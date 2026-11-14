@@ -343,11 +343,15 @@ namespace CosmicShore.Gameplay
 
             if (Profile.idleFullThrottle) inputStatus.XDiff = 1f;
 
+            // Both triggers pulled, as a pad reads them (Garrett, 2026-11-14: "both thumbs off should read as
+            // both triggers pulled and switch to gyro controls"): the analog values AND the presses a pad's
+            // two triggers raise (Left/RightStickAction, BothSticksAction), through the pad's own rule. It
+            // used to write the analog values only, so a hull whose triggers are presses saw nothing.
+            // Repeating it each idle frame raises nothing new.
             if (Profile.idlePullsBothTriggers)
             {
-                inputStatus.LeftTriggerAnalog = 1f;
-                inputStatus.RightTriggerAnalog = 1f;
                 triggersPulledByIdle = true;
+                DispatchTriggers(1f, 1f);
             }
         }
 
@@ -355,8 +359,7 @@ namespace CosmicShore.Gameplay
         {
             if (!triggersPulledByIdle) return;
             triggersPulledByIdle = false;
-            inputStatus.LeftTriggerAnalog = 0f;
-            inputStatus.RightTriggerAnalog = 0f;
+            DispatchTriggers(0f, 0f);
         }
 
         private enum TiltMode { None = 0, Steer = 1 }
@@ -373,7 +376,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The Dolphin's aim (one thumb flying, the other lifted): the phone is an augmented-reality window
+        /// The one-thumb gyro roll (one thumb flying, the other lifted; the Dolphin and the Squirrel): the phone is an augmented-reality window
         /// on the roll axis. The hull rolls exactly as far as the phone has turned like a wheel since the
         /// aim began, clockwise banks right, up to the library's limit either side (Garrett, 2026-10-22:
         /// "1 to 1 roll like augmented reality not a control that sends the vessel into a roll"). It used
@@ -386,7 +389,7 @@ namespace CosmicShore.Gameplay
             // neutral next time.
             SetTiltMode(TiltMode.None);
 
-            bool rollHull = Profile != null && Profile.tiltRollOnOneThumb;
+            bool rollHull = Profile != null && Profile.gyroRollOnOneThumb;
             if (rollHull) TouchAttitudeRoll.Warm();
             if (!rollHull || !oneThumbActive)
             {

@@ -442,5 +442,9 @@ Platform-agnostic input via `Assets/_Scripts/Controller/IO/`:
   pitch only, Garrett 2026-10-22 / 2026-10-25; it is hull data under the one Invert Y rule, not a strategy's sign; a
   hull may soften one-thumb flight at home with `oneThumbResponseCurve`, the Dolphin 0.6, rim unchanged), read by `TouchInputStrategy` (flight) and `TouchControlsHud` (the cards). Both thumbs off reads as both
   triggers pulled and switches to gyro controls (Garrett, 2026-11-14: "both thumbs off should read as both triggers pulled
-  and switch to gyro controls"); until the profiles carry it fleet-wide, a hull opts in with `idlePullsBothTriggers` and
-  `tiltSteersWhileIdle`, and a hull without them still reads a released pad. `Docs/ABILITY_LOCKUP.md` "On a phone" and `Docs/Reports/MOBILE_VESSELS.md` §8.
+  and switch to gyro controls"): `idlePullsBothTriggers` raises exactly what a pad's two held triggers raise (the shared
+  `TriggerEdges`, which the gamepad and keyboard read too) and `tiltSteersWhileIdle` steers by tilt. Every thumb-lift
+  hull has both except where its both-thumbs-off has another job (the Manta's soar and the Thresher's launch keep the
+  gyro only; the Dolphin's one-thumb flight and the Honeyguide's cancel keep neither); the TotemButtons hulls keep a
+  released pad, since their triggers are on-screen buttons (`author_touch_profiles.py`, `BOTH_OFF`). The one-thumb
+  gyro roll is `gyroRollOnOneThumb` (was `tiltRollOnOneThumb`), any hull's to use. `Docs/ABILITY_LOCKUP.md` "On a phone" and `Docs/Reports/MOBILE_VESSELS.md` §8.
