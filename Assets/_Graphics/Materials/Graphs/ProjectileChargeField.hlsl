@@ -244,6 +244,11 @@ void ProjectileChargeField_float(
         float height = dot(fragDir, pole);
         float theta = atan2(dot(fragDir, v), dot(fragDir, u));
 
+        // Exact early-out before the wander FBM: |wob| <= 0.875 * _ArcWander (3-octave FBM, amplitudes
+        // 0.5 + 0.25 + 0.125), and a stroke below 0.002 is dropped further down anyway, so a fragment farther
+        // than that from the arc's circle (+2.5 widths) can never be lit. Pixel-identical, skips the FBM.
+        if (abs(height) > 0.875 * _ArcWander + 2.5 * max(_ArcSharpness, 1e-3)) continue;
+
         // ── The bolt wanders off the exact circle ──
         // Without this the stroke is a drafted arc; with it, it is lightning that happens
         // to be following one.
