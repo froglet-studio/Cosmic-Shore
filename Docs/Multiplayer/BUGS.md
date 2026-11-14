@@ -10,6 +10,10 @@ One line per bug, with its current state. Full entries (repro, root cause, fix) 
 | P-B36 / P-B45: a long frame freeze (boot menu load, cell swap) makes the Relay drop the host | Freezes not fixed. Boot-order decision (start the Relay host after the menu is up) is waiting on the owner; Garrett's machine needs a Profiler capture |
 | P-B46: `ArgumentNullException` flood from the match HUD on another client after a rejoin | Throw fixed (`be6f1058e`, `MiniGameHUD.ResolveAIAvatarSprite`); why the reclaimed seat has no name (`Player.Name` null) is still open, and `MultiplayerHUD` now logs it |
 | P-B7: client pair-init runs before remote identity replicates | ⚪ open, low |
+| **Two pilots with the same display name collapse into one** (found 2026-11-15; both MPPM test accounts are "ys1"): `GameDataSO.AddPlayer` keeps one `Players` and one `RoundStatsList` entry per name, so each machine's scoreboard lists one pilot row, and Play Again leaves the other pilot's B21 stats uncleared on the host | Open. Decide first: can two real players have the same display name? If yes, the roster needs an id key (client id or UGS id), not the name. Until then give MPPM Player 2 another name |
+| `[UGS Auth] Sign-in failed ... The player is already signing in`, twice at boot (2026-11-15) | Open, low. Seen on 2 of 3 boots with "play offline" preferred, on none of about 8 online boots. UGS is in fact signed in afterwards; the facade's own `SignInAnonymouslyCore` call (from `TrySignInCachedAsync`) is refused. Who starts the other sign-in is not found |
+| "The host left" notice appears over a NEW match (2026-11-15) | Open, low. A drop record left by the previous Play (`MatchRejoin`, dropped) is given up by `DisconnectNotice.CheckRejoin` a while after boot; nobody dismissed it, so it sat over the next match's end screen. `CheckRejoin` is meant for the menu and does not stop in a game scene |
+| A rejoiner and READY in a multi-turn mode (2026-11-15) | Not checked. After a forced turn end the host went back to READY and the rejoiner showed no READY button; the end was forced, so this needs a real multi-turn match (checklist "B50" step 6) |
 | No scripted MPPM scenarios and no automatic host/join harness: every multiplayer run needs a person | Open, see [`TODO.md`](TODO.md) |
 | Amoebius edit-mode suite no longer builds (102 missing engine APIs) | Open, harness owner |
 
@@ -42,6 +46,15 @@ MPPM run of 2026-11-15 (the editor + Player 2, Switchback, `4b414df525`; results
 "B50" entries): the solo stat block passed; two-player stats matched on both machines during the race; the drop and
 REJOIN passed (`seatReclaimed`, `rejoinedRunningTurn`, no READY, no B46 or B47 error). Still owed: the final two-player
 scoreboard on different hulls, Play Again, input by hand after a rejoin, and a rejoiner's READY in a multi-turn mode.
+
+Second MPPM run of 2026-11-15 (Bloomrush; the session called the game's own handlers, it did not click buttons):
+- P-B20 held: the host pressed READY, the guest left at the ready gate, the host's match started.
+- P-B18 / P-B22, the handlers only: the guest's `party leave` and the scoreboard's `OnLeaveLobbyButtonPressed` both took
+  it to its own menu and party, and the host stayed. The BUTTON wiring (what B22 was) is not proven by this.
+- P-B33 held: Play started again after a stop came up in a new party session with no "lobby not found".
+- Relay region: with Settings > REGION set to `asia-south1` the host's session reported that region and the guest
+  joined it (2/4). The preference was put back to Auto.
+- A second hull for B21 (scoring): Mantas report and sync Prisms Damaged like the Dolphins did.
 
 ## Not bugs, missing features (tracked in [`TODO.md`](TODO.md))
 

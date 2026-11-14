@@ -569,6 +569,16 @@ editor's command server; the AI flew the hulls, nobody was at the controls):
   race (host 29 / guest 185, then 425 / 210 on both). Not covered: different hulls (both spawned on Dolphins) and the
   final scoreboard's rows (the guest's hull never finished the course, so the race did not end by itself).
 - Steps 4-6 **NOT RUN** (Play Again reset, the per-ram count judged by a person, a Sparrow or Squirrel match).
+
+**Second run, 2026-11-15** (two-player Bloomrush, both on Mantas, the match ended on its 90 s timer):
+- Step 3, the final scoreboard **PASSED for the stat block**: the host showed Prisms Damaged "ys1 5 · ys1 4" and
+  Player 2 "ys1 4 · ys1 5" (the same numbers, each machine's own pilot first).
+- **Found: both MPPM test accounts are named "ys1", and the roster is keyed by display name**
+  (`GameDataSO.AddPlayer`: one `Players` / `RoundStatsList` entry per name). With two pilots of one name each machine's
+  `RoundStatsList` held one entry: the scoreboard listed ONE pilot row, and after Play Again the host kept the guest's
+  old value (4) because the guest's stats were not in the list that is cleared. Step 5 (Play Again) cannot be judged
+  until Player 2 has another name. Whether two real players can share a display name is the open question
+  (`Docs/Multiplayer/BUGS.md`, Open).
 2. Solo, fly a Dolphin (or Manta, Rhino, Serpent, Swordfish) in any arcade mode and ram some prisms. **Pass:** the
    scoreboard's Prisms Damaged is above 0, and Longest Drift / Max Boost show your values. The console no longer
    warns "[TelemetryBootstrap] ... serialized stat SO refs will be null".
