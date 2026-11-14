@@ -417,11 +417,11 @@ def scroller(x, y, w, h, inner, top=""):
 
 def filters():
     chips = "".join(
-        f'<button class="tabw cap" type="button" onClick="{{{{setF.{k}}}}}" style="position:relative;font-size:{13 if PICKED[0] else 14}px;{"white-space:nowrap;" if PICKED[0] else ""}color:{TEXT}">{n}'
+        f'<button class="tabw cap" type="button" onClick="{{{{setF.{k}}}}}" style="position:relative;font-size:{13 if PICKED[0] else 14}px;{"white-space:nowrap;flex:none;letter-spacing:.1em;" if PICKED[0] else ""}color:{TEXT}">{n}'
         f'<span class="num" style="color:{SOFT};margin-left:6px">{c}</span>'
         f'<sc-if value="{{{{f.{k}}}}}" hint-placeholder-val="{{{{ {"true" if k == "all" else "false"} }}}}"><span class="abs" style="left:0;right:0;bottom:-8px;height:2px;background:{JADE}"></span></sc-if></button>'
         for k, n, c in (("all", "All", len(SETS)), ("free", CB if PICKED[0] else "Free", len(VISION) if PICKED[0] else len(FREE) + len(VISION)), ("premium", "Premium", len(PREM))))
-    return f'<div style="display:flex;gap:{20 if PICKED[0] else 26}px;padding:20px 18px 12px;border-bottom:1px solid #222645;flex:none">{chips}</div>'
+    return f'<div style="display:flex;gap:{18 if PICKED[0] else 26}px;{"white-space:nowrap;" if PICKED[0] else ""}padding:20px 18px 12px;border-bottom:1px solid #222645;flex:none">{chips}</div>'
 
 
 # ---------------------------------------------------------------- the stage: the picked set's world, name and action
