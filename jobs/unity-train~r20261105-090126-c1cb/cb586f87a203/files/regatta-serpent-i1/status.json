@@ -6,9 +6,9 @@
  "generation": 2,
  "loss": -46.7071533203125,
  "people_line": "652 points from 2 race(s)",
- "phase": "stopped",
+ "phase": "the project does not compile",
  "scenario": "Serpent_Regatta_I1",
  "seed": "none: the seed named no gene the registry knows",
  "unit_episodes": 50,
- "updated": 1794622126.561613
+ "updated": 1794622287.9803548
 }
