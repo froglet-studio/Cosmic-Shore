@@ -3248,23 +3248,7 @@
    "area": "vessel",
    "retired": "knockback on other vessels (VesselImpulseByExplosionEffectSO), VesselShrinkSkimmerEffectSO, the Rhino's VesselDangerBlockFormationBySkimmerEffectSO and its sword's danger dome, the Butterfly dust's decaying debuff",
    "test": "List every effect the design has on an opposing vessel; each must be a petal move that scores through CombatHitDrain.TryAdmit, and nothing else.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-vessel-03",
-   "owner": "Garrett",
-   "date": "2026-10-16",
-   "words": "make the shrimp launch have a significant cooldown; make the goby zip around crazy fast so it is almost impossible to catch up with.",
-   "rule": "The Goby is crazy fast, almost impossible to catch; the Pistol's launch is a rare commitment with a long cooldown.",
-   "source": {
-    "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 5178
-   },
-   "kind": "quote",
-   "area": "vessel",
-   "retired": "",
-   "test": "Does the tuning keep the Goby nearly uncatchable and the launch rare (one charge, about 9 s)?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-04",
@@ -3296,7 +3280,7 @@
    "area": "vessel",
    "retired": "C# `*HullForm` procedural surfaces as vessel models (and the seven from-scratch hulls of 2026-10-17)",
    "test": "Does the brief ship a modelled FBX hull with the shipped names and four element morphs? A generated or placeholder mesh fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-06",
@@ -3328,7 +3312,7 @@
    "area": "vessel",
    "retired": "SparrowDebuffByRhinoDangerPrismEffectSO's 5 s Button2 mute and its event asset (deleted 2026-10-17)",
    "test": "Does any effect in the design mute, lock or steal an input? It fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-08",
@@ -3344,7 +3328,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the new crew vessel reuse CrewSeat, CrewPictureInPicture and CrewViewRender, or roll its own seats and views?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-09",
@@ -3360,7 +3344,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the hull's colour scheme add a family beyond domain, Blue and Fire, or put Lime (the call to action) on the vessel?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-10",
@@ -3376,7 +3360,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the hull read as a creature with a face and limbs, or as a ship whose silhouette says its animal?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-11",
@@ -3392,7 +3376,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the design add a way to take petals without silencing by worth, or silence anything beyond harm (movement, Mass, Time)? Either breaks the fleet-wide silence rule.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-12",
@@ -3408,7 +3392,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the silenced state block an input, stop an ability from playing, or leave any of its harm live? Any of those is wrong.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-13",
@@ -3424,7 +3408,7 @@
    "area": "vessel",
    "retired": "silencing for settled petals only (the first cut)",
    "test": "Would a scored hit on a pilot holding no petals silence them for the hit's worth? If not, the design has gone back to petals settled.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-14",
@@ -3440,7 +3424,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the hit's consequence ride the scored hit itself and take only harmlessness, never motion or control?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-15",
@@ -3456,7 +3440,7 @@
    "area": "vessel",
    "retired": "the seven from-scratch hulls of 2026-10-17 (retired 2026-10-18)",
    "test": "Does every part of the model float clear of the hull (assembly_report.py)? A welded part is out.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-16",
@@ -3493,18 +3477,18 @@
   {
    "id": "P-vessel-18",
    "owner": "Garrett",
-   "date": "2026-10-22",
-   "words": "a hull's tilt may be turned over per axis, flipTiltSteerPitch / flipTiltSteerYaw: the Manta flips pitch only, Garrett 2026-10-22 / 2026-10-25; it is hull data under the one Invert Y rule, not a strategy's sign",
-   "rule": "On a phone each hull has its own touch profile (thumb lifts or totem buttons, tilt, both-thumbs-off controls, extra buttons); a tilt flip is hull data under the one Invert Y rule, and both thumbs off reads as a released pad.",
+   "date": "2026-11-14",
+   "words": "both thumbs off should read as both triggers pulled and switch to gyro controls",
+   "rule": "On a phone each hull has its own touch profile (thumb lifts or totem buttons, tilt, extra buttons); a tilt flip is hull data under the one Invert Y rule, and both thumbs off reads as both triggers pulled and switches to gyro (tilt) controls.",
    "source": {
     "file": "Docs/claude/ARCHITECTURE_CORE.md",
-    "line": 441
+    "line": 444
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
-   "test": "Does the new hull ship a touch profile, and is any axis flip authored as hull data rather than in a strategy?",
-   "status": "drafted"
+   "test": "With no thumb on the glass, do both triggers read fully pulled and does tilt steer? Is any axis flip authored as hull data rather than in a strategy?",
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-19",
@@ -3600,7 +3584,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Count the levels of form on the model: are there five, each carrying two to five heterarchies, down to micro detail?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-25",
@@ -3616,7 +3600,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the model carry a dome, spike or plinth that serves no form? Remove it.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-26",
@@ -3712,7 +3696,7 @@
    "area": "vessel",
    "retired": "the vortex-ring ride back to the den after a fall (the 2026-10-28 design)",
    "test": "Can the Pistol ever be stuck with no crossable path, or land on prisms that are not there?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-32",

@@ -8,16 +8,11 @@ namespace CosmicShore.Gameplay
 {
     public class GamepadInputStrategy : BaseInputStrategy
     {
-        private const float TriggerDeadzone = 0.05f;
-
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
 
         private Vector2 leftStickRaw;
         private Vector2 rightStickRaw;
-
-        private bool prevLeftTriggerActive;
-        private bool prevRightTriggerActive;
 
         // Face-button held state, edge-detected from isPressed rather than the frame flags
         // (SingleStickMouseInputStrategy's shape). wasReleasedThisFrame is only seen while this
@@ -142,70 +137,6 @@ namespace CosmicShore.Gameplay
             float leftTriggerValue = Gamepad.current.leftTrigger.ReadValue();
             float rightTriggerValue = Gamepad.current.rightTrigger.ReadValue();
             DispatchTriggers(leftTriggerValue, rightTriggerValue);
-        }
-
-        private void DispatchTriggers(float leftTriggerValue, float rightTriggerValue)
-        {
-            inputStatus.LeftTriggerAnalog = leftTriggerValue;
-            inputStatus.RightTriggerAnalog = rightTriggerValue;
-
-            bool leftActive = leftTriggerValue > TriggerDeadzone;
-            bool rightActive = rightTriggerValue > TriggerDeadzone;
-
-            bool leftJustPressed = leftActive && !prevLeftTriggerActive;
-            bool leftJustReleased = !leftActive && prevLeftTriggerActive;
-            bool leftHeld = leftActive;
-
-            bool rightJustPressed = rightActive && !prevRightTriggerActive;
-            bool rightJustReleased = !rightActive && prevRightTriggerActive;
-            bool rightHeld = rightActive;
-
-            prevLeftTriggerActive = leftActive;
-            prevRightTriggerActive = rightActive;
-
-            // Individual trigger events
-            if (leftJustPressed)
-                inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
-            if (leftJustReleased)
-                inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
-            if (rightJustPressed)
-            {
-                inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
-            }
-            if (rightJustReleased)
-                inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
-
-            // BothSticksAction Released
-            if ((leftJustReleased && rightJustReleased)
-                || (leftJustReleased && rightHeld)
-                || (rightJustReleased && leftHeld))
-                inputStatus.OnButtonReleased.Raise(InputEvents.BothSticksAction);
-
-            // OnlyLeftStickAction Released
-            if ((leftJustReleased && !rightHeld)
-                || (rightJustPressed && leftHeld))
-                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
-
-            // OnlyRightStickAction Released
-            if ((rightJustReleased && !leftHeld)
-                || (leftJustPressed && rightHeld))
-                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyRightStickAction);
-
-            // OnlyLeftStickAction Pressed
-            if ((leftJustPressed && !rightHeld)
-                || (rightJustReleased && leftHeld))
-                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
-
-            // OnlyRightStickAction Pressed
-            if ((rightJustPressed && !leftHeld)
-                || (leftJustReleased && rightHeld))
-                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
-
-            // BothSticksAction Pressed
-            if ((leftJustPressed && rightJustPressed)
-                || (leftJustPressed && rightHeld)
-                || (rightJustPressed && leftHeld))
-                inputStatus.OnButtonPressed.Raise(InputEvents.BothSticksAction);
         }
 
         private void Reparameterize()
