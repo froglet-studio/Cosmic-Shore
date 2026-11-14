@@ -1,0 +1,546 @@
+# Release builds: every platform's player from a release tag, built on Unity Build Automation (UBA), checked to be
+# that tag's commit, and uploaded to its PRE-RELEASE channel only. Docs/LAUNCH/PIPELINES.md is the full picture:
+# the flow per platform, every secret by name and the Environment that holds it, what is proven and what is not.
+#
+#   Release (release.yml, a v* / rc-* tag) succeeds -> this workflow, or Actions > Release builds > Run workflow.
+#
+#   resolve    the tag, its commit and version (from the Release run's build-identity.json, or the dispatch form),
+#              and the platforms (Tools/Launch/uba.py plan: windows, android, ios, web; anything else fails)
+#   preflight  every Environment the chosen platforms need exists (Tools/Launch/environments.py). It runs BEFORE
+#              any job names an Environment, because naming one that does not exist makes GitHub create it empty
+#              and unprotected.
+#   windows    build-windows (uba-builds) -> steam-prerelease: SteamPipe to the Playtest app's `internal` branch
+#              (Tools/Steam/upload.sh --target playtest). OPT-IN: refuses without STEAM_CONFIG_VDF.
+#   android    build-android (uba-builds) -> play-prerelease: the .aab to the Play INTERNAL track (Tools/Launch/play.py)
+#   ios        build-ios (uba-builds). Hand-off to ios-testflight.yml is a seam a person crosses today (PIPELINES.md).
+#   web        handed to the web pipeline (its own workflow; it builds, stages and records web itself)
+#   status     one launch-status record per platform step (Docs/LAUNCH/STATUS_CONTRACT.md), whatever happened
+#
+# Nothing here reaches players outside the team: Steam `internal` and Play `internal` are team-only channels, and
+# promotion to them is release-promote.yml's job behind a reviewer. No player build is ever kept as a workflow
+# artifact: this repository is public, so an artifact is downloadable by anyone signed in to GitHub. Each upload
+# job downloads its player straight from UBA instead.
+#
+# Rehearsal: a pull request that changes this pipeline runs resolve and preflight for real (no secrets, read-only
+# token) and records the would-be status with --dry-run. It builds and uploads nothing.
+
+name: Release builds
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "A release tag that already has a Release run: v<major>.<minor>.<patch>[-<pre>] or rc-<label>"
+        required: true
+        type: string
+      platforms:
+        description: "Comma-separated: windows, android, ios, web"
+        required: true
+        type: string
+        default: "windows,android,ios,web"
+      upload:
+        description: "Upload to the pre-release channels (Steam internal, Play internal) after building"
+        type: boolean
+        default: true
+  pull_request:
+    paths:
+      - ".github/workflows/release-builds.yml"
+      - "Tools/Launch/uba.py"
+      - "Tools/Launch/play.py"
+      - "Tools/Launch/environments.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-builds-${{ inputs.tag || github.event.workflow_run.head_branch || github.head_ref }}
+  cancel-in-progress: false
+
+env:
+  # What a pull-request rehearsal plans for. The negative control sets an invalid platform here.
+  REHEARSAL_PLATFORMS: "windows,android,ios,web"
+
+jobs:
+  resolve:
+    name: Tag, commit and platforms
+    # A Release run counts only when it succeeded on a tag push or a dispatch, never its pull-request rehearsal.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'pull_request')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read   # the Release run's build-identity.json
+    outputs:
+      mode: ${{ steps.which.outputs.mode }}
+      tag: ${{ steps.which.outputs.tag }}
+      sha: ${{ steps.which.outputs.sha }}
+      version: ${{ steps.which.outputs.version }}
+      upload: ${{ steps.which.outputs.upload }}
+      windows: ${{ steps.plan.outputs.windows }}
+      android: ${{ steps.plan.outputs.android }}
+      ios: ${{ steps.plan.outputs.ios }}
+      web: ${{ steps.plan.outputs.web }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+          sparse-checkout: Tools/Launch
+          lfs: false
+          persist-credentials: false
+
+      - name: Which release
+        id: which
+        env:
+          EVENT: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_UPLOAD: ${{ inputs.upload }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          case "$EVENT" in
+            workflow_run)
+              # The Release run's own record of what it tagged: tag, commit, version.
+              gh run download "$RUN_ID" -n release-notes -D identity
+              read -r TAG SHA VERSION < <(python3 -c 'import json; d=json.load(open("identity/build-identity.json")); print(d["tag"], d["commit"], d["version"])')
+              case "$TAG" in rc-rehearsal-*) echo "::error::$TAG is a rehearsal tag; it is never built."; exit 1 ;; esac
+              MODE=release; UPLOAD=true ;;
+            workflow_dispatch)
+              TAG="$INPUT_TAG"
+              if [ -z "$TAG" ] || printf '%s' "$TAG" | grep -q '[^A-Za-z0-9._-]'; then
+                echo "::error::The tag name holds characters a release tag never has."; exit 1
+              fi
+              # An annotated tag lists its own object first and the commit as "<tag>^{}": take the commit.
+              SHA=$(git ls-remote origin "refs/tags/$TAG" "refs/tags/$TAG^{}" \
+                    | awk '$2 ~ /\^\{\}$/ {c=$1} $2 !~ /\^\{\}$/ {t=$1} END {print (c != "" ? c : t)}')
+              if [ -z "$SHA" ]; then echo "::error::No tag $TAG on origin. Push it (and let Release run) first."; exit 1; fi
+              VERSION=""
+              MODE=release; UPLOAD="$INPUT_UPLOAD" ;;
+            pull_request)
+              TAG="rc-rehearsal-$PR_NUMBER"; SHA="$PR_SHA"; VERSION=""
+              MODE=rehearsal; UPLOAD=false ;;
+            *) echo "::error::Unsupported trigger $EVENT"; exit 1 ;;
+          esac
+          CHECKED=$(python3 Tools/Launch/release_notes.py check-tag "$TAG")
+          VERSION="${VERSION:-$CHECKED}"
+          if ! printf '%s' "$SHA" | grep -Eq '^[0-9a-f]{40}$'; then echo "::error::Not a commit sha for $TAG."; exit 1; fi
+          {
+            echo "mode=$MODE"; echo "tag=$TAG"; echo "sha=$SHA"; echo "version=$VERSION"; echo "upload=$UPLOAD"
+          } >> "$GITHUB_OUTPUT"
+          echo "$MODE: $TAG ($VERSION) at $SHA, upload=$UPLOAD"
+
+      - name: Platforms
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_PLATFORMS: ${{ inputs.platforms }}
+        run: |
+          case "$EVENT" in
+            workflow_dispatch) P="$INPUT_PLATFORMS" ;;
+            pull_request) P="$REHEARSAL_PLATFORMS" ;;
+            *) P="windows,android,ios,web" ;;
+          esac
+          python3 Tools/Launch/uba.py plan --platforms "$P" --github-output "$GITHUB_OUTPUT"
+
+  preflight:
+    name: Environments exist
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read   # GET /repos/{repo}/environments/{name}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+          sparse-checkout: Tools/Launch
+          lfs: false
+          persist-credentials: false
+      - name: Check the Environments this run would use
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          WINDOWS: ${{ needs.resolve.outputs.windows }}
+          ANDROID: ${{ needs.resolve.outputs.android }}
+          IOS: ${{ needs.resolve.outputs.ios }}
+          UPLOAD: ${{ needs.resolve.outputs.upload }}
+          MODE: ${{ needs.resolve.outputs.mode }}
+        run: |
+          set -euo pipefail
+          needs=()
+          if [ "$WINDOWS" = true ] || [ "$ANDROID" = true ] || [ "$IOS" = true ]; then needs+=(uba-builds); fi
+          # A rehearsal checks every Environment an uploading run would need.
+          if [ "$WINDOWS" = true ] && { [ "$UPLOAD" = true ] || [ "$MODE" = rehearsal ]; }; then needs+=(steam-prerelease); fi
+          if [ "$ANDROID" = true ] && { [ "$UPLOAD" = true ] || [ "$MODE" = rehearsal ]; }; then needs+=(play-prerelease); fi
+          if [ ${#needs[@]} -eq 0 ]; then echo "No Environment needed (web only)."; exit 0; fi
+          python3 Tools/Launch/environments.py check "${needs[@]}"
+
+  build-windows:
+    name: Build Windows (UBA)
+    needs: [resolve, preflight]
+    if: needs.resolve.outputs.mode == 'release' && needs.resolve.outputs.windows == 'true'
+    runs-on: ubuntu-latest
+    environment: uba-builds
+    timeout-minutes: 240
+    outputs:
+      build: ${{ steps.start.outputs.build }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
+      - name: Start the UBA build at the tag's commit
+        id: start
+        env:
+          UBA_API_KEY: ${{ secrets.UBA_API_KEY }}
+          UBA_ORG_ID: ${{ secrets.UBA_ORG_ID }}
+          UBA_PROJECT_ID: ${{ secrets.UBA_PROJECT_ID }}
+          UBA_WINDOWS_TARGET: ${{ vars.UBA_WINDOWS_TARGET }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: python3 Tools/Launch/uba.py start --platform windows --commit "$SHA" --label "$TAG" --github-output "$GITHUB_OUTPUT"
+      - name: Wait for it, then check it built that commit
+        env:
+          UBA_API_KEY: ${{ secrets.UBA_API_KEY }}
+          UBA_ORG_ID: ${{ secrets.UBA_ORG_ID }}
+          UBA_PROJECT_ID: ${{ secrets.UBA_PROJECT_ID }}
+          UBA_WINDOWS_TARGET: ${{ vars.UBA_WINDOWS_TARGET }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          python3 Tools/Launch/uba.py wait --platform windows --build "${{ steps.start.outputs.build }}" --timeout-min 220
+          python3 Tools/Launch/uba.py verify --platform windows --build "${{ steps.start.outputs.build }}" --commit "$SHA"
+
+  steam-prerelease:
+    name: Steam Playtest internal (SteamPipe)
+    needs: [resolve, build-windows]
+    if: needs.resolve.outputs.upload == 'true' && needs.build-windows.result == 'success'
+    runs-on: ubuntu-latest
+    environment: steam-prerelease
+    timeout-minutes: 90
+    steps:
+      - name: Opt-in check (a builder account's cached login, STEAM_CONFIG_VDF)
+        env:
+          STEAM_CONFIG_VDF: ${{ secrets.STEAM_CONFIG_VDF }}
+          STEAM_USER: ${{ secrets.STEAM_USER }}
+          STEAM_PLAYTEST_APPID: ${{ vars.STEAM_PLAYTEST_APPID }}
+          STEAM_PLAYTEST_DEPOTID: ${{ vars.STEAM_PLAYTEST_DEPOTID }}
+          UBA_API_KEY: ${{ secrets.UBA_API_KEY }}
+        run: |
+          missing=""
+          [ -n "$STEAM_CONFIG_VDF" ] || missing="$missing STEAM_CONFIG_VDF"
+          [ -n "$STEAM_USER" ] || missing="$missing STEAM_USER"
+          [ -n "$STEAM_PLAYTEST_APPID" ] || missing="$missing STEAM_PLAYTEST_APPID(variable)"
+          [ -n "$STEAM_PLAYTEST_DEPOTID" ] || missing="$missing STEAM_PLAYTEST_DEPOTID(variable)"
+          [ -n "$UBA_API_KEY" ] || missing="$missing UBA_API_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Steam upload from CI is opt-in and not set up:$missing missing in the steam-prerelease Environment. Until it is, upload by hand from the build machine (Tools/Steam/README.md). The trade-off to decide first: Docs/LAUNCH/PIPELINES.md, Steam."
+            exit 1
+          fi
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            Tools/Launch
+            Tools/Steam
+          lfs: false
+          persist-credentials: false
+
+      - name: Download the Windows player from UBA (the tag's commit only)
+        env:
+          UBA_API_KEY: ${{ secrets.UBA_API_KEY }}
+          UBA_ORG_ID: ${{ secrets.UBA_ORG_ID }}
+          UBA_PROJECT_ID: ${{ secrets.UBA_PROJECT_ID }}
+          UBA_WINDOWS_TARGET: ${{ vars.UBA_WINDOWS_TARGET }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          BUILD: ${{ needs.build-windows.outputs.build }}
+        run: |
+          set -euo pipefail
+          python3 Tools/Launch/uba.py download --platform windows --build "$BUILD" --commit "$SHA" --out "$RUNNER_TEMP/windows.zip"
+          mkdir -p "$RUNNER_TEMP/player"
+          unzip -q "$RUNNER_TEMP/windows.zip" -d "$RUNNER_TEMP/player"
+          rm -f "$RUNNER_TEMP/windows.zip"
+          EXE=$(find "$RUNNER_TEMP/player" -maxdepth 3 -name 'CosmicShore.exe' -print -quit)
+          if [ -z "$EXE" ]; then
+            echo "::error::The UBA Windows build holds no CosmicShore.exe. Set the UBA target's executable name to CosmicShore (Tools/Steam/upload.sh and the depot expect it; Docs/LAUNCH/PIPELINES.md)."
+            find "$RUNNER_TEMP/player" -maxdepth 2 -name '*.exe' -printf 'found: %P\n'
+            exit 1
+          fi
+          echo "PLAYER_DIR=$(dirname "$EXE")" >> "$GITHUB_ENV"
+          printf 'version=%s\ncommit=%s\nconfiguration=Release\n' "${{ needs.resolve.outputs.version }}" "$SHA" > "$(dirname "$EXE")/build_manifest.txt"
+
+      - name: Install steamcmd
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y -qq lib32gcc-s1 > /dev/null   # steamcmd is a 32-bit program
+          # Valve publishes no checksum or version for this bootstrapper, and steamcmd updates itself on first run,
+          # so it cannot be pinned. The hash is logged so a change is visible between runs.
+          mkdir -p "$RUNNER_TEMP/steamcmd"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/steamcmd.tgz" https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
+          sha256sum "$RUNNER_TEMP/steamcmd.tgz"
+          tar -xzf "$RUNNER_TEMP/steamcmd.tgz" -C "$RUNNER_TEMP/steamcmd"
+          echo "STEAMCMD=$RUNNER_TEMP/steamcmd/steamcmd.sh" >> "$GITHUB_ENV"
+
+      - name: Upload to the Playtest app's internal branch
+        env:
+          STEAM_CONFIG_VDF: ${{ secrets.STEAM_CONFIG_VDF }}
+          STEAM_USER: ${{ secrets.STEAM_USER }}
+          STEAM_PLAYTEST_APPID: ${{ vars.STEAM_PLAYTEST_APPID }}
+          STEAM_PLAYTEST_DEPOTID: ${{ vars.STEAM_PLAYTEST_DEPOTID }}
+        run: |
+          set -euo pipefail
+          # The builder account's cached login (Steam Guard already satisfied), never a password.
+          mkdir -p "$RUNNER_TEMP/steamcmd/config"
+          umask 077
+          printf '%s' "$STEAM_CONFIG_VDF" | tr -d '\r\n ' | base64 --decode > "$RUNNER_TEMP/steamcmd/config/config.vdf"
+          trap 'rm -f "$RUNNER_TEMP/steamcmd/config/config.vdf"' EXIT
+          "$STEAMCMD" +quit > /dev/null 2>&1 || true   # first run updates steamcmd itself
+          unset STEAM_PASSWORD
+          bash Tools/Steam/upload.sh --target playtest --build-dir "$PLAYER_DIR" --branch internal --set-live 2>&1 \
+            | tee "$RUNNER_TEMP/steam.log"
+          if grep -Eiq 'Login Failure|Steam Guard|Invalid Password|Two-factor' "$RUNNER_TEMP/steam.log"; then
+            echo "::error::steamcmd could not log in with the cached session in STEAM_CONFIG_VDF. It has expired or was revoked: refresh it (Docs/LAUNCH/PIPELINES.md, Steam)."
+            exit 1
+          fi
+          if ! grep -q 'Successfully finished AppID' "$RUNNER_TEMP/steam.log"; then
+            echo "::error::SteamPipe did not report a finished app build; see the log above."
+            exit 1
+          fi
+
+  build-android:
+    name: Build Android (UBA)
+    needs: [resolve, preflight]
+    if: needs.resolve.outputs.mode == 'release' && needs.resolve.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    environment: uba-builds
+    timeout-minutes: 240
+    outputs:
+      build: ${{ steps.start.outputs.build }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
+      - name: Start the UBA build at the tag's commit
+        id: start
+        env:
+          UBA_API_KEY: ${{ secrets.UBA_API_KEY }}
+          UBA_ORG_ID: ${{ secrets.UBA_ORG_ID }}
+          UBA_PROJECT_ID: ${{ secrets.UBA_PROJECT_ID }}
+          UBA_ANDROID_TARGET: ${{ vars.UBA_ANDROID_TARGET }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: python3 Tools/Launch/uba.py start --platform android --commit "$SHA" --label "$TAG" --github-output "$GITHUB_OUTPUT"
+      - name: Wait for it, then check it built that commit
+        env:
+          UBA_API_KEY: ${{ secrets.UBA_API_KEY }}
+          UBA_ORG_ID: ${{ secrets.UBA_ORG_ID }}
+          UBA_PROJECT_ID: ${{ secrets.UBA_PROJECT_ID }}
+          UBA_ANDROID_TARGET: ${{ vars.UBA_ANDROID_TARGET }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          python3 Tools/Launch/uba.py wait --platform android --build "${{ steps.start.outputs.build }}" --timeout-min 220
+          python3 Tools/Launch/uba.py verify --platform android --build "${{ steps.start.outputs.build }}" --commit "$SHA"
+
+  play-prerelease:
+    name: Play internal track
+    needs: [resolve, build-android]
+    if: needs.resolve.outputs.upload == 'true' && needs.build-android.result == 'success'
+    runs-on: ubuntu-latest
+    environment: play-prerelease
+    timeout-minutes: 60
+    outputs:
+      version_code: ${{ steps.upload.outputs.version_code }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
+      - name: Download the App Bundle from UBA (the tag's commit only)
+        env:
+          UBA_API_KEY: ${{ secrets.UBA_API_KEY }}
+          UBA_ORG_ID: ${{ secrets.UBA_ORG_ID }}
+          UBA_PROJECT_ID: ${{ secrets.UBA_PROJECT_ID }}
+          UBA_ANDROID_TARGET: ${{ vars.UBA_ANDROID_TARGET }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          BUILD: ${{ needs.build-android.outputs.build }}
+        run: |
+          set -euo pipefail
+          python3 Tools/Launch/uba.py download --platform android --build "$BUILD" --commit "$SHA" --out "$RUNNER_TEMP/android.bin"
+          case "$(file -b "$RUNNER_TEMP/android.bin")" in
+            *Zip*|*zip*) ;;
+            *) echo "::error::The UBA Android download is not an archive."; exit 1 ;;
+          esac
+          # An .aab is itself a zip; a zip that holds one is UBA's packaging.
+          if unzip -l "$RUNNER_TEMP/android.bin" | grep -q 'BundleConfig.pb'; then
+            mv "$RUNNER_TEMP/android.bin" "$RUNNER_TEMP/app.aab"
+          else
+            mkdir -p "$RUNNER_TEMP/android" && unzip -q "$RUNNER_TEMP/android.bin" -d "$RUNNER_TEMP/android"
+            AAB=$(find "$RUNNER_TEMP/android" -name '*.aab' -print -quit)
+            if [ -z "$AAB" ]; then echo "::error::The UBA Android target built no .aab. Turn on 'Build App Bundle' in the target (Docs/LAUNCH/PIPELINES.md)."; exit 1; fi
+            mv "$AAB" "$RUNNER_TEMP/app.aab"
+          fi
+          ls -l "$RUNNER_TEMP/app.aab"
+      - name: Upload to the internal track
+        id: upload
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          RELEASE_NAME: ${{ needs.resolve.outputs.version }}
+        run: python3 Tools/Launch/play.py upload --aab "$RUNNER_TEMP/app.aab" --release-name "$RELEASE_NAME" --github-output "$GITHUB_OUTPUT"
+
+  build-ios:
+    name: Build iOS (UBA)
+    needs: [resolve, preflight]
+    if: needs.resolve.outputs.mode == 'release' && needs.resolve.outputs.ios == 'true'
+    runs-on: ubuntu-latest
+    environment: uba-builds
+    timeout-minutes: 240
+    outputs:
+      build: ${{ steps.start.outputs.build }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
+      - name: Start the UBA build at the tag's commit
+        id: start
+        env:
+          UBA_API_KEY: ${{ secrets.UBA_API_KEY }}
+          UBA_ORG_ID: ${{ secrets.UBA_ORG_ID }}
+          UBA_PROJECT_ID: ${{ secrets.UBA_PROJECT_ID }}
+          UBA_IOS_TARGET: ${{ vars.UBA_IOS_TARGET }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: python3 Tools/Launch/uba.py start --platform ios --commit "$SHA" --label "$TAG" --github-output "$GITHUB_OUTPUT"
+      - name: Wait for it, then check it built that commit
+        env:
+          UBA_API_KEY: ${{ secrets.UBA_API_KEY }}
+          UBA_ORG_ID: ${{ secrets.UBA_ORG_ID }}
+          UBA_PROJECT_ID: ${{ secrets.UBA_PROJECT_ID }}
+          UBA_IOS_TARGET: ${{ vars.UBA_IOS_TARGET }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          python3 Tools/Launch/uba.py wait --platform ios --build "${{ steps.start.outputs.build }}" --timeout-min 220
+          python3 Tools/Launch/uba.py verify --platform ios --build "${{ steps.start.outputs.build }}" --commit "$SHA"
+          {
+            echo "### iOS build ${{ steps.start.outputs.build }} is ready on UBA"
+            echo "TestFlight is not reached from here yet (the seam in Docs/LAUNCH/PIPELINES.md, iOS): download the"
+            echo "export from Unity Cloud > Build Automation > the iOS target > build ${{ steps.start.outputs.build }},"
+            echo "share it privately as IOS_RELEASE_EXPORT_URL in the testflight Environment, and run iOS TestFlight."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  web:
+    name: Hand the web build to the web pipeline
+    needs: [resolve, preflight]
+    if: needs.resolve.outputs.mode == 'release' && needs.resolve.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write   # dispatch the web pipeline's workflow
+    steps:
+      - name: Dispatch the web pipeline's stage for this tag's commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          # The web pipeline owns its build, staging and status (toybox-publish.yml, claude/launch-web-pipeline): a
+          # web-v* tag or a dispatch with action=stage and the commit. A tag pushed with this run's token would start
+          # nothing (GitHub does not trigger workflows from GITHUB_TOKEN pushes), so this dispatches. It stages only;
+          # promotion to /play is that workflow's toybox-production job, behind its reviewers.
+          # Until that pipeline is on bleeding-edge, the old toybox-publish.yml has none of these inputs and GitHub
+          # refuses the dispatch (HTTP 422), which fails this job and nothing else.
+          gh workflow run toybox-publish.yml --ref bleeding-edge \
+            -f action=stage -f commit="$SHA" -f start_uba_build=true
+          echo "Dispatched toybox-publish.yml (stage) for $TAG at $SHA." >> "$GITHUB_STEP_SUMMARY"
+
+  status:
+    name: Launch status
+    needs: [resolve, preflight, build-windows, steam-prerelease, build-android, play-prerelease, build-ios, web]
+    if: always() && needs.resolve.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # the launch-status branch; this job holds no other secret
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+          sparse-checkout: Tools/Launch
+          lfs: false
+          persist-credentials: ${{ github.event_name != 'pull_request' }}
+      - name: Publish one record per platform step
+        env:
+          MODE: ${{ needs.resolve.outputs.mode }}
+          RESOLVE: ${{ needs.resolve.result }}
+          PREFLIGHT: ${{ needs.preflight.result }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          WINDOWS: ${{ needs.resolve.outputs.windows }}
+          ANDROID: ${{ needs.resolve.outputs.android }}
+          IOS: ${{ needs.resolve.outputs.ios }}
+          UPLOAD: ${{ needs.resolve.outputs.upload }}
+          R_BUILD_WINDOWS: ${{ needs.build-windows.result }}
+          R_STEAM: ${{ needs.steam-prerelease.result }}
+          R_BUILD_ANDROID: ${{ needs.build-android.result }}
+          R_PLAY: ${{ needs.play-prerelease.result }}
+          R_BUILD_IOS: ${{ needs.build-ios.result }}
+          N_WINDOWS: ${{ needs.build-windows.outputs.build }}
+          N_ANDROID: ${{ needs.build-android.outputs.build }}
+          N_IOS: ${{ needs.build-ios.outputs.build }}
+          VERSION_CODE: ${{ needs.play-prerelease.outputs.version_code }}
+        run: |
+          set -uo pipefail
+          dry=(); [ "$MODE" = "release" ] || dry=(--dry-run)
+          rc=0
+          result_of() { case "$1" in success) echo success ;; cancelled) echo cancelled ;; skipped) echo skipped ;; *) echo failure ;; esac; }
+          pub() {  # id platform kind channel result build summary [details...]
+            local id=$1 platform=$2 kind=$3 channel=$4 result=$5 build=$6 summary=$7; shift 7
+            local args=(publish "${dry[@]}" --id "$id" --platform "$platform" --kind "$kind" --result "$result" --summary "$summary")
+            [ -n "$channel" ] && args+=(--channel "$channel")
+            [ -n "$build" ] && args+=(--build "$build")
+            [ -n "$VERSION" ] && args+=(--version "$VERSION")
+            [ -n "$SHA" ] && args+=(--commit "$SHA")
+            args+=(--detail "tag=$TAG")
+            for d in "$@"; do args+=(--detail "$d"); done
+            python3 Tools/Launch/launch_status.py "${args[@]}" || rc=1
+          }
+          stopped=""
+          if [ "$RESOLVE" != "success" ]; then stopped="the tag or platform check failed"
+          elif [ "$PREFLIGHT" != "success" ]; then stopped="a GitHub Environment it needs is missing (see the run)"; fi
+          for p in windows android ios; do
+            case $p in windows) sel=$WINDOWS ;; android) sel=$ANDROID ;; ios) sel=$IOS ;; esac
+            # When resolve itself failed nothing is known about the platforms, so all three record the stop.
+            [ "$sel" = true ] || [ "$RESOLVE" != "success" ] || continue
+            if [ -n "$stopped" ]; then
+              label="Stopped before building $p: $stopped"; [ "$MODE" = "rehearsal" ] && label="Rehearsal: $label"
+              pub "build-$p" "$p" build "" failure "" "$label"
+              continue
+            fi
+            case $p in
+              windows) r=$(result_of "$R_BUILD_WINDOWS"); n=$N_WINDOWS ;;
+              android) r=$(result_of "$R_BUILD_ANDROID"); n=$N_ANDROID ;;
+              ios) r=$(result_of "$R_BUILD_IOS"); n=$N_IOS ;;
+            esac
+            pub "build-$p" "$p" build "" "$r" "$n" "UBA $p build ${n:-?} of $TAG: $r"
+          done
+          if [ -z "$stopped" ] && [ "$UPLOAD" = true ]; then
+            if [ "$WINDOWS" = true ]; then
+              r=$(result_of "$R_STEAM")
+              pub windows-prerelease windows channel prerelease "$r" "$N_WINDOWS" "Steam Playtest internal: $TAG $r" "uba_build=${N_WINDOWS:-none}"
+            fi
+            if [ "$ANDROID" = true ]; then
+              r=$(result_of "$R_PLAY")
+              pub android-prerelease android channel prerelease "$r" "$VERSION_CODE" "Play internal track: $TAG $r" "version_code=${VERSION_CODE:-none}"
+            fi
+          fi
+          exit $rc

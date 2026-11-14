@@ -374,7 +374,10 @@ it: every job gets a fresh VM that is discarded afterwards.
 
 - No player artefact upload. The build is multiple GB; only test results and the build manifest are
   retained. SteamPipe uploads (§4) run by hand from a machine that holds the Steam builder login —
-  never from the CI runner, which must hold no credentials (*Security* above).
+  never from the CI runner, which must hold no credentials (*Security* above). This stays the rule unless you
+  decide otherwise: `release-builds.yml` carries an **opt-in** SteamPipe job on a GitHub-hosted runner that refuses
+  to run until a builder account's cached login (`STEAM_CONFIG_VDF`) is put in the `steam-prerelease` Environment.
+  The trade-off is in `Docs/LAUNCH/PIPELINES.md` § Windows / Steam.
 - No notifications beyond GitHub's own. Failures surface in the Actions tab and via GitHub's default
   email; wiring Discord is a later addition if the signal gets missed.
 
