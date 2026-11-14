@@ -14,16 +14,16 @@
   "unity": true
  },
  "cores": 23,
- "current": {},
- "host": "desktop-lqtg35e",
- "last": {
-  "count": 52,
-  "epoch": "cb586f87a203",
+ "current": {
   "job": "unity-train~r20261105-090126-c1cb",
-  "rc": 6,
-  "stopped": "failed (exit 6): the project does not compile in Unity: Scripts have compiler errors.",
+  "max_evals": 148,
+  "minutes": 60.0,
+  "phase": "starting",
+  "request": "r20261105-090126-c1cb",
+  "since": 1794646040,
   "unit": "regatta-serpent-i1"
  },
+ "host": "desktop-lqtg35e",
  "runs": [
   {
    "best_end": -46.7071533203125,
@@ -389,7 +389,7 @@
  "totals": {
   "sessions": 3605
  },
- "updated": 1794646015,
+ "updated": 1794646040,
  "user": "belacstein",
  "version": "1"
 }
