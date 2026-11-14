@@ -14,29 +14,17 @@
   "unity": true
  },
  "cores": 23,
- "current": {
+ "current": {},
+ "host": "desktop-lqtg35e",
+ "last": {
+  "count": 52,
+  "epoch": "cb586f87a203",
   "job": "unity-train~r20261105-090126-c1cb",
-  "max_evals": 148,
-  "minutes": 60.0,
-  "phase": "starting",
-  "request": "r20261105-090126-c1cb",
-  "since": 1794679798,
+  "rc": 6,
+  "stopped": "failed (exit 6): the project does not compile in Unity: Assets\\_Scripts\\Controller\\AI\\AIPilot.cs(7,19): error CS0234: The type or namespace name 'Soap' does not exist in the namespace 'CosmicShore' (are you missing an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(2,19): error CS0234: The type or namespace name 'Soap' does not exist in the namespace 'CosmicShore' (are you missing an assembly reference?) | Assets\\_Scripts\\Controller\\AI\\AIPilot.cs(241,9): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(29,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(30,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(31,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(32,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(33,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(34,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Scripts have compiler errors.",
   "unit": "regatta-serpent-i1"
  },
- "host": "desktop-lqtg35e",
  "runs": [
-  {
-   "best_end": -46.7071533203125,
-   "best_start": null,
-   "end": 1794675515,
-   "epoch": "cb586f87a203",
-   "evals": 52,
-   "job": "unity-train~r20261105-090126-c1cb",
-   "request": "r20261105-090126-c1cb",
-   "start": 1794675382,
-   "stopped": "failed (exit 6): the project does not compile in Unity: Assets\\_Scripts\\Controller\\AI\\AIPilot.cs(7,19): error CS0234: The type or namespace name 'Soap' does not exist in the namespace 'CosmicShore' (are you missing an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(2,19): error CS0234: The type or namespace name 'Soap' does not exist in the namespace 'CosmicShore' (are you missing an assembly reference?) | Assets\\_Scripts\\Controller\\AI\\AIPilot.cs(241,9): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(29,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(30,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(31,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(32,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(33,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(34,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Scripts have compiler errors.",
-   "unit": "regatta-serpent-i1"
-  },
   {
    "best_end": -46.7071533203125,
    "best_start": null,
@@ -384,12 +372,24 @@
    "start": 1794679654,
    "stopped": "failed (exit 6): the project does not compile in Unity: Assets\\_Scripts\\Controller\\AI\\AIPilot.cs(7,19): error CS0234: The type or namespace name 'Soap' does not exist in the namespace 'CosmicShore' (are you missing an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(2,19): error CS0234: The type or namespace name 'Soap' does not exist in the namespace 'CosmicShore' (are you missing an assembly reference?) | Assets\\_Scripts\\Controller\\AI\\AIPilot.cs(241,9): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(29,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(30,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(31,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(32,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(33,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(34,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Scripts have compiler errors.",
    "unit": "regatta-serpent-i1"
+  },
+  {
+   "best_end": -46.7071533203125,
+   "best_start": null,
+   "end": 1794679931,
+   "epoch": "cb586f87a203",
+   "evals": 52,
+   "job": "unity-train~r20261105-090126-c1cb",
+   "request": "r20261105-090126-c1cb",
+   "start": 1794679798,
+   "stopped": "failed (exit 6): the project does not compile in Unity: Assets\\_Scripts\\Controller\\AI\\AIPilot.cs(7,19): error CS0234: The type or namespace name 'Soap' does not exist in the namespace 'CosmicShore' (are you missing an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(2,19): error CS0234: The type or namespace name 'Soap' does not exist in the namespace 'CosmicShore' (are you missing an assembly reference?) | Assets\\_Scripts\\Controller\\AI\\AIPilot.cs(241,9): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(29,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(30,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(31,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(32,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(33,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Assets\\_Scripts\\Utility\\AITraining\\Telemetry\\TrainingTelemetrySO.cs(34,16): error CS0246: The type or namespace name 'ScriptableEventNoParam' could not be found (are you missing a using directive or an assembly reference?) | Scripts have compiler errors.",
+   "unit": "regatta-serpent-i1"
   }
  ],
  "totals": {
-  "sessions": 3682
+  "sessions": 3683
  },
- "updated": 1794679798,
+ "updated": 1794679931,
  "user": "belacstein",
  "version": "1"
 }
