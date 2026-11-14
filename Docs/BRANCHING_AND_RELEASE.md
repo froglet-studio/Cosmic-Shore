@@ -171,6 +171,12 @@ has actually been through a test build.
    git push origin v0.3.0
    ```
 
+   Pushing a `v<major>.<minor>.<patch>` or `rc-<label>` tag runs **Release** (`.github/workflows/release.yml`):
+   it lists every pull request merged since the previous release tag, grouped by area
+   (`Tools/Launch/release_notes.py`), and opens a **draft** GitHub release with those notes and
+   `build-identity.json` (tag, commit, version, build number). Read and edit the draft; publishing it is
+   your click, never the workflow's. A malformed tag or a range with no pull requests fails the run.
+
 5. **Build from `master` in UGS**, manually. Until R1 lands, the tag is the only
    link between what players are running and a commit, so do not skip step 4.
 
