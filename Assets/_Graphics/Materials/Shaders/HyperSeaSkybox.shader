@@ -37,6 +37,9 @@ Shader "CosmicShore/HyperSeaSkybox"
         [HDR]_NebulaColor3 ("Nebula Color 3 (Violet)", Color) = (0.2, 0.06, 0.4, 1)
         _NebulaStrength ("Nebula Strength", Range(0, 2)) = 0.55
         _NebulaScale ("Nebula Scale", Range(0.5, 10)) = 2.5
+        _NebulaMix ("Nebula Mix (weights of colours 1, 2, 3)", Vector) = (1, 1, 1, 0)
+        _NebulaVoid ("Nebula Voids (raises the cloud threshold: darker gaps)", Range(0, 0.45)) = 0
+        _NebulaStretch ("Nebula Stretch (x, y, z: below 1 draws the clouds out along that axis)", Vector) = (1, 1, 1, 0)
 
         [Header(Dust Lanes)]
         _DustStrength ("Dust Strength", Range(0, 1)) = 0.45
@@ -62,6 +65,19 @@ Shader "CosmicShore/HyperSeaSkybox"
         _CellOverlayScale ("Cell Overlay Scale", Range(1, 40)) = 8.0
         _CellOverlayColor ("Cell Overlay Color", Color) = (0.14, 0.21, 0.62, 1)
         _CellEdgeSharpness ("Cell Edge Sharpness", Range(1, 20)) = 8.0
+        _CellInteriorFill ("Cell Interior Fill (haze inside each cell)", Range(0, 0.3)) = 0.15
+        _CellVeilCoverage ("Cell Net Coverage (1 = everywhere, lower = patches)", Range(0, 1)) = 1
+        _CellVeilScale ("Cell Net Patch Scale", Range(0.5, 8)) = 1.7
+
+        [Header(Depth (a layer on a shell around the arena moves against the stars as the camera flies))]
+        _SkyShellCentre ("Shell Centre (world)", Vector) = (0, 0, 0, 0)
+        _CellShellRadius ("Cell Net Shell Radius (0 = at infinity)", Float) = 0
+        _CellFarShellScale ("Far Net Shell Radius (x near)", Range(1, 4)) = 2.2
+        _CellFarStrength ("Far Net Strength (x near)", Range(0, 1)) = 0
+        _NebulaShellRadius ("Nebula Shell Radius (0 = at infinity)", Float) = 0
+
+        [Header(Brightness Budget)]
+        _SkyCeiling ("Sky Ceiling (linear; the sky rolls off under it so the action stays brightest; 0 = off)", Range(0, 2)) = 0
 
         [Header(Membrane Atmosphere Bridge)]
         _AtmosphereColor ("Atmosphere Color", Color) = (0.02, 0.04, 0.18, 1)
@@ -111,6 +127,9 @@ Shader "CosmicShore/HyperSeaSkybox"
     half4 _NebulaColor3;
     half _NebulaStrength;
     half _NebulaScale;
+    float4 _NebulaMix;
+    half _NebulaVoid;
+    float4 _NebulaStretch;
 
     half _DustStrength;
     half _DustScale;
@@ -137,6 +156,17 @@ Shader "CosmicShore/HyperSeaSkybox"
     half _CellOverlayScale;
     half4 _CellOverlayColor;
     half _CellEdgeSharpness;
+    half _CellInteriorFill;
+    half _CellVeilCoverage;
+    half _CellVeilScale;
+
+    float4 _SkyShellCentre;
+    float _CellShellRadius;
+    half _CellFarShellScale;
+    half _CellFarStrength;
+    float _NebulaShellRadius;
+
+    half _SkyCeiling;
 
     half4 _AtmosphereColor;
     half _AtmosphereStrength;
@@ -233,6 +263,26 @@ Shader "CosmicShore/HyperSeaSkybox"
             a *= 0.5;
         }
         return v;
+    }
+
+    // ================================================================
+    // DEPTH: a layer drawn on a SHELL of finite radius around the arena
+    // The sky is at infinity, so nothing in it moves as the camera flies.
+    // A layer on a shell is looked up where the view ray leaves that
+    // sphere, so it slides against the stars (parallax): the nearer the
+    // shell, the more it moves. Radius 0 is the old sky (at infinity),
+    // and a camera outside the shell sees the layer at infinity too.
+    // ================================================================
+
+    float3 shellDir(float3 dir, float radius)
+    {
+        if (radius <= 0.0) return dir;
+        float3 c = _WorldSpaceCameraPos - _SkyShellCentre.xyz;
+        float k = dot(c, c) - radius * radius;
+        if (k >= 0.0) return dir;
+        float b = dot(c, dir);
+        float t = sqrt(b * b - k) - b;
+        return (c + dir * t) / radius;
     }
 
     // ================================================================
@@ -442,7 +492,8 @@ Shader "CosmicShore/HyperSeaSkybox"
 
     half3 computeNebulae(float3 dir, float time)
     {
-        float3 p = dir * _NebulaScale;
+        dir = shellDir(dir, _NebulaShellRadius);
+        float3 p = dir * _NebulaStretch.xyz * _NebulaScale;
         float drift = time * _DriftSpeed;
 
         // Domain warping - organic flowing shapes instead of blobby camo
@@ -465,11 +516,11 @@ Shader "CosmicShore/HyperSeaSkybox"
 
         // Wide smoothstep + square curve: dense bright cores with long
         // wispy tails that gradually fade into darkness (no hard edges)
-        float c1 = smoothstep(0.28, 0.88, n1);
+        float c1 = smoothstep(0.28 + _NebulaVoid, 0.88, n1);
         c1 *= c1;
-        float c2 = smoothstep(0.30, 0.90, n2);
+        float c2 = smoothstep(0.30 + _NebulaVoid, 0.90, n2);
         c2 *= c2;
-        float c3 = smoothstep(0.29, 0.89, n3);
+        float c3 = smoothstep(0.29 + _NebulaVoid, 0.89, n3);
         c3 *= c3;
 
         // Brightness variation within each cloud - creates illusion of
@@ -482,9 +533,9 @@ Shader "CosmicShore/HyperSeaSkybox"
         c2 *= 0.3 + depth2 * 1.0;
         c3 *= 0.3 + depth3 * 1.0;
 
-        half3 color = c1 * _NebulaColor1.rgb
-                    + c2 * _NebulaColor2.rgb
-                    + c3 * _NebulaColor3.rgb;
+        half3 color = c1 * _NebulaMix.x * _NebulaColor1.rgb
+                    + c2 * _NebulaMix.y * _NebulaColor2.rgb
+                    + c3 * _NebulaMix.z * _NebulaColor3.rgb;
 
         // Apply large-scale modulation - some sky regions are rich, others void
         color *= regionMask;
@@ -610,15 +661,10 @@ Shader "CosmicShore/HyperSeaSkybox"
     // Uses 3D Voronoi so the pattern is seamless on the sphere.
     // ================================================================
 
-    half3 computeCellOverlay(float3 dir, float time)
+    // One net: the two nearest Voronoi centres; the edge where they are nearly equidistant, plus a little haze
+    // inside each cell.
+    float cellNet(float3 p)
     {
-        half strength = _CellOverlayStrength * saturate(1.0 - _SkyCellOverlaySuppress);
-        if (strength < 0.001) return 0;
-
-        float3 p = dir * _CellOverlayScale;
-        float3 drift = float3(time * _DriftSpeed * 0.3, 0, time * _DriftSpeed * 0.2);
-        p += drift;
-
         float3 i = floor(p);
         float3 f = frac(p);
 
@@ -653,9 +699,45 @@ Shader "CosmicShore/HyperSeaSkybox"
         float edge = 1.0 - smoothstep(0.0, 1.0 / _CellEdgeSharpness, minDist2 - minDist1);
 
         // Subtle interior gradient for depth
-        float interior = smoothstep(0.0, 0.5, minDist1) * 0.15;
+        float interior = smoothstep(0.0, 0.5, minDist1) * _CellInteriorFill;
 
-        float pattern = edge + interior;
+        return edge + interior;
+    }
+
+    // Where the net shows: 1 everywhere at full coverage (the old sky); lower coverage leaves it only in drifting
+    // patches, so it reads as a far structure glimpsed through the sea, not a grid on the glass. Exactly 0 between
+    // the patches, where the Voronoi search is skipped.
+    float cellVeil(float3 dir, float3 seed)
+    {
+        if (_CellVeilCoverage >= 0.999) return 1.0;
+        float v = valueNoise(dir * _CellVeilScale + seed);
+        float edge = 1.0 - _CellVeilCoverage;
+        return smoothstep(edge - 0.12, edge + 0.12, v);
+    }
+
+    half3 computeCellOverlay(float3 dir, float time)
+    {
+        half strength = _CellOverlayStrength * saturate(1.0 - _SkyCellOverlaySuppress);
+        if (strength < 0.001) return 0;
+
+        float3 drift = float3(time * _DriftSpeed * 0.3, 0, time * _DriftSpeed * 0.2);
+
+        // The near net, on its shell (at infinity when the radius is 0).
+        float3 nearDir = shellDir(dir, _CellShellRadius);
+        float pattern = 0.0;
+        float veil = cellVeil(nearDir, float3(7.1, 3.3, 11.9));
+        if (veil > 0.0)
+            pattern = cellNet(nearDir * _CellOverlayScale + drift) * veil;
+
+        // The far net: a second shell further out, finer and fainter, so the structure has depth of its own.
+        if (_CellFarStrength > 0.001)
+        {
+            float3 farDir = shellDir(dir, _CellShellRadius * _CellFarShellScale);
+            float farVeil = cellVeil(farDir, float3(41.3, 19.7, 5.2)) * _CellFarStrength;
+            if (farVeil > 0.0)
+                pattern += cellNet(farDir * (_CellOverlayScale * 1.9) + drift * 0.6) * farVeil;
+        }
+
         return pattern * _CellOverlayColor.rgb * strength;
     }
 
@@ -741,6 +823,15 @@ Shader "CosmicShore/HyperSeaSkybox"
 
         // 9. Atmosphere bridge - directional haze in membrane palette
         color += computeAtmosphereBridge(dir);
+
+        // 10. Brightness budget - the sky is the ground the action is read against, so it rolls off smoothly under
+        // a ceiling (hue kept, linear near black) and never reaches the brightness of a trail or a blast.
+        if (_SkyCeiling > 0.0)
+        {
+            float peak = max(color.x, max(color.y, color.z));
+            if (peak > 0.0)
+                color *= _SkyCeiling * (1.0 - exp(-peak / _SkyCeiling)) / peak;
+        }
 
         return half4(color, 1.0);
     }

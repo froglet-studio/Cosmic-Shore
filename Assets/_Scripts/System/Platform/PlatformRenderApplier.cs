@@ -1,3 +1,5 @@
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -15,6 +17,10 @@ namespace CosmicShore.Core
     /// <c>CapsuleMembrane.Awake</c>, the wormhole exact-view cap in <c>WormholeView</c>.
     /// <c>Docs/PLATFORM_UNIFICATION.md</c>, Step 4.
     ///
+    /// The sky drawn is also where each game is played: a scene the HyperSea sky places list
+    /// (<see cref="HyperSeaSkyPlacesSO"/>, <c>Resources/HyperSeaSkyPlaces</c>) draws its place's copy of the
+    /// authored sky - unless a cut in force bakes the sky, which keeps drawing its one bake everywhere.
+    ///
     /// Only the sky MATERIAL changes. Ambient light and reflections were baked from the authored sky
     /// and stay as they are, so a swapped scene is lit exactly as authored.
     /// </summary>
@@ -25,11 +31,31 @@ namespace CosmicShore.Core
         static Material s_authoredSky;
         static Material s_drawnSky;
 
+        static HyperSeaSkyPlacesSO s_places;
+        static bool s_placesLoaded;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
             s_authoredSky = null;
             s_drawnSky = null;
+            s_places = null;
+            s_placesLoaded = false;
+        }
+
+        /// <summary>The shipped places table, or null when the asset is missing (a warning names it once).</summary>
+        static HyperSeaSkyPlacesSO Places
+        {
+            get
+            {
+                if (s_placesLoaded) return s_places;
+                s_placesLoaded = true;
+                s_places = Resources.Load<HyperSeaSkyPlacesSO>(HyperSeaSkyPlacesSO.ResourcePath);
+                if (!s_places)
+                    CSDebug.LogWarning($"[PlatformRenderApplier] Resources/{HyperSeaSkyPlacesSO.ResourcePath}.asset is " +
+                                       "missing: every game draws the sky its scene authored.");
+                return s_places;
+            }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -60,7 +86,10 @@ namespace CosmicShore.Core
             var authored = current && current == s_drawnSky ? s_authoredSky : current;
 
             var replacement = GraphicsCuts.SkyboxReplacementFor(authored);
-            var wanted = replacement ? replacement : authored;
+            var place = replacement || !authored || !Places
+                ? null
+                : Places.SkyFor(SceneManager.GetActiveScene().name, authored);
+            var wanted = replacement ? replacement : place ? place : authored;
             if (wanted != current) RenderSettings.skybox = wanted;
 
             s_authoredSky = authored;
