@@ -3280,7 +3280,7 @@
    "area": "vessel",
    "retired": "C# `*HullForm` procedural surfaces as vessel models (and the seven from-scratch hulls of 2026-10-17)",
    "test": "Does the brief ship a modelled FBX hull with the shipped names and four element morphs? A generated or placeholder mesh fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-06",
@@ -3360,7 +3360,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the hull read as a creature with a face and limbs, or as a ship whose silhouette says its animal?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-11",
@@ -3440,7 +3440,7 @@
    "area": "vessel",
    "retired": "the seven from-scratch hulls of 2026-10-17 (retired 2026-10-18)",
    "test": "Does every part of the model float clear of the hull (assembly_report.py)? A welded part is out.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-16",
