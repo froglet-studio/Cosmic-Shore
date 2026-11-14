@@ -1,0 +1,840 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-13 01:01:28 (next editor launch after the abnormal exit)
+session:        20261112-164217908  (pid 24804, Unity 6000.3.17f1)
+started:        2026-11-12T16:42:17.908Z UTC
+last heartbeat: 2026-11-12T19:13:40.913Z UTC
+last state:     DomainReload
+main thread:    responsive at the last heartbeat — the process ended abruptly (hard crash or kill)
+hang dump:      C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261112-164217908.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261112-164217908
+started: 2026-11-12T16:42:17.908Z UTC
+unity:   6000.3.17f1
+pid:     24804
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[22:13:04.325] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261112-164217908.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[22:13:30.699] ---- main thread stalled ~72s and RECOVERED — slow, not hung ----
+[22:33:46.528] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:33:59.640] ---- domain reload complete — session re-adopted ----
+[00:29:47.886] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261112-164217908.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:30:25.593] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:30:38.406] ---- domain reload complete — session re-adopted ----
+[00:31:13.926] ---- entering play mode ----
+[00:31:23.412] ---- play mode running ----
+[00:34:01.986] ---- leaving play mode ----
+[00:34:09.187] ---- edit mode restored ----
+[00:36:03.592] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261112-164217908.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:36:21.967] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:37:12.530] ---- domain reload complete — session re-adopted ----
+[00:41:45.080] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:41:52.167] ---- domain reload complete — session re-adopted ----
+[00:42:11.714] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:42:19.169] ---- domain reload complete — session re-adopted ----
+[00:43:16.533] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:43:24.146] ---- domain reload complete — session re-adopted ----
+[00:43:40.913] ---- domain reload begins (script compilation / play-mode transition) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+Start HTTP server: port:7801
+Editor is not in automated mode. Modal Pop up might break continuous command workflow. Start the editor with -automated
+0x00007ffb09044e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb0a87f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb0a87fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb08ff587f (Unity) DebugStringToFile
+0x00007ffb08eb1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000025b643e245d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000025b643e2313 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000025b643e1f2b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000025b643e1c70 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000025b643e1b38 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000025b643e1a7b (Mono JIT Code) Unity.Pipeline.Editor.EditorPipelineServer:ServerStarted () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineServer.cs:91)
+0x0000025b64399f03 (Mono JIT Code) Unity.Pipeline.BasePipelineServer:Start (int) (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:238)
+0x0000025b64398ff3 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:StartServer () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:174)
+0x0000025b64395a43 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:.cctor () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:47)
+0x0000025b6438ebb5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffb252f6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb25238984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb25233965 (mono-2.0-bdwgc) mono_runtime_class_init_full (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:563)
+0x00007ffb25169fb7 (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall.c:1292)
+0x00007ffb2519cbdc (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor_raw (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall-def.h:756)
+0x0000025b39c37e8a (Mono JIT Code) (wrapper managed-to-native) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (intptr)
+0x0000025b39c37d7b (Mono JIT Code) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (System.RuntimeTypeHandle)
+0x0000025b39c35213 (Mono JIT Code) UnityEditor.EditorAssemblies:ProcessInitializeOnLoadAttributes (System.Type[])
+0x0000025de39c5008 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object (object,intptr,intptr,intptr)
+0x00007ffb252f6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb25238984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb25238a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb0987fdd4 (Unity) scripting_method_invoke
+0x00007ffb09886c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb09882235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffb09e72433 (Unity) Scripting::UnityEditor::EditorAssembliesProxy::ProcessInitializeOnLoadAttributes
+0x00007ffb0979d9bf (Unity) MonoManager::SetupLoadedEditorAssemblies
+0x00007ffb09794cf3 (Unity) MonoManager::FinalizeReload
+0x00007ffb0b765cd4 (Unity) ScriptingInitializer::FinalizeReload
+0x00007ffb0b7f52d6 (Unity) ImportOutOfDateAssets
+0x00007ffb0b7fe3fa (Unity) RefreshInternalV2
+0x00007ffb0b806f17 (Unity) StopAssetImportingV2Internal
+0x00007ffb0b7ff51c (Unity) RefreshV2
+0x00007ffb0b771073 (Unity) AssetDatabase::Refresh
+0x00007ffb0a0a2951 (Unity) Application::AutoRefresh
+0x00007ffb09ed4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ffbf3cd52e6 (USER32) CallWindowProcW
+0x00007ffbf3cd4dac (USER32) CallWindowProcW
+0x00007ffbd9dbced8 (COMCTL32) DefSubclassProc
+0x00007ffbd9dbce08 (COMCTL32) DefSubclassProc
+0x00007ffb733033f3 (AppUINativePlugin) 
+0x00007ffbd9dbced8 (COMCTL32) DefSubclassProc
+0x00007ffbd9dbccaf (COMCTL32) GetWindowSubclass
+0x00007ffbf3cd52e6 (USER32) CallWindowProcW
+0x00007ffbf3cd4b6c (USER32) GetFocus
+0x00007ffbf3cff543 (USER32) GetWindowDpiAwarenessContext
+0x00007ffbf42fa424 (ntdll) KiUserCallbackDispatcher
+0x00007ffbf1951304 (win32u) NtUserPeekMessage
+0x00007ffbf3cd19df (USER32) PeekMessageW
+0x00007ffbf3cd1968 (USER32) PeekMessageW
+0x00007ffb09e99eb6 (Unity) MainMessageLoop
+0x00007ffb09ea1a12 (Unity) UnityMain
+0x00007ff7067c2f2a (Unity) __scrt_common_main_seh
+0x00007ffbf355dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffbf4259c5c (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+[Logcat] [WorkThread] 00:37:20.4385 Worker thread started
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Reflex LogLevel set to Info
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Logging.ReflexLogger:.cctor () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:15)
+Reflex.Configuration.ReflexSettings:OnValidate () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Configuration/ReflexSettings.cs:39)
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs Line: 15)
+
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in 38.557 seconds
+Domain Reload Profiling: 76077ms
+	BeginReloadAssembly (7338ms)
+		ExecutionOrderSort (4ms)
+		DisableScriptedObjects (239ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (3ms)
+		CreateAndSetChildDomain (1714ms)
+	RebuildCommonClasses (52ms)
+	RebuildNativeTypeToScriptingClass (21ms)
+	initialDomainReloadingComplete (95ms)
+	LoadAllAssembliesAndSetupDomain (30013ms)
+		LoadAssemblies (33002ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (1698ms)
+			TypeCache.Refresh (707ms)
+				TypeCache.ScanAssembly (660ms)
+			BuildScriptInfoCaches (940ms)
+			ResolveRequiredComponents (40ms)
+	FinalizeReload (38558ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (16767ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (63ms)
+			SetLoadedEditorAssemblies (8ms)
+			BeforeProcessingInitializeOnLoad (816ms)
+			ProcessInitializeOnLoadAttributes (14480ms)
+			ProcessInitializeOnLoadMethodAttributes (1380ms)
+			AfterProcessingInitializeOnLoad (17ms)
+			EditorAssembliesLoaded (3ms)
+		ExecutionOrderSort2 (4ms)
+		AwakeInstancesAfterBackupRestoration (19687ms)
+[Licensing::Client] Successfully resolved entitlement details
+Asset Pipeline Refresh (id=e73de8dff63a568468a6681acaa73c1e): Total: 144.700 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=39537 ms
+		Asset DB Callback time: managed=996 ms, native=1 ms
+		Scripting: domain reloads=1, domain reload time=37628 ms, compile time=66536 ms, other=0 ms
+		Project Asset Count: scripts=4705, non-scripts=13075
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.002ms
+	InvokePackagesCallback: 5.821ms
+	ApplyChangesToAssetFolders: 1.301ms
+	Scan: 29.462ms
+	OnSourceAssetsModified: 0.005ms
+	CategorizeAssetsWithTransientArtifact: 0.015ms
+	ProcessAssetsWithTransientArtifactChanges: 20.839ms
+	CategorizeAssets: 567.635ms
+	ImportOutOfDateAssets: 38754.089ms (-27830.866ms without children)
+		CompileScripts: 66535.949ms
+		CollectScriptTypesHashes: 11.592ms
+		ReloadNativeAssets: 22.771ms
+		UnloadImportedAssets: 0.445ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 8.780ms
+		InitializingProgressBar: 0.003ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.003ms
+		OnDemandSchedulerStart: 5.414ms
+	PostProcessAllAssets: 996.878ms
+	GatherAllCurrentPrimaryArtifactRevisions: 1.440ms
+	UnloadStreamsBegin: 0.004ms
+	PersistCurrentRevisions: 1.482ms
+	UnloadStreamsEnd: 0.004ms
+	GenerateScriptTypeHashes: 69.753ms
+	Untracked: 104321.486ms
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[INFO ] [relay] log Unity client connected with ID: editor-24804-0cs5ds (relay 1.0.12-build.96)
+[INFO ] [relay] connection.established clientId=editor-24804-0cs5ds port=9001
+Unloading 2790 unused Assets / (16.3 MB). Loaded Objects now: 39097.
+Memory consumption went from 0.90 GB to 0.89 GB.
+Total: 135.862200 ms (FindLiveObjects: 5.078400 ms CreateObjectMapping: 7.008600 ms MarkObjects: 98.236600 ms  DeleteObjects: 25.531200 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Asset Pipeline Refresh (id=527df2ac6d522904290788e6489b1dd0): Total: 0.013 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Reloading assemblies due to switching skins.
+Reloading assemblies after forced synchronous recompile.
+[Licensing::Client] Successfully resolved entitlement details
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Begin MonoManager ReloadAssembly
+[BugLedger] Validated & closed: "Unable to parse file Assets/Resources/ElementalAbilityMaps/Manta.asset: [Parser Failure at line 60: Expect ':' between k" — silent across 2 clean EditMode sessions (last: 11min editor span, script reload). Archived to BugLedger/resolved/.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugLedger:CreditCleanSessions (string,System.Collections.Generic.HashSet`1<string>,bool,string) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:572)
+CosmicShore.Editor.BugLedger:CreditEditorSpanAtReload () (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:510)
+CosmicShore.Editor.BugLedger:OnBeforeAssemblyReload () (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:252)
+UnityEditor.AssemblyReloadEvents:OnBeforeAssemblyReload ()
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugLedger.cs Line: 572)
+
+[INFO ] [relay] log Domain reload signal received from client editor-24804-0cs5ds
+[Logcat] [WorkThread] 00:41:45.3459 Worker thread exited
+[Logcat] [MainThread]00:41:45.3459 Dispatcher shutting down
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Symbol file LoadedFromMemory is not a mono symbol file
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  3.382 seconds
+Refreshing native plugins compatible for Editor in 46.08 ms, found 15 plugins.
+Native extension for iOS target not found
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Assembly reference Packages/com.unity.cinemachine/Editor/Samples/ExposeHDRPInternals/HDRP-Editor-ref.asmref has no target assembly definition
+Assembly reference Packages/com.unity.entities/Unity.Scenes.Editor/Internals/Properties/Unity.Properties.Internals.asmref has no target assembly definition
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+TypeManager.Initialize took: 546ms
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 47.59 ms, found 15 plugins.
+Start HTTP server: port:7801
+Editor is not in automated mode. Modal Pop up might break continuous command workflow. Start the editor with -automated
+0x00007ffb09044e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb0a87f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb0a87fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb08ff587f (Unity) DebugStringToFile
+0x00007ffb08eb1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000025b62e1bccd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000025b62e1bb83 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000025b62e1b79b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000025b62e1b4e0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000025b62e1b3a8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000025b62e1b2eb (Mono JIT Code) Unity.Pipeline.Editor.EditorPipelineServer:ServerStarted () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineServer.cs:91)
+0x0000025b62de26f3 (Mono JIT Code) Unity.Pipeline.BasePipelineServer:Start (int) (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:238)
+0x0000025b62de17e3 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:StartServer () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:174)
+0x0000025b62dddff3 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:.cctor () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:47)
+0x0000025b62dd45b5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffb252f6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb25238984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb25233965 (mono-2.0-bdwgc) mono_runtime_class_init_full (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:563)
+0x00007ffb25169fb7 (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall.c:1292)
+0x00007ffb2519cbdc (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor_raw (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall-def.h:756)
+0x0000025b3af3f5da (Mono JIT Code) (wrapper managed-to-native) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (intptr)
+0x0000025b3af3f4cb (Mono JIT Code) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (System.RuntimeTypeHandle)
+0x0000025b3af3c963 (Mono JIT Code) UnityEditor.EditorAssemblies:ProcessInitializeOnLoadAttributes (System.Type[])
+0x0000025cd4be5008 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object (object,intptr,intptr,intptr)
+0x00007ffb252f6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb25238984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb25238a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb0987fdd4 (Unity) scripting_method_invoke
+0x00007ffb09886c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb09882235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffb09e72433 (Unity) Scripting::UnityEditor::EditorAssembliesProxy::ProcessInitializeOnLoadAttributes
+0x00007ffb0979d9bf (Unity) MonoManager::SetupLoadedEditorAssemblies
+0x00007ffb09794cf3 (Unity) MonoManager::FinalizeReload
+0x00007ffb0b765cd4 (Unity) ScriptingInitializer::FinalizeReload
+0x00007ffb0b7f52d6 (Unity) ImportOutOfDateAssets
+0x00007ffb0b7fe3fa (Unity) RefreshInternalV2
+0x00007ffb0b806f17 (Unity) StopAssetImportingV2Internal
+0x00007ffb0a0b7c7c (Unity) Application::TickTimer
+0x00007ffb09e99f7c (Unity) MainMessageLoop
+0x00007ffb09ea1a12 (Unity) UnityMain
+0x00007ff7067c2f2a (Unity) __scrt_common_main_seh
+0x00007ffbf355dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffbf4259c5c (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Loading style catalogs (10)
+	StyleSheets/Extensions/base/common.uss
+	UIPackageResources/StyleSheets/Default/Variables/Public/common.uss
+	StyleSheets/Northstar/common.uss
+	StyleSheets/Extensions/fonts/inter.uss
+	StyleSheets/Extensions/base/light.uss
+	UIPackageResources/StyleSheets/Default/Northstar/Palette/light.uss
+	Packages/com.unity.entities/Editor Default Resources/uss/StyleSheets/Extensions/common.uss
+	Packages/com.unity.timeline/Editor/StyleSheets/Extensions/light.uss
+	Packages/com.unity.timeline/Editor/StyleSheets/Extensions/common.uss
+	Packages/com.unity.entities/Editor Default Resources/uss/StyleSheets/Extensions/light.uss
+[Logcat] [WorkThread] 00:41:55.9937 Worker thread started
+Reflex LogLevel set to Info
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Logging.ReflexLogger:.cctor () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:15)
+Reflex.Configuration.ReflexSettings:OnValidate () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Configuration/ReflexSettings.cs:39)
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs Line: 15)
+
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in 10.388 seconds
+Domain Reload Profiling: 13756ms
+	BeginReloadAssembly (2107ms)
+		ExecutionOrderSort (3ms)
+		DisableScriptedObjects (212ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (1ms)
+		CreateAndSetChildDomain (1385ms)
+	RebuildCommonClasses (52ms)
+	RebuildNativeTypeToScriptingClass (24ms)
+	initialDomainReloadingComplete (98ms)
+	LoadAllAssembliesAndSetupDomain (1086ms)
+		LoadAssemblies (363ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (866ms)
+			TypeCache.Refresh (15ms)
+				TypeCache.ScanAssembly (0ms)
+			BuildScriptInfoCaches (796ms)
+			ResolveRequiredComponents (44ms)
+	FinalizeReload (10389ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (5187ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (59ms)
+			SetLoadedEditorAssemblies (8ms)
+			BeforeProcessingInitializeOnLoad (813ms)
+			ProcessInitializeOnLoadAttributes (3407ms)
+			ProcessInitializeOnLoadMethodAttributes (882ms)
+			AfterProcessingInitializeOnLoad (15ms)
+			EditorAssembliesLoaded (3ms)
+		ExecutionOrderSort2 (4ms)
+		AwakeInstancesAfterBackupRestoration (3858ms)
+Asset Pipeline Refresh (id=50d9a457dea18854c9c58a154c1ba763): Total: 15.016 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=10992 ms
+		Asset DB Callback time: managed=570 ms, native=0 ms
+		Scripting: domain reloads=1, domain reload time=3450 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=4705, non-scripts=13075
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 3.735ms
+	ApplyChangesToAssetFolders: 0.817ms
+	Scan: 0.003ms
+	OnSourceAssetsModified: 0.003ms
+	CategorizeAssetsWithTransientArtifact: 0.007ms
+	ProcessAssetsWithTransientArtifactChanges: 20.549ms
+	CategorizeAssets: 328.018ms
+	ImportOutOfDateAssets: 10541.367ms (10516.925ms without children)
+		CompileScripts: 1.636ms
+		CollectScriptTypesHashes: 3.936ms
+		ReloadNativeAssets: 8.066ms
+		UnloadImportedAssets: 4.327ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 3.897ms
+		InitializingProgressBar: 0.001ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 2.578ms
+	PostProcessAllAssets: 570.927ms
+	GatherAllCurrentPrimaryArtifactRevisions: 1.480ms
+	UnloadStreamsBegin: 2.230ms
+	PersistCurrentRevisions: 0.637ms
+	UnloadStreamsEnd: 0.003ms
+	GenerateScriptTypeHashes: 31.678ms
+	Untracked: 3546.252ms
+
+Unloading 1 Unused Serialized files (Serialized files now loaded: 0)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[INFO ] [relay] log Unity client connected with ID: editor-24804-rklayn (relay 1.0.12-build.96)
+[INFO ] [relay] connection.established clientId=editor-24804-rklayn port=9001
+Unloading 357 unused Assets / (0.5 MB). Loaded Objects now: 39283.
+Memory consumption went from 1.36 GB to 1.36 GB.
+Total: 88.443800 ms (FindLiveObjects: 4.216900 ms CreateObjectMapping: 7.071100 ms MarkObjects: 73.764000 ms  DeleteObjects: 3.388900 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Reloading assemblies due to switching skins.
+Reloading assemblies after forced synchronous recompile.
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Begin MonoManager ReloadAssembly
+[INFO ] [relay] log Domain reload signal received from client editor-24804-rklayn
+[Logcat] [WorkThread] 00:42:12.0553 Worker thread exited
+[Logcat] [MainThread]00:42:12.0553 Dispatcher shutting down
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Symbol file LoadedFromMemory is not a mono symbol file
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  3.710 seconds
+Refreshing native plugins compatible for Editor in 41.95 ms, found 15 plugins.
+Native extension for iOS target not found
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Assembly reference Packages/com.unity.cinemachine/Editor/Samples/ExposeHDRPInternals/HDRP-Editor-ref.asmref has no target assembly definition
+Assembly reference Packages/com.unity.entities/Unity.Scenes.Editor/Internals/Properties/Unity.Properties.Internals.asmref has no target assembly definition
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+TypeManager.Initialize took: 564ms
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 48.81 ms, found 15 plugins.
+Start HTTP server: port:7801
+Editor is not in automated mode. Modal Pop up might break continuous command workflow. Start the editor with -automated
+0x00007ffb09044e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb0a87f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb0a87fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb08ff587f (Unity) DebugStringToFile
+0x00007ffb08eb1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000025b62dbbccd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000025b62dbbb83 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000025b62dbb79b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000025b62dbb4e0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000025b62dbb3a8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000025b62dbb2eb (Mono JIT Code) Unity.Pipeline.Editor.EditorPipelineServer:ServerStarted () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineServer.cs:91)
+0x0000025b570026f3 (Mono JIT Code) Unity.Pipeline.BasePipelineServer:Start (int) (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:238)
+0x0000025b570017e3 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:StartServer () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:174)
+0x0000025b56ffdff3 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:.cctor () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:47)
+0x0000025b56ff45b5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffb252f6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb25238984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb25233965 (mono-2.0-bdwgc) mono_runtime_class_init_full (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:563)
+0x00007ffb25169fb7 (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall.c:1292)
+0x00007ffb2519cbdc (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor_raw (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall-def.h:756)
+0x0000025b3aebf5da (Mono JIT Code) (wrapper managed-to-native) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (intptr)
+0x0000025b3aebf4cb (Mono JIT Code) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (System.RuntimeTypeHandle)
+0x0000025b3aebc963 (Mono JIT Code) UnityEditor.EditorAssemblies:ProcessInitializeOnLoadAttributes (System.Type[])
+0x0000025ba1e85008 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object (object,intptr,intptr,intptr)
+0x00007ffb252f6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb25238984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb25238a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb0987fdd4 (Unity) scripting_method_invoke
+0x00007ffb09886c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb09882235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffb09e72433 (Unity) Scripting::UnityEditor::EditorAssembliesProxy::ProcessInitializeOnLoadAttributes
+0x00007ffb0979d9bf (Unity) MonoManager::SetupLoadedEditorAssemblies
+0x00007ffb09794cf3 (Unity) MonoManager::FinalizeReload
+0x00007ffb0b765cd4 (Unity) ScriptingInitializer::FinalizeReload
+0x00007ffb0b7f52d6 (Unity) ImportOutOfDateAssets
+0x00007ffb0b7fe3fa (Unity) RefreshInternalV2
+0x00007ffb0b806f17 (Unity) StopAssetImportingV2Internal
+0x00007ffb0a0b7c7c (Unity) Application::TickTimer
+0x00007ffb09e99f7c (Unity) MainMessageLoop
+0x00007ffb09ea1a12 (Unity) UnityMain
+0x00007ff7067c2f2a (Unity) __scrt_common_main_seh
+0x00007ffbf355dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffbf4259c5c (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Loading style catalogs (10)
+	StyleSheets/Extensions/base/common.uss
+	UIPackageResources/StyleSheets/Default/Variables/Public/common.uss
+	StyleSheets/Northstar/common.uss
+	StyleSheets/Extensions/fonts/inter.uss
+	StyleSheets/Extensions/base/dark.uss
+	UIPackageResources/StyleSheets/Default/Northstar/Palette/dark.uss
+	Packages/com.unity.timeline/Editor/StyleSheets/Extensions/dark.uss
+	Packages/com.unity.entities/Editor Default Resources/uss/StyleSheets/Extensions/common.uss
+	Packages/com.unity.timeline/Editor/StyleSheets/Extensions/common.uss
+	Packages/com.unity.entities/Editor Default Resources/uss/StyleSheets/Extensions/dark.uss
+[Logcat] [WorkThread] 00:42:23.0171 Worker thread started
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Reflex LogLevel set to Info
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Logging.ReflexLogger:.cctor () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:15)
+Reflex.Configuration.ReflexSettings:OnValidate () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Configuration/ReflexSettings.cs:39)
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs Line: 15)
+
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in 10.310 seconds
+Domain Reload Profiling: 14004ms
+	BeginReloadAssembly (2342ms)
+		ExecutionOrderSort (5ms)
+		DisableScriptedObjects (271ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (3ms)
+		CreateAndSetChildDomain (1498ms)
+	RebuildCommonClasses (63ms)
+	RebuildNativeTypeToScriptingClass (24ms)
+	initialDomainReloadingComplete (112ms)
+	LoadAllAssembliesAndSetupDomain (1152ms)
+		LoadAssemblies (398ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (908ms)
+			TypeCache.Refresh (17ms)
+				TypeCache.ScanAssembly (0ms)
+			BuildScriptInfoCaches (842ms)
+			ResolveRequiredComponents (39ms)
+	FinalizeReload (10311ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (5254ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (61ms)
+			SetLoadedEditorAssemblies (8ms)
+			BeforeProcessingInitializeOnLoad (785ms)
+			ProcessInitializeOnLoadAttributes (3528ms)
+			ProcessInitializeOnLoadMethodAttributes (854ms)
+			AfterProcessingInitializeOnLoad (16ms)
+			EditorAssembliesLoaded (3ms)
+		ExecutionOrderSort2 (4ms)
+		AwakeInstancesAfterBackupRestoration (3663ms)
+Asset Pipeline Refresh (id=55f926f66c98c8b4190cddab4b09e29d): Total: 15.408 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=10971 ms
+		Asset DB Callback time: managed=646 ms, native=0 ms
+		Scripting: domain reloads=1, domain reload time=3786 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=4705, non-scripts=13075
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.002ms
+	InvokePackagesCallback: 3.886ms
+	ApplyChangesToAssetFolders: 1.064ms
+	Scan: 0.004ms
+	OnSourceAssetsModified: 0.003ms
+	CategorizeAssetsWithTransientArtifact: 0.009ms
+	ProcessAssetsWithTransientArtifactChanges: 21.707ms
+	CategorizeAssets: 354.941ms
+	ImportOutOfDateAssets: 10471.667ms (10437.178ms without children)
+		CompileScripts: 2.423ms
+		CollectScriptTypesHashes: 4.077ms
+		ReloadNativeAssets: 13.893ms
+		UnloadImportedAssets: 3.138ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 7.360ms
+		InitializingProgressBar: 0.001ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.002ms
+		OnDemandSchedulerStart: 3.594ms
+	PostProcessAllAssets: 646.612ms
+	GatherAllCurrentPrimaryArtifactRevisions: 1.421ms
+	UnloadStreamsBegin: 4.040ms
+	PersistCurrentRevisions: 0.710ms
+	UnloadStreamsEnd: 0.003ms
+	GenerateScriptTypeHashes: 39.572ms
+	Untracked: 3902.321ms
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[INFO ] [relay] log Unity client connected with ID: editor-24804-8e3b91 (relay 1.0.12-build.96)
+[INFO ] [relay] connection.established clientId=editor-24804-8e3b91 port=9001
+Unloading 356 unused Assets / (163.6 KB). Loaded Objects now: 39847.
+Memory consumption went from 1.36 GB to 1.36 GB.
+Total: 90.291000 ms (FindLiveObjects: 4.492500 ms CreateObjectMapping: 6.095200 ms MarkObjects: 77.263300 ms  DeleteObjects: 2.437300 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Reloading assemblies due to reload request.
+Reloading assemblies after forced synchronous recompile.
+[Licensing::Client] Successfully resolved entitlement details
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Begin MonoManager ReloadAssembly
+[INFO ] [relay] log Domain reload signal received from client editor-24804-8e3b91
+[Logcat] [WorkThread] 00:43:16.8028 Worker thread exited
+[Logcat] [MainThread]00:43:16.8040 Dispatcher shutting down
+The type Unity.Entities.Editor Unity.Entities.Editor.MemoryProfilerModule is being serialized by [SerializeReference], but is missing the [Serializable] attribute. To suppress this warning add [Serializable] or use [MakeSerializable].
+The type Unity.Entities.Editor Unity.Entities.Editor.StructuralChangesProfilerModule is being serialized by [SerializeReference], but is missing the [Serializable] attribute. To suppress this warning add [Serializable] or use [MakeSerializable].
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Symbol file LoadedFromMemory is not a mono symbol file
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  3.211 seconds
+Refreshing native plugins compatible for Editor in 43.50 ms, found 15 plugins.
+Native extension for iOS target not found
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Assembly reference Packages/com.unity.cinemachine/Editor/Samples/ExposeHDRPInternals/HDRP-Editor-ref.asmref has no target assembly definition
+Assembly reference Packages/com.unity.entities/Unity.Scenes.Editor/Internals/Properties/Unity.Properties.Internals.asmref has no target assembly definition
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+TypeManager.Initialize took: 540ms
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 47.89 ms, found 15 plugins.
+Start HTTP server: port:7801
+Editor is not in automated mode. Modal Pop up might break continuous command workflow. Start the editor with -automated
+0x00007ffb09044e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb0a87f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb0a87fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb08ff587f (Unity) DebugStringToFile
+0x00007ffb08eb1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000025b6403d01f (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000025b6403cec3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000025b6403cd5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000025b6403c7c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000025b6403c63a (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000025b6403c53b (Mono JIT Code) Unity.Pipeline.Editor.EditorPipelineServer:ServerStarted () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineServer.cs:91)
+0x0000025b62e7f02b (Mono JIT Code) Unity.Pipeline.BasePipelineServer:Start (int) (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:238)
+0x0000025b62e7dcdb (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:StartServer () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:174)
+0x0000025b62e78fbb (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:.cctor () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:47)
+0x0000025b62e6cc3d (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffb252f6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb25238984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb25233965 (mono-2.0-bdwgc) mono_runtime_class_init_full (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:563)
+0x00007ffb25169fb7 (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall.c:1292)
+0x00007ffb2519cbdc (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor_raw (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall-def.h:756)
+0x0000025b3af4464e (Mono JIT Code) (wrapper managed-to-native) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (intptr)
+0x0000025b3af444fb (Mono JIT Code) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (System.RuntimeTypeHandle)
+0x0000025b3af40f9b (Mono JIT Code) UnityEditor.EditorAssemblies:ProcessInitializeOnLoadAttributes (System.Type[])
+0x0000025b56df9828 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object (object,intptr,intptr,intptr)
+0x00007ffb252f6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb25238984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb25238a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb0987fdd4 (Unity) scripting_method_invoke
+0x00007ffb09886c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb09882235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffb09e72433 (Unity) Scripting::UnityEditor::EditorAssembliesProxy::ProcessInitializeOnLoadAttributes
+0x00007ffb0979d9bf (Unity) MonoManager::SetupLoadedEditorAssemblies
+0x00007ffb09794cf3 (Unity) MonoManager::FinalizeReload
+0x00007ffb0b765cd4 (Unity) ScriptingInitializer::FinalizeReload
+0x00007ffb0b7f52d6 (Unity) ImportOutOfDateAssets
+0x00007ffb0b7fe3fa (Unity) RefreshInternalV2
+0x00007ffb0b806f17 (Unity) StopAssetImportingV2Internal
+0x00007ffb0a0b7981 (Unity) Application::TickTimer
+0x00007ffb09e99f7c (Unity) MainMessageLoop
+0x00007ffb09ea1a12 (Unity) UnityMain
+0x00007ff7067c2f2a (Unity) __scrt_common_main_seh
+0x00007ffbf355dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffbf4259c5c (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+[Logcat] [WorkThread] 00:43:29.0233 Worker thread started
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Reflex LogLevel set to Info
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Logging.ReflexLogger:.cctor () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:15)
+Reflex.Configuration.ReflexSettings:OnValidate () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Configuration/ReflexSettings.cs:39)
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs Line: 15)
+
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in 11.755 seconds
+Domain Reload Profiling: 14953ms
+	BeginReloadAssembly (1978ms)
+		ExecutionOrderSort (4ms)
+		DisableScriptedObjects (214ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (1ms)
+		CreateAndSetChildDomain (1252ms)
+	RebuildCommonClasses (52ms)
+	RebuildNativeTypeToScriptingClass (22ms)
+	initialDomainReloadingComplete (95ms)
+	LoadAllAssembliesAndSetupDomain (1052ms)
+		LoadAssemblies (335ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (849ms)
+			TypeCache.Refresh (15ms)
+				TypeCache.ScanAssembly (0ms)
+			BuildScriptInfoCaches (784ms)
+			ResolveRequiredComponents (40ms)
+	FinalizeReload (11756ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (6583ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (58ms)
+			SetLoadedEditorAssemblies (18ms)
+			BeforeProcessingInitializeOnLoad (1408ms)
+			ProcessInitializeOnLoadAttributes (4160ms)
+			ProcessInitializeOnLoadMethodAttributes (922ms)
+			AfterProcessingInitializeOnLoad (15ms)
+			EditorAssembliesLoaded (3ms)
+		ExecutionOrderSort2 (3ms)
+		AwakeInstancesAfterBackupRestoration (3717ms)
+Asset Pipeline Refresh (id=dc5fec1f1eff5f349b08b768eb909f12): Total: 16.201 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=12341 ms
+		Asset DB Callback time: managed=581 ms, native=0 ms
+		Scripting: domain reloads=1, domain reload time=3275 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=4705, non-scripts=13075
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 3.650ms
+	ApplyChangesToAssetFolders: 0.868ms
+	Scan: 0.003ms
+	OnSourceAssetsModified: 0.003ms
+	CategorizeAssetsWithTransientArtifact: 0.007ms
+	ProcessAssetsWithTransientArtifactChanges: 20.949ms
+	CategorizeAssets: 316.054ms
+	ImportOutOfDateAssets: 11899.990ms (11879.189ms without children)
+		CompileScripts: 1.572ms
+		CollectScriptTypesHashes: 3.635ms
+		ReloadNativeAssets: 8.648ms
+		UnloadImportedAssets: 0.187ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 3.602ms
+		InitializingProgressBar: 0.001ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 3.156ms
+	PostProcessAllAssets: 581.191ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.898ms
+	UnloadStreamsBegin: 2.901ms
+	PersistCurrentRevisions: 0.643ms
+	UnloadStreamsEnd: 0.002ms
+	GenerateScriptTypeHashes: 31.738ms
+	Untracked: 3373.470ms
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[INFO ] [relay] log Unity client connected with ID: editor-24804-nux5gp (relay 1.0.12-build.96)
+[INFO ] [relay] connection.established clientId=editor-24804-nux5gp port=9001
+Unloading 350 unused Assets / (152.0 KB). Loaded Objects now: 39894.
+Memory consumption went from 1.36 GB to 1.36 GB.
+Total: 82.269600 ms (FindLiveObjects: 4.488100 ms CreateObjectMapping: 5.992500 ms MarkObjects: 69.265700 ms  DeleteObjects: 2.520300 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Reloading assemblies due to reload request.
+Reloading assemblies after forced synchronous recompile.
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Begin MonoManager ReloadAssembly
+[INFO ] [relay] log Domain reload signal received from client editor-24804-nux5gp
+[Logcat] [WorkThread] 00:43:41.3096 Worker thread exited
+[Logcat] [MainThread]00:43:41.3111 Dispatcher shutting down
+The type Unity.Entities.Editor Unity.Entities.Editor.MemoryProfilerModule is being serialized by [SerializeReference], but is missing the [Serializable] attribute. To suppress this warning add [Serializable] or use [MakeSerializable].
+The type Unity.Entities.Editor Unity.Entities.Editor.StructuralChangesProfilerModule is being serialized by [SerializeReference], but is missing the [Serializable] attribute. To suppress this warning add [Serializable] or use [MakeSerializable].
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+[INFO ] [relay] log Auto-shutdown timer fired after 180s inactivity, shutting down: Dedicated client disconnected
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Dedicated client disconnected
+Unexpected transport error from import worker 0 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker0.log
+0x00007ffb09044e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb0a87f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb0a87fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb08ff587f (Unity) DebugStringToFile
+0x00007ffb0b890ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ffb0b89da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ffb0b860207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ffb0b862aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ffb0b8590c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ffb0b863f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ffb0b870867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ffb0b85ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ffb0b85dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ffb0b86d809 (Unity) IOService::Run
+0x00007ffb0b86e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ffb0a872b80 (Unity) Thread::RunThreadWrapper
+0x00007ffbf355dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffbf4259c5c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 0: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker0.log
+Unexpected transport error from import worker 1 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker1.log
+0x00007ffb09044e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb0a87f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb0a87fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb08ff587f (Unity) DebugStringToFile
+0x00007ffb0b890ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ffb0b89da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ffb0b860207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ffb0b862aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ffb0b8590c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ffb0b863f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ffb0b870867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ffb0b85ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ffb0b85dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ffb0b86d809 (Unity) IOService::Run
+0x00007ffb0b86e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ffb0a872b80 (Unity) Thread::RunThreadWrapper
+0x00007ffbf355dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffbf4259c5c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 1: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker1.log
+
