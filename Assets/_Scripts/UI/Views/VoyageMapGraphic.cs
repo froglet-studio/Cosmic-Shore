@@ -464,6 +464,21 @@ namespace CosmicShore.UI
         /// 3 Region, 4 Neighbourhood, 5 Cell, 6 System).</summary>
         public int Tier => float.IsInfinity(_minX) ? -1 : HyperSeaSky.TierOf(ViewWidth);
 
+        float _floorLy = MinViewLy;
+
+        /// <summary>The narrowest view (light years across) the map zooms in to; the Voyages page stops it at Region,
+        /// since the closer tiers paint far more of the sea every frame (Shombith measured 2 fps past Region, 2026-11-14).
+        /// Narrowing it pulls a closer view back out.</summary>
+        public float NarrowestLy
+        {
+            get => _floorLy;
+            set
+            {
+                _floorLy = Mathf.Clamp(value, MinViewLy, MaxViewLy);
+                if (!float.IsInfinity(_minX) && _chart != null && ViewWidth < _floorLy) SetView(Centre, _floorLy);
+            }
+        }
+
         /// <summary>Fly to tier <paramref name="tier"/>'s width about the view's centre (the Voyages page's zoom row), as the
         /// ladder does.</summary>
         public void ZoomToTier(int tier)
@@ -595,7 +610,7 @@ namespace CosmicShore.UI
         /// the board's dive does: longer the further it goes, at most 5.2 s.</summary>
         void FlyTo(Vector2 centre, float width)
         {
-            width = Mathf.Clamp(width, MinViewLy, MaxViewLy);
+            width = Mathf.Clamp(width, _floorLy, MaxViewLy);
             float w0 = ViewWidth;
             float ratio = Mathf.Abs(Mathf.Log(w0 / width)) + Vector2.Distance(Centre, centre) / w0 * .3f;
             _flyFromC = Centre;
@@ -630,7 +645,7 @@ namespace CosmicShore.UI
         void SetView(Vector2 centre, float width)
         {
             float frame = FrameScale();
-            _zoom = Mathf.Max(1f, rectTransform.rect.width) / Mathf.Clamp(width, MinViewLy, MaxViewLy) / frame;
+            _zoom = Mathf.Max(1f, rectTransform.rect.width) / Mathf.Clamp(width, _floorLy, MaxViewLy) / frame;
             _pan = centre - FrameCentre;
             ClampView();
             _viewDirty = true;
@@ -651,7 +666,7 @@ namespace CosmicShore.UI
             float frame = FrameScale();
             float width = Mathf.Max(1f, rectTransform.rect.width);
             float lo = _chart != null ? width / MaxViewLy / frame : MinZoom;
-            float hi = _chart != null ? width / MinViewLy / frame : MaxZoom;
+            float hi = _chart != null ? width / _floorLy / frame : MaxZoom;
             _zoom = Mathf.Clamp(_zoom * factor, Mathf.Min(lo, 1f), Mathf.Max(hi, 1f));
             // The centre that puts world back under the pointer.
             _pan = world - (at - rectTransform.rect.center) / Scale() - FrameCentre;

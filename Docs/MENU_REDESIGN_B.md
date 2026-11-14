@@ -8399,3 +8399,11 @@ and `Draw` named for the board's curves):
 | Seat picker | modal .45s (24 up, .97 to 1), dim .35s | `VoyageSeatPicker.Tick`, same |
 
 Not opened in Unity: the feel is for Shombith to judge on the branch.
+
+### 205.2 After Shombith's first look (2026-11-14)
+
+Shombith ran PR #1985 and asked for these fixes:
+- **The map stops at Region.** Zooming in past Region (1,200 ly) dropped the game to about 2 fps. `VoyageMapGraphic.NarrowestLy` is a new floor on the zoom. The table sets it to Region, so the zoom buttons, the wheel and a pinch all stop there.
+- **No black ground.** The page's own deep ground, from section 205, is gone. The Voyage window's sea now shows behind the pages, as it does behind Arcade and Arena.
+- **Buttons.** The quiet buttons were the board's faded `.soft` band, which read as a smudge on the window's sea. They are now the style guide's default button (`.def`): a cut-corner plate inside a #747BAD line, like the window's own Back button.
+- **Pictures whole.** Pilot faces and vessel renders show whole and are never cropped. `ShowCover` now fits the picture inside its box, and `SetHull` drops the measured crop.

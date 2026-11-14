@@ -300,7 +300,7 @@ namespace CosmicShore.UI
             return view;
         }
 
-        /// <summary>Show <paramref name="sprite"/> cropped to its hull (the style's measured crop), as large as its box
+        /// <summary>Show <paramref name="sprite"/> whole, as large as its box
         /// allows.</summary>
         public void SetHull(HullView view, Sprite sprite)
         {
@@ -309,7 +309,8 @@ namespace CosmicShore.UI
                 view.Image.enabled = false;
                 return;
             }
-            var crop = _style ? _style.CropOf(sprite) : new Rect(0f, 0f, 1f, 1f);
+            // The whole render: a measured crop trimmed wing tips and antennae (Shombith, 2026-11-14).
+            var crop = new Rect(0f, 0f, 1f, 1f);
             var tex = sprite.texture;
             var tr = sprite.textureRect;
             view.Image.texture = tex;

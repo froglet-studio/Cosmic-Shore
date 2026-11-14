@@ -140,7 +140,6 @@ namespace CosmicShore.UI
             board._kit = new VoyageKit(style, lines, font);
             board._rules = new VoyageSeats(style, lines, vessels);
             board._rules.Changed += () => board.SquadChanged?.Invoke();
-            board.BuildGround(host);
             board.BuildHeader();
             board._pages = VoyageKit.Node("Pages", rt);
             VoyageKit.Stretch(board._pages);
@@ -150,30 +149,6 @@ namespace CosmicShore.UI
             board._ark = new VoyageArkPage(board, board._kit, board._rules, board._pages, party);
             board.ShowPage(Page.Sea);
             return board;
-        }
-
-        /// <summary>
-        /// The pages' own ground (Frogma Rev 100-111: a near-opaque deep gradient, rgba(0,4,31,.92) to .97, with a few
-        /// faint long waves drifting through it), under everything on the Voyages page, so the menu's busy sea does not
-        /// show through the board.
-        /// </summary>
-        void BuildGround(RectTransform host)
-        {
-            var ground = VoyageKit.Node("VoyageGround", host);
-            ground.SetAsFirstSibling();
-            VoyageKit.Stretch(ground);
-            var fill = ground.gameObject.AddComponent<VoyageGradient>();
-            fill.raycastTarget = false;
-            fill.Set(VoyageKit.Fade(_kit.Popup, 0.92f), VoyageKit.Fade(_kit.Popup, 0.95f), VoyageKit.Fade(_kit.Popup, 0.97f), 0.5f);
-            var waves = VoyageKit.Node("Waves", ground);
-            VoyageKit.Stretch(waves);
-            var lines = waves.gameObject.AddComponent<VoyageSeaLines>();
-            lines.color = VoyageKit.Fade(_kit.Outline, 0.45f);
-            lines.Lines = 4;
-            lines.Waves = 1.2f;
-            lines.Swell = 0.3f;
-            lines.Width = 1.5f;
-            lines.Speed = 0.006f;
         }
 
         void BuildHeader()
