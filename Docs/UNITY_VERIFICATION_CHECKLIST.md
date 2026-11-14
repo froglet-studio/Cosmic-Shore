@@ -23514,6 +23514,6 @@ Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor conf
 - [ ] An omni crystal hatches a Shark or a Worm Colony where you took it, and you are in it at once.
 - [ ] Phone: the four cards are buttons; the Charge card is A (leave); holding the Space card aims while the other thumb flies.
 - [ ] Ark escort, a hostile world: a creature that reaches a squad vessel plays its attack at it and the vessel loses petals;
-      on a pacified world nothing strikes. (Only with `claude/jewel-wasp-ark-strikes`, Shombith's Voyages lane.)
+      on a pacified world nothing strikes. (Affects Shombith's Voyages.)
 - [ ] After a ride of 3 s or more, `Documents/CosmicShore Diagnostics/Flights/possession_<scene>_<species>_<time>.json` exists
       and is sent with the flights after Play.
