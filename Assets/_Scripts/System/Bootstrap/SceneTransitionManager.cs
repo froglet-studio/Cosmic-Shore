@@ -42,6 +42,16 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Color of the full-screen fade overlay (only used when no splash overlay is wired).")]
         Color _fadeColor = Color.black;
 
+        [SerializeField, Tooltip("Duration of the reveal into the menu world (the boot splash dissolving into the Toy " +
+            "Box, and the cover lifting on a return to the menu). Longer than a plain fade and eased at both ends, so " +
+            "the world arrives instead of popping open.")]
+        float _revealDuration = 1.2f;
+
+        [SerializeField, Min(0.001f), Tooltip("The longest frame a fade advances by, in seconds. A hitch frame (a " +
+            "garbage collection, a first render) then lengthens the fade a little instead of swallowing it whole, " +
+            "which is what made the menu bang open after the splash.")]
+        float _maxFadeStep = 1f / 30f;
+
         [Header("Timing")]
         [SerializeField, Tooltip("Brief pause after scene load before fading in, letting the new scene's Awake/Start run.")]
         float _postLoadSettleDelay = 0.1f;
@@ -252,6 +262,34 @@ namespace CosmicShore.Core
         public async UniTask FadeFromBlack()
             => await FadeAsync(1f, 0f, EnsureCtsToken());
 
+        /// <summary>
+        /// The overlay dissolves into the menu world: <see cref="_revealDuration"/> long, eased at both ends, and
+        /// hitch-proof like every fade. Raises <see cref="RevealStarted"/> first, so the menu's own entrances play as
+        /// the world appears rather than behind the opaque splash.
+        /// </summary>
+        public async UniTask RevealAsync()
+        {
+            RevealStarted?.Invoke();
+            await FadeAsync(1f, 0f, EnsureCtsToken(), _revealDuration, eased: true);
+        }
+
+        /// <summary>Raised when <see cref="RevealAsync"/> begins: the splash starts to dissolve into the menu.</summary>
+        public static event Action RevealStarted;
+
+        /// <summary>
+        /// How far one frame moves a fade: the frame's time, never negative, never more than
+        /// <paramref name="maxStep"/>. Pure, so the hitch rule is testable without a scene.
+        /// </summary>
+        public static float FadeStep(float unscaledDeltaTime, float maxStep) =>
+            Mathf.Clamp(unscaledDeltaTime, 0f, Mathf.Max(0.0001f, maxStep));
+
+        /// <summary>Smoothstep: a fade that starts and ends at rest. 0 and 1 map to themselves.</summary>
+        public static float EaseInOut(float t)
+        {
+            t = Mathf.Clamp01(t);
+            return t * t * (3f - 2f * t);
+        }
+
         CancellationToken EnsureCtsToken()
         {
             if (_cts == null)
@@ -287,7 +325,9 @@ namespace CosmicShore.Core
 
         #region Internal - Fade Animation
 
-        async UniTask FadeAsync(float from, float to, CancellationToken ct)
+        UniTask FadeAsync(float from, float to, CancellationToken ct) => FadeAsync(from, to, ct, _fadeDuration, eased: false);
+
+        async UniTask FadeAsync(float from, float to, CancellationToken ct, float duration, bool eased)
         {
             if (_fadeCanvasGroup == null) return;
 
@@ -295,7 +335,7 @@ namespace CosmicShore.Core
             _fadeCanvasGroup.blocksRaycasts = true;
             _fadeCanvasGroup.interactable = true;
 
-            if (_fadeDuration <= 0f)
+            if (duration <= 0f)
             {
                 _fadeCanvasGroup.alpha = to;
                 _fadeCanvasGroup.blocksRaycasts = to > 0.01f;
@@ -304,11 +344,12 @@ namespace CosmicShore.Core
             }
 
             float elapsed = 0f;
-            while (elapsed < _fadeDuration)
+            while (elapsed < duration)
             {
                 ct.ThrowIfCancellationRequested();
-                elapsed += Time.unscaledDeltaTime;
-                _fadeCanvasGroup.alpha = Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / _fadeDuration));
+                elapsed += FadeStep(Time.unscaledDeltaTime, _maxFadeStep);
+                float t = Mathf.Clamp01(elapsed / duration);
+                _fadeCanvasGroup.alpha = Mathf.Lerp(from, to, eased ? EaseInOut(t) : t);
                 await UniTask.Yield(ct);
             }
 

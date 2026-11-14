@@ -22,7 +22,7 @@
       "id": "C1",
       "milestone": "M1",
       "title": "Parity harness",
-      "exit": "(1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay, plus `Random` sequences for a set of seeds. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens using the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9): exact state, RNG and event order; transforms within 1e-4 relative for 10 s; SSIM per frame. (4) GitHub CI: build the port and run `engine_smoke` for every mode on each bleeding-edge push. (5) A generated parity scoreboard (`docs/PARITY.md` + JSON for MILESTONES): every subsystem and shader Faithful / Approximate / Missing with its covering test",
+      "exit": "(1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay, plus `Random` sequences for a set of seeds. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens using the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9): exact state, RNG and event order; transforms within 1e-4 relative for 10 s; SSIM per frame. (4) GitHub CI: build the port and run `engine_smoke` for every mode on bleeding-edge (each push until 2026-11-13, nightly since). (5) A generated parity scoreboard (`docs/PARITY.md` + JSON for MILESTONES): every subsystem and shader Faithful / Approximate / Missing with its covering test",
       "weeks": 4,
       "dependsOn": [
         "C0"

@@ -34,11 +34,11 @@ namespace CosmicShore.Gameplay
     /// 2026-10-21): both read fully pulled, which is the energize stance - so a phone energizes
     /// through the mirrors like every other device and the event-driven pose drops into the
     /// centred chop with it (<see cref="MirrorsInStance"/>). An AI Rhino's
-    /// <see cref="RhinoSwordAutopilot"/> writes the mirrors on its owning machine, so its sword
+    /// <see cref="SwordfishSwordAutopilot"/> writes the mirrors on its owning machine, so its sword
     /// replicates the same way.
     ///
     /// COMBOS ride on top: a rapid string of trigger TAPS (RR, RL, RLR, …) calls an authored
-    /// flourish from <see cref="RhinoSwordComboLibrarySO"/> — a separate, upgraded set while
+    /// flourish from <see cref="SwordfishSwordComboLibrarySO"/> — a separate, upgraded set while
     /// the blade is ENERGIZED — which blends in from the current pose, plays its path, and
     /// blends back to wherever the fingers are. The local pilot sees its name in the game's toast
     /// container (top right, under Settings). A held trigger is never a tap, so positioning
@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
     public sealed class ShieldSwipeActionExecutor : ShipActionExecutorBase
     {
         [Header("Config")]
-        [SerializeField] RhinoShieldSwipeConfigSO config;
+        [SerializeField] SwordfishShieldSwipeConfigSO config;
 
         [Header("References")]
         [Tooltip("The shield/sword transform to sweep (the ForceFieldSkimmer root). Falls back to the near-field skimmer.")]
@@ -58,10 +58,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
 
         [Header("Autopilot")]
-        [Tooltip("The AI's sword hand (RhinoSwordAutopilot on the Rhino root). While it drives the " +
+        [Tooltip("The AI's sword hand (SwordfishSwordAutopilot on the Rhino root). While it drives the " +
                  "trigger mirrors, an autopiloted vessel's triggers are followed instead of dropped. " +
                  "Found on the vessel when empty.")]
-        [SerializeField] RhinoSwordAutopilot autopilot;
+        [SerializeField] SwordfishSwordAutopilot autopilot;
 
         [Header("Blade Geometry")]
         [Tooltip("Half the blade mesh's extent along its length axis, in the blade's OWN local units. " +
@@ -97,23 +97,23 @@ namespace CosmicShore.Gameplay
         bool _leftHeld;
 
         // --- Combos -------------------------------------------------------------------------
-        RhinoSwordComboDetector _comboDetector;
-        RhinoSwordComboLibrarySO _comboLibraryConfigured; // library the detector was configured from
-        RhinoSwordComboPath _flourish;         // playing flourish, null when the fingers own the pose
+        SwordfishSwordComboDetector _comboDetector;
+        SwordfishSwordComboLibrarySO _comboLibraryConfigured; // library the detector was configured from
+        SwordfishSwordComboPath _flourish;         // playing flourish, null when the fingers own the pose
         float _flourishElapsed;
         SwordPoseChannels _flourishEntry;      // pose the flourish blends in FROM (wrapped)
         SwordPoseChannels _lastApplied;        // last pose written to the sword, in channel space
-        RhinoSwordFXController _fx;            // the blade's own FX (same GameObject as shieldRoot)
+        SwordfishSwordFXController _fx;            // the blade's own FX (same GameObject as shieldRoot)
 
         /// <summary>The flourish currently playing, or null. For FX/HUD/diagnostics.</summary>
-        public RhinoSwordComboPath ActiveFlourish => _flourish;
+        public SwordfishSwordComboPath ActiveFlourish => _flourish;
 
         /// <summary>The pose last written to the blade (the swipe, the chop and any flourish), in
         /// channel space; zero at rest. <see cref="RhinoAnimation"/> leans the wings with it.</summary>
         public SwordPoseChannels CurrentPose => _lastApplied;
 
         /// <summary>The swipe/chop tuning, so a reader can normalise <see cref="CurrentPose"/> (the HUD's katana).</summary>
-        public RhinoShieldSwipeConfigSO Config => config;
+        public SwordfishShieldSwipeConfigSO Config => config;
 
         /// <summary>The frame <see cref="CurrentPose"/>'s sweep is expressed in: the blade's parent,
         /// whose origin it pivots about. Null until the blade resolves.</summary>
@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
         {
             _status = shipStatus;
             if (!config)
-                CSDebug.LogError($"[{nameof(ShieldSwipeActionExecutor)}] No {nameof(RhinoShieldSwipeConfigSO)} wired on '{name}' - the shield swipe will not run.");
+                CSDebug.LogError($"[{nameof(ShieldSwipeActionExecutor)}] No {nameof(SwordfishShieldSwipeConfigSO)} wired on '{name}' - the shield swipe will not run.");
             EnsureShieldRoot();
         }
 
@@ -264,7 +264,7 @@ namespace CosmicShore.Gameplay
 
             if (_comboDetector == null || _comboLibraryConfigured != library)
             {
-                _comboDetector ??= new RhinoSwordComboDetector(library.DetectorSettings);
+                _comboDetector ??= new SwordfishSwordComboDetector(library.DetectorSettings);
                 _comboDetector.Configure(library.DetectorSettings);
                 _comboDetector.Reset();
                 _comboLibraryConfigured = library;
@@ -286,7 +286,7 @@ namespace CosmicShore.Gameplay
             StartFlourish(library, path, combo.IsFinisher, energized && path.Energized);
         }
 
-        void StartFlourish(RhinoSwordComboLibrarySO library, RhinoSwordComboPath path, bool finisher, bool energized)
+        void StartFlourish(SwordfishSwordComboLibrarySO library, SwordfishSwordComboPath path, bool finisher, bool energized)
         {
             _flourishEntry = _lastApplied.Wrapped();
             _flourish = path;
@@ -374,7 +374,7 @@ namespace CosmicShore.Gameplay
         /// machine (the supershield key) runs off the same reparameterized trigger
         /// signals that pose the blade. See RHINO_ENERGY_SWORD.md.
         /// </summary>
-        IRhinoSwordState Sword
+        ISwordfishSwordState Sword
         {
             get
             {
@@ -499,7 +499,7 @@ namespace CosmicShore.Gameplay
         {
             get
             {
-                if (!autopilot && _status?.ShipTransform) autopilot = _status.ShipTransform.GetComponentInChildren<RhinoSwordAutopilot>(true);
+                if (!autopilot && _status?.ShipTransform) autopilot = _status.ShipTransform.GetComponentInChildren<SwordfishSwordAutopilot>(true);
                 return autopilot && autopilot.DrivesTriggers;
             }
         }
@@ -551,7 +551,7 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the events should drive the stance (see <see cref="TryReadTriggers"/>).</summary>
         bool EventsDriveStance => !TryReadTriggers(out _, out _, out _);
 
-        public void BeginSwipe(RhinoShieldSwipeActionSO so, IVesselStatus status)
+        public void BeginSwipe(SwordfishShieldSwipeActionSO so, IVesselStatus status)
         {
             _status ??= status;
             if (!so) return;
@@ -565,7 +565,7 @@ namespace CosmicShore.Gameplay
             _activeSign = so.DirectionSign;
         }
 
-        public void EndSwipe(RhinoShieldSwipeActionSO so, IVesselStatus status)
+        public void EndSwipe(SwordfishShieldSwipeActionSO so, IVesselStatus status)
         {
             _status ??= status;
             if (!so) return;

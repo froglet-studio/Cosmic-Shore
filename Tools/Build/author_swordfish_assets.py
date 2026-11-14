@@ -26,7 +26,7 @@ WHAT IT MAKES
           overrides, InputEvents 2 / 1) bind RhinoPloughSteerLeft / Right instead of the shield swipes
         - removed: ScaleSkimmerObject (the blade driver + the afterimages), the inactive ZoomCameraObject that read the
           driver, the five blade tracers, the sword FX added to
-          the blade, RhinoSwordNetworkRelay and RhinoSwordAutopilot; the HUD controller's sword references are nulled
+          the blade, SwordfishSwordNetworkRelay and SwordfishSwordAutopilot; the HUD controller's sword references are nulled
         - the blade skimmer stays as the Rhino's only near-field skimmer (vessel rule 11: an elemental crystal is
           collected only by an initialised skimmer), re-posed as a static 15 u crystal catcher round the hull with a
           haptics-only container (RhinoSkimmerImpactorDataContainer) - it cuts nothing and takes no petals
@@ -100,10 +100,10 @@ VESSEL_IMPACTOR_ID = "3485795873575935315"
 HUD_CONTROLLER_ID = "2171807218592972036"
 SWING_EXECUTOR_ID = "5837219046513728403"   # ShieldSwipeActionExecutor -> RhinoPloughSteerExecutor (in place)
 SWING_GO = "5837219046513728401"
-SCALE_SKIMMER_GO = "2798795461378093357"    # ShieldSkimmerScaleDriver + RhinoSwordAfterimage
+SCALE_SKIMMER_GO = "2798795461378093357"    # ShieldSkimmerScaleDriver + SwordfishSwordAfterimage
 ZOOM_CAMERA_GO = "6085091417435899968"      # inactive CameraZoomFollowScaleProvider reading the blade driver
 TRACER_GOS = ["5300000000001101", "5300000000001111", "5300000000001121", "5300000000001131", "5300000000001141"]
-SWORD_FX_ID = "5300000000001301"            # RhinoSwordFXController, ADDED to the blade instance
+SWORD_FX_ID = "5300000000001301"            # SwordfishSwordFXController, ADDED to the blade instance
 RELAY_ID = "7740000000000001601"
 SWORD_AUTOPILOT_ID = "7740000000000001603"
 BLADE_INSTANCE = "1660592348679971898"      # the ForceFieldSkimmer Variant instance (the blade / crystal catcher)
@@ -117,20 +117,20 @@ PLOUGH_BLADE_COMPONENT = "7741000000000002005"
 
 # --- script and asset guids ------------------------------------------------------------------------------------------
 SWING_EXECUTOR_SCRIPT = "fc766772d5459db71a1c792a127f2e48"   # ShieldSwipeActionExecutor
-SWIPE_RIGHT_GUID = "b92a3e13c6d6cae4c13166674711fddb"        # RhinoShieldSwipeRightAction
-SWIPE_LEFT_GUID = "4ff8e060662050b3e6c52df601ba9ca2"         # RhinoShieldSwipeLeftAction
+SWIPE_RIGHT_GUID = "b92a3e13c6d6cae4c13166674711fddb"        # SwordfishShieldSwipeRightAction
+SWIPE_LEFT_GUID = "4ff8e060662050b3e6c52df601ba9ca2"         # SwordfishShieldSwipeLeftAction
 IMPACT_COLLIDER_SCRIPT = "fafcc767febd41ccbad67c5457dc432d"
 SWORD_SCRIPTS = {   # nothing of the sword may stay on the Rhino
     "ShieldSkimmerScaleDriver": "ShieldSkimmerScaleDriver.cs.meta",
-    "RhinoSwordAfterimage": "RhinoSwordAfterimage.cs.meta",
-    "RhinoSwordFXController": "RhinoSwordFXController.cs.meta",
-    "RhinoSwordNetworkRelay": "RhinoSwordNetworkRelay.cs.meta",
-    "RhinoSwordAutopilot": "RhinoSwordAutopilot.cs.meta",
+    "SwordfishSwordAfterimage": "SwordfishSwordAfterimage.cs.meta",
+    "SwordfishSwordFXController": "SwordfishSwordFXController.cs.meta",
+    "SwordfishSwordNetworkRelay": "SwordfishSwordNetworkRelay.cs.meta",
+    "SwordfishSwordAutopilot": "SwordfishSwordAutopilot.cs.meta",
 }
 PLOUGH_EFFECT_GUID = "dd3c981395e34324b68b9ce34145854c"      # RhinoPloughPrismEffect.asset
 RAM_EFFECT_GUID = "4da62d4eefe03594ba35027dd537aff0"         # VesselDamagePrismEffect.asset (the fleet ram)
-SURGE_EFFECT_GUID = "2c9905659013874571988cf2fda5904c"       # RhinoVesselSurgeByCrystalEffect.asset
-SWORD_SKIMMER_CONTAINER_GUID = "05483649aa8bbea458ee49ed300542bd"   # RhinoForceFieldSkimmerImpactorDataContainer
+SURGE_EFFECT_GUID = "2c9905659013874571988cf2fda5904c"       # SwordfishVesselSurgeByCrystalEffect.asset
+SWORD_SKIMMER_CONTAINER_GUID = "05483649aa8bbea458ee49ed300542bd"   # SwordfishForceFieldSkimmerImpactorDataContainer
 SKIMMER_CONTAINER_SCRIPT = "68b3e74284f14e32a6e21b5fb8c3e8ad"
 VESSEL_HAPTICS_BY_SKIMMER = "02cd4a20ea91bbc4591c9ccbf9db91af"
 SKIMMER_HAPTICS_BY_PRISM = "dcce08b9351b97c4eb275508001a5b8e"

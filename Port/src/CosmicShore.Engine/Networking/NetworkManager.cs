@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Engine.Tasks;
 
 namespace CosmicShore.Engine.Networking
@@ -29,8 +30,15 @@ namespace CosmicShore.Engine.Networking
         public bool RunInBackground = true;
         public bool DontDestroy = true;
 
+        /// <summary>Netcode 2's hook: raised in every NetworkManager's Awake, before anything else it does.</summary>
+        public static event Action<NetworkManager> OnInstantiated;
+
+        /// <summary>Netcode 2's hook: raised when a NetworkManager is destroyed.</summary>
+        public static event Action<NetworkManager> OnDestroying;
+
         void Awake()
         {
+            OnInstantiated?.Invoke(this);
             if (!EmulateNetcodeLifecycle) return;
             if (NetworkConfigSerialized != null) NetworkConfig = NetworkConfigSerialized;
             IsServer = false;
@@ -50,6 +58,7 @@ namespace CosmicShore.Engine.Networking
 
         void OnDestroy()
         {
+            OnDestroying?.Invoke(this);
             if (!EmulateNetcodeLifecycle) return;
             SceneManagement.SceneManager.BeforeSingleLoadUnload -= MigrateSurvivingObjects;
             if (IsListening) Shutdown();

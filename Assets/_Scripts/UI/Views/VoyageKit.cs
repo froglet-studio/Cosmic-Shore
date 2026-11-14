@@ -7,9 +7,10 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The small builders every part of the Voyage window's Sea table is made with (<see cref="VoyageBoard"/>,
-    /// <see cref="VoyageSquadColumn"/>, <see cref="VoyageSlabPage"/>): a node, a slivered plate, a line of text in the
-    /// window's face, a label in the style's label face, a keyed button. One look: every sprite, colour and face is
+    /// The small builders every part of the Voyage window is made with (<see cref="VoyageBoard"/>,
+    /// <see cref="VoyageSquadDeck"/>, <see cref="VoyageSquadColumn"/>, <see cref="VoyageSlabPage"/>): a node, a slivered
+    /// plate, a soft-ended band, a line of text in the window's face, a label in the style's label face, a keyed button,
+    /// an element's flower. One look: every sprite, colour and face is
     /// <see cref="VoyageBoardStyleSO"/>'s, and every colour is read as the worn colour set has it
     /// (ColorTrace, Docs/VesselModels/COLOR_TRACE.md).
     /// </summary>
@@ -39,6 +40,9 @@ namespace CosmicShore.UI
         public Color CtaFill => ColorTrace.Retrace(ColorTrace.Ui, Style.CtaFill);
         public Color CtaText => ColorTrace.Retrace(ColorTrace.Ui, Style.CtaText);
         public Color Disabled => ColorTrace.Retrace(ColorTrace.Ui, DisabledAuthored);
+
+        /// <summary><paramref name="c"/> at <paramref name="alpha"/> of its own opacity.</summary>
+        public static Color Fade(Color c, float alpha) => new(c.r, c.g, c.b, c.a * alpha);
 
         public static RectTransform Node(string name, Transform parent)
         {
@@ -126,6 +130,41 @@ namespace CosmicShore.UI
             return img;
         }
 
+        /// <summary>A fill solid in the middle and fading to both ends, each <paramref name="soft"/> of its width
+        /// (<see cref="VoyageSoftFill"/>): a button, the band behind a group, a hairline.</summary>
+        public static VoyageSoftFill Band(RectTransform rt, Color color, float soft = 0.2f, bool hit = false)
+        {
+            var fill = rt.gameObject.AddComponent<VoyageSoftFill>();
+            fill.Set(VoyageSoftFill.Shape.Band, soft);
+            fill.color = color;
+            fill.raycastTarget = hit;
+            return fill;
+        }
+
+        /// <summary>A light fading from the middle of <paramref name="rt"/> to its rim (under a picked picture).</summary>
+        public static VoyageSoftFill Glow(RectTransform rt, Color color)
+        {
+            var fill = rt.gameObject.AddComponent<VoyageSoftFill>();
+            fill.Set(VoyageSoftFill.Shape.Glow, 0f);
+            fill.color = color;
+            fill.raycastTarget = false;
+            return fill;
+        }
+
+        /// <summary>A hairline across <paramref name="parent"/>'s top (<paramref name="top"/>) or foot, fading to both
+        /// ends.</summary>
+        public static VoyageSoftFill Hairline(RectTransform parent, bool top, Color color, float soft = 0.2f)
+        {
+            var rt = Node(top ? "LineTop" : "LineFoot", parent);
+            Le(rt).ignoreLayout = true;
+            rt.anchorMin = new Vector2(0f, top ? 1f : 0f);
+            rt.anchorMax = new Vector2(1f, top ? 1f : 0f);
+            rt.pivot = new Vector2(0.5f, top ? 1f : 0f);
+            rt.sizeDelta = new Vector2(0f, 1f);
+            rt.anchoredPosition = Vector2.zero;
+            return Band(rt, color, soft);
+        }
+
         /// <summary>A picture kept in its own shape; hidden until it has a sprite (<see cref="Show"/>).</summary>
         public static Image Picture(RectTransform rt)
         {
@@ -179,6 +218,20 @@ namespace CosmicShore.UI
             return t;
         }
 
+        /// <summary>A line of text over a 2 unit line as wide as the text (the picked mark: light the line with
+        /// <see cref="Cyan"/>, clear it otherwise), set to <paramref name="align"/> in its parent.</summary>
+        public (TMP_Text text, Image bar) Underlined(Transform parent, float size, TextAnchor align = TextAnchor.MiddleCenter)
+        {
+            var row = Node("NameRow", parent);
+            Row(row, 0f, align);
+            var name = Node("Name", row);
+            Column(name, 6f, TextAnchor.UpperCenter);
+            var text = Text(name, size, Light, TextAlignmentOptions.Center);
+            var bar = Node("Bar", name);
+            Le(bar).preferredHeight = 2f;
+            return (text, Block(bar, Cyan));
+        }
+
         /// <summary>A button over a slivered plate; <paramref name="edge"/> draws its outline.</summary>
         public Button Plated(RectTransform rt, Color fill, bool edge, out Image plate, out Image outline)
         {
@@ -228,8 +281,8 @@ namespace CosmicShore.UI
         /// keycap before its words.</summary>
         public (Button button, TMP_Text words) Cta(RectTransform rt, string key, string words, Action onClick)
         {
-            var fill = Sliced(rt, Style.Sliver10Fill, CtaFill);
-            fill.raycastTarget = true;
+            // Soft hard soft: solid across the middle, fading out to both ends; no box and no cut corners.
+            var fill = Band(rt, CtaFill, 0.2f, hit: true);
             var b = rt.gameObject.AddComponent<Button>();
             b.targetGraphic = fill;
             var colors = b.colors;
@@ -240,14 +293,48 @@ namespace CosmicShore.UI
             return (b, t);
         }
 
-        /// <summary>A quiet button (the default kind): the ground under an outline, its keycap before its words.</summary>
-        public Button Quiet(RectTransform rt, string key, string words, Action onClick)
+        /// <summary>A quiet button (the default kind): the ground between two hairlines, all three fading out to both
+        /// ends, its keycap before its words.</summary>
+        public Button Quiet(RectTransform rt, string key, string words, Action onClick) => Quiet(rt, key, words, onClick, out _);
+
+        public Button Quiet(RectTransform rt, string key, string words, Action onClick, out TMP_Text label)
         {
-            var b = Plated(rt, Popup, true, out _, out var edge);
-            edge.color = Light;
-            KeyedLabel(rt, key, words, Light);
+            var fill = Band(rt, Fade(RowPicked, 1f), 0.2f, hit: true);
+            Hairline(rt, true, Fade(Light, 0.8f));
+            Hairline(rt, false, Fade(Light, 0.8f));
+            var b = rt.gameObject.AddComponent<Button>();
+            b.targetGraphic = fill;
+            var colors = b.colors;
+            colors.disabledColor = Disabled;
+            b.colors = colors;
+            label = KeyedLabel(rt, key, words, Light);
             b.onClick.AddListener(() => onClick?.Invoke());
             return b;
+        }
+
+        /// <summary>The element's mark: the HUD's flower, five copies of the element's petal turned 72 degrees about the
+        /// centre (<see cref="ElementalBarsView.ConfigurePetal"/>, Resources/ElementPetals), in <paramref name="color"/>.
+        /// Elements carry no colour of their own.</summary>
+        public static RectTransform Flower(Transform parent, CosmicShore.Data.Element element, Color color)
+        {
+            var root = Node("Flower", parent);
+            var sprite = Resources.Load<Sprite>("ElementPetals/" + element.ToString().ToLowerInvariant() + "_petal");
+            for (int i = 0; i < 5; i++)
+            {
+                var petal = Node("Petal" + i, root);
+                var img = petal.gameObject.AddComponent<Image>();
+                img.color = color;
+                img.raycastTarget = false;
+                ElementalBarsView.ConfigurePetal(img, sprite, i);
+                img.enabled = sprite;
+            }
+            return root;
+        }
+
+        /// <summary>Tint a <see cref="Flower"/>.</summary>
+        public static void TintFlower(RectTransform flower, Color color)
+        {
+            foreach (var img in flower.GetComponentsInChildren<Image>(true)) img.color = color;
         }
 
         /// <summary>

@@ -30,7 +30,7 @@ changed, and what is still an estimate. The targets themselves live where they a
 | Waystation | rings (dealt in clusters; more = longer) | 24 | **15** | 205 s -> ~90-130 s | measured, 1 pilot |
 | Grizzly Time | laps x 8 gates | 3 laps = 24 | **2 laps = 16** | unfinishable today (4 gates in 268 s) | see §4 |
 | Headlong | laps x 8 gates | 3 laps = 24 | **5 laps = 40** | ~40-55 s -> ~70-90 s | estimate (Regatta transfer) |
-| Redline | laps x 8 gates | 3 laps = 24 | **5 laps = 40** | ~40-75 s -> ~70-120 s | estimate (Regatta transfer) |
+| Redline | laps x 8 gates | 3 laps = 24 | **8 laps = 64** (5 = 40 from 2026-10-26; 8 since 2026-11-11, when the card lit Soar from the gun) | ~38-89 s for the model's ideal pilot, ~50-115 s for a person (`manta_redline_sim.py --reading`, REDLINE.md §0.1) | offline model, not flown |
 | SkimRace | crystals = laps x crystals a lap (`lapsPerIntensity`) | [3,3,2,2] -> 24/30/56/52 | **[3,3,1,1] -> 24/30/28/26** | I3 ~200 s, I4 ~145 s -> ~75-100 s | AI benchmark + one I3 race (AI won at 199 s) |
 | Scurry (Crystal Capture) | crystals | 20 | **14** | ~100-140 s -> ~90 s | estimate; 9 runs left unfinished at 28-97 s |
 | Joust | jousts | 3 | **2** | not reached by 144 s | estimate |

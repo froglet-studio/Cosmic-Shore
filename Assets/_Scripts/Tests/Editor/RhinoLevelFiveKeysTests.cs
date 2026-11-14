@@ -15,9 +15,9 @@ namespace CosmicShore.Tests
     public class RhinoLevelFiveKeysTests
     {
         const string SwordConfigPath =
-            "Assets/_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset";
+            "Assets/_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset";
         const string StealEffectPath =
-            "Assets/_SO_Assets/Effects/Vessel Skimmer Effects/RhinoSwordStealBySkimmerEffect.asset";
+            "Assets/_SO_Assets/Effects/Vessel Skimmer Effects/SwordfishSwordStealBySkimmerEffect.asset";
         const string SquirrelJoustPath =
             "Assets/_SO_Assets/Effects/Vessel Skimmer Effects/VesselOvertakeBySkimmerEffect.asset";
 

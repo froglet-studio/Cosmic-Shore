@@ -184,7 +184,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The I4 gauntlet</b> (Yash, 2026-11-03: "I4 is too empty ... they cannot just simply fly into the rings,
     /// they have to use both drifting and blasting multiple times to pass the rings"). There is no bore: the field fills
-    /// the leg's line, and both doors' eyes are SEALED (<see cref="EmitSeal"/>, a Danger heart). The way through is a
+    /// the leg's line, and both doors' eyes are SEALED (<see cref="EmitSeal"/>: nine plain cubes; the Danger heart they had until 2026-11-13
+    /// made every missed blast two dead stops a gate, Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md). The way through is a
     /// zig-zag of <see cref="GauntletStages"/> keys (<see cref="GauntletKeys"/>), each off the line and aimed at the next,
     /// the last on the line aimed at the door; every segment between them is a plugged tunnel (<see cref="BlastRunTunnel"/>).
     /// Each key's segment turns from the one before it, so a blast down the cleared lane needs the nose swung onto the
@@ -227,6 +228,20 @@ namespace CosmicShore.Gameplay
         /// its way through is the gauntlet (<see cref="HasGauntlet"/>), and the field fills the line.</summary>
         public static float BoreRadius(int intensity) => BoreRadius(intensity, true);
         public static float BoreRadius(int intensity, bool gauntlet) => new[] { 30f, 26f, 22f, 0f, 18f }[R(intensity, gauntlet)];
+        /// <summary>u past the bigger of a leg's two mouths that the sight line keeps clear (<see cref="SightBore"/>): half a
+        /// cell, so the next ring's whole rim, and a little water round it, shows down the leg.</summary>
+        public const float SightMargin = 12f;
+        /// <summary>The bore a leg's field actually keeps clear. Every row keeps <see cref="BoreRadius(int, bool)"/>; I4
+        /// WITHOUT the gauntlet (Scarab Rally) also keeps the SIGHT LINE from the ring you leave to the next one: the bigger
+        /// of the two mouths plus <see cref="SightMargin"/>, so no field prism hides the next ring's lime rim from where
+        /// you leave a ring (Garrett, 2026-11-14: "respect sight lines from one ring to another"). Its 18 u bore was
+        /// narrower than its 22 u mouths, so the field covered the rim on every blocked leg.</summary>
+        public static float SightBore(int intensity, bool gauntlet, float mouthRadius, float previousMouthRadius)
+        {
+            float bore = BoreRadius(intensity, gauntlet);
+            if (R(intensity, gauntlet) != 4) return bore;
+            return Mathf.Max(bore, Mathf.Max(mouthRadius, previousMouthRadius) + SightMargin);
+        }
         /// <summary>The chance a free cell starts an object (bigger objects then claim more cells).</summary>
         public static float Fill(int intensity) => Fill(intensity, true);
         public static float Fill(int intensity, bool gauntlet) => new[] { 0.30f, 0.40f, 0.50f, 0.70f, 0.60f }[R(intensity, gauntlet)];
@@ -287,6 +302,11 @@ namespace CosmicShore.Gameplay
         public static bool HasSliderPairs(int intensity) => intensity >= 4;
         public static bool HasBeams(int intensity) => intensity >= 3;
         public static bool HasDoubleDoor(int intensity) => intensity >= 4;
+        /// <summary>Whether a blocked gate hangs its door(s). Every row does except I4 WITHOUT the gauntlet (Scarab Rally): a
+        /// door is a plug across the port with an 18 u eye, so it hid the 22 u lime ring behind it from down the leg, and its
+        /// eye only opens to the Dolphin's blast (Garrett, 2026-11-14: keep the sight line from one ring to the next). The
+        /// door's keepout stays, so the field still leaves the mouth clear.</summary>
+        public static bool LaysDoors(int intensity, bool gauntlet) => R(intensity, gauntlet) != 4;
 
         // ── budgets (the 100 fps target; SWITCHBACK.md "Blast Run - budgets") ──
         /// <summary>Whole-course prism ceilings, doors and moving prisms included (Breakwater lays about 4600 at I1). I4
@@ -424,8 +444,11 @@ namespace CosmicShore.Gameplay
                 bool dbl = HasDoubleDoor(intensity);
                 if (dbl && !DoorClear(course, centre, clearRadius, door2, port, g)) continue;
 
-                EmitDoor(layout, door, axis, port, gauntlet);
-                if (dbl) EmitDoor(layout, door2, axis, port, gauntlet);
+                if (LaysDoors(intensity, profile))
+                {
+                    EmitDoor(layout, door, axis, port, gauntlet);
+                    if (dbl) EmitDoor(layout, door2, axis, port, gauntlet);
+                }
                 keepouts.Add(new Keepout(door, door, port + 6f));
                 if (dbl) keepouts.Add(new Keepout(door2, door2, port + 6f));
                 if (!gauntlet)
@@ -596,15 +619,17 @@ namespace CosmicShore.Gameplay
         /// <summary>The prisms one door lays at <paramref name="intensity"/> (seal included where the gauntlet is).</summary>
         public static int DoorPrisms(int intensity, bool gauntlet = true)
         {
+            if (!LaysDoors(intensity, gauntlet)) return 0;
             int n = 0;
             EmitDoorPrisms(Vector3.zero, Vector3.forward, PortFor(intensity), HasGauntlet(intensity, gauntlet), (p, r, s, k) => n++);
             return n;
         }
 
         /// <summary>
-        /// The I4 eye SEAL: a 3 x 3 of <see cref="SealCube"/> cubes filling the door's 18 u eye, square to the door
-        /// (<see cref="DoorBasis"/>), its middle a Danger heart. Nothing threads a sealed eye: a hull rams it (a dead stop at
-        /// the heart) or a key's blast clears it.
+        /// The I4 eye SEAL: a 3 x 3 of <see cref="SealCube"/> plain cubes filling the door's 18 u eye, square to the door
+        /// (<see cref="DoorBasis"/>). Nothing threads a sealed eye: a hull rams it (a plain hit's slow per cube) or a key's
+        /// blast clears it. Its middle was a Danger heart until 2026-11-13 (elemental loop step 2: two dead stops a gate for
+        /// every missed blast were most of I4's cliff over I3, Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md).
         /// </summary>
         public static void EmitSeal(Vector3 position, Vector3 axis, System.Action<Vector3, Quaternion, Vector3, PrismKind> emit)
         {
@@ -614,8 +639,7 @@ namespace CosmicShore.Gameplay
             var size = new Vector3(SealCube, SealCube, SealCube);
             for (int i = -1; i <= 1; i++)
             for (int j = -1; j <= 1; j++)
-                emit(position + u * (i * SealPitch) + v * (j * SealPitch), rot, size,
-                     i == 0 && j == 0 ? PrismKind.Danger : PrismKind.Plain);
+                emit(position + u * (i * SealPitch) + v * (j * SealPitch), rot, size, PrismKind.Plain);
         }
 
         // ── fields ───────────────────────────────────────────────────────
@@ -788,7 +812,8 @@ namespace CosmicShore.Gameplay
             Vector3 gate = course[st.Gate].Position;
             var f = new Field
             {
-                Station = s, OwnLeg = st.Gate - 1, N = CellsHalf(it, ctx.Profile), Nz = nz, Z0 = z0, Bore = BoreRadius(it, ctx.Profile),
+                Station = s, OwnLeg = st.Gate - 1, N = CellsHalf(it, ctx.Profile), Nz = nz, Z0 = z0,
+                Bore = SightBore(it, ctx.Profile, course[st.Gate].Radius, course[st.Gate - 1].Radius),
                 Origin = gate, S1 = s1, S2 = s2, Dir = dir, Rot = Quaternion.LookRotation(dir, s2),
                 Salt = GateSalt(gate, s),
             };

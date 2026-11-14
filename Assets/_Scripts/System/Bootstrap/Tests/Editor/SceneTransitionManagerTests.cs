@@ -199,6 +199,42 @@ namespace CosmicShore.Core
         }
 
         #endregion
+
+        #region The reveal: a hitch never eats the fade (section 185)
+
+        [Test]
+        public void FadeStep_CapsAHitchFrame()
+        {
+            // A half-second frame (a collect, a first render) must advance a fade by one capped step, not by half a
+            // second: that frame is what made the menu bang open after the splash.
+            Assert.AreEqual(1f / 30f, SceneTransitionManager.FadeStep(0.5f, 1f / 30f), 1e-6f);
+        }
+
+        [Test]
+        public void FadeStep_PassesAnOrdinaryFrameAndRefusesANegativeOne()
+        {
+            Assert.AreEqual(1f / 60f, SceneTransitionManager.FadeStep(1f / 60f, 1f / 30f), 1e-6f);
+            Assert.AreEqual(0f, SceneTransitionManager.FadeStep(-0.1f, 1f / 30f), 1e-6f);
+        }
+
+        [Test]
+        public void EaseInOut_StartsAndEndsAtRestAndNeverLeavesTheRange()
+        {
+            Assert.AreEqual(0f, SceneTransitionManager.EaseInOut(0f), 1e-6f);
+            Assert.AreEqual(1f, SceneTransitionManager.EaseInOut(1f), 1e-6f);
+            Assert.AreEqual(0.5f, SceneTransitionManager.EaseInOut(0.5f), 1e-6f);
+            float last = 0f;
+            for (int i = 1; i <= 100; i++)
+            {
+                float v = SceneTransitionManager.EaseInOut(i / 100f);
+                Assert.GreaterOrEqual(v, last, "the reveal must never step back");
+                last = v;
+            }
+            // At rest at the ends: the first and last hundredths move far less than the middle one.
+            Assert.Less(SceneTransitionManager.EaseInOut(0.01f), 0.01f);
+        }
+
+        #endregion
     }
 }
 #endif

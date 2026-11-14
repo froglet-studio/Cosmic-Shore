@@ -21,11 +21,15 @@ namespace CosmicShore.Gameplay
     /// answer with a 1.5/s exponential lag (<c>VesselTransformer.LERP_AMOUNT</c>), so Soar given up
     /// costs about two seconds to win back.</para>
     ///
+    /// <para><b>Since 2026-11-07 Soar is the Time LEVEL-5 upgrade and Time raises the cruise too</b>, so the race starts
+    /// every Manta at Time 6 (<see cref="StartingTimeLevelByIntensity"/>) and is flown on <see cref="SoarSpeed"/>: 1104 u/s
+    /// and a 252 u circle at Time 6, 1404 u/s and 259 u at Time 10. The 720 / 237 / 156 numbers below are the curve the
+    /// course was CUT on (Soar at Time 0, as it was on 2026-11-04); the course is unchanged, so they stand as its record.</para>
+    ///
     /// <para><b>Why the Manta and not another hull.</b> Its cruise is the fleet's fastest
-    /// (180 u/s, boosted x4 to 720, x1.3 again at Time 10) and its turning circle is bounded:
+    /// (180 u/s at Time 0, +5% a Time level; Soar x4 on top, +3% a level) and its turning circle is bounded:
     /// with <c>RotationThrottleScaler</c> 0.2 the radius converges on <c>180/(pi x 0.2)</c> =
-    /// 286 u, so at full boost it holds a 237 u circle and a Time-10 Manta at 936 u/s only
-    /// 247. A course whose corners are cut around that radius is a course this vessel flies
+    /// 286 u, so at full Soar it holds a 237-259 u circle whatever its Time level. A course whose corners are cut around that radius is a course this vessel flies
     /// at the speed the mode is named for, on long swooping legs it can PITCH through - it
     /// pitches (50 deg/s) better than it yaws (30), which is why the course is cut more out of
     /// its plane than Headlong's.</para>
@@ -155,6 +159,82 @@ namespace CosmicShore.Gameplay
         /// <summary>Speed the Manta settles at through a corner of <paramref name="radius"/> on Soar alone.</summary>
         public static float FastestSoarSpeedForCorner(float radius) =>
             SpeedAtBoost(FastestSoarForCorner(radius));
+
+        // ── The curve as the race is FLOWN: Soar at a Time level (2026-11-11) ─────────────
+        // The curves above are the 2026-11-04 cut, made when Soar was live at Time 0 and Time scaled Soar alone. Since
+        // 2026-11-07 (96952eb939, c4052cb70e) Soar is the Manta's Time LEVEL-5 upgrade (dark below Time 5, relocked
+        // below 4), and Time raises the cruise too. The course is still cut on the curves above (so every seed is the
+        // same course it was and the card art stands); the race is FLOWN on these, and the heat grades on them
+        // (RedlineHeat). REDLINE.md section 0 has what that changed.
+
+        /// <summary>`ThrottleScalerMultiplier` on Manta.prefab: 1 -> 1.5 over Time 0-10, so +5% cruise a level.</summary>
+        public const float MantaCruisePerTimeLevel = 0.05f;
+
+        /// <summary>`BoostSpeedMultiplier` on Manta.prefab: 1 -> 1.3 over Time 0-10, so +3% Soar a level (while boosting).</summary>
+        public const float MantaSoarPerTimeLevel = 0.03f;
+
+        /// <summary>The Manta's ability map (Manta.asset, Time): Soar is the level-5 upgrade.</summary>
+        public const int MantaSoarUnlockLevel = 5;
+
+        /// <summary>The Manta's ability map (Manta.asset, Time): Soar relocks below this level.</summary>
+        public const int MantaSoarRelockBelowLevel = 4;
+
+        /// <summary>The top of the earned band (overcharge past 10 is not read here).</summary>
+        public const int MantaMaxTimeLevel = 10;
+
+        /// <summary>
+        /// The Time level every Manta starts the race at, I1-I4: the card's <c>StartingElements</c>, written by
+        /// <c>Tools/Build/author_redline_assets.py</c> from this line. <b>6 at every level</b>: Soar is lit from the
+        /// gun (it unlocks at 5) with two petals of headroom before it relocks (below 4). Before 2026-11-11 the card
+        /// seeded nothing, so every Manta, human and AI, started at Time 0 with Soar dark and flew the "crazy fast" race
+        /// at 180 u/s until a fifth Time crystal lit it (never at I1).
+        /// </summary>
+        public static readonly int[] StartingTimeLevelByIntensity = { 6, 6, 6, 6 };
+
+        public static int StartingTimeLevel(int intensity) =>
+            StartingTimeLevelByIntensity[Mathf.Clamp(intensity, 1, StartingTimeLevelByIntensity.Length) - 1];
+
+        static int ClampLevel(int timeLevel) => Mathf.Clamp(timeLevel, 0, MantaMaxTimeLevel);
+
+        /// <summary>Is Soar live at <paramref name="timeLevel"/> (climbing; a Manta falling from above relocks below 4)?</summary>
+        public static bool SoarLit(int timeLevel) => timeLevel >= MantaSoarUnlockLevel;
+
+        /// <summary>Cruise at <paramref name="timeLevel"/>, throttle buried, no Soar: 180 x (1 + 0.05 L).</summary>
+        public static float CruiseAt(int timeLevel) =>
+            MantaThrottleScaler * (1f + MantaCruisePerTimeLevel * ClampLevel(timeLevel)) + MantaMinimumSpeed;
+
+        /// <summary>
+        /// Speed with both triggers at <paramref name="soar"/> at <paramref name="timeLevel"/>: the cruise, x (1 + 3s) x the
+        /// Time level's Soar multiplier while boosting (<c>VesselTransformer.CurrentBoostAmount</c>; the executor boosts
+        /// over a 0.01 overlap). Cruise alone while Soar is dark.
+        /// </summary>
+        public static float SoarSpeed(float soar, int timeLevel)
+        {
+            float s = Mathf.Clamp01(soar);
+            float cruise = CruiseAt(timeLevel);
+            if (s <= 0.01f || !SoarLit(timeLevel)) return cruise;
+            return cruise * (1f + (MantaBoostMultiplier - 1f) * s) * (1f + MantaSoarPerTimeLevel * ClampLevel(timeLevel));
+        }
+
+        /// <summary>Full Soar at <paramref name="timeLevel"/>: 1104 u/s at Time 6, 1404 at Time 10.</summary>
+        public static float SoarTop(int timeLevel) => SoarSpeed(1f, timeLevel);
+
+        /// <summary>The circle the stick alone holds at <paramref name="speed"/> (0.2 v + 30 deg/s, no trigger difference).</summary>
+        public static float StickRadiusAt(float speed)
+        {
+            float omega = speed * MantaRotationThrottleScaler + MantaTurnScaler;
+            return omega <= 1e-4f ? float.PositiveInfinity : speed / (omega * Mathf.Deg2Rad);
+        }
+
+        /// <summary>Both triggers at <paramref name="soar"/> at <paramref name="timeLevel"/>, stick hard over.</summary>
+        public static float SoarRadius(float soar, int timeLevel) => StickRadiusAt(SoarSpeed(soar, timeLevel));
+
+        /// <summary>Flat out at <paramref name="timeLevel"/>: 252 u at Time 6, 259 at Time 10.</summary>
+        public static float FullSoarRadius(int timeLevel) => SoarRadius(1f, timeLevel);
+
+        /// <summary>Both triggers released, the stick alone, at cruise: 175 u at Time 6, 184 at Time 10. A corner tighter
+        /// than this needs the trigger DIFFERENCE (Yawstery, the Manta's Time turn).</summary>
+        public static float StickAloneRadius(int timeLevel) => StickRadiusAt(CruiseAt(timeLevel));
 
         /// <summary>
         /// The shipped circuit per intensity. <b>INTENSITY IS WHAT MIX OF CORNERS A LAP ASKS

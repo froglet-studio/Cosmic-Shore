@@ -51,10 +51,10 @@ namespace CosmicShore.UI
         [SerializeField] RectTransform cardColumn;
         [Tooltip("The space between the map and the edge view under it, in the map column.")]
         [SerializeField] float edgeGap = 12f;
-        [Tooltip("The Voyages tab as Shombith picked it (Docs/MENU_REDESIGN_B.md sections 170-172): the Sea table - the " +
-                 "voyages as chips, the map lying back over its edge view, the squad's seats with their steppers (Rev 89 " +
-                 "A), built by VoyageBoard over this page; the Saga, Quests and Episodes pages take the same table (Rev " +
-                 "90). Off: the map column and the voyage cards as before.")]
+        [Tooltip("The Voyages tab as Shombith picked it (Docs/MENU_REDESIGN_B.md sections 180-184): two screens built by " +
+                 "VoyageBoard over this page - the voyage on the flat map with its explorer, then Configure squad (Rev 98 " +
+                 "1A and 2D); the Saga, Quests and Episodes pages are the Sea table (Rev 90, sections 171-172). Off: the " +
+                 "map column and the voyage cards as before.")]
         [SerializeField] bool board = true;
         [Tooltip("The Saga tab is locked (Shombith, 2026-11-12: \"lock saga\"): its table is dimmed and says Coming soon, " +
                  "no part is listed and nothing launches from it. Off: the saga's parts, the squad and Set sail.")]
@@ -99,7 +99,11 @@ namespace CosmicShore.UI
 
         void OnDestroy()
         {
-            if (_board) _board.SquadChanged -= Refresh;
+            if (_board)
+            {
+                _board.SquadChanged -= Refresh;
+                _board.ScreenChanged -= Refresh;
+            }
             if (!_card) return;
             _card.Closed -= CloseCard;
             _card.Step -= StepCard;
@@ -242,7 +246,7 @@ namespace CosmicShore.UI
             if (!focused) Map(content, lines, style, here, null, _placeCaption);
         }
 
-        // ── The board (the Sea table, Rev 89 A) ──────────────────────────────
+        // ── The board (the Voyages tab as two screens, Rev 98 1A and 2D) ──────────────────────────────
 
         /// <summary>
         /// Draw the Voyages tab as the board: one row per voyage on offer (and the Ark escort), the open one framed on the
@@ -260,13 +264,9 @@ namespace CosmicShore.UI
             if (grid && grid != transform) grid.gameObject.SetActive(false);
             _boardRows.Clear();
             var map = EnsureMap();
-            // The board's map is the course, lying back: no tier ladder or readout over it (VoyageSlab).
-            if (map)
-            {
-                map.Plain = true;
-                // The table needs the map column to stand in; without one the map stays flat above the page.
-                map.Tilt = mapColumn;
-            }
+            // The voyage screen's map is the explorer, flat: its tier ladder, readout, drag, pinch and wheel, and a press
+            // on a place sets the course there (Rev 98 1A). Behind the squad screen it is the course alone.
+            if (map) map.Plain = _board.OnSquadScreen;
             FitBoardColumn();
 
             // The escort or a job under way: its one row, open, Set sail dark.
@@ -358,6 +358,7 @@ namespace CosmicShore.UI
             if (lines == null || transform is not RectTransform page) return false;
             _board = VoyageBoard.Create(page, template ? template.LabelTemplate : null, vessels, lines);
             _board.SquadChanged += Refresh;
+            _board.ScreenChanged += Refresh;
             // The window's tabs as the board draws them: plain words, the shown one underlined, one step down the type
             // scale (Rev 88: "the top texts are too big").
             var style = VoyageBoardStyleSO.Load();
@@ -383,12 +384,13 @@ namespace CosmicShore.UI
             return true;
         }
 
-        /// <summary>The table in the course column: the map lying over the edge view, its front face (Rev 89 A).</summary>
+        /// <summary>The table in the course column: the map over its edge-on view (Rev 98 1A); behind the squad screen
+        /// the map alone, over the whole page.</summary>
         void FitBoardColumn()
         {
             if (!mapColumn || !_board) return;
             EnsureEdge();
-            _board.FitSlab(_mapHost, _edgeHost);
+            _board.FitTable(_mapHost, _edgeHost);
         }
 
         static VoyageBoard.Row BoardRow(VoyageLines lines, VoyageOpenCard.Model model, int index, CrewPerson person)

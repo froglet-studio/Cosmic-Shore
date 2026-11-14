@@ -45,6 +45,9 @@ namespace CosmicShore.UI
         [Header("Motion")]
         [Tooltip("Everything but the backdrop: fades out as the gate starts.")]
         [SerializeField] CanvasGroup content;
+        [Tooltip("The sea's drifting fields, drawn between the cover's black base and its sea lines. They have no hole " +
+                 "of their own, so they fade out with the content as the gate starts, before the hole has grown.")]
+        [SerializeField] CanvasGroup backdrop;
         [Tooltip("Seconds from the arena being ready to the hole having grown past the screen.")]
         [SerializeField, Min(0.3f)] float gateSeconds = 1.7f;
         [Tooltip("The hole's radius once it has settled at the centre, before it bursts.")]
@@ -85,6 +88,7 @@ namespace CosmicShore.UI
             foreach (var c in cover)
                 if (c) c.SetAperture(Vector2.zero, 0f);
             if (content) content.alpha = 1f;
+            if (backdrop) backdrop.alpha = 1f;
             if (gateRing) gateRing.enabled = false;
             if (tour) tour.Begin();
             if (content) KitEntrance.ReplayUnder(content.transform);
@@ -129,7 +133,9 @@ namespace CosmicShore.UI
                 t += Mathf.Min(Time.unscaledDeltaTime, 1f / 20f);
 
                 // The done state is read first, then the tour and the bar leave.
-                if (content) content.alpha = 1f - KitMotion.Ease(KitEase.OutCubic, Mathf.Clamp01((t - tHold) / tExit));
+                float shown = 1f - KitMotion.Ease(KitEase.OutCubic, Mathf.Clamp01((t - tHold) / tExit));
+                if (content) content.alpha = shown;
+                if (backdrop) backdrop.alpha = shown;
 
                 // The hole: opens at the centre and settles, then bursts.
                 float radius;

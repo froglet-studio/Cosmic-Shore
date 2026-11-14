@@ -3908,6 +3908,78 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens"
+    },
+    "R97Squad.dc.html": {
+      "x": 0,
+      "y": 25500,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 97 Squad - Squad presets, three ways - interactive",
+      "is_interactive": true
+    },
+    "R97Choices.dc.html": {
+      "x": 2100,
+      "y": 25500,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 97 Choices - The seat's choices, three ways - interactive",
+      "is_interactive": true
+    },
+    "R97S1A.dc.html": {
+      "x": 4200,
+      "y": 25500,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 97 S1A - 1A with Formation squads - interactive",
+      "is_interactive": true
+    },
+    "R97S2D.dc.html": {
+      "x": 0,
+      "y": 26760,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 97 S2D - 2D with the Shelf - interactive",
+      "is_interactive": true
+    },
+    "R97S2G.dc.html": {
+      "x": 2100,
+      "y": 26760,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 97 S2G - 2G Three players - leader's screen - interactive",
+      "is_interactive": true
+    },
+    "R97S2H.dc.html": {
+      "x": 4200,
+      "y": 26760,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 97 S2H - 2H Three players - a friend's screen - interactive",
+      "is_interactive": true
+    },
+    "R98S1A.dc.html": {
+      "x": 0,
+      "y": 29300,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 98 S1A - 1A - the voyage on the map - interactive",
+      "is_interactive": true
+    },
+    "R98S2D.dc.html": {
+      "x": 2100,
+      "y": 29300,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 98 S2D - 2D - the squad - interactive",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -4036,6 +4108,8 @@
     "sec-rev95",
     "sec-rev96",
     "sec-rev94",
+    "sec-rev97",
+    "sec-rev98",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4120,7 +4194,9 @@
     "rev91",
     "rev94",
     "rev95",
-    "rev96"
+    "rev96",
+    "rev97",
+    "rev98"
   ],
   "notes": {
     "hud_end": {
@@ -6667,6 +6743,54 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "loading-screens"
+    },
+    "rev97": {
+      "kind": "title1",
+      "text": "Rev 97 - Voyages: the squad presets and the seat's choices redrawn; three players picking at once",
+      "x": 0,
+      "y": 25100,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev97": {
+      "kind": "rect",
+      "x": -160,
+      "y": 24940,
+      "w": 6440,
+      "h": 3060,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev98": {
+      "kind": "title1",
+      "text": "Rev 98 - Voyages: 1A and 2D, Shombith's picks, with room between the words",
+      "x": 0,
+      "y": 28900,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev98": {
+      "kind": "rect",
+      "x": -160,
+      "y": 28740,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -7143,7 +7267,15 @@
     "R96S2D.dc.html",
     "R96S2E.dc.html",
     "R96S2F.dc.html",
-    "R96Notes.dc.html"
+    "R96Notes.dc.html",
+    "R97Squad.dc.html",
+    "R97Choices.dc.html",
+    "R97S1A.dc.html",
+    "R97S2D.dc.html",
+    "R97S2G.dc.html",
+    "R97S2H.dc.html",
+    "R98S1A.dc.html",
+    "R98S2D.dc.html"
   ],
   "pages": [
     {

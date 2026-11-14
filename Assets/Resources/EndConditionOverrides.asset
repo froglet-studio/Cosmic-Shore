@@ -69,7 +69,7 @@ MonoBehaviour:
   breakwaterLaps: 2
   skeinRingTarget: 24
   headlongGateTarget: 40
-  redlineGateTarget: 40
+  redlineGateTarget: 64
   grizzlyTimeGateTarget: 16
   slingshotGateTarget: 16
   warplineGateTarget: 10
@@ -144,7 +144,7 @@ MonoBehaviour:
   breakwaterLapsBuild: 2
   skeinRingTargetBuild: 24
   headlongGateTargetBuild: 40
-  redlineGateTargetBuild: 40
+  redlineGateTargetBuild: 64
   grizzlyTimeGateTargetBuild: 16
   slingshotGateTargetBuild: 16
   warplineGateTargetBuild: 10

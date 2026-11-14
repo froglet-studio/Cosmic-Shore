@@ -62,6 +62,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The current (newest) banked ability on trigger k, or null while its base power is current.</summary>
         internal Banked Current(int k) => k >= 0 && k < 2 && Banks[k].Count > 0 ? Banks[k][^1] : null;
 
+        /// <summary>The card picture of the ability current on trigger k (0 RT, 1 LT), or null while its base power is current:
+        /// the HUD shows it on the trigger's card (<c>HoneyguideHUDView</c>).</summary>
+        public Sprite CurrentTriggerIcon(int k) => Current(k)?.Def?.icon;
         /// <summary>Every use banked on trigger k (the chip's ticks).</summary>
         internal int BankedUses(int k)
         {

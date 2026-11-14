@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Jacks' vessel pass: authored element scaling, four level-5 cards, their own HUD (`claude/jacks-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/JACKS.md` § 2. The four element curves moved from `JacksMath`'s formulas onto
+`ElementalFloat` endpoints on `JacksConfigSO` (`dangerShare`, `herdBirthRate`, `ringScale`, `herdSpeed`), set to the
+lab's curves exactly, so gameplay should not change. `JacksHUDVariant` + `JacksHUDView` (forked from the Rhino's by
+`author_jacks_hud.py`, the shared fork now taking a source) replace RhinoHUDVariant, whose reworked view built a katana and
+reach blade over the Charge and Space cards; four level-5 cards (Attack, Mass Clusters, Eat Shields, Second Decoy).
+Ran: `unity_refcompile` runtime and editor (0 errors in changed files), `element_ability_table.py Jacks` (4/4 scaling,
+4/4 L5), `author_jacks_assets.py --check`, `author_jacks_hud.py --check`, `author_{orca,wrasse,honeyguide}_hud.py --check`
+(no drift), `icon_kit/author.py jacks --check`. `author_jacks_assets.py --self-test` has 5 failures that are also on
+bleeding-edge (the hidden-skimmer container check), not from this change. Not run: Unity, `JacksScalingTests`,
+`JacksHUDTests`.
+
+1. Toybox, Jacks: the four cards show Danger Share, The Call, Wide and Decoys. No katana or blade drawn over any card,
+   and no console errors from the HUD at spawn.
+2. The Charge card's gauge still fills with the danger share, the herd count still sits on the Mass card, and Space lights
+   while the view is Wide.
+3. Reach level 5 in each element: that card swaps to Attack, Mass Clusters, Eat Shields or Second Decoy.
+4. Herd at a few element levels: the ring, the herd's speed and the share of danger creatures feel as before.
+
 ### 🔴 The Shrike's level-5 upgrades: Salvo, Armed Nests, Whipcrack (`claude/shrike-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` § 3 "Level-5 upgrades". Charge 5 Salvo (nest flora launch x2 as often while
@@ -323,6 +343,40 @@ headless: the generator `--check` (with a negative control), the `/arcadegame` �
 **First-pass tuning (not settled):** round 90 s; plant caps 36 / 30 / 24 / 18; omni 4 / 3 / 3 / 2; grazers
 6 / 9 / 12 / 15; cactus at 1.4x leaf (~32,900 volume mature); comeback 0.00003. The open question is the
 retire condition: does the garden matter against the trail (~42,000 volume a round of cruising)?
+### 🔴 Redline round 5: Soar from the gun, 8 laps, the AI race line, the heat (`Ys-bleeding-edge`, 2026-11-11, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `Assets/_Scripts/Controller/Arcade/REDLINE.md` section 0. The card starts every Manta at Time 6
+(`StartingElements`, from `RedlineCourse.StartingTimeLevelByIntensity`) so Soar (the Time level-5 upgrade) is lit from
+the gun; the race is 8 laps (64 gates); the AI Mantas fly a race line through the mouths' centres
+(`RedlineController.TryRaceLine`) at a throttle floor by difficulty (`AIThrottleFloorFor`, a new additive hook on
+`GateRaceController` that every other mode answers with its old `AIThrottleFloor`), with quicker Easy/Medium noses at
+I3-I4; and the local pilot's threads are graded and called (`RedlineHeat`, `RedlineController.Heat`, toasts 360-366, nine
+EMPTY FMOD slots). **Not compiled in Unity:** `redline_course_harness` compiled and ran `RedlineCourse`, `RedlineHeat` and
+their tests out of the editor (29/29, four negative controls); `RedlineController`, `RedlineController.Heat`,
+`GateRaceController` and `RedlineAISteeringTests` have not been compiled (no Unity was run in this worktree; ten
+sessions shared the machine).
+
+**Verify in editor:**
+1. Compile; run the EditMode tests `RedlineHeatTests`, `RedlineCourseTests`, `RedlineTimeCrystalsTests`,
+   `RedlineAISteeringTests` (the last has three new or changed tests: the nose rows, the throttle floor, the race line).
+2. Launch Redline at I1 with two players: the Manta starts with six Time petals, and both triggers buried go to ~1100
+   u/s within ~2 s. (Before this, Soar was dark at I1 for the whole race.) The goal row reads x/64.
+3. Thread a ring dead centre: a copy of its mouth grows off the gate and vanishes (redhot, flat out: a bigger one).
+   Three clean in a row: the toast "3 clean in a row". Off-centre or a miss: the streak ends silently.
+4. Finish a lap: "Lap 1 - N.Ns"; a faster later lap reads "Best lap yet". A lap threaded clean end to end: a chase
+   of shock rings round the circuit and "Clean lap N".
+5. At I4 take Time crystals to Time 10 and bury both triggers: once a race, "REDLINE - 13xx u/s" and every ring flares.
+6. Add AI Mantas at Easy and Legendary, I1 and I4: they race at the mouths' centres and finish (offline: Legendary
+   60/64/71/91 s, Easy 139/143/153/149 s for 8 laps at I1-I4). After a missed mouth they turn back and re-attack.
+7. Regression: Headlong, Grizzly Time and every other gate race unchanged (they answer `AIThrottleFloorFor` with their
+   own `AIThrottleFloor`).
+8. MPPM two clients: both peers see the same circuit and crystals; each sees only its OWN shock rings and heat toasts.
+
+**First-pass tuning:** start Time 6; 8 laps; throttle floors 0.7 / 0.85 / 1 / 1; nose rows I3 2.5/3/6/9, I4 4/5/6/9;
+clean 0.5 of the mouth, redhot 0.8 of full Soar, redline 1362 u/s; flare 1.6x / 2.6x over 0.45 s.
+
+---
+
 ### 🔴 Harvest, the Thresher's Space game (GameModes 88) (`claude/keen-rubin-rw7p6q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/HARVEST.md` (plan: `Docs/MassAndSpaceGames/THRESHER_SPACE.md`). A Thresher
@@ -22834,6 +22888,45 @@ Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generato
 3. **Codex > Ecology (Field Guide):** scroll the bottom strip left; tiles stop 16 px short of the "Friends" text, never over it.
 4. **Hangar > Upgrades, any hull:** "CHARGE CRYSTALS 0 HELD - 0 SPENT" is on its own row under the step line; nothing overlaps.
 
+## 🔴 The Voyages tab as two screens: Rev 98 1A and 2D (2026-11-13, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/sweet-mccarthy-ow25e2`, `Docs/MENU_REDESIGN_B.md` section 184. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code); the ship gates pass; `VoyageBoardTests` compiled, not run. **No Unity editor ran and
+nobody has seen it.** It replaces the Voyages tab of the entry below (the Saga, Quests and Episodes steps there still
+hold). Set a screenshot of each screen beside its Frogma board (Voyages tab: R98S1A, R98S2D) and report what differs.
+
+1. **Open the Voyage window.** The four tabs are plain words in capitals, the shown one underlined: **no dark boxes, no
+   LB / RB keys**. A click on a tab shows it. Change the colour set (or anything that re-themes the menu) and look
+   again: still no boxes. LB / RB on a pad slide the hub (Toy Box, Arcade, Arena, Voyage), not the window's tabs.
+2. **The voyage screen.** Left: a chip per voyage, taller than before, its two lines well apart, the open one with a
+   cyan bar. Middle: the HyperSea map, flat, with its tier ladder and readout, and the edge-on view under it. Right: the
+   voyage's name and numbers, SQUAD, one block per squad (name, who flies, three hulls in formation), CONFIGURE SQUAD,
+   SET SAIL.
+3. **Explore the map.** Drag, pinch or wheel; press + and - at its top right; press a tier on the ladder. Press a place
+   a voyage sails to: that voyage opens. Press another chip: the map frames that course.
+4. **Buttons.** Set sail and Configure squad have no box: solid in the middle, fading out to both ends. Nothing is
+   clipped at the ends and the words are readable.
+5. **Squads.** With two or more squads: press another squad's block. It lights, the other dims, and the voyages may
+   change (the pilots bring them).
+6. **Configure squad.** The squad screen: VOYAGES (back) and the voyage on one line at the top, the squads' names at the
+   right, three seats large, the choices under them, SAVE AS PRESET, a note, SET SAIL. The voyage's map is dimmed
+   behind and does not take the pointer.
+7. **A seat.** Your own seat is lit and underlined; the others are dimmed. Each shows the pilot, the hull, its place
+   (LEADER...), the vessel's name and one line of four parts. In your own squad press the AI seat: it becomes the lit
+   one and the choices change. A friend's seat does not respond.
+8. **The choices.** Vessel, Pilot, Element (four flowers of five petals), Artifact. No boxes; the taken one is lit and
+   underlined. Press another vessel: the seat's hull changes at once, and on your own seat the pilot becomes the one
+   kept for that vessel in the Hangar. Press a pilot marked "Swaps with ...": the two seats swap pilots.
+9. **Save as preset.** A new squad appears among the names and becomes the one that sails. With four squads, or on a
+   joined squad, the button is dark.
+10. **Back, and Set sail from both screens.** VOYAGES returns to the voyage screen with the same voyage open. Set sail
+    launches the voyage from either screen.
+11. **Words.** Blank `BoardHangarNote` in `VoyageContent.asset`: the note is gone, nothing else moves.
+12. **Other tabs.** Saga (locked), Quests, Episodes still draw; their buttons have the soft look too and their chips are
+    taller.
+13. **Other shapes.** Phone, iPad, 21:9: nothing overlaps on either screen. Not tested at all.
+14. **Known gaps** (section 184): no lobby line, no blur behind the squad screen, the pad does not press X / B / Y.
+
 ## 🔴 The Voyage window as the Sea table: Rev 89 A and Rev 90 (2026-11-12, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/sweet-mccarthy-ow25e2`, `Docs/MENU_REDESIGN_B.md` section 172. Compiled with `unity_refcompile` (player and
@@ -23270,3 +23363,152 @@ editor: this is the first screen of the game, so run step 1 before anything else
    were still growing in the scene being left, check the bar does not start above 0.
 8. A portrait or 4:3 Game view: the stage shrinks to fit.
 9. Profiler with the splash faded out: no `PosterDrift` or `BootStepBar` cost, and 0 GC per frame while it is visible.
+
+## 🔴 The boot reveal into the Toy Box (2026-11-13, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/gracious-faraday-h2ny3a`. Record: `Docs/MENU_REDESIGN_B.md` section 185. Compiled against the Unity
+reference assemblies (player and editor); `author_start_flow.py --check` and `--self-test` clean.
+
+1. Run EditMode tests `SceneTransitionManagerTests` and `BootPosterTests`; all pass.
+2. Open `Bootstrap.unity` and press Play. Watch the Console from the first frame: no exception from `BootStepBar` or
+   `BootLoadProgress`, and the bar shows a number in front of its `%` from the start.
+3. Froglet's logo sits in the bottom-right corner under the percentage, on the splash and on the sign-in scene.
+4. When the bar says Ready: the splash dissolves over about a second, eased, while the poster grows slightly; the Toy
+   Box comes into view through it. It must never vanish in one frame.
+5. The menu's screen elements play their entrances as the world appears, not before.
+6. Profiler, Timeline, on the reveal: the `GC.Collect` frame and the load report's write are under the opaque splash
+   or after the fade, never inside it; the fade's frames stay smooth.
+7. Play a match and return to the menu: the cover lifts the same way, and the poster shrinks back into place when the
+   splash comes back over the world at the start of the return.
+8. Note how long the frame that activates Menu_Main takes (while the bar is at Loading profile) and send it: that
+   frame is the remaining lag, and the next fix needs its profile.
+## Scarab Rally: Blast Run only at I4 (2026-11-13, `claude/project-thread-v8enx0`)
+
+Not run in a Unity editor (cloud session; unity_refcompile editor config: 0 errors in changed files). Hand test:
+1. Arcade > Scarab Rally at I2 with three AI Scarabs: no block fields, doors or key crystals on any leg; the rings are the race.
+2. The AI Scarabs never turn off the line for a crystal.
+3. At I4 the block fields are still laid as before.
+4. Switchback at I1-I4 is unchanged (Blast Run on every intensity).
+
+## 🔴 Switchback I4: plain gauntlet seals and the retuned AI pace (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-j3xxyz`. Record: `Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md`, `SWITCHBACK.md` "The I4
+gauntlet, softened". The changed files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors
+in changed files; the 30 errors it reports are in multiplayer and camera files this change does not touch, and fail the
+same on `bleeding-edge`). The 76 shipped Switchback layout and planner tests pass headless (`switchback_sim_harness/run.sh
+tests`); no Unity editor ran.
+
+1. Run the EditMode tests `SwitchbackBlastRunTests` and `SwitchbackAISteeringTests`.
+2. Arcade, Switchback, Dolphin, I4, seed FIXED (45_504). At a gate's door, the eye's seal is nine plain prisms: ramming
+   it slows the Dolphin, it never stops it dead; a key's blast still clears it.
+3. Same race with three AI seats at Easy, then at Medium: Medium finishes ahead of Easy (offline Easy ~176 s, Medium ~167).
+4. Scarab Rally I4 is unchanged (no seals there).
+
+## 🔴 The loading screen's sea and motion (Rev 91 F, the rest) (2026-11-13, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/gracious-faraday-h2ny3a`. Record: `Docs/MENU_REDESIGN_B.md` section 186. Compiled against the Unity
+reference assemblies; `author_ingame_hud.py --check` and `--self-test` clean.
+
+1. Launch any arcade mode from Menu_Main. Behind the tour: three soft blue fields drifting slowly under the sea lines,
+   never popping or jumping; the sea lines still slide.
+2. On The Ark chapter the Ark drifts sideways with a slight turn; on the Vessels chapter the Sparrow bobs up and down.
+   Both move smoothly as their chapter cross-fades in.
+3. At Ready, as the hex opens, the fields fade with the words and the bar: nothing covers the arena once the hole grows.
+4. Replay the mode: the fields are back at full strength on the next loading screen.
+5. Profiler during the loading screen: no GC per frame from `PosterDrift`.
+
+## 🔴 Goby: Vortex Steal (Charge 5) and the four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/goby-vortex-steal`. The changed files compile clean against the Unity reference assemblies
+(`unity_refcompile`: 0 errors in changed files; the 30 it reports are UGS/party files this change does not touch).
+`author_goby_assets.py --check`, `author_goby_hud.py --check` and `icon_kit/author.py goby --check` clean; no Unity editor ran.
+
+1. Goby & Pistol in Freestyle, Charge to 5 (Toybox crystal dial): a Pistol vortex ring that hits a rival hull now adds the
+   petals to the Goby's bars (no loose crystals). Below Charge 4 the hit ejects them again.
+2. Same flight, fly the Pistol: at Charge 5 the Charge card shows Vortex Steal (the ring on a rival, petals coming back),
+   at Mass 5 the Mass card shows Fortress (the den with a shell). Swap to the Goby (D-pad): its Charge and Mass cards
+   keep their pictures; its Space card shows Deep Undertow at Space 5 and its Time card Phase Dart at Time 5.
+3. Drop an element below 4: that card's picture returns to the seat's ordinary card in both seats.
+## 🔴 Thresher: Anchor Ward (Time 5) and its Time card ward (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/thresher-anchor-ward`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `icon_kit/author.py thresher --check`
+clean; no Unity editor ran.
+
+1. Thresher in Freestyle, Time to 5. Plant (full LT) and orbit through a field of danger prisms: the bars do not drain.
+   Let go and fly through the same prisms: they drain as before.
+2. Still at Time 5, planted, take a rival pilot's hit: it lands (the ward is danger prisms only).
+3. Time card: planted at Time 5 shows the white ward arc and an orange danger prism outside it; flying free, or below
+   Time 4, neither shows.
+4. Swap vessels mid-plant: the next hull is not left warded (the executor revokes the grant on disable).
+## 🔴 Meerkat: the soliton's surface area as an ElementalFloat, and the four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/meerkat-space-scaling`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `author_meerkat_assets.py --check`,
+`studio_to_unity.py --vessel meerkat --check` and `icon_kit/author.py meerkat` gates clean; no Unity editor ran.
+(`author_meerkat_assets.py --self-test` was already failing on bleeding-edge: its HUD donor no longer carries the Stoat's
+sprites. Not touched here.)
+
+1. Open `MeerkatSolitonConfig.asset`: Space's area is one `Surface Area` ElementalFloat (6000 at rest, 18000 at Space 10,
+   floor 3000, element Space). `areaL0` / `areaL10` are gone.
+2. Meerkat in Freestyle, Space 0 then Space 10 (Toybox crystal dial): the reticle and the formed soliton are thinner at 0
+   and fatter at 10, as before. Drain Space below rest: the tunnel thins further but never closes.
+3. Each element to 5: Charge card shows Six Sentinels (three sentinels under one guard), Mass shows Danger Portal (six
+   spiked prisms), Space shows Steal (a hollow prism in, a solid one out), Time shows Boost Out (two long bars). Below 4
+   the ordinary card returns.
+## 🔴 Honeyguide: off the Sparrow's weapon data, and the banked upgrade's picture on the trigger cards (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/honeyguide-own-data`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `author_honeyguide_assets.py --check`
+and `--self-test`, `author_honeyguide_hud.py --check` clean; no Unity editor ran.
+
+1. Open `Honeyguide.prefab`: no component names `SkyBurstGunAction` or `FullAutoAction` (the Sparrow's). GunSprayAccuracy
+   reads `HoneyguidePeckAction`; the FireGunActionExecutor's default action is empty; VesselRearmOnPrismDestruction is off.
+2. Honeyguide in Freestyle: RT Pecks as before (straight, no spray); no warnings from the rearm or the missile executor.
+3. Make a Ratel upgrade card that banks on RT (e.g. Genesis Lance): the Space card shows its picture until its uses are
+   spent, then Peck again (or Piercing Pecks at Space 5). Same on LT with an LT card (e.g. Blink Drive) on the Charge card.
+4. Bank two different RT upgrades: the card shows the newer one; spend it and the older one's picture comes back.
+## 🔴 Rhino: its own plough HUD (sword code out) and the three level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/rhino-plough-hud`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `author_rhino_hud.py --check`,
+`author_hull_ability_rows.py --check`, `author_jacks_hud.py --check` and `icon_kit/author.py rhino --check` clean; no
+Unity editor ran. `RhinoKatanaPoseTests` and `RhinoBladeReachLayoutTests` were deleted with the code they tested (the
+Swordfish's copies keep their own tests).
+
+1. Open `RhinoHUDVariant.prefab`: the Charge, Mass and Space cards show Gore, Heft and Blade with no override from
+   Rhino.prefab; there are no Afterimage objects; the view has no katana / reach / afterimage fields.
+2. Rhino in Freestyle: the Charge plate still fills toward the gore speed and lights at a ram; the Time card still shows
+   the hull, the danger prism and, at Time 5 above 70% speed, the ward. No console errors from the HUD.
+3. Each of Charge, Mass, Space to 5: the card swaps to Gore Steal, Berm, Unstoppable; below 4 it swaps back.
+4. Jacks in Freestyle: its four cards are unchanged (its HUD is regenerated from the Rhino's without the dead afterimage
+   objects).
+## 🔴 Grizzly: Mass scaling, Charge 5 Battle Sight, four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/grizzly-kit-pass`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `icon_kit/author.py grizzly --check`
+clean; `element_ability_table.py Grizzly` shows 4/4 scaling and 4/4 L5 gates. No Unity editor ran.
+
+1. Fly the Grizzly in the Toybox; raise Mass. Trail prisms grow (x1 at rest, x2.5 at Mass 10; never below x0.4).
+2. Raise Charge to 5, dig in with rivals within ~600 m: each rival's hull turns its domain colour with a ringed halo,
+   visible through mass. Un-plant (or drop below Charge 4): the marks fade out within a quarter second, none stick.
+   Allies and your own hull are never marked; an AI Grizzly marks nothing on anyone's screen.
+3. At level 5 of each element the card swaps to its upgraded picture: Battle Sight (Charge), Claimed Fire (Mass),
+   Safe Detonation (Space), Vector Control (Time); below level 4 it swaps back.
+## 🔴 Swordfish: the Rhino-named sword classes and assets renamed (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/swordfish-rename`. Every class, script and asset only the Swordfish uses lost its Rhino name
+(`RhinoSword*` / `RhinoShieldSwipe*` / ... -> `Swordfish*`; `RhinoSwordCamera` -> `SwordfishSwordLengthCamera`, as
+`SwordfishSwordCamera` already exists); the sword's action assets moved to `VesselActions/Swordfish/`. Every .meta guid
+is kept, so no prefab or asset reference changes. Compiled against the Unity reference assemblies (`unity_refcompile`:
+0 errors in changed files). No Unity editor ran.
+
+1. Open the project: no "missing script" or "class name does not match file name" warnings for any Swordfish* script.
+2. Fly the Swordfish in the Toybox: swipe, energize, afterimages, combos and the Surge ring all work as before.
+3. The Rhino and the Jacks fly as before (they share only `RhinoAnimation` and `RhinoAIBoostPolicy`, which keep their names).
+
+## Scarab Rally I4: the next ring stays in sight (2026-11-14, `claude/project-thread-v8enx0`)
+
+Not run in a Unity editor. Headless: `switchback_sim_harness/run.sh tests` 78 passed (the new sight-line test failed
+85,404 / 147,200 on the old layout). Hand test: Scarab Rally I4, leave each ring and check the next lime ring's whole
+rim shows through the field; no doors on the rings; Switchback I1-I4 unchanged.

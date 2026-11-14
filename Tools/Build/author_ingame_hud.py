@@ -635,6 +635,7 @@ CN = dict(comp="6370090134550638757", root_go="470661231859203382", root_rt="540
 S.update(connect=script_guid("Assets/_Scripts/UI/ConnectingPanelController.cs"),
          gate=script_guid("Assets/_Scripts/UI/Elements/ConnectingGateView.cs"),
          tour=script_guid("Assets/_Scripts/UI/Elements/ConnectingTourView.cs"),
+         drift=script_guid("Assets/_Scripts/UI/Screens/PosterDrift.cs"),
          stepbar=K.kit_script("KitStepBar"),
          aperture=script_guid("Assets/_Scripts/UI/Elements/HexApertureGraphic.cs"),
          crystal=script_guid("Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs"),
@@ -787,12 +788,44 @@ def centred(box):
 
 # --- the cover and the ring (root children) -------------------------------------------------
 
+def motion(seconds, offset=((0, 0), (0, 0)), turn=(0, 0), scale=(1, 1), phase=0.0):
+    """PosterDrift: between two poses and back, eased both ways, seconds one way (the board's CSS `alternate`).
+    Offsets are canvas units with y UP; the board's CSS translates are y DOWN, so their y is negated here."""
+    return lambda ctx, go: K.mono(go, S["drift"],
+                                  f"  offsetFrom: {K.v2(*offset[0])}\n  turnFrom: {K.f32(turn[0])}\n  scaleFrom: {K.f32(scale[0])}\n"
+                                  f"  offsetTo: {K.v2(*offset[1])}\n  turnTo: {K.f32(turn[1])}\n  scaleTo: {K.f32(scale[1])}\n"
+                                  f"  seconds: {K.f32(seconds)}\n  phase: {K.f32(phase)}\n")
+
+
+# The board's sea (r91_loading.py `sea()`): three soft fields drifting slowly under the sea lines. Each is (token, alpha,
+# the board's box left/top/width/height, seconds one way, the CSS translate pair, the CSS scale pair). The board's two
+# indigos are not theme colours, so the fields wear the theme's blue family (SurfaceLight, NeutralLightest) and follow
+# the worn colour set like every other token.
+SEA_FIELDS = (("SurfaceLight", 0.50, (-300, -260, 1500, 1100), 26, ((-260, -120), (340, 140)), (1.0, 1.25)),
+              ("NeutralLightest", 0.30, (760, 120, 1500, 1100), 34, ((220, 90), (-320, -160)), (1.2, 1.0)),
+              ("SurfaceLight", 0.46, (260, 380, 1500, 1100), 42, ((-120, 160), (260, -80)), (1.1, 1.3)))
+# The board's chapter motions: the Ark drifts (16 s, a slight turn), the Vessels chapter's hull bobs (6 s).
+ARK_DRIFT = dict(seconds=16, offset=((-40, -14), (110, 22)), turn=(1, -1.5))
+HULL_BOB = dict(seconds=6, offset=((0, 10), (0, -12)))
+
+
+def sea_fields_node():
+    """The drifting fields, in their own group: the gate fades it with the content (it has no hole of its own)."""
+    n = N("Gate/Cover/Fields", "CoverFields", STRETCH)
+    n.add("cg", 225, H.canvas_group(True))
+    for i, (token, alpha, box, seconds, moves, scale) in enumerate(SEA_FIELDS):
+        f = gimg(n, f"Gate/Cover/Fields/Field{i}", f"Field{i + 1}", centred(box), tok(token, alpha), K.kit_sprite("kit_ring_glow"))
+        f.add("th", 114, H.themed(token, alpha))
+        f.add("drift", 114, motion(seconds, offset=tuple((x, -y) for x, y in moves), scale=scale))
+    return n
+
+
 def cover_nodes():
     base = N("Gate/Cover/Base", "CoverBase", STRETCH)
     base.add("cr", 222, K.canvas_renderer()).add("hole", 114, aperture(tok("SurfaceBlack")))
     sea = N("Gate/Cover/Sea", "CoverSea", STRETCH)
     sea.add("cr", 222, K.canvas_renderer()).add("hole", 114, aperture((1, 1, 1, 1), HM.M.SEA_WINDOW_MAT))
-    return [base, sea]
+    return [base, sea_fields_node(), sea]
 
 
 def ring_node():
@@ -820,11 +853,13 @@ def show_node(i):
         for j, callsign in enumerate(SQUAD_PILOTS):
             gimg(n, f"Tour/Show0/Pilot{j}", callsign, HM.TL(30 + j * (264 + 24), 60, 264, 336), white, PORTRAIT[callsign], preserve=True)
     elif i == 1:    # The Ark
-        gimg(n, "Tour/Show1/Ark", "Ark", HM.TL(40, 60, 800, 375), white, ARK_ART, preserve=True)
+        gimg(n, "Tour/Show1/Ark", "Ark", HM.TL(40, 60, 800, 375), white, ARK_ART, preserve=True) \
+            .add("drift", 114, motion(**ARK_DRIFT))
     elif i == 2:    # Pilots: one, large
         gimg(n, "Tour/Show2/Pilot", "Galleon", HM.TL(260, 0, 380, 484), white, PORTRAIT["Galleon"], preserve=True)
     elif i == 3:    # Vessels: a hull's class card
-        gimg(n, "Tour/Show3/Hull", "Sparrow", HM.TL(190, -20, 520, 520), white, HULL_CARD["Sparrow"], preserve=True)
+        gimg(n, "Tour/Show3/Hull", "Sparrow", HM.TL(190, -20, 520, 520), white, HULL_CARD["Sparrow"], preserve=True) \
+            .add("drift", 114, motion(**HULL_BOB))
     else:           # Toy Box: a hull in the Vessel Changer's hex
         gimg(n, "Tour/Show4/HexFill", "HexFill", HM.TL(190, 20, 520, 450), tok("SurfaceVeryDark", 0.88), K.kit_sprite("kit_hex_fill"))
         gimg(n, "Tour/Show4/HexLine", "HexLine", HM.TL(190, 20, 520, 450), tok("SurfaceLight"), K.kit_sprite("kit_hex_line2"))
@@ -949,7 +984,7 @@ def cut_nodes():
     return out
 
 
-GENERATED_CONNECT_KEYS = (("Gate/Cover/Base", "Gate/Cover/Sea", "Gate/Ring", "Gate/Entering", "Tour", "Gate/Bar", "Gate/Bar/Glint")
+GENERATED_CONNECT_KEYS = (("Gate/Cover/Base", "Gate/Cover/Fields", "Gate/Cover/Sea", "Gate/Ring", "Gate/Entering", "Tour", "Gate/Bar", "Gate/Bar/Glint")
                           + tuple(f"Gate/Bar/Cut{i}" for i in range(len(STEP_ENDS) - 1)))
 
 
@@ -961,7 +996,8 @@ def gate_view(p):
         + f"  gateRing: {{fileID: {c('Gate/Ring', 'hex')}}}\n"
         f"  enteringText: {{fileID: {c('Gate/Entering', 'tmp')}}}\n  loadingLabel: {{fileID: {c('Gate/Bar/Loading', 'tmp')}}}\n"
         f"  tour: {{fileID: {c('Tour', 'tour')}}}\n"
-        f"  content: {{fileID: {p.ctx.fid(CN['safe_go'] + '#cg')}}}\n  gateSeconds: 1.7\n  gateSettleRadius: 452\n")
+        f"  content: {{fileID: {p.ctx.fid(CN['safe_go'] + '#cg')}}}\n"
+        f"  backdrop: {{fileID: {c('Gate/Cover/Fields', 'cg')}}}\n  gateSeconds: 1.7\n  gateSettleRadius: 452\n")
 
 
 def controller_doc(p, gate_fid):
@@ -2040,6 +2076,23 @@ def validate(files):
     assert f"guid: {K.meta_guid('Assets/_Graphics/Codex/ethirion_omni.png')}" not in cn, "the Omni crystal is still on the loading screen"
     assert not re.search(r"^  m_FillRect:", cn, re.M), "the Slider is back on the track - it and KitStepBar would both anchor the fill"
 
+    # The board's sea and motion (section 186): the fields drift between the black base and the sea lines, in a group
+    # the gate fades with its content (they have no hole), and the Ark drifts and the Vessels hull bobs.
+    assert re.search(r"^  backdrop: \{fileID: %s\}" % p_fid("Gate/Cover/Fields#cg"), gv, re.M), \
+        "the gate does not fade the sea's fields - they would cover the arena as the hole opens"
+    order = re.findall(r"^  - \{fileID: (-?\d+)\}", cd[CN["root_rt"]].split("  m_Children:\n", 1)[1].split("  m_Father:", 1)[0], re.M)
+    base_i, fields_i, sea_i = (order.index(p_fid(k + "#rt")) for k in ("Gate/Cover/Base", "Gate/Cover/Fields", "Gate/Cover/Sea"))
+    assert base_i < fields_i < sea_i, "the sea's fields must draw over the black base and under the sea lines"
+    def drift_on(key):
+        go = p_fid(key + "#go")
+        return [d for d in cd.values() if f"guid: {S['drift']}, type: 3}}" in d and f"  m_GameObject: {{fileID: {go}}}" in d]
+    for i, (_, _, _, seconds, _, _) in enumerate(SEA_FIELDS):
+        got = drift_on(f"Gate/Cover/Fields/Field{i}")
+        assert len(got) == 1 and f"  seconds: {K.f32(seconds)}\n" in got[0], f"the sea's field {i + 1} does not drift"
+    for key, what in (("Tour/Show1/Ark", ARK_DRIFT), ("Tour/Show3/Hull", HULL_BOB)):
+        got = drift_on(key)
+        assert len(got) == 1 and f"  seconds: {K.f32(what['seconds'])}\n" in got[0], f"{key} lost the board's motion"
+
     # The tour: five chapters, each a picture and its words, one on show at rest, every word an authored field.
     tours = [f for f, d in cd.items() if f"guid: {S['tour']}, type: 3}}" in d]
     assert len(tours) == 1 and re.search(r"^  tour: \{fileID: %s\}" % tours[0], gv, re.M), "the tour is not the gate view's"
@@ -2315,6 +2368,10 @@ def self_test(files):
         ("the step bar unwired from the controller", lambda f: f.__setitem__(CONNECT, re.sub(
             r"(  stepBar: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
         ("the bar Lime before the load is done", sub(CONNECT, f"  fillToken: {K.TOKEN_INDEX['TextLight']}\n", f"  fillToken: {K.TOKEN_INDEX['Cta']}\n")),
+        ("the sea's fields left out of the gate's fade", lambda f: f.__setitem__(CONNECT, re.sub(
+            r"(  backdrop: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("the hull no longer bobs", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(
+            f"  seconds: {K.f32(HULL_BOB['seconds'])}\n", "  seconds: 9\n", 1))),
         ("the Slider back on the track", lambda f: f.__setitem__(CONNECT, f[CONNECT]
             + "--- !u!114 &7770002\nMonoBehaviour:\n  m_FillRect: {fileID: 0}\n")),
         ("the pilot rows drawn again", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(

@@ -1,0 +1,26 @@
+{
+  "id": "2026-11-13-your-redline-round-5-was-cherry-picked-o-bad20d",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-13T15:27:35+00:00",
+  "area": "Redline round 5 (Ys-bleeding-edge bb43f95c0e)",
+  "summary": "Your Redline round 5 was cherry-picked onto bleeding-edge unchanged except the Yastri-to-Yawstery rename (#1906) in REDLINE.md, manta_redline_sim.py and a RedlineCourse comment, so Soar is lit in Redline for the Manta's elemental-loop fun pass; when Ys-bleeding-edge next merges, take bleeding-edge's side of those lines.",
+  "why": "On bleeding-edge Soar was dark in Redline (Time level-5 upgrade since 2026-11-07, the card started at Time 0); Garrett asked for the Manta's Time step 1 now, and his standing rule is to merge rather than wait.",
+  "branch": "claude/project-thread-7gmifu",
+  "lane": "redline",
+  "commit": "d82b05de6",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/REDLINE.md",
+    "Assets/_Scripts/Controller/Arcade/Redline",
+    "Tools/Build/manta_redline_sim.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Manta"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "1"
+  }
+}

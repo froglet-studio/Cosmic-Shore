@@ -30,15 +30,35 @@ first DOMAIN whose lead runner threads the last ring wins (golf: finish time).
 | Hairpins | none | every 2nd corner (90-150°) | every 3rd (90-130°) | every 2nd (110-150°) |
 | Mouth twist (jitter / cap) | 15° / 40° | 25° / 50° | 40° / 60° | 40° / 60° |
 | Legs | 420-620 | 400-620 | 420-620 | 360-520 |
-| Course features | - | - | Switchback's prism walls along legs | Switchback's danger prisms beside the line |
+| Blast Run (fields, doors, keys) | none | none | none | Switchback's pre-gauntlet I4 field (unchanged) |
+
+**Blast Run only at I4 (2026-11-13, elemental loop step 1).** Switchback became Blast Run on 2026-10-29, two days
+after this race was cut, and Scarab Rally inherited it at every intensity: every second or third leg (every leg from I3)
+carried a block field across the line (a 26-30 u bore, sliders from I2), a door of danger rakes and a Dolphin key
+crystal on the line, which a Scarab's skimmer forges into a ball sitting in its own path; its AI also detoured for
+crystals. That is the Dolphin's question (blast your way through), and it punished the Scarab's: a drift's line runs
+wide of the bore, and the held throttle meets the field. The I3 walls and I4 danger prisms this table used to list had
+been retired with the Classic ladder. Now I1-I3 lay no Blast Run (`ScarabRallyCourse.LaysBlastRun`,
+`SwitchbackController.LaysBlastRun`), so the passive crystals stay and the rings are the whole race, and the AI flies
+the rings and nothing else (`AIDetoursForCrystals` false, Yash's rule). I4 keeps the field it had; whether the I4
+rung should keep it is the ladder's question (loop step 2).
+
+**I4 keeps the sight line (2026-11-14, Garrett's I4 playtest).** "It is too hard to find the rings ... the lime green is
+not visible when it is occluded by so many prisms ... respect sight lines from one ring to another." Two things hid the
+next ring: each blocked gate's DOOR (a plug across the port with an 18 u eye, in front of a 22 u ring) and the field's
+18 u bore. Now I4 without the gauntlet hangs no doors (`SwitchbackBlastRun.LaysDoors`; the door's keepout stays, so the
+field still leaves the mouth clear) and each field keeps a sight bore of the bigger mouth + 12 u (34 u at I4,
+`SwitchbackBlastRun.SightBore`). Measured headless (`SwitchbackBlastRunTests.WithoutTheGauntlet_TheNextRingIsInSightFromTheRingYouLeave`,
+40 Rally I4 courses, rays from five points of the ring you leave to eight points of the next rim, movers at four times):
+85,404 of 147,200 sight lines were blocked before, 0 after. The field stays: 3,112 prisms a course on average, against 3,374.
 
 Measured over 400 seeds per level: the walk never fails. Hairpin share is 0 / 50 / 32 / 50%, and the shortest leg
 is 420 / 400 / 420 / 360 u.
 
 ## What is reused, and what is new
 
-- **Reused whole:** `SwitchbackController` (`ScarabRallyController` subclasses it and overrides only the name and
-  the course source), `SwitchbackCourse.Generate`, `SwitchbackFeatures` (I3/I4), the Regatta AI steering
+- **Reused whole:** `SwitchbackController` (`ScarabRallyController` subclasses it and overrides the name, the course
+  source, Blast Run below I4 and the crystal detour), `SwitchbackCourse.Generate`, Blast Run at I4, the Regatta AI steering
   (`AICommitFromApproachPoint`), `RaceGateTurnMonitor`, `GateRaceScoringRuleSO`, `RaceGateObjectiveProvider` and the
   race-beat toasts.
 - **New:**

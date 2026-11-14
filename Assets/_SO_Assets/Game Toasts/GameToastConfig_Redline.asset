@@ -64,3 +64,73 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 60
     repeatWhileIdle: 1
+  - situation: 360
+    messageTemplate: 'Soar is lit from the gun. Bury both triggers, thread every ring through its heart, and ease both together only where a ring would get away from you'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 361
+    messageTemplate: '{0} clean in a row'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 362
+    messageTemplate: 'Lap {0} - {1}s'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 363
+    messageTemplate: 'Best lap yet - lap {0} in {1}s'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 364
+    messageTemplate: 'Clean lap {0} - every ring through its heart'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 365
+    messageTemplate: 'Soar is dark - a Time crystal lights it again'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 366
+    messageTemplate: 'REDLINE - {0} u/s'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

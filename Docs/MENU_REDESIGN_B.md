@@ -7417,7 +7417,7 @@ quest track (states from `GameModeProgressionService`). The table tops are a sti
 galaxy from `VoyagePlaceArt.Galaxy()`); only the Voyages table is the live map. Not seen in Unity.
 
 
-## 172. Built: the Voyage window as the Sea table - Rev 89 A and Rev 90 (2026-11-12, not seen in Unity)
+## 172. Built: the Voyage window as the Sea table - Rev 89 A and Rev 90 (2026-11-12; seen in Unity by Shombith, the tilt and the top bar rejected, redrawn in section 180)
 
 **Asked (Shombith, 2026-11-12, on Rev 89 A and Rev 90):** "Now build all of this in Unity".
 Affects: Garrett's Voyage window and galaxy map (`VoyageJobsView`, `VoyageMapGraphic`; his voyage data, launch and Ark
@@ -7788,3 +7788,284 @@ in the scene being left, a return bar could start above 0.
 Verified: `author_start_flow.py` nothing to write, `--check` and `--self-test` (eight new negative controls),
 `unity_refcompile` player and editor, `gates.sh`, `colour_trace.py --check`. Hand test: "Boot splash and sign-in scene:
 the poster" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 180. Rev 95 mockups: Voyages as two screens - the voyage on the map, then the squad (2026-11-12; Shombith picked 1A, the squad screens rejected, redrawn in section 181)
+
+**Asked (Shombith, 2026-11-12, with two screenshots of the built section 172 in Unity):**
+- "Image 1 : the top bar looks nothing like the design" (the tabs are still dark boxes).
+- "Image 2 : I dont like the preview earlier we could zoom in and out of the whole map, set course directly there which
+  is not possible."
+- "first screen in voyages is the left side list, that can stay, the middle becomes the preview with all features that
+  I mentioned earlier. Then we can have squad presets and set sail directly or if we have players in the friends lobby
+  with me and they are not in the squad we can have the configure your current squad or something like that but then
+  the second image can give us the options to select the vessel, pilot, artifact, element etc and then set sail. Create
+  3 mockups each for both the screens".
+
+**What the screenshots showed of the build (the first time a Voyage build of this redesign was seen in Unity):**
+- The tabs keep their dark boxes: `VoyageWindowTabs.Plain` does not remove them in the editor. Not fixed here; it is
+  fixed with the build of whichever boards are picked.
+- The tilt works as drawn (the map lies back, the edge view stands under it), and is rejected: a lying map cannot be
+  explored. The edge view's caption runs across the face in capitals, and the course's far end leaves the frame.
+
+**On the canvas:** tab **Voyages**, round "Rev 95 - Voyages as two screens: the voyage on the map, then the squad"
+(canvas version `1794524853-7ff6`), under Rev 90.
+- Copies: `Docs/MenuRedesignB/board/R95*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r95_voyages.py`, on Rev 89's.
+- All boards pass `frogma.py check`. `check_mockup.py` against `--baseline Docs/MenuRedesignB/board/R89A.dc.html` (a
+  budget of 98): the three screen 1 boards and 2B pass; **2A (118) and 2C (119) are over**, because they show every
+  seat's choices at once. The count is of the markup, with five steppers for each of three seats.
+- They were rendered locally with the canvas's own art, at rest and zoomed out, and looked at before publishing.
+
+**The map, in all three of screen 1:** flat, and the explorer again: a zoom ladder (Galaxy, Arm, Sector, Course) with +
+and -; zoomed out, each voyage's place is a mark with its name, and a press sets the course there and zooms to it. The
+edge-on view stays with it. The voyage list on the left is Rev 89's chips.
+
+**Screen 1, the voyage:**
+- **1A - Presets (recommended):** the map over its edge view. On the right the voyage's name and numbers, the squad
+  presets as cards (name, who flies, the three hulls), Configure squad, Set sail.
+- **1B - Wide map:** the map across the window; a foot bar holds the edge view, the voyage, the squad as a stepper
+  with its hulls, Configure squad and Set sail. The widest map, cropped top and bottom.
+- **1C - Briefing:** the map full height with the edge view inset at its foot. The right shows the squad's three seats
+  (hull, vessel, who) under the squad names.
+- **Configure squad** is on all three: a quiet button that opens the matching screen 2, and over it a line naming a
+  lobby friend who flies no seat ("Mirel is in your lobby, not in this squad").
+
+**Screen 2, the squad:**
+- **2A - Three seats (recommended):** a column per seat: pilot, vessel, who, hull, then Vessel, Pilot, Element and
+  Artifact as steppers. A seat that is not yours to change says whose it is.
+- **2B - Seat and picker:** the seats on the left; the picked seat's choice on the right as large tiles under Vessel,
+  Pilot, Element, Artifact tabs.
+- **2C - Roster:** a table, a row per seat and a stepper per choice.
+- In all three: the picked voyage and a way back at the head, the squad names, **Save as preset** and Set sail at the
+  foot. A seat of your own squad that is not yours has a fifth stepper, **Flown by**: the AI, or a lobby friend.
+- **Notes.**
+
+**Picked (Shombith, 2026-11-12): 1A; none of screen 2:** "S1A is good but I didnt like any of the second scren designs"
+(section 181).
+
+**Recommended: 1A with 2A.** 1A keeps Set sail one press from a preset, which is the common case; 2A shows the whole
+squad at once, so a change to one seat is seen against the others.
+
+**New rules these draw, to confirm with the pick:** a lobby friend can be given a seat from the Voyage window (Flown
+by), and a changed squad can be saved as a preset here. Today both happen in the Ark (`SquadsPage`).
+
+**Differs from the build (section 172):** the tilt goes (`VoyageMapGraphic.Tilt`, `VoyageSlab` for the Voyages tab) and
+the map is the explorer again (not `Plain`), with places pressable; the seats and steppers leave the Voyages tab for a
+second screen; the right column becomes the voyage's name, the presets and two buttons. The Saga, Quests and Episodes
+tables (Rev 90) are not redrawn here.
+
+
+## 181. Rev 96 mockups: the squad screen - a backdrop, soft buttons, one press (2026-11-12; Shombith disliked the squad preset plates and the 2D tray with its foot, redrawn in section 182)
+
+**Asked (Shombith, 2026-11-12, on Rev 95):** "S1A is good but I didnt like any of the second scren designs, the bg is
+too bland and also the button in both the screens are too hard not soft hard soft. Clicking through so many vessels and
+pilots and artifacts also seems like a drag, we need to make the experience smoother for the users".
+
+**On the canvas:** tab **Voyages**, round "Rev 96 - the squad screen: a backdrop, soft buttons, one press" (canvas
+version `1794525384-1630`), under Rev 95.
+- Copies: `Docs/MenuRedesignB/board/R96*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r96_voyages.py`, on Rev 95's.
+- All boards pass `frogma.py check`. `check_mockup.py` against `--baseline Docs/MenuRedesignB/board/R89A.dc.html` (a
+  budget of 98): 1A passes; **2D (103), 2E (99) and 2F (101) are just over**, because every choice is on screen; the
+  Buttons board fails the one-Lime rule by design (it compares four Set sails); and the soft-ended buttons draw a
+  contrast warning at their faded ends, where there are no words.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**Three answers, in every board:**
+- **The backdrop.** The squad stands on a lit deck over the sea of the voyage that was picked: its own course map,
+  blurred and dimmed, with the deck's lines running away under the hulls.
+- **The buttons.** "Soft hard soft" is read as the fill being solid in the middle and fading out to both ends, with no
+  box (so no cut corners). **This is a reading, not a certainty**: the Buttons board sets it beside the buttons as
+  they were and two other readings (Soft glow: the slab stays, a soft light round it; Soft face: the fill eases from
+  top to foot under one bright line). The style guide's section 4 says two cut corners and nothing rounded; Soft ends
+  departs from it, the other two do not. Whichever is picked becomes the rule for every button.
+- **One press.** No steppers. Every choice is on screen. Picking a vessel brings the pilot, element and artifact kept
+  for it (the Hangar's kit), so most seats are one press.
+
+**The boards:**
+- **1A:** screen 1 as picked (Rev 95 1A) with the soft buttons. Configure squad opens 2D.
+- **Buttons:** the four button looks side by side.
+- **2D - Deck (recommended):** the three seats stand across the deck, each its pilot and hull; a press picks the seat
+  being changed (lit, the others dimmed). One tray under them holds its four strips: six hulls, four pilots (one who
+  flies another seat says "Swaps with ..."), four elements, five artifacts.
+- **2E - Kits:** the picked seat large on the left under a row of the three seats. Six whole kits (hull, pilot,
+  element, artifact), one press sets all four; element and artifact can still be changed alone.
+- **2F - Showroom:** the seats on a rail, the picked seat as the hero, its four strips in a panel on the right.
+- All three: the voyage and a way back at the head, the squad names, Save as preset and Set sail at the foot.
+- **Notes.**
+
+**Recommended: 2D.** It is the only one that shows the whole squad at full size while one seat is changed.
+
+**New rules these draw, to confirm with the pick:** a vessel brings a whole kit (today a vessel change brings only the
+pilot kept for it in the Hangar, `PilotLoadoutStore.GetPilot`); Save as preset and a lobby friend's seat, as section 180.
+Rev 95's "Flown by" is not drawn on these boards.
+
+**Differs from the build (section 172):** as section 180, and the steppers (`VoyageSquadColumn`) are replaced by
+strips of tiles; the backdrop needs the picked voyage's map drawn behind the squad screen.
+
+## 182. Rev 97 mockups: the squad presets and the seat's choices redrawn; three players picking at once (2026-11-12; Shombith picked 1A and 2D, "the texts are too cramped", respaced in section 183)
+
+**Asked (Shombith, on Rev 96, with two screenshots - the Squad plates of 1A, and 2D's tray with its foot):** "These
+screenshots are the parts I do not like". While the round was drawn: "think if you are configuring, 3 players are
+selecting their vessel, pilot, element etc it should be a good experience", and "wrong elemental icons, check ecology
+for the correct ones the ones with petals are the ones we should use".
+
+**Read as (mine, not his words):** both parts were rows of dark boxes with small pictures. Here no choice has a box:
+pictures are larger and stand on the screen, the picked one is lit and underlined in Jade, the rest are dimmed.
+
+**Drawn** (tab Voyages, title note `rev97`, generator `Docs/MenuRedesignB/rounds/r97_voyages.py`):
+
+- **Squad** - the squad presets three ways: Formation (three hulls in formation, the leader in front), Carousel (one
+  squad large, step to the next), Crew (the three pilots and what each flies).
+- **Choices** - the seat's choices three ways: Shelf (four open groups), Two rows (the vessels across the whole width),
+  Focus (each group shows its picked choice large).
+- **1A** - screen 1 with the Formation presets. **2D** - the Deck with the Shelf.
+- **2G, 2H - three players at once.** Every seat is a lane. On each player's screen their own lane is open with every
+  choice in it; the other two seats are large pictures that change as their players pick, each with Choosing or Ready.
+  2G is the leader's screen: the AI seat has Change, the button is Set sail. 2H is a friend's screen: the button is
+  Ready, and the leader sets sail.
+- **Element marks** are the HUD's flowers (`ElementalBarsView`): five copies of the element's petal
+  (`Assets/Resources/ElementPetals`) turned 72 degrees about the centre, white, no colour.
+
+**Recommended: 2G / 2H with Formation presets on 1A.** They are the only squad screens where three people pick at the
+same time without sharing one cursor.
+
+**New rules these draw, to confirm with the pick:** a Ready state per player and Set sail only for the leader; a
+friend's picks shown live on the others' screens; and section 181's (a vessel brings its kit, Save as preset).
+
+**Gate:** `check_mockup.py` noise is over the budget on every screen that shows all choices (2D 107, 2G and 2H 188
+against 98); the two compare boards carry three Lime buttons each because they show a part three times.
+
+**Differs from the build (section 172):** as sections 180 and 181; the game has no per-player Ready in the Voyage
+window and no element flower outside the HUD.
+
+## 183. Rev 98 mockups: 1A and 2D with room between the words (2026-11-12; Shombith: "Yes, build these two screens in Unity", built in section 184)
+
+**Asked (Shombith, on Rev 97):** "s2d and s1a but the thing is that everywhere the texts are too cramped up together.
+Can we do something about that?"
+
+**Picked so far:** screen 1 is 1A (the voyage list, the flat map explorer over the edge-on view, the voyage's name,
+the squads as formations, Configure squad, Set sail). Screen 2 is 2D (the three seats large, the picked seat's choices
+on the Shelf). The three-player lanes (2G, 2H) were not picked.
+
+**Drawn** (tab Voyages, title note `rev98`, generator `Docs/MenuRedesignB/rounds/r98_voyages.py`): the same two
+screens to one spacing rule, which is also the rule for the build:
+
+- lines of one group stand at least 10 px apart, line height 1.4 or more;
+- groups stand at least 28 px apart; a label stands 16 px or more above what it labels;
+- no text wraps inside a tile: the tile is made wide enough;
+- two short lines that said one thing are one line with wide gaps between its parts.
+
+What moved: the voyage chips are 96 high (76) with their two lines 38 apart; the zoom ladder's rows are 36 high;
+the voyage's name block has 12-20 px between its lines and 40 px to the squads; a squad is its name, who flies under
+it, and its formation beside them; a seat is role, vessel, then one line of player, pilot, element, artifact; the
+Shelf's groups are 28 px apart with wider tiles, and a pilot's note stays on one line.
+
+**Gate:** `check_mockup.py` passes 1A; 2D is over the noise budget (113 against 98) because every choice is on screen.
+
+**Differs from the build (section 172):** as sections 180 to 182.
+
+## 184. Built: the Voyages tab as two screens - Rev 98 1A and 2D (2026-11-13, not seen in Unity)
+
+**Asked (Shombith, on Rev 98):** "Yes, build these two screens in Unity".
+
+**Built** (branch `claude/sweet-mccarthy-ow25e2`; no Unity editor ran, so nobody has seen it):
+
+- **The voyage screen** (`VoyageBoard`, rewritten): the voyage chips (96 high, their two lines apart); the window's own
+  HyperSea map, flat, with its explorer back (the tier ladder, readout, drag, pinch, wheel, a press on a place sets the
+  course there) and a + and - over it (`VoyageMapGraphic.ZoomStep`), over the edge-on view; on the right the voyage's
+  name and numbers, the squads as formations (name, who flies, three hulls), Configure squad and Set sail.
+- **The squad screen** (`VoyageSquadDeck`, new; `VoyageBoard.ShowScreen`): the way back and the voyage on one line, the
+  squads' names, the three seats large, the picked seat's choices on the shelf (Vessel, Pilot, Element, Artifact as
+  open pictures; one press takes and saves), Save as preset, Set sail. The voyage's map stands dimmed behind it.
+- **The squad rules in one place** (`VoyageSeats`, new): what a seat may take and how it changes, moved out of
+  `VoyageSquadColumn`, which the Saga tab still uses. Same Ark rules.
+- **Soft fills** (`VoyageSoftFill`, new): Set sail and the quiet buttons are solid in the middle and fade to both ends,
+  on every tab of the window; the bands and the light under a picked picture are the same graphic.
+- **Element marks**: the HUD's flower (`VoyageKit.Flower`, five petals through `ElementalBarsView.ConfigurePetal`).
+- **The tabs' boxes** (section 172's reject; Shombith saw them again on 2026-11-13: "This looks so ugly"): every frame
+  piece of a tab (Fill, Border, the four Brackets) is switched off as an object and the button gets its own clear hit
+  area with no colour transition. Clearing or disabling was not enough: the menu's theme pass (`UIThemeLive`) repaints
+  every `KitThemedGraphic`, disabled ones too. The LB / RB keys are gone and the window no longer takes the bumpers
+  ("it does not need an LB/RB support for now ... just clicks work fine"): a tab is clicked.
+- 11 new authored lines (`BoardZoomIn` to `BoardSwapsWith`); chips are 96 high on every tab (`RowHeight`).
+
+**Differs from the boards:**
+
+- No blur and no deck grid behind the squad screen: the map is dimmed by a veil.
+- The "in your lobby, not in this squad" line is not built: the window has no reach to the party's members yet.
+- The zoom ladder is the map's own (seven tiers, drawn by the map), not the board's four rows.
+- Save as preset copies the squad under the book's own name ("Squad N"); it is dark on a joined squad or a full book.
+- The keycaps (X, B, Y, A) are drawn; the pad does not press them yet.
+- The window title and hub row keep their sizes; Saga, Quests and Episodes keep the tilted table (Rev 90).
+- More vessels, pilots or artifacts than the board showed narrow their tiles; a pilot's note that would not fit is left out.
+
+**Verified:** `unity_refcompile` player and editor, 0 errors in project code; the ship gates pass; `VoyageBoardTests`
+(11 tests) compiled, not run. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The Voyages tab as two screens".
+
+## 185. The boot reveal: no lag, no pop, a way into the Toy Box; Froglet's logo under the bar (2026-11-13, not seen in Unity)
+
+Shombith, 2026-11-13, after section 179: "After the loading screen is completed there is a big lag when the scene is
+switching aren't we using async scene loading? Why will it lag when the scene is getting switched and there can be a
+smooth transition into the toybox dont just boom open scene". And: "The froglet logo should be in the bottom right
+corner below the percentage bar".
+
+**Why it lagged, from the code** (no recording was available here; `LoadInsights` writes them on the player's machine):
+the scene load IS async (`SceneManager.LoadSceneAsync`), and by the time the bar says Ready the menu has loaded and its
+world is built. The lag was the reveal frame itself, which did three things at once:
+- a full blocking `GC.Collect()` (`SceneLoader.FadeFromSplashWhenSettled`, every boot);
+- the boot's load report finished on the same frame: `LoadInsights.CompleteLoad` serialises it to JSON and writes two
+  files, synchronously, on every boot;
+- the fade started on the next frame. `SceneTransitionManager.FadeAsync` advanced by each frame's real time with no
+  cap, so the frame that carried the collect and the write (easily half a second) used up the whole 0.4 s fade at
+  once. That is the "boom": the splash vanished in one frame.
+
+What still is not fixed: the menu scene's activation (its objects' `Awake`) is one main-thread frame however the load
+is called; on 26 Oct one such frame took 10.4 s. It happens while the bar is at Loading profile, not after Ready, and
+it needs a profile of that frame before anything is changed.
+
+**What changed:**
+- **The reveal** (`SceneLoader`): the collect still runs under the opaque splash, then `revealSettleFrames` (2) frames
+  render under cover so a long frame ends out of sight. The menu's "shown" moment is stamped then
+  (`LoadInsights.MarkVisualReady`), and the report is written after the reveal, not on its first frame.
+- **The fade** (`SceneTransitionManager`): every fade advances by at most `_maxFadeStep` (1/30 s) per frame, so a hitch
+  lengthens a fade a little instead of skipping it. Entering the menu (the boot, and a return from a game) uses
+  `RevealAsync`: `_revealDuration` 1.2 s, eased at both ends.
+- **Into the Toy Box** (`PosterExit`, new, on the poster's root): as the splash dissolves the poster grows 12 percent
+  about its centre, so the player moves through it into the world. It reads the splash's own fade, needs no wiring,
+  and runs in reverse when the splash comes back on a return.
+- **The menu arrives with the world**: `ScreenSwitcher` also replays the current screen's entrances when the reveal
+  starts (`SceneTransitionManager.RevealStarted`); before, on a boot they played behind the still-opaque splash.
+- **Froglet's logo** moved from under the game's logo to the foot's bottom-right corner, under the bar's percentage,
+  150 wide, on both the splash and the sign-in scene (`author_start_flow.py`), and on board `R94C`.
+
+Verified: `unity_refcompile` player and editor; `author_start_flow.py` check and self-test (two new negative controls:
+the poster without its exit, the logo back at the top left); `gates.sh`. New EditMode tests (`SceneTransitionManagerTests`
+for the hitch rule and the ease, `BootPosterTests` for the exit's scale) compile and were not run. Hand test: "The boot
+reveal into the Toy Box" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+Seen in Shombith's screenshot and not explained from the code: the splash's bar showed the `%` sign with no number
+and an empty track, which means `BootStepBar` never drew. Its wiring in both scenes is correct; an exception in the
+Console from `BootStepBar` or `BootLoadProgress` is the likely cause and is the first thing to look for.
+
+## 186. Built: the loading screen's sea and motion - the rest of Rev 91 F (2026-11-13, not seen in Unity)
+
+Shombith, 2026-11-13: "Now build the F loading screen's missing sea lines and bob". Section 178 had left out the
+board's moving sea and its idle motion.
+
+- **The sea.** The cover already drew sea lines: its upper layer is `Sea_Window.mat`, which animates by itself. What
+  the board had and the build did not were the three soft fields drifting under the lines. They are now
+  `Gate/Cover/Fields`, between the cover's black base and its sea lines: three `kit_ring_glow` soft discs at the board's
+  boxes, each a `PosterDrift` with the board's timings (26, 34 and 42 s one way, the board's offsets and scales). The
+  board's two indigos are not theme colours, so the fields wear the theme's blue family (`SurfaceLight` at 0.50 and 0.46,
+  `NeutralLightest` at 0.30) and follow the worn colour set: a little greyer than the board.
+- **The gate.** The fields have no hex hole of their own, so `ConnectingGateView` gained a `backdrop` group, faded
+  with the content as the gate starts (it is gone before the hole has grown) and reset on the next hold.
+- **The bob.** The Ark drifts (16 s one way, -40 to 110 across, a turn from 1 to -1.5 degrees) and the Vessels
+  chapter's Sparrow bobs (6 s, 10 up to 12 down), as on the board. `PosterDrift` sleeps while its chapter's group is at
+  zero, so the hidden chapters cost nothing.
+
+Still not built: tabular digits on the percentage. The sea lines are the menu windows', not the board's own layers.
+
+Verified: `author_ingame_hud.py` run, `--check` and `--self-test` (two new negative controls: the fields left out of the
+gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; `gates.sh`. Hand test: "The loading
+screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+

@@ -910,3 +910,428 @@ void VesselVisionShade_float(vec3 PositionWS, vec3 NormalWS, vec4 Tint, vec3 Bas
   }
   Color = mix(BaseColor, cel, amount * max(breakup, rim01));
 }
+
+// ---------------------------------------------------------------------------------------------
+// Assets/_Graphics/Materials/Graphs/IncorporealDepth.hlsl (included by SpindleLod.hlsl)
+// ONE depth effect for the HyperSea's incorporeal parts (Docs/SPINDLE_LOD.md section 7): the
+// prisms' opening ramp, a wave travelling along the part, and a recede with distance. Ported whole
+// (Open, Part, Bloom, the pulse and the glow), so the next adopter finds every form here.
+// Globals (IncorporealDepth.Publish): _IncorporealSpread, _IncorporealFlow, _IncorporealRecede.
+// All zero (nothing published) = closed, still, unlit: a no-op, as in Unity.
+// ---------------------------------------------------------------------------------------------
+#ifndef SG_HAS_IncorporealSpread
+uniform vec4 _IncorporealSpread;
+#endif
+#ifndef SG_HAS_IncorporealFlow
+uniform vec4 _IncorporealFlow;
+#endif
+#ifndef SG_HAS_IncorporealRecede
+uniform vec4 _IncorporealRecede;
+#endif
+
+#define INCORPOREAL_DEPTH_FAR_GAIN vec3(50.0, 35.0, 20.0)
+#define INCORPOREAL_DEPTH_NEAR_START -7.0
+#define INCORPOREAL_DEPTH_TAU 6.2831853
+
+float IncorporealDepth_Norm(vec3 originWS)
+{
+  vec3 d = originWS - sg_CamPos;
+  return dot(d, d) / max(_IncorporealSpread.w, 1.0);
+}
+
+vec3 IncorporealDepth_Opening(float norm, vec3 spread)
+{
+  vec3 farS = spread * INCORPOREAL_DEPTH_FAR_GAIN;
+  vec3 eff = norm > 1.0 ? farS : mix(vec3(INCORPOREAL_DEPTH_NEAR_START), farS, norm);
+  eff = max(eff, spread);
+  return max(eff - spread, vec3(0.0));
+}
+
+float IncorporealDepth_RampOpenness(float norm, vec3 spread)
+{
+  vec3 full = spread * INCORPOREAL_DEPTH_FAR_GAIN - spread;
+  float denom = dot(full, full);
+  if (!(denom > 1e-12)) return 0.0;
+  vec3 o = IncorporealDepth_Opening(norm, spread);
+  return sg_saturate(sqrt(dot(o, o) / denom));
+}
+
+float IncorporealDepth_Recede(float norm)
+{
+  float a = _IncorporealRecede.x;
+  float b = _IncorporealRecede.y;
+  if (!(b > a) || !(a > 0.0)) return 1.0;
+  return 1.0 - smoothstep(sqrt(a), sqrt(b), sqrt(max(norm, 0.0)));
+}
+
+float IncorporealDepth_Openness(float norm, vec3 spread)
+{
+  return IncorporealDepth_RampOpenness(norm, spread) * IncorporealDepth_Recede(norm);
+}
+
+float IncorporealDepth_WaveArg(float flowCoord, float phase, float clock)
+{
+  return INCORPOREAL_DEPTH_TAU * (_IncorporealFlow.y * flowCoord - _IncorporealFlow.z * clock) + phase;
+}
+
+float IncorporealDepth_Wave(float flowCoord, float phase, float clock)
+{
+  return sin(IncorporealDepth_WaveArg(flowCoord, phase, clock));
+}
+
+vec3 IncorporealDepth_ObjectScale()
+{
+  return max(vec3(length(sg_ObjectToWorld[0].xyz), length(sg_ObjectToWorld[1].xyz), length(sg_ObjectToWorld[2].xyz)), vec3(1e-5));
+}
+
+vec3 IncorporealDepth_Origin() { return sg_ObjectToWorld[3].xyz; }
+
+void IncorporealDepthOpen_float(vec3 PositionOS, vec3 NormalOS, float FlowCoord, float Phase, float Clock,
+  float Strength, out vec3 Out, out float Openness)
+{
+  vec3 spread = _IncorporealSpread.xyz * max(Strength, 0.0);
+  float norm = IncorporealDepth_Norm(IncorporealDepth_Origin());
+  vec3 opening = IncorporealDepth_Opening(norm, spread) * IncorporealDepth_Recede(norm);
+  Openness = IncorporealDepth_Openness(norm, spread);
+  float flow = 1.0 + _IncorporealFlow.x * Openness * IncorporealDepth_Wave(FlowCoord, Phase, Clock);
+  Out = PositionOS + NormalOS * (opening / IncorporealDepth_ObjectScale()) * flow;
+}
+
+void IncorporealDepthPart_float(vec3 PositionOS, vec3 DirectionOS, float FlowCoord, float Phase, float Clock,
+  float Strength, out vec3 Out, out float Openness)
+{
+  Out = PositionOS;
+  float dirLen = length(DirectionOS);
+  vec3 spread = _IncorporealSpread.xyz * max(Strength, 0.0);
+  float norm = IncorporealDepth_Norm(IncorporealDepth_Origin());
+  vec3 opening = IncorporealDepth_Opening(norm, spread) * IncorporealDepth_Recede(norm);
+  Openness = IncorporealDepth_Openness(norm, spread);
+  if (!(dirLen > 1e-6)) return;
+  float amount = max(opening.x, max(opening.y, opening.z));
+  float flow = 1.0 + _IncorporealFlow.x * Openness * IncorporealDepth_Wave(FlowCoord, Phase, Clock);
+  float worldLen = length(mat3(sg_ObjectToWorld) * DirectionOS);
+  Out = PositionOS + DirectionOS * (amount * flow / max(worldLen, 1e-6));
+}
+
+#define INCORPOREAL_DEPTH_BLOOM_MAX_SHARE 0.3
+#define INCORPOREAL_DEPTH_BLOOM_MIN_SLOPE 0.2
+
+float IncorporealDepth_BloomAmount(vec3 opening, float reach, float openness)
+{
+  float q = INCORPOREAL_DEPTH_TAU * max(_IncorporealFlow.y, 0.0) * max(_IncorporealFlow.x, 0.0) * openness;
+  float share = min(INCORPOREAL_DEPTH_BLOOM_MAX_SHARE, (1.0 - INCORPOREAL_DEPTH_BLOOM_MIN_SLOPE) / max(q, 1e-6));
+  return min(max(opening.x, max(opening.y, opening.z)), share * reach);
+}
+
+void IncorporealDepth_BloomRadius(float r, float amount, float reach, float openness, float phase, float clock,
+  out float rd, out float drd)
+{
+  float k = INCORPOREAL_DEPTH_TAU * _IncorporealFlow.y / reach;
+  float arg = IncorporealDepth_WaveArg(r / reach, phase, clock);
+  float a = _IncorporealFlow.x * openness;
+  float flow = 1.0 + a * sin(arg);
+  float dflow = a * cos(arg) * k;
+  if (r < reach)
+  {
+    rd = r + amount * flow * r / reach;
+    drd = 1.0 + amount * (flow + r * dflow) / reach;
+  }
+  else
+  {
+    rd = r + amount * flow;
+    drd = 1.0 + amount * dflow;
+  }
+}
+
+float IncorporealDepth_BloomRestRadius(float rdisplaced, float amount, float reach, float openness,
+  float phase, float clock)
+{
+  float r = rdisplaced / (1.0 + amount / max(rdisplaced, reach));
+  for (int i = 0; i < 4; i++)
+  {
+    float rd, drd;
+    IncorporealDepth_BloomRadius(r, amount, reach, openness, phase, clock, rd, drd);
+    r = max(r - (rd - rdisplaced) / max(drd, INCORPOREAL_DEPTH_BLOOM_MIN_SLOPE), 0.0);
+  }
+  return r;
+}
+
+void IncorporealDepthBloom_float(vec3 PositionOS, float Reach, float Phase, float Clock, float Strength,
+  out vec3 Out, out float Openness)
+{
+  vec3 spread = _IncorporealSpread.xyz * max(Strength, 0.0);
+  float norm = IncorporealDepth_Norm(IncorporealDepth_Origin());
+  vec3 opening = IncorporealDepth_Opening(norm, spread) * IncorporealDepth_Recede(norm);
+  Openness = IncorporealDepth_Openness(norm, spread);
+  float reach = max(Reach, 1e-3);
+  float amount = IncorporealDepth_BloomAmount(opening, reach, Openness);
+  float r = length(mat3(sg_ObjectToWorld) * PositionOS);
+  float rd, drd;
+  IncorporealDepth_BloomRadius(r, amount, reach, Openness, Phase, Clock, rd, drd);
+  Out = r > 1e-6 ? PositionOS * (rd / r) : PositionOS;
+}
+
+float IncorporealDepth_BloomPulse(vec3 PositionWS, float Reach, float Phase, float Clock, float Strength)
+{
+  vec3 spread = _IncorporealSpread.xyz * max(Strength, 0.0);
+  vec3 origin = IncorporealDepth_Origin();
+  float norm = IncorporealDepth_Norm(origin);
+  vec3 opening = IncorporealDepth_Opening(norm, spread) * IncorporealDepth_Recede(norm);
+  float openness = IncorporealDepth_Openness(norm, spread);
+  float reach = max(Reach, 1e-3);
+  float amount = IncorporealDepth_BloomAmount(opening, reach, openness);
+  float r = IncorporealDepth_BloomRestRadius(length(PositionWS - origin), amount, reach, openness, Phase, Clock);
+  float crest = sg_saturate(IncorporealDepth_Wave(r / reach, Phase, Clock));
+  return max(_IncorporealFlow.w, 0.0) * openness * crest * crest;
+}
+
+float IncorporealDepth_Pulse(float FlowCoord, float Phase, float Clock, float Strength)
+{
+  vec3 spread = _IncorporealSpread.xyz * max(Strength, 0.0);
+  float openness = IncorporealDepth_Openness(IncorporealDepth_Norm(IncorporealDepth_Origin()), spread);
+  float crest = sg_saturate(IncorporealDepth_Wave(FlowCoord, Phase, Clock));
+  return max(_IncorporealFlow.w, 0.0) * openness * crest * crest;
+}
+
+void IncorporealDepthGlow_float(vec3 Color, float FlowCoord, float Phase, float Clock, float Strength, out vec3 Out)
+{
+  Out = Color * (1.0 + IncorporealDepth_Pulse(FlowCoord, Phase, Clock, Strength));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Assets/_Graphics/Materials/Graphs/Standins/SpindleStandin.hlsl (79b7f744c5a249fba3d30722e075bb8d)
+// The spindle lace's Voronoi: Unity's deterministic Voronoi (Hash_Tchou_2_2) searching only the 6
+// cells that can win (rows -1..0 x columns -1..1), the node's own hash and true sin/cos.
+// ---------------------------------------------------------------------------------------------
+vec2 SpindleStandin_Tchou22(vec2 i)
+{
+  uvec2 v = uvec2(ivec2(round(i)));
+  v.y ^= 1103515245u;
+  v.x += v.y;
+  v.x *= v.y;
+  v.x ^= v.x >> 5u;
+  v.x *= 0x27d4eb2du;
+  v.y ^= (v.x << 3u);
+  return vec2(v >> 8u) * (1.0 / float(0x00ffffff));
+}
+
+void SpindleVoronoi6_float(vec2 UV, float AngleOffset, float CellDensity, out float Out)
+{
+  vec2 p = UV * CellDensity;
+  vec2 g = floor(p);
+  vec2 f = p - g;
+  float res = 8.0;
+  for (int y = -1; y <= 0; y++)
+  for (int x = -1; x <= 1; x++)
+  {
+    vec2 lat = vec2(float(x), float(y));
+    vec2 h = SpindleStandin_Tchou22(lat + g);
+    vec2 o = vec2(sin(h.y * AngleOffset), cos(h.x * AngleOffset)) * 0.5 + 0.5;
+    res = min(res, distance(lat + o, f));
+  }
+  Out = res;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Assets/_Graphics/Materials/Graphs/SpindleLod.hlsl (631b1929270bf2aacc5c4ded13875e6c)
+// The GPU half of the spindle LOD (Docs/SPINDLE_LOD.md): the mid and far tiers' vertex and surface
+// stages, the synthetic wire (switch rings) and the overt depth effect on non-braid surfaces.
+// Globals (SpindleLodSystem): _SpindleLodBands, _SpindleLodLook, _SpindleLodLook2. All zero (no
+// system running, which is Amoebius until SpindleLodSystem publishes) = a pass-through on the mid
+// graph and an unfaded thread on the far one, as in Unity.
+// Unity built-ins: _WorldSpaceCameraPos = sg_CamPos, unity_OrthoParams = sg_OrthoParams,
+// _ScreenParams = sg_ScreenParams, UNITY_MATRIX_P._m11 = sg_Proj[1][1].
+// ---------------------------------------------------------------------------------------------
+#ifndef SG_HAS_SpindleLodBands
+uniform vec4 _SpindleLodBands;
+#endif
+#ifndef SG_HAS_SpindleLodLook
+uniform vec4 _SpindleLodLook;
+#endif
+#ifndef SG_HAS_SpindleLodLook2
+uniform vec4 _SpindleLodLook2;
+#endif
+
+#define SPINDLE_LOD_MAX_INFLATE 32.0
+
+bool SpindleLod_Overt() { return _SpindleLodLook2.y > 0.5; }
+
+struct SpindleLodView
+{
+  float metric;
+  float progress;
+  float converge;
+  float pxPerUnit;
+  float scaleXY;
+};
+
+float SpindleLod_Ramp(float edge0, float edge1, float x)
+{
+  if (!(edge1 > edge0)) return 0.0;
+  return smoothstep(edge0, edge1, x);
+}
+
+float SpindleLod_Converge(float metric)
+{
+  return SpindleLod_Ramp(_SpindleLodBands.x, _SpindleLodBands.y, metric);
+}
+
+SpindleLodView SpindleLod_View(float girth)
+{
+  SpindleLodView v;
+  vec3 origin = sg_ObjectToWorld[3].xyz;
+  v.scaleXY = max(min(length(sg_ObjectToWorld[0].xyz), length(sg_ObjectToWorld[1].xyz)), 1e-6);
+  float dist = max(length(origin - sg_CamPos), 1e-3);
+  if (sg_OrthoParams.w > 0.5)
+    v.pxPerUnit = sg_ScreenParams.y / max(2.0 * abs(sg_OrthoParams.y), 1e-6);
+  else
+    v.pxPerUnit = sg_ScreenParams.y * 0.5 * abs(sg_Proj[1][1]) / dist;
+  if (SpindleLod_Overt())
+  {
+    v.metric = IncorporealDepth_Norm(origin);
+    v.progress = IncorporealDepth_RampOpenness(v.metric, _IncorporealSpread.xyz);
+    v.converge = 1.0 - IncorporealDepth_Recede(v.metric);
+  }
+  else
+  {
+    v.metric = dist / max(girth * v.scaleXY, 1e-6);
+    v.progress = SpindleLod_Converge(v.metric);
+    v.converge = v.progress;
+  }
+  return v;
+}
+
+float SpindleLod_Inflate(SpindleLodView v, float strandRadius)
+{
+  float minPixels = _SpindleLodLook.x;
+  if (!(minPixels > 0.0) || !(strandRadius > 0.0)) return 1.0;
+  float trueWidthPx = 2.0 * strandRadius * v.scaleXY * v.pxPerUnit;
+  return clamp(minPixels / max(trueWidthPx, 1e-6), 1.0, SPINDLE_LOD_MAX_INFLATE);
+}
+
+float SpindleLod_Hold(SpindleLodView v, float strandRadius)
+{
+  return mix(1.0, SpindleLod_Inflate(v, strandRadius), v.progress);
+}
+
+void SpindleLod_ThreadLook(vec3 dull, vec3 bright, float deathState, vec3 normalWS, vec3 viewWS,
+  SpindleLodView v, float strandRadius, bool synthetic, out vec3 color, out float alpha)
+{
+  vec3 n = normalize(normalWS);
+  vec3 e = normalize(viewWS);
+  float facing = sg_saturate(abs(dot(n, e)));
+  float baseT = synthetic ? _SpindleLodLook2.z : _SpindleLodLook.y;
+  float facet = synthetic ? _SpindleLodLook2.w : _SpindleLodLook.z;
+  float t = sg_saturate(baseT + facet * facing * facing);
+  float recede = SpindleLod_Ramp(_SpindleLodBands.y, _SpindleLodBands.z, v.metric);
+  float glow = synthetic ? 1.0 : mix(1.0, max(_SpindleLodLook.w, 0.0), recede);
+  color = mix(dull, bright, t) * glow;
+
+  float coverage = 1.0 / SpindleLod_Hold(v, strandRadius);
+  float life = 1.0 - smoothstep(0.0, 1.0, sg_saturate(deathState));
+  float farFade = 1.0;
+  if (!synthetic) farFade = 1.0 - SpindleLod_Ramp(_SpindleLodBands.z, _SpindleLodBands.w, v.metric);
+  float threadAlpha = _SpindleLodLook2.x > 0.0 ? _SpindleLodLook2.x : 1.0;
+  alpha = threadAlpha * coverage * life * farFade;
+}
+
+void SpindleLod_Thread(vec3 dull, vec3 bright, float deathState, vec3 normalWS, vec3 viewWS,
+  SpindleLodView v, float strandRadius, out vec3 color, out float alpha)
+{
+  SpindleLod_ThreadLook(dull, bright, deathState, normalWS, viewWS, v, strandRadius, false, color, alpha);
+}
+
+vec3 SpindleLod_Pulse(vec3 color, float flowCoord, float phase, float clock, float strength)
+{
+  if (!SpindleLod_Overt()) return color;
+  return color * (1.0 + IncorporealDepth_Pulse(flowCoord, phase, clock, strength));
+}
+
+void SpindleLodVertex_float(vec3 PositionOS, vec3 NormalOS, vec3 UV, vec3 ToAxis, vec3 Radial,
+  vec3 Splay, float Girth, float StrandRadius, float Strength, float Phase, float Clock, out vec3 Out)
+{
+  Out = PositionOS;
+  if (!(Girth > 0.0)) return;
+  SpindleLodView v = SpindleLod_View(Girth);
+  float inflate = SpindleLod_Hold(v, StrandRadius);
+  vec3 strandCentre = PositionOS - Radial;
+  if (SpindleLod_Overt())
+  {
+    vec3 held = strandCentre + ToAxis * v.converge + Radial * inflate;
+    vec3 parted;
+    float openness;
+    IncorporealDepthPart_float(held, Splay, UV.x, Phase, Clock, Strength, parted, openness);
+    Out = held + (parted - held) * sg_saturate(UV.x);
+  }
+  else
+  {
+    Out = strandCentre + ToAxis * v.converge + Radial * inflate;
+  }
+}
+
+void SpindleLodSurface_float(vec3 LaceColor, float LaceAlpha, vec3 Dull, vec3 Bright, float DeathState,
+  vec3 NormalWS, vec3 ViewWS, vec3 UV, float Girth, float StrandRadius, float Strength, float Phase,
+  float Clock, out vec3 Color, out float Alpha)
+{
+  Color = LaceColor;
+  Alpha = LaceAlpha;
+  if (!(Girth > 0.0)) return;
+  SpindleLodView v = SpindleLod_View(Girth);
+  vec3 threadColor;
+  float threadAlpha;
+  SpindleLod_Thread(Dull, Bright, DeathState, NormalWS, ViewWS, v, StrandRadius, threadColor, threadAlpha);
+  Color = SpindleLod_Pulse(mix(LaceColor, threadColor, v.progress), UV.x, Phase, Clock, Strength);
+  Alpha = mix(LaceAlpha, threadAlpha, v.progress);
+}
+
+void SpindleLodThread_float(vec3 Dull, vec3 Bright, float DeathState, vec3 NormalWS, vec3 ViewWS,
+  vec3 UV, float Girth, float StrandRadius, float Strength, float Phase, float Clock, out vec3 Color, out float Alpha)
+{
+  SpindleLodView v = SpindleLod_View(max(Girth, 1e-6));
+  SpindleLod_Thread(Dull, Bright, DeathState, NormalWS, ViewWS, v, StrandRadius, Color, Alpha);
+  Color = SpindleLod_Pulse(Color, UV.x, Phase, Clock, Strength);
+}
+
+void SpindleWireSurface_float(vec3 LaceColor, float LaceAlpha, vec3 Dull, vec3 Bright, float DeathState,
+  vec3 NormalWS, vec3 ViewWS, vec3 UV, float Girth, float StrandRadius, float Strength, float Phase,
+  float Clock, out vec3 Color, out float Alpha)
+{
+  Color = LaceColor;
+  Alpha = LaceAlpha;
+  if (!(Girth > 0.0)) return;
+  SpindleLodView v = SpindleLod_View(Girth);
+  vec3 wireColor;
+  float wireAlpha;
+  SpindleLod_ThreadLook(Dull, Bright, DeathState, NormalWS, ViewWS, v, StrandRadius, true, wireColor, wireAlpha);
+  float lace = SpindleLod_Overt() ? IncorporealDepth_Openness(v.metric, _IncorporealSpread.xyz) : 0.0;
+  Color = SpindleLod_Pulse(mix(wireColor, LaceColor, lace), UV.x, Phase, Clock, Strength);
+  Alpha = mix(wireAlpha, LaceAlpha, lace);
+}
+
+void SpindleDepthVertex_float(vec3 PositionOS, vec3 NormalOS, vec3 UV, float Reach, float Form,
+  float Strength, float Phase, float Clock, out vec3 Out)
+{
+  Out = PositionOS;
+  if (!SpindleLod_Overt()) return;
+  float openness;
+  if (Form > 0.5)
+    IncorporealDepthOpen_float(PositionOS, NormalOS, UV.x, Phase, Clock, Strength, Out, openness);
+  else
+    IncorporealDepthBloom_float(PositionOS, Reach, Phase, Clock, Strength, Out, openness);
+}
+
+void SpindleDepthGlow_float(vec3 Color, float Alpha, vec3 PositionWS, vec3 UV, float Reach, float Form,
+  float Strength, float Phase, float Clock, out vec3 OutColor, out float OutAlpha)
+{
+  OutColor = Color;
+  OutAlpha = Alpha;
+  if (!SpindleLod_Overt()) return;
+  if (Form > 0.5)
+  {
+    OutColor = Color * (1.0 + IncorporealDepth_Pulse(UV.x, Phase, Clock, Strength));
+    return;
+  }
+  OutColor = Color * (1.0 + IncorporealDepth_BloomPulse(PositionWS, Reach, Phase, Clock, Strength));
+  float norm = IncorporealDepth_Norm(IncorporealDepth_Origin());
+  OutAlpha = Alpha * (1.0 - SpindleLod_Ramp(_SpindleLodBands.z, _SpindleLodBands.w, norm));
+}
