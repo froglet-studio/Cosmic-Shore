@@ -8972,3 +8972,24 @@ in TextLight; the picked mark draws over the art. The screen's ground is Surface
 SurfaceVeryDark, so the paintings carry the colour, as the pilot scenes inside the Ark do; no blue text is left in a
 cell. `author_menu_ark.py` `pilot_card()` builds it, and the checks now hold the card's rows inside the fade and every
 callsign word in H3 on its card. No C#: the cell is still a SquadPickChip.
+
+## 205. Built: B steps back on the Ark's Pilots and Artifacts tabs (2026-11-14, claude/project-thread-ia8lnf, not run in Unity)
+
+**Asked (Shombith, 2026-11-14):** build every Ark UI picked on Frogma in Unity. The audit against `ark-rework`: the
+transitions (section 197), the Converter's holo dais (196), the Artifacts lens (201), the nautilus PDA with crew cards
+and sight lines (192, 198, 199) are all built and merged, and their generators pass `--check` on the merged branch. The
+Squads tab (Rev 106 B, Rev 110) is the one pick not in `ark-rework`: its boards and live vessel layer are on PR #1973
+and its panels are being built by the Squads thread. The one gap the built sections left open was section 192's "B on
+the pad does not lay the PDA down (no page of the Ark handles cancel yet)", and the Artifacts tab's three levels had
+the same hole.
+
+**Built:** `ArkTabsView` reads B on a pad and Escape while the Ark is the active screen and asks the shown page to step
+back one level through a new interface, `IArkTabBack.TryBack()`. `ArkPilotsPage`: a file goes back to the crew, the
+crew lays the PDA down (the put-down clip plays, as LAY DOWN does). `ArkArtifactsPage`: feeding back to the artifact, the
+artifact back to the hoard (its BACK button). At the top level the press is refused; under a modal (the pilot profile
+page closes itself on B) and on a guided path (`MenuGuide`) the Ark ignores it. No prefab change: the view finds the
+`ScreenSwitcher` itself when its new field is empty.
+
+**Ran:** `unity_refcompile` player and editor (0 errors in the changed files), `author_menu_ark.py --check`;
+`ArkTabBackTests` compiled, not run. Hand test: "B / Escape steps back on the Ark's Pilots and Artifacts tabs" in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`.

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace CosmicShore.UI
 {
@@ -8,6 +9,14 @@ namespace CosmicShore.UI
     {
         /// <summary>True while the page is the one on screen AND the Ark is the active screen.</summary>
         void SetPageShown(bool shown);
+    }
+
+    /// <summary>A page of the Ark's tabs that has levels of its own (the Pilots tab's PDA, the Artifacts tab's hoard,
+    /// artifact and feed). B on a pad, or Escape, steps it one level back (Docs/MENU_REDESIGN_B.md section 205).</summary>
+    public interface IArkTabBack
+    {
+        /// <summary>Steps one level back. False when the page is already at its top level, so the press is not its.</summary>
+        bool TryBack();
     }
 
     /// <summary>
@@ -54,6 +63,10 @@ namespace CosmicShore.UI
         [SerializeField, Min(0f)] private float pageInSeconds = KitMotion.Panel;
         [Tooltip("How far the page reached rises as it comes in, in canvas units.")]
         [SerializeField, Min(0f)] private float pageRise = 14f;
+
+        [Header("Back (B on a pad, Escape)")]
+        [Tooltip("Leave empty to find the one in the scene. A modal over the Ark (a pilot's profile page) keeps B for itself.")]
+        [SerializeField] private ScreenSwitcher screenSwitcher;
 
         int _current = -1;
         bool _screenActive;
@@ -158,6 +171,7 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            if (_screenActive && BackPressed()) TryBack();
             float dt = Time.unscaledDeltaTime;
             if (_leaveClock >= 0f)
             {
@@ -174,6 +188,21 @@ namespace CosmicShore.UI
                 else ApplyArrival(KitMotion.Ease(KitEase.OutQuint, Mathf.Max(0f, k)));
             }
         }
+
+        /// <summary>B or Escape: the shown page steps one level back, if it has levels and is not at its top one.
+        /// Nothing happens under a modal (it closes itself on B) or on a guided path (only the spotlit control works).</summary>
+        public bool TryBack()
+        {
+            if (!_screenActive || _current < 0 || _current >= tabs.Length) return false;
+            if (MenuGuide.IsActive) return false;
+            if (!screenSwitcher) screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+            if (screenSwitcher && screenSwitcher.HasActiveModal) return false;
+            return tabs[_current].pageLogic is IArkTabBack page && page.TryBack();
+        }
+
+        static bool BackPressed() =>
+            (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame) ||
+            (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame);
 
         void ApplyArrival(float e)
         {
