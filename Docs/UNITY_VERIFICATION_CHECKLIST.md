@@ -23812,3 +23812,14 @@ Not compiled: the editor was in use by the multiplayer testing session. Files: `
    **Expect:** false, refusal says the hull is flown on their machine. The host's own hull still hands over as before.
 5. Still open, not explained by reading: the host's own handed-over hull took over 6 minutes and damaged 425 prisms in
    the two-human match (21 of 26 in 2:00 solo). Re-time it once Player 2's hull is no longer wandering the course.
+
+**Run of 2026-11-15** (`9a851bf91b` compiled in the editor, 0 errors; editor + MPPM Player 2, driven by a session):
+- Step 1: compiled. EditMode tests **not run** for this change.
+- Step 2 **PASSED on its outcome**: Player 2 left 36 s into the race (`party leave`); the race then ended by itself, the
+  host's hull at 26 gates in 2:46, and the leaver's hull scored (166) where before it stayed at 2 gates and the race
+  never ended. Its gate count was not read gate by gate and nobody watched it fly.
+- Step 3 **not run** (a rejoin after this fix).
+- Step 4 **PASSED**: the host's call returned false with "ys1's hull is flown on their machine: the host's AI cannot
+  steer it"; the host's own hull handed over as before.
+- Step 5: the host's hull took 2:46 this time, not 6 minutes, so the slow run went with Player 2's wandering hull.
+- `1167a0a2f9` (FunCard): compiled, and no `get_isBatchMode` error in a full Play and stop afterwards (82 before).
