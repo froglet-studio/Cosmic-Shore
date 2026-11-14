@@ -70,6 +70,14 @@ namespace CosmicShore.Gameplay
         Quaternion _modelRestRotation = Quaternion.identity;
         bool _modelCaptured;
         float _modelScale = 1f;
+        Vector3 _flightPosition;             // the sting's flight to the heart (StepSting)
+        Quaternion _flightRotation = Quaternion.identity;
+        JewelWaspNetworkRelay _relay;        // on the root, beside the NetworkObject (JewelWaspNetworkRelay)
+        bool _relayLooked;
+        Transform _abdomen;                  // the model's gaster bone (JewelWasp.fbx), curled by the sting
+        Quaternion _abdomenRest = Quaternion.identity;
+        float _curl;
+        ButterflyAnimation _wings;           // the four wings, folded over the back while nested
 
         // the chase camera's stand-back while riding
         CustomCameraController _cam;
@@ -84,17 +92,18 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ what the HUD and the recorder read
 
-        public WaspMode Mode => _mode;
+        public WaspMode Mode => _mode;   // on a mirror (a networked peer that is not the server) the server's, every frame
         /// <summary>The creature the wasp rides, or null.</summary>
         public Fauna Host => _mode == WaspMode.InFauna ? _host : null;
         /// <summary>The plant the wasp rides, or null.</summary>
         public Flora Plant => _mode == WaspMode.InFlora ? _plant : null;
         /// <summary>What the held trigger has lit (a Fauna or a Flora), or null.</summary>
         public Component Aim => _aim;
-        public bool Bursting => _mode == WaspMode.InFauna && Time.time < _burstUntil;
-        public float AttackCooldown01 => Remaining01(_attackReadyAt, _attackTotal);
-        public float BurstCooldown01 => Remaining01(_burstReadyAt, config ? config.BurstCooldown : 0f);
-        public float StingCooldown01 => Remaining01(_stingReadyAt, config ? config.StingCooldown : 0f);
+        public bool Bursting => Mirrors ? (Relay.State & JewelWaspNetworkRelay.BurstingBit) != 0
+                                        : _mode == WaspMode.InFauna && Time.time < _burstUntil;
+        public float AttackCooldown01 => Mirrors ? Relay.View.x : Remaining01(_attackReadyAt, _attackTotal);
+        public float BurstCooldown01 => Mirrors ? Relay.View.y : Remaining01(_burstReadyAt, config ? config.BurstCooldown : 0f);
+        public float StingCooldown01 => Mirrors ? Relay.View.z : Remaining01(_stingReadyAt, config ? config.StingCooldown : 0f);
         public JewelWaspConfigSO Config => config;
 
         static float Remaining01(float readyAt, float total)
@@ -110,6 +119,8 @@ namespace CosmicShore.Gameplay
         {
             LetGo(launch: false);
             _status = shipStatus;
+            _relay = null;
+            _relayLooked = false;
             _mode = WaspMode.Free;
             _rightHeld = _leftHeld = false;
             _stingReadyAt = _burstUntil = _burstReadyAt = _attackReadyAt = _suctionAt = 0f;
@@ -130,9 +141,29 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the gates
 
-        /// <summary>The machine that owns the hull acts on its presses (every other peer sees where it puts it).</summary>
-        bool DecidesHere => _status != null && _status.Transform && ElementalTransfer.IsDecidedHere(_status) &&
-                            !(_status.Player is { IsNetworkOwner: false });
+        /// <summary>The machine that decides the possession: the SERVER in a networked match, because it simulates the
+        /// creatures, whoever owns the hull (JEWEL_WASP.md §6.1); anywhere off the network. A hull with no relay keeps
+        /// the owner rule it had (it cannot possess what another machine simulates; Sting refuses that once, loudly).</summary>
+        bool DecidesHere => _status != null && _status.Transform &&
+                            (Relay ? Relay.IsDecider
+                                   : ElementalTransfer.IsDecidedHere(_status) && !(_status.Player is { IsNetworkOwner: false }));
+
+        /// <summary>A networked peer that is not the server: it shows the server's possession (the model, the nest, the
+        /// HUD) and, on the hull's owner, holds the hull where the server nests it.</summary>
+        bool Mirrors => Relay && Relay.IsNetworked && !Relay.IsDecider;
+
+        JewelWaspNetworkRelay Relay
+        {
+            get
+            {
+                if (!_relayLooked && _status != null && _status.Transform)
+                {
+                    _relayLooked = true;
+                    _status.Transform.TryGetComponent(out _relay);
+                }
+                return _relay;
+            }
+        }
 
         bool IsLocalHuman => _status != null && _status.Player != null && !_status.IsInitializedAsAI && _status.IsLocalUser;
         bool IsAI => _status != null && (_status.IsInitializedAsAI || _status.AutoPilotEnabled);
@@ -152,7 +183,13 @@ namespace CosmicShore.Gameplay
 
         public void Press(JewelWaspControl control, bool down)
         {
-            if (!config || !DecidesHere) return;
+            if (!config) return;
+            if (!DecidesHere)
+            {
+                // the server decides; the owner only keeps which trigger is held, to light what its aim would sting
+                if (Mirrors && Relay.IsOwner) HoldTriggerShown(control, down);
+                return;
+            }
             switch (control)
             {
                 case JewelWaspControl.Right:
@@ -179,12 +216,13 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (!config || _status == null || !_status.Transform) return;
+            float dt = Time.deltaTime;
             if (!DecidesHere)
             {
-                SetAim(null, true);
+                if (Mirrors) StepMirror(dt);
+                else SetAim(null, true);
                 return;
             }
-            float dt = Time.deltaTime;
             if (_incorporeal && _mode == WaspMode.Free && Time.time >= _graceUntil) SetIncorporeal(false);
 
             switch (_mode)
@@ -210,7 +248,13 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (!config || _status == null || !_status.Transform) return;
-            if (DecidesHere) PlaceHull();
+            if (DecidesHere)
+            {
+                PlaceHull();
+                PublishState();
+            }
+            else if (Mirrors && Relay.IsOwner && _mode != WaspMode.Free)
+                _status.Transform.SetPositionAndRotation(Relay.NestPosition, Relay.NestRotation);   // the server's nest
             if (IsLocalHuman && !_status.AutoPilotEnabled) UpdateCamera(Time.deltaTime);
             else ReleaseCamera();
         }
@@ -323,7 +367,8 @@ namespace CosmicShore.Gameplay
                     {
                         _warnedRemote = true;
                         CSDebug.LogWarning("[JewelWasp] this machine does not simulate that creature, so it cannot be " +
-                                           "possessed from here (a client hull in a networked match: JEWEL_WASP.md, follow-ups).");
+                                           "possessed from here: the hull has no JewelWaspNetworkRelay to hand the sting to " +
+                                           "the server (JEWEL_WASP.md section 6.1).");
                     }
                     return;
                 }
@@ -334,6 +379,8 @@ namespace CosmicShore.Gameplay
             LeaveCurrent(launch: false);
             _stingTarget = target;
             _stingStartedAt = Time.time;
+            _flightPosition = _status.Transform.position;
+            _flightRotation = _status.Transform.rotation;
             _stingArrivedAt = -1f;
             _mode = WaspMode.Stinging;
             HoldHull(true);
@@ -353,7 +400,9 @@ namespace CosmicShore.Gameplay
             }
             var hull = _status.Transform;
             NestPose(target, out var nest, out var nestRot);
-            Vector3 to = nest - hull.position;
+            // the flight is kept here, not read back off the transform: on the server a client's hull is placed by its
+            // owner from what this publishes, so its transform lags the flight by a round trip
+            Vector3 to = nest - _flightPosition;
             float arrive = HeartRadius(target) * 2f + 1f;
             if (_stingArrivedAt < 0f)
             {
@@ -361,13 +410,14 @@ namespace CosmicShore.Gameplay
                 if (to.sqrMagnitude <= Mathf.Max(arrive * arrive, step * step))
                 {
                     _stingArrivedAt = Time.time;
-                    hull.position = nest;
+                    _flightPosition = nest;
                 }
                 else
                 {
-                    hull.position += to.normalized * step;
-                    if (SafeLookRotation.TryGet(to, out var look, this)) hull.rotation = look;
+                    _flightPosition += to.normalized * step;
+                    if (SafeLookRotation.TryGet(to, out var look, this)) _flightRotation = look;
                 }
+                hull.SetPositionAndRotation(_flightPosition, _flightRotation);
                 return;
             }
             // tucked in beside the heart: the sting (the model's nose dips into the crystal)
@@ -879,6 +929,20 @@ namespace CosmicShore.Gameplay
             _modelCaptured = true;
             _modelScale = config ? config.HullScale : 1f;
             hullModel.localScale = _modelRestScale * _modelScale;
+            _abdomen = FindBone(hullModel, "abdomen");
+            if (_abdomen) _abdomenRest = _abdomen.localRotation;
+            if (_status != null && _status.Transform) _status.Transform.TryGetComponent(out _wings);
+        }
+
+        static Transform FindBone(Transform root, string bone)
+        {
+            if (root.name == bone) return root;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var found = FindBone(root.GetChild(i), bone);
+                if (found) return found;
+            }
+            return null;
         }
 
         void EaseModel(float dt)
@@ -889,10 +953,24 @@ namespace CosmicShore.Gameplay
             float want = nested ? config.NestedScale : config.HullScale;
             _modelScale = Mathf.MoveTowards(_modelScale, want, dt * 2f);
             hullModel.localScale = _modelRestScale * _modelScale;
-            float dip = 0f;
+            float dip = 0f, curl = nested ? config.NestedCurlDegrees : 0f;
             if (_mode == WaspMode.Stinging && _stingArrivedAt >= 0f)
-                dip = Mathf.Sin(Mathf.Clamp01((Time.time - _stingArrivedAt) / config.StingSeconds) * Mathf.PI) * 40f;
+            {
+                float beat = Mathf.Sin(Mathf.Clamp01((Time.time - _stingArrivedAt) / config.StingSeconds) * Mathf.PI);
+                dip = beat * 40f;
+                curl = Mathf.Max(curl, beat * config.StingCurlDegrees);
+            }
             hullModel.localRotation = _modelRestRotation * Quaternion.Euler(dip, 0f, 0f);
+            // the sting: the gaster curls under the body about the waist (the model's `abdomen` bone), about the hull's
+            // right axis, so the needle swings down and forward whatever the bone's own import frame
+            _curl = Mathf.MoveTowards(_curl, curl, dt * 360f);
+            if (_abdomen && _abdomen.parent)
+            {
+                var parent = _abdomen.parent.rotation;
+                _abdomen.localRotation = Quaternion.Inverse(parent) * Quaternion.AngleAxis(-_curl, hullModel.right) * parent *
+                                         _abdomenRest;
+            }
+            if (_wings) _wings.SetFolded(nested);
         }
 
         /// <summary>While the wasp rides, the hull's own flight stops (the fleet's stop, <see cref="IVesselStatus.IsStationary"/>,
@@ -966,11 +1044,8 @@ namespace CosmicShore.Gameplay
             _cam = cam;
             float neutral = cam.NeutralOffsetZ;
             if (neutral >= 0f) return;   // not a chase camera
-            float want = neutral;
-            if (_mode == WaspMode.InFauna && _host)
-                want = -Mathf.Max(-neutral, config.HostCameraBase + _host.PossessionBodyRadius * config.HostCameraBodies);
-            else if (_mode == WaspMode.InFlora)
-                want = -Mathf.Max(-neutral, config.FloraCameraDistance);
+            float back = CameraBack();
+            float want = back > 0f ? -Mathf.Max(-neutral, back) : neutral;
             if (!_camEngaged && Mathf.Approximately(want, neutral)) return;
             if (_camEngaged && !Mathf.Approximately(cam.GetCameraDistance(), _camWritten))
             {
@@ -983,6 +1058,70 @@ namespace CosmicShore.Gameplay
             cam.SetCameraDistance(next);
             _camWritten = next;
             _camEngaged = !Mathf.Approximately(next, neutral);
+        }
+
+        /// <summary>How far the chase camera stands back while the wasp rides (0: the hull's own distance).</summary>
+        float CameraBack()
+        {
+            if (Mirrors) return Relay.View.w;
+            if (_mode == WaspMode.InFauna && _host)
+                return config.HostCameraBase + _host.PossessionBodyRadius * config.HostCameraBodies;
+            return _mode == WaspMode.InFlora ? config.FloraCameraDistance : 0f;
+        }
+
+        // ------------------------------------------------------------------ the network (JewelWaspNetworkRelay)
+
+        /// <summary>The server's decision, published every frame it changes (nothing off the network).</summary>
+        void PublishState()
+        {
+            var relay = Relay;
+            if (!relay || !relay.IsNetworked) return;
+            byte state = (byte)((byte)_mode & JewelWaspNetworkRelay.ModeMask);
+            if (_mode == WaspMode.Stinging && _stingArrivedAt >= 0f) state |= JewelWaspNetworkRelay.ArrivedBit;
+            if (_incorporeal) state |= JewelWaspNetworkRelay.IncorporealBit;
+            if (Bursting) state |= JewelWaspNetworkRelay.BurstingBit;
+            var hull = _status.Transform;
+            bool flying = _mode == WaspMode.Stinging && _stingArrivedAt < 0f;
+            relay.Publish(state, flying ? _flightPosition : hull.position, flying ? _flightRotation : hull.rotation,
+                          new Vector4(AttackCooldown01, BurstCooldown01, StingCooldown01, CameraBack()));
+        }
+
+        /// <summary>A peer that is not the server follows its decision: the model dressed for the mode, the nested hull
+        /// held still, laying nothing and solid to nothing, and on the owner the aim its held trigger would sting.</summary>
+        void StepMirror(float dt)
+        {
+            var relay = Relay;
+            byte state = relay.State;
+            var mode = (WaspMode)(state & JewelWaspNetworkRelay.ModeMask);
+            bool arrived = mode == WaspMode.Stinging && (state & JewelWaspNetworkRelay.ArrivedBit) != 0;
+            if (mode != WaspMode.Stinging) _stingArrivedAt = -1f;
+            else if (arrived && _stingArrivedAt < 0f) _stingArrivedAt = Time.time;
+            else if (!arrived) _stingArrivedAt = -1f;
+            _mode = mode;
+            bool riding = mode != WaspMode.Free;
+            if (relay.IsOwner) HoldHull(riding);
+            SetPen(riding);
+            SetIncorporeal((state & JewelWaspNetworkRelay.IncorporealBit) != 0);
+            if (relay.IsOwner && mode != WaspMode.InFauna && mode != WaspMode.Stinging && (_rightHeld || _leftHeld))
+                UpdateAim(_aimFauna);
+            else SetAim(null, true);
+            EaseModel(dt);
+        }
+
+        void HoldTriggerShown(JewelWaspControl control, bool down)
+        {
+            if (control == JewelWaspControl.Right)
+            {
+                _rightHeld = down;
+                if (down) _aimFauna = true;
+                else if (_leftHeld) _aimFauna = false;
+            }
+            else if (control == JewelWaspControl.Left)
+            {
+                _leftHeld = down;
+                if (down) _aimFauna = false;
+                else if (_rightHeld) _aimFauna = true;
+            }
         }
 
         void ReleaseCamera()

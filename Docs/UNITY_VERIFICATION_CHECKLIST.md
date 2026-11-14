@@ -23495,10 +23495,15 @@ Branch `claude/clever-clarke-7uxwca`; `Docs/MENU_REDESIGN_B.md` sections 187-188
 ## 🔴 Jewel Wasp: the possession vessel, class 31 (2026-11-14, Garrett's project thread, `claude/jewel-wasp`, NOT RUN IN EDITOR)
 
 Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor configurations: 0 errors in the changed files);
-`author_jewel_wasp_assets.py --check` and `--self-test` pass. Nothing has been run in Unity. Design:
+`author_jewel_wasp_assets.py --check` and `--self-test`, `author_jewel_wasp_hud.py --check`, `icon_kit/author.py JewelWasp
+--check` and `vessel_model/build.py JewelWasp --check` pass. Nothing has been run in Unity. Design:
 `Assets/_Scripts/Controller/Vessel/R_VesselActions/JEWEL_WASP.md`. Fly it from the Toybox's Vessel Changer.
 
-- [ ] The Vessel Changer offers the Jewel Wasp; it spawns flying (the Tiger Moth's airframe, smaller); the console is clean.
+- [ ] The Vessel Changer offers the Jewel Wasp; it spawns flying as the wasp's own model (JewelWasp.fbx: compound eyes,
+      masts, banded gaster, four glass wings), its class card and hangar preview show the wasp; the console is clean.
+- [ ] The wings beat fast and shallow, fore and hind together (no butterfly glide); each element at 10 morphs the hull
+      (Charge needle and prongs, Mass gaster swells, Space masts and wings reach, Time wings sweep).
+- [ ] A sting: the gaster curls under on arrival; nested, it stays half curled and the wings fold.
 - [ ] Hold RT: the creature ahead lights in your hue. Let go: the hull flies to its heart, tucks in small beside the crystal,
       and the sticks fly the creature (both together pitch and yaw, one up one down rolls, apart is faster).
 - [ ] A Brittlestar host: RT at a rival vessel whips all five arms out at it, and the rival loses petals (a Strike). A shark or
@@ -23515,5 +23520,10 @@ Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor conf
 - [ ] Phone: the four cards are buttons; the Charge card is A (leave); holding the Space card aims while the other thumb flies.
 - [ ] Ark escort, a hostile world: a creature that reaches a squad vessel plays its attack at it and the vessel loses petals;
       on a pacified world nothing strikes. (Affects Shombith's Voyages.)
+- [ ] The HUD is the wasp's own (no Moth dust, drop or keys): Attack, Root, Sting, Swim; in a host the Space card shows
+      the Suction and the Time card the Dash, and they swap back on leaving; a level-5 card keeps its upgrade picture.
+- [ ] Multiplayer, a CLIENT hull (host + one client, `Docs/MULTIPLAYER_START_HERE.md`): the client stings a creature and
+      flies it from its own sticks; the host sees the wasp nested and the creature steered; RT attack and suction, LT
+      burst and A leave all work from the client; the client's HUD shows the recharges; a second client sees the same.
 - [ ] After a ride of 3 s or more, `Documents/CosmicShore Diagnostics/Flights/possession_<scene>_<species>_<time>.json` exists
       and is sent with the flights after Play.

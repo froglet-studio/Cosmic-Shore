@@ -35,6 +35,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("The hull model's scale nested beside a host's heart, so it tucks in beside the crystal: an onlooker " +
                  "sees a creature, and only an observant one sees the wasp.")]
         [SerializeField, Min(0.01f)] float nestedScale = 0.22f;
+        [Tooltip("Degrees the gaster (the model's `abdomen` bone) curls under the body at the height of the sting, the " +
+                 "needle swinging forward into the heart.")]
+        [SerializeField, Range(0f, 120f)] float stingCurlDegrees = 72f;
+        [Tooltip("Degrees the gaster stays curled while the wasp rides a host or a plant: the needle kept in.")]
+        [SerializeField, Range(0f, 120f)] float nestedCurlDegrees = 34f;
         [Tooltip("How far beside the heart the wasp nests, in heart radii.")]
         [SerializeField, Min(0f)] float nestOffset = 1.3f;
         [Tooltip("The heart's radius when the host carries no crystal (u).")]
@@ -141,6 +146,8 @@ namespace CosmicShore.Gameplay
         public float StingMaxSeconds => stingMaxSeconds;
         public float HullScale => hullScale;
         public float NestedScale => nestedScale;
+        public float StingCurlDegrees => stingCurlDegrees;
+        public float NestedCurlDegrees => nestedCurlDegrees;
         public float NestOffset => nestOffset;
         public float FallbackHeartRadius => fallbackHeartRadius;
         public float HostTurnDegrees => hostTurnDegrees;

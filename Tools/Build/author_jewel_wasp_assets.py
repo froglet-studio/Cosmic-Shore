@@ -119,6 +119,22 @@ SPREAD_TRANSFORM = "8118271280978713450"
 SPREAD_EXECUTOR = "2591329563551618180"
 INPUT_RT, INPUT_LT, INPUT_A = 1, 2, 6   # RightStickAction, LeftStickAction, Button1Action (the pad's A)
 
+# The hull model: the wasp's own (Tools/Build/vessel_model/specs/jewelwasp.py), on the Butterfly's rig and names, so the
+# prefab binds it by swapping the model's guid alone (the borrowed-rig path); the stand-in was the Tiger Moth's Butterfly.
+MODEL_FBX = os.path.join(ROOT, "Assets", "_Models", "Vessel Models", "JewelWasp.fbx")
+BUTTERFLY_MODEL_GUID = "1c6e4c75c81047ddb894f8966caea0af"
+# The possession's network relay (JewelWaspNetworkRelay, on the root beside the NetworkObject): the server decides the
+# possession in a networked match and every peer mirrors it (JEWEL_WASP.md section 6.1).
+RELAY_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "JewelWaspNetworkRelay.cs.meta")
+RELAY_ID = "7741000000000003101"
+# The HUD: the wasp's own JewelWaspHUDVariant (Tools/Build/author_jewel_wasp_hud.py), never the Tiger Moth's.
+BUTTERFLY_HUD_GUID = "dd198b52721e3c346970524ad4972959"
+OWN_HUD_META = os.path.join(ROOT, "Assets", "_Prefabs", "UI Elements", "VesselHUD", "JewelWaspHUDVariant.prefab.meta")
+# The wingbeat, a wasp's: fast and shallow, fore and hind wings hooked together (a wasp's hamuli), no soaring V.
+# ButterflyAnimation's own fields on this hull (the Tiger Moth's values were a butterfly's slow, deep, lagged beat).
+WING_BEAT = (("beatAmplitude", "52", "30"), ("beatAmplitudeAtCruise", "16", "12"), ("beatHz", "1.15", "5"),
+             ("beatHzAtCruise", "1.7", "8"), ("glideLift", "26", "6"), ("hindLagBeats", "0.18", "0.03"))
+
 
 # ----------------------------------------------------------------------------- the prefab
 def clone_prefab(donor: str) -> str:
@@ -159,8 +175,7 @@ def clone_prefab(donor: str) -> str:
                   "  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.JewelWaspHUDController\n"
                   f"  baseView: {{fileID: {base_view}}}\n"
                   "  _iconSetSwitcher: {fileID: 0}\n"
-                  f"  wasp: {{fileID: {EXECUTOR_ID}}}\n"
-                  "  timeInHostIcon: {fileID: 0}", 1)
+                  f"  wasp: {{fileID: {EXECUTOR_ID}}}", 1)
 
     # SpreadWings (the Butterfly's Mass / Dust mode) goes
     for fid in (SPREAD_GO, SPREAD_TRANSFORM, SPREAD_EXECUTOR):
@@ -204,7 +219,7 @@ def config_asset() -> str:
     t = so_head(guid_of(CONFIG_SO_META), "JewelWaspConfig", "CosmicShore.Gameplay.JewelWaspConfigSO")
     t += ("  aimConeDegrees: 14\n  stingRangeOutsideCell: 3000\n  stingSpeed: 1400\n  stingSeconds: 0.35\n"
           "  stingCooldown: 0.6\n  stingMaxSeconds: 4\n"
-          "  hullScale: 0.45\n  nestedScale: 0.22\n  nestOffset: 1.3\n  fallbackHeartRadius: 2\n"
+          "  hullScale: 0.45\n  nestedScale: 0.22\n  stingCurlDegrees: 72\n  nestedCurlDegrees: 34\n  nestOffset: 1.3\n  fallbackHeartRadius: 2\n"
           "  hostTurnDegrees: 120\n  hostRollDegrees: 110\n")
     t += efloat("hostSpeedScale", 1.5, 3, 4, 1)
     t += "  hostSlowShare: 0.45\n  burstMultiplier: 2.2\n  burstSeconds: 1.2\n  burstCooldown: 3\n"
@@ -306,11 +321,37 @@ def network_entry() -> str:
             "    SourcePrefabToOverride: {fileID: 0}\n    SourceHashToOverride: 0\n    OverridingTargetPrefab: {fileID: 0}\n")
 
 
+def wear_own_hull(t: str) -> str:
+    """The prefab after the clone: the wasp's own model in place of the Butterfly (a guid swap: the names, bones and
+    sub-asset ids are the Butterfly's) and a wasp's wingbeat. Idempotent: it runs on the committed prefab every time."""
+    model_guid = guid_of(MODEL_FBX + ".meta")
+    t = t.replace(f"guid: {BUTTERFLY_MODEL_GUID}", f"guid: {model_guid}")
+    t = re.sub(r"(propertyPath: m_Name\n      value: )Butterfly\n", r"\g<1>JewelWasp\n", t)
+    for key, old, new in WING_BEAT:
+        t = re.sub(rf"(?m)^  {key}: {re.escape(old)}$", f"  {key}: {new}", t)
+    if f"--- !u!114 &{RELAY_ID}\n" not in t and os.path.exists(RELAY_META):
+        root = block(t, ROOT_GO)
+        last = re.findall(r"  - component: \{fileID: -?\d+\}\n", root)[-1]
+        t = t.replace(root, root.replace(last, last + f"  - component: {{fileID: {RELAY_ID}}}\n", 1), 1)
+        t = t.rstrip("\n") + "\n" + (
+            f"--- !u!114 &{RELAY_ID}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+            f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {ROOT_GO}}}\n"
+            f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {guid_of(RELAY_META)}, type: 3}}\n  m_Name: \n"
+            f"  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.JewelWaspNetworkRelay\n"
+            f"  ShowTopMostFoldoutHeaderGroup: 1\n")
+    return t
+
+
 # ----------------------------------------------------------------------------- author + check
 def author() -> None:
     if not os.path.exists(PREFAB) and os.path.exists(DONOR):
         write(PREFAB, clone_prefab(read(DONOR)))
         write(PREFAB + ".meta", prefab_meta(PREFAB_GUID))
+    if os.path.exists(PREFAB) and os.path.exists(MODEL_FBX + ".meta"):
+        t = read(PREFAB)
+        n = wear_own_hull(t)
+        if n != t: write(PREFAB, n)
     if not os.path.exists(ACTION_DIR + ".meta"):
         write(ACTION_DIR + ".meta", folder_meta(ACTION_DIR_GUID))
     if not os.path.exists(CONFIG):
@@ -370,6 +411,21 @@ def errors() -> list:
     need(f"guid: {guid_of(EXECUTOR_META)}" in exec_block and f"config: {{fileID: 11400000, guid: {CONFIG_GUID}" in exec_block,
          "the possession executor is not wired to its config")
     need(f"  hullModel: {{fileID: {HULL_MODEL_ID}}}" in exec_block, "the possession executor has no hull model")
+    need(os.path.exists(MODEL_FBX) and os.path.exists(MODEL_FBX + ".meta"),
+         "JewelWasp.fbx is missing (build it: vessel_model/build.py JewelWasp)")
+    if os.path.exists(MODEL_FBX + ".meta"):
+        need(f"m_SourcePrefab: {{fileID: 100100000, guid: {guid_of(MODEL_FBX + '.meta')}, type: 3}}" in pf
+             and BUTTERFLY_MODEL_GUID not in pf, "the hull still wears the Butterfly's model, not JewelWasp.fbx")
+    relay_on_root = (f"  - component: {{fileID: {RELAY_ID}}}\n" in block(pf, ROOT_GO)
+                     and f"--- !u!114 &{RELAY_ID}\n" in pf
+                     and f"m_GameObject: {{fileID: {ROOT_GO}}}" in block(pf, RELAY_ID)
+                     and f"guid: {guid_of(RELAY_META)}" in block(pf, RELAY_ID)) if os.path.exists(RELAY_META) else False
+    need(relay_on_root, "JewelWaspNetworkRelay is not on the root beside the NetworkObject (the server cannot hand "
+                        "a client its possession)")
+    for key, _, new in WING_BEAT:
+        need(f"\n  {key}: {new}\n" in pf, f"the wingbeat's {key} is not the wasp's ({new})")
+    need(os.path.exists(OWN_HUD_META) and f"guid: {guid_of(OWN_HUD_META)}" in pf and BUTTERFLY_HUD_GUID not in pf,
+         "the hull still nests the Tiger Moth's HUD (run author_jewel_wasp_hud.py)")
     hud = block(pf, HUD_ID)
     need(f"guid: {guid_of(HUD_META)}" in hud and f"  wasp: {{fileID: {EXECUTOR_ID}}}" in hud,
          "the HUD controller does not read the possession executor")
@@ -410,6 +466,9 @@ def errors() -> list:
         need(f"UpgradeLabel: {label}\n" in mp, f"the map has no {label} level-5 card")
     need(re.search(r"  - Element: 1\n(?:    .*\n)*?    Input: 6\n", mp) is not None, "Charge is not on A")
     need(f"  Class: {CLASS_ID}\n" in read(CLASS_ASSET), "SO_Class_JewelWasp is not class 31")
+    card = os.path.join(ROOT, "Assets", "_Graphics", "CardImages", "JewelWasp.png.meta")
+    need(os.path.exists(card) and f"  IconActive: {{fileID: 21300000, guid: {guid_of(card)}, type: 3}}\n" in read(CLASS_ASSET),
+         "SO_Class_JewelWasp does not show the wasp's own card (render it: vessel_model/render_cards.py JewelWasp)")
     for path in CLASS_LISTS:
         need(f"guid: {CLASS_GUID}" in read(path), f"{os.path.basename(path)} does not list SO_Class_JewelWasp")
     need(f"{{fileID: {ROOT_TRANSFORM_ID}, guid: {PREFAB_GUID}, type: 3}}" in read(CONTAINER),
@@ -431,6 +490,10 @@ def self_test() -> int:
         "A unbound": good.replace(f"  - InputEvent: {INPUT_A}\n", "  - InputEvent: 7\n", 1),
         "dangling": good.replace(f"  wasp: {{fileID: {EXECUTOR_ID}}}", "  wasp: {fileID: 123}"),
         "no hull model": good.replace(f"  hullModel: {{fileID: {HULL_MODEL_ID}}}", "  hullModel: {fileID: 0}"),
+        "the Butterfly's model": good.replace(f"guid: {guid_of(MODEL_FBX + '.meta')}", f"guid: {BUTTERFLY_MODEL_GUID}"),
+        "a butterfly's beat": good.replace("\n  beatHz: 5\n", "\n  beatHz: 1.15\n"),
+        "no network relay": good.replace(f"  - component: {{fileID: {RELAY_ID}}}\n", "", 1),
+        "the Moth's HUD": good.replace(f"guid: {guid_of(OWN_HUD_META)}", f"guid: {BUTTERFLY_HUD_GUID}"),
     }
     failed = 0
     try:
