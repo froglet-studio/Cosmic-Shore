@@ -897,6 +897,7 @@ namespace CosmicShore.Gameplay
                 vc.NetworkObject.ChangeOwnership(NetworkManager.ServerClientId);
 
             ConfigureDepartedPilotAI(vessel);
+            ArmModeSteering(player);
             vessel.ToggleAIPilot(true);
 
             // Say it out loud. A ship that keeps flying under new management is LESS confusing than
@@ -904,6 +905,20 @@ namespace CosmicShore.Gameplay
             // differently reads as a cheat or a bug. Fired on the server; the toast feed is
             // per-peer, so this announces on the host and the ClientRpc below covers the rest.
             AnnouncePilotHandedToAI(player.NetName.Value.ToString(), player.Domain);
+        }
+
+        /// <summary>
+        /// Give an adopted hull the mode's own AI steering (<see cref="IAIPilotArming"/>: every gate race), as
+        /// <c>PilotControl</c> does for a hull handed over by hand. A gate race arms its AI seats once, when the
+        /// countdown ends, so a pilot who left after that flew the platform autopilot's own seeking: in Switchback it
+        /// circled through the cell centre and never threaded a gate (two-player test, 2026-11-15). A mode without
+        /// the interface keeps the platform autopilot.
+        /// </summary>
+        static void ArmModeSteering(IPlayer player)
+        {
+            foreach (var controller in FindObjectsByType<MiniGameControllerBase>(FindObjectsSortMode.None))
+                if (controller is IAIPilotArming arming && arming.ArmAIPilot(player))
+                    return;
         }
 
         void HandleClientConnectedForRejoin(ulong clientId)

@@ -23785,3 +23785,20 @@ Legendary pace (8 seeds) moved by under 5 s a race (I1 62 -> 58, I2 101 -> 102, 
 2. Take a key facing the ring: the blast opens the door behind it.
 3. I4: both doors sit behind the ring (8 u and 24 u). The gauntlet tunnels still hide the ring on about half the legs.
 4. AI seats still blast most blocked gates and do not stall on a door.
+
+## 🔴 A leaver's hull flies the gates in a gate race (Switchback, 2026-11-15) — NOT COMPILED, NOT EDITOR-VERIFIED
+
+Not compiled: the editor was in use by the multiplayer testing session. Files: `ServerPlayerVesselInitializer.cs`
+(`ConvertPlayerToAI` now arms the mode's AI steering, `IAIPilotArming`), `PilotControl.cs` (refuses a remote pilot's hull).
+
+1. Compile; run the EditMode tests.
+2. Editor host + MPPM Player 2, Switchback, both on Dolphins, no AI rivals (`gameData.ConfigurePlayerCounts(2, 2)`).
+   After the countdown, close Player 2 (or deactivate it in the MPPM window).
+   **Expect:** the "handed to the AI" toast, then Player 2's hull flies gate to gate (its gate count climbs; with the
+   Third Eye its objective reads Approach / Through, never only the cell centre) and finishes or keeps progressing.
+   Before: it circled through the cell centre and stayed at its gate count.
+3. Same match, Player 2 rejoins: its hull is its own again and its own flying threads gates.
+4. From the host, `PilotControl.TrySetAIFlies(player2, true, gameData, out refusal)` while Player 2 is connected.
+   **Expect:** false, refusal says the hull is flown on their machine. The host's own hull still hands over as before.
+5. Still open, not explained by reading: the host's own handed-over hull took over 6 minutes and damaged 425 prisms in
+   the two-human match (21 of 26 in 2:00 solo). Re-time it once Player 2's hull is no longer wandering the course.

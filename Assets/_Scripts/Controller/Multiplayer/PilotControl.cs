@@ -70,6 +70,14 @@ namespace CosmicShore.Gameplay
                 return false;
             }
             if (aiFlies == IsHeldByAI(human)) return true;
+            // A hull is flown on the machine that owns it. The host's AIPilot would steer its own copy of a remote
+            // pilot's hull, which that pilot's machine overwrites: the hull kept flying uncontrolled while this read
+            // "the AI flies it" (two-player Switchback test, 2026-11-15).
+            if (aiFlies && hull is VesselController { IsSpawned: true, IsOwner: false })
+            {
+                refusal = $"{human.Name}'s hull is flown on their machine: the host's AI cannot steer it";
+                return false;
+            }
 
             if (aiFlies)
             {

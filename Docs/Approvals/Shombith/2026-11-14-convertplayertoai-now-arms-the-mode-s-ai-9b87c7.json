@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-14-convertplayertoai-now-arms-the-mode-s-ai-9b87c7",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-14T23:04:38+00:00",
+  "area": "multiplayer leaver hand-over and PilotControl",
+  "summary": "ConvertPlayerToAI now arms the mode's AI steering (IAIPilotArming) so a leaver's hull flies the gates in a gate race instead of circling the cell centre; PilotControl.TrySetAIFlies refuses a remote client's hull (the host's AI cannot steer it). Not compiled: the editor was in use.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "1167a0a2f"
+}
