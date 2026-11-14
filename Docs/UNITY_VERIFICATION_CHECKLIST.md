@@ -331,6 +331,22 @@ on a missing clip and a drifted entry). No Unity editor ran.
 6. Leave the Ark and come back: the clips start again; no error about a missing clip in the console.
 7. Profiler on a phone build: the video decode cost on the Ark screen.
 
+### 🔴 B / Escape steps back on the Ark's Pilots and Artifacts tabs (`claude/project-thread-ia8lnf`, 2026-11-14, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed** (Docs/MENU_REDESIGN_B.md section 205): `ArkTabsView` reads B on a pad and Escape while the Ark is the
+active screen and asks the shown page to step one level back (`IArkTabBack`). Pilots: a file goes back to the crew,
+the crew lays the PDA down. Artifacts: feeding goes back to the artifact, the artifact back to the hoard. At a page's
+top level, under a modal (the pilot's profile page) or on a guided path, nothing happens. Ran headless:
+`unity_refcompile` player and editor (0 errors in the changed files; the 30 it reports are package gaps outside them),
+`author_menu_ark.py --check`. `ArkTabBackTests` compiled, not run. No Unity editor ran.
+
+**Verify in editor:**
+1. Ark, PILOTS, PICK UP, open a pilot's file. Press B (pad) or Escape. **Pass:** back to the crew. Again: the PDA is
+   laid down (the put-down clip plays). Again: nothing happens.
+2. On a file, FULL PROFILE, then B. **Pass:** only the profile page closes; the PDA still shows the file.
+3. Ark, ARTIFACTS, pick a medallion, FEED IT. B, B. **Pass:** feeding, then the artifact, then the hoard; a third B does
+   nothing.
+
 ### 🔴 The Ark's Pilots tab as the crew PDA on the hangar's workbench, Rev 99 C (`claude/project-thread-5ayjx3`, 2026-11-13, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed** (Docs/MENU_REDESIGN_B.md section 192): PILOTS is no longer veiled. Its backdrop is the hangar's
