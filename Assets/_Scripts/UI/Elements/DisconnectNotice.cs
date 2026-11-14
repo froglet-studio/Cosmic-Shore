@@ -270,11 +270,16 @@ namespace CosmicShore.UI
         /// match, offer to rejoin it; when nobody has for a while, give it up - saying "The host left" after a drop, since
         /// the host is a player and its match ends with it.
         /// </summary>
+        const string MenuScene = "Menu_Main";
+
         void CheckRejoin()
         {
             if (Time.unscaledTime < _nextRejoinCheck) return;
             _nextRejoinCheck = Time.unscaledTime + _config.RejoinCheckSeconds;
             if (_targetAlpha > 0f || _launching || _busy) return;
+            // The menu only. In a game scene the remembered match is either this one or an older one this player has
+            // moved on from, and giving the older one up there put "The host left" over the new match (2026-11-15).
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != MenuScene) { _presenceOnlineFor = 0f; return; }
             if (!MatchRejoin.TryLoad(out var record)) { _presenceOnlineFor = 0f; return; }
 
             var hcs = HostConnectionService.Instance;
