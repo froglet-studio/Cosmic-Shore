@@ -558,7 +558,8 @@ values to its `RoundStats` (`n_VesselStats`, server-written); the scoreboard's s
 a play.
 
 **Verify in editor:**
-1. The project compiles; EditMode `VesselStatsSyncTests` (7) passes.
+1. The project compiles; EditMode `VesselStatsSyncTests` (7) passes. **PASSED 2026-11-15** (Unity 6000.3.17f1 batch
+   mode on `Ys-bleeding-edge` `8a306db1b1`: 0 compile errors, 7/7). Steps 2-6 still need a play.
 2. Solo, fly a Dolphin (or Manta, Rhino, Serpent, Swordfish) in any arcade mode and ram some prisms. **Pass:** the
    scoreboard's Prisms Damaged is above 0, and Longest Drift / Max Boost show your values. The console no longer
    warns "[TelemetryBootstrap] ... serialized stat SO refs will be null".
@@ -579,7 +580,9 @@ READY when the turn is already running; the host ignores a Ready press during a 
 Roslyn and response files (0 errors). Not run: EditMode, a play.
 
 **Verify in editor:**
-1. The project compiles; EditMode `GameDataSOTests` passes, the three `JoinRunningTurn_*` included.
+1. The project compiles; EditMode `GameDataSOTests` passes, the three `JoinRunningTurn_*` included. **PASSED
+   2026-11-15** (Unity 6000.3.17f1 batch mode on `Ys-bleeding-edge` `8a306db1b1`: 0 compile errors, 41/41). Steps 2-6
+   still need a two-player play.
 2. Two players (main editor + MPPM Player 2, or the editor + a dev build), a party match of any arcade mode, both press
    READY, the race starts. Drop Player 2 mid-race (stop its Play, or kill the build) and wait for "handed to the AI".
 3. Player 2 comes back and presses REJOIN. **Pass:** after the connecting panel, Player 2 is flying its old ship at

@@ -10,7 +10,6 @@ One line per bug, with its current state. Full entries (repro, root cause, fix) 
 | P-B36 / P-B45: a long frame freeze (boot menu load, cell swap) makes the Relay drop the host | Freezes not fixed. Boot-order decision (start the Relay host after the menu is up) is waiting on the owner; Garrett's machine needs a Profiler capture |
 | P-B46: `ArgumentNullException` flood from the match HUD on another client after a rejoin | Throw fixed (`be6f1058e`, `MiniGameHUD.ResolveAIAvatarSprite`); why the reclaimed seat has no name (`Player.Name` null) is still open, and `MultiplayerHUD` now logs it |
 | P-B7: client pair-init runs before remote identity replicates | ⚪ open, low |
-| `OfflineSessionTests.Case4_NetworkLostMidSession_RaisesTheNoticeEventOnce` fails (EditMode, Cosmos 2026-11-02) | Open, not triaged. Test file unchanged since `59c88e5f1` (2026-10-26), no fix since. Offline mode notice event, see [`../OFFLINE_MODE.md`](../OFFLINE_MODE.md) |
 | No scripted MPPM scenarios and no automatic host/join harness: every multiplayer run needs a person | Open, see [`TODO.md`](TODO.md) |
 | Amoebius edit-mode suite no longer builds (102 missing engine APIs) | Open, harness owner |
 
@@ -30,6 +29,14 @@ One line per bug, with its current state. Full entries (repro, root cause, fix) 
 ## Fixed and verified
 
 P-B2, B3, B5, B8 to B17, B30 (🟢 in the party BUGS file).
+
+`OfflineSessionTests.Case4_NetworkLostMidSession_RaisesTheNoticeEventOnce` (failed since 2026-11-02): a test fault, not
+a game fault. It counted raises of a SOAP channel, and a SOAP channel does nothing outside Play mode, so an EditMode
+test never hears it. `NetworkMonitor` now counts its Online -> Offline transitions (`LossesSeen`, internal) and the test
+reads that. Fixed 2026-11-15; `OfflineSessionTests` 15/15 in Unity 6000.3.17f1 batch mode.
+
+EditMode run of 2026-11-15 (batch mode, `Ys-bleeding-edge`): `VesselStatsSyncTests` 7/7, `GameDataSOTests` 41/41 (the
+three `JoinRunningTurn_*` included). The plays for B21 (scoring) and P-B50 are still owed.
 
 ## Not bugs, missing features (tracked in [`TODO.md`](TODO.md))
 
