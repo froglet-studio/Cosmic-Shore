@@ -81,10 +81,7 @@ plays its attack at it. The escort's danger contact (`ArkEscortSO.faunaStrikeEff
 (`ArkEscortRun.Strikes.cs`).
 
 Possessed creatures, murmurations and creatures this machine does not simulate never strike there. This is the escort's
-own carve-out, `Docs/ECOSYSTEM.md` section 0.w.
-
-**It is on its own branch, `claude/jewel-wasp-ark-strikes`, not in the vessel's change.** The Ark escort is the Voyages
-lane, which Garrett handed to Shombith on 2026-11-13, so it waits for the two of them to agree.
+own carve-out, `Docs/ECOSYSTEM.md` section 0.w. Affects: Shombith's Voyages (queued for his `/approve`).
 
 ## 5. Recording rides for the fauna
 
