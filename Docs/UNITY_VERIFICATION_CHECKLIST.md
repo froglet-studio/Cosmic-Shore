@@ -23448,3 +23448,9 @@ is kept, so no prefab or asset reference changes. Compiled against the Unity ref
 1. Open the project: no "missing script" or "class name does not match file name" warnings for any Swordfish* script.
 2. Fly the Swordfish in the Toybox: swipe, energize, afterimages, combos and the Surge ring all work as before.
 3. The Rhino and the Jacks fly as before (they share only `RhinoAnimation` and `RhinoAIBoostPolicy`, which keep their names).
+
+## Scarab Rally I4: the next ring stays in sight (2026-11-14, `claude/project-thread-v8enx0`)
+
+Not run in a Unity editor. Headless: `switchback_sim_harness/run.sh tests` 78 passed (the new sight-line test failed
+85,404 / 147,200 on the old layout). Hand test: Scarab Rally I4, leave each ring and check the next lime ring's whole
+rim shows through the field; no doors on the rings; Switchback I1-I4 unchanged.

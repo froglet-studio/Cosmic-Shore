@@ -228,6 +228,20 @@ namespace CosmicShore.Gameplay
         /// its way through is the gauntlet (<see cref="HasGauntlet"/>), and the field fills the line.</summary>
         public static float BoreRadius(int intensity) => BoreRadius(intensity, true);
         public static float BoreRadius(int intensity, bool gauntlet) => new[] { 30f, 26f, 22f, 0f, 18f }[R(intensity, gauntlet)];
+        /// <summary>u past the bigger of a leg's two mouths that the sight line keeps clear (<see cref="SightBore"/>): half a
+        /// cell, so the next ring's whole rim, and a little water round it, shows down the leg.</summary>
+        public const float SightMargin = 12f;
+        /// <summary>The bore a leg's field actually keeps clear. Every row keeps <see cref="BoreRadius(int, bool)"/>; I4
+        /// WITHOUT the gauntlet (Scarab Rally) also keeps the SIGHT LINE from the ring you leave to the next one: the bigger
+        /// of the two mouths plus <see cref="SightMargin"/>, so no field prism hides the next ring's lime rim from where
+        /// you leave a ring (Garrett, 2026-11-14: "respect sight lines from one ring to another"). Its 18 u bore was
+        /// narrower than its 22 u mouths, so the field covered the rim on every blocked leg.</summary>
+        public static float SightBore(int intensity, bool gauntlet, float mouthRadius, float previousMouthRadius)
+        {
+            float bore = BoreRadius(intensity, gauntlet);
+            if (R(intensity, gauntlet) != 4) return bore;
+            return Mathf.Max(bore, Mathf.Max(mouthRadius, previousMouthRadius) + SightMargin);
+        }
         /// <summary>The chance a free cell starts an object (bigger objects then claim more cells).</summary>
         public static float Fill(int intensity) => Fill(intensity, true);
         public static float Fill(int intensity, bool gauntlet) => new[] { 0.30f, 0.40f, 0.50f, 0.70f, 0.60f }[R(intensity, gauntlet)];
@@ -288,6 +302,11 @@ namespace CosmicShore.Gameplay
         public static bool HasSliderPairs(int intensity) => intensity >= 4;
         public static bool HasBeams(int intensity) => intensity >= 3;
         public static bool HasDoubleDoor(int intensity) => intensity >= 4;
+        /// <summary>Whether a blocked gate hangs its door(s). Every row does except I4 WITHOUT the gauntlet (Scarab Rally): a
+        /// door is a plug across the port with an 18 u eye, so it hid the 22 u lime ring behind it from down the leg, and its
+        /// eye only opens to the Dolphin's blast (Garrett, 2026-11-14: keep the sight line from one ring to the next). The
+        /// door's keepout stays, so the field still leaves the mouth clear.</summary>
+        public static bool LaysDoors(int intensity, bool gauntlet) => R(intensity, gauntlet) != 4;
 
         // ── budgets (the 100 fps target; SWITCHBACK.md "Blast Run - budgets") ──
         /// <summary>Whole-course prism ceilings, doors and moving prisms included (Breakwater lays about 4600 at I1). I4
@@ -425,8 +444,11 @@ namespace CosmicShore.Gameplay
                 bool dbl = HasDoubleDoor(intensity);
                 if (dbl && !DoorClear(course, centre, clearRadius, door2, port, g)) continue;
 
-                EmitDoor(layout, door, axis, port, gauntlet);
-                if (dbl) EmitDoor(layout, door2, axis, port, gauntlet);
+                if (LaysDoors(intensity, profile))
+                {
+                    EmitDoor(layout, door, axis, port, gauntlet);
+                    if (dbl) EmitDoor(layout, door2, axis, port, gauntlet);
+                }
                 keepouts.Add(new Keepout(door, door, port + 6f));
                 if (dbl) keepouts.Add(new Keepout(door2, door2, port + 6f));
                 if (!gauntlet)
@@ -597,6 +619,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The prisms one door lays at <paramref name="intensity"/> (seal included where the gauntlet is).</summary>
         public static int DoorPrisms(int intensity, bool gauntlet = true)
         {
+            if (!LaysDoors(intensity, gauntlet)) return 0;
             int n = 0;
             EmitDoorPrisms(Vector3.zero, Vector3.forward, PortFor(intensity), HasGauntlet(intensity, gauntlet), (p, r, s, k) => n++);
             return n;
@@ -789,7 +812,8 @@ namespace CosmicShore.Gameplay
             Vector3 gate = course[st.Gate].Position;
             var f = new Field
             {
-                Station = s, OwnLeg = st.Gate - 1, N = CellsHalf(it, ctx.Profile), Nz = nz, Z0 = z0, Bore = BoreRadius(it, ctx.Profile),
+                Station = s, OwnLeg = st.Gate - 1, N = CellsHalf(it, ctx.Profile), Nz = nz, Z0 = z0,
+                Bore = SightBore(it, ctx.Profile, course[st.Gate].Radius, course[st.Gate - 1].Radius),
                 Origin = gate, S1 = s1, S2 = s2, Dir = dir, Rot = Quaternion.LookRotation(dir, s2),
                 Salt = GateSalt(gate, s),
             };

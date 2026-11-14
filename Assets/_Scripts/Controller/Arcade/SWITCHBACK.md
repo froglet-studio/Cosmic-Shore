@@ -534,7 +534,8 @@ state, no physics and nothing reacts to players; a blasted mover prism simply st
 | I4 gauntlet (since 2026-11-03) | none | 11 x 11 x 12 (240 u across) | 70 % | + frames, jacks, hoops, ziggurats; tunnels on the route | <= 42 / 210; sealed double door; 2-3 keys a gate ("The I4 gauntlet" below) |
 
 The I4 row is now the field of a mode that turns the gauntlet off (Scarab Rally, `BlastRunGauntlet`); Switchback's own
-I4 is the gauntlet row and its section below.
+I4 is the gauntlet row and its section below. Since 2026-11-14 that row hangs no doors and keeps a sight bore of the
+bigger mouth + 12 u (`LaysDoors`, `SightBore`; SCARABRALLY.md "I4 keeps the sight line"); Switchback's rows are unchanged.
 
 Stations closer than `StationSpacing` = 280 u door to door are skipped (hairpins fold the course back on itself).
 
