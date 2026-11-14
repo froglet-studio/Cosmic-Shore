@@ -44,7 +44,7 @@ HULL_PAD = 6  # px of air kept round each measured hull
 NUMBERS = [
     # The Sea table's columns (Rev 89 A, 1840 across): chips 0-310, the table 340-1360, the squad from 1390.
     ("ListRight", "0.1685"), ("CourseLeft", "0.1848"), ("CourseRight", "0.7391"), ("PanelLeft", "0.7554"),
-    ("RowHeight", "76"),
+    ("RowHeight", "96"),
 ]
 
 

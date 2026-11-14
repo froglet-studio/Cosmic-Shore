@@ -213,7 +213,7 @@ namespace CosmicShore.UI
             _voyage = _chart?.Along(_route);
             if (_chart != null) SkyOf.ContentChanged();
             else _sky?.Hide();
-            raycastTarget = !_tilt;
+            raycastTarget = true;
             // A new frame (another course, or none) starts the explorer over; a redraw of the same one keeps where the
             // player has looked.
             string key = (focus ? "f:" : "a:") + string.Join(">", _route);
@@ -245,26 +245,6 @@ namespace CosmicShore.UI
         /// without the explorer's tier ladder and readout. Drag, pinch and wheel still explore.
         /// </summary>
         public bool Plain;
-
-        /// <summary>
-        /// The Sea table (Rev 89 A, Docs/MENU_REDESIGN_B.md section 172): the map lies back in perspective
-        /// (<see cref="VoyageSlab"/>), its far edge fading out. A lying map is looked at, not explored: it takes no
-        /// pointer, draws no corner galaxy and no caption, and its place names shrink with the distance.
-        /// </summary>
-        public bool Tilt
-        {
-            get => _tilt;
-            set
-            {
-                if (_tilt == value) return;
-                _tilt = value;
-                raycastTarget = !value;
-                if (_captionText) _captionText.gameObject.SetActive(!value && !string.IsNullOrEmpty(_caption));
-                PlaceLabels();
-                SetVerticesDirty();
-            }
-        }
-        bool _tilt;
 
         // A view the board asked for (FrameOn): kept across a resize until the player explores.
         Vector2 _fixCentre;
@@ -465,6 +445,16 @@ namespace CosmicShore.UI
             _fixWidth = 0f;
             _flying = false;
             ZoomAbout(Local(e, e.position), Mathf.Pow(WheelZoom, e.scrollDelta.y));
+        }
+
+        /// <summary>Zoom by <paramref name="factor"/> about the middle of the view (the Voyages screen's + and -), as the
+        /// wheel does about the pointer.</summary>
+        public void ZoomStep(float factor)
+        {
+            if (float.IsInfinity(_minX) || factor <= 0f) return;
+            _fixWidth = 0f;
+            _flying = false;
+            ZoomAbout(rectTransform.rect.center, factor);
         }
 
         public void OnPointerClick(PointerEventData e)
@@ -739,14 +729,12 @@ namespace CosmicShore.UI
                 var r = rectTransform.rect;
                 var lo = SeaUv(FromRect(r.min));
                 var hi = SeaUv(FromRect(r.max));
-                // Lying back, the water is a grid: one quad's texture would stretch along its diagonal (VoyageSlab).
-                if (_tilt) VoyageSlab.Grid(vh, r, SeaTint, lo, hi);
-                else Quad(vh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax),
+                Quad(vh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax),
                     new Vector2(r.xMax, r.yMin), SeaTint, lo, new Vector2(lo.x, hi.y), hi, new Vector2(hi.x, lo.y));
                 // The stars, clusters and landmarks over the water, under the corner, the lanes and the places.
                 SkyOf.Populate(vh, white, _style);
                 // Under the lanes and places, so a place in the corner still shows over it.
-                if (!_tilt) Inset(vh, white);
+                Inset(vh, white);
             }
 
             foreach (var lane in _content.Lanes ?? new List<VoyageLane>())
@@ -782,7 +770,6 @@ namespace CosmicShore.UI
                     white);
             }
 
-            if (_tilt) VoyageSlab.Apply(vh, rectTransform.rect);
         }
 
         static Vector2 Galaxy((double x, double y) p) => new((float)p.x, (float)-p.y);
@@ -921,7 +908,7 @@ namespace CosmicShore.UI
                 if (existing) existing.TryGetComponent(out _captionText);
             }
             bool show = !string.IsNullOrEmpty(_caption);
-            if (!_captionText && (!show || _tilt)) return;
+            if (!_captionText && !show) return;
             if (!_captionText)
             {
                 _captionText = NewText(CaptionName, VoyageMapText.Caption);
@@ -933,7 +920,7 @@ namespace CosmicShore.UI
                 rt.sizeDelta = new Vector2(-2f * InsetMargin, VoyageMapText.Caption * 1.4f);
                 rt.anchoredPosition = new Vector2(InsetMargin, InsetMargin);
             }
-            _captionText.gameObject.SetActive(show && !_tilt);
+            _captionText.gameObject.SetActive(show);
             if (show) _captionText.text = _caption;
         }
 
@@ -948,17 +935,7 @@ namespace CosmicShore.UI
                 var label = (RectTransform)_labels[i].transform;
                 bool shown = i < _labelShown.Count && _labelShown[i] && InFrame(at);
                 var below = new Vector2(0f, -MarkerSize * .5f - 2f - label.sizeDelta.y * .5f);
-                float scale = 1f;
-                if (_tilt)
-                {
-                    // The name stands where its place is seen, as much smaller as the place is far; none in the fade.
-                    var r = rectTransform.rect;
-                    shown &= VoyageSlab.Fade(r, at) > 0.5f;
-                    at = VoyageSlab.Warp(r, at, out scale);
-                    below *= scale;
-                }
                 _labels[i].gameObject.SetActive(shown);
-                label.localScale = new Vector3(scale, scale, 1f);
                 label.anchoredPosition = at - rectTransform.rect.center + below;
             }
         }

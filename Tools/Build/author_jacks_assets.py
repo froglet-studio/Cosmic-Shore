@@ -24,7 +24,7 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/R_VesselActions/JAC
           / a lifted thumb) and Input 4 (both thumbs lifted); CALL on Input 7 (A); the jacks' own DECOY on Input 6 (X; the
           Time level-5 upgrade). The Rhino's gamepad overrides (the shield swipes) are emptied
         - NO SWORD: the sword driver and its afterimages (ScaleSkimmerObject), the shield swipes (ShieldSwipeActionRegistry),
-          the sword relay, the sword autopilot, the Momentum ward, the sword's look (RhinoSwordFXController) and its five
+          the sword relay, the sword autopilot, the Momentum ward, the sword's look (SwordfishSwordFXController) and its five
           streaks are stripped (RHINO_SUBTREES, RHINO_COMPONENTS). The ForceFieldSkimmer stays: it is the hull's skimmer,
           made THE JACK (Garrett, 2026-10-23: three orthogonal axes spun about (1,1,1) on the line between the fish) - two
           more trigger capsules (X, Z) beside its own Y one (jack_retrofit); JacksBodies poses and draws it
@@ -140,7 +140,7 @@ WANT_BINDINGS = (
 RHINO_SUBTREES = ["ScaleSkimmerObject", "ShieldSwipeActionRegistry", "LeftJetParticle", "RightJetParticle", "JetTest",
                   "RampBoostActionRegistry"] + [
     f"RhinoSwordBladeTracer{i}" for i in range(5)]
-RHINO_COMPONENTS = ["RhinoSwordNetworkRelay", "VesselElementalImmunity", "RhinoSwordAutopilot", "RhinoSwordFXController"]
+RHINO_COMPONENTS = ["SwordfishSwordNetworkRelay", "VesselElementalImmunity", "SwordfishSwordAutopilot", "SwordfishSwordFXController"]
 # the Rhino's nested jets: the ten VesselJets (two pods, eight body nozzles), the pods' JetFX and the arc lightning
 RHINO_JET_PREFABS = {"55ceca573be662744948afc745f8840b": "VesselJet", "f2d613e7ff9874744baa70c5dc697310": "JetFX",
                      "304ca7b3152755c4885ea01bcc7183a6": "VfxArcLightning"}
@@ -156,7 +156,7 @@ SKIMMER_Y_COLLIDER = "4880931740909781519"         # the sword's own capsule (di
 # the skimmer's effects (Garrett, 2026-10-25: "remove the rhino skimmer effect"): the Rhino's container carried the sword's
 # prism damage (its Space-5 Breaker), its combat hit and its steal on rival hulls; the Jacks' hidden skimmer takes the
 # fleet's empty container - it only collects elemental crystals, whose effects are the crystal's own
-RHINO_SKIMMER_CONTAINER_GUID = "05483649aa8bbea458ee49ed300542bd"   # RhinoForceFieldSkimmerImpactorDataContainer
+RHINO_SKIMMER_CONTAINER_GUID = "05483649aa8bbea458ee49ed300542bd"   # SwordfishForceFieldSkimmerImpactorDataContainer
 NO_EFFECTS_SKIMMER_CONTAINER_GUID = "0ae2a0c5e2da4ac8885103089fc2ddce"   # NoEffectsSkimmerImpactorDataContainer
 # ... and its Space-scaled size (the sword's 30 -> 50) is switched off: JacksBodies sizes the hidden skimmer, so the curve
 # changed nothing and only read, in /element-ability-table, as the Jacks' Space scaling
@@ -339,9 +339,10 @@ MODEL_ROOT_TRANSFORM = "-8679921383154817045"
 MARLIN_INSTANCE_ID, MARLIN_TRANSFORM_ID, MARLIN_GO_ID = "2200000000000000011", "2200000000000000012", "2200000000000000013"
 JACK_IDS = (("Jack A", "2200000000000000021", "2200000000000000022"), ("Jack B", "2200000000000000031", "2200000000000000032"))
 BODIES_ID = "2200000000000000041"                # JacksBodies on the root
-# the ability row's four icons (author_jacks_icons.py), over the Rhino's sword placeholders the HUD variant draws
-HUD_INSTANCE = "2754590152818896375"            # RhinoHUDVariant nested in the hull
-HUD_VARIANT_GUID = "2656b477a4af7304180e65f2848a84b3"
+# the ability row's four icons, bound on the hull's nested HUD (JacksHUDVariant since 2026-11-13, author_jacks_hud.py,
+# forked from RhinoHUDVariant with every fileID kept; the variant carries the same sprites and each level-5 card)
+HUD_INSTANCE = "2754590152818896375"            # JacksHUDVariant nested in the hull
+HUD_VARIANT_GUID = "dacce99a4a521d2995cc614beb26d6a3"   # JacksHUDVariant (was RhinoHUDVariant 2656b477a4af7304180e65f2848a84b3)
 ICON_SPRITES = (("7720000000000003015", "c3a91e5d7b2f4c68a0e4d1b9f6c2a873"),   # ChargeIcon: Danger Share
                 ("7720000000000003025", "5e8b2d6a1f9c4b37a2d0e7c4b1f9a645"),   # MassIcon: The Call
                 ("7720000000000003035", "9f1c4a7e3b6d4e82b5a0c8d2e7f1b396"),   # SpaceIcon: Wide
@@ -851,7 +852,7 @@ def check_prefab(text: str, script_guid: str):
     names = set(re.findall(r"^  m_Name: (.*)$", text, re.M))
     for n in RHINO_SUBTREES:
         want(n not in names, f"Jacks.prefab: the Rhino's {n} is still on the hull")
-    for n in RHINO_COMPONENTS + ["ShieldSkimmerScaleDriver", "RhinoSwordAfterimage", "ShieldSwipeActionExecutor",
+    for n in RHINO_COMPONENTS + ["ShieldSkimmerScaleDriver", "SwordfishSwordAfterimage", "ShieldSwipeActionExecutor",
                                  "RhinoHUDController"]:
         want(f"guid: {guid_of_script(n)}, type: 3" not in text, f"Jacks.prefab: the Rhino's {n} is still on the hull")
     hud = re.search(r"guid: %s, type: 3\}\n((?:.*\n)*?)(?=--- !u!|\Z)" % guid_of_script("JacksHUDController"), text)

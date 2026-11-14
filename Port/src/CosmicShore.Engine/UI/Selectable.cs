@@ -1,7 +1,7 @@
 namespace CosmicShore.Engine.UI
 {
     /// <summary>Per-state tint set for ColorTint transitions (original contract: ColorBlock).</summary>
-    public struct ColorBlock
+    public partial struct ColorBlock
     {
         public Color normalColor;
         public Color highlightedColor;

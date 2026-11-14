@@ -2836,6 +2836,17 @@ MonoBehaviour:
     BoardStats: '{distance}   -   {sail}   -   Intensity {intensity}'
     BoardStepBack: '<'
     BoardStepOn: '>'
+    BoardZoomIn: '+'
+    BoardZoomOut: '-'
+    BoardConfigure: CONFIGURE SQUAD
+    BoardConfigureKey: X
+    BoardBack: VOYAGES
+    BoardBackKey: B
+    BoardSavePreset: SAVE AS PRESET
+    BoardSavePresetKey: Y
+    BoardHangarNote: A vessel brings the pilot you keep for it in the Hangar.
+    BoardPresetWho: '{leader}, {one}, {two}'
+    BoardSwapsWith: 'Swaps with {vessel}'
     SlabChip: '{n}  {name}'
     SlabSagaPart: 'Part {n} of {count}'
     SlabSagaKicker: 'Saga - part {n} of {count}'

@@ -4,22 +4,22 @@
  "tool": "Tools/Build/colour_trace.py",
  "rule": "Every colour that reaches a pixel comes from the worn colour set. Photic holds the baked values; every other set computes its own from its pigments (colour_trace.py repaint). A colour is inert, a UI theme token, fixed (pure white, pure black), traced (an id below), or untraced (listed below: the work left).",
  "counts": {
-  "fixed": 2492,
-  "inert": 29830,
-  "token": 3864,
+  "fixed": 2603,
+  "inert": 30365,
+  "token": 4088,
   "traced": 1933
  },
  "inert": {
   "ambient-mode": 180,
   "camera-no-clear": 8,
   "code-fallback": 157,
-  "code-inert": 229,
+  "code-inert": 228,
   "debug": 107,
   "field-reviewed": 9,
   "fog-off": 60,
   "gradient-key-unused": 78,
   "kit-legacy-field": 69,
-  "kit-selectable": 1420,
+  "kit-selectable": 1530,
   "material-stale": 840,
   "material-unused-prop": 20,
   "material-vector": 452,
@@ -35,10 +35,10 @@
   "shader-not-drawn": 19,
   "stale-field": 17,
   "subtractive-off": 60,
-  "tmp-colour-twin": 1603,
-  "tmp-face-cache": 1603,
+  "tmp-colour-twin": 1674,
+  "tmp-face-cache": 1674,
   "tmp-feature-off": 52,
-  "tmp-gradient-off": 6412,
+  "tmp-gradient-off": 6696,
   "unreachable": 13561
  },
  "inert_why": {
@@ -78,24 +78,24 @@
   "tmp-feature-off": "a TextMesh Pro material colour whose feature is off (no GLOW_ON, UNDERLAY_ON or BEVEL_ON keyword, outline width 0)"
  },
  "tokens": {
-  "ControlActive": 417,
-  "Cta": 294,
+  "ControlActive": 421,
+  "Cta": 295,
   "Danger": 16,
   "ElementCharge": 4,
   "ElementMass": 4,
   "ElementSpace": 4,
   "ElementTime": 4,
   "InactiveLight": 11,
-  "NeutralLightest": 737,
+  "NeutralLightest": 784,
   "Purchase": 32,
   "Sea": 7,
-  "Selection": 118,
-  "SurfaceBlack": 178,
-  "SurfaceDark": 438,
-  "SurfaceLight": 219,
-  "SurfaceVeryDark": 278,
+  "Selection": 137,
+  "SurfaceBlack": 221,
+  "SurfaceDark": 456,
+  "SurfaceLight": 226,
+  "SurfaceVeryDark": 298,
   "TextInactive": 1,
-  "TextLight": 1100,
+  "TextLight": 1165,
   "Tooltip": 2
  },
  "ids": {
@@ -438,12 +438,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 179,
+   "uses": 222,
    "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI",
     "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
-    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab HexApertureGraphic",
-    "Assets/_Prefabs/UI Elements/In Game/DomainScorePanel.prefab Image"
+    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab HexApertureGraphic"
    ],
    "token": "SurfaceBlack"
   },
@@ -484,7 +484,7 @@
     0.55
    ],
    "family": "blue",
-   "uses": 279,
+   "uses": 299,
    "where": [
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
@@ -544,12 +544,12 @@
     1.0
    ],
    "family": "jade",
-   "uses": 418,
+   "uses": 422,
    "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
     "Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab Image",
-    "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image",
-    "Assets/_Prefabs/UI Elements/Kit/KitButton.prefab Image"
+    "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image"
    ],
    "token": "ControlActive"
   },
@@ -807,7 +807,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 439,
+   "uses": 457,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
     "Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab Image",
@@ -1101,7 +1101,7 @@
     1.0
    ],
    "family": "band~blue",
-   "uses": 119,
+   "uses": 138,
    "where": [
     "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab TextMeshProUGUI",
     "Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab Image",
@@ -1175,12 +1175,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 220,
+   "uses": 227,
    "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
-    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
-    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab Image"
+    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image"
    ],
    "token": "SurfaceLight"
   },
@@ -1413,12 +1413,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 738,
+   "uses": 785,
    "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI",
     "Assets/_Graphics/Materials/Shaders/UI/Presence_Orb.mat Material(CosmicShore/UI/Presence)",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
-    "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI",
-    "Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab TextMeshProUGUI"
+    "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI"
    ],
    "token": "NeutralLightest"
   },
@@ -1801,12 +1801,12 @@
     0.0
    ],
    "family": "lime",
-   "uses": 295,
+   "uses": 296,
    "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
     "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
-    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab TextMeshProUGUI",
-    "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image"
+    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab TextMeshProUGUI"
    ],
    "token": "Cta"
   },
@@ -2045,20 +2045,6 @@
     "Assets/_Scripts/UI/UITheme.cs code"
    ],
    "token": "ElementSpace"
-  },
-  "ui:B0B0B0": {
-   "role": "ui",
-   "photic": [
-    0.6886792,
-    0.6886792,
-    0.6886792,
-    1.0
-   ],
-   "family": "blue",
-   "uses": 1,
-   "where": [
-    "Assets/_Scenes/Authentication.unity Image"
-   ]
   },
   "ui:B2B2B2": {
    "role": "ui",
@@ -2441,12 +2427,12 @@
     0.16
    ],
    "family": "blue",
-   "uses": 1101,
+   "uses": 1166,
    "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab Image",
+    "Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI",
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
-    "Assets/Resources/UI/ToastNotificationItem.prefab TextMeshProUGUI",
-    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
-    "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI"
+    "Assets/Resources/UI/ToastNotificationItem.prefab TextMeshProUGUI"
    ],
    "token": "TextLight"
   },
@@ -2627,7 +2613,7 @@
     1.0
    ],
    "family": "fire",
-   "uses": 12,
+   "uses": 13,
    "where": [
     "Assets/_Scripts/UI/View/AnglerHUDView.cs code",
     "Assets/_Scripts/UI/View/ButterflyHUDView.cs code",
@@ -3999,7 +3985,7 @@
    "family": "jade",
    "uses": 1,
    "where": [
-    "Assets/_Graphics/Materials/RhinoSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
+    "Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
    ]
   },
   "world:0F157B": {
@@ -5944,7 +5930,7 @@
    "family": "jade",
    "uses": 1,
    "where": [
-    "Assets/_Graphics/Materials/RhinoSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
+    "Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
    ]
   },
   "world:9DFF2E": {
@@ -7044,7 +7030,7 @@
    "uses": 3,
    "where": [
     "Assets/_Graphics/Materials/ProjectileChargeFieldMaterial.mat Material(Shader Graphs/ProjectileChargeField)",
-    "Assets/_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO",
+    "Assets/_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO",
     "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleConfigSO.cs code"
    ],
    "palette": "EnvironmentColors.Danger",
@@ -7931,7 +7917,7 @@
    "family": "blue",
    "uses": 2,
    "where": [
-    "Assets/_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO",
+    "Assets/_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO",
     "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleConfigSO.cs code"
    ]
   },

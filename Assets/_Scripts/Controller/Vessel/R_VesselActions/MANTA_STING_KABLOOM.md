@@ -50,6 +50,22 @@ disagrees with this section, this section wins.
   (the ability map's `AbilityLabel`, the HUD fields, the icon sprites, the AI's `YawsteryStickBand`, docs and tools).
   A name only: what the ability does is unchanged. Renamed serialized fields carry `[FormerlySerializedAs]`.
 
+## 0b. The trail is shaped by speed, never by what is near it (Caleb, 2026-11-11)
+
+Caleb's pick in the Manta Trail Lab (https://claude.ai/artifact/UcrAbovUrX7NPCx1mLoB9k, "Free curves";
+`Docs/Manta/POLISH.md`, round "speed-shaped trail prisms"). `ScoutTrailPrismScaler`, which sized the trail's width
+from a probe of nearby prisms, is off the Manta. `VesselPrismController.speedShape` (`TrailSpeedShape.cs`) shapes
+every two-rail prism instead:
+- **X** is one rail's width, 8 m at every speed.
+- **Z** keeps 5.5 m up to 162 u/s and grows smoothly to 10 m at Soar (600 u/s). It never passes 0.9 of the gap to
+  the next prism on its rail; at Soar that gap is speed × frame time, because the lay is one prism per frame.
+- **Y** is 0.75 m at cruise, up to 4× below 60 u/s, and +80 % at a full Yawstery turn.
+- **In a turn** the inside rail shortens and the outside lengthens by the ratio of each rail's arc to the vessel's,
+  and the outside loses up to 25 % of its height. Y is held between 0.1 and 3.5 m.
+
+`TrailSpeedShapeTests` pins the lab's numbers and the prefab. The rest of §0's Squirrel-size note still holds for
+the other hulls: the shape is off unless a prism controller authors it.
+
 ## 0a. Charge is the fuse, not the petals (Garrett, 2026-11-10)
 
 *"I want to move away from charge being coupled to elemental petals. It is too coarse to adjust. The manta charge

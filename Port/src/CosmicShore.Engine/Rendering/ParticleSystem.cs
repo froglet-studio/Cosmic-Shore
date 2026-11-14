@@ -13,6 +13,10 @@ namespace CosmicShore.Engine
     public enum ParticleSystemRenderMode { Billboard = 0, Stretch = 1, HorizontalBillboard = 2, VerticalBillboard = 3, Mesh = 4, None = 5 }
     public enum ParticleSystemEmitterVelocityMode { Transform = 0, Rigidbody = 1, Custom = 2 }
     public enum ParticleSystemNoiseQuality { Low = 0, Medium = 1, High = 2 }
+    /// <summary>The two custom-data streams (original: UnityEngine.ParticleSystemCustomData; values match).</summary>
+    public enum ParticleSystemCustomData { Custom1 = 0, Custom2 = 1 }
+    /// <summary>What a custom-data stream holds (original: UnityEngine.ParticleSystemCustomDataMode; values match).</summary>
+    public enum ParticleSystemCustomDataMode { Disabled = 0, Vector = 1, Color = 2 }
 
     /// <summary>
     /// UnityEngine.ParticleSystem, simulated: each particle is born from the shape module with the
@@ -150,7 +154,12 @@ namespace CosmicShore.Engine
             public bool sizeOverLifetimeEnabled, sizeSeparateAxes; public MinMaxCurve sizeOverLifetime = 1f, sizeX = 1f, sizeY = 1f, sizeZ = 1f; public float sizeMultiplier = 1f;
             public bool velocityEnabled; public MinMaxCurve velX = 0f, velY = 0f, velZ = 0f, orbitalX = 0f, orbitalY = 0f, orbitalZ = 0f, radial = 0f, speedModifier = 1f; public ParticleSystemSimulationSpace velSpace;
             public bool noiseEnabled, noiseSeparateAxes; public MinMaxCurve noiseStrength = 1f, scrollSpeed = 0f; public float frequency = 0.5f; public int octaveCount = 1; public ParticleSystemNoiseQuality noiseQuality = ParticleSystemNoiseQuality.High; public MinMaxCurve positionAmount = 1f;
-            public bool trailsEnabled; public MinMaxCurve trailLifetime = 1f, widthOverTrail = 1f; public float ratio = 1f; public MinMaxGradient colorOverTrail = Color.white;
+            public bool trailsEnabled; public MinMaxCurve trailLifetime = 1f, widthOverTrail = 1f; public float ratio = 1f; public MinMaxGradient colorOverTrail = Color.white, trailColorOverLifetime = Color.white;
+            public bool colorBySpeedEnabled; public MinMaxGradient colorBySpeed = Color.white; public Vector2 colorBySpeedRange = new(0f, 1f);
+            public readonly ParticleSystemCustomDataMode[] customDataMode = new ParticleSystemCustomDataMode[2];
+            public readonly MinMaxGradient[] customDataColor = { Color.white, Color.white };
+            public readonly int[] customDataVectorCount = { 4, 4 };
+            public readonly MinMaxCurve[,] customDataVector = { { 0f, 0f, 0f, 0f }, { 0f, 0f, 0f, 0f } };
             public bool limitVelocityEnabled; public MinMaxCurve limit = 1f; public float dampen = 1f;
             public bool rotationOverLifetimeEnabled; public MinMaxCurve rotationZ = 0f;
             public bool collisionEnabled, textureSheetEnabled, lightsEnabled, subEmittersEnabled, inheritVelocityEnabled, forceOverLifetimeEnabled, externalForcesEnabled, triggerEnabled, customDataEnabled;
@@ -178,6 +187,7 @@ namespace CosmicShore.Engine
         public EmissionModule emission => new(this);
         public ShapeModule shape => new(this);
         public ColorOverLifetimeModule colorOverLifetime => new(this);
+        public ColorBySpeedModule colorBySpeed => new(this);
         public SizeOverLifetimeModule sizeOverLifetime => new(this);
         public VelocityOverLifetimeModule velocityOverLifetime => new(this);
         public NoiseModule noise => new(this);
@@ -192,7 +202,7 @@ namespace CosmicShore.Engine
         public ToggleModule forceOverLifetime => new(this, 5);
         public ToggleModule externalForces => new(this, 6);
         public ToggleModule trigger => new(this, 7);
-        public ToggleModule customData => new(this, 8);
+        public CustomDataModule customData => new(this);
 
         public bool isPlaying => _playing && !_paused;
         public bool isEmitting => _emitting && !_paused;
@@ -738,6 +748,40 @@ namespace CosmicShore.Engine
             public MinMaxCurve lifetime { get => s.trailLifetime; set => s.trailLifetime = value; }
             public MinMaxCurve widthOverTrail { get => s.widthOverTrail; set => s.widthOverTrail = value; }
             public MinMaxGradient colorOverTrail { get => s.colorOverTrail; set => s.colorOverTrail = value; }
+            /// <summary>Data only: the port's trail draw uses <see cref="colorOverTrail"/> alone.</summary>
+            public MinMaxGradient colorOverLifetime { get => s.trailColorOverLifetime; set => s.trailColorOverLifetime = value; }
+        }
+
+        /// <summary>
+        /// Original contract: ParticleSystem.ColorBySpeedModule. Data only - the port's simulation does not tint by
+        /// speed yet; the values are kept so game code that reads or repaints them (WorldColorTrace) round-trips.
+        /// </summary>
+        public readonly struct ColorBySpeedModule
+        {
+            readonly State s;
+            internal ColorBySpeedModule(ParticleSystem ps) { s = ps.s; }
+            public bool enabled { get => s.colorBySpeedEnabled; set => s.colorBySpeedEnabled = value; }
+            public MinMaxGradient color { get => s.colorBySpeed; set => s.colorBySpeed = value; }
+            public Vector2 range { get => s.colorBySpeedRange; set => s.colorBySpeedRange = value; }
+        }
+
+        /// <summary>
+        /// Original contract: ParticleSystem.CustomDataModule (two streams, each Disabled, a Vector of up to four
+        /// curves, or a Color). Data only - the port's renderer feeds no custom vertex streams to shaders yet.
+        /// </summary>
+        public readonly struct CustomDataModule
+        {
+            readonly State s;
+            internal CustomDataModule(ParticleSystem ps) { s = ps.s; }
+            public bool enabled { get => s.customDataEnabled; set => s.customDataEnabled = value; }
+            public void SetMode(ParticleSystemCustomData stream, ParticleSystemCustomDataMode mode) => s.customDataMode[(int)stream] = mode;
+            public ParticleSystemCustomDataMode GetMode(ParticleSystemCustomData stream) => s.customDataMode[(int)stream];
+            public void SetVectorComponentCount(ParticleSystemCustomData stream, int count) => s.customDataVectorCount[(int)stream] = Math.Clamp(count, 0, 4);
+            public int GetVectorComponentCount(ParticleSystemCustomData stream) => s.customDataVectorCount[(int)stream];
+            public void SetVector(ParticleSystemCustomData stream, int component, MinMaxCurve curve) => s.customDataVector[(int)stream, component] = curve;
+            public MinMaxCurve GetVector(ParticleSystemCustomData stream, int component) => s.customDataVector[(int)stream, component];
+            public void SetColor(ParticleSystemCustomData stream, MinMaxGradient gradient) => s.customDataColor[(int)stream] = gradient;
+            public MinMaxGradient GetColor(ParticleSystemCustomData stream) => s.customDataColor[(int)stream];
         }
 
         public readonly struct LimitVelocityOverLifetimeModule

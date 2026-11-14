@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 112 - notes: what was asked, the four, Free vs Premium, how it maps to the built Showroom, decisions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hexc{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:10px;height:52px;padding:0 22px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.cta{background:#99FF80;color:#00010A}
+.sec{background:#2B3266;color:#E6E9FF}
+.gho{background:#00010A;color:#C9CDEA;box-shadow:inset 0 0 0 1px #434C89}
+.off{background:#151A3A;color:#5A6196;cursor:default}
+.btn .kc{border-color:currentColor;color:inherit;opacity:.8}
+.btn:focus-visible,.pick:focus-visible,.tabw:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.pick,.tabw{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.panel{background:rgba(8,12,40,.92);box-shadow:inset 0 0 0 1px #2B3266}
+.rule{border-top:1px solid #222645}
+.pz{position:absolute}
+.pz svg{display:block;overflow:visible}
+@keyframes ldFill{0%{height:0%}8%{height:6%}40%{height:52%}70%{height:84%}88%{height:100%}100%{height:100%}}
+@keyframes ldBar{0%{width:0%}8%{width:6%}40%{width:52%}70%{width:84%}88%{width:100%}100%{width:100%}}
+@keyframes ldT1{0%,6%{opacity:.25}12%,100%{opacity:1}}
+@keyframes ldT2{0%,30%{opacity:.25}38%,100%{opacity:1}}
+@keyframes ldT3{0%,58%{opacity:.25}66%,100%{opacity:1}}
+@keyframes ldT4{0%,80%{opacity:.25}88%,100%{opacity:1}}
+@keyframes ldU1{0%{width:0}10%,100%{width:100%}}
+@keyframes ldU2{0%,12%{width:0}36%,100%{width:100%}}
+@keyframes ldU3{0%,38%{width:0}64%,100%{width:100%}}
+@keyframes ldU4{0%,66%{width:0}86%,100%{width:100%}}
+@keyframes ldIn{from{opacity:0}to{opacity:1}}
+@keyframes tstIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+
+.ghost{position:absolute;inset:0}
+.chipbtn{background:none;border:0;padding:0;cursor:pointer;text-align:left;color:inherit;font:inherit}
+.chipbtn:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.tagl{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+input[type=range].wipe{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:#2B3266;outline:none;margin:0}
+input[type=range].wipe::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;background:#E6E9FF;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);cursor:ew-resize}
+input[type=range].wipe::-moz-range-thumb{width:22px;height:22px;background:#E6E9FF;border:0;border-radius:0;cursor:ew-resize}
+input[type=range].wipe:focus-visible{outline:2px solid #00D4FF;outline-offset:6px}
+
+.buy{background:#FFAE00;color:#00010A}
+.scroll{scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+.scroll::-webkit-scrollbar{width:6px}
+.scroll::-webkit-scrollbar-thumb{background:#434C89}
+.wallcard{position:relative}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div style="padding:40px 56px"><span class="lab">Rev 112 - notes</span><div style="font-size:34px;margin:6px 0 22px">Colour sets for a growing catalog</div><div style="display:flex;gap:40px"><div style="flex:1;min-width:0"><span class="lab" style="font-size:14px">Asked</span><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">"we will be making multiples of them so scrolling or clicking through each one is not an option": the built Showroom's < > rail shows three of fourteen and steps one at a time.</p><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">"a preview to show what the color set changes to depict the world of our game": the world, plus four tiles for what it repaints (prisms in three shields, vessels and trails, crystals, menus).</p><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">"a scrollable list with differentiation between free and the other type" and "use the whole place": every option fills the screen; nothing sits in an empty middle.</p></div><div style="flex:1;min-width:0"><span class="lab" style="font-size:14px">The four</span><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">A Stage and list (recommended): the list holds eight sets in view and scrolls; the world and its tiles take the rest. Every set one press away, the preview as big as the screen allows.</p><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">B Wall: twelve tiles in view, each a little world; scales furthest when the catalog passes thirty.</p><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">C Two shelves: the type is a place, not a mark. Costs width: the world is the smallest of the four.</p><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">D The real cell: closest to what is built (the world is the menu cell itself); the list docks right with All / Free / Premium.</p></div><div style="flex:1;min-width:0"><span class="lab" style="font-size:14px">Free and Premium</span><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">Free: Nocturne, Photic, and the six colour-vision sets under their own heading (always free, section 126.3). A plain word and a quiet edge: Lime stays the one call to action (Apply), so Gold alone says Premium.</p><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">Premium: the other six. Gold edge; Owned, or the crystal and its price; the button turns gold (Unlock), the style guide's purchase button.</p><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">Prices and Dart Frog owned are sample values. How a Premium set is earned (crystals, a quest as in Rev 107, a store) is not decided.</p></div><div style="flex:1;min-width:0"><span class="lab" style="font-size:14px">In Unity, and decisions</span><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">The world in A, B and C is a framed view of the menu cell (as the Showroom does); the four tiles are small renders, or drawn UI from the set's colours.</p><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">The menus tile is an approximation of ColorSetUITheme; the build paints it from the set.</p><p style="font-size:15px;line-height:1.5;color:#C9CDEA;margin:12px 0 0">1. Which option. 2. The word for the other type: Premium (drawn), Earned or Store. 3. Do tiles animate (a prism shielding, a trail drawn) or stay still.</p></div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

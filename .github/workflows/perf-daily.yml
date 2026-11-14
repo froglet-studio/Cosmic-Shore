@@ -7,8 +7,8 @@
 #             Docs/TOOLING_DECISIONS.md) for one Skim Race match: allocations per marker against the committed
 #             baseline. Red when a marker allocates more than it did. Milliseconds there are only reported.
 #             Scheduled and manual runs only: a pull request never runs it (Yash, 2026-10-25: his PRs into
-#             bleeding-edge are not held on Amoebius). Amoebius parity CI still compiles the port on every
-#             bleeding-edge push.
+#             bleeding-edge are not held on Amoebius). Amoebius parity CI also compiles the port, nightly on
+#             bleeding-edge (not on every push since 2026-11-13).
 #   publish   (scheduled and manual runs only) re-runs the sweep with the amoebius job's result and COMMITS
 #             Docs/perf/status.json and Docs/Reports/PERFORMANCE.md to bleeding-edge (Yash, 2026-10-17), so the
 #             editor's Project Record (BugHuntSendConfirmation) and every session read today's status from the

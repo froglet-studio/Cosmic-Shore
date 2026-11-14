@@ -22,6 +22,12 @@ MonoBehaviour:
     element: 4
     UseFloor: 1
     Floor: 0.05
+  rearmUpgradeElement: 1
+  rearmSeconds: 12
+  bulwarkUpgradeElement: 2
+  bulwarkGap: 14
+  chainUpgradeElement: 3
+  afterburnerUpgradeElement: 4
   shieldBlocks: 144
   shieldMinRadius: 50
   shieldMaxRadius: 70

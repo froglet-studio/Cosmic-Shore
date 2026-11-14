@@ -813,7 +813,10 @@
         "parity ci",
         "perf-daily",
         "why is ci red",
-        "ci failing"
+        "ci failing",
+        "trunk health",
+        "is bleeding-edge red",
+        "trunk doctor"
       ],
       "owner": "Shombith",
       "people": [
@@ -833,7 +836,9 @@
       ],
       "docs": [
         "CLAUDE.md",
-        "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+        "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+        "Docs/Reports/TRUNK_HEALTH.md",
+        ".claude/skills/trunk-doctor/SKILL.md"
       ],
       "artifacts": [],
       "report": "Docs/Reports/CI.md",

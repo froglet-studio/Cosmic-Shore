@@ -226,6 +226,43 @@ def upgrades_yaml(lab, effects) -> str:
     return text
 
 
+# Each Ratel upgrade's card picture (HoneyguideUpgrade.icon; the roster audit, 2026-11-13): the trigger's card shows it while
+# the ability is the newest banked on that trigger. The lab's ACTIVES8 key -> the icon kit's sprite (specs/honeyguide.py).
+UPGRADE_ICONS_DIR = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "AbilityIcons", "Honeyguide", "Upgrades")
+UPGRADE_ICONS = {"lance": "Honeyguide_GenesisLance", "littlebang": "Honeyguide_LittleBangGrenade",
+                 "harmonizer": "Honeyguide_ParticleHarmonizer", "fugacity": "Honeyguide_FugacityDischarger",
+                 "sepia": "Honeyguide_SepiaDrone", "thruster": "Honeyguide_ThrusterSwarm", "eyelet": "Honeyguide_HexapodEyeletJet",
+                 "lasso": "Honeyguide_HardLightLasso", "blink": "Honeyguide_BlinkDrive", "portals": "Honeyguide_AllTerrainPortals",
+                 "rosen": "Honeyguide_RosenBridge", "ftl": "Honeyguide_FTLChromatool", "monte": "Honeyguide_MonteCannon"}
+
+
+def upgrade_icon_line(key: str) -> str:
+    guid = guid_of(os.path.join(UPGRADE_ICONS_DIR, UPGRADE_ICONS[key] + ".png.meta"))
+    return f"    icon: {{fileID: 21300000, guid: {guid}, type: 3}}\n"
+
+
+UPGRADE_ENTRY = r"^  - effect: (\d+)\n    trigger: \d\n    reach: [\d.]+\n    preview: \d+\n    sfx:\n(?:      .*\n)+"
+
+
+def upgrade_icons_retrofit(text: str, lab, cs: str) -> str:
+    """Each upgrade entry carries its card picture, keyed by its effect (the committed config is a one-shot). Idempotent."""
+    effects = effect_members(cs)
+    by_effect = {effects[key]: key for key, *_ in lab["actives"]}
+    return re.sub("(" + UPGRADE_ENTRY[1:] + ")(?:    icon: .*\\n)?",
+                  lambda m: m.group(1) + upgrade_icon_line(by_effect[int(m.group(2))]), text, flags=re.M)
+
+
+def check_upgrade_icons(text: str, lab, cs: str):
+    effects = effect_members(cs)
+    errs = []
+    for key, *_ in lab["actives"]:
+        m = re.search(r"^  - effect: %d\n    trigger: \d\n    reach: [\d.]+\n    preview: \d+\n    sfx:\n(?:      .*\n)+(    icon: .*\n)?"
+                      % effects[key], text, re.M)
+        if not m or m.group(1) != upgrade_icon_line(key):
+            errs.append(f"HoneyguideConfig: upgrade {key} does not carry its card picture {UPGRADE_ICONS[key]}")
+    return errs
+
+
 def config_asset(lab, cs: str, script_guid: str) -> str:
     fields = cs_defaults(cs)
     effects = effect_members(cs)
@@ -492,15 +529,17 @@ def register_network(text: str) -> str:
 MAP_ENTRIES = [
     (1, "Flit", "Hold LT to see the dart, let go to fly it: 18 u ahead, striking every rival vessel and creature within 8 u "
                 "of its lane, every 2 s. Each Charge card the Ratel makes (Hard Light Lasso, Blink Drive, All Terrain "
-                "Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) banks three uses on LT; the newest fires first.", 2, "", ""),
+                "Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) banks three uses on LT; the newest fires first.", 2,
+     "Relentless", "A Flit that strikes a vessel or creature is ready again at once."),
     (2, "Hive", "Every 45 s (sooner as Mass rises) a hive appears somewhere in the cell. Fly to it to open hive mode.",
-     0, "", ""),
+     0, "Hive Chain", "Reaching a hive plants the next one at once."),
     (3, "Peck", "Hold RT to see the aim line, let go for three quick shots, every 1 s. Each Space card the Ratel makes "
                 "(Genesis Lance, Little Bang Grenade, Particle Harmonizer, Fugacity Discharger, Sepia Drone, Thruster Swarm, "
                 "Hexapod Eyelet Jet) banks three uses on RT; the newest fires first. Hold both triggers to cancel.", 1,
      "Piercing Pecks", "Pecks pierce through prisms instead of stopping at the first."),
     (4, "Slip", "Touch a trail of a domain the battery holds with your nose along it and ride it to its end, fast: the "
-                "charge is spent. The Ratel charges the battery by making patterns on the Dynamo.", 0, "", ""),
+                "charge is spent. The Ratel charges the battery by making patterns on the Dynamo.", 0,
+     "Slipstream", "A slip carries twice the boost out."),
 ]
 
 
@@ -685,6 +724,52 @@ def retarget_container(text: str) -> str:
     return text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {HONEYGUIDE_CONTAINER_GUID},")
 
 
+# The last of the Sparrow's DATA the clone carried (roster audit, 2026-11-13): three Sparrow executors left on the hull still
+# named the Sparrow's SkyBurstGunAction / FullAutoAction, so a Sparrow tune reached the Honeyguide. The input never presses
+# them (retarget_triggers), but GunSprayAccuracy shapes every shot the hull's gun fires, Peck's included, and the rearm
+# refilled the Sparrow's missile tank on every prism a Peck broke. Now: the spray reads the Honeyguide's own Peck, the
+# missile executor names no weapon (it never fires one; null-safe), and the rearm is off (Peck spends no ammo).
+SPARROW_SKYBURST, SPARROW_FULLAUTO = SPARROW_TRIGGER_GUIDS[1], SPARROW_TRIGGER_GUIDS[3]
+SPRAY_SCRIPT = "a50adf365dbc4ea4b3bb8194dcf030d5"    # GunSprayAccuracy
+FIREGUN_SCRIPT = "69aa8012f6e74f26b97a2e11699eda45"  # FireGunActionExecutor
+REARM_SCRIPT = "bc361300eda44e80938f736f649ace19"    # VesselRearmOnPrismDestruction
+
+
+def _with_doc(text: str, script: str, edit) -> str:
+    """Apply `edit` to the one MonoBehaviour document whose m_Script is `script`."""
+    docs = [m for m in re.finditer(r"--- !u!114 &\d+\n(?:(?!--- ).*\n)*", text) if f"guid: {script}, type: 3}}" in m.group(0)]
+    if len(docs) != 1:
+        raise RuntimeError(f"Honeyguide.prefab: expected one component with script {script}, found {len(docs)}")
+    m = docs[0]
+    return text[:m.start()] + edit(m.group(0)) + text[m.end():]
+
+
+def sparrow_data_retrofit(text: str) -> str:
+    """Cut the hull's last links to the Sparrow's weapon data (above). Idempotent."""
+    text = _with_doc(text, SPRAY_SCRIPT, lambda d: d.replace(
+        f"  profileSource: {{fileID: 11400000, guid: {SPARROW_FULLAUTO}, type: 2}}",
+        f"  profileSource: {{fileID: 11400000, guid: {PECK_GUID}, type: 2}}"))
+    text = _with_doc(text, FIREGUN_SCRIPT, lambda d: d.replace(
+        f"  defaultAction: {{fileID: 11400000, guid: {SPARROW_SKYBURST}, type: 2}}", "  defaultAction: {fileID: 0}"))
+    text = _with_doc(text, REARM_SCRIPT, lambda d: d.replace(
+        f"  weaponAction: {{fileID: 11400000, guid: {SPARROW_SKYBURST}, type: 2}}", "  weaponAction: {fileID: 0}")
+        .replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1))
+    return text
+
+
+def check_sparrow_data(text: str):
+    errs = []
+    for g in (SPARROW_SKYBURST, SPARROW_FULLAUTO):
+        if f"guid: {g}," in text:
+            errs.append(f"Honeyguide.prefab: still names the Sparrow's weapon asset {g} (a Sparrow tune would reach it)")
+    if f"  profileSource: {{fileID: 11400000, guid: {PECK_GUID}, type: 2}}" not in text:
+        errs.append("Honeyguide.prefab: GunSprayAccuracy's profileSource is not HoneyguidePeckAction")
+    rearm = [m.group(0) for m in re.finditer(r"--- !u!114 &\d+\n(?:(?!--- ).*\n)*", text) if f"guid: {REARM_SCRIPT}, type: 3}}" in m.group(0)]
+    if not rearm or "  m_Enabled: 0\n" not in rearm[0]:
+        errs.append("Honeyguide.prefab: VesselRearmOnPrismDestruction is on (it refills the Sparrow's missile tank)")
+    return errs
+
+
 # The omni crystal breaks into the hive comb's heart (R_VesselActions/HONEYGUIDE_CRYSTAL_MORPH.md).
 HIVE_MORPH_GUID = "4db7ae5535d24e6eac9db5e1cd906a75"   # HoneyguideCrystalMorphByCrystal.asset
 HIVE_MORPH_LINE = f"  omniCrystalRetirement: {{fileID: 11400000, guid: {HIVE_MORPH_GUID}, type: 2}}\n"
@@ -793,6 +878,7 @@ def check_all():
         return ["Honeyguide.prefab (+ .meta) is missing: run Tools/Build/author_honeyguide_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Honeyguide.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid)
+    errs += check_sparrow_data(read(PREFAB))
     for path, guid in ((HONEYGUIDE_CONTAINER, HONEYGUIDE_CONTAINER_GUID), (HIVE_EFFECT, HIVE_EFFECT_GUID)):
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run Tools/Build/author_honeyguide_assets.py"]
@@ -808,6 +894,7 @@ def check_all():
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
     errs += [] if guid_of(CONFIG + ".meta") == CONFIG_GUID else ["HoneyguideConfig.asset.meta: guid is not CONFIG_GUID"]
     errs += check_config(read(CONFIG), read_lab(read(LAB)), read(CONFIG_SCRIPT), config_script_guid())
+    errs += check_upgrade_icons(read(CONFIG), read_lab(read(LAB)), read(CONFIG_SCRIPT))
     for path, guid in ((PECK, PECK_GUID), (RT_ACTION, RT_GUID), (LT_ACTION, LT_GUID)):
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
@@ -825,7 +912,7 @@ def author():
     if not os.path.exists(PREFAB):   # the spent one-shots stand down once committed
         write(PREFAB, build_clone(read(DONOR), script_guid))
         write(PREFAB + ".meta", prefab_meta())
-    old = read(PREFAB); new = retarget_container(model_retrofit(retarget_triggers(old), guid_of(BODY_SCRIPT_META)))   # not one-shots: held to them
+    old = read(PREFAB); new = sparrow_data_retrofit(retarget_container(model_retrofit(retarget_triggers(old), guid_of(BODY_SCRIPT_META))))   # not one-shots: held to them
     if new != old:
         write(PREFAB, new)
     if not os.path.isdir(CONFIG_DIR):
@@ -834,6 +921,9 @@ def author():
     if not os.path.exists(CONFIG):
         write(CONFIG, config_asset(read_lab(read(LAB)), read(CONFIG_SCRIPT), config_script_guid()))
         write(CONFIG + ".meta", native_meta(CONFIG_GUID))
+    old = read(CONFIG); new = upgrade_icons_retrofit(old, read_lab(read(LAB)), read(CONFIG_SCRIPT))
+    if new != old:
+        write(CONFIG, new)
     if not os.path.exists(CLASS_ASSET):
         write(CLASS_ASSET, class_asset(read(DONOR_CLASS))); write(CLASS_ASSET + ".meta", native_meta(CLASS_GUID))
     old = read(CLASS_ASSET); new = card_retrofit(old)
@@ -884,6 +974,19 @@ def self_test():
     expect(check_prefab(good.replace(RT_GUID, SPARROW_TRIGGER_GUIDS[0], 1), script_guid), 2, "RT back on the Sparrow's fire")
     if retarget_triggers(good) != good:
         fails.append("retarget_triggers is not idempotent")
+    lab, cs = read_lab(read(LAB)), read(CONFIG_SCRIPT)
+    bare = config_asset(lab, cs, config_script_guid())
+    iconed = upgrade_icons_retrofit(bare, lab, cs)
+    expect(check_upgrade_icons(bare, lab, cs), 13, "a config whose upgrades carry no card picture")
+    expect(check_upgrade_icons(iconed, lab, cs), 0, "a config with every upgrade's card picture")
+    expect(check_config(iconed, lab, cs, config_script_guid()), 0, "the pictures leave the lab's table intact")
+    if upgrade_icons_retrofit(iconed, lab, cs) != iconed:
+        fails.append("upgrade_icons_retrofit is not idempotent")
+    cut = sparrow_data_retrofit(good)
+    expect(check_sparrow_data(cut), 0, "a clone cut from the Sparrow's weapon data passes")
+    expect(check_sparrow_data(good), 3, "a clone still on the Sparrow's SkyBurstGun / FullAuto, its rearm on")
+    if sparrow_data_retrofit(cut) != cut:
+        fails.append("sparrow_data_retrofit is not idempotent")
     bg = guid_of(BODY_SCRIPT_META)
     modelled = model_retrofit(good, bg)
     expect(check_model(modelled, bg), 0, "a retrofitted clone passes")

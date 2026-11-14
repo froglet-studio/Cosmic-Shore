@@ -479,12 +479,15 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>Every I4 door's eye is SEALED: a 3 x 3 of cubes inside the 18 u eye, its middle a Danger heart, clear of the
-        /// door's own bars and collar; I4 without the gauntlet (Scarab Rally's) keeps the open eye.</summary>
+        /// door's own bars and collar; I4 without the gauntlet (Scarab Rally's) hangs no door at all.</summary>
         [Test]
         public void TheEyesAreSealed()
         {
             float port = SwitchbackBlastRun.PortFor(4);
-            Assert.AreEqual(SwitchbackBlastRun.DoorPrisms(4, false) + SwitchbackBlastRun.SealPrisms, SwitchbackBlastRun.DoorPrisms(4));
+            Assert.AreEqual(0, SwitchbackBlastRun.DoorPrisms(4, false), "I4 without the gauntlet hangs no door (the sight line)");
+            int open4 = 0;
+            SwitchbackBlastRun.EmitDoorPrisms(Vector3.zero, Vector3.forward, port, false, (p, r, s, k) => open4++);
+            Assert.AreEqual(open4 + SwitchbackBlastRun.SealPrisms, SwitchbackBlastRun.DoorPrisms(4));
             Assert.AreEqual(SwitchbackBlastRun.DoorPrisms(3), SwitchbackBlastRun.DoorPrisms(3, false), "no seal below I4");
             var door = new List<SwitchbackFeaturePrism>();
             Vector3 at = new(10f, -40f, 300f), axis = new Vector3(0.3f, 0.2f, 1f).normalized;
@@ -493,13 +496,15 @@ namespace CosmicShore.Tests
             for (int i = bars; i < door.Count; i++)
             {
                 var seal = door[i];
-                if (seal.Kind == PrismKind.Danger) { danger++; Assert.Less((seal.Position - at).magnitude, 0.01f, "the heart is the middle"); }
+                if (seal.Kind == PrismKind.Danger) danger++;
                 Across(seal, at, axis, out _, out float far);
                 Assert.Less(far, BreakwaterCourseSettings.EyeRadius, "a seal cube reaches out of the eye");
                 for (int j = 0; j < bars; j++)
                     Assert.IsFalse(Overlap(seal, door[j], 0.05f), $"seal cube {i - bars} clips door prism {j}");
             }
-            Assert.AreEqual(1, danger);
+            // The seal is plain since 2026-11-13: its Danger heart made every missed blast two dead stops a gate
+            // (Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md). Ramming it still costs a plain hit per cube.
+            Assert.AreEqual(0, danger, "a seal has no Danger heart");
         }
 
         [Test]
@@ -572,6 +577,109 @@ namespace CosmicShore.Tests
         /// <summary>Without the gauntlet (a mode reusing Switchback's course for a hull without the key blast: Scarab
         /// Rally) I4 is the Fortress of before 2026-11-03: one key a gate on the line, open eyes, the 18 u bore, its own
         /// budgets. I1-I3 do not depend on the switch.</summary>
+        /// <summary>Scarab Rally's I4 (no gauntlet, its own course): from anywhere inside the ring you leave, every point of
+        /// the next ring's rim is in plain sight - no prism, door or field, laid or on its mover's cycle, crosses the line
+        /// (Garrett, 2026-11-14: "respect sight lines from one ring to another so that prisms are not occluding which ring
+        /// is lime green from the perspective of leaving a ring").</summary>
+        [Test]
+        public void WithoutTheGauntlet_TheNextRingIsInSightFromTheRingYouLeave()
+        {
+            int blocked = 0, rays = 0;
+            for (int seed = 1; seed <= 40; seed++)
+            {
+                var s = ScarabRallyCourse.ForIntensity(4);
+                s.GateCount = 24; s.InnerRadius = Inner; s.OuterRadius = Outer;
+                s.FirstGateDirection = Vector3.up; s.FirstGateDistance = 620f;
+                var c = SwitchbackCourse.Generate(seed, s);
+                if (c == null || c.Count < 3) continue;
+                var L = Layout(c, 4, false);
+                for (int step = 0; step < 4; step++)
+                {
+                    var posed = PosedAt(L, step * 0.61f);
+                    for (int g = 1; g < c.Count; g++)
+                    {
+                        RaceGate from = c[g - 1], to = c[g];
+                        SwitchbackBlastRun.Frame(from.Axis, out Vector3 a1, out Vector3 a2);
+                        SwitchbackBlastRun.Frame(to.Axis, out Vector3 b1, out Vector3 b2);
+                        for (int i = 0; i < 5; i++)
+                        {
+                            float ai = i * 0.4f * Mathf.PI;
+                            Vector3 eye = i == 4 ? from.Position
+                                : from.Position + (a1 * Mathf.Cos(ai) + a2 * Mathf.Sin(ai)) * (0.5f * from.Radius);
+                            for (int j = 0; j < 8; j++)
+                            {
+                                float bj = j * 0.25f * Mathf.PI;
+                                Vector3 rim = to.Position + (b1 * Mathf.Cos(bj) + b2 * Mathf.Sin(bj)) * to.Radius;
+                                rays++;
+                                foreach (var p in posed)
+                                    if (SegmentHitsBox(eye, rim, p, 0.5f)) { blocked++; break; }
+                            }
+                        }
+                    }
+                }
+            }
+            Assert.Greater(rays, 1000);
+            Assert.AreEqual(0, blocked, $"{blocked} of {rays} sight lines from a ring to the next one's rim are blocked");
+        }
+
+        /// <summary>Every door hangs wholly BEHIND its ring (Garrett, 2026-11-14, Docs/Reports/SIGHT_LINES.md): each door
+        /// prism's box lies past the ring's plane, so no line from upstream to the ring's rim, which lies in that plane, can
+        /// pass through a door. In front, the plug (wider than the ring) hid the lime ring on 12-67% of legs at I2-I4.</summary>
+        [Test]
+        public void TheDoorsHangBehindTheirRing([Values(1, 2, 3, 4)] int intensity)
+        {
+            int doors = 0;
+            foreach (int seed in SeedsFor(intensity))
+            {
+                var c = Course(intensity, seed);
+                if (c == null) continue;
+                var L = Layout(c, intensity);
+                int world = 0;
+                foreach (var st in L.Stations) world += st.WorldPrisms;
+                int doorPrisms = L.Prisms.Count - world;
+                for (int k = 0; k < doorPrisms; k++)
+                {
+                    var p = L.Prisms[k];
+                    // the nearest ring: a door hangs DoorSetback (or SecondDoorSetback) past its own
+                    BlastRunStation own = default; float best = float.MaxValue;
+                    foreach (var st in L.Stations)
+                    {
+                        float dd = (p.Position - c[st.Gate].Position).sqrMagnitude;
+                        if (dd < best) { best = dd; own = st; }
+                    }
+                    Vector3 axis = own.FlowAxis, ring = c[own.Gate].Position;
+                    Vector3 h = p.Scale * 0.5f;
+                    float reach = Mathf.Abs(Vector3.Dot(p.Rotation * new Vector3(h.x, 0f, 0f), axis))
+                                + Mathf.Abs(Vector3.Dot(p.Rotation * new Vector3(0f, h.y, 0f), axis))
+                                + Mathf.Abs(Vector3.Dot(p.Rotation * new Vector3(0f, 0f, h.z), axis));
+                    Assert.Greater(Vector3.Dot(p.Position - ring, axis) - reach, 0f,
+                                   $"I{intensity} seed {seed}: door prism {k} reaches in front of gate {own.Gate}'s ring");
+                    doors++;
+                }
+            }
+            Assert.Greater(doors, 0, $"I{intensity}: no doors laid");
+        }
+
+        /// <summary>Whether segment a-b passes through prism <paramref name="p"/>'s box shrunk by <paramref name="shrink"/>
+        /// on every side (slab test in the box's frame).</summary>
+        static bool SegmentHitsBox(Vector3 a, Vector3 b, SwitchbackFeaturePrism p, float shrink)
+        {
+            Quaternion inv = Quaternion.Inverse(p.Rotation);
+            Vector3 la = inv * (a - p.Position), lb = inv * (b - p.Position), d = lb - la;
+            Vector3 h = p.Scale * 0.5f - Vector3.one * shrink;
+            if (h.x <= 0f || h.y <= 0f || h.z <= 0f) return false;
+            float t0 = 0f, t1 = 1f;
+            for (int k = 0; k < 3; k++)
+            {
+                if (Mathf.Abs(d[k]) < 1e-6f) { if (Mathf.Abs(la[k]) > h[k]) return false; continue; }
+                float u = (-h[k] - la[k]) / d[k], v = (h[k] - la[k]) / d[k];
+                if (u > v) (u, v) = (v, u);
+                t0 = Mathf.Max(t0, u); t1 = Mathf.Min(t1, v);
+                if (t0 > t1) return false;
+            }
+            return true;
+        }
+
         [Test]
         public void WithoutTheGauntlet_I4IsTheFortressOfBefore()
         {

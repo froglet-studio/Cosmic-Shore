@@ -57,12 +57,16 @@ namespace CosmicShore.UI
         [SerializeField] Image arrayTargetIcon;
         [Tooltip("Charge card: the flora's missiles coming in (white; painted with a missile ready).")]
         [SerializeField] Image arrayMissilesIcon;
+        [Tooltip("Charge card, Salvo (Charge 5): a second missile volley beside the first (white; painted with Salvo).")]
+        [SerializeField] Image arraySalvoIcon;
         [Tooltip("Mass card: the Shrike docked (domain).")]
         [SerializeField] Image nestShrikeIcon;
         [Tooltip("Mass card: the nest's super-shielded cup (white; faint undocked).")]
         [SerializeField] Image nestCupIcon;
         [Tooltip("Mass card: a nest flora with its missile (white; once a nest stands).")]
         [SerializeField] Image nestFloraIcon;
+        [Tooltip("Mass card, Armed Nests (Mass 5): the nest flora's second missile (white; once a nest stands with Armed Nests).")]
+        [SerializeField] Image nestArmedIcon;
         [Tooltip("Space card: the Shrike (domain).")]
         [SerializeField] Image lanceShrikeIcon;
         [Tooltip("Space card: the Void Lance (white; firing).")]
@@ -83,6 +87,8 @@ namespace CosmicShore.UI
         [SerializeField] Image slingTetherIcon;
         [Tooltip("Time card: the blocks it lays slinging (domain).")]
         [SerializeField] Image slingBlocksIcon;
+        [Tooltip("Time card, Whipcrack (Time 5): the whip-crack chevrons on the tether (white; with Whipcrack).")]
+        [SerializeField] Image slingWhipIcon;
         [Tooltip("Rival colour on the parts (the fleet danger orange).")]
         [SerializeField] Color dangerColor = new(1f, 0.3294f, 0.1020f, 1f);
         [Tooltip("Alpha of a part that is there but not in play (the reticle before a lock, the cup undocked, the tether).")]
@@ -157,10 +163,12 @@ namespace CosmicShore.UI
             Paint(arrayReticleIcon, Color.white, _painted ? 1f : idlePartAlpha);
             Paint(arrayTargetIcon, danger, 1f);
             Paint(arrayMissilesIcon, Color.white, _painted ? 1f : 0f);
+            Paint(arraySalvoIcon, Color.white, _painted && IsAbilityUpgraded(Element.Charge) ? 1f : 0f);
 
             Paint(nestShrikeIcon, _domain, 1f);
             Paint(nestCupIcon, Color.white, _docked ? 1f : idlePartAlpha);
             Paint(nestFloraIcon, Color.white, _nestBuilt ? 1f : 0f);
+            Paint(nestArmedIcon, Color.white, _nestBuilt && IsAbilityUpgraded(Element.Mass) ? 1f : 0f);
 
             bool pierce = IsAbilityUpgraded(Element.Space);
             Paint(lanceShrikeIcon, _domain, 1f);
@@ -174,6 +182,7 @@ namespace CosmicShore.UI
             Paint(slingAnchorIcon, Color.white, 1f);
             Paint(slingTetherIcon, Color.white, _tethered || _slinging ? 1f : idlePartAlpha);
             Paint(slingBlocksIcon, _domain, _slinging ? 1f : 0f);
+            Paint(slingWhipIcon, Color.white, IsAbilityUpgraded(Element.Time) ? 1f : 0f);
         }
 
         static void Paint(Image part, Color color, float alpha)

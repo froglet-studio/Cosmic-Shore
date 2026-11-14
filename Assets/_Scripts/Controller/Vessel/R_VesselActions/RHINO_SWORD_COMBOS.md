@@ -7,21 +7,21 @@
 > - **The combo's NAME is toasted** for the pilot who landed it, through `ToastNotificationAPI.Show` -
 >   the game's toast container, top right under Settings, and nowhere else. The line is the library's
 >   authored `comboToastTemplate` (`{name}` = the flourish's `displayName`; empty = no toast), emitted
->   by `author_rhino_sword_combos.py`. An AI, a remote copy and the lava lamp's autopilot are silent
+>   by `author_swordfish_sword_combos.py`. An AI, a remote copy and the lava lamp's autopilot are silent
 >   (`ShieldSwipeActionExecutor.StartFlourish`).
 > - **A staggered stance no longer fires a combo.** A press while the OTHER trigger is still pulled
 >   past `pressThreshold` is a chord (the stance forming), however late it comes; a rolled tap still
 >   links because its earlier trigger is coming OFF, below the threshold
->   (`RhinoSwordComboDetector.Step`; `AStaggeredStance_IsNeverACombo`, `AfterAStaggeredStance_TapsLinkAgain`,
+>   (`SwordfishSwordComboDetector.Step`; `AStaggeredStance_IsNeverACombo`, `AfterAStaggeredStance_TapsLinkAgain`,
 >   and `ARolledTap_StillLinks` rewritten to a trigger that is actually coming off - run against the old
 >   detector, the new tests fail 4 of 4).
-> - **The AI combos.** `RhinoSwordAutopilot` taps a string (0.08 s taps, 0.1 s apart - inside the 0.3 s
+> - **The AI combos.** `SwordfishSwordAutopilot` taps a string (0.08 s taps, 0.1 s apart - inside the 0.3 s
 >   tap and 0.35 s window) instead of a stroke `comboChance` (0.35) of the time: two taps, or a finisher
 >   `finisherChance` (0.4) of the time and always while energized; first letter on the target's side.
 >   It writes the same mirrors, so its flourish plays on every peer.
 
 > **2026-10-16:** the energized variant is now chosen from the REPLICATED energize phase (the
-> owner decides it, `RhinoSwordNetworkRelay`), so every peer picks the same set. The AI still never
+> owner decides it, `SwordfishSwordNetworkRelay`), so every peer picks the same set. The AI still never
 > combos. New OPEN finding: a staggered entry into the energize stance fires a combo (Follow-ups).
 
 > Sits ON TOP of the analog swordsmanship in `RHINO_SHIELD_SWIPE.md` and changes none of it:
@@ -56,11 +56,11 @@ own. Both properties are asserted by the generator, not just authored.
 | LRR | **Lunge** | left feint, right cut, straight forward lunge | **Piercing Charge** | two lances, then a rising wheel off to the right |
 
 Tip trajectories (top + side view, every path): run
-`python3 Tools/Build/author_rhino_sword_combos.py --svg <file.svg>`.
+`python3 Tools/Build/author_swordfish_sword_combos.py --svg <file.svg>`.
 
 ## Input model — why a combo can never steal the analog control
 
-`RhinoSwordComboDetector` (pure C#, edit-mode tested) turns trigger samples into combos:
+`SwordfishSwordComboDetector` (pure C#, edit-mode tested) turns trigger samples into combos:
 
 - A **press** is a trigger reaching `pressThreshold` (0.5); it is released below
   `releaseThreshold` (0.2). Partial pulls under the press threshold are never taps.
@@ -81,8 +81,8 @@ window) still links — that is how fast alternation is actually played.
 made while the other trigger has been down for no longer than `tapMaxHoldSeconds`, whether or not
 that trigger is coming off. So a pilot squeezing into the both-triggers energize stance with one
 finger 0.08–0.3 s behind the other — past the chord window, inside the tap hold — fires the
-two-letter combo (RL or LR) on the second press (`RhinoSwordComboDetector.Press`;
-`RhinoSwordComboTests.ARolledTap_StillLinks` asserts the link, with the first trigger still at
+two-letter combo (RL or LR) on the second press (`SwordfishSwordComboDetector.Press`;
+`SwordfishSwordComboTests.ARolledTap_StillLinks` asserts the link, with the first trigger still at
 full pull when the second lands). That contradicts verification step 1's "no flourish ever fires
 from holding". See Follow-ups.
 
@@ -98,7 +98,7 @@ flourish, so the blend lands where the triggers are when it ends, not where they
 began.
 
 A path is sampled as a piecewise cubic Hermite through its keys (finite-difference tangents, zero
-at the ends — `RhinoSwordComboPath.SamplePath`). A flourish that turns the blade a full
+at the ends — `SwordfishSwordComboPath.SamplePath`). A flourish that turns the blade a full
 revolution ends at e.g. yaw 380; the end pose is **wrapped** per channel before the blend out,
 which never changes what is drawn (a 360 turn about any one axis is the identity) and stops the
 blend from unwinding a turn the flourish already paid for.
@@ -116,14 +116,14 @@ flourish IS the swing, and it never owes the rhythm penalty a lone swipe does.
   / `RightTriggerAnalog`, Owner-write / Everyone-read) — the same values the energize stance reads
   — so the owner and every replica call the same combo to within a network tick of timing, with
   no new RPC. The energized variant is chosen from `IsEnergized`, which since 2026-10-16 is the
-  owner's energize phase on every peer (`RhinoSwordNetworkRelay`, `RHINO_ENERGY_SWORD.md`), so the
+  owner's energize phase on every peer (`SwordfishSwordNetworkRelay`, `RHINO_ENERGY_SWORD.md`), so the
   choice is no longer purely local. *(Until then each peer ran its own energize machine and a peer
   whose energy tally differed could play the base variant where the owner played the upgraded
   one.)* Residual: the phase and the mirrors are separate NetworkVariables, so a combo tapped
   within a tick of ignition or of the tail running out can still pick different sets on owner and
   replica. A tap shorter than one network tick can coalesce away on a replica (an edge is not a
   level across a tick).
-- **Feedback:** `RhinoSwordFXController.NotifyCombo` flashes the blade (hit flash for a
+- **Feedback:** `SwordfishSwordFXController.NotifyCombo` flashes the blade (hit flash for a
   two-letter combo, pop flash for a finisher or energized combo) and strings a crackle along the
   blade (denser and hotter energized). No camera shake — combos are frequent.
 - **Audio:** every path carries its own `EventReference sound` slot, shipped **empty** (silent)
@@ -133,13 +133,13 @@ flourish IS the swing, and it never owes the rhythm penalty a lone swipe does.
 
 | Role | File |
 |---|---|
-| Detector (pure, tested) | `Executors/RhinoSwordComboDetector.cs` |
-| Library SO + path + pose channels + sampler | `Data Containers/RhinoSwordComboLibrarySO.cs` |
+| Detector (pure, tested) | `Executors/SwordfishSwordComboDetector.cs` |
+| Library SO + path + pose channels + sampler | `Data Containers/SwordfishSwordComboLibrarySO.cs` |
 | Playback (detect, blend in, path, blend out, thrust) | `Executors/ShieldSwipeActionExecutor.cs` |
-| Wiring | `RhinoShieldSwipeConfigSO.comboLibrary` → `_SO_Assets/VesselActions/Rhino/RhinoSwordComboLibrary.asset` |
-| Feedback | `Executors/RhinoSwordFXController.cs` (`NotifyCombo`) |
-| Author + proof | `Tools/Build/author_rhino_sword_combos.py` (`--check`, `--self-test`, `--svg`) |
-| Tests | `_Scripts/Tests/Editor/RhinoSwordComboTests.cs` |
+| Wiring | `SwordfishShieldSwipeConfigSO.comboLibrary` → `_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset` |
+| Feedback | `Executors/SwordfishSwordFXController.cs` (`NotifyCombo`) |
+| Author + proof | `Tools/Build/author_swordfish_sword_combos.py` (`--check`, `--self-test`, `--svg`) |
+| Tests | `_Scripts/Tests/Editor/SwordfishSwordComboTests.cs` |
 
 **The library asset is generator-owned** — edit the `BASE` / `ENERGIZED` tables in the script
 and re-run it, never the asset. Before writing, the script runs the shipped pose math over every
@@ -151,7 +151,7 @@ has at least 1.2x its base's tip travel; and no path passes the blade within 20 
 camera (read off `RhinoCameraSettingsSO`) at resting length. `--self-test` proves each gate fires.
 The Python sampler agrees with the compiled C# `SamplePath` to 1e-4 degrees over every path.
 
-## Tuning knobs (`RhinoSwordComboLibrary.asset`, via the generator's `DETECTION`)
+## Tuning knobs (`SwordfishSwordComboLibrary.asset`, via the generator's `DETECTION`)
 
 | Knob | Default | Effect |
 |---|---|---|
@@ -195,6 +195,6 @@ their rules, and the generator's gates + self-test pass.
 - **Audio**: 24 empty `sound` slots on the library asset for the audio owner.
 - ~~**HUD callout**~~ **DONE 2026-10-26**: the combo's `DisplayName` is toasted (header note).
 - ~~**Replicated energized choice**~~ **DONE 2026-10-16** via the owner-authoritative energize
-  phase (`RhinoSwordNetworkRelay`); only the within-a-tick residual above remains.
+  phase (`SwordfishSwordNetworkRelay`); only the within-a-tick residual above remains.
 - ~~**AI (still OPEN)**: AI Rhinos never combo.~~ **DONE 2026-10-26** (header note).
 - ~~**Staggered stance fires a combo (OPEN, 2026-10-16).**~~ **FIXED 2026-10-26** (header note).

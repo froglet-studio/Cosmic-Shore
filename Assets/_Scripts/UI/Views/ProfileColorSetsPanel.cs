@@ -12,36 +12,33 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Profile's COLOUR SETS tab, the Showroom (Rev 54 A, picked by Shombith 2026-11-05; Docs/MENU_REDESIGN_B.md
-    /// §126). The page is a window onto the real menu cell: while it shows, the Profile's veil, the pilot card and the
-    /// record step aside, and the cell wears the set being browsed (<see cref="ThemeManager.PreviewColorSet"/>). Over
-    /// the cell sit the set's name, line and four rim-over-face pigments, a rail of set tiles (the pad moving onto a
-    /// tile previews it) and APPLY, which raises the cell-change veil in its colour-set mode and wears the set
-    /// (<see cref="ThemeManager.ApplyColorSet"/>). Leaving the tab or the Profile without applying puts the equipped set
-    /// back. LB / RB step between the Record and Colour sets tabs.
+    /// The Profile's COLOUR SETS tab: Rev 112 D, "the real cell" (picked by Shombith 2026-11-14; Docs/MENU_REDESIGN_B.md
+    /// §187), which replaced the Showroom's two three-tile rails (Rev 54 A, §126) because the catalog keeps growing and
+    /// stepping through it a tile at a time does not scale.
     ///
-    /// <para>Two rails (Shombith, 2026-11-09): the looks on the left, and apart on the right the sets made for a vision
-    /// (colour blindness, low vision, Contrast), which are free because they are accessibility
-    /// (<see cref="ColorSetCatalogSO.IsPickable"/>). Each rail is a window onto its own sets: its tiles show them from the
-    /// rail's first on, and its previous and next buttons step the set shown and slide the window, so any number of sets
-    /// is browsed through the same tiles. Settings > General > Colour sets is a breadcrumb that opens this page on the
-    /// vision rail (<see cref="ShowColourSetsWhenOpen"/>).</para>
+    /// <para>The world is the real menu cell: while the page shows, the Profile's veil dims, the pilot card and the record
+    /// step aside, and the cell wears the set being browsed (<see cref="ThemeManager.PreviewColorSet"/>). Docked on the
+    /// right is ONE scrolling list of every set, cloned from <see cref="rowTemplate"/> once per catalog entry, in three
+    /// groups: Yours from the start, Color Blind supported (Free) and Premium, with All / Color Blind supported / Premium
+    /// filters. Over the cell on the left: the set's kind, name, line and four rim-over-face pigments, and APPLY (or
+    /// UNLOCK with its crystal price for a Premium set not owned yet, or Equipped). Along the foot four tiles show what
+    /// the set repaints - prisms in three shields, vessels and their prism trails, the Codex's own crystal renders, menus -
+    /// painted from the set itself. Behind it all, the board's world - prisms in depth, three vessels laying prism trails,
+    /// the domains' glow on the sea - drawn in the UI and painted from the set shown (§189), over the dimmed real cell.</para>
+    ///
+    /// <para>APPLY raises the cell-change veil and wears the set (<see cref="ThemeManager.ApplyColorSet"/>); UNLOCK
+    /// spends the crystals (<see cref="PlayerDataService.TryUnlockColorSet"/>). Leaving the tab or the Profile without
+    /// applying puts the equipped set back. LB / RB step between Record and Colour sets.</para>
     ///
     /// <para>Every word is a field here, authored in the prefab, or the catalog's (<see cref="ColorSetCatalogSO"/>).</para>
     /// </summary>
     public class ProfileColorSetsPanel : MonoBehaviour
     {
-        [Serializable]
-        public struct Thumb
+        public enum Filter
         {
-            public CanvasGroup group;
-            public KitTile tile;
-            public TMP_Text nameText;
-            [Tooltip("The lime tick beside the name while this set is equipped.")]
-            public GameObject equippedMark;
-            [Tooltip("Jade, Ruby, Gold, Blue: each prism swatch's face (fill) and rim (outline).")]
-            public Image[] faces;
-            public Image[] rims;
+            All = 0,
+            ColorBlind = 1,
+            Premium = 2,
         }
 
         [Header("Tabs")]
@@ -53,12 +50,11 @@ namespace CosmicShore.UI
         [SerializeField] private CanvasGroup group;
 
         [Header("Step aside while the world shows")]
-        [Tooltip("The pilot card, hidden while this page shows (the board gives the world its space).")]
+        [Tooltip("The pilot card, hidden while this page shows.")]
         [SerializeField] private CanvasGroup pilotCard;
         [Tooltip("The Profile's veil: dimmed to Veil While Showing while this page shows, so the cell is seen but sits " +
                  "back behind the words.")]
         [SerializeField] private Graphic veil;
-        [Tooltip("The veil's alpha while this page shows (the cell through it). Its own alpha comes back on leaving.")]
         [Range(0f, 1f)] [SerializeField] private float veilWhileShowing = 0.55f;
         [Tooltip("Switched off while this page shows: the veil's sea lines, which would draw over the cell.")]
         [SerializeField] private Graphic[] hideWhileShowing = Array.Empty<Graphic>();
@@ -66,56 +62,100 @@ namespace CosmicShore.UI
         [Header("Sets")]
         [Tooltip("Used when the theme manager is not up (a test scene). In the game, ThemeManagerDataContainer's catalog.")]
         [SerializeField] private ColorSetCatalogSO catalog;
-        [Tooltip("The left rail: the sets picked for their looks (vision None).")]
-        [SerializeField] private Thumb[] thumbs = Array.Empty<Thumb>();
-        [SerializeField] private Button previousButton;
-        [SerializeField] private Button nextButton;
+        [Tooltip("The UI theme the Menus tile builds the set's theme on (ColorSetUITheme).")]
+        [SerializeField] private UIThemeSO theme;
 
-        [Header("Colour vision (free)")]
-        [Tooltip("The right rail: only the sets made for a vision (colour blindness, low vision, Contrast). Always free.")]
-        [SerializeField] private Thumb[] visionThumbs = Array.Empty<Thumb>();
-        [SerializeField] private Button visionPreviousButton;
-        [SerializeField] private Button visionNextButton;
+        [Header("The list")]
+        [SerializeField] private ScrollRect scroll;
+        [Tooltip("The list's content; the headings are its children and the rows are cloned into it.")]
+        [SerializeField] private RectTransform content;
+        [Tooltip("The row cloned once per set. Kept inactive.")]
+        [SerializeField] private ColorSetRowView rowTemplate;
+        [Tooltip("Yours from the start, Color Blind supported (Free), Premium: each group's heading.")]
+        [SerializeField] private GameObject[] headings = new GameObject[3];
+        [Tooltip("Each group's count beside its heading.")]
+        [SerializeField] private TMP_Text[] headingCounts = new TMP_Text[3];
+
+        [Header("Filters")]
+        [SerializeField] private KitTextTab allFilter;
+        [SerializeField] private KitTextTab colorBlindFilter;
+        [SerializeField] private KitTextTab premiumFilter;
+        [Tooltip("All, Color Blind supported, Premium: each filter's count.")]
+        [SerializeField] private TMP_Text[] filterCounts = new TMP_Text[3];
 
         [Header("The set shown")]
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text lineText;
-        [Tooltip("\"2 of 3\": the set's place in its own rail.")]
-        [SerializeField] private TMP_Text positionText;
         [Tooltip("\"Wearing Nocturne\".")]
         [SerializeField] private TMP_Text wearingText;
+        [Tooltip("Yours from the start, Color Blind supported (Free), Premium: the line above the name, one shown.")]
+        [SerializeField] private GameObject[] kindLabels = new GameObject[3];
         [Tooltip("Jade, Ruby, Gold, Blue: the rim swatch, the face swatch and the pigment words.")]
         [SerializeField] private Image[] pairRims = Array.Empty<Image>();
         [SerializeField] private Image[] pairFaces = Array.Empty<Image>();
         [SerializeField] private TMP_Text[] pairTexts = Array.Empty<TMP_Text>();
         [SerializeField] private Button applyButton;
+        [Tooltip("UNLOCK and the price, for a Premium set the player does not own yet.")]
+        [SerializeField] private Button unlockButton;
+        [SerializeField] private TMP_Text unlockCaption;
         [Tooltip("Shown instead of APPLY when the set shown is the one worn (a tick and the word).")]
         [SerializeField] private GameObject equippedMark;
+        [Tooltip("Shown after UNLOCK when the crystals are short, until another set is picked.")]
+        [SerializeField] private GameObject shortMark;
+
+        [Header("The world (the preview behind the page)")]
+        [Tooltip("The board's world, drawn in the UI and painted from the set shown: a prism per entry, its face, rim " +
+                 "and lit facet (Rev 112 D, section 189).")]
+        [SerializeField] private Image[] worldFaces = Array.Empty<Image>();
+        [SerializeField] private Image[] worldRims = Array.Empty<Image>();
+        [SerializeField] private Image[] worldLits = Array.Empty<Image>();
+        [Tooltip("Per world prism: x its domain (Jade 0, Ruby 1, Gold 2, Blue 3), y its tier (0 plain, 1 shielded, " +
+                 "2 super-shielded), z its alpha (far prisms are fainter).")]
+        [SerializeField] private Vector3[] worldPrisms = Array.Empty<Vector3>();
+        [Tooltip("The vessels flying through the world, each tinted with its domain's vessel colour.")]
+        [SerializeField] private Image[] worldVessels = Array.Empty<Image>();
+        [SerializeField] private int[] worldVesselDomains = Array.Empty<int>();
+        [Tooltip("Jade, Ruby, Gold, Blue: the soft glow each domain's rim casts on the sea.")]
+        [SerializeField] private Image[] worldWashes = Array.Empty<Image>();
+        [Range(0f, 1f)] [SerializeField] private float washAlpha = 0.18f;
+
+        [Header("What the set repaints")]
+        [Tooltip("Prisms: Jade, Ruby, Gold, Blue x plain, shielded, super-shielded (domain * 3 + tier).")]
+        [SerializeField] private Image[] prismFaces = Array.Empty<Image>();
+        [SerializeField] private Image[] prismRims = Array.Empty<Image>();
+        [SerializeField] private Image[] prismLits = Array.Empty<Image>();
+        [Tooltip("Vessels and trails: one vessel icon per domain, tinted with the domain's vessel colour.")]
+        [SerializeField] private Image[] vesselIcons = Array.Empty<Image>();
+        [Tooltip("Each vessel's trail of prisms (domain * Trail Length + k).")]
+        [SerializeField] private Image[] trailFaces = Array.Empty<Image>();
+        [SerializeField] private Image[] trailRims = Array.Empty<Image>();
+        [Min(1)] [SerializeField] private int trailLength = 5;
+        [Tooltip("Menus: a panel, its line, a picked card, a call to action and a purchase, in the set's UI theme.")]
+        [SerializeField] private Image menuPanel;
+        [SerializeField] private Image menuLine;
+        [SerializeField] private Image menuSelection;
+        [SerializeField] private Image menuCta;
+        [SerializeField] private Image menuPurchase;
 
         [Header("Words (empty shows nothing)")]
-        [Tooltip("{index} the set's place in the rail, {count} how many sets.")]
-        [SerializeField] private string positionTemplate = "{index} of {count}";
         [Tooltip("{name} the set worn now.")]
         [SerializeField] private string wearingTemplate = "Wearing {name}";
+        [Tooltip("{price} the crystals the set shown costs.")]
+        [SerializeField] private string unlockTemplate = "UNLOCK {price}";
+        [Tooltip("{count} how many sets.")]
+        [SerializeField] private string countTemplate = "{count}";
 
         static readonly Domains[] DomainOrder = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+        static readonly PrismKind[] Tiers = { PrismKind.Plain, PrismKind.Shielded, PrismKind.SuperShielded };
 
-        /// <summary>One rail at run time: its tiles, buttons, the catalog indices it shows and its window.</summary>
-        sealed class Rail
-        {
-            public Thumb[] Thumbs;
-            public readonly List<int> Sets = new();   // catalog indices, in card order
-            public int First;                          // the place in Sets on the first tile
-            public bool Vision;
-        }
-
-        readonly Rail _looks = new() { Vision = false };
-        readonly Rail _vision = new() { Vision = true };
-        ColorSetCatalogSO _railsBuiltFor;
+        readonly List<ColorSetRowView> _rows = new();
+        ColorSetCatalogSO _builtFor;
+        Filter _filter = Filter.All;
 
         bool _showing;
         int _picked = -1;      // the catalog index of the set shown
         bool _openOnVisionSets;
+        bool _short;
         float _veilAlpha = -1f;
         GameObject _lastSelected;
 
@@ -128,19 +168,11 @@ namespace CosmicShore.UI
             if (recordTab) recordTab.onClick.AddListener(ShowRecord);
             if (colourSetsTab) colourSetsTab.onClick.AddListener(ShowColourSets);
             if (applyButton) applyButton.onClick.AddListener(Apply);
-            _looks.Thumbs = thumbs ?? Array.Empty<Thumb>();
-            _vision.Thumbs = visionThumbs ?? Array.Empty<Thumb>();
-            if (previousButton) previousButton.onClick.AddListener(() => Step(_looks, -1));
-            if (nextButton) nextButton.onClick.AddListener(() => Step(_looks, +1));
-            if (visionPreviousButton) visionPreviousButton.onClick.AddListener(() => Step(_vision, -1));
-            if (visionNextButton) visionNextButton.onClick.AddListener(() => Step(_vision, +1));
-            foreach (var rail in new[] { _looks, _vision })
-                for (int i = 0; i < rail.Thumbs.Length; i++)
-                {
-                    int tile = i;
-                    var r = rail;
-                    if (rail.Thumbs[i].tile) rail.Thumbs[i].tile.onClick.AddListener(() => PickTile(r, tile));
-                }
+            if (unlockButton) unlockButton.onClick.AddListener(Unlock);
+            if (allFilter) allFilter.onClick.AddListener(() => SetFilter(Filter.All));
+            if (colorBlindFilter) colorBlindFilter.onClick.AddListener(() => SetFilter(Filter.ColorBlind));
+            if (premiumFilter) premiumFilter.onClick.AddListener(() => SetFilter(Filter.Premium));
+            if (rowTemplate) rowTemplate.gameObject.SetActive(false);
             if (record)
             {
                 record.Opened += OnRecordOpened;
@@ -167,7 +199,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Settings > General > Colour sets (the accessibility breadcrumb): the next time the Profile opens, it opens on
-        /// this page showing the first set made for a vision; if the Profile is already open, at once.
+        /// this page filtered to the Color Blind supported sets, showing the first; if the Profile is open, at once.
         /// </summary>
         public void ShowColourSetsWhenOpen()
         {
@@ -196,19 +228,17 @@ namespace CosmicShore.UI
             if (padFree && pad.rightShoulder.wasPressedThisFrame && !_showing) ShowColourSets();
             else if (padFree && pad.leftShoulder.wasPressedThisFrame && _showing) ShowRecord();
 
-            // The pad moving onto a set's tile previews it: one reference compare a frame while the page shows.
+            // The pad moving onto a row previews its set: one reference compare a frame while the page shows.
             if (!_showing || !events) return;
             var selected = events.currentSelectedGameObject;
             if (selected == _lastSelected) return;
             _lastSelected = selected;
-            foreach (var rail in new[] { _looks, _vision })
-                for (int i = 0; i < rail.Thumbs.Length; i++)
-                    if (rail.Thumbs[i].tile && rail.Thumbs[i].tile.gameObject == selected)
-                    {
-                        int index = SetAt(rail, rail.First + i);
-                        if (index >= 0 && index != _picked) Pick(index);
-                        return;
-                    }
+            foreach (var row in _rows)
+                if (row && row.Tile && row.Tile.gameObject == selected)
+                {
+                    if (row.Index >= 0 && row.Index != _picked) Pick(row.Index);
+                    return;
+                }
         }
 
         public void ShowRecord()
@@ -220,96 +250,91 @@ namespace CosmicShore.UI
         public void ShowColourSets()
         {
             var cat = Catalog;
-            BuildRails(cat);
+            BuildList(cat);
             int vision = _openOnVisionSets && cat ? cat.IndexOfFirstVisionSet() : -1;
             _openOnVisionSets = false;
             SetPage(true);
             if (vision >= 0)
             {
-                // The breadcrumb opens the vision rail on its first set, shown (and previewed) on the cell.
-                _vision.First = 0;
+                // The breadcrumb opens the Color Blind supported sets, the first shown (and previewed) on the cell.
+                _filter = Filter.ColorBlind;
                 Pick(vision);
             }
             else
             {
+                _filter = Filter.All;
                 _picked = cat ? Mathf.Max(0, cat.IndexOf(Equipped)) : -1;
-                Reveal(_picked);
                 Refresh();
             }
-            SelectTile(_picked);
+            SelectRow(_picked);
         }
 
-        /// <summary>
-        /// Splits the catalog into the two rails: the looks (vision None) and the sets made for a vision. The catalog's
-        /// card order is kept inside each rail.
-        /// </summary>
-        public static void SplitRails(ColorSetCatalogSO cat, List<int> looks, List<int> vision)
+        /// <summary>Whether a set of <paramref name="kind"/> shows under <paramref name="filter"/>.</summary>
+        public static bool Shows(Filter filter, ColorSetKind kind) => filter switch
         {
-            looks.Clear();
-            vision.Clear();
+            Filter.ColorBlind => kind == ColorSetKind.ColorBlind,
+            Filter.Premium => kind == ColorSetKind.Premium,
+            _ => true,
+        };
+
+        /// <summary>
+        /// The catalog indices in list order: Yours from the start, then Color Blind supported, then Premium, each
+        /// group in the catalog's card order.
+        /// </summary>
+        public static void ListOrder(ColorSetCatalogSO cat, List<int> order)
+        {
+            order.Clear();
             int n = cat ? cat.Count : 0;
-            for (int i = 0; i < n; i++)
+            for (int kind = 0; kind < 3; kind++)
+                for (int i = 0; i < n; i++)
+                {
+                    var entry = cat.Get(i);
+                    if (entry != null && (int)ColorSetCatalogSO.KindOf(entry) == kind) order.Add(i);
+                }
+        }
+
+        readonly List<int> _order = new();
+
+        // One row per set, cloned from the template, under its group's heading. Built once per catalog.
+        void BuildList(ColorSetCatalogSO cat)
+        {
+            if (_builtFor == cat && cat) return;
+            _builtFor = cat;
+            foreach (var row in _rows)
+                if (row) Destroy(row.gameObject);
+            _rows.Clear();
+            if (!rowTemplate || !content) return;
+            ListOrder(cat, _order);
+            int sibling = 0;
+            int at = 0;
+            for (int kind = 0; kind < 3; kind++)
             {
-                var entry = cat.Get(i);
-                if (entry == null) continue;
-                (entry.vision == ColourVision.None ? looks : vision).Add(i);
+                if (kind < headings.Length && headings[kind]) headings[kind].transform.SetSiblingIndex(sibling++);
+                for (; at < _order.Count && (int)ColorSetCatalogSO.KindOf(cat.Get(_order[at])) == kind; at++)
+                {
+                    int index = _order[at];
+                    var row = Instantiate(rowTemplate, content);
+                    row.name = $"Set {cat.Get(index).id}";
+                    row.gameObject.SetActive(true);
+                    row.transform.SetSiblingIndex(sibling++);
+                    if (row.Tile) row.Tile.onClick.AddListener(() => Pick(index));
+                    _rows.Add(row);
+                }
             }
+            rowTemplate.transform.SetAsLastSibling();
         }
 
-        void BuildRails(ColorSetCatalogSO cat)
-        {
-            if (_railsBuiltFor == cat && cat) return;
-            _railsBuiltFor = cat;
-            SplitRails(cat, _looks.Sets, _vision.Sets);
-            _looks.First = _vision.First = 0;
-        }
-
-        Rail RailOf(int catalogIndex)
-        {
-            var entry = Catalog ? Catalog.Get(catalogIndex) : null;
-            return entry != null && entry.vision != ColourVision.None ? _vision : _looks;
-        }
-
-        static int SetAt(Rail rail, int place) => place >= 0 && place < rail.Sets.Count ? rail.Sets[place] : -1;
-
-        void PickTile(Rail rail, int tile)
-        {
-            int index = SetAt(rail, rail.First + tile);
-            if (index >= 0) Pick(index);
-        }
-
-        /// <summary>
-        /// The rail's first tile for a catalog of <paramref name="count"/> sets seen through <paramref name="tiles"/>
-        /// tiles, moved as little as possible so <paramref name="index"/> is on a tile.
-        /// </summary>
-        public static int WindowStart(int first, int index, int tiles, int count)
-        {
-            if (tiles <= 0 || count <= tiles) return 0;
-            if (index < first) first = index;
-            else if (index >= first + tiles) first = index - tiles + 1;
-            return Mathf.Clamp(first, 0, count - tiles);
-        }
-
-        void Reveal(int index)
-        {
-            if (index < 0) return;
-            var rail = RailOf(index);
-            int place = rail.Sets.IndexOf(index);
-            if (place < 0) return;
-            rail.First = WindowStart(rail.First, place, rail.Thumbs.Length, rail.Sets.Count);
-        }
-
-        void SelectTile(int index)
+        void SelectRow(int index)
         {
             var events = EventSystem.current;
             if (!events || index < 0) return;
-            var rail = RailOf(index);
-            int tile = rail.Sets.IndexOf(index) - rail.First;
-            if (tile >= 0 && tile < rail.Thumbs.Length && rail.Thumbs[tile].tile)
-            {
-                events.SetSelectedGameObject(rail.Thumbs[tile].tile.gameObject);
-                _lastSelected = rail.Thumbs[tile].tile.gameObject;
-            }
+            foreach (var row in _rows)
+                if (row && row.Index == index && row.gameObject.activeSelf && row.Tile)
+                {
+                    events.SetSelectedGameObject(row.Tile.gameObject);
+                    _lastSelected = row.Tile.gameObject;
+                    return;
+                }
         }
 
         void SetPage(bool colourSets)
@@ -340,25 +365,20 @@ namespace CosmicShore.UI
             if (colourSetsTab) colourSetsTab.IsSelected = colourSets;
         }
 
-        // A rail's < > step through that rail's own sets; from a set in the other rail they start at its first.
-        void Step(Rail rail, int by)
+        void SetFilter(Filter filter)
         {
-            BuildRails(Catalog);
-            int n = rail.Sets.Count;
-            if (n == 0) return;
-            int place = rail.Sets.IndexOf(_picked);
-            int next = place < 0 ? (by > 0 ? 0 : n - 1) : ((place + by) % n + n) % n;
-            Pick(rail.Sets[next]);
-            SelectTile(rail.Sets[next]);
+            _filter = filter;
+            Refresh();
+            if (scroll) scroll.verticalNormalizedPosition = 1f;
         }
 
         // Browsing previews the set on the real cell; nothing is saved until APPLY.
         void Pick(int index)
         {
             _picked = index;
-            Reveal(index);
+            _short = false;
             var entry = Catalog ? Catalog.Get(index) : null;
-            if (ColorSetCatalogSO.IsPickable(entry) && Manager) Manager.PreviewColorSet(entry.colorSet);
+            if (entry?.colorSet && Manager) Manager.PreviewColorSet(entry.colorSet);
             Refresh();
         }
 
@@ -381,73 +401,148 @@ namespace CosmicShore.UI
                 manager.ApplyColorSet(entry.colorSet, entry.id);
         }
 
+        void Unlock()
+        {
+            var entry = Catalog ? Catalog.Get(_picked) : null;
+            var data = PlayerDataService.Instance;
+            if (entry == null || ColorSetCatalogSO.IsPickable(entry) || !data) return;
+            _short = !data.TryUnlockColorSet(entry.id, entry.price);
+            Refresh();
+            if (!_short && applyButton) EventSystem.current?.SetSelectedGameObject(applyButton.gameObject);
+        }
+
         void Refresh()
         {
             var cat = Catalog;
-            BuildRails(cat);
+            BuildList(cat);
             var equipped = Equipped;
-            RefreshRail(_looks, cat, equipped);
-            RefreshRail(_vision, cat, equipped);
 
-            var shown = cat ? cat.Get(_picked) : null;
-            if (nameText) nameText.text = shown?.displayName ?? string.Empty;
-            if (lineText) lineText.text = shown?.line ?? string.Empty;
-            var shownRail = RailOf(_picked);
-            int shownPlace = shownRail.Sets.IndexOf(_picked);
-            if (positionText)
-                positionText.text = shown != null && shownPlace >= 0
-                    ? TemplateText.Fill(positionTemplate, "index", (shownPlace + 1).ToString(), "count", shownRail.Sets.Count.ToString())
-                    : string.Empty;
+            int[] counts = new int[3];
+            for (int r = 0; r < _rows.Count; r++)
+            {
+                var row = _rows[r];
+                if (!row) continue;
+                int index = r < _order.Count ? _order[r] : -1;
+                var entry = cat ? cat.Get(index) : null;
+                row.Show(entry, index, entry?.colorSet && entry.colorSet == equipped, index == _picked, ColorSetCatalogSO.IsPickable(entry));
+                if (entry != null) counts[(int)row.Kind]++;
+                row.gameObject.SetActive(entry != null && Shows(_filter, row.Kind));
+            }
+            for (int k = 0; k < 3; k++)
+            {
+                // Yours from the start shows under All only; a group with no sets hides its heading.
+                bool shown = counts[k] > 0 && Shows(_filter, (ColorSetKind)k);
+                if (k < headings.Length && headings[k]) headings[k].SetActive(shown);
+                if (k < headingCounts.Length && headingCounts[k]) headingCounts[k].text = Count(counts[k]);
+            }
+            SetCount(0, counts[0] + counts[1] + counts[2]);
+            SetCount(1, counts[(int)ColorSetKind.ColorBlind]);
+            SetCount(2, counts[(int)ColorSetKind.Premium]);
+            if (allFilter) allFilter.IsSelected = _filter == Filter.All;
+            if (colorBlindFilter) colorBlindFilter.IsSelected = _filter == Filter.ColorBlind;
+            if (premiumFilter) premiumFilter.IsSelected = _filter == Filter.Premium;
+
+            var shownEntry = cat ? cat.Get(_picked) : null;
+            if (nameText) nameText.text = shownEntry?.displayName ?? string.Empty;
+            if (lineText) lineText.text = shownEntry?.line ?? string.Empty;
             var worn = cat ? cat.Get(cat.IndexOf(equipped)) : null;
             if (wearingText) wearingText.text = worn != null ? TemplateText.Fill(wearingTemplate, "name", worn.displayName ?? string.Empty) : string.Empty;
+            var kind = ColorSetCatalogSO.KindOf(shownEntry);
+            for (int k = 0; k < kindLabels.Length; k++)
+                if (kindLabels[k]) kindLabels[k].SetActive(shownEntry != null && (int)kind == k);
             for (int d = 0; d < DomainOrder.Length; d++)
             {
-                if (d < pairTexts.Length && pairTexts[d]) pairTexts[d].text = ColorSetCatalogSO.Pigment(shown, d);
-                if (shown?.colorSet && shown.colorSet.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var rim, out var face))
+                if (d < pairTexts.Length && pairTexts[d]) pairTexts[d].text = ColorSetCatalogSO.Pigment(shownEntry, d);
+                if (shownEntry?.colorSet && shownEntry.colorSet.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var rim, out var face))
                 {
-                    Paint(pairRims, d, rim);
-                    Paint(pairFaces, d, face);
+                    Paint(pairRims, d, Display(rim));
+                    Paint(pairFaces, d, Display(face));
                 }
             }
 
-            bool isEquipped = shown?.colorSet && shown.colorSet == equipped;
-            if (applyButton) applyButton.gameObject.SetActive(ColorSetCatalogSO.IsPickable(shown) && !isEquipped);
+            bool owned = ColorSetCatalogSO.IsPickable(shownEntry);
+            bool isEquipped = shownEntry?.colorSet && shownEntry.colorSet == equipped;
+            if (applyButton) applyButton.gameObject.SetActive(owned && !isEquipped);
+            if (unlockButton) unlockButton.gameObject.SetActive(shownEntry != null && !owned);
+            if (unlockCaption) unlockCaption.text = shownEntry != null ? TemplateText.Fill(unlockTemplate, "price", shownEntry.price.ToString("N0")) : string.Empty;
             if (equippedMark) equippedMark.SetActive(isEquipped);
+            if (shortMark) shortMark.SetActive(_short);
+
+            PaintRepaints(shownEntry?.colorSet);
         }
 
-        void RefreshRail(Rail rail, ColorSetCatalogSO cat, SO_ColorSet equipped)
+        string Count(int n) => TemplateText.Fill(countTemplate, "count", n.ToString());
+
+        void SetCount(int filter, int n)
         {
-            for (int i = 0; i < rail.Thumbs.Length; i++)
+            if (filter < filterCounts.Length && filterCounts[filter]) filterCounts[filter].text = Count(n);
+        }
+
+        // The four tiles: everything here is painted from the set shown, so they change as the list is browsed.
+        void PaintRepaints(SO_ColorSet set)
+        {
+            if (!set) return;
+            for (int d = 0; d < DomainOrder.Length; d++)
             {
-                var t = rail.Thumbs[i];
-                int index = SetAt(rail, rail.First + i);
-                var entry = cat && index >= 0 ? cat.Get(index) : null;
-                if (t.group)
-                {
-                    t.group.alpha = entry != null ? 1f : 0f;
-                    t.group.interactable = t.group.blocksRaycasts = entry != null;
-                }
-                if (entry == null) continue;
-                if (t.nameText) t.nameText.text = entry.displayName ?? string.Empty;
-                if (t.equippedMark) t.equippedMark.SetActive(entry.colorSet && entry.colorSet == equipped);
-                if (t.tile)
-                {
-                    t.tile.IsSelected = index == _picked;
-                    t.tile.IsLocked = !ColorSetCatalogSO.IsPickable(entry);
-                }
-                for (int d = 0; d < DomainOrder.Length; d++)
-                    if (entry.colorSet && entry.colorSet.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var rim, out var face))
+                for (int t = 0; t < Tiers.Length; t++)
+                    if (set.TryGetPrismKindColors(DomainOrder[d], Tiers[t], out var rim, out var face))
                     {
-                        Paint(t.faces, d, face);
-                        Paint(t.rims, d, rim);
+                        int i = d * Tiers.Length + t;
+                        Paint(prismFaces, i, Display(face));
+                        Paint(prismRims, i, Display(rim));
+                        Paint(prismLits, i, Lit(face, rim));
+                    }
+                if (set.TryGetColorSetByDomain(DomainOrder[d], out var domain))
+                    Paint(vesselIcons, d, Display(domain.ShipColor2));
+                if (set.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var trailRim, out var trailFace))
+                    for (int k = 0; k < trailLength; k++)
+                    {
+                        // Oldest faintest, as a trail fades behind its vessel.
+                        float a = Mathf.Lerp(0.35f, 1f, trailLength > 1 ? k / (float)(trailLength - 1) : 1f);
+                        Paint(trailFaces, d * trailLength + k, WithAlpha(Display(trailFace), a));
+                        Paint(trailRims, d * trailLength + k, WithAlpha(Display(trailRim), a));
                     }
             }
+            PaintWorld(set);
+            var ui = ColorSetUITheme.Build(theme, set);
+            if (menuPanel) menuPanel.color = ui[UIColorToken.SurfaceVeryDark];
+            if (menuLine) menuLine.color = ui[UIColorToken.SurfaceDark];
+            if (menuSelection) menuSelection.color = ui[UIColorToken.ControlActive];
+            if (menuCta) menuCta.color = ui[UIColorToken.Cta];
+            if (menuPurchase) menuPurchase.color = ui[UIColorToken.Purchase];
         }
 
-        static void Paint(Image[] images, int index, Color linear)
+        // The world behind the page: every prism, vessel and wash in the set's colours.
+        void PaintWorld(SO_ColorSet set)
+        {
+            int n = Mathf.Min(worldPrisms.Length, Mathf.Min(worldFaces.Length, Mathf.Min(worldRims.Length, worldLits.Length)));
+            for (int i = 0; i < n; i++)
+            {
+                var p = worldPrisms[i];
+                int d = Mathf.Clamp((int)p.x, 0, DomainOrder.Length - 1);
+                int t = Mathf.Clamp((int)p.y, 0, Tiers.Length - 1);
+                if (!set.TryGetPrismKindColors(DomainOrder[d], Tiers[t], out var rim, out var face)) continue;
+                Paint(worldFaces, i, WithAlpha(Display(face), p.z));
+                Paint(worldRims, i, WithAlpha(Display(rim), p.z));
+                Paint(worldLits, i, WithAlpha(Lit(face, rim), p.z));
+            }
+            for (int i = 0; i < worldVessels.Length && i < worldVesselDomains.Length; i++)
+            {
+                int d = Mathf.Clamp(worldVesselDomains[i], 0, DomainOrder.Length - 1);
+                if (set.TryGetColorSetByDomain(DomainOrder[d], out var domain))
+                    Paint(worldVessels, i, Display(domain.ShipColor2));
+            }
+            for (int d = 0; d < DomainOrder.Length; d++)
+                if (set.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var rim, out _))
+                    Paint(worldWashes, d, WithAlpha(Display(rim), washAlpha));
+        }
+
+        static Color WithAlpha(Color c, float a) => new(c.r, c.g, c.b, a);
+
+        static void Paint(Image[] images, int index, Color c)
         {
             if (images == null || index < 0 || index >= images.Length || !images[index]) return;
-            images[index].color = Display(linear);
+            images[index].color = c;
         }
 
         /// <summary>
@@ -462,5 +557,8 @@ namespace CosmicShore.UI
             var g = c.gamma;
             return new Color(g.r, g.g, g.b, 1f);
         }
+
+        /// <summary>A prism's lit facet: its face lifted halfway toward its rim, as the board draws it (Rev 54, Rev 112).</summary>
+        public static Color Lit(Color face, Color rim) => Color.Lerp(Display(face), Display(rim), 0.5f);
     }
 }

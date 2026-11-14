@@ -217,15 +217,17 @@ namespace CosmicShore.UI
             if (_root.position != _reference.position) _root.position = _reference.position;
         }
 
-        /// <summary>The front face at the column's foot and the picture lying over it, as the Voyages table has them
-        /// (<see cref="VoyageBoard.FitSlab"/>).</summary>
+        // The table's foot stands this far above the page's foot for a table as wide as the board drew it (1020).
+        const float BoardWidth = 1020f, FootGap = 26f;
+
+        /// <summary>The front face at the column's foot and the picture lying over it (Rev 90).</summary>
         void Fit()
         {
             if (!_column) return;
             float w = _column.rect.width;
             if (w < 1f || Mathf.Approximately(w, _fitWidth)) return;
             _fitWidth = w;
-            float foot = VoyageBoard.FootGap * w / VoyageBoard.BoardWidth, face = w / VoyageSlab.FaceAspect, top = w / VoyageSlab.TopAspect;
+            float foot = FootGap * w / BoardWidth, face = w / VoyageSlab.FaceAspect, top = w / VoyageSlab.TopAspect;
             VoyageKit.Foot(_faceRect, foot, face);
             VoyageKit.Foot(_topRect, foot + face, top);
         }

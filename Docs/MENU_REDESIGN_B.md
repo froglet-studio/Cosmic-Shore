@@ -34,6 +34,7 @@ section here. The build that follows a pick is verified against the picked board
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
 | Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79-83 on the canvas now: Rev 81 B5 with the Rev 83 S2 seat editor picked and built, section 165; Rev 70-77 were reverted and taken off, section 159) | Shombith, 2026-11-08 (sections 147-151, 159-165) |
+| Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -7410,7 +7411,7 @@ quest track (states from `GameModeProgressionService`). The table tops are a sti
 galaxy from `VoyagePlaceArt.Galaxy()`); only the Voyages table is the live map. Not seen in Unity.
 
 
-## 172. Built: the Voyage window as the Sea table - Rev 89 A and Rev 90 (2026-11-12, not seen in Unity)
+## 172. Built: the Voyage window as the Sea table - Rev 89 A and Rev 90 (2026-11-12; seen in Unity by Shombith, the tilt and the top bar rejected, redrawn in section 180)
 
 **Asked (Shombith, 2026-11-12, on Rev 89 A and Rev 90):** "Now build all of this in Unity".
 Affects: Garrett's Voyage window and galaxy map (`VoyageJobsView`, `VoyageMapGraphic`; his voyage data, launch and Ark
@@ -7472,3 +7473,692 @@ boards is unknown until a screenshot is set beside R89A, R90Saga, R90Quests and 
 - `VoyageBoardTests` (9 tests: the tilt's arithmetic, the fade, the grid, the picture crop, the stepper, the board
   building and shaping its table): written and compiled, **not run**.
 - The hand test is "The Voyage window as the Sea table" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 173. Rev 91 mockups: the loading screen - a moving sea, one progress bar, a part of the game on show (2026-11-12; Shombith picked F, built in section 178)
+
+**Asked** (Shombith, 2026-11-12): "use /frogma-new and create me mockups for the animated smooth background with
+perfect progress bar. Create me mockups, maybe all parts of the game is shown in the loading menu. Like squads or the
+ark or the pilots or vessels the toybox. Create like 6 mockups". He named the new tab **Loading Screens**.
+
+**Picked (Shombith, 2026-11-12): "for the Loading screen I liked F"**, and "Make the percentage real" (section 176).
+
+**On the canvas**: tab **Loading Screens** (`loading-screens`, opened for this round), section "Rev 91 - Loading
+screens". Copies: `Docs/MenuRedesignB/board/R91*.dc.html`; the source that draws them is
+`Docs/MenuRedesignB/rounds/r91_loading.py` (re-run it on a planned root to redraw). Every board plays one 16 second
+loop; all motion is keyframe percentages on that loop, so a clip can be cut by seeking.
+
+**When it shows**: loading into a game mode (today's `ConnectingPanel`). For an hour the boards were republished with
+the boot's words, after he asked whether they were the Bootstrap scene; he then asked for the boot splash as separate
+mockups (Rev 92, section 174), so these went back to the mode entry (canvas version `1794512490-bf4f`).
+
+Shared by all six:
+- **The sea.** Three slow fields of the Blue family drifting under three layers of sea lines that slide at different
+  speeds, on the Deep Sea ground. CSS only.
+- **The bar.** Four segments, one per real step (Connecting to shore, Building the arena, Settling the arena, Waiting
+  for pilots: the `ConnectingPanel` phases of section 99.4), each as long as its share of the work. The step's name
+  sits over the bar, a tabular percentage on the right, and each step's marker fills when the step is done. The bar
+  only moves forward. A glint keeps travelling along the fill, so a slow step never looks frozen. At 100 the fill
+  turns Lime and the name reads Ready; Lime appears nowhere else.
+- ENTERING and the mode's name, top left. No tip line and no spinner.
+
+The boards:
+- `R91Compare`: the bar on its own, live, then held at 0, 12, 41 (a slow patch), 75, 93 and 100.
+- **A Squad**: three seat cards (pilot, hull, callsign); each seat arrives as the load moves on.
+- **B The Ark**: the Ark drifts across the sea; Converter, Squads, Artifacts and Decor are lit one per step.
+- **C Pilots**: one pilot stands large with the callsign; four take turns; eight of the roster beside.
+- **D Vessels**: one hull large; four take turns; the fleet as a grid beside.
+- **E Toy Box**: the Vessel Changer in a hex cycling six hulls; the seven toys listed and lit in turn.
+- **F The tour (recommended, picked)**: Squad, the Ark, Pilots, Vessels and the Toy Box in turn while the bar fills,
+  with a five-word index top right.
+- `R91Notes`: what was asked, what is shared, what each option shows, what differs from the build.
+
+Art, uploaded to the canvas for this round: six hull cards (`Assets/_Graphics/CardImages/<Hull>_large.png`), eight of
+the roster's painted portraits (Galleon, Needle, Anvil, Sundial, Flume, Doe, Hornet, Manger), and two views of the Ark
+cut from `Docs/VesselModels/ArkReverse_sheet.png`. The seven toys have no icon in the repo, so E lists them by name.
+
+Gates: `frogma.py check --only R91` clean. `check_mockup.py`: colours, type and contrast pass on all eight; the noise
+gate fails E (72) and F (67) because it counts the layers that take turns, though one shows at a time, and fails the
+Compare board, which is a sheet of fragments. Looked at in a local render at two moments of the loop.
+
+**Differs from the build**: today's mode entry is the Cell gate (Rev 33 A, section 99.4): an Omni crystal in a hex,
+a steps panel, a pilots panel, a tip and a slim bar. F replaces the crystal and both panels with the tour and moves
+the steps into the bar. The moving background departs from the quiet rule (no idle motion) because motion was the
+brief. In the game the show would be the live models, and every word (the step names, the lines under each title) an
+authored field. F's look is not built; only the percentage is (section 176).
+
+## 174. Rev 92 mockups: the boot splash and sign-in scene - two logos and the environment (2026-11-12; rejected by Shombith the same day)
+
+**Asked** (Shombith, 2026-11-12, with a screenshot of today's splash): "This can be a good bootstrap splash and sign
+in scene but we need something better than the image I shared with you. It cannot be texts, it needs to be froglet
+logo, game name and something cool to show off the environment, create separate mockups for that."
+
+**On the canvas**: tab **Loading Screens**, section "Rev 92 - The boot splash and sign-in scene", under Rev 91. Copies:
+`Docs/MenuRedesignB/board/R92*.dc.html`; drawn by `Docs/MenuRedesignB/rounds/r92_splash.py` (it imports Rev 91's sea,
+bar and page).
+
+Shared by all four: the Cosmic Shore logo and the Froglet Games logo as images (cut from
+`Assets/_Graphics/Icons/App Icons/SPLASH SCREEN.png` and `FrogSplashLogo.png`), Rev 91's sea, and Rev 91's bar with
+the boot status lines as its four steps (Connecting, Signing in, Loading profile, Creating session). No other words.
+
+- **A The cell (recommended)**: one cell with three domain trails being laid around it, passing behind and in front,
+  crystals pulsing inside, a second cell far off. The logo stands left. Recommended: it is the game's own picture (a
+  cell, trails, crystals) and the calmest of the four.
+- **B The gates**: ring gates fly out of the distance past the logo; a Jade and a Ruby trail run out to the edges.
+- **C The arenas**: three windows onto real arenas (the card-art renders of Waystation, Glasshouse, Tapestry,
+  Bloomrush, Harvest and Kelpwood at their own size), taking turns. The only one made of the game's own pictures.
+- **D The garden**: flora blooming and turning around the logos.
+- `R92Notes`.
+
+A, B and D are SVG and CSS stand-ins for the live world. `frogma.py check --only R92` and `check_mockup.py` pass on
+all five. Looked at in a local render.
+
+**Differs from the build**: today's splash is one still picture under a dim with the logo in it, LOADING over a
+180 x 2 bar and one status line (section 26). A picked option makes the environment move behind the two logos; the
+sign-in, pilot name, consent and connection-lost windows sit over it as today. Nothing built.
+
+**Rejected (Shombith, 2026-11-12): "If this is what we enter when we enter cosmic shore I dont like the direction
+already"**, on a screenshot of all four. What the four have in common, and so what a next round must not repeat: the
+environment is a thin line drawing on a dark, mostly empty ground (A, B, D) or three small pictures (C), where today's
+splash is a full, bright picture; the logo is laid on top of it, not part of it. A next round needs the real world at
+full size (the offline arena renderer, `Tools/Build/render_card_backgrounds.py`, can draw one at 1920 x 1080 but needs
+the .NET 8 SDK, which this session could not install).
+
+## 175. Rev 93 mockups: the boot splash as today's art with a real vessel (2026-11-12; not taken: "move away from this neon design", section 177)
+
+**Asked** (Shombith, 2026-11-12, after rejecting Rev 92): "I like the idea of real arena and also improve today's art
+replace it with like a real vessel. Can you show me mockups for both?" Then, on a sheet of the offline arena renders
+(`render_card_backgrounds.py` run at 1920 x 1080): "Dont use these pictures they are too bad, I will change them
+later too". So this round is the second direction only. **The real-arena direction is not drawn**: it waits for arena
+pictures he accepts (a capture from the editor).
+
+**On the canvas**: tab **Loading Screens**, section "Rev 93", under Rev 92. Copies: `Docs/MenuRedesignB/board/R93*.dc.html`;
+drawn by `Docs/MenuRedesignB/rounds/r93_splash_vessel.py`.
+
+Today's splash picture (`Assets/_Graphics/Icons/App Icons/Feature_Graphic_width_matched.png`: a neon vessel laying a
+trail of prisms through a starfield, the logo top left) rebuilt: Rev 91's sea with a starfield, the Cosmic Shore logo
+top left and Froglet's under it, the prisms laid one by one behind the hull on a loop, Rev 91's bar with the boot
+status lines. The hull is real: the shipped FBX mesh (Squirrel, Sparrow, Dolphin) projected with the icon kit's reader
+(`Tools/Build/icon_kit/hull_view.py`) and drawn in the art's own style, blue faces and glowing cyan creases.
+
+- **A Squirrel (recommended)**: today's composition with the real Squirrel laying a Ruby trail.
+- **B The squad**: Dolphin, Squirrel and Sparrow in formation, a trail each in Jade, Ruby and Gold.
+- **C The fleet**: Squirrel, Sparrow and Dolphin take turns in the same place.
+- `R93Notes`.
+
+`frogma.py check --only R93` and `check_mockup.py` pass on all four. Looked at in a local render. The hull drawings
+are the bind pose of each mesh, not a posed or lit render; today's art has a prism structure on the left that these
+leave out. Nothing built.
+
+## 176. Built: the loading screen's percentage is real (2026-11-12, not run in Unity)
+
+Shombith, with the pick of Rev 91 F: "Make the percentage real". Only the number is built here; F's look is not.
+
+**What it was.** The loading screen into a game (`ConnectingPanel`) already drew a bar and a `{pct}%`, both from
+`ArenaLoadProgress`. Two stretches of it were not measurements: a timed creep toward 5% during the opening dwell, and
+a timed creep toward the next band in any gap between phases. And the wait for the other pilots sat at 100%.
+
+**What it is.** Every value is a measurement, in three shares (`Docs/CONNECTING_PANEL.md` section 1):
+- laying, 0 to 60%: prisms laid over prisms queued;
+- growing, 60 to 90%: prisms settled over the most that were ever growing;
+- pilots, 90 to 100%: human pilots who reported their arena built over human pilots in the match.
+
+Where nothing is measurable the bar holds. It still never goes down and still ends at exactly 100. Alone, the pilots'
+share completes the moment the arena is ready.
+
+**Files.** `Assets/_Scripts/UI/Elements/ArenaLoadProgress.cs` (the model: no clock, a pilots' share),
+`ConnectingPanelController.TickProgress` (passes the roster's ready and total counts), `ArenaLoadProgressTests`
+(8 tests: the creep test became "holds still where nothing is measured"; two new ones for the pilots' share).
+No prefab, scene or generator changed: the panel's slider and percentage text already read this value.
+
+**Verified.** `unity_refcompile` player and editor: no errors in project code. `gates.sh`: all OK. The 8 tests run
+outside Unity on a `Mathf` shim: all pass. **Not run in the editor**: the hand test is "Loading screen: the percentage
+is real" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Not done.** The boot splash's bar (`KitLoadBar`) has no percentage and still reads only the prism builder
+(`EnvironmentLoadVeil.BarSpan`: a drifting segment before a build, which is not a measurement). Giving connecting,
+signing in, the profile and the session a share means `BootStatusBroadcaster` and the sign-in controller reporting
+steps to a shared model; it waits on the splash's pick (sections 174, 175). The scene load before the panel exists is
+not measured either: nothing reads the scene load's own progress.
+
+## 177. Rev 94 mockups: the boot splash as a poster, no neon (2026-11-12; Shombith likes C, redrawn with the game's own art in 177.2; built in section 179)
+
+**Asked** (Shombith, 2026-11-12, on Rev 93): "Okay can we move away from this neon design, create some good poster
+based mockups 4".
+
+**On the canvas**: tab **Loading Screens**, section "Rev 94", under Rev 93. Copies: `Docs/MenuRedesignB/board/R94*.dc.html`;
+drawn by `Docs/MenuRedesignB/rounds/r94_posters.py`.
+
+No glow anywhere. Flat colour fields; the roster's painted pilots (the 220 x 280 portraits enlarged to 440 x 560); the
+real hulls (Squirrel, Sparrow, Dolphin meshes) drawn in three flat tones with an ink line; both logos as flat marks
+cut from the neon ones; Rev 91's bar on a dark foot with the boot status lines. Motion is slow: a disc breathing, a
+hull drifting, the sea sliding.
+
+- **A The crew (recommended)**: an ensemble poster. Hornet, Needle, Galleon, Sundial and Anvil stand in a line before
+  the Ark on two flat blue discs. Recommended: the painted pilots are the best art the game has, and this is the one
+  that looks like a game's key art.
+- **B The shore**: a travel poster. Flat sky bands, a low sun-coloured cell on the horizon, a flat sea sliding, the
+  Squirrel in shadow crossing the cell with its prisms behind it.
+- **C The pilot**: a character one-sheet. One pilot on a gold disc with the hull's shadow behind and the callsign;
+  Galleon, Needle, Sundial and Hornet take turns.
+- **D Three domains**: three slanted bands in Jade, Ruby and Gold with the Dolphin, the Squirrel and the Sparrow.
+- `R94Notes`.
+
+`frogma.py check --only R94` and `check_mockup.py` pass on all five. Looked at in a local render before the last
+layout pass. To know: a poster at this size wants the pilots painted larger; Gold here is a sun and a disc, not a
+purchase (a poster uses the families as paint, which is a question for the style guide's owner, who asked for the
+poster); the flat logos are thresholds of the neon ones, not drawn marks. Nothing built.
+
+### 177.1 Second pass: A and D as one poster, the colour set changing (2026-11-12)
+
+Shombith, on the four posters: "Delete others and can you combine D and A and the theme switching in this scene as
+well, this scene needs to be very very smooth. Now delete the old revs in 94 and then mockups combining D and A and
+also the colors on D is too bright, I dont like that and also the empty dull blue. Can show some animated parts of
+the cell along with the sea lines in the background."
+
+**Taken off the canvas** on his word: `R94C` (the pilot) and `R94D` (three domains) deleted; `R94A`, `R94B` and
+`R94Notes` replaced by the boards below. The four first-pass boards are in git at `aa2439de9d`. Rev 92 and Rev 93 are
+still on the canvas.
+
+**On the canvas** (version `1794524891-90ac`), drawn by the rewritten `Docs/MenuRedesignB/rounds/r94_posters.py`:
+- **A The crew before the domains (recommended)**: the five pilots in a line across three slanted domain bands, the
+  Ark above them.
+- **B Three crews**: a pilot and a hull in each band (Needle and the Dolphin, Galleon and the Squirrel, Anvil and the
+  Sparrow), the Ark beside, inside a cell.
+- `R94Notes`.
+
+What answers each of his points:
+- **Too bright.** A band is its domain's prism as the worn colour set paints it: the set's FACE colour as the body
+  (a dark jewel) and its RIM colour as a 3 px edge. No bright flat fields.
+- **Theme switching.** The colour set changes on a 28 s loop: Nocturne, Dart Frog, Dusk, Ukiyo-e, with the swatches
+  from `Docs/VesselModels/colour_sets.json`. Each holds, then blends into the next; the last blends back into the
+  first, so the loop has no seam. A small readout names the worn set.
+- **The dull blue.** The flat discs and flat ground are gone. Behind the bands: Rev 91's sea lines and parts of a cell
+  moving in it (a membrane breathing, crystals pulsing, a prism trail being laid). The flora bursts were taken out
+  the same hour ("remove this sun like thing", canvas version `1794524931-85b0`).
+- **Smooth.** Every motion eases both ways and alternates; nothing pops or restarts.
+
+`frogma.py check --only R94` passes. `check_mockup.py` fails the colour gate on purpose: the 24 colour-set swatches are
+not UI tokens. Looked at in a local render at two moments of the loop (two sets), before a last layout pass.
+In the game the splash would wear the player's own set and blend when it changes. Nothing built.
+
+**C, added the same hour.** Shombith, on the flora bursts: "remove this sun like thing", then "crystals cells can be
+shown but not this i guess, create another mockup with cells and crystals and fauna and flora in the distant bg as
+well". `R94C` is A with the living sea far behind the bands (which are a little more see-through): five cells
+breathing, crystals pulsing, a school of small darts crossing, one long creature of linked segments swimming, and
+flora as stalks of prism segments swaying from the floor, never a radial burst. Canvas version `1794525024-6c59`.
+The fauna and flora are drawings, not the game's creatures. Looked at in a local render before a last pass that moved
+a cell off the Froglet logo and the creature off the colour-set readout.
+
+### 177.2 Third pass: C in the game's own art; the old splash rounds off the canvas (2026-11-12)
+
+Shombith: "Delete the old revs for this opening scene but I like C but the captains are too low res, garrett added new
+captain images, we can curate and use some of them and also use the vessels actual icons from the hangar the silver
+look and for crystals I want actual omni crystals not this small icon and also some color ful prisms or a cell works
+as well".
+
+**Liked (Shombith, 2026-11-12): "I like C"** - the crew before the three domain bands with the living sea behind.
+
+**Taken off the canvas** on his word (version `1794525596-970e`): Rev 92 (`R92A`-`D`, notes), Rev 93 (`R93A`-`C`,
+notes) and this round's `R94A` and `R94B`, with the two rounds' title notes and sections; Rev 94 moved up into their
+place. Their copies stay in `Docs/MenuRedesignB/board/` and in git. Rev 91 (the loading screen, F picked) is untouched.
+
+**`R94C` redrawn** (`Docs/MenuRedesignB/rounds/r94_posters.py`), every stand-in replaced by the game's own picture:
+- **Captains**: five of the new 1024 px busts from `Docs/Pilots/art/busts/` on `bleeding-edge` (Hornet, Needle,
+  Galleon, Sundial, Anvil), each in a slanted card that leans the way the bands lean, the middle one largest. Curated
+  to keep the cast the board already had; any of the 18 roster busts drops in.
+- **Vessels**: the class cards in silver livery (`Assets/_Graphics/CardImages/<Hull>_large.png`: Squirrel, Dolphin,
+  Sparrow), one floating over each band.
+- **Crystals**: the Omni crystal's own render (`Assets/_Graphics/Codex/ethirion_omni.png`), five of them turning.
+- **A cell and colourful prisms**: a real frame of a cell seen from outside, with its coloured prism clouds
+  (`Docs/Pilots/art/refs/sea_cell_outside.jpg`, one of the painter's reference frames of the game), far behind
+  everything and slowly pushing in; two short runs of prisms in the worn set's rim colours.
+- **Fauna and flora**: the Codex's pictures (`Assets/_Graphics/Codex/`): a shoal, a quadfish, a shark and a piranha
+  gliding; coral, an arbor, a lantern and a pine swaying from the foot.
+
+Kept: the three domain bands as the worn colour set paints a prism, the set changing on the seamless 28 s loop, the
+sea lines, the flat logos, Rev 91's bar. `frogma.py check --only R94` passes; `check_mockup.py`'s colour gate fails on
+the colour-set swatches, as before. Looked at in a local render before one prism run was moved off the Froglet logo.
+To know: the busts are painted with their own backgrounds, so they sit in cards and are not cut out; the silver hull
+cards are 512 px shown at 300; the cell frame is dimmed and mostly behind the bands. Nothing built.
+
+## 178. Built: the loading screen into a game as the tour - Rev 91 F (2026-11-13, not seen in Unity)
+
+Shombith, 2026-11-12: "Done, make F and this in unity". Built in a cloud session with no editor: compiled against the
+Unity reference assemblies, the generator's checks clean, **never looked at**. The last two UI builds made unseen came
+out wrong on the first pass (the Voyages tab, section 165), so this waits on a screenshot beside the board.
+
+`ConnectingPanel.prefab`, regenerated by `Tools/Build/author_ingame_hud.py` section 12c:
+- **Kept**: the cover over the arena (`HexApertureGraphic`, `Sea_Window.mat`), ENTERING and the mode's title top left,
+  the gate (`ConnectingGateView.Open`); the hex now opens from the centre.
+- **The tour** (`ConnectingTourView`): Squad, The Ark, Pilots, Vessels, Toy Box, one at a time, cross-fading over 0.4 s.
+  The chapter is the fifth of the bar's value the load is in (`ChapterFor`), so it follows real progress and never
+  goes back. Every title, line and the "{n} of {total}" counter is an authored field. A five-word index top right.
+- **The bar** is `KitStepBar` (new, `Assets/_Scripts/UI/Kit/`): the fill, the running step's name, the percentage, step
+  labels and markers, a travelling glint, and the Lime call-to-action token with "Ready" when done.
+- **Removed** through the generator: the Omni crystal hex, the steps panel, the pilots panel's rows, the tip, the footer.
+  `ConnectingPlayerRoster` stays (it is what `AllHumansReady` reads) under a zero-alpha group; the 27 GameCanvas
+  overrides into the panel still resolve.
+
+Against the board:
+- **Three steps, not four.** Building the arena (to 60%), Settling the arena (to 90%), Waiting for pilots (to 100%):
+  the shares `ArenaLoadProgress` measures (section 176). The board's "Connecting to shore" is not built because
+  nothing measures it.
+- Not built: the drifting sea lines of the board's background, the Ark's drift and the hull's bob, tabular digits.
+- The Ark's picture is a cut from the model sheet imported as `Assets/_Graphics/UI/Loading/loading_tour_ark.png`; the
+  game had no Ark sprite.
+
+Verified: `author_ingame_hud.py` run, `--check` and `--self-test` (nine new negative controls for this screen),
+`unity_refcompile` player and editor, `gates.sh`. Hand test: "Loading screen into a game: the tour" in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 179. Built: the boot splash and sign-in scene as the poster - Rev 94 C (2026-11-13, not seen in Unity)
+
+The same request, the same caveat: compiled and checked, **never looked at**, and this one is the first screen of the
+game.
+
+`Bootstrap.unity`'s `Canvas - Splash Screen` and `Authentication.unity`, regenerated by `Tools/Build/author_start_flow.py`:
+- **The poster** replaces the still feature art on both: the cell frame pushing in under the sea lines; three leaning
+  domain bands; five captains (Hornet, Needle, Galleon, Sundial, Anvil) in slanted cards (`KitSlant`); the Squirrel,
+  Dolphin and Sparrow in silver; Omni crystals, the Codex's fauna and flora, two runs of prisms; both logos top left;
+  a dark foot. `PosterDrift` moves everything on unscaled time and sleeps while unseen; `PosterFit` shrinks the stage
+  to fit other aspects.
+- **The bands follow the worn colour set** (`PosterDomainPaint`): the domain's prism face colour at 0.74 alpha and its
+  rim colour on two 3 px edges, read through `ColorTrace.Worn` and eased over 1 s when the set changes. No colour is
+  typed. The board's four-set cycle and its "Colour set" readout were a demonstration and are not built.
+- **The percentage is real** (`BootLoadProgress`, pure and tested; `BootStatusRequest` now carries a `BootStep`):
+  Connecting 0-8%, Signing in 8-22%, Loading profile 22-36%, Creating session 36-100% (lobby 36, session 41, host
+  ready 46, the world laying 50-85 and growing 85-100). It holds between measurements and reaches 100 only after a
+  world build was seen and the veil lifts. The generator reads the step ends from the C#.
+- **On a return to the menu** the splash is the transition overlay and no boot is running: the bar shows the world
+  build alone across its whole width under one authored line, "Building the world", with the step labels hidden.
+- The sign-in, pilot-name, consent and connection-lost windows work as before; their fill went from 0.92 to 1 so text
+  sits on an opaque window over the poster. The sign-in controller's status lines became authored fields.
+
+To know: the two logos are thresholded cuts of the neon ones, not drawn marks; the five busts and the cell frame were
+imported into `Assets/_Graphics/UI/Splash/`; `colour_trace.py` rewrote the use counts in the 14 colour-set assets and
+dropped one colour whose only use was the old sign-in image. One thing nobody could check: if prisms are still growing
+in the scene being left, a return bar could start above 0.
+
+Verified: `author_start_flow.py` nothing to write, `--check` and `--self-test` (eight new negative controls),
+`unity_refcompile` player and editor, `gates.sh`, `colour_trace.py --check`. Hand test: "Boot splash and sign-in scene:
+the poster" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 180. Rev 95 mockups: Voyages as two screens - the voyage on the map, then the squad (2026-11-12; Shombith picked 1A, the squad screens rejected, redrawn in section 181)
+
+**Asked (Shombith, 2026-11-12, with two screenshots of the built section 172 in Unity):**
+- "Image 1 : the top bar looks nothing like the design" (the tabs are still dark boxes).
+- "Image 2 : I dont like the preview earlier we could zoom in and out of the whole map, set course directly there which
+  is not possible."
+- "first screen in voyages is the left side list, that can stay, the middle becomes the preview with all features that
+  I mentioned earlier. Then we can have squad presets and set sail directly or if we have players in the friends lobby
+  with me and they are not in the squad we can have the configure your current squad or something like that but then
+  the second image can give us the options to select the vessel, pilot, artifact, element etc and then set sail. Create
+  3 mockups each for both the screens".
+
+**What the screenshots showed of the build (the first time a Voyage build of this redesign was seen in Unity):**
+- The tabs keep their dark boxes: `VoyageWindowTabs.Plain` does not remove them in the editor. Not fixed here; it is
+  fixed with the build of whichever boards are picked.
+- The tilt works as drawn (the map lies back, the edge view stands under it), and is rejected: a lying map cannot be
+  explored. The edge view's caption runs across the face in capitals, and the course's far end leaves the frame.
+
+**On the canvas:** tab **Voyages**, round "Rev 95 - Voyages as two screens: the voyage on the map, then the squad"
+(canvas version `1794524853-7ff6`), under Rev 90.
+- Copies: `Docs/MenuRedesignB/board/R95*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r95_voyages.py`, on Rev 89's.
+- All boards pass `frogma.py check`. `check_mockup.py` against `--baseline Docs/MenuRedesignB/board/R89A.dc.html` (a
+  budget of 98): the three screen 1 boards and 2B pass; **2A (118) and 2C (119) are over**, because they show every
+  seat's choices at once. The count is of the markup, with five steppers for each of three seats.
+- They were rendered locally with the canvas's own art, at rest and zoomed out, and looked at before publishing.
+
+**The map, in all three of screen 1:** flat, and the explorer again: a zoom ladder (Galaxy, Arm, Sector, Course) with +
+and -; zoomed out, each voyage's place is a mark with its name, and a press sets the course there and zooms to it. The
+edge-on view stays with it. The voyage list on the left is Rev 89's chips.
+
+**Screen 1, the voyage:**
+- **1A - Presets (recommended):** the map over its edge view. On the right the voyage's name and numbers, the squad
+  presets as cards (name, who flies, the three hulls), Configure squad, Set sail.
+- **1B - Wide map:** the map across the window; a foot bar holds the edge view, the voyage, the squad as a stepper
+  with its hulls, Configure squad and Set sail. The widest map, cropped top and bottom.
+- **1C - Briefing:** the map full height with the edge view inset at its foot. The right shows the squad's three seats
+  (hull, vessel, who) under the squad names.
+- **Configure squad** is on all three: a quiet button that opens the matching screen 2, and over it a line naming a
+  lobby friend who flies no seat ("Mirel is in your lobby, not in this squad").
+
+**Screen 2, the squad:**
+- **2A - Three seats (recommended):** a column per seat: pilot, vessel, who, hull, then Vessel, Pilot, Element and
+  Artifact as steppers. A seat that is not yours to change says whose it is.
+- **2B - Seat and picker:** the seats on the left; the picked seat's choice on the right as large tiles under Vessel,
+  Pilot, Element, Artifact tabs.
+- **2C - Roster:** a table, a row per seat and a stepper per choice.
+- In all three: the picked voyage and a way back at the head, the squad names, **Save as preset** and Set sail at the
+  foot. A seat of your own squad that is not yours has a fifth stepper, **Flown by**: the AI, or a lobby friend.
+- **Notes.**
+
+**Picked (Shombith, 2026-11-12): 1A; none of screen 2:** "S1A is good but I didnt like any of the second scren designs"
+(section 181).
+
+**Recommended: 1A with 2A.** 1A keeps Set sail one press from a preset, which is the common case; 2A shows the whole
+squad at once, so a change to one seat is seen against the others.
+
+**New rules these draw, to confirm with the pick:** a lobby friend can be given a seat from the Voyage window (Flown
+by), and a changed squad can be saved as a preset here. Today both happen in the Ark (`SquadsPage`).
+
+**Differs from the build (section 172):** the tilt goes (`VoyageMapGraphic.Tilt`, `VoyageSlab` for the Voyages tab) and
+the map is the explorer again (not `Plain`), with places pressable; the seats and steppers leave the Voyages tab for a
+second screen; the right column becomes the voyage's name, the presets and two buttons. The Saga, Quests and Episodes
+tables (Rev 90) are not redrawn here.
+
+
+## 181. Rev 96 mockups: the squad screen - a backdrop, soft buttons, one press (2026-11-12; Shombith disliked the squad preset plates and the 2D tray with its foot, redrawn in section 182)
+
+**Asked (Shombith, 2026-11-12, on Rev 95):** "S1A is good but I didnt like any of the second scren designs, the bg is
+too bland and also the button in both the screens are too hard not soft hard soft. Clicking through so many vessels and
+pilots and artifacts also seems like a drag, we need to make the experience smoother for the users".
+
+**On the canvas:** tab **Voyages**, round "Rev 96 - the squad screen: a backdrop, soft buttons, one press" (canvas
+version `1794525384-1630`), under Rev 95.
+- Copies: `Docs/MenuRedesignB/board/R96*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r96_voyages.py`, on Rev 95's.
+- All boards pass `frogma.py check`. `check_mockup.py` against `--baseline Docs/MenuRedesignB/board/R89A.dc.html` (a
+  budget of 98): 1A passes; **2D (103), 2E (99) and 2F (101) are just over**, because every choice is on screen; the
+  Buttons board fails the one-Lime rule by design (it compares four Set sails); and the soft-ended buttons draw a
+  contrast warning at their faded ends, where there are no words.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**Three answers, in every board:**
+- **The backdrop.** The squad stands on a lit deck over the sea of the voyage that was picked: its own course map,
+  blurred and dimmed, with the deck's lines running away under the hulls.
+- **The buttons.** "Soft hard soft" is read as the fill being solid in the middle and fading out to both ends, with no
+  box (so no cut corners). **This is a reading, not a certainty**: the Buttons board sets it beside the buttons as
+  they were and two other readings (Soft glow: the slab stays, a soft light round it; Soft face: the fill eases from
+  top to foot under one bright line). The style guide's section 4 says two cut corners and nothing rounded; Soft ends
+  departs from it, the other two do not. Whichever is picked becomes the rule for every button.
+- **One press.** No steppers. Every choice is on screen. Picking a vessel brings the pilot, element and artifact kept
+  for it (the Hangar's kit), so most seats are one press.
+
+**The boards:**
+- **1A:** screen 1 as picked (Rev 95 1A) with the soft buttons. Configure squad opens 2D.
+- **Buttons:** the four button looks side by side.
+- **2D - Deck (recommended):** the three seats stand across the deck, each its pilot and hull; a press picks the seat
+  being changed (lit, the others dimmed). One tray under them holds its four strips: six hulls, four pilots (one who
+  flies another seat says "Swaps with ..."), four elements, five artifacts.
+- **2E - Kits:** the picked seat large on the left under a row of the three seats. Six whole kits (hull, pilot,
+  element, artifact), one press sets all four; element and artifact can still be changed alone.
+- **2F - Showroom:** the seats on a rail, the picked seat as the hero, its four strips in a panel on the right.
+- All three: the voyage and a way back at the head, the squad names, Save as preset and Set sail at the foot.
+- **Notes.**
+
+**Recommended: 2D.** It is the only one that shows the whole squad at full size while one seat is changed.
+
+**New rules these draw, to confirm with the pick:** a vessel brings a whole kit (today a vessel change brings only the
+pilot kept for it in the Hangar, `PilotLoadoutStore.GetPilot`); Save as preset and a lobby friend's seat, as section 180.
+Rev 95's "Flown by" is not drawn on these boards.
+
+**Differs from the build (section 172):** as section 180, and the steppers (`VoyageSquadColumn`) are replaced by
+strips of tiles; the backdrop needs the picked voyage's map drawn behind the squad screen.
+
+## 182. Rev 97 mockups: the squad presets and the seat's choices redrawn; three players picking at once (2026-11-12; Shombith picked 1A and 2D, "the texts are too cramped", respaced in section 183)
+
+**Asked (Shombith, on Rev 96, with two screenshots - the Squad plates of 1A, and 2D's tray with its foot):** "These
+screenshots are the parts I do not like". While the round was drawn: "think if you are configuring, 3 players are
+selecting their vessel, pilot, element etc it should be a good experience", and "wrong elemental icons, check ecology
+for the correct ones the ones with petals are the ones we should use".
+
+**Read as (mine, not his words):** both parts were rows of dark boxes with small pictures. Here no choice has a box:
+pictures are larger and stand on the screen, the picked one is lit and underlined in Jade, the rest are dimmed.
+
+**Drawn** (tab Voyages, title note `rev97`, generator `Docs/MenuRedesignB/rounds/r97_voyages.py`):
+
+- **Squad** - the squad presets three ways: Formation (three hulls in formation, the leader in front), Carousel (one
+  squad large, step to the next), Crew (the three pilots and what each flies).
+- **Choices** - the seat's choices three ways: Shelf (four open groups), Two rows (the vessels across the whole width),
+  Focus (each group shows its picked choice large).
+- **1A** - screen 1 with the Formation presets. **2D** - the Deck with the Shelf.
+- **2G, 2H - three players at once.** Every seat is a lane. On each player's screen their own lane is open with every
+  choice in it; the other two seats are large pictures that change as their players pick, each with Choosing or Ready.
+  2G is the leader's screen: the AI seat has Change, the button is Set sail. 2H is a friend's screen: the button is
+  Ready, and the leader sets sail.
+- **Element marks** are the HUD's flowers (`ElementalBarsView`): five copies of the element's petal
+  (`Assets/Resources/ElementPetals`) turned 72 degrees about the centre, white, no colour.
+
+**Recommended: 2G / 2H with Formation presets on 1A.** They are the only squad screens where three people pick at the
+same time without sharing one cursor.
+
+**New rules these draw, to confirm with the pick:** a Ready state per player and Set sail only for the leader; a
+friend's picks shown live on the others' screens; and section 181's (a vessel brings its kit, Save as preset).
+
+**Gate:** `check_mockup.py` noise is over the budget on every screen that shows all choices (2D 107, 2G and 2H 188
+against 98); the two compare boards carry three Lime buttons each because they show a part three times.
+
+**Differs from the build (section 172):** as sections 180 and 181; the game has no per-player Ready in the Voyage
+window and no element flower outside the HUD.
+
+## 183. Rev 98 mockups: 1A and 2D with room between the words (2026-11-12; Shombith: "Yes, build these two screens in Unity", built in section 184)
+
+**Asked (Shombith, on Rev 97):** "s2d and s1a but the thing is that everywhere the texts are too cramped up together.
+Can we do something about that?"
+
+**Picked so far:** screen 1 is 1A (the voyage list, the flat map explorer over the edge-on view, the voyage's name,
+the squads as formations, Configure squad, Set sail). Screen 2 is 2D (the three seats large, the picked seat's choices
+on the Shelf). The three-player lanes (2G, 2H) were not picked.
+
+**Drawn** (tab Voyages, title note `rev98`, generator `Docs/MenuRedesignB/rounds/r98_voyages.py`): the same two
+screens to one spacing rule, which is also the rule for the build:
+
+- lines of one group stand at least 10 px apart, line height 1.4 or more;
+- groups stand at least 28 px apart; a label stands 16 px or more above what it labels;
+- no text wraps inside a tile: the tile is made wide enough;
+- two short lines that said one thing are one line with wide gaps between its parts.
+
+What moved: the voyage chips are 96 high (76) with their two lines 38 apart; the zoom ladder's rows are 36 high;
+the voyage's name block has 12-20 px between its lines and 40 px to the squads; a squad is its name, who flies under
+it, and its formation beside them; a seat is role, vessel, then one line of player, pilot, element, artifact; the
+Shelf's groups are 28 px apart with wider tiles, and a pilot's note stays on one line.
+
+**Gate:** `check_mockup.py` passes 1A; 2D is over the noise budget (113 against 98) because every choice is on screen.
+
+**Differs from the build (section 172):** as sections 180 to 182.
+
+## 184. Built: the Voyages tab as two screens - Rev 98 1A and 2D (2026-11-13, not seen in Unity)
+
+**Asked (Shombith, on Rev 98):** "Yes, build these two screens in Unity".
+
+**Built** (branch `claude/sweet-mccarthy-ow25e2`; no Unity editor ran, so nobody has seen it):
+
+- **The voyage screen** (`VoyageBoard`, rewritten): the voyage chips (96 high, their two lines apart); the window's own
+  HyperSea map, flat, with its explorer back (the tier ladder, readout, drag, pinch, wheel, a press on a place sets the
+  course there) and a + and - over it (`VoyageMapGraphic.ZoomStep`), over the edge-on view; on the right the voyage's
+  name and numbers, the squads as formations (name, who flies, three hulls), Configure squad and Set sail.
+- **The squad screen** (`VoyageSquadDeck`, new; `VoyageBoard.ShowScreen`): the way back and the voyage on one line, the
+  squads' names, the three seats large, the picked seat's choices on the shelf (Vessel, Pilot, Element, Artifact as
+  open pictures; one press takes and saves), Save as preset, Set sail. The voyage's map stands dimmed behind it.
+- **The squad rules in one place** (`VoyageSeats`, new): what a seat may take and how it changes, moved out of
+  `VoyageSquadColumn`, which the Saga tab still uses. Same Ark rules.
+- **Soft fills** (`VoyageSoftFill`, new): Set sail and the quiet buttons are solid in the middle and fade to both ends,
+  on every tab of the window; the bands and the light under a picked picture are the same graphic.
+- **Element marks**: the HUD's flower (`VoyageKit.Flower`, five petals through `ElementalBarsView.ConfigurePetal`).
+- **The tabs' boxes** (section 172's reject; Shombith saw them again on 2026-11-13: "This looks so ugly"): every frame
+  piece of a tab (Fill, Border, the four Brackets) is switched off as an object and the button gets its own clear hit
+  area with no colour transition. Clearing or disabling was not enough: the menu's theme pass (`UIThemeLive`) repaints
+  every `KitThemedGraphic`, disabled ones too. The LB / RB keys are gone and the window no longer takes the bumpers
+  ("it does not need an LB/RB support for now ... just clicks work fine"): a tab is clicked.
+- 11 new authored lines (`BoardZoomIn` to `BoardSwapsWith`); chips are 96 high on every tab (`RowHeight`).
+
+**Differs from the boards:**
+
+- No blur and no deck grid behind the squad screen: the map is dimmed by a veil.
+- The "in your lobby, not in this squad" line is not built: the window has no reach to the party's members yet.
+- The zoom ladder is the map's own (seven tiers, drawn by the map), not the board's four rows.
+- Save as preset copies the squad under the book's own name ("Squad N"); it is dark on a joined squad or a full book.
+- The keycaps (X, B, Y, A) are drawn; the pad does not press them yet.
+- The window title and hub row keep their sizes; Saga, Quests and Episodes keep the tilted table (Rev 90).
+- More vessels, pilots or artifacts than the board showed narrow their tiles; a pilot's note that would not fit is left out.
+
+**Verified:** `unity_refcompile` player and editor, 0 errors in project code; the ship gates pass; `VoyageBoardTests`
+(11 tests) compiled, not run. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The Voyages tab as two screens".
+
+## 185. The boot reveal: no lag, no pop, a way into the Toy Box; Froglet's logo under the bar (2026-11-13, not seen in Unity)
+
+Shombith, 2026-11-13, after section 179: "After the loading screen is completed there is a big lag when the scene is
+switching aren't we using async scene loading? Why will it lag when the scene is getting switched and there can be a
+smooth transition into the toybox dont just boom open scene". And: "The froglet logo should be in the bottom right
+corner below the percentage bar".
+
+**Why it lagged, from the code** (no recording was available here; `LoadInsights` writes them on the player's machine):
+the scene load IS async (`SceneManager.LoadSceneAsync`), and by the time the bar says Ready the menu has loaded and its
+world is built. The lag was the reveal frame itself, which did three things at once:
+- a full blocking `GC.Collect()` (`SceneLoader.FadeFromSplashWhenSettled`, every boot);
+- the boot's load report finished on the same frame: `LoadInsights.CompleteLoad` serialises it to JSON and writes two
+  files, synchronously, on every boot;
+- the fade started on the next frame. `SceneTransitionManager.FadeAsync` advanced by each frame's real time with no
+  cap, so the frame that carried the collect and the write (easily half a second) used up the whole 0.4 s fade at
+  once. That is the "boom": the splash vanished in one frame.
+
+What still is not fixed: the menu scene's activation (its objects' `Awake`) is one main-thread frame however the load
+is called; on 26 Oct one such frame took 10.4 s. It happens while the bar is at Loading profile, not after Ready, and
+it needs a profile of that frame before anything is changed.
+
+**What changed:**
+- **The reveal** (`SceneLoader`): the collect still runs under the opaque splash, then `revealSettleFrames` (2) frames
+  render under cover so a long frame ends out of sight. The menu's "shown" moment is stamped then
+  (`LoadInsights.MarkVisualReady`), and the report is written after the reveal, not on its first frame.
+- **The fade** (`SceneTransitionManager`): every fade advances by at most `_maxFadeStep` (1/30 s) per frame, so a hitch
+  lengthens a fade a little instead of skipping it. Entering the menu (the boot, and a return from a game) uses
+  `RevealAsync`: `_revealDuration` 1.2 s, eased at both ends.
+- **Into the Toy Box** (`PosterExit`, new, on the poster's root): as the splash dissolves the poster grows 12 percent
+  about its centre, so the player moves through it into the world. It reads the splash's own fade, needs no wiring,
+  and runs in reverse when the splash comes back on a return.
+- **The menu arrives with the world**: `ScreenSwitcher` also replays the current screen's entrances when the reveal
+  starts (`SceneTransitionManager.RevealStarted`); before, on a boot they played behind the still-opaque splash.
+- **Froglet's logo** moved from under the game's logo to the foot's bottom-right corner, under the bar's percentage,
+  150 wide, on both the splash and the sign-in scene (`author_start_flow.py`), and on board `R94C`.
+
+Verified: `unity_refcompile` player and editor; `author_start_flow.py` check and self-test (two new negative controls:
+the poster without its exit, the logo back at the top left); `gates.sh`. New EditMode tests (`SceneTransitionManagerTests`
+for the hitch rule and the ease, `BootPosterTests` for the exit's scale) compile and were not run. Hand test: "The boot
+reveal into the Toy Box" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+Seen in Shombith's screenshot and not explained from the code: the splash's bar showed the `%` sign with no number
+and an empty track, which means `BootStepBar` never drew. Its wiring in both scenes is correct; an exception in the
+Console from `BootStepBar` or `BootLoadProgress` is the likely cause and is the first thing to look for.
+
+## 186. Built: the loading screen's sea and motion - the rest of Rev 91 F (2026-11-13, not seen in Unity)
+
+Shombith, 2026-11-13: "Now build the F loading screen's missing sea lines and bob". Section 178 had left out the
+board's moving sea and its idle motion.
+
+- **The sea.** The cover already drew sea lines: its upper layer is `Sea_Window.mat`, which animates by itself. What
+  the board had and the build did not were the three soft fields drifting under the lines. They are now
+  `Gate/Cover/Fields`, between the cover's black base and its sea lines: three `kit_ring_glow` soft discs at the board's
+  boxes, each a `PosterDrift` with the board's timings (26, 34 and 42 s one way, the board's offsets and scales). The
+  board's two indigos are not theme colours, so the fields wear the theme's blue family (`SurfaceLight` at 0.50 and 0.46,
+  `NeutralLightest` at 0.30) and follow the worn colour set: a little greyer than the board.
+- **The gate.** The fields have no hex hole of their own, so `ConnectingGateView` gained a `backdrop` group, faded
+  with the content as the gate starts (it is gone before the hole has grown) and reset on the next hold.
+- **The bob.** The Ark drifts (16 s one way, -40 to 110 across, a turn from 1 to -1.5 degrees) and the Vessels
+  chapter's Sparrow bobs (6 s, 10 up to 12 down), as on the board. `PosterDrift` sleeps while its chapter's group is at
+  zero, so the hidden chapters cost nothing.
+
+Still not built: tabular digits on the percentage. The sea lines are the menu windows', not the board's own layers.
+
+Verified: `author_ingame_hud.py` run, `--check` and `--self-test` (two new negative controls: the fields left out of the
+gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; `gates.sh`. Hand test: "The loading
+screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+
+## 187. Rev 112 mockups: colour sets for a growing catalog - a world preview, one scrolling list, Free and Premium apart (2026-11-14; Shombith picked D)
+
+**Asked (Shombith, 2026-11-14):** "Color sets we do need to change how they look, we will be making multiples of them so
+scrolling or clicking through each one is not an option. [...] We need a preview to show what the color set changes to
+depict the world of our game, We need a scrollable list with differentiation between free and the other type, lets use
+the whole place not leave a big empty space in the middle." Then, on the first draft's vessels tile: "Should look like
+actual vessel icons with actual prism trails with the supported color."
+
+**On the canvas:** tab Menu Redesign A, section "Rev 112 - Colour sets for a growing catalog" (version
+`1794681676-3efd`). Copies in `Docs/MenuRedesignB/board/R112*.dc.html`, drawn by
+`Docs/MenuRedesignB/rounds/r112_colour_sets_catalog.py <root> 112`. All fourteen sets of `ColorSetCatalog.asset` (name,
+line, pigments, vision), every colour from its shipped `SO_ColorSet`. Every option shows the picked set's world (prisms
+in depth, three vessels with their prism trails, a crystal) and four tiles of what the set repaints: **Prisms** (four
+domains x three shields), **Vessels and trails** (the in-game vessel icons, each `SO_Class_<Hull>.IconActive` -
+Squirrel, Sparrow, Dolphin, Manta, one per domain - multiplied by the set's vessel colour, each leaving a line of
+rim-over-face prisms), **Crystals**, **Menus** (an approximation of `ColorSetUITheme`).
+- **R112Compare:** the four layouts as diagrams, a Free and a Premium row side by side, what each mark says, the four tiles.
+- **R112A Stage and list (recommended, interactive):** a scrolling list on the left (Free, Colour vision, Premium);
+  the world and the four tiles fill the right. Eight sets in view, every one a press away, nothing empty.
+- **R112B Wall (interactive):** the world and the tiles across the top; every set a tile in a scrolling wall below,
+  with All / Free / Premium. Scales furthest once the catalog passes thirty.
+- **R112C Two shelves (interactive):** Free down the left, Premium down the right, the world between.
+- **R112D The real cell (interactive):** the world is the whole screen (as the built Showroom); a docked list right
+  with All / Free / Premium; the tiles along the foot.
+- **R112Notes:** what was asked, the four, Free vs Premium, Unity, decisions.
+
+**Free and Premium:** Free is Nocturne, Photic and the six colour-vision sets (under their own heading, never a reward,
+section 126.3): a plain "Free" and a quiet edge. Premium is the other six: a gold edge, "Owned" or the crystal and its
+price, and the action turns into the gold purchase button (Unlock). Lime stays the one call to action (Apply). Prices
+and Dart Frog owned are sample values.
+
+**Differs from the build (section 126):** the Showroom's two three-tile rails with < > become one scrolling list (or a
+wall); the type is marked on every row; a set's preview adds the four "what it repaints" tiles beside the cell.
+
+**Gates:** `frogma.py check --only R112` OK. `check_mockup.py`: the CTA gate passes (one Lime action per board); colour,
+type and noise fail as the inherited Rev 51/54 kit and a fourteen-set list do (the set pigments are data, not tokens).
+
+**Decisions waiting:** which option; the word for the other type (Premium as drawn, Earned, or Store) and how it is
+unlocked (crystals, a quest as in Rev 107); whether the tiles animate (a prism shielding, a trail laid) or stay still.
+
+**Picked (Shombith, 2026-11-14):** "I like D, bring the sea lines in the card backgrounds and don't name it Free but Color
+Blind supported (Free) that's all." Then: "Make this into unity". R112D was changed in place on that word (canvas
+version `1794681928-7fe0`; A, B and C are as first published): the menu's sea lines behind every list card and every
+tile; the colour-vision group, its filter and the stage's type line read "Color Blind supported (Free)" (its filter
+shows only those six); Nocturne and Photic sit under "Yours from the start", shown under All; no row says a bare "Free".
+
+## 188. Built: Rev 112 D, the Colour sets list over the real cell (2026-11-14, NOT RUN IN EDITOR)
+
+Shombith: "Make this into unity" (section 187). It replaces section 126's Showroom rails; the tabs, the cell preview,
+APPLY's veil and the Settings breadcrumb stay.
+- **One list that grows with the catalog.** `ProfileColorSetsPanel` clones the inactive template row
+  (`ColorSetRowView`) once per catalog entry under its group's heading: Yours from the start, Color Blind supported
+  (Free), Premium (`ColorSetCatalogSO.KindOf`). Filters All / Color Blind supported (Free) / Premium with counts. A new
+  set in the catalog needs no prefab change. The pad moving onto a row previews it and scrolls it into view
+  (`KitScrollIntoView`).
+- **Premium is real.** The catalog entry has a crystal `price` (the board's sample prices, seeded by
+  `author_colour_set_catalog.py`, edited in the inspector after). UNLOCK spends them through
+  `PlayerDataService.TryUnlockColorSet` and keeps the set as the reward `colorset:<id>`; `ColorSetCatalogSO.IsPickable`
+  asks it. Every set is still `unlocked` (2026-11-05), so today every Premium set reads Owned.
+- **What it repaints**, four tiles painted from the set shown: prisms in three shields; the Squirrel, Sparrow, Dolphin and
+  Manta icons (`SO_Class_*.IconActive`) tinted with the domain's vessel colour, each at the head of five prisms; crystals
+  in the set's call to action; a menu mock in the set's UI theme (`ColorSetUITheme.Build`).
+- **Sea lines in every card** (Sea_Panel.mat on each row and tile), and no bare "Free" anywhere (the generator's gate).
+- New prism and eye glyphs: `Tools/Build/author_colour_set_glyphs.py` (white, tinted at run time).
+- Gates: `author_menu_profile.py` validates the page whole, with five new negative controls. Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not seen in Unity: no editor in this session.
+- Open: a set bought before the profile loads could be dropped as the saved pick at boot (`ThemeManager` reads the pick in
+  `Awake`); harmless while every set is unlocked.
+
+## 189. Fix: Rev 112 D in the editor - the world behind the page, real vessel icons, the Codex's crystals (2026-11-14, NOT RUN IN EDITOR)
+
+Shombith, on section 188 in Unity: "Vessel Icons dont show up", "Where is the whole background preview image?", "Show
+the actual 2D omnicrystal and elemental crystals from the ecology tab".
+- **Vessel icons.** The generator passed a whole sprite reference where `sprite_ref` takes a bare guid, so the four
+  `IconActive` sprites never resolved and drew as tinted squares. Fixed; `validate_colour_sets` now asserts every icon
+  and crystal sprite resolves, with a negative control.
+- **The world behind the page.** The real cell under a 55 % veil and a solid band read as an empty dark screen. The
+  board's world is now drawn in the UI behind the page (`ColourSets/World`, `world_layout()`, the board's seed): the
+  sea at 80 %, each domain's glow (`kit_ring_glow`), 46 prisms in depth, and the Squirrel, Sparrow and Dolphin flying
+  their prism trails, every colour painted from the browsed set (`ProfileColorSetsPanel.PaintWorld`). The real cell,
+  which wears the set too, still moves faintly behind it. About 400 UI images, drawn only while the page shows.
+- **Crystals.** The tile shows the Codex's own renders (`Assets/_Graphics/Codex/ethirion_*.png`, its Elements page): the
+  Omni crystal among Charge, Mass, Space and Time, as they are drawn (not tinted).
+
+## 190. Fix: Rev 112 D's tiles - hulls and prisms that read, on their trails (2026-11-14, NOT RUN IN EDITOR)
+
+Shombith, on section 189 in Unity: "Because of the card backgrounds the vessels and prisms do not show up and also pretty
+sure the vessel and prisms are not aligned".
+- **The turn was about the wrong point.** Every rotated prism and hull was laid out top-left-pivoted (`TL`), and a
+  RectTransform turns about its pivot, so each swung off its place around its corner: the trails missed their hulls,
+  the world's prisms and the row thumbnails drifted too. Rotated nodes now pivot at their centre (`centred`), and
+  `validate_colour_sets` fails on any turned node that does not (a new negative control).
+- **Each hull on its own line.** The icons are not all drawn at one angle: each one's nose and centre are measured from
+  its alpha (`ICON_POSE`: Squirrel 28, Sparrow 15, Dolphin 25 degrees; the Manta by eye, its blobs give no axis), so a
+  hull is turned onto its trail's heading and placed by its centre just past the newest prism.
+- **They read now.** The hulls draw with `Hull_Lit.mat` (the arcade cards' lift and white rim for the near-black renders),
+  times the domain's vessel colour, in the tile and the world; the tiles' sea lines sit at 35 % so the content leads.
+  The tile's trail is four prisms, larger (11 x 25), the hulls 60.

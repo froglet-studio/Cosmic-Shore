@@ -34,8 +34,8 @@ holds; if the vessel's lane is occupied by someone else, say who and take the ne
 | Step | Load first | The exit you are working toward (PLAYBOOK section 3) |
 |---|---|---|
 | 0 kit | `/arcadegame`, `Docs/MassAndSpaceGames/` prompts, `/cardart` | the vessel has a Time, a Charge and a Mass or Space game on the arcade roster |
-| 1 fun | `/vessel`, `/element-ability-table`, `/vessel-studio` (offer in one line) | ONE human flew it and signs it off as fun; only then step 2 |
-| 2 ladder | `/arcadegame` (intensity ladder), `/EndGameConditions`, `/ecology` | I1 intro, I2 fun, I3 challenging, I4 very hard, each showing a vessel capability; ONE human signs them off as fun; only then AI training |
+| 1 fun | `/vessel`, `/element-ability-table`, `/vessel-studio` (offer in one line), the fun card (`fun_cards.py`) | ONE human flew it and signs it off as fun (the editor's fun card after an arcade match; `fun_cards.py apply` records it); only then step 2 |
+| 2 ladder | `/arcadegame` (intensity ladder), `/EndGameConditions`, `/ecology`, `rung_bars.py` | I1 intro, I2 fun, I3 challenging, I4 very hard, each showing a vessel capability; `rung_bars.py` checks each rung against its bar from the recorded flights; ONE human signs them off as fun (fun card: "yes" and "right" on all four); only then AI training |
 | 3 AI | `/vessel-ai`, `/compute-job`, `Docs/AI_SYSTEM/AI_PLAN.md` | one genome on I1-I4, four-part test, editor check; commit says `Plan step: <id>` |
 | 4 creator | `/regatta-balance` (Time), `/arenagame`, `/compute-job` | the generator plateaus against the fixed AI pool; a person agrees its environments are fair and fun |
 | 5 imbalance | `/vessel`, `/approve` | the smallest vessel tuning, shipped and queued for Garrett's `/approve` (never waits on him); tuned elements set to `redo` |

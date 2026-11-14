@@ -35,6 +35,16 @@ StartAgeGate / StartConsent boards).
         ready in this build) and AUTO (signed in for you with Steam). The window is top-pivoted: the chooser
         collapses rows the platform does not offer and sets its height. SignInProviders.asset (the per-platform
         order, the silent provider, the stand-in marks) is written here too.
+    Rev 94 C (Docs/MENU_REDESIGN_B.md section 177.2; Docs/MenuRedesignB/rounds/r94_posters.py, board R94C): the
+        still feature art, its dim and its bottom fade give way to a POSTER on both the splash and the sign-in scene:
+        a real frame of a cell far behind, pushing in, under the sea lines; three slanted domain bands (Jade, Ruby,
+        Gold) painted as prisms of the WORN colour set (PosterDomainPaint: face colour body, rim colour edges, read
+        at runtime, blended when the set changes - no colour is written here); five captains in slanted cards
+        (KitSlant); three hulls in silver, bobbing; Omni crystals, fauna, flora and two runs of prisms in the
+        margins (PosterDrift); the flat logos; a dark foot with the Rev 91 bar (BootStepBar, a KitStepBar that
+        draws BootLoadProgress, whose shares this script reads from the C# so the bar's steps cannot disagree with
+        the model). The poster's art is imported here from Docs/ into Assets/_Graphics/UI/Splash/. The start flow's
+        windows become opaque: they no longer sit on a dimmed still.
     PrivacyConsentConfig.asset: the overlay's five optional sliver sprites (the overlay builds its
         own UI in code - PrivacyConsentOverlay - so this is the only authored part of it).
 
@@ -49,6 +59,7 @@ same output (--check reports no drift).
 import argparse
 import hashlib
 import importlib.util
+import math
 import os
 import re
 import sys
@@ -76,7 +87,7 @@ S = dict(
     line=HUD.script_guid("Assets/_Scripts/UI/Screens/BootStatusLine.cs"),
     rules=HUD.script_guid("Assets/_Scripts/UI/Elements/DisplayNameRulesView.cs"),
     auth=HUD.script_guid("Assets/_Scripts/System/AuthenticationSceneController.cs"),
-    loadbar=K.kit_script("KitLoadBar"),
+    loadbar=K.kit_script("KitLoadBar"),        # retired from both scenes by Rev 94 C; the gate keeps it out
     kitbutton=HUD.S["kitbutton"],
     cbp=HUD.S["cbp"],
     loader="96d427922847afd4ca2fcdffed2c2b3b",        # Loader.prefab (the rotating icon)
@@ -84,6 +95,13 @@ S = dict(
     providers_so=HUD.script_guid("Assets/_Scripts/UI/SignInProvidersSO.cs"),
     brand=K.kit_script("KitBrandButton"),
     welcome=HUD.script_guid("Assets/_Scripts/UI/Screens/BootWelcomeCard.cs"),
+    stepbar=HUD.script_guid("Assets/_Scripts/UI/Screens/BootStepBar.cs"),
+    paint=HUD.script_guid("Assets/_Scripts/UI/Screens/PosterDomainPaint.cs"),
+    drift=HUD.script_guid("Assets/_Scripts/UI/Screens/PosterDrift.cs"),
+    fit=HUD.script_guid("Assets/_Scripts/UI/Screens/PosterFit.cs"),
+    exit=HUD.script_guid("Assets/_Scripts/UI/Screens/PosterExit.cs"),
+    slant=K.kit_script("KitSlant"),
+    cover=K.kit_script("KitCoverImage"),
 )
 AUTH_DATA = "875bcedfcf3335047b416297732cba15"            # the AuthenticationData variable the broadcaster reads
 WELCOME_H = 168
@@ -116,12 +134,12 @@ BOOT_STATUS_CHANNEL = "8a2f3b41c9e7456db1d8f9c0a1b2e84b"   # ScriptableEventBoot
 
 # Bootstrap.unity, measured 2026-10-15.
 SP = dict(canvas_go="820208339", panel_comp="820208346", broadcaster="820208347", art_rt="1866429628",
-          art_img="1866429629", safe_rt="277081002343380552", status_go="1713505285", status_rt="1713505286",
+          art_img="1866429629", art_go="1866429627", safe_rt="277081002343380552", status_go="1713505285", status_rt="1713505286",
           status_tmp="1713505288", loader_pid="8514091261509452843", old_retry_go="203003804")
 CONNECTION_LOST = "We could not reach the servers. Check your network, then retry."
 
 # Authentication.unity, measured 2026-10-15.
-AU = dict(canvas_rt="394550809", bg_rt="1700000002", safe_rt="612275706100289267", ctrl="708444222",
+AU = dict(canvas_rt="394550809", bg_rt="1700000002", bg_img="1700000004", bg_go="1700000001", safe_rt="612275706100289267", ctrl="708444222",
           auth_go="1203594348", auth_rt="1203594349", old_guest_go="1671311812",
           login_status_rt="200000002", login_status_tmp="200000004",
           name_go="832278049", name_rt="832278050", old_confirm_go="532112917",
@@ -201,35 +219,323 @@ def plain_kit_button(k, name, x, y, variant, opaque, caption, cap, active=True):
     return n
 
 
-def vignette_nodes(prefix):
-    """The board's dim over the feature art, and a deeper fade along the bottom where the readout sits."""
-    dim = N(f"{prefix}/Dim", "Dim", STRETCH)
-    dim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.32))).add("th", 114, H.themed("SurfaceBlack", 0.32))
-    fade = N(f"{prefix}/BottomFade", "BottomFade", R((0, 0), (1, 0), (0, 210), (0, 420)))
-    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.9), K.kit_sprite("kit_fade_v"))) \
-        .add("th", 114, H.themed("SurfaceBlack", 0.9))
-    # §70: the sea over the dimmed art (shader-only: no CPU, never dirties the canvas).
-    return [dim, M.window_sea_node(f"{prefix}/Lattice", name="Sea"), fade]
+# --------------------------------------------------------------------------------------------
+# Rev 94 C: the poster (Docs/MENU_REDESIGN_B.md section 177.2; board R94C, Docs/MenuRedesignB/rounds/r94_posters.py)
+# --------------------------------------------------------------------------------------------
+# Positions are the board's, on its 1920 x 1080 page with y down. The foot is the bottom FOOT_H of the screen; the
+# STAGE is the board's area above it, 1920 wide, standing on the foot's top edge and scaled down by PosterFit on a
+# screen narrower than the board. No colour is typed: art is drawn white (the identity tint), chrome takes theme tokens,
+# and the domain colours are read from the worn colour set at runtime (PosterDomainPaint), so a band ships transparent.
+
+SPLASH_DIR = "Assets/_Graphics/UI/Splash"
+CAPTAINS = (("Hornet", 400, 230), ("Needle", 470, 260), ("Galleon", 540, 300), ("Sundial", 470, 260), ("Anvil", 400, 230))
+CAPTAIN_X = (452, 700, 960, 1220, 1468)        # card centres; the middle card is drawn last, in front
+CAPTAIN_ORDER = (0, 4, 1, 3, 2)
+CAPTAIN_FOOT = 862                             # the cards' bottom edge on the board: 2 px under the foot's top edge
+# The poster's own pictures, imported from Docs/ (file name under SPLASH_DIR -> source). The busts are Garrett's new
+# 1024 px captains (the 256 px avatars and the 16:9 pilot scenes in Assets/ are other pictures); the logos are
+# thresholded cuts of the neon logos, not drawn marks; the cell is one of the painter's reference frames of the game.
+ART = {"poster_cell.jpg": "Docs/MenuRedesignB/build_refs/sea_cell_outside.jpg",
+       "poster_logo_cosmic_shore.png": "Docs/MenuRedesignB/build_refs/flat_cosmic_shore.png",
+       "poster_logo_froglet.png": "Docs/MenuRedesignB/build_refs/flat_froglet.png"}
+ART.update({f"captain_{n.lower()}.jpg": f"Docs/Pilots/art/busts/{n.upper()}.jpg" for n, _, _ in CAPTAINS})
+ART_META_DONOR = "Assets/_Graphics/CardImages/Squirrel_large.png.meta"     # a single sprite, no mipmaps
+HULLS = (("Squirrel", 500, 20, 9), ("Dolphin", 830, -10, 7), ("Sparrow", 1190, 20, 8))    # name, x, y, bob seconds
+HULL_SIZE = 300
+DOMAIN_VALUE = {"Jade": 1, "Ruby": 2, "Gold": 4}           # CosmicShore.Data.Domains
+BANDS = ("Jade", "Ruby", "Gold")
+BAND_X0, BAND_PITCH, BAND_W, BAND_ALPHA, RIM_W = 360, 400, 400, 0.74, 3
+BAND_MID = 440                 # the board's bands (top -60, 1000 tall) are centred here; the lean pivots on it
+BAND_TOP, BAND_BOTTOM = -4000, 940     # drawn far past the board's top, so a tall screen never shows a band's end
+LEAN = 14.0
+SLANT = math.tan(math.radians(LEAN))
+FOOT_H, STAGE_W = 220, 1920
+STAGE_H = 1080 - FOOT_H
+POSTER_MARGIN = 96
+POSTER_EXIT_PUSH = 0.12      # PosterExit: 12 percent larger when the splash has dissolved
+FROGLET_W, FROGLET_BOTTOM = 150, 8   # the Froglet logo under the bar (whose step names sit 72 above the canvas foot)
+BLEND_SECONDS = 1.0
+WINDOW_FILL = 1.0              # the start flow's windows are opaque: they sit on the poster, not on a dimmed still
+BAR_H = 132
+STEP_NAMES = ("Connecting", "Signing in", "Loading profile", "Creating session")
+DONE_WORD = "Ready"
+RETURN_WORDS = "Building the world"
+PROGRESS_CS = "Assets/_Scripts/UI/Elements/BootLoadProgress.cs"
+
+
+def step_ends(src=None):
+    """BootLoadProgress.StepEnds, read from the C#: the bar's steps end where the model's shares end."""
+    if src is None:
+        src = open(os.path.join(REPO, PROGRESS_CS), encoding="utf-8").read()
+    m = re.search(r"StepEnds = \{([^}]*)\}", src)
+    assert m, "BootLoadProgress.StepEnds moved"
+    return [float(x.strip().rstrip("f")) for x in m.group(1).split(",")]
+
+
+STEP_ENDS = step_ends()
+assert len(STEP_ENDS) == len(STEP_NAMES) and STEP_ENDS[-1] == 1 and STEP_ENDS == sorted(STEP_ENDS), \
+    "BootLoadProgress.StepEnds must be one rising end per step, the last at 1"
+
+
+def art_guid(name):
+    return hashlib.md5(f"CosmicShore/Splash/{name}".encode()).hexdigest()
+
+
+def art_bytes():
+    """The poster's pictures, byte for byte from their sources."""
+    out = {}
+    for name, src in ART.items():
+        with open(os.path.join(REPO, src), "rb") as fh:
+            out[f"{SPLASH_DIR}/{name}"] = fh.read()
+    return out
+
+
+def art_metas():
+    donor = open(os.path.join(REPO, ART_META_DONOR), encoding="utf-8").read()
+    assert "spriteMode: 1\n" in donor and "textureType: 8\n" in donor and "enableMipMap: 0\n" in donor, "the sprite meta donor changed"
+    out = {SPLASH_DIR + ".meta": K.FOLDER_META.format(g=art_guid("folder"))}
+    for name in ART:
+        out[f"{SPLASH_DIR}/{name}.meta"] = re.sub(r"^guid: [0-9a-f]{32}$", "guid: " + art_guid(name), donor, count=1, flags=re.M)
+    return out
+
+
+def codex(name):
+    return K.meta_guid(f"Assets/_Graphics/Codex/{name}.png")
+
+
+def SC(x, y, w, h, pivot=(0.5, 0.5)):
+    """A rect on the stage whose PIVOT sits at the board's (x, y) (y down from the stage's top)."""
+    return R((0, 1), None, (x, -y), (w, h), pivot)
+
+
+def picture(n, sprite, alpha=1.0, preserve=True):
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, alpha), sprite, preserve=preserve))
+    return n
+
+
+def motion(seconds, phase=0.0, offset=((0, 0), (0, 0)), turn=(0, 0), scale=(1, 1)):
+    """PosterDrift: between two poses and back, eased both ways. Offsets are canvas units with y UP."""
+    return lambda ctx, go: K.mono(go, S["drift"],
+                                  f"  offsetFrom: {K.v2(*offset[0])}\n  turnFrom: {K.f32(turn[0])}\n  scaleFrom: {K.f32(scale[0])}\n"
+                                  f"  offsetTo: {K.v2(*offset[1])}\n  turnTo: {K.f32(turn[1])}\n  scaleTo: {K.f32(scale[1])}\n"
+                                  f"  seconds: {K.f32(seconds)}\n  phase: {K.f32(phase)}\n")
+
+
+def slant(color, lean=LEAN, sprite=None, focus=(0.5, 0.5)):
+    """KitSlant: a leaning quad, flat or showing a picture cropped to it."""
+    return lambda ctx, go: K.mono(go, S["slant"],
+                                  "  m_Material: {fileID: 0}\n"
+                                  f"  m_Color: {K.col(color)}\n  m_RaycastTarget: 0\n"
+                                  "  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}\n  m_Maskable: 1\n"
+                                  "  m_OnCullStateChanged:\n    m_PersistentCalls:\n      m_Calls: []\n"
+                                  f"  leanDegrees: {K.f32(lean)}\n  sprite: {K.sprite_ref(sprite)}\n  focus: {K.v2(*focus)}\n")
+
+
+UNPAINTED = tok("SurfaceBlack", 0.0)      # what a domain shape ships as: clear until the worn set paints it
+
+
+def paint(domain, faces=(), rims=(), face_alpha=BAND_ALPHA, rim_alpha=1.0):
+    """PosterDomainPaint: `faces` and `rims` are node keys of KitSlant shapes."""
+    return lambda ctx, go: K.mono(go, S["paint"],
+                                  f"  domain: {DOMAIN_VALUE[domain]}\n"
+                                  + K.refs_list("faces", [ctx.c(k, "slant") for k in faces])
+                                  + f"  faceAlpha: {K.f32(face_alpha)}\n"
+                                  + K.refs_list("rims", [ctx.c(k, "slant") for k in rims])
+                                  + f"  rimAlpha: {K.f32(rim_alpha)}\n  blendSeconds: {K.f32(BLEND_SECONDS)}\n")
+
+
+def band_node(k, i, domain):
+    """One domain as its prism: the worn set's face colour as the body, its rim colour along both long edges."""
+    height = BAND_BOTTOM - BAND_TOP
+    reach = SLANT * height
+    cy = (BAND_TOP + BAND_BOTTOM) / 2
+    cx = BAND_X0 + i * BAND_PITCH + BAND_W / 2 + SLANT * (BAND_MID - cy)
+    key = f"{k}/Band{domain}"
+    n = N(key, f"Band {domain}", SC(cx, cy, BAND_W + reach, height))
+    n.child(N(f"{key}/Face", "Face", STRETCH)).add("cr", 222, K.canvas_renderer()).add("slant", 114, slant(UNPAINTED))
+    for side, ax in (("RimL", 0), ("RimR", 1)):
+        n.child(N(f"{key}/{side}", side, R((ax, 0), (ax, 1), (0, 0), (RIM_W + reach, 0), (ax, 0.5)))) \
+            .add("cr", 222, K.canvas_renderer()).add("slant", 114, slant(UNPAINTED))
+    n.add("paint", 114, paint(domain, [f"{key}/Face"], [f"{key}/RimL", f"{key}/RimR"]))
+    return n
+
+
+def prism_run(k, i, domain, x, y, count, phase):
+    """A short run of prisms in a domain's rim colour, as a vessel lays them (r94_posters.prisms)."""
+    key = f"{k}/Run{domain}"
+    n = N(key, f"Prisms {domain}", R((0, 1), None, (x, -y), (0, 0), (0, 1)))
+    keys = []
+    for j in range(count):
+        w, h = 26, 70 + j * 8
+        pk = f"{key}/P{j}"
+        prism = n.child(N(pk, f"Prism{j}", R((0, 1), None, (j * 40 + w / 2, round(j * 40 * 0.45) - h / 2), (w, h))))
+        prism.rot = 24
+        prism.add("cr", 222, K.canvas_renderer()).add("slant", 114, slant(UNPAINTED, lean=0))
+        keys.append(pk)
+    n.add("paint", 114, paint(domain, rims=keys, rim_alpha=0.8))
+    n.add("drift", 114, motion(8 + i, phase, offset=((0, 8), (0, -10))))
+    return n
+
+
+def captain_card(k, name, cx, h, w):
+    """A captain's bust in a slanted card that leans the way the bands lean, an ink line round it."""
+    box = w + round(h * SLANT)
+    key = f"{k}/{name}"
+    n = N(key, name, TL(cx - box // 2, CAPTAIN_FOOT - h, box, h))
+    n.child(N(f"{key}/Ink", "Ink", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("slant", 114, slant(tok("TextLight"))).add("th", 114, H.themed("TextLight"))
+    n.child(N(f"{key}/Picture", "Picture", R((0, 0), (1, 1), (0, 0), (-6, -6)))).add("cr", 222, K.canvas_renderer()) \
+        .add("slant", 114, slant(K.WHITE, sprite=art_guid(f"captain_{name.lower()}.jpg"), focus=(0.5, 0.82)))
+    return n
+
+
+def life_nodes(k):
+    """The far sea's life, drawn with the game's own pictures (r94_posters.far_sea)."""
+    out = []
+    omni = codex("ethirion_omni")
+    for i, (x, y, size, seconds) in enumerate(((170, 520, 150, 9), (1730, 250, 170, 11), (1560, 640, 96, 8), (330, 330, 84, 10), (1840, 560, 70, 12))):
+        n = picture(N(f"{k}/Omni{i}", f"Omni{i}", SC(x, y, size, size)), omni)
+        out.append(n.add("drift", 114, motion(seconds, i * 0.37, offset=((0, 6), (0, -8)), turn=(-7, 7))))
+    right, left = ((-50, -16), (90, 24)), ((60, -10), (-80, 20))
+    for name, x, y, w, h, alpha, seconds, way in (("shoal", 40, 380, 260, 87, 0.9, 30, right), ("quadfish", 1600, 420, 150, 152, 0.9, 26, left),
+                                                    ("shark", 1570, 80, 170, 100, 0.8, 36, left), ("piranha", 60, 650, 150, 116, 0.85, 34, right)):
+        n = picture(N(f"{k}/{name}", name.capitalize(), SC(x + w / 2, y + h / 2, w, h)), codex(f"fauna_{name}"), alpha)
+        out.append(n.add("drift", 114, motion(seconds, offset=way)))
+    for name, x, y, w, h, alpha, seconds in (("arbor", 250, 590, 142, 270, 0.85, 9), ("coral", 20, 690, 180, 176, 0.8, 11),
+                                             ("lantern", 1790, 560, 99, 300, 0.85, 10), ("pine", 1560, 700, 160, 169, 0.8, 12)):
+        n = picture(N(f"{k}/{name}", name.capitalize(), SC(x + w / 2, y + h, w, h, (0.5, 0))), codex(f"flora_{name}"), alpha)
+        out.append(n.add("drift", 114, motion(seconds, turn=(-2.5, 2.5))))       # rooted: it sways about its foot
+    out.append(prism_run(k, 0, "Jade", 70, 340, 4, 0.0))
+    out.append(prism_run(k, 2, "Gold", 1650, 820, 3, 0.8))
+    return out
+
+
+def poster_node(prefix):
+    k = f"{prefix}/Poster"
+    root = N(k, "Poster", STRETCH)
+    # The exit (section 185): the poster grows as the splash dissolves, so the reveal moves through it into the world.
+    root.add("exit", 114, lambda ctx, go: K.mono(go, S["exit"], f"  push: {K.f32(POSTER_EXIT_PUSH)}\n"))
+    cell = root.child(N(f"{k}/Cell", "Cell", STRETCH))
+    shot = picture(cell.child(N(f"{k}/Cell/Picture", "Picture", R(size=(1920, 1080)))), art_guid("poster_cell.jpg"), 0.62, preserve=False)
+    shot.add("drift", 114, motion(40, offset=((-10, -6), (14, 10)), scale=(1.02, 1.1)))       # the slow push-in
+    cell.add("cover", 114, lambda ctx, go: K.mono(go, S["cover"], f"  image: {{fileID: {ctx.c(f'{k}/Cell/Picture', 'img')}}}\n  overscan: 1.02\n"))
+    root.child(M.window_sea_node(f"{k}/Sea", name="Sea"))        # shader-only: no CPU, never dirties the canvas
+
+    stage = root.child(N(f"{k}/Stage", "Stage", R((0.5, 0), None, (0, FOOT_H), (STAGE_W, STAGE_H), (0.5, 0))))
+    stage.add("fit", 114, lambda ctx, go: K.mono(go, S["fit"], f"  frame: {{fileID: {ctx.rt(k)}}}\n  authoredWidth: {STAGE_W}\n"))
+    for n in life_nodes(f"{k}/Stage"):
+        stage.child(n)
+    for i, domain in enumerate(BANDS):
+        stage.child(band_node(f"{k}/Stage", i, domain))
+    for name, x, y, seconds in HULLS:
+        hull = picture(N(f"{k}/Stage/{name}", name, SC(x + HULL_SIZE / 2, y + HULL_SIZE / 2, HULL_SIZE, HULL_SIZE)),
+                       K.meta_guid(f"Assets/_Graphics/CardImages/{name}_large.png"))
+        stage.child(hull.add("drift", 114, motion(seconds, offset=((0, 8), (0, -10)))))
+    for i in CAPTAIN_ORDER:
+        stage.child(captain_card(f"{k}/Stage", CAPTAINS[i][0], CAPTAIN_X[i], CAPTAINS[i][1], CAPTAINS[i][2]))
+
+    picture(root.child(N(f"{k}/Logo", "Logo Cosmic Shore", TL(POSTER_MARGIN, 64, 300, round(300 * 359 / 910)))), art_guid("poster_logo_cosmic_shore.png"))
+    foot = root.child(N(f"{k}/Foot", "Foot", R((0, 0), (1, 0), (0, 0), (0, FOOT_H), (0.5, 0))))
+    foot.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack"))).add("th", 114, H.themed("SurfaceBlack"))
+    # Froglet's logo sits in the foot's bottom-right corner, under the bar's percentage (Shombith, 2026-11-13: "The
+    # froglet logo should be in the bottom right corner below the percentage bar"). After the foot, so it draws on it.
+    picture(root.child(N(f"{k}/Froglet", "Logo Froglet",
+                         R((1, 0), None, (-POSTER_MARGIN, FROGLET_BOTTOM), (FROGLET_W, round(FROGLET_W * 322 / 900)), (1, 0)))),
+            art_guid("poster_logo_froglet.png"))
+    return root
+
+
+def ground(p, img, go, raycast):
+    """The feature art's Image becomes the poster's ground: the theme's deepest surface, no picture."""
+    p.body(img, K.image(tok("SurfaceBlack"), raycast=raycast), go)
+
+
+RETIRED_BACKDROP = ("Dim", "Lattice", "BottomFade")       # section 26's dim and bottom fade, section 70's sea node
+
+
+def retire_backdrop(p, prefix):
+    """Delete what the poster replaces (emitting over the committed scene keeps what it no longer writes): the dim,
+    the old sea node, the bottom fade, and the 180 x 2 KitLoadBar on the readout's track."""
+    for name in RETIRED_BACKDROP:
+        remove_go(p, str(p.ctx.go(f"{prefix}/{name}")))
+    bar = str(p.ctx.c(f"{prefix}/Readout/Track", "bar"))
+    if p.sc.has(bar):
+        p.sc.remove(bar)
+
+
+def themed_image(n, token, alpha=1.0, sprite=None, preserve=False):
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(token, alpha), sprite, preserve=preserve)) \
+        .add("th", 114, H.themed(token, alpha))
+    return n
 
 
 def readout_node(prefix, with_line):
-    """LOADING over the 180 x 2 KitLoadBar, bottom centre; the sign-in scene's also carries its line."""
-    n = N(f"{prefix}/Readout", "Readout", R((0.5, 0), None, (0, 92 if with_line else 76), (420, 64)))
+    """The foot's bar (Rev 91's, board R94C): LOADING, the running step's name, the percentage, one bar cut into the
+    boot's steps with a mark and a name under each. BootStepBar draws BootLoadProgress on it; the sign-in scene's
+    also carries its status line (BootStatusLine)."""
+    k = f"{prefix}/Readout"
+    n = N(k, "Readout", R((0, 0), (1, 0), (0, 64), (-2 * POSTER_MARGIN, BAR_H), (0.5, 0)))
     n.add("cg", 225, H.canvas_group(True))
-    H.label(n.child(N(f"{prefix}/Readout/Caption", "Caption", R((0.5, 1), None, (0, -10), (420, 20)))),
-            "Loading", "Label", "NeutralLightest", align="center")
-    track = n.child(N(f"{prefix}/Readout/Track", "Track", R((0.5, 1), None, (0, -44), (180, 2))))
-    track.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight", 0.12))).add("th", 114, H.themed("TextLight", 0.12))
-    fill = track.child(N(f"{prefix}/Readout/Track/Fill", "Fill", R((0, 0), (0.22, 1), (0, 0), (0, 0))))
-    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"))).add("th", 114, H.themed("ControlActive"))
-    track.add("bar", 114, lambda ctx, go: K.mono(go, S["loadbar"], f"  fill: {{fileID: {ctx.rt(prefix + '/Readout/Track/Fill')}}}\n"))
+    H.label(n.child(N(f"{k}/Caption", "Caption", TL(0, 0, 420, 20))), "Loading", "Label", "NeutralLightest")
+    words = n.child(N(f"{k}/StepWords", "StepWords", TL(0, 26, 900, 34)))
+    words.add("cg", 225, H.canvas_group(True))
+    H.label(words.child(N(f"{k}/StepWords/Step", "Step", STRETCH)), "", "H2", "TextLight")
+    back = n.child(N(f"{k}/ReturnWords", "ReturnWords", TL(0, 26, 900, 34)))
+    back.add("cg", 225, H.canvas_group(False))
+    H.label(back.child(N(f"{k}/ReturnWords/Line", "Line", STRETCH)), RETURN_WORDS, "H2", "TextLight")
+    H.label(n.child(N(f"{k}/Percent", "Percent", HM.TR(28, 6, 160, 54))), "", "DataLarge", "TextLight", align="right")
+    H.label(n.child(N(f"{k}/PercentSign", "PercentSign", HM.TR(0, 30, 24, 26))), "%", "Data", "NeutralLightest", align="right")
+
+    track = themed_image(n.child(N(f"{k}/Track", "Track", R((0, 1), (1, 1), (0, -76), (0, 8), (0.5, 1)))), "SurfaceLight", 0.55)
+    fill = themed_image(track.child(N(f"{k}/Track/Fill", "Fill", R((0, 0), (0, 1), (0, 0), (0, 0)))), "TextLight")
+    fill.add("mask", 114, M.rect_mask())
+    themed_image(fill.child(N(f"{k}/Track/Fill/Glint", "Glint", R((0, 0), (0.12, 1), (0, 0), (0, 0)))), "SurfaceVeryDark", 0.55,
+                 K.kit_sprite("kit_sheen"))
+    for i, end in enumerate(STEP_ENDS[:-1]):          # the cuts between steps, in the foot's own colour
+        themed_image(track.child(N(f"{k}/Track/Cut{i}", f"Cut{i}", R((end, 0), (end, 1), (0, 0), (4, 0)))), "SurfaceBlack")
+
+    row = n.child(N(f"{k}/Steps", "Steps", R((0, 1), (1, 1), (0, -104), (0, 20), (0.5, 1))))
+    row.add("cg", 225, H.canvas_group(True))
+    for i, name in enumerate(STEP_NAMES):
+        start = STEP_ENDS[i - 1] if i else 0
+        step = row.child(N(f"{k}/Steps/S{i}", f"Step{i}", R((start, 0), (start, 1), (0, 0), (300, 0), (0, 0.5))))
+        themed_image(step.child(N(f"{k}/Steps/S{i}/Mark", "Mark", R((0, 0.5), None, (7, 0), (14, 12)))), "NeutralLightest",
+                     sprite=K.kit_sprite("kit_hex_line1"), preserve=True)
+        word = step.child(N(f"{k}/Steps/S{i}/Word", "Word", R((0, 0.5), None, (24, 0), (270, 20), (0, 0.5))))
+        word.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text(name, "BodySmall", tok("NeutralLightest"))) \
+            .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest", driven=True))
+
     if with_line:
-        H.label(n.child(N(f"{prefix}/Readout/Line", "StatusLine", R((0.5, 0), None, (0, 0), (900, 22)))),
-                "", "BodySmall", "NeutralLightest", align="center")
+        H.label(n.child(N(f"{k}/Line", "StatusLine", R((0, 0), None, (0, -34), (900, 22), (0, 0)))), "", "BodySmall", "NeutralLightest")
         n.add("line", 114, lambda ctx, go: K.mono(go, S["line"],
               f"  requestEvent: {K.ref(11400000, BOOT_STATUS_CHANNEL, 2)}\n"
-              f"  statusText: {{fileID: {ctx.c(prefix + '/Readout/Line', 'tmp')}}}\n"
-              f"  readoutGroup: {{fileID: {ctx.c(prefix + '/Readout', 'cg')}}}\n"))
+              f"  statusText: {{fileID: {ctx.c(k + '/Line', 'tmp')}}}\n"
+              f"  readoutGroup: {{fileID: {ctx.c(k, 'cg')}}}\n"))
+
+    def bar(ctx, go):
+        c = ctx.c
+        marks = [c(f"{k}/Steps/S{i}/Mark", "img") for i in range(len(STEP_NAMES))]
+        words_ = [c(f"{k}/Steps/S{i}/Word", "tmp") for i in range(len(STEP_NAMES))]
+        return K.mono(go, S["stepbar"],
+                      f"  fill: {{fileID: {ctx.rt(k + '/Track/Fill')}}}\n"
+                      f"  fillGraphic: {{fileID: {c(k + '/Track/Fill', 'img')}}}\n"
+                      f"  glint: {{fileID: {ctx.rt(k + '/Track/Fill/Glint')}}}\n  glintSeconds: 2.4\n"
+                      "  stepEnds:\n" + "".join(f"  - {K.f32(e)}\n" for e in STEP_ENDS)
+                      + "  stepNames:\n" + "".join(f"  - {K.yaml_scalar(s_)}\n" for s_ in STEP_NAMES)
+                      + K.refs_list("stepLabels", words_) + K.refs_list("stepMarkers", marks)
+                      + f"  stepText: {{fileID: {c(k + '/StepWords/Step', 'tmp')}}}\n"
+                      f"  percentText: {{fileID: {c(k + '/Percent', 'tmp')}}}\n"
+                      "  percentTemplate: '{pct}'\n"
+                      f"  doneWord: {DONE_WORD}\n"
+                      f"  requestEvent: {K.ref(11400000, BOOT_STATUS_CHANNEL, 2)}\n"
+                      f"  theme: {K.ref(11400000, K.THEME, 2)}\n"
+                      + K.refs_list("stepMarks", marks) + K.refs_list("stepWords", words_)
+                      + f"  markOpen: {K.sprite_ref(K.kit_sprite('kit_hex_line1'))}\n"
+                      f"  markDone: {K.sprite_ref(K.kit_sprite('kit_hex_fill'))}\n"
+                      f"  stepRow: {{fileID: {c(k + '/Steps', 'cg')}}}\n"
+                      f"  bootWords: {{fileID: {c(k + '/StepWords', 'cg')}}}\n"
+                      f"  returnWords: {{fileID: {c(k + '/ReturnWords', 'cg')}}}\n")
+    n.add("stepbar", 114, bar)
     return n
 
 
@@ -239,7 +545,7 @@ def window(key, r, eyebrow, eyebrow_token, title, title_role, entrance=True):
     w.add("cg", 225, H.canvas_group(True))
     if entrance:
         w.add("in", 114, M.entrance("Rise", distance=14))
-    H.framed(w, key, 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
+    H.framed(w, key, 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=WINDOW_FILL)
     M.bracket_nodes(w, f"{key}/Bracket", inset=-6)
     H.label(w.child(N(f"{key}/Eyebrow", "Eyebrow", TL(PAD, 30, WIN_W - 2 * PAD, 20))), eyebrow, "Label", eyebrow_token)
     H.label(w.child(N(f"{key}/Title", "Title", TL(PAD, 56, WIN_W - 2 * PAD, 44))), title, title_role, "TextLight")
@@ -295,12 +601,14 @@ def splash_text(text_):
     remove_instance(p, SP["loader_pid"], SP["safe_rt"])
     remove_go(p, SP["old_retry_go"])
 
-    # The dim rides the art (it bleeds); everything readable rides the safe area.
-    vig = vignette_nodes("Splash")
-    emit_under(p, SP["art_rt"], vig, SP["art_img"], lambda rts: rts + [k for k in p.kids(SP["art_rt"]) if k not in rts])
+    # Rev 94 C: the poster takes the feature art's place (it bleeds); everything readable rides the safe area.
+    retire_backdrop(p, "Splash")
+    ground(p, SP["art_img"], SP["art_go"], raycast=True)
+    emit_under(p, SP["art_rt"], [poster_node("Splash")], SP["art_img"],
+               lambda rts: rts + [k for k in p.kids(SP["art_rt"]) if k not in rts])
 
-    p.rect(SP["status_rt"], R((0.5, 0), None, (0, 40), (900, 22)))
-    p.replace(SP["status_tmp"], tmp_restyle(p.doc(SP["status_tmp"]), "Chakra", 15, False, 2, "center", "NeutralLightest"))
+    p.rect(SP["status_rt"], R((0, 0), None, (POSTER_MARGIN, 30), (900, 22), (0, 0)))
+    p.replace(SP["status_tmp"], tmp_restyle(p.doc(SP["status_tmp"]), "Chakra", 15, False, 2, "left", "NeutralLightest"))
     readout, retry, welcome = readout_node("Splash", False), retry_window(), welcome_window()
     emit_under(p, SP["safe_rt"], [readout, welcome, retry], SP["status_tmp"],
                lambda rts: [k for k in p.kids(SP["safe_rt"]) if k not in rts] + rts)
@@ -402,7 +710,7 @@ def bare_window(key, r):
     w = N(key, "Window", r)
     w.add("cg", 225, H.canvas_group(True))
     w.add("in", 114, M.entrance("Rise", distance=14))
-    H.framed(w, key, 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
+    H.framed(w, key, 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=WINDOW_FILL)
     M.bracket_nodes(w, f"{key}/Bracket", inset=-6)
     return w
 
@@ -586,7 +894,9 @@ def auth_text(text_):
     remove_go(p, I["old_guest_go"])
     remove_go(p, I["old_confirm_go"])
 
-    emit_under(p, I["canvas_rt"], vignette_nodes("Auth"), "1700000004",
+    retire_backdrop(p, "Auth")
+    ground(p, I["bg_img"], I["bg_go"], raycast=False)
+    emit_under(p, I["canvas_rt"], [poster_node("Auth")], I["bg_img"],
                lambda rts: [I["bg_rt"]] + rts + [k for k in p.kids(I["canvas_rt"]) if k not in rts and k != I["bg_rt"]])
     readout = readout_node("Auth", True)
     emit_under(p, I["safe_rt"], [readout], "979943021161530881",
@@ -683,6 +993,7 @@ def outputs():
     files = {path: fn(open(os.path.join(REPO, path), encoding="utf-8").read()) for path, fn in TRANSFORMS.items()}
     files[PROVIDERS_ASSET] = providers_asset()
     files[PROVIDERS_ASSET + ".meta"] = PROVIDERS_META
+    files.update(art_metas())
     return files
 
 
@@ -746,9 +1057,11 @@ def validate(files):
         assert field_ref(wd, f) != "0" and sc.has(field_ref(wd, f)), f"BootWelcomeCard.{f} is not wired"
     wg = sc.docs[field_ref(wd, "group")]
     assert "  m_Alpha: 0\n" in wg and "  m_BlocksRaycasts: 0\n" in wg, "the welcome card ships shown"
-    for path, s in ((SPLASH, sc),):
-        bars = [d for d in s.docs.values() if f"guid: {S['loadbar']}" in d]
-        assert bars and all(field_ref(d, "fill") != "0" for d in bars), f"{path}: a KitLoadBar has no fill"
+    check_poster(SPLASH, sc, splash_ctx(), "Splash", files)
+    assert sc.go_of(field_ref(panel, "readoutGroup")) == sc.go_of(step_bar(SPLASH, sc)[0]), \
+        "BootStatusPanel.readoutGroup is not the bar's readout (the bar would stay up under the retry window)"
+    for key in ("Retry", "Welcome"):
+        assert "  alpha: 1\n" in sc.docs[str(splash_ctx().c(f"{key}/Fill", "th"))], f"the {key} window is see-through over the poster"
     # Sign-in scene
     au = check_scene_links(AUTH, files[AUTH])
     assert not loader_instances(au), "the sign-in scene still carries the rotating Loader icon"
@@ -773,8 +1086,11 @@ def validate(files):
         assert got and got.group(1).count("{fileID: ") == RULES, f"DisplayNameRulesView.{f} needs {RULES} entries"
     for f in ("countText", "fieldBorder"):
         assert field_ref(rules[0], f) != "0", f"DisplayNameRulesView.{f} is not wired"
-    bars = [d for d in au.docs.values() if f"guid: {S['loadbar']}" in d]
-    assert bars and all(field_ref(d, "fill") != "0" for d in bars), f"{AUTH}: a KitLoadBar has no fill"
+    check_poster(AUTH, au, auth_ctx(), "Auth", files)
+    assert au.go_of(field_ref(lines[0], "readoutGroup")) == au.go_of(step_bar(AUTH, au)[0]), \
+        "BootStatusLine.readoutGroup is not the bar's readout (a loading bar would sit under a question)"
+    for key in ("SignIn", "Name"):
+        assert "  alpha: 1\n" in au.docs[str(auth_ctx().c(f"{key}/Fill", "th"))], f"the {key} window is see-through over the poster"
     for path, s in ((SPLASH, sc), (AUTH, au)):
         for fid, d in s.docs.items():
             if f"guid: {S['kitbutton']}" in d:
@@ -845,9 +1161,115 @@ def validate(files):
         assert f"  {f}: {K.sprite_ref(K.kit_sprite(sprite))}" in files[PRIVACY], f"PrivacyConsentConfig.{f} is not set"
 
 
+def step_bar(path, sc):
+    bars = [(fid, d) for fid, d in sc.docs.items() if f"guid: {S['stepbar']}" in d]
+    assert len(bars) == 1, f"{path}: needs exactly one BootStepBar"
+    return bars[0]
+
+
+def subtree(sc, rt):
+    """Every RectTransform at or under `rt`."""
+    out, todo = [], [str(rt)]
+    while todo:
+        cur = todo.pop()
+        out.append(cur)
+        m = re.search(r"^  m_Children:\n((?:  - .*\n)*)", sc.docs[cur], re.M)
+        todo += re.findall(r"\{fileID: (-?\d+)\}", m.group(1)) if m else []
+    return out
+
+
+def colour_of(doc):
+    m = re.search(r"^  m_Color: \{r: ([-\d.e]+), g: ([-\d.e]+), b: ([-\d.e]+), a: ([-\d.e]+)\}", doc, re.M)
+    return tuple(float(x) for x in m.groups()) if m else None
+
+
+def from_the_theme(rgb):
+    """True for white (the identity tint over art) and for a UI theme token: the only colours this script may write."""
+    allowed = [K.WHITE[:3]] + [K.hexc(h)[:3] for h in K.TOK.values()]
+    return any(all(abs(a - b) < 5e-4 for a, b in zip(rgb, t)) for t in allowed)
+
+
+def check_poster(path, sc, ctx, prefix, files):
+    """Rev 94 C: the poster and the foot's bar, on one surface."""
+    assert not any(f"guid: {S['loadbar']}" in d for d in sc.docs.values()), f"{path}: the 180 x 2 KitLoadBar is back"
+    for name in RETIRED_BACKDROP:
+        assert not sc.has(str(ctx.go(f"{prefix}/{name}"))), f"{path}: the still's {name} survives under the poster"
+    # The bar: wired, on the boot status channel, cut where the model's shares end.
+    _, bar = step_bar(path, sc)
+    for f in ("fill", "fillGraphic", "glint", "stepText", "percentText", "stepRow", "bootWords", "returnWords"):
+        assert field_ref(bar, f) != "0" and sc.has(field_ref(bar, f)), f"{path}: BootStepBar.{f} is not wired"
+    assert f"  requestEvent: {K.ref(11400000, BOOT_STATUS_CHANNEL, 2)}\n" in bar, f"{path}: BootStepBar is not on the boot status channel"
+    ends = re.search(r"^  stepEnds:\n((?:  - .*\n)*)", bar, re.M)
+    got = [float(x) for x in re.findall(r"  - (.*)\n", ends.group(1))] if ends else []
+    assert len(got) == len(STEP_ENDS) and all(abs(a - b) < 1e-6 for a, b in zip(got, STEP_ENDS)), \
+        f"{path}: the bar's steps end at {got}, BootLoadProgress.StepEnds says {STEP_ENDS} (the name over the bar would disagree with the fill)"
+    names = re.search(r"^  stepNames:\n((?:  - .*\n)*)", bar, re.M)
+    assert names and len([x for x in re.findall(r"  - (.*)\n", names.group(1)) if x.strip()]) == len(STEP_ENDS), f"{path}: the bar needs a name per step"
+    for f in ("stepMarks", "stepWords"):
+        got_ = re.search(r"^  %s:\n((?:  - .*\n)*)" % f, bar, re.M)
+        assert got_ and got_.group(1).count("{fileID: ") == len(STEP_ENDS), f"{path}: BootStepBar.{f} needs {len(STEP_ENDS)} entries"
+    hidden = sc.docs[field_ref(bar, "returnWords")]
+    assert "  m_Alpha: 0\n" in hidden, f"{path}: the return line ships shown over the step's name"
+
+    # The poster: every piece present, every colour from the theme or left to the worn set.
+    root = str(ctx.rt(f"{prefix}/Poster"))
+    assert sc.has(root), f"{path}: no poster"
+    comps = [sc.docs[c] for rt in subtree(sc, root) for c in sc.components(sc.go_of(rt)) if c in sc.docs]
+    slants = [d for d in comps if f"guid: {S['slant']}" in d]
+    for d in comps:
+        if f"guid: {S['slant']}" in d or f"guid: {K.IMAGE}" in d:
+            rgb = colour_of(d)
+            assert rgb and from_the_theme(rgb[:3]), f"{path}: a poster graphic carries a typed colour {rgb} (white, a theme token, or the worn set at runtime)"
+    paints = [d for d in comps if f"guid: {S['paint']}" in d]
+    bands = [d for d in paints if "  faces:\n" in d]
+    assert sorted(int(re.search(r"^  domain: (\d+)", d, re.M).group(1)) for d in bands) == sorted(DOMAIN_VALUE[b] for b in BANDS), \
+        f"{path}: the poster needs one band each for {', '.join(BANDS)}"
+    assert len(paints) == len(bands) + 2, f"{path}: the poster needs its two runs of prisms"
+    for d in paints:
+        shapes = re.findall(r"^  - \{fileID: (-?\d+)\}", d, re.M)
+        assert shapes, f"{path}: a PosterDomainPaint paints nothing"
+        for fid in shapes:
+            sd = sc.docs.get(fid, "")
+            assert f"guid: {S['slant']}" in sd, f"{path}: a PosterDomainPaint names a shape that is not a KitSlant"
+            assert colour_of(sd)[3] == 0, f"{path}: a domain shape ships with a colour of its own (it must be clear until the worn colour set paints it)"
+    for d in bands:
+        rims = re.search(r"^  rims:\n((?:  - .*\n)*)", d, re.M)
+        assert rims and rims.group(1).count("{fileID: ") == 2, f"{path}: a band needs a rim along both long edges"
+        assert f"  blendSeconds: {K.f32(BLEND_SECONDS)}\n" in d, f"{path}: a band does not blend when the worn set changes"
+    pictures = "".join(comps)
+    for name, _, _ in CAPTAINS:
+        assert f"  sprite: {K.sprite_ref(art_guid('captain_' + name.lower() + '.jpg'))}\n" in pictures, f"{path}: the poster lost {name}"
+    for name, _, _, _ in HULLS:
+        assert K.sprite_ref(K.meta_guid(f"Assets/_Graphics/CardImages/{name}_large.png")) in pictures, f"{path}: the poster lost the {name}"
+    for name in ("poster_cell.jpg", "poster_logo_cosmic_shore.png", "poster_logo_froglet.png"):
+        assert K.sprite_ref(art_guid(name)) in pictures, f"{path}: the poster lost {name}"
+    assert K.sprite_ref(codex("ethirion_omni")) in pictures, f"{path}: the poster lost its Omni crystals"
+    drifts = [d for d in comps if f"guid: {S['drift']}" in d]
+    assert len(drifts) >= 19 and all(float(re.search(r"^  seconds: (.*)$", d, re.M).group(1)) > 0 for d in drifts), \
+        f"{path}: the poster's motion is missing or has a zero period"
+    fits = [d for d in comps if f"guid: {S['fit']}" in d]
+    assert len(fits) == 1 and field_ref(fits[0], "frame") == root, f"{path}: the stage does not fit itself to the poster"
+    # The exit (section 185): on the poster's root, so the whole picture moves through as the splash dissolves.
+    exits = [c for c in sc.components(sc.go_of(root)) if f"guid: {S['exit']}" in sc.docs.get(c, "")]
+    assert len(exits) == 1 and f"  push: {K.f32(POSTER_EXIT_PUSH)}\n" in sc.docs[exits[0]], \
+        f"{path}: the poster has no PosterExit on its root (the reveal would pop open instead of moving through it)"
+    # Froglet's logo: in the bottom-right corner under the bar, drawn after the foot so the foot does not hide it.
+    frog = sc.docs[str(ctx.rt(f"{prefix}/Poster/Froglet"))]
+    assert "  m_AnchorMin: {x: 1, y: 0}\n" in frog and "  m_AnchorMax: {x: 1, y: 0}\n" in frog \
+        and "  m_Pivot: {x: 1, y: 0}\n" in frog, f"{path}: the Froglet logo is not in the bottom-right corner"
+    kids = re.findall(r"^  - \{fileID: (-?\d+)\}", sc.docs[root].split("  m_Children:\n", 1)[1].split("  m_Father:", 1)[0], re.M)
+    assert kids.index(str(ctx.rt(f"{prefix}/Poster/Froglet"))) > kids.index(str(ctx.rt(f"{prefix}/Poster/Foot"))), \
+        f"{path}: the Froglet logo is drawn under the foot"
+    for name in ART:
+        meta = files[f"{SPLASH_DIR}/{name}.meta"]
+        assert f"guid: {art_guid(name)}\n" in meta and "spriteMode: 1\n" in meta, f"{name}.meta is not a sprite with the poster's guid"
+
+
 def drift(files):
-    return [p for p, t in files.items()
-            if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
+    stale = [p for p, t in files.items()
+             if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
+    return stale + [p for p, b in art_bytes().items()
+                    if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), "rb").read() != b]
 
 
 def _show_face(text_, field):
@@ -918,6 +1340,23 @@ def self_test(files):
         ("Apple dropped from Android", lambda f: f.__setitem__(PROVIDERS_ASSET, f[PROVIDERS_ASSET].replace(
             "  androidOrder:\n  - 3\n  - 4\n", "  androidOrder:\n  - 3\n"))),
         ("Steam no longer silent", lambda f: f.__setitem__(PROVIDERS_ASSET, f[PROVIDERS_ASSET].replace("desktopSilentProvider: 2", "desktopSilentProvider: 0"))),
+        ("a band with a colour of its own", edit_doc(SPLASH, str(splash_ctx().c("Splash/Poster/Stage/BandJade/Face", "slant")),
+                                             lambda d: d.replace("a: 0}", "a: 0.74}", 1))),
+        ("a typed colour on the poster", edit_doc(AUTH, str(auth_ctx().c("Auth/Poster/Foot", "img")),
+                                          lambda d: re.sub(r"  m_Color: .*", "  m_Color: {r: 0.1, g: 0.2, b: 0.3, a: 1}", d, count=1))),
+        ("the bar's steps disagree with the model", edit_doc(AUTH, str(auth_ctx().c("Auth/Readout", "stepbar")),
+                                                     lambda d: d.replace(f"  - {K.f32(STEP_ENDS[1])}\n", "  - 0.3\n", 1))),
+        ("the bar off the boot status channel", edit_doc(SPLASH, str(splash_ctx().c("Splash/Readout", "stepbar")),
+                                                 lambda d: re.sub(r"  requestEvent: .*", "  requestEvent: {fileID: 0}", d, count=1))),
+        ("a captain missing", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(art_guid("captain_galleon.jpg"), "0" * 32))),
+        ("the retry window see-through", edit_doc(SPLASH, str(splash_ctx().c("Retry/Fill", "th")), lambda d: d.replace("  alpha: 1\n", "  alpha: 0.92\n"))),
+        ("the bar stays up under the retry window", edit_doc(SPLASH, SP["panel_comp"], lambda d: re.sub(
+            r"(  readoutGroup: )\{fileID: -?\d+\}", r"\1{fileID: %s}" % splash_ctx().c("Splash/Readout/StepWords", "cg"), d))),
+        ("the poster lost its exit", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(f"guid: {S['exit']}", "0" * 32))),
+        ("the Froglet logo back at the top left", edit_doc(SPLASH, str(splash_ctx().rt("Splash/Poster/Froglet")),
+                                                  lambda d: d.replace("  m_AnchorMin: {x: 1, y: 0}", "  m_AnchorMin: {x: 0, y: 1}", 1))),
+        ("a band lost a rim", edit_doc(AUTH, str(auth_ctx().c("Auth/Poster/Stage/BandGold", "paint")),
+                               lambda d: re.sub(r"(  rims:\n  - .*\n)  - .*\n", r"\1", d, count=1))),
         ("the rule ticks judge another field", lambda f: f.__setitem__(AUTH, re.sub(r"(  input: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[AUTH], count=1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
@@ -932,7 +1371,7 @@ def main():
     args = ap.parse_args()
     files = outputs()
     validate(files)
-    print("OK: the start flow validates (Bootstrap splash, sign-in scene, privacy sprites)")
+    print("OK: the start flow validates (Bootstrap splash, sign-in scene, the poster and its bar, privacy sprites)")
     if args.self_test:
         return 0 if self_test(files) else 1
     stale = drift(files)
@@ -941,9 +1380,15 @@ def main():
             print(f"DRIFT: {p}")
         print("OK: no drift" if not stale else f"FAIL: {len(stale)} file(s) drifted")
         return 1 if stale else 0
+    pictures = art_bytes()
     for path in stale:
-        with open(os.path.join(REPO, path), "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(files[path])
+        os.makedirs(os.path.dirname(os.path.join(REPO, path)), exist_ok=True)
+        if path in pictures:
+            with open(os.path.join(REPO, path), "wb") as fh:
+                fh.write(pictures[path])
+        else:
+            with open(os.path.join(REPO, path), "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(files[path])
         print(f"wrote {path}")
     if not stale:
         print("no files written (already current)")

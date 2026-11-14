@@ -620,7 +620,7 @@ namespace CosmicShore.Engine
     /// Immediate-mode GUI (original: UnityEngine.GUI). OnGUI is not part of the port's frame,
     /// so IMGUI overlays (debug HUDs) draw nothing; calls are accepted and ignored.
     /// </summary>
-    public static class GUI
+    public static partial class GUI
     {
         public static GUISkin skin { get; set; } = ScriptableObject.CreateInstance<GUISkin>();
         public static Color color { get; set; } = Color.white;
@@ -654,7 +654,7 @@ namespace CosmicShore.Engine
 
     public enum ScaleMode { StretchToFill = 0, ScaleAndCrop = 1, ScaleToFit = 2 }
 
-    public static class GUILayout
+    public static partial class GUILayout
     {
         public static void Label(string text, params GUILayoutOption[] options) { }
         public static void Label(string text, GUIStyle style, params GUILayoutOption[] options) { }

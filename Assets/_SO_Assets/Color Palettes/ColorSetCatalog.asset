@@ -24,6 +24,7 @@ MonoBehaviour:
     - Honey over Violet
     - Cornflower over Spruce
     vision: 0
+    price: 0
   - id: photic
     colorSet: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f, type: 2}
     displayName: Photic
@@ -35,6 +36,7 @@ MonoBehaviour:
     - Amber over Umber
     - Periwinkle over Indigo
     vision: 0
+    price: 0
   - id: dartfrog
     colorSet: {fileID: 11400000, guid: fc278fc4db3642deb6d5c94314865280, type: 2}
     displayName: Dart Frog
@@ -46,6 +48,7 @@ MonoBehaviour:
     - Bumblebee over Coal
     - Azure over Cobalt
     vision: 0
+    price: 1200
   - id: nacre
     colorSet: {fileID: 11400000, guid: 5c23989fe41646f5998662aa44c15ffa, type: 2}
     displayName: Nacre
@@ -57,6 +60,7 @@ MonoBehaviour:
     - Butter over Champagne
     - Periwinkle over Powder
     vision: 0
+    price: 800
   - id: blueringedoctopus
     colorSet: {fileID: 11400000, guid: de30bf08df564c14bddcbb3fe0edf203, type: 2}
     displayName: Blue-ringed Octopus
@@ -68,6 +72,7 @@ MonoBehaviour:
     - Sand over Ochre Skin
     - Ring Blue over Deep Water
     vision: 0
+    price: 1200
   - id: neonnoir
     colorSet: {fileID: 11400000, guid: 6a7e9e76e42c40b19d5216644774eb96, type: 2}
     displayName: Neon Noir
@@ -79,6 +84,7 @@ MonoBehaviour:
     - Sodium Lamp over Violet Haze
     - Electric Blue over Amber Puddle
     vision: 0
+    price: 1500
   - id: ukiyoe
     colorSet: {fileID: 11400000, guid: 32a11b7b922d4094bce00730a8568ae3, type: 2}
     displayName: Ukiyo-e
@@ -90,6 +96,7 @@ MonoBehaviour:
     - 'Gamboge over Gamboge, printed deep'
     - 'Prussian Blue over Prussian Blue, printed deep'
     vision: 0
+    price: 1500
   - id: dusk
     colorSet: {fileID: 11400000, guid: 7e428642c62b47f4a40c7da1717b9699, type: 2}
     displayName: Dusk
@@ -101,6 +108,7 @@ MonoBehaviour:
     - Last Light over Rosewood
     - Slate Blue over Night Fog
     vision: 0
+    price: 800
   - id: contrast
     colorSet: {fileID: 11400000, guid: a2b69fd4235d40b683d21c958716a7f8, type: 2}
     displayName: Contrast
@@ -112,6 +120,7 @@ MonoBehaviour:
     - Bright Gold over Amber
     - Ultramarine over Navy
     vision: 6
+    price: 0
   - id: protanopia
     colorSet: {fileID: 11400000, guid: 31cde80f4f78432bac8960d826595421, type: 2}
     displayName: Protanopia
@@ -123,6 +132,7 @@ MonoBehaviour:
     - Tangerine over Steel Blue
     - Lavender over Emerald
     vision: 1
+    price: 0
   - id: deuteranopia
     colorSet: {fileID: 11400000, guid: c60912e872a449699ac1e217150b1eeb, type: 2}
     displayName: Deuteranopia
@@ -134,6 +144,7 @@ MonoBehaviour:
     - Orange over Electric Violet
     - Ultramarine over Ink
     vision: 2
+    price: 0
   - id: tritanopia
     colorSet: {fileID: 11400000, guid: 744330f0b8aa4ef1a9adcdd29ad77dda, type: 2}
     displayName: Tritanopia
@@ -145,6 +156,7 @@ MonoBehaviour:
     - Saffron over Slate Blue
     - Azure over Forest
     vision: 3
+    price: 0
   - id: achromatopsia
     colorSet: {fileID: 11400000, guid: dfa527e6fbe540f5bac81322305c848f, type: 2}
     displayName: Achromatopsia
@@ -156,6 +168,7 @@ MonoBehaviour:
     - Amber over Plum
     - Ultramarine over Forest
     vision: 4
+    price: 0
   - id: lowvision
     colorSet: {fileID: 11400000, guid: e94dde772fbd4e3dbe87f5514b3ac707, type: 2}
     displayName: Low Vision
@@ -167,3 +180,4 @@ MonoBehaviour:
     - Marigold over Plum
     - Lavender over Forest
     vision: 5
+    price: 0

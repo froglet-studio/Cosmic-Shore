@@ -163,7 +163,7 @@ namespace CosmicShore.Engine
     public enum FullScreenMode { ExclusiveFullScreen = 0, FullScreenWindow = 1, MaximizedWindow = 2, Windowed = 3 }
 
     /// <summary>IMGUI style (UnityEngine.GUIStyle) — the port draws no IMGUI; styles are data.</summary>
-    public class GUIStyle
+    public partial class GUIStyle
     {
         public GUIStyle() { }
         public GUIStyle(GUIStyle other) { if (other != null) { fontSize = other.fontSize; alignment = other.alignment; richText = other.richText; wordWrap = other.wordWrap; } }
@@ -185,7 +185,7 @@ namespace CosmicShore.Engine
         public Texture2D background { get; set; }
     }
 
-    public class GUIContent
+    public partial class GUIContent
     {
         public string text { get; set; }
         public Texture image { get; set; }

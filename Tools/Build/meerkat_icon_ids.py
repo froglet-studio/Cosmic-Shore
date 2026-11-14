@@ -8,6 +8,9 @@ HULL = "Meerkat"
 ICONS = ("Meerkat_SentinelMode", "Meerkat_ExitPortal", "Meerkat_Soliton", "Meerkat_FasterRide")
 # The omni crystal card (VesselHUDView.omniAbilitySprite): the Soliton Network an omni crystal grows.
 OMNI = "Meerkat_SolitonNetwork"
+# Each card's level-5 picture (the binding's upgradedSprite, swapped in when the upgrade unlocks; roster audit 2026-11-13),
+# in the same order: Six Sentinels, Danger Portal, Steal, Boost Out.
+UPGRADED = ("Meerkat_SixSentinels", "Meerkat_DangerPortal", "Meerkat_Steal", "Meerkat_BoostOut")
 
 
 def guid_for(name: str) -> str:

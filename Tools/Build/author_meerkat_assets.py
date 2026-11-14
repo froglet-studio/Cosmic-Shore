@@ -41,7 +41,7 @@ committed prefab and assets, idempotently:
       Runtime GameData), and the HUD's `kit` reference to it
     - Y (InputEvents 14, Button4Action) -> MeerkatSentinelModeAction (Charge, Sentinel mode), a new action asset
     - the config's kit section: the page's plain kit keys at their SHIPPED values (then studio_to_unity.py's), four
-      ElementalFloat blocks from the page's L0/L10 pairs (rush Time, zapPetals Charge, portalSize Mass; Space's area is
+      ElementalFloat blocks from the page's L0/L10 pairs (rush Time, zapPetals Charge, portalSize Mass, surfaceArea Space from
       round 23's areaL0 / areaL10),
       the combat-hit channel and five empty FMOD slots
     - the element map's four designed rows (Space Soliton on RT, Time passive, Mass passive, Charge Sentinel mode on Y),
@@ -162,17 +162,19 @@ CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax",
                # round 28, the Rift (the omnicrystal's ultimate; omniMode 0 the Rift, 1 the network)
                "omniMode", "riftSpeed", "riftSeconds", "riftLife",
                # Garrett's soliton (round 23): the surface area, the pull, the carry, the fire
-               "areaL0", "areaL10", "suckRadius", "suckSpeed", "swallowShare", "carryStretch", "carryTwist", "fireSpeed", "fireGlideSeconds"]
+               "suckRadius", "suckSpeed", "swallowShare", "carryStretch", "carryTwist", "fireSpeed", "fireGlideSeconds"]
 
 
 # Garrett's kit (MEERKAT.md section 9): the page's plain kit keys, by the same names (studio_to_unity.py writes them once
 # they exist); Unity-only budget fields; the four ElementalFloats as (field, L0 key, L10 key, element, floor).
-# Space (areaL0/L10, suck*, swallowShare, carrySpeed, carryStretch/Twist, fireSpeed, fireGlideSeconds) is round 23's, in
-# CONFIG_KEYS: its swallow is MeerkatSwallow.
+# Space (suck*, swallowShare, carrySpeed, carryStretch/Twist, fireSpeed, fireGlideSeconds) is round 23's, in CONFIG_KEYS: its
+# swallow is MeerkatSwallow. Its surface area (the page's areaL0 / areaL10) is the ElementalFloat surfaceArea since the
+# 2026-11-13 roster audit (it was a raw pair the executor lerped on GetLevel); config_retrofit carries the asset's numbers over.
 KIT_KEYS = ["boostOut", "sentinelPool", "sentinelPoolL5", "guardShare", "aiZapRate", "portalShare"]
 KIT_UNITY = {"zapCooldownSeconds": "0"}
 KIT_FLOATS = [("rush", "rushL0", "rushL10", 4, "0.05"),
-              ("zapPetals", "zapPetalsL0", "zapPetalsL10", 1, "0"), ("portalSize", "portalSizeL0", "portalSizeL10", 2, "0.05")]
+              ("zapPetals", "zapPetalsL0", "zapPetalsL10", 1, "0"), ("portalSize", "portalSizeL0", "portalSizeL10", 2, "0.05"),
+              ("surfaceArea", "areaL0", "areaL10", 3, "3000")]
 KIT_EVENTS = ["zapEvent", "sentinelPlacedEvent", "sentinelLostEvent", "portalEvent", "prismFiredEvent"]
 
 
@@ -292,7 +294,9 @@ RETIRED = ["lengthStraight", "lengthBent", "throatStraight", "throatBent", "mout
            "labyrinthRandomness", "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl", "labyrinthFormSeconds",
            "rootMaxSpeed", "rootBounce",
            # and the old flight, retired for the slip-and-slide (wall gravity, a small RT push, no stick)
-           "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootGravity"]
+           "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootGravity",
+           # 2026-11-13 (the roster audit): the surface area is the ElementalFloat surfaceArea (KIT_FLOATS)
+           "areaL0", "areaL10"]
 
 
 def config_retrofit(cfg: str, values: dict) -> str:
@@ -301,6 +305,9 @@ def config_retrofit(cfg: str, values: dict) -> str:
     for old, new in RENAMED.items():   # a key the studio renamed keeps its number under the new name (FormerlySerializedAs)
         if not re.search(r"^  %s: " % new, cfg, re.M):
             cfg = re.sub(r"^  %s: " % old, f"  {new}: ", cfg, count=1, flags=re.M)
+    lo, hi = (re.search(r"^  %s: (.*)\n" % k, cfg, re.M) for k in ("areaL0", "areaL10"))
+    if lo and hi and not re.search(r"^  surfaceArea:\n", cfg, re.M):   # the area pair becomes its ElementalFloat, same numbers
+        cfg = cfg.replace(lo.group(0), elemental_block("surfaceArea", lo.group(1), hi.group(1), 3, "3000"), 1)
     for k in RETIRED:
         cfg = re.sub(r"^  %s: .*\n" % k, "", cfg, flags=re.M)
     for i, k in enumerate(CONFIG_KEYS):   # a new key goes in after the key before it, so the asset reads in the page's order
@@ -643,7 +650,8 @@ THEME_LINES = (f"  theme: {{fileID: 11400000, guid: {UI_THEME_GUID}, type: 2}}\n
 
 
 def patch_hud_variant(text: str) -> str:
-    """Idempotent edits the committed variant takes too (its clone is a spent one-shot): the omni crystal card's sprite,
+    """Idempotent edits the committed variant takes too (its clone is a spent one-shot): each card's level-5 upgradedSprite
+    (meerkat_icon_ids.UPGRADED), the omni crystal card's sprite,
     the Soliton Network (VesselHUDView.omniAbilitySprite; empty, the card draws LOCKED), and the gauges' theme tokens
     (THEME_LINES), written in the view's own block."""
     m = re.search(r"--- !u!114 &%s\n(?:.*\n)*?(?=--- !u!|\Z)" % HUD_VIEW_DOC, text)
@@ -651,6 +659,9 @@ def patch_hud_variant(text: str) -> str:
         raise RuntimeError("MeerkatHUDVariant: the view's block is not found")
     view = re.sub(r"^  omniAbilitySprite: .*\n", "", m.group(0), flags=re.M)
     view = replace_once(view, "  upgradeHighlightScale:", OMNI_LINE + "  upgradeHighlightScale:", "the view's upgradeHighlightScale")
+    for el, name in enumerate(I.UPGRADED, 1):   # each card's level-5 picture (roster audit, 2026-11-13)
+        view = re.sub(r"(  - element: %d\n    icon: \{fileID: \d+\}\n    upgradedSprite: ).*\n" % el,
+                      lambda m: m.group(1) + f"{{fileID: 21300000, guid: {I.guid_for(name)}, type: 3}}\n", view, count=1)
     view = re.sub(r"^  (?:gaugeColor|readyColor|theme|gaugeToken|readyToken): .*\n", "", view, flags=re.M)
     view = replace_once(view, "  colorBlendRate:", THEME_LINES + "  colorBlendRate:", "the view's colorBlendRate")
     return text[:m.start()] + view + text[m.end():]
@@ -686,7 +697,10 @@ def check_hud_variant(text: str):
     want(THEME_LINES in view and not re.search(r"^  (?:gaugeColor|readyColor): ", view, re.M),
          "MeerkatHUDVariant: the gauge colours are not the UI theme's tokens (theme, gaugeToken 7, readyToken 8)")
     want(OMNI_LINE in view, "MeerkatHUDVariant: the omni card is not the Soliton Network (an empty omniAbilitySprite draws LOCKED)")
-    for old, name in list(zip(STOAT_ICONS, I.ICONS)) + [(None, I.OMNI)]:
+    for el, name in enumerate(I.UPGRADED, 1):
+        want(re.search(r"  - element: %d\n    icon: \{fileID: \d+\}\n    upgradedSprite: \{fileID: 21300000, guid: %s, type: 3\}\n"
+                       % (el, I.guid_for(name)), view), f"MeerkatHUDVariant: card {el}'s upgradedSprite is not {name}")
+    for old, name in list(zip(STOAT_ICONS, I.ICONS)) + [(None, I.OMNI)] + [(None, n) for n in I.UPGRADED]:
         want(old is None or old not in text, f"MeerkatHUDVariant: the Stoat's sprite {old} is still on a card")
         want(text.count(f"guid: {I.guid_for(name)}, type: 3}}") == 1, f"MeerkatHUDVariant: {name} is not on its card once")
         meta = os.path.join(ICONS_DIR, name + ".png.meta")

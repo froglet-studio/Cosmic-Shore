@@ -15,11 +15,11 @@ MonoBehaviour:
   Mode: 53
   IsMultiplayer: 1
   DisplayName: Redline
-  Description: Mantas only, flat out. Both triggers buried is Soar - four times cruise
-    and a turning circle you can hold through most of the lap. The corners that will not
-    take it are cut to the metre, and easing both triggers to make one costs you two
-    seconds of winding the Soar back up. Time crystals make it faster still. Laps, until
-    somebody stops lifting.
+  Description: Mantas only, flat out. Soar is lit from the gun - bury both triggers for
+    over a thousand units a second and a turning circle you can hold through most of the
+    lap. Thread every ring through its heart to keep the streak alive, and ease both
+    triggers only where a ring would get away from you. Time crystals make it faster
+    still, all the way to the redline. Eight laps.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: d9c53903de9448a19dd18139d2747680, type: 3}
@@ -35,4 +35,33 @@ MonoBehaviour:
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
+  StartingElements:
+  - Class: 1
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.6
+  - Class: 1
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.6
+  - Class: 1
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.6
+  - Class: 1
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.6
   ComebackRatePerScoreDeficit: 0.21

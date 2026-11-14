@@ -1753,14 +1753,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>A ring on a rival hull under the LOCKED PvP rule (petals only): admitted through the one gate every
-        /// scored hit passes, it takes <c>ringPetals</c> (Charge) from each of the victim's elements, and raises the score.</summary>
+        /// scored hit passes, it takes <c>ringPetals</c> (Charge) from each of the victim's elements, and raises the score. At
+        /// Charge 5 (Vortex Steal) the petals are stolen onto the pair rather than ejected.</summary>
         void ScoreRingHit(IVesselStatus victim, Vector3 velocity)
         {
             if (!ElementalTransfer.IsDecidedHere(_status)) return;
             var hitClass = Config.RingHitClass;
             if (!CombatHitDrain.TryAdmit(victim, _status, hitClass, Config.HitCooldown, ElementalDebuffSources.Other, out int superseded)) return;
             float petals = Mathf.Max(0f, Config.RingPetals.EvaluateReplicated(_status));
-            ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Eject, victim, _status, petals * CombatHitDrain.NormalizedPerLevel,
+            // Charge 5 VORTEX STEAL (2026-11-13): the hit's petals land on the pair instead of being knocked loose,
+            // read through the replicated unlock bit at the moment of the hit
+            var form = Abilities && Abilities.IsUpgradeActive(Element.Charge) ? ElementalTransferForm.Steal : ElementalTransferForm.Eject;
+            ElementalTransfer.ApplyAllAuthoritative(form, victim, _status, petals * CombatHitDrain.NormalizedPerLevel,
                 velocity, ElementalDebuffSources.Other);
             if (Config.OnCombatHitLanded)
                 Config.OnCombatHitLanded.Raise(new CombatHitStats

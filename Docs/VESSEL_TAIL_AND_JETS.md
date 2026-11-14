@@ -102,7 +102,7 @@ them in a dictionary; a round has exactly one).
 **Scope is the markers, not every trail under the vessel** — which is the whole reason `VesselTail`
 and `VesselJet` are components rather than a naming convention. A vessel can carry streaks that are
 not identity at all: the Rhino's five `RhinoSwordBladeTracer`s are a STATE readout owned by
-`RhinoSwordFXController`, which drives their colour from the blade's energy and its impact flash.
+`SwordfishSwordFXController`, which drives their colour from the blade's energy and its impact flash.
 An earlier pass swept every `TrailRenderer` under the vessel and repainted those with the domain,
 fighting the controller for them every frame. Anything that wants the domain says so by carrying a
 marker.

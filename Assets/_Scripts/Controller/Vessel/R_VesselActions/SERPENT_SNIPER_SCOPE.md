@@ -204,7 +204,7 @@ walls' steal radius.
 Super-shielded mass is invulnerable to `Prism.Damage` outright — it early-returns through
 `AbsorbSuperShieldHit`. The sanctioned teardown drops the shields **first** and then devastates,
 which is precisely what the Rhino's energised blade does
-(`RhinoSkimmerDamagePrismEffectSO.PopSuperShield`):
+(`SwordfishSkimmerDamagePrismEffectSO.PopSuperShield`):
 
 ```csharp
 prism.DeactivateShields(impact, debrisSpeedLimit);          // sheds the stellation as debris
