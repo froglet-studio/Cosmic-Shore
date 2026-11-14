@@ -98,6 +98,7 @@ VESSELS = {
     "Goby": {"fbx": MODELS + "Goby.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_goby_assets.py"},
     # the Jacks' card is one jack (the marlin's model waits for its own swordsman class, 2026-10-21)
     "Jacks": {"fbx": MODELS + "Jack.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_jacks_assets.py"},
+    "JewelWasp": {"fbx": MODELS + "JewelWasp.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_jewel_wasp_assets.py"},
     # the artist hulls: rendered in place over the files their class assets (and other UI) already reference
     "Squirrel": {"fbx": MODELS + "SquirrelVessel_CosmicShoresTest1.fbx", "roles": FLEET_SLOTS},
     "Dolphin": {"fbx": MODELS + "dolphin_shapekey_with_animations.fbx", "roles": ARTIST_SLOTS,

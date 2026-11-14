@@ -22,13 +22,13 @@ MonoBehaviour:
     Charge: 0
     Space: 0
     Time: 0
-  IconActive: {fileID: 21300000, guid: cf2f75d44fc814161d8010cc674f5bdc, type: 3}
-  IconInactive: {fileID: 21300000, guid: 1eecea1c7e95be8fde0b008440c74313, type: 3}
-  PreviewImage: {fileID: 21300000, guid: 29673dd1345fa05d8a3891e93871cc63, type: 3}
-  SquadImage: {fileID: 21300000, guid: cb28739c26ff2dc171f3648367bf09d1, type: 3}
+  IconActive: {fileID: 21300000, guid: 21cd89f2da7f2e76aee93bb02ee083d9, type: 3}
+  IconInactive: {fileID: 21300000, guid: bb4ca1bf25884511196d143f4bb255c9, type: 3}
+  PreviewImage: {fileID: 21300000, guid: 58018698ec7437ad7c10f0fb3c6d11bd, type: 3}
+  SquadImage: {fileID: 21300000, guid: fbe43cdac164efd6210141d5c8428c95, type: 3}
   TrailPreviewImage: {fileID: 0}
-  CardSilohoutteActive: {fileID: 21300000, guid: cf2f75d44fc814161d8010cc674f5bdc, type: 3}
-  CardSilohoutteInactive: {fileID: 21300000, guid: 46c9e38357edb52cac5df4b20b7c3fb4, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: 21cd89f2da7f2e76aee93bb02ee083d9, type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: e0b97570e8ffd3c6890ecd93115b8109, type: 3}
   Abilities: []
   Games: []
   TrainingGames: []

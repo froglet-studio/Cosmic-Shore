@@ -20,6 +20,8 @@ MonoBehaviour:
   stingMaxSeconds: 4
   hullScale: 0.45
   nestedScale: 0.22
+  stingCurlDegrees: 72
+  nestedCurlDegrees: 34
   nestOffset: 1.3
   fallbackHeartRadius: 2
   hostTurnDegrees: 120

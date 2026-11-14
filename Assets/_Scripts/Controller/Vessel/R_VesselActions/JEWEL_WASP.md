@@ -6,10 +6,14 @@ was signed off the same day with his changes, which this doc records as built. A
 and walks it home by its antenna; this one stings a creature's heart crystal and flies it.
 
 Code: `Executors/JewelWaspExecutor.cs` (every decision), `Data Containers/JewelWaspConfigSO.cs` (every number),
-`Data Containers/JewelWaspActionSO.cs` (the three controls), `UI/Controller/JewelWaspHUDController.cs`,
+`Data Containers/JewelWaspActionSO.cs` (the three controls), `JewelWaspNetworkRelay.cs` (multiplayer, section 6.1),
+`UI/Controller/JewelWaspHUDController.cs` and `UI/View/JewelWaspHUDView.cs`,
 `ImpactEffects/.../JewelWaspHatchByCrystalEffectSO.cs`, `Executors/PossessionRecorder.cs`. The fauna side:
 `Environment/FloraAndFauna/IFaunaPossession.cs`, `Fauna.Possession.cs`, `FaunaAttackDriver.cs`, `LifeformHighlight.cs`.
-Assets: `Tools/Build/author_jewel_wasp_assets.py` (`--check`, `--self-test`).
+Assets: `Tools/Build/author_jewel_wasp_assets.py` (`--check`, `--self-test`); the model
+`Tools/Build/vessel_model/specs/jewelwasp.py` (`build.py JewelWasp`); the icons `Tools/Build/icon_kit/specs/jewelwasp.py`
+(`author.py JewelWasp`); the HUD `Tools/Build/author_jewel_wasp_hud.py`; the class cards `vessel_model/render_cards.py
+JewelWasp`.
 
 ## 1. The loop
 
@@ -36,8 +40,10 @@ Assets: `Tools/Build/author_jewel_wasp_assets.py` (`--check`, `--self-test`).
 | Space | Sting / Suction (RT) | the suction's reach, x1 to x3 the creature's own | **Maw**: suction pulls from every side, not only ahead |
 | Time | Swim / Burst (LT in a creature) | a host's speed, x1.5 to x3 its own top speed | **Restless**: no wait between stings, none between bursts |
 
-The Time card's icon swaps to the burst while the wasp rides a creature (`JewelWaspHUDController.timeInHostIcon`, empty
-until the icon round). The Charge card is A on a pad and, on a phone, the on-screen A: the hull is a TotemButtons
+Two cards swap while the wasp rides a creature (`JewelWaspHUDView.SetInHost`): Space shows the Suction, Time the Dash
+(the burst). An unlocked level-5 card keeps its upgrade picture in either mode. The cards: Charge Attack / Burst, Mass
+Root / Overgrowth, Space Sting (Suction in a host) / Maw, Time Swim (Dash in a host) / Restless
+(`Docs/Icons/sheets/jewelwasp.png`). The Charge card is A on a pad and, on a phone, the on-screen A: the hull is a TotemButtons
 profile, so its four cards are its buttons (`author_touch_profiles.py`).
 
 **The omni crystal** hatches a random PREDATOR where it is collected (a Shark or a Worm Colony of any element,
@@ -101,20 +107,42 @@ It writes `possession_<Mode>_<Species>_<time>.json` (schema `cosmic-shore.posses
 editor sends it with the flights to `bugledger/<user>` (`BugHuntReports`). The name is not `flight_*`, so no vessel
 learner reads it. No learner reads it yet: that is the next step for fauna behaviour.
 
-## 6. Stand-ins and follow-ups
+## 6. The hull, and what is still open
 
-- **The airframe is the Tiger Moth's** (`TigerMoth.prefab` cloned, the Mass/Dust mode removed; its dust skimmer stays
-  switched off because nothing drives it). The **model** is a `/vessel-model` round: a wasp hull sized so its nested pose
-  tucks in beside a heart crystal, with a sting take.
-- **The icons** are a `/ability-icon` round. The HUD is the Tiger Moth's stand-in view; the Time card's in-host icon
-  slot ships empty.
+- **The model is the wasp's own** (`JewelWasp.fbx`, 2026-11-14, `Docs/VesselModels/README.md`): a jewel-bright hull on
+  the Butterfly's rig and bone names plus a `head` and an `abdomen` bone, so the prefab bound it by a guid swap. Four
+  element morphs (Charge: the needle and clamp prongs, Mass: the gaster swells, Space: the masts and wings reach, Time:
+  the wings sweep and the gaster stretches) and the takes `beatup`, `beatdown`, `fold`, `spread`, `sting`. The prefab
+  still carries the Tiger Moth's airframe components, with the Mass/Dust mode removed and its dust skimmer off.
+- **The model plays the possession**: the gaster curls under for the sting's beat (`stingCurlDegrees`, 72) and stays
+  half curled while nested (`nestedCurlDegrees`, 34), and the wings fold in a host (`ButterflyAnimation.SetFolded`).
+  The wingbeat is a wasp's: fast and shallow, the hind wings hooked to the fore wings (`author_jewel_wasp_assets.py`
+  `WING_BEAT`).
+- **The HUD is its own** (`JewelWaspHUDVariant`, forked from the Tiger Moth's with every Moth part off; section 2).
 - **The six FMOD slots ship empty:** sting, nest, leave, attack, suction and burst.
-- **Multiplayer:** possession needs the hull's owner and the creature's simulation authority on one machine. So it works
-  solo and for the host's own hull, and a client hull's sting is refused with one warning. A client hull is a follow-up:
-  a ServerRpc sting, with the host steering from the client's sticks.
 - **The AI:**
   - Free, it stings the creature ahead, or any creature in the cell.
   - In a host, it heads for the nearest rival vessel, else the densest rival mass. It keeps RT held (suction or the
     attack) and moves on after 14 s.
   - It is a first cut, not trained (`Docs/AI_SYSTEM/AI_PLAN.md`: its element games come first).
 - **Not run in the Unity editor yet:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` lists the hand tests.
+
+### 6.1 Multiplayer: the server decides the possession
+
+The creatures are simulated on the server (`FaunaNetworkSync.IsSimAuthority`), so the possession is decided there for
+every hull, the host's and the clients'. `JewelWaspNetworkRelay` (on the hull's root, beside its NetworkObject) carries
+what the server decides and the other machines cannot work out:
+
+- **What already reaches the server:** every press (the action handler's ServerRpc / ClientRpc pair) and the sticks,
+  throttle and triggers (`InputStatus`'s owner-write mirrors). So the server's copy of a client's hull stings, steers
+  and attacks from the client's own input.
+- **What the relay replicates (server-write):** the mode, with the arrived, incorporeal and bursting bits; the nest's
+  position and rotation (the flight's pose while a sting is in the air); the attack, burst and sting recharges for the
+  pilot's HUD; and the camera's stand-back.
+- **Who moves the hull:** its transform is owner-authoritative (`ClientNetworkTransform`), so the OWNER puts its own hull
+  at the nest the server publishes; every other peer sees it through the transform sync. Every peer dresses the model
+  from the mode (scale, curl, folded wings) and keeps a nested hull's colliders off.
+- **Not covered yet:** a client's ride is not recorded (`PossessionRecorder` records the local human on the deciding
+  machine only), and an AutoPilot client hull has not been tried.
+- Off the network (single player, the menu, an editor test) the relay reports the local machine as the decider and the
+  executor runs as it always did.

@@ -505,6 +505,17 @@ guids. Sheet: `Docs/Icons/sheets/jacks.png`.
 Rounds 2-4 are each a branch, a sheet, a commit and a flight test; one hull failing never holds the
 others.
 
+**The Jewel Wasp (2026-11-14, its first row; picks made by the session on Garrett's standing go-ahead to choose):** ten
+cards (`specs/jewelwasp.py`), the wasp drawn from its own mesh (`JewelWasp.fbx`, top view) and a creature as the Jacks'
+herd fish (lens body, forked tail). Charge **Attack** (a creature lunging at a rival hull, the hit between them) / L5
+**Burst** (the wasp thrown clear of a blast); Mass **Root** (a plant growing, the wasp at its foot) / L5 **Overgrowth**
+(three plants); Space **Sting** (the wasp diving at a creature, its heart cut out) / L5 **Maw** (prisms drawn in from all
+four sides); Time **Swim** (a creature over the fleet's motion bar) / L5 **Restless** (the wasp and two ghosts on its
+line). Two cards swap in a host through `JewelWaspHUDView`: Space **Suction** (three prisms drawn into the mouth,
+smallest nearest) and Time **Dash** (the creature ahead of its own ghost). Its own HUD (`author_jewel_wasp_hud.py`,
+forked from the Tiger Moth's with `sparrow_hud_fork.BUTTERFLY`, which drops the Moth's wing-energy gauge). Not yet run in
+Unity; awaiting Garrett's review.
+
 ## 9. Who works here
 
 `who_works_where.py` on the icon folders and the generators: Garrett merged every one of the icon
