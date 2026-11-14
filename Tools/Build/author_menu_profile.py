@@ -398,17 +398,36 @@ def build_view():
 # the set being browsed. Over it: the set's name, line and four pigments, a rail of set tiles with < >, and APPLY. The
 # words a set shows come from the catalog (Tools/Build/author_colour_set_catalog.py); every other word is authored here.
 
-COLOUR_SET_CARDS = 3
-# The two rails, left to right: (node prefix, eyebrow, < key, > key). Set keeps the first rail's shipped node names.
-COLOUR_RAILS = (("Set", "Colour sets", "ColourPrev", "ColourNext"),
-                ("Vision", "Colour vision, always free", "VisionPrev", "VisionNext"))
-COLOUR_RAIL_GAP = 80
+# Rev 112 D, "the real cell" (Shombith picked it, 2026-11-14; section 187) replaced the Showroom's two three-tile rails:
+# the catalog keeps growing, so stepping through it a tile at a time does not scale. The world is still the real menu
+# cell behind the Profile. Docked on the right, ONE scrolling list of every set (ColorSetRowView cloned from a template
+# row per catalog entry), in three groups - Yours from the start, Color Blind supported (Free), Premium - with All /
+# Color Blind supported (Free) / Premium filters. On the left over the cell: the set's kind, name, line, pigments and
+# APPLY / UNLOCK; along the foot, four tiles of what the set repaints. Shombith on the board: "bring the sea lines in the
+# card backgrounds and don't name it Free but Color Blind supported (Free)" - every card carries Sea_Panel.mat.
+
 COLOUR_CATALOG = "Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset"
 DOMAIN_NAMES = ("Jade", "Ruby", "Gold", "Blue")
-COLOUR_WORDS = (("positionTemplate", "'{index} of {count}'"), ("wearingTemplate", "Wearing {name}"))
-HERO_W, HERO_H, HERO_TOP = 1840, 864, 176
-NAME_SIZE = 88   # the board's hero name; past the type scale's Display (48) on purpose (section 126)
+COLOUR_WORDS = (("wearingTemplate", "Wearing {name}"), ("unlockTemplate", "UNLOCK {price}"), ("countTemplate", "'{count}'"))
+NAME_SIZE = 80   # the board's hero name; past the type scale's Display (48) on purpose (sections 126, 187)
 TAB_X, TAB_Y = 360, 112
+# Page-local geometry: the page starts under the 84-unit nav, so screen y = page y + 84 (the board's numbers - 84).
+LIST_X, LIST_Y, LIST_W, LIST_H = 1360, 92, 520, 872
+ROW_W, ROW_H = LIST_W - 24, 84
+TILES_X, TILES_Y, TILES_W, TILES_H, TILE_GAP = 40, 774, 1300, 190, 16
+WORDS_R = 1330                     # the words' right edge (APPLY sits against it)
+KINDS = (("Starter", "Yours from the start", "NeutralLightest", None),
+         ("ColorBlind", "Color Blind supported (Free)", "TextLight", "chrome_eye"),
+         ("Premium", "Premium", "Purchase", "chrome_crystal"))
+FILTERS = (("All", "All"), ("ColorBlind", "Color Blind supported (Free)"), ("Premium", "Premium"))
+TIERS = 3
+TRAIL = 5
+# One hull per domain for the Vessels tile: each SO_Class_<Hull>.IconActive (the vessel selector's icon).
+VESSEL_ICONS = (("Squirrel", "5d8f022f56d65ef4fae2cea4428a990f"), ("Sparrow", "ba44f040361ef7a48bc5af4f07dc0123"),
+                ("Dolphin", "c07463db6e8244c45b639760efd18f9e"), ("Manta", "3cf78c88592fff3419945dc7d6a4889a"))
+NOSE = 40                          # the icons are drawn nose to the upper right, this many degrees above level
+SCROLL_INTO = K.kit_script("KitScrollIntoView")
+ROW_SCRIPT = C.script("ColorSetRowView")
 
 
 def build_tabs(root):
@@ -419,42 +438,57 @@ def build_tabs(root):
     tabs.children.append(Inst("TabsLB", "KitKeycap", "KeycapLB", TL(0, (44 - kh) // 2, kw, kh), [("Label#tmp", "m_text", "LB", None)]))
     x = kw + 24
     for key, caption, selected in (("RecordTab", "Record", True), ("ColourSetsTab", "Colour sets", False)):
-        k = f"Tabs/{key}"
         w = K.label_width(caption.upper(), "Button")
-        n = tabs.child(N(k, key, TL(x, 0, w, 44)))
-        A.ring_node(n, f"{k}/FocusRing", 10)
-        hit = n.child(N(f"{k}/Hit", "Hit", STRETCH))
-        hit.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
-        # The word centred in the row, level with the LB / RB keycaps (it sat at the row's top: "misaligned texts").
-        lab = n.child(N(f"{k}/Label", "Label", R((0, 0.5), (1, 0.5), (0, 0), (0, K.line_height("Button")), (0.5, 0.5))))
-        lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp(caption.upper(), "Button", tok("NeutralLightest"))) \
-            .add("kt", 114, K.kit_text("Button", "NeutralLightest", driven=True))
-        und = n.child(N(f"{k}/Underline", "Underline", R((0, 0), (1, 0), (0, 0), (0, 2), (0.5, 0))))
-        und.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive", 0.0)))
-        n.add("tab", 114, (lambda k_, sel: lambda ctx, go: mono(go, S["tab"],
-              A.selectable() + f"  m_TargetGraphic: {ref(ctx.c(f'{k_}/Hit', 'img'))}\n" + A.calls([])
-              + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{k_}/FocusRing', 'img'))}\n"
-              f"  isSelected: {1 if sel else 0}\n"
-              f"  label: {ref(ctx.c(f'{k_}/Label', 'tmp'))}\n  underline: {ref(ctx.c(f'{k_}/Underline', 'img'))}\n"))(k, selected))
-        n.add("audio", 114, A.menu_audio(11))
+        text_tab(tabs, f"Tabs/{key}", key, caption.upper(), "Button", TL(x, 0, w, 44), selected)
         x += w + 36
     tabs.children.append(Inst("TabsRB", "KitKeycap", "KeycapRB", TL(x - 12, (44 - kh) // 2, kw, kh), [("Label#tmp", "m_text", "RB", None)]))
 
 
-def swatch(parent, key, r, rim=True):
-    """A prism swatch: the hex face and (optionally) its rim, untinted - ProfileColorSetsPanel paints both."""
-    n = parent.child(N(key, key.split("/")[-1], r))
-    art_node(n, f"{key}/Face", "Face", STRETCH, K.kit_sprite("kit_hex_fill"), preserve=True)
-    if rim:
-        art_node(n, f"{key}/Rim", "Rim", STRETCH, K.kit_sprite("kit_hex_line2"), preserve=True)
+def text_tab(parent, k, name, caption, role, r, selected=False):
+    """A KitTextTab: the word centred in its row (level with any keycaps), an underline at the row's foot, a focus ring."""
+    n = parent.child(N(k, name, r))
+    A.ring_node(n, f"{k}/FocusRing", 10)
+    hit = n.child(N(f"{k}/Hit", "Hit", STRETCH))
+    hit.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
+    lab = n.child(N(f"{k}/Label", "Label", R((0, 0.5), (1, 0.5), (0, 0), (0, K.line_height(role)), (0.5, 0.5))))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp(caption, role, tok("NeutralLightest"))) \
+        .add("kt", 114, K.kit_text(role, "NeutralLightest", driven=True))
+    und = n.child(N(f"{k}/Underline", "Underline", R((0, 0), (1, 0), (0, 0), (0, 2), (0.5, 0))))
+    und.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive", 0.0)))
+    n.add("tab", 114, lambda ctx, go: mono(go, S["tab"],
+          A.selectable() + f"  m_TargetGraphic: {ref(ctx.c(f'{k}/Hit', 'img'))}\n" + A.calls([])
+          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{k}/FocusRing', 'img'))}\n"
+          f"  isSelected: {1 if selected else 0}\n"
+          f"  label: {ref(ctx.c(f'{k}/Label', 'tmp'))}\n  underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n"))
+    n.add("audio", 114, A.menu_audio(11))
     return n
 
 
-def tick_node(parent, key, r):
-    t = parent.child(N(key, "Tick", r, active=False))
-    t.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta"), K.chrome_sprite("chrome_confirm"), preserve=True)) \
-        .add("th", 114, H.themed("Cta"))
-    return t
+def tint_node(parent, key, name, r, sprite, sliced=False, preserve=True, rot=0):
+    """A white Image ProfileColorSetsPanel / ColorSetRowView paints from the set (no KitThemedGraphic: the set, not the
+    UI theme, owns its colour, and a themed graphic would paint it back - the Voyages lesson in /frogma section 5)."""
+    n = parent.child(N(key, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), sprite, sliced, False, preserve))
+    if rot:
+        n.rot = rot
+    return n
+
+
+def prism_nodes(parent, key, r, rot=0):
+    """A prism glyph: face, lit facet and rim, stacked (author_colour_set_glyphs.py), all painted at run time."""
+    n = parent.child(N(key, key.split("/")[-1], r))
+    if rot:
+        n.rot = rot
+    for part in ("Face", "Lit", "Rim"):
+        tint_node(n, f"{key}/{part}", part, STRETCH, K.kit_sprite(f"kit_prism_{part.lower()}"))
+    return n
+
+
+def card_sea(parent, key, inset=4):
+    """The menu's sea lines inside a card, under its content (Sea_Panel.mat, as the arcade cards' bodies carry)."""
+    sea = parent.child(N(key, "Sea", R((0, 0), (1, 1), (0, 0), (-2 * inset, -2 * inset))))
+    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_PANEL_MAT))
+    return sea
 
 
 def big_name(node, size=NAME_SIZE):
@@ -469,98 +503,190 @@ def big_name(node, size=NAME_SIZE):
     return node
 
 
+def tick_node(parent, key, r):
+    t = parent.child(N(key, "Tick", r, active=False))
+    t.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta"), K.chrome_sprite("chrome_confirm"), preserve=True)) \
+        .add("th", 114, H.themed("Cta"))
+    return t
+
+
 def build_colour_sets(root):
     k0 = "ColourSets"
-    kh = f"{k0}/Hero"
     pg = root.child(N(k0, "ColourSets", R((0, 0), (1, 1), (0, -42), (0, -84))))
     pg.add("cg", 225, canvas_group(False))
-    W, H = HERO_W, HERO_H
-    hero = pg.child(N(kh, "Hero", TL(40, HERO_TOP - 84, W, H)))
-    # A window onto the cell, with a backing under the words and the rail: the real cell is far busier than the
-    # board's drawn sea, so a fade alone left the words on the world ("missing background"). A fade into a solid band,
-    # and the Profile's veil dimmed rather than off (ProfileColorSetsPanel.veilWhileShowing).
-    BAND = 330
-    fade = hero.child(N(f"{kh}/Fade", "Fade", TL(0, H - BAND - 220, W, 220)))
-    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.88), K.kit_sprite("kit_fade_v"), False))
-    band = hero.child(N(f"{kh}/Band", "Band", TL(0, H - BAND, W, BAND)))
-    band.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.88)))
-    frame(hero, f"{kh}/Frame", 14, "SurfaceBlack", "SurfaceDark", fill_alpha=0.0)
-    label(hero.child(N(f"{kh}/Position", "Position", TL(56, 40, 160, 18))), "", "Label", "NeutralLightest")
-    label(hero.child(N(f"{kh}/Wearing", "Wearing", TL(200, 40, 600, 18))), "", "Label", "TextLight")
-    label(hero.child(N(f"{kh}/Private", "Private", TR(48, 38, 600, 20))), "Only you see your colour set", "BodySmall",
-          "NeutralLightest", align="right")
-    label(hero.child(N(f"{kh}/Eyebrow", "Eyebrow", TL(56, H - 378, 300, 18))), "Colour set", "Label", "NeutralLightest")
-    big_name(hero.child(N(f"{kh}/Name", "Name", TL(56, H - 358, 1240, 104))))
-    label(hero.child(N(f"{kh}/Line", "Line", TL(56, H - 246, 1240, 28))), "", "Body", "TextLight")
-    for d, dom in enumerate(DOMAIN_NAMES):
-        x, y = 56 + d * 300, H - 206
-        label(hero.child(N(f"{kh}/Pair{d}/Domain", f"Domain{d}", TL(x, y + 3, 44, 16))), dom, "Label", "NeutralLightest")
-        art_node(hero, f"{kh}/Pair{d}/Rim", f"Rim{d}", TL(x + 50, y, 20, 20), None)
-        art_node(hero, f"{kh}/Pair{d}/Face", f"Face{d}", TL(x + 70, y, 20, 20), None)
-        label(hero.child(N(f"{kh}/Pair{d}/Words", f"Words{d}", TL(x + 100, y - 1, 196, 22))), "", "BodySmall", "TextLight")
-    # Two rails (Shombith, 2026-11-09): the looks on the left, and on the right, apart, the sets made for colour vision
-    # (colour blindness, low vision, Contrast), which are free because they are accessibility. Each rail is a window onto
-    # its own sets: its < > step the set shown and slide the window. The pad moving onto a tile previews it.
-    rail_y = H - 146
-    x = 56
-    for rail in COLOUR_RAILS:
-        x = colour_rail(hero, kh, rail, x, rail_y) + COLOUR_RAIL_GAP
-    # The hairline between the rails.
-    div_x = colour_rail_width() + 56 + COLOUR_RAIL_GAP // 2
-    div = hero.child(N(f"{kh}/RailDivider", "RailDivider", TL(div_x, rail_y - 24, 1, 138)))
-    div.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, C.H.themed("SurfaceDark"))
-    # APPLY, or Equipped when the set shown is the one worn: level with the name, right, so the rails have the band.
-    aw, ah = K.button_size("APPLY")
-    hero.children.append(kit_button("ApplyColourSet", "ApplyButton", "Cta", "APPLY", TL(W - 48 - aw, H - 358 + (104 - ah) / 2, aw, ah)))
-    eq = hero.child(N(f"{kh}/Equipped", "Equipped", TL(W - 48 - 220, H - 358 + 37, 220, 30), active=False))
-    tick_node(eq, f"{kh}/Equipped/Tick", TL(120, 6, 18, 18)).active = True
-    label(eq.child(N(f"{kh}/Equipped/Word", "Word", TL(146, 4, 74, 22))), "Equipped", "Label", "TextLight")
+    build_shown(pg)
+    build_tiles(pg)
+    build_list(pg)
     pg.add("colours", 114, lambda ctx, go: mono(go, S["colours"], colour_sets_body(ctx)))
 
 
-def colour_rail_width():
-    w, _ = K.button_size("<", small=True)
-    return w + 16 + COLOUR_SET_CARDS * 224 + w
+def build_shown(pg):
+    """The set shown, over the cell: a fade into a backing band (the real cell is busy: section 126.1), the wearing
+    line, the kind, the name, the line, the four pigments, and APPLY / UNLOCK / Equipped against the right edge."""
+    k = "ColourSets/Shown"
+    fade = pg.child(N(f"{k}Fade", "ShownFade", TL(0, 330, LIST_X - 10, 200)))
+    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.85), K.kit_sprite("kit_fade_v"), False))
+    band = pg.child(N(f"{k}Band", "ShownBand", TL(0, 530, LIST_X - 10, 466)))
+    band.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.85)))
+    label(pg.child(N(f"{k}/Wearing", "Wearing", TL(40, 456, 300, 18))), "", "Label", "TextLight")
+    label(pg.child(N(f"{k}/Private", "Private", TL(340, 454, 600, 20))), "Only you see your colour set", "BodySmall", "NeutralLightest")
+    for kk, words, token, icon in KINDS:
+        n = pg.child(N(f"{k}/Kind{kk}", f"Kind{kk}", TL(40, 488, 700, 20), active=False))
+        x = 0
+        if icon == "chrome_eye":
+            ic = n.child(N(f"{k}/Kind{kk}/Icon", "Icon", TL(0, 2, 21, 16)))
+            ic.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(token), K.chrome_sprite(icon), preserve=True)) \
+                .add("th", 114, H.themed(token))
+            x = 30
+        label(n.child(N(f"{k}/Kind{kk}/Word", "Word", TL(x, 1, 660, 18))), words, "Label", token)
+    big_name(pg.child(N(f"{k}/Name", "Name", TL(40, 512, 1000, 96))))
+    label(pg.child(N(f"{k}/Line", "Line", TL(40, 610, 1000, 28))), "", "Body", "TextLight")
+    for d, dom in enumerate(DOMAIN_NAMES):
+        x, y = 40 + d * 300, 652
+        tint_node(pg, f"{k}/Pair{d}/Rim", f"Rim{d}", TL(x, y, 18, 18), None, preserve=False)
+        tint_node(pg, f"{k}/Pair{d}/Face", f"Face{d}", TL(x + 18, y, 18, 18), None, preserve=False)
+        label(pg.child(N(f"{k}/Pair{d}/Words", f"Words{d}", TL(x + 46, y - 2, 240, 22))), "", "BodySmall", "TextLight")
+    aw, ah = K.button_size("APPLY")
+    pg.children.append(kit_button("ApplyColourSet", "ApplyButton", "Cta", "APPLY", TL(WORDS_R - aw, 540, aw, ah)))
+    uw, uh = K.button_size("UNLOCK 1,500")
+    pg.children.append(kit_button("UnlockColourSet", "UnlockButton", "Purchase", "UNLOCK", TL(WORDS_R - uw, 540, uw, uh)))
+    eq = pg.child(N(f"{k}/Equipped", "Equipped", TL(WORDS_R - 220, 552, 220, 30), active=False))
+    tick_node(eq, f"{k}/Equipped/Tick", TL(120, 6, 18, 18)).active = True
+    label(eq.child(N(f"{k}/Equipped/Word", "Word", TL(146, 4, 74, 22))), "Equipped", "Label", "TextLight")
+    short = pg.child(N(f"{k}/Short", "Short", TL(WORDS_R - 400, 540 + uh + 10, 400, 20), active=False))
+    label(short, "Not enough crystals", "BodySmall", "Danger", align="right")
 
 
-def colour_rail(hero, kh, rail, x, rail_y):
-    """One rail: its eyebrow, < , COLOUR_SET_CARDS set tiles and >, from `x`. Returns where it ends."""
-    prefix, eyebrow, prev_key, next_key = rail
-    w, h = K.button_size("<", small=True)
-    names = ("PreviousButton", "NextButton") if prefix == "Set" else (f"{prefix}PreviousButton", f"{prefix}NextButton")
-    label(hero.child(N(f"{kh}/{prefix}Eyebrow", f"{prefix}Eyebrow", TL(x, rail_y - 24, 600, 18))), eyebrow, "Label",
-          "NeutralLightest")
-    hero.children.append(small(prev_key, names[0], "Default", "<", TL(x, rail_y + 42 - h // 2, w, h)))
-    x0 = x + w + 16
-    for i in range(COLOUR_SET_CARDS):
-        k = f"{kh}/{prefix}{i}"
-        tx = x0 + i * 224
-        t = hero.child(N(k, f"{prefix}{i}", TL(tx, rail_y, 204, 84)))
-        t.add("cg", 225, canvas_group(True))
-        tile_nodes(t, k, 10)
-        for d in range(4):
-            swatch(t, f"{k}/Swatch{d}", TL(20 + d * 44, 24, 36, 32))
-        label(hero.child(N(f"{k}Name", f"{prefix}{i}Name", TL(tx, rail_y + 96, 170, 18))), "", "Label", "TextLight")
-        tick_node(hero, f"{k}Tick", TL(tx + 184, rail_y + 96, 18, 18))
-        t.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"), 10))
-        t.add("audio", 114, A.menu_audio(11))
-    hero.children.append(small(next_key, names[1], "Default", ">", TL(x0 + COLOUR_SET_CARDS * 224, rail_y + 42 - h // 2, w, h)))
-    return x0 + COLOUR_SET_CARDS * 224 + w
+def tile_frame(parent, key, name, r, title, sub):
+    """One of the four tiles: a card over the sea lines with its title and a word on what it shows."""
+    t = parent.child(N(key, name, r))
+    frame(t, f"{key}/Frame", 10, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.94)
+    card_sea(t, f"{key}/Sea")
+    label(t.child(N(f"{key}/Title", "Title", TL(16, 14, 200, 18))), title, "Label", "TextLight")
+    label(t.child(N(f"{key}/Sub", "Sub", TR(16, 13, 150, 18))), sub, "BodySmall", "NeutralLightest", align="right")
+    return t
+
+
+def build_tiles(pg):
+    """What the set repaints, each tile painted from the set shown: prisms in three shields, vessels with their prism
+    trails, crystals, menus (ColorSetUITheme)."""
+    k = "ColourSets/Tiles"
+    tiles = pg.child(N(k, "Tiles", TL(TILES_X, TILES_Y, TILES_W, TILES_H)))
+    tw = (TILES_W - 3 * TILE_GAP) // 4
+    x = lambda i: i * (tw + TILE_GAP)
+    # Prisms: a column per domain, its plain, shielded and super-shielded prism stepping down and right.
+    p = tile_frame(tiles, f"{k}/Prisms", "Prisms", TL(x(0), 0, tw, TILES_H), "Prisms", "three shields")
+    for d in range(4):
+        for t in range(TIERS):
+            prism_nodes(p, f"{k}/Prisms/P{d}{t}", TL(34 + d * 66 + t * 12, 44 + t * 44, 20, 44), rot=12)
+    # Vessels and trails: a cell per domain, its hull's icon at the head of a line of prisms.
+    v = tile_frame(tiles, f"{k}/Vessels", "Vessels", TL(x(1), 0, tw, TILES_H), "Vessels and trails", "every team")
+    for d, (hull, guid) in enumerate(VESSEL_ICONS):
+        cx, cy = 14 + (d % 2) * (tw - 28) // 2, 46 + (d // 2) * 68
+        heading = 20                                       # the trail rises 20 degrees to the right
+        for j in range(TRAIL):
+            prism_nodes(v, f"{k}/Vessels/T{d}{j}", TL(cx + j * 16, cy + 34 - j * 6, 9, 20), rot=heading)
+        icon = tint_node(v, f"{k}/Vessels/Hull{d}", f"Hull{hull}", TL(cx + 84, cy - 4, 52, 52),
+                         f"{{fileID: 21300000, guid: {guid}, type: 3}}", rot=heading - NOSE)
+    # Crystals: the set's call to action on the crystal glyph, one large and three small.
+    c_ = tile_frame(tiles, f"{k}/Crystals", "Crystals", TL(x(2), 0, tw, TILES_H), "Crystals", "what you collect")
+    for i, (cx, cy, sz) in enumerate(((tw / 2 - 30, 64, 60), (40, 120, 26), (tw - 70, 52, 30), (tw - 60, 128, 20))):
+        tint_node(c_, f"{k}/Crystals/C{i}", f"Crystal{i}", TL(round(cx), cy, sz, sz), K.chrome_sprite("chrome_crystal"))
+    # Menus: a panel in the set's UI theme with a picked card, a plain card, a call to action and a purchase.
+    m = tile_frame(tiles, f"{k}/Menus", "Menus", TL(x(3), 0, tw, TILES_H), "Menus", "panels, picks, buttons")
+    mw = tw - 48
+    tint_node(m, f"{k}/Menus/Panel", "Panel", TL(24, 46, mw, 124), K.kit_sprite("kit_sliver10_fill"), sliced=True, preserve=False)
+    tint_node(m, f"{k}/Menus/Selection", "Selection", TL(38, 60, mw // 2 - 20, 40), K.kit_sprite("kit_sliver10_line2"), sliced=True, preserve=False)
+    tint_node(m, f"{k}/Menus/Line", "Line", TL(38 + mw // 2 - 8, 60, mw // 2 - 20, 40), K.kit_sprite("kit_sliver10_line1"), sliced=True, preserve=False)
+    tint_node(m, f"{k}/Menus/Cta", "Cta", TL(38, 116, mw // 2 - 20, 38), K.kit_sprite("kit_sliver10_fill"), sliced=True, preserve=False)
+    tint_node(m, f"{k}/Menus/Purchase", "Purchase", TL(38 + mw // 2 - 8, 116, mw // 2 - 20, 38), K.kit_sprite("kit_sliver10_fill"), sliced=True, preserve=False)
+
+
+def build_list(pg):
+    """The docked list: the filters, then a scroll view whose content holds the three headings and the template row."""
+    k = "ColourSets/List"
+    lst = pg.child(N(k, "List", TL(LIST_X, LIST_Y, LIST_W, LIST_H)))
+    frame(lst, f"{k}/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.94)
+    x = 18
+    for key, caption in FILTERS:
+        w = K.label_width(caption.upper(), "Label")
+        text_tab(lst, f"{k}/Filter{key}", f"Filter{key}", caption.upper(), "Label", TL(x, 18, w, 36), selected=key == "All")
+        label(lst.child(N(f"{k}/Filter{key}Count", f"Filter{key}Count", TL(x + w + 6, 27, 24, 18))), "0", "Label", "NeutralLightest")
+        x += w + 6 + 18 + 16
+    div = lst.child(N(f"{k}/Divider", "Divider", TL(0, 62, LIST_W, 1)))
+    div.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
+    sv = lst.child(N(f"{k}/Scroll", "Scroll", TL(0, 63, LIST_W, LIST_H - 70)))
+    sv.add("scroll", 114, A.scroll_rect(f"{k}/Scroll/Viewport/Content", f"{k}/Scroll/Viewport", 30))
+    vp = sv.child(N(f"{k}/Scroll/Viewport", "Viewport", STRETCH))
+    vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)).add("mask", 114, A.rect_mask())
+    content = vp.child(N(f"{k}/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
+    content.add("vlg", 114, K.hv_layout(True, (12, 12, 8, 20), 6, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    ck = f"{k}/Scroll/Viewport/Content"
+    for kk, words, token, icon in KINDS:
+        h = content.child(N(f"{ck}/Heading{kk}", f"Heading{kk}", R((0, 1), None, (0, 0), (ROW_W, 40), (0, 1))))
+        h.add("le", 114, le(ph=40))
+        x = 4
+        if icon:
+            ic = h.child(N(f"{ck}/Heading{kk}/Icon", "Icon", TL(x, 15, 20 if icon == "chrome_eye" else 16, 15)))
+            ic.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(token), K.chrome_sprite(icon), preserve=True)) \
+                .add("th", 114, H.themed(token))
+            x += 28
+        w = K.label_width(words.upper(), "Label")
+        label(h.child(N(f"{ck}/Heading{kk}/Word", "Word", TL(x, 13, w + 4, 18))), words, "Label", token)
+        label(h.child(N(f"{ck}/Heading{kk}/Count", "Count", TL(x + w + 14, 13, 40, 18))), "0", "Label", "NeutralLightest")
+    build_row(content, f"{ck}/Row")
+
+
+def build_row(content, k):
+    """The template row, inactive: ProfileColorSetsPanel clones it once per set. A KitTile card over the sea lines."""
+    row = content.child(N(k, "RowTemplate", R((0, 1), None, (0, 0), (ROW_W, ROW_H), (0, 1)), active=False))
+    row.add("le", 114, le(ph=ROW_H))
+    tile_nodes(row, k, 10)
+    card_sea(row, f"{k}/Sea", 5)
+    th = row.child(N(f"{k}/Thumb", "Thumb", TL(12, 10, 112, 64)))
+    th.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.85))).add("th", 114, H.themed("SurfaceBlack", 0.85))
+    for d in range(4):
+        prism_nodes(th, f"{k}/Thumb/P{d}", TL(8 + d * 25, 6 + (d % 2) * 3, 23, 50), rot=(-8 if d % 2 else 8))
+    label(row.child(N(f"{k}/Name", "Name", TL(140, 14, 250, 28))), "", "H3", "TextLight")
+    tick_node(row, f"{k}/Tick", TL(396, 20, 18, 18))
+    for d in range(4):
+        tint_node(row, f"{k}/SwatchRim{d}", f"SwatchRim{d}", TL(140 + d * 30, 52, 11, 11), None, preserve=False)
+        tint_node(row, f"{k}/SwatchFace{d}", f"SwatchFace{d}", TL(151 + d * 30, 52, 11, 11), None, preserve=False)
+    eye = row.child(N(f"{k}/ColorBlind", "ColorBlind", TL(ROW_W - 40, 34, 22, 16), active=False))
+    eye.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_eye"), preserve=True)) \
+        .add("th", 114, H.themed("TextLight"))
+    label(row.child(N(f"{k}/Owned", "Owned", TR(16, 33, 100, 18), active=False)), "Owned", "Label", "Purchase", align="right")
+    price = row.child(N(f"{k}/Price", "Price", TR(16, 30, 110, 24), active=False))
+    pic = price.child(N(f"{k}/Price/Icon", "Icon", TL(0, 5, 15, 14)))
+    pic.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
+        .add("th", 114, H.themed("Purchase"))
+    label(price.child(N(f"{k}/Price/Amount", "Amount", TL(22, 0, 88, 24))), "0", "Data", "Purchase", align="right")
+    row.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"), 10))
+    row.add("audio", 114, A.menu_audio(11))
+    row.add("scroll", 114, lambda ctx, go: mono(go, SCROLL_INTO, "  target: {fileID: 0}\n  margin: 12\n"))
+    row.add("row", 114, lambda ctx, go: mono(go, ROW_SCRIPT, row_body(ctx, k)))
+
+
+def row_body(ctx, k):
+    seq = lambda name, ids: f"  {name}:\n" + "".join(f"  - {ref(x)}\n" for x in ids)
+    parts = lambda part: [ctx.c(f"{k}/Thumb/P{d}/{part}", "img") for d in range(4)]
+    return (f"  tile: {ref(ctx.c(k, 'tile'))}\n  nameText: {ref(ctx.c(f'{k}/Name', 'tmp'))}\n"
+            f"  equippedMark: {ref(ctx.go(f'{k}/Tick'))}\n"
+            + seq("prismFaces", parts("Face")) + seq("prismRims", parts("Rim")) + seq("prismLits", parts("Lit"))
+            + seq("swatchRims", [ctx.c(f"{k}/SwatchRim{d}", "img") for d in range(4)])
+            + seq("swatchFaces", [ctx.c(f"{k}/SwatchFace{d}", "img") for d in range(4)])
+            + f"  colorBlindMark: {ref(ctx.go(f'{k}/ColorBlind'))}\n  ownedMark: {ref(ctx.go(f'{k}/Owned'))}\n"
+            f"  priceMark: {ref(ctx.go(f'{k}/Price'))}\n  priceText: {ref(ctx.c(f'{k}/Price/Amount', 'tmp'))}\n"
+            "  priceTemplate: '{price}'\n")
 
 
 def colour_sets_body(ctx):
-    k0, kh = "ColourSets", "ColourSets/Hero"
-    seq = lambda name, ids, ind="  ": f"{ind}{name}:\n" + "".join(f"{ind}- {ref(x)}\n" for x in ids)
-    def thumbs(prefix):
-        return "".join(
-            f"  - group: {ref(ctx.c(f'{kh}/{prefix}{i}', 'cg'))}\n"
-            f"    tile: {ref(ctx.c(f'{kh}/{prefix}{i}', 'tile'))}\n"
-            f"    nameText: {ref(ctx.c(f'{kh}/{prefix}{i}Name', 'tmp'))}\n"
-            f"    equippedMark: {ref(ctx.go(f'{kh}/{prefix}{i}Tick'))}\n"
-            + seq("faces", [ctx.c(f"{kh}/{prefix}{i}/Swatch{d}/Face", "img") for d in range(4)], "    ")
-            + seq("rims", [ctx.c(f"{kh}/{prefix}{i}/Swatch{d}/Rim", "img") for d in range(4)], "    ")
-            for i in range(COLOUR_SET_CARDS))
-    words = "".join(f"  {k}: {v}\n" for k, v in COLOUR_WORDS)
+    k0, k, kt, kl = "ColourSets", "ColourSets/Shown", "ColourSets/Tiles", "ColourSets/List"
+    ck = f"{kl}/Scroll/Viewport/Content"
+    seq = lambda name, ids: f"  {name}:\n" + "".join(f"  - {ref(x)}\n" for x in ids)
+    prism_parts = lambda part: [ctx.c(f"{kt}/Prisms/P{d}{t}/{part}", "img") for d in range(4) for t in range(TIERS)]
+    trail_parts = lambda part: [ctx.c(f"{kt}/Vessels/T{d}{j}/{part}", "img") for d in range(4) for j in range(TRAIL)]
+    words = "".join(f"  {name}: {v}\n" for name, v in COLOUR_WORDS)
     return (f"  recordTab: {ref(ctx.c('Tabs/RecordTab', 'tab'))}\n"
             f"  colourSetsTab: {ref(ctx.c('Tabs/ColourSetsTab', 'tab'))}\n"
             f"  record: {ref(ctx.c('Record', 'record'))}\n"
@@ -569,21 +695,38 @@ def colour_sets_body(ctx):
             + f"  veil: {ref(ctx.c('Veil', 'img'))}\n  veilWhileShowing: 0.55\n"
             + seq("hideWhileShowing", [ctx.c("VeilSea", "img")])
             + f"  catalog: {asset_ref(COLOUR_CATALOG)}\n"
-            "  thumbs:\n" + thumbs("Set")
-            + f"  previousButton: {ref(ctx.iref('ColourPrev', 'root#button'))}\n"
-            f"  nextButton: {ref(ctx.iref('ColourNext', 'root#button'))}\n"
-            "  visionThumbs:\n" + thumbs("Vision")
-            + f"  visionPreviousButton: {ref(ctx.iref('VisionPrev', 'root#button'))}\n"
-            f"  visionNextButton: {ref(ctx.iref('VisionNext', 'root#button'))}\n"
-            f"  nameText: {ref(ctx.c(f'{kh}/Name', 'tmp'))}\n"
-            f"  lineText: {ref(ctx.c(f'{kh}/Line', 'tmp'))}\n"
-            f"  positionText: {ref(ctx.c(f'{kh}/Position', 'tmp'))}\n"
-            f"  wearingText: {ref(ctx.c(f'{kh}/Wearing', 'tmp'))}\n"
-            + seq("pairRims", [ctx.c(f"{kh}/Pair{d}/Rim", "img") for d in range(4)])
-            + seq("pairFaces", [ctx.c(f"{kh}/Pair{d}/Face", "img") for d in range(4)])
-            + seq("pairTexts", [ctx.c(f"{kh}/Pair{d}/Words", "tmp") for d in range(4)])
+            f"  theme: {K.ref(11400000, K.THEME, 2)}\n"
+            f"  scroll: {ref(ctx.c(f'{kl}/Scroll', 'scroll'))}\n"
+            f"  content: {ref(ctx.rt(ck))}\n"
+            f"  rowTemplate: {ref(ctx.c(f'{ck}/Row', 'row'))}\n"
+            + seq("headings", [ctx.go(f"{ck}/Heading{kk}") for kk, *_ in KINDS])
+            + seq("headingCounts", [ctx.c(f"{ck}/Heading{kk}/Count", "tmp") for kk, *_ in KINDS])
+            + f"  allFilter: {ref(ctx.c(f'{kl}/FilterAll', 'tab'))}\n"
+            f"  colorBlindFilter: {ref(ctx.c(f'{kl}/FilterColorBlind', 'tab'))}\n"
+            f"  premiumFilter: {ref(ctx.c(f'{kl}/FilterPremium', 'tab'))}\n"
+            + seq("filterCounts", [ctx.c(f"{kl}/Filter{key}Count", "tmp") for key, _ in FILTERS])
+            + f"  nameText: {ref(ctx.c(f'{k}/Name', 'tmp'))}\n"
+            f"  lineText: {ref(ctx.c(f'{k}/Line', 'tmp'))}\n"
+            f"  wearingText: {ref(ctx.c(f'{k}/Wearing', 'tmp'))}\n"
+            + seq("kindLabels", [ctx.go(f"{k}/Kind{kk}") for kk, *_ in KINDS])
+            + seq("pairRims", [ctx.c(f"{k}/Pair{d}/Rim", "img") for d in range(4)])
+            + seq("pairFaces", [ctx.c(f"{k}/Pair{d}/Face", "img") for d in range(4)])
+            + seq("pairTexts", [ctx.c(f"{k}/Pair{d}/Words", "tmp") for d in range(4)])
             + f"  applyButton: {ref(ctx.iref('ApplyColourSet', 'root#button'))}\n"
-            f"  equippedMark: {ref(ctx.go(f'{kh}/Equipped'))}\n" + words)
+            f"  unlockButton: {ref(ctx.iref('UnlockColourSet', 'root#button'))}\n"
+            f"  unlockCaption: {ref(ctx.iref('UnlockColourSet', 'Label#tmp'))}\n"
+            f"  equippedMark: {ref(ctx.go(f'{k}/Equipped'))}\n"
+            f"  shortMark: {ref(ctx.go(f'{k}/Short'))}\n"
+            + seq("prismFaces", prism_parts("Face")) + seq("prismRims", prism_parts("Rim")) + seq("prismLits", prism_parts("Lit"))
+            + seq("vesselIcons", [ctx.c(f"{kt}/Vessels/Hull{d}", "img") for d in range(4)])
+            + seq("trailFaces", trail_parts("Face")) + seq("trailRims", trail_parts("Rim"))
+            + f"  trailLength: {TRAIL}\n"
+            + seq("crystals", [ctx.c(f"{kt}/Crystals/C{i}", "img") for i in range(4)])
+            + f"  menuPanel: {ref(ctx.c(f'{kt}/Menus/Panel', 'img'))}\n"
+            f"  menuLine: {ref(ctx.c(f'{kt}/Menus/Line', 'img'))}\n"
+            f"  menuSelection: {ref(ctx.c(f'{kt}/Menus/Selection', 'img'))}\n"
+            f"  menuCta: {ref(ctx.c(f'{kt}/Menus/Cta', 'img'))}\n"
+            f"  menuPurchase: {ref(ctx.c(f'{kt}/Menus/Purchase', 'img'))}\n" + words)
 
 
 # --------------------------------------------------------------------------------------------
@@ -1281,6 +1424,37 @@ def validate(files):
     for gone in ("m_Name: Episodes\n", "m_Name: Quests\n", "m_Name: Expand\n"):
         assert gone not in view, f"ProfileView still has {gone.split(': ')[1].strip()} (Rev 13)"
     validate_rev10(files, sc)
+    validate_colour_sets(files)
+
+
+def validate_colour_sets(files):
+    """Rev 112 D (section 187): the Colour sets page is wired whole, its list grows from one inactive template row, every
+    card (the template row and the four tiles) carries the sea lines, and no heading or filter says a bare "Free"."""
+    view = files[prefab_path("ProfileView")]
+    V = K.FileIds("ProfileView")
+    _, body = A.doc_of(view, V("ColourSets#colours"))
+    assert body and S["colours"] in body, "ProfileView: no ProfileColorSetsPanel on the Colour sets page"
+    for m in re.finditer(r"^  (?!m_)(\w+): \{fileID: 0\}", body, re.M):
+        raise AssertionError(f"ProfileColorSetsPanel.{m.group(1)} is not wired")
+    for name, n in (("headings", 3), ("headingCounts", 3), ("filterCounts", 3), ("kindLabels", 3), ("pairRims", 4),
+                    ("prismFaces", 4 * TIERS), ("prismRims", 4 * TIERS), ("prismLits", 4 * TIERS), ("vesselIcons", 4),
+                    ("trailFaces", 4 * TRAIL), ("trailRims", 4 * TRAIL), ("crystals", 4)):
+        m = re.search(rf"^  {name}:\n((?:  - .*\n)*)", body, re.M)
+        got = re.findall(r"\{fileID: (-?\d+)\}", m.group(1)) if m else []
+        assert len(got) == n and "0" not in got, f"ProfileColorSetsPanel.{name} needs {n} references (has {len(got)})"
+    row_key = "ColourSets/List/Scroll/Viewport/Content/Row"
+    _, row = A.doc_of(view, V(f"{row_key}#row"))
+    assert row and ROW_SCRIPT in row, "the template row carries no ColorSetRowView"
+    for m in re.finditer(r"^  (?!m_)(\w+): \{fileID: 0\}", row, re.M):
+        raise AssertionError(f"ColorSetRowView.{m.group(1)} is not wired")
+    m = re.search(r"m_Name: RowTemplate\n(?:.*\n)*?  m_IsActive: (\d)", view)
+    assert m and m.group(1) == "0", "the template row ships active (the panel clones it; the template itself stays hidden)"
+    for key in (f"{row_key}/Sea", "ColourSets/Tiles/Prisms/Sea", "ColourSets/Tiles/Vessels/Sea",
+                "ColourSets/Tiles/Crystals/Sea", "ColourSets/Tiles/Menus/Sea"):
+        _, sea = A.doc_of(view, V(f"{key}#img"))
+        assert sea and M.SEA_PANEL_MAT in sea, f"{key}: the card has no sea lines (Sea_Panel.mat; Shombith on Rev 112 D)"
+    for words in re.findall(r"^  m_text: (.*)$", view, re.M):
+        assert words.strip().strip("'").upper() != "FREE", "a heading or filter says a bare FREE (Rev 112 D: Color Blind supported (Free))"
 
 
 def validate_rev10(files, sc):
@@ -1394,6 +1568,16 @@ def self_test(files):
             f[prefab_path("NowPlayingCard")].replace("  restingOn:\n  - 2\n", "  restingOn:\n  - 5\n"))),
         ("a caption that breaks the YAML", lambda f: f.__setitem__(prefab_path("ProfileView"),
             f[prefab_path("ProfileView")].replace("      value: SHUFFLE\n", "      value: SHUFFLE: ON\n", 1))),
+        ("the colour list's template row unwired", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            re.sub(r"(  priceText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("ProfileView")], count=1))),
+        ("a colour tile without its sea lines", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            f[prefab_path("ProfileView")].replace(M.SEA_PANEL_MAT, M.SEA_WINDOW_MAT, 1))),
+        ("the colour panel missing a trail prism", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            re.sub(r"(  trailRims:\n)  - \{fileID: -?\d+\}\n", r"\1", f[prefab_path("ProfileView")], count=1))),
+        ("a heading back to a bare Free", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            f[prefab_path("ProfileView")].replace("  m_text: Color Blind supported (Free)\n", "  m_text: Free\n", 1))),
+        ("the template row shipped active", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            re.sub(r"(m_Name: RowTemplate\n(?:.*\n)*?  m_IsActive: )0", r"\g<1>1", f[prefab_path("ProfileView")], count=1))),
         ("a dangling profile reference", lambda f: f.__setitem__(SCENE, f[SCENE].replace("  profileIconImage: {fileID: 0}",
                                                                                           "  profileIconImage: {fileID: 5397632936483963836}", 1))),
     ]

@@ -8109,3 +8109,26 @@ Blind supported (Free) that's all." Then: "Make this into unity". R112D was chan
 version `1794681928-7fe0`; A, B and C are as first published): the menu's sea lines behind every list card and every
 tile; the colour-vision group, its filter and the stage's type line read "Color Blind supported (Free)" (its filter
 shows only those six); Nocturne and Photic sit under "Yours from the start", shown under All; no row says a bare "Free".
+
+## 188. Built: Rev 112 D, the Colour sets list over the real cell (2026-11-14, NOT RUN IN EDITOR)
+
+Shombith: "Make this into unity" (section 187). It replaces section 126's Showroom rails; the tabs, the cell preview,
+APPLY's veil and the Settings breadcrumb stay.
+- **One list that grows with the catalog.** `ProfileColorSetsPanel` clones the inactive template row
+  (`ColorSetRowView`) once per catalog entry under its group's heading: Yours from the start, Color Blind supported
+  (Free), Premium (`ColorSetCatalogSO.KindOf`). Filters All / Color Blind supported (Free) / Premium with counts. A new
+  set in the catalog needs no prefab change. The pad moving onto a row previews it and scrolls it into view
+  (`KitScrollIntoView`).
+- **Premium is real.** The catalog entry has a crystal `price` (the board's sample prices, seeded by
+  `author_colour_set_catalog.py`, edited in the inspector after). UNLOCK spends them through
+  `PlayerDataService.TryUnlockColorSet` and keeps the set as the reward `colorset:<id>`; `ColorSetCatalogSO.IsPickable`
+  asks it. Every set is still `unlocked` (2026-11-05), so today every Premium set reads Owned.
+- **What it repaints**, four tiles painted from the set shown: prisms in three shields; the Squirrel, Sparrow, Dolphin and
+  Manta icons (`SO_Class_*.IconActive`) tinted with the domain's vessel colour, each at the head of five prisms; crystals
+  in the set's call to action; a menu mock in the set's UI theme (`ColorSetUITheme.Build`).
+- **Sea lines in every card** (Sea_Panel.mat on each row and tile), and no bare "Free" anywhere (the generator's gate).
+- New prism and eye glyphs: `Tools/Build/author_colour_set_glyphs.py` (white, tinted at run time).
+- Gates: `author_menu_profile.py` validates the page whole, with five new negative controls. Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not seen in Unity: no editor in this session.
+- Open: a set bought before the profile loads could be dropped as the saved pick at boot (`ThemeManager` reads the pick in
+  `Awake`); harmless while every set is unlocked.

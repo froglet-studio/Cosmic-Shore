@@ -23466,3 +23466,23 @@ Legendary pace (8 seeds) moved by under 5 s a race (I1 62 -> 58, I2 101 -> 102, 
 2. Take a key facing the ring: the blast opens the door behind it.
 3. I4: both doors sit behind the ring (8 u and 24 u). The gauntlet tunnels still hide the ring on about half the legs.
 4. AI seats still blast most blocked gates and do not stall on a door.
+
+## 🔴 Profile Colour sets: Rev 112 D, one scrolling list over the real cell (2026-11-14, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/clever-clarke-7uxwca`; `Docs/MENU_REDESIGN_B.md` sections 187-188. Compiled with `unity_refcompile`;
+`author_menu_profile.py` `--check` / `--self-test`, `author_colour_set_catalog.py`, `author_colour_set_glyphs.py`,
+`colour_trace.py` pass. Never opened in the Unity editor: no editor in the cloud session.
+
+- [ ] Menu_Main > Profile > RB (Colour sets): the cell shows through; the list is docked right (520 wide) with ALL 14,
+      COLOR BLIND SUPPORTED (FREE) 6, PREMIUM 6 on one line; nothing overlaps the nav or the tabs.
+- [ ] The list shows Yours from the start (Nocturne, Photic), Color Blind supported (Free) with the eye (six), Premium
+      (six, each OWNED in gold). Each row's four prisms are that set's colours; the sea lines run behind every row.
+- [ ] Scroll with the mouse wheel and with the pad: moving onto a row previews it on the cell and the row comes into view.
+- [ ] Each filter shows only its group (Yours from the start shows under All only); counts are right.
+- [ ] The left side: kind line, name, line and four pigments change with the row; APPLY repaints and the veil rises; Equipped
+      on the worn set.
+- [ ] The four tiles along the foot repaint with each set: prisms in three shields, the Squirrel / Sparrow / Dolphin / Manta
+      icons tinted their domain with a trail of prisms behind each, the crystals, the menus mock. Sea lines in each tile.
+- [ ] Unlock (set a Premium set's `unlocked` off in ColorSetCatalog.asset): the row shows the crystal price, the gold
+      UNLOCK 1,200 button; short of crystals shows "Not enough crystals"; with enough, the crystals go and APPLY appears.
+- [ ] Settings > General > Colour sets opens the Profile on the Color Blind supported filter, first set shown.
