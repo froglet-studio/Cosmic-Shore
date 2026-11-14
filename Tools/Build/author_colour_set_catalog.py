@@ -62,6 +62,13 @@ SETS = (
      "Made for low vision and cataract: bright rims over dark faces, the domains apart in brightness first.", 5),
 )
 VISION = {s[0]: s[4] for s in SETS}
+# Rev 112 D (Shombith picked it 2026-11-14, Docs/MENU_REDESIGN_B.md section 187): the crystals a Premium set costs in
+# the Profile's list. Nocturne and Photic are yours from the start (0); a set made for a vision is Color Blind supported
+# and always free (0, and the game ignores a price on one). The numbers are the board's sample prices: an economy
+# decision, seeded once and then edited in the inspector like the words. Every set is still `unlocked` (2026-11-05),
+# so a Premium set shows Owned until someone turns `unlocked` off.
+PRICE = {"dartfrog": 1200, "nacre": 800, "blueringedoctopus": 1200, "neonnoir": 1500, "ukiyoe": 1500, "dusk": 800}
+
 JSON_KEY = {"dartfrog": "dart_frog", "lowvision": "low_vision", "blueringedoctopus": "blue_ringed_octopus",
             "neonnoir": "neon_noir", "ukiyoe": "ukiyo_e"}   # catalog id -> colour_sets.json key, where they differ
 
@@ -94,7 +101,8 @@ def pigment_lines(sid):
 
 def entry_text(sid, guid, name, line):
     return (f"  - id: {sid}\n    colorSet: {ref(guid)}\n    displayName: {yaml_str(name)}\n"
-            f"    line: {yaml_str(line)}\n    unlocked: 1\n" + pigment_lines(sid) + f"    vision: {VISION[sid]}\n")
+            f"    line: {yaml_str(line)}\n    unlocked: 1\n" + pigment_lines(sid) + f"    vision: {VISION[sid]}\n"
+            f"    price: {PRICE.get(sid, 0)}\n")
 
 
 def add_pigments(text):
@@ -108,6 +116,8 @@ def add_pigments(text):
             b = re.sub(r"(    unlocked: \d+\n)", lambda x: x.group(1) + pigment_lines(m.group(1)), b, count=1)
         if m and m.group(1) in VISION and "    vision:" not in b:
             b = b.rstrip("\n") + "\n" + f"    vision: {VISION[m.group(1)]}\n"
+        if m and m.group(1) in VISION and "    price:" not in b:   # 2026-11-14: the price after the vision
+            b = re.sub(r"(    vision: \d+\n)", lambda x: x.group(1) + f"    price: {PRICE.get(m.group(1), 0)}\n", b, count=1)
         out.append(b)
     return "".join(out)
 
@@ -198,6 +208,11 @@ def validate(catalog, container, palette_guids, script_guid):
         v = re.search(r"^    vision: (\d+)$", block, re.M)
         if not v or int(v.group(1)) != vision:
             errors.append(f"{CATALOG}: '{sid}' must be made for vision {vision} (ColourVision)")
+        pr = re.search(r"^    price: (\d+)$", block, re.M)
+        if not pr:
+            errors.append(f"{CATALOG}: '{sid}' has no price (0 for a set that is yours from the start)")
+        elif vision and int(pr.group(1)):
+            errors.append(f"{CATALOG}: '{sid}' is made for a vision, so it is Color Blind supported and free: price 0")
     visions = [int(v) for v in re.findall(r"^    vision: (\d+)$", catalog, re.M) if int(v)]
     for v in sorted(set(visions)):
         if visions.count(v) > 1:
@@ -230,8 +245,10 @@ def self_test():
         "a set missing a pigment": (good_cat.replace("    - Mint over Bronze\n", "", 1), good_con),
         "a vision set made for the wrong vision": (good_cat.replace("    vision: 1\n", "    vision: 2\n", 1), good_con),
         "two sets made for one vision": (good_cat.replace("    vision: 3\n", "    vision: 2\n", 1), good_con),
+        "a colour-blind set with a price": (good_cat.replace("    vision: 1\n    price: 0\n", "    vision: 1\n    price: 500\n", 1), good_con),
+        "a set with no price": (good_cat.replace("    price: 1200\n", "", 1), good_con),
     }
-    old_shape = re.sub(r"^    vision: \d+\n", "", good_cat.split("  - id: contrast", 1)[0], flags=re.M)
+    old_shape = re.sub(r"^    (vision|price): \d+\n", "", good_cat.split("  - id: contrast", 1)[0], flags=re.M)
     old_shape = re.sub(r"^  - id: nacre\n(?:    .*\n)+", "", old_shape, flags=re.M)   # a set added mid-catalog
     assert add_entries(add_pigments(old_shape), guids) == good_cat, "the migration does not reach the authored catalog"
     for name, (cat, con) in planted.items():

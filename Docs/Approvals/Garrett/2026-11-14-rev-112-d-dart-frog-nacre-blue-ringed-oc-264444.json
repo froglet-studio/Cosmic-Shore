@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-14-rev-112-d-dart-frog-nacre-blue-ringed-oc-264444",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-14T19:04:02+00:00",
+  "area": "colour sets catalog",
+  "summary": "Rev 112 D: Dart Frog, Nacre, Blue-ringed Octopus, Neon Noir, Ukiyo-e and Dusk are now Premium with sample crystal prices (800-1500) in ColorSetCatalog.asset; all stay unlocked, so they read Owned. Prices and which sets are Premium are open.",
+  "branch": "claude/clever-clarke-7uxwca",
+  "commit": "c114292ec"
+}
