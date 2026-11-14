@@ -23053,3 +23053,19 @@ against Unity reference assemblies (`unity_refcompile`), not opened in the edito
    Koi, Brass Lantern Company), and no "Pictured:" line shows. The crew list and a squad that seated them still work.
 3. **The story** reads as three short paragraphs with a blank line between, inside the panel, on every pilot.
 4. **A voyage's jobs** for a starter come from the painted faction (VOLT: a Merchant's courier and convoy work).
+
+## 🔴 Both thumbs off pulls both triggers and steers by gyro (2026-11-14, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/project-thread-wlkcla`; `Docs/claude/ARCHITECTURE_CORE.md` § Input Strategy (the touch profile line),
+`Tools/Build/author_touch_profiles.py` (`BOTH_OFF`). Compiled against Unity reference assemblies (`unity_refcompile`,
+player and editor), not opened in the editor; `TouchControlsTests` not run.
+
+1. **Run the EditMode tests** `TouchControlsTests` (three new: the per-hull both-thumbs-off judgement and the two
+   `TriggerEdges` cases) and `InputInversionTests`.
+2. **A pad and a keyboard still fly as before**: LT, RT and both together on the Squirrel, the Rhino and the Sparrow
+   (the trigger rule moved into `TriggerEdges` unchanged).
+3. **On a phone, lift both thumbs** on the Squirrel, Rhino, Tiger Moth, Orca, Wrasse, Goby and Meerkat: both triggers'
+   abilities fire as on a pad, and tilting steers (pitch turned over, as the Manta's soar). Put a thumb back: they let go.
+4. **Unchanged on a phone**: the Manta's soar, the Thresher's launch, the Swordfish's raised sword, the Dolphin, the
+   Honeyguide's both-off cancel, and every totem-button hull (nothing fires when the phone is set down).
+5. **The one-thumb gyro roll** (now `gyroRollOnOneThumb`) still rolls the Dolphin and the Squirrel one to one.
