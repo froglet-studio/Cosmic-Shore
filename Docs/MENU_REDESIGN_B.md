@@ -8132,3 +8132,18 @@ APPLY's veil and the Settings breadcrumb stay.
   `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not seen in Unity: no editor in this session.
 - Open: a set bought before the profile loads could be dropped as the saved pick at boot (`ThemeManager` reads the pick in
   `Awake`); harmless while every set is unlocked.
+
+## 189. Fix: Rev 112 D in the editor - the world behind the page, real vessel icons, the Codex's crystals (2026-11-14, NOT RUN IN EDITOR)
+
+Shombith, on section 188 in Unity: "Vessel Icons dont show up", "Where is the whole background preview image?", "Show
+the actual 2D omnicrystal and elemental crystals from the ecology tab".
+- **Vessel icons.** The generator passed a whole sprite reference where `sprite_ref` takes a bare guid, so the four
+  `IconActive` sprites never resolved and drew as tinted squares. Fixed; `validate_colour_sets` now asserts every icon
+  and crystal sprite resolves, with a negative control.
+- **The world behind the page.** The real cell under a 55 % veil and a solid band read as an empty dark screen. The
+  board's world is now drawn in the UI behind the page (`ColourSets/World`, `world_layout()`, the board's seed): the
+  sea at 80 %, each domain's glow (`kit_ring_glow`), 46 prisms in depth, and the Squirrel, Sparrow and Dolphin flying
+  their prism trails, every colour painted from the browsed set (`ProfileColorSetsPanel.PaintWorld`). The real cell,
+  which wears the set too, still moves faintly behind it. About 400 UI images, drawn only while the page shows.
+- **Crystals.** The tile shows the Codex's own renders (`Assets/_Graphics/Codex/ethirion_*.png`, its Elements page): the
+  Omni crystal among Charge, Mass, Space and Time, as they are drawn (not tinted).
