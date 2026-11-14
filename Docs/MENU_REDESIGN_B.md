@@ -8147,3 +8147,18 @@ the actual 2D omnicrystal and elemental crystals from the ecology tab".
   which wears the set too, still moves faintly behind it. About 400 UI images, drawn only while the page shows.
 - **Crystals.** The tile shows the Codex's own renders (`Assets/_Graphics/Codex/ethirion_*.png`, its Elements page): the
   Omni crystal among Charge, Mass, Space and Time, as they are drawn (not tinted).
+
+## 190. Fix: Rev 112 D's tiles - hulls and prisms that read, on their trails (2026-11-14, NOT RUN IN EDITOR)
+
+Shombith, on section 189 in Unity: "Because of the card backgrounds the vessels and prisms do not show up and also pretty
+sure the vessel and prisms are not aligned".
+- **The turn was about the wrong point.** Every rotated prism and hull was laid out top-left-pivoted (`TL`), and a
+  RectTransform turns about its pivot, so each swung off its place around its corner: the trails missed their hulls,
+  the world's prisms and the row thumbnails drifted too. Rotated nodes now pivot at their centre (`centred`), and
+  `validate_colour_sets` fails on any turned node that does not (a new negative control).
+- **Each hull on its own line.** The icons are not all drawn at one angle: each one's nose and centre are measured from
+  its alpha (`ICON_POSE`: Squirrel 28, Sparrow 15, Dolphin 25 degrees; the Manta by eye, its blobs give no axis), so a
+  hull is turned onto its trail's heading and placed by its centre just past the newest prism.
+- **They read now.** The hulls draw with `Hull_Lit.mat` (the arcade cards' lift and white rim for the near-black renders),
+  times the domain's vessel colour, in the tile and the world; the tiles' sea lines sit at 35 % so the content leads.
+  The tile's trail is four prisms, larger (11 x 25), the hulls 60.

@@ -23489,3 +23489,5 @@ Branch `claude/clever-clarke-7uxwca`; `Docs/MENU_REDESIGN_B.md` sections 187-188
 - [ ] (Section 189) Behind the page, the set's world: prisms in depth, three vessels on prism trails, each domain's glow;
       it repaints as you browse. The Vessels tile shows the real hull icons (no squares); the Crystals tile shows the
       Codex's Omni and four elemental crystals.
+- [ ] (Section 190) In the Vessels tile each hull reads (lit, in its team colour) and sits at the head of its own prism
+      trail; the tiles' sea lines sit back behind the prisms; the world's prisms and hulls are where the board puts them.
