@@ -559,7 +559,16 @@ a play.
 
 **Verify in editor:**
 1. The project compiles; EditMode `VesselStatsSyncTests` (7) passes. **PASSED 2026-11-15** (Unity 6000.3.17f1 batch
-   mode on `Ys-bleeding-edge` `8a306db1b1`: 0 compile errors, 7/7). Steps 2-6 still need a play.
+   mode on `Ys-bleeding-edge` `8a306db1b1`: 0 compile errors, 7/7).
+
+**Run of 2026-11-15** (`Ys-bleeding-edge` `4b414df525`, the editor + MPPM Player 2, driven by a session through the
+editor's command server; the AI flew the hulls, nobody was at the controls):
+- Step 2 **PASSED**: solo Switchback on a Dolphin; the scoreboard showed Longest Drift 2.65s, Max Boost 0.84s, Prisms
+  Damaged 6, and the console had no "[TelemetryBootstrap]" warning.
+- Step 3 **PARTLY**: in a two-player Switchback each machine showed the same values for both pilots all through the
+  race (host 29 / guest 185, then 425 / 210 on both). Not covered: different hulls (both spawned on Dolphins) and the
+  final scoreboard's rows (the guest's hull never finished the course, so the race did not end by itself).
+- Steps 4-6 **NOT RUN** (Play Again reset, the per-ram count judged by a person, a Sparrow or Squirrel match).
 2. Solo, fly a Dolphin (or Manta, Rhino, Serpent, Swordfish) in any arcade mode and ram some prisms. **Pass:** the
    scoreboard's Prisms Damaged is above 0, and Longest Drift / Max Boost show your values. The console no longer
    warns "[TelemetryBootstrap] ... serialized stat SO refs will be null".
@@ -581,8 +590,22 @@ Roslyn and response files (0 errors). Not run: EditMode, a play.
 
 **Verify in editor:**
 1. The project compiles; EditMode `GameDataSOTests` passes, the three `JoinRunningTurn_*` included. **PASSED
-   2026-11-15** (Unity 6000.3.17f1 batch mode on `Ys-bleeding-edge` `8a306db1b1`: 0 compile errors, 41/41). Steps 2-6
-   still need a two-player play.
+   2026-11-15** (Unity 6000.3.17f1 batch mode on `Ys-bleeding-edge` `8a306db1b1`: 0 compile errors, 41/41).
+
+**Run of 2026-11-15** (`Ys-bleeding-edge` `4b414df525`, the editor + MPPM Player 2, Switchback, driven by a session;
+Player 2 was dropped by shutting its Netcode client down mid-race, not by stopping its Play):
+- Steps 2-3 **PASSED** on what a log and a screenshot show: the host logged `clientLeft 1`, `leaverToAI`, then
+  `clientApproved 2 rejoin` and `seatReclaimed`; Player 2 logged `rejoinedRunningTurn 344.8s in`; Player 2 was back
+  in its old seat with the turn running, the vessel HUD up, no intro and no READY, and its stats as they were (Prisms
+  Damaged 210 before and after). Same `netConfig` hash on both. No "Double initialization" (B47) and no
+  `ArgumentNullException` (B46) on either console. **Not checked: input by hand.**
+- The race clock: Player 2 read about 2 s behind the host right after the rejoin and 6 s behind 90 s later, so the gap
+  is the two editors' own `Time.time` drifting apart while unfocused (both logged 3 s stalls), not the hand-off.
+- Step 4 **PASSED**: the host recorded one `readyGate` press for the whole match and no second countdown.
+- Step 5 **NOT RUN**: the race did not end by itself (Player 2's hull never finished the course).
+- Step 6 **OPEN, one thing to look at**: when the turn was ended from the host by raising the turn-end condition by
+  hand, the host went back to READY and Player 2 (the rejoiner) showed no READY button. That end was forced, so it is
+  not proof of a fault; a multi-turn mode needs the check (does a rejoiner get READY for the next turn?).
 2. Two players (main editor + MPPM Player 2, or the editor + a dev build), a party match of any arcade mode, both press
    READY, the race starts. Drop Player 2 mid-race (stop its Play, or kill the build) and wait for "handed to the AI".
 3. Player 2 comes back and presses REJOIN. **Pass:** after the connecting panel, Player 2 is flying its old ship at

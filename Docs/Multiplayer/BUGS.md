@@ -36,7 +36,12 @@ test never hears it. `NetworkMonitor` now counts its Online -> Offline transitio
 reads that. Fixed 2026-11-15; `OfflineSessionTests` 15/15 in Unity 6000.3.17f1 batch mode.
 
 EditMode run of 2026-11-15 (batch mode, `Ys-bleeding-edge`): `VesselStatsSyncTests` 7/7, `GameDataSOTests` 41/41 (the
-three `JoinRunningTurn_*` included). The plays for B21 (scoring) and P-B50 are still owed.
+three `JoinRunningTurn_*` included).
+
+MPPM run of 2026-11-15 (the editor + Player 2, Switchback, `4b414df525`; results in the checklist's "B21 (scoring)" and
+"B50" entries): the solo stat block passed; two-player stats matched on both machines during the race; the drop and
+REJOIN passed (`seatReclaimed`, `rejoinedRunningTurn`, no READY, no B46 or B47 error). Still owed: the final two-player
+scoreboard on different hulls, Play Again, input by hand after a rejoin, and a rejoiner's READY in a multi-turn mode.
 
 ## Not bugs, missing features (tracked in [`TODO.md`](TODO.md))
 

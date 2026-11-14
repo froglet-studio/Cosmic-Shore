@@ -2714,3 +2714,9 @@ itself still shows READY, as before; the countdown's end reaches the rejoiner an
 **Verified.** Assembly-CSharp and Assembly-CSharp-Editor compiled with the editor's Roslyn and today's response files
 (0 errors); `check_console_logging.py` and `check_conditional_compilation.py` pass. Not run: the EditMode tests
 (`GameDataSOTests.JoinRunningTurn_*`, 3 new) and a two-player rejoin: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "B50".
+
+**Run 2026-11-15** (editor + MPPM Player 2, Switchback, `4b414df525`). `GameDataSOTests` 41/41 in the real editor. The
+rejoin held: host `clientLeft` -> `leaverToAI` -> `clientApproved 2 rejoin` -> `seatReclaimed`; Player 2
+`rejoinedRunningTurn 344.8s in`, flying with no intro and no READY, stats intact, one `readyGate` press on the host for
+the whole match. Stays 🟡: input by hand, the match's end and a multi-turn mode (does the rejoiner get READY for the
+next turn?) are not checked; the checklist entry has the detail.
