@@ -43,6 +43,15 @@ been retired with the Classic ladder. Now I1-I3 lay no Blast Run (`ScarabRallyCo
 the rings and nothing else (`AIDetoursForCrystals` false, Yash's rule). I4 keeps the field it had; whether the I4
 rung should keep it is the ladder's question (loop step 2).
 
+**I4 keeps the sight line (2026-11-14, Garrett's I4 playtest).** "It is too hard to find the rings ... the lime green is
+not visible when it is occluded by so many prisms ... respect sight lines from one ring to another." Two things hid the
+next ring: each blocked gate's DOOR (a plug across the port with an 18 u eye, in front of a 22 u ring) and the field's
+18 u bore. Now I4 without the gauntlet hangs no doors (`SwitchbackBlastRun.LaysDoors`; the door's keepout stays, so the
+field still leaves the mouth clear) and each field keeps a sight bore of the bigger mouth + 12 u (34 u at I4,
+`SwitchbackBlastRun.SightBore`). Measured headless (`SwitchbackBlastRunTests.WithoutTheGauntlet_TheNextRingIsInSightFromTheRingYouLeave`,
+40 Rally I4 courses, rays from five points of the ring you leave to eight points of the next rim, movers at four times):
+85,404 of 147,200 sight lines were blocked before, 0 after. The field stays: 3,112 prisms a course on average, against 3,374.
+
 Measured over 400 seeds per level: the walk never fails. Hairpin share is 0 / 50 / 32 / 50%, and the shortest leg
 is 420 / 400 / 420 / 360 u.
 
