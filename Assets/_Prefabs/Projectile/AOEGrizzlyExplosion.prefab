@@ -57,6 +57,7 @@ MonoBehaviour:
   destructive: 1
   devastating: 0
   shielding: 0
+  blastLook: {fileID: 11400000, guid: 5b96c44850d42232950b5a49fda736fc, type: 2}
 --- !u!33 &8683897607158942398
 MeshFilter:
   m_ObjectHideFlags: 0

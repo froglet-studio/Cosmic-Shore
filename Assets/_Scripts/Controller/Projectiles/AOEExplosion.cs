@@ -95,6 +95,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool AffectsPrisms => affectsPrisms;
 
+        [Header("Look")]
+        [Tooltip("The blast's LOOK (BLAST_LOOK.md): a white-hot faceted core, a faceted shock shell, a flash of " +
+                 "light and the casing shards and embers that hang for seconds after the sweep. Empty: the blast " +
+                 "draws only its ripple sphere, as before. Visual only - the sweep, the trigger and the damage " +
+                 "never read it. Drawn for the plain sphere's ExplodeAsync; a subclass with its own ExplodeAsync " +
+                 "calls ReleaseLook itself.")]
+        [SerializeField] protected BlastLookSO blastLook;
+
         [Header("Impact")]
         [Tooltip("Gain on the blast-wave speed handed to the mass this blast destroys. 1 = debris leaves at the wavefront's own speed. NOTE: this dial only reaches the screen with Proportional Debris ON - see below.")]
         [SerializeField] protected float Inertia = 1f;
@@ -205,6 +213,22 @@ namespace CosmicShore.Gameplay
             dark = mat.GetColor(a);
             bright = mat.GetColor(b);
             return true;
+        }
+
+        /// <summary>
+        /// Hands this blast's look (<see cref="blastLook"/>) to <see cref="BlastLookSystem"/> at the
+        /// release - the frame the sweep starts - in the shooter's colour (the rim of the material the
+        /// blast was initialised with, which ThemeManager tints per domain). The look's shock shell draws
+        /// in place of the ripple sphere, so the sphere's photons are held for this life; its sweep,
+        /// trigger and damage run exactly as before. The look outlives the blast: the system owns it.
+        /// </summary>
+        protected void ReleaseLook(Vector3 at)
+        {
+            if (!blastLook) return;
+            var signal = TryGetBlastColours(out _, out var rim) ? rim : Color.white;
+            if (BlastLookSystem.Release(blastLook, at, _colliderRadius * MaxScale, ExplosionDuration, signal)
+                && blastLook.ReplaceRippleSphere)
+                HoldPhotonsForMorph(true);
         }
 
         /// <summary>
@@ -493,6 +517,8 @@ namespace CosmicShore.Gameplay
                     meshRenderer.material = Material;
                     meshRenderer.enabled = true;
                 }
+
+                ReleaseLook(cachedTransform.position);
 
                 float time = 0f;
 
