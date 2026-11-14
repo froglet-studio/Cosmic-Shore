@@ -3477,18 +3477,18 @@
   {
    "id": "P-vessel-18",
    "owner": "Garrett",
-   "date": "2026-10-22",
-   "words": "a hull's tilt may be turned over per axis, flipTiltSteerPitch / flipTiltSteerYaw: the Manta flips pitch only, Garrett 2026-10-22 / 2026-10-25; it is hull data under the one Invert Y rule, not a strategy's sign",
-   "rule": "On a phone each hull has its own touch profile (thumb lifts or totem buttons, tilt, both-thumbs-off controls, extra buttons); a tilt flip is hull data under the one Invert Y rule, and both thumbs off reads as a released pad.",
+   "date": "2026-11-14",
+   "words": "both thumbs off should read as both triggers pulled and switch to gyro controls",
+   "rule": "On a phone each hull has its own touch profile (thumb lifts or totem buttons, tilt, extra buttons); a tilt flip is hull data under the one Invert Y rule, and both thumbs off reads as both triggers pulled and switches to gyro (tilt) controls.",
    "source": {
     "file": "Docs/claude/ARCHITECTURE_CORE.md",
-    "line": 441
+    "line": 444
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
-   "test": "Does the new hull ship a touch profile, and is any axis flip authored as hull data rather than in a strategy?",
-   "status": "drafted"
+   "test": "With no thumb on the glass, do both triggers read fully pulled and does tilt steer? Is any axis flip authored as hull data rather than in a strategy?",
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-19",
