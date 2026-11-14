@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-10-prismrenderservice-stampgrow-now-queues-46d307",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-10T19:05:03+00:00",
+  "area": "prism render service / ECS prism animation",
+  "summary": "PrismRenderService.StampGrow now queues a clear of the settled grow stamp (one shared min-heap drained in the flush host's LateUpdate); before, the entity path never cleared it, so every grown prism paid exp() + 3 per-instance loads per vertex forever. PrismSway skips zero-span prisms. Resting prisms ~415 -> ~270 vertex instructions (offline SPIR-V), bit-identical.",
+  "why": "Unity stand-ins shader cost study",
+  "branch": "claude/standin-prism-rest",
+  "commit": "3e947f108",
+  "paths": [
+    "Assets/_Scripts/Controller/ECS/Rendering/"
+  ]
+}
