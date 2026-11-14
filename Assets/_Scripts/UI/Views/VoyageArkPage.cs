@@ -26,7 +26,11 @@ namespace CosmicShore.UI
     /// </summary>
     public sealed class VoyageArkPage
     {
-        const float FootHeight = 56f, Gap = 24f, HeadHeight = 96f, PresetHeight = 48f;
+        // Frogma Rev 108 Lobby and Squad (on Rev 100 P3A), in their own units: the page is x 40-1880, y 176-934 of the
+        // 1920 x 1080 board.
+        static readonly Vector2 Design = new(1840f, 758f);
+        const float PresetX = 600f, PresetWidth = 250f, PresetHeight = 104f, PresetGap = 16f;
+        const float VoyageX = 1140f, SeatY = 124f, SeatHeight = 540f, SeatWidth = 592f, SeatStep = 625f, FootY = 702f;
         const string LastKitKey = "Voyages.LastKit";
 
         readonly VoyageBoard _board;
@@ -36,11 +40,11 @@ namespace CosmicShore.UI
         readonly HostConnectionDataSO _party;
 
         public RectTransform Root { get; }
+        readonly RectTransform _frame;
+        Vector2 _fitFor = new(-1f, -1f);
         TMP_Text _head, _headLine;
-        RectTransform _presets, _seats;
-        readonly List<Button> _presetButtons = new();
-        readonly List<TMP_Text> _presetNames = new();
-        readonly List<Image> _presetBars = new();
+        RectTransform _presets;
+        readonly List<PresetView> _presetViews = new();
         readonly List<SeatView> _seatViews = new();
         RectTransform _flySquadBox;
         TMP_Text _flySquadText;
@@ -48,14 +52,23 @@ namespace CosmicShore.UI
         VoyageSeatPicker _picker;
 
         // The voyage, top right.
-        TMP_Text _voyageKind, _voyageTitle, _voyageDifficulty, _voyagePay;
+        Image _voyageFace;
+        TMP_Text _voyageKind, _voyageTitle, _voyageDifficulty;
         VoyagePips _voyagePips;
-        RectTransform _voyageFlower;
 
         VoyageBoard.Offer _offer;
         int _difficulty;
         bool _squadView, _editable;
         readonly List<string> _friends = new();
+
+        sealed class PresetView
+        {
+            public RectTransform Root;
+            public VoyageKit.GlassCard Card;
+            public Button Button;
+            public TMP_Text Name, Who;
+            public VoyageSeats.HullView Hull;
+        }
 
         sealed class SeatView
         {
@@ -82,130 +95,104 @@ namespace CosmicShore.UI
             _party = party;
             Root = VoyageKit.Node("YourArk", pages);
             VoyageKit.Stretch(Root);
-
-            var ground = VoyageKit.Node("SeaLines", Root);
-            VoyageKit.Stretch(ground);
-            var lines = ground.gameObject.AddComponent<VoyageSeaLines>();
-            lines.color = VoyageKit.Fade(_kit.Outline, 0.45f);
-            lines.Lines = 9;
-            lines.Speed = 0.008f;
+            _frame = VoyageKit.Node("Frame", Root);
+            VoyageKit.Fit(_frame, Design);
 
             BuildHead();
             BuildVoyage();
-            _presets = VoyageKit.Node("Squads", Root);
-            VoyageKit.Top(_presets, HeadHeight + Gap, PresetHeight);
-            _presets.offsetMax = new Vector2(-480f, _presets.offsetMax.y);
-            VoyageKit.Row(_presets, 12f);
-            _seats = VoyageKit.Node("Seats", Root);
-            VoyageKit.Stretch(_seats);
-            _seats.offsetMin = new Vector2(0f, FootHeight + Gap);
-            _seats.offsetMax = new Vector2(0f, -(HeadHeight + Gap * 2f + PresetHeight));
-            var row = VoyageKit.Row(_seats, Gap, TextAnchor.UpperLeft, expandWidth: true);
-            row.childForceExpandHeight = true;
+            _presets = At("Squads", PresetX, 0f, VoyageX - PresetX - 24f, PresetHeight);
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++) _seatViews.Add(BuildSeat(seat));
             BuildFoot();
             _picker = new VoyageSeatPicker(_board, _kit, _rules, Root);
             _rules.Changed += Refresh;
         }
 
+        RectTransform At(string name, float x, float y, float w, float h, RectTransform parent = null)
+        {
+            var rt = VoyageKit.Node(name, parent ? parent : _frame);
+            VoyageKit.At(rt, x, y, w, h);
+            return rt;
+        }
+
         void BuildHead()
         {
-            var head = VoyageKit.Node("Head", Root);
-            VoyageKit.Top(head, 0f, HeadHeight);
-            head.offsetMax = new Vector2(-480f, head.offsetMax.y);
-            VoyageKit.Column(head, 8f, TextAnchor.MiddleLeft);
-            _head = _kit.Label(head, 16, _kit.Light);
-            _headLine = _kit.Text(head, 18, _kit.Sub, TextAlignmentOptions.Left);
+            // "YOUR LOBBY" (caps 14, Light) over who is in it (16, Sub).
+            var head = At("Head", 0f, 10f, PresetX - 30f, 60f);
+            VoyageKit.Column(head, 8f, TextAnchor.UpperLeft);
+            _head = _kit.Label(head, 14, _kit.Light);
+            _headLine = _kit.Text(head, 16, _kit.Sub, TextAlignmentOptions.Left);
         }
 
         void BuildVoyage()
         {
-            var rt = VoyageKit.Node("Voyage", Root);
-            rt.anchorMin = rt.anchorMax = rt.pivot = Vector2.one;
-            rt.sizeDelta = new Vector2(440f, HeadHeight + 30f);
-            rt.anchoredPosition = Vector2.zero;
-            var glass = _kit.Glass(rt, hit: false);
-            var words = VoyageKit.Node("Words", glass.Content);
-            VoyageKit.Stretch(words);
-            words.offsetMin = new Vector2(20f, 12f);
-            words.offsetMax = new Vector2(-20f, -12f);
-            VoyageKit.Column(words, 6f, TextAnchor.MiddleLeft);
-            _voyageKind = _kit.Label(words, 13, _kit.Sub);
+            // The open voyage: its pilot's face, its name (20), its kind with the difficulty pips and number.
+            var face = At("VoyagePilot", VoyageX, 6f, 60f, 60f);
+            _voyageFace = VoyageKit.CoverBox(face);
+            var words = At("Voyage", VoyageX + 78f, 10f, Design.x - VoyageX - 78f, 60f);
+            VoyageKit.Column(words, 8f, TextAnchor.UpperLeft);
             _voyageTitle = _kit.Text(words, 20, _kit.Light, TextAlignmentOptions.Left);
             var meta = VoyageKit.Node("Meta", words);
             VoyageKit.Row(meta, 12f);
-            VoyageKit.Le(meta).preferredHeight = 20f;
+            VoyageKit.Le(meta).preferredHeight = 18f;
+            _voyageKind = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
+            _voyageKind.overflowMode = TextOverflowModes.Overflow;
             _voyagePips = _kit.Pips(meta);
-            _voyageDifficulty = _kit.Text(meta, 15, _kit.Sub, TextAlignmentOptions.Left);
+            _voyageDifficulty = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
             VoyageKit.Le(_voyageDifficulty).minWidth = VoyageKit.Le(_voyageDifficulty).preferredWidth = 24f;
-            var box = VoyageKit.Node("Element", meta);
-            var le = VoyageKit.Le(box);
-            le.preferredWidth = le.minWidth = le.preferredHeight = le.minHeight = 18f;
-            _voyageFlower = VoyageKit.Flower(box, Element.Charge, _kit.Light);
-            VoyageKit.Stretch(_voyageFlower);
-            _voyagePay = _kit.Text(meta, 15, _kit.Sub, TextAlignmentOptions.Left);
-            VoyageKit.Le(_voyagePay).flexibleWidth = 1f;
+            meta.GetComponent<HorizontalLayoutGroup>().childForceExpandWidth = false;
         }
 
         SeatView BuildSeat(int seat)
         {
-            var view = new SeatView { Root = VoyageKit.Node("Seat" + seat, _seats) };
+            var view = new SeatView { Root = At("Seat" + seat, seat * SeatStep, SeatY, SeatWidth, SeatHeight) };
             view.Card = _kit.Glass(view.Root, hit: false);
             var c = view.Card.Content;
+            float w = SeatWidth;
 
-            var top = VoyageKit.Node("Top", c);
-            VoyageKit.Top(top, 20f, 48f);
-            top.offsetMin = new Vector2(24f, top.offsetMin.y);
-            top.offsetMax = new Vector2(-24f, top.offsetMax.y);
-            VoyageKit.Column(top, 4f, TextAnchor.UpperLeft);
-            view.Role = _kit.Label(top, 13, _kit.Sub);
-            view.Who = _kit.Text(top, 18, _kit.Light, TextAlignmentOptions.Left);
+            // Its name (24) at the top left; its role or state (14, Sub) at the top right.
+            view.Who = _kit.Text(At("Who", 28f, 22f, w - 56f - 200f, 32f, c), 24, _kit.Light, TextAlignmentOptions.Left);
+            VoyageKit.Stretch(view.Who.rectTransform);
+            view.Role = _kit.Text(At("Role", w - 28f - 220f, 28f, 220f, 22f, c), 14, _kit.Sub, TextAlignmentOptions.Right);
+            VoyageKit.Stretch(view.Role.rectTransform);
 
-            var hull = VoyageKit.Node("Hull", c);
-            VoyageKit.Anchor(hull, 0f, 0.5f, 1f, 1f);
-            hull.offsetMin = new Vector2(24f, 0f);
-            hull.offsetMax = new Vector2(-24f, -76f);
+            // The hull, large in the middle over a soft light.
+            var glow = At("Glow", 60f, 120f, w - 120f, 200f, c);
+            VoyageKit.Glow(glow, VoyageKit.Fade(_kit.Outline, 0.55f));
+            var hull = At("Hull", 40f, 76f, w - 80f, 260f, c);
             view.Hull = VoyageSeats.HullBox(hull);
 
-            // The pilot's portrait in the hull's corner.
-            var face = VoyageKit.Node("Pilot", c);
-            face.anchorMin = face.anchorMax = face.pivot = new Vector2(1f, 1f);
-            face.sizeDelta = new Vector2(84f, 84f);
-            face.anchoredPosition = new Vector2(-20f, -20f);
-            view.Portrait = VoyageKit.Picture(face);
-
-            var words = VoyageKit.Node("Words", c);
-            VoyageKit.Anchor(words, 0f, 0f, 1f, 0.5f);
-            words.offsetMin = new Vector2(24f, 76f);
-            words.offsetMax = new Vector2(-24f, -8f);
-            VoyageKit.Column(words, 6f, TextAnchor.UpperLeft);
-            view.Vessel = _kit.Text(words, 22, _kit.Light, TextAlignmentOptions.Left);
-            view.Pilot = _kit.Text(words, 16, _kit.Light, TextAlignmentOptions.Left);
-            var element = VoyageKit.Node("Element", words);
-            VoyageKit.Row(element, 8f);
-            VoyageKit.Le(element).preferredHeight = 20f;
-            var box = VoyageKit.Node("Flower", element);
-            var fle = VoyageKit.Le(box);
-            fle.preferredWidth = fle.minWidth = fle.preferredHeight = fle.minHeight = 18f;
-            view.Flower = VoyageKit.Flower(box, Element.Charge, _kit.Light);
+            // The pilot (72 x 84), the vessel (24) and pilot's name (16, Sub) beside it; the element's flower at the right.
+            var face = At("Pilot", 28f, 350f, 72f, 84f, c);
+            VoyageKit.Block(face, VoyageKit.Fade(_kit.Popup, 0.6f));
+            view.Portrait = VoyageKit.CoverBox(face);
+            var faceEdge = VoyageKit.Node("Edge", face);
+            VoyageKit.Stretch(faceEdge);
+            faceEdge.gameObject.AddComponent<VoyageOutline>().Solid(VoyageKit.Fade(_kit.Light, 0.6f));
+            var names = At("Names", 118f, 362f, w - 118f - 120f, 60f, c);
+            VoyageKit.Column(names, 6f, TextAnchor.UpperLeft);
+            view.Vessel = _kit.Text(names, 24, _kit.Light, TextAlignmentOptions.Left);
+            view.Pilot = _kit.Text(names, 16, _kit.Sub, TextAlignmentOptions.Left);
+            var flowerBox = At("Flower", w - 28f - 32f - 14f, 366f, 32f, 32f, c);
+            view.Flower = VoyageKit.Flower(flowerBox, Element.Charge, _kit.Light);
             VoyageKit.Stretch(view.Flower);
-            view.Element = _kit.Text(element, 15, _kit.Sub, TextAlignmentOptions.Left);
-            view.Artifact = _kit.Text(words, 15, _kit.Sub, TextAlignmentOptions.Left);
-            view.Line = _kit.Text(words, 15, _kit.Sub, TextAlignmentOptions.Left);
+            view.Element = _kit.Text(At("Element", w - 28f - 120f, 402f, 120f, 20f, c), 14, _kit.Sub, TextAlignmentOptions.Right);
+            VoyageKit.Stretch(view.Element.rectTransform);
 
-            // The four settings, each opening the seat popup on its tab.
-            view.Settings = VoyageKit.Node("Settings", c);
-            VoyageKit.Foot(view.Settings, 20f, 44f);
-            view.Settings.offsetMin = new Vector2(20f, view.Settings.offsetMin.y);
-            view.Settings.offsetMax = new Vector2(-20f, view.Settings.offsetMax.y);
+            // Under them: the artifact (another's seat) or a line; your own seat has its four settings there instead.
+            var lines = At("Lines", 28f, 468f, w - 56f, 48f, c);
+            VoyageKit.Column(lines, 4f, TextAnchor.UpperLeft);
+            view.Artifact = _kit.Text(lines, 16, _kit.Sub, TextAlignmentOptions.Left);
+            view.Line = _kit.Text(lines, 16, _kit.Sub, TextAlignmentOptions.Left);
+
+            view.Settings = At("Settings", 28f, 470f, w - 56f, 40f, c);
             VoyageKit.Row(view.Settings, 8f, TextAnchor.MiddleCenter, expandWidth: true);
-            string[] names = { _lines?.CardSettingVessel, _lines?.CardSettingPilot, _lines?.CardSettingElement, _lines?.CardSettingArtifact };
+            string[] settings = { _lines?.CardSettingVessel, _lines?.CardSettingPilot, _lines?.CardSettingElement, _lines?.CardSettingArtifact };
             for (int kind = 0; kind < 4; kind++)
             {
                 int k = kind;
                 var b = VoyageKit.Node("Setting" + kind, view.Settings);
-                VoyageKit.Le(b).preferredHeight = 44f;
-                view.Buttons[kind] = _kit.Quiet(b, null, names[kind], () => OpenPicker(seat, k), out var label);
+                VoyageKit.Le(b).preferredHeight = 40f;
+                view.Buttons[kind] = _kit.Quiet(b, null, settings[kind], () => OpenPicker(seat, k), out var label);
                 label.fontSize = 14;
             }
             return view;
@@ -213,24 +200,15 @@ namespace CosmicShore.UI
 
         void BuildFoot()
         {
-            var foot = VoyageKit.Node("Foot", Root);
-            VoyageKit.Foot(foot, 0f, FootHeight);
-            var back = VoyageKit.Node("Back", foot);
-            back.anchorMin = back.anchorMax = back.pivot = new Vector2(0f, 0.5f);
-            back.sizeDelta = new Vector2(220f, 48f);
-            _kit.Quiet(back, _lines?.PageBackKey, _lines?.PageBack, _board.StepBack);
-            _flySquadBox = VoyageKit.Node("FlySquad", foot);
-            _flySquadBox.anchorMin = _flySquadBox.anchorMax = _flySquadBox.pivot = new Vector2(0f, 0.5f);
-            _flySquadBox.sizeDelta = new Vector2(380f, 48f);
-            _flySquadBox.anchoredPosition = new Vector2(244f, 0f);
+            _flySquadBox = At("FlySquad", 0f, FootY, 360f, 56f);
             _kit.Quiet(_flySquadBox, _lines?.ArkFlySquadKey, _lines?.ArkFlySquad, () =>
             {
                 _squadView = !_squadView;
                 Refresh();
             }, out _flySquadText);
-            var sail = VoyageKit.Node("SetSail", foot);
-            sail.anchorMin = sail.anchorMax = sail.pivot = new Vector2(1f, 0.5f);
-            sail.sizeDelta = new Vector2(380f, 56f);
+            var back = At("Back", 1200f, FootY, 200f, 56f);
+            _kit.Quiet(back, _lines?.PageBackKey, _lines?.PageBack, _board.StepBack);
+            var sail = At("SetSail", 1420f, FootY, 420f, 56f);
             (_sail, _) = _kit.Cta(sail, _lines?.BoardSailKey, _lines?.CardSetSail, _board.SetSail);
         }
 
@@ -307,47 +285,64 @@ namespace CosmicShore.UI
             var book = VoyageSeats.Book;
             int count = show && book?.Squads != null ? book.Squads.Count : 0;
             _presets.gameObject.SetActive(count > 0);
-            while (_presetButtons.Count < count)
+            while (_presetViews.Count < count)
             {
-                int index = _presetButtons.Count;
-                var rt = VoyageKit.Node("Squad" + index, _presets);
-                var le = VoyageKit.Le(rt);
-                le.preferredWidth = 220f;
-                le.preferredHeight = PresetHeight;
-                var b = _kit.Quiet(rt, null, null, () => _rules.PickSquad(index), out var label);
-                label.fontSize = 15;
-                var bar = VoyageKit.Node("Bar", rt);
-                VoyageKit.Foot(bar, 0f, 2f);
-                _presetBars.Add(VoyageKit.Block(bar, _kit.Cyan));
-                _presetButtons.Add(b);
-                _presetNames.Add(label);
+                int index = _presetViews.Count;
+                // A squad: a glass card 250 x 104, its name (20), who flies it (14, Sub), its leader's hull at the foot.
+                var view = new PresetView { Root = At("Squad" + index, index * (PresetWidth + PresetGap), 0f, PresetWidth, PresetHeight, _presets) };
+                view.Card = _kit.Glass(view.Root, hit: true);
+                view.Button = view.Root.gameObject.AddComponent<Button>();
+                view.Button.targetGraphic = view.Card.Fill;
+                view.Button.transition = Selectable.Transition.None;
+                view.Button.onClick.AddListener(() => _rules.PickSquad(index));
+                var words = At("Words", 18f, 14f, PresetWidth - 36f, 50f, view.Card.Content);
+                VoyageKit.Column(words, 6f, TextAnchor.UpperLeft);
+                view.Name = _kit.Text(words, 20, _kit.Light, TextAlignmentOptions.Left);
+                view.Who = _kit.Text(words, 14, _kit.Sub, TextAlignmentOptions.Left);
+                var hull = At("Hull", PresetWidth - 18f - 72f, PresetHeight - 10f - 32f, 72f, 32f, view.Card.Content);
+                view.Hull = VoyageSeats.HullBox(hull);
+                _presetViews.Add(view);
             }
-            for (int i = 0; i < _presetButtons.Count; i++)
+            for (int i = 0; i < _presetViews.Count; i++)
             {
+                var view = _presetViews[i];
                 bool on = i < count;
-                _presetButtons[i].gameObject.SetActive(on);
+                view.Root.gameObject.SetActive(on);
                 if (!on) continue;
+                var squad = book.Squads[i];
                 bool active = i == book.ActiveIndex;
-                VoyageKit.Set(_presetNames[i], _rules.SquadName(book.Squads[i]));
-                _presetNames[i].color = active ? _kit.Light : _kit.Sub;
-                _presetBars[i].enabled = active;
+                VoyageKit.Set(view.Name, _rules.SquadName(squad));
+                VoyageKit.Set(view.Who, Who(squad));
+                view.Card.Pick(_kit, active);
+                var lead = squad != null ? _rules.VesselOf(squad.GetSlot(0).Vessel) : null;
+                _rules.SetHull(view.Hull, VoyageSeats.HullOf(lead));
             }
+        }
+
+        // Who flies a squad, seat by seat ("You · AI · AI"): the content's words for each seat.
+        string Who(SavedSquad squad)
+        {
+            if (squad == null) return null;
+            var parts = new List<string>(SavedSquad.SlotCount);
+            int mine = VoyageSeats.MySeat(squad);
+            for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
+            {
+                var slot = squad.GetSlot(seat);
+                parts.Add(seat == mine ? _lines?.ArkYou : slot.IsPlayer() ? slot.MemberName
+                    : slot.IsOpen() ? _lines?.CardSeatOpen : _lines?.ArkSeatAiShort);
+            }
+            return string.Join(_lines?.ArkSquadSeparator ?? string.Empty, parts);
         }
 
         void DrawVoyage()
         {
             var offer = _offer;
             if (offer == null) return;
+            VoyageKit.ShowCover(_voyageFace, offer.Portrait, new Vector2(60f, 60f), VoyageKit.FaceFocus);
             VoyageKit.Set(_voyageKind, TemplateText.Fill(_lines?.ArkVoyageLine, "kind", offer.Kind));
             VoyageKit.Set(_voyageTitle, offer.Title);
             _voyagePips.Lit = _difficulty;
             VoyageKit.Set(_voyageDifficulty, _difficulty.ToString(CultureInfo.InvariantCulture));
-            _voyageFlower.parent.gameObject.SetActive(offer.Pays);
-            if (offer.Pays) VoyageSeatPicker.Petals(_voyageFlower, offer.Element);
-            VoyageKit.Set(_voyagePay, offer.Pays
-                ? TemplateText.Fill(_lines?.SeaOfferPay, "pay", VoyageBoard.PayAt(offer, _difficulty).ToString(CultureInfo.InvariantCulture),
-                    "element", _board.ElementName(offer.Element))
-                : null);
         }
 
         void DrawSeat(SeatView view, SavedSquad squad, int seat, bool you)
@@ -380,6 +375,8 @@ namespace CosmicShore.UI
             // No squad yet (a new player, or before the cloud loads): the player's card says where to make one.
             VoyageKit.Set(view.Line, !_editable && you ? _lines?.CardNoSquad : null);
             view.Settings.gameObject.SetActive(editable && _editable);
+            // Your own seat shows its four settings where another seat shows its artifact.
+            view.Artifact.transform.parent.gameObject.SetActive(!view.Settings.gameObject.activeSelf || !string.IsNullOrEmpty(view.Line.text));
             int s = seat;
             for (int k = 0; k < 4; k++)
             {
@@ -403,6 +400,7 @@ namespace CosmicShore.UI
             VoyageKit.Set(view.Artifact, null);
             VoyageKit.Set(view.Line, _lines?.ArkFriendLine);
             view.Settings.gameObject.SetActive(false);
+            view.Artifact.transform.parent.gameObject.SetActive(true);
         }
 
         // ── The seat popup ───────────────────────────────────────────────────
@@ -411,7 +409,14 @@ namespace CosmicShore.UI
 
         public void ClosePicker() => _picker.Close();
 
-        public void Tick(float dt) { }
+        public void Tick(float dt)
+        {
+            _picker.Tick(dt);
+            var room = Root.rect.size;
+            if (room == _fitFor) return;
+            _fitFor = room;
+            VoyageKit.Fit(_frame, Design);
+        }
 
         /// <summary>Remember the player's own seat as it sails, for the popup's Last flown kit.</summary>
         public void RememberSeat()

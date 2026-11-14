@@ -249,6 +249,43 @@ namespace CosmicShore.UI
         /// </summary>
         public bool Plain;
 
+        bool _unnamed;
+
+        /// <summary>
+        /// The Voyages table's map (Frogma Rev 111 Full, Docs/MENU_REDESIGN_B.md section 205): no place names and no caption
+        /// of its own; the page stands its pins and their names over it (<see cref="VoyageSeaPage"/>), so two places on one
+        /// spot never print over each other and no line of text crosses the table.
+        /// </summary>
+        public bool Unnamed
+        {
+            get => _unnamed;
+            set
+            {
+                if (_unnamed == value) return;
+                _unnamed = value;
+                if (_content == null) return;
+                Label();
+                Caption();
+                _viewDirty = true;
+            }
+        }
+
+        /// <summary>A map point (<see cref="MapPoint"/>, <see cref="PlacePoint"/>) in the rect, flat (before any tilt).</summary>
+        public Vector2 RectPointOf(Vector2 mapPoint) => ToRect(mapPoint);
+
+        /// <summary>Where place <paramref name="id"/> stands in the rect, flat; false when it is not drawn.</summary>
+        public bool PlaceRectPoint(string id, out Vector2 point)
+        {
+            point = default;
+            var l = _content?.Location(id);
+            if (!Drawn(l) || float.IsInfinity(_minX)) return false;
+            point = At(l);
+            return true;
+        }
+
+        /// <summary>True when <paramref name="rectPoint"/> (flat) is inside the map.</summary>
+        public bool InView(Vector2 rectPoint) => InFrame(rectPoint);
+
         // A view the board asked for (FrameOn): kept across a resize until the player explores.
         Vector2 _fixCentre;
         float _fixWidth;
@@ -573,10 +610,12 @@ namespace CosmicShore.UI
         void StepFlight()
         {
             float t = _flyMs > 0f ? Mathf.Min(1f, (Time.unscaledTime - _flyT0) * 1000f / _flyMs) : 1f;
-            float e = t < .5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f;
             float w0 = _flyFromW, w1 = _flyToW;
-            float wt = Mathf.Exp(Mathf.Log(w0) + (Mathf.Log(w1) - Mathf.Log(w0)) * e);
             bool far = Mathf.Max(w0 / w1, w1 / w0) > 6f;
+            // A step of one tier or a pan moves as Rev 111 Full's map does (.8s-ish, cubic-bezier(.2,.7,.2,1): quick off
+            // the mark, a long soft settle); the long dive keeps its even in-out.
+            float e = !far ? VoyageKit.Rise(t) : t < .5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f;
+            float wt = Mathf.Exp(Mathf.Log(w0) + (Mathf.Log(w1) - Mathf.Log(w0)) * e);
             float ce = !far ? e : w1 < w0 ? (1f / wt - 1f / w0) / (1f / w1 - 1f / w0) : (wt - w0) / (w1 - w0);
             SetView(_flyFromC + (_flyToC - _flyFromC) * ce, wt);
             if (t >= 1f)
@@ -907,7 +946,7 @@ namespace CosmicShore.UI
             {
                 var l = i < n ? _content.Locations[i] : null;
                 // The board's plain map names only the course's two ends.
-                bool named = !Plain || (l != null && _route.Count > 0 && (l.Id == _route[0] || l.Id == _route[^1]));
+                bool named = !_unnamed && (!Plain || (l != null && _route.Count > 0 && (l.Id == _route[0] || l.Id == _route[^1])));
                 _labelShown.Add(Drawn(l) && named);
             }
             string end = _route.Count > 0 ? _route[^1] : null;
@@ -942,7 +981,7 @@ namespace CosmicShore.UI
                 var existing = transform.Find(CaptionName);
                 if (existing) existing.TryGetComponent(out _captionText);
             }
-            bool show = !string.IsNullOrEmpty(_caption);
+            bool show = !_unnamed && !string.IsNullOrEmpty(_caption);
             if (!_captionText && !show) return;
             if (!_captionText)
             {

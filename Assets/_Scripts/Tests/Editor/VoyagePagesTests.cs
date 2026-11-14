@@ -168,6 +168,34 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Cover_FillsTheBox_AndCropsAboutTheFocus()
+        {
+            // A tall 100 x 300 picture in a 100 x 150 box at the board's face crop (object-position 50% 28%).
+            var tex = new Texture2D(100, 300);
+            var sprite = Sprite.Create(tex, new Rect(0f, 0f, 100f, 300f), new Vector2(0.5f, 0.5f));
+            var box = new GameObject("Box", typeof(RectTransform));
+            try
+            {
+                var image = VoyageKit.CoverBox((RectTransform)box.transform);
+                VoyageKit.ShowCover(image, sprite, new Vector2(100f, 150f), VoyageKit.FaceFocus);
+                var rt = image.rectTransform;
+                Assert.IsTrue(image.enabled);
+                Assert.AreEqual(100f, rt.sizeDelta.x, 1e-3f, "as wide as the box");
+                Assert.AreEqual(300f, rt.sizeDelta.y, 1e-3f, "its own shape kept");
+                Assert.AreEqual(0f, rt.anchoredPosition.x, 1e-3f);
+                Assert.AreEqual(150f * 0.28f, rt.anchoredPosition.y, 1e-3f, "28% of the overflow above the box");
+                VoyageKit.ShowCover(image, null, new Vector2(100f, 150f), VoyageKit.FaceFocus);
+                Assert.IsFalse(image.enabled, "no picture hides it");
+            }
+            finally
+            {
+                Object.DestroyImmediate(box);
+                Object.DestroyImmediate(sprite);
+                Object.DestroyImmediate(tex);
+            }
+        }
+
+        [Test]
         public void PagesLines_AreAuthored()
         {
             var lines = VoyageContentSO.Load()?.Lines;
@@ -176,12 +204,13 @@ namespace CosmicShore.Tests
                      {
                          lines.StepSea, lines.StepVoyage, lines.StepArk, lines.PageBack, lines.PageBackKey, lines.SeaFullScreen,
                          lines.SeaFullScreenBack, lines.SeaCrew, lines.SeaCrewHide, lines.SeaTierWidth, lines.SeaOpenVoyage,
-                         lines.SeaOfferKicker, lines.SeaOfferPay, lines.SeaCrewRecommends, lines.BriefKicker, lines.BriefStats,
+                         lines.SeaOfferKicker, lines.SeaOfferPay, lines.SeaCrewRecommends, lines.SeaCrewDrawer, lines.BriefKicker, lines.BriefStats,
                          lines.BriefDifficulty, lines.BriefRecommended, lines.BriefRewards, lines.BriefCrystals, lines.BriefCrystalsBy,
                          lines.BriefStanding, lines.BriefStandingBy, lines.BriefRole, lines.BriefStop, lines.BriefReady, lines.ArkLobby,
                          lines.ArkLobbyWith, lines.ArkSquadHead, lines.ArkSquadLine, lines.ArkSquadLineLobby, lines.ArkYou,
                          lines.ArkWingmate, lines.ArkInLobby, lines.ArkFriendLine, lines.ArkArtifact, lines.ArkFlySquad,
-                         lines.ArkFlySquadKey, lines.ArkBackToLobby, lines.ArkVoyageLine, lines.PickTitle, lines.PickTitleSeat,
+                         lines.ArkFlySquadKey, lines.ArkBackToLobby, lines.ArkVoyageLine, lines.ArkSeatAiShort, lines.ArkSquadSeparator,
+                         lines.PickTitle, lines.PickTitleSeat,
                          lines.PickKits, lines.PickKitVoyage, lines.PickKitLast, lines.PickKitWho, lines.PickSees, lines.PickSeesAll,
                          lines.PickSeesCrystals, lines.PickSeesPrisms, lines.PickSeesLife, lines.PickSeesVessels, lines.PickSeesPaths,
                          lines.PickCount, lines.PickForVoyage, lines.PickNote, lines.PickClose, lines.KindCourier, lines.KindHunt,

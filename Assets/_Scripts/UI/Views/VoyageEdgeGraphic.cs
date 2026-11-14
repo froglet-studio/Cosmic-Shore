@@ -74,6 +74,20 @@ namespace CosmicShore.UI
 
         /// <summary>Follow <paramref name="map"/>'s view; <paramref name="caption"/> is the authored line under the strip
         /// (empty shows nothing), <paramref name="labelTemplate"/> the text it copies its look from.</summary>
+        /// <summary>No caption line (the Voyages table, Frogma Rev 111 Full: its front face is the side view alone).</summary>
+        public bool Uncaptioned
+        {
+            get => _uncaptioned;
+            set
+            {
+                if (_uncaptioned == value) return;
+                _uncaptioned = value;
+                Caption(_captionText, _template);
+            }
+        }
+
+        bool _uncaptioned;
+
         public void Follow(VoyageMapGraphic map, string caption, TMP_Text labelTemplate)
         {
             if (_map != map)
@@ -497,7 +511,7 @@ namespace CosmicShore.UI
                 var existing = transform.Find(CaptionName);
                 if (existing) existing.TryGetComponent(out _caption);
             }
-            bool show = !string.IsNullOrEmpty(caption);
+            bool show = !_uncaptioned && !string.IsNullOrEmpty(caption);
             if (!_caption && !show) return;
             if (!_caption)
             {

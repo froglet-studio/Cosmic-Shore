@@ -55,6 +55,21 @@ namespace CosmicShore.UI
         /// <summary>What tab <paramref name="index"/> shows (its page), or null.</summary>
         public GameObject PageOf(int index) => index >= 0 && index < tabs.Length ? tabs[index].page : null;
 
+        /// <summary>The row the tab buttons stand in (the first tab's parent), or null.</summary>
+        public RectTransform TabStrip => tabs.Length > 0 && tabs[0].button ? tabs[0].button.transform.parent as RectTransform : null;
+
+        /// <summary>How many tabs are still in the window (not dropped).</summary>
+        public int Kept
+        {
+            get
+            {
+                int n = 0;
+                for (int i = 0; i < tabs.Length; i++)
+                    if (tabs[i].button && !IsDropped(i)) n++;
+                return n;
+            }
+        }
+
         bool[] _dropped = Array.Empty<bool>();
 
         /// <summary>Whether tab <paramref name="index"/> was taken out of the window (<see cref="Drop{T}"/>).</summary>
