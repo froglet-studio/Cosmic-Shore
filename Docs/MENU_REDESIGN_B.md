@@ -8063,3 +8063,49 @@ Verified: `author_ingame_hud.py` run, `--check` and `--self-test` (two new negat
 gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; `gates.sh`. Hand test: "The loading
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+
+## 187. Rev 112 mockups: colour sets for a growing catalog - a world preview, one scrolling list, Free and Premium apart (2026-11-14; Shombith picked D)
+
+**Asked (Shombith, 2026-11-14):** "Color sets we do need to change how they look, we will be making multiples of them so
+scrolling or clicking through each one is not an option. [...] We need a preview to show what the color set changes to
+depict the world of our game, We need a scrollable list with differentiation between free and the other type, lets use
+the whole place not leave a big empty space in the middle." Then, on the first draft's vessels tile: "Should look like
+actual vessel icons with actual prism trails with the supported color."
+
+**On the canvas:** tab Menu Redesign A, section "Rev 112 - Colour sets for a growing catalog" (version
+`1794681676-3efd`). Copies in `Docs/MenuRedesignB/board/R112*.dc.html`, drawn by
+`Docs/MenuRedesignB/rounds/r112_colour_sets_catalog.py <root> 112`. All fourteen sets of `ColorSetCatalog.asset` (name,
+line, pigments, vision), every colour from its shipped `SO_ColorSet`. Every option shows the picked set's world (prisms
+in depth, three vessels with their prism trails, a crystal) and four tiles of what the set repaints: **Prisms** (four
+domains x three shields), **Vessels and trails** (the in-game vessel icons, each `SO_Class_<Hull>.IconActive` -
+Squirrel, Sparrow, Dolphin, Manta, one per domain - multiplied by the set's vessel colour, each leaving a line of
+rim-over-face prisms), **Crystals**, **Menus** (an approximation of `ColorSetUITheme`).
+- **R112Compare:** the four layouts as diagrams, a Free and a Premium row side by side, what each mark says, the four tiles.
+- **R112A Stage and list (recommended, interactive):** a scrolling list on the left (Free, Colour vision, Premium);
+  the world and the four tiles fill the right. Eight sets in view, every one a press away, nothing empty.
+- **R112B Wall (interactive):** the world and the tiles across the top; every set a tile in a scrolling wall below,
+  with All / Free / Premium. Scales furthest once the catalog passes thirty.
+- **R112C Two shelves (interactive):** Free down the left, Premium down the right, the world between.
+- **R112D The real cell (interactive):** the world is the whole screen (as the built Showroom); a docked list right
+  with All / Free / Premium; the tiles along the foot.
+- **R112Notes:** what was asked, the four, Free vs Premium, Unity, decisions.
+
+**Free and Premium:** Free is Nocturne, Photic and the six colour-vision sets (under their own heading, never a reward,
+section 126.3): a plain "Free" and a quiet edge. Premium is the other six: a gold edge, "Owned" or the crystal and its
+price, and the action turns into the gold purchase button (Unlock). Lime stays the one call to action (Apply). Prices
+and Dart Frog owned are sample values.
+
+**Differs from the build (section 126):** the Showroom's two three-tile rails with < > become one scrolling list (or a
+wall); the type is marked on every row; a set's preview adds the four "what it repaints" tiles beside the cell.
+
+**Gates:** `frogma.py check --only R112` OK. `check_mockup.py`: the CTA gate passes (one Lime action per board); colour,
+type and noise fail as the inherited Rev 51/54 kit and a fourteen-set list do (the set pigments are data, not tokens).
+
+**Decisions waiting:** which option; the word for the other type (Premium as drawn, Earned, or Store) and how it is
+unlocked (crystals, a quest as in Rev 107); whether the tiles animate (a prism shielding, a trail laid) or stay still.
+
+**Picked (Shombith, 2026-11-14):** "I like D, bring the sea lines in the card backgrounds and don't name it Free but Color
+Blind supported (Free) that's all." Then: "Make this into unity". R112D was changed in place on that word (canvas
+version `1794681928-7fe0`; A, B and C are as first published): the menu's sea lines behind every list card and every
+tile; the colour-vision group, its filter and the stage's type line read "Color Blind supported (Free)" (its filter
+shows only those six); Nocturne and Photic sit under "Yours from the start", shown under All; no row says a bare "Free".

@@ -3586,135 +3586,6 @@
       "page": "ark",
       "title": "Rev 86 ArtifactsAB - A + B - the Reliquary platform in the Gallery"
     },
-    "R87A.dc.html": {
-      "x": 0,
-      "y": 0,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 87 A - Slide: small voyage cards, the picked one slides open; the squad as rows that open where they stand (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R87Notes.dc.html": {
-      "x": 0,
-      "y": 1260,
-      "w": 1920,
-      "h": 900,
-      "page": "voyages",
-      "title": "Rev 87 - notes: what stays, what is new in all three, the three options, the recommendation"
-    },
-    "R88Voyages.dc.html": {
-      "x": 0,
-      "y": 3620,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 88 Voyages - A with smaller top texts: the voyages and the Ark escort as cards, the picked one open; the squad as rows - interactive",
-      "is_interactive": true
-    },
-    "R88Escort.dc.html": {
-      "x": 2100,
-      "y": 3620,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 88 Escort - the Ark escort card open: its difficulty stepper where a voyage has its intensity - interactive",
-      "is_interactive": true
-    },
-    "R88Saga.dc.html": {
-      "x": 4200,
-      "y": 3620,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 88 Saga - the two parts as cards, Tandava open with its forms, The Severing locked; the squad and Set sail - interactive",
-      "is_interactive": true
-    },
-    "R88Quests.dc.html": {
-      "x": 0,
-      "y": 4880,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 88 Quests - the five quests as cards with their state, the picked one open over its game's art; Claim or Play quest - interactive",
-      "is_interactive": true
-    },
-    "R88Episodes.dc.html": {
-      "x": 2100,
-      "y": 4880,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 88 Episodes - Episode 2, coming soon, over the galaxy; one way back"
-    },
-    "R88Notes.dc.html": {
-      "x": 0,
-      "y": 6140,
-      "w": 1920,
-      "h": 900,
-      "page": "voyages",
-      "title": "Rev 88 - notes: the top texts, the one order, each screen, what is not drawn"
-    },
-    "R89A.dc.html": {
-      "x": 0,
-      "y": 8500,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 89 A - Sea table: the map tilted in perspective, the edge-on view its front face; the voyage's name over it (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R89B.dc.html": {
-      "x": 2100,
-      "y": 8500,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 89 B - Flat chart: the same screen without the tilt - the whole map in its own colours over its edge-on view - interactive",
-      "is_interactive": true
-    },
-    "R89Notes.dc.html": {
-      "x": 0,
-      "y": 9760,
-      "w": 1920,
-      "h": 900,
-      "page": "voyages",
-      "title": "Rev 89 - notes: what was dull, what both options do, the two options, the recommendation"
-    },
-    "R90Saga.dc.html": {
-      "x": 0,
-      "y": 12120,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 90 Saga - the part's arena on the table, its forms in order on the front face; The Severing locked - interactive",
-      "is_interactive": true
-    },
-    "R90Quests.dc.html": {
-      "x": 2100,
-      "y": 12120,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 90 Quests - the HyperSea on the table, the episode's five quests as a track on the front face; the picked quest's card, Claim or Play quest - interactive",
-      "is_interactive": true
-    },
-    "R90Episodes.dc.html": {
-      "x": 4200,
-      "y": 12120,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 90 Episodes - the galaxy on the table, dimmed; Episode 2 is coming; one way back"
-    },
-    "R90Notes.dc.html": {
-      "x": 0,
-      "y": 13380,
-      "w": 1920,
-      "h": 900,
-      "page": "voyages",
-      "title": "Rev 90 - notes: one slab on every tab, each tab, the tabs as links"
-    },
     "R91Compare.dc.html": {
       "x": 0,
       "y": 0,
@@ -3787,68 +3658,6 @@
       "page": "loading-screens",
       "title": "Rev 94 - notes: what is now the game's own art, the far background, what was kept"
     },
-    "R95S1A.dc.html": {
-      "x": 0,
-      "y": 15740,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 95 S1A - 1A Presets: the map over its edge view; the voyage's name, the squad presets as cards and Set sail on the right (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R95S1B.dc.html": {
-      "x": 2100,
-      "y": 15740,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 95 S1B - 1B Wide map: the map across the window; a foot bar holds the edge view, the voyage, the squad and Set sail - interactive",
-      "is_interactive": true
-    },
-    "R95S1C.dc.html": {
-      "x": 4200,
-      "y": 15740,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 95 S1C - 1C Briefing: the map full height with the edge view inset at its foot; the squad's three seats shown on the right - interactive",
-      "is_interactive": true
-    },
-    "R95S2A.dc.html": {
-      "x": 0,
-      "y": 17000,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 95 S2A - 2A Three seats: a column per seat, its pilot and hull over its choices; Save as preset and Set sail at the foot (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R95S2B.dc.html": {
-      "x": 2100,
-      "y": 17000,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 95 S2B - 2B Seat and picker: the seats on the left, one large picker on the right with Vessel, Pilot, Element, Artifact - interactive",
-      "is_interactive": true
-    },
-    "R95S2C.dc.html": {
-      "x": 4200,
-      "y": 17000,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 95 S2C - 2C Roster: one table, a row per seat and a stepper per choice - interactive",
-      "is_interactive": true
-    },
-    "R95Notes.dc.html": {
-      "x": 0,
-      "y": 18260,
-      "w": 1920,
-      "h": 900,
-      "page": "voyages",
-      "title": "Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations"
-    },
     "R94C.dc.html": {
       "x": 0,
       "y": 6140,
@@ -3857,129 +3666,465 @@
       "page": "loading-screens",
       "title": "Rev 94 C - The crew before the domains, in the game's own art: the new captain busts, silver hulls, Omni crystals, a real cell, fauna and flora; the colour set changing"
     },
-    "R96S1A.dc.html": {
+    "R99Compare.dc.html": {
       "x": 0,
-      "y": 20620,
+      "y": 17051,
       "w": 1920,
       "h": 1080,
-      "page": "voyages",
-      "title": "Rev 96 S1A - 1A - Screen 1 as picked (Rev 95 1A), with the soft buttons - interactive",
+      "page": "ark",
+      "title": "Rev 99 - The PDA's three screens flat, and the three places it lies"
+    },
+    "R99A.dc.html": {
+      "x": 2100,
+      "y": 17051,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 99 A - The chart room: the PDA on the chart table under the Ark's great window (recommended) - interactive",
       "is_interactive": true
     },
-    "R96Buttons.dc.html": {
-      "x": 2100,
-      "y": 20620,
-      "w": 1920,
-      "h": 620,
-      "page": "voyages",
-      "title": "Rev 96 Buttons - three readings of soft hard soft on Set sail and Configure squad, beside the buttons as they were"
-    },
-    "R96S2D.dc.html": {
+    "R99B.dc.html": {
       "x": 4200,
-      "y": 20620,
+      "y": 17051,
       "w": 1920,
       "h": 1080,
-      "page": "voyages",
-      "title": "Rev 96 S2D - 2D Deck: the three seats stand across a lit deck; the picked seat's four choices are one tray under them, one press each (recommended) - interactive",
+      "page": "ark",
+      "title": "Rev 99 B - The captain's cabin: the PDA on the desk under a porthole, one warm lamp - interactive",
       "is_interactive": true
     },
-    "R96S2E.dc.html": {
+    "R99C.dc.html": {
       "x": 0,
-      "y": 21880,
+      "y": 18311,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 99 C - The hangar bench: the PDA on a workbench, the hangar running out to the cell - interactive",
+      "is_interactive": true
+    },
+    "R99Notes.dc.html": {
+      "x": 0,
+      "y": 19571,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 99 - notes: what was asked, what Garrett's tab has, what changes, the recommendation"
+    },
+    "R103Compare.dc.html": {
+      "x": 0,
+      "y": 0,
       "w": 1920,
       "h": 1080,
       "page": "voyages",
-      "title": "Rev 96 S2E - 2E Kits: the picked seat large; six whole kits from the Hangar, one press sets all four; element and artifact beside - interactive",
-      "is_interactive": true
+      "title": "Rev 103 - the three strips side by side at full width, at rest and pressed"
     },
-    "R96S2F.dc.html": {
+    "R103A.dc.html": {
       "x": 2100,
-      "y": 21880,
+      "y": 0,
       "w": 1920,
       "h": 1080,
       "page": "voyages",
-      "title": "Rev 96 S2F - 2F Showroom: a rail of seats, the picked seat as the hero on the deck, its four choices as strips beside it - interactive",
+      "title": "Rev 103 A - One shelf: two locked cards side by side, each with its dimmed picture (recommended) - interactive",
       "is_interactive": true
     },
-    "R96Notes.dc.html": {
+    "R103B.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 103 B - One line: a single quiet line, lock mark, Saga and Episodes, Coming soon - interactive",
+      "is_interactive": true
+    },
+    "R103C.dc.html": {
       "x": 0,
-      "y": 23140,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 103 C - Teaser band: one dimmed picture strip with both names over it - interactive",
+      "is_interactive": true
+    },
+    "R103Notes.dc.html": {
+      "x": 0,
+      "y": 2520,
       "w": 1920,
       "h": 900,
       "page": "voyages",
-      "title": "Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens"
+      "title": "Rev 103 - notes: what changes against the build and why A"
     },
-    "R97Squad.dc.html": {
+    "R101Compare.dc.html": {
       "x": 0,
-      "y": 25500,
+      "y": 0,
       "w": 1920,
       "h": 1080,
-      "page": "voyages",
-      "title": "Rev 97 Squad - Squad presets, three ways - interactive",
-      "is_interactive": true
+      "page": "quests",
+      "title": "Rev 101 - one quest's goals and its claim, as each option draws them"
     },
-    "R97Choices.dc.html": {
+    "R101A.dc.html": {
       "x": 2100,
-      "y": 25500,
+      "y": 0,
       "w": 1920,
       "h": 1080,
-      "page": "voyages",
-      "title": "Rev 97 Choices - The seat's choices, three ways - interactive",
+      "page": "quests",
+      "title": "Rev 101 A - Star chart: the five quests as stars on the HyperSea, joined by the current that opens them (recommended) - interactive",
       "is_interactive": true
     },
-    "R97S1A.dc.html": {
+    "R101B.dc.html": {
       "x": 4200,
-      "y": 25500,
+      "y": 0,
       "w": 1920,
       "h": 1080,
-      "page": "voyages",
-      "title": "Rev 97 S1A - 1A with Formation squads - interactive",
+      "page": "quests",
+      "title": "Rev 101 B - Quest log: a calm list on the left, the open quest's goals as a ladder in the middle - interactive",
       "is_interactive": true
     },
-    "R97S2D.dc.html": {
+    "R101C.dc.html": {
       "x": 0,
-      "y": 26760,
+      "y": 1260,
       "w": 1920,
       "h": 1080,
-      "page": "voyages",
-      "title": "Rev 97 S2D - 2D with the Shelf - interactive",
+      "page": "quests",
+      "title": "Rev 101 C - The route: the quests as stations along one course across the screen - interactive",
       "is_interactive": true
     },
-    "R97S2G.dc.html": {
+    "R101Notes.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 900,
+      "page": "quests",
+      "title": "Rev 101 - notes: where the screen opens from, what each option changes, what is real data"
+    },
+    "R104A.dc.html": {
+      "x": 0,
+      "y": 22111,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 104 A - Ledger on the deck: the four balances and the omni stand in one row at the foot of the pier, no panels (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R104B.dc.html": {
       "x": 2100,
-      "y": 26760,
+      "y": 22111,
       "w": 1920,
       "h": 1080,
-      "page": "voyages",
-      "title": "Rev 97 S2G - 2G Three players - leader's screen - interactive",
+      "page": "ark",
+      "title": "Rev 104 B - Holo dais: a projection rises from the pier's edge like the bridge tables in the pilot scenes, the four round the omni - interactive",
       "is_interactive": true
     },
-    "R97S2H.dc.html": {
+    "R104C.dc.html": {
       "x": 4200,
-      "y": 26760,
+      "y": 22111,
       "w": 1920,
       "h": 1080,
-      "page": "voyages",
-      "title": "Rev 97 S2H - 2H Three players - a friend's screen - interactive",
+      "page": "ark",
+      "title": "Rev 104 C - Wall gauges: each balance mounted on the pier's tiled walls, two a side, the omni count on the lintel - interactive",
       "is_interactive": true
     },
-    "R98S1A.dc.html": {
+    "R105A.dc.html": {
       "x": 0,
-      "y": 29300,
+      "y": 24651,
       "w": 1920,
       "h": 1080,
-      "page": "voyages",
-      "title": "Rev 98 S1A - 1A - the voyage on the map - interactive",
+      "page": "ark",
+      "title": "Rev 105 A - In the room: each artifact's words hang beside it, no box - interactive",
       "is_interactive": true
     },
-    "R98S2D.dc.html": {
+    "R105B.dc.html": {
       "x": 2100,
-      "y": 29300,
+      "y": 24651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 105 B - The lens: a hologram of what it does, its tracks round the rim (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R105C.dc.html": {
+      "x": 4200,
+      "y": 24651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 105 C - One at a time: the artifact large in the room, a caption under it - interactive",
+      "is_interactive": true
+    },
+    "R105Notes.dc.html": {
+      "x": 0,
+      "y": 25911,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 105 - notes: no cards, three levels, real artifacts, the recommendation"
+    },
+    "R106Compare.dc.html": {
+      "x": 0,
+      "y": 28271,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 106 - one seat at rest and open, in the build and in A, B and C"
+    },
+    "R106A.dc.html": {
+      "x": 2100,
+      "y": 28271,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 106 A - Levels: tags over the vessels, a seat opens, one choice at a time (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R106B.dc.html": {
+      "x": 4200,
+      "y": 28271,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 106 B - The holo table: the squad on a bridge console, its seat projected up - interactive",
+      "is_interactive": true
+    },
+    "R106C.dc.html": {
+      "x": 0,
+      "y": 29531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 106 C - Seat by seat: one seat in type over the hangar, no panels - interactive",
+      "is_interactive": true
+    },
+    "R106Notes.dc.html": {
+      "x": 0,
+      "y": 30791,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen"
+    },
+    "R100P1A.dc.html": {
+      "x": 0,
+      "y": 4880,
       "w": 1920,
       "h": 1080,
       "page": "voyages",
-      "title": "Rev 98 S2D - 2D - the squad - interactive",
+      "title": "Rev 100 P1A - Page 1 Table top: the HyperSea on a chart table, its edge view the front; the crew's voyages on the right (recommended) - interactive",
       "is_interactive": true
+    },
+    "R100P2A.dc.html": {
+      "x": 2100,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P2A - Page 2 Briefing: the pilot's story, the route drawing itself, the rewards arriving; difficulty 1-9 (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R100P3A.dc.html": {
+      "x": 4200,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P3A - Page 3 Lobby: your lobby's three seats; your seat changes in place; Set sail (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R100Notes.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 - notes: what was asked, each page, the new rules to confirm"
+    },
+    "R107Compare.dc.html": {
+      "x": 0,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "quests",
+      "title": "Rev 107 - the colour set reward, drawn three ways"
+    },
+    "R107D.dc.html": {
+      "x": 2100,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "quests",
+      "title": "Rev 107 D - Route on top: the course across, the quest, its reward and Claim side by side below (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R107E.dc.html": {
+      "x": 4200,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "quests",
+      "title": "Rev 107 E - Route as the list: the course down the left, the quest and its checkpoints in the middle, the reward beside Claim - interactive",
+      "is_interactive": true
+    },
+    "R107Notes.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 900,
+      "page": "quests",
+      "title": "Rev 107 - notes: the two mixes, the proposed reward per quest, what changed from Rev 101"
+    },
+    "R108Table.dc.html": {
+      "x": 0,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 108 Table - P1A again: table flatter at 34 deg, feathered round edges, slow float and sheen, side view upright beneath - interactive",
+      "is_interactive": true
+    },
+    "R108Lobby.dc.html": {
+      "x": 2100,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 108 Lobby - P3A again: glass cards with glowing rims and hover lift; your card opens the seat popup - interactive",
+      "is_interactive": true
+    },
+    "R108Squad.dc.html": {
+      "x": 4200,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 108 Squad - Fly a squad instead: squad choices on top, AI wingmates fill the seats, lobby kept - interactive",
+      "is_interactive": true
+    },
+    "R108Picker.dc.html": {
+      "x": 0,
+      "y": 12460,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 108 Picker - Seat popup: vessel, pilot, element, artifact tabs, quick kits, Sees filter, one press per pick - interactive",
+      "is_interactive": true
+    },
+    "R109Compare.dc.html": {
+      "x": 0,
+      "y": 33151,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 109 - the three devices lying on the bench and held up, beside the built slab"
+    },
+    "R109A.dc.html": {
+      "x": 2100,
+      "y": 33151,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 109 A - The tidestone: a slab of clear crystal, the crew glowing inside, brass claws (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R109B.dc.html": {
+      "x": 4200,
+      "y": 33151,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 109 B - The nautilus: a chambered shell whose pearl throws the crew up as light - interactive",
+      "is_interactive": true
+    },
+    "R109C.dc.html": {
+      "x": 0,
+      "y": 34411,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 109 C - The light scroll: the crew stretched between two long prisms - interactive",
+      "is_interactive": true
+    },
+    "R109Notes.dc.html": {
+      "x": 0,
+      "y": 35671,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 109 - notes: what was asked, the three devices, the recommendation, what the build changes"
+    },
+    "R110B.dc.html": {
+      "x": 0,
+      "y": 38031,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 110 B - The holo table with every setting: the seat, its four lists, an open seat, the squads, the light, Make, Join - interactive",
+      "is_interactive": true
+    },
+    "R110Notes.dc.html": {
+      "x": 0,
+      "y": 39291,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 110 - the vessels in the hangar: real models over an empty-pad video, checked"
+    },
+    "R111Full.dc.html": {
+      "x": 0,
+      "y": 15000,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 111 Full - The table animates to full screen: no border, zoom inside the map, back from full screen, Galaxy to Cell - interactive",
+      "is_interactive": true
+    },
+    "R112Compare.dc.html": {
+      "x": 0,
+      "y": 43684,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 - the four layouts side by side, and how a Free and a Premium row read in each"
+    },
+    "R112A.dc.html": {
+      "x": 2100,
+      "y": 43684,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 A - Stage and list: a scrolling list on the left, Free then Premium; the set's world and what it repaints fill the right (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R112B.dc.html": {
+      "x": 4200,
+      "y": 43684,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 B - Wall: the world and what it repaints across the top; every set as a tile below, a wall that scrolls, Free and Premium as two shelves - interactive",
+      "is_interactive": true
+    },
+    "R112C.dc.html": {
+      "x": 0,
+      "y": 44944,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 C - Two shelves: Free down the left, Premium down the right, the world and what it repaints between them - interactive",
+      "is_interactive": true
+    },
+    "R112D.dc.html": {
+      "x": 2100,
+      "y": 44944,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 D - The real cell: the world is the whole screen; a docked list on the right with Free / Premium filters, what it repaints along the foot - interactive",
+      "is_interactive": true
+    },
+    "R112Notes.dc.html": {
+      "x": 0,
+      "y": 46204,
+      "w": 1920,
+      "h": 900,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 - notes: what was asked, the four, Free vs Premium, how it maps to the built Showroom, decisions"
     }
   },
   "createdOnFiles": {
@@ -3988,7 +4133,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "voyages",
+    "page": "menu-redesign-c",
     "view": "canvas"
   },
   "noteOrder": [
@@ -4100,16 +4245,21 @@
     "sec-rev84",
     "sec-rev85",
     "sec-rev86",
-    "sec-rev87",
-    "sec-rev88",
-    "sec-rev89",
-    "sec-rev90",
     "sec-rev91",
-    "sec-rev95",
-    "sec-rev96",
     "sec-rev94",
-    "sec-rev97",
-    "sec-rev98",
+    "sec-rev99",
+    "sec-rev103",
+    "sec-rev101",
+    "sec-rev104",
+    "sec-rev105",
+    "sec-rev106",
+    "sec-rev107",
+    "sec-rev108",
+    "sec-rev109",
+    "sec-rev110",
+    "sec-rev111",
+    "sec-rev100",
+    "sec-rev112",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4186,17 +4336,22 @@
     "rev84",
     "rev85",
     "rev86",
-    "rev87",
     "f2u-sgbuttons",
-    "rev88",
-    "rev89",
-    "rev90",
     "rev91",
     "rev94",
-    "rev95",
-    "rev96",
-    "rev97",
-    "rev98"
+    "rev99",
+    "rev103",
+    "rev101",
+    "rev104",
+    "rev105",
+    "rev106",
+    "rev100",
+    "rev107",
+    "rev108",
+    "rev109",
+    "rev110",
+    "rev111",
+    "rev112"
   ],
   "notes": {
     "hud_end": {
@@ -6543,30 +6698,6 @@
       },
       "page": "ark"
     },
-    "rev87": {
-      "kind": "title1",
-      "text": "Rev 87 - the Voyages tab, drawn new around the HyperSea map and the edge view",
-      "x": 0,
-      "y": -400,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev87": {
-      "kind": "rect",
-      "x": -160,
-      "y": -560,
-      "w": 6440,
-      "h": 2880,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
-    },
     "f2u-sgbuttons": {
       "kind": "title1",
       "maxW": 1920,
@@ -6575,78 +6706,6 @@
       "w": 240,
       "x": 0,
       "y": 4040
-    },
-    "rev88": {
-      "kind": "title1",
-      "text": "Rev 88 - A taken forward: smaller top texts, every screen of the Voyage window",
-      "x": 0,
-      "y": 3220,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev88": {
-      "kind": "rect",
-      "x": -160,
-      "y": 3060,
-      "w": 6440,
-      "h": 4140,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
-    },
-    "rev89": {
-      "kind": "title1",
-      "text": "Rev 89 - the Voyages screen with the HyperSea as the show",
-      "x": 0,
-      "y": 8100,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev89": {
-      "kind": "rect",
-      "x": -160,
-      "y": 7940,
-      "w": 6440,
-      "h": 2880,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
-    },
-    "rev90": {
-      "kind": "title1",
-      "text": "Rev 90 - Saga, Quests and Episodes as the Sea table",
-      "x": 0,
-      "y": 11720,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev90": {
-      "kind": "rect",
-      "x": -160,
-      "y": 11560,
-      "w": 6440,
-      "h": 2880,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
     },
     "rev91": {
       "kind": "title1",
@@ -6681,54 +6740,6 @@
       "maxW": 6120,
       "page": "loading-screens"
     },
-    "rev95": {
-      "kind": "title1",
-      "text": "Rev 95 - Voyages as two screens: the voyage on the map, then the squad",
-      "x": 0,
-      "y": 15340,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev95": {
-      "kind": "rect",
-      "x": -160,
-      "y": 15180,
-      "w": 6440,
-      "h": 4140,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
-    },
-    "rev96": {
-      "kind": "title1",
-      "text": "Rev 96 - the squad screen: a backdrop, soft buttons, one press",
-      "x": 0,
-      "y": 20220,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev96": {
-      "kind": "rect",
-      "x": -160,
-      "y": 20060,
-      "w": 6440,
-      "h": 4140,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
-    },
     "sec-rev94": {
       "kind": "rect",
       "x": -160,
@@ -6744,21 +6755,222 @@
       },
       "page": "loading-screens"
     },
-    "rev97": {
+    "rev99": {
       "kind": "title1",
-      "text": "Rev 97 - Voyages: the squad presets and the seat's choices redrawn; three players picking at once",
+      "text": "Rev 99 - The Pilots tab as a crew PDA lying in the Ark: each pilot's file and story read on it",
       "x": 0,
-      "y": 25100,
+      "y": 16651,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev99": {
+      "kind": "rect",
+      "x": -160,
+      "y": 16491,
+      "w": 6440,
+      "h": 4320,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev103": {
+      "kind": "title1",
+      "text": "Rev 103 - Saga and Episodes locked together: one coming-soon strip at the foot of the Voyages screen",
+      "x": 0,
+      "y": -400,
       "w": 240,
       "maxW": 6120,
       "page": "voyages"
     },
-    "sec-rev97": {
+    "sec-rev103": {
       "kind": "rect",
       "x": -160,
-      "y": 24940,
+      "y": -560,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(150, 156, 190, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(150, 156, 190, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev101": {
+      "kind": "title1",
+      "text": "Rev 101 - Quests as a screen of its own: the episode's five quests, each one's goals, claim and what it opens",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "quests"
+    },
+    "sec-rev101": {
+      "kind": "rect",
+      "x": -160,
+      "y": -560,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "quests"
+    },
+    "rev104": {
+      "kind": "title1",
+      "text": "Rev 104 - Elemental Converter without the cards: the player's real crystal balances, inside the Ark",
+      "x": 0,
+      "y": 21711,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev104": {
+      "kind": "rect",
+      "x": -160,
+      "y": 21551,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev105": {
+      "kind": "title1",
+      "text": "Rev 105 - The Artifacts tab without cards: three levels (the hoard, one artifact, feeding it), the words on the room",
+      "x": 0,
+      "y": 24251,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev105": {
+      "kind": "rect",
+      "x": -160,
+      "y": 24091,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev106": {
+      "kind": "title1",
+      "text": "Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like the captains' bridges",
+      "x": 0,
+      "y": 27871,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev106": {
+      "kind": "rect",
+      "x": -160,
+      "y": 27711,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev100": {
+      "kind": "title1",
+      "text": "Rev 100 - Voyages, new: the HyperSea and your crew's voyages, the voyage opened, your Ark",
+      "x": 0,
+      "y": 4480,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "rev107": {
+      "kind": "title1",
+      "text": "Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no episode",
+      "x": 0,
+      "y": 4480,
+      "w": 240,
+      "maxW": 6120,
+      "page": "quests"
+    },
+    "sec-rev107": {
+      "kind": "rect",
+      "x": -160,
+      "y": 4320,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "quests"
+    },
+    "rev108": {
+      "kind": "title1",
+      "text": "Rev 108 Voyages: flatter table, cooler Ark cards, squad mode, seat popup",
+      "x": 0,
+      "y": 10800,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev108": {
+      "kind": "rect",
+      "x": -160,
+      "y": 10640,
       "w": 6440,
       "h": 3060,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev109": {
+      "kind": "title1",
+      "text": "Rev 109 - The crew PDA itself, redesigned: three devices from the Ark for the hangar bench",
+      "x": 0,
+      "y": 32751,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev109": {
+      "kind": "rect",
+      "x": -160,
+      "y": 32591,
+      "w": 6440,
+      "h": 4140,
       "css": {
         "background": "rgba(166, 0, 255, 0.06)",
         "border-style": "solid",
@@ -6766,23 +6978,23 @@
         "border-width": "3px 3px 3px 3px",
         "border-radius": "40px 40px 40px 40px"
       },
-      "page": "voyages"
+      "page": "ark"
     },
-    "rev98": {
+    "rev110": {
       "kind": "title1",
-      "text": "Rev 98 - Voyages: 1A and 2D, Shombith's picks, with room between the words",
+      "text": "Rev 110 - The Squads tab, option B with every setting; the vessels in the hangar as real models",
       "x": 0,
-      "y": 28900,
+      "y": 37631,
       "w": 240,
       "maxW": 6120,
-      "page": "voyages"
+      "page": "ark"
     },
-    "sec-rev98": {
+    "sec-rev110": {
       "kind": "rect",
       "x": -160,
-      "y": 28740,
+      "y": 37471,
       "w": 6440,
-      "h": 1800,
+      "h": 2880,
       "css": {
         "background": "rgba(255, 174, 0, 0.06)",
         "border-style": "solid",
@@ -6790,7 +7002,70 @@
         "border-width": "3px 3px 3px 3px",
         "border-radius": "40px 40px 40px 40px"
       },
+      "page": "ark"
+    },
+    "rev111": {
+      "kind": "title1",
+      "text": "Rev 111 Voyages: the table opens to full screen, down to one Cell",
+      "x": 0,
+      "y": 14600,
+      "w": 240,
+      "maxW": 6120,
       "page": "voyages"
+    },
+    "sec-rev111": {
+      "kind": "rect",
+      "x": -160,
+      "y": 14440,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "sec-rev100": {
+      "kind": "rect",
+      "x": -160,
+      "y": 4320,
+      "w": 6440,
+      "h": 3060,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev112": {
+      "kind": "title1",
+      "text": "Rev 112 - Colour sets for a growing catalog: a world preview, one scrolling list, Free and Premium apart, no empty middle",
+      "x": 0,
+      "y": 43284,
+      "w": 240,
+      "maxW": 6120,
+      "page": "menu-redesign-c"
+    },
+    "sec-rev112": {
+      "kind": "rect",
+      "x": -160,
+      "y": 43124,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "menu-redesign-c"
     }
   },
   "order": [
@@ -7230,21 +7505,6 @@
     "R85ArtifactsB.dc.html",
     "R85ArtifactsC.dc.html",
     "R86ArtifactsAB.dc.html",
-    "R87A.dc.html",
-    "R87Notes.dc.html",
-    "R88Voyages.dc.html",
-    "R88Escort.dc.html",
-    "R88Saga.dc.html",
-    "R88Quests.dc.html",
-    "R88Episodes.dc.html",
-    "R88Notes.dc.html",
-    "R89A.dc.html",
-    "R89B.dc.html",
-    "R89Notes.dc.html",
-    "R90Saga.dc.html",
-    "R90Quests.dc.html",
-    "R90Episodes.dc.html",
-    "R90Notes.dc.html",
     "R91Compare.dc.html",
     "R91A.dc.html",
     "R91B.dc.html",
@@ -7255,27 +7515,59 @@
     "R91Notes.dc.html",
     "R94C.dc.html",
     "R94Notes.dc.html",
-    "R95S1A.dc.html",
-    "R95S1B.dc.html",
-    "R95S1C.dc.html",
-    "R95S2A.dc.html",
-    "R95S2B.dc.html",
-    "R95S2C.dc.html",
-    "R95Notes.dc.html",
-    "R96S1A.dc.html",
-    "R96Buttons.dc.html",
-    "R96S2D.dc.html",
-    "R96S2E.dc.html",
-    "R96S2F.dc.html",
-    "R96Notes.dc.html",
-    "R97Squad.dc.html",
-    "R97Choices.dc.html",
-    "R97S1A.dc.html",
-    "R97S2D.dc.html",
-    "R97S2G.dc.html",
-    "R97S2H.dc.html",
-    "R98S1A.dc.html",
-    "R98S2D.dc.html"
+    "R99Compare.dc.html",
+    "R99A.dc.html",
+    "R99B.dc.html",
+    "R99C.dc.html",
+    "R99Notes.dc.html",
+    "R103Compare.dc.html",
+    "R103A.dc.html",
+    "R103B.dc.html",
+    "R103C.dc.html",
+    "R103Notes.dc.html",
+    "R101Compare.dc.html",
+    "R101A.dc.html",
+    "R101B.dc.html",
+    "R101C.dc.html",
+    "R101Notes.dc.html",
+    "R104A.dc.html",
+    "R104B.dc.html",
+    "R104C.dc.html",
+    "R105A.dc.html",
+    "R105B.dc.html",
+    "R105C.dc.html",
+    "R105Notes.dc.html",
+    "R106Compare.dc.html",
+    "R106A.dc.html",
+    "R106B.dc.html",
+    "R106C.dc.html",
+    "R106Notes.dc.html",
+    "R100P1A.dc.html",
+    "R100P2A.dc.html",
+    "R100P3A.dc.html",
+    "R100Notes.dc.html",
+    "R107Compare.dc.html",
+    "R107D.dc.html",
+    "R107E.dc.html",
+    "R107Notes.dc.html",
+    "R108Table.dc.html",
+    "R108Lobby.dc.html",
+    "R108Squad.dc.html",
+    "R108Picker.dc.html",
+    "R109Compare.dc.html",
+    "R109A.dc.html",
+    "R109B.dc.html",
+    "R109C.dc.html",
+    "R109Notes.dc.html",
+    "R110B.dc.html",
+    "R110Notes.dc.html",
+    "R111Full.dc.html",
+    "R112Compare.dc.html",
+    "R112A.dc.html",
+    "R112B.dc.html",
+    "R112C.dc.html",
+    "R112D.dc.html",
+    "R112Notes.dc.html"
   ],
   "pages": [
     {
@@ -7325,6 +7617,10 @@
     {
       "id": "loading-screens",
       "name": "Loading Screens"
+    },
+    {
+      "id": "quests",
+      "name": "Quests"
     }
   ],
   "title": "Frogma"
