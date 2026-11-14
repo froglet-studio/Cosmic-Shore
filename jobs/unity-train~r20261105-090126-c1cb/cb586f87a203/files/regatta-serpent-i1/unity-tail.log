@@ -33,8 +33,8 @@ Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(907,20): 
 Assets\_Scripts\Controller\Arcade\HijackController.cs(305,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
 Assets\_Scripts\Controller\Arcade\HijackController.cs(317,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
 Assets\_Scripts\Controller\Arcade\Racing\GateRaceController.cs(762,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
-Assets\_Scripts\UI\NetworkVolumeUIController.cs(67,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
 Assets\_Scripts\Controller\Arcade\Tandava\TandavaController.cs(888,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\UI\NetworkVolumeUIController.cs(67,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
 Assets\_Scripts\Controller\Arcade\TandavaSevering\TandavaSeveringController.cs(944,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
 Assets\_Scripts\Controller\Arcade\TurnMonitors\NetworkJoustCollisionTurnMonitor.cs(154,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
 Assets\_Scripts\Controller\Environment\FloraAndFauna\FaunaNetworkSync.cs(341,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
@@ -58,21 +58,21 @@ Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(371,20):
 Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(386,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
 Assets\_Scripts\Controller\Vessel\VesselController.cs(491,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
 Assets\_Scripts\Controller\Vessel\VesselController.cs(501,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
-AssetDatabase: script compilation time: 5.797126s
+AssetDatabase: script compilation time: 5.647367s
 Scripts have compiler errors.
-0x00007ffd1b3c4e2e (Unity) StackWalker::ShowCallstack
-0x00007ffd1cbff369 (Unity) PlatformStacktrace::GetStacktrace
-0x00007ffd1cbffbee (Unity) Stacktrace::GetStacktrace
-0x00007ffd1b37587f (Unity) DebugStringToFile
-0x00007ffd1bdc1177 (Unity) CheckBatchModeErrorString
-0x00007ffd1db84fc3 (Unity) ShouldEnterSafeMode
-0x00007ffd1db6257f (Unity) DomainReloadIfAllowed
-0x00007ffd1db7dd4b (Unity) RefreshInternalV2
-0x00007ffd1db86f17 (Unity) StopAssetImportingV2Internal
-0x00007ffd1db75b1f (Unity) InitialRefreshV2
-0x00007ffd1daec562 (Unity) AssetDatabase::InitialRefresh
-0x00007ffd1c42d390 (Unity) Application::InitializeProject
-0x00007ffd1c2214d3 (Unity) UnityMain
+0x00007ffd204c4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd21cff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd21cffbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd2047587f (Unity) DebugStringToFile
+0x00007ffd20ec1177 (Unity) CheckBatchModeErrorString
+0x00007ffd22c84fc3 (Unity) ShouldEnterSafeMode
+0x00007ffd22c6257f (Unity) DomainReloadIfAllowed
+0x00007ffd22c7dd4b (Unity) RefreshInternalV2
+0x00007ffd22c86f17 (Unity) StopAssetImportingV2Internal
+0x00007ffd22c75b1f (Unity) InitialRefreshV2
+0x00007ffd22bec562 (Unity) AssetDatabase::InitialRefresh
+0x00007ffd2152d390 (Unity) Application::InitializeProject
+0x00007ffd213214d3 (Unity) UnityMain
 0x00007ff75d5a2f2a (Unity) __scrt_common_main_seh
 0x00007ffe49f2dda7 (KERNEL32) BaseThreadInitThunk
 0x00007ffe4c0dee4c (ntdll) RtlUserThreadStart
