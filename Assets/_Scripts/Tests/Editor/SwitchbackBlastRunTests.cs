@@ -622,6 +622,44 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, blocked, $"{blocked} of {rays} sight lines from a ring to the next one's rim are blocked");
         }
 
+        /// <summary>Every door hangs wholly BEHIND its ring (Garrett, 2026-11-14, Docs/Reports/SIGHT_LINES.md): each door
+        /// prism's box lies past the ring's plane, so no line from upstream to the ring's rim, which lies in that plane, can
+        /// pass through a door. In front, the plug (wider than the ring) hid the lime ring on 12-67% of legs at I2-I4.</summary>
+        [Test]
+        public void TheDoorsHangBehindTheirRing([Values(1, 2, 3, 4)] int intensity)
+        {
+            int doors = 0;
+            foreach (int seed in SeedsFor(intensity))
+            {
+                var c = Course(intensity, seed);
+                if (c == null) continue;
+                var L = Layout(c, intensity);
+                int world = 0;
+                foreach (var st in L.Stations) world += st.WorldPrisms;
+                int doorPrisms = L.Prisms.Count - world;
+                for (int k = 0; k < doorPrisms; k++)
+                {
+                    var p = L.Prisms[k];
+                    // the nearest ring: a door hangs DoorSetback (or SecondDoorSetback) past its own
+                    BlastRunStation own = default; float best = float.MaxValue;
+                    foreach (var st in L.Stations)
+                    {
+                        float dd = (p.Position - c[st.Gate].Position).sqrMagnitude;
+                        if (dd < best) { best = dd; own = st; }
+                    }
+                    Vector3 axis = own.FlowAxis, ring = c[own.Gate].Position;
+                    Vector3 h = p.Scale * 0.5f;
+                    float reach = Mathf.Abs(Vector3.Dot(p.Rotation * new Vector3(h.x, 0f, 0f), axis))
+                                + Mathf.Abs(Vector3.Dot(p.Rotation * new Vector3(0f, h.y, 0f), axis))
+                                + Mathf.Abs(Vector3.Dot(p.Rotation * new Vector3(0f, 0f, h.z), axis));
+                    Assert.Greater(Vector3.Dot(p.Position - ring, axis) - reach, 0f,
+                                   $"I{intensity} seed {seed}: door prism {k} reaches in front of gate {own.Gate}'s ring");
+                    doors++;
+                }
+            }
+            Assert.Greater(doors, 0, $"I{intensity}: no doors laid");
+        }
+
         /// <summary>Whether segment a-b passes through prism <paramref name="p"/>'s box shrunk by <paramref name="shrink"/>
         /// on every side (slab test in the box's frame).</summary>
         static bool SegmentHitsBox(Vector3 a, Vector3 b, SwitchbackFeaturePrism p, float shrink)
