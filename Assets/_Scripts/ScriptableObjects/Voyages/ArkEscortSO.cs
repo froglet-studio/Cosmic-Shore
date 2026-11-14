@@ -206,6 +206,25 @@ namespace CosmicShore.ScriptableObjects
                                           "inside its nucleus: cultivation is deliberate work, not a pass through the core.")]
         float pacifyNucleusSeconds = 40f;
 
+        [Header("Wild strikes (Garrett, 2026-11-14)")]
+        [SerializeField, Tooltip("On a hostile world the escort has not pacified, a wild creature within reach of a squad vessel " +
+                                 "plays its ATTACK at it (a Brittlestar's legs whip out; a body with no limbs lunges) and this " +
+                                 "contact lands on the vessel: a danger contact, petals only (\"fauna missing this should have " +
+                                 "this and use it against vessels when attacking an ark\"). Empty: no wild strikes.")]
+        VesselElementalDebuffByDangerPrismEffectSO faunaStrikeEffect;
+
+        [SerializeField, Min(0f), Tooltip("How far a wild strike reaches beyond the creature's body (u).")]
+        float faunaStrikeReach = 24f;
+
+        [SerializeField, Min(0.1f), Tooltip("The wait between one creature's strikes (s).")]
+        float faunaStrikeCooldown = 2.5f;
+
+        [SerializeField, Min(0.1f), Tooltip("How long a wild strike's attack animation plays (s).")]
+        float faunaStrikeSeconds = 0.6f;
+
+        [SerializeField, Min(0f), Tooltip("The contact's weight in the burn rules (a bite is 1, a drain 0.25).")]
+        float faunaStrikeWeight = 1f;
+
         [Header("Words (every line is authored; empty shows nothing)")]
         [SerializeField, Tooltip("The voyage's name, on the build veil and the card.")]
         string voyageName = "ARK ESCORT";
@@ -261,6 +280,11 @@ namespace CosmicShore.ScriptableObjects
         public float SecondWaveAt { get => secondWaveAt; set => secondWaveAt = Mathf.Clamp01(value); }
         public float PacifyMinVolume { get => pacifyMinVolume; set => pacifyMinVolume = Mathf.Max(0f, value); }
         public float PacifyNucleusSeconds { get => pacifyNucleusSeconds; set => pacifyNucleusSeconds = Mathf.Max(0f, value); }
+        public VesselElementalDebuffByDangerPrismEffectSO FaunaStrikeEffect => faunaStrikeEffect;
+        public float FaunaStrikeReach => faunaStrikeReach;
+        public float FaunaStrikeCooldown => faunaStrikeCooldown;
+        public float FaunaStrikeSeconds => faunaStrikeSeconds;
+        public float FaunaStrikeWeight => faunaStrikeWeight;
         public string OverrunLine => overrunLine;
         public string CourseLine => courseLine;
         public string BerthedLine => berthedLine;

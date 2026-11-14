@@ -196,8 +196,7 @@ ark"):
 - **Wild strikes on Ark escort vessels.** On an escort world the squad has not pacified, a wild creature next to a squad
   vessel plays its attack (`FaunaAttackDriver`) and lands the escort's danger contact, which costs petals only
   (`ArkEscortRun.Strikes.cs`, `ArkEscortSO.faunaStrikeEffect`). It has one caller and runs in the escort's worlds only,
-  alongside the feeding lure (§0.z). This part is on its own branch, `claude/jewel-wasp-ark-strikes`, waiting on the
-  Voyages lane's occupant (Shombith).
+  alongside the feeding lure (§0.z).
 
 The fence:
 - `IFaunaPossession` has one implementer, `JewelWaspExecutor`, and possession runs on the simulating peer only.

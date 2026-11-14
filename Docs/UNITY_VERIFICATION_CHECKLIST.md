@@ -23534,7 +23534,7 @@ Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor conf
 - [ ] An omni crystal hatches a Shark or a Worm Colony where you took it, and you are in it at once.
 - [ ] Phone: the four cards are buttons; the Charge card is A (leave); holding the Space card aims while the other thumb flies.
 - [ ] Ark escort, a hostile world: a creature that reaches a squad vessel plays its attack at it and the vessel loses petals;
-      on a pacified world nothing strikes. (Only with `claude/jewel-wasp-ark-strikes`, Shombith's Voyages lane.)
+      on a pacified world nothing strikes. (Affects Shombith's Voyages.)
 - [ ] The HUD is the wasp's own (no Moth dust, drop or keys): Attack, Root, Sting, Swim; in a host the Space card shows
       the Suction and the Time card the Dash, and they swap back on leaving; a level-5 card keeps its upgrade picture.
 - [ ] Multiplayer, a CLIENT hull (host + one client, `Docs/MULTIPLAYER_START_HERE.md`): the client stings a creature and

@@ -381,6 +381,11 @@ namespace CosmicShore.Gameplay
                 _nextSample = Time.time + SampleSeconds;
                 Sample();
             }
+            if (Time.time >= _nextStrikeScan)
+            {
+                _nextStrikeScan = Time.time + StrikeScanSeconds;
+                TickWildStrikes();
+            }
             if (Time.unscaledTime >= _nextLeash)
             {
                 _nextLeash = Time.unscaledTime + LeashCheckSeconds;
