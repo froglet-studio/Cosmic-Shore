@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept); now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
+| Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept); now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203; Rev 111 Full, P2A and P3A built in section 204), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
 | Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
 | Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 187) |
 
@@ -8306,3 +8306,31 @@ not set; every animated property now has its own hole. The crew is a column of p
 views, with a "Crew" toggle above it: the voyage cards slide out beside the portraits only when it is pressed, and
 "Hide" closes them. The picked voyage and Open voyage are one card that moves from under the table to the foot of the
 full screen.
+
+## 204. Built: the three Voyages pages - Rev 111 Full, P2A Briefing and P3A Lobby (2026-11-14, claude/project-thread-sbm2ns, not seen in Unity)
+
+Asked (Shombith): build the picked Voyages screens in the game. Page 1 is Rev 111 Full (section 203), page 2 is Rev 100
+P2A, page 3 is Rev 100 P3A (section 201), with Rev 108's glass cards on sea lines (section 202). Voyages use difficulty
+1-9.
+
+Built in `Assets/_Scripts/UI/Views/` (all code-built, no prefab or scene change), on the Voyages tab's `VoyageBoard`:
+- **Page 1, The HyperSea** (`VoyageSeaPage`): the map laid back as a table by vertex projection (`VoyageTableTilt`, a
+  mesh effect: UGUI's overlay canvas has no perspective, so each vertex is projected, labels sit at their projected
+  points and a press is unprojected back onto the flat map), the square-cornered rim (`VoyageTableRim`), the edge view
+  as the table's front edge, drag pan, the zoom row, Full screen (the page moves into an overlay canvas, lies flat and
+  grows; the ladder gains Neighbourhood and Cell; Back from full screen) and the crew portrait column whose Crew / Hide
+  toggle slides the crew's voyages over the picked card (rows fit the column, compact under 110 px).
+- **Difficulty 1-9** (`VoyageDifficulty`): a pilot recommends twice the job's intensity; a pick sails a copy of the job
+  at intensity (d+1)/2 (at most 4), and pay scales by (0.55 + 0.1 d) against the recommendation, never below one.
+- **Page 2, The Voyage** (`VoyageBriefPage`): the offering pilot on glass, the route drawn over 2.4 s with each stop
+  named as the line reaches it (`VoyageRoutePoster`), the nine difficulty squares with the recommendation marked, and
+  the rewards (crystals, standing, role). Ready your Ark steps on.
+- **Page 3, Your Ark** (`VoyageArkPage`): the lobby (you and your party) or Fly a squad (the squad presets and three
+  seat cards: hull, pilot, element, artifact, four buttons), the voyage summary, Set sail. A player with no squad yet
+  sees the squad that would sail and "Make a squad in the Ark to sail with it."
+- **The seat popup** (`VoyageSeatPicker`): the four tabs, the quick kits (For this voyage, Last flown), the pilots'
+  Sees groups, a grid that tags what the voyage wants, a preview, Done. It opens in its own overlay canvas.
+
+Every word is a `VoyageLines` field (`Docs/Voyages/voyage_slice.json`, `author_voyage_assets.py`); colours come from
+`VoyageBoardStyleSO` through `ColorTrace`. Seen in Amoebius at 1920x1080 (all three pages, full screen, the crew
+column, the popup). Not opened in Unity: the PR's Verification status lists the hand tests.

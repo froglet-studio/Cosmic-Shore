@@ -233,6 +233,9 @@ namespace CosmicShore.UI
         }
 
         // On a charted map the board's y runs toward Sol and the screen's up, so it flips.
+        /// <summary>A place's point on a charted map (the units <see cref="MapPoint"/> gives a course's points in).</summary>
+        public static Vector2 PlacePoint(VoyageLocation l) => l == null ? Vector2.zero : Pos(l, true);
+
         static Vector2 Pos(VoyageLocation l, bool charted) =>
             charted ? new Vector2(l.GalaxyX, -l.GalaxyY) : new Vector2(l.ChartX, l.ChartZ);
 
@@ -400,7 +403,39 @@ namespace CosmicShore.UI
         Vector2 Local(PointerEventData e, Vector2 screen)
         {
             RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screen, e.pressEventCamera, out var p);
-            return p;
+            // A table lying back (the Voyages page, VoyageTableTilt): the press is taken back to the flat map it is seen on.
+            return Tilt && Tilt.Active ? VoyageTableTilt.Flat(rectTransform.rect, p, Tilt.Angle) : p;
+        }
+
+        /// <summary>The Voyages page's table tilt on this map, or null for a flat map (Frogma Rev 111, Docs/MENU_REDESIGN_B.md
+        /// sections 201-203). Set by the board; the names and the presses follow it.</summary>
+        public VoyageTableTilt Tilt;
+
+        /// <summary>Where a point of the flat map (rect space) is seen: through <see cref="Tilt"/> when the map lies back,
+        /// else where it is. <paramref name="scale"/> is how much smaller a name stands there.</summary>
+        public Vector2 SeenAt(Vector2 flat, out float scale)
+        {
+            if (Tilt && Tilt.Active) return VoyageTableTilt.Seen(rectTransform.rect, flat, Tilt.Angle, out scale);
+            scale = 1f;
+            return flat;
+        }
+
+        /// <summary>Draw the view again on the next frame (the names follow a tilt that is easing).</summary>
+        public void Redraw() => _viewDirty = true;
+
+        /// <summary>The tier the view shows now (an index into <see cref="HyperSeaSky.Tiers"/>: 0 Galaxy, 1 Arm, 2 Sector,
+        /// 3 Region, 4 Neighbourhood, 5 Cell, 6 System).</summary>
+        public int Tier => float.IsInfinity(_minX) ? -1 : HyperSeaSky.TierOf(ViewWidth);
+
+        /// <summary>Fly to tier <paramref name="tier"/>'s width about the view's centre (the Voyages page's zoom row), as the
+        /// ladder does.</summary>
+        public void ZoomToTier(int tier)
+        {
+            if (float.IsInfinity(_minX) || tier < 0 || tier >= HyperSeaSky.Tiers.Length) return;
+            _fixWidth = 0f;
+            float width = (float)HyperSeaSky.Tiers[tier].width;
+            // A charted map's width is light years; an uncharted one keeps its framed scale.
+            if (_chart != null) FlyTo(Centre, width);
         }
 
         public void OnPointerDown(PointerEventData e) => _pointers[e.pointerId] = Local(e, e.position);
@@ -936,7 +971,10 @@ namespace CosmicShore.UI
                 bool shown = i < _labelShown.Count && _labelShown[i] && InFrame(at);
                 var below = new Vector2(0f, -MarkerSize * .5f - 2f - label.sizeDelta.y * .5f);
                 _labels[i].gameObject.SetActive(shown);
-                label.anchoredPosition = at - rectTransform.rect.center + below;
+                // On a table lying back the name stands upright where its place is seen, smaller further away.
+                var seen = SeenAt(at, out float scale);
+                label.anchoredPosition = seen - rectTransform.rect.center + below * scale;
+                label.localScale = new Vector3(scale, scale, 1f);
             }
         }
     }

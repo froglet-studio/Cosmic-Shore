@@ -729,7 +729,10 @@ namespace CosmicShore.UI
                 t.fontSize = size;
                 t.color = cand.Color;
                 if (!ReferenceEquals(t.text, cand.Text)) t.text = cand.Text;
-                ((RectTransform)t.transform).anchoredPosition = new Vector2(bx + 3f, cand.At.y) - r.center;
+                // On a table lying back (VoyageTableTilt) the name stands where its point is seen.
+                var seen = _map.SeenAt(new Vector2(bx + 3f, cand.At.y), out float scale);
+                ((RectTransform)t.transform).anchoredPosition = seen - r.center;
+                t.transform.localScale = new Vector3(scale, scale, 1f);
             }
             for (int i = used; i < _labels.Count; i++)
                 if (_labels[i].gameObject.activeSelf) _labels[i].gameObject.SetActive(false);

@@ -23,6 +23,12 @@ namespace CosmicShore.UI
         public static readonly Color Clear = new(0f, 0f, 0f, 0f);
         static readonly Color DisabledAuthored = new(0.55f, 0.55f, 0.6f, 0.6f);
 
+        /// <summary>A route poster's course, its Ark end and its water tint, as authored (the poster reads them through the
+        /// worn colour set, <see cref="VoyageRoutePoster"/>).</summary>
+        public static readonly Color RouteAuthored = new(0.784f, 1f, 0.353f, 1f);
+        public static readonly Color ArkAuthored = new(1f, 0.78f, 0.25f, 1f);
+        public static readonly Color SeaAuthored = new(0.75f, 0.75f, 0.8f, 1f);
+
         public VoyageKit(VoyageBoardStyleSO style, VoyageLines lines, TMP_Text font)
         {
             Style = style;
@@ -183,7 +189,13 @@ namespace CosmicShore.UI
 
         public static void Set(TMP_Text t, string value)
         {
-            if (t) t.text = value ?? string.Empty;
+            if (!t) return;
+            value ??= string.Empty;
+            if (t.text == value) return;
+            t.text = value;
+            // A row or column sized by its words lays out again when they change.
+            if (t.transform.parent is RectTransform parent && parent.TryGetComponent<LayoutGroup>(out _))
+                LayoutRebuilder.MarkLayoutForRebuild(parent);
         }
 
         public TMP_Text Text(Transform parent, float size, Color color, TextAlignmentOptions align)
@@ -201,6 +213,8 @@ namespace CosmicShore.UI
             t.textWrappingMode = TextWrappingModes.NoWrap;
             t.overflowMode = TextOverflowModes.Ellipsis;
             t.raycastTarget = false;
+            // A line is never laid out shorter than the face needs: a cut-short line would ellipsis away whole.
+            Le(t).minHeight = Mathf.Ceil(size * 1.3f);
             return t;
         }
 
@@ -273,7 +287,10 @@ namespace CosmicShore.UI
             }
             var t = Label(row, 18, color, TextAlignmentOptions.Center);
             t.fontStyle = FontStyles.UpperCase | FontStyles.Bold;
+            // A button's words are short and always read whole.
+            t.overflowMode = TextOverflowModes.Overflow;
             t.text = words ?? string.Empty;
+            LayoutRebuilder.MarkLayoutForRebuild(row);
             return t;
         }
 
@@ -379,6 +396,74 @@ namespace CosmicShore.UI
             var b = rt.gameObject.AddComponent<Button>();
             b.targetGraphic = hit;
             return b;
+        }
+
+        /// <summary>
+        /// A glass card (Frogma Rev 108, Docs/MENU_REDESIGN_B.md section 202: "glass cards with sea-line backgrounds, no
+        /// glow, hover lift"): the dark glass, the sea's lines drifting through it, a thin outline, and its content in
+        /// <see cref="GlassCard.Content"/>, which rises a little while the pointer is over the card.
+        /// </summary>
+        public GlassCard Glass(RectTransform rt, bool hit = true)
+        {
+            var card = new GlassCard { Root = rt };
+            card.Fill = Sliced(rt, Style.Sliver10Fill, Fade(Popup, 0.78f));
+            card.Fill.raycastTarget = hit;
+            var sea = Node("Sea", rt);
+            Le(sea).ignoreLayout = true;
+            Stretch(sea);
+            sea.offsetMin = new Vector2(2f, 2f);
+            sea.offsetMax = new Vector2(-2f, -2f);
+            card.Lines = sea.gameObject.AddComponent<VoyageSeaLines>();
+            card.Lines.color = Fade(Outline, 0.55f);
+            card.Lines.Lines = 6;
+            card.Lines.Speed = 0.012f;
+            var edge = Node("Edge", rt);
+            Le(edge).ignoreLayout = true;
+            Stretch(edge);
+            card.Edge = Sliced(edge, Style.Sliver10Line, Outline);
+            card.Content = Node("Content", rt);
+            Le(card.Content).ignoreLayout = true;
+            Stretch(card.Content);
+            var hover = rt.gameObject.AddComponent<VoyageHoverLift>();
+            hover.Target = card.Content;
+            hover.Lines = card.Lines;
+            return card;
+        }
+
+        public sealed class GlassCard
+        {
+            public RectTransform Root, Content;
+            public Image Fill, Edge;
+            public VoyageSeaLines Lines;
+
+            /// <summary>Light the outline (the picked or the player's own card) or set it back.</summary>
+            public void Pick(VoyageKit kit, bool on) => Edge.color = on ? kit.Cyan : kit.Outline;
+        }
+
+        /// <summary>A row of <paramref name="count"/> difficulty pips, the first ones lit (<see cref="VoyagePips"/>).</summary>
+        public VoyagePips Pips(Transform parent, int count = 9)
+        {
+            var rt = Node("Pips", parent);
+            var le = Le(rt);
+            le.preferredWidth = le.minWidth = count * 14f;
+            le.preferredHeight = le.minHeight = 8f;
+            var pips = rt.gameObject.AddComponent<VoyagePips>();
+            pips.Count = count;
+            pips.color = Light;
+            pips.Off = Outline;
+            return pips;
+        }
+
+        /// <summary>A small outlined square button with a mark or a word in it (the zoom steps, a picker's close).</summary>
+        public (Button button, TMP_Text text) Square(RectTransform rt, string mark, Action onClick)
+        {
+            var b = Plated(rt, Fade(Popup, 0.78f), true, out _, out _);
+            var t = Text(rt, 20, Light, TextAlignmentOptions.Center);
+            Stretch(t.rectTransform);
+            t.richText = false;
+            t.text = mark ?? string.Empty;
+            b.onClick.AddListener(() => onClick?.Invoke());
+            return (b, t);
         }
 
         public sealed class Stepper

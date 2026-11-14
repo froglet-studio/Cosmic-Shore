@@ -2903,3 +2903,81 @@ MonoBehaviour:
     StripEpisodesName: Episode 2
     StripSoon: Coming soon
     StripNotOpen: Not open yet. Voyages are open now.
+    StepSea: 01  THE HYPERSEA
+    StepVoyage: 02  THE VOYAGE
+    StepArk: 03  YOUR ARK
+    PageBack: BACK
+    PageBackKey: B
+    SeaFullScreen: FULL SCREEN
+    SeaFullScreenBack: BACK FROM FULL SCREEN
+    SeaCrew: CREW
+    SeaCrewHide: HIDE
+    SeaTierWidth: '{ly} ly'
+    SeaOpenVoyage: OPEN VOYAGE
+    SeaOfferKicker: '{kind} - {pilot}'
+    SeaOfferPay: '{pay} {element}'
+    SeaCrewRecommends: '{pilot} recommends'
+    BriefKicker: '{kind} - offered by {pilot}'
+    BriefStats: '{ly} ly - {minutes} min - {stops} stops'
+    BriefDifficulty: DIFFICULTY
+    BriefRecommended: 'Recommended by {pilot}: {difficulty}'
+    BriefRewards: REWARDS
+    BriefCrystals: '{pay} {element} crystals'
+    BriefCrystalsBy: 'At difficulty {difficulty}'
+    BriefStanding: 'Standing with {faction}'
+    BriefStandingBy: They trust you more
+    BriefRole: 'Your squad sails as {role}'
+    BriefStop: 'STOP {n} OF {count}'
+    BriefReady: READY YOUR ARK
+    ArkLobby: YOUR LOBBY
+    ArkLobbyWith: '{names} sail with you'
+    ArkSquadHead: FLY A SQUAD
+    ArkSquadLine: AI wingmates fly the other seats
+    ArkSquadLineLobby: 'Your lobby waits; AI wingmates fly the other seats'
+    ArkYou: You
+    ArkWingmate: AI wingmate
+    ArkInLobby: IN YOUR LOBBY
+    ArkFriendLine: Picks their own vessel
+    ArkArtifact: 'Artifact - {artifact}'
+    ArkFlySquad: FLY A SQUAD INSTEAD
+    ArkFlySquadKey: X
+    ArkBackToLobby: BACK TO YOUR LOBBY
+    ArkVoyageLine: '{kind}'
+    PickTitle: Change your seat
+    PickTitleSeat: 'Change {seat}'
+    PickKits: QUICK KITS - ALL FOUR IN ONE PRESS
+    PickKitVoyage: For this voyage
+    PickKitLast: Last flown
+    PickKitWho: '{vessel} - {pilot} - {element}'
+    PickSees: SEES
+    PickSeesAll: All
+    PickSeesCrystals: Crystals
+    PickSeesPrisms: Prisms
+    PickSeesLife: Life
+    PickSeesVessels: Vessels
+    PickSeesPaths: Paths
+    PickCount: '{shown} of {total}'
+    PickForVoyage: FOR THIS VOYAGE
+    PickNote: One press takes it. Your seat behind updates as you pick.
+    PickClose: X
+    KindCourier: Courier
+    KindHunt: Vault hunt
+    KindSalvage: Salvage
+    KindDefence: Defence
+    KindSurvey: Survey
+    KindHarvest: Harvest
+    KindStudy: Study
+    KindRescue: Rescue
+    KindLiberate: Liberation
+    KindBuild: Build
+    KindLift: Lift
+    KindBounty: Bounty hunt
+    KindRite: Rite
+    KindParley: Parley
+    KindRaid: Piracy
+    KindTend: Tending
+    KindExhibition: Exhibition
+    KindConvoy: Convoy
+    KindCull: Hunt
+    KindHome: Home
+    KindEscort: Ark escort

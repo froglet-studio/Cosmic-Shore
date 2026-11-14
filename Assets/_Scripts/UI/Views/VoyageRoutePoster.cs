@@ -23,6 +23,34 @@ namespace CosmicShore.UI
         Texture _texture;
         /// <summary>How thick the course and its ends draw (1: the open card's; the Voyages board's small rows draw thinner).</summary>
         public float LineScale = 1f;
+
+        float _drawn = 1f;
+        readonly List<Vector2> _stops = new();
+
+        /// <summary>How much of the course is drawn, from its start (0-1): the voyage page draws it in as it opens
+        /// (Frogma Rev 100 P2A, "the route drawing itself").</summary>
+        public float Drawn
+        {
+            get => _drawn;
+            set
+            {
+                value = Mathf.Clamp01(value);
+                if (Mathf.Approximately(value, _drawn)) return;
+                _drawn = value;
+                SetVerticesDirty();
+            }
+        }
+
+        /// <summary>The voyage's stops (map points), ringed on the course; a stop the drawing has reached is lit.</summary>
+        public void SetStops(IReadOnlyList<Vector2> stops)
+        {
+            _stops.Clear();
+            if (stops != null) _stops.AddRange(stops);
+            SetVerticesDirty();
+        }
+
+        /// <summary>How far along the course (0-1) the stop nearest <paramref name="stop"/> lies.</summary>
+        public float ShareAt(Vector2 stop) => VoyageCardRules.ShareAlong(_course, stop);
         // The map's view the mesh was last built for: the poster rebuilds only when the map repaints or moves.
         Vector2 _drawnLo, _drawnHi;
         Rect _drawnRect;
@@ -82,12 +110,26 @@ namespace CosmicShore.UI
 
             if (_course.Count < 2) return;
             var white = _source.WhiteUv;
-            // A soft wide line under a thin bright one: the course lit on the water.
+            // A soft wide line under a thin bright one: the course lit on the water, drawn up to Drawn of its length.
             var glow = new Color(route.r, route.g, route.b, 0.22f);
-            for (int i = 1; i < _course.Count; i++) Segment(vh, At(_course[i - 1]), At(_course[i]), 12f * LineScale, glow, white);
-            for (int i = 1; i < _course.Count; i++) Segment(vh, At(_course[i - 1]), At(_course[i]), 3f * LineScale, route, white);
+            float total = VoyageCardRules.Length(_course), left = total * _drawn;
+            var dim = new Color(sea.r, sea.g, sea.b, 0.35f);
+            for (int i = 1; i < _course.Count; i++)
+            {
+                var a = _course[i - 1];
+                var b = _course[i];
+                float len = Vector2.Distance(a, b);
+                if (left <= 0f) { Segment(vh, At(a), At(b), 2f * LineScale, dim, white); continue; }
+                var end = len > left ? Vector2.Lerp(a, b, left / Mathf.Max(1e-4f, len)) : b;
+                Segment(vh, At(a), At(end), 12f * LineScale, glow, white);
+                Segment(vh, At(a), At(end), 3f * LineScale, route, white);
+                if (len > left) Segment(vh, At(end), At(b), 2f * LineScale, dim, white);
+                left -= len;
+            }
+            foreach (var stop in _stops)
+                Ring(vh, At(stop), 9f * LineScale, 2f * LineScale, ShareAt(stop) <= _drawn + 1e-3f ? route : dim, white);
             Diamond(vh, At(_course[0]), 9f * LineScale, ark, white);
-            Diamond(vh, At(_course[^1]), 9f * LineScale, route, white);
+            if (_drawn >= 0.999f) Diamond(vh, At(_course[^1]), 9f * LineScale, route, white);
         }
 
         static void Segment(VertexHelper vh, Vector2 a, Vector2 b, float width, Color c, Vector2 uv)
@@ -96,6 +138,18 @@ namespace CosmicShore.UI
             if (d.sqrMagnitude < 1e-4f) return;
             var n = new Vector2(-d.y, d.x).normalized * (width * 0.5f);
             Quad(vh, a - n, a + n, b + n, b - n, c, uv, uv, uv, uv);
+        }
+
+        static void Ring(VertexHelper vh, Vector2 p, float r, float width, Color c, Vector2 uv)
+        {
+            const int Sides = 20;
+            for (int i = 0; i < Sides; i++)
+            {
+                float a0 = i * Mathf.PI * 2f / Sides, a1 = (i + 1) * Mathf.PI * 2f / Sides;
+                var d0 = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0));
+                var d1 = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1));
+                Quad(vh, p + d0 * (r - width), p + d0 * r, p + d1 * r, p + d1 * (r - width), c, uv, uv, uv, uv);
+            }
         }
 
         static void Diamond(VertexHelper vh, Vector2 p, float r, Color c, Vector2 uv) =>
