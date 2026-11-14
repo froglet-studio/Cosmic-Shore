@@ -179,6 +179,33 @@ homeostasis the food web is meant to produce, both now gone:
 
 ---
 
+### 0.w Granted carve-out: possession, and wild strikes on escort vessels (Garrett, 2026-11-14)
+
+The Jewel Wasp (`Assets/_Scripts/Controller/Vessel/R_VesselActions/JEWEL_WASP.md`) possesses a creature and flies it.
+Garrett signed off three breaks with the concept ("any host should always be available"; "shielded prisms and
+supershielded prisms always edible"; "fauna missing this should have this and use it against vessels when attacking an
+ark"):
+
+- **Any creature can be possessed**, any diet, from any holder (`Fauna.TryPossess`; the old holder is told through
+  `IFaunaLeash.Released`). A worm is taken by its head, a murmuration whole. Grid colonies (builder, substrate, NCA) say
+  no (`Fauna.CanBePossessed`).
+- **A possessed creature eats every shield**, at its rider's word only. `Fauna.IsInedibleShield` returns false for it, and
+  `Fauna.BiteMass` drops a super-shield and eats the prism devastating. Mass is conserved: the ordinary consume and
+  implosion fill its stomach. The rider's own team's mass, creatures' bodies and the race corridor stay off the menu
+  (`Fauna.PossessedCanEat`).
+- **Wild strikes on Ark escort vessels.** On an escort world the squad has not pacified, a wild creature next to a squad
+  vessel plays its attack (`FaunaAttackDriver`) and lands the escort's danger contact, which costs petals only
+  (`ArkEscortRun.Strikes.cs`, `ArkEscortSO.faunaStrikeEffect`). It has one caller and runs in the escort's worlds only,
+  alongside the feeding lure (§0.z). This part is on its own branch, `claude/jewel-wasp-ark-strikes`, waiting on the
+  Voyages lane's occupant (Shombith).
+
+The fence:
+- `IFaunaPossession` has one implementer, `JewelWaspExecutor`, and possession runs on the simulating peer only.
+- The host keeps its starvation clock (`Sustains` false), so no starvation exception enters.
+- Steering, the cell's grids, spawning and the one-fauna-colour rule are untouched.
+
+An exception, not a precedent: the next one needs its own sign-off.
+
 ### 0.x Granted carve-out: armour wears under creature bites in the Ark escort's worlds (2026-10-31)
 
 Resembles the rejected "make the Ark's plates edible by special-casing" and is NOT that. Asked for by Garrett

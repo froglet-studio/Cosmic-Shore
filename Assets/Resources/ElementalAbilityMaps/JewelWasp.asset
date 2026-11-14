@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: JewelWasp
+  m_EditorClassIdentifier:
+  vesselClass: 31
+  entries:
+  - Element: 1
+    AbilityLabel: Leave / Attack
+    AbilityDescription: 'A leaves a host: the wasp pops out of the creature or plant it rides and flies on along the host''s heading, untouchable for a moment so the host cannot joust it (on screen on a phone: the Charge card is the A button). In a creature, RT AT A RIVAL VESSEL ahead plays the creature''s attack (a Brittlestar''s legs whip out; a body with no limbs lunges) and lands a Strike, the petal-stealing scored hit. Charge''s dial is the ATTACK''S RECHARGE: 3 s at rest, 0.8 s at Charge 10.'
+    Input: 6
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Burst
+    UpgradeDescription: 'Leaving a creature bursts it: every rival vessel within 60 u takes a blast-class hit.'
+  - Element: 2
+    AbilityLabel: Root
+    AbilityDescription: 'LT AT A PLANT: hold to aim (the plant ahead lights in your hue), let go to sting it from anywhere in the cell. The wasp roots in the plant, the camera stands far back and the sticks turn it round the plant, and the plant GROWS while you are in it. Either trigger from a plant aims and stings the next host, so a plant is the best seat for picking one. Mass''s dial is HOW FAST THE PLANT GROWS: x2 at rest, x6 at Mass 10.'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Overgrowth
+    UpgradeDescription: 'Every plant within 200 u of the one you are rooted in grows as fast.'
+  - Element: 3
+    AbilityLabel: Sting / Suction
+    AbilityDescription: 'RT AT A CREATURE: hold to aim (the creature ahead lights in your hue), let go to sting it from anywhere in the cell - any creature, any diet; a worm segment takes the whole worm by its head, a swarm member the whole murmuration. The wasp nests beside its heart crystal and the sticks fly it. In a creature, RT AT PRISMS is suction: the nearest rival prisms ahead, shields and super-shields included, are pulled into its mouth and fill its stomach. Space''s dial is THE SUCTION''S REACH: x1 the creature''s own at rest, x3 at Space 10.'
+    Input: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Maw
+    UpgradeDescription: 'Suction pulls from every side, not only ahead.'
+  - Element: 4
+    AbilityLabel: Swim / Burst
+    AbilityDescription: 'In a creature the sticks fly it at a multiple of its own top speed (sticks together slowest, apart full), and LT is a BURST of speed: 2.2x for 1.2 s, then 3 s to recharge (the card''s icon swaps to the burst while you ride). Time''s dial is HOW FAST A HOST SWIMS: x1.5 its own top speed at rest, x3 at Time 10.'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Restless
+    UpgradeDescription: 'No wait between stings, and none between bursts.'

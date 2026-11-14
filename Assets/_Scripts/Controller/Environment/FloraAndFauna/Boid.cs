@@ -267,6 +267,14 @@ namespace CosmicShore.Gameplay
                     yield break;
                 }
 
+                // POSSESSED (Fauna.Possession): the rider steers every frame (Update) and decides every meal, so the tick
+                // flocks, attaches and grazes nothing. The starvation test above still runs.
+                if (IsPossessed && IsSimAuthority)
+                {
+                    yield return CosmicShore.Utility.WaitCache.About(behaviorUpdateRate);
+                    continue;
+                }
+
                 if (!isAttached)
                 {
                     target = Goal;      // Check it later
@@ -1007,6 +1015,17 @@ namespace CosmicShore.Gameplay
 
         public override bool LeashCanEat(Prism prism) => IsEdibleForForager(prism);
 
+        // --- Possession (Fauna.Possession) -------------------------------------
+
+        public override float PossessionTopSpeed => Mathf.Max(1f, maxSpeed);
+        public override float PossessionMouthReach => Mathf.Max(base.PossessionMouthReach, FeedReach, feedingClusterRadius);
+
+        protected override void OnPossessionChanged(bool possessed)
+        {
+            _feedTarget = null;      // the rider decides every meal now (or, leaving, the boid picks again)
+            _feedHoldUntil = -1f;
+        }
+
         /// <summary>The holder's ordered meal if this forager may eat it (its own diet decides), else null.</summary>
         Prism LeashedMeal()
         {
@@ -1081,6 +1100,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            if (IsPossessed && IsLatched) ReleaseLatch();   // a possessed boid swims where its rider says
             ResolveLatch();
             // A rider's position is its seat on the grip (PlateLatch writes this transform only;
             // the body prism follows its parent and the movers contract below still files it).
@@ -1097,6 +1117,8 @@ namespace CosmicShore.Gameplay
             float turnRate = 1f;
             if (riding)
                 turnRate = Mathf.Max(1f, feedingTurnBoost);
+            else if (IsPossessed && !isKilled)
+                turnRate = SteerOnLeash(Mathf.Max(1f, feedingTurnBoost));
             else if (forager && !isKilled && UpdateFeeding())
                 turnRate = Mathf.Max(1f, feedingTurnBoost);
             else if (Leash != null && !isKilled)
