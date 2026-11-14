@@ -57,6 +57,16 @@ namespace CosmicShore.Gameplay
 
         static SolitonTunnelLensPass s_pass;
         static Material s_lens;
+
+        /// <summary>
+        /// The march-free wall bend (<c>_MW_STANDIN</c>, SolitonTunnelStandin.hlsl, Docs/UNITY_STANDINS.md): 3-14x cheaper per
+        /// pixel than the shell march, a close but approximate bend (mean 5-9 px off at 1280x720, the rims softest). Used only
+        /// while the camera is not riding a tube; riding keeps the march. On by default on phones only, where the march is
+        /// the cost that matters; any quality setting can flip it.
+        /// </summary>
+        public static bool MarchFreeWhenOutside = Application.isMobilePlatform;
+        static LocalKeyword s_standinKeyword;
+        static bool s_standinKeywordReady;
         static bool s_resolved, s_holdingCameras;
         static readonly ProfilerMarker s_marker = new("SolitonTunnel.Maintain");
 
@@ -126,7 +136,20 @@ namespace CosmicShore.Gameplay
             public readonly MaterialPropertyBlock block = new();
             public Vector4 view;
             public Vector4 light;
+            public bool standin;
             public readonly ContourTubes tubes = new();
+        }
+
+        /// <summary>Turns the march-free keyword on or off on the lens material; returns whether it is on.</summary>
+        static bool SetStandin(bool on)
+        {
+            if (!s_standinKeywordReady)
+            {
+                s_standinKeyword = new LocalKeyword(s_lens.shader, "_MW_STANDIN");
+                s_standinKeywordReady = true;
+            }
+            s_lens.SetKeyword(s_standinKeyword, on);
+            return on;
         }
 
         SolitonTunnelLensPass()
@@ -197,6 +220,7 @@ namespace CosmicShore.Gameplay
                 data.light = LightDir();
                 data.view = new Vector4(cam.aspect, s_tubes.Inside, s_tubes.Steady, tubes);
                 s_tubes.CopyTo(data.tubes);
+                data.standin = SetStandin(MarchFreeWhenOutside && s_tubes.Inside <= 0f);
                 builder.UseTexture(copy, AccessFlags.Read);
                 if (resources.cameraDepthTexture.IsValid())
                     builder.UseTexture(resources.cameraDepthTexture, AccessFlags.Read);
@@ -225,6 +249,9 @@ namespace CosmicShore.Gameplay
                     d.block.SetVectorArray(WellPId, t.WellP);
                     d.block.SetVectorArray(WellTId, t.WellT);
                     d.block.SetVector(HoleId, t.Hole);
+                    if (d.standin)   // the shell LUT from the tunnel look's wall widths and rim tightness (_MWLook[0].zw, [2].y)
+                        d.block.SetTexture(SolitonTunnelShellLut.LutId,
+                            SolitonTunnelShellLut.Get(t.Look[0].z, t.Look[0].w, t.Look[2].y));
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, d.material, 0, MeshTopology.Triangles, 3, 1, d.block);
                 });
             }
@@ -510,6 +537,7 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogWarning($"[Soliton] The Soliton Tunnel lens cannot draw: {reason}. Tunnels are not shown.");
                 s_lens = null;
+                s_standinKeywordReady = false;
             }
             WorldColorTrace.Paint(s_lens);   // loaded after the scene's repaint: born in the worn colour set
             return s_lens;
@@ -538,6 +566,7 @@ namespace CosmicShore.Gameplay
         {
             s_resolved = false;
             s_lens = null;
+            s_standinKeywordReady = false;
             s_holdingCameras = false;
             s_phaseFrame = -1;
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;

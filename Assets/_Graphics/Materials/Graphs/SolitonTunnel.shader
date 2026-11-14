@@ -42,6 +42,8 @@ Shader "CosmicShore/SolitonTunnel"
             #pragma target 3.5
             #pragma vertex MeerkatLensVert
             #pragma fragment MeerkatLensFrag
+            // lens worker stand-in: march-free wall bend (SolitonTunnelStandin.hlsl), on while not riding a tube
+            #pragma multi_compile_local _ _MW_STANDIN
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
@@ -322,6 +324,10 @@ Shader "CosmicShore/SolitonTunnel"
                 return len > 2.0 ? off * (2.0 / len) : off;
             }
 
+            #if defined(_MW_STANDIN)
+            #include "SolitonTunnelStandin.hlsl"
+            #endif
+
             float3 MWScene(float2 s, float aspect)
             {
                 float2 suv = s / float2(aspect, 1.0) + 0.5;
@@ -407,7 +413,11 @@ Shader "CosmicShore/SolitonTunnel"
                 float aspect = _MWView.x;
                 float2 p = (uv - 0.5) * float2(aspect, 1.0);
                 float sceneZ = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
+                #if defined(_MW_STANDIN)
+                float2 disp = MWContourStandin(p, sceneZ);
+                #else
                 float2 disp = MWContour(p, sceneZ);
+                #endif
                 float3 ring = float3(0.0, 0.0, 0.0);
                 float shadow = 0.0;
                 disp += MWWells(p, sceneZ, ring, shadow);
