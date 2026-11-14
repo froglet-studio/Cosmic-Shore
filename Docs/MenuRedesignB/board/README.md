@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-13 from canvas version `1794610288-7e60` of **Frogma**: Rev 3 to Rev 110, 499 boards on 13 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-13 from canvas version `1794612096-e4d5` of **Frogma**: Rev 3 to Rev 110, 500 boards on 13 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -671,11 +671,11 @@ Copied on 2026-11-13 from canvas version `1794610288-7e60` of **Frogma**: Rev 3 
 
 #### Rev 109 - The crew PDA itself, redesigned: three devices from the Ark for the hangar bench
 
-- `R109Compare.dc.html` (not copied yet) - Rev 109 - the three devices lying on the bench and held up, beside the built slab
-- `R109A.dc.html` (not copied yet) - Rev 109 A - The tidestone: a slab of clear crystal, the crew glowing inside, brass claws (recommended) - interactive
-- `R109B.dc.html` (not copied yet) - Rev 109 B - The nautilus: a chambered shell whose pearl throws the crew up as light - interactive
-- `R109C.dc.html` (not copied yet) - Rev 109 C - The light scroll: the crew stretched between two long prisms - interactive
-- `R109Notes.dc.html` (not copied yet) - Rev 109 - notes: what was asked, the three devices, the recommendation, what the build changes
+- [`R109Compare.dc.html`](R109Compare.dc.html) - Rev 109 - the three devices lying on the bench and held up, beside the built slab
+- [`R109A.dc.html`](R109A.dc.html) - Rev 109 A - The tidestone: a slab of clear crystal, the crew glowing inside, brass claws (recommended) - interactive
+- [`R109B.dc.html`](R109B.dc.html) - Rev 109 B - The nautilus: a chambered shell whose pearl throws the crew up as light - interactive
+- [`R109C.dc.html`](R109C.dc.html) - Rev 109 C - The light scroll: the crew stretched between two long prisms - interactive
+- [`R109Notes.dc.html`](R109Notes.dc.html) - Rev 109 - notes: what was asked, the three devices, the recommendation, what the build changes
 
 #### Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like the captains' bridges
 
@@ -687,10 +687,10 @@ Copied on 2026-11-13 from canvas version `1794610288-7e60` of **Frogma**: Rev 3 
 
 #### Rev 105 - The Artifacts tab without cards: three levels (the hoard, one artifact, feeding it), the words on the room
 
-- `R105A.dc.html` (not copied yet) - Rev 105 A - In the room: each artifact's words hang beside it, no box - interactive
-- `R105B.dc.html` (not copied yet) - Rev 105 B - The lens: a hologram of what it does, its tracks round the rim (recommended) - interactive
-- `R105C.dc.html` (not copied yet) - Rev 105 C - One at a time: the artifact large in the room, a caption under it - interactive
-- `R105Notes.dc.html` (not copied yet) - Rev 105 - notes: no cards, three levels, real artifacts, the recommendation
+- [`R105A.dc.html`](R105A.dc.html) - Rev 105 A - In the room: each artifact's words hang beside it, no box - interactive
+- [`R105B.dc.html`](R105B.dc.html) - Rev 105 B - The lens: a hologram of what it does, its tracks round the rim (recommended) - interactive
+- [`R105C.dc.html`](R105C.dc.html) - Rev 105 C - One at a time: the artifact large in the room, a caption under it - interactive
+- [`R105Notes.dc.html`](R105Notes.dc.html) - Rev 105 - notes: no cards, three levels, real artifacts, the recommendation
 
 #### Rev 104 - Elemental Converter without the cards: the player's real crystal balances, inside the Ark
 
@@ -700,11 +700,11 @@ Copied on 2026-11-13 from canvas version `1794610288-7e60` of **Frogma**: Rev 3 
 
 #### Rev 99 - The Pilots tab as a crew PDA lying in the Ark: each pilot's file and story read on it
 
-- `R99Compare.dc.html` (not copied yet) - Rev 99 - The PDA's three screens flat, and the three places it lies
-- `R99A.dc.html` (not copied yet) - Rev 99 A - The chart room: the PDA on the chart table under the Ark's great window (recommended) - interactive
-- `R99B.dc.html` (not copied yet) - Rev 99 B - The captain's cabin: the PDA on the desk under a porthole, one warm lamp - interactive
-- `R99C.dc.html` (not copied yet) - Rev 99 C - The hangar bench: the PDA on a workbench, the hangar running out to the cell - interactive
-- `R99Notes.dc.html` (not copied yet) - Rev 99 - notes: what was asked, what Garrett's tab has, what changes, the recommendation
+- [`R99Compare.dc.html`](R99Compare.dc.html) - Rev 99 - The PDA's three screens flat, and the three places it lies
+- [`R99A.dc.html`](R99A.dc.html) - Rev 99 A - The chart room: the PDA on the chart table under the Ark's great window (recommended) - interactive
+- [`R99B.dc.html`](R99B.dc.html) - Rev 99 B - The captain's cabin: the PDA on the desk under a porthole, one warm lamp - interactive
+- [`R99C.dc.html`](R99C.dc.html) - Rev 99 C - The hangar bench: the PDA on a workbench, the hangar running out to the cell - interactive
+- [`R99Notes.dc.html`](R99Notes.dc.html) - Rev 99 - notes: what was asked, what Garrett's tab has, what changes, the recommendation
 
 #### Rev 86 - The Artifacts room, A and B as one - the Reliquary's platform in the Gallery's hall
 
@@ -746,6 +746,7 @@ Copied on 2026-11-13 from canvas version `1794610288-7e60` of **Frogma**: Rev 3 
 - `R108Lobby.dc.html` (not copied yet) - Rev 108 Lobby - P3A again: glass cards with glowing rims and hover lift; your card opens the seat popup - interactive
 - `R108Squad.dc.html` (not copied yet) - Rev 108 Squad - Fly a squad instead: squad choices on top, AI wingmates fill the seats, lobby kept - interactive
 - `R108Picker.dc.html` (not copied yet) - Rev 108 Picker - Seat popup: vessel, pilot, element, artifact tabs, quick kits, Sees filter, one press per pick - interactive
+- `R108Full.dc.html` (not copied yet) - Rev 108 Full - full screen: the map across the window, the crew at the side, zoom from the Galaxy down to one Cell (the foam) - interactive
 
 #### Rev 103 - Saga and Episodes locked together: one coming-soon strip at the foot of the Voyages screen
 

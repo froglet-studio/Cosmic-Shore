@@ -193,6 +193,16 @@ KIT_OWNS_PNGS = True
 OMNI_PNG = "Core/Goby_OmniCrystal.png"
 
 
+# Each card's level-5 picture (the fleet pass, 2026-11-13), on the seat whose act the upgrade changes: None keeps that
+# seat's card through the upgrade (the card's rim and bloom still mark it). element -> (Goby's, Pistol's)
+UPGRADED = {1: (None, "Pistol_VortexSteal"), 2: (None, "Pistol_Fortress"), 3: ("Goby_DeepUndertow", None),
+            4: ("Goby_PhaseDart", None)}
+
+
+def kit_ref(name):
+    return f"{{fileID: 21300000, guid: {kit_guid(name)}, type: 3}}" if name else "{fileID: 0}"
+
+
 def kit_guid(name: str) -> str:
     """The icon kit's deterministic guid for a NEW icon (icon_kit/author.py guid_for): the omni card's sprite."""
     return hashlib.md5(f"CosmicShore/IconKit/Goby/{name}".encode()).hexdigest()
@@ -274,7 +284,9 @@ def variant_text() -> str:
                         f"    gauge: {{fileID: {gauge[1]['img'] if gauge else 0}}}\n")
         seat_icons.append(f"  - element: {element}\n"
                           f"    goby: {sprite_ref(gpng)}\n"
-                          f"    pistol: {sprite_ref(ppng)}\n")
+                          f"    pistol: {sprite_ref(ppng)}\n"
+                          f"    gobyUpgraded: {kit_ref(UPGRADED[element][0])}\n"
+                          f"    pistolUpgraded: {kit_ref(UPGRADED[element][1])}\n")
 
     head = f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:

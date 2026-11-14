@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 109 - notes: what was asked, the three devices, the recommendation, what the build changes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#8A8FAE;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#B8C0F0}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.pick:focus-visible,.pbtn:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.glass{background:rgba(0,4,31,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.scene{position:absolute;inset:0;transition:transform 520ms cubic-bezier(.22,.8,.25,1)}
+.scr{position:absolute;left:0;top:0;width:1200px;height:870px;transform-origin:0 0;overflow:hidden;background:#00010A;color:#E6E9FF;font-family:'Aldrich','Chakra Petch',sans-serif}
+.pbtn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:12px;height:72px;padding:0 30px;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:28px;letter-spacing:.1em;text-transform:uppercase;background:rgba(0,4,31,.7);color:#E6E9FF;box-shadow:inset 0 0 0 2px #747BAD}
+.pbtn .kc{min-width:40px;height:34px;font-size:18px;border-color:currentColor;color:inherit}
+.chip{position:relative;width:168px;height:214px}
+.chip img{display:block;width:168px;height:168px;object-fit:cover}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<span class="abs cap" style="left:80px;top:60px;font-size:28px">Rev 109 - the crew PDA, redesigned</span><div class="abs" style="left:80px;top:110px;width:1760px"><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:11px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Asked</span><span style="font-size:17px;line-height:1.45">Shombith, 2026-11-13, on the built Rev 99 C: &quot;I like C but the actual device it looks too earth like, it should be something completely different and modern and never seen before.&quot; And: take the lighting and design from the pilot scenes set inside the Ark.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:11px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Kept</span><span style="font-size:17px;line-height:1.45">Everything but the device: the hangar bench, the camera, the pick-up, the crew page and a pilot&#x27;s file, the pad. The display stays an upright rectangle when held, about the same size, so ArkPilotsPage and its generator do not change.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:11px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Where the cues come from</span><span style="font-size:17px;line-height:1.45">The in-Ark pilot scenes: Zodiac&#x27;s chart table that glows at its rim, Needle&#x27;s and Galleon&#x27;s brass fittings, Sundial&#x27;s glass, the elemental crystals&#x27; cut light, and the game&#x27;s own prisms. No slab, no bezel, no keys: nothing a phone or tablet has.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:11px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">A - tidestone</span><span style="font-size:17px;line-height:1.45">A long hexagon of clear crystal with chamfered edges; the crew glows inside it, thin cyan seams run along the cuts, brass claws close over both points, a lime seed crystal at one tip. Reads as something cut, not manufactured.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:11px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">B - nautilus</span><span style="font-size:17px;line-height:1.45">A dark lacquered chambered shell with brass septa; a pearl in its mouth throws the crew up as a standing sheet of light. Lying, it is the strangest object of the three; held, the sheet fills the view and the shell drops to its foot.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:11px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">C - light scroll</span><span style="font-size:17px;line-height:1.45">Two long triangular prisms of hull metal with cyan trim and brass caps; the crew is a membrane of light stretched between them. The closest to the game&#x27;s prisms; it unrolls rather than wakes.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:11px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Recommended: A</span><span style="font-size:17px;line-height:1.45">It is the one that stays itself when held: the crystal and its claws frame the crew on every side, where B&#x27;s shell and C&#x27;s prisms leave the frame when the view closes in. It also matches the converter&#x27;s crystals, so the Ark&#x27;s two crystal things belong together.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:11px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">For the build</span><span style="font-size:17px;line-height:1.45">Re-render the bench clips (r99_pilots_bench_videos.py) from the picked device&#x27;s stills, and take PDA_REST_CORNERS and GLASS_X/Y/W/H in author_menu_ark.py from its screen corners. No C# changes. The pick-up transition itself is another thread&#x27;s (the transitions work).</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:11px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Open</span><span style="font-size:17px;line-height:1.45">Whether the device glows faintly while lying (a hint it is live) or stays dark until picked up. Whether the lime seed in A should take the squad&#x27;s domain colour.</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

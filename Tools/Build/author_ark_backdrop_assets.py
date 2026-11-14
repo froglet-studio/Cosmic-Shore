@@ -10,7 +10,8 @@ Writes (and with --check, compares; fails when a clip or a referenced script is 
     Assets/_Scripts/ScriptableObjects/Toys/ArkBackdropConfigSO.cs.meta, Assets/_Scripts/UI/Elements/Ark/ArkBackdrop.cs.meta,
     Assets/_Scripts/UI/Elements/Ark/SquadVesselLayer.cs.meta (the squad's real vessels over the hangar clips, section 202)
 
-The clips themselves are encoded by Docs/MenuRedesignB/rounds/r67_ark_backdrop_videos.py from the Frogma renders.
+The clips themselves are encoded by Docs/MenuRedesignB/rounds/r67_ark_backdrop_videos.py from the Frogma renders, and
+the PILOTS tab's bench clips by Docs/MenuRedesignB/rounds/r99_pilots_bench_videos.py (Rev 99 C, section 191).
 
     python3 Tools/Build/author_ark_backdrop_assets.py           # write
     python3 Tools/Build/author_ark_backdrop_assets.py --check   # exit 1 on drift or a missing clip
@@ -57,8 +58,12 @@ HANGAR = {
 }
 ASSET = "Assets/Resources/ArkBackdropConfig.asset"
 VIDEO_DIR = "Assets/_Graphics/Video/Ark"
-ROOM = {"Hangar": 1, "Pier": 2, "Artifacts": 3}
-RUN = {"loop": 0, "convert": 1, "done": 2}
+PASS_SHADER = "Assets/_Graphics/Materials/Shaders/UI/ArkPass.shader"   # the HyperSea pass (MENU_REDESIGN_B.md section 197)
+PASS_SECONDS = 0.5        # a pass from one room to another (Shombith, 2026-11-13: "the pass can be .50s")
+PASS_STYLES = (0, 1, 2)   # membrane, ripple, caustic veil, picked at random per change until one is final
+DISSOLVE_SECONDS = 0.3    # the pier's own runs: at rest, the conversion, the Omni made
+ROOM = {"Hangar": 1, "Pier": 2, "Artifacts": 3, "Bench": 4}
+RUN = {"loop": 0, "convert": 1, "done": 2, "pickup": 3, "held": 4, "putdown": 5}
 DOMAIN = {"Jade": 1, "Ruby": 2, "Gold": 4}
 SETS = ("Nocturne", "Photic", "DartFrog")
 
@@ -76,6 +81,8 @@ def clips():
     for run in ("loop", "convert", "done"):
         out.append((f"converter_Nocturne_{run}.mp4", "Pier", run, "Nocturne", None))
     out.append(("artifacts_Nocturne_loop.mp4", "Artifacts", "loop", "Nocturne", None))
+    for run in ("loop", "pickup", "held", "putdown"):     # PILOTS: the crew PDA on the hangar's workbench (section 191)
+        out.append((f"bench_Nocturne_{run}.mp4", "Bench", run, "Nocturne", None))
     return out
 
 
@@ -126,6 +133,24 @@ MonoBehaviour:
 {hangar_text()}
   vesselPrefabs: {{fileID: 11400000, guid: {VESSEL_PREFABS}, type: 2}}
   offlineLivery: {{fileID: 2100000, guid: {OFFLINE_LIVERY}, type: 2}}
+  passShader: {{fileID: 4800000, guid: {guid(PASS_SHADER)}, type: 3}}
+  passSeconds: {PASS_SECONDS}
+  passStyles:{"".join(chr(10) + "  - " + str(x) for x in PASS_STYLES) if PASS_STYLES else " []"}
+  dissolveSeconds: {DISSOLVE_SECONDS}
+"""
+
+
+def shader_meta():
+    return f"""fileFormatVersion: 2
+guid: {guid(PASS_SHADER)}
+ShaderImporter:
+  externalObjects: {{}}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
 """
 
 
@@ -190,7 +215,8 @@ NativeFormatImporter:
 def outputs():
     out = {ASSET: asset_text(), ASSET + ".meta": asset_meta(),
            SO_CS + ".meta": script_meta(SO_CS), PLAYER_CS + ".meta": script_meta(PLAYER_CS),
-           LAYER_CS + ".meta": script_meta(LAYER_CS)}
+           LAYER_CS + ".meta": script_meta(LAYER_CS),
+           PASS_SHADER + ".meta": shader_meta()}
     for f, *_ in clips():
         p = VIDEO_DIR + "/" + f
         out[p + ".meta"] = video_meta(p)
@@ -207,10 +233,17 @@ def validate():
     for f in stray:
         errors.append(f"{VIDEO_DIR}/{f} is not a backdrop this config names (ship it in the table or delete it)")
     so = open(os.path.join(REPO, SO_CS)).read() if os.path.exists(os.path.join(REPO, SO_CS)) else ""
-    for field in ("clips", "textureSize", "room", "run", "colourSet", "domain", "anyDomain", "clip", "hangar",
-                  "vesselPrefabs", "offlineLivery", *HANGAR):
+    for member, value in (("Bench", ROOM["Bench"]), ("PickUp", RUN["pickup"]), ("Held", RUN["held"]), ("PutDown", RUN["putdown"])):
+        if not re.search(r"\b" + member + r"\s*=\s*" + str(value) + r"\s*,", so):
+            errors.append(f"the asset writes {member} = {value}, which ArkBackdropConfigSO's enums do not declare")
+    for field in ("clips", "textureSize", "room", "run", "colourSet", "domain", "anyDomain", "clip", "passShader",
+                  "passSeconds", "dissolveSeconds", "passStyles", "hangar", "vesselPrefabs", "offlineLivery", *HANGAR):
         if not re.search(r"\b" + field + r"\s*[;=]", so):
             errors.append(f"the asset writes '{field}', which ArkBackdropConfigSO does not declare")
+    if not os.path.exists(os.path.join(REPO, PASS_SHADER)):
+        errors.append(f"{PASS_SHADER} is missing (the HyperSea pass)")
+    elif 'Shader "CosmicShore/UI/ArkPass"' not in open(os.path.join(REPO, PASS_SHADER)).read():
+        errors.append(f"{PASS_SHADER} is not the CosmicShore/UI/ArkPass shader")
     for cs in (PLAYER_CS, LAYER_CS):
         if not os.path.exists(os.path.join(REPO, cs)):
             errors.append(f"{cs} is missing")

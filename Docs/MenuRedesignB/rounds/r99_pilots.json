@@ -1,0 +1,182 @@
+[
+ {
+  "cs": "ENSIGN",
+  "name": "Veliane Crestward",
+  "a1": "Crane",
+  "a2": "Lemur",
+  "faction": "Wardens of the Calm",
+  "home": "Stillwater",
+  "sees": "Your domain's mass: what is yours to defend, and the gaps in it.",
+  "story": "Veliane Crestward keeps the sea wall of a water garden in Stillwater, and mends it by hand, one stone at a time.\n\nThe Wardens of the Calm keep watch over the cores the quiet domains rely on. With Veliane aboard, the Wardens will ask your crew to patrol those cores, to answer when one calls for aid, and to hold it until the danger has passed.\n\nThe Wardens are slow to trust a crew, and slower to forget one."
+ },
+ {
+  "cs": "MANGER",
+  "name": "Tamako Deephook",
+  "a1": "Ibis",
+  "a2": "Platypus",
+  "faction": "Order of the Last Lure",
+  "home": "Brackenmouth",
+  "sees": "The mass cluster the fauna are heading for.",
+  "story": "Tamako Deephook wades the feeding flats of Brackenmouth, inside a cell the size of a valley, and sets lure lines in water a hand deep.\n\nThe Order of the Last Lure keeps a ledger of every vault field and every sighting its members have ever heard of. With Tamako aboard, that ledger is open to your crew: vaults to open, and lairs to hunt.\n\nThe Order asks only that you write down what you find."
+ },
+ {
+  "cs": "ANVIL",
+  "name": "Brikon Copperwright",
+  "a1": "Yak",
+  "a2": "Beetle",
+  "faction": "Tidewright Exchange",
+  "home": "the Copper Reef",
+  "sees": "Every Mass crystal.",
+  "story": "Brikon Copperwright hauls heavy crystal up from the quarries of the Copper Reef, a boulder at a time, and sells it by weight to anyone with a hull to fill.\n\nThe Tidewright Exchange keeps a desk in every port worth the name. Fly with Brikon and the Exchange will hand your crew sealed dispatches to carry between them, and cargo for convoys bound to ports under pressure.\n\nPay is good when the sea is quiet. When it is not, the cargo still has to arrive."
+ },
+ {
+  "cs": "VOLT",
+  "name": "Karenth Amberweaver",
+  "a1": "Axolotl",
+  "a2": "Koi",
+  "faction": "Brass Lantern Company",
+  "home": "the Lantern Reach",
+  "sees": "Every Charge crystal.",
+  "story": "Karenth Amberweaver makes lamps in a workshop in the Lantern Reach, and proves every bulb by hand before it is sold.\n\nThe Brass Lantern Company lights half the ports of the HyperSea. With Karenth aboard, the Company will give your crew its dispatches to carry, and its convoys to run when a port goes dark.\n\nEvery port you light remembers your name."
+ },
+ {
+  "cs": "ZODIAC",
+  "name": "Ivelia Starreach",
+  "a1": "Ocelot",
+  "a2": "Heron",
+  "faction": "Saltmark Consortium",
+  "home": "Starwake",
+  "sees": "Every Space crystal.",
+  "story": "Ivelia Starreach was apprenticed to a cartographer in Starwake, and now keeps the chart house of a trade barge crossing the HyperSea.\n\nThe Saltmark Consortium charts the trade lanes and sells passage along them. Fly with Ivelia and the Consortium will give your crew dispatches to carry, and convoys to bring to the ports its lanes have left short.\n\nThe charts are never finished. Neither is the work."
+ },
+ {
+  "cs": "SUNDIAL",
+  "name": "Delmira Stillwater",
+  "a1": "Owl",
+  "a2": "Pangolin",
+  "faction": "House Verdance",
+  "home": "Gloamwater",
+  "sees": "Every Time crystal.",
+  "story": "Delmira Stillwater keeps the great water clock of Gloamwater, and has never once arrived early.\n\nHouse Verdance trusts its clocks and its cores to the same few hands. With Delmira in your crew, you will patrol the house's cores, answer its calls for aid, and retake a core another domain has seized.\n\nVerdance keeps time in seasons, not days."
+ },
+ {
+  "cs": "OPAL",
+  "name": "Quivera Pearlspark",
+  "a1": "Chameleon",
+  "a2": "Jellyfish",
+  "faction": "House of Seven Scales",
+  "home": "the Silver Lane",
+  "sees": "Every Omni crystal.",
+  "story": "Quivera Pearlspark trades along the Silver Lane from a cargo quay that never sleeps, and refuses to fly on an empty stomach.\n\nThe House of Seven Scales moves goods to every port on the Lane. Fly with Quivera and your crew will carry its dispatches from port to port, and run its convoys to ports short of what they need.\n\nA port under pressure pays well, and remembers who came."
+ },
+ {
+  "cs": "RAMPART",
+  "name": "Obelo Stormstone",
+  "a1": "Badger",
+  "a2": "Armadillo",
+  "faction": "Quayside Mutual",
+  "home": "Shellmouth",
+  "sees": "Every shielded prism.",
+  "story": "Obelo Stormstone keeps a warehouse on the harbour at Shellmouth, and wants nothing more than a quiet harbour and a long sleep.\n\nThe Quayside Mutual insures cargo across the HyperSea, so it needs crews to carry its dispatches and see its convoys safe to ports where trouble is brewing. With Obelo aboard, that work comes to you.\n\nThe Mutual pays on arrival. Not one moment before."
+ },
+ {
+  "cs": "CITADEL",
+  "name": "Nedira Shellward",
+  "a1": "Hedgehog",
+  "a2": "Tortoise",
+  "faction": "House Albrine",
+  "home": "Coldharbour",
+  "sees": "Every super-shielded prism: what a payload is for.",
+  "story": "Nedira Shellward keeps the storerooms of House Albrine in Coldharbour, and every winter the harbour eats from them.\n\nThe house holds cores across the sea for the domains it answers to. With Nedira in your crew, Albrine will send you to patrol them, to answer its calls for aid, and to take back a core another domain has seized.\n\nA house that feeds a harbour remembers who stood by it."
+ },
+ {
+  "cs": "HORNET",
+  "name": "Zeko Mirethorn",
+  "a1": "Mantis",
+  "a2": "Newt",
+  "faction": "Deepreed Stalkers",
+  "home": "the Glass Shoals",
+  "sees": "Every danger prism: the mass that burns your petals.",
+  "story": "Zeko Mirethorn keeps the hazard light on a shoal in the Glass Shoals, and stands under it through the night, watching what the light draws in.\n\nThe Deepreed Stalkers hunt where the water is dangerous. With Zeko in your crew, they will send you after vaults rumoured in the shallows, and into lairs where the fauna have grown into predators.\n\nA lair is cleared when nothing in it is left to bite."
+ },
+ {
+  "cs": "IVY",
+  "name": "Mathalo Kelpbloom",
+  "a1": "Orangutan",
+  "a2": "Sloth",
+  "faction": "House Verdance",
+  "home": "the Kelp Throne",
+  "sees": "Every plant.",
+  "story": "Mathalo Kelpbloom tends a forest that grows downward inside a living cell above the Kelp Throne, and judges its one bloom of the year.\n\nHouse Verdance holds cores in the green reaches of the HyperSea. Fly with Mathalo and the house will ask your crew to patrol them, to answer its calls for aid, and to retake the ones another domain has taken.\n\nVerdance is patient. It expects its crews to be patient too."
+ },
+ {
+  "cs": "TALON",
+  "name": "Wyvendo Waveline",
+  "a1": "Lynx",
+  "a2": "Jackal",
+  "faction": "Hollowfen Trackers",
+  "home": "Hollowfen",
+  "sees": "Every predator.",
+  "story": "Wyvendo Waveline grew up in the brickyards of Hollowfen, reading the prints of whatever walked through town in the night.\n\nThe Hollowfen Trackers follow sightings across the HyperSea. Fly with Wyvendo and you will hear of vault fields before other crews do, and of lairs where something has grown too large to leave alone.\n\nThe Trackers share what they find. Mostly."
+ },
+ {
+  "cs": "DOE",
+  "name": "Fenlia Moonbell",
+  "a1": "Moose",
+  "a2": "Fennec",
+  "faction": "Longwake Lodge",
+  "home": "Mirrorfen",
+  "sees": "Every herbivore.",
+  "story": "Fenlia Moonbell grew up on the floating meadows of Mirrorfen, where the turf drifts in the haze and the hunting is done by ear.\n\nThe Longwake Lodge trades in rumours: a vault field glimpsed through the mist, a lair where the predators have grown too bold. Fly with Fenlia and those rumours become your crew's work.\n\nWhat a vault holds goes home in the Ark."
+ },
+ {
+  "cs": "WINGMAN",
+  "name": "Jorin Gullwing",
+  "a1": "Puffin",
+  "a2": "Pelican",
+  "faction": "Gullbone Crew",
+  "home": "Farshore",
+  "sees": "Every vessel on your side, through mass.",
+  "story": "Jorin Gullwing lives in a burrow on the sea cliffs of Farshore, and wants one thing above all: a crew that stays.\n\nThe Gullbone Crew raid the hoards other pirates leave unguarded, and strip the wrecks nobody else will touch. With Jorin aboard, they will tell your crew where both are.\n\nGullbone looks after its own. Stay long enough and that means you."
+ },
+ {
+  "cs": "BANDIT",
+  "name": "Rosh Rusthook",
+  "a1": "Octopus",
+  "a2": "Raven",
+  "faction": "Black Tide",
+  "home": "Wrackline",
+  "sees": "Every opposing vessel, through mass.",
+  "story": "Rosh Rusthook works the wrack at low tide on Wrackline, where old ships come apart on the sand and nothing stays buried for long.\n\nThe Black Tide knows where the other crews hide their hoards. With Rosh aboard, you will hear where those hoards sit, and where a fresh wreck is waiting to be stripped.\n\nNot every port will be glad to see you after."
+ },
+ {
+  "cs": "NEEDLE",
+  "name": "Ilia Silvergate",
+  "a1": "Narwhal",
+  "a2": "Seahorse",
+  "faction": "The Jade Accord",
+  "home": "the Old Harbour",
+  "sees": "Every ring that activates something: gates, Scarab switches, goals.",
+  "story": "Ilia Silvergate keeps the sea gate of the Old Harbour, and stands its last watch before dawn, when the ships come in.\n\nThe Jade Accord binds a dozen harbours to keep each other's cores. With Ilia in your crew, the Accord will send you to patrol them, to answer a harbour's call for aid, and to take a core back when another domain holds it.\n\nThe gate opens for crews the Accord trusts."
+ },
+ {
+  "cs": "GALLEON",
+  "name": "Haradek Anchorkeel",
+  "a1": "Walrus",
+  "a2": "Bison",
+  "faction": "The Unmoored",
+  "home": "the Grey Reach",
+  "sees": "The Arks, and the payload aboard.",
+  "story": "Haradek Anchorkeel keeps the hangar deck of a ship of the Unmoored, and ties a ribbon to a hull for every friend the sea has taken.\n\nThe Unmoored answer to no port. Fly with Haradek and you will hear of hoards to raid and wrecks to strip from one end of the Grey Reach to the other.\n\nThe pay is rich. So is the list of crews who would like a word with you."
+ },
+ {
+  "cs": "FLUME",
+  "name": "Ekora Hollowbrook",
+  "a1": "Otter",
+  "a2": "Eel",
+  "faction": "Saltjaw Brethren",
+  "home": "Tangleweed",
+  "sees": "Every soliton, whoever made it: where it is and where it leads.",
+  "story": "Ekora Hollowbrook grew up on a salvage barge anchored in the kelp of Tangleweed, and learned to swim before learning to steer.\n\nThe Saltjaw Brethren live off what the sea gives up. Sign Ekora on and the Brethren will point your crew at the stashes they know of, and at wrecks still fresh enough to strip.\n\nRival crews hunt the same wrecks. Whoever arrives first keeps what is aboard."
+ }
+]

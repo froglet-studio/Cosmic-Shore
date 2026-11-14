@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using CosmicShore.Core;
@@ -5,159 +6,193 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Ark's ARTIFACTS tab (Docs/Pilots/INVENTORY.md §2, Docs/Pilots/ARTIFACTS.md §4): the player's hoard of UNIQUE
-    /// artifacts down the left (<see cref="PilotLoadoutStore.GetHoard"/>), and the picked one on the right.
+    /// The Ark's ARTIFACTS tab as Rev 105 B draws it (Docs/MENU_REDESIGN_B.md sections 193 and 201; Shombith, 2026-11-13:
+    /// "B is good", after "the UI cards on top of each screen, I do not like them at all"): no card behind any word, the
+    /// room's backdrop whole, and the tab in THREE LEVELS, one press each, the back button one level up:
+    /// <list type="number">
+    /// <item><b>The hoard.</b> The rail of medallions along the floor: every held artifact's mark and kind, then empty
+    /// slots for the ones still to find. Nothing else on screen but a one-line hint.</item>
+    /// <item><b>One artifact.</b> The lens opens (<see cref="ArtifactLens"/>): its payload plays over prisms, its four
+    /// tracks round the rim. On the left, no box: the kind and serial, its unique name, what its kind does, its attuned
+    /// element with the value it improves, and which seat carries it; FEED IT and GIVE TO A SEAT.</item>
+    /// <item><b>Feeding it.</b> The same words, then the attuned track's level now and after the next feed (the twist
+    /// marked at 5), the crystals of its element the profile holds, and FEED / OMNI.</item>
+    /// </list>
     ///
-    /// <para><b>2026-11-07 (Garrett): every artifact is unique and accepts ONE element.</b> Each held artifact
-    /// (<see cref="ArtifactRecord"/>) was rolled from its own seed on top of a kind (<see cref="ArtifactSO"/>): it has
-    /// its own name and serial, it is attuned to exactly one element (<see cref="ArtifactRecord.Element"/>), and feeding
-    /// it that element improves exactly one thing (<see cref="ArtifactRecord.Aspect"/>, the kind's track for that
-    /// element). It takes any number of crystals with diminishing returns (<see cref="ArtifactCurve"/>), so the attuned
-    /// level is a real number creeping toward a ceiling it never reaches; the other three tracks stay at the levels it
-    /// was rolled with, forever. So the old "RAISE one whole level per track" design is gone: there is nothing to raise
-    /// on three of the four tracks, and no top to reach on the fourth.</para>
+    /// <para><b>The feeding rule is unchanged</b> (Garrett, 2026-11-07, Docs/Pilots/INVENTORY.md section 2): every artifact
+    /// is unique and accepts ONE element; FEED spends <see cref="feedBatch"/> of that element, OMNI the same number of
+    /// omni crystals; the level creeps toward a ceiling on the diminishing curve and the other three tracks are fixed as
+    /// rolled. The crystals are the profile's (<see cref="PilotLoadoutStore.Crystals"/>).</para>
     ///
-    /// <para><b>How the four track rows are used now.</b> The first row is the attuned track: its level now and after the
-    /// next feed, its value now and after, its twist (lit once the level reaches
-    /// <see cref="ArtifactLevels.TwistLevel"/>), and the two feed buttons. FEED spends <see cref="feedBatch"/> crystals of
-    /// the artifact's own element; OMNI spends the same number of omni crystals instead (the player's pick, never
-    /// automatic). The other three rows show the fixed tracks read-only and dimmed, with their buttons hidden: the same
-    /// prefab rows, so no new wiring is needed.</para>
-    ///
-    /// <para><b>The list has four rows</b> but a hoard can hold more. Until the prefab gets a scroll list, the rows are a
-    /// window onto the hoard: picking the last visible row scrolls the window down by one, picking the first scrolls it
-    /// up, so every artifact can be reached.</para>
-    ///
-    /// <para>The crystals are the profile's (<see cref="PilotLoadoutStore.Crystals"/>); the crystals fed live on the
-    /// artifact itself, so a stolen artifact keeps them. Every word is authored on this component; code fills the
-    /// numbers. Words added on 2026-11-07 carry defaults so the page reads before the prefab authors them.</para>
+    /// <para>Every word is authored on this component; code fills the numbers (<see cref="TemplateText"/>).</para>
     /// </summary>
     public class ArkArtifactsPage : MonoBehaviour, IArkTabPage
     {
-        [System.Serializable]
-        public class TrackRow
+        /// <summary>The tab's three levels.</summary>
+        public enum Level
         {
-            public TMP_Text elementText;
-            [Tooltip("What the track moves (ArtifactTrack.label; the artifact's Aspect on the attuned row).")]
-            public TMP_Text labelText;
-            public TMP_Text levelText;
-            [Tooltip("The value now, and after the next feed (attuned row) or as rolled (fixed rows).")]
-            public TMP_Text valueText;
-            [Tooltip("The level-5 twist: dim until it is reached.")]
-            public TMP_Text twistText;
-            public CanvasGroup twistGroup;
-            [Tooltip("FEED on the attuned row; hidden on the fixed rows. (Named raise* for the prefab's wiring.)")]
-            public KitButton raiseButton;
-            public TMP_Text raiseLabel;
-            [Tooltip("Feed in omni crystals instead, on the attuned row; hidden on the fixed rows.")]
-            public KitButton omniButton;
-            public TMP_Text omniLabel;
+            Hoard = 0,
+            Artifact = 1,
+            Feed = 2,
         }
 
-        /// <summary>The fixed rows' order after the attuned one: the four elements as the converter lists them.</summary>
-        static readonly Element[] TrackOrder = { Element.Mass, Element.Space, Element.Time, Element.Charge };
-        /// <summary>The crystal strip's order: the four elements, then Omni.</summary>
-        static readonly Element[] CrystalOrder = { Element.Mass, Element.Space, Element.Time, Element.Charge, Element.Omni };
+        /// <summary>How a kind of artifact looks on the rail and plays in the lens.</summary>
+        [Serializable]
+        public class KindLook
+        {
+            [Tooltip("The kind's id (ArtifactSO.Id), e.g. artifact.hydra.")]
+            public string kindId;
+            [Tooltip("Its mark on the rail.")]
+            public Sprite glyph;
+            [Tooltip("The shape its payload plays in the lens.")]
+            public ArtifactLens.Payload payload;
+            [Tooltip("The track whose value is the payload's count (heads, cracks, shocks, re-raises).")]
+            public Element countTrack = Element.Charge;
+            [Tooltip("Added to that value: 1 for a count of re-raises, where the first shell is not a re-raise.")]
+            public int countOffset;
+        }
 
-        /// <summary>A fixed track row's text alpha: read-only, so dimmed.</summary>
-        const float FixedAlpha = 0.5f;
+        /// <summary>The tracks round the lens's rim, in the lens's arc order.</summary>
+        static readonly Element[] TrackOrder = { Element.Mass, Element.Space, Element.Time, Element.Charge };
 
         [SerializeField] private PilotArtifactCatalogSO catalog;
+        [SerializeField] private KindLook[] kinds = Array.Empty<KindLook>();
 
-        [Header("The list")]
-        [SerializeField] private SquadRowView[] rows = new SquadRowView[4];
+        [Header("Level 1: the hoard")]
+        [Tooltip("The rail's medallions, left to right. Past the hoard they show as empty slots.")]
+        [SerializeField] private ArtifactMedallion[] medallions = new ArtifactMedallion[7];
+        [Tooltip("The hint over the rail while nothing is picked.")]
+        [SerializeField] private CanvasGroup hintGroup;
+        [Tooltip("No artifacts held: the words that stand in for the rail's medallions.")]
         [SerializeField] private CanvasGroup emptyGroup;
+        [Tooltip("Where you are, in the tab row: the hoard, the artifact, feeding it.")]
+        [SerializeField] private TMP_Text trailText;
 
-        [Header("The picked artifact")]
+        [Header("Level 2: one artifact")]
+        [SerializeField] private ArtifactLens lens;
+        [Tooltip("The picked artifact's words on the left (levels 2 and 3).")]
         [SerializeField] private CanvasGroup detailGroup;
+        [SerializeField] private TMP_Text kickerText;
         [SerializeField] private TMP_Text nameText;
-        [Tooltip("What it accepts and improves, what its kind does, and its lore (descriptionTemplate).")]
         [SerializeField] private TMP_Text descriptionText;
-        [Tooltip("Row 0 is the attuned track; rows 1-3 the fixed tracks, read-only.")]
-        [SerializeField] private TrackRow[] tracks = new TrackRow[4];
-        [SerializeField] private TMP_Text statusText;
-        [Tooltip("GIVE TO A SEAT: takes the picked artifact to the Squads tab, where the next seat picked carries it (R86).")]
+        [SerializeField] private KitElementFlower attunedFlower;
+        [SerializeField] private TMP_Text attunedText;
+        [SerializeField] private TMP_Text heldText;
+        [Tooltip("FEED IT and GIVE TO A SEAT (level 2 only).")]
+        [SerializeField] private CanvasGroup actionsGroup;
+        [SerializeField] private KitButton feedItButton;
+        [Tooltip("GIVE TO A SEAT: takes the picked artifact to the Squads tab, where the next seat picked carries it.")]
         [SerializeField] private KitButton giveButton;
+        [SerializeField] private TMP_Text giveLabel;
+        [Tooltip("BACK: one level up (levels 2 and 3).")]
+        [SerializeField] private CanvasGroup backGroup;
+        [SerializeField] private KitButton backButton;
 
-        /// <summary>Raised by GIVE TO A SEAT with the picked artifact's id and its name (the Ark takes it to the Squads tab).</summary>
-        public event System.Action<string, string> GiveRequested;
-
-        [Header("Feeding")]
+        [Header("Level 3: feeding it")]
+        [SerializeField] private CanvasGroup feedGroup;
+        [SerializeField] private TMP_Text levelText;
+        [Tooltip("The level now, filled horizontally over the 0-10 band.")]
+        [SerializeField] private Image levelFill;
+        [Tooltip("The level after the next feed, filled under the level now.")]
+        [SerializeField] private Image nextFill;
+        [Tooltip("The artifact's ceiling on the band: placed by its anchors.")]
+        [SerializeField] private RectTransform ceilingMark;
+        [SerializeField] private TMP_Text twistText;
+        [SerializeField] private CanvasGroup twistGroup;
+        [SerializeField] private TMP_Text valueText;
+        [Tooltip("The crystals of the artifact's element the profile holds, one icon each, up to the row's length.")]
+        [SerializeField] private Image[] crystalIcons = new Image[10];
+        [Tooltip("Crystal sprites by Element value (None, Charge, Mass, Space, Time, Omni).")]
+        [SerializeField] private Sprite[] crystalSprites = new Sprite[6];
+        [SerializeField] private TMP_Text balanceText;
+        [SerializeField] private KitButton feedButton;
+        [SerializeField] private TMP_Text feedLabel;
+        [SerializeField] private KitButton omniButton;
+        [SerializeField] private TMP_Text omniLabel;
+        [SerializeField] private TMP_Text statusText;
         [Tooltip("Crystals one press of FEED (or OMNI) spends. Each crystal adds a little less than the one before.")]
         [Min(1)]
         [SerializeField] private int feedBatch = 5;
 
-        [Header("Crystals")]
-        [Tooltip("Mass, Space, Time, Charge, Omni.")]
-        [SerializeField] private TMP_Text[] crystalTexts = new TMP_Text[5];
+        /// <summary>Raised by GIVE TO A SEAT with the picked artifact's id and its name (the Ark takes it to the Squads tab).</summary>
+        public event Action<string, string> GiveRequested;
 
         [Header("Words")]
         [Tooltip("Element names, by Element value (None, Charge, Mass, Space, Time, Omni).")]
         [SerializeField] private string[] elementNames = { "", "", "", "", "", "" };
-        [Tooltip("A crystal balance; {element} and {count} are filled in.")]
-        [SerializeField] private string crystalTemplate = "";
-        [Tooltip("A list row's line; {element}, {aspect}, {level} and {serial} are filled in.")]
-        [SerializeField] private string rowLineTemplate = "{element} {level} - {aspect}";
-        [Tooltip("The picked artifact's name; {name}, {serial} and {kind} are filled in.")]
-        [SerializeField] private string nameTemplate = "{name}  #{serial}";
-        [Tooltip("The picked artifact's description; {element}, {aspect}, {description} and {lore} are filled in.")]
-        [TextArea(2, 6)]
-        [SerializeField] private string descriptionTemplate =
-            "Accepts only {element} crystals (or Omni). Feeding it raises {aspect}.\n{description}\n{lore}";
-        [Tooltip("A fixed track's level; {level} and {max} are filled in.")]
-        [SerializeField] private string levelTemplate = "";
-        [Tooltip("The attuned track's level; {level}, {next}, {ceiling}, {max} and {fed} are filled in.")]
-        [SerializeField] private string attunedLevelTemplate = "{level} -> {next} / {max}  ({fed} fed)";
-        [Tooltip("The attuned track's value now and after the next feed; {now} and {next} are filled in.")]
+        [Tooltip("Seat names: Leader, Rogue One, Rogue Two.")]
+        [SerializeField] private string[] seatNames = { "", "", "" };
+        [Tooltip("The trail at each level; {kind} is filled in.")]
+        [SerializeField] private string trailHoard = "";
+        [SerializeField] private string trailArtifact = "";
+        [SerializeField] private string trailFeed = "";
+        [Tooltip("Over the name; {kind} and {serial} are filled in.")]
+        [SerializeField] private string kickerTemplate = "";
+        [Tooltip("The attuned line; {element}, {aspect} and {value} are filled in.")]
+        [SerializeField] private string attunedTemplate = "";
+        [Tooltip("Which seat carries it; {squad} and {seat} are filled in.")]
+        [SerializeField] private string heldTemplate = "";
+        [Tooltip("No seat carries it.")]
+        [SerializeField] private string notHeldWord = "";
+        [Tooltip("GIVE's word while no seat carries it.")]
+        [SerializeField] private string giveWord = "";
+        [Tooltip("GIVE's word while a seat already carries it.")]
+        [SerializeField] private string giveAgainWord = "";
+        [Tooltip("The level now; {level} is filled in.")]
+        [SerializeField] private string levelNowTemplate = "";
+        [Tooltip("The level now and after the next feed; {level} and {next} are filled in.")]
+        [SerializeField] private string levelNextTemplate = "";
+        [Tooltip("The value now and after the next feed; {now}, {next}, {aspect} and {fed} are filled in.")]
         [SerializeField] private string valueTemplate = "";
-        [Tooltip("A fixed track's value; {now} is filled in.")]
-        [SerializeField] private string valueTopTemplate = "";
         [Tooltip("The twist before level 5; {twist} and {at} are filled in.")]
         [SerializeField] private string twistLockedTemplate = "";
         [Tooltip("The twist once reached; {twist} is filled in.")]
         [SerializeField] private string twistOpenTemplate = "";
+        [Tooltip("The balances; {element}, {count}, {omni} and {batch} are filled in.")]
+        [SerializeField] private string balanceTemplate = "";
         [Tooltip("FEED's word; {count} and {element} are filled in.")]
-        [SerializeField] private string feedTemplate = "Feed {count} {element}";
-        [Tooltip("OMNI's word; {count} is filled in. (Authored before 2026-11-07 with {cost}, which is also filled in.)")]
+        [SerializeField] private string feedTemplate = "";
+        [Tooltip("OMNI's word; {count} is filled in.")]
         [SerializeField] private string omniTemplate = "";
-        [Tooltip("A fixed track's element suffix; {element} is filled in. Shown in the element column of rows 1-3.")]
-        [SerializeField] private string fixedElementTemplate = "{element} (fixed)";
         [Tooltip("A feed was refused for crystals; {element} is the crystal that pays.")]
         [SerializeField] private string notEnoughTemplate = "";
         [Tooltip("A feed was refused because the artifact takes another element; {artifact} and {element} are filled in.")]
-        [SerializeField] private string wrongElementTemplate = "{artifact} accepts only {element} crystals.";
+        [SerializeField] private string wrongElementTemplate = "";
         [Tooltip("A feed was refused because the artifact is no longer held.")]
-        [SerializeField] private string goneWord = "That artifact is no longer in the hoard.";
+        [SerializeField] private string goneWord = "";
         [Tooltip("A feed landed; {artifact}, {aspect}, {element}, {level} and {gain} are filled in.")]
-        [SerializeField] private string fedTemplate = "{artifact}: {aspect} is now {level} (+{gain}).";
+        [SerializeField] private string fedTemplate = "";
         [Tooltip("A feed reached the twist; {artifact} and {twist} are filled in.")]
         [SerializeField] private string twistedTemplate = "";
 
         readonly List<ArtifactRecord> _hoard = new();
         /// <summary>The picked artifact's id: ids survive the hoard changing order, indices do not.</summary>
         string _pickedId = string.Empty;
-        /// <summary>The hoard index the first list row shows.</summary>
+        /// <summary>The hoard index the first medallion shows.</summary>
         int _first;
+        Level _level = Level.Hoard;
         bool _shown;
+        bool _replayLens;
+
+        public Level CurrentLevel => _level;
 
         void Awake()
         {
-            for (int i = 0; i < rows.Length; i++)
+            for (int i = 0; i < medallions.Length; i++)
             {
                 int index = i;
-                if (rows[i] && rows[i].Button) rows[i].Button.onClick.AddListener(() => PickRow(index));
+                if (medallions[i] && medallions[i].Button) medallions[i].Button.onClick.AddListener(() => Pick(index));
             }
-            // Only the attuned row (0) feeds; the fixed rows' buttons are hidden.
-            if (tracks.Length > 0 && tracks[0] != null)
-            {
-                if (tracks[0].raiseButton) tracks[0].raiseButton.onClick.AddListener(() => Feed(false));
-                if (giveButton) giveButton.onClick.AddListener(Give);
-                if (tracks[0].omniButton) tracks[0].omniButton.onClick.AddListener(() => Feed(true));
-            }
+            if (feedItButton) feedItButton.onClick.AddListener(() => GoTo(Level.Feed));
+            if (backButton) backButton.onClick.AddListener(Back);
+            if (giveButton) giveButton.onClick.AddListener(Give);
+            if (feedButton) feedButton.onClick.AddListener(() => Feed(false));
+            if (omniButton) omniButton.onClick.AddListener(() => Feed(true));
         }
 
         void OnEnable()
@@ -177,7 +212,13 @@ namespace CosmicShore.UI
         public void SetPageShown(bool shown)
         {
             _shown = shown;
-            if (!shown) return;
+            if (!shown)
+            {
+                if (lens) lens.Hide();
+                return;
+            }
+            // Every visit opens on the hoard.
+            _level = Level.Hoard;
             if (statusText) statusText.text = string.Empty;
             Refresh();
         }
@@ -185,14 +226,28 @@ namespace CosmicShore.UI
         void OnArtifactsChanged(VesselClassType _) => Refresh();
         void OnBalance(int _) => Refresh();
 
-        void PickRow(int row)
+        void Pick(int medallion)
         {
-            int index = _first + row;
+            int index = _first + medallion;
             if (index < 0 || index >= _hoard.Count) return;
-            _pickedId = _hoard[index].Id;
-            // Scroll the window by one at either edge so a hoard longer than the rows stays reachable.
-            if (row == rows.Length - 1 && _first + rows.Length < _hoard.Count) _first++;
-            else if (row == 0 && _first > 0) _first--;
+            string id = _hoard[index].Id;
+            if (id == _pickedId && _level != Level.Hoard) return;
+            _pickedId = id;
+            // Scroll the window by one at either edge so a hoard longer than the rail stays reachable.
+            if (medallion == medallions.Length - 1 && _first + medallions.Length < _hoard.Count) _first++;
+            else if (medallion == 0 && _first > 0) _first--;
+            _replayLens = true;
+            GoTo(Level.Artifact);
+        }
+
+        /// <summary>One level up: feeding back to the artifact, the artifact back to the hoard.</summary>
+        public void Back() => GoTo(_level == Level.Feed ? Level.Artifact : Level.Hoard);
+
+        void GoTo(Level level)
+        {
+            if (level != Level.Hoard && PickedIndex() < 0) level = Level.Hoard;
+            if (level == Level.Hoard) _replayLens = true;
+            _level = level;
             if (statusText) statusText.text = string.Empty;
             Refresh();
         }
@@ -224,7 +279,7 @@ namespace CosmicShore.UI
                     TemplateText.Fill(twistedTemplate, "artifact", name, "twist", TwistLine(artifact)),
                 PilotLoadoutStore.FeedOutcome.Fed =>
                     TemplateText.Fill(fedTemplate, "artifact", name, "aspect", artifact?.Aspect ?? string.Empty,
-                        "element", ElementName(element), "level", Level(result.After), "gain", Gain(result.After - result.Before)),
+                        "element", ElementName(element), "level", LevelWord(result.After), "gain", Gain(result.After - result.Before)),
                 PilotLoadoutStore.FeedOutcome.NotEnoughCrystals =>
                     TemplateText.Fill(notEnoughTemplate, "element", ElementName(payWithOmni ? Element.Omni : element)),
                 PilotLoadoutStore.FeedOutcome.WrongElement =>
@@ -241,141 +296,213 @@ namespace CosmicShore.UI
             int picked = PickedIndex();
             if (picked < 0)
             {
-                picked = 0;
-                _pickedId = _hoard.Count > 0 ? _hoard[0].Id : string.Empty;
+                _pickedId = string.Empty;
+                _level = Level.Hoard;
             }
-            // Keep the window inside the hoard and the picked artifact inside the window.
-            int visible = Mathf.Max(1, rows.Length);
+
+            int visible = Mathf.Max(1, medallions.Length);
             _first = Mathf.Clamp(_first, 0, Mathf.Max(0, _hoard.Count - visible));
-            if (picked < _first) _first = picked;
+            if (picked >= 0 && picked < _first) _first = picked;
             else if (picked >= _first + visible) _first = picked - visible + 1;
 
-            for (int i = 0; i < crystalTexts.Length && i < CrystalOrder.Length; i++)
-                if (crystalTexts[i])
-                    crystalTexts[i].text = TemplateText.Fill(crystalTemplate, "element", ElementName(CrystalOrder[i]),
-                        "count", PilotLoadoutStore.Crystals(CrystalOrder[i]).ToString(CultureInfo.InvariantCulture));
-
-            for (int i = 0; i < rows.Length; i++)
+            bool anyPicked = _level != Level.Hoard;
+            for (int i = 0; i < medallions.Length; i++)
             {
-                if (!rows[i]) continue;
+                if (!medallions[i]) continue;
                 int index = _first + i;
-                if (index >= _hoard.Count) { rows[i].Draw(false, null, null, false); continue; }
+                if (index >= _hoard.Count) { medallions[i].Draw(false, null, null, false, anyPicked); continue; }
                 var a = _hoard[index];
-                rows[i].Draw(true, DisplayName(a),
-                    TemplateText.Fill(rowLineTemplate, "element", ElementName(a.Element), "aspect", a.Aspect ?? string.Empty,
-                        "level", Level(a.AttunedLevel()), "serial", a.Serial()), index == picked);
+                var kind = Kind(a);
+                medallions[i].Draw(true, Look(a)?.glyph, kind ? kind.DisplayName : DisplayName(a), anyPicked && index == picked, anyPicked);
             }
-            if (giveButton) giveButton.interactable = _hoard.Count > 0;
-            KitVisibility.SetShown(emptyGroup, _hoard.Count == 0);
-            KitVisibility.SetShown(detailGroup, _hoard.Count > 0);
-            if (_hoard.Count > 0) DrawDetail(_hoard[picked]);
-        }
 
-        void DrawDetail(ArtifactRecord artifact)
-        {
-            ArtifactSO kind = null;
-            if (catalog) catalog.TryGetArtifact(artifact.Kind(), out kind);
-            if (nameText)
-                nameText.text = TemplateText.Fill(nameTemplate, "name", DisplayName(artifact), "serial", artifact.Serial(),
-                    "kind", kind ? kind.DisplayName : string.Empty);
-            if (descriptionText)
-                descriptionText.text = TemplateText.Fill(descriptionTemplate, "element", ElementName(artifact.Element),
-                    "aspect", artifact.Aspect ?? string.Empty, "description", kind ? kind.Description : string.Empty,
-                    "lore", artifact.Lore ?? string.Empty).Trim();
+            bool empty = _hoard.Count == 0;
+            KitVisibility.SetShown(emptyGroup, empty);
+            KitVisibility.SetShown(hintGroup, !empty && _level == Level.Hoard);
+            KitVisibility.SetShown(detailGroup, _level != Level.Hoard);
+            KitVisibility.SetShown(actionsGroup, _level == Level.Artifact);
+            KitVisibility.SetShown(feedGroup, _level == Level.Feed);
+            KitVisibility.SetShown(backGroup, _level != Level.Hoard);
+            SetButton(feedItButton, _level == Level.Artifact);
+            SetButton(giveButton, _level == Level.Artifact);
+            SetButton(backButton, _level != Level.Hoard);
+            SetButton(feedButton, _level == Level.Feed);
+            SetButton(omniButton, _level == Level.Feed);
 
-            var levels = artifact.Levels();
-            int row = 0;
-            if (row < tracks.Length) DrawAttuned(tracks[row++], artifact, kind);
-            for (int e = 0; e < TrackOrder.Length && row < tracks.Length; e++)
+            var current = picked >= 0 ? _hoard[picked] : null;
+            var currentKind = current != null ? Kind(current) : null;
+            if (trailText)
             {
-                if (TrackOrder[e] == artifact.Element) continue;
-                DrawFixed(tracks[row++], TrackOrder[e], levels.Of(TrackOrder[e]), kind);
+                string template = _level switch { Level.Feed => trailFeed, Level.Artifact => trailArtifact, _ => trailHoard };
+                trailText.text = TemplateText.Fill(template, "kind", currentKind ? currentKind.DisplayName : string.Empty);
             }
-            for (; row < tracks.Length; row++) DrawFixed(tracks[row], Element.None, 0f, null);
+
+            if (current == null)
+            {
+                if (lens) lens.Hide();
+                return;
+            }
+            DrawDetail(current, currentKind);
+            DrawLens(current, currentKind);
+            if (_level == Level.Feed) DrawFeed(current, currentKind);
         }
 
-        void DrawAttuned(TrackRow row, ArtifactRecord artifact, ArtifactSO kind)
+        void DrawDetail(ArtifactRecord artifact, ArtifactSO kind)
         {
-            if (row == null) return;
+            var track = kind ? kind.Track(artifact.Element) : null;
+            float level = artifact.AttunedLevel();
+            string kindName = kind ? kind.DisplayName : string.Empty;
+            if (kickerText) kickerText.text = TemplateText.Fill(kickerTemplate, "kind", kindName, "serial", artifact.Serial());
+            if (nameText) nameText.text = DisplayName(artifact);
+            if (descriptionText) descriptionText.text = kind ? kind.Description : string.Empty;
+            if (attunedFlower) attunedFlower.Set(artifact.Element, FlowerMarkLevel);
+            if (attunedText)
+                attunedText.text = TemplateText.Fill(attunedTemplate, "element", ElementName(artifact.Element),
+                    "aspect", Aspect(artifact, track), "value", track == null ? string.Empty : Number(track.Value(level)));
+            bool carried = TryFindSeat(artifact.Id, out string squad, out int seat);
+            if (heldText) heldText.text = carried ? TemplateText.Fill(heldTemplate, "squad", squad, "seat", SeatName(seat)) : notHeldWord;
+            if (giveLabel) giveLabel.text = carried ? giveAgainWord : giveWord;
+        }
+
+        /// <summary>The flower drawn as the element's mark, all five petals lit (the HUD's level 5), not as a level.</summary>
+        const int FlowerMarkLevel = 5;
+
+        void DrawLens(ArtifactRecord artifact, ArtifactSO kind)
+        {
+            if (!lens) return;
+            if (_level == Level.Hoard) { lens.Hide(); return; }
+            var levels = artifact.Levels();
+            for (int i = 0; i < TrackOrder.Length; i++)
+            {
+                var e = TrackOrder[i];
+                var track = kind ? kind.Track(e) : null;
+                float lv = levels.Of(e);
+                lens.SetArc(i, e, lv, track == null ? string.Empty : Number(track.Value(lv)), track?.label ?? string.Empty,
+                    e == artifact.Element);
+            }
+            var look = Look(artifact);
+            int count = 1;
+            if (look != null && kind && kind.Track(look.countTrack) is { } countTrack)
+                count = Mathf.RoundToInt(countTrack.Value(levels.Of(look.countTrack))) + look.countOffset;
+            lens.Show(look?.payload ?? ArtifactLens.Payload.Fan, count, Seed(artifact.Id), _replayLens);
+            _replayLens = false;
+        }
+
+        void DrawFeed(ArtifactRecord artifact, ArtifactSO kind)
+        {
             var element = artifact.Element;
             var track = kind ? kind.Track(element) : null;
             float level = artifact.AttunedLevel();
             float next = artifact.LevelAfter(feedBatch);
-            SetAlpha(row, 1f);
-            if (row.elementText) row.elementText.text = ElementName(element);
-            if (row.labelText) row.labelText.text = string.IsNullOrEmpty(artifact.Aspect) ? track?.label ?? string.Empty : artifact.Aspect;
-            if (row.levelText)
-                row.levelText.text = TemplateText.Fill(attunedLevelTemplate, "level", Level(level), "next", Level(next),
-                    "ceiling", Level(artifact.Ceiling), "max", Level(ArtifactLevels.MaxLevel),
-                    "fed", artifact.Invested.ToString(CultureInfo.InvariantCulture));
-            if (row.valueText)
-                row.valueText.text = track == null ? string.Empty
-                    : TemplateText.Fill(valueTemplate, "now", Number(track.Value(level)), "next", Number(track.Value(next)));
-            DrawTwist(row, track, level);
-
-            string count = feedBatch.ToString(CultureInfo.InvariantCulture);
-            SetButtonShown(row.raiseButton, true);
-            SetButtonShown(row.omniButton, true);
-            if (row.raiseLabel) row.raiseLabel.text = TemplateText.Fill(feedTemplate, "count", count, "element", ElementName(element));
-            if (row.omniLabel) row.omniLabel.text = TemplateText.Fill(omniTemplate, "count", count, "cost", count);
-        }
-
-        void DrawFixed(TrackRow row, Element element, float level, ArtifactSO kind)
-        {
-            if (row == null) return;
-            var track = kind ? kind.Track(element) : null;
-            bool used = element != Element.None;
-            SetAlpha(row, FixedAlpha);
-            if (row.elementText) row.elementText.text = used ? TemplateText.Fill(fixedElementTemplate, "element", ElementName(element)) : string.Empty;
-            if (row.labelText) row.labelText.text = track?.label ?? string.Empty;
-            if (row.levelText)
-                row.levelText.text = used ? TemplateText.Fill(levelTemplate, "level", Level(level), "max", Level(ArtifactLevels.MaxLevel)) : string.Empty;
-            if (row.valueText)
-                row.valueText.text = track == null ? string.Empty : TemplateText.Fill(valueTopTemplate, "now", Number(track.Value(level)));
-            DrawTwist(row, track, level);
-            if (row.twistGroup && track != null) row.twistGroup.alpha *= FixedAlpha;
-            SetButtonShown(row.raiseButton, false);
-            SetButtonShown(row.omniButton, false);
-            if (row.raiseLabel) row.raiseLabel.text = string.Empty;
-            if (row.omniLabel) row.omniLabel.text = string.Empty;
-        }
-
-        void DrawTwist(TrackRow row, ArtifactTrack track, float level)
-        {
+            if (levelText) levelText.text = TemplateText.Fill(levelNextTemplate, "level", LevelWord(level), "next", LevelWord(next));
+            if (levelFill) levelFill.fillAmount = level / ArtifactLevels.MaxLevel;
+            if (nextFill) nextFill.fillAmount = next / ArtifactLevels.MaxLevel;
+            if (ceilingMark)
+            {
+                float x = Mathf.Clamp01(artifact.Ceiling / ArtifactLevels.MaxLevel);
+                ceilingMark.anchorMin = new Vector2(x, ceilingMark.anchorMin.y);
+                ceilingMark.anchorMax = new Vector2(x, ceilingMark.anchorMax.y);
+            }
             bool twisted = level >= ArtifactLevels.TwistLevel;
-            if (row.twistText)
-                row.twistText.text = track == null || string.IsNullOrEmpty(track.twistLine) ? string.Empty
+            if (twistText)
+                twistText.text = track == null || string.IsNullOrEmpty(track.twistLine) ? string.Empty
                     : twisted ? TemplateText.Fill(twistOpenTemplate, "twist", track.twistLine)
-                    : TemplateText.Fill(twistLockedTemplate, "twist", track.twistLine, "at", Level(ArtifactLevels.TwistLevel));
-            if (row.twistGroup) row.twistGroup.alpha = twisted ? 1f : 0.45f;
+                    : TemplateText.Fill(twistLockedTemplate, "twist", track.twistLine, "at", LevelWord(ArtifactLevels.TwistLevel));
+            if (twistGroup) twistGroup.alpha = twisted ? 1f : 0.55f;
+            if (valueText)
+                valueText.text = track == null ? string.Empty
+                    : TemplateText.Fill(valueTemplate, "now", Number(track.Value(level)), "next", Number(track.Value(next)),
+                        "aspect", Aspect(artifact, track), "fed", artifact.Invested.ToString(CultureInfo.InvariantCulture));
+
+            int held = PilotLoadoutStore.Crystals(element);
+            int omni = PilotLoadoutStore.Crystals(Element.Omni);
+            var sprite = CrystalSprite(element);
+            for (int i = 0; i < crystalIcons.Length; i++)
+            {
+                if (!crystalIcons[i]) continue;
+                crystalIcons[i].sprite = sprite;
+                crystalIcons[i].enabled = sprite && i < held;
+            }
+            string count = feedBatch.ToString(CultureInfo.InvariantCulture);
+            if (balanceText)
+                balanceText.text = TemplateText.Fill(balanceTemplate, "element", ElementName(element),
+                    "count", held.ToString(CultureInfo.InvariantCulture), "omni", omni.ToString(CultureInfo.InvariantCulture),
+                    "batch", count);
+            if (feedLabel) feedLabel.text = TemplateText.Fill(feedTemplate, "count", count, "element", ElementName(element));
+            if (omniLabel) omniLabel.text = TemplateText.Fill(omniTemplate, "count", count);
+            if (feedButton) feedButton.interactable = held >= feedBatch;
+            if (omniButton) omniButton.interactable = omni >= feedBatch;
         }
 
-        /// <summary>Dims a fixed row's words (rows have no group of their own in the prefab, so the texts carry it).</summary>
-        static void SetAlpha(TrackRow row, float alpha)
+        /// <summary>The first squad in the player's book whose seat carries <paramref name="artifactId"/>.</summary>
+        static bool TryFindSeat(string artifactId, out string squad, out int seat)
         {
-            if (row.elementText) row.elementText.alpha = alpha;
-            if (row.labelText) row.labelText.alpha = alpha;
-            if (row.levelText) row.levelText.alpha = alpha;
-            if (row.valueText) row.valueText.alpha = alpha;
+            squad = string.Empty;
+            seat = -1;
+            var book = VoyageSeats.Book;
+            if (book?.Squads == null || string.IsNullOrEmpty(artifactId)) return false;
+            foreach (var s in book.Squads)
+            {
+                if (s == null) continue;
+                for (int i = 0; i < SavedSquad.SlotCount; i++)
+                {
+                    if (s.GetSlot(i).ArtifactId != artifactId) continue;
+                    squad = s.Name ?? string.Empty;
+                    seat = i;
+                    return true;
+                }
+            }
+            return false;
         }
 
-        static void SetButtonShown(KitButton button, bool shown)
+        static void SetButton(KitButton button, bool on)
         {
-            if (!button) return;
-            button.interactable = shown;
-            if (button.gameObject.activeSelf != shown) button.gameObject.SetActive(shown);
+            if (button) button.interactable = on;
+        }
+
+        ArtifactSO Kind(ArtifactRecord artifact) =>
+            catalog && catalog.TryGetArtifact(artifact.Kind(), out var kind) ? kind : null;
+
+        KindLook Look(ArtifactRecord artifact)
+        {
+            string id = artifact.Kind();
+            foreach (var k in kinds)
+                if (k != null && k.kindId == id) return k;
+            return null;
+        }
+
+        Sprite CrystalSprite(Element element)
+        {
+            int i = (int)element;
+            return i >= 0 && i < crystalSprites.Length ? crystalSprites[i] : null;
+        }
+
+        static string Aspect(ArtifactRecord artifact, ArtifactTrack track) =>
+            !string.IsNullOrEmpty(artifact.Aspect) ? artifact.Aspect : track?.label ?? string.Empty;
+
+        /// <summary>A stable seed from an artifact's id (FNV-1a), so its field of prisms is the same on every visit.</summary>
+        static int Seed(string id)
+        {
+            unchecked
+            {
+                uint h = 2166136261;
+                foreach (char ch in id ?? string.Empty) h = (h ^ ch) * 16777619;
+                return (int)h;
+            }
         }
 
         string TwistLine(ArtifactRecord artifact)
         {
-            if (artifact == null || !catalog || !catalog.TryGetArtifact(artifact.Kind(), out var kind)) return string.Empty;
-            return kind.Track(artifact.Element)?.twistLine ?? string.Empty;
+            if (artifact == null) return string.Empty;
+            var kind = Kind(artifact);
+            return kind ? kind.Track(artifact.Element)?.twistLine ?? string.Empty : string.Empty;
         }
 
         string DisplayName(ArtifactRecord artifact)
         {
             if (!string.IsNullOrEmpty(artifact.Name)) return artifact.Name;
-            return catalog && catalog.TryGetArtifact(artifact.Kind(), out var kind) ? kind.DisplayName : artifact.Serial();
+            var kind = Kind(artifact);
+            return kind ? kind.DisplayName : artifact.Serial();
         }
 
         string ElementName(Element element)
@@ -384,11 +511,13 @@ namespace CosmicShore.UI
             return i >= 0 && i < elementNames.Length ? elementNames[i] : string.Empty;
         }
 
-        /// <summary>A level on the 0-10 band: two decimals, since a feed late on the curve moves it by hundredths.</summary>
-        static string Level(float v) => v.ToString("0.00", CultureInfo.InvariantCulture);
+        string SeatName(int seat) => seat >= 0 && seat < seatNames.Length ? seatNames[seat] : string.Empty;
+
+        /// <summary>A level on the 0-10 band: one decimal on the lens's page (the curve still moves it by hundredths).</summary>
+        static string LevelWord(float v) => v.ToString("0.0#", CultureInfo.InvariantCulture);
 
         /// <summary>What a feed added; never "+0.00" for a real gain too small to show.</summary>
-        static string Gain(float v) => v > 0f && v < 0.005f ? "<0.01" : Level(v);
+        static string Gain(float v) => v > 0f && v < 0.005f ? "<0.01" : v.ToString("0.00", CultureInfo.InvariantCulture);
 
         static string Number(float v) => v.ToString("0.##", CultureInfo.InvariantCulture);
     }

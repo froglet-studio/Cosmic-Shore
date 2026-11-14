@@ -15,9 +15,13 @@ namespace CosmicShore.UI
     /// its effects (<see cref="OmniCombinePlayer"/>, the Omni Combine Lab's round-2 choreography). Every press
     /// draws a fresh choreography from <see cref="OmniCombineConfigSO"/>'s ranges, so no two plays are alike.
     ///
-    /// <para><b>For now it only PLAYS the animation</b> (designer, 2026-10-13: "for now i just want to use
-    /// it to test this animation rendering in the app shell"). Spending the player's elemental crystals and
-    /// crediting omni crystals is the next step and is not wired: no such balances exist yet.</para>
+    /// <para><b>It converts the player's real crystals</b> (Shombith, 2026-11-13: "the elemental converter should show the
+    /// actual elemental crystals balance the user has"; Docs/MENU_REDESIGN_B.md sections 195-196, Rev 104 A). The four
+    /// balances and the omni wallet stand in one row at the foot of the pier (<see cref="ConverterBalance"/>); CONVERT
+    /// takes one crystal of each element and gives one omni crystal (<see cref="PlayerDataService.TrySpendElementalCrystals"/>,
+    /// <see cref="PlayerDataService.AddCrystals"/>), and is off while any element is at 0. Both are booked the moment it
+    /// is pressed, so leaving mid-run loses nothing; the row lags them to the picture, each count stepping down as its
+    /// crystal flies in and the omni count stepping up as the omni forms.</para>
     ///
     /// <para><b>Its picture is an off-screen stage</b>, the Toy Box preview's pattern
     /// (<see cref="ToyPreviewCamera"/>): the crystals stand far outside every gameplay camera's far clip, a
@@ -26,9 +30,9 @@ namespace CosmicShore.UI
     /// screen shows. It renders only while the Ark screen is the active one (<see cref="IScreen"/>), on
     /// UNSCALED time, because <c>ScreenSwitcher</c> pauses the game on every screen but HOME.</para>
     ///
-    /// <para><b>Its picture is built in code</b> under this object's rect, behind everything else. The style-B
-    /// overlay (Docs/MENU_REDESIGN_B.md section 16: the title band, the recipe panel, the converter bar and
-    /// CONVERT) is an authored prefab (<c>Tools/Build/author_menu_ark.py</c>) this view drives through the
+    /// <para><b>Its picture is built in code</b> under this object's rect, behind everything else. The overlay (the
+    /// balance row, its line and CONVERT; the title band, recipe panel and converter bar of section 16 were retired in
+    /// section 196) is an authored prefab (<c>Tools/Build/author_menu_ark.py</c>) this view drives through the
     /// fields under "Style-B overlay"; with no CONVERT button wired it falls back to the first cut's
     /// code-built title and button (<c>Tools/Build/author_elemental_converter.py</c>).</para>
     ///
@@ -96,39 +100,29 @@ namespace CosmicShore.UI
         [SerializeField] KitButton convertButton;
         [Tooltip("CONVERT's label: \"Convert\", \"Converting...\", \"Convert again\".")]
         [SerializeField] TMP_Text convertLabel;
-        [Tooltip("The converter bar's eyebrow: Ready / Converting / Converted.")]
-        [SerializeField] KitText statusText;
-        [Tooltip("The run's clock, \"00:11 / 00:22\".")]
-        [SerializeField] TMP_Text clockText;
-        [Tooltip("The bar's four segments (Image, Filled Horizontal), in fly-in order: Space, Charge, Mass, Time.")]
-        [SerializeField] Image[] segments = { };
-        [Tooltip("Each segment's travelling spark, shown once its element has merged.")]
-        [SerializeField] CanvasGroup[] segmentSparks = { };
-        [Tooltip("The recipe panel's four rows, in fly-in order.")]
-        [SerializeField] ConverterRecipeRow[] recipeRows = { };
-        [Tooltip("\"2 of 4 merged\".")]
-        [SerializeField] KitText mergedText;
+        [Tooltip("The four balances, in fly-in order: Space, Charge, Mass, Time.")]
+        [SerializeField] ConverterBalance[] balances = { };
+        [Tooltip("The omni wallet's count, beside the four.")]
+        [SerializeField] KitText omniCountText;
+        [Tooltip("The line over the row: the recipe, or why CONVERT is off.")]
+        [SerializeField] KitText balanceLineText;
 
         [Header("Words (empty shows nothing)")]
-        [Tooltip("The status eyebrow before a run.")]
-        [SerializeField] string readyStatusLine = "Ready";
-        [Tooltip("The status eyebrow during a run.")]
-        [SerializeField] string convertingStatusLine = "Converting";
-        [Tooltip("The status eyebrow after a run.")]
-        [SerializeField] string convertedStatusLine = "Converted";
+        [Tooltip("The line over the row when CONVERT can run.")]
+        [SerializeField] string recipeLine = "One of each makes one omni crystal";
+        [Tooltip("The line while a conversion plays.")]
+        [SerializeField] string convertingLine = "Converting";
+        [Tooltip("The line when one element is short. {element} is its name (Element names, below).")]
+        [SerializeField] string shortLine = "Short of {element}: one more converts";
+        [Tooltip("The line when the player holds no elemental crystal at all.")]
+        [SerializeField] string emptyLine = "No elemental crystals yet. Matches earn them.";
+        [Tooltip("The elements' names for {element}, in fly-in order: Space, Charge, Mass, Time.")]
+        [SerializeField] string[] elementNames = { "Space", "Charge", "Mass", "Time" };
         [Tooltip("CONVERT's label during a run (before one it reads the Layout's button label).")]
         [SerializeField] string convertingButtonLine = "Converting...";
         [Tooltip("CONVERT's label after a run.")]
         [SerializeField] string convertAgainButtonLine = "Convert again";
-        [Tooltip("The merged count. {merged} is how many elements have merged, {total} how many there are.")]
-        [SerializeField] string mergedLine = "{merged} of {total} merged";
-        [Tooltip("The clock. {time} is the play time, {length} the run's length (or the next line before it is known).")]
-        [SerializeField] string clockLine = "{time} / {length}";
-        [Tooltip("The clock's {length} while the run's length is not known yet.")]
-        [SerializeField] string unknownLengthLine = "--:--";
-        [Tooltip("The omni block: dim until the omni forms.")]
-        [SerializeField] CanvasGroup omniGroup;
-        [Tooltip("Pops the omni in as it forms (ceremony). Optional.")]
+        [Tooltip("Pops the omni count in as the omni forms (ceremony). Optional.")]
         [SerializeField] KitEntrance omniPop;
 
         [Header("Ark tabs (optional)")]
@@ -140,18 +134,26 @@ namespace CosmicShore.UI
         [Header("Ark backdrops")]
         [Tooltip("The Ark screen's backdrops: the Frogma renders played as video behind each tab (Docs/MENU_REDESIGN_B.md " +
                  "section 190) - the hangar with the squad behind SQUADS, the pier with Garrett's combine behind CONVERTER, the " +
-                 "artifacts room behind ARTIFACTS; a tab with none (DECOR) shows none. Empty uses the shipped " +
+                 "artifacts room behind ARTIFACTS, the hangar's workbench and its crew PDA behind PILOTS (section 191); " +
+                 "a tab with none (DECOR) shows none. Empty uses the shipped " +
                  "Resources/ArkBackdropConfig; with neither, the converter plays the combine live on its own stage as before.")]
         [SerializeField] ArkBackdropConfigSO backdrops;
 
-        const float OmniDimAlpha = 0.35f;
         const int Elements = 4;
+        const string ConvertSource = "ark_convert";
+
+        /// <summary>The fly-in order (<c>OmniCombineCore.Order</c>), as the profile's elements.</summary>
+        static readonly Element[] FlyIn = { Element.Space, Element.Charge, Element.Mass, Element.Time };
 
         enum Phase { None = -1, Ready = 0, Converting = 1, Converted = 2 }
 
         Phase _phase = Phase.None;
-        int _merged = -1, _clockShown = -1, _clockTotal = -1;
         bool _omniShown;
+        // The run that was paid for: its crystals left the balances when CONVERT was pressed, and the row shows them
+        // until each flies in (and the omni until it forms).
+        bool _paidRun;
+        int _omniShownCount = -1, _lineState = -1;
+        bool _canShown;
 
         RawImage _surface;
         Button _button;
@@ -166,9 +168,13 @@ namespace CosmicShore.UI
         ArkBackdrop _backdrop;
         ArkRoom _room = ArkRoom.Pier;
         ArkBackdropRun _pierRun = ArkBackdropRun.Loop;
+        ArkBackdropRun _benchRun = ArkBackdropRun.Loop;
         SquadsPage _squads;
+        ArkPilotsPage _pilots;
         SquadVesselLayer _vessels;
         ArkArtifactsPage _artifactsPage;
+        int _lastTab = -1;
+        bool _fadingOut;   // the picture is passing into a tab with no room; hidden once it is dark
 
         void Awake()
         {
@@ -177,7 +183,10 @@ namespace CosmicShore.UI
             _backdropConfig = backdrops ? backdrops : ArkBackdropConfigSO.LoadDefault();
             // The hangar's clip is the squad's domain.
             _squads = GetComponentInChildren<SquadsPage>(true);
-            if (_squads) _squads.HangarChanged += ShowBackdrop;
+            if (_squads) _squads.HangarChanged += ShowHangarBackdrop;
+            // The bench's clip follows the crew PDA: lying, picked up, held, laid down (Rev 99 C).
+            _pilots = GetComponentInChildren<ArkPilotsPage>(true);
+            if (_pilots) _pilots.HeldChanged += HandlePdaHeld;
             // GIVE TO A SEAT on the Artifacts tab carries on in the Squads tab: the next seat picked takes the artifact.
             _artifactsPage = GetComponentInChildren<ArkArtifactsPage>(true);
             if (_artifactsPage) _artifactsPage.GiveRequested += GiveToSeat;
@@ -186,6 +195,7 @@ namespace CosmicShore.UI
                 arkTabs.Changed += HandleTabChanged;
                 _pageShown = arkTabs.Current < 0 || PictureFor(arkTabs.Current);
                 _room = arkTabs.Current < 0 ? ArkRoom.Pier : RoomFor(arkTabs.Current);
+                _lastTab = arkTabs.Current;
             }
             BuildUi();
         }
@@ -199,7 +209,8 @@ namespace CosmicShore.UI
             // Arriving shows the four idling, waiting to be converted; a finished combine plays again.
             _player.Begin(convert: false);
             _pierRun = ArkBackdropRun.Loop;
-            ShowBackdrop();
+            SettleBench();
+            ShowBackdrop(ArkPassKind.Cut);   // arriving: the screen switcher has its own transition
             _frame = 0f;   // snap to the first framing rather than easing in from the last visit's
             // No Select() here: the switcher's Refocus lands on CONVERT, the screen's first live control,
             // and a second owner of first focus is how the pad lost track of it on other screens.
@@ -236,16 +247,23 @@ namespace CosmicShore.UI
         }
 
         /// <summary>The tab's backdrop clip, in the worn colour set (and, for the hangar, the squad's domain), shown in the
-        /// picture. A no-op when there is no backdrop config or the Ark is not the screen.</summary>
-        void ShowBackdrop()
+        /// picture: by <paramref name="kind"/> from what is showing, in direction <paramref name="dir"/> along the tab row
+        /// (the HyperSea pass, Docs/MENU_REDESIGN_B.md section 197). A no-op when there is no backdrop config or the Ark is
+        /// not the screen.</summary>
+        void ShowBackdrop(ArkPassKind kind, int dir = 1, Vector2? origin = null)
         {
             if (!UsesBackdrops || !_active || !_pageShown || _room == ArkRoom.None)
             {
                 ShowVessels();   // hides them: another room, or no picture
                 return;
             }
-            if (!_backdrop) _backdrop = ArkBackdrop.Create(transform);
-            var run = _room == ArkRoom.Pier ? _pierRun : ArkBackdropRun.Loop;
+            EnsureBackdrop();
+            var run = _room switch
+            {
+                ArkRoom.Pier => _pierRun,
+                ArkRoom.Bench => _benchRun,
+                _ => ArkBackdropRun.Loop,
+            };
             var set = ColorTrace.Worn ? ColorTrace.Worn.name : string.Empty;
             var domain = _squads && _squads.HasHangar ? _squads.HangarDomain : Domains.Jade;
             var clip = _backdropConfig.Find(_room, run, set, domain);
@@ -254,7 +272,7 @@ namespace CosmicShore.UI
                 if (_vessels) _vessels.Hide();
                 return;
             }
-            _backdrop.Show(clip, run != ArkBackdropRun.Convert, _backdropConfig.TextureSize);
+            _backdrop.Show(clip, !PlaysOnce(run), _backdropConfig.TextureSize, kind, dir, origin);
             if (_surface) _surface.texture = _backdrop.Texture;
             ShowVessels();
         }
@@ -272,6 +290,44 @@ namespace CosmicShore.UI
             if (_vessels) _vessels.Show(_squads);
         }
 
+        static bool PlaysOnce(ArkBackdropRun run) =>
+            run is ArkBackdropRun.Convert or ArkBackdropRun.PickUp or ArkBackdropRun.PutDown;
+
+        // The crew PDA was picked up or laid down: its move plays once (the clip is the move, so a cut), then the bench
+        // holds where it ended.
+        void HandlePdaHeld(bool held)
+        {
+            _benchRun = held ? ArkBackdropRun.PickUp : ArkBackdropRun.PutDown;
+            ShowBackdrop(ArkPassKind.Cut);
+        }
+
+        // Arriving at the bench (or the screen) shows the PDA where the page has it, without its move.
+        void SettleBench() => _benchRun = _pilots && _pilots.Held ? ArkBackdropRun.Held : ArkBackdropRun.Loop;
+
+        // The squad's domain changed: the same hangar in another colour, so a dissolve, not a pass.
+        void ShowHangarBackdrop() => ShowBackdrop(ArkPassKind.Dissolve);
+
+        /// <summary>Where tab <paramref name="tab"/>'s word sits on the picture, 0-1 across it (the ripple starts there); null
+        /// without the picture or the word.</summary>
+        Vector2? TabOrigin(int tab)
+        {
+            var word = arkTabs ? arkTabs.ButtonRect(tab) : null;
+            if (!word || !_surface) return null;
+            var picture = _surface.rectTransform;
+            Vector2 local = picture.InverseTransformPoint(word.TransformPoint(word.rect.center));
+            var r = picture.rect;
+            if (r.width <= 0f || r.height <= 0f) return null;
+            return new Vector2((local.x - r.xMin) / r.width, (local.y - r.yMin) / r.height);
+        }
+
+        void EnsureBackdrop()
+        {
+            if (_backdrop) return;
+            _backdrop = ArkBackdrop.Create(transform, _backdropConfig.PassShader, _backdropConfig.PassSeconds,
+                                           _backdropConfig.DissolveSeconds, _backdropConfig.PassStyles);
+            if (_surface && _backdrop.Material) _surface.material = _backdrop.Material;
+        }
+
         /// <summary>Which part of the Ark tab <paramref name="tab"/> looks at: chosen by what the tab HOLDS (its page), never
         /// by its place in the row.</summary>
         ArkRoom RoomFor(int tab)
@@ -281,6 +337,7 @@ namespace CosmicShore.UI
             {
                 SquadsPage => ArkRoom.Hangar,
                 ArkArtifactsPage => ArkRoom.Artifacts,
+                ArkPilotsPage => ArkRoom.Bench,
                 _ => ArkRoom.None,
             };
         }
@@ -291,28 +348,41 @@ namespace CosmicShore.UI
 
         // Another tab is up: its room shows (the hangar, the pier, the artifacts room), or, for a tab with none, the picture
         // goes and its target is let go as on exit.
+        // The picture passes through the Ark's membrane toward the tab pressed: a tab to the right comes in from the right.
         void HandleTabChanged(int tab)
         {
+            int dir = _lastTab < 0 || tab >= _lastTab ? 1 : -1;
+            _lastTab = tab;
+            var origin = TabOrigin(tab);
             _room = UsesBackdrops ? RoomFor(tab) : ArkRoom.Pier;
+            SettleBench();
             bool shown = PictureFor(tab);
             if (shown == _pageShown)
             {
-                ShowBackdrop();
+                ShowBackdrop(ArkPassKind.Pass, dir, origin);
                 return;
             }
             _pageShown = shown;
-            if (_surface) _surface.enabled = shown;
             if (!shown)
             {
                 if (_vessels) _vessels.Hide();
+                // Into the dark of a tab with no room (Pilots, Decor), then the picture hides (LateUpdate).
+                if (_backdrop && _backdrop.Material && _active && _surface && _surface.enabled)
+                {
+                    _backdrop.ShowDark(ArkPassKind.Pass, dir, origin);
+                    _fadingOut = true;
+                }
+                else if (_surface) _surface.enabled = false;
                 ReleaseTarget();
                 return;
             }
+            _fadingOut = false;
+            if (_surface) _surface.enabled = true;
             if (_active && EnsureStage())
             {
                 _frame = 0f;
                 _phase = Phase.None;
-                ShowBackdrop();
+                ShowBackdrop(ArkPassKind.Pass, dir, origin);
                 DrawOverlay();
             }
         }
@@ -327,7 +397,8 @@ namespace CosmicShore.UI
         void OnDestroy()
         {
             if (arkTabs) arkTabs.Changed -= HandleTabChanged;
-            if (_squads) _squads.HangarChanged -= ShowBackdrop;
+            if (_squads) _squads.HangarChanged -= ShowHangarBackdrop;
+            if (_pilots) _pilots.HeldChanged -= HandlePdaHeld;
             if (_artifactsPage) _artifactsPage.GiveRequested -= GiveToSeat;
             ReleaseStage();
         }
@@ -339,14 +410,44 @@ namespace CosmicShore.UI
             // A press mid-run used to restart the whole sequence; the run finishes first now (CONVERT reads
             // "Converting..." and is inactive meanwhile).
             if (_player.IsRunning) return;
+            if (convertButton && !TryPay()) return;
             _player.Convert();
             _pierRun = ArkBackdropRun.Convert;   // the conversion's clip plays once, then the Omni made loops
-            ShowBackdrop();
+            ShowBackdrop(ArkPassKind.Dissolve);
             DrawOverlay();
+        }
+
+        /// <summary>One crystal of each element out, one omni crystal in; nothing moves unless the player holds all four.</summary>
+        bool TryPay()
+        {
+            var data = PlayerDataService.Instance;
+            if (!data || !CanPay(data)) return false;
+            foreach (var e in FlyIn)
+                if (!data.TrySpendElementalCrystals(e, 1, ConvertSource))
+                    return false;   // CanPay just said each holds one; nothing else spends between
+            data.AddCrystals(1, ConvertSource);
+            _paidRun = true;
+            return true;
+        }
+
+        static bool CanPay(PlayerDataService data)
+        {
+            foreach (var e in FlyIn)
+                if (data.GetElementalCrystalsHeld(e) < 1) return false;
+            return true;
         }
 
         void LateUpdate()
         {
+            if (_fadingOut && _backdrop && _surface)
+            {
+                _surface.texture = _backdrop.Texture;
+                if (_backdrop.RestingDark || !_active)
+                {
+                    _fadingOut = false;
+                    _surface.enabled = false;
+                }
+            }
             if (!_active || !_pageShown || !_player) return;
             float dt = Time.unscaledDeltaTime;
             if (UsesBackdrops)
@@ -357,7 +458,12 @@ namespace CosmicShore.UI
                 if (_pierRun == ArkBackdropRun.Convert && _backdrop && _backdrop.Finished)
                 {
                     _pierRun = ArkBackdropRun.Done;
-                    ShowBackdrop();
+                    ShowBackdrop(ArkPassKind.Dissolve);
+                }
+                if (_room == ArkRoom.Bench && PlaysOnce(_benchRun) && _backdrop && _backdrop.Finished)
+                {
+                    _benchRun = _benchRun == ArkBackdropRun.PickUp ? ArkBackdropRun.Held : ArkBackdropRun.Loop;
+                    ShowBackdrop(ArkPassKind.Cut);   // the move ended on this very frame
                 }
                 if (_surface && _backdrop && _surface.texture != _backdrop.Texture) _surface.texture = _backdrop.Texture;
                 if (_vessels && _room == ArkRoom.Hangar) _vessels.Tick(_backdrop ? _backdrop.LoopPhase : -1f);
@@ -392,59 +498,72 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// The overlay's live state: each element's row and segment from its own flight, the merged count,
-        /// the omni (dim until it forms, then popped in), the clock and CONVERT. Text and colours are written
-        /// only when they change; the bars every frame.
+        /// The overlay's live state: each element's balance (a paid run's crystal still counted until it flies in), the
+        /// omni wallet (its new crystal counted once the omni forms), the line, the omni pop and CONVERT. Text and
+        /// colours are written only when they change.
         /// </summary>
         void DrawOverlay()
         {
             if (!_player) return;
-            int merged = 0;
+            var data = PlayerDataService.Instance;
+            bool running = _player.IsRunning;
+            if (_paidRun && !running && !_player.IsDone) _paidRun = false;   // the run was dropped (screen left, replayed)
+
+            int shortest = -1, empty = 0;
             for (int k = 0; k < Elements; k++)
             {
+                int held = data ? data.GetElementalCrystalsHeld(FlyIn[k]) : 0;
                 float p = _player.ElementProgress(k);
-                if (p >= 1f) merged++;
-                if (k < recipeRows.Length && recipeRows[k]) recipeRows[k].Draw(p);
-                if (k < segments.Length && segments[k]) segments[k].fillAmount = p;
-                if (k < segmentSparks.Length) KitVisibility.SetShown(segmentSparks[k], p >= 1f);
-            }
-            if (merged != _merged)
-            {
-                _merged = merged;
-                if (mergedText) mergedText.SetText(TemplateText.Fill(mergedLine, "merged", merged.ToString(), "total", Elements.ToString()));
+                if (_paidRun && running && p <= 0f) held += 1;   // still waiting on the pier
+                if (held < 1 && shortest < 0) shortest = k;
+                if (held < 1) empty++;
+                if (k < balances.Length && balances[k]) balances[k].Draw(held, running && p > 0f && p < 1f, running && p > 0f);
             }
 
             bool formed = _player.OmniFormed;
+            int omni = data ? data.GetCrystalBalance() : 0;
+            if (_paidRun && !formed) omni -= 1;
+            if (omniCountText && omni != _omniShownCount)
+            {
+                _omniShownCount = omni;
+                omniCountText.SetText(omni.ToString("N0"));
+            }
             if (formed != _omniShown || _phase == Phase.None)
             {
                 if (formed && !_omniShown && omniPop && isActiveAndEnabled) omniPop.Play();
                 _omniShown = formed;
-                if (omniGroup) omniGroup.alpha = formed ? 1f : OmniDimAlpha;
+                if (omniCountText) omniCountText.SetColorToken(formed && _paidRun ? UIColorToken.Cta : UIColorToken.TextLight);
             }
 
-            var phase = _player.IsRunning ? Phase.Converting : _player.IsDone ? Phase.Converted : Phase.Ready;
-            if (phase != _phase)
+            // 0 recipe, 1 converting, 2 short, 3 empty; the short element is part of the state.
+            int line = running ? 1 : empty == Elements ? 3 : shortest >= 0 ? 2 : 0;
+            int lineState = line * 8 + Mathf.Max(0, shortest);
+            if (balanceLineText && lineState != _lineState)
+            {
+                _lineState = lineState;
+                balanceLineText.SetText(line switch
+                {
+                    1 => convertingLine,
+                    3 => emptyLine,
+                    2 => TemplateText.Fill(shortLine, "element", shortest < elementNames.Length ? elementNames[shortest] : string.Empty),
+                    _ => recipeLine,
+                });
+            }
+
+            bool can = !running && data && shortest < 0;
+            var phase = running ? Phase.Converting : _player.IsDone ? Phase.Converted : Phase.Ready;
+            if (phase != _phase || can != _canShown)
             {
                 _phase = phase;
-                if (statusText)
-                    statusText.SetText(phase switch { Phase.Converting => convertingStatusLine, Phase.Converted => convertedStatusLine, _ => readyStatusLine });
+                _canShown = can;
                 if (convertLabel)
-                    convertLabel.text = phase switch { Phase.Converting => convertingButtonLine, Phase.Converted => convertAgainButtonLine, _ => buttonLabel };
+                    convertLabel.text = phase switch { Phase.Converting => convertingButtonLine, Phase.Converted when can => convertAgainButtonLine, _ => buttonLabel };
                 if (convertButton)
                 {
-                    convertButton.Variant = phase == Phase.Converting ? KitButtonVariant.Inactive : KitButtonVariant.Purchase;   // converting spends the merged elements: gold
-                    convertButton.interactable = phase != Phase.Converting;
+                    // Converting spends crystals: gold (Purchase), and gold means nothing else (Docs/UI_COLOR_RULES.md).
+                    convertButton.Variant = can ? KitButtonVariant.Purchase : KitButtonVariant.Inactive;
+                    convertButton.interactable = can;
                 }
-            }
-
-            // Play time runs on after the omni wakes (it idles), so the clock stops at the run's length.
-            int total = Mathf.CeilToInt((float)_player.RunDuration);
-            int shown = Mathf.Min(Mathf.FloorToInt((float)_player.RunTime), total);
-            if (clockText && (shown != _clockShown || total != _clockTotal))
-            {
-                _clockShown = shown;
-                _clockTotal = total;
-                clockText.text = TemplateText.Fill(clockLine, "time", Clock(shown), "length", total > 0 ? Clock(total) : unknownLengthLine);
             }
         }
 

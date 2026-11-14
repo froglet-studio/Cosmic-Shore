@@ -1,7 +1,7 @@
 {
  "counts": {
   "exempt": 7,
-  "grey": 518,
+  "grey": 542,
   "ui": 612,
   "world": 1
  },
@@ -3729,6 +3729,11 @@
    "kind": "sprite",
    "sha": "8cfebbf048837072"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Goby/Goby_DeepUndertow.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "bfa62b6db1f6d74a"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Goby/Goby_Lock.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3738,6 +3743,11 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "8ac0b7cf6d8e4f46"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Goby/Goby_PhaseDart.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "625d2134c2034367"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Goby/Goby_Undertow.png": {
    "coloured": 0.0,
@@ -3754,6 +3764,11 @@
    "kind": "sprite",
    "sha": "49862684db038b32"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Goby/Pistol_Fortress.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "4962e6f5efbf990b"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Goby/Pistol_Ghost.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3764,10 +3779,25 @@
    "kind": "sprite",
    "sha": "5ee54f83f4f55cca"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Goby/Pistol_VortexSteal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "a45980d0a37245fc"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_BattleSight.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "340dc7a1237cd87d"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_ChargedCannon.png": {
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "2e501402b1fa9118"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_ClaimedFire.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "9afc14281b4200a8"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_DigIn.png": {
    "coloured": 0.0,
@@ -3778,6 +3808,16 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "0505082b0dbe1476"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_SafeDetonation.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "8b650c9bc087e5a2"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_VectorControl.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "ba514cecda16480f"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_WeaponSystems.png": {
    "coloured": 0.0,
@@ -3823,6 +3863,71 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "ab8b71d68803bcab"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_AllTerrainPortals.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "0da2c1cd5773505a"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_BlinkDrive.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "482060f35ea41639"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_FTLChromatool.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "d8ef3f3d941193fd"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_FugacityDischarger.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "06a720053cd3ca07"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_GenesisLance.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "55d166085ac73245"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_HardLightLasso.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "f2a11daec221f9da"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_HexapodEyeletJet.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "804ec1adb19f5d9c"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_LittleBangGrenade.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c6c69d7b6fa6271f"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_MonteCannon.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "2c4ede8247cc27c3"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_ParticleHarmonizer.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "64082f77de805e00"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_RosenBridge.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "b237b8cbd67c5b90"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_SepiaDrone.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "dd9ba13cc7368b4a"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_ThrusterSwarm.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c532bb662aed5df3"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_Attack.png": {
    "coloured": 0.0,
@@ -3954,6 +4059,16 @@
    "kind": "sprite",
    "sha": "ff34b3a1fa4d5500"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_BoostOut.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "f28b3ceeafa23e8c"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_DangerPortal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "1081c69d6b7b7b8c"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_ExitPortal.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3969,6 +4084,11 @@
    "kind": "sprite",
    "sha": "0fb7770416c1c095"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_SixSentinels.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "8308fb6481c8c7bb"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_Soliton.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3978,6 +4098,11 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "de87c41eee5ea0a4"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_Steal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "a52bde82063ae669"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_Afterburner.png": {
    "coloured": 0.0,
@@ -4019,56 +4144,6 @@
    "kind": "sprite",
    "sha": "8c4ac747515581c5"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_AfterimageBlade.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "7e4a73a97f27ccee"
-  },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_AfterimageFar.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "fbc8ee697a1f7f6d"
-  },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_AfterimageNear.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "6ed7dd7cc0b88037"
-  },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_KatanaChop.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "419e6517bb8f97b3"
-  },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_KatanaCurved.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "cc6621c5a9ad238d"
-  },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_ReachBlade.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "1fa0306d833f5e74"
-  },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_ReachHilt.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "733763b0628ab261"
-  },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_ReachPosts.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "e8f3de0f0f449ab0"
-  },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_ReachPrism.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "eb6533916e95905a"
-  },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_ReachPrismBroken.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "292dbc590e2f379f"
-  },
   "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_SpoolGlance.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -4089,6 +4164,11 @@
    "kind": "sprite",
    "sha": "f478c28010a20610"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Berm.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "e66379b1883fbd15"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Blade.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -4099,10 +4179,20 @@
    "kind": "sprite",
    "sha": "fd1eb42b35785d65"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_GoreSteal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3baf9d5f47794825"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Heft.png": {
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "1d412c723108d0ea"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Unstoppable.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "60522f5c280a68fe"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Scarab/Core/Scarab_BallForge.png": {
    "coloured": 0.0,
@@ -4809,6 +4899,11 @@
    "kind": "sprite",
    "sha": "65547681e026760b"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Thresher/Parts/Thresher_PlantDanger.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "40040052f594eead"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Thresher/Parts/Thresher_PlantOrbit.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -4818,6 +4913,11 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "25167a46d3c2fbac"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Thresher/Parts/Thresher_PlantWard.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "4514a5b8fd3a1bf2"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Thresher/Parts/Thresher_WinchBall.png": {
    "coloured": 0.0,
@@ -5151,6 +5251,26 @@
    "kind": "sprite",
    "sha": "2b68790f13f9ff7b",
    "why": "the app icon and splash: the platform draws them before any script runs"
+  },
+  "Assets/_Graphics/Icons/Artifacts/artifact_aegis.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "ce9d0f7b4a87663b"
+  },
+  "Assets/_Graphics/Icons/Artifacts/artifact_aftershock.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "585b669bb4aa901a"
+  },
+  "Assets/_Graphics/Icons/Artifacts/artifact_hydra.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "8bdae21e59af1505"
+  },
+  "Assets/_Graphics/Icons/Artifacts/artifact_javelin.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "6bcf56f83c3ee474"
   },
   "Assets/_Graphics/Icons/Icon_Generate.png": {
    "coloured": 1.0,

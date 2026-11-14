@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-13-tab-changes-in-the-ark-now-fade-the-page-3f4635",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-13T22:31:25+00:00",
+  "area": "the Ark's Pilots tab",
+  "summary": "Tab changes in the Ark now fade the page left and rise the page reached in step with the backdrop's HyperSea pass (ArkTabsView, MENU_REDESIGN_B.md section 197); going to Pilots, the room behind passes into the dark before your page's veil shows. Your page's content and layout are unchanged.",
+  "branch": "claude/project-thread-s689ho",
+  "commit": "f7418d27c"
+}
