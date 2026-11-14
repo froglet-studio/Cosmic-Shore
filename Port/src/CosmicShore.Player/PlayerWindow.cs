@@ -348,6 +348,7 @@ namespace CosmicShore.Player
             if (cam != null && cam.isActiveAndEnabled)
             {
                 post = PostSettings.For(cam, _volumes);
+                post.KeepAlpha = false;   // the window's own frame is opaque; only a camera's RenderTexture keeps its alpha
                 _gpu?.Begin(2);
                 _environment.Update(_skybox);
                 BeginCamera(cam);

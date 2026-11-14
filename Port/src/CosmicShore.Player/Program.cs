@@ -57,6 +57,7 @@ namespace CosmicShore.Player
         {
             // The diagnostics overlay (F3) shown from the start: --diag, or the launcher's SETTINGS > GAME switch.
             if (Environment.GetEnvironmentVariable("COSMIC_SHORE_DIAG") == "1") PlayerDiagnostics.StartVisible = true;
+            VideoDecoder.Install();   // video clips decoded by the ffmpeg on the PATH (the phone player installs none)
             string scene = null, screenshot = null;
             int frames = -1, width = 1600, height = 900;
             bool headless = false, quiet = false, reportRender = false;

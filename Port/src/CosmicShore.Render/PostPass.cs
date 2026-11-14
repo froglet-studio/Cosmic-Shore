@@ -23,6 +23,10 @@ namespace CosmicShore.Render
         public bool Panini;
         public float PaniniDistance, PaniniCropToFit;
         public float TanHalfFovX, TanHalfFovY;
+        /// <summary>The camera renders with no post-processing: the composite keeps the scene's alpha (URP writes
+        /// alpha 1 only in its post pass, so a camera with post off clears a target transparent and the UI shows what
+        /// is behind it - the Hangar's vessel stage, the Ark's squad vessels).</summary>
+        public bool KeepAlpha;
 
         /// <summary>
         /// The post state one camera renders with: nothing unless the camera's URP data turns
@@ -34,7 +38,11 @@ namespace CosmicShore.Render
             var s = new PostSettings();
             if (camera == null) return s;
             var data = camera.GetComponent<CosmicShore.Engine.Rendering.UniversalAdditionalCameraData>();
-            if (data == null || !data.renderPostProcessing) return s;
+            if (data == null || !data.renderPostProcessing)
+            {
+                s.KeepAlpha = true;
+                return s;
+            }
             // A ViaScripting camera renders with its own stack, as its scripts last refreshed it (URP); every other camera
             // with the pipeline's shared stack, refreshed here each frame.
             if (!data.requiresVolumeFrameworkUpdate && data.volumeStack != null) stack = data.volumeStack;
@@ -231,15 +239,17 @@ uniform vec2 uBloomSize;
 uniform int uHq;
 uniform float uBloomIntensity;
 uniform vec3 uBloomTint;
+uniform int uKeepAlpha;
 out vec4 frag;
 " + Bicubic + @"
 void main(){
-  vec3 c = texture(uScene, vUv).rgb;
+  vec4 scene = texture(uScene, vUv);
+  vec3 c = scene.rgb;
   if (uBloomIntensity > 0.0) {
     vec3 b = uHq == 1 ? sampleBicubic(uBloom, vUv, uBloomSize) : texture(uBloom, vUv).rgb;
     c += b * uBloomIntensity * uBloomTint;
   }
-  frag = vec4(c, 1.0);
+  frag = vec4(c, uKeepAlpha == 1 ? clamp(scene.a, 0.0, 1.0) : 1.0);
 }";
 
         sealed class Rt { public uint Fbo, Tex; public int W, H; }
@@ -356,6 +366,7 @@ void main(){
             _composite.Set("uBloom", 1);
             _composite.Set("uBloomSize", bloomW, bloomH);
             _composite.Set("uHq", s.BloomHighQuality ? 1 : 0);
+            _composite.Set("uKeepAlpha", s.KeepAlpha ? 1 : 0);
             _composite.Set("uBloomIntensity", bloomTex != 0 ? s.BloomIntensity : 0f);
             _gl.Uniform3(_composite.Loc("uBloomTint"), s.BloomTint.X, s.BloomTint.Y, s.BloomTint.Z);
             Tex(0, source);

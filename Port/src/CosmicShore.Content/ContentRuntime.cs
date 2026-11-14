@@ -75,6 +75,7 @@ namespace CosmicShore.Content
             Assets.Importers[typeof(CosmicShore.Engine.UI.TMP_FontAsset)] = LoadFontAsset;
             Audio.MixerImporter.Register(Assets, new Audio.MixerImporter(Db));
             Assets.Importers[typeof(TextAsset)] = LoadTextAsset;
+            Assets.Importers[typeof(CosmicShore.Engine.Video.VideoClip)] = LoadVideoClip;
             ChainImporter(typeof(Mesh), r => r.Guid == AssetLoader.BuiltinDefaultGuid ? BuiltinMeshes.ForFileId(r.FileId) : null);
             ChainImporter(typeof(Material), r => r.Guid == AssetLoader.BuiltinExtraGuid ? BuiltinMaterials.ForFileId(r.FileId) : null);
             ShaderProperties = new Shaders.ShaderPropertyCatalog(Db);
@@ -105,6 +106,26 @@ namespace CosmicShore.Content
             var path = Db.PathOf(r.Guid);
             if (path == null || !TextAsset.IsTextAssetExtension(System.IO.Path.GetExtension(path)) || !System.IO.File.Exists(path)) return null;
             return TextAsset.FromFile(path);
+        }
+
+        /// <summary>A movie Unity imports as a VideoClip (.mp4, .mov, .m4v): its path, length and size, read from the file's
+        /// own header (Videos/Mp4Header). Pixels come from VideoPlayer.FrameDecoder when the player installs one.</summary>
+        EngineObject LoadVideoClip(ObjRef r)
+        {
+            var path = Db.PathOf(r.Guid);
+            if (path == null || !System.IO.File.Exists(path)) return null;
+            var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+            if (ext is not (".mp4" or ".mov" or ".m4v")) return null;
+            var clip = new CosmicShore.Engine.Video.VideoClip { originalPath = System.IO.Path.GetFullPath(path), name = System.IO.Path.GetFileNameWithoutExtension(path) };
+            if (Videos.Mp4Header.TryRead(path, out var info))
+            {
+                clip.length = info.Seconds;
+                clip.width = (uint)info.Width;
+                clip.height = (uint)info.Height;
+                if (info.FrameRate > 0) clip.frameRate = info.FrameRate;
+                clip.frameCount = (ulong)Math.Round(clip.length * clip.frameRate);
+            }
+            return clip;
         }
 
         /// <summary>A TMP font asset reference (only a MonoBehaviour whose script IS TMP_FontAsset).</summary>
