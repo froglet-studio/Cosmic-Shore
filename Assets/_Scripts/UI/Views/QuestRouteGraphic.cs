@@ -10,6 +10,7 @@ namespace CosmicShore.UI
     /// the claimed station (the window's one motion; nothing else moves at rest). Stations are in this graphic's own
     /// space, centred; <see cref="QuestsRules.Station"/> places them.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public class QuestRouteGraphic : MaskableGraphic
     {
         const int Steps = 32;
