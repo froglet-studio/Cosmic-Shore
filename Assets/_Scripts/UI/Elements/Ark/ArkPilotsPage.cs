@@ -37,7 +37,7 @@ namespace CosmicShore.UI
     /// <para>The picture is the callsign's, not the person's (<see cref="PilotSceneCatalogSO"/>): the same face the
     /// profile page shows full screen. A callsign with no scene shows the words alone.</para>
     /// </summary>
-    public class ArkPilotsPage : MonoBehaviour, IArkTabPage
+    public class ArkPilotsPage : MonoBehaviour, IArkTabPage, IArkTabBack
     {
         [Tooltip("Each callsign's scene and close-up (Tools/Build/author_pilot_scene_assets.py).")]
         [SerializeField] private PilotSceneCatalogSO scenes;
@@ -321,6 +321,16 @@ namespace CosmicShore.UI
             _file = index;
             s_lastRead = _crew[index].Id;
             Refresh();
+        }
+
+        /// <summary>B or Escape (<see cref="ArkTabsView.TryBack"/>): a file goes back to the crew, the crew lays the PDA
+        /// down on the bench; lying down, the press is not the page's.</summary>
+        public bool TryBack()
+        {
+            if (!_shown) return false;
+            if (_filing) { BackToCrew(); return true; }
+            if (_held) { PutDown(); return true; }
+            return false;
         }
 
         void BackToCrew()

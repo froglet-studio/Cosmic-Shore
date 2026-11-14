@@ -31,7 +31,7 @@ namespace CosmicShore.UI
     ///
     /// <para>Every word is authored on this component; code fills the numbers (<see cref="TemplateText"/>).</para>
     /// </summary>
-    public class ArkArtifactsPage : MonoBehaviour, IArkTabPage
+    public class ArkArtifactsPage : MonoBehaviour, IArkTabPage, IArkTabBack
     {
         /// <summary>The tab's three levels.</summary>
         public enum Level
@@ -242,6 +242,14 @@ namespace CosmicShore.UI
 
         /// <summary>One level up: feeding back to the artifact, the artifact back to the hoard.</summary>
         public void Back() => GoTo(_level == Level.Feed ? Level.Artifact : Level.Hoard);
+
+        /// <summary>B or Escape (<see cref="ArkTabsView.TryBack"/>): <see cref="Back"/>, unless the hoard is up.</summary>
+        public bool TryBack()
+        {
+            if (!_shown || _level == Level.Hoard) return false;
+            Back();
+            return true;
+        }
 
         void GoTo(Level level)
         {
