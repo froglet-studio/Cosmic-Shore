@@ -8645,6 +8645,39 @@ each rebuilt the right hull. The first run showed the hulls too big and floating
 7.5 m tall and 1.6 m up), which the height cap and the 0.6 m clearance fixed. Still for Unity: the light, and that the
 player's hull sits partly behind the vessel picker row at 1600 x 900.
 
+## 203. Built: the Squads tab as Rev 110 B, the holo table (2026-11-14, claude/project-thread-sdvd40, not run in Unity)
+
+**Asked (Shombith, 2026-11-14):** "Why do I see this old UI and not the rev 110 UIs ... just fix it first and merge to
+ark-rework. I will open unity and check." Section 202 had built only the vessels on the pads; the panels over them were
+still Rev 67's (the squads row, the domain row, the three seat cards, the picker grid and the two bars).
+
+**Built (board R110B, its numbers, 1920 x 1080 from the screen's foot-centre; `author_menu_ark.py`'s Squads page):**
+- **The bridge:** two warm lamps in the foot's corners and a dome of light (1260 x 520) in the squad's domain colour.
+- **The plates** (`SquadSeatPlate`): one per seat on the dome, Rogue One left, the leader in the middle, Rogue Two right
+  (the pads' order), each 300 x 82: the pilot's face (a plus on an open seat), who flies it, "vessel - element" (an open
+  seat: "Pick who flies it"), the presence diamond; lit in the domain, dimmed while the pilot is away. Pressing one
+  raises it 26 and projects the seat; pressing it again (or B) puts it back.
+- **The projection** over the picked plate, a beam of light down to it: "who - state", then the seat's lines (Who flies
+  it on an AI or open rogue seat, Vessel, Element, Pilot, Artifact), each opening only its list in place (2 x 6 word
+  chips, or 2 x 4 pilots with faces; < > page a longer list) with one line on what the pick changes. A pick is kept at
+  once: there is no Make or Edit mode and no Save any more. Under the lines, the seat's one action: CHANGE VESSEL on
+  yours, WHO FLIES IT on an open seat, OPEN THE SEAT on an offline friend's. A joined squad's seat is read-only, with
+  its join state ("Only Kestrel changes the squad."). B or Escape steps back a level (`IArkTabBack`, section 205).
+- **The brass rail** along the foot (136 high): < the squad's name and whose it is >, MAKE, JOIN, DELETE (LEAVE on a
+  joined squad, "Press again" to confirm); the squad's light (Jade, Ruby, Gold) in the middle; Take into MISSION (the
+  padlock while Home's entry is locked) and ARENA on the right. MAKE makes the squad at once (you and two open seats)
+  and opens Rogue One; JOIN projects the friends' squads with an open seat in the middle of the table.
+- **No squad yet:** the words and MAKE SQUAD over the dome.
+- GIVE TO A SEAT (the Artifacts tab) now gives the artifact to the next plate pressed.
+
+`SquadsPage` keeps its data and rules (the squad book, joining, refresh and publish, Take into, the hangar line-up the
+vessel layer reads). Retired with Rev 67's screen: the seat cards' hull renders and nanobot swap (the real hulls stand
+on the pads), the squads row, the picker grid, the Make / Edit bars and their words. `--check` and `--self-test` hold
+the new wiring and the plates' order (three new negative controls). Not run in Unity: the hand test is the "holo table"
+entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+Affects: Shombith's Ark screen (`SquadsPage`, `author_menu_ark.py`, ArkView.prefab).
+
 ## 195. Rev 104 mockups: the Elemental Converter without the cards, showing the player's real crystals (2026-11-13, B picked, built in section 196)
 
 **Asked** (Shombith, 2026-11-13): "The UI cards on top of each screen. I do not like them at all ... The elemental

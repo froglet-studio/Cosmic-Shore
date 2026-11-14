@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Squads tab as the holo table, Rev 110 B (`claude/project-thread-sdvd40`, 2026-11-14, Shombith) — NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 203. Compiled with `unity_refcompile` (0 errors in changed files); never opened in Unity.
+- [ ] Ark > SQUADS with no squad: "No squad yet" and MAKE SQUAD over the dome; MAKE makes a squad (you and two open
+      seats), Rogue One's plate rises and its projection shows Who flies it.
+- [ ] The three plates sit on the dome under their pads (Rogue One left, you in the middle, Rogue Two right), clear of
+      the rail; faces, names and "vessel - element" read; the dome, the plates and the beam take the squad's light.
+- [ ] Press your plate > Vessel: the list opens in place; pick one: the pad's hull changes, the plate's line changes.
+      Element, Pilot (faces), Artifact the same. B / Escape steps back a level.
+- [ ] An open seat: WHO FLIES IT > AI wingmate fills the pad; an offline friend's seat: OPEN THE SEAT empties it.
+- [ ] The rail: < > step through your squads; Jade / Ruby / Gold relight the table and the hangar; DELETE asks
+      "Press again"; JOIN lists friends' squads in the middle; MISSION (locked) and ARENA take the squad in.
+- [ ] A joined squad: its seats are read-only with the join state under them; the light refuses.
+
 ### 🔴 The squad's real vessels in the hangar, over empty-pad clips (`claude/project-thread-sdvd40`, 2026-11-14, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/MENU_REDESIGN_B.md` section 202. The nine Squads clips now show the hangar's pads empty;
