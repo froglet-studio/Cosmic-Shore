@@ -170,9 +170,20 @@ namespace CosmicShore.UI
             SetLayerRecursive(model, _stage.gameObject.layer);
             // Stand it on its pad: the hull's lowest point `clearance` above the floor, whatever the hull's shape.
             model.transform.SetPositionAndRotation(StageOrigin + Pad(view, seat), Facing);
-            float bottom = float.MaxValue;
+            float bottom = float.MaxValue, top = float.MinValue;
             foreach (var r in model.GetComponentsInChildren<Renderer>(true))
+            {
                 bottom = Mathf.Min(bottom, r.bounds.min.y);
+                top = Mathf.Max(top, r.bounds.max.y);
+            }
+            // A round hull fitted to its length stands as tall as it is long: bring it down to the pad's height.
+            if (bottom < float.MaxValue && view.hullHeight > 0f && top - bottom > view.hullHeight)
+            {
+                float k = view.hullHeight / (top - bottom);
+                var pivot = model.transform.position;
+                model.transform.localScale *= k;
+                bottom = pivot.y + (bottom - pivot.y) * k;
+            }
             _lift[seat] = bottom < float.MaxValue ? view.clearance + (StageOrigin.y + Pad(view, seat).y - bottom) : view.clearance;
             _hulls[seat] = model;
 

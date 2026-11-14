@@ -80,6 +80,8 @@ namespace CosmicShore.ScriptableObjects
             public Vector3[] pads;
             [Tooltip("Every hull is fitted to this length (its longest side), metres.")]
             public float hullLength;
+            [Tooltip("No hull stands taller than this, metres: a round hull fitted to its length is scaled down to it.")]
+            public float hullHeight;
             [Tooltip("Gap between the hull's lowest point and the pad, metres.")]
             public float clearance;
             [Tooltip("How far a live hull rises and sinks over one loop, metres.")]
@@ -111,7 +113,8 @@ namespace CosmicShore.ScriptableObjects
                 loopSeconds = 3.2f,
                 pads = new[] { new Vector3(0.0f, -23.0f, -66.0f), new Vector3(-9.0f, -23.0f, -60.5f), new Vector3(9.6f, -23.0f, -60.5f) },
                 hullLength = 7.5f,
-                clearance = 1.6f,
+                hullHeight = 3.4f,
+                clearance = 0.6f,
                 hover = 0.12f,
                 rockDegrees = 1.7f,
                 phaseStep = 2.1f,

@@ -105,7 +105,8 @@ MonoBehaviour:
     - {x: -9, y: -23, z: -60.5}
     - {x: 9.6, y: -23, z: -60.5}
     hullLength: 7.5
-    clearance: 1.6
+    hullHeight: 3.4
+    clearance: 0.6
     hover: 0.12
     rockDegrees: 1.7
     phaseStep: 2.1

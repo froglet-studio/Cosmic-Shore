@@ -42,7 +42,8 @@ HANGAR = {
     "loopSeconds": 3.2,
     "pads": [(0.0, -23.0, -66.0), (-9.0, -23.0, -60.5), (9.6, -23.0, -60.5)],
     "hullLength": 7.5,                     # Rev 110's check: 0.6 of the clip's Sparrow (12.5 m)
-    "clearance": 1.6,
+    "hullHeight": 3.4,                     # a round hull (the Urchin) is no taller than this: its pad is 7.5 m across
+    "clearance": 0.6,                      # Amoebius check 2026-11-14: 1.6 left the hulls floating off their pads
     "hover": 0.12,
     "rockDegrees": 1.7,
     "phaseStep": 2.1,

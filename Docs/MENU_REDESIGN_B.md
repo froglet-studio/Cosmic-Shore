@@ -8618,7 +8618,8 @@ hangar). The converter view lays a transparent layer exactly over the picture wh
   drives the same sway the render used, so the hulls never slide on their pads. Checked against Blender's own
   projection at three loop times: the pads land within 0.03 px at 960 x 540;
 - each held seat's hull, a display copy built by `VesselModelBuilder.TryBuildLive` from the Vessel Prefab Container,
-  fitted to 7.5 m and stood 1.6 m over its pad (the player's pad in the middle, a step back; seats two and three left and
+  fitted to 7.5 m (and no taller than 3.4 m, so a round hull like the Urchin does not tower over its pad) and stood
+  0.6 m over it (the player's pad in the middle, a step back; seats two and three left and
   right, as the clips' line-up was). Live hulls wear the squad's domain ship material, float and rock, and get their pad's
   glow in the domain colour; an offline mate's hull wears the class livery, holds still and is lit by the bay's white
   lamp alone; an open seat's pad stays empty. Hulls are rebuilt only when the line-up, the domain or the worn colour set
@@ -8633,3 +8634,13 @@ on a phone. Hand test: the "squad's real vessels in the hangar" entry in `Docs/U
 
 Affects: Shombith's Ark screen (`ElementalConverterView`, `SquadsPage`, `ArkBackdrop`, the backdrop config and its
 generator).
+
+**Run in Amoebius (2026-11-14, Shombith: "run it on amoebius and take screenshots and check").** Amoebius could not play a
+video clip before this (no VideoClip import, no decode), so the port learned to: the MP4 header gives the clip's length,
+size and rate, and the desktop player decodes each clip once through the ffmpeg on the PATH into frames the
+RenderTexture shows; its post pass now keeps the scene's alpha on a camera with post-processing off, as URP does. With
+that, the Squads tab played its Gold clip with the hulls on their pads; changing the leader's vessel (Squirrel to
+Sparrow), seat three's (Urchin to Rhino) and opening seat two to an AI wingmate (the Dolphin appears on the left pad)
+each rebuilt the right hull. The first run showed the hulls too big and floating (the Urchin, fitted to 7.5 m, stood
+7.5 m tall and 1.6 m up), which the height cap and the 0.6 m clearance fixed. Still for Unity: the light, and that the
+player's hull sits partly behind the vessel picker row at 1600 x 900.
