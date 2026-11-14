@@ -16,7 +16,7 @@ reaches past its ring's rim, so it shows up as a blocker.
 | Mode (vessel) | I1 | I2 | I3 | I4 | What hides the next ring |
 |---|---|---|---|---|---|
 | Scarab Rally (Scarab) | 0 | 0 | 0 | 0 | nothing, after #1950 and #1979 |
-| Switchback (Dolphin) | 1% | 12% | 14% | 67% | the **doors**: the plug across a blocked ring reaches past its rim, so the lime ring behind it is hidden until it is blasted. At I4 the gauntlet's plugged **tunnels** on the line add to it. The field alone hides 1% of legs at I1 and none at I2-I4. |
+| Switchback (Dolphin) | 1% | 12% | 14% | 67% | the **doors**: the plug across a blocked ring reaches past its rim, so the lime ring behind it is hidden until it is blasted. At I4 the gauntlet's plugged **tunnels** on the line add to it. The field alone hides 1% of legs at I1 and none at I2-I4. **Fixed 2026-11-14, below: now 1% / 0 / 0 / 50%.** |
 | Breach (Orca) | 0 | 0 | 39% | 22% | the **walls**: a wall stands square across the line 110 u before its ring and 16-22 u wider than it, so from the ring you leave it covers the ring. |
 | Headlong (Rhino) | 16% | 34% | 16% | 16% | the **hedges** you plough through. Rhino is on hold, so this is not changed. |
 | Skein (Urchin) | 0 | 0 | 0 | 3% | the rails, partly (13% of rays at I4) |
@@ -39,3 +39,21 @@ walls and Headlong's hedges. Clearing those the way #1979 cleared the field woul
 Garrett's decision, not a sight-line fix. One way to keep both is to light the next ring's guard (its door or wall)
 the way the ring itself is lit, so the next one reads at a glance (the LOCKED rule: show a world fact by lighting the
 thing).
+
+## Garrett's decision, 2026-11-14: move them off the sight line
+
+**Switchback: done.** Every door now hangs 8 u BEHIND its ring (I4's second door 24 u behind), and the key stands
+16 u nearer the ring so the door is no farther from it than before (inside the blast, short of its narrow tip). The AI
+planner's thread and blast lanes run on through the doors. Hidden legs: I1 1%, I2 0 (was 12%), I3 0 (was 14%), I4 50%
+(was 67%). Field prisms per course are unchanged. Offline Legendary AI pace moved by under 5 s a race. The test
+`TheDoorsHangBehindTheirRing` holds every door prism past its ring's plane.
+
+**What still hides I4's rings:** the gauntlet's plugged tunnels (Yash's I4 design, 2026-11-03). The last tunnel runs
+on the line into the ring, 18 u round it, and the ring is 20 u, so from the ring you leave it covers most of the rim.
+
+**Breach: tried and held back.** The leg into a walled ring arrives along the ring's axis, so any line of sight from
+the ring before to the rim is also a straight line into the ring. Shifting each wall off the axis until its round-side
+rim showed took about 42 u. That puts the line that rounds the wall inside the ring's mouth, so the dog-leg is gone.
+In the offline helm sweep (200 seeds), the pulsing helm got 32 s faster at I3, and burning stopped paying there
+(-2% against +10.5%). The same held when only the rim's last 4 u were kept in sight. I3's lesson ("coast the wall")
+would be lost, so the walls are unchanged until Garrett chooses.

@@ -23454,3 +23454,15 @@ is kept, so no prefab or asset reference changes. Compiled against the Unity ref
 Not run in a Unity editor. Headless: `switchback_sim_harness/run.sh tests` 78 passed (the new sight-line test failed
 85,404 / 147,200 on the old layout). Hand test: Scarab Rally I4, leave each ring and check the next lime ring's whole
 rim shows through the field; no doors on the rings; Switchback I1-I4 unchanged.
+
+## 🔴 Switchback: every door hangs behind its ring (2026-11-14, `claude/project-thread-v8enx0`, NOT RUN IN EDITOR)
+
+Garrett picked "move them off the sight line" (Docs/Reports/SIGHT_LINES.md). Headless: `switchback_sim_harness/run.sh
+tests` 81 passed; the new `TheDoorsHangBehindTheirRing` fails on every intensity with the door back in front. Offline
+Legendary pace (8 seeds) moved by under 5 s a race (I1 62 -> 58, I2 101 -> 102, I3 100 -> 105, I4 145 -> 148).
+
+1. Switchback (Dolphin) I2 and I3: leave a ring; the next blocked ring's lime rim shows in full, with its door just
+   behind it. Fly through without the key: the door (or its eye) stops you just past the ring, as before.
+2. Take a key facing the ring: the blast opens the door behind it.
+3. I4: both doors sit behind the ring (8 u and 24 u). The gauntlet tunnels still hide the ring on about half the legs.
+4. AI seats still blast most blocked gates and do not stall on a door.

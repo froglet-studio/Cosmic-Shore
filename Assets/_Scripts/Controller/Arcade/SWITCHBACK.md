@@ -491,15 +491,21 @@ shared clock. The course is the Classic ladder unchanged (`SwitchbackCourseSetti
 
 **A blocked station** (`SwitchbackBlastRun.IsBlocked`, `Layout`): on the leg INTO a blocked gate -
 
-1. a **key crystal** on the leg line, `KeyLeadFor(leg)` = 0.62 x the leg clamped to 230-400 u upstream of the ring
-   (inside the explosion's 400 u minimum length, so a blast fired at the key reaches the door). Keys are ordinary
+1. a **key crystal** on the leg line, `KeyLeadFor(leg)` = 0.62 x the leg clamped to 230-384 u upstream of the ring
+   (the door hangs 8 u past the ring, so the door stays inside the explosion's 400 u minimum length, no farther from
+   its key than before 2026-11-14, and a blast fired at the key reaches it). Keys are ordinary
    `Domains.Blue` crystals (any domain may take them) laid by the server's `CrystalManager.SetCourseKeys`; they
    replace the passive crystal field for the match (`RetireCrystalsBeyondSlots`), and `ClearCourseKeys` runs at
    despawn. A key's explosion core is 1.25 x (`BlastRunKeyCrystals.KeyCoreMultiplier`, matched within 4 u of the
    explosion origin in `VesselExplosionByCrystalEffectSO` - CODE only; the shared
    `DolphinVesselExplosionByCrystalEffect` asset is untouched, so every other crystal is unchanged).
 2. a **door**: `BreakwaterStationBuilder.BuildDoor` - danger rakes round an always-open 18 u eye (`PortFor(i)`),
-   8 u upstream of the ring plane; I4 adds a second door 8 u downstream.
+   **8 u downstream of the ring plane** (`DoorSetback`); I4 adds a second door 24 u downstream (`SecondDoorSetback`).
+   The door hung 8 u in front of the ring until 2026-11-14: its plug reaches past the ring's rim, so it hid the lime
+   ring from the ring you leave on 12% / 14% / 67% of legs at I2 / I3 / I4 (Garrett: "respect sight lines from one
+   ring to another", `Docs/Reports/SIGHT_LINES.md`). Behind the ring, the ring is in sight and the door still stops a
+   pilot who neither blasted it nor threaded its eye; `TheDoorsHangBehindTheirRing` holds every door prism past its
+   ring's plane. The planner's thread and blast lanes run on through the doors (`SwitchbackBlastPlanner.Decide`).
 3. a **block field** (`BlastRunWorld.Blocks` family, `EmitField`) between the door's keepout and 40 u short of the key:
    a 3D grid of 24 u cells in the leg's frame (`Frame`: s1, s2 across, z upstream), `CellsHalf` cells each side
    across and up to `CellsDeep` cells deep (a field under 2 cells deep is skipped). Every cell is filled with

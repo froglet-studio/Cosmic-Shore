@@ -170,7 +170,17 @@ public static class Audit
 
     static void AddLayout(SwitchbackFeatureLayout L, List<Box> boxes)
     {
-        for (int pi = 0; pi < L.Prisms.Count; pi++) { var p = L.Prisms[pi]; boxes.Add(new Box { P = p.Position, R = p.Rotation, S = p.Scale, Tag = TagOf(L, pi) }); }
+        // the doors come first, one group per blocked gate in course order: they belong to their gate's ring
+        var gates = new List<int>(); bool dbl = false;
+        foreach (var st in L.Stations) { if (gates.Count == 0 || gates[^1] != st.Gate) gates.Add(st.Gate); dbl |= st.DoubleDoor; }
+        int world = 0; foreach (var st in L.Stations) world += st.WorldPrisms;
+        int doorPrisms = L.Prisms.Count - world, perGate = gates.Count > 0 ? doorPrisms / gates.Count : 0;
+        for (int pi = 0; pi < L.Prisms.Count; pi++)
+        {
+            var p = L.Prisms[pi];
+            int ring = pi < doorPrisms && perGate > 0 ? gates[Math.Min(pi / perGate, gates.Count - 1)] + 1 : 0;
+            boxes.Add(new Box { P = p.Position, R = p.Rotation, S = p.Scale, Tag = TagOf(L, pi), Ring = ring });
+        }
         // movers: their prisms are in L.Prisms at the laid pose; add three more poses of each
         foreach (var m in L.Movers)
             for (int s = 1; s <= 3; s++)
