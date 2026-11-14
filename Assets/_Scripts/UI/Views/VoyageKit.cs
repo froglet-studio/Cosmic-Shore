@@ -182,16 +182,16 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Show <paramref name="sprite"/> in <paramref name="image"/> covering a box <paramref name="box"/> units (the
-        /// image's parent, which clips it: <see cref="CoverBox"/>), cropped about <paramref name="focus"/> as CSS's
-        /// <c>object-fit: cover; object-position</c> does (the board's faces stand at 50% 28%). Hidden without a sprite.
+        /// Show <paramref name="sprite"/> whole in <paramref name="image"/>, as large as a box <paramref name="box"/> units
+        /// allows (the image's parent: <see cref="CoverBox"/>), its spare room shared out by <paramref name="focus"/>.
+        /// Pilots and vessels are never trimmed (Shombith, 2026-11-14). Hidden without a sprite.
         /// </summary>
         public static void ShowCover(Image image, Sprite sprite, Vector2 box, Vector2 focus)
         {
             Show(image, sprite);
             if (!sprite) return;
             var src = sprite.rect.size;
-            float k = Mathf.Max(box.x / Mathf.Max(1f, src.x), box.y / Mathf.Max(1f, src.y));
+            float k = Mathf.Min(box.x / Mathf.Max(1f, src.x), box.y / Mathf.Max(1f, src.y));
             var size = src * k;
             var rt = image.rectTransform;
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0f, 1f);
@@ -342,16 +342,19 @@ namespace CosmicShore.UI
             return (b, t);
         }
 
-        /// <summary>A quiet button (the default kind): the ground between two hairlines, all three fading out to both
-        /// ends, its keycap before its words.</summary>
+        /// <summary>A quiet button (the default kind): a cut-corner plate in a line, its keycap before its words.</summary>
         public Button Quiet(RectTransform rt, string key, string words, Action onClick) => Quiet(rt, key, words, onClick, out _);
 
         public Button Quiet(RectTransform rt, string key, string words, Action onClick, out TMP_Text label)
         {
-            // Rev 98's .soft: rgba(0,4,31,.86) between two rgba(230,233,255,.7) hairlines, each fading over its outer fifth.
-            var fill = Band(rt, Fade(Popup, 0.86f), 0.2f, hit: true);
-            Hairline(rt, true, Fade(Light, 0.7f));
-            Hairline(rt, false, Fade(Light, 0.7f));
+            // The style guide's default button (.def, as the window's own Back): a cut-corner plate of rgba(0,4,31,.78)
+            // inside a #747BAD line. The faded .soft band read as a smudge on the menu's sea (Shombith, 2026-11-14).
+            var fill = Sliced(rt, Style.Sliver10Fill, Fade(Popup, 0.78f));
+            fill.raycastTarget = true;
+            var edge = Node("Edge", rt);
+            Le(edge).ignoreLayout = true;
+            Stretch(edge);
+            Sliced(edge, Style.Sliver10Line, Sub).raycastTarget = false;
             var b = rt.gameObject.AddComponent<Button>();
             b.targetGraphic = fill;
             var colors = b.colors;

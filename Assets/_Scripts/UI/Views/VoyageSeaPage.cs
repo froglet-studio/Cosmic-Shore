@@ -337,6 +337,8 @@ namespace CosmicShore.UI
             map.Tilt = _tilt;
             map.Plain = true;
             map.Unnamed = true;
+            // The table zooms no closer than Region: the closer tiers cost the frame rate (2 fps, Shombith 2026-11-14).
+            map.NarrowestLy = (float)HyperSeaSky.Tiers[PinsTo].width;
             // The table's rim, drawn over the map at the same tilt.
             var rim = VoyageKit.Node("Rim", map.transform);
             VoyageKit.Stretch(rim);
