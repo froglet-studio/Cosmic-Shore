@@ -570,6 +570,10 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // POSSESSED (Fauna.Possession): the rider steers every frame (Update) and decides every meal; the tick decides
+            // nothing. The starvation test above still runs: a host its rider never feeds starves.
+            if (IsPossessed) return;
+
             Vector3 separation = Vector3.zero;
 
             // Phase-driven goal. Each phase swaps the goal source rather than killing/spawning
@@ -1113,6 +1117,27 @@ namespace CosmicShore.Gameplay
         public override float LeashMouthReach => data ? ConsumeRadius * GetAggressionConsumeRadiusMultiplier() : 0f;
         public override bool LeashCanEat(Prism prism) => IsEdibleForHerbivore(prism);
 
+        // --- Possession (Fauna.Possession) -------------------------------------
+
+        /// <summary>A predator's suction sink sits at its danger-prism centroid (its jaws); a grazer eats at its root.</summary>
+        public override Transform PossessionMouth => _mouth ? _mouth : transform;
+
+        /// <summary>The creature's own feeding reach: the mouthful's cluster, or a predator's attack range.</summary>
+        public override float PossessionMouthReach => data
+            ? Mathf.Max(ConsumeRadius, FeedingClusterRadius, AttackRange, 6f)
+            : base.PossessionMouthReach;
+
+        public override float PossessionTopSpeed => data ? MaxSpeed : base.PossessionTopSpeed;
+
+        protected override void OnPossessionChanged(bool possessed)
+        {
+            // drop whatever meal or prey the creature had picked for itself: the rider decides now (or, leaving, it
+            // picks again on its next tick)
+            _feedTarget = null;
+            _feedHoldUntil = -1f;
+            _targetPrey = null;
+        }
+
         // --- Hunting (predator, per-frame) -----------------------------------
 
         /// <summary>
@@ -1224,7 +1249,13 @@ namespace CosmicShore.Gameplay
 
             if (!_withering && data)
             {
-                if (diet == FaunaDiet.Herbivore)
+                if (IsPossessed)
+                {
+                    // the rider's sticks steer any diet (Fauna.Possession); a predator's jaws still close on prey in reach
+                    SteerOnLeash();
+                    if (diet == FaunaDiet.Predator) TryDevourPreyAtMouth();
+                }
+                else if (diet == FaunaDiet.Herbivore)
                 {
                     using (s_FeedMarker.Auto()) UpdateFeeding();
                     if (Leash != null && !IsFeedingEngaged) SteerOnLeash();

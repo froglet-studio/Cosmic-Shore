@@ -25,7 +25,7 @@ SCRIPT_META = "Assets/_Scripts/Controller/IO/TouchControls/TouchControlProfileLi
 
 VESSEL = dict(Manta=1, Dolphin=2, Rhino=3, Urchin=4, Grizzly=5, Squirrel=6, Serpent=7, Shrike=10, Sparrow=11,
               Scarab=12, Thresher=14, Stoat=15, BrittleStar=16, Angler=17, Goby=18, Wrasse=19, Orca=20, Honeyguide=23,
-              Meerkat=28, TigerMoth=29, Swordfish=30)
+              Meerkat=28, TigerMoth=29, Swordfish=30, JewelWasp=31)
 INPUT = dict(RightStick=1, LeftStick=2, Flip=3, Idle=4, A=6, B=7, X=8, Y=14)
 ELEMENT = dict(none=0, Charge=1, Mass=2, Space=3, Time=4)
 SCHEME = dict(ThumbLifts=0, TotemButtons=1)
@@ -136,6 +136,11 @@ PROFILES = [
     # The Angler's squad pick and recall were retired on 2026-10-21 (two alternating groups, ANGLER.md §1m): its four cards
     # are everything, so it takes no extra buttons.
     profile("Angler", "TotemButtons"),
+    # The Jewel Wasp (2026-11-14, Garrett): its four cards are its buttons - the Space card is RT (aim at a creature, let go
+    # to sting; in a creature, suction or the attack), the Mass card LT (aim at a plant), the Time card LT in a creature
+    # (the burst) and the Charge card the pad's A, which leaves a host ("the "a" button, which is on screen on mobile").
+    # A thumb anywhere else steers, so a held card aims while the other thumb flies (R_VesselActions/JEWEL_WASP.md §5).
+    profile("JewelWasp", "TotemButtons"),
 ]
 
 

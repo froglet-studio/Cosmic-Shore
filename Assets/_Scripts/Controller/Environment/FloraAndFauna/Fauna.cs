@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
     /// Uses virtual methods instead of abstract to satisfy LSP - subclasses only
     /// override what they need, and managers don't have to throw NotImplementedException.
     /// </summary>
-    public abstract class Fauna : MonoBehaviour, ILifeFormEntity
+    public abstract partial class Fauna : MonoBehaviour, ILifeFormEntity
     {
         [Header("Data References")]
         [Inject] GameDataSO gameData;
@@ -932,7 +932,15 @@ namespace CosmicShore.Gameplay
             if (!prism || prism.destroyed) return BiteResult.None;
             var props = prism.prismProperties;
             bool armoured = props != null && (props.IsShielded || props.IsSuperShielded);
-            if (armoured && GnawsArmourOf(prism) && !EatsShieldWhole(prism))
+            // A POSSESSED host eats every shield whole (IFaunaPossession, Garrett 2026-11-14): a super-shield is broken
+            // first, the sanctioned sequence (Prism.AbsorbSuperShieldHit), so the devastating consume below lands.
+            if (armoured && props.IsSuperShielded && Leash is IFaunaPossession)
+            {
+                if (!IsSimAuthority) return BiteResult.None;
+                prism.DeactivateShields();
+                devastate = true;
+            }
+            else if (armoured && GnawsArmourOf(prism) && !EatsShieldWhole(prism))
             {
                 if (!IsSimAuthority) return BiteResult.None;
                 if (!prism.GnawArmour(ArmourBite(props.IsSuperShielded))) return BiteResult.Gnawed;
@@ -983,13 +991,16 @@ namespace CosmicShore.Gameplay
         /// <item>its cell is in a <b>Frenzy</b> (<see cref="Cell.ShieldedMassIsFood"/>; the designer, 2026-10-21: "in general
         /// shielded prisms should be food during a frenzy when the cell has too many prism");</item>
         /// <item>its herd's holder lets it eat shields (<see cref="IFaunaHerd.EatsShields"/>: the Jacks at Space 5).</item>
+        /// <item>it is POSSESSED (<see cref="IFaunaPossession"/>: the Jewel Wasp's host): every shield, super-shields too,
+        /// is food, and <see cref="BiteMass"/> breaks a super-shield before it eats.</item>
         /// </list>
-        /// Super-shielded mass is never food. A shielded prism that is food is eaten whole: the grazer consumes it with
+        /// Otherwise super-shielded mass is never food. A shielded prism that is food is eaten whole: the grazer consumes it with
         /// <c>devastate</c> (<see cref="Prism.Consume"/> otherwise only sheds the shield).
         /// </summary>
         protected bool IsInedibleShield(Prism prism)
         {
             if (!IsShieldedMass(prism)) return false;
+            if (Leash is IFaunaPossession) return false;   // a possessed host eats every shield (IFaunaPossession)
             if (GnawsArmourOf(prism)) return false;
             if (prism.prismProperties.IsSuperShielded) return true;
             var c = cell;

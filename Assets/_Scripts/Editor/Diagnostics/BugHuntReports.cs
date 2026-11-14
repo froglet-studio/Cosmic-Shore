@@ -74,6 +74,9 @@ namespace CosmicShore.Editor
             // A flight is ~130 bytes a sample at 10 Hz plus its rail, so a long race passes the 512 KB report cap; a
             // flight over it was skipped SILENTLY (no file sent, no question asked). Flights get their own cap.
             if (perfDir != null) Collect(candidates, Path.Combine(perfDir, "Flights"), "flight_*.json", "flights", cutoff, MaxFlightBytes);
+            // Rides on a possessed creature (PossessionRecorder, the Jewel Wasp; Garrett, 2026-11-14): fauna learn from them as
+            // the vessels learn from the flights, so they go with the flights. Not flight_*, so no vessel learner reads one.
+            if (perfDir != null) Collect(candidates, Path.Combine(perfDir, "Flights"), "possession_*.json", "flights", cutoff, MaxFlightBytes);
             // The one-minute fun card's answers (FunCard): the elemental loop's step 1 and 2 sign-offs, read by
             // Tools/Build/fun_cards.py from every bugledger branch.
             if (perfDir != null) Collect(candidates, Path.Combine(perfDir, FunCard.FolderName), "funcard_*.json", "fun", cutoff);

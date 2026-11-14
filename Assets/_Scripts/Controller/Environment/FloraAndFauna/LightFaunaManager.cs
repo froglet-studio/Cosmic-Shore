@@ -17,6 +17,9 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class LightFaunaManager : Fauna
     {
+        /// <summary>A rider cannot steer this body (the Jewel Wasp, <see cref="IFaunaPossession"/>): no possession yet.</summary>
+        protected override bool CanBePossessed => false;
+
         [Header("Prefab")]
         [SerializeField] LightFauna lightFaunaPrefab;
 
