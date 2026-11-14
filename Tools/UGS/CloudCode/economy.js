@@ -65,6 +65,7 @@ const CATALOG = {
     "Grizzly": { cost: 4000, starter: true },
     "Honeyguide": { cost: 4000, starter: true },
     "Jacks": { cost: 4000, starter: true },
+    "Jewel Wasp": { cost: 100, starter: true },
     "Manta": { cost: 4000, starter: false },
     "Meerkat": { cost: 0, starter: true },
     "Orca": { cost: 4000, starter: true },

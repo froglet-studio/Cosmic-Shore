@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-14-the-jewel-wasp-new-vessel-class-31-owned-f7ed2d",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-14T20:25:17+00:00",
+  "area": "Backend: economy.js shop catalog",
+  "summary": "The Jewel Wasp (new vessel class 31, owned from the start, unlock cost 100 copied from the Tiger Moth's class asset) joins the CATALOG block in Tools/UGS/CloudCode/economy.js through author_economy_catalog.py (its --check gate failed without it). The repo file changed only: economy.js needs a redeploy from you before the live server knows the new hull.",
+  "branch": "claude/jewel-wasp",
+  "commit": "e5d81e5a4"
+}

@@ -117,6 +117,33 @@ namespace CosmicShore.Gameplay
         /// <summary>Live head speed — jousting a segment heart means outracing the kaiju.</summary>
         public override float CurrentSpeed => _currentSpeed;
 
+        // --- Possession (Fauna.Possession): a rider steers the HEAD, whichever segment it stung ----------------------
+
+        /// <summary>The rider nests beside the head's heart.</summary>
+        public override Transform PossessionNest => segments.Count > 0 && segments[0] ? segments[0].PossessionNest : transform;
+        public override Vector3 PossessionForward => segments.Count > 0 && segments[0] ? segments[0].transform.forward : transform.forward;
+        public override Transform PossessionMouth => _mouth ? _mouth : transform;
+        public override float PossessionMouthReach => config
+            ? Mathf.Max(config.MouthRadius, config.FaunaBiteRange, 6f) : base.PossessionMouthReach;
+        public override float PossessionTopSpeed => config ? config.CruiseSpeed * Mathf.Max(1f, config.PursuitSpeedMultiplier) : base.PossessionTopSpeed;
+        public override float PossessionBodyRadius => segments.Count > 0 && segments[0]
+            ? Mathf.Max(2f, segments[0].PossessionBodyRadius * 1.5f) : base.PossessionBodyRadius;
+
+        /// <summary>The worm's attack is its own lunge (the kaiju's strike), aimed where the rider says.</summary>
+        public override void PlayPossessionAttack(Vector3 at, float seconds)
+        {
+            if (segments.Count == 0 || !config) return;
+            _threat = null;
+            _lungePoint = at;
+            SetState(AttackState.Lunge);
+        }
+
+        protected override void OnPossessionChanged(bool possessed)
+        {
+            _threat = null;
+            if (_state != AttackState.Lunge) SetState(AttackState.Cruise);
+        }
+
         /// <summary>Current chain length (the boss's visible health-and-history bar).</summary>
         public int SegmentCount => segments.Count;
 
@@ -541,6 +568,16 @@ namespace CosmicShore.Gameplay
                     break;
 
                 default:
+                    if (IsPossessed && Leash.TrySteer(this, out var riderGoal, out float riderSpeed, out _))
+                    {
+                        // POSSESSED (Fauna.Possession): the rider's sticks steer the head and the body follows it
+                        desiredDirection = (riderGoal - leader.position).normalized;
+                        if (desiredDirection.sqrMagnitude <= DegenerateSteeringSqr) desiredDirection = leader.forward;
+                        targetSpeed = riderSpeed;
+                        turnRate *= config.PursuitTurnMultiplier * 2f;
+                        swayMultiplier = 0.6f;
+                        break;
+                    }
                     desiredDirection = (Goal - leader.position).normalized;
                     targetSpeed = config.CruiseSpeed * speedMult;
                     separates = true;
@@ -716,6 +753,11 @@ namespace CosmicShore.Gameplay
             }
             if (_state == AttackState.Lunge || _state == AttackState.Recover)
                 return; // committed — the locked strike plays out
+            if (IsPossessed)
+            {
+                _threat = null;   // a possessed worm strikes only at its rider's word (PlayPossessionAttack)
+                return;
+            }
 
             Vector3 headPos = segments[0].transform.position;
             _threat = FindNearestVessel(headPos, config.AggroRadius);

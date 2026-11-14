@@ -23491,3 +23491,29 @@ Branch `claude/clever-clarke-7uxwca`; `Docs/MENU_REDESIGN_B.md` sections 187-188
       Codex's Omni and four elemental crystals.
 - [ ] (Section 190) In the Vessels tile each hull reads (lit, in its team colour) and sits at the head of its own prism
       trail; the tiles' sea lines sit back behind the prisms; the world's prisms and hulls are where the board puts them.
+
+## 🔴 Jewel Wasp: the possession vessel, class 31 (2026-11-14, Garrett's project thread, `claude/jewel-wasp`, NOT RUN IN EDITOR)
+
+Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor configurations: 0 errors in the changed files);
+`author_jewel_wasp_assets.py --check` and `--self-test` pass. Nothing has been run in Unity. Design:
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/JEWEL_WASP.md`. Fly it from the Toybox's Vessel Changer.
+
+- [ ] The Vessel Changer offers the Jewel Wasp; it spawns flying (the Tiger Moth's airframe, smaller); the console is clean.
+- [ ] Hold RT: the creature ahead lights in your hue. Let go: the hull flies to its heart, tucks in small beside the crystal,
+      and the sticks fly the creature (both together pitch and yaw, one up one down rolls, apart is faster).
+- [ ] A Brittlestar host: RT at a rival vessel whips all five arms out at it, and the rival loses petals (a Strike). A shark or
+      a fish with no rig lunges instead.
+- [ ] RT at rival prisms in a host: prisms are pulled into its mouth (the suction implosion), shielded and super-shielded ones
+      too; your own team's prisms are never taken. Space raises the reach; Space 5 (Maw) pulls from all sides.
+- [ ] LT in a host: a speed burst; the Time card's veil shows its recharge. A leaves: the wasp pops out and flies on, and the
+      host is not jousted by it. Charge 5 (Burst): leaving kills the host and hits rival vessels within 60 u.
+- [ ] A worm segment: the whole worm is taken and steered by its head. A tadpole of a murmuration: the whole murmuration
+      follows the sticks.
+- [ ] Hold LT at a plant and let go: the wasp roots in it, the camera stands far back and the sticks orbit it, the plant grows
+      faster (Mass); RT or LT from there aims and stings the next host; A leaves.
+- [ ] An omni crystal hatches a Shark or a Worm Colony where you took it, and you are in it at once.
+- [ ] Phone: the four cards are buttons; the Charge card is A (leave); holding the Space card aims while the other thumb flies.
+- [ ] Ark escort, a hostile world: a creature that reaches a squad vessel plays its attack at it and the vessel loses petals;
+      on a pacified world nothing strikes. (Only with `claude/jewel-wasp-ark-strikes`, Shombith's Voyages lane.)
+- [ ] After a ride of 3 s or more, `Documents/CosmicShore Diagnostics/Flights/possession_<scene>_<species>_<time>.json` exists
+      and is sent with the flights after Play.
