@@ -3251,22 +3251,6 @@
    "status": "confirmed"
   },
   {
-   "id": "P-vessel-03",
-   "owner": "Garrett",
-   "date": "2026-10-16",
-   "words": "make the shrimp launch have a significant cooldown; make the goby zip around crazy fast so it is almost impossible to catch up with.",
-   "rule": "The Goby is crazy fast, almost impossible to catch; the Pistol's launch is a rare commitment with a long cooldown.",
-   "source": {
-    "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 5178
-   },
-   "kind": "quote",
-   "area": "vessel",
-   "retired": "",
-   "test": "Does the tuning keep the Goby nearly uncatchable and the launch rare (one charge, about 9 s)?",
-   "status": "drafted"
-  },
-  {
    "id": "P-vessel-04",
    "owner": "unattributed",
    "date": "2026-10-16",
@@ -3344,7 +3328,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the new crew vessel reuse CrewSeat, CrewPictureInPicture and CrewViewRender, or roll its own seats and views?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-09",
@@ -3712,7 +3696,7 @@
    "area": "vessel",
    "retired": "the vortex-ring ride back to the den after a fall (the 2026-10-28 design)",
    "test": "Can the Pistol ever be stuck with no crossable path, or land on prisms that are not there?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-32",
