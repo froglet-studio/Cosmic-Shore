@@ -463,3 +463,23 @@
 2026-11-10T01:47:28.725Z editor load: play=False capture=True minPlay=15s issues=66
 2026-11-10T02:47:29.800Z PlayMode session ended (2991s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-251530c87b E-fcf50f15ac E-0f0eb8a59f
 2026-11-10T03:27:30.221Z PlayMode session ended (2237s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c703a8f80b
+2026-11-10T18:41:42.947Z editor load: play=False capture=True minPlay=15s issues=68
+2026-11-10T20:09:49.084Z PlayMode session ended (1020s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-11T01:43:26.142Z EditMode session ended (421min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-11T01:44:09.681Z editor load: play=False capture=True minPlay=15s issues=68
+2026-11-11T01:52:30.756Z PlayMode session ended (297s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-11T01:53:23.244Z EditMode session ended (9min editor session): not counted (capture=True, long enough=False)
+2026-11-14T19:39:29.133Z editor load: play=False capture=True minPlay=15s issues=68
+2026-11-14T19:42:51.439Z editor load: play=False capture=True minPlay=15s issues=68
+2026-11-14T19:45:02.259Z EditMode session ended (5min editor session): not counted (capture=True, long enough=False)
+2026-11-14T20:12:46.295Z editor load: play=False capture=True minPlay=15s issues=68
+2026-11-14T20:16:42.587Z editor load: play=False capture=True minPlay=15s issues=68
+2026-11-14T20:18:32.215Z EditMode session ended (5min editor session): not counted (capture=True, long enough=False)
+2026-11-14T21:59:22.924Z editor load: play=False capture=True minPlay=15s issues=68
+2026-11-14T22:07:32.585Z editor load: play=False capture=True minPlay=15s issues=68
+2026-11-14T22:09:28.267Z E-251530c87b: fix 4c28f26f0 taken (PlayMode); needs 2 clean run(s)
+2026-11-14T22:09:28.363Z E-603d7f129d: fix 4c28f26f0 taken (EditMode); needs 2 clean run(s)
+2026-11-14T22:09:28.456Z E-c52c39070d: fix 4c28f26f0 taken (PlayMode); needs 2 clean run(s)
+2026-11-14T22:14:43.948Z PlayMode session ended (243s play run, exiting play mode): 3 fix(es) waiting; counted: E-251530c87b 1/2 E-c52c39070d 1/2; fired: E-e5bc8c31c5 E-f668e8c5a5
+2026-11-14T22:14:57.042Z editor load: play=False capture=True minPlay=15s issues=69
+2026-11-14T22:18:55.108Z PlayMode session ended (107s play run, exiting play mode): 3 fix(es) waiting; counted: E-251530c87b 2/2 E-c52c39070d 2/2
