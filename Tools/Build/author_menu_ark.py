@@ -1479,7 +1479,7 @@ RETIRED_ART_FIELDS = ("rows", "tracks", "crystalTexts", "raiseTemplate", "topWor
 ROW_VIEW_FIELDS = dict(button=S["button"], group=225, titleText=TMP, lineText=TMP, activeMark=IMG, domainText=TMP)
 CHIP_FIELDS = dict(button=S["button"], group=225, label=TMP, selectedMark=IMG)
 NANOBOT_FIELDS = dict(hull=IMG, companion=IMG, botTemplate=IMG)
-# Rev 31: Take into is Mission and Arena only (Shombith, 2026-10-27: "Yes keep it out"); Rev 110 B (section 203) retired
+# Rev 31: Take into is Mission and Arena only (Shombith, 2026-10-27: "Yes keep it out"); Rev 110 B (section 206) retired
 # the Rev 67 squads row, header, seat cards, picker and bars for the holo table.
 RETIRED_SQUAD_FIELDS = ("playArcadeButton", "playArenaButton", "playMissionButton", "detailGroup", "squadRows", "mateCards",
                         "headerGroup", "deckRoot", "pickerGroup", "vesselTiles", "makeBarGroup", "viewBarGroup", "editButton",

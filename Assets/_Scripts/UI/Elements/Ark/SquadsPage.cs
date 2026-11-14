@@ -14,7 +14,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The Ark's SQUADS tab as THE HOLO TABLE (Rev 106 B, every setting drawn as Rev 110 B; Shombith 2026-11-13: "B is
-    /// good"; Docs/MENU_REDESIGN_B.md sections 194, 200 and 203). The hangar is the screen: the squad's real vessels stand on
+    /// good"; Docs/MENU_REDESIGN_B.md sections 194, 200 and 206). The hangar is the screen: the squad's real vessels stand on
     /// its pads (<see cref="SquadVesselLayer"/>), and in front of them a dome of light carries the three seats as plates.
     ///
     /// <list type="bullet">

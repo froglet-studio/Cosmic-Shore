@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One seat on the Squads tab's holo table (Rev 110 B, Docs/MENU_REDESIGN_B.md section 203): a plate of light on the
+    /// One seat on the Squads tab's holo table (Rev 110 B, Docs/MENU_REDESIGN_B.md section 206): a plate of light on the
     /// dome under the seat's pad, with the pilot's face, who flies it, the vessel and element, and whether they are here.
     /// The picked plate rises and glows; an open seat shows a plus instead of a face. <see cref="SquadsPage"/> writes it.
     /// </summary>

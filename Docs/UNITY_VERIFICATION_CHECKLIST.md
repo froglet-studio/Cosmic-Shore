@@ -67,7 +67,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ### 🔴 The Squads tab as the holo table, Rev 110 B (`claude/project-thread-sdvd40`, 2026-11-14, Shombith) — NOT EDITOR-VERIFIED
 
-Docs/MENU_REDESIGN_B.md section 203. Compiled with `unity_refcompile` (0 errors in changed files); never opened in Unity.
+Docs/MENU_REDESIGN_B.md section 206. Compiled with `unity_refcompile` (0 errors in changed files); never opened in Unity.
 - [ ] Ark > SQUADS with no squad: "No squad yet" and MAKE SQUAD over the dome; MAKE makes a squad (you and two open
       seats), Rogue One's plate rises and its projection shows Who flies it.
 - [ ] The three plates sit on the dome under their pads (Rogue One left, you in the middle, Rogue Two right), clear of
