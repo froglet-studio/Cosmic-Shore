@@ -39,16 +39,30 @@ Known effects of the switch to Nocturne, measured 2026-11-03 and still open:
   no longer match what the HUD paints. The Fleet Codex's domain picker reads the live palette (whatever
   `ThemeManagerDataContainer.ColorSet` names) since 2026-11-05.
 
-- **Nocturne's Gold domain is in the forbidden band.** `#FF8F11` sits between Gold and Fire on the colour chart
-  (`colour_domains.py classify '#FF8F11'`), where Photic's `#FFA700` rested inside Gold. The style guide's tokens read
-  the live palette since 2026-11-05 (`Tools/Build/froglet_style.py`, `Docs/UI_STYLE_GUIDE.md`) and report it as open
-  rather than failing; moving the colour or reshaping Gold is Garrett's decision.
+- **Nocturne's Gold domain was in the forbidden band; fixed 2026-11-10.** The HUD reads `TrailHighlightColor` as sRGB,
+  so Nocturne's honey showed there as `#FF8F11`, between Gold and Fire. Its Gold rim moved 4 degrees toward yellow (hue
+  83 to 87, `colour_sets.json` rule 4) and the HUD gold is now `#FF9B11`, inside Gold; the style guide's tokens
+  (`Tools/Build/froglet_style.py`) followed.
 
-**`NacreColorSetSO`** (2026-11-08) is the light set, Nocturne's complement: pastel rims over pale pastel faces, written
-like the others from `colour_sets.json` (`nacre`) and offered in the Profile's colour-set rail. It is the one set with
-`rim_brightness` (0.75): its rim fields are Photic's brightness times 0.75, so they sit below the other sets' glow. The
-gameplay bloom threshold is 0.2, so its rims still bloom, and its light faces bloom more than Nocturne's dark ones; how
-light it reads on screen is an editor call. It does not replace `PastelColorSetSO`, which is older and still unwired.
+**`NacreColorSetSO`** (2026-11-08, re-derived 2026-11-10) is the light set, Nocturne's complement: soft bodies in each
+family's own colour under clearer rims of the same family, written like the others from `colour_sets.json` (`nacre`)
+and offered in the Profile's colour-set rail. It is the one set with `rim_brightness` (0.7): its rim fields are Photic's
+brightness times 0.7. Its first cut painted pale faces of other hues at L 0.70-0.79; under the gameplay bloom (threshold
+0.2, clamp 0.5, intensity 2.5) they washed out to white and named the wrong domains. Its faces now sit at mid L
+0.56-0.66, so the bloom lifts them to pastel (`colour_set_maker.py preview` models it); how light it reads on screen is
+still an editor call. It does not replace `PastelColorSetSO`, which is older and still unwired.
+
+**`DartFrogColorSetSO`** was re-derived on 2026-11-10 too: each frog's warning colour stays the rim and its ground goes
+into the night (L 0.40 or below), so a Jade prism no longer reads as bronze; Blue is the Azureus, azure over cobalt. Every
+set obeys the seven rules of `colour_sets.json` (`colour_sets.py --check`, `/colour-set`).
+
+**`BlueRingedOctopusColorSetSO`, `NeonNoirColorSetSO`, `UkiyoEColorSetSO` and `DuskColorSetSO`** (2026-11-11) were the
+`/colour-set` skill's worked examples (an animal, a film genre's palette, a painting style, a mood) and are now game sets
+in the Profile's colour-set rail, beside the other looks (free track, unlocked like every set; Garrett: "the artifact
+lab had some great new color sets"), written like the others from `colour_sets.json`. Taking Dusk in moved its Lime
+face (Heather) 1 degree and 0.005 saturation: the palette writer's whitened Ruby fields walk toward grey along the
+plum's hue and one of them (`AOEConicEdgeColor`) landed in that quiet purple face. `author_colour_set_assets.py --check`
+now holds the examples to the same field rule, so the next example taken into the game is a move, not a re-derivation.
 
 `CosmicWaveColorSetSO`, `PastelColorSetSO` and `Default Color Palette` exist but are
 **not wired to anything** — editing them changes nothing at runtime. The per-domain

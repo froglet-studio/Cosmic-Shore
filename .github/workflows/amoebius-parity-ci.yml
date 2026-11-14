@@ -1,7 +1,7 @@
 # Amoebius parity CI (Port/docs/ROADMAP.md C1, item 4).
 #
-# On every bleeding-edge push: compile the port against the new Assets/ (the live compile of
-# Assets/_Scripts), run the engine's unit tests, then smoke-run EVERY enabled build scene headless
+# Nightly on bleeding-edge, and by hand from the Actions tab (Run workflow): compile the port
+# against the current Assets/ (the live compile of Assets/_Scripts), run the engine's unit tests, then smoke-run EVERY enabled build scene headless
 # with the same `engine_smoke` the MCP server gives an agent (amoebius-mcp --call). A Unity-side
 # change that breaks the port fails here instead of being found by hand.
 #
@@ -12,13 +12,30 @@
 # The engine_parity job diffs every replay in Port/parity/manifest.json against the Unity goldens
 # in Port/parity/goldens; a channel without a golden reports MISSING and does not fail.
 #
+# On a pull request into bleeding-edge that changes the game's scripts, one light job (pr-compile) runs instead: it compiles the PR's
+# Assets/ in the port and the PR's base the same way, and WARNS about every live-compile error the PR adds - usually a
+# Unity type or member the port does not imitate yet. It never fails the PR; the author sees the gap before the merge
+# instead of the nightly run finding it after (2026-11-13: the build had been red for weeks over four types).
+#
 # This only builds and runs Port/. It never imports or changes the Unity project.
+#
+# WHEN IT RUNS (Shombith, 2026-11-13): once a night at 11:17 UTC (03:17 PST / 04:17 PDT), outside
+# 06:00-09:00 Pacific, plus workflow_dispatch. It no longer runs on every bleeding-edge push: it had
+# never passed (83 of its last 100 runs failed at the first step, the live compile of
+# Assets/_Scripts), nobody gates on it, and every red push run mailed "Run failed" to whoever merged
+# the PR. Only the trigger changed; every job and step is the same and still blocking. A scheduled
+# run checks out the default branch, bleeding-edge; a manual run checks out the branch picked in the
+# Run workflow menu. The pull_request trigger runs only the warning-only pr-compile job (above); the
+# build, smoke and parity jobs skip pull requests.
 
 name: Amoebius parity CI
 
 on:
-  push:
+  schedule:
+    - cron: '17 11 * * *'
+  pull_request:
     branches: [ 'bleeding-edge' ]
+    paths: [ 'Assets/_Scripts/**', 'Assets/FTUE/**', 'Assets/Resolvers/**', 'Assets/ArcadeDPadNav.cs' ]
   workflow_dispatch:
 
 permissions:
@@ -35,7 +52,51 @@ env:
   COSMIC_SHORE_AUDIO: 'off'
 
 jobs:
+  # Pull requests only: warn about the live-compile errors the PR adds over its base. Never fails.
+  pr-compile:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Live compile of the PR and its base (warning only)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set +e
+          # The base's game scripts, compiled by the same engine into their own sync directory (SyncUnitySources.targets).
+          git fetch --no-tags --depth=1 origin "$BASE_SHA" && git worktree add --quiet --detach "$RUNNER_TEMP/base" FETCH_HEAD
+          dotnet build Port/src/CosmicShore.Live -nologo -v q -p:LiveAssetsDir="$RUNNER_TEMP/base/Assets" -p:LiveSrcDir=obj/live-src-base > base.log 2>&1
+          dotnet build Port/src/CosmicShore.Live -nologo -v q > pr.log 2>&1
+          pr_status=$?
+          # One key per error, without the line number (the PR may move lines): Assets/<file>: error CSxxxx: <message>.
+          keys() { grep -E ': error CS' "$1" | sed -E 's/ \[[^]]*\]$//; s#^.*/(Assets/[^(]*)\([0-9]+,[0-9]+\)#\1#' | sort -u; }
+          keys base.log > base-errors.txt
+          keys pr.log > pr-errors.txt
+          comm -13 base-errors.txt pr-errors.txt > new-errors.txt
+          n=$(wc -l < new-errors.txt); b=$(wc -l < base-errors.txt)
+          if [ "$n" -gt 0 ]; then
+            echo "::warning title=Amoebius cannot compile this PR's game code::$n new live-compile error(s). Usually a Unity type or member the port does not imitate yet: add a look-alike under Port/src (Port/CLAUDE.md, /amoebius), or leave it for the Amoebius update. This never blocks the merge."
+            head -30 new-errors.txt | while IFS= read -r line; do echo "::warning::$line"; done
+            { echo "### Amoebius: $n new live-compile error(s)"; echo '```'; head -60 new-errors.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$pr_status" -ne 0 ] && [ "$b" -eq 0 ]; then
+            echo "::warning title=Amoebius build failed::The port did not build, but with no compile error to compare (setup or restore). See pr.log in the step output."
+            tail -30 pr.log
+          else
+            echo "Amoebius: this PR adds no live-compile error ($b already on its base)." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          exit 0
+
   build:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:

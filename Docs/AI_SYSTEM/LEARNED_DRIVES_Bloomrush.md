@@ -11,7 +11,7 @@ By intensity (flights / finished): I1 5 / 4, I3 2 / 2
 | Measure | You (fastest finished races) | The AI today (seconds it held your hull) | Written |
 |---|---:|---:|---:|
 | `BoostStickBand` | 0.03 | - | 0.03 |
-| `YastriStickBand` | 0.97 | - | 0.97 |
+| `YawsteryStickBand` | 0.97 | - | 0.97 |
 | `meanSoar` | 0.13 | - | - |
 | `samples` | 4256 | 6 | - |
 

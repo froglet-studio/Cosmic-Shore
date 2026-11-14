@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -111,6 +112,11 @@ namespace CosmicShore.UI
         float _currentScale = 1f;
         float _currentRendererAlpha = 1f;
 
+        // The mesh is rebuilt when the player wears another colour set (the authored lime is the set's, OnPopulateMesh):
+        // a version check in Update, not an OnEnable override, whose access differs between the shipped uGUI
+        // (protected) and the compile gate's publicized reference (public).
+        int _colorVersion;
+
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
@@ -121,13 +127,20 @@ namespace CosmicShore.UI
             float cx = r.center.x;
             float cy = r.center.y;
 
+            // The authored lime as the worn colour set paints it (ColorTrace); an accent is a domain colour, already the
+            // set's own.
+            bool authored = !_accent.HasValue;
+            Color glow = authored ? ColorTrace.Retrace(ColorTrace.Ui, glowColor) : glowColor;
+            Color outer = authored ? ColorTrace.Retrace(ColorTrace.Ui, outerColor) : outerColor;
+            Color inner = authored ? ColorTrace.Retrace(ColorTrace.Ui, innerColor) : innerColor;
+
             // Back-to-front: glow halo, outer stroke, bright core.
             // Mesh is static - pulse animation modulates canvasRenderer alpha
             // and rectTransform scale at runtime, neither of which rebuilds
             // this mesh.
-            AddChevron(vh, cx, cy, halfW * glowScale, halfH * glowScale, glowColor);
-            AddChevron(vh, cx, cy, halfW, halfH, outerColor);
-            AddChevron(vh, cx, cy, halfW * innerScale, halfH * innerScale, innerColor);
+            AddChevron(vh, cx, cy, halfW * glowScale, halfH * glowScale, glow);
+            AddChevron(vh, cx, cy, halfW, halfH, outer);
+            AddChevron(vh, cx, cy, halfW * innerScale, halfH * innerScale, inner);
         }
 
         /// <summary>
@@ -162,6 +175,11 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            if (_colorVersion != ColorTrace.Version)
+            {
+                _colorVersion = ColorTrace.Version;
+                SetVerticesDirty();
+            }
             if (!pulse)
             {
                 if (_currentScale != 1f)

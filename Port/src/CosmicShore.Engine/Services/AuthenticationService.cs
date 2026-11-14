@@ -49,6 +49,13 @@ namespace CosmicShore.Engine.Services
         System.Threading.Tasks.Task<PlayerInfo> GetPlayerInfoAsync();
         System.Threading.Tasks.Task SignInWithSteamAsync(string sessionTicket, string identity, SignInOptions options = null);
         System.Threading.Tasks.Task LinkWithSteamAsync(string sessionTicket, string identity, LinkOptions options = null);
+
+        // Game Center and Play Games sign-in (GameCenterSignIn, PlayGamesSignIn). Amoebius runs on neither platform,
+        // so their platform plugins never return an identity and these are not reached in practice.
+        System.Threading.Tasks.Task SignInWithAppleGameCenterAsync(string signature, string teamPlayerId, string publicKeyURL, string salt, ulong timestamp, SignInOptions options = null);
+        System.Threading.Tasks.Task LinkWithAppleGameCenterAsync(string signature, string teamPlayerId, string publicKeyURL, string salt, ulong timestamp, LinkOptions options = null);
+        System.Threading.Tasks.Task SignInWithGooglePlayGamesAsync(string authCode, SignInOptions options = null);
+        System.Threading.Tasks.Task LinkWithGooglePlayGamesAsync(string authCode, LinkOptions options = null);
     }
 
     public class SignInOptions { public bool CreateAccount { get; set; } = true; }
@@ -62,6 +69,23 @@ namespace CosmicShore.Engine.Services
         public string Id { get; set; } = string.Empty;
         public string SteamId { get; set; } = string.Empty;
         public string GetSteamId() => SteamId;
+
+        /// <summary>Original contract: every external identity linked to the account.</summary>
+        public System.Collections.Generic.List<Identity> Identities { get; set; } = new();
+
+        /// <summary>Original contract: the linked Play Games id, or null.</summary>
+        public string GetGooglePlayGamesId()
+        {
+            foreach (var i in Identities) if (i?.TypeId == "playgames.com") return i.UserId;
+            return null;
+        }
+    }
+
+    /// <summary>One external identity on an account (original: Unity.Services.Authentication.Identity).</summary>
+    public class Identity
+    {
+        public string TypeId { get; set; }
+        public string UserId { get; set; }
     }
 
     /// <summary>Original: Unity.Services.Authentication.AuthenticationException.</summary>
@@ -194,6 +218,19 @@ namespace CosmicShore.Engine.Services
 
         public virtual System.Threading.Tasks.Task LinkWithSteamAsync(string sessionTicket, string identity, LinkOptions options = null)
             => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Steam is not available in Amoebius."));
+
+        /// <summary>No Game Center or Play Games in Amoebius: refused as Steam is.</summary>
+        public virtual System.Threading.Tasks.Task SignInWithAppleGameCenterAsync(string signature, string teamPlayerId, string publicKeyURL, string salt, ulong timestamp, SignInOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Game Center is not available in Amoebius."));
+
+        public virtual System.Threading.Tasks.Task LinkWithAppleGameCenterAsync(string signature, string teamPlayerId, string publicKeyURL, string salt, ulong timestamp, LinkOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Game Center is not available in Amoebius."));
+
+        public virtual System.Threading.Tasks.Task SignInWithGooglePlayGamesAsync(string authCode, SignInOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Play Games is not available in Amoebius."));
+
+        public virtual System.Threading.Tasks.Task LinkWithGooglePlayGamesAsync(string authCode, LinkOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Play Games is not available in Amoebius."));
 
         /// <summary>Harness entry: raise <see cref="SignInFailed"/> as the SDK would.</summary>
         public void NotifySignInFailed(RequestFailedException e) => SignInFailed?.Invoke(e);

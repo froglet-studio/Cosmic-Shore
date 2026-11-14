@@ -190,11 +190,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The authored axial reach of the first cone in the set, or 0 when the set holds none —
-        /// which AOEConicExplosion reads as "no override, keep what the prefab says". Scaling from
-        /// the prefab's own number keeps the art the source of the cone's baseline shape.
-        /// </summary>
-        /// <summary>
         /// The world-space volume a conic blast would sweep if it detonated RIGHT NOW — the shape
         /// a preview has to draw to be honest about the ability.
         ///
@@ -266,6 +261,11 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
+        /// <summary>
+        /// The authored axial reach of the first cone in the set, or 0 when the set holds none —
+        /// which AOEConicExplosion reads as "no override, keep what the prefab says". Scaling from
+        /// the prefab's own number keeps the art the source of the cone's baseline shape.
+        /// </summary>
         static float AuthoredConeHeight(AOEExplosion[] prefabs)
         {
             if (prefabs == null) return 0f;

@@ -38,7 +38,7 @@ Nothing written: too little Soar in the races (mean 0.04, need 0.05).
 | Measure | You (fastest finished races) | The AI today (seconds it held your hull) | Written |
 |---|---:|---:|---:|
 | `BoostStickBand` | 0.03 | - | - |
-| `YastriStickBand` | 0.15 | - | - |
+| `YawsteryStickBand` | 0.15 | - | - |
 | `meanSoar` | 0.04 | - | - |
 | `samples` | 1941 | 2 | - |
 

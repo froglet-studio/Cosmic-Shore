@@ -22,8 +22,8 @@ in flight on grizzly-v3, so the view is not touched here.
 import numpy as np
 
 import mesh_silhouette
-from canvas import disc, fill, ngon, rect, rotate
-from motifs import burst
+from canvas import band, disc, fill, ngon, rect, ring, rotate
+from motifs import arrowhead, burst, prism
 
 HULL = "Grizzly"
 FBX = "Assets/_Models/Vessel Models/Grizzly.fbx"
@@ -111,6 +111,46 @@ def rush():
     return hull | (bars & ~_dilate(hull, 6))
 
 
+# ---- level-5 cards (2026-11-13): each card's upgraded picture, bound as its binding's upgradedSprite ----
+
+def battle_sight():
+    """Charge 5 Battle Sight: the Grizzly dug in on its plate (small, bottom left) and, up and away, a rival's chevron
+    inside the ring the sight marks it with - while dug in, it sees who is coming."""
+    hull = mesh_silhouette.silhouette(FBX, pitch=-90, yaw=0, box=70, cx=42, cy=80, dilate_px=1.4, take="rig|dig")
+    from canvas import GY
+    plate = rect(8, 104, 76, 115) & ~_dilate(hull & (GY > 104), 5)
+    mark = ring(88, 40, 29, w=7)
+    from motifs import hull as chevron
+    rival = chevron(88, 40, 16, heading=200)
+    return (hull | plate) | mark | rival
+
+
+def claimed_fire():
+    """Mass 5 Claimed Fire: the plasma claw's flame, and beside it the prism it burnt standing whole and solid - the
+    claw claims what it burns instead of destroying it. The flame's hollow core keeps it a fire at 40 px."""
+    flame = disc(38, 90, 24) | fill([(14, 92), (14, 64), (24, 76), (28, 46), (38, 64), (46, 18), (54, 56), (62, 44),
+                                      (62, 92)])
+    core = fill([(30, 104), (28, 88), (36, 94), (40, 72), (46, 92), (50, 86), (48, 104)])
+    flame = flame & ~core
+    prism_m = prism(96, 72, 26)
+    return (flame & ~_dilate(prism_m, 6)) | prism_m
+
+
+def safe_detonation():
+    """Space 5 Safe Detonation: the shell's blast with a shield standing whole in its heart - friendly fire off."""
+    blast = burst(64, 64, 58, spikes=11, inner=0.78, rot=8)
+    shield = fill([(46, 42), (64, 36), (82, 42), (80, 66), (64, 88), (48, 66)])
+    return (blast & ~_dilate(shield, 6)) | shield
+
+
+def vector_control():
+    """Time 5 Vector Control: the Grizzly mid-rush, its motion bar bending up behind it - it steers the charge."""
+    lean, box, cx, cy = -30, 80, 82, 46
+    hull = mesh_silhouette.silhouette(FBX, pitch=-90, yaw=0, box=box, cx=cx, cy=cy, dilate_px=1.4, roll=lean)
+    path = band(92, 106, 66, 182, 232, w=13)
+    return hull | (path & ~_dilate(hull, 6))
+
+
 ICONS = [
     dict(name="Grizzly_DigIn", element="Charge", act="Dig In", draw=dig_in, before=PH + "SmashIcon-PLACEHOLDER.png",
          exempt={"gap": "the hull's real mesh: the pods, ears and claw blades float across even gaps by design "
@@ -122,6 +162,16 @@ ICONS = [
     dict(name="Grizzly_Rush", element="Time", act="Rush", draw=rush, before=PH + "BoostIcon-PLACEHOLDER.png",
          exempt={"gap": "the hull's real mesh: the pods, ears and claw blades float across even gaps by design "
                         "(vessel-model SKILL 0.5)"}),
+    dict(name="Grizzly_BattleSight", element="Charge", act="Charge 5 Battle Sight: dug in, a rival marked in its ring",
+         draw=battle_sight, exempt={"gap": "the hull's real mesh (vessel-model SKILL 0.5)",
+                                    "components": "the hull, its plate and the marked rival"}),
+    dict(name="Grizzly_ClaimedFire", element="Mass", act="Mass 5 Claimed Fire: the claw's flame and the prism it claims",
+         draw=claimed_fire, exempt={"components": "the flame and the prism's two halves",
+                                    "gap": "the prism's cut between its halves and the flame's tongues"}),
+    dict(name="Grizzly_SafeDetonation", element="Space", act="Space 5 Safe Detonation: a shield whole inside the blast",
+         draw=safe_detonation),
+    dict(name="Grizzly_VectorControl", element="Time", act="Time 5 Vector Control: the rush's bar bending, steered",
+         draw=vector_control, exempt={"gap": "the hull's real mesh (vessel-model SKILL 0.5)"}),
 ]
 
 REBIND = [

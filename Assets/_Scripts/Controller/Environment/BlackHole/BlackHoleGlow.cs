@@ -75,6 +75,7 @@ namespace CosmicShore.Gameplay
                 if (reason != null)
                     CSDebug.LogWarning($"[BlackHole] The mobile glow cannot draw: {reason}. Holes draw as plain spheres.");
                 else s_material = material;
+                WorldColorTrace.Paint(s_material);   // loaded after the scene's repaint: born in the worn colour set
                 return s_material;
             }
         }
@@ -140,7 +141,7 @@ namespace CosmicShore.Gameplay
                 mode = ModeBlackHole;
                 shape = new Vector4(shadow, config.PhotonRingWidth, config.PhotonRingGlow, config.MobileHaloGlow);
                 outer = shadow * (1.04f + 3f * config.PhotonRingWidth + 0.6f);
-                colour = Color.Lerp(RingColour, well.Tint, tint);
+                colour = Color.Lerp(ColorTrace.Retrace(ColorTrace.World, RingColour), well.Tint, tint);
             }
             else if (well.Kind == BlackHoleLens.KindWhiteHole)
             {
@@ -148,7 +149,7 @@ namespace CosmicShore.Gameplay
                 mode = ModeWhiteHole;
                 shape = new Vector4(core, 0f, config.WhiteCoreBrightness, 0.5f);
                 outer = core * 1.6f;
-                colour = Color.Lerp(WhiteCoreColour, well.Tint, 0.5f * tint);
+                colour = Color.Lerp(ColorTrace.Retrace(ColorTrace.World, WhiteCoreColour), well.Tint, 0.5f * tint);
             }
             else
             {
@@ -157,7 +158,8 @@ namespace CosmicShore.Gameplay
                 float strength = Mathf.Clamp01(well.LensStrength);
                 shape = new Vector4(well.Radius, Mathf.Max(0.5f, 0.15f * well.Radius), 0.2f * strength, 0f);
                 outer = well.Radius * 1.6f;
-                colour = Color.Lerp(well.Kind == BlackHoleLens.KindSmoothRepulsor ? WhiteCoreColour : RingColour, well.Tint, tint);
+                colour = Color.Lerp(ColorTrace.Retrace(ColorTrace.World,
+                    well.Kind == BlackHoleLens.KindSmoothRepulsor ? WhiteCoreColour : RingColour), well.Tint, tint);
             }
             colour.a = 1f;
             return outer > 1e-4f;
@@ -170,6 +172,9 @@ namespace CosmicShore.Gameplay
             var live = BlackHoleWaves.Live;
             if (live.Count == 0) return;
             float now = BlackHoleWaves.Now, reach = config.MobileWaveReach;
+            // the worn colour set's ripple and shell light, once a frame for every wave drawn
+            Color waveColour = ColorTrace.Retrace(ColorTrace.World, GravityWaveColour);
+            Color shellColour = ColorTrace.Retrace(ColorTrace.World, ShellColour);
             int drawn = 0;
             for (int n = live.Count - 1; n >= 0 && drawn < MaxWavesDrawn; n--)
             {
@@ -179,7 +184,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (!RippleShape(w, u, config, out float inner, out float outer, out var shape, out var wave, out var axis, out float fade))
                         continue;
-                    Draw(w.Centre, inner, outer, ModeRipple, shape, wave, axis, GravityWaveColour, fade);
+                    Draw(w.Centre, inner, outer, ModeRipple, shape, wave, axis, waveColour, fade);
                 }
                 else
                 {
@@ -187,7 +192,7 @@ namespace CosmicShore.Gameplay
                     float fade = ReachFade(radius, reach) * envelope;
                     if (fade <= 1e-3f) continue;
                     Draw(w.Centre, Mathf.Max(0f, radius - 2f * ShellHalfWidth), radius + 2f * ShellHalfWidth, ModeRing,
-                        new Vector4(radius, ShellHalfWidth, config.MobileWaveGlow, 0f), Vector4.zero, Vector4.zero, ShellColour, fade);
+                        new Vector4(radius, ShellHalfWidth, config.MobileWaveGlow, 0f), Vector4.zero, Vector4.zero, shellColour, fade);
                 }
                 drawn++;
             }

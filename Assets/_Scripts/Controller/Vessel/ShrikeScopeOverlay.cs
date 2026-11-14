@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -99,7 +100,8 @@ namespace CosmicShore.Gameplay
             _pipRect.anchorMin = _pipRect.anchorMax = new Vector2(0f, 1f);
             _pipRect.pivot = new Vector2(0f, 1f);
             _backing = MakePetal("Backing", 0f);
-            _backing.color = new Color(0.02f, 0.03f, 0.05f, 0.95f);
+            // the worn colour set's (ColorTrace); a later wear: UIThemeLive retraces this canvas graphic
+            _backing.color = ColorTrace.Retrace(ColorTrace.Ui, new Color(0.02f, 0.03f, 0.05f, 0.95f));
             _picture = MakePetal("Picture", BorderPixels);
             _picture.enabled = false;
             _pipRing = MakeRing(_pipRect, "Ring", 30f, RingThickness);

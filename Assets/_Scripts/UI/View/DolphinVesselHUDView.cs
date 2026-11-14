@@ -489,7 +489,7 @@ namespace CosmicShore.UI
 
             // The free-for-all seed wears the same lime a full element flower does, read from the
             // one shared config rather than authored a second time here.
-            return barsConfig ? barsConfig.LimeColor : crystalOmniColor;
+            return barsConfig ? barsConfig.LimeColor : ColorTrace.Retrace(ColorTrace.Ui, crystalOmniColor);
         }
 
         /// <summary>
@@ -501,8 +501,8 @@ namespace CosmicShore.UI
         void ResolveProfileColors()
         {
             ResolveBarsConfig();
-            _profileRest = barsConfig ? barsConfig.GreyColor : profileRestColor;
-            _profileEngaged = barsConfig ? barsConfig.WhiteColor : profileEngagedColor;
+            _profileRest = barsConfig ? barsConfig.GreyColor : ColorTrace.Retrace(ColorTrace.Ui, profileRestColor);
+            _profileEngaged = barsConfig ? barsConfig.WhiteColor : ColorTrace.Retrace(ColorTrace.Ui, profileEngagedColor);
         }
 
         // ---------------------------------------------------------------
@@ -520,8 +520,9 @@ namespace CosmicShore.UI
                 // DOVirtual rather than a DOColor extension: this project ships no DOTween TMP
                 // module, so TMP_Text has no tween shortcut of its own.
                 _blastColorTween?.Kill();
-                blastCountText.color = blastFlashColor;
-                _blastColorTween = DOVirtual.Color(blastFlashColor, blastRestColor, colorTweenDuration,
+                var flash = ColorTrace.Retrace(ColorTrace.Ui, blastFlashColor);
+                blastCountText.color = flash;
+                _blastColorTween = DOVirtual.Color(flash, blastRestColor, colorTweenDuration,
                         c => { if (blastCountText) blastCountText.color = c; })
                     .SetEase(Ease.OutQuad)
                     .SetLink(blastCountText.gameObject);
@@ -583,8 +584,9 @@ namespace CosmicShore.UI
         void FlashTally(TMP_Text text, Color rest, ref Tween tween)
         {
             tween?.Kill();
-            text.color = blastFlashColor;
-            tween = DOVirtual.Color(blastFlashColor, rest, colorTweenDuration,
+            var flash = ColorTrace.Retrace(ColorTrace.Ui, blastFlashColor);
+            text.color = flash;
+            tween = DOVirtual.Color(flash, rest, colorTweenDuration,
                     c => { if (text) text.color = c; })
                 .SetEase(Ease.OutQuad)
                 .SetLink(text.gameObject);
@@ -597,8 +599,26 @@ namespace CosmicShore.UI
         void ResolveTallyColors()
         {
             ResolveBarsConfig();
-            _pilotRest = barsConfig ? barsConfig.WhiteColor : pilotCountColor;
-            _faunaRest = barsConfig ? barsConfig.BlueColor : faunaCountColor;
+            _pilotRest = barsConfig ? barsConfig.WhiteColor : ColorTrace.Retrace(ColorTrace.Ui, pilotCountColor);
+            _faunaRest = barsConfig ? barsConfig.BlueColor : ColorTrace.Retrace(ColorTrace.Ui, faunaCountColor);
+        }
+
+        void OnEnable() => ColorTrace.Changed += OnColorSetWorn;
+        void OnDisable() => ColorTrace.Changed -= OnColorSetWorn;
+
+        /// <summary>
+        /// Another colour set was worn: the rest, engaged and armed colours this view caches are resolved from it again,
+        /// so the next tween lands in the new set. What is already on screen in a traced colour is repainted by
+        /// UIThemeLive; the jaws' blend toward the armed lime is no traced colour, so it is drawn again here.
+        /// </summary>
+        void OnColorSetWorn()
+        {
+            ResolveProfileColors();
+            ResolveTallyColors();
+            _jawArmedColor = barsConfig ? barsConfig.LimeColor : jawRestColor;
+            if (_jawArm01 < 0f || (!_jawUpperGraphic && !_jawLowerGraphic)) return;
+            _jawColorTween?.Kill();
+            WriteJawColor(Color.Lerp(jawRestColor, _jawArmedColor, _jawArm01));
         }
 
         // ---------------------------------------------------------------

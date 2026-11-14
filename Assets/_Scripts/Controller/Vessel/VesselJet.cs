@@ -149,20 +149,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Re-parent onto a named bone on this vessel's model.
-        ///
-        /// <b>Why by NAME and not by reference.</b> A jet that belongs on an engine has to follow
-        /// that engine when the model animates, which means parenting to a bone. A bone inside a
-        /// nested model prefab can only be referenced from the vessel prefab by the model file's
-        /// own sub-asset id, and that id does not survive a re-export — so an FX mount authored
-        /// that way silently detaches the next time the art is updated. Resolving by name is the
-        /// same choice <see cref="VesselAnimation"/> already makes for animated parts, and for the
-        /// same reason: it is what makes an art swap cheap (<c>Docs/VESSEL_CONSTRUCTION.md</c> §5).
-        ///
-        /// Fails LOUD and harmlessly: an unresolvable name is an error naming the vessel and the
-        /// bone, and the jet stays where the prefab put it rather than vanishing.
-        /// </summary>
-        /// <summary>
         /// Resolve this jet's <see cref="MountBone"/> against its own vessel, or null when it
         /// declares none or the name does not resolve. This is the ONE implementation: the audit
         /// tool calls it too, so what it reports is what <see cref="MountOnBone"/> will do rather
@@ -180,6 +166,20 @@ namespace CosmicShore.Gameplay
             return FindDescendant(searchRoot, mountBone);
         }
 
+        /// <summary>
+        /// Re-parent onto a named bone on this vessel's model.
+        ///
+        /// <b>Why by NAME and not by reference.</b> A jet that belongs on an engine has to follow
+        /// that engine when the model animates, which means parenting to a bone. A bone inside a
+        /// nested model prefab can only be referenced from the vessel prefab by the model file's
+        /// own sub-asset id, and that id does not survive a re-export — so an FX mount authored
+        /// that way silently detaches the next time the art is updated. Resolving by name is the
+        /// same choice <see cref="VesselAnimation"/> already makes for animated parts, and for the
+        /// same reason: it is what makes an art swap cheap (<c>Docs/VESSEL_CONSTRUCTION.md</c> §5).
+        ///
+        /// Fails LOUD and harmlessly: an unresolvable name is an error naming the vessel and the
+        /// bone, and the jet stays where the prefab put it rather than vanishing.
+        /// </summary>
         void MountOnBone()
         {
             if (string.IsNullOrEmpty(mountBone)) return;

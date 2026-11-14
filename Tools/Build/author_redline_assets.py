@@ -16,7 +16,7 @@ through the cell, flown in LAPS by every pilot, and the first DOMAIN whose LEAD 
 the last gate of the last lap wins. Every corner is cut against the Manta's FULL-BOOST turn
 radius - the 237u circle it holds with both triggers flat - so a corner is one question: how
 much Soar is it worth? Since 2026-11-04 it teaches the Time ability (Soar) ALONE: no corner
-needs the Yastri pivot, the cell's omni crystal is off (the scene's CrystalManager spawns
+needs the Yawstery pivot, the cell's omni crystal is off (the scene's CrystalManager spawns
 none), and the only pickups are the Time crystals RedlineController lays from the course
 (RedlineTimeCrystals). See Assets/_Scripts/Controller/Arcade/REDLINE.md.
 

@@ -608,7 +608,7 @@ segments. Shoot or ram a super-shielded prism and watch:
 6. **Skimming never deflects, on any vessel.** Confirmed by playtest 2026-08-15 (jiggle on
    vessel impact, none on skimmer impact — both as desired), and still true after the energy
    sword merge. Four of five skimmer containers carry no prism-damage effect at all; the fifth
-   (Rhino forcefield) carries `RhinoSkimmerDamagePrismEffectSO`, which pops or bounces
+   (Rhino forcefield) carries `SwordfishSkimmerDamagePrismEffectSO`, which pops or bounces
    super-shielded mass in its own branch and returns before `Damage`. If you ever want a skim
    to deflect, that is a container/effect change on that vessel — not a change here.
 

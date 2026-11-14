@@ -188,7 +188,7 @@ Three scoping rules, each of which would be a defect to get wrong:
   is never hidden (CLAUDE.md ▸ *Mass is conserved*). It is not a `TrailRenderer` at all.
 - **Scoped to the MARKERS**, through `VesselTailAndJets.HideTails` — the class that owns what a
   tail is. A sweep of the `TrailRenderer`s under a vessel would take the Rhino's five blade tracers
-  with it, which are a state readout owned by `RhinoSwordFXController`.
+  with it, which are a state readout owned by `SwordfishSwordFXController`.
 
 It hides by `Renderer.forceRenderingOff` rather than by disabling the component, because **a
 disabled `TrailRenderer` stops RECORDING as well as drawing** — the ribbon would bridge the gap

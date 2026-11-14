@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The settings window's four tabs (GENERAL / DISPLAY / PERFORMANCE / OTHER): one tab active,
+    /// The settings window's tabs (GENERAL / DISPLAY / PERFORMANCE / OTHER / REGION / ACCOUNT): one tab active,
     /// its page shown, the others hidden.
     ///
     /// <para>Two looks share this class. The legacy one toggles each page and underline with

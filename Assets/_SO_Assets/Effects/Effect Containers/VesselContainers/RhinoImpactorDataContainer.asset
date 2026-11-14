@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: RhinoImpactorDataContainer
   m_EditorClassIdentifier: 
   vesselPrismEffects:
-  - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
+  - {fileID: 11400000, guid: 835745615e5b62cd2e46cceb02690cd4, type: 2}
   - {fileID: 11400000, guid: dd3c981395e34324b68b9ce34145854c, type: 2}
   - {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}
   vesselCrystalEffects:
-  - {fileID: 11400000, guid: 80864e81937532c44b5c32823f5e19b9, type: 2}
+  - {fileID: 11400000, guid: a262f689fe4d4d6caa8dc49cab5fa08e, type: 2}
   vesselSkimmerEffects: []
-  omniCrystalRetirement: {fileID: 11400000, guid: c62807b520fd4bbb8569dd7b68924156, type: 2}
+  omniCrystalRetirement: {fileID: 11400000, guid: 9a40b3a2720043cd86332dbf7e16dd8d, type: 2}

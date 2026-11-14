@@ -229,12 +229,26 @@ crystal's own). The invisible hull's TOUCH leaves crystals and prisms alone in b
 | Time | **Decoys** (round 10, 2026-10-25: "in herding mode the triggers should drop decoys. in netting mode the triggers should fast travel to the decoy"): herding, a trigger lays the decoy at the jack on that side (a phone: a lifted thumb); netting, a trigger flies the hull fast to it (round 11: "don't teleport, move quickly"). There is ALWAYS one decoy (2026-10-25: "there should always be at least one decoy available"): laid between the jacks when they land and never spent by the travel. Time scales the herd's speed, +6% per level, floored at x0.4. (Rounds 8-9 made Time a herding DASH of both jacks to the decoy; retired with `dashSpeed`, `dashGap`, `decoyPlaceHold` and `decoyTapPixels`.) | **Second Decoy** (2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly to)"): each trigger has its own decoy - the left trigger lays the left one (at the jack further left on the herding view) and flies to it, the right likewise; a phone's both-thumbs lift flies to the one placed last. It replaced the Flying Decoy (netting, A dropped the decoy; Input 6 is unbound) |
 
 Each upgrade is its own gate with its element written out (`JacksExecutor.ChargeUpgraded` .. `TimeUpgraded`), so
-`/element-ability-table` reads all four as live (2026-10-25; through one `Upgraded(e)` helper it read three as prose). The
-table still reads no scaling for Charge, Mass and Time, and Space as the hidden skimmer's 30 -> 50: the real curves are the
-lab's formulas in `JacksMath` (`DangerShare`, `FeedsPerOffspringScale`, `Ring`, `SpeedMultiplier`), which no channel of
-the tool reads, and the skimmer's curve is switched off on the Jacks (`Scale.Enabled` 0, an override of the nested
-variant the tool reads past). The map's words are rewritten by the tool whenever they still carry an older round's words
-(`STALE_MAP_WORDS`). On the HUD (`JacksHUDController`): the Charge card's gauge is the danger share; the Mass card is the
+`/element-ability-table` reads all four as live (2026-10-25; through one `Upgraded(e)` helper it read three as prose).
+
+**The scaling is authored (the vessel pass, 2026-11-13).** The four curves were the lab's formulas in `JacksMath`
+(`DangerShare`, `FeedsPerOffspringScale`, `Ring`, `SpeedMultiplier`), which no inspector could tune and the table could
+not read. They are now `ElementalFloat` endpoints on `JacksConfigSO`, read through `DangerShareFor`, `FeedsPerOffspringScaleFor`,
+`RingFor` and `HerdSpeedFor`, and set to reproduce the lab's curves exactly across -5..15 (`JacksScalingTests`):
+
+| Element | Field | At rest | At level 10 | Floor |
+|---|---|---|---|---|
+| Charge | `dangerShare` (clamped 0..1) | 0.25 | 0.75 | 0 |
+| Mass | `herdBirthRate` (a birth takes the species' feeds over it) | 1.5 | 2.5 | 1 |
+| Space | `ringScale` (x the thumb floor `RingFloor`) | 1.3 | 1.9 | 1 |
+| Time | `herdSpeed` | 1 | 1.6 | 0.4 |
+
+`JacksMath`'s formulas stay as the lab's reference. The skimmer's Space curve is still switched off on the Jacks
+(`Scale.Enabled` 0, an override of the nested variant the tool reads past). The map's words are rewritten by the tool
+whenever they still carry an older round's words (`STALE_MAP_WORDS`). On the HUD (`JacksHUDController` on the Jacks' own `JacksHUDVariant` and `JacksHUDView`, forked from the Rhino's on
+2026-11-13 by `Tools/Build/author_jacks_hud.py`, because the Rhino's reworked view built its katana and reach blade over
+the Charge and Space cards; each card's level-5 picture is its binding's upgraded sprite: Attack, Mass Clusters, Eat
+Shields, Second Decoy, `icon_kit/specs/jacks.py`): the Charge card's gauge is the danger share; the Mass card is the
 call - herding, lit while it pulls the herd, its cooldown on the veil; netting, lit while the plane's pull is on - with
 the herd's size on it and its fill on the gauge; the Space card is lit while the herding view is Wide; the Time card flashes
 (`decoyFlashSeconds`) when a decoy is laid and is lit for the whole of a fast travel.
@@ -357,8 +371,6 @@ units and multiplied by `labScale` (0.4).
   while the herd is leashed on the host; whether the owner sees the creatures close enough to score is for the
   host-client test.
 - **Crystal hull fusion** still bakes the Rhino's hull shape (the four Jacks entries are the Rhino's).
-- `element_ability_table.py Jacks` reads the four level-5 gates (2026-10-25) but not the scaling (§2): the curves are
-  `JacksMath`'s lab formulas. Teaching the tool a channel for them, or moving the curves onto authored endpoints, is open.
 - **Hull-radius sweeps see the jacks.** The two jack models are children of the vessel root, up to the herd ring away
   from the hull while herding, and `PrismOcclusionCorridor.MeasureCircumscribedRadius` (scope pip, Echo Sight, occlusion
   corridor, crystal ejector) counts every active child renderer. The Wrasse's kite has the same shape; the fix is one

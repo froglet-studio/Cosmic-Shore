@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -40,6 +41,7 @@ namespace CosmicShore.Gameplay
         Transform _anchor;
         static Mesh s_core;
         static Material s_mat;
+        static int s_coreVersion = -1;   // the ColorTrace.Version the core's gold was baked at
 
         /// <summary>Burrow Run: omnicrystals half way between the course's rings (<paramref name="rings"/>, one lap, in order).</summary>
         public static MeerkatOmnicrystalField ForCourse(Transform parent, IReadOnlyList<Vector3> rings)
@@ -166,12 +168,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The core (an icosahedron, its faces shaded, gold-white) and its shell (the same, faint), as two
-        /// submeshes of one mesh drawn through the wormhole's additive material.</summary>
+        /// submeshes of one mesh drawn through the wormhole's additive material. The gold is the worn colour set's,
+        /// baked into the vertex colours again whenever another set is worn.</summary>
         static bool Resolve()
         {
             if (!s_mat) s_mat = Resources.Load<Material>(SolitonTunnelView.AdditiveMaterialPath);
             if (!s_mat) return false;
-            if (s_core) return true;
+            if (s_core && s_coreVersion == ColorTrace.Version) return true;
+            if (s_core) Destroy(s_core);
+            s_coreVersion = ColorTrace.Version;
             float g = (1f + Mathf.Sqrt(5f)) / 2f;
             var v = new[]
             {
@@ -188,7 +193,7 @@ namespace CosmicShore.Gameplay
             var col = new List<Color>();
             var core = new List<int>();
             var shell = new List<int>();
-            var gold = new Color(1f, 0.85f, 0.45f);
+            var gold = ColorTrace.Retrace(ColorTrace.World, new Color(1f, 0.85f, 0.45f));
             for (int s = 0; s < 2; s++)
             for (int i = 0; i < f.Length; i += 3)
             {

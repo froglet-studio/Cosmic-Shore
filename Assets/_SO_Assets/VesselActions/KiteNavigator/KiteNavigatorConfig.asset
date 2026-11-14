@@ -59,6 +59,35 @@ MonoBehaviour:
   stealCooldown: 1
   faunaChargeCost: 1
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  chargePetalScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 1
+    UseFloor: 1
+    Floor: 1
+  massClusterScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 2
+    UseFloor: 1
+    Floor: 1
+  spaceReachScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 3
+    UseFloor: 1
+    Floor: 1
+  crystalStealUpgradeElement: 1
+  shieldedClustersUpgradeElement: 2
+  shieldBreakerUpgradeElement: 3
+  tailwindUpgradeElement: 4
+  tailwindBoostScale: 1.5
   aiCrewNavigates: 1
   aiBoostRingDistance: 180
   aiSkill: 2

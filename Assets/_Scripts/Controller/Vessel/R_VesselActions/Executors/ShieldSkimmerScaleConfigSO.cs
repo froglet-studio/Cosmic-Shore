@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -9,9 +10,9 @@ namespace CosmicShore.Gameplay
     /// omni-crystal surge's sword ring and camera, and every blade-look/juice knob (energized danger
     /// red, impact flashes, crackle, camera shake). There is no energy (2026-10-26). The blade's
     /// LENGTH range is Space's: Skimmer.Scale on Rhino.prefab (24 at rest, 40 at Space 10).
-    /// One shared asset (`_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset`)
+    /// One shared asset (`_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset`)
     /// drives every Rhino, read by <see cref="ShieldSkimmerScaleDriver"/> and
-    /// <see cref="RhinoSwordFXController"/>.
+    /// <see cref="SwordfishSwordFXController"/>.
     /// </summary>
     [CreateAssetMenu(
         fileName = "ShieldSkimmerScaleConfig",
@@ -33,13 +34,23 @@ namespace CosmicShore.Gameplay
                  "A phone pilot energizes by lifting BOTH thumbs, which also lets go of the steering, so the " +
                  "hold is divided by this (2 = half the hold). 1 = the pad's timing. AI and autopilot keep the " +
                  "pad's timing. Decided on the vessel's owner and replicated with the energize phase " +
-                 "(RhinoSwordNetworkRelay), so every peer ignites on the same edge.")]
+                 "(SwordfishSwordNetworkRelay), so every peer ignites on the same edge.")]
         [SerializeField, Min(0.01f)] private float touchEnergizeRateMultiplier = 2f;
         [Tooltip("Seconds the blade stays energized AFTER leaving the stance. Holding the stance " +
                  "from ignition keeps it lit; once let go the tail runs out whatever the fingers do.")]
         [SerializeField] private float energizedTailSeconds = 5f;
         [Tooltip("Seconds of cooldown after the energized tail before the blade can charge again.")]
         [SerializeField] private float energizeCooldownSeconds = 5f;
+
+        /// <summary>TIME -> the sword's RATE, the Swordfish's Time card QUICKDRAW (Garrett, 2026-11-12: the
+        /// Swordfish gets its own Time ability instead of the Rhino's Ramp Spool). Divides the energize hold and
+        /// the energize cooldown: x1 at rest, x2.5 at level 10 (hold 1 -> 0.4 s, cooldown 5 -> 2 s), floored at
+        /// x0.5 so a deficit slows the sword rather than inverting it. The let-go tail is a DURATION, not a rate,
+        /// and stays as authored. Read live on the owner, which decides the energize and replicates it.</summary>
+        [Tooltip("TIME (Quickdraw): divides the energize hold and the energize cooldown. x1 at rest, x2.5 at " +
+                 "level 10, floored x0.5. The tail is not scaled.")]
+        [SerializeField] private ElementalFloat timeSwordRateMultiplier =
+            ElementalFloat.Multiplier(1f, 2.5f, Element.Time, 0.5f);
 
         [Tooltip("Element whose level-5 upgrade, SHIELD BREAKER, lets the sword destroy SUPER-SHIELDED " +
                  "prisms at all (the Rhino: Space; Garrett, 2026-10-26). Without it the blade binds in " +
@@ -126,7 +137,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Rotation (pitch/yaw/roll) rate multiplier while the blade is inside a super-shielded prism it " +
                  "cannot cut — the armour DRAGS on the sword instead of throwing the ship back. " +
                  "1 = no drag, 0 = the vessel cannot rotate at all while bound. " +
-                 "Replaces the old recoil (RhinoSkimmerDamagePrismEffectSO.recoilWhenDenied).")]
+                 "Replaces the old recoil (SwordfishSkimmerDamagePrismEffectSO.recoilWhenDenied).")]
         [SerializeField, Range(0f, 1f)] private float bindTurnRateMultiplier = 0.3f;
         [Tooltip("How fast (multiplier units/sec) the turn rate eases DOWN into the bind. High, so " +
                  "the drag reads as the blade biting on contact.")]
@@ -167,6 +178,16 @@ namespace CosmicShore.Gameplay
         public float EnergizedTailSeconds    => Mathf.Max(0f, energizedTailSeconds);
         public float EnergizeCooldownSeconds => Mathf.Max(0f, energizeCooldownSeconds);
 
+        /// <summary>Time's live rate multiplier on the sword (Quickdraw), floored at 0.05 so it can never divide by 0.</summary>
+        public float TimeSwordRate(IVesselStatus status) => Mathf.Max(0.05f, timeSwordRateMultiplier.EvaluateLive(status));
+
+        /// <summary>The stance hold for this pilot at this vessel's live Time level (Quickdraw).</summary>
+        public float EnergizeHoldSecondsFor(bool touchPilot, IVesselStatus status) =>
+            Mathf.Max(0.01f, EnergizeHoldSecondsFor(touchPilot) / TimeSwordRate(status));
+
+        /// <summary>The energize cooldown at this vessel's live Time level (Quickdraw).</summary>
+        public float EnergizeCooldownSecondsFor(IVesselStatus status) => EnergizeCooldownSeconds / TimeSwordRate(status);
+
         /// <summary>SPACE level-5, Shield Breaker: may this vessel's sword destroy super-shielded prisms?
         /// Through the replicated unlock bit (IsUpgradeActive), never a raw level read.</summary>
         public bool SuperShieldUpgradeActive(IVesselStatus status)
@@ -179,7 +200,7 @@ namespace CosmicShore.Gameplay
         public float VisibilityMultiplier => Mathf.Max(0f, visibilityMultiplier);
         public Color RestingBladeColor    => restingBladeColor;
 
-        public Color EnergizedColor         => energizedColor;
+        public Color EnergizedColor         => ColorTrace.Retrace(ColorTrace.World, energizedColor);
         public float ColorTransitionSeconds => Mathf.Max(0.0001f, colorTransitionSeconds);
 
         public float IgniteCrackleIntensity => Mathf.Max(0f, igniteCrackleIntensity);
@@ -195,7 +216,7 @@ namespace CosmicShore.Gameplay
         public float HitFlashAmount    => hitFlashAmount;
         public float PopFlashAmount    => popFlashAmount;
         public float FlashDecaySeconds => Mathf.Max(0.0001f, flashDecaySeconds);
-        public Color FlashColor        => flashColor;
+        public Color FlashColor        => ColorTrace.Retrace(ColorTrace.World, flashColor);
 
         public float PopShakeIntensity      => Mathf.Max(0f, popShakeIntensity);
         public float PopShakeDuration       => Mathf.Max(0f, popShakeDuration);

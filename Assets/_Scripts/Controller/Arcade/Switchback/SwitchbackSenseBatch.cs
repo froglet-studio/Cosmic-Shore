@@ -62,10 +62,10 @@ namespace CosmicShore.Gameplay
             _pos[i] = pos; _dir[i] = dir; _up[i] = up; _goal[i] = goalDir; _radReach[i] = new float2(radius, reach);
         }
 
-        /// <summary>Last frame's answer for slot <paramref name="i"/>: false when the lane ahead was clear.</summary>
         /// <summary>Whether the farthest blocked tap reaches at least 1.5x the straight line's hit (last frame).</summary>
         public bool FarthestHelps(int i) => !_disposed && i >= 0 && i < _cap && _readyClear[i] == 2;
 
+        /// <summary>Last frame's answer for slot <paramref name="i"/>: false when the lane ahead was clear.</summary>
         public bool Read(int i, out Vector3 steerDir, out float hitDist, out bool tapClear)
         {
             steerDir = default; hitDist = -1f; tapClear = false;

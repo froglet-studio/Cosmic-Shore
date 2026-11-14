@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Author the Manta ability row's PLACEHOLDER icon sprites (Sting / Yastri / Kabloom / Soar).
+"""Author the Manta ability row's PLACEHOLDER icon sprites (Sting / Yawstery / Kabloom / Soar).
 
 The four icons authored by the spec remake shipped with empty sprite slots, which a UGUI
 Image renders as a bare white box — unreadable on the lockup card (playtest 2026-08-26:
@@ -66,7 +66,7 @@ def sting(px, py):
     return False
 
 
-def yastri(px, py):
+def yawstery(px, py):
     """A hard-turn arrow: a thick arc sweeping over the top, arrowhead on the right."""
     cx, cy, R, t = 64, 56, 34, 9
     dx, dy = px - cx, py - cy
@@ -112,7 +112,7 @@ def soar(px, py):
 
 ICONS = {
     "Manta_Sting.png": sting,
-    "Manta_Yastri.png": yastri,
+    "Manta_Yawstery.png": yawstery,
     "Manta_Kabloom.png": kabloom,
     "Manta_Soar.png": soar,
 }

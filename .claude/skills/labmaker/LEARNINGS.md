@@ -419,14 +419,14 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `read_prisms()` in `Tools/Build/author_omni_combine_asset.py` and its "wrong baked thickness is refused" self-test; `depth.massThickness` / `depth.omniThickness`; `OmniCombinePlayer.DepthShape.Of(..., baked)`. The recovered thin Mass matched the pre-bake data to 1e-5.
 - Promoted: no
 
-### L-STU-41 — A brief names a cause; measure the mechanism before building the cure
+### L-STU-175 — A brief names a cause; measure the mechanism before building the cure
 - Lab: Omni Motion Lab (`Docs/Studios/OmniMotionLab.html`) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
 - What happened: the brief was to time the squares' moves and the rhombi's flips so they never move at once, "so their movements never clip". The lab built that scheduler. It also added a convex-plate interpenetration test that records what was moving on each clipping frame (`clipTimeline`). The overlap fell from 87% to 0, but visible clips only fell from 66.7% to 28.6% of frames, and every remaining clip happened with the rhombi STILL. A square turning round its pentagon cuts through the still rhombus beside it, on the art's own keys and on a rigid turn alike. What reached 0 was a rigid turn that hops off the shell. A lift sweep found the edge: 0.14 R on the pentagon turn, 2.2× the art's lift on the triangle turn.
 - Do instead: when a brief says "do X so that Y", build Y's METRIC as well as X. Have it record the state that was active when Y fails, so the lab can say whether X is the cause. Ship the requested change AND the measured fix as separate styles, so the designer sees both.
 - Evidence: `runFullBatch()` rows "Proposal: the brief, as keys" (overlap 0, clips 28.6) vs "Proposal: rigid arcs that hop clear" (0, 0); `clipTimeline`; `OMNI_MOTION_LAB.md` Found 1.
 - Promoted: no
 
-### L-STU-42 — "Make it more" can be capped by a rule, not by the knob the designer named; measure what caps it
+### L-STU-176 — "Make it more" can be capped by a rule, not by the knob the designer named; measure what caps it
 - Lab: Omni Motion Lab round 3 (`Docs/Studios/OmniMotionLab.html`) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
 - What happened: "more Mass prisms out, and further out". The obvious knob, column height, moved the visible count from 2.2 to at most about 2.4. The ratchet was the cap: it holds a prism moving away sealed until the deep reseat. Taller columns made it worse, because they need a deeper reseat to stay hidden. Changing the RULE fixed it: a prism may rise whenever its column top is hidden. Visible height went 1.5 → 7.4 plate radii, with zero rises seen, and a planted "rise anywhere" control reads 100% so the check is live.
 - Do instead: before sweeping the named knob, add the metric for what the designer wants to SEE (here, height seen = how far × how many). Sweep the knob, and if it plateaus, find the invariant that caps it. A new rule needs its own never-seen check and a planted control that breaks it.
@@ -931,6 +931,28 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: with no Unity and no .NET in the container, the C# `BrittleStarRules.ForwardTurn` was transliterated to JS (Mathf.DeltaAngle / Repeat / MoveTowards included) and run against the old rule: 0 difference frame for frame below the turn rate (0.25..2 rev/s), exactly the cap and 0 backward frames above it, and the old rule's 13..30 backward frames a second. The EditMode tests assert those numbers, so they were measured before they were written, not guessed.
 - Do instead: when the tests cannot run here, run a line-for-line copy of the code under test and assert only what it produced; say in the PR that the C# itself did not run.
 - Evidence: `BrittleStarRingSpinTests` (written, not run in Unity).
+- Promoted: no
+
+
+### L-STU-168 — Judge a look on the game's own render: round 2 picked a smear on a stand-in ring and measured total light
+- Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `claude/brittlestar-smear-empty-layer` · By: Garrett's session · Date: 2026-11-10
+- What happened: round 2 drew the ring as a 0.44-unit neon beam with a white core and a glow, 19 units away in a three-quarter view (about 2.6 times the game's size). The game's ring is a near-black `VesselGraph` body whose light comes from thin domain plates, seen from 38 units straight behind through the gameplay bloom. Round 2's brightness check summed the smear's light (−1.2%..−0.3% of the still ring), which an average keeps by construction, so it could never say no. When the ring went "too dark to see" in Unity, the page had no way to tell a look problem from a port bug.
+- Do instead: render the shipped FBX with the shader's own formula on the shipped materials and colour set, through the profile's post (L-SIM-2), from the shipped camera, and measure what the eye reads: the 99th-percentile lightness of the rendered frame against the object at rest. Give the scorecard a row that must fail (round 3's "bleeding-edge today": the ring hidden and nothing drawn reads about 6%), so the column is known to say no.
+- Evidence: round 3's game look (`GR` in the page, mesh from `BrittleStar.fbx` by axis swap file (x, z, y)); scorecard at 60 fps Nocturne Jade: averaged smear 90% at 3 rev/s, the bug row 6%.
+- Promoted: no
+
+### L-STU-169 — A port that hides the original must count its replacement as drawn only when something landed in it
+- Lab: Brittle Star Ring Spin (port: `BrittleStarRingSmearPass`) · Branch: `claude/brittlestar-smear-empty-layer` · By: Garrett's session · Date: 2026-11-10
+- What happened: the smear pass redrew the ring into a layer with the hull's materials, picking each material's pass by LightMode (UniversalForward / UniversalForwardOnly / SRPDefaultUnlit). `VesselGraph` is an Unlit Shader Graph, and URP 17.3 writes its forward pass with NO LightMode tag (`UniversalUnlitSubTarget` sets none; ShaderGraph's `Generator.cs` writes `// LightMode: <None>`), so `FindPassTagValue` answered `ShaderTagId.none` and no material matched. The layer was empty, the hull had already hidden its ring, and the fallback ("a smear no camera drew shows the ring") never fired, because `DrawnFrame` was set when the pass was recorded. The ring vanished whenever it turned more than 1.5° a frame. The port was never compiled or run before merge.
+- Do instead: treat an untagged pass as the forward pass when no tagged one exists (URP draws it as SRPDefaultUnlit). Decide "drawn" from the replacement's actual draw list, and skip, without marking drawn, a request with nothing to draw. Add an edit-mode test that every material the replacement draws has a pass (`BrittleStarRingSpinTests.TheSmearLayer_FindsTheForwardPassOnEveryHullMaterial`, with a negative control).
+- Evidence: Unity-Technologies/Graphics `6000.3/staging` 4064d5b: `UniversalUnlitSubTarget.UnlitPasses.Forward` (no `lightMode`), `Generator.cs` (the `<None>` splice); `BrittleStarRingSmearPass.ForwardPass` / `HasDrawableSubmesh`.
+- Promoted: no
+
+### L-STU-170 — Verify a lab kept as an artifact FRAGMENT in its published form, and A/B its failures against the last round
+- Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `claude/brittlestar-smear-empty-layer` · By: Garrett's session · Date: 2026-11-10
+- What happened: the repo copy is the artifact's fragment (it starts at `<title>`; the Artifact tool adds the doctype, viewport and body when it publishes). `verify_lab.cjs` on the fragment ran it in quirks mode with no viewport, so the emulated iPhone 13 laid the page out 980 px wide, and the full-page phone screenshot timed out at 30 s on both tries after the desktop half had run. Wrapped in a publish skeleton the same page finished in 45 s with both screenshots. In a cloud session the egress proxy refuses the page's Google Fonts, which the verifier reports on every load as `console/page error: Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED`.
+- Do instead: wrap a fragment in a skeleton (doctype, charset, `width=device-width` viewport, body) before verifying it, and run the verifier on the lab's previous round too (`git show <merge-base>:<lab.html>`), so a failure is attributed to the round that caused it. Read the font error as the sandbox's.
+- Evidence: this session: the fragment (TimeoutError at the phone screenshot, twice) against the wrapped page (45 s, `desktop.png` + `phone.png`); round 2 from `385d3018c` fails the same font check and scrolls 1727 px on desktop (round 3: 2590 px), so the ring lab has never been on §2.7's no-scroll layout.
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
@@ -1562,7 +1584,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - When the designer remaps buttons, check what the OLD button did. A habit press is how a hidden mode gets entered.
 - Evidence: `R_VesselActions/ANGLER.md` §1k; `ANGLER_COMMAND_LAB.md` round 7.
 
-### L-STU-102 — One cooldown for the skim and the hull hides every hull contact
+### L-STU-177 — One cooldown for the skim and the hull hides every hull contact
 - Lab: Concept fleet (`Docs/Studios/VesselStudio/studio-vessel.js`) · Branch: `Ys-bleeding-edge` · By: the concept-fleet session · Date: 2026-10-17
 - What happened: the platform baseline inherited from the Squirrel studio cooled a prism for 0.6 s per pilot on a SKIM (12 u out) and used the same cooldown for the HULL contact, so a hull flying through a prism it had just skimmed registered nothing. Invisible in every studio whose hull avoids prisms; the Flea, whose mechanic IS the contact, never bounced (uses 2 in 300 s), and every concept's contact count read 0.
 - Do instead: keep two cooldowns (`p.cool` for the skim, `p.hull` for the contact) and test the hull branch with a vessel that wants to hit things. The game's `SkimmerImpactor` / `VesselImpactor` are separate components; worth confirming they never share a cooldown.
@@ -1872,4 +1894,53 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the first search for the vision sets passed rules 1-5 with near-grey faces (sat 0.03-0.08 against rho 0.035), and the palette writer then failed seven fields: the shielded tiers are whitened toward grey, and a pigment whose chroma disc reaches the neutral axis owns that grey, so a Jade shield read as Fire's face.
 - Do instead: keep every pigment's sat at least about 0.1 (grey stays unclaimed), and put the writer's field check (`author_colour_set_assets.field_problems`) inside any search's score, not after it.
 - Evidence: `author_colour_set_assets.py --check` (the failures, then clean on the re-search); the six vision sets' sat values.
+- Promoted: no
+
+### L-STU-171 — The HUD reads a rim's numbers as sRGB: measure every rim as light AND as paint
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-set rules session · Date: 2026-11-10
+- What happened: the palette writer paints `TrailHighlightColor` in linear light, but `GetDomainUIColor`, the score panels and the vessel tails (`TailGradient`) read those floats as sRGB, which darkens the middle channel and turns an orange gold into Fire. Nocturne's honey showed on the HUD as `#FF8F11` (the Gold/Fire band), and every vision set's Gold read as Fire. Rule 5 had measured the rims only as light, so an achromat could tell Gold's and Ruby's HUD colours apart by 1.5 JND and a deutan Fire's and Gold's by 2.4.
+- Do instead: judge a rim in every reading the game shows it (`colour_sets.readings`: swatch, light, paint) and count the HUD in any per-viewer measure. The window that survives both readings for Gold is hue 82-96 (`colour_set_maker.py atlas`).
+- Evidence: `colour_sets.py` rules 4 and 5; Nocturne's Gold hue 83 to 87; the vision sets' rule 5 before and after in `colour_sets.json`.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §1, §2, §8
+
+### L-STU-172 — A face above the night line names its domain: make it its family's, its rim's paint, or quiet
+- Lab: Colour Sets Lab · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-set rules session · Date: 2026-11-10
+- What happened: every set passed the old four rules, yet Dart Frog's faces (mid L 0.39-0.45, bronze, indigo, forest, petrol) made a Jade prism read as bronze, a Blue one as green, and Nacre's light faces (a lavender Jade, a periwinkle Gold) named other domains outright. Below L 0.40 the six-family truth holds only Fire and Blue, which is why Nocturne's dark jewel faces of any hue read as night under their rims.
+- Do instead: give each face a voice (rule 6): its family's own colour, its rim's own paint (the two cones overlap, as Photic does), or quiet, wholly at or below L 0.40 (as Nocturne does). A contrasting second colour from an inspiration goes quiet; a light body must be its family's.
+- Evidence: `colour_sets.py voices`; `colour_set_maker.py preview` sheets of the old and new Dart Frog and Nacre.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §3
+
+### L-STU-173 — The gameplay bloom turns light faces white: paint a pastel set's faces at L 0.5-0.7 and let the bloom lift them
+- Lab: Colour Sets Lab · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-set rules session · Date: 2026-11-10
+- What happened: Nacre's first faces were painted at L 0.70-0.79 (brightest channel up to 0.93). The gameplay profile blooms from 0.2, clamped at 0.5, intensity 2.5, so a model of the block shader with that bloom drew every Nacre prism, and every shielded tier, as near-white: the domains vanished. The writer's face fields take the pigment's own L, so the pigment decides it.
+- Do instead: render a set with the bloom before judging it (`colour_set_maker.py preview`, `hero`), and keep a light set's faces at mid L 0.50-0.74 (the Nacre style) so the bloom carries them to pastel; check the shielded tiers too, which the writer paints brighter and whiter.
+- Evidence: `colour_set_maker.py preview photic nacre`; `colour_sets.json` `styles.nacre`.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §4, §8
+
+### L-STU-174 — A colour-blind set keeps the rules as its viewer sees them: measure its names on the game's own colours through that viewer's eyes, never waive them
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-trace session · Date: 2026-11-10
+- What happened: the six vision sets (2026-11-05) switched rules off with waivers (`waive.paint`, `waive.voice`, `waive.apart`), because the six-family truth is a partition for typical vision: a set made for a protan's eyes cannot keep its rims in the cells a typical viewer names. Garrett: "we want the colour-blind sets to fulfill their version of the same criteria". The names a viewer has learned are the game's own colours of each family as their eyes show them, so the truth's anchors through the same vision model (Machado 2009, Rec. 709 luminance, half chroma) make rules 4 and 6 measurable for that viewer: a rim, as light and on the HUD, and a face must sit nearer their own family's anchors than any other family's. Deuteranopia and achromatopsia cannot reach zero: for those eyes the game's own Fire, Gold and Lime anchors (deutan) or all six (achromat) crowd one line, so they declare the shortfall they measured (-0.021 and -0.045 at the 2026-11-10 re-balance, `colour_sets.py --report`).
+- Do instead: give a set made for another viewer every rule through that viewer's model (`colour_sets.vision_prototypes`, `name_margin`); where the game's own colours make a rule unreachable for those eyes, declare the measured shortfall on the set (its `name_margin`) so the gate still holds it to a number, never a waiver that turns the rule off.
+- Evidence: `colour_sets.py --check` (rules 4 and 6 per vision set) and `--self-test`; `colour_sets.json` `name_margin` on deuteranopia and achromatopsia; the lab's rule panel for each vision set.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §1 ("No rule is waived")
+
+### L-STU-178 — A worked example is not ready until the palette writer's field check passes, and a lab's examples are not shipped
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-11 colour-set promotion session · Date: 2026-11-11
+- What happened: Garrett tried bleeding-edge after #1895 and the lab's new sets (Blue-ringed Octopus, Neon Noir, Ukiyo-e, Dusk) were not there. They were the `/colour-set` skill's worked examples, which by design are never written to the game, and the ship report never said so. Taking them in, Dusk failed the palette writer's field check: its Ruby `AOEConicEdgeColor`, a whitened tier of the Wild Plum rim (hue 318), landed in the Lime face Heather, a quiet purple at hue 316. The seven rules compare pigments; the writer compares every field it paints, and whitening walks a rim toward grey along its own hue. Heather's lawful window was hue 313-316 at sat 0.21-0.22, between the band (Rosewood, Twilight Slate), rule 2 (Wild Plum) and the writer's fields; hue 315 at sat 0.212 is the point whose neighbours all pass.
+- Do instead: hold an example to everything a set is held to, the writer's field check included (`author_colour_set_assets.py --check` now does), so promoting one is a move in `colour_sets.json`. When a lab shows sets beside the game's, a ship report names the ones that are not shipped and offers to take them in: a person reads the lab's rail as the game's.
+- Evidence: `author_colour_set_assets.py --self-test` (Dusk's old Heather, planted as an example, is caught); the window scan in the promotion commit.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §7, §9
+
+### L-STU-179 — A per-lay loop that waits on UniTask.Delay is frame-bound at speed: the spacing is speed × frame time, not the authored wavelength
+- Lab: Manta Trail Lab (`Docs/Studios/MantaTrailLab.html`) · Branch: `claude/manta-trail-speed-shape` · By: Manta Polish thread (Caleb) · Date: 2026-11-11
+- What happened: `VesselPrismController.SpawnLoopAsync` lays, then waits `wavelength / speed` (10 m / speed). A `UniTask.Delay` ends on a frame, so once the wait is shorter than a frame the lay is one per frame. At the Manta's Soar (~600-700 u/s at 60 fps) the rail spacing is ~11 m, not 10, and it grows with speed and with a lower frame rate. A first lab that stepped the lay with sub-frame timing would have shown a Soar ribbon that the game never lays: Soar fill read 0.45 for the shipped 5.5 m prism, and a "Z fills the wavelength" rule left gaps at Soar until its cap used `max(wavelength, speed × dt)`.
+- Do instead: step any per-lay or per-tick async loop the way the game's awaiter resolves (one firing per frame at most, the next wait measured from that frame), and give the lab a frame-rate dial so a phone's 30 fps is scored too.
+- Evidence: `VesselPrismController.SpawnLoopAsync`; the lab's `simStep` lay timer and `shFrameAware` dial; scorecard "Soar fill" column.
+- Promoted: no
+
+### L-STU-180 — A lab that lays "after the move" hides a loop that runs before it: port the ORDER, not only the formula
+- Lab: Manta Trail Lab (`Docs/Studios/MantaTrailLab.html`) · Branch: `claude/manta-trail-speed-shape` · By: Manta Polish thread (Caleb) · Date: 2026-11-12
+- What happened: the lab and the C# shared one pacing rule (lay by distance, back to the exact spacing point), and every lab check passed. In the editor the prisms still bunched at top speed. The game's loop runs at UniTask's Update timing, BEFORE `VesselTransformer.Update` moves the hull, so counting Speed x deltaTime as flown placed each prism a frame's flight too far back; a 0.1 s editor hitch (108 m at 1080 u/s) put one against its neighbour. The lab's `simStep` moves first and lays second, so it could not show it. Two earlier rounds on the same trail were the same shape: a timer that ends on a frame (L-STU-179), and sizing a prism to one frame's wobbling flight.
+- Do instead: in the game, read what actually happened (the hull's displacement since the last loop), never a rate times dt; when the lab models a loop, put its update order in the model (`/labmaker` §2), and feed the pacing tests long frames (a hitch every ~100 frames), not just jitter.
+- Evidence: `VesselPrismController.ShapedSpawnLoopAsync`; `TrailSpeedShape.StepLay` / `NextLay`; `TrailSpeedShapeTests.StepLay_LaysEvenlyAtEverySpeed_ThroughJitterAndHitches`; `Docs/Manta/POLISH.md` fly tests 1-3.
 - Promoted: no

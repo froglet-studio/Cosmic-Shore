@@ -388,7 +388,7 @@ applies to new abilities, new resources on the meter list, and anything that add
     `IsEnergized` by itself, so an energized blade without the upgrade was refused the pop and then slid
     through the prism with no drag. The ignition re-dispatch and the AI's "energize for hardened mass"
     trigger had the same old condition. The fix was one bit on the sword
-    (`IRhinoSwordState.SuperShieldUpgradeActive`, authored on the sword's config) that all four read.
+    (`ISwordfishSwordState.SuperShieldUpgradeActive`, authored on the sword's config) that all four read.
     Grep the old CONDITION (`IsEnergized`), not just the effect you are gating.
 
 27. **Before writing "X still lands" about an upgrade's SCOPE, read that vessel's own effect
@@ -809,13 +809,13 @@ applies to new abilities, new resources on the meter list, and anything that add
       the slope, not an end), and `Tick` returned early off the owner - so every replica held
       `IsBoosting` and ×16.8 for the rest of the turn. Grade from the replicated sticks everywhere.
     - **Owner-authoritative STATE needs a relay, not a hope.** Energy banked from per-peer kills and
-      an energize phase run on per-peer clocks decided what pops; `RhinoSwordNetworkRelay` (energy,
+      an energize phase run on per-peer clocks decided what pops; `SwordfishSwordNetworkRelay` (energy,
       phase, surge bit, owner-write) is the shape. Route the mirrored phase through the same setter
       the owner uses, so the edges (ignition re-dispatch, FX, the afterimage window) fire everywhere.
     - **No AI raises `FullSpeedStraightAction`** - only a human input strategy does - so an ability
       bound to the gesture is human-only until an `AIBoostPolicySO` presses it; and an ability posed
       by TRIGGERS is human-only until something writes the trigger mirrors for the autopilot
-      (`RhinoSwordAutopilot`). Ask of every new ability: what presses it when the pilot is a bot?
+      (`SwordfishSwordAutopilot`). Ask of every new ability: what presses it when the pilot is a bot?
 53. **On a PHONE, lifting the thumb is an instant `Idle()`: ease every stick term INSIDE the animation.**
     `TouchInputStrategy` sets `InputStatus.Idle = true` the frame the last thumb leaves the glass, and
     `VesselAnimation.Update` then calls `Idle()` INSTEAD of `PerformShipPuppetry`. An animation whose `Idle()` is
@@ -937,11 +937,11 @@ applies to new abilities, new resources on the meter list, and anything that add
 
 
 61. **A runtime COPY of a live vessel part (a second blade, a mirrored arm) is cloned under an INACTIVE holder and
-    stripped before it wakes.** The Rhino's surge ring (`RhinoSurgeSwordRing`, 2026-10-26) needed seven more swords that
+    stripped before it wakes.** The Rhino's surge ring (`SwordfishSurgeSwordRing`, 2026-10-26) needed seven more swords that
     cut exactly like the real one. A clone of the blade root carries everything that makes a blade a blade (mesh, both
     trigger colliders, the kinematic body, `SkimmerImpactor` + `ImpactCollider` wired to the CLONE by Unity's internal
     reference remap, its own `SkimmerSwingKinematics`) - and also the one-of-a-kind parts, whose serialized references
-    point OUTSIDE the clone and still reach the original: `RhinoSwordFXController.bladeTracers` names the fuselage's five
+    point OUTSIDE the clone and still reach the original: `SwordfishSwordFXController.bladeTracers` names the fuselage's five
     tracers, so a woken copy would re-seat and tint the pilot's own streaks. So: `Instantiate` under a holder whose
     GameObject is INACTIVE (no Awake / OnEnable runs on the copy), `DestroyImmediate` the one-of-a-kind components, then
     arm what is left (`Skimmer.Initialize(status)`, `HasExternalScaleDriver = true`, `SwordState` = the real sword's, so
@@ -955,7 +955,7 @@ applies to new abilities, new resources on the meter list, and anything that add
     ability. The Rhino has two (2026-10-26): `SurroundFraming01` (the surge: straight back and centred on the hull) and
     `VesselDistanceScale` (the blade's Space length: the camera pulls back in proportion). Both reset in
     `SetFollowTarget`, both are written only for the LOCAL HUMAN pilot (an AI, a remote copy or the lava lamp's
-    autopilot must never move this machine's camera), and the owner releases them on disable (`RhinoSwordCamera`). Keep
+    autopilot must never move this machine's camera), and the owner releases them on disable (`SwordfishSwordLengthCamera`). Keep
     the hull where it sat on screen by scaling the LOOK POINT with the offset. FOV stays the player's (rule 21).
 63. **To move an ability to another button, change the BINDING's owner, then measure who reads the old button.**
     `cece/sweet-mendel-yoq3vo` (2026-10-27) moved the three RB abilities to Y. What it learned:
@@ -1021,6 +1021,30 @@ applies to new abilities, new resources on the meter list, and anything that add
     - **`element_ability_table.py` resolves an L5 gate only when the `IsUpgradeActive` argument IS the serialized
       element field.** A helper `UpgradeActive(status, element)` hides every gate behind one parameter and the
       table reports "UPGRADE IS PROSE". Call `abilities.IsUpgradeActive(<field>)` at each site.
+
+68. **An element's dial is a continuous quantity, not a PETAL COUNT** (Garrett, 2026-11-10: "move away from charge
+    being coupled to elemental petals. it is too coarse to adjust"). A petal take settles in whole petals, so Charge
+    0 -> 10 on a 1.2-petal bite moves it by about one petal and there is nothing in between to tune. Three hulls were
+    re-cut on `cece/cool-dijkstra-4puf92` and they are the pattern: the take goes flat (its priced value), and the
+    element moves something continuous the pilot plays with - the Manta's shared FUSE length at each reset
+    (`MantaStingConfigSO.fuseScale`), the Squirrel's minimum JOUST SPEED (`JoustSpeedConfigSO`, vessel and lifeform
+    jousts), the Scarab's shove COOLDOWN (`ScarabCavitationBlast.cooldownScale`, snapshotted when it fires). Read it
+    at the REPLICATED level wherever more than one machine decides the outcome (a joust, a blast every peer fires)
+    and at the live level where only one does (the Manta's fuse runs on the bomb's simulating machine only). Still
+    coupled when this was written, and each the owner's call: the Swordfish's sword steal, the Thresher's ball hit,
+    the Goby & Pistol's rings, the Meerkat's zaps (`element_ability_table.py <Hull>` shows each).
+    **A behaviour can have several DECIDERS, and the gate goes on all of them** (rule 26's lesson, met again). A
+    Squirrel joust is decided in FOUR places: the scored hit and steal (`VesselCombatHitBySkimmerEffectSO`), the
+    joust point and its blast, which is what the Joust mode counts (`VesselExplosionBySkimmerEffectSO`), the friendly
+    buff (`VesselOvertakeBySkimmerEffectSO.Execute`) and the lifeform joust (`VesselWitherLifeformByCrystalEffectSO`).
+    The first cut gated three; the ship review found the joust point still scoring a joust that stole nothing. Two of
+    those assets are shared by five hulls, so the rule rides the hull's OWN sibling effect (`IContactAdmission`,
+    asked through `ContactAdmission.AdmittedBySiblings`) and the shared assets stay byte-identical. List the deciders
+    by grepping the CONDITION the old rule used (here the overtake test, `Speed <= ...Speed`), not the effect you
+    started from. **A live measurement on a card** (the joust speed against its minimum) is generated in
+    `EnsureGeneratedAbilityIcons` and bound with `BindGeneratedAbilityGauge`, so the lockup adopts and styles it like
+    an authored gauge; its threshold is drawn the way the Rhino draws Momentum (ticks below, a gap through the fill
+    once past). Three views now carry that mark code (Sparrow, Rhino, Squirrel): `Docs/REFACTOR_BACKLOG.md` S118.
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

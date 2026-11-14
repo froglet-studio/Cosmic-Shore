@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
 using UnityEngine;
@@ -103,6 +104,9 @@ namespace CosmicShore.Gameplay
         public HoneyguidePreview preview;
         [Tooltip("Plays on each use. Ship empty; an unwired slot is a visible TODO.")]
         public EventReference sfx;
+        [Tooltip("Its card picture: the trigger's card (RT the Space card, LT the Charge card) shows it while this ability is " +
+                 "the newest banked on that trigger (icon kit, AbilityIcons/Honeyguide/Upgrades/).")]
+        public Sprite icon;
     }
 
     /// <summary>A designed engine (Appendix B): its printed rows, top first, M / C / S a port of that colour.</summary>
@@ -498,6 +502,26 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float hiveMinDistance = 150f;
         [Tooltip("lab hiveReach: pass within this of the hive to open hive mode (u).")]
         [SerializeField, Min(1f)] float hiveReach = 25f;
+
+        [Header("Element scaling and level-5 upgrades (the vessel pass, Garrett, 2026-11-13)")]
+        [Tooltip("CHARGE: Flit's strike radius (vessel contract: Charge = threat). Multiplies flitStrikeRadius: x1 at Charge 0 to " +
+                 "x2 at Charge 10.")]
+        [SerializeField] ElementalFloat flitStrikeScale = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 1f);
+        [Tooltip("MASS: the hive's size (vessel contract: Mass = size). Multiplies hiveReach: x1 at Mass 0 to x2 at Mass 10.")]
+        [SerializeField] ElementalFloat hiveReachScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 1f);
+        [Tooltip("SPACE: Peck's burst (vessel contract: Space = how much opposing prism volume RT reaches). Multiplies peckBurst: " +
+                 "x1 at Space 0 to x2 at Space 10 (3 -> 6 shots).")]
+        [SerializeField] ElementalFloat peckBurstScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 1f);
+        [Tooltip("TIME: the Slip's speed (vessel contract: Time = rate). Multiplies zipSpeed: x1 at Time 0 to x1.5 at Time 10.")]
+        [SerializeField] ElementalFloat slipSpeedScale = ElementalFloat.Multiplier(1f, 1.5f, Element.Time, 1f);
+        [Tooltip("CHARGE level-5 'Relentless': a Flit that strikes a vessel or creature is ready again at once. None = never.")]
+        [SerializeField] Element relentlessUpgradeElement = Element.Charge;
+        [Tooltip("MASS level-5 'Hive Chain': reaching a hive plants the next one at once. None = never.")]
+        [SerializeField] Element hiveChainUpgradeElement = Element.Mass;
+        [Tooltip("TIME level-5 'Slipstream': a slip carries slipstreamExitScale times its boost out. None = never.")]
+        [SerializeField] Element slipstreamUpgradeElement = Element.Time;
+        [Tooltip("How much more boost a slip carries out under Slipstream (x zipExitBoost).")]
+        [SerializeField, Min(1f)] float slipstreamExitScale = 2f;
         [Tooltip("The hive marker's size (u).")]
         [SerializeField, Min(1f)] float hiveMarkerSize = 12f;
         [Tooltip("The hive marker's colour.")]
@@ -753,15 +777,57 @@ namespace CosmicShore.Gameplay
         public float RideWatchdog => rideWatchdog;
         public Material PreviewMaterial => previewMaterial;
         public float PreviewWidth => previewWidth;
-        public Color PreviewColour => previewColour;
+        public Color PreviewColour => ColorTrace.Retrace(ColorTrace.World, previewColour);
         public int PreviewRingSegments => previewRingSegments;
         public bool MassHive => massHive;
         public float MassHiveSeconds => massHiveSeconds;
         public float MassHiveLevelGain => massHiveLevelGain;
         public float HiveMinDistance => hiveMinDistance;
         public float HiveReach => hiveReach;
+        public ElementalFloat FlitStrikeScale => flitStrikeScale;
+        public ElementalFloat HiveReachScale => hiveReachScale;
+        public ElementalFloat PeckBurstScale => peckBurstScale;
+        public ElementalFloat SlipSpeedScale => slipSpeedScale;
+        public float SlipstreamExitScale => slipstreamExitScale;
+
+        static float Live(ElementalFloat f, IVesselStatus status) => f != null ? Mathf.Max(0f, f.EvaluateLive(status)) : 1f;
+
+        /// <summary>Flit's strike radius for <paramref name="status"/> (flitStrikeRadius x Charge).</summary>
+        public float FlitStrikeRadiusFor(IVesselStatus status) => flitStrikeRadius * Live(flitStrikeScale, status);
+        /// <summary>The hive's reach for <paramref name="status"/> (hiveReach x Mass).</summary>
+        public float HiveReachFor(IVesselStatus status) => hiveReach * Live(hiveReachScale, status);
+        /// <summary>Shots in one Peck for <paramref name="status"/> (peckBurst x Space, at least one).</summary>
+        public int PeckBurstFor(IVesselStatus status) => Mathf.Max(1, Mathf.RoundToInt(peckBurst * Live(peckBurstScale, status)));
+        /// <summary>The Slip's top speed for <paramref name="status"/> (zipSpeed x Time).</summary>
+        public float ZipSpeedFor(IVesselStatus status) => zipSpeed * Live(slipSpeedScale, status);
+        /// <summary>Seconds of boost a slip carries out for <paramref name="status"/>: more under Slipstream.</summary>
+        public float ZipExitBoostFor(IVesselStatus status) => zipExitBoost * (SlipstreamActive(status) ? slipstreamExitScale : 1f);
+
+        /// <summary>Charge 5 'Relentless': a Flit that strikes is ready again at once.</summary>
+        public bool RelentlessActive(IVesselStatus status)
+        {
+            if (relentlessUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(relentlessUpgradeElement);
+        }
+
+        /// <summary>Mass 5 'Hive Chain': reaching a hive plants the next at once.</summary>
+        public bool HiveChainActive(IVesselStatus status)
+        {
+            if (hiveChainUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(hiveChainUpgradeElement);
+        }
+
+        /// <summary>Time 5 'Slipstream': a slip carries more boost out.</summary>
+        public bool SlipstreamActive(IVesselStatus status)
+        {
+            if (slipstreamUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(slipstreamUpgradeElement);
+        }
         public float HiveMarkerSize => hiveMarkerSize;
-        public Color HiveMarkerColour => hiveMarkerColour;
+        public Color HiveMarkerColour => ColorTrace.Retrace(ColorTrace.World, hiveMarkerColour);
         public HoneyguideEngineerSkill EngineerSkill => engineerSkills is { Length: > 0 }
             ? engineerSkills[Mathf.Clamp((int)engineerLevel, 0, engineerSkills.Length - 1)] : new HoneyguideEngineerSkill();
         public bool AICrewEngineers => aiCrewEngineers;
@@ -782,7 +848,7 @@ namespace CosmicShore.Gameplay
         public string PickAbilityTitle => pickAbilityTitle;
         public string MadeToastTemplate => madeToastTemplate;
         public string MadeLineTemplate => madeLineTemplate;
-        public Color DynamoLineColour => dynamoLineColour;
+        public Color DynamoLineColour => ColorTrace.Retrace(ColorTrace.Ui, dynamoLineColour);
         public string AbilityToastTemplate => abilityToastTemplate;
         public string CardDetailTemplate => cardDetailTemplate;
         public float ZipSpeed => zipSpeed;
@@ -818,7 +884,7 @@ namespace CosmicShore.Gameplay
         public FloraConfigurationSO LeftBeeHive => leftBeeHive;
         public float LeftBeeHiveBehind => leftBeeHiveBehind;
         public float StripRangeU => stripRangeU;
-        public Color HiveDangerColour => hiveDangerColour;
+        public Color HiveDangerColour => ColorTrace.Retrace(ColorTrace.Ui, hiveDangerColour);
         public HoneyguideHiveSkill HiveSkill => hiveSkills is { Length: > 0 }
             ? hiveSkills[Mathf.Clamp((int)engineerLevel, 0, hiveSkills.Length - 1)] : new HoneyguideHiveSkill();
         public string HiveTitle => hiveTitle;
@@ -853,7 +919,8 @@ namespace CosmicShore.Gameplay
         public GameDataSO GameData => gameData;
 
         /// <summary>Colour 1-3's display colour (white for anything else).</summary>
-        public Color ColourOf(int colour) => colours != null && colour >= 1 && colour <= colours.Length ? colours[colour - 1] : Color.white;
+        public Color ColourOf(int colour) => colours != null && colour >= 1 && colour <= colours.Length
+            ? ColorTrace.Retrace(ColorTrace.Ui, colours[colour - 1]) : Color.white;
 
         /// <summary>Colour 1-3's name, or empty.</summary>
         public string ColourName(int colour) => colourNames != null && colour >= 1 && colour <= colourNames.Length ? colourNames[colour - 1] : "";

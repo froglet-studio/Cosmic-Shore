@@ -1,0 +1,23 @@
+{
+    "swapFile":  "Assets/_Graphics/Materials/Graphs/ChargeCrystal.hlsl",
+    "clockSpan":  20,
+    "drawsPerBatch":  48,
+    "mesh":  "Assets/_Models/ChargeCrystalExport1_7-11-25.fbx",
+    "meshPrep":  "CosmicShore.Utility.CrystalEdgeArcMeshBaker.GetOrBake",
+    "cameraDistance":  2.2,
+    "warmup":  10,
+    "timepoints":  48,
+    "material":  "Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalMaterial.mat",
+    "rounds":  4,
+    "variantB":  "D:/ABLab/variants/C_ChargeCrystal.hlsl",
+    "outDir":  "D:/ABLab/out/dx12/negctrl",
+    "batches":  40,
+    "height":  1440,
+    "clockProperty":  "_ArcClock",
+    "variantA":  "D:/ABLab/variants/A_ChargeCrystal.hlsl",
+    "width":  2560,
+    "fov":  60,
+    "chain":  8,
+    "warmupSeconds":  3,
+    "samples":  200
+}

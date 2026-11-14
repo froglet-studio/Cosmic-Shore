@@ -20,6 +20,9 @@
         },
         {
             "m_Id": "98450daeef3346bcb074957826be14bd"
+        },
+        {
+            "m_Id": "debeae30a41d400bb854f4a76c52c6dd"
         }
     ],
     "m_Keywords": [],
@@ -73,7 +76,7 @@
             "m_Id": "dcc046d106dc4ec398483e0af24454d5"
         },
         {
-            "m_Id": "cb55e6b0e51640a1a2279cbd6ec9492b"
+            "m_Id": "ddf440bad1ae4230849fbdfca3dab623"
         },
         {
             "m_Id": "d854fe2aac1d4a9ab22cb104a316cc77"
@@ -402,7 +405,7 @@
         {
             "m_OutputSlot": {
                 "m_Node": {
-                    "m_Id": "cb55e6b0e51640a1a2279cbd6ec9492b"
+                    "m_Id": "ddf440bad1ae4230849fbdfca3dab623"
                 },
                 "m_SlotId": 0
             },
@@ -786,31 +789,6 @@
         "z": 0.0,
         "w": 0.0
     }
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Vector4MaterialSlot",
-    "m_ObjectId": "1e48eb4021f34946b0b54966178b5d70",
-    "m_Id": 0,
-    "m_DisplayName": "Out",
-    "m_SlotType": 1,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "Out",
-    "m_StageCapability": 3,
-    "m_Value": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 0.0
-    },
-    "m_DefaultValue": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 0.0
-    },
-    "m_Labels": []
 }
 
 {
@@ -2520,6 +2498,9 @@
         },
         {
             "m_Id": "98450daeef3346bcb074957826be14bd"
+        },
+        {
+            "m_Id": "debeae30a41d400bb854f4a76c52c6dd"
         }
     ]
 }
@@ -2831,49 +2812,6 @@
         "y": 0.0,
         "z": 0.0,
         "w": 0.0
-    }
-}
-
-{
-    "m_SGVersion": 1,
-    "m_Type": "UnityEditor.ShaderGraph.ColorNode",
-    "m_ObjectId": "cb55e6b0e51640a1a2279cbd6ec9492b",
-    "m_Group": {
-        "m_Id": ""
-    },
-    "m_Name": "Color",
-    "m_DrawState": {
-        "m_Expanded": true,
-        "m_Position": {
-            "serializedVersion": "2",
-            "x": -769.3334350585938,
-            "y": 405.33331298828127,
-            "width": 209.33343505859376,
-            "height": 130.00006103515626
-        }
-    },
-    "m_Slots": [
-        {
-            "m_Id": "1e48eb4021f34946b0b54966178b5d70"
-        }
-    ],
-    "synonyms": [
-        "rgba"
-    ],
-    "m_Precision": 0,
-    "m_PreviewExpanded": true,
-    "m_PreviewMode": 0,
-    "m_CustomColors": {
-        "m_SerializableColors": []
-    },
-    "m_Color": {
-        "color": {
-            "r": 0.0063706072978675369,
-            "g": 0.0071669332683086399,
-            "b": 0.02309345081448555,
-            "a": 0.4117647111415863
-        },
-        "mode": 1
     }
 }
 
@@ -3590,6 +3528,95 @@
         "x": 0.0,
         "y": 0.0,
         "z": 0.0
+    },
+    "m_Labels": []
+}
+
+{
+    "m_SGVersion": 3,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.ColorShaderProperty",
+    "m_ObjectId": "debeae30a41d400bb854f4a76c52c6dd",
+    "m_Guid": {
+        "m_GuidSerialized": "eacc2532-fe07-4928-8309-baf1013040c9"
+    },
+    "m_Name": "Nucleus Dark",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Nucleus Dark",
+    "m_DefaultReferenceName": "_Nucleus_Dark",
+    "m_OverrideReferenceName": "",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": {
+        "r": 0.07332988570141805,
+        "g": 0.07978493698980901,
+        "b": 0.16446880906868963,
+        "a": 0.4117647111415863
+    },
+    "isMainColor": false,
+    "m_ColorMode": 0
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.PropertyNode",
+    "m_ObjectId": "ddf440bad1ae4230849fbdfca3dab623",
+    "m_Group": {
+        "m_Id": ""
+    },
+    "m_Name": "Property",
+    "m_DrawState": {
+        "m_Expanded": true,
+        "m_Position": {
+            "serializedVersion": "2",
+            "x": -769.3334350585938,
+            "y": 405.33331298828125,
+            "width": 160.0,
+            "height": 36.0
+        }
+    },
+    "m_Slots": [
+        {
+            "m_Id": "ea036983868a42508b4f6b6b71f6fca3"
+        }
+    ],
+    "synonyms": [],
+    "m_Precision": 0,
+    "m_PreviewExpanded": true,
+    "m_PreviewMode": 0,
+    "m_CustomColors": {
+        "m_SerializableColors": []
+    },
+    "m_Property": {
+        "m_Id": "debeae30a41d400bb854f4a76c52c6dd"
+    }
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector4MaterialSlot",
+    "m_ObjectId": "ea036983868a42508b4f6b6b71f6fca3",
+    "m_Id": 0,
+    "m_DisplayName": "Nucleus Dark",
+    "m_SlotType": 1,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "Out",
+    "m_StageCapability": 3,
+    "m_Value": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 0.0
+    },
+    "m_DefaultValue": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 0.0
     },
     "m_Labels": []
 }

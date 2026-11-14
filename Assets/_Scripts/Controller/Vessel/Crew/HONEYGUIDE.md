@@ -242,6 +242,29 @@ While an AI flies the hull (an AI crew, or you on the Ratel's seat) the crew pul
 lab's `wanted8`, holding each pull `aiPreviewSeconds`, with "ahead" standing in for the lab's destination (freestyle has
 none). The AI pilot does not yet steer to a Mass hive (a follow-up).
 
+## Element scaling and level 5 (the vessel pass, Garrett, 2026-11-13)
+
+The fleet contract (Space = reach, Time = rate, Charge = threat and PvP petals, Mass = size) now holds on every card and
+the three open level-5 slots are filled. Game only: the lab's numbers stay the base, each multiplier is x1 at level 0,
+and every gate reads its own element field on `HoneyguideConfigSO` (`element_ability_table.py Honeyguide`: 4/4, 4/4):
+
+| Element | Scales | Level 5 |
+|---|---|---|
+| Charge | `flitStrikeScale` x1 -> x2: Flit's strike radius (8 -> 16 u) | **Relentless** (new): a Flit that strikes a vessel or creature is ready again at once (`RelentlessActive`) |
+| Mass | `hiveReachScale` x1 -> x2: how near the hull must pass a hive (25 -> 50 u); the hive still comes sooner with Mass | **Hive Chain** (new): reaching a hive plants the next one at once (`HiveChainActive`) |
+| Space | `peckBurstScale` x1 -> x2: shots in a Peck (3 -> 6) | Piercing Pecks (unchanged, the gun's own upgrade) |
+| Time | `slipSpeedScale` x1 -> x1.5: the Slip's top speed | **Slipstream** (new): a slip carries `slipstreamExitScale` (2) times `zipExitBoost` out (`ZipExitBoostFor`) |
+
+The Sparrow parts the hull was cloned with still carry their own gates (`FireGunActionExecutor`, the block-shoot
+executor, `VesselElementalImmunity` while translation is restricted); the Honeyguide never fires those, so they are
+inert here. Tests: `HoneyguideFundamentalsTests`.
+
+**Its own HUD (2026-11-13).** The Honeyguide no longer draws the Sparrow's HUD: `HoneyguideHUDVariant` (forked by
+`Tools/Build/author_honeyguide_hud.py`, `--check`) carries `HoneyguideHUDView`, so the round-1 cards show at last, each
+with its level-5 card swapped in when the upgrade unlocks: Flit / Relentless, Hive / Hive Chain, Peck / Piercing Pecks,
+Slip / Slipstream. The hull's `SparrowHUDController` (which read the Sparrow's view and guns) is now the fleet's base
+`VesselHUDController` on the same component. Tests: `HoneyguideHUDTests`.
+
 ## Choices made in the port (not in the lab)
 
 - **Peck is the Sparrow's gun** at the lab's rate and range, so it is the real networked projectile.
@@ -250,8 +273,7 @@ none). The AI pilot does not yet steer to a Mass hive (a follow-up).
 - **A boost effect fires at once** (`IsBoosting` for its seconds, capped at `boostCap`).
 - **Fractal Frame** recolours the hull's own trail prisms as the prism controller lays them (`OnBlockSpawned`).
 - **The four cards (round 8)**: Charge is Flit on LT, Mass the hive, Space Peck on RT (at Space 5 Pecks pierce, the gun's
-  own Space upgrade), Time the Slip. The ability-row icons are still the Sparrow's (`SparrowHUDVariant`): a Honeyguide HUD
-  variant with its own icons is a follow-up.
+  own Space upgrade), Time the Slip. The ability-row icons were the Sparrow's until its own HUD (2026-11-13, above).
 - **The previews and the hive marker are lines in the world**, drawn only for the pilot on this screen; their look
   (`previewMaterial`, `previewColour`, `hiveMarkerColour`) is a placeholder until the art pass.
 - **No new visual effects yet.** A shattered prism shows the game's own break; the lance's lane and the harmonizer's

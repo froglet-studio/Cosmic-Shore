@@ -1,0 +1,25 @@
+{
+  "id": "2026-11-12-the-ark-has-a-new-pilots-tab-between-squ-e67e0c",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T15:59:58+00:00",
+  "area": "the Ark app shell and the menu UI",
+  "summary": "The Ark has a new PILOTS tab between Squads and Artifacts (the crew, one cell a pilot with the close-up of their callsign's scene), and pressing a pilot opens a new full-screen pilot profile window (ModalWindows.PILOT_PROFILE = 21, added to the canvas from Resources at start, so no scene is edited; 20 stays free for the Quests window, which was taken back out). ArkView.prefab gained 814 documents and changed three (the root's children, the tabs list, the tab row's width); Menu_Main.unity is untouched. Not drawn on Frogma first and not run in the editor.",
+  "why": "Garrett, 2026-11-12: 'Lets get them into the game. update the avatars, and use the full size art for each pilot's profile page in the ark.' Things to look at: PilotSceneImage is the first UI picture loaded by name from Resources and unloaded on close (one 1536x864 texture in memory); the 18 scene textures are BC7 on Standalone, platform default on Android and iOS and 32 px stand-ins on WebGL; the plates under the words are solid SurfaceBlack with a TextLight hairline (at 0.88 a bright picture showed through, seen when the merged menu was run in Amoebius: the game blends in linear light); no upright pose is drawn; the page's three buttons (Next, Previous, Close) are on explicit navigation, not the kit's automatic, so the pad cannot land on the top nav's arrow buttons under the page (Docs/REFACTOR_BACKLOG.md row PP4); your open PR #1738 (claude/ui-jade-ruby) also regenerates ArkView.prefab, so whichever lands second re-runs author_menu_ark.py.",
+  "branch": "claude/signature-pilot-busts",
+  "pr": 1894,
+  "lane": "ark-converter",
+  "commit": "3b80801d7",
+  "paths": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/ArkView.prefab",
+    "Assets/_Scripts/UI/Elements/Ark/ArkPilotsPage.cs",
+    "Assets/_Scripts/UI/Elements/Ark/ArkTabsView.cs",
+    "Assets/_Scripts/UI/Elements/Ark/PilotSceneImage.cs",
+    "Assets/_Scripts/UI/Modals/PilotProfileModal.cs",
+    "Assets/_Scripts/UI/ScreenSwitcher.cs",
+    "Docs/MENU_REDESIGN_B.md",
+    "Tools/Build/author_menu_ark.py",
+    "Tools/Build/author_menu_pilot_profile.py"
+  ]
+}

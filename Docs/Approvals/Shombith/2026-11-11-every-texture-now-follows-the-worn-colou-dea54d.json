@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-11-every-texture-now-follows-the-worn-colou-dea54d",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T00:44:22+00:00",
+  "area": "UI rendering, the sign-in views and the /ship gates",
+  "summary": "Every texture now follows the worn colour set (Garrett, LOCKED 2026-11-10; 'perhaps you can get clever'): the colour grade applies the colour trace's rule to every texel through a 33^3 table per set and role (Tools/Build/colour_grade.py writes Resources/ColorGrades/*.bytes; ColorGrade.cs builds Texture3Ds on each wear and switches COSMIC_COLOR_GRADE; Photic has no table and costs nothing). (1) While the game runs, uGUI's default UI material is CosmicShore/UI/GradedDefault (UI/Default as TMP's sprite shader for this Unity has it, plus the grade; GradedDefaultUI sets Graphic.s_DefaultUI; uGUI's own is back when play stops). (2) CardDrift, HullLit, SilhouetteHolo and ElementRim include ColorGrade.cginc (target 3.0 for the 3D lookup). (3) SignInChooser and AccountSettingsView call ColorGrade.KeepAsAuthored on the providers' marks, which keep their brand colours. (4) ship_gates.py runs colour_trace and colour_grade --check/--self-test.",
+  "why": "Garrett, 2026-11-10: 'all colors come from a color set ... if rerendering textures per set is the best you can do, but perhaps you can get clever.'",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "49d29732a",
+  "paths": [
+    "Assets/_Graphics/Materials/Shaders/ColorGrade.cginc",
+    "Assets/_Graphics/Materials/Shaders/UI/CardDrift.shader",
+    "Assets/_Graphics/Materials/Shaders/UI/ElementRim.shader",
+    "Assets/_Graphics/Materials/Shaders/UI/GradedDefault.shader",
+    "Assets/_Graphics/Materials/Shaders/UI/HullLit.shader",
+    "Assets/_Graphics/Materials/Shaders/UI/SilhouetteHolo.shader",
+    "Assets/_Scripts/Controller/Managers/ColorGrade.cs",
+    "Assets/_Scripts/UI/GradedDefaultUI.cs",
+    "Assets/_Scripts/UI/Modals/AccountSettingsView.cs",
+    "Assets/_Scripts/UI/Screens/SignInChooser.cs",
+    "Tools/Build/ship_gates.py"
+  ]
+}

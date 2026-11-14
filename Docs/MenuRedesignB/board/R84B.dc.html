@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 84 B - The whole fleet, sorted and filtered by completion and by tier, each on its own</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&amp;family=Saira:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#13010C}
+.app{position:relative;overflow:hidden;color:#F5E6EE;background:radial-gradient(ellipse 70% 60% at 50% 30%,#210118,#13010C 72%);font-family:'Saira',sans-serif}
+.app *{box-sizing:border-box}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:2px solid #65E1DF;outline-offset:2px}
+.disp{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.lab{font-size:12px;letter-spacing:.22em;color:#A8869A;text-transform:uppercase}
+.soft{-webkit-mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%)}
+.hud{position:absolute;padding:22px 24px;background:rgba(19,1,12,.88)}
+.chip{border:0;cursor:pointer;height:34px;padding:0 14px;background:transparent;color:#A8869A;box-shadow:inset 0 0 0 1px #70405F;font-size:13px;letter-spacing:.06em;transition:color .2s cubic-bezier(.45,0,.2,1),background .2s cubic-bezier(.45,0,.2,1)}
+.chip:hover{color:#F5E6EE}
+.chip.on{color:#13010C;background:#65E1DF;box-shadow:none}
+/* the certificate: five segments, filled in ink, the stage word in Gold only when it is Arena Ready (a first place) */
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg i{display:block;height:8px;background:#70405F;opacity:.45;transition:opacity .4s cubic-bezier(.45,0,.2,1),background .4s cubic-bezier(.45,0,.2,1)}
+.seg i.on{background:#F5E6EE;opacity:1}
+.seg i.part{background:linear-gradient(90deg,#F5E6EE var(--p),#70405F var(--p));opacity:1}
+.seg.thin i{height:4px}
+.chk{display:grid;grid-template-columns:20px 130px 1fr;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(112,64,95,.5);font-size:14px}
+.chk svg{width:16px;height:16px}
+.chk span{color:#A8869A;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.chk.no{color:#6C5A65}
+.stage{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:30px;letter-spacing:.04em}
+.stage.gold{color:#FFC549}
+.stage.dim{color:#A8869A}
+/* a tier letter: S solid (Gold, a first place), A outlined ink, B soft, C off; a dash is no game of that element */
+.tier{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:22px}
+.tier.tS{background:#FFC549;color:#13010C}
+.tier.tA{box-shadow:inset 0 0 0 2px #F5E6EE;color:#F5E6EE}
+.tier.tB{box-shadow:inset 0 0 0 1px #70405F;color:#A8869A}
+.tier.tC{color:#6C5A65;box-shadow:inset 0 0 0 1px rgba(112,64,95,.5)}
+.tier.t-{color:#6C5A65;font-size:16px}
+.vsel{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:0;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px #70405F;transition:background .2s cubic-bezier(.45,0,.2,1)}
+.vsel.on{background:#3C1D31;box-shadow:inset 0 0 0 1px #65E1DF}
+.vsel img{width:46px;height:26px;object-fit:cover}
+.trow{display:grid;grid-template-columns:64px 170px 300px 70px 160px repeat(4,70px);gap:18px;align-items:center;height:42px;border-bottom:1px solid rgba(112,64,95,.45);font-size:15px}
+.trow img{width:64px;height:36px;object-fit:cover}
+.trow.h{height:34px;font-size:11px;letter-spacing:.2em;color:#A8869A;text-transform:uppercase}
+.fcard{display:flex;flex-direction:column;gap:7px;padding:8px 10px 10px;background:rgba(60,29,49,.42);box-shadow:inset 0 0 0 1px rgba(112,64,95,.6)}
+.fcard img{width:100%;height:62px;object-fit:cover;-webkit-mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 50%,transparent 100%)}
+.fcard b{font-family:'Saira Condensed',sans-serif;font-size:21px;text-transform:uppercase;line-height:1}
+.tier.hot{outline:2px solid #65E1DF;outline-offset:1px}
+.tile{display:flex;flex-direction:column;gap:6px;width:150px;padding:8px;background:rgba(60,29,49,.35);box-shadow:inset 0 0 0 1px rgba(112,64,95,.6)}
+.tile img{width:134px;height:70px;object-fit:cover}
+.tile b{font-family:'Saira Condensed',sans-serif;font-size:19px;text-transform:uppercase;line-height:1}
+.tile small{font-size:11px;color:#A8869A}
+.lane{display:grid;grid-template-columns:90px 1fr;gap:20px;align-items:center;min-height:132px;border-bottom:1px solid rgba(112,64,95,.5);padding:10px 0}
+.lane .tier{width:72px;height:72px;font-size:46px}
+.lane .tiles{display:flex;gap:12px;flex-wrap:wrap}
+.grow{animation:grow .7s cubic-bezier(.45,0,.2,1) both}
+@keyframes grow{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
+@media (prefers-reduced-motion:reduce){.grow{animation:none}}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:1080px">
+<header style="position:absolute;left:64px;right:64px;top:24px;height:52px;display:flex;align-items:center;gap:26px"><span class="disp" style="font-size:28px;letter-spacing:.12em">Fleet Codex</span><span style="font-size:13px;color:#A8869A;letter-spacing:.08em">THE FLEET</span><span style="flex:1"></span></header>
+<div style="position:absolute;left:64px;right:64px;top:92px;display:flex;align-items:flex-end;gap:30px">
+  <div><div class="lab" style="color:#65E1DF">THE FLEET</div><h1 class="disp" style="font-size:60px;margin:4px 0 0">Pick a vessel</h1></div>
+  <span style="flex:1"></span><span style="font-size:14px;color:#A8869A">{{shown}} solo vessels</span>
+</div>
+<div style="position:absolute;left:64px;right:64px;top:176px;display:grid;grid-template-columns:auto 1fr;gap:10px 18px;align-items:center">
+  <span class="lab">SORT BY</span><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{sorts}}" as="c" hint-placeholder-count="5"><button type="button" class="{{c.cls}}" onClick="{{c.pick}}">{{c.label}}</button></sc-for></div>
+  <span class="lab">COMPLETION</span><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{stages}}" as="c" hint-placeholder-count="5"><button type="button" class="{{c.cls}}" onClick="{{c.pick}}">{{c.label}}</button></sc-for></div>
+  <span class="lab">TIER</span><div style="display:flex;gap:18px;align-items:center"><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{tels}}" as="c" hint-placeholder-count="4"><button type="button" class="{{c.cls}}" onClick="{{c.pick}}">{{c.label}}</button></sc-for></div><span style="width:1px;height:26px;background:#70405F"></span><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{tls}}" as="c" hint-placeholder-count="5"><button type="button" class="{{c.cls}}" onClick="{{c.pick}}">{{c.label}}</button></sc-for></div></div>
+</div>
+<div style="position:absolute;left:64px;right:64px;top:318px;display:grid;grid-template-columns:repeat(6,1fr);gap:12px">
+  <sc-for list="{{cards}}" as="v" hint-placeholder-count="18"><div class="fcard">
+    <img src="{{v.img}}" alt="">
+    <div style="display:flex;align-items:baseline;gap:8px"><b>{{v.name}}</b><span style="flex:1"></span><span class="disp num" style="font-size:20px">{{v.pctS}}</span></div>
+    <div class="seg thin"><sc-for list="{{v.segs}}" as="g" hint-placeholder-count="5"><i class="{{g.cls}}" style="{{g.style}}"></i></sc-for></div>
+    <div style="display:flex;align-items:center;gap:5px"><span class="{{v.stageCls}}" style="font-size:15px;flex:1">{{v.stage}}</span>
+      <sc-for list="{{v.tiers}}" as="t" hint-placeholder-count="4"><span style="display:flex;flex-direction:column;align-items:center;gap:2px"><span class="{{t.cls}}" style="width:24px;height:24px;font-size:15px">{{t.t}}</span><small style="font-size:9px;letter-spacing:.1em;color:#A8869A">{{t.e}}</small></span></sc-for></div>
+  </div></sc-for>
+  <sc-if value="{{none}}" hint-placeholder-val="{{false}}"><p style="color:#A8869A;grid-column:1/-1">No vessel matches both filters.</p></sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sort: 'Completion', stage: 'Any stage', tel: 'Time', tl: 'Any tier' }; }
+
+  segs(v) { return v.done.map((d, i) => i === 1 && !d && v.wired > 0 ? { cls: 'part', style: '--p:' + (v.wired * 25) + '%' } : { cls: d ? 'on' : '', style: '' }); }
+  stageCls(v) { return v.stage === 'Arena Ready' ? 'stage gold' : v.stage === 'In the hangar' ? 'stage dim' : 'stage'; }
+
+  renderVals() {
+    const V = [{"key": "Manta", "name": "Manta", "id": 1, "img": "/_blob/1dfc5ccf5597ce1757d3df79ae0a19d1", "pct": 100, "stage": "Arena Ready", "done": [true, true, true, true, true], "detail": ["All four", "4 of 4 wired", "Redline", "Scurry, Bloomrush", "Corona"], "wired": 4, "games": {"Charge": ["Corona"], "Mass": ["Scurry"], "Space": ["Bloomrush"], "Time": ["Redline"]}, "next": "Certified for the arena", "tiers": {"Charge": "A", "Mass": "S", "Space": "C", "Time": "B"}, "story": "Soar at high speed through open spaces to create the biggest blocks in the Hypersea, or skim your opponents trail to steal theirs"}, {"key": "Dolphin", "name": "Dolphin", "id": 2, "img": "/_blob/2b3b0cc00c95ca53719597e466d881cb", "pct": 100, "stage": "Arena Ready", "done": [true, true, true, true, true], "detail": ["All four", "4 of 4 wired", "Switchback", "Rampage", "The Bends"], "wired": 4, "games": {"Charge": ["The Bends"], "Mass": [], "Space": ["Rampage"], "Time": ["Switchback"]}, "next": "Certified for the arena", "tiers": {"Charge": "B", "Mass": "-", "Space": "S", "Time": "C"}, "story": "Thread the narrowest needles at the highest speeds to build max charge, then drift sideways into a crystal to release one of the biggest blasts in the Hypersea"}, {"key": "Rhino", "name": "Rhino", "id": 3, "img": "/_blob/9c2d40deaaf3047946715ff8410e7b8f", "pct": 60, "stage": "Launch Ready", "done": [true, true, true, false, false], "detail": ["All four", "4 of 4 wired", "Headlong", "None yet", "None yet"], "wired": 4, "games": {"Charge": [], "Mass": [], "Space": [], "Time": ["Headlong"]}, "next": "Next: a Mass or Space", "tiers": {"Charge": "-", "Mass": "-", "Space": "-", "Time": "A"}, "story": "A plough"}, {"key": "Urchin", "name": "Urchin", "id": 4, "img": "/_blob/4eb9cd7ec4ecae65326d4f0bc952efb0", "pct": 80, "stage": "Fleet Ready", "done": [true, true, true, true, false], "detail": ["All four", "4 of 4 wired", "Skein", "Hijack", "None yet"], "wired": 4, "games": {"Charge": [], "Mass": ["Hijack"], "Space": [], "Time": ["Skein"]}, "next": "Next: its charge game", "tiers": {"Charge": "-", "Mass": "S", "Space": "-", "Time": "B"}, "story": "Don't mess with me or I will shoot"}, {"key": "Grizzly", "name": "Grizzly", "id": 5, "img": "/_blob/c380d140a449b101d472ac01a68fb7f1", "pct": 75, "stage": "In the hangar", "done": [true, false, true, true, false], "detail": ["All four", "3 of 4 wired", "Grizzly Time", "Grizzly Charge", "None yet"], "wired": 3, "games": {"Charge": [], "Mass": [], "Space": ["Grizzly Charge"], "Time": ["Grizzly Time"]}, "next": "Next: the level-5 upgrades", "tiers": {"Charge": "-", "Mass": "-", "Space": "A", "Time": "S"}, "story": "A flying siege tank - big, slow, and explosive"}, {"key": "Squirrel", "name": "Squirrel", "id": 6, "img": "/_blob/27617fceea883c9a40458136506eb3ef", "pct": 100, "stage": "Arena Ready", "done": [true, true, true, true, true], "detail": ["All four", "4 of 4 wired", "Skim Race", "Scurry", "Joust"], "wired": 4, "games": {"Charge": ["Joust"], "Mass": ["Scurry"], "Space": [], "Time": ["Skim Race"]}, "next": "Certified for the arena", "tiers": {"Charge": "C", "Mass": "B", "Space": "-", "Time": "S"}, "story": "Get in your flow and stay there"}, {"key": "Serpent", "name": "Serpent", "id": 7, "img": "/_blob/1b9da511eba7837c68ed4e68474725a5", "pct": 80, "stage": "Launch Ready", "done": [true, true, true, false, true], "detail": ["All four", "4 of 4 wired", "Serpentine", "None yet", "Hood"], "wired": 4, "games": {"Charge": ["Hood"], "Mass": [], "Space": [], "Time": ["Serpentine"]}, "next": "Next: a Mass or Space", "tiers": {"Charge": "A", "Mass": "-", "Space": "-", "Time": "B"}, "story": "Navigate with just one thumb and place seeds that will steal ALL local blocks into a wall that can be sheilded"}, {"key": "Shrike", "name": "Shrike", "id": 10, "img": "/_blob/5b7f1c59bcde45979d4913c57e781abc", "pct": 45, "stage": "In the hangar", "done": [true, false, true, false, false], "detail": ["All four", "1 of 4 wired", "Thornline", "None yet", "None yet"], "wired": 1, "games": {"Charge": [], "Mass": [], "Space": [], "Time": ["Thornline"]}, "next": "Next: the level-5 upgrades", "tiers": {"Charge": "-", "Mass": "-", "Space": "-", "Time": "C"}, "story": "A slow sniper that docks to whatever it touches"}, {"key": "Sparrow", "name": "Sparrow", "id": 11, "img": "/_blob/6aef9a8a7aa0e752f5460db440362953", "pct": 100, "stage": "Arena Ready", "done": [true, true, true, true, true], "detail": ["All four", "4 of 4 wired", "Breakwater", "Scurry, Salvo, Wildlife Liberation", "Dog Fight"], "wired": 4, "games": {"Charge": ["Dog Fight"], "Mass": ["Scurry"], "Space": ["Salvo", "Wildlife Liberation"], "Time": ["Breakwater"]}, "next": "Certified for the arena", "tiers": {"Charge": "B", "Mass": "A", "Space": "S", "Time": "C"}, "story": "The classic arcade flyer"}, {"key": "Scarab", "name": "Scarab", "id": 12, "img": "/_blob/e17c3128888451d102cba983e3b85734", "pct": 100, "stage": "Arena Ready", "done": [true, true, true, true, true], "detail": ["All four", "4 of 4 wired", "Scarab Rally", "Scarab Scramble, Tollway, Wrecking Ball", "Undertow"], "wired": 4, "games": {"Charge": ["Undertow"], "Mass": ["Scarab Scramble", "Tollway"], "Space": ["Wrecking Ball"], "Time": ["Scarab Rally"]}, "next": "Certified for the arena", "tiers": {"Charge": "S", "Mass": "C", "Space": "B", "Time": "A"}, "story": "Roll a ball you made yourself"}, {"key": "Thresher", "name": "Thresher", "id": 14, "img": "/_blob/ddbdbd9ffa549e06fd6421bb27f85d39", "pct": 95, "stage": "In the hangar", "done": [true, false, true, true, true], "detail": ["All four", "3 of 4 wired", "Thresher Time", "Harvest", "Jackstraw"], "wired": 3, "games": {"Charge": ["Jackstraw"], "Mass": [], "Space": ["Harvest"], "Time": ["Thresher Time"]}, "next": "Next: the level-5 upgrades", "tiers": {"Charge": "A", "Mass": "-", "Space": "C", "Time": "B"}, "story": "A small, nimble hull towing a heavy wrecking ball on a chain"}, {"key": "Stoat", "name": "Stoat", "id": 15, "img": "/_blob/21914e3ed6c21be1664780c49a3d43c4", "pct": 60, "stage": "Launch Ready", "done": [true, true, true, false, false], "detail": ["All four", "4 of 4 wired", "Slingshot", "None yet", "None yet"], "wired": 4, "games": {"Charge": [], "Mass": [], "Space": [], "Time": ["Slingshot"]}, "next": "Next: a Mass or Space", "tiers": {"Charge": "-", "Mass": "-", "Space": "-", "Time": "S"}, "story": "Never flies straight for long"}, {"key": "BrittleStar", "name": "Brittle Star", "id": 16, "img": "/_blob/a3b542258cef6a3907f216751f3393bc", "pct": 100, "stage": "Arena Ready", "done": [true, true, true, true, true], "detail": ["All four", "4 of 4 wired", "Brittle Star Time", "Shatterplane", "Flatline"], "wired": 4, "games": {"Charge": ["Flatline"], "Mass": [], "Space": ["Shatterplane"], "Time": ["Brittle Star Time"]}, "next": "Certified for the arena", "tiers": {"Charge": "S", "Mass": "-", "Space": "B", "Time": "A"}, "story": "A one-touch flyer built round a cockpit and a five-pointed support ring"}, {"key": "Angler", "name": "Angler", "id": 17, "img": "/_blob/60d425f092069d090668aba97c3e16fa", "pct": 70, "stage": "In the hangar", "done": [true, false, true, false, true], "detail": ["All four", "2 of 4 wired", "Lantern Run", "None yet", "Kelpwood"], "wired": 2, "games": {"Charge": ["Kelpwood"], "Mass": [], "Space": [], "Time": ["Lantern Run"]}, "next": "Next: the level-5 upgrades", "tiers": {"Charge": "A", "Mass": "-", "Space": "-", "Time": "B"}, "story": "The fleet's strategist"}, {"key": "Starling", "name": "Starlings", "id": 21, "img": "/_blob/dd68e2019a195bc3986c327dccc3905f", "pct": 20, "stage": "In the hangar", "done": [true, false, false, false, false], "detail": ["All four", "0 of 4 wired", "None yet", "None yet", "None yet"], "wired": 0, "games": {"Charge": [], "Mass": [], "Space": [], "Time": []}, "next": "Next: the level-5 upgrades", "tiers": {"Charge": "-", "Mass": "-", "Space": "-", "Time": "-"}, "story": "A swarm, not a ship"}, {"key": "Jacks", "name": "Jacks", "id": 22, "img": "/_blob/53789d005fafad3361aa5e12fdfeea52", "pct": 60, "stage": "Launch Ready", "done": [true, true, true, false, false], "detail": ["All four", "4 of 4 wired", "Decoy Run", "None yet", "None yet"], "wired": 4, "games": {"Charge": [], "Mass": [], "Space": [], "Time": ["Decoy Run"]}, "next": "Next: a Mass or Space", "tiers": {"Charge": "-", "Mass": "-", "Space": "-", "Time": "A"}, "story": "Two jacks herd the cell's wildlife"}, {"key": "Meerkat", "name": "Meerkat", "id": 28, "img": "/_blob/de076523c87916461c95de705a36c47d", "pct": 60, "stage": "Launch Ready", "done": [true, true, true, false, false], "detail": ["All four", "4 of 4 wired", "Burrow Run, Warpline", "None yet", "None yet"], "wired": 4, "games": {"Charge": [], "Mass": [], "Space": [], "Time": ["Burrow Run", "Warpline"]}, "next": "Next: a Mass or Space", "tiers": {"Charge": "-", "Mass": "-", "Space": "-", "Time": "B"}, "story": "Digs its own way"}, {"key": "TigerMoth", "name": "Tiger Moth", "id": 29, "img": "/_blob/8bf7ac800ce1fcf4b82a3c6d5e9857fd", "pct": 100, "stage": "Arena Ready", "done": [true, true, true, true, true], "detail": ["All four", "4 of 4 wired", "Waystation", "Tapestry, Sirocco", "Dustup"], "wired": 4, "games": {"Charge": ["Dustup"], "Mass": ["Tapestry"], "Space": ["Sirocco"], "Time": ["Waystation"]}, "next": "Certified for the arena", "tiers": {"Charge": "C", "Mass": "B", "Space": "A", "Time": "S"}, "story": "Slow, wide and quiet, like the Butterfly - until a bat comes"}, {"key": "Swordfish", "name": "Swordfish", "id": 30, "img": "/_blob/9c2d40deaaf3047946715ff8410e7b8f", "pct": 60, "stage": "In the hangar", "done": [true, true, false, true, false], "detail": ["All four", "4 of 4 wired", "None yet", "Cleave", "None yet"], "wired": 4, "games": {"Charge": [], "Mass": [], "Space": ["Cleave"], "Time": []}, "next": "Next: its time game", "tiers": {"Charge": "-", "Mass": "-", "Space": "C", "Time": "-"}, "story": "All sword"}], E = ["Charge", "Mass", "Space", "Time"], S = ["Arena Ready", "Fleet Ready", "Launch Ready", "In the hangar"], N = {"Arena Ready": 7, "Fleet Ready": 1, "Launch Ready": 5, "In the hangar": 6}, R = { S: 0, A: 1, B: 2, C: 3, '-': 4 };
+    const st = this.state;
+    let rows = V.filter(v => (st.stage === 'Any stage' || v.stage === st.stage) && (st.tl === 'Any tier' || v.tiers[st.tel] === st.tl));
+    const key = st.sort === 'Completion' ? null : st.sort.split(' ')[0];
+    rows = rows.slice().sort((a, b) => key ? (R[a.tiers[key]] - R[b.tiers[key]]) || (b.pct - a.pct) : (b.pct - a.pct) || (a.id - b.id));
+    const cards = rows.map(v => Object.assign({}, v, { segs: this.segs(v), stageCls: this.stageCls(v), pctS: v.pct + '%',
+      tiers: E.map(e => ({ e: e.charAt(0), t: v.tiers[e], cls: 'tier t' + v.tiers[e] + (key === e || (st.tl !== 'Any tier' && st.tel === e) ? ' hot' : '') })) }));
+    const chips = (list, cur, set, lab) => list.map(x => ({ label: lab ? lab(x) : x, cls: x === cur ? 'chip on' : 'chip', pick: () => this.setState(set(x)) }));
+    return { cards, none: cards.length === 0, shown: cards.length + ' of ' + V.length,
+      sorts: chips(['Completion'].concat(E.map(e => e + ' tier')), st.sort, x => ({ sort: x })),
+      stages: chips(['Any stage'].concat(S), st.stage, x => ({ stage: x }), x => x === 'Any stage' ? x : x + ' ' + N[x]),
+      tels: chips(E, st.tel, x => ({ tel: x })),
+      tls: chips(['Any tier', 'S', 'A', 'B', 'C'], st.tl, x => ({ tl: x })) };
+  }
+}
+</script>
+</body>
+</html>

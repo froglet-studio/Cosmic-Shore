@@ -389,6 +389,13 @@ namespace CosmicShore.Gameplay
         // ── AI dogfighters (server) ──────────────────────────────────────────
 
         /// <summary>
+        /// One AI's dogfight state. A pilot is either closing on someone or deliberately getting
+        /// away from them; there is no third thing, and mixing the two is what produced the
+        /// wrestling match this replaces.
+        /// </summary>
+        enum DogfightPhase { Pursue = 0, Extend = 1 }
+
+        /// <summary>
         /// Drives every AI Sparrow as a dogfighter rather than a missile.
         ///
         /// The AI's guns need no wiring here: the Sparrow prefab's <c>AIPilot</c> already runs
@@ -415,15 +422,7 @@ namespace CosmicShore.Gameplay
         /// the AI keeps flying lead pursuit on the pilot it already picked - the provider is
         /// sampled every frame, so the aim point tracks a live position even though the CHOICE
         /// is re-made on a slow cadence.
-        /// </summary>
-        /// <summary>
-        /// One AI's dogfight state. A pilot is either closing on someone or deliberately getting
-        /// away from them; there is no third thing, and mixing the two is what produced the
-        /// wrestling match this replaces.
-        /// </summary>
-        enum DogfightPhase { Pursue = 0, Extend = 1 }
-
-        /// <summary>
+        ///
         /// Gives every AI a committed PURSUE → EXTEND → PURSUE loop.
         ///
         /// <b>Why a state machine and not a distance test.</b> The first version had no state: it

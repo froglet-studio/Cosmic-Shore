@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using FMODUnity;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -118,7 +119,7 @@ namespace CosmicShore.Gameplay
         public float SelfLaunchSeconds => selfLaunchSeconds;
         public float SelfLaunchEdgeStrength => selfLaunchEdgeStrength;
         public float SelfLaunchCeiling => selfLaunchCeiling;
-        public Color FallbackDangerColor => fallbackDangerColor;
+        public Color FallbackDangerColor => ColorTrace.Retrace(ColorTrace.World, fallbackDangerColor);
         public float SideHueShift => sideHueShift;
         public float AiFireIntervalSeconds => aiFireIntervalSeconds;
         public EventReference FireEvent => fireEvent;
@@ -136,11 +137,12 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// One trigger's bomb colour: <paramref name="danger"/> (alpha 0 = no palette colour, use
         /// <see cref="FallbackDangerColor"/>) rotated <see cref="SideHueShift"/> one way for LT and
-        /// the other for RT, saturation and brightness kept. Pure; edit-mode tested.
+        /// the other for RT, saturation and brightness kept. Pure but for the fallback, which is the worn colour
+        /// set's; edit-mode tested.
         /// </summary>
         public Color BombColor(bool leftTrigger, Color danger)
         {
-            var c = danger.a > 0f ? danger : fallbackDangerColor;
+            var c = danger.a > 0f ? danger : FallbackDangerColor;
             Color.RGBToHSV(c, out float h, out float sat, out float v);
             h = Mathf.Repeat(h + (leftTrigger ? -sideHueShift : sideHueShift), 1f);
             var shifted = Color.HSVToRGB(h, sat, v);

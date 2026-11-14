@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-10-dart-frog-nacre-contrast-and-the-five-vi-ed8d2c",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-10T18:45:28+00:00",
+  "area": "the Profile's colour-set rail, the analytics console and editor themes, the style-guide tokens, and the skills",
+  "summary": "Dart Frog, Nacre, Contrast and the five vision sets have new pigments and Nocturne's Gold rim moved 4 degrees, so the catalog asset's words (Dart Frog's and Nacre's lines, the pigments of Dart Frog, Nacre and Contrast), themes.css / theme.js, FrogletSeaTheme.Themes.cs and froglet-tokens.json (gold #FF8F11 to #FF9B11) were regenerated; make_themes.py's self-test now reads Dart Frog's bronze from colour_sets.json instead of pinning #774325; and a new skill, /colour-set, with its tool Tools/Build/colour_set_maker.py.",
+  "why": "Garrett asked for colour-set rules that keep the six domains distinguishable and each looking like its name, Dart Frog and Nacre fixed under them, and a skill that makes sets from any inspiration. Nacre's UI theme is now mint-hued (its Jade face is seafoam, was lavender); Dart Frog's stays bronze.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "385d3018c",
+  "paths": [
+    ".claude/skills/colour-set/SKILL.md",
+    "Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset",
+    "Assets/_Scripts/Editor/FrogletTools/FrogletSeaTheme.Themes.cs",
+    "Docs/UI/froglet-tokens.json",
+    "Docs/UI/froglet.css",
+    "Tools/Analytics/console/make_themes.py",
+    "Tools/Analytics/console/theme.js",
+    "Tools/Analytics/console/themes.css",
+    "Tools/Build/author_colour_set_catalog.py",
+    "Tools/Build/colour_set_maker.py"
+  ]
+}

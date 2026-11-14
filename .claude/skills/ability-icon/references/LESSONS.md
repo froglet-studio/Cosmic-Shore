@@ -24,7 +24,7 @@ game where appropriate. Dolphin uses its jaw silhouette to good effect in its sp
 4. **`Urchin_ChargeRing.png` is a gauge, not an icon.** The audit called a bare ring "generic"; it is
    the hold-charge ring the HUD draws round the Charge card. Read `author_<hull>_hud.py` before
    judging a sprite in the icon folder.
-5. **Prisms in a row fuse into a zigzag at 40 px** unless the gap is ≥ 6 px (Yastri round 1: two
+5. **Prisms in a row fuse into a zigzag at 40 px** unless the gap is ≥ 6 px (Yawstery round 1: two
    prisms overlapped by 3 px and read as a chain). Two big prisms beat three small ones.
 6. **The smallest feature of a silhouette is what gets named.** The Manta's cephalic lobes, drawn
    tall, made the Soar icon a fox's head at 40 px (ears + snout). Flattened to short lobes on a blunt
@@ -602,3 +602,18 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     when the parts are few and bold; a busy scene shrunk to 104 px loses the 40 px read. When a fitted card fails
     `coverage` or `at40`, redraw it with fewer, bigger things rather than nudging sizes (the Jacks' Call went from six
     creatures to three).
+
+
+## 2026-11-12 - the Swordfish: a vessel that borrowed another's HUD
+
+92. **A vessel running another hull's HUD gets its own variant, view and controller before its icons change.** The
+    Swordfish flew the Rhino's `RhinoHUDVariant`, so redrawing its row would have redrawn the Rhino's, and the Rhino's
+    rework would have redrawn the Swordfish's. Copy the variant (new guid), the view and the controller under the
+    vessel's name, swap the vessel prefab's nested HUD and controller, and only then rebind the kit's cards
+    (`specs/swordfish.py` REBIND). Shared drawing code is imported from the other spec (`import specs.rhino as _rh`),
+    never shared PNGs.
+93. **A part drawn from the camera behind is foreshortened at rest, and its socket carries the read.** The bill seen
+    from behind is a short wedge; the hull behind it was too wispy at 40 px and fought the bill, so the card draws a
+    snout socket the bill grows out of, with no clearance cut into it. A part that moves with live state gets its own
+    straight-line centre (the Space prism sits on the bill's line, not the card's), and a rate is drawn as a tapered
+    swoosh, never an arc with a needle, which reads as a speedometer.

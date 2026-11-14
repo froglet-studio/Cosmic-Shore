@@ -1,0 +1,26 @@
+{
+ "id": "example-w5-space-hearts",
+ "title": "Space hearts stop re-deforming off screen (W5, re-run as the scene-bench example)",
+ "owner": "Yash",
+ "lane": "ecology",
+ "kind": "scene",
+ "metricCounter": "MeshSkinning.Update",
+ "runtimeWriters": "SpaceCrystalAnimator.Update writes two blend-shape weights every frame (SpaceCrystalAnimator.cs:93-106); nothing writes updateWhenOffscreen on these crystals; the prefabs author it on (CrystalSpace.prefab m_UpdateWhenOffscreen 1).",
+ "exposure": "Every Space heart: Garland menu world (6-12), fauna-heavy cells (~80 in Wildlife Liberation).",
+ "scene": {
+  "common": {
+   "prefab": "Assets/_Prefabs/Environment/CrystalSpace.prefab",
+   "spawnBehind": 200,
+   "spawnInView": 49,
+   "setupMethod": "none",
+   "offscreenAOn": "true"
+  },
+  "change": {
+   "offscreenBoundsSize": 0.0254
+  },
+  "neg": {
+   "offscreenBoundsSize": 1e-05
+  }
+ },
+ "note": "W5 has shipped, so the spawned hearts already turn updateWhenOffscreen off in Awake; offscreenAOn puts A back to the state before W5."
+}

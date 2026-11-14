@@ -1,20 +1,28 @@
 #!/usr/bin/env python3
-"""Swim lanes: which vessels and app-shell sections are OCCUPIED right now, and which open ones to pick up next.
+"""Swim lanes: which vessels, games, app-shell sections and systems are OCCUPIED right now, and which open ones to pick up next.
 
-    python3 .claude/skills/swimlanes/swimlanes.py                 # the board: open with work, occupied, needs polish, polished
+    python3 .claude/skills/swimlanes/swimlanes.py                 # the board: the loop's vessel lanes, open with work, occupied, needs polish, polished
     python3 .claude/skills/swimlanes/swimlanes.py --lane thresher # one lane in full: who is in it, its work, its polish gaps
+    python3 .claude/skills/swimlanes/swimlanes.py --kind game     # only one kind: vessel, game, shell, system
     python3 .claude/skills/swimlanes/swimlanes.py --md | --json   # for a page or another tool
     python3 .claude/skills/swimlanes/swimlanes.py --days 5 --no-github
     python3 .claude/skills/swimlanes/swimlanes.py set thresher rough --by Garrett --note "the Belfry needs a sound pass"
     python3 .claude/skills/swimlanes/swimlanes.py --self-test
 
-A lane is a vessel or a section of the app shell (the Voyages map, the Hangar, ...) that someone can hold in their
-head; it is never a task. Lanes are listed in lanes.json beside this file; every vessel on the roster is a lane by
-itself.
+A lane is anything that someone can hold in their head and that takes more than a couple of prompts and one pull
+request to finish: a vessel, a game (a mode with its own card), a section of the app shell (the Voyages map, the
+Hangar, ...) or a mechanical system (ecology, prisms, netcode, ...). It is never a task. Every vessel on the roster and
+every shipped game card is a lane by itself; shell sections and systems are listed in lanes.json beside this file, and
+one that is truly closed out is archived there (`archived`), not deleted silently.
 
   OCCUPIED   an unmerged branch has pushed work focused on the lane in the last `window_days` (default 7). The lane
              opens again by itself when that work merges into bleeding-edge, or when the branch goes quiet. Past work
              that has merged never occupies a lane: history is context, not a block.
+  LOOP       FIRST, above everything else: every vessel nobody occupies is its own parallel lane through Garrett's
+             elemental vessel loop (2026-11-12, the top priority; Docs/ElementalLoop/PLAYBOOK.md), showing its loop
+             progress and its next step from Tools/Build/elemental_loop.py, ranked as `elemental_loop.py next` ranks
+             them (Time first, arena-seated vessels first, earliest step). Never cut. An occupied vessel shows its
+             next loop step too, for its occupant.
   OPEN       nobody is in it. Ranked, highest first:
                1. work waiting: open Froglet Tasks tickets that name it, editor hand tests not yet run
                   (Docs/UNITY_VERIFICATION_CHECKLIST.md), open Bug Ledger errors thrown from its files, placeholder
@@ -28,7 +36,7 @@ Read from origin/* (run `git fetch --prune origin` first), the tickets and open 
 with --no-github or when gh is not signed in), and the repo's own files. A READER: it writes nothing except, with
 `set`, the verdict in lanes.json.
 """
-import argparse, collections, datetime, fnmatch, json, os, re, shutil, subprocess, sys, tempfile
+import argparse, collections, datetime, fnmatch, importlib.util, json, os, re, shutil, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOG = os.path.join(HERE, 'lanes.json')
@@ -108,7 +116,25 @@ def split_camel(name):
     return re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', name)
 
 
+GAMES_DIR = ('Assets', '_SO_Assets', 'Games')
+
+
+def game_roster(root):
+    """The shipped game cards: every Assets/_SO_Assets/Games/ArcadeGame<Name>.asset at the top of the folder (the arcade
+    and arena cards alike; _Archive, Training and Missions are not games anyone plays as a mode). -> [(Name, DisplayName)]"""
+    d = os.path.join(root, *GAMES_DIR)
+    out = []
+    for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+        if not (f.startswith('ArcadeGame') and f.endswith('.asset')) or len(f) <= len('ArcadeGame.asset'):
+            continue
+        m = re.search(r'^\s+DisplayName:\s*(.*)$', read(root, '/'.join(GAMES_DIR + (f,))), re.M)
+        out.append((f[len('ArcadeGame'):-len('.asset')], (m.group(1).strip().strip('\'"') if m else '')))
+    return out
+
+
 def load_lanes(root, catalog):
+    """Every lane: the vessels (the roster), the games (the shipped cards), then the catalog's app-shell sections and
+    systems. A catalog lane with `archived` set is closed out and not on the board; a retired vessel or game likewise."""
     lanes = []
     vcfg = catalog.get('vessels', {})
     retired = set(vcfg.get('retired', []))
@@ -119,15 +145,33 @@ def load_lanes(root, catalog):
         if v in retired:
             continue
         lanes.append(Lane(v.lower(), split_camel(v), 'vessel', [v] + aliases.get(v, [])))
-    for s in catalog.get('shell', []):
-        lanes.append(Lane(s['key'], s['name'], 'shell', s.get('tokens', []), s.get('paths', []), s.get('note', '')))
+    gcfg = catalog.get('games', {})
+    g_retired, g_aliases = set(gcfg.get('retired', [])), gcfg.get('aliases', {})
+    taken = {ln.key for ln in lanes}
+    for g, shown in game_roster(root):
+        if g in g_retired:
+            continue
+        spaced = split_camel(g)
+        name = shown if not shown or shown.replace(' ', '').lower() == g.lower() else f'{shown} ({spaced})'
+        key = g.lower() if g.lower() not in taken else 'game-' + g.lower()
+        lanes.append(Lane(key, name or spaced, 'game', [g] + ([spaced] if spaced != g else []) + g_aliases.get(g, [])))
+    for kind, section in (('shell', 'shell'), ('system', 'systems')):
+        for s in catalog.get(section, []):
+            if s.get('archived'):
+                continue
+            lanes.append(Lane(s['key'], s['name'], kind, s.get('tokens', []), s.get('paths', []), s.get('note', '')))
     return lanes
+
+
+def archived_lanes(catalog):
+    return [(s['key'], s['name'], s['archived']) for sec in ('shell', 'systems') for s in catalog.get(sec, []) if s.get('archived')]
 
 
 def focus_lanes(files, lanes):
     """The lanes a commit is ABOUT: each lane holding a quarter of its files or three of them (meta files left out). A
     sweep across twenty vessels' docs is about none of them; a fix that brushes one Hangar prefab among ten files is not
-    Hangar work. A commit about three or more lanes at once is a sweep and occupies none."""
+    Hangar work. A commit about three or more lanes OF ONE KIND (vessels, games, shell sections, systems) is a sweep and
+    occupies none of that kind."""
     files = [f for f in files if not f.endswith('.meta')]
     if not files or len(files) > MAX_FILES:
         return set()
@@ -137,7 +181,13 @@ def focus_lanes(files, lanes):
             if ln.matches(f):
                 hits[ln.key] += 1
     focus = {k for k, n in hits.items() if n * 4 >= len(files) or n >= 3}
-    return focus if len(focus) <= 2 else set()      # a re-bake or rename across the fleet is a sweep, not a lane
+    kind = {ln.key: ln.kind for ln in lanes}
+    by_kind = collections.defaultdict(set)
+    for k in focus:
+        by_kind[kind[k]].add(k)
+    # a re-bake or rename across the fleet (three vessels, three games, three systems) is a sweep, not a lane; a vessel
+    # change that also touches its game and the AI system is about all three
+    return {k for ks in by_kind.values() if len(ks) <= 2 for k in ks}
 
 
 def named_lanes(text, lanes, most):
@@ -215,10 +265,47 @@ def occupancy(root, lanes, team, cfg, days, base, prs, merged_heads):
         for k, cs in per.items():
             cs.sort(key=lambda c: c['date'], reverse=True)
             occ[k].append({'branch': branch, 'people': people, 'last': cs[0]['date'][:10], 'commits': len(cs),
-                           'subjects': [c['subject'] for c in cs[:3]], 'pr': pr.get('number') if pr else None})
+                           'subjects': [c['subject'] for c in cs[:3]], 'pr': pr.get('number') if pr else None,
+                           'label': getattr(team, 'branch_label', lambda b: None)(branch)})
     for k in occ:
         occ[k].sort(key=lambda r: r['last'], reverse=True)
     return occ
+
+
+def read_handoffs(root, notes=None):
+    """lane key -> its latest handoff (Tools/Build/handoff.py: to a person, open, for test, a claim), with its status."""
+    try:
+        spec = importlib.util.spec_from_file_location('handoff', os.path.join(root, 'Tools', 'Build', 'handoff.py'))
+        ho = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ho)
+        return ho.current(ho.read_all(root)), ho.holder
+    except Exception as exc:                          # a reader, never a gate: say so and carry on
+        if notes is not None:
+            notes.append(f'handoffs could not be read ({type(exc).__name__}: {exc}); run `python3 Tools/Build/handoff.py list`.')
+        return {}, lambda h: None
+
+
+def apply_handoffs(occ, handoffs, holder):
+    """A handoff moves a lane: to a person, the tester or a claimer, it is theirs (an occupant); open or sent back, the
+    work pushed before the handoff no longer holds it. Work anybody ELSE pushes after the handoff still occupies."""
+    out = collections.defaultdict(list, {k: list(v) for k, v in occ.items()})
+    for k, h in handoffs.items():
+        day = h['on'][:10]
+        later = [o for o in out.get(k, []) if o['last'] > day]
+        who = holder(h)
+        if who:
+            later = [o for o in later if who not in o['people']]
+            verb = {'new': 'handed to them by', 'taken': 'handed to them by', 'testing': 'sent for test by',
+                    'claimed': 'claimed by'}.get(h['status'], 'held by')
+            row = {'branch': h.get('branch') or '(no branch yet)', 'people': [who], 'last': day, 'commits': 0,
+                   'subjects': [f'{verb} {h["by"]}' + (f': {h["note"]}' if h.get('note') else '')], 'pr': h.get('pr'),
+                   'handoff': h['id'], 'handoffStatus': h['status']}
+            out[k] = later + [row]
+        else:
+            out[k] = later
+        if not out[k]:
+            del out[k]
+    return out
 
 
 def landed(root, lanes, team, days, base, skip_rx):
@@ -435,6 +522,28 @@ def assess(root, lanes, files, ticket_rows, bug_rows, l5, verdicts):
 
 # --- The board ----------------------------------------------------------------------------------------------------
 
+def loop_line(a):
+    """One loop action as a work line: 'Time step 2 (built): <what to do>'."""
+    step = 'step 0 kit' if a['step'] == '0' else f'step {a["step"]}'
+    return f'{a["element"]} {step} ({a["state"]}): {a["text"]}' + (f' [blocked: {a["blocked"]}]' if a.get('blocked') else '')
+
+
+def loop_lanes(root, notes):
+    """The elemental vessel loop (Garrett, 2026-11-12, the top priority): every vessel is its own parallel lane, and
+    its next loop step is that lane's first work. {lane key: elemental_loop.vessel_lanes() row}; empty (with a note)
+    when the board cannot be read, so the swim lanes never fail because of it."""
+    if not os.path.exists(os.path.join(root, 'Docs', 'ElementalLoop', 'loop.json')):
+        return {}
+    try:
+        sys.path.insert(0, os.path.join(root, 'Tools', 'Build'))
+        import elemental_loop
+        return {v.lower(): row for v, row in elemental_loop.vessel_lanes(elemental_loop.build(root)).items()}
+    except Exception as exc:                          # a reader, never a gate: say so and carry on
+        notes.append(f'the elemental loop board could not be read ({type(exc).__name__}: {exc}); run '
+                     '`python3 Tools/Build/elemental_loop.py --check`.')
+        return {}
+
+
 def build(root, args):
     catalog = json.load(open(CATALOG, encoding='utf-8'))
     days = args.days or catalog.get('window_days', 7)
@@ -459,19 +568,59 @@ def build(root, args):
         occ[k] = [o for o in occ[k] if not superseded(o, last.get(k))]
         if not occ[k]:
             del occ[k]
+    handoffs, holder = ({}, None) if getattr(args, 'no_handoffs', False) else read_handoffs(root, notes)
+    if handoffs:
+        occ = apply_handoffs(occ, handoffs, holder)
+    # Quiet work: pushed in the last quiet_days but not the last window_days. It holds nothing on the board; the People
+    # page keeps it under the lane's OWNER, and asks anyone else whether they are still on it (Shombith, 2026-11-13).
+    long_days = max(days, catalog.get('quiet_days', 30))
+    occ_long = occupancy(root, lanes, team, catalog, long_days, BASE, prs, merged) if long_days > days else {}
+    cutoff = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+    quiet = {}
+    for k, rows in occ_long.items():
+        active = {p for o in occ.get(k, []) for p in o['people']}
+        h = handoffs.get(k)
+        rows = [o for o in rows if o['last'] < cutoff and not superseded(o, last.get(k))
+                and not (h and h['on'][:10] >= o['last']) and not (o['people'] and set(o['people']) <= active)]
+        if rows and not occ.get(k):                       # someone else is on it now: nothing to ask about
+            quiet[k] = [dict(o, asked=o['people'][0] if o['people'] else None)    # the branch's own person, not its mergers
+                        for o in sorted(rows, key=lambda o: o['last'], reverse=True)[:1]]  # only the LAST work in it is asked
     found = assess(root, lanes, files, ticket_rows, bug_rows, l5, catalog.get('verdicts', {}))
-    owners = {}
+    for k, h in handoffs.items():                      # an open or sent-back lane carries the handoff's note on top
+        if k in found and h['status'] in ('open', 'back'):
+            fb = [e for e in h.get('events', []) if e['event'] == 'feedback']
+            text = (f'sent back from test by {fb[-1]["by"]} {fb[-1]["on"][:10]}: {fb[-1].get("note", "")}' if h['status'] == 'back'
+                    else f'handed off open by {h["by"]} {h["on"][:10]}' + (f': {h["note"]}' if h.get('note') else '')
+                    + (f' (start from {h["branch"]})' if h.get('branch') else ''))
+            found[k]['work'].append((9 if h['status'] == 'back' else 6, text))
+        elif k in found and h['status'] == 'passed':
+            found[k]['polish'].append((0, f'tested good to go by {h.get("to")} {h["events"][-1]["on"][:10]}'))
+    owners, lane_owner = {}, {}
+    declared = catalog.get('owners', {})
     for ln in lanes:
         decl = [o['owner'] for o in team.declared_owners(ln.paths)] if ln.paths else []
+        who_owns = (declared.get(ln.key) or {}).get('owner') or (re.match(r'\s*(\w+)', decl[0]).group(1) if decl else None)
+        if who_owns:
+            lane_owner[ln.key] = who_owns
         if decl or ln.note:
             owners[ln.key] = (ln.note or ('Owner: ' + ', '.join(decl) + ' (Docs/TEAM.json): tell them, and queue changes for their /approve.'))
+    loop = loop_lanes(root, notes)
     board = []
     for ln in lanes:
         f = found[ln.key]
         work = sum(wt for wt, _ in f['work'])
         gap = sum(wt for wt, _ in f['polish'])
-        if occ.get(ln.key):
+        lp = loop.get(ln.key) if ln.kind == 'vessel' else None
+        h = handoffs.get(ln.key)
+        held = occ.get(ln.key) and occ[ln.key][-1].get('handoff') and occ[ln.key][0].get('handoff')
+        if held and h['status'] in ('new', 'taken'):
+            tier = 'handed'
+        elif held and h['status'] == 'testing':
+            tier = 'testing'
+        elif occ.get(ln.key):
             tier = 'occupied'
+        elif lp and lp['actions']:
+            tier = 'loop'
         elif work > 0:
             tier = 'work'
         elif gap > 0:
@@ -481,19 +630,25 @@ def build(root, args):
         board.append({'key': ln.key, 'name': ln.name, 'kind': ln.kind, 'tier': tier, 'workScore': work, 'polishGap': gap,
                       'occupants': occ.get(ln.key, []), 'work': [t for _, t in sorted(f['work'], key=lambda x: -x[0])],
                       'polish': [t for _, t in sorted(f['polish'], key=lambda x: -x[0])], 'landed': last.get(ln.key),
-                      'note': owners.get(ln.key, '')})
-    order = {'work': 0, 'occupied': 1, 'polish': 2, 'polished': 3}
+                      'note': owners.get(ln.key, ''), 'owner': lane_owner.get(ln.key),
+                      'quiet': quiet.get(ln.key, []),
+                      'handoff': {x: h.get(x) for x in ('id', 'kind', 'status', 'by', 'to', 'on', 'note', 'what', 'branch', 'events', 'brief', 'source')} if h else None,
+                      'loop': {'progress': lp['progress'], 'seated': lp['seated'], 'rank': list(lp['rank'] or []),
+                               'actions': [loop_line(a) for a in lp['actions']]} if lp else None})
+    order = {'loop': 0, 'handed': 1, 'testing': 2, 'work': 3, 'occupied': 4, 'polish': 5, 'polished': 6}
 
     board.sort(key=lambda b: b['name'])
     board.sort(key=lambda b: b['occupants'][0]['last'] if b['occupants'] else '', reverse=True)   # occupied: newest push first
-    board.sort(key=lambda b: (order[b['tier']], -b['workScore'] if b['tier'] == 'work' else
-                              -b['polishGap'] if b['tier'] == 'polish' else 0))
+    board.sort(key=lambda b: (order[b['tier']], b['loop']['rank'] if b['tier'] == 'loop' else
+                              [-b['workScore']] if b['tier'] == 'work' else
+                              [-b['polishGap']] if b['tier'] == 'polish' else []))
+    me = getattr(args, 'me', None)
     return {'generated': datetime.date.today().isoformat(), 'windowDays': days, 'base': BASE, 'notes': notes,
-            'lanes': board, 'order': list(order)}
+            'lanes': board, 'order': list(order), 'me': me}
 
 
 def who(o):
-    ppl = ', '.join(o['people']) if o['people'] else 'a Claude session (no person on record)'
+    ppl = ', '.join(o['people']) if o['people'] else (o.get('label') or 'a Claude session (no person on record)')   # TEAM.json unattributed_prefixes
     pr = f', PR #{o["pr"]}' if o.get('pr') else ''
     return f'{ppl} on {o["branch"]}{pr}, last push {o["last"]}, {o["commits"]} commit(s): "{o["subjects"][0][:80]}"'
 
@@ -506,32 +661,85 @@ def opened(b):
     return f'  (last landed {l["date"]}: {what}' + (f', {l["by"]}' if l.get('by') else '') + ')'
 
 
-HEADS = {'work': 'OPEN - WORK WAITING (highest priority: pick one of these)',
+HEADS = {'loop': 'THE ELEMENTAL LOOP - every vessel is its own parallel lane (Garrett 2026-11-12, TOP PRIORITY): take one '
+                 'and advance it one step (/elemental-loop)',
+         'handed': 'HANDED OFF - passed to a person (NEW until they read it: handoff.py seen <lane>)',
+         'testing': 'FOR TEST - with the tester until they answer (/handoff-feedback good|back)',
+         'work': 'OPEN - WORK WAITING (pick one of these when every loop lane is held)',
          'occupied': 'OCCUPIED - someone has their head in it right now (do not collide: build elsewhere or talk to them)',
          'polish': 'OPEN - NEEDS POLISH (no obvious work, but it does not feel finished)',
          'polished': 'OPEN - POLISHED (lowest priority)'}
 
 
-def print_board(data, full=False, md=False, limit=3):
+QUIET_ROWS = 8          # the two quiet tiers list this many lanes unless --full: the board is read, not scrolled
+WORK_ROWS = 12          # the work tier its top twelve; occupied is never cut (it is the heads-up)
+
+
+def print_board(data, full=False, md=False, limit=3, kind=None):
     out = []
     h = (lambda s: out.append(f'\n## {s}\n')) if md else (lambda s: out.append(f'\n{s}'))
     out.append(('# Swim lanes' if md else 'SWIM LANES') + f' - {data["generated"]}; occupied = unmerged work pushed in the last '
                f'{data["windowDays"]} days (read from origin/*: run `git fetch --prune origin` first)')
     for n in data['notes']:
         out.append(('> ' if md else '  note: ') + n)
+    me = data.get('me')
+    if me:
+        mine = [b for b in data['lanes'] if (b.get('handoff') or {}).get('to') == me and b['tier'] in ('handed', 'testing')]
+        h(f'FOR YOU, {me}  [{len(mine) + sum(1 for b in data["lanes"] if b.get("owner") != me and any(q.get("asked") == me for q in b.get("quiet", [])))}]')
+        if not mine:
+            out.append('  nothing handed to you')
+        for b in mine:
+            ho = b['handoff']
+            new = 'NEW  ' if ho['status'] == 'new' else 'TEST ' if ho['status'] == 'testing' else ''
+            out.append(f'  {new}{b["name"]} [{b["kind"]}] from {ho["by"]} {ho["on"][:10]}' + (f': {ho["note"]}' if ho.get('note') else ''))
+            if ho.get('what'):
+                out.append(f'        test: {ho["what"]}')
+        gone = [b for b in data['lanes'] if b.get('owner') != me and any(q.get('asked') == me for q in b.get('quiet', []))]
+        for b in gone[:5]:
+            q = next(q for q in b['quiet'] if q.get('asked') == me)
+            out.append(f'  WENT QUIET  {b["name"]}: your last push was {q["last"]} ({q["branch"]}), so it is open for anyone again.'
+                       f' Still on it: `handoff.py claim {b["key"]}`. Done with it: `handoff.py open --lane {b["key"]} --note "..."`.')
+        if len(gone) > 5:
+            out.append(f'  ... {len(gone) - 5} more went quiet (the Swim Lanes page lists them all)')
     for tier in data['order']:
-        rows = [b for b in data['lanes'] if b['tier'] == tier]
+        rows = [b for b in data['lanes'] if b['tier'] == tier and (not kind or b['kind'] == kind)]
         h(HEADS[tier] + f'  [{len(rows)}]')
         if not rows:
             out.append('  none')
+        hidden = 0
+        cap = WORK_ROWS if tier == 'work' else QUIET_ROWS if tier in ('polish', 'polished') else None
+        if cap and not full and len(rows) > cap:
+            rows, hidden = rows[:cap], len(rows) - cap
         for i, b in enumerate(rows, 1):
             bullet = '- ' if md else f'  {i:>2}. '
             name = f'**{b["name"]}**' if md else b['name']
             tag = f'[{b["kind"]}]'
-            if tier == 'occupied':
+            if tier == 'loop':
+                lp = b['loop']
+                seated = f'; seats: {", ".join(lp["seated"])}' if lp['seated'] else '; no arena seat'
+                out.append(f'{bullet}{name} {tag} {lp["progress"]}{seated}{opened(b)}')
+                for t in lp['actions'][:None if full else 1]:
+                    out.append(f'        next: {t}')
+                rest = len(lp['actions']) - 1
+                if not full and rest > 0:
+                    out.append(f'        ... {rest} more loop step(s) in other elements (elemental_loop.py vessel {b["name"]})')
+                if b['work'] and full:
+                    out.append(f'        other work: {b["work"][0]}')
+            elif tier in ('handed', 'testing'):
+                ho = b['handoff']
+                flag = 'NEW ' if ho['status'] == 'new' else ''
+                out.append(f'{bullet}{flag}{name} {tag}: {ho["by"]} -> {ho.get("to")} {ho["on"][:10]}'
+                           + (f': {ho["note"]}' if ho.get('note') else ''))
+                if ho.get('what'):
+                    out.append(f'        test: {ho["what"]}')
+                for o in b['occupants'][:-1]:
+                    out.append(f'        also {who(o)}')
+            elif tier == 'occupied':
                 out.append(f'{bullet}{name} {tag}: ' + who(b['occupants'][0]))
                 for o in b['occupants'][1:]:
                     out.append(f'        also {who(o)}')
+                if b.get('loop') and b['loop']['actions']:
+                    out.append(f'        loop next (theirs to advance, or talk to them): {b["loop"]["actions"][0]}')
                 if b['work'] and full:
                     out.append(f'        work waiting for after: {b["work"][0]}')
             elif tier == 'work':
@@ -546,8 +754,13 @@ def print_board(data, full=False, md=False, limit=3):
                 out.append(f'{bullet}{name} {tag}{opened(b)}' + (f': {b["polish"][0]}' if b['polish'] else ''))
             if b['note'] and tier != 'occupied':
                 out.append(f'        ! {b["note"]}')
-    out.append('\nA lane is a vessel or an app-shell section, not a task. It opens when its work merges into bleeding-edge.'
-               ' Details: --lane <key>. Mark one: swimlanes.py set <key> polished|rough --by <you>.')
+        if hidden:
+            out.append(f'  ... {hidden} more (--full, or --kind vessel|game|shell|system)')
+    if any(b['tier'] == 'loop' for b in data['lanes']):
+        out.append('\nLoop marks per element, steps 1 fun / 2 intensities / 3 AI: . todo, ~ doing, b built (not signed off),'
+                   ' D done, R redo, x no game, - not needed. Record a step: elemental_loop.py set (/elemental-loop).')
+    out.append('\nA lane is a vessel, a game, an app-shell section or a system, not a task. It opens when its work merges into'
+               ' bleeding-edge. Details: --lane <key>. Mark one: swimlanes.py set <key> polished|rough --by <you>.')
     print('\n'.join(out))
 
 
@@ -558,11 +771,20 @@ def print_lane(data, key):
     print(f'{b["name"]} [{b["kind"]}]: {HEADS[b["tier"]].split(" (")[0]}{opened(b)}')
     if b['note']:
         print(f'  ! {b["note"]}')
+    if b.get('handoff'):
+        ho = b['handoff']
+        print(f'  handoff: {ho["kind"]} by {ho["by"]} {ho["on"][:10]}' + (f' to {ho["to"]}' if ho.get('to') else '')
+              + f' [{ho["status"]}]' + (f': {ho["note"]}' if ho.get('note') else ''))
     print('\nIn it now:' if b['occupants'] else '\nIn it now: nobody')
     for o in b['occupants']:
         print(f'  {who(o)}')
         for s in o['subjects'][1:]:
             print(f'      "{s[:100]}"')
+    if b.get('loop'):
+        print(f'\nElemental loop (top priority): {b["loop"]["progress"]}' +
+              (f'; seats: {", ".join(b["loop"]["seated"])}' if b['loop']['seated'] else '; no arena seat'))
+        for t in b['loop']['actions']:
+            print(f'  - {t}')
     print(f'\nWork waiting (score {b["workScore"]}):' if b['work'] else '\nWork waiting: none found')
     for t in b['work']:
         print(f'  - {t}')
@@ -582,6 +804,19 @@ def set_verdict(key, polish, by, note):
         json.dump(catalog, fh, indent=2, ensure_ascii=False)
         fh.write('\n')
     print(f'{key}: {polish}' + (f' ({note})' if note else '') + f' - written to {os.path.relpath(CATALOG)}; commit it so everyone sees it.')
+
+
+def set_owner(key, person, by):
+    catalog = json.load(open(CATALOG, encoding='utf-8'))
+    o = catalog.setdefault('owners', {})
+    if person == 'clear':
+        o.pop(key, None)
+    else:
+        o[key] = {'owner': person, 'said': f'{by}, {datetime.date.today().isoformat()}'}
+    with open(CATALOG, 'w', encoding='utf-8', newline='\n') as fh:
+        json.dump(catalog, fh, indent=2, ensure_ascii=False)
+        fh.write('\n')
+    print(f'{key}: owner {person} - written to {os.path.relpath(CATALOG)}; commit it so everyone sees it.')
 
 
 def parse_iso(s):
@@ -623,8 +858,55 @@ def self_test():
         bad.append('a fleet-wide line was given to every vessel it names')
     if named_lanes('Thresher Time: the Belfry', lanes, 2) != {'t'}:
         bad.append('a commit about the Thresher was not read as about the Thresher')
+    bloom, corona, regatta = (Lane(k.lower(), k, 'game', [k]) for k in ('Bloomrush', 'Corona', 'Regatta'))
+    ai = Lane('ai-system', 'AI', 'system', [], ['Assets/_Scripts/Controller/AI'])
+    mixed = lanes + [bloom, corona, regatta, ai]
+    if focus_lanes(['Assets/MantaSting.cs', 'Assets/Thresher.prefab', 'Assets/ThresherBloomrush.asset', 'Assets/BloomrushController.cs',
+                    'Assets/_Scripts/Controller/AI/ThresherSoar.cs', 'Assets/_Scripts/Controller/AI/BloomrushPilot.cs',
+                    'Assets/_Scripts/Controller/AI/X.cs'], mixed) != {'t', 'bloomrush', 'ai-system'}:
+        bad.append('a vessel change that also touches its game and the AI system lost one of the three lanes')
+    if focus_lanes([f'Assets/Cards/{g}{i}.asset' for g in ('Bloomrush', 'Corona', 'Regatta') for i in range(3)], mixed):
+        bad.append('a card sweep across three games occupied each of them')                         # negative control
+    import contextlib, io
+    lane = lambda k, tier, loop: {'key': k, 'name': k.title(), 'kind': 'vessel', 'tier': tier, 'workScore': 0, 'polishGap': 0,
+                                  'occupants': [], 'work': [], 'polish': [], 'landed': None, 'note': '', 'loop': loop}
+    lp = {'progress': 'Time bb.', 'seated': ['Regatta'], 'rank': [0, 0, 1, 'Manta'], 'actions': ['Time step 1 (built): fun pass']}
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        print_board({'generated': 'd', 'windowDays': 7, 'notes': [], 'order': ['loop', 'work', 'occupied', 'polish', 'polished'],
+                     'lanes': [lane('manta', 'loop', lp), lane('goby', 'polished', None)]})
+    shown = buf.getvalue()
+    if 'THE ELEMENTAL LOOP' not in shown or shown.index('Manta') > shown.index('Goby') or 'next: Time step 1' not in shown:
+        bad.append('the loop tier is not the first tier, or its lane does not show its next step')
+    occ0 = {'voyages': [{'branch': 'claude/v', 'people': ['Shombith'], 'last': '2026-11-12', 'commits': 3, 'subjects': ['x']}]}
+    hold = lambda h: h.get('to') if h['status'] in ('new', 'taken', 'testing') else None
+    ho = {'voyages': {'id': 'H-1', 'kind': 'to', 'status': 'new', 'by': 'Shombith', 'to': 'Garrett', 'on': '2026-11-13T10:00:00+00:00'}}
+    got = apply_handoffs(occ0, ho, hold)['voyages']
+    if [o['people'] for o in got] != [['Garrett']]:
+        bad.append(f'a lane handed to Garrett is not his, or the sender still holds it: {got}')
+    ho['voyages'].update(kind='open', status='open', to=None)
+    if apply_handoffs(occ0, ho, hold):
+        bad.append('a lane handed off open is still occupied by the work pushed before it')
+    later = {'voyages': [dict(occ0['voyages'][0], people=['Yash'], last='2026-11-14')]}
+    if [o['people'] for o in apply_handoffs(later, ho, hold).get('voyages', [])] != [['Yash']]:
+        bad.append('work pushed after an open handoff did not occupy the lane')            # negative control
     tmp = tempfile.mkdtemp(prefix='lanes-')
     try:
+        for rel, body in [('Assets/Resources/ElementalAbilityMaps/Manta.asset', ''),
+                          ('Assets/_SO_Assets/Games/ArcadeGameSerpentTime.asset', '  DisplayName: Serpentine\n'),
+                          ('Assets/_SO_Assets/Games/ArcadeGameManta.asset', '  DisplayName: Manta\n'),
+                          ('Assets/_SO_Assets/Games/ArcadeGameOld.asset', '  DisplayName: Old\n'),
+                          ('Assets/_SO_Assets/Games/_Archive/ArcadeGameGone.asset', '  DisplayName: Gone\n')]:
+            os.makedirs(os.path.dirname(os.path.join(tmp, rel)), exist_ok=True)
+            with open(os.path.join(tmp, rel), 'w') as fh:
+                fh.write(body)
+        got = {ln.key: ln for ln in load_lanes(tmp, {'games': {'retired': ['Old']}, 'systems': [
+            {'key': 'prisms', 'name': 'Prisms', 'paths': ['P']}, {'key': 'gone', 'name': 'Gone', 'archived': '2026-11-11, x: done'}]})}
+        if set(got) != {'manta', 'serpenttime', 'game-manta', 'prisms'}:
+            bad.append(f'the lanes from the roster, the cards and the catalog are wrong: {sorted(got)}')
+        elif got['serpenttime'].name != 'Serpentine (Serpent Time)' or not got['serpenttime'].matches('Assets/_SO_Assets/Cell Configs/Serpent Time Cell/I1.asset') \
+                or got['serpenttime'].kind != 'game' or got['prisms'].kind != 'system':
+            bad.append('a game lane does not carry its card name, its spaced token or its kind')
         def run(*a, cwd, env=None):
             subprocess.run(list(a), cwd=cwd, check=True, capture_output=True, env=dict(os.environ, GIT_CONFIG_NOSYSTEM='1', **(env or {})))
 
@@ -684,11 +966,12 @@ def self_test():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('cmd', nargs='?', choices=['board', 'set'], default='board')
-    ap.add_argument('rest', nargs='*', help='set: <lane> polished|rough|clear')
+    ap.add_argument('cmd', nargs='?', choices=['board', 'set', 'owner'], default='board')
+    ap.add_argument('rest', nargs='*', help='set: <lane> polished|rough|clear; owner: <lane> <person>|clear')
     ap.add_argument('--lane', help='one lane in full')
     ap.add_argument('--days', type=int, help='how recent a push must be to occupy a lane (default lanes.json window_days)')
     ap.add_argument('--full', action='store_true', help='every work item, every polish gap')
+    ap.add_argument('--kind', choices=['vessel', 'game', 'shell', 'system'], help='only lanes of this kind')
     ap.add_argument('--md', action='store_true')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--no-github', action='store_true', help='skip the tickets and pull requests (gh)')
@@ -696,6 +979,8 @@ def main():
     ap.add_argument('--tickets-offline', help='read the tickets from a team_tasks.py dump instead of GitHub')
     ap.add_argument('--by', help='set: who says so')
     ap.add_argument('--note', default='', help='set: why')
+    ap.add_argument('--me', help='show what was handed to this person first (default: your git identity)')
+    ap.add_argument('--no-handoffs', action='store_true', help='ignore Docs/Handoffs')
     ap.add_argument('--self-test', action='store_true')
     a = ap.parse_args()
     if a.self_test:
@@ -705,13 +990,28 @@ def main():
             ap.error('set <lane> polished|rough|clear --by <name> [--note "..."]')
         set_verdict(a.rest[0].lower(), a.rest[1], a.by, a.note)
         return 0
-    data = build(repo_root(), a)
+    if a.cmd == 'owner':
+        if len(a.rest) != 2 or not a.by:
+            ap.error('owner <lane> <person>|clear --by <name>')
+        set_owner(a.rest[0].lower(), a.rest[1], a.by)
+        return 0
+    root = repo_root()
+    if not a.me:
+        try:
+            team = load_team(root)
+            ap_mod = importlib.util.spec_from_file_location('approvals', os.path.join(root, 'Tools', 'Build', 'approvals.py'))
+            apm = importlib.util.module_from_spec(ap_mod)
+            ap_mod.loader.exec_module(apm)
+            a.me = apm.me_of(team, root, None)
+        except Exception:
+            a.me = None
+    data = build(root, a)
     if a.json:
         print(json.dumps(data, indent=1, ensure_ascii=False))
     elif a.lane:
         print_lane(data, a.lane.lower())
     else:
-        print_board(data, full=a.full, md=a.md)
+        print_board(data, full=a.full, md=a.md, kind=a.kind)
     return 0
 
 

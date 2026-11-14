@@ -1,7 +1,7 @@
 """The Manta's four ability icons (Resources/ElementalAbilityMaps/Manta.asset), angular, one object each.
 
   Charge  Sting    the bomb the bay plants: an octagonal shell, a square neck, a zig-zag fuse, the spark
-  Mass    Yastri   the hard turn that LEAVES mass: a mitred right-angle band ending in an arrowhead, two
+  Mass    Yawstery   the hard turn that LEAVES mass: a mitred right-angle band ending in an arrowhead, two
                    prisms growing behind the bend
   Space   Kabloom  the bloom, wider: one jagged blast ring round a small core
   Time    Soar     the Manta itself at speed: its top-view silhouette banked, one motion bar behind each wing
@@ -24,7 +24,7 @@ def sting():
     return body | neck | fuse | spark
 
 
-def yastri():
+def yawstery():
     # The band is the turn; the vertical leg behind the bend is what it LEAVES: prisms, growing.
     head = arrowhead((122, 36), (1, 0), 30, spread=0.72)
     band = stroke([(30, 58), (30, 36), (98, 36)], 14)
@@ -60,7 +60,7 @@ def soar():
 
 ICONS = [
     dict(name="Manta_Sting", element="Charge", act="Sting", draw=sting),
-    dict(name="Manta_Yastri", element="Mass", act="Yastri", draw=yastri,
+    dict(name="Manta_Yawstery", element="Mass", act="Yawstery", draw=yawstery,
          exempt={"components": "the band and its two prisms, each two close triangles (never the rhombus, Garrett 2026-11-01)"}),
     dict(name="Manta_Kabloom", element="Space", act="Kabloom", draw=kabloom),
     dict(name="Manta_Soar", element="Time", act="Soar", draw=soar),
@@ -106,7 +106,7 @@ def bomb(cx, cy, r, held=True, w=2.2):
     return ring(cx, cy, r - w / 2, w=w) | (neck & ~disc(cx, cy, r - w))
 
 
-# ==== Round 3 (2026-11-07): the overhauled kit (#1803, #1804) - Sting, Decoy, Skim, Yastri ====================================
+# ==== Round 3 (2026-11-07): the overhauled kit (#1803, #1804) - Sting, Decoy, Skim, Yawstery ====================================
 # The round-2 Sting options (bay / plant / belly) drew the old bomb bay; the overhaul retired it: bombs now share ONE fuse,
 # skim energy buys each plant, and the Mass and Time cards carry new abilities. Every card is redrawn against the new kit.
 import importlib as _importlib
@@ -123,10 +123,10 @@ def _png(name):
 
 
 # The row as the HUD draws it today: the four shipped sprites in the prefab's slots (Charge, Mass, Space, Time) - the
-# overhaul moved the abilities but not the sprites, so Mass still wears Yastri and Time still wears Soar.
+# overhaul moved the abilities but not the sprites, so Mass still wears Yawstery and Time still wears Soar.
 LOCKUP = dict(
     Charge=dict(parts=dict(i=lambda: _png("Manta_Sting")), state=[("i", "white")], gauge=0.5),
-    Mass=dict(parts=dict(i=lambda: _png("Manta_Yastri")), state=[("i", "white")], gauge=0.0),
+    Mass=dict(parts=dict(i=lambda: _png("Manta_Yawstery")), state=[("i", "white")], gauge=0.0),
     Space=dict(parts=dict(i=lambda: _png("Manta_Kabloom")), state=[("i", "white")], gauge=0.0),
     Time=dict(parts=dict(i=lambda: _png("Manta_Soar")), state=[("i", "white")], gauge=0.0),
 )
@@ -177,7 +177,7 @@ def fuse_ring(cx, cy, r, frac, w=4.0):
 
 # ---- Charge: Sting ----------------------------------------------------------------------------------------------------------
 # Skimming a rival plants a bomb (paid for with a bomb of skim energy). Every bomb shares ONE fuse, reset by each plant, so
-# they all go off together; Charge raises the petals each bloom knocks out. L5 Contagion: anything caught in a blast is
+# they all go off together; Charge sets how long that fuse runs when a plant resets it. L5 Contagion: anything caught in a blast is
 # bombed too. The plate is the shared FUSE (MantaVesselHUDView.SetFuse).
 
 CH_MANTA = manta(50, cx=27, cy=100)
@@ -299,7 +299,7 @@ def d_pair_elemental():
     return decoy(34, 86, 38, frozen=0)
 
 
-DECOY_BEFORE = "Assets/_Graphics/Icons/AbilityIcons/Manta/Manta_Yastri.png"
+DECOY_BEFORE = "Assets/_Graphics/Icons/AbilityIcons/Manta/Manta_Yawstery.png"
 DECOY_GAUGE = {"no decoy": (0.0, None), "a decoy standing": (0.7, None), "Mass 5: Omni Decoy": (0.7, None)}
 CARDS += [
     dict(name="decoy_a", group="decoy", element="Mass", before=DECOY_BEFORE, gauge=DECOY_GAUGE,
@@ -396,7 +396,7 @@ CARDS += [
 ]
 
 
-# ---- Time: Yastri -----------------------------------------------------------------------------------------------------------
+# ---- Time: Yawstery -----------------------------------------------------------------------------------------------------------
 # Hard flat turns on the turn pair; Time makes the Manta faster (cruise x1.5, soaring x1.3 at Time 10). L5 Soar: boosting
 # unlocks (the analog turn-boost and the boost button stay dark until Time 5).
 from motifs import speed_wedge  # noqa: E402
@@ -425,17 +425,17 @@ def y_soar():
     return out
 
 
-YASTRI_BEFORE = "Assets/_Graphics/Icons/AbilityIcons/Manta/Manta_Soar.png"
+YAWSTERY_BEFORE = "Assets/_Graphics/Icons/AbilityIcons/Manta/Manta_Soar.png"
 Y_GAUGE = {"cruise": (None, None), "Time 3: faster": (None, None), "Time 5: Soar": (None, None)}
 CARDS += [
-    dict(name="yastri_a", group="yastri", element="Time", before=YASTRI_BEFORE,
+    dict(name="yawstery_a", group="yawstery", element="Time", before=YAWSTERY_BEFORE,
          title="A  the flat turn: the Manta (domain) leaving a hard corner in its trail (white); Soar's chevrons at Time 5",
          parts=dict(m=manta(60, cx=80, cy=48), t=y_turn, s=y_soar),
          states=[("cruise", [("m", "domain"), ("t", "white", 0.5)]),
                  ("Time 3: faster", [("m", "domain"), ("t", "white")]),
                  ("Time 5: Soar", [("m", "domain"), ("t", "white"), ("s", "white")])],
          lockup_state=1),
-    dict(name="yastri_b", group="yastri", element="Time", before=YASTRI_BEFORE,
+    dict(name="yawstery_b", group="yawstery", element="Time", before=YAWSTERY_BEFORE,
          title="B  faster: the Manta (domain) with speed marks (white) that grow with Time; Soar's chevrons at Time 5",
          parts=dict(m=manta(66, cx=64, cy=56), w1=lambda: _np.roll(y_marks(1), (0, -26 * 8), axis=(0, 1)),
                     w3=lambda: _np.roll(y_marks(3), (0, -26 * 8), axis=(0, 1)), s=lambda: _np.roll(y_soar(), (-2 * 8, -16 * 8), axis=(0, 1))),
@@ -443,8 +443,8 @@ CARDS += [
                  ("Time 3: faster", [("m", "domain"), ("w3", "white")]),
                  ("Time 5: Soar", [("m", "domain"), ("w3", "white"), ("s", "white")])],
          lockup_state=1),
-    dict(name="yastri_c", group="yastri", element="Time", before=YASTRI_BEFORE,
-         title="C  the bank: the Manta (domain) rolled into the turn, flat wings tipped - the shipped Yastri, on the real hull",
+    dict(name="yawstery_c", group="yawstery", element="Time", before=YAWSTERY_BEFORE,
+         title="C  the bank: the Manta (domain) rolled into the turn, flat wings tipped - the shipped Yawstery, on the real hull",
          parts=dict(m=manta(78, roll=-35.0), s=lambda: _np.roll(y_soar(), (-4 * 8, -16 * 8), axis=(0, 1))),
          states=[("cruise", [("m", "domain", 0.7)]),
                  ("Time 3: faster", [("m", "domain")]),
@@ -539,13 +539,13 @@ SKIM_PARTS = [("SkimManta", "Manta_SkimManta", "skimMantaIcon", SK_MANTA, "the M
               ("EnergyGauge", None, "energyFill", None, "the card's plate: the skim energy, full = one bomb")]
 
 Y_MANTA_A = manta(60, cx=80, cy=48)
-YASTRI_PARTS = [("YastriManta", "Manta_YastriManta", "yastriMantaIcon", Y_MANTA_A, "the Manta from above (domain)"),
-                ("YastriTurn", "Manta_YastriTurn", "yastriTurnIcon", lambda: _clear_of(y_turn(), Y_MANTA_A(), px=2.0),
+YAWSTERY_PARTS = [("YawsteryManta", "Manta_YawsteryManta", "yawsteryMantaIcon", Y_MANTA_A, "the Manta from above (domain)"),
+                ("YawsteryTurn", "Manta_YawsteryTurn", "yawsteryTurnIcon", lambda: _clear_of(y_turn(), Y_MANTA_A(), px=2.0),
                  "the hard corner its turn pair cuts (white; brighter as Time speeds it up)"),
-                ("YastriSoar", "Manta_YastriSoar", "yastriSoarIcon", lambda: _clear_of(y_soar(), Y_MANTA_A(), px=2.0),
+                ("YawsterySoar", "Manta_YawsterySoar", "yawsterySoarIcon", lambda: _clear_of(y_soar(), Y_MANTA_A(), px=2.0),
                  "Soar: the boost chevrons ahead of the nose (white; Time 5)")]
 
-for element, parts in (("Charge", STING_PARTS), ("Mass", DECOY_PARTS), ("Space", SKIM_PARTS), ("Time", YASTRI_PARTS)):
+for element, parts in (("Charge", STING_PARTS), ("Mass", DECOY_PARTS), ("Space", SKIM_PARTS), ("Time", YAWSTERY_PARTS)):
     ICONS += [dict(name=i, element=element, act=act, draw=draw, subdir="Parts", family=False, exempt=PART_EXEMPT)
               for _n, i, _f, draw, act in parts if i]
 
@@ -598,13 +598,13 @@ CARDS += [
                  ("Space 5: Shield Breaker", [("SkimManta", "domain"), ("SkimPrisms", "danger"), ("SkimSparks", "white"),
                                               ("SkimShards", "white")])],
          lockup_state=1),
-    dict(name="yastri", element="Time", before=YASTRI_BEFORE,
-         title="Yastri (Time, picked A): the Manta (domain) and the hard corner (white) its turn pair cuts; Soar's chevrons "
+    dict(name="yawstery", element="Time", before=YAWSTERY_BEFORE,
+         title="Yawstery (Time, picked A): the Manta (domain) and the hard corner (white) its turn pair cuts; Soar's chevrons "
                "once Time 5 unlocks the boost",
-         parts=_parts(YASTRI_PARTS),
-         states=[("cruise", [("YastriManta", "domain"), ("YastriTurn", "white", 0.55)]),
-                 ("Time 10: faster", [("YastriManta", "domain"), ("YastriTurn", "white")]),
-                 ("Time 5: Soar", [("YastriManta", "domain"), ("YastriTurn", "white"), ("YastriSoar", "white")])],
+         parts=_parts(YAWSTERY_PARTS),
+         states=[("cruise", [("YawsteryManta", "domain"), ("YawsteryTurn", "white", 0.55)]),
+                 ("Time 10: faster", [("YawsteryManta", "domain"), ("YawsteryTurn", "white")]),
+                 ("Time 5: Soar", [("YawsteryManta", "domain"), ("YawsteryTurn", "white"), ("YawsterySoar", "white")])],
          lockup_state=1),
     dict(name="omni", element="Omni", title="The OMNI crystal card: the cash-out - every planted bomb blooms at once",
          parts=dict(i=omni_cash_out), states=[("an omni crystal collected", [("i", "white")])]),
@@ -613,7 +613,7 @@ LOCKUP = dict(
     Charge=dict(parts=_parts(STING_PARTS), state=CARDS[-5]["states"][2][1], gauge=0.6),
     Mass=dict(parts=_parts(DECOY_PARTS), state=CARDS[-4]["states"][1][1]),
     Space=dict(parts=_parts(SKIM_PARTS), state=CARDS[-3]["states"][0][1], gauge=0.45),
-    Time=dict(parts=_parts(YASTRI_PARTS), state=CARDS[-2]["states"][1][1]),
+    Time=dict(parts=_parts(YAWSTERY_PARTS), state=CARDS[-2]["states"][1][1]),
     Omni=dict(parts=dict(i=omni_cash_out), state=[("i", "white")]),
 )
 REBIND = [
@@ -625,6 +625,6 @@ REBIND = [
                                 children=[(n, i, f) for n, i, f, _d, _a in SKIM_PARTS],
                                 binding=dict(element=3, gauge="EnergyGauge"))),
     dict(file=VESSEL, pair=dict(container=SLOT["Time"], view=VIEW, after="fuseText",
-                                children=[(n, i, f) for n, i, f, _d, _a in YASTRI_PARTS],
+                                children=[(n, i, f) for n, i, f, _d, _a in YAWSTERY_PARTS],
                                 fields={"omniAbilitySprite": ("icon", "Manta_OmniCashOut")})),
 ]

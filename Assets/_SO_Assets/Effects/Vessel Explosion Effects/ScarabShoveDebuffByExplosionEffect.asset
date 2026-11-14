@@ -15,4 +15,4 @@ MonoBehaviour:
   debuffMagnitude: -0.12
   debuffDuration: 4
   cooldown: 1
-  magnitudeAtFullCharge: 2.5
+  magnitudeAtFullCharge: 1

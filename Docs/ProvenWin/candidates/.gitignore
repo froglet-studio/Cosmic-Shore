@@ -1,0 +1,7 @@
+out/
+specs/
+variants_generated/
+unity_*.log
+run.log
+change_frames/
+signoff/

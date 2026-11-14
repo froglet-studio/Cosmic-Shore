@@ -33,6 +33,12 @@ namespace CosmicShore.Core
         [Header("Words (empty shows nothing)")]
         [Tooltip("Under the pilot-name field when the name could not be set. {error} is the reason.")]
         [SerializeField] string usernameFailedLine = "Failed to set username: {error}";
+        [Tooltip("The status line while the player is being signed in.")]
+        [SerializeField] string signingInLine = "Signing in…";
+        [Tooltip("The status line when there is no connection and the game starts offline.")]
+        [SerializeField] string offlineLine = "No connection. Starting offline…";
+        [Tooltip("The status line while the signed-in player's profile loads.")]
+        [SerializeField] string loadingProfileLine = "Loading profile…";
 
         [Header("Panels")]
         [SerializeField] private GameObject authPanel;
@@ -174,7 +180,7 @@ namespace CosmicShore.Core
                 return;
             }
 
-            ShowLoading(IsOffline ? "No connection. Starting offline…" : "Signing in…");
+            ShowLoading(IsOffline ? offlineLine : signingInLine, BootStep.SigningIn);
 
             try
             {
@@ -251,7 +257,7 @@ namespace CosmicShore.Core
             }
 
             CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Privacy flow resolved - resuming sign-in.");
-            ShowLoading(IsOffline ? "No connection. Starting offline…" : "Signing in…");
+            ShowLoading(IsOffline ? offlineLine : signingInLine, BootStep.SigningIn);
         }
 
         async UniTask RunAuthFlowCoreAsync(CancellationToken ct)
@@ -422,7 +428,7 @@ namespace CosmicShore.Core
             _awaitingPlayerInput = false;   // they acted - this is no longer a parked boot
             if (guestLoginButton) guestLoginButton.interactable = false;
             ClearStatusMessages();
-            ShowLoading("Signing in…");
+            ShowLoading(signingInLine, BootStep.SigningIn);
 
             try
             {
@@ -551,7 +557,7 @@ namespace CosmicShore.Core
 
         async UniTask HandlePostAuthFlowAsync(CancellationToken ct)
         {
-            ShowLoading("Loading profile…");
+            ShowLoading(loadingProfileLine, BootStep.LoadingProfile);
 
             // Wait for PlayerDataService to initialize, with a timeout.
             if (_playerDataService != null && !_playerDataService.IsInitialized)
@@ -814,8 +820,9 @@ namespace CosmicShore.Core
             }
         }
 
-        void ShowLoading(string text = "Loading…")
-            => bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, text));
+        // `step` is the boot milestone this status starts (the splash bar's percentage counts from it).
+        void ShowLoading(string text, BootStep step = BootStep.None)
+            => bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, text, step));
 
         void HideLoading()
             => bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));

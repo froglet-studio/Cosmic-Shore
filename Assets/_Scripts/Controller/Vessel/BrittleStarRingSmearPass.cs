@@ -37,6 +37,11 @@ namespace CosmicShore.Gameplay
     /// <para><b>Stated limits.</b> The rotation is applied to points on the ring's PLANE, so parts that stand off
     /// it (the pods' tails, the barrels) smear with a little parallax. A TRANSPARENT drawn in front of the ring is
     /// overdrawn by the smear (it runs after the transparents).</para>
+    ///
+    /// <para><b>Never an empty layer (2026-11-10).</b> Each material is drawn with its <see cref="ForwardPass"/>, which
+    /// must accept an UNTAGGED pass: the hull's Unlit Shader Graph has no LightMode tag, and before this the layer drew
+    /// nothing, so the hidden ring vanished while it turned. A request with nothing drawable is now skipped without
+    /// being marked drawn, so <see cref="BrittleStarAnimation"/> falls back to the hull's own ring.</para>
     /// </summary>
     public sealed class BrittleStarRingSmearPass : ScriptableRenderPass
     {
@@ -170,6 +175,10 @@ namespace CosmicShore.Gameplay
                 var request = s_active[r];
                 if (request.Ring == null || request.Copies < 2 || request.SubmittedFrame < Time.frameCount - 1) continue;
                 if ((cam.cullingMask & (1 << request.Layer)) == 0) continue;
+                // Nothing the layer could draw: the smear would average an EMPTY layer while the hull has hidden its ring,
+                // and the ring would vanish whenever it turned (what bleeding-edge did until 2026-11-10, see ForwardPass).
+                // DrawnFrame stays behind, so BrittleStarAnimation shows the ring again and warns.
+                if (!HasDrawableSubmesh(request)) continue;
 
                 TextureHandle layer = UniversalRenderer.CreateRenderGraphTexture(renderGraph, colourDesc,
                     "_BrittleStarRingLayer", true, FilterMode.Bilinear, TextureWrapMode.Clamp);
@@ -243,17 +252,47 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        static int ForwardPass(Material material)
+        /// <summary>Does <paramref name="request"/>'s ring have at least one submesh the layer can draw (a material with a
+        /// <see cref="ForwardPass"/>)? The same test <see cref="FillOrder"/> applies, asked before anything is recorded.</summary>
+        static bool HasDrawableSubmesh(Request request)
         {
+            int subMeshes = Mathf.Min(request.Ring.subMeshCount, request.Materials.Count);
+            for (int s = 0; s < subMeshes; s++)
+                if (request.Materials[s] && request.Ring.GetSubMesh(s).indexCount > 0 && ForwardPass(request.Materials[s]) >= 0)
+                    return true;
+            return false;
+        }
+
+        /// <summary>
+        /// The pass URP's forward renderer draws <paramref name="material"/> with: one tagged UniversalForward,
+        /// UniversalForwardOnly or SRPDefaultUnlit, else the first pass with NO LightMode tag, which URP draws as
+        /// SRPDefaultUnlit. -1 = none.
+        /// <para><b>Why the untagged case (2026-11-10).</b> The hull wears <c>VesselGraph</c>, an Unlit Shader Graph, and
+        /// URP 17's generator writes an Unlit graph's forward pass with no LightMode tag at all (UniversalUnlitSubTarget
+        /// sets none; ShaderGraph's Generator then writes <c>// LightMode: &lt;None&gt;</c>), so
+        /// <see cref="Shader.FindPassTagValue"/> answers <see cref="ShaderTagId.none"/>. Matching the tags alone found no
+        /// pass on any of the hull's materials: the ring layer came out empty, the smear averaged nothing, and the ring,
+        /// which the hull had already hidden, vanished whenever it turned more than <c>ringSmearMinDegrees</c> a frame
+        /// (1.5° in BrittleStarConfig.asset). Garrett: "too dark to see".</para>
+        /// </summary>
+        public static int ForwardPass(Material material)
+        {
+            if (!material) return -1;
             if (s_forwardPass.TryGetValue(material, out int cached)) return cached;
-            int found = -1;
+            int found = -1, untagged = -1;
             var shader = material.shader;
             for (int p = 0; shader && p < shader.passCount && found < 0; p++)
             {
                 var mode = shader.FindPassTagValue(p, LightModeTag);
+                if (mode == ShaderTagId.none)
+                {
+                    if (untagged < 0) untagged = p;
+                    continue;
+                }
                 for (int m = 0; m < ForwardModes.Length; m++)
                     if (mode == ForwardModes[m]) { found = p; break; }
             }
+            if (found < 0) found = untagged;
             s_forwardPass[material] = found;
             return found;
         }

@@ -842,9 +842,9 @@ MonoBehaviour:
   - {fileID: 1564881929}
   arrangeSpawnPointsAroundCell: 1
   spawnDistanceOutsideNucleus: 40
-  spawnRingRadiusFloor: 880
+  spawnRingRadiusFloor: 900
   spawnRingRadiusFloorByIntensity:
-  - 880
+  - 900
   - 960
   - 1020
   - 1080

@@ -126,6 +126,30 @@ namespace CosmicShore.UI
         public VoyageMapSky Sky => _chart != null ? _sky : null;
         VoyageMapSky SkyOf => _sky ??= new VoyageMapSky(this);
 
+        /// <summary>
+        /// The water this map last painted, for another view to show the same sea (the open voyage card's ground,
+        /// <see cref="VoyageRoutePoster"/>): the texture, the uv rectangle holding the water, and the map points at that
+        /// rectangle's lower-left and upper-right corners (<see cref="MapPoint"/>'s space). False before the first paint
+        /// or on an uncharted map. Read only: it changes nothing on this map.
+        /// </summary>
+        public bool TrySeaView(out Texture texture, out Rect uv, out Vector2 lo, out Vector2 hi)
+        {
+            texture = null;
+            uv = default;
+            lo = _paintLo;
+            hi = _paintHi;
+            if (!_painted || _chart == null || !s_Atlas) return false;
+            texture = s_Atlas;
+            uv = new Rect(0f, 0f, (float)SeaTexWidth / s_Atlas.width, (float)_seaTexHeight / s_Atlas.height);
+            return true;
+        }
+
+        /// <summary>The uv of a white texel in the painted texture, for lines drawn over the water with it.</summary>
+        public Vector2 WhiteUv => _white;
+
+        /// <summary>A course point (light years on the board, <see cref="VoyageChart.Voyage.Points"/>) as a map point.</summary>
+        public static Vector2 MapPoint((double x, double y) p) => Galaxy(p);
+
         static Texture2D s_Atlas;
         static string s_AtlasKey;
         Vector2 _white;
@@ -196,7 +220,7 @@ namespace CosmicShore.UI
             if (key != _frameKey)
             {
                 _frameKey = key;
-                _openPending = OpenTier >= 0;
+                _fixWidth = 0f;
                 _pan = Vector2.zero;
                 _zoom = 1f;
                 _flying = false;
@@ -206,28 +230,6 @@ namespace CosmicShore.UI
             Caption();
             _placedFor = Vector2.zero;
             Relayout();
-            ApplyOpenTier();
-        }
-
-        /// <summary>
-        /// The ladder tier a new frame opens on (0 the whole galaxy, 6 a single system, as the ladder's rows), or -1 to
-        /// open framed on the places or the course. The Voyage window opens on the whole galaxy (Shombith, 2026-11-08,
-        /// Docs/MENU_REDESIGN_B.md section 149: "we should have the old whole galaxy view on the left"); the player zooms
-        /// from there as before.
-        /// </summary>
-        public int OpenTier { get; set; } = -1;
-        bool _openPending;
-
-        /// <summary>Open the frame on <see cref="OpenTier"/>, once, as soon as the map has a size (the ladder's own dive,
-        /// shown at once rather than flown).</summary>
-        void ApplyOpenTier()
-        {
-            if (!_openPending || _chart == null) return;
-            var r = rectTransform.rect;
-            if (r.width < 1f || r.height < 1f) return;
-            _openPending = false;
-            var (centre, width) = SkyOf.Dive(OpenTier, r.height / Mathf.Max(1f, r.width));
-            SetView(centre ?? Vector2.zero, width);
         }
 
         // On a charted map the board's y runs toward Sol and the screen's up, so it flips.
@@ -237,6 +239,45 @@ namespace CosmicShore.UI
         /// <summary>Which places this crew can see (Docs/Voyages/DEPTH.md §8): an uncharted place is drawn only once the
         /// crew has found it. Null draws every place. Set by the view with the galaxy's record (VoyageRules.IsVisible).</summary>
         public System.Func<string, bool> Visible;
+
+        /// <summary>
+        /// The Voyages board's map (Rev 81 B5, Docs/MENU_REDESIGN_B.md section 165): the course with the sea and its places,
+        /// without the explorer's tier ladder and readout. Drag, pinch and wheel still explore.
+        /// </summary>
+        public bool Plain;
+
+        // A view the board asked for (FrameOn): kept across a resize until the player explores.
+        Vector2 _fixCentre;
+        float _fixWidth;
+
+        /// <summary>
+        /// Frame the view on <paramref name="points"/> (map points, <see cref="MapPoint"/>), <paramref name="margin"/> wider
+        /// than they span and at least <paramref name="minWidth"/> ly across, at once. The frame holds when the map is resized
+        /// (a first draw before the layout settles) until the player drags, pinches or scrolls.
+        /// </summary>
+        public void FrameOn(IReadOnlyList<Vector2> points, float margin = 1.35f, float minWidth = 360f)
+        {
+            if (points == null || points.Count == 0) return;
+            Vector2 lo = points[0], hi = points[0];
+            foreach (var p in points)
+            {
+                lo = Vector2.Min(lo, p);
+                hi = Vector2.Max(hi, p);
+            }
+            var r = rectTransform.rect;
+            float aspect = r.height > 1f ? r.width / r.height : 1.4f;
+            float width = Mathf.Max(minWidth, (hi.x - lo.x) * margin, (hi.y - lo.y) * margin * aspect);
+            _fixCentre = (lo + hi) * 0.5f;
+            _fixWidth = width;
+            _flying = false;
+            ApplyFix();
+        }
+
+        void ApplyFix()
+        {
+            if (_fixWidth <= 0f || float.IsInfinity(_minX)) return;
+            SetView(_fixCentre, _fixWidth);
+        }
 
         /// <summary>A charted map draws only the charted locations, and only the ones this crew can see.</summary>
         bool Drawn(VoyageLocation l) => l != null && (_chart == null || l.Charted) && (Visible == null || Visible(l.Id));
@@ -297,12 +338,20 @@ namespace CosmicShore.UI
         // The labels and the sea follow the map's size. Watched here rather than by overriding
         // OnRectTransformDimensionsChange, whose access differs between the shipped uGUI (protected) and the compile
         // gate's publicized reference (public).
+        // The colour set the map was last drawn in (ColorTrace.Version): another one worn draws it again, the route,
+        // landmark and sky colours through the trace (Docs/VesselModels/COLOR_TRACE.md).
+        int _colorVersion;
+
         void LateUpdate()
         {
+            if (_colorVersion != ColorTrace.Version)
+            {
+                _colorVersion = ColorTrace.Version;
+                _viewDirty = true;
+            }
             if (rectTransform.rect.size != _placedFor)
             {
                 Relayout();
-                ApplyOpenTier();
                 return;
             }
             if (_chart != null && SkyOf.Tick()) _viewDirty = true;
@@ -335,6 +384,7 @@ namespace CosmicShore.UI
 
         void Relayout()
         {
+            ApplyFix();
             _placedFor = rectTransform.rect.size;
             _insetPainted = false;
             PaintSea();
@@ -357,6 +407,7 @@ namespace CosmicShore.UI
         public void OnPointerUp(PointerEventData e) => _pointers.Remove(e.pointerId);
         public void OnBeginDrag(PointerEventData e)
         {
+            _fixWidth = 0f;
             _flying = false;
             _pointers[e.pointerId] = Local(e, e.position);
         }
@@ -391,8 +442,19 @@ namespace CosmicShore.UI
         public void OnScroll(PointerEventData e)
         {
             if (float.IsInfinity(_minX) || Mathf.Approximately(e.scrollDelta.y, 0f)) return;
+            _fixWidth = 0f;
             _flying = false;
             ZoomAbout(Local(e, e.position), Mathf.Pow(WheelZoom, e.scrollDelta.y));
+        }
+
+        /// <summary>Zoom by <paramref name="factor"/> about the middle of the view (the Voyages screen's + and -), as the
+        /// wheel does about the pointer.</summary>
+        public void ZoomStep(float factor)
+        {
+            if (float.IsInfinity(_minX) || factor <= 0f) return;
+            _fixWidth = 0f;
+            _flying = false;
+            ZoomAbout(rectTransform.rect.center, factor);
         }
 
         public void OnPointerClick(PointerEventData e)
@@ -425,7 +487,8 @@ namespace CosmicShore.UI
                 return;
             }
             if (_chart == null) return;
-            // A star, a cluster or a landmark opens its card; a tap on open water closes it.
+            // A star, a cluster or a landmark opens its card; a tap on open water closes it. The board's plain map has none.
+            if (Plain) return;
             var hit = SkyOf.HitAt(at);
             if (hit == null && SkyOf.Selected == null) return;
             SkyOf.Select(hit);
@@ -628,9 +691,7 @@ namespace CosmicShore.UI
             s_AtlasKey = key;
         }
 
-        /// <summary>The water's colour at column density <paramref name="n"/> (the colour key the map paints with); the
-        /// open voyage's place cards paint their close-ups with it too (<see cref="VoyagePlaceArt"/>).</summary>
-        internal static Color32 Sea(double n, byte alpha)
+        static Color32 Sea(double n, byte alpha)
         {
             var (r, g, b) = HyperSea.SeaColor(n);
             return new Color32((byte)r, (byte)g, (byte)b, alpha);
@@ -810,7 +871,9 @@ namespace CosmicShore.UI
             for (int i = 0; i < _labels.Count; i++)
             {
                 var l = i < n ? _content.Locations[i] : null;
-                _labelShown.Add(Drawn(l));
+                // The board's plain map names only the course's two ends.
+                bool named = !Plain || (l != null && _route.Count > 0 && (l.Id == _route[0] || l.Id == _route[^1]));
+                _labelShown.Add(Drawn(l) && named);
             }
             string end = _route.Count > 0 ? _route[^1] : null;
             for (int i = 0; i < n; i++)
@@ -869,10 +932,11 @@ namespace CosmicShore.UI
                 var l = _content.Locations[i];
                 if (!Drawn(l) || !_labels[i]) continue;
                 var at = At(l);
-                _labels[i].gameObject.SetActive(i < _labelShown.Count && _labelShown[i] && InFrame(at));
-                ((RectTransform)_labels[i].transform).anchoredPosition =
-                    at - rectTransform.rect.center +
-                    new Vector2(0f, -MarkerSize * .5f - 2f - ((RectTransform)_labels[i].transform).sizeDelta.y * .5f);
+                var label = (RectTransform)_labels[i].transform;
+                bool shown = i < _labelShown.Count && _labelShown[i] && InFrame(at);
+                var below = new Vector2(0f, -MarkerSize * .5f - 2f - label.sizeDelta.y * .5f);
+                _labels[i].gameObject.SetActive(shown);
+                label.anchoredPosition = at - rectTransform.rect.center + below;
             }
         }
     }

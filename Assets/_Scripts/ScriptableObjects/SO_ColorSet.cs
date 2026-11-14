@@ -13,6 +13,40 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] public DomainColorSet BlueColors;
         [SerializeField] public EnvironmentColorSet EnvironmentColors;
 
+        [Header("Traced colours")]
+        [Tooltip("Every colour the game draws outside the blocks above (the sky, materials, particles, the UI's own " +
+                 "colours, configs and code), keyed by the role it is drawn in and its Photic value " +
+                 "(Docs/VesselModels/COLOR_TRACE.md). Photic holds the baked values and every other set its own, written " +
+                 "by Tools/Build/author_colour_set_assets.py from colour_trace.json. To retune one for this set, put it in " +
+                 "colour_sets.json's set.traced and run the writer (an edit here is drift the writer's --check reports).")]
+        [SerializeField] public TracedColor[] TracedColors = System.Array.Empty<TracedColor>();
+
+        System.Collections.Generic.Dictionary<string, Color> _traced;
+        int _tracedCount = -1;
+
+        /// <summary>
+        /// This set's colour for the traced colour <paramref name="id"/> (<see cref="ColorTrace"/> ids: a role and a
+        /// Photic value, or a UI theme token). False when the set does not trace it.
+        /// </summary>
+        public bool TryGetTracedColor(string id, out Color color)
+        {
+            var list = TracedColors ?? System.Array.Empty<TracedColor>();
+            if (_traced == null || _tracedCount != list.Length)
+            {
+                _traced = new System.Collections.Generic.Dictionary<string, Color>(list.Length);
+                foreach (var t in list)
+                    if (!string.IsNullOrEmpty(t.Id)) _traced[t.Id] = t.Color;
+                _tracedCount = list.Length;
+            }
+            return _traced.TryGetValue(id ?? string.Empty, out color);
+        }
+
+        void OnValidate()
+        {
+            _traced = null;
+            ColorTrace.Invalidate();
+        }
+
         public bool TryGetColorSetByDomain(Domains domain,  out DomainColorSet colorSet)
         {
             colorSet = domain switch
@@ -250,6 +284,23 @@ namespace CosmicShore.ScriptableObjects
             GetPrismKindColors(colorSet, kind, out bright, out dark);
             return true;
         }
+    }
+
+    /// <summary>
+    /// One colour the game draws outside a colour set's domain and environment blocks, as this set paints it. The id
+    /// (<see cref="ColorTrace"/>) is <c>role:RRGGBB</c>: the role it is drawn in (ui or world) and its Photic value,
+    /// the colour found on screen; or <c>ui-token:&lt;Token&gt;</c>, a UI theme token the set gives directly.
+    /// </summary>
+    [System.Serializable]
+    public struct TracedColor
+    {
+        [Tooltip("The colour's id: its role (ui or world) and its Photic value as RRGGBB (xN.NN when HDR), or ui-token:<Token>.")]
+        public string Id;
+        [Tooltip("This set's colour for it, stored as the place it is drawn stores colours (materials and UI: sRGB, HDR " +
+                 "kept). Photic's is the baked value the game was authored with.")]
+        [ColorUsage(true, true)] public Color Color;
+        [Tooltip("Where it is drawn (written by Tools/Build/colour_trace.py, for people tuning it).")]
+        public string Note;
     }
 
     [System.Serializable]

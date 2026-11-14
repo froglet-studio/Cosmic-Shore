@@ -118,6 +118,14 @@ namespace CosmicShore.Core
                 changed = true;
             }
 
+            // The starter crew are the painted pilots (PaintedCrewSO): repainted on every read, so a crew saved
+            // before 2026-11-12 (rolled people under the painted pictures) and an edited story both catch up.
+            var painted = PaintedCrewSO.Load();
+            if (painted && inventory.Pilots != null)
+                foreach (var pilot in inventory.Pilots)
+                    if (PaintedCrewSO.IsPaintable(pilot) && painted.Paint(pilot))
+                        changed = true;
+
             if (!inventory.DeviceImportDone)
             {
                 ImportDevice(inventory, catalog, now);
@@ -145,7 +153,7 @@ namespace CosmicShore.Core
         {
             foreach (var vision in Callsigns.All)
                 if (!inventory.HasCallsign(vision))
-                    inventory.MintPilot(vision, FactionType.None, "starter", now);
+                    inventory.MintPilot(vision, FactionType.None, PaintedCrewSO.StarterOrigin, now);
 
             if (!catalog) return;
             foreach (var kind in catalog.Artifacts)

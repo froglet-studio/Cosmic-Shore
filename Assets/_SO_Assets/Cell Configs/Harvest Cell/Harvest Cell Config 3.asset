@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: Harvest Cell Config 3
   m_EditorClassIdentifier:
   CellName: Harvest
-  Description: 'Stooks - intensity 3 of Harvest: sixteen sheaves, a quarter each Jade, Ruby, Gold and
-    neutral, with sparser stalks. 3040 prisms in 16 sheaves (1760 core, 1280 stalk, 1760
-    shielded, 0 danger), field radius 940 inside the standard 1200 u cell, spawn ring 1020.
-    The omni crystals spawn in the clear centre. NO NUCLEUS, no flora, no fauna. Authored by
-    Tools/Build/author_harvest_assets.py from harvest_budget.py - re-run it rather than
-    hand-editing.'
+  Description: 'Stooks - intensity 3 of Harvest: sixteen wheel sheaves and eight bales, a quarter each
+    Jade, Ruby, Gold and neutral, with Space crystals for every team in the match. 4448
+    prisms - 16 wheel sheaves (1600 core, 2240 stalk), 12 chaff clouds (392), 8 bales (216);
+    1600 shielded, 0 danger; field radius 940 inside the standard 1200 u cell, spawn ring
+    1020. The omni crystals spawn in the clear centre. NO NUCLEUS, no flora, no fauna.
+    Authored by Tools/Build/author_harvest_assets.py from harvest_budget.py - re-run it
+    rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 3
   CellEndGameScore: 0
@@ -32,11 +33,11 @@ MonoBehaviour:
   EnvironmentIntensity: 3
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 3740
-    RestlessExit: 3540
-    FrenzyEnter: 6640
-    FrenzyExit: 6040
-    RestlessEnterVolume: 620608
-    RestlessExitVolume: 617408
-    FrenzyEnterVolume: 667008
-    FrenzyExitVolume: 657408
+    RestlessEnter: 5148
+    RestlessExit: 4948
+    FrenzyEnter: 8048
+    FrenzyExit: 7448
+    RestlessEnterVolume: 874847
+    RestlessExitVolume: 871647
+    FrenzyEnterVolume: 921247
+    FrenzyExitVolume: 911647

@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: Harvest Cell Config 1
   m_EditorClassIdentifier:
   CellName: Harvest
-  Description: 'Stubble - intensity 1 of Harvest: eight big neutral sheaves, dense with stalks - every
-    sheaf scores for everyone. 3200 prisms in 8 sheaves (1280 core, 1920 stalk, 0 shielded,
-    0 danger), field radius 800 inside the standard 1200 u cell, spawn ring 880. The omni
-    crystals spawn in the clear centre. NO NUCLEUS, no flora, no fauna. Authored by
-    Tools/Build/author_harvest_assets.py from harvest_budget.py - re-run it rather than
-    hand-editing.'
+  Description: 'Stubble - intensity 1 of Harvest: ten big neutral wheel sheaves, drifts of chaff and
+    four bales - everything scores for everyone. 4058 prisms - 10 wheel sheaves (1500 core,
+    2160 stalk), 8 chaff clouds (290), 4 bales (108); 0 shielded, 0 danger; field radius 820
+    inside the standard 1200 u cell, spawn ring 900. The omni crystals spawn in the clear
+    centre. NO NUCLEUS, no flora, no fauna. Authored by Tools/Build/author_harvest_assets.py
+    from harvest_budget.py - re-run it rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 1
   CellEndGameScore: 0
@@ -32,11 +32,11 @@ MonoBehaviour:
   EnvironmentIntensity: 1
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 3900
-    RestlessExit: 3700
-    FrenzyEnter: 6800
-    FrenzyExit: 6200
-    RestlessEnterVolume: 631552
-    RestlessExitVolume: 628352
-    FrenzyEnterVolume: 677952
-    FrenzyExitVolume: 668352
+    RestlessEnter: 4758
+    RestlessExit: 4558
+    FrenzyEnter: 7658
+    FrenzyExit: 7058
+    RestlessEnterVolume: 797323
+    RestlessExitVolume: 794123
+    FrenzyEnterVolume: 843723
+    FrenzyExitVolume: 834123

@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-10-astroleagueball-paints-the-balltrail-mat-a39744",
+  "to": "aradia1",
+  "by": "Garrett",
+  "date": "2026-11-10T23:43:10+00:00",
+  "area": "Astro League ball trail",
+  "summary": "AstroLeagueBall paints the BallTrail material it Resources.Loads with WorldColorTrace.Paint, so the ball's comet trail wears the worn colour set (it kept Photic's colour for the whole match). One line.",
+  "why": "Colour trace review: lazily loaded traced materials were never painted.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "2873b874d",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs"
+  ]
+}

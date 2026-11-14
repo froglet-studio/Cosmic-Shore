@@ -257,7 +257,8 @@ namespace CosmicShore.Gameplay
                 {
                     _smearWarned = true;
                     CSDebug.LogWarning($"[BrittleStarAnimation] '{name}': no camera drew the ring's motion smear " +
-                                       "(BrittleStarRingSmearPass), so the ring is drawn unsmeared.");
+                                       "(BrittleStarRingSmearPass: no URP camera took the pass, or none of the hull's " +
+                                       "materials has a pass it can draw), so the ring is drawn unsmeared.");
                 }
                 _smearRetryAt = Time.unscaledTime + 2f;
                 StopRingSmear();

@@ -55,12 +55,14 @@ closed to every Ark (proposed).
   where you want your voyages to take you"). Laid out by `Tools/Build/author_voyage_window.py`:
   - **Three tabs at the top, VOYAGES | SAGA | EPISODES** (`VoyageWindowTabs`, rebuilt 2026-11-02 to Shombith's
     pick, `Docs/MENU_REDESIGN_B.md` section 119, and again on 2026-11-08, section 151; `VoyageWindowModals` and its
-    modals retired). Voyages opens first. Saga holds Tandava and its Severing, and Episodes is locked ("coming soon",
-    Episode 2). LB / RB step through the tabs and stop at either end; while the window is open it holds the bumpers
+    modals retired). Voyages opens first. Saga holds Tandava and its Severing (`SagaView`, Rev 77 "Saga": the picked part's art on the left, the parts on a coverflow, one Set sail; `Docs/MENU_REDESIGN_B.md` section 157), and Episodes is locked (`EpisodesView`, Rev 77 "Episodes": Episode 2 over the muted galaxy,
+    "Coming soon", and a way back to the Saga; section 158). LB / RB step through the tabs and stop at either end; while the window is open it holds the bumpers
     (`HubShoulders`), so they do not slide the hub as well.
   - **The quest tracker is its own window, Quests** (2026-11-08, Rev 77 "Quests", section 151):
     `Assets/Resources/Voyages/QuestsView.prefab`, made by the same generator from this window's chrome. Its tabs are
-    Episode 1 (the quests) and Episode 2 (locked). `ScreenSwitcher.EnsureQuestsModal` places it beside this window as
+    Episode 1 and Episode 2 (locked). Episode 1 is the quests on a coverflow of their games' card art
+    (`QuestCarouselView`, `Docs/MENU_REDESIGN_B.md` section 156): the picked quest's line ends in Claim, Play quest or
+    Open the Hangar. `ScreenSwitcher.EnsureQuestsModal` places it beside this window as
     the `QUESTS` modal (20), and Home's quest card opens it (`OnClickQuests`).
   - **The galaxy map** (`VoyageMapGraphic`), named HyperSea map in the window, fills the left column (`mapColumn`) over
     the edge view. It shows the sea around the places,

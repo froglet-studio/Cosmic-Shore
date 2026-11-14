@@ -116,6 +116,7 @@ namespace CosmicShore.Gameplay
         Domains _paintedDomain;
         bool _litPublished;
         bool _painted;
+        int _paintedColorVersion;   // the colour set (ColorTrace.Version) the motes were last painted from
 
         CapsuleCollider _capsule;
         SkimmerImpactor _impactor;
@@ -300,12 +301,14 @@ namespace CosmicShore.Gameplay
         void RefreshColour()
         {
             var domain = _status != null && _status.Player != null ? _status.Domain : Domains.Blue;
-            if (_painted && domain == _paintedDomain) return;
+            // Another colour set worn repaints too: the palette and the fallback both come from the worn set.
+            if (_painted && domain == _paintedDomain && _paintedColorVersion == ColorTrace.Version) return;
             _painted = true;
             _paintedDomain = domain;
+            _paintedColorVersion = ColorTrace.Version;
 
             var main = _particles.main;
-            ResolveMotePalette(_gameData, domain, dustColor, _palette);
+            ResolveMotePalette(_gameData, domain, ColorTrace.Retrace(ColorTrace.World, dustColor), _palette);
             main.startColor = MotePaletteGradient(_palette);
         }
 
@@ -403,7 +406,7 @@ namespace CosmicShore.Gameplay
             main.startLifetime = moteLifetime;
             main.startSpeed = 0f;
             main.startSize = new ParticleSystem.MinMaxCurve(moteSize.x, moteSize.y);
-            main.startColor = dustColor;
+            main.startColor = ColorTrace.Retrace(ColorTrace.World, dustColor);
             main.gravityModifier = 0f;
             main.maxParticles = Mathf.CeilToInt(maxMotesPerSecond * moteLifetime * 1.25f);
 

@@ -63,23 +63,36 @@ namespace CosmicShore.UI
         static bool s_Loaded;
 
         static readonly Color32 GlobCore = new(255, 226, 170, 242), GlobMid = new(255, 206, 140, 115), GlobEdge = new(255, 200, 130, 0);
-        static readonly Color OpenRing = new(170 / 255f, 205 / 255f, 1f, .85f);
-        static readonly Color StarLabelReal = new(214 / 255f, 226 / 255f, 246 / 255f, .8f);
-        static readonly Color StarLabelModel = new(200 / 255f, 210 / 255f, 230 / 255f, .6f);
-        static readonly Color StarLabelTumult = new(1f, 214 / 255f, 150 / 255f, .82f);
-        static readonly Color GlobLabel = new(1f, 220 / 255f, 170 / 255f, .85f);
-        static readonly Color OpenLabel = new(180 / 255f, 210 / 255f, 1f, .85f);
-        static readonly Color FarColor = new(159 / 255f, 176 / 255f, 200 / 255f, .9f);
+        static readonly Color OpenRingAuthored = new(170 / 255f, 205 / 255f, 1f, .85f);
+        static Color OpenRing => ColorTrace.Retrace(ColorTrace.Ui, OpenRingAuthored);
+        static readonly Color StarLabelRealAuthored = new(214 / 255f, 226 / 255f, 246 / 255f, .8f);
+        static Color StarLabelReal => ColorTrace.Retrace(ColorTrace.Ui, StarLabelRealAuthored);
+        static readonly Color StarLabelModelAuthored = new(200 / 255f, 210 / 255f, 230 / 255f, .6f);
+        static Color StarLabelModel => ColorTrace.Retrace(ColorTrace.Ui, StarLabelModelAuthored);
+        static readonly Color StarLabelTumultAuthored = new(1f, 214 / 255f, 150 / 255f, .82f);
+        static Color StarLabelTumult => ColorTrace.Retrace(ColorTrace.Ui, StarLabelTumultAuthored);
+        static readonly Color GlobLabelAuthored = new(1f, 220 / 255f, 170 / 255f, .85f);
+        static Color GlobLabel => ColorTrace.Retrace(ColorTrace.Ui, GlobLabelAuthored);
+        static readonly Color OpenLabelAuthored = new(180 / 255f, 210 / 255f, 1f, .85f);
+        static Color OpenLabel => ColorTrace.Retrace(ColorTrace.Ui, OpenLabelAuthored);
+        static readonly Color FarColorAuthored = new(159 / 255f, 176 / 255f, 200 / 255f, .9f);
+        static Color FarColor => ColorTrace.Retrace(ColorTrace.Ui, FarColorAuthored);
         static readonly Color LadderIdle = new(214 / 255f, 224 / 255f, 240 / 255f, .7f);
         static readonly Color PanelBack = new(.02f, .035f, .07f, .86f);
         static readonly Color LabelBack = new(.02f, .035f, .07f, .62f);
         /// <summary>The Lime of the edge view's slice bar (the style guide's call to action: it is dragged).</summary>
-        public static readonly Color SliceLime = new(179 / 255f, 1f, 89 / 255f, .95f);
-        static readonly Color CutLine = new(179 / 255f, 1f, 89 / 255f, .6f);
-        static readonly Color TagNucleus = new(1f, 238 / 255f, 196 / 255f, 1f);
-        static readonly Color TagCytoplasm = new(207 / 255f, 228 / 255f, 1f, 1f);
-        static readonly Color TagMembrane = new(214 / 255f, 236 / 255f, 1f, 1f);
-        static readonly Color TagBody = new(214 / 255f, 224 / 255f, 240 / 255f, .8f);
+        public static readonly Color SliceLimeAuthored = new(179 / 255f, 1f, 89 / 255f, .95f);
+        public static Color SliceLime => ColorTrace.Retrace(ColorTrace.Ui, SliceLimeAuthored);
+        static readonly Color CutLineAuthored = new(179 / 255f, 1f, 89 / 255f, .6f);
+        static Color CutLine => ColorTrace.Retrace(ColorTrace.Ui, CutLineAuthored);
+        static readonly Color TagNucleusAuthored = new(1f, 238 / 255f, 196 / 255f, 1f);
+        static Color TagNucleus => ColorTrace.Retrace(ColorTrace.Ui, TagNucleusAuthored);
+        static readonly Color TagCytoplasmAuthored = new(207 / 255f, 228 / 255f, 1f, 1f);
+        static Color TagCytoplasm => ColorTrace.Retrace(ColorTrace.Ui, TagCytoplasmAuthored);
+        static readonly Color TagMembraneAuthored = new(214 / 255f, 236 / 255f, 1f, 1f);
+        static Color TagMembrane => ColorTrace.Retrace(ColorTrace.Ui, TagMembraneAuthored);
+        static readonly Color TagBodyAuthored = new(214 / 255f, 224 / 255f, 240 / 255f, .8f);
+        static Color TagBody => ColorTrace.Retrace(ColorTrace.Ui, TagBodyAuthored);
 
         readonly VoyageMapGraphic _map;
         readonly HyperSeaSkyField _field = new();
@@ -406,6 +419,10 @@ namespace CosmicShore.UI
                 Disc(vh, at, rad, col, col, 8, white);
             }
             var clim = new Rect(r.xMin - 30f, r.yMin - 30f, r.width + 60f, r.height + 60f);
+            // A globular cluster's glow in the worn colour set (ColorTrace), looked up once per mesh.
+            Color32 globCore = (Color32)ColorTrace.Retrace(ColorTrace.Ui, GlobCore),
+                globMid = (Color32)ColorTrace.Retrace(ColorTrace.Ui, GlobMid),
+                globEdge = (Color32)ColorTrace.Retrace(ColorTrace.Ui, GlobEdge);
             foreach (var m in _clusters)
             {
                 if (vh.currentVertCount > MaxVerts) return;
@@ -416,8 +433,8 @@ namespace CosmicShore.UI
                 if (c.Kind == SkyKind.Globular)
                 {
                     float a = m.Alpha;
-                    Disc(vh, at, rpx * 1.4f * .45f, Fade(GlobCore, a), Fade(GlobMid, a), 12, white);
-                    Annulus(vh, at, rpx * 1.4f * .45f, rpx * 1.4f, Fade(GlobMid, a), Fade(GlobEdge, a), 12, white);
+                    Disc(vh, at, rpx * 1.4f * .45f, Fade(globCore, a), Fade(globMid, a), 12, white);
+                    Annulus(vh, at, rpx * 1.4f * .45f, rpx * 1.4f, Fade(globMid, a), Fade(globEdge, a), 12, white);
                 }
                 else DashedRing(vh, at, rpx, 1.1f, new Color(OpenRing.r, OpenRing.g, OpenRing.b, OpenRing.a * m.Alpha), white);
             }
@@ -449,16 +466,18 @@ namespace CosmicShore.UI
             // [is] the slice for the thickness so they always have a nice lock up"): marked in the slice bar's Lime.
             VoyageMapGraphic.Line(vh, new Vector2(r.xMin, r.yMin + 1f), new Vector2(r.xMax, r.yMin + 1f), 1.5f, CutLine, white);
             // The dark plates under the names and the readout, so they read over bright stars and thick water.
+            var labelBack = ColorTrace.Retrace(ColorTrace.Ui, LabelBack);
             foreach (var b in _backs)
                 VoyageMapGraphic.Quad(vh, new Vector2(b.xMin, b.yMin), new Vector2(b.xMin, b.yMax), new Vector2(b.xMax, b.yMax),
-                    new Vector2(b.xMax, b.yMin), LabelBack, white, white, white, white);
+                    new Vector2(b.xMax, b.yMin), labelBack, white, white, white, white);
             // The ladder's chips, under their text.
             for (int i = 0; i < _ladderRects.Count; i++)
             {
                 var b = _ladderRects[i];
                 bool on = i == _tier;
                 VoyageMapGraphic.Quad(vh, new Vector2(b.xMin, b.yMin), new Vector2(b.xMin, b.yMax), new Vector2(b.xMax, b.yMax),
-                    new Vector2(b.xMax, b.yMin), on ? new Color(.95f, .97f, 1f, .92f) : new Color(.04f, .067f, .125f, .78f),
+                    new Vector2(b.xMax, b.yMin),
+                    ColorTrace.Retrace(ColorTrace.Ui, on ? new Color(.95f, .97f, 1f, .92f) : new Color(.04f, .067f, .125f, .78f)),
                     white, white, white, white);
             }
         }
@@ -614,6 +633,14 @@ namespace CosmicShore.UI
         void Labels()
         {
             _candidates.Clear();
+            if (_map.Plain)
+            {
+                // The board's plain map: no star, cluster or landmark names, and no card.
+                foreach (var t in _labels) if (t && t.gameObject.activeSelf) t.gameObject.SetActive(false);
+                _backs.Clear();
+                if (Selected != null) Select(null);
+                return;
+            }
             bool sys = SystemTier;
             foreach (var m in _stars)
             {
@@ -788,6 +815,13 @@ namespace CosmicShore.UI
             var r = _map.rectTransform.rect;
             _tier = HyperSeaSky.TierOf(_view.W);
             _ladderRects.Clear();
+            if (_map.Plain)
+            {
+                // The Voyages board's map shows no ladder or readout (VoyageMapGraphic.Plain).
+                foreach (var t in _ladder) if (t) t.gameObject.SetActive(false);
+                if (_readout) _readout.gameObject.SetActive(false);
+                return;
+            }
             float size = VoyageMapText.Ladder;
             float y = r.yMax - LadderTop;
             for (int i = 0; i < Rows; i++)
@@ -802,7 +836,7 @@ namespace CosmicShore.UI
                 bool on = i == _tier;
                 t.fontSize = size;
                 t.fontStyle = on ? FontStyles.Bold : FontStyles.Normal;
-                t.color = on ? new Color(.02f, .035f, .07f, 1f) : LadderIdle;
+                t.color = ColorTrace.Retrace(ColorTrace.Ui, on ? new Color(.02f, .035f, .07f, 1f) : LadderIdle);
                 if (!ReferenceEquals(t.text, text)) t.text = text;
                 float w = text.Length * size * .66f + 14f;
                 var box = new Rect(r.xMin + LadderLeft, y - LadderRow, w, LadderRow - 2f);
@@ -883,7 +917,7 @@ namespace CosmicShore.UI
                 var go = new GameObject("SkyCard", typeof(RectTransform));
                 go.transform.SetParent(_map.transform, false);
                 _card = go.AddComponent<Image>();
-                _card.color = PanelBack;
+                _card.color = ColorTrace.Retrace(ColorTrace.Ui, PanelBack);   // a later wear: UIThemeLive retraces it
                 _card.raycastTarget = false;
                 var crt = _card.rectTransform;
                 crt.pivot = new Vector2(1f, 0f);

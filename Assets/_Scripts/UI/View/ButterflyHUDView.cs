@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -139,6 +140,21 @@ namespace CosmicShore.UI
         int _dropShown = -1, _dustShown = -1, _reachShown = -1;
         Color _domain = Color.white, _shielded = Color.white, _danger = Color.white;
 
+        void OnEnable()
+        {
+            ColorTrace.Changed += RepaintCards;
+            RepaintCards();
+        }
+
+        void OnDisable() => ColorTrace.Changed -= RepaintCards;
+
+        /// <summary>
+        /// Another colour set was worn (or may have been, while this was hidden): the controller's next push repaints the
+        /// Time and Charge cards in it (<see cref="hitColor"/>, <see cref="rivalIdleColor"/>). The mode gauge is repainted
+        /// by every push already.
+        /// </summary>
+        void RepaintCards() => _dropShown = _dustShown = -1;
+
         /// <summary>
         /// Push the mode, 1 = Mass mode, 0 = Dust mode, anything between = switching
         /// (<c>SpreadWingsActionExecutor.MassMode01</c>, eased). The plate fills with it; the card's key ends fade with
@@ -151,7 +167,8 @@ namespace CosmicShore.UI
             if (wingEnergyGauge)
             {
                 wingEnergyGauge.fillAmount = value;
-                wingEnergyGauge.color = Color.Lerp(dustModeColor, massModeColor, value);
+                wingEnergyGauge.color = Color.Lerp(ColorTrace.Retrace(ColorTrace.Ui, dustModeColor),
+                                                   ColorTrace.Retrace(ColorTrace.Ui, massModeColor), value);
             }
 
             var keys = gildedWake ? Color.Lerp(_domain, _shielded, value) : _domain;
@@ -196,7 +213,7 @@ namespace CosmicShore.UI
             if (dropMouthIcon)
             {
                 dropMouthIcon.enabled = tollGate;
-                dropMouthIcon.color = A(tolled ? hitColor : _domain, live);
+                dropMouthIcon.color = A(tolled ? ColorTrace.Retrace(ColorTrace.Ui, hitColor) : _domain, live);
             }
             if (dropStreaksIcon) dropStreaksIcon.color = A(Color.white, streaks);
             if (dropMothIcon) dropMothIcon.color = A(_domain, live);
@@ -216,12 +233,13 @@ namespace CosmicShore.UI
             if (scaleDustRingIcon)
             {
                 scaleDustRingIcon.enabled = tollGate;
-                scaleDustRingIcon.color = tolled ? hitColor : _domain;
+                scaleDustRingIcon.color = tolled ? ColorTrace.Retrace(ColorTrace.Ui, hitColor) : _domain;
             }
             if (scaleDustMotesIcon) scaleDustMotesIcon.color = A(_shielded, a);
             if (scaleDustMotesDangerIcon) scaleDustMotesDangerIcon.color = A(_danger, a);
             if (scaleDustMotesDomainIcon) scaleDustMotesDomainIcon.color = A(_domain, a);
-            if (scaleDustRivalIcon) scaleDustRivalIcon.color = A(hit && dustOn ? hitColor : rivalIdleColor, a);
+            if (scaleDustRivalIcon)
+                scaleDustRivalIcon.color = A(ColorTrace.Retrace(ColorTrace.Ui, hit && dustOn ? hitColor : rivalIdleColor), a);
             if (scaleDustMothIcon) scaleDustMothIcon.color = A(_domain, dustOn ? 1f : noDustAlpha);
         }
 

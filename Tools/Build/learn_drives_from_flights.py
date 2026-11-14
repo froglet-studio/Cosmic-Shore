@@ -317,7 +317,7 @@ RANGES = {
     "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 6.0), "releaseRunwaySeconds": (0.0, 6.0),
     "steeringShareOfPlateau": (0.1, 1.0), "minHoldSeconds": (0.0, 5.0), "minRestSeconds": (0.0, 5.0),
     "minRearmSeconds": (0.0, 5.0), "spendAtCharge01": (0.05, 1.0), "cornerSpeed": (100.0, 1200.0),
-    "BoostStickBand": (0.0, 1.0), "YastriStickBand": (0.0, 1.0),
+    "BoostStickBand": (0.0, 1.0), "YawsteryStickBand": (0.0, 1.0),
     # the Stoat's autopilot (StoatModeActionSO, StoatDipoleConfigSO, StoatSlingConfigSO)
     "autopilotTimeModeDegrees": (0.0, 180.0), "autopilotModeIntervalSeconds": (0.5, 20.0),
     "autopilotHold01": (0.0, 1.0), "autopilotMinDistance": (0.0, 2000.0), "autopilotIntervalSeconds": (0.0, 20.0),
@@ -832,7 +832,7 @@ def measure_stoat(S, held=False):
     return out
 
 
-def autopilot_triggers(yaw, stick, boost_band, yastri_band):
+def autopilot_triggers(yaw, stick, boost_band, yawstery_band):
     """MantaAnalogTurnBoostExecutor.AutopilotTriggers, line for line."""
     if boost_band <= 0:
         hold = 0.0
@@ -842,8 +842,8 @@ def autopilot_triggers(yaw, stick, boost_band, yastri_band):
         hold = min(1.0, max(0.0, 1 - (abs(stick) - boost_band) / max(1e-4, 1 - boost_band)))
     lt = rt = hold
     a = abs(yaw)
-    if a > yastri_band:
-        excess = min(1.0, max(0.0, (a - yastri_band) / max(1e-4, 1 - yastri_band)))
+    if a > yawstery_band:
+        excess = min(1.0, max(0.0, (a - yawstery_band) / max(1e-4, 1 - yawstery_band)))
         outer = min(1.0, hold + excess)
         if yaw > 0:
             rt = outer
@@ -862,7 +862,7 @@ def measure_manta(S, held=False):
     best_b = min(grid, key=lambda b: sum((min(s["lt"], s["rt"]) - autopilot_triggers(0, s["stick"], b, 1.0)[0]) ** 2 for s in pts))
     best_y = min([y for y in grid if y >= best_b] or [1.0],
                  key=lambda y: sum(((s["rt"] - s["lt"]) - (lambda t: t[1] - t[0])(autopilot_triggers(s["yaw"], s["stick"], best_b, y))) ** 2 for s in pts))
-    m["BoostStickBand"], m["YastriStickBand"] = best_b, best_y
+    m["BoostStickBand"], m["YawsteryStickBand"] = best_b, best_y
     m["meanSoar"] = statistics.mean(min(s["lt"], s["rt"]) for s in pts)
     return m
 
@@ -925,7 +925,7 @@ def learn_hull(hull, flights, each_intensity=False):
             # A person who never Soars here fits a degenerate band that would switch the AI's Soar off.
             why = f"too little Soar in the races (mean {person['meanSoar']:.2f}, need {MIN_MEAN_SOAR})"
         else:
-            for k in ("BoostStickBand", "YastriStickBand"):
+            for k in ("BoostStickBand", "YawsteryStickBand"):
                 if k in person:
                     learned[k] = clamp(k, person[k])
     elif hull == "Urchin":
@@ -1519,7 +1519,7 @@ def self_test():
     do = learned("Dolphin", "policy")["learned"]
     assert do and abs(do["spendAtCharge01"] - 0.805) < 0.02 and "releaseAlignDegrees" not in do, do
     mt = learned("Manta", "manta")["learned"]
-    assert abs(mt["BoostStickBand"] - 0.5) < 0.03 and abs(mt["YastriStickBand"] - 0.8) < 0.03, mt
+    assert abs(mt["BoostStickBand"] - 0.5) < 0.03 and abs(mt["YawsteryStickBand"] - 0.8) < 0.03, mt
     assert not learned("Rhino", "policy", n=2)["learned"], "fewer than 3 finished races writes nothing"
     assert not learned("Rhino", "policy", finished=False)["learned"], "unfinished races write nothing"
     held = flight("Rhino", "policy", held=True)
@@ -1531,7 +1531,7 @@ def self_test():
         ("RhinoAIBoostPolicy_Regatta", "alignDegrees") not in UNWRITTEN, "a dropped number is reported, a written one is not"
     path, text = variant_text("Rhino", {"alignDegrees": 9.5}, intensity=4)
     assert path.endswith(f"RhinoAIBoostPolicy_{MODE}_I4.asset") and f"m_Name: RhinoAIBoostPolicy_{MODE}_I4" in text, path
-    path, text = variant_text("Manta", {"BoostStickBand": 0.5, "YastriStickBand": 0.8})
+    path, text = variant_text("Manta", {"BoostStickBand": 0.5, "YawsteryStickBand": 0.8})
     assert "MantaSoarAITuning_Regatta" in text and "BoostStickBand: 0.5" in text
     # The Stoat: a pilot in Time mode slings when the ring is 40+ deg off the nose and 200+ u away, squeezes 0.7, lets
     # go once the ring is within 15 deg; switches into Time mode when the ring is 35 deg off. Recovered from flights.

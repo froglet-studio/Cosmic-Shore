@@ -25,7 +25,12 @@ python3 Tools/Build/render_card_backgrounds.py --check --sheet   # render to tem
 python3 Tools/Build/render_card_backgrounds.py                    # write PNGs, import, rewire
 python3 Tools/Build/render_card_backgrounds.py --check            # must pass (byte-identical)
 python3 Tools/Build/author_card_backgrounds.py --strict           # every live card wired
+python3 Tools/Build/colour_grade.py                               # a NEW card is a new UI texture: record it
 ```
+
+**A new card PNG is a new texture the colour grade must record** (`Docs/VesselModels/colour_grade.json`, Garrett's
+LOCKED colour-set rule): without the re-run, `/ship`'s `colour_grade` gate goes red with "colour_grade.json is stale"
+(Glasshouse, 2026-11-11). Only the record changes; the grade tables do not.
 
 `--check --sheet` is the iteration loop: it renders everything into a temp dir, writes a contact
 sheet in roster order at half size, and touches nothing in `Assets/`. Commit the PNGs, their

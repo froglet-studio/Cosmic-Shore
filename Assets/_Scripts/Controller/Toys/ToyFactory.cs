@@ -345,7 +345,7 @@ namespace CosmicShore.Gameplay
                                            theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
             // HALO likewise: the pearl, minted on the prism shader once and cached by colour.
             if (signal == ToySwitchSignal.Halo)
-                return PrismShaderMaterial(HaloPearl,
+                return PrismShaderMaterial(ColorTrace.Retrace(ColorTrace.World, HaloPearl),
                                            theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
 
             var painted = SwitchDomain(signal, domain);
@@ -363,7 +363,7 @@ namespace CosmicShore.Gameplay
             => signal switch
             {
                 ToySwitchSignal.Next => CtaLime(theme),
-                ToySwitchSignal.Halo => HaloPearl,
+                ToySwitchSignal.Halo => ColorTrace.Retrace(ColorTrace.World, HaloPearl),
                 _ => DomainAccentColor(theme, SwitchDomain(signal, domain)),
             };
 

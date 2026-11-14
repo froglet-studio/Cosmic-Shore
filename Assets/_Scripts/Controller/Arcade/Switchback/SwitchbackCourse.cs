@@ -32,22 +32,6 @@ namespace CosmicShore.Gameplay
         public float HairpinMaxDegrees;      // ...and at most this much
 
         /// <summary>
-        /// The shipped course shape per intensity: ONE NEW DEMAND PER LEVEL (Yash, 2026-10-26,
-        /// <c>Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md</c> §3.3). Switchback is where the Dolphin's AI is
-        /// trained, so each level teaches one of the Dolphin's verbs and the next adds one:
-        /// <list type="number">
-        /// <item><b>I1, learn to fly:</b> a flowing arc of wide gates, gentle corners (40 degrees at most), no hairpins.</item>
-        /// <item><b>I2, carve:</b> every second corner is a HAIRPIN (90-150 degrees) that only a drift makes - the
-        /// gate faces the leg you arrive on, so you thread it straight and carve the turn after it.</item>
-        /// <item><b>I3, charge economy:</b> long legs and a hairpin every third corner.</item>
-        /// <item><b>I4, gauntlet:</b> short legs, a hairpin every second corner (110-150) and the tightest mouths.</item>
-        /// </list>
-        /// What sits on the course at every intensity is Blast Run's doors and block fields
-        /// (<see cref="SwitchbackBlastRun"/>, laid by <see cref="SpawnableSwitchbackFeatures"/>).
-        /// Gate COUNT stays constant (the end-game target, authored in one place), so the four levels are
-        /// comparable. <c>SwitchbackCourseTests</c> sweeps 400 seeds of each.
-        /// </summary>
-        /// <summary>
         /// The Dolphin's own circumscribing radius, in world units: 2.86.
         ///
         /// <para>MEASURED from the shipped prefab rather than guessed - the eight corners of all
@@ -69,6 +53,22 @@ namespace CosmicShore.Gameplay
         public static float RingRadiusForIntensity(int intensity) =>
             new[] { WidestRingRadius, 48f, 32f, 20f }[Mathf.Clamp(intensity, 1, 4) - 1];
 
+        /// <summary>
+        /// The shipped course shape per intensity: ONE NEW DEMAND PER LEVEL (Yash, 2026-10-26,
+        /// <c>Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md</c> §3.3). Switchback is where the Dolphin's AI is
+        /// trained, so each level teaches one of the Dolphin's verbs and the next adds one:
+        /// <list type="number">
+        /// <item><b>I1, learn to fly:</b> a flowing arc of wide gates, gentle corners (40 degrees at most), no hairpins.</item>
+        /// <item><b>I2, carve:</b> every second corner is a HAIRPIN (90-150 degrees) that only a drift makes - the
+        /// gate faces the leg you arrive on, so you thread it straight and carve the turn after it.</item>
+        /// <item><b>I3, charge economy:</b> long legs and a hairpin every third corner.</item>
+        /// <item><b>I4, gauntlet:</b> short legs, a hairpin every second corner (110-150) and the tightest mouths.</item>
+        /// </list>
+        /// What sits on the course at every intensity is Blast Run's doors and block fields
+        /// (<see cref="SwitchbackBlastRun"/>, laid by <see cref="SpawnableSwitchbackFeatures"/>).
+        /// Gate COUNT stays constant (the end-game target, authored in one place), so the four levels are
+        /// comparable. <c>SwitchbackCourseTests</c> sweeps 400 seeds of each.
+        /// </summary>
         public static SwitchbackCourseSettings ForIntensity(int intensity)
         {
             int i = Mathf.Clamp(intensity, 1, 4);

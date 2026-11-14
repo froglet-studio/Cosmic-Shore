@@ -78,7 +78,7 @@ negative() {   # $1 = label, $2 = course source, $3 = crystals source, $4 = heat
 sed 's/CornerFloorRadius = new\[\] { 0.75f \* full, 205f, 175f, 160f }/CornerFloorRadius = new[] { 0.75f * full, 205f, 175f, 90f }/' \
   "$COURSE" > "$OUT/RedlineCourse_neg.cs"
 grep -q '175f, 90f' "$OUT/RedlineCourse_neg.cs" || { echo "the I4 floor mutation did not apply"; exit 1; }
-negative "an I4 corner floor of 90 u (the Yastri pivot's ladder)" "$OUT/RedlineCourse_neg.cs" "$CRYSTALS"
+negative "an I4 corner floor of 90 u (the Yawstery pivot's ladder)" "$OUT/RedlineCourse_neg.cs" "$CRYSTALS"
 sed 's/public const float ApexInset = 70f;/public const float ApexInset = -70f;/' "$CRYSTALS" > "$OUT/RedlineTimeCrystals_neg.cs"
 grep -q 'ApexInset = -70f' "$OUT/RedlineTimeCrystals_neg.cs" || { echo "the inset mutation did not apply"; exit 1; }
 negative "I4 crystals set OUTSIDE their corners" "$COURSE" "$OUT/RedlineTimeCrystals_neg.cs"

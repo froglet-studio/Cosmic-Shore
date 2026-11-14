@@ -1872,6 +1872,14 @@ MonoBehaviour:
   radiusPerVesselRadius: 10
   fallbackVesselRadius: 4.5
   cooldownSeconds: 2.5
+  cooldownScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 0.5
+    element: 1
+    UseFloor: 1
+    Floor: 0.25
 --- !u!1 &6013774229915510331
 GameObject:
   m_ObjectHideFlags: 0

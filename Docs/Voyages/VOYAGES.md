@@ -564,8 +564,8 @@ and the in-flight branches (`CLAUDE.md` § Team).
 
 Each has a default the draft is written to; a different answer changes the section named.
 
-1. **People per squad.** Is a squad 1 to 3 people with AI in the other seats (default), or always one person flying
-   three vessels? (§2, §6.7)
+1. **Settled 2026-11-12 (Garrett):** "squads are always 3 vessels. vessels have a seat count which affects the number
+   of pilots (ai or player controlled)." A squad's pilots, human or AI, are the sum of its three vessels' seats. (§2, §6.7)
 2. **Settled 2026-10-28 (Garrett):** at least 6 people for squad vs squad and 9 for three squads, more with
    multi-seat vessels; peer to peer limits it for now and the limit gets pushed (§6.7, §7.5). Still open: a squad
    with more than 4 people (multi-seat vessels) needs Yash's yes on the party rule.

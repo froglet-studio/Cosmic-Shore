@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Gameplay
 {
@@ -19,9 +20,10 @@ namespace CosmicShore.Gameplay
                  "the boost off linearly above it. 0 disables the drive.")]
         [Range(0f, 1f)] public float BoostStickBand = 0.35f;
 
-        [Tooltip("Past this yaw stick deflection the autopilot also Yastri-pivots (the trigger on the turn's side rises " +
+        [Tooltip("Past this yaw stick deflection the autopilot also Yawstery-pivots (the trigger on the turn's side rises " +
                  "above the other). Keep it above Boost Stick Band. 1 disables the pivot.")]
-        [Range(0f, 1f)] public float YastriStickBand = 0.75f;
+        [FormerlySerializedAs("YastriStickBand")]
+        [Range(0f, 1f)] public float YawsteryStickBand = 0.75f;
 
         /// <summary>This mode's tuning, or null when the mode has none (the executor's own bands then apply).</summary>
         public static MantaSoarAITuningSO LoadForMode(GameModes mode) =>

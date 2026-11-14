@@ -216,12 +216,12 @@ namespace CosmicShore.Gameplay
                 AiD0 == o.AiD0 && AiD1 == o.AiD1 && AiD2 == o.AiD2 && AiD3 == o.AiD3 &&
                 AiD4 == o.AiD4 && AiD5 == o.AiD5;
 
-            /// <summary>The placed AI domains as the modal consumes them (Domains as ints, placement order).</summary>
             /// <summary>One-line summary for logs and the multiplayer debug overlay.</summary>
             public override string ToString() =>
                 $"gen={Generation} open={IsOpen} mode={GameMode} pc={PlayerCount} humans={HumanCount} " +
                 $"domains={DomainCount} ai={AiCount}[{string.Join(",", PlacedAiDomains())}]";
 
+            /// <summary>The placed AI domains as the modal consumes them (Domains as ints, placement order).</summary>
             public int[] PlacedAiDomains()
             {
                 int n = Mathf.Clamp(AiCount, 0, MaxAiSlots);

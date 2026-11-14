@@ -275,7 +275,9 @@ namespace CosmicShore.UI
             {
                 if (afterburnerJetsRestSprite) afterburnerJetsIcon.sprite = afterburnerJetsRestSprite;
                 EnsureBarsConfig();
-                afterburnerJetsIcon.color = barsConfig ? barsConfig.BlueColor : afterburnerJetsFallbackColor;
+                afterburnerJetsIcon.color = barsConfig
+                    ? barsConfig.BlueColor
+                    : ColorTrace.Retrace(ColorTrace.Ui, afterburnerJetsFallbackColor);
             }
 
             if (weaponModeIcon)
@@ -710,6 +712,7 @@ namespace CosmicShore.UI
         void PaintGunHeatMarks()
         {
             float heat = Mathf.Max(0f, _gunHeat);
+            var gap = ColorTrace.Retrace(ColorTrace.Ui, gunHeatGapColor);
             for (int i = 0; i < _gunHeatJoins.Count && i < _gunHeatMarks.Count; i++)
             {
                 var m = _gunHeatMarks[i];
@@ -718,7 +721,7 @@ namespace CosmicShore.UI
                 m.Gap.gameObject.SetActive(passed);
                 m.TickLeft.gameObject.SetActive(!passed);
                 m.TickRight.gameObject.SetActive(!passed);
-                m.Gap.color = gunHeatGapColor;
+                m.Gap.color = gap;
                 m.TickLeft.color = m.TickRight.color = gunHeatMarkAheadColor;
             }
         }
@@ -860,7 +863,7 @@ namespace CosmicShore.UI
             _gunSprayPierce.enabled = show;
             if (!show) return;
             EnsureBarsConfig();
-            var danger = barsConfig ? barsConfig.FireColor : gunSprayPierceFallbackColor;
+            var danger = barsConfig ? barsConfig.FireColor : ColorTrace.Retrace(ColorTrace.Ui, gunSprayPierceFallbackColor);
             danger.a = gunSprayPierceAlpha;
             _gunSprayPierce.color = danger;
         }
@@ -923,10 +926,11 @@ namespace CosmicShore.UI
                 existing?.Kill();
 
             img.enabled = true;
-            img.color = blockedInputColor;
+            var blocked = ColorTrace.Retrace(ColorTrace.Ui, blockedInputColor);
+            img.color = blocked;
 
             // Pulse between blocked color and a dimmed version
-            var dimColor = blockedInputColor * 0.5f;
+            var dimColor = blocked * 0.5f;
             dimColor.a = 1f;
             _blockTweens[input] = img.DOColor(dimColor, blockedPulseDuration)
                 .SetLoops(-1, LoopType.Yoyo)

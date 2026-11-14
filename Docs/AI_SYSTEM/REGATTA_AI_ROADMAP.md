@@ -128,7 +128,7 @@ falling target. Model (`Tools/Build/dolphin_drive_sim.py`, centre steering), 3 l
 
 **2026-10-17: step 3, the Manta holds Soar deeper into turns.** Soar raises the Manta's turn rate (0.2 v + 30 deg/s), so
 it turns better fast, and the executor's bands (0.35 / 0.75) dropped Soar too early. Regatta now flies `BoostStickBand`
-0.8 and `YastriStickBand` 0.85 through `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta` (the learner's slot,
+0.8 and `YawsteryStickBand` 0.85 through `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta` (the learner's slot,
 written with its writer; every other mode keeps the executor's bands; a person's Manta flights replace these).
 Model (`Tools/Build/manta_drive_sim.py`), 3 laps, default → Regatta bands: I1 26.5 → 25.0, I2 32.8 → 31.0, I3 37.5 →
 35.6, I4 37.6 → 35.5 s. The roadmap's corner look-ahead (drop Soar before a corner, like the Rhino's brake) was modelled

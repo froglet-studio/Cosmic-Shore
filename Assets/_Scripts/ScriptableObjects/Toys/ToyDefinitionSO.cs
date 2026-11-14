@@ -65,7 +65,7 @@ namespace CosmicShore.ScriptableObjects
         public string Description => description;
         public bool UnlockedByDefault => unlockedByDefault;
         public float PlacementAngleDegrees => placementAngleDegrees;
-        public Color AccentColor => accentColor;
+        public Color AccentColor => ColorTrace.Retrace(ColorTrace.World, accentColor);   // the worn colour set's (COLOR_TRACE.md)
 
         /// <summary>
         /// Build the runtime toy(s) for this definition under <paramref name="parent"/>. A definition

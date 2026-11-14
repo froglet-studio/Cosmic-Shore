@@ -89,6 +89,98 @@ namespace CosmicShore.Tests
             }
         }
 
+        // Garrett, 2026-11-12: "the bolt should always be on screen. it spends too much time invisible to the player on
+        // the other side of the crystal." The walk, given the viewer, stays on the viewer's side and comes round fast.
+        static System.Collections.Generic.List<ChargeSeamWalker.Leg> Walk(ChargeSeamWalker walker, ChargeArcSettings settings,
+            float from, float to, System.Func<float, Vector3?> eyeAt)
+        {
+            var legs = new System.Collections.Generic.SortedDictionary<int, ChargeSeamWalker.Leg>();
+            for (float t = from; t < to; t += 0.05f)
+            {
+                walker.Advance(t, settings, eyeAt(t));
+                foreach (var leg in walker.Legs) legs[leg.Serial] = leg;
+            }
+            return legs.Values.ToList();
+        }
+
+        static float Share(ChargeSites sites, ChargeSeamWalker walker, System.Collections.Generic.List<ChargeSeamWalker.Leg> legs, Vector3 eye, bool whole) =>
+            legs.Count(l =>
+            {
+                bool a = walker.Facing(sites.Seams[l.Seam].A, eye) > 0f, b = walker.Facing(sites.Seams[l.Seam].B, eye) > 0f;
+                return whole ? a && b : a || b;
+            }) / (float)legs.Count;
+
+        [Test]
+        public void SeamWalk_GivenTheViewer_StaysOnItsSide_AndKeepsItsRules()
+        {
+            var mesh = ModelMesh(ChargeFbxPath);
+            Assert.IsTrue(ChargeSites.TryBuild(mesh.vertices, mesh.triangles, 1f, out var sites, out var problem), problem);
+            var steered = ChargeArcSettings.Lab;
+            steered.SeamFaceViewer = 1f;
+            var eye = new Vector3(0.3f, 0.2f, 1f).normalized * (sites.Radius * 20f);
+
+            for (int seed = 1; seed <= 5; seed++)
+            {
+                var walker = new ChargeSeamWalker(sites, seed, 0f);
+                var legs = Walk(walker, steered, 0f, 120f, _ => eye).Skip(8).ToList();  // from wherever it started, it comes round first
+                var free = new ChargeSeamWalker(sites, seed, 0f);
+                var freeLegs = Walk(free, steered, 0f, 120f, _ => null).Skip(8).ToList();
+                // measured offline over 40 random views (D:/ABLab/boltlab, 2026-11-12): 100 % of seams at least partly in
+                // sight and 94 % wholly, against 59 % partly when the walk ignores the viewer
+                Assert.Greater(Share(sites, walker, legs, eye, whole: false), 0.99f, $"seed {seed}: every seam the bolt runs is at least partly in sight");
+                Assert.Greater(Share(sites, walker, legs, eye, whole: true), 0.85f, $"seed {seed}: most seams are wholly in sight");
+                Assert.Less(Share(sites, free, freeLegs, eye, whole: false), 0.75f, $"seed {seed}: control - unsteered, many seams are out of sight");
+
+                int circling = 0;
+                for (int i = 1; i < legs.Count; i++)
+                {
+                    ChargeSeam a = sites.Seams[legs[i - 1].Seam], b = sites.Seams[legs[i].Seam];
+                    Assert.AreEqual(legs[i - 1].Forward ? a.B : a.A, legs[i].Forward ? b.A : b.B, "each seam starts where the last ended");
+                    Assert.AreNotEqual(legs[i - 1].Seam, legs[i].Seam, "never straight back");
+                    if (i < 4) continue;
+                    for (int s = 0; s < ChargeSites.SiteCount; s++)
+                        if (Enumerable.Range(i - 4, 5).All(j => sites.Seams[legs[j].Seam].Touches(s))) circling++;
+                }
+                // the no-circling rule yields only when every way out would leave the viewer's sight
+                Assert.Less(circling, legs.Count * 0.06f, $"seed {seed}: a fifth seam round one bloom stays rare");
+            }
+        }
+
+        [Test]
+        public void SeamWalk_WhenTheViewerGoesRoundTheBack_TheBoltComesRoundWithinTwoSeconds()
+        {
+            var mesh = ModelMesh(ChargeFbxPath);
+            Assert.IsTrue(ChargeSites.TryBuild(mesh.vertices, mesh.triangles, 1f, out var sites, out var problem), problem);
+            var steered = ChargeArcSettings.Lab;
+            steered.SeamFaceViewer = 1f;
+            var front = new Vector3(0.3f, 0.2f, 1f).normalized * (sites.Radius * 20f);
+            for (int seed = 1; seed <= 5; seed++)
+            {
+                var walker = new ChargeSeamWalker(sites, seed, 0f);
+                Walk(walker, steered, 0f, 30f, _ => front);
+                // the viewer jumps to the far side at t = 30; the walk has planned up to a second ahead with the old view
+                var legs = Walk(walker, steered, 30f, 60f, _ => -front);
+                var struckAfter = legs.Where(l => l.Struck >= 32f).ToList();
+                Assert.Greater(struckAfter.Count, 20);
+                Assert.IsTrue(struckAfter.All(l => walker.Facing(sites.Seams[l.Seam].A, -front) > 0f || walker.Facing(sites.Seams[l.Seam].B, -front) > 0f),
+                    $"seed {seed}: two seconds after the viewer moved, every seam touches the viewer's side");
+            }
+        }
+
+        [Test]
+        public void SeamWalk_WithNoViewer_IsTheWalkItAlwaysWas()
+        {
+            var mesh = ModelMesh(ChargeFbxPath);
+            Assert.IsTrue(ChargeSites.TryBuild(mesh.vertices, mesh.triangles, 1f, out var sites, out var problem), problem);
+            var steered = ChargeArcSettings.Lab;
+            steered.SeamFaceViewer = 1f;
+            var old = Walk(new ChargeSeamWalker(sites, 7, 0f), ChargeArcSettings.Lab, 0f, 60f, _ => null);
+            var noEye = Walk(new ChargeSeamWalker(sites, 7, 0f), steered, 0f, 60f, _ => null);
+            var zeroShare = Walk(new ChargeSeamWalker(sites, 7, 0f), ChargeArcSettings.Lab, 0f, 60f, _ => Vector3.forward * 100f);
+            CollectionAssert.AreEqual(old.Select(l => l.Seam), noEye.Select(l => l.Seam), "no eye: the same walk");
+            CollectionAssert.AreEqual(old.Select(l => l.Seam), zeroShare.Select(l => l.Seam), "share 0: the same walk");
+        }
+
         [Test]
         public void FluxChain_LeapsOnFromTheLastSink()
         {

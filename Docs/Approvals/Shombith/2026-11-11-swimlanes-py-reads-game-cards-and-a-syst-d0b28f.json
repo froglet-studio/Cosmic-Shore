@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-11-swimlanes-py-reads-game-cards-and-a-syst-d0b28f",
+  "to": "Shombith",
+  "by": "Caleb",
+  "date": "2026-11-11T01:10:53+00:00",
+  "area": "Claude skills and tooling (/swimlanes, approvals.py)",
+  "summary": "swimlanes.py reads game cards and a systems catalog (18 lanes, several noting you as owner: Amoebius, UI kit, backend, Claude tooling); more lanes means approvals.py check can report a collision in more places.",
+  "why": "Caleb, 2026-11-11: track every lane-sized piece of work",
+  "branch": "claude/brave-ritchie-funsll",
+  "commit": "c53235b20",
+  "paths": [
+    ".claude/skills/swimlanes/lanes.json",
+    ".claude/skills/swimlanes/swimlanes.py"
+  ]
+}

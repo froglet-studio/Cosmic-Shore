@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-11-the-pilot-creator-skill-new-in-this-pull-3bf2ae",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T19:00:44+00:00",
+  "area": "the Claude skills and the profile avatars",
+  "summary": "The /pilot-creator skill (new in this pull request) gains a scene section, a tool Tools/Build/pilot_art/scene.py and a third reader workflow, scene_read.js: two reader agents a run, about 220k tokens for four scenes. Eight avatars (Comet, Damsel, Dozer, Krush, Maestro, OPAL, Reaper, Slingshot) are re-cut from repainted busts; ids, guids and metas are unchanged.",
+  "why": "Garrett's review of the avatars on 2026-11-11 (no crab hands, wings and fans grow from the back, a gradual jellyfish blend) and his ask for a second, realistic style of the same pilots. The scenes are four samples for him to choose from; nothing in the game imports them, and no profile code or prefab changed.",
+  "branch": "claude/signature-pilot-busts",
+  "pr": 1894,
+  "commit": "19b1459a8",
+  "paths": [
+    ".claude/skills/pilot-creator",
+    "Assets/_Graphics/Profile/Pilots",
+    "Tools/Build/pilot_art/scene.py"
+  ]
+}

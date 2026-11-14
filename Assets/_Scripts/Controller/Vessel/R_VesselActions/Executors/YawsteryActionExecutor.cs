@@ -234,7 +234,7 @@ namespace CosmicShore.Gameplay
 
             vesselTransformer.ApplyRotation(deltaAngle, _ship.Transform.up);
 
-            // Yastri: the turn shapes the trail — outer-lane flare + the Mass-5 shield window
+            // Yawstery: the turn shapes the trail — outer-lane flare + the Mass-5 shield window
             // follow the held intensity (and its ramp-out back to zero).
             if (_so.DriveTrailFlare)
             {

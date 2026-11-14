@@ -1,0 +1,177 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9cb45d9403e429cb8f253293ab4837a, type: 3}
+  m_Name: PaintedCrew
+  m_EditorClassIdentifier: 
+  people:
+  - callsign: 1
+    given: "Veliane"
+    family: "Crestward"
+    speciesOne: 31
+    speciesTwo: 23
+    factionType: 3
+    factionName: "Wardens of the Calm"
+    homeworld: "Stillwater"
+    story: "Veliane Crestward keeps the sea wall of a water garden in Stillwater, and mends it by hand, one stone at a time.\n\nThe Wardens of the Calm keep watch over the cores the quiet domains rely on. With Veliane aboard, the Wardens will ask your crew to patrol those cores, to answer when one calls for aid, and to hold it until the danger has passed.\n\nThe Wardens are slow to trust a crew, and slower to forget one."
+  - callsign: 2
+    given: "Tamako"
+    family: "Deephook"
+    speciesOne: 15
+    speciesTwo: 30
+    factionType: 2
+    factionName: "Order of the Last Lure"
+    homeworld: "Brackenmouth"
+    story: "Tamako Deephook wades the feeding flats of Brackenmouth, inside a cell the size of a valley, and sets lure lines in water a hand deep.\n\nThe Order of the Last Lure keeps a ledger of every vault field and every sighting its members have ever heard of. With Tamako aboard, that ledger is open to your crew: vaults to open, and lairs to hunt.\n\nThe Order asks only that you write down what you find."
+  - callsign: 3
+    given: "Brikon"
+    family: "Copperwright"
+    speciesOne: 44
+    speciesTwo: 32
+    factionType: 1
+    factionName: "Tidewright Exchange"
+    homeworld: "the Copper Reef"
+    story: "Brikon Copperwright hauls heavy crystal up from the quarries of the Copper Reef, a boulder at a time, and sells it by weight to anyone with a hull to fill.\n\nThe Tidewright Exchange keeps a desk in every port worth the name. Fly with Brikon and the Exchange will hand your crew sealed dispatches to carry between them, and cargo for convoys bound to ports under pressure.\n\nPay is good when the sea is quiet. When it is not, the cargo still has to arrive."
+  - callsign: 4
+    given: "Karenth"
+    family: "Amberweaver"
+    speciesOne: 1
+    speciesTwo: 28
+    factionType: 1
+    factionName: "Brass Lantern Company"
+    homeworld: "the Lantern Reach"
+    story: "Karenth Amberweaver makes lamps in a workshop in the Lantern Reach, and proves every bulb by hand before it is sold.\n\nThe Brass Lantern Company lights half the ports of the HyperSea. With Karenth aboard, the Company will give your crew its dispatches to carry, and its convoys to run when a port goes dark.\n\nEvery port you light remembers your name."
+  - callsign: 5
+    given: "Ivelia"
+    family: "Starreach"
+    speciesOne: 39
+    speciesTwo: 2
+    factionType: 1
+    factionName: "Saltmark Consortium"
+    homeworld: "Starwake"
+    story: "Ivelia Starreach was apprenticed to a cartographer in Starwake, and now keeps the chart house of a trade barge crossing the HyperSea.\n\nThe Saltmark Consortium charts the trade lanes and sells passage along them. Fly with Ivelia and the Consortium will give your crew dispatches to carry, and convoys to bring to the ports its lanes have left short.\n\nThe charts are never finished. Neither is the work."
+  - callsign: 6
+    given: "Delmira"
+    family: "Stillwater"
+    speciesOne: 20
+    speciesTwo: 4
+    factionType: 3
+    factionName: "House Verdance"
+    homeworld: "Gloamwater"
+    story: "Delmira Stillwater keeps the great water clock of Gloamwater, and has never once arrived early.\n\nHouse Verdance trusts its clocks and its cores to the same few hands. With Delmira in your crew, you will patrol the house's cores, answer its calls for aid, and retake a core another domain has seized.\n\nVerdance keeps time in seasons, not days."
+  - callsign: 7
+    given: "Quivera"
+    family: "Pearlspark"
+    speciesOne: 19
+    speciesTwo: 17
+    factionType: 1
+    factionName: "House of Seven Scales"
+    homeworld: "the Silver Lane"
+    story: "Quivera Pearlspark trades along the Silver Lane from a cargo quay that never sleeps, and refuses to fly on an empty stomach.\n\nThe House of Seven Scales moves goods to every port on the Lane. Fly with Quivera and your crew will carry its dispatches from port to port, and run its convoys to ports short of what they need.\n\nA port under pressure pays well, and remembers who came."
+  - callsign: 8
+    given: "Obelo"
+    family: "Stormstone"
+    speciesOne: 18
+    speciesTwo: 27
+    factionType: 1
+    factionName: "Quayside Mutual"
+    homeworld: "Shellmouth"
+    story: "Obelo Stormstone keeps a warehouse on the harbour at Shellmouth, and wants nothing more than a quiet harbour and a long sleep.\n\nThe Quayside Mutual insures cargo across the HyperSea, so it needs crews to carry its dispatches and see its convoys safe to ports where trouble is brewing. With Obelo aboard, that work comes to you.\n\nThe Mutual pays on arrival. Not one moment before."
+  - callsign: 9
+    given: "Nedira"
+    family: "Shellward"
+    speciesOne: 41
+    speciesTwo: 11
+    factionType: 3
+    factionName: "House Albrine"
+    homeworld: "Coldharbour"
+    story: "Nedira Shellward keeps the storerooms of House Albrine in Coldharbour, and every winter the harbour eats from them.\n\nThe house holds cores across the sea for the domains it answers to. With Nedira in your crew, Albrine will send you to patrol them, to answer its calls for aid, and to take back a core another domain has seized.\n\nA house that feeds a harbour remembers who stood by it."
+  - callsign: 10
+    given: "Zeko"
+    family: "Mirethorn"
+    speciesOne: 13
+    speciesTwo: 34
+    factionType: 2
+    factionName: "Deepreed Stalkers"
+    homeworld: "the Glass Shoals"
+    story: "Zeko Mirethorn keeps the hazard light on a shoal in the Glass Shoals, and stands under it through the night, watching what the light draws in.\n\nThe Deepreed Stalkers hunt where the water is dangerous. With Zeko in your crew, they will send you after vaults rumoured in the shallows, and into lairs where the fauna have grown into predators.\n\nA lair is cleared when nothing in it is left to bite."
+  - callsign: 11
+    given: "Mathalo"
+    family: "Kelpbloom"
+    speciesOne: 47
+    speciesTwo: 37
+    factionType: 3
+    factionName: "House Verdance"
+    homeworld: "the Kelp Throne"
+    story: "Mathalo Kelpbloom tends a forest that grows downward inside a living cell above the Kelp Throne, and judges its one bloom of the year.\n\nHouse Verdance holds cores in the green reaches of the HyperSea. Fly with Mathalo and the house will ask your crew to patrol them, to answer its calls for aid, and to retake the ones another domain has taken.\n\nVerdance is patient. It expects its crews to be patient too."
+  - callsign: 12
+    given: "Wyvendo"
+    family: "Waveline"
+    speciesOne: 6
+    speciesTwo: 36
+    factionType: 2
+    factionName: "Hollowfen Trackers"
+    homeworld: "Hollowfen"
+    story: "Wyvendo Waveline grew up in the brickyards of Hollowfen, reading the prints of whatever walked through town in the night.\n\nThe Hollowfen Trackers follow sightings across the HyperSea. Fly with Wyvendo and you will hear of vault fields before other crews do, and of lairs where something has grown too large to leave alone.\n\nThe Trackers share what they find. Mostly."
+  - callsign: 13
+    given: "Fenlia"
+    family: "Moonbell"
+    speciesOne: 25
+    speciesTwo: 12
+    factionType: 2
+    factionName: "Longwake Lodge"
+    homeworld: "Mirrorfen"
+    story: "Fenlia Moonbell grew up on the floating meadows of Mirrorfen, where the turf drifts in the haze and the hunting is done by ear.\n\nThe Longwake Lodge trades in rumours: a vault field glimpsed through the mist, a lair where the predators have grown too bold. Fly with Fenlia and those rumours become your crew's work.\n\nWhat a vault holds goes home in the Ark."
+  - callsign: 14
+    given: "Jorin"
+    family: "Gullwing"
+    speciesOne: 35
+    speciesTwo: 40
+    factionType: 4
+    factionName: "Gullbone Crew"
+    homeworld: "Farshore"
+    story: "Jorin Gullwing lives in a burrow on the sea cliffs of Farshore, and wants one thing above all: a crew that stays.\n\nThe Gullbone Crew raid the hoards other pirates leave unguarded, and strip the wrecks nobody else will touch. With Jorin aboard, they will tell your crew where both are.\n\nGullbone looks after its own. Stay long enough and that means you."
+  - callsign: 15
+    given: "Rosh"
+    family: "Rusthook"
+    speciesOne: 9
+    speciesTwo: 10
+    factionType: 4
+    factionName: "Black Tide"
+    homeworld: "Wrackline"
+    story: "Rosh Rusthook works the wrack at low tide on Wrackline, where old ships come apart on the sand and nothing stays buried for long.\n\nThe Black Tide knows where the other crews hide their hoards. With Rosh aboard, you will hear where those hoards sit, and where a fresh wreck is waiting to be stripped.\n\nNot every port will be glad to see you after."
+  - callsign: 16
+    given: "Ilia"
+    family: "Silvergate"
+    speciesOne: 7
+    speciesTwo: 21
+    factionType: 3
+    factionName: "The Jade Accord"
+    homeworld: "the Old Harbour"
+    story: "Ilia Silvergate keeps the sea gate of the Old Harbour, and stands its last watch before dawn, when the ships come in.\n\nThe Jade Accord binds a dozen harbours to keep each other's cores. With Ilia in your crew, the Accord will send you to patrol them, to answer a harbour's call for aid, and to take a core back when another domain holds it.\n\nThe gate opens for crews the Accord trusts."
+  - callsign: 17
+    given: "Haradek"
+    family: "Anchorkeel"
+    speciesOne: 14
+    speciesTwo: 33
+    factionType: 4
+    factionName: "The Unmoored"
+    homeworld: "the Grey Reach"
+    story: "Haradek Anchorkeel keeps the hangar deck of a ship of the Unmoored, and ties a ribbon to a hull for every friend the sea has taken.\n\nThe Unmoored answer to no port. Fly with Haradek and you will hear of hoards to raid and wrecks to strip from one end of the Grey Reach to the other.\n\nThe pay is rich. So is the list of crews who would like a word with you."
+  - callsign: 18
+    given: "Ekora"
+    family: "Hollowbrook"
+    speciesOne: 3
+    speciesTwo: 48
+    factionType: 4
+    factionName: "Saltjaw Brethren"
+    homeworld: "Tangleweed"
+    story: "Ekora Hollowbrook grew up on a salvage barge anchored in the kelp of Tangleweed, and learned to swim before learning to steer.\n\nThe Saltjaw Brethren live off what the sea gives up. Sign Ekora on and the Brethren will point your crew at the stashes they know of, and at wrecks still fresh enough to strip.\n\nRival crews hunt the same wrecks. Whoever arrives first keeps what is aboard."

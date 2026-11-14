@@ -70,6 +70,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | Five-player scenario harness (runs the real game code in Amoebius, no Unity; down until it moves to the UGS stand-ins, §4) | `Tools/Build/prisma_party_scenarios/` (README) |
 | The game's edit-mode tests, run in Amoebius | `Tools/Build/prisma_edit_mode_tests/run.sh` |
 | Amoebius online play: START ONLINE, + PLAYER 2, SETTINGS > ONLINE (UGS environment, UGS CHECK) | `Port/docs/LAUNCHER.md` § START ONLINE |
+| The Relay region a host's parties use (Settings > REGION, ping per region, Auto fallback) | `RelayRegionPreference.cs`, `RelayRegionProbe.cs` (`Assets/_Scripts/Controller/Multiplayer/`), `Assets/_Scripts/UI/Modals/RegionSettingsView.cs`; checklist entry "Settings > REGION" |
 | Netcode, transports, relay, UGS sign-in and Lobby, simulator, stats, faults (code; built in one place, `NetStack.cs`) | `Port/src/CosmicShore.Engine/Networking/Wire/` |
 
 ### 3.1 What reaches Claude by itself, and the sweep that reads it

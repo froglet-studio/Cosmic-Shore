@@ -13,9 +13,11 @@ namespace CosmicShore.Gameplay
     /// path (Fauna.Predated / LifeForm.Die), dropping its crystal exactly like starvation.
     /// An ACTIVE force: mass conserved, continuity honored, fauna spawn immunity respected.
     /// Rooted flora have CurrentSpeed 0, so they are trivially joustable; fast fauna must be
-    /// overtaken. A slower vessel bounces off harmlessly.
+    /// overtaken. A slower vessel bounces off harmlessly. On top of that, a hull can need a MINIMUM joust speed
+    /// (<see cref="joustSpeed"/>, the Squirrel's Charge since 2026-11-11): below it neither branch lands.
     ///
-    /// SPACE level-5 upgrade ('Shepherd'): jousting an OWN-domain lifeform NOURISHES it -
+    /// Level-5 upgrade ('Shepherd', on <see cref="allyUpgradeElement"/>, which the Squirrel authors as CHARGE):
+    /// jousting an OWN-domain lifeform NOURISHES it -
     /// <see cref="ILifeFormEntity.Nourish"/> feeds it, so a creature's starvation clock resets
     /// and its birth counter advances, and a plant's growth quota advances toward its next
     /// seeding. Below the unlock an ally joust does nothing.
@@ -45,6 +47,11 @@ namespace CosmicShore.Gameplay
                  "vessel out-paces them; fast fauna must genuinely be overtaken.")]
         [SerializeField] float speedMargin = 1f;
 
+        [Tooltip("The least speed a joust needs at all, on the jouster's element (the Squirrel's Charge, " +
+                 "SquirrelJoustSpeed.asset, the same asset its vessel joust and its Charge card read). A floor on " +
+                 "top of speedMargin. Empty = no minimum.")]
+        [SerializeField] JoustSpeedConfigSO joustSpeed;
+
         [Tooltip("Optional: raised with the jouster's player name on a successful joust " +
                  "(a kill, or an ally nourished) - the Squirrel HUD listens on its impact " +
                  "icon channel.")]
@@ -59,6 +66,7 @@ namespace CosmicShore.Gameplay
 
             // The joust only lands when the vessel is genuinely moving faster than its target.
             if (status.Speed < lifeform.CurrentSpeed + speedMargin) return;
+            if (joustSpeed && !joustSpeed.Admits(status)) return;
 
             // Own domain: Space-5 'Shepherd' - the joust nourishes the ally (never a kill).
             if (lifeform.Domain == status.Domain)

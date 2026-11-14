@@ -1,0 +1,17 @@
+2026-10-28T23:29:55.6485787Z ##[group]Run set -euo pipefail
+2026-10-28T23:29:55.6486120Z [36;1mset -euo pipefail[0m
+2026-10-28T23:29:55.6486444Z [36;1mpython3 Tools/Build/arcade_mode_lib.py --self-test[0m
+2026-10-28T23:29:55.6487100Z [36;1mfor f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do[0m
+2026-10-28T23:29:55.6487710Z [36;1m  echo "== $f"[0m
+2026-10-28T23:29:55.6487948Z [36;1m  python3 "$f" --check[0m
+2026-10-28T23:29:55.6488199Z [36;1mdone[0m
+2026-10-28T23:29:55.6517139Z shell: /usr/bin/bash -e {0}
+2026-10-28T23:29:55.6517396Z env:
+2026-10-28T23:29:55.6517601Z   REPORT_LABEL: ci-bleeding-edge
+2026-10-28T23:30:38.7014336Z OK - every asset matches the model.
+2026-10-28T23:30:38.8908136Z == Tools/Build/author_manta_kit_assets.py
+2026-10-28T23:30:38.9113981Z check clean: every authored file matches the generator
+2026-10-28T23:30:38.9148846Z == Tools/Build/author_meerkat_assets.py
+2026-10-28T23:30:38.9921024Z FAIL: MeerkatWormholeConfig.asset: onCombatHitLanded is not Event_CombatHitStats (a zap would score nowhere)
+2026-10-28T23:30:38.9922235Z author_meerkat_assets: 1 problem(s)
+2026-10-28T23:30:38.9982809Z ##[error]Process completed with exit code 1.

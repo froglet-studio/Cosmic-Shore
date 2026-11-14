@@ -1,0 +1,165 @@
+{
+ "schema": "froglet.elemental-loop/1",
+ "doc": "Docs/ElementalLoop/PLAYBOOK.md",
+ "set_by": "Garrett, 2026-11-12",
+ "note": "What a person or session SIGNED OFF in the elemental loop. Written with `python3 Tools/Build/elemental_loop.py set ...`, never by hand when the tool can do it. The game kit (which arcade games seat a vessel, per element) is measured from the cards and never recorded here. A vessel step with no entry falls back to what the assets prove: a game that exists is 'built' for step 1, and for step 2 too when its card spans I1-I4. States: todo, doing, built (exists, not yet signed off), done (signed off: by, date, kind human|auto, loop), redo (step 5 sent it back), n/a.",
+ "current_loop": 1,
+ "element_order": [
+  "Time",
+  "Charge",
+  "Mass",
+  "Space"
+ ],
+ "arena_games": {
+  "Time": "Regatta",
+  "Charge": "Broadside",
+  "Mass": "BroodRush"
+ },
+ "no_game_ok": {
+  "Dolphin": [
+   "Mass"
+  ],
+  "Squirrel": [
+   "Space"
+  ]
+ },
+ "loops": [
+  {
+   "n": 1,
+   "started": "2026-11-12",
+   "note": "The first loop. Time is furthest along (the Regatta plan, 2026-11-06 to 11-08); its steps 1-2 were built before the loop existed and wait on a person's sign-off."
+  }
+ ],
+ "vessels": {
+  "Dolphin": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Regatta plan threads",
+     "date": "2026-11-08",
+     "evidence": "trained drive promoted to Switchback (all four files), model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846)"
+    },
+    "1": {
+     "state": "done",
+     "by": "Garrett",
+     "date": "2026-11-13",
+     "evidence": "Garrett, project thread 2026-11-13: Dolphin signed off as fun on Switchback; I1-I4 not all flown yet",
+     "kind": "human",
+     "loop": 1
+    },
+    "2": {
+     "state": "built",
+     "by": "Claude (Garrett's project thread)",
+     "date": "2026-11-13",
+     "evidence": "Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md: I4 gauntlet seals made plain (the cliff), AI gauntlet pace retuned; awaiting Garrett's four-rung fun card"
+    }
+   }
+  },
+  "Squirrel": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Regatta plan threads",
+     "date": "2026-11-08",
+     "evidence": "general SkimRaceAIConfig from skimrace-squirrel-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846)"
+    }
+   }
+  },
+  "Rhino": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Regatta plan threads",
+     "date": "2026-11-08",
+     "evidence": "RhinoAIBoostPolicy_Headlong from drive-rhino-headlong-on-lead, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846)"
+    }
+   }
+  },
+  "Serpent": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Regatta plan threads",
+     "date": "2026-11-08",
+     "evidence": "SerpentAIBoostPolicy_SerpentTime from serpenttime-serpent-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846)"
+    }
+   }
+  },
+  "Sparrow": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Regatta plan threads",
+     "date": "2026-11-08",
+     "evidence": "SparrowAIBoostPolicy_Breakwater from breakwater-sparrow-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846)"
+    }
+   }
+  },
+  "Stoat": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Regatta plan threads",
+     "date": "2026-11-08",
+     "evidence": "StoatSlingConfig_Slingshot from slingshot-stoat-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846)"
+    }
+   }
+  },
+  "Thresher": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Regatta plan threads",
+     "date": "2026-11-08",
+     "evidence": "ThresherAIBoostPolicy_ThresherTime from threshertime-thresher-time-lead, model only, editor soak pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846)"
+    }
+   }
+  },
+  "Manta": {
+   "Time": {
+    "3": {
+     "state": "doing",
+     "by": "Regatta plan threads",
+     "date": "2026-11-08",
+     "evidence": "Redline AI nose rate (#1844); the Soar steering should be re-searched at the new nose rates (AI_PLAN.md section 5)"
+    },
+    "1": {
+     "state": "doing",
+     "by": "Claude (Garrett's thread)",
+     "date": "2026-11-13",
+     "evidence": "Redline round 5 (Yash, 2026-11-11) brought onto bleeding-edge: Soar was dark in Redline since 2026-11-07 (Time level-5 upgrade, card started at Time 0); now Time 6 start, 8 laps, AI race line and throttle floors, the heat. Waiting on one human's fun card at I2 (REDLINE.md section 0.2)"
+    }
+   }
+  },
+  "Urchin": {
+   "Time": {
+    "3": {
+     "state": "doing",
+     "by": "Regatta plan threads",
+     "date": "2026-11-08",
+     "evidence": "Skein aim, rail seek and genome (#1845); not yet well trained: Docs/Reports/SKEIN_URCHIN_AI.md"
+    }
+   }
+  },
+  "Scarab": {
+   "Time": {
+    "1": {
+     "state": "doing",
+     "by": "Claude for Garrett",
+     "date": "2026-11-13",
+     "evidence": "Rally I1-I3 off Blast Run, AI no crystal detours (SCARABRALLY.md 2026-11-13); awaiting Garrett's fun card at I2"
+    }
+   }
+  }
+ },
+ "arenas": {
+  "Time": {
+   "4": {
+    "state": "doing",
+    "by": "Regatta plan threads",
+    "date": "2026-11-08",
+    "evidence": "the course-pool search is the first environment creator: best pool 1.104x against the 1.10x bar in the model (#1825); live in bleeding-edge, waits on Garrett's playtest and on step 3 for every Regatta hull (Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md)"
+   }
+  }
+ }
+}

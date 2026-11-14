@@ -225,9 +225,10 @@ namespace CosmicShore.UI
                 // Highlight the player's Score
                 if (!string.IsNullOrEmpty(score.PlayerId) && score.PlayerId == LocalPlayerId)
                 {
-                    HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);
-                    HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);
-                    HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);
+                    var you = ColorTrace.Retrace(ColorTrace.Ui, new Color(.1f, .7f, .7f));
+                    HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().color = you;
+                    HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().color = you;
+                    HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().color = you;
                 }
                 else
                 {

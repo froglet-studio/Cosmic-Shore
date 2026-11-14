@@ -1,0 +1,682 @@
+<title>Manta Trail Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--
+  Manta Trail Lab (Manta Polish round 1, Docs/Manta/POLISH.md). Built from .claude/skills/labmaker/template/lab.html.
+  Question: what shape should the Manta's trail prisms take as a function of speed and turning?
+  A READER of Manta.prefab / VesselPrismController / ScoutTrailPrismScaler; every shipped constant names its source.
+  Verify: node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/MantaTrailLab.html
+-->
+<style>
+  /* Layout: editor shell. Header / top-down stage with a side-profile inset + right dock of dials / bottom dock of scorecard and log. */
+  :root {
+    --bg: #f3f5f7; --panel: #ffffff; --ink: #172028; --muted: #59646f; --line: #d9dee3;
+    --accent: #1f6fb8; --warn: #a65307; --ok: #1d7a45; --bad: #b3261e; --stage: #091119; --changed: #1f6fb8;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1217; --panel: #151c23; --ink: #e3e9ef; --muted: #93a0ad; --line: #26313b;
+      --accent: #6aaee8; --warn: #f0a050; --ok: #5cc98a; --bad: #f28b82; --stage: #060b10; --changed: #6aaee8; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1217; --panel: #151c23; --ink: #e3e9ef; --muted: #93a0ad; --line: #26313b;
+    --accent: #6aaee8; --warn: #f0a050; --ok: #5cc98a; --bad: #f28b82; --stage: #060b10; --changed: #6aaee8; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: auto minmax(0, 1fr) 230px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 10px; align-items: center; padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 15px; margin: 0; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); touch-action: none; }
+  #stage { width: 100%; height: 100%; display: block; }
+  #hud { position: absolute; left: 12px; top: 10px; color: #cfd8e2; font: 12px/1.5 var(--mono); pointer-events: none; white-space: pre; }
+  #touch { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: space-between; padding: 0 12px; pointer-events: none; }
+  #touch button { pointer-events: auto; width: 76px; height: 64px; border-radius: 12px; border: 1px solid #ffffff40; background: #ffffff1a; color: #e8eef4; font: 600 13px system-ui, sans-serif; touch-action: none; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn, .seg button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  .tabs button[aria-selected="true"], .btn.primary, .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; }
+  .row label .key { color: var(--muted); font: 11px var(--mono); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .hint { color: var(--muted); }
+  h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 4px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 12px; }
+  .pass { color: var(--ok); } .fail { color: var(--bad); font-weight: 600; } .info { color: var(--ink); }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  .tablewrap { overflow-x: auto; }
+  textarea, select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  ul { margin: 4px 0; padding-left: 18px; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 4 / 5; max-width: 100%; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  }
+</style>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="pilotBtn">Pilot: AI</button>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="resetAll">Shipped</button>
+  </header>
+  <div id="stageWrap"><canvas id="stage"></canvas><div id="hud"></div>
+    <div id="touch" hidden><button id="tL">L trigger</button><button id="tSlow">Slow</button><button id="tR">R trigger</button></div>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= (1) LAB meta + the shipped numbers =================
+  const LAB = { name: 'Manta Trail Lab', branch: 'claude/manta-trail-speed-shape', round: 1, doc: 'Docs/Manta/POLISH.md' };
+  const SHIPPED = {
+    // --- the lay (Manta.prefab, VesselPrismController) ---
+    baseX: 20,         // VesselPrismController.BaseScale.x
+    baseY: 0.75,       // VesselPrismController.BaseScale.y
+    baseZ: 5.5,        // VesselPrismController.BaseScale.z
+    gap: 18,           // VesselPrismController.Gap (two rails)
+    wavelength: 10,    // VesselPrismController.initialWavelength (m of travel per lay)
+    minBlock: 1,       // VesselPrismController.minBlockScale (XScaler after Initialize)
+    maxBlock: 4,       // VesselPrismController.maxBlockScale
+    // --- flight (Manta.prefab VesselTransformer + MantaAnalogTurnBoostExecutor) ---
+    throttleScaler: 180, // VesselTransformer.DefaultThrottleScaler
+    throttleHigh: 0.9,   // AIPilot.defaultThrottleHigh (cruise stick)
+    throttleLow: 0.2,    // AIPilot.defaultThrottleLow (crawl stick)
+    boostMult: 4,        // VesselStatus.boostMultiplier (Soar at full trigger overlap)
+    timeMult: 1,         // VesselTransformer.ThrottleScalerMultiplier (1.5 at Time 10)
+    maxYaw: 60,          // MantaAnalogTurnBoostExecutor.maxYawDegPerSec
+    spdEase: 1.5,        // lab: speed tracking rate (/s), stands in for VesselTransformer.StepTowardTarget
+    fps: 60,             // lab: frame rate the lay loop runs at (UniTask.Delay ends on a frame)
+    // --- ScoutTrailPrismScaler (ScoutTrailPrismConfig.asset), the environment sizing still live ---
+    scMin: 20,         // ScoutTrailPrismScalerConfig.minRadius
+    scMax: 100,        // ScoutTrailPrismScalerConfig.maxRadius
+    scRate: 6000,      // ScoutTrailPrismScalerConfig.radiusGrowthRate / radiusShrinkRate
+    scInterval: 0.05,  // ScoutTrailPrismScalerConfig.updateInterval
+    scSmooth: 0.2,     // ScoutTrailPrismScalerConfig.scaleSmoothTime
+    scLerp: 1.5,       // VesselPrismController.LerpXScalerAsync duration
+    colliderWait: 1,   // VesselPrismController.defaultWaitTime (a prism joins the index after this)
+    envCount: 500,     // lab: prisms scattered over the course (the Toybox cell stand-in)
+    // --- proposals (no game field yet; prefix sh) ---
+    shRailW: 11,       // proposal: one rail's width, m (XScaler 2, where today's scaler rests)
+    shVRef: 162,       // proposal: speed at which a prism is the shipped 5.5 m x 0.75 m (cruise = 0.9 x 180)
+    shZK: 1,           // proposal: Z grows as (speed / vRef)^k
+    shZMin: 1.5,       // proposal: shortest prism, m
+    shFill: 1,         // proposal: longest prism as a fraction of the lay spacing (1 = end to end)
+    shFrameAware: 1,   // proposal: 1 = the spacing cap uses speed x frame time when that beats the wavelength
+    shYMin: 0.3,       // proposal: thinnest prism, m
+    shYMax: 4,         // proposal: tallest prism, m
+    shYawY: 0.6,       // proposal: Yawstery height gain at full turn (x)
+    shArc: 1,          // proposal: 1 = inside rail shortens, outside lengthens by the turn's geometry
+    shThin: 0.25,      // proposal (Free curves): outside rail thins in Y by this at full turn
+    shFreeZMax: 10,    // proposal (Free curves): Z at Soar speed, m
+    shFreeV1: 600,     // proposal (Free curves): speed where Z reaches its max
+    shFreeYLow: 4,     // proposal (Free curves): Y multiplier at a crawl
+    shFreeVLow: 60,    // proposal (Free curves): below this speed Y grows
+    shTopV: 1100,      // TrailSpeedShape.TopSpeed: the stretch is complete here
+    shTopSp: 3,        // TrailSpeedShape.TopSpacingMultiplier: gap at Top Speed (x wavelength)
+    shTopZ: 20,        // TrailSpeedShape.TopLength: Z at Top Speed, m
+    shTopY: 0.4,       // TrailSpeedShape.TopHeightMultiplier: Y at Top Speed (x cruise)
+    aiNoise: 0,        // lab: rookie steering noise (0 = skilled)
+  };
+
+  const SPEC = [
+    ['Proposal', 'shRailW', 2, 30, 0.5, 'Rail width (m)', 'Uniform X for every proposed rule. Today a rail is 20 x XScaler / 2 - 9: 1 m at XScaler 1, 31 m at 4.'],
+    ['Proposal', 'shVRef', 40, 400, 2, 'Reference speed (u/s)', 'The speed at which a prism keeps the shipped 5.5 x 0.75 profile.'],
+    ['Proposal', 'shZK', 0.2, 2, 0.05, 'Z growth exponent', 'Volume kept: Z = 5.5 x (speed / reference)^k. 1 = Z in proportion to speed.'],
+    ['Proposal', 'shZMin', 0.5, 5.5, 0.1, 'Shortest Z (m)', 'Floor on prism length at a crawl.'],
+    ['Proposal', 'shFill', 0.5, 1.6, 0.05, 'Longest Z (x spacing)', 'Cap on length as a fraction of the gap to the next prism on that rail. Over 1 overlaps.'],
+    ['Proposal', 'shFrameAware', 0, 1, 1, 'Frame-aware cap', '1: at Soar the lay is one per frame, so the spacing is speed x frame time, not the wavelength. The cap follows it.'],
+    ['Proposal', 'shYMin', 0.1, 1.5, 0.05, 'Thinnest Y (m)', 'Floor on height at Soar.'],
+    ['Proposal', 'shYMax', 0.75, 10, 0.25, 'Tallest Y (m)', 'Cap on height at a crawl or deep in a Yawstery.'],
+    ['Proposal', 'shYawY', 0, 2, 0.05, 'Yawstery height gain', 'Extra height (x) at a full single-trigger turn. Volume kept trades it out of Z.'],
+    ['Proposal', 'shArc', 0, 1, 0.05, 'Turn geometry', 'How much the inside rail shortens and the outside lengthens to meet their neighbours (1 = exactly the arc ratio).'],
+    ['Free curves', 'shThin', 0, 0.8, 0.05, 'Outside thin', 'Free curves only: the outside rail loses this fraction of its height at full turn.'],
+    ['Free curves', 'shFreeZMax', 5.5, 20, 0.5, 'Z at Soar (m)', 'Free curves only.'],
+    ['Free curves', 'shFreeV1', 200, 1000, 10, 'Soar speed (u/s)', 'Free curves only: where Z reaches its max.'],
+    ['Free curves', 'shFreeYLow', 1, 8, 0.25, 'Y at a crawl (x)', 'Free curves only.'],
+    ['Free curves', 'shFreeVLow', 10, 160, 5, 'Crawl speed (u/s)', 'Free curves only: below this the prism grows taller.'],
+    ['Free curves', 'shTopV', 600, 2000, 10, 'Top speed (u/s)', 'Free curves only: the stretch above Soar is complete here. Time 10 with both triggers is about 1080.'],
+    ['Free curves', 'shTopSp', 1, 6, 0.1, 'Gap at top (x wavelength)', 'Free curves only: prisms go further apart above Soar, so production falls behind.'],
+    ['Free curves', 'shTopZ', 5.5, 40, 0.5, 'Z at top (m)', 'Free curves only: still capped by Longest Z of the stretched gap.'],
+    ['Free curves', 'shTopY', 0.05, 1, 0.05, 'Y at top (x)', 'Free curves only: thinning above Soar.'],
+    ['Flight', 'throttleHigh', 0.2, 1, 0.05, 'Cruise stick', 'AIPilot.defaultThrottleHigh. Cruise = stick x 180.'],
+    ['Flight', 'boostMult', 1, 6, 0.1, 'Soar multiplier', 'VesselStatus.boostMultiplier, applied at full trigger overlap.'],
+    ['Flight', 'timeMult', 1, 1.5, 0.05, 'Time speed (x)', 'VesselTransformer.ThrottleScalerMultiplier: 1 at Time 0, 1.5 at Time 10.'],
+    ['Flight', 'maxYaw', 20, 140, 1, 'Yaw at full trigger (deg/s)', 'MantaAnalogTurnBoostExecutor.maxYawDegPerSec.'],
+    ['Flight', 'fps', 30, 144, 1, 'Frame rate', 'The lay loop waits on UniTask.Delay, which ends on a frame. At Soar that, not the wavelength, sets the spacing.'],
+    ['Flight', 'aiNoise', 0, 1, 0.05, 'Rookie noise', 'Steering noise for the AI pilot. 0 = skilled.'],
+    ['Today', 'scMin', 5, 100, 1, 'Probe min radius', 'ScoutTrailPrismConfig.minRadius'],
+    ['Today', 'scMax', 20, 300, 1, 'Probe max radius', 'ScoutTrailPrismConfig.maxRadius'],
+    ['Today', 'scRate', 50, 8000, 50, 'Radius rate (u/s)', 'ScoutTrailPrismConfig growth and shrink rate. 6000 at a 0.05 s tick slams end to end.'],
+    ['Today', 'envCount', 0, 1500, 50, 'Cell prisms', 'Lab: prisms scattered over the course. Only the Today rule reads them.'],
+  ];
+
+  const LS_KEY = 'lab:' + LAB.name + ':P';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet(LS_KEY, {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+  // ================= (3) THE MODEL =================
+  // The trail RULES. Each returns one rail's prism {x, y, z} from what the lay knows at that moment.
+  // ctx: speed, turn01 (|net trigger|), omega (rad/s, + = right), side (+1 right rail, -1 left), railD (rail centre offset),
+  // spacing (expected gap to the next prism on this rail along the vessel path), xscaler (Today only).
+  const RULES = {
+    today:    { name: 'Today (scaler live)', note: 'Shipped: ScoutTrailPrismScaler sizes X from nearby prisms.' },
+    plain:    { name: 'Scaler removed', note: 'Shipped prefab with the scaler deleted: XScaler stays 1, so a rail is 1 m wide.' },
+    wide:     { name: 'Fixed width', note: 'The plain Squirrel-style trail the kit doc describes, at the proposed width.' },
+    free:     { name: 'Free curves', note: 'Proposal: Z and Y each follow their own speed curve; the outside rail thins.' },
+    conserve: { name: 'Volume kept', note: 'Proposal: X fixed, Z from speed, Y = volume / (X x Z), so slow is tall, fast is long and thin.' },
+    overfill: { name: 'Planted: overfill', note: 'Negative control: every prism 1.6x the spacing long, at any speed. The overlap column must fail it.' },
+  };
+  const RULE_ORDER = ['today', 'plain', 'wide', 'free', 'conserve'];
+  function arcFactor(c) {
+    // Inside rail (on the turn's side) runs a tighter arc than the vessel, outside a wider one.
+    if (Math.abs(c.omega) < 1e-3 || c.speed < 1) return 1;
+    const R = c.speed / Math.abs(c.omega), inside = Math.sign(c.omega) === c.side;
+    return clamp((R + (inside ? -1 : 1) * c.railD) / R, 0.2, 3);
+  }
+  function laySpacing(rule, speed) { return rule === 'free' ? P.wavelength * lerp(1, P.shTopSp, smooth(P.shFreeV1, P.shTopV, speed)) : P.wavelength; }
+  function shapeFor(rule, c) {
+    const railOf = (xs) => P.baseX * xs / 2 - P.gap / 2;
+    if (rule === 'today') return { x: Math.max(0.5, railOf(c.xscaler)), y: P.baseY, z: P.baseZ };
+    if (rule === 'plain') return { x: Math.max(0.5, railOf(P.minBlock)), y: P.baseY, z: P.baseZ };
+    if (rule === 'wide') return { x: P.shRailW, y: P.baseY, z: P.baseZ };
+    const f = lerp(1, arcFactor(c), P.shArc), cap = c.spacing * (rule === 'overfill' ? 1.6 : P.shFill) * f;
+    if (rule === 'free') {
+      const top = smooth(P.shFreeV1, P.shTopV, c.speed);
+      let z = lerp(lerp(P.baseZ, P.shFreeZMax, smooth(P.shVRef, P.shFreeV1, c.speed)), P.shTopZ, top) * f;
+      let y = P.baseY * lerp(1, P.shFreeYLow, 1 - smooth(P.shFreeVLow * 0.25, P.shFreeVLow, c.speed)) * lerp(1, P.shTopY, top) * (1 + P.shYawY * c.turn01);
+      if (f > 1) y *= 1 - P.shThin * c.turn01;
+      return { x: P.shRailW, y: clamp(y, P.shYMin, P.shYMax), z: Math.min(z, cap) };
+    }
+    // conserve / overfill: keep the cruise prism's volume
+    if (rule === 'overfill') { const z = Math.max(P.shZMin, cap); return { x: P.shRailW, y: clamp(P.shRailW * P.baseY * P.baseZ / (P.shRailW * z), P.shYMin, P.shYMax), z }; }
+    const v0 = P.shRailW * P.baseY * P.baseZ, yaw = 1 + P.shYawY * c.turn01;
+    let z = P.baseZ * Math.pow(Math.max(c.speed, 1) / P.shVRef, P.shZK) / yaw;
+    z = clamp(z * f, P.shZMin, Math.max(P.shZMin, cap));
+    return { x: P.shRailW, y: clamp(v0 / (P.shRailW * z), P.shYMin, P.shYMax), z };
+  }
+
+  // The course: a Redline-style loop (Time race). Soar straights, two Yawstery hairpins, a slalom, a crawl chicane.
+  const GATES = [
+    { x: 0, z: 700, k: 'cruise', r: 70 }, { x: 0, z: 1700, k: 'soar', r: 70 }, { x: 0, z: 2600, k: 'soar', r: 70 }, { x: 0, z: 3400, k: 'cruise', r: 70 },
+    { x: 155, z: 3555, k: 'hairpin', r: 80 }, { x: 310, z: 3300, k: 'cruise', r: 70 },
+    { x: 150, z: 2700, k: 'slalom', r: 60 }, { x: 470, z: 2150, k: 'slalom', r: 60 }, { x: 150, z: 1600, k: 'slalom', r: 60 },
+    { x: 310, z: 1100, k: 'crawl', r: 30 }, { x: 350, z: 1000, k: 'crawl', r: 30 }, { x: 310, z: 900, k: 'crawl', r: 30 }, { x: 350, z: 800, k: 'crawl', r: 30 },
+    { x: 330, z: 350, k: 'cruise', r: 70 }, { x: 165, z: 190, k: 'hairpin', r: 80 }, { x: 0, z: 400, k: 'cruise', r: 70 },
+  ];
+
+  let world = null, seed = 1, ruleName = 'conserve', pilotMode = 'ai', paused = false;
+  const human = { lt: 0, rt: 0, slow: false };
+  function makeEnv(rnd) {
+    const env = [];
+    for (let i = 0; i < Math.round(P.envCount); i++) env.push({ x: -500 + rnd() * 1500, z: -200 + rnd() * 4100 });
+    return env;
+  }
+  function reset(s, opts) {
+    if (s != null) seed = s >>> 0;
+    opts = opts || {};
+    const rnd = mulberry32(seed), envRnd = mulberry32(seed * 7919 + 13);
+    world = {
+      t: 0, x: 0, z: 0, h: 0, speed: 0, omega: 0, turn01: 0, overlap: 0, gate: 0, laps: 0, rnd,
+      noise: 0, layTimer: 2, gateT: 0, missed: 0, // startDelay 2 s on Manta.prefab
+      rule: opts.rule || ruleName, env: opts.noEnv ? [] : makeEnv(envRnd),
+      rails: { '-1': [], '1': [] }, lays: [], pairs: [],
+      sc: { timer: 0, radius: 150, target: 0.5, cur: 0.5, vel: 0, xscaler: P.minBlock },
+      input: { lt: 0, rt: 0, throttle: P.throttleHigh },
+    };
+  }
+  function anyWithin(px, pz, r) {
+    const r2 = r * r, w = world;
+    for (const e of w.env) { const dx = e.x - px, dz = e.z - pz; if (dx * dx + dz * dz <= r2) return true; }
+    for (const side of ['-1', '1']) {
+      const L = w.rails[side];
+      for (let i = L.length - 1; i >= 0 && i >= L.length - 200; i--) {
+        const p = L[i]; if (w.t - p.t < P.colliderWait) continue;   // collider still off
+        const dx = p.x - px, dz = p.z - pz; if (dx * dx + dz * dz <= r2) return true;
+      }
+    }
+    return false;
+  }
+  function smoothDamp(cur, target, s, st, dt) {
+    st = Math.max(1e-4, st); const om = 2 / st, x = om * dt, ex = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+    const ch = cur - target, temp = (s.vel + om * ch) * dt; s.vel = (s.vel - om * temp) * ex;
+    let out = target + (ch + temp) * ex;
+    if ((target - cur > 0) === (out > target)) { out = target; s.vel = (out - target) / dt; }
+    return out;
+  }
+  function stepScout(dt) {
+    // ScoutTrailPrismScaler.Update + VesselPrismController.SetNormalizedXScale. The stack of 1.5 s lerps it starts
+    // (one per call) is approximated as one approach with a 1.5 s time constant: the newest lerp writes last each frame.
+    const sc = world.sc; sc.timer += dt;
+    if (sc.timer >= P.scInterval) {
+      sc.timer = 0;
+      const hit = anyWithin(world.x, world.z, sc.radius), step = P.scRate * P.scInterval;
+      sc.radius = hit ? Math.max(P.scMin, sc.radius - step) : Math.min(P.scMax, sc.radius + step);
+      sc.target = clamp((sc.radius - P.scMin) / Math.max(1e-6, P.scMax - P.scMin), 0, 1);
+    }
+    const prev = sc.cur; sc.cur = smoothDamp(sc.cur, sc.target, sc, P.scSmooth, dt);
+    if (Math.abs(sc.cur - prev) > 1e-6) {
+      const ns = Math.max(P.minBlock, P.maxBlock * Math.min(sc.cur, 1));
+      sc.xscaler += (ns - sc.xscaler) * Math.min(1, dt / P.scLerp);
+    }
+  }
+  function pilot(dt) {
+    // Input-only: writes the same {lt, rt, throttle} a pad does. Mirrors the shipped autopilot drive's shape
+    // (MantaAnalogTurnBoostExecutor.AutopilotBoostIntent, band 0.35).
+    const w = world, g = GATES[w.gate];
+    let bear = Math.atan2(g.x - w.x, g.z - w.z) - w.h;
+    while (bear > Math.PI) bear -= 2 * Math.PI; while (bear < -Math.PI) bear += 2 * Math.PI;
+    w.noise += (-w.noise * 1.5 + (w.rnd() * 2 - 1) * 6) * dt;
+    const n = clamp(bear * 2.5 + w.noise * P.aiNoise, -1, 1);
+    const boost = g.k === 'soar' ? Math.max(0, 1 - Math.abs(n) / 0.35) : 0;
+    w.input.rt = Math.min(1, boost + Math.max(0, n)); w.input.lt = Math.min(1, boost + Math.max(0, -n));
+    w.input.throttle = g.k === 'crawl' ? P.throttleLow : P.throttleHigh;
+  }
+  function readHuman() {
+    let lt = human.lt, rt = human.rt, slow = human.slow;
+    try {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (const gp of pads) { if (!gp) continue; lt = Math.max(lt, gp.buttons[6] ? gp.buttons[6].value : 0); rt = Math.max(rt, gp.buttons[7] ? gp.buttons[7].value : 0); if ((gp.buttons[1] && gp.buttons[1].pressed) || gp.axes[1] > 0.5) slow = true; }
+    } catch (e) { /* the viewer may block the Gamepad API */ }
+    world.input.lt = lt; world.input.rt = rt; world.input.throttle = slow ? P.throttleLow : P.throttleHigh;
+  }
+  function lay(measured, back) {
+    const w = world, fwdX = Math.sin(w.h), fwdZ = Math.cos(w.h), rX = Math.cos(w.h), rZ = -Math.sin(w.h);
+    const frameDt = 1 / P.fps;
+    back = back || 0;
+    const spacing = measured != null ? (P.shFrameAware ? measured : P.wavelength)
+      : (P.shFrameAware ? Math.max(P.wavelength, w.speed * frameDt) : P.wavelength);
+    const evt = { t: w.t, speed: w.speed, turn01: w.turn01, omega: w.omega, rails: {} };
+    for (const side of [-1, 1]) {
+      const c0 = { speed: w.speed, turn01: w.turn01, omega: w.omega, side, railD: P.gap / 2 + P.shRailW / 2, spacing, xscaler: w.sc.xscaler };
+      const s = shapeFor(w.rule, c0);
+      const off = (s.x / 2 + P.gap / 2) * side;
+      const p = { x: w.x + rX * off - fwdX * back, z: w.z + rZ * off - fwdZ * back, h: w.h, w: s.x, y: s.y, l: s.z, t: w.t, side, speed: w.speed, turn01: w.turn01 };
+      const L = w.rails[side], prev = L[L.length - 1];
+      if (prev && w.t - prev.t < 3.5) {
+        const dist = Math.hypot(p.x - prev.x, p.z - prev.z), inside = Math.sign(w.omega) === side && Math.abs(w.omega) > 0.05;
+        w.pairs.push({ overlap: (p.l + prev.l) / 2 - dist, fill: dist > 1e-3 ? p.l / dist : 1, vpm: dist > 1e-3 ? p.w * p.y * p.l / dist : 0, speed: w.speed, turn01: w.turn01, side, inside, t: w.t });
+      }
+      L.push(p); if (L.length > 900) L.shift();
+      evt.rails[side] = s;
+    }
+    w.lays.push(evt);
+  }
+  function simStep(dt) {
+    const w = world;
+    if (pilotMode === 'ai') pilot(dt); else readHuman();
+    const lt = w.input.lt < 0.05 ? 0 : w.input.lt, rt = w.input.rt < 0.05 ? 0 : w.input.rt;
+    const net = rt - lt; w.overlap = Math.min(lt, rt); w.turn01 = Math.abs(net);
+    w.omega = net * P.maxYaw * Math.PI / 180;
+    const boost = w.overlap > 0.01 ? 1 + (P.boostMult - 1) * w.overlap : 1;
+    const target = w.input.throttle * P.throttleScaler * P.timeMult * boost;
+    w.speed += (target - w.speed) * (1 - Math.exp(-P.spdEase * dt));
+    w.h += w.omega * dt;
+    w.x += Math.sin(w.h) * w.speed * dt; w.z += Math.cos(w.h) * w.speed * dt;
+    w.t += dt;
+    if (w.rule === 'today') stepScout(dt);
+    // VesselPrismController.SpawnLoopAsync: lay, then wait wavelength / speed (clamped to 3 s); the wait ends on a frame.
+    if (w.rule !== 'today' && w.rule !== 'plain') {
+      // TrailSpeedShape.StepLay (the speed shape lays by distance flown, not by a timer that ends on a frame).
+      const step = w.speed * dt;
+      const wl = laySpacing(w.rule, w.speed);   // TrailSpeedShape.LaySpacing (Free curves stretches above Soar)
+      if (w.layTimer > 0) w.layTimer -= dt;   // startDelay, as the game's loop waits it before laying
+      else if (w.speed <= 3) { w.travelled = Infinity; w.sinceLay = 0; }
+      else if (w.travelled === undefined || w.travelled === Infinity) { lay(wl, 0); w.travelled = 0; w.sinceLay = 0; }
+      else {
+        w.travelled += step; w.sinceLay = (w.sinceLay || 0) + dt;
+        if (w.travelled >= wl) {
+          // TrailSpeedShape.StepLay / NextLay: every spacing point this frame flew past gets its prism (up to 4).
+          for (let k = 0; w.travelled >= wl; k++) {
+            const back = w.travelled - wl; lay(wl, back); w.travelled = back;
+            if (k >= 3) { w.travelled %= wl; break; }
+          }
+          w.sinceLay = 0;
+        } else if (w.sinceLay >= 3) { lay(wl, 0); w.travelled = 0; w.sinceLay = 0; }
+      }
+    } else {
+    w.layTimer -= dt;
+    if (w.layTimer <= 1e-9) {
+      if (w.speed > 3) lay();
+      const raw = w.speed > 0 ? P.wavelength / w.speed : 1;
+      w.layTimer = clamp(raw, 0, 3);
+    }
+    }
+    const g = GATES[w.gate];
+    w.gateT += dt;
+    // A gate not reached in 15 s is skipped and counted as missed (an orbiting pilot must not stall the run).
+    const reached = Math.hypot(g.x - w.x, g.z - w.z) < g.r;
+    if (reached || w.gateT > 15) { if (!reached) w.missed++; w.gateT = 0; w.gate = (w.gate + 1) % GATES.length; if (w.gate === 0) w.laps++; }
+  }
+
+  // ================= scorecard =================
+  function corr(a, b) {
+    const n = a.length; if (n < 3) return 0;
+    let ma = 0, mb = 0; for (let i = 0; i < n; i++) { ma += a[i]; mb += b[i]; } ma /= n; mb /= n;
+    let sab = 0, saa = 0, sbb = 0; for (let i = 0; i < n; i++) { const da = a[i] - ma, db = b[i] - mb; sab += da * db; saa += da * da; sbb += db * db; }
+    return saa < 1e-12 || sbb < 1e-12 ? 0 : sab / Math.sqrt(saa * sbb);
+  }
+  function measure() {
+    const w = world, lays = w.lays, pairs = w.pairs;
+    const xs = [], logSp = [], logAsp = [];
+    for (const e of lays) for (const s of [-1, 1]) { const r = e.rails[s]; xs.push(r.x); if (e.speed > 3) { logSp.push(Math.log(e.speed)); logAsp.push(Math.log(r.z / r.y)); } }
+    const band = (lo, hi) => pairs.filter((p) => p.speed >= lo && p.speed < hi && p.turn01 < 0.3);
+    const mean = (arr, f) => arr.length ? arr.reduce((s, p) => s + f(p), 0) / arr.length : NaN;
+    const cruise = mean(band(120, 260), (p) => p.vpm), slow = mean(band(3, 60), (p) => p.vpm), fast = mean(band(300, 1e9), (p) => p.vpm);
+    // Turn fit: pairs from the same lay event, inside vs outside fill, while turning hard.
+    const byT = new Map(); for (const p of pairs) { if (p.turn01 < 0.5) continue; const k = p.t.toFixed(5); if (!byT.has(k)) byT.set(k, []); byT.get(k).push(p); }
+    let tf = 0, tn = 0; for (const arr of byT.values()) if (arr.length === 2) { tf += Math.abs(arr[0].fill - arr[1].fill); tn++; }
+    return {
+      xSpread: xs.length ? Math.max(...xs) / Math.min(...xs) : 1,
+      overlapMax: pairs.length ? Math.max(...pairs.map((p) => p.overlap)) : 0,
+      soarFill: mean(band(300, 1e9), (p) => Math.min(p.fill, 1.5)),
+      speedRead: corr(logSp, logAsp),
+      massSlow: slow / cruise, massFast: fast / cruise, vpmCruise: cruise,
+      turnFit: tn ? tf / tn : 0,
+      laps: w.laps, missed: w.missed, t: w.t, lays: lays.length,
+    };
+  }
+  function score() { const m = measure(); const o = {}; for (const k in m) o[k] = typeof m[k] === 'number' && isFinite(m[k]) ? +m[k].toFixed(3) : m[k]; return o; }
+  const CHECKS = [
+    // [key, label, test, hard, tip]
+    ['xSpread', 'Width spread', (v) => v <= 1.05, true, 'Widest / narrowest rail. X should be uniform: pass at 1.05 or less.'],
+    ['envDelta', 'Ignores cell', (v) => v <= 1e-9, true, 'Largest change to any prism dimension (m) between the same flight with and without cell prisms. Must be 0.'],
+    ['overlapMax', 'Worst overlap (m)', (v) => v <= 0.5, true, 'Most two neighbours on one rail overlap. Pass at 0.5 m or less.'],
+    ['speedRead', 'Speed read', (v) => v >= 0.8, false, 'Correlation of log speed with log(Z / Y): does the shape show the speed? Pass at 0.8.'],
+    ['massSlow', 'Mass/m slow', (v) => v >= 0.5 && v <= 2, false, 'Volume per metre while crawling over volume per metre at cruise. Pass between 0.5 and 2 (polish, not a balance change).'],
+    ['massFast', 'Mass/m Soar', (v) => v >= 0.5 && v <= 2, false, 'Volume per metre at Soar over cruise. Pass between 0.5 and 2.'],
+    ['soarFill', 'Soar fill', (v) => v >= 0.85, false, 'Prism length over the gap to its neighbour at Soar. 1 = an unbroken ribbon. Pass at 0.85.'],
+    ['turnFit', 'Turn fit', (v) => v <= 0.1, false, 'Mean |inside fill - outside fill| in hard turns: both rails meet their neighbours equally. Pass at 0.1.'],
+  ];
+  function runOne(rule, s, seconds, noEnv) {
+    reset(s, { rule, noEnv }); const dt = 1 / P.fps, n = Math.round(seconds / dt);
+    for (let i = 0; i < n; i++) simStep(dt);
+    return { m: measure(), lays: world.lays };
+  }
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2, 3], seconds = opts.seconds || 110, savedSeed = seed, savedRule = ruleName, savedMode = pilotMode, savedNoise = P.aiNoise, rows = [];
+    pilotMode = 'ai'; if (opts.rookie != null) P.aiNoise = opts.rookie;
+    const rules = opts.rules || RULE_ORDER.concat(['overfill']);
+    for (const rule of rules) {
+      const acc = {}, keys = ['xSpread', 'overlapMax', 'speedRead', 'massSlow', 'massFast', 'soarFill', 'turnFit', 'laps', 'vpmCruise'];
+      let envDelta = 0;
+      for (const s of seeds) {
+        const a = runOne(rule, s, seconds, false), b = runOne(rule, s, seconds, true);
+        for (const k of keys) acc[k] = k === 'xSpread' || k === 'overlapMax' ? Math.max(acc[k] || 0, a.m[k]) : (acc[k] || 0) + a.m[k] / seeds.length;
+        const n = Math.min(a.lays.length, b.lays.length);
+        if (a.lays.length !== b.lays.length) envDelta = Math.max(envDelta, 99);
+        for (let i = 0; i < n; i++) for (const sd of [-1, 1]) { const ra = a.lays[i].rails[sd], rb = b.lays[i].rails[sd]; envDelta = Math.max(envDelta, Math.abs(ra.x - rb.x), Math.abs(ra.y - rb.y), Math.abs(ra.z - rb.z)); }
+      }
+      const row = { rule, name: RULES[rule].name, envDelta };
+      for (const k of keys) row[k] = +(+acc[k]).toFixed(3);
+      row.hardFail = CHECKS.filter((c) => c[3] && !c[2](row[c[0]])).map((c) => c[1]);
+      row.passes = CHECKS.filter((c) => c[2](row[c[0]])).length;
+      rows.push(row);
+    }
+    P.aiNoise = savedNoise; pilotMode = savedMode; ruleName = savedRule; reset(savedSeed);
+    return rows;
+  }
+
+  // ================= render =================
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function prismColor(p, alpha) {
+    // Height reads as brightness, length as hue shift: a tall slow prism is pale, a long Soar prism is deep blue.
+    const tall = clamp(Math.log(p.y / 0.3) / Math.log(4 / 0.3), 0, 1), long = clamp(p.l / 12, 0, 1);
+    const hue = lerp(170, 220, long), light = lerp(38, 78, tall);
+    return 'hsla(' + hue.toFixed(0) + ',70%,' + light.toFixed(0) + '%,' + alpha + ')';
+  }
+  function render() {
+    const w = canvas.width, h = canvas.height, W = world, dpr = Math.min(2, devicePixelRatio || 1);
+    ctx.fillStyle = css('--stage') || '#060b10'; ctx.fillRect(0, 0, w, h);
+    const zoom = dpr * clamp(1.6 - W.speed / 600, 0.45, 1.6);
+    ctx.save(); ctx.translate(w / 2, h * 0.62); ctx.scale(zoom, zoom); ctx.rotate(-W.h); ctx.translate(-W.x, W.z);
+    // world: x right, z up the screen (canvas y = -z)
+    ctx.fillStyle = '#5a6672';
+    for (const e of W.env) ctx.fillRect(e.x - 3, -e.z - 3, 6, 6);
+    ctx.lineWidth = 3 / zoom;
+    GATES.forEach((g, i) => { ctx.strokeStyle = i === W.gate ? '#ffd36e' : (g.k === 'crawl' ? '#c58cff88' : g.k === 'hairpin' ? '#ff9d6e88' : '#9fb6ff55'); ctx.beginPath(); ctx.arc(g.x, -g.z, g.r, 0, 7); ctx.stroke(); });
+    for (const side of ['-1', '1']) {
+      for (const p of W.rails[side]) {
+        if (Math.abs(p.x - W.x) > 2500 || Math.abs(p.z - W.z) > 2500) continue;
+        ctx.save(); ctx.translate(p.x, -p.z); ctx.rotate(p.h);
+        ctx.fillStyle = prismColor(p, 0.9); ctx.fillRect(-p.w / 2, -p.l / 2, p.w, p.l);
+        ctx.restore();
+      }
+    }
+    // the vessel
+    ctx.save(); ctx.translate(W.x, -W.z); ctx.rotate(W.h); ctx.fillStyle = '#f2f5f8';
+    ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(22, 10); ctx.lineTo(0, 4); ctx.lineTo(-22, 10); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.restore();
+    drawProfile(w, h, dpr);
+    const L = W.rails['-1'][W.rails['-1'].length - 1], R = W.rails['1'][W.rails['1'].length - 1];
+    const f = (p) => p ? p.w.toFixed(1) + ' x ' + p.y.toFixed(2) + ' x ' + p.l.toFixed(1) : '-';
+    $('hud').textContent = RULES[W.rule].name + '   pilot ' + (pilotMode === 'ai' ? 'AI' : 'you') + (paused ? '   [paused]' : '') +
+      '\nspeed ' + W.speed.toFixed(0) + ' u/s   turn ' + W.turn01.toFixed(2) + (W.overlap > 0.01 ? '   SOAR ' + W.overlap.toFixed(2) : '') +
+      '\nleft rail  X x Y x Z  ' + f(L) + '\nright rail X x Y x Z  ' + f(R) + (W.rule === 'today' ? '\nprobe radius ' + W.sc.radius.toFixed(0) + '   XScaler ' + W.sc.xscaler.toFixed(2) : '');
+  }
+  function drawProfile(w, h, dpr) {
+    // Side view of the last 24 prisms on each rail: horizontal = length (Z), vertical = height (Y), at one scale.
+    const W = world, bw = Math.min(w * 0.42, 420 * dpr), bh = 170 * dpr, x0 = w - bw - 12 * dpr, y0 = 12 * dpr;
+    ctx.fillStyle = '#0b1620e6'; ctx.fillRect(x0, y0, bw, bh); ctx.strokeStyle = '#ffffff22'; ctx.strokeRect(x0, y0, bw, bh);
+    ctx.fillStyle = '#9fb0c0'; ctx.font = (11 * dpr) + 'px ui-monospace, monospace';
+    ctx.fillText('side view, last 24 per rail (1 m = 5 px)', x0 + 8 * dpr, y0 + 14 * dpr);
+    const k = 5 * dpr;
+    [['-1', 'L', y0 + 84 * dpr], ['1', 'R', y0 + 158 * dpr]].forEach(([side, lab, base]) => {
+      ctx.fillStyle = '#9fb0c0'; ctx.fillText(lab, x0 + 8 * dpr, base - 2 * dpr);
+      const arr = W.rails[side].slice(-24); if (!arr.length) return;
+      let cx = x0 + bw - 8 * dpr;
+      for (let i = arr.length - 1; i >= 1 && cx > x0 + 24 * dpr; i--) {
+        const p = arr[i], q = arr[i - 1], d = Math.hypot(p.x - q.x, p.z - q.z);
+        ctx.fillStyle = prismColor(p, 0.95); ctx.fillRect(cx - p.l * k, base - p.y * k, p.l * k, p.y * k);
+        cx -= d * k;
+      }
+      ctx.strokeStyle = '#ffffff22'; ctx.beginPath(); ctx.moveTo(x0 + 20 * dpr, base + 0.5); ctx.lineTo(x0 + bw - 6 * dpr, base + 0.5); ctx.stroke();
+    });
+  }
+
+  // ================= platform =================
+  function detectPlatform() {
+    const host = window.__labHost || {}, ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= UI =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function refreshDiff() {
+    const n = Object.keys(diffOnly()).length;
+    $('diff').textContent = n ? n + ' setting' + (n > 1 ? 's differ' : ' differs') + ' from shipped' : 'shipped numbers';
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key]; }
+  }
+  function setParam(key, v) { P[key] = v; lsSet(LS_KEY, diffOnly()); if (key === 'envCount' || key === 'fps') reset(); refreshDiff(); }
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) { for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name)); body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name); }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+  }
+  function rulePicker() {
+    const box = document.createElement('div');
+    box.innerHTML = '<h3>Trail rule</h3><div class="seg" id="ruleSeg"></div><p class="hint" id="ruleNote"></p>';
+    const seg = box.querySelector('#ruleSeg');
+    for (const r of RULE_ORDER) {
+      const b = document.createElement('button'); b.textContent = RULES[r].name; b.setAttribute('aria-pressed', String(r === ruleName));
+      b.onclick = () => { ruleName = r; reset(); for (const c of seg.children) c.setAttribute('aria-pressed', String(c === b)); box.querySelector('#ruleNote').textContent = RULES[r].note; };
+      seg.appendChild(b);
+    }
+    box.querySelector('#ruleNote').textContent = RULES[ruleName].note;
+    return box;
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    if (group === 'Proposal') box.appendChild(rulePicker());
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); inp.id = 'p_' + key; Object.assign(inp, { min: lo, max: hi, step, value: P[key] });
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    if (group === 'Flight') { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Fly it yourself: Pilot button, then A / D (or LT / RT) are the triggers, both at once is Soar, S (or B) is the crawl throttle. On a phone, the three buttons on the stage.'; box.appendChild(p); }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  const groups = [...new Set(SPEC.map((r) => r[0]))];
+  makeTabs('dockTabs', 'dockBody', groups.map((g) => ({ name: g, build: () => sliderGroup(g) })), 'lab:' + LAB.name + ':dock');
+
+  // ================= decision log =================
+  let db = null, me = '', remote = [], localLog = lsGet('lab:' + LAB.name + ':log', []);
+  function snapshot() { return { round: LAB.round, seed, rule: ruleName, changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('lab:' + LAB.name + ':log', localLog); return 'local';
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><input type="text" id="logTopic" placeholder="Topic"><textarea id="logChoice" rows="2"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><div class="tablewrap"><table id="logTable"></table></div>';
+    const status = box.querySelector('#logStatus');
+    status.textContent = db ? 'Shared log: saved with the lab, readable by Claude.' : 'Kept in this browser (Copy log to send it).';
+    status.className = db ? 'status-ok' : 'status-warn';
+    box.querySelector('#logTopic').value = 'Trail rule';
+    box.querySelector('#logChoice').value = RULES[ruleName].name + (Object.keys(diffOnly()).length ? ' with ' + JSON.stringify(diffOnly()) : ' at the lab numbers');
+    box.querySelector('#logSave').onclick = async () => { const where = await record(box.querySelector('#logTopic').value || 'General', box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); try { navigator.clipboard.writeText(t).catch(() => {}); } catch (e) { /* clipboard refused */ } };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+  })();
+
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score every rule</button> <button class="btn" id="runRookie">Score with a rookie</button> <span class="hint" id="scoreHint">AI pilot, seeds 1-3, 110 s (two laps) each, every flight run twice (with and without cell prisms). Bold red = a hard fail.</span></p><div class="tablewrap"><table id="scoreTable"></table></div>';
+    const go = (rookie) => {
+      box.querySelector('#scoreHint').textContent = 'Scoring...';
+      setTimeout(() => {
+        const t0 = performance.now(), rows = runBatch(rookie ? { rookie: 0.6 } : {}), t = box.querySelector('#scoreTable');
+        t.innerHTML = '';
+        const hd = document.createElement('tr'); hd.innerHTML = '<th>Rule</th>' + CHECKS.map((c) => '<th></th>').join('') + '<th>Passes</th>';
+        CHECKS.forEach((c, i) => { hd.children[i + 1].textContent = c[1]; hd.children[i + 1].title = c[4]; });
+        t.appendChild(hd);
+        for (const r of rows) {
+          const tr = document.createElement('tr'), td0 = document.createElement('td'); td0.textContent = r.name; td0.title = RULES[r.rule].note; tr.appendChild(td0);
+          for (const c of CHECKS) { const td = document.createElement('td'), v = r[c[0]], ok = c[2](v); td.textContent = (+v).toFixed(c[0] === 'envDelta' || c[0] === 'overlapMax' ? 2 : 2); td.className = ok ? 'pass' : (c[3] ? 'fail' : 'info'); td.title = c[4]; tr.appendChild(td); }
+          const tp = document.createElement('td'); tp.textContent = r.passes + ' / ' + CHECKS.length + (r.hardFail.length ? '  NO' : ''); tp.className = r.hardFail.length ? 'fail' : 'pass'; tr.appendChild(tp);
+          t.appendChild(tr);
+        }
+        box.querySelector('#scoreHint').textContent = (rookie ? 'Rookie pilot (noise 0.6). ' : 'Skilled pilot. ') + 'Scored in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s. Green passes, red is a hard fail, plain is a soft miss.';
+      }, 20);
+    };
+    box.querySelector('#runBatch').onclick = () => go(false);
+    box.querySelector('#runRookie').onclick = () => go(true);
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p id="aboutHead"></p>' +
+      '<p>The question: what shape should the Manta\'s trail prisms take from speed and turning alone? X uniform, Z stretching with speed, Y growing at a crawl or in a Yawstery, the inside rail shortening and the outside lengthening to meet their neighbours. Today the width still comes from nearby prisms (ScoutTrailPrismScaler).</p>' +
+      '<h3>What this lab does not model</h3><ul>' +
+      '<li>The course is a stand-in for Redline, not the shipped track. Only the Time game is here; the Space, Mass and Charge games are not built for this round.</li>' +
+      '<li>Flight is flat (no pitch, no roll, no Soar ramp curve); speed eases at a fixed rate and Yawstery is the analog trigger turn only (no touch pivot).</li>' +
+      '<li>Prisms are drawn as flat rectangles from above and in a side view: no lighting, materials, shields, pooling, the 0.5 scale floor or the pool\'s scale window.</li>' +
+      '<li>The scaler\'s stack of overlapping 1.5 s lerps is approximated as one approach with a 1.5 s time constant.</li>' +
+      '<li>Nothing here measures frame time, colliders or how a prism\'s new shape changes what it is worth to other vessels.</li></ul>';
+    box.querySelector('#aboutHead').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc;
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], 'lab:' + LAB.name + ':bottom');
+
+  $('title').textContent = LAB.name; $('meta').textContent = 'Manta Polish round ' + LAB.round;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('restart').onclick = () => reset();
+  $('pilotBtn').onclick = () => { pilotMode = pilotMode === 'ai' ? 'human' : 'ai'; $('pilotBtn').textContent = 'Pilot: ' + (pilotMode === 'ai' ? 'AI' : 'You'); $('touch').hidden = !(pilotMode === 'human' && PLATFORM.device === 'phone'); };
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet(LS_KEY, {}); for (const k in outputs) outputs[k].inp.value = P[k]; reset(); refreshDiff(); };
+  const keyMap = { KeyA: 'lt', ArrowLeft: 'lt', KeyD: 'rt', ArrowRight: 'rt' };
+  addEventListener('keydown', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; if (keyMap[e.code]) human[keyMap[e.code]] = 1; if (e.code === 'Space') { human.lt = human.rt = 1; e.preventDefault(); } if (e.code === 'KeyS' || e.code === 'ArrowDown') human.slow = true; });
+  addEventListener('keyup', (e) => { if (keyMap[e.code]) human[keyMap[e.code]] = 0; if (e.code === 'Space') human.lt = human.rt = 0; if (e.code === 'KeyS' || e.code === 'ArrowDown') human.slow = false; });
+  const hold = (id, on, off) => { const b = $(id); b.addEventListener('pointerdown', (e) => { e.preventDefault(); on(); }); for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, off); };
+  hold('tL', () => { human.lt = 1; }, () => { human.lt = 0; });
+  hold('tR', () => { human.rt = 1; }, () => { human.rt = 0; });
+  hold('tSlow', () => { human.slow = true; }, () => { human.slow = false; });
+
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now(), acc = 0;
+  function frame(now) {
+    const real = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) {
+      resize();
+      if (!paused) { const dt = 1 / P.fps; acc += real; let n = 0; while (acc >= dt && n < 8) { simStep(dt); acc -= dt; n++; } if (n === 8) acc = 0; }
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+  reset(); resize();
+  for (let i = 0; i < Math.round(8 * P.fps); i++) simStep(1 / P.fps);   // open mid-flight with a trail already laid
+  refreshDiff(); render(); requestAnimationFrame(frame);
+
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, PLATFORM, RULES, GATES, CHECKS,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || 1 / P.fps; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
+    reset, score, runBatch, setParam, record, shapeFor,
+    setRule(r) { if (RULES[r]) { ruleName = r; reset(); } return ruleName; },
+    state: () => ({ t: world.t, seed, rule: world.rule, speed: world.speed, lays: world.lays.length, gate: world.gate, laps: world.laps, missed: world.missed }),
+  };
+})();
+</script>

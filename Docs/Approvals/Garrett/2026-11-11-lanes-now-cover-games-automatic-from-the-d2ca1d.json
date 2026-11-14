@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-11-lanes-now-cover-games-automatic-from-the-d2ca1d",
+  "to": "Garrett",
+  "by": "Caleb",
+  "date": "2026-11-11T01:10:53+00:00",
+  "area": "the /swimlanes skill and lane catalog",
+  "summary": "Lanes now cover games (automatic from the shipped ArcadeGame cards, 52) and 18 curated mechanical systems beside vessels and shell sections; a lane can be archived; the sweep cap is now per kind (3+ vessels, games or systems), so a vessel+its game+AI commit occupies all three; the board caps the work tier at 12 and quiet tiers at 8 (--full / --kind).",
+  "why": "Caleb, 2026-11-11: everything bigger than a couple of prompts and one PR should be tracked so efforts can be coordinated",
+  "branch": "claude/brave-ritchie-funsll",
+  "commit": "c53235b20",
+  "paths": [
+    ".claude/skills/swimlanes",
+    "CLAUDE.md",
+    "Docs/TEAM.md",
+    "Tools/Build/approvals.py"
+  ]
+}

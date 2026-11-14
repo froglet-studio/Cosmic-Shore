@@ -64,10 +64,10 @@ namespace CosmicShore.Gameplay
         int _blocksAtStart = -1;
         string _runTag = "Switchback";   // the finish line's mode (Slingshot's Orrery reuses this runtime for its movers)
 
-        /// <summary>Hand over the match: the Blast Run layout and the container its prisms were laid into.</summary>
         /// <summary>True when <paramref name="p"/> is one of the course's moving prisms (once matched).</summary>
         public bool IsMover(Prism p) => p != null && _moverSet.Contains(p);
 
+        /// <summary>Hand over the match: the Blast Run layout and the container its prisms were laid into.</summary>
         public void Init(GameDataSO gameData, int intensity, int seed, int courseCount, System.Func<int> raceLength,
                          SwitchbackFeatureLayout layout, Transform prismContainer, bool trackAllPrisms = false,
                          string runTag = "Switchback")

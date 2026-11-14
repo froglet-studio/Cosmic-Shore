@@ -12,7 +12,7 @@ afterwards, through their own queue, and approves it or talks to the person who 
 
 The process (Garrett, 2026-11-10: "only slow people down when they collide with a swimlane"):
 
-  COLLISION  the change is ABOUT a swim lane (the /swimlanes skill: a vessel or an app-shell section) that someone ELSE
+  COLLISION  the change is ABOUT a swim lane (the /swimlanes skill: a vessel, game, app-shell section or system) that someone ELSE
              occupies right now (unmerged work pushed in the last 7 days). `check` exits 2 and names the occupant: the
              session stops and tells its person, who talks to the occupant or decides to go ahead anyway.
   HEADS-UP   anything else: declared owners (Docs/TEAM.json `owners`), people whose recent work landed in these paths,
@@ -174,6 +174,9 @@ def check(root, files, me, branch, days, offline, landed_days):
         occ = sw.occupancy(root, lanes, team, catalog, days or catalog.get('window_days', 7), BASE, prs, merged)
         last = sw.landed(root, lanes, team, catalog.get('landed_days', 14), BASE,
                          re.compile(catalog.get('ignore_subjects') or r'^$'))
+        handoffs, holder = sw.read_handoffs(root) if hasattr(sw, 'read_handoffs') else ({}, None)
+        if handoffs:
+            occ = sw.apply_handoffs(occ, handoffs, holder)   # a lane handed to someone is theirs; handed off open is free
         for k in list(occ):
             occ[k] = [o for o in occ[k] if not sw.superseded(o, last.get(k)) and o['branch'] != branch
                       and not (me and o['people'] and all(p == me for p in o['people']))]
@@ -228,7 +231,7 @@ def print_check(r, me):
         print('\nCOLLISION - stop and tell your person before going on (Docs/TEAM.md rule 3):')
         for row in r['collisions']:
             for o in row['occupants']:
-                ppl = ', '.join(o['people']) or 'a Claude session (no person on record)'
+                ppl = ', '.join(o['people']) or o.get('label') or 'a Claude session (no person on record)'
                 pr = f', PR #{o["pr"]}' if o.get('pr') else ''
                 print(f'  {row["name"]}: {ppl} on {o["branch"]}{pr}, last push {o["last"]}: "{o["subjects"][0][:80]}"')
         print('  Talk to them first. If your person decides to go ahead anyway, go ahead, say "Affects: <occupant>\'s'
@@ -272,7 +275,7 @@ def write_json(path, data):
         fh.write('\n')
 
 
-def add(root, team, to, by, area, summary, why, paths, branch, pr, lane, now=None):
+def add(root, team, to, by, area, summary, why, paths, branch, pr, lane, now=None, loop=None):
     to_p, by_p = person_of(team, to), person_of(team, by)
     if not to_p:
         raise SystemExit(f'--to "{to}" is not a person in Docs/TEAM.json')
@@ -286,7 +289,8 @@ def add(root, team, to, by, area, summary, why, paths, branch, pr, lane, now=Non
     eid = make_id(to_p, by_p, summary, now)
     entry = {'id': eid, 'to': to_p, 'by': by_p, 'date': now.isoformat(), 'area': area or '', 'summary': summary.strip(),
              'why': (why or '').strip(), 'branch': branch or '', 'pr': pr, 'lane': lane or '',
-             'commit': git('rev-parse', '--short=9', 'HEAD', cwd=root).strip(), 'paths': sorted(set(paths or []))[:30]}
+             'commit': git('rev-parse', '--short=9', 'HEAD', cwd=root).strip(), 'paths': sorted(set(paths or []))[:30],
+             'loop': {k: v for k, v in (loop or {}).items() if v} or None}
     path = os.path.join(root, QUEUE, to_p, eid + '.json')
     write_json(path, {k: v for k, v in entry.items() if v not in (None, '', [])})
     return eid, os.path.relpath(path, root)
@@ -407,6 +411,83 @@ def read_queue(root, days):
     return entries
 
 
+# --- Loop impact: answer first what the elemental loop is building on (Garrett, 2026-11-12) -------------------------
+# "/approval ... should be prioritizing sign off on the items most likely to affect the velocity of things through the
+# process as things need to be rerun when a stakeholder catches an issue against the spirit of a vessel they have worked
+# on, which evokes a retraining. /approval is to catch those sooner so they advance less before needing more retraining
+# at each downstream step." An entry's impact is the loop work a "this is wrong" answer would send back NOW
+# (elemental_loop.rework): it grows while the entry waits, as the vessel advances, so the oldest unread change to a
+# vessel the loop is building on rises to the top.
+
+LOOP_ELEMENTS = ('Time', 'Charge', 'Mass', 'Space')
+
+
+def loop_board(root):
+    """(elemental_loop module, its board), or (None, None) when the loop cannot be read; the queue still lists."""
+    if not os.path.exists(os.path.join(root, 'Docs', 'ElementalLoop', 'loop.json')):
+        return None, None
+    try:
+        el = load_module('elemental_loop', os.path.join(root, 'Tools', 'Build', 'elemental_loop.py'))
+        return el, el.build(root)
+    except Exception:                                   # a reader: never stop the queue over it
+        return None, None
+
+
+# Where a change can move how a vessel plays, and so what its intensities, AI and arena were built on. A path outside
+# these (UI, HUD, colour, art, docs, tools, tests) or an area that says it is about the look sends nothing back.
+LOOP_PATHS = ('Controller/Vessel', 'ElementalAbilityMaps', 'Controller/Arcade', 'Controller/AI', 'Controller/Projectiles',
+              '_SO_Assets/Games', '_SO_Assets/VesselActions', '_SO_Assets/AI Training', '_SO_Assets/Scoring Rules',
+              'Cell Configs', '_Prefabs/Spacevessels', 'Tools/Build/author_')
+NOT_PLAY = re.compile(r'(Visual|HUD|Colou?r|Icon|Material|Theme|Tests/|\.md$)')
+LOOK_AREA = re.compile(r'\b(colou?rs?|hud|icons?|look|art|portraits?|previews?|glow|vfx|shaders?|visuals?)\b', re.I)
+
+
+def loop_target(e, vessels, cards=()):
+    """Which vessels, elements and loop step an entry is about. What `add --vessel/--element/--loop-step` recorded wins;
+    else it is read from the entry: the vessels named in its lane or area (or the single-hull arcade game it names), or
+    whose name is in a play file it changed; the elements named with a capital there (or that game's elements); step 3
+    when every play file is AI work, 2 when every one is an intensity / cell config, else 1: a change to the vessel or
+    its game is a change to its spirit, and every later step is built on it. Nothing when its files are all outside
+    play (LOOP_PATHS) or its area is about the look."""
+    rec = e.get('loop') or {}
+    text = ' '.join(str(e.get(k) or '') for k in ('lane', 'area'))
+    paths = e.get('paths') or []
+    play = [p for p in paths if any(k in p for k in LOOP_PATHS) and not NOT_PLAY.search(p)]
+    if not rec.get('vessels') and ((paths and not play) or LOOK_AREA.search(text)):
+        return [], [], ''
+    found, elements = list(rec.get('vessels') or []), list(rec.get('elements') or [])
+    if not found:
+        found = [v for v in vessels if re.search(rf'\b{re.escape(v)}\b', text, re.I) or any(v in p for p in play)]
+        for c in cards:
+            if len(c['hulls']) == 1 and c['name'] and re.search(rf'\b{re.escape(c["name"])}\b', text, re.I):
+                found += [h for h in c['hulls'] if h not in found]
+                elements += [x for x in c['elements'] if x not in elements and not rec.get('elements')]
+    if not rec.get('elements'):
+        elements += [x for x in LOOP_ELEMENTS if x not in elements and
+                     (re.search(rf'\b{x}\b', text) or any(re.search(rf'{x}(?![a-z])', p) for p in play))]
+    step = str(rec.get('step') or '')
+    if not step:
+        ai = [p for p in play if '/AI' in p]
+        ladder = [p for p in play if 'Cell Configs' in p]
+        step = '3' if (play and len(ai) == len(play)) or (not play and re.search(r'\bAI\b', text)) else \
+            '2' if play and len(ladder) == len(play) else '1'
+    return found, elements, step
+
+
+def loop_impact(e, el, board):
+    """(score, [what a late catch would send back]) for one entry; (0, []) when it touches no vessel in the loop."""
+    if not board:
+        return 0, []
+    vessels = [r['vessel'] for r in board['rows']]
+    found, elements, step = loop_target(e, vessels, [c for c in board['cards'] if 'ArcadeGames' in c['lists']])
+    score, hits = 0, []
+    for v in found:
+        sc, h = el.rework(board, v, elements or None, step)
+        score += sc
+        hits += [x for x in h if x not in hits]
+    return score, hits
+
+
 def print_entries(rows, header, show_to=False):
     print(header)
     if not rows:
@@ -417,8 +498,12 @@ def print_entries(rows, header, show_to=False):
             'only in this working tree (not pushed)' if e['where'] == 'local' else f'not merged yet, on {e["where"]}'
         pr = f', PR #{e["pr"]}' if e.get('pr') else ''
         who = f'to {e["to"]}' if show_to else f'from {e["by"]}'
-        print(f'\n  [{e["status"].upper()}] {e["id"]}')
+        imp = f'  LOOP IMPACT {e["loopImpact"]}' if e.get('loopImpact') else ''
+        print(f'\n  [{e["status"].upper()}]{imp} {e["id"]}')
         print(f'    {who}, {e["date"][:10]}: {e["summary"]}')
+        if e.get('loopRework'):
+            more = f' and {len(e["loopRework"]) - 4} more' if len(e['loopRework']) > 4 else ''
+            print(f'    answer early: if this goes against the vessel, the loop redoes {"; ".join(e["loopRework"][:4])}{more}')
         if e.get('area'):
             print(f'    their area: {e["area"]}' + (f'  (lane: {e["lane"]})' if e.get('lane') else ''))
         if e.get('why'):
@@ -431,16 +516,25 @@ def print_entries(rows, header, show_to=False):
             print(f'    {r["date"][:10]} {r["by"]}: {r["status"]}' + (f' - {r["note"]}' if r.get('note') else ''))
 
 
-def list_queue(entries, person=None, sender=None, show_all=False, as_json=False):
+def list_queue(entries, person=None, sender=None, show_all=False, as_json=False, loop=(None, None)):
     rows = [e for e in entries.values() if (not person or e['to'] == person) and (not sender or e['by'] == sender)]
     if not show_all:
         rows = [e for e in rows if e['status'] in OPEN_STATUSES]
-    rows.sort(key=lambda e: (e['status'] != 'discuss', e['status'] != 'pending', e['date']))
+    el, board = loop
+    for e in rows:
+        e['loopImpact'], e['loopRework'] = loop_impact(e, el, board) if e['status'] in OPEN_STATUSES else (0, [])
+    # Open entries the loop is building on first, the most rework first; then talk-about before waiting; oldest first.
+    rows.sort(key=lambda e: (e['status'] not in OPEN_STATUSES, -e['loopImpact'], e['status'] != 'discuss',
+                             e['status'] != 'pending', e['date']))
     if as_json:
         print(json.dumps(rows, indent=1, ensure_ascii=False))
         return rows
     if person:
-        print_entries(rows, f'{person}\'s approval queue ({len(rows)} {"entries" if show_all else "waiting"}):')
+        head = f'{person}\'s approval queue ({len(rows)} {"entries" if show_all else "waiting"})'
+        if board:
+            head += (', LOOP IMPACT first: the elemental loop work a "this is wrong" answer would send back now. It grows'
+                     ' while an entry waits, so answering these first is what keeps the loop moving (Garrett, 2026-11-12)')
+        print_entries(rows, head + ':')
         if rows and not show_all:
             print('\nAnswer each: approve (you agree), discuss (talk to the person who made it; --note says about what),'
                   ' resolve (settled after talking):\n  python3 Tools/Build/approvals.py reply <id> approve --by '
@@ -484,6 +578,22 @@ def self_test():
     h = lane_hits(['Assets/Thresher/A.cs', 'Assets/Thresher/B.cs', 'Assets/UI/HangarView.cs', 'Docs/x.md'],
                   [thresher, hangar])
     ok(len(h.get('thresher', [])) == 2 and len(h.get('hangar', [])) == 1, 'files land in their lanes')
+
+    # Loop impact: what an entry is about, and that the look and the tools send nothing back (negative controls).
+    vs, cs = ['Manta', 'TigerMoth', 'Dolphin'], [{'name': 'Waystation', 'hulls': ['TigerMoth'], 'elements': ['Time']},
+                                                {'name': 'Regatta', 'hulls': ['Manta', 'Dolphin'], 'elements': ['Time']}]
+    ok(loop_target({'area': 'Redline AI nose follow rates', 'summary': 'x'}, vs, cs)[2] == '3', 'an AI area is step 3')
+    ok(loop_target({'area': 'Waystation (GameModes 58)'}, vs, cs)[:2] == (['TigerMoth'], ['Time']),
+       'a single-hull game names its vessel and element')
+    ok(loop_target({'area': 'Regatta courses'}, vs, cs)[0] == [], 'an arena card names no one vessel')
+    ok(loop_target({'area': 'Manta', 'paths': ['Assets/_Scripts/Controller/Vessel/MantaSting.cs']}, vs)[0] == ['Manta']
+       and loop_target({'area': 'Manta', 'paths': ['Assets/_Scripts/Controller/Vessel/MantaSting.cs']}, vs)[2] == '1',
+       'a vessel play file is a step 1 change to that vessel')
+    ok(loop_target({'area': 'Manta', 'paths': ['Assets/_Scripts/UI/View/MantaHUDView.cs']}, vs)[0] == [],
+       'a HUD file sends nothing back')
+    ok(loop_target({'area': 'Manta colours', 'summary': 'Manta'}, vs)[0] == [], 'a look area sends nothing back')
+    ok(loop_target({'area': 'x', 'loop': {'vessels': ['Dolphin'], 'step': '2'}}, vs)[::2] == (['Dolphin'], '2'),
+       'what add --vessel / --loop-step recorded wins')
 
     # A queue round trip in a scratch repo: add -> pending, reply discuss -> open, resolve -> closed; refusals hold.
     with tempfile.TemporaryDirectory() as tmp:
@@ -546,6 +656,9 @@ def main():
     a_.add_argument('--branch', help='default: the current branch')
     a_.add_argument('--pr', type=int)
     a_.add_argument('--lane', default='', help='the swim lane key, when it is one')
+    a_.add_argument('--vessel', nargs='*', default=[], help='the elemental loop vessel(s) it changes (else read from the entry)')
+    a_.add_argument('--element', nargs='*', default=[], choices=list(LOOP_ELEMENTS), help='the loop element(s) it changes')
+    a_.add_argument('--loop-step', choices=['1', '2', '3'], help='the loop step it changes: 1 the vessel / fun, 2 intensities, 3 AI')
     l_ = sub.add_parser('list', help='a person\'s queue, or what a person\'s changes queued')
     l_.add_argument('--person', help='whose queue (default: you)')
     l_.add_argument('--from', dest='sender', help='entries this person\'s changes filed for others')
@@ -580,7 +693,7 @@ def main():
         return 2 if r['collisions'] else 0
     if a.cmd == 'add':
         eid, rel = add(root, team, a.to, a.by, a.area, a.summary, a.why, a.paths, a.branch or current_branch(root),
-                       a.pr, a.lane)
+                       a.pr, a.lane, loop={'vessels': a.vessel, 'elements': a.element, 'step': a.loop_step})
         print(f'queued {eid} for {person_of(team, a.to)}: {rel}\nCommit it with the change, so it lands with it.')
         return 0
     if a.cmd == 'list':
@@ -594,7 +707,7 @@ def main():
         if not person and not a.sender:
             raise SystemExit('whose queue? pass --person <name> (or --from <name>)')
         list_queue(entries, person=person, sender=person_of(team, a.sender) if a.sender else None,
-                   show_all=a.all, as_json=a.json)
+                   show_all=a.all, as_json=a.json, loop=loop_board(root))
         return 0
     if a.cmd == 'reply':
         entries = read_queue(root, a.days)

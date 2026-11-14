@@ -164,11 +164,6 @@ namespace CosmicShore.UI
         /// <summary>True while this element's level-5 upgrade is active on this HUD.</summary>
         public bool IsAbilityUpgraded(Element element) => _upgraded.Contains(element);
 
-        /// <summary>
-        /// The ability icon this element upgrades, if the vessel wired one. Used by the control-hint
-        /// binder so an (LT)/(RT) label can find the ability it belongs to instead of being pinned to
-        /// a hand-authored position.
-        /// </summary>
         /// <summary>The meter this ability drives, if the vessel wired one.</summary>
         public bool TryGetAbilityGauge(Element element, out Image gauge)
         {
@@ -182,6 +177,11 @@ namespace CosmicShore.UI
             return false;
         }
 
+        /// <summary>
+        /// The ability icon this element upgrades, if the vessel wired one. Used by the control-hint
+        /// binder so an (LT)/(RT) label can find the ability it belongs to instead of being pinned to
+        /// a hand-authored position.
+        /// </summary>
         public bool TryGetAbilityIcon(Element element, out Image icon)
         {
             foreach (var binding in abilityIcons)
@@ -562,6 +562,29 @@ namespace CosmicShore.UI
             }
 
             abilityIcons.Add(new AbilityIconBinding { element = element, icon = icon });
+        }
+
+        /// <summary>
+        /// Points an ELEMENT's card at a meter built at runtime (the Squirrel's joust speed), adding the entry when
+        /// the vessel authored none. The gauge twin of <see cref="BindGeneratedAbilityIcon"/>, called from
+        /// <see cref="EnsureGeneratedAbilityIcons"/> so the lockup adopts it like an authored one. An authored
+        /// gauge always wins.
+        /// </summary>
+        protected void BindGeneratedAbilityGauge(Element element, Image gauge)
+        {
+            if (!gauge) return;
+
+            for (int i = 0; i < abilityIcons.Count; i++)
+            {
+                if (abilityIcons[i].element != element) continue;
+                if (abilityIcons[i].gauge) return;         // an authored meter wins
+                var binding = abilityIcons[i];
+                binding.gauge = gauge;
+                abilityIcons[i] = binding;
+                return;
+            }
+
+            abilityIcons.Add(new AbilityIconBinding { element = element, gauge = gauge });
         }
 
         /// <summary>

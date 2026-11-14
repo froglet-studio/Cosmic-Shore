@@ -1,0 +1,165 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5cb53a6129e0871de97b71928d49605, type: 3}
+  m_Name: VoyageBoardStyle
+  m_EditorClassIdentifier: 
+  Sliver10Fill: {fileID: 21300000, guid: 9a86abd8613e387afc691f6e48d9830a, type: 3}
+  Sliver10Line: {fileID: 21300000, guid: 98099cf4a35661dd88b7e9cb399386b7, type: 3}
+  LabelFont: {fileID: 11400000, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
+  Light: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
+  Sub: {r: 0.454902, g: 0.4823529, b: 0.6784314, a: 1}
+  Jade: {r: 0.1294118, g: 0.7529412, b: 0.7411765, a: 1}
+  Cyan: {r: 0, g: 0.8313725, b: 1, a: 1}
+  Outline: {r: 0.2627451, g: 0.2980392, b: 0.5372549, a: 1}
+  Popup: {r: 0, g: 0.003921569, b: 0.03921569, a: 1}
+  RowPicked: {r: 0, g: 0.01568627, b: 0.1215686, a: 0.86}
+  CtaFill: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+  CtaText: {r: 0, g: 0.01568627, b: 0.1215686, a: 1}
+  ListRight: 0.1685
+  CourseLeft: 0.1848
+  CourseRight: 0.7391
+  PanelLeft: 0.7554
+  RowHeight: 96
+  HullCrops:
+  - Sprite: {fileID: 21300000, guid: 0346d212c38317799ee4deedf0ed40e9, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0215
+      y: 0.1289
+      width: 0.9590
+      height: 0.7441
+  - Sprite: {fileID: 21300000, guid: 1720fb1defdfdaaa2baa1bc8b5eab251, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0215
+      y: 0.1602
+      width: 0.9570
+      height: 0.6797
+  - Sprite: {fileID: 21300000, guid: 2286f04c9031ee84d8d935de1926f92a, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0195
+      y: 0.1719
+      width: 0.9609
+      height: 0.6562
+  - Sprite: {fileID: 21300000, guid: 25940445b8b862b47bed3feb4ac02a4a, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0176
+      y: 0.1816
+      width: 0.9648
+      height: 0.6367
+  - Sprite: {fileID: 21300000, guid: 42bbb35c6c8abd11030e8d8e7d482149, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0176
+      y: 0.1934
+      width: 0.9648
+      height: 0.6133
+  - Sprite: {fileID: 21300000, guid: 4445028811cd31f0faf2d54c51bb2d90, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0195
+      y: 0.0508
+      width: 0.9609
+      height: 0.8984
+  - Sprite: {fileID: 21300000, guid: 468b9bae5faa0d94d82ead6a137b1d6a, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0215
+      y: 0.1875
+      width: 0.9570
+      height: 0.6250
+  - Sprite: {fileID: 21300000, guid: 490c8f555ec5f6248b728873bc66068b, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0254
+      y: 0.2031
+      width: 0.9473
+      height: 0.5918
+  - Sprite: {fileID: 21300000, guid: 6a47f7b1aafd1a64d9522babaff8a248, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0273
+      y: 0.1777
+      width: 0.9453
+      height: 0.6445
+  - Sprite: {fileID: 21300000, guid: 84d140bd415cafb66af261a3210bf794, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0195
+      y: 0.1152
+      width: 0.9609
+      height: 0.7715
+  - Sprite: {fileID: 21300000, guid: 9623ac1001600874773566faccc6c9d9, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0215
+      y: 0.1934
+      width: 0.9570
+      height: 0.6133
+  - Sprite: {fileID: 21300000, guid: 9f113d91dcb00645df430c90ed9a86a2, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0195
+      y: 0.2188
+      width: 0.9609
+      height: 0.5645
+  - Sprite: {fileID: 21300000, guid: a0271f997d38177eadc5953600c0406b, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0195
+      y: 0.2832
+      width: 0.9609
+      height: 0.4336
+  - Sprite: {fileID: 21300000, guid: cb28739c26ff2dc171f3648367bf09d1, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0195
+      y: 0.0703
+      width: 0.9609
+      height: 0.8594
+  - Sprite: {fileID: 21300000, guid: d071add11cf05ec46b30d819e86fc72d, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0195
+      y: 0.0527
+      width: 0.9609
+      height: 0.8945
+  - Sprite: {fileID: 21300000, guid: d2c584c87663f65dbf0546e6a56d97fd, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.1270
+      y: 0.0195
+      width: 0.7461
+      height: 0.9609
+  - Sprite: {fileID: 21300000, guid: ec3b66f2f2ab57fd5a2ebd4929c4b388, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0215
+      y: 0.1895
+      width: 0.9570
+      height: 0.6211
+  - Sprite: {fileID: 21300000, guid: fab32bb8bfe608c410c9a29a45785d81, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0176
+      y: 0.2129
+      width: 0.9648
+      height: 0.5742
+  - Sprite: {fileID: 21300000, guid: fab857e5d0454e7d44e392b62578d2ca, type: 3}
+    Uv:
+      serializedVersion: 2
+      x: 0.0215
+      y: 0.2148
+      width: 0.9570
+      height: 0.5684

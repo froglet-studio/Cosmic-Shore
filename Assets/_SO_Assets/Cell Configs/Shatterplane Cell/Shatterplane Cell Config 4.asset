@@ -18,9 +18,10 @@ MonoBehaviour:
     four crystals. 4588 prisms, all neutral (3232 breakable, 1356 super-shielded, 704
     danger). Membrane radius 1200, spawn ring 780, the standard nucleus resized to 470 u by
     the controller (the ring blast is as wide as the nucleus; play geometry, not a claim),
-    the crystal field laid by the controller on the plates'' axes. No flora, no fauna.
-    Authored by Tools/Build/author_shatterplane_assets.py - re-run it rather than
-    hand-editing.'
+    the crystal field laid by the controller on the plates'' axes. No flora; live elemental
+    fauna (the Blob tadpole and shark, each creature rolling one of four elements, at 2x
+    their authored populations). Authored by Tools/Build/author_shatterplane_assets.py -
+    re-run it rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 4
   CellEndGameScore: 0
@@ -29,7 +30,7 @@ MonoBehaviour:
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CytoplasmShardDistance: 120
   CellModifiers: []
-  SpawnProfile: {fileID: 11400000, guid: a5648314df28373fbbb13472a5c3d361, type: 2}
+  SpawnProfile: {fileID: 11400000, guid: 0804dc01a73e24b6b24996bdb4318ad3, type: 2}
   EnvironmentPrefab: {fileID: 8800000000000203, guid: 4fa409dfb742f3e91454a38a9480114d, type: 3}
   EnvironmentIntensity: 4
   SenseRadiusOverride: 0

@@ -681,6 +681,7 @@ GameObject:
   - component: {fileID: -7706008104071495775}
   - component: {fileID: 3901220300004001}
   - component: {fileID: 7740000000000001602}
+  - component: {fileID: 7740000000000001700}
   m_Layer: 0
   m_Name: Rhino
   m_TagString: Player_Ship
@@ -1195,9 +1196,8 @@ MonoBehaviour:
   baseView: {fileID: 7033107979473629901}
   _iconSetSwitcher: {fileID: 0}
   view: {fileID: 7033107979473629901}
-  swordDriver: {fileID: 0}
-  afterimage: {fileID: 0}
   speedWard: {fileID: 7740000000000001602}
+  goreSpeed: {fileID: 11400000, guid: 747ac55656974b2492cc54ce6218b894, type: 2}
 --- !u!114 &7965853245772039612
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13126,6 +13126,19 @@ MonoBehaviour:
     Value: 14
     Min: 14
     Max: 40
-    element: 2
+    element: 3
     UseFloor: 1
     Floor: 10
+--- !u!114 &7740000000000001700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e9ca211629f4017977c0fa50f314767, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wardedSources: -1

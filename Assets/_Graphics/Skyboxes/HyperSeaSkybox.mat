@@ -69,5 +69,9 @@ Material:
     - _NebulaColor1: {r: 0.023529422, g: 0.027056675, b: 0.5176471, a: 1}
     - _NebulaColor2: {r: 0.04, g: 0.25, b: 0.55, a: 1}
     - _NebulaColor3: {r: 0.2126609, g: 0.078431375, b: 0.5019608, a: 1}
+    - _StarColorCool: {r: 1, g: 0.7014107, b: 0.5370987, a: 1}
+    - _StarColorHot: {r: 0.82665706, g: 0.88082502, b: 1, a: 1}
+    - _StarColorWarm: {r: 1, g: 0.8962439, b: 0.6651851, a: 1}
+    - _StarColorWhite: {r: 1, g: 0.9776916, b: 0.9452769, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

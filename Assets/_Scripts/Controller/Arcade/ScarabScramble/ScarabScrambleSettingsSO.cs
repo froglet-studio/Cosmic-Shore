@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -53,7 +54,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Accent colour of the hoop rings (the ToyFactory ring body). Deliberately " +
                  "domain-NEUTRAL — a hoop belongs to nobody; ownership lives on the balls.")]
         [SerializeField] Color hoopAccentColor = new(0.78f, 0.92f, 1f);
-        public Color HoopAccentColor => hoopAccentColor;
+        public Color HoopAccentColor => ColorTrace.Retrace(ColorTrace.World, hoopAccentColor);
 
         [Tooltip("Seconds a hoop's ring flares after a goal (feedback only, every peer).")]
         [SerializeField, Min(0.1f)] float hoopFlareSeconds = 1.2f;

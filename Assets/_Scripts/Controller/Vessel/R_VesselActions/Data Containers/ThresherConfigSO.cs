@@ -401,8 +401,8 @@ namespace CosmicShore.Gameplay
         public float BallVisualScale => ballVisualScale;
         public int ChainLinks => chainLinks;
         public int ChainRenderSubdivisions => chainRenderSubdivisions;
-        public Color ChainColor => chainColor;
-        public Color FallbackDomainColor => fallbackDomainColor;
+        public Color ChainColor => ColorTrace.Retrace(ColorTrace.World, chainColor);
+        public Color FallbackDomainColor => ColorTrace.Retrace(ColorTrace.World, fallbackDomainColor);
         public Color FallbackDangerColor => fallbackDangerColor;
         public Color FallbackReadyColor => fallbackReadyColor;
         public float SkidTrailSeconds => skidTrailSeconds;

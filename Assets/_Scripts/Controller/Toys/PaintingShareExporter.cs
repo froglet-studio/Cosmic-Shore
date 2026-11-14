@@ -147,7 +147,18 @@ namespace CosmicShore.Gameplay
             string palette =
                 $"{{1:[{Rgb(jade)}],2:[{Rgb(ruby)}],4:[{Rgb(gold)}],0:[0.6,0.6,0.65],3:[0.45,0.6,0.9]}}";
 
+            // The page's own colours, as the worn colour set paints them (ColorTrace): its ground (the page, and the
+            // canvas clears to it), the caption, and the caption's title. Filled before the title, so a painting's
+            // name can never carry a colour token.
+            Color ground = ColorTrace.Retrace(ColorTrace.World, new Color32(0x05, 0x07, 0x0F, 0xFF));
+            Color caption = ColorTrace.Retrace(ColorTrace.World, new Color32(0x9F, 0xB4, 0xD8, 0xFF));
+            Color captionTitle = ColorTrace.Retrace(ColorTrace.World, new Color32(0xE8, 0xF1, 0xFF, 0xFF));
+
             return ViewerTemplate
+                .Replace("__PAGE__", Hex(ground))
+                .Replace("__CLEAR__", Rgb(ground))
+                .Replace("__CAPTION__", Hex(caption))
+                .Replace("__CAPTION_TITLE__", Hex(captionTitle))
                 .Replace("__TITLE__", WebUtilityEscape(title))
                 .Replace("__COUNT__", records.Count.ToString(CultureInfo.InvariantCulture))
                 .Replace("__PALETTE__", palette)
@@ -167,6 +178,8 @@ namespace CosmicShore.Gameplay
             "{0:0.###},{1:0.###},{2:0.###}",
             Mathf.Clamp01(c.r), Mathf.Clamp01(c.g), Mathf.Clamp01(c.b)); // trail colours are HDR
 
+        static string Hex(Color c) => "#" + ColorUtility.ToHtmlStringRGB(c);
+
         static string WebUtilityEscape(string s) =>
             (s ?? "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 
@@ -184,10 +197,10 @@ namespace CosmicShore.Gameplay
 <html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>__TITLE__ - Cosmic Shore</title>
 <style>
-html,body{margin:0;height:100%;overflow:hidden;background:#05070f;font-family:system-ui,sans-serif}
+html,body{margin:0;height:100%;overflow:hidden;background:__PAGE__;font-family:system-ui,sans-serif}
 canvas{display:block;width:100%;height:100%;touch-action:none}
-#hud{position:fixed;left:0;right:0;bottom:14px;text-align:center;color:#9fb4d8;pointer-events:none}
-#hud b{color:#e8f1ff;font-weight:600}
+#hud{position:fixed;left:0;right:0;bottom:14px;text-align:center;color:__CAPTION__;pointer-events:none}
+#hud b{color:__CAPTION_TITLE__;font-weight:600}
 </style></head><body>
 <canvas id='c'></canvas>
 <div id='hud'><b>__TITLE__</b> · painted in Cosmic Shore · __COUNT__ prisms · drag to spin</div>
@@ -255,7 +268,7 @@ function attr(name,size,off){var a=gl.getAttribLocation(prog,name);gl.enableVert
 attr('aP',3,0);attr('aN',3,12);attr('aC',3,24);
 var uMVP=gl.getUniformLocation(prog,'uMVP');
 var uR=gl.getUniformLocation(prog,'uR');
-gl.enable(gl.DEPTH_TEST);gl.clearColor(0.02,0.03,0.06,1);
+gl.enable(gl.DEPTH_TEST);gl.clearColor(__CLEAR__,1);
 
 var yaw=0.6,pitch=0.25,dist=radius*2.1,auto=true,lastTouch=0;
 function onDrag(dx,dy){yaw+=dx*0.008;pitch=Math.max(-1.4,Math.min(1.4,pitch+dy*0.008));auto=false;lastTouch=performance.now();}

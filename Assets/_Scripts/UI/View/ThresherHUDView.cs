@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -93,6 +94,10 @@ namespace CosmicShore.UI
         [SerializeField] Image plantChainIcon;
         [Tooltip("Time card: the ball stopped as a pivot (white).")]
         [SerializeField] Image plantBallIcon;
+        [Tooltip("Time card, Anchor Ward (Time 5): the ward round the planted orbit (white).")]
+        [SerializeField] Image plantWardIcon;
+        [Tooltip("Time card, Anchor Ward (Time 5): the danger prism the ward turns away (danger).")]
+        [SerializeField] Image plantDangerIcon;
         [Tooltip("Rival colour on the parts (the fleet danger orange).")]
         [SerializeField] Color dangerColor = new(1f, 0.3294f, 0.1020f, 1f);
         [Tooltip("Alpha of a part that is there but not in play (the Mass row off Mass Mode, the slack chain, the free orbit).")]
@@ -142,11 +147,12 @@ namespace CosmicShore.UI
         {
             // Mass Mode never smashes (THRESHER.md 2b), so the Charge card is cool there too.
             bool smash = _hot && !_massMode;
+            var danger = ColorTrace.Retrace(ColorTrace.Ui, dangerColor);
             Paint(wreckSharkIcon, _domain, 1f);
             Paint(wreckChainIcon, Color.white, 1f);
-            Paint(wreckBallIcon, smash ? dangerColor : Color.white, 1f);
-            Paint(wreckPrismIcon, dangerColor, smash ? 0f : 1f);
-            Paint(wreckSplitIcon, dangerColor, smash ? 1f : 0f);
+            Paint(wreckBallIcon, smash ? danger : Color.white, 1f);
+            Paint(wreckPrismIcon, danger, smash ? 0f : 1f);
+            Paint(wreckSplitIcon, danger, smash ? 1f : 0f);
             Paint(wreckBlastIcon, Color.white, smash ? 1f : 0f);
             Paint(wreckMagnetIcon, Color.white, IsAbilityUpgraded(Element.Charge) ? 1f : 0f);
 
@@ -167,6 +173,9 @@ namespace CosmicShore.UI
             Paint(plantOrbitIcon, Color.white, _planted ? 1f : idlePartAlpha);
             Paint(plantChainIcon, Color.white, _planted ? 1f : 0f);
             Paint(plantBallIcon, Color.white, 1f);
+            bool ward = _planted && IsAbilityUpgraded(Element.Time);
+            Paint(plantWardIcon, Color.white, ward ? 1f : 0f);
+            Paint(plantDangerIcon, danger, ward ? 1f : 0f);
         }
 
         static void Paint(Image part, Color color, float alpha)
@@ -192,7 +201,7 @@ namespace CosmicShore.UI
             if (!energyGauge) return;
             float e = Mathf.Clamp01(radius01);
             energyGauge.fillAmount = e;
-            Color target = Color.Lerp(chainColor, fullColor, e);
+            Color target = Color.Lerp(ColorTrace.Retrace(ColorTrace.Ui, chainColor), fullColor, e);
             float k = 1f - Mathf.Exp(-colorBlendRate * Time.unscaledDeltaTime);
             energyGauge.color = Color.Lerp(energyGauge.color, target, k);
         }

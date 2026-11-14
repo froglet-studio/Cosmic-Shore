@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-11-every-pilot-avatar-assets-graphics-profi-b9a093",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T20:36:48+00:00",
+  "area": "the profile avatars and the Claude skills",
+  "summary": "Every pilot avatar (Assets/_Graphics/Profile/Pilots) is now cut from the close-up of that pilot's realistic widescreen scene (Docs/Pilots/art/scenes/<NAME>.jpg, 1536 x 864) in place of the painted bust: four in this commit (MANGER, GALLEON, Echo, Tenacious), the other 46 as their scenes are painted in this pull request; ids, guids, metas and SO_DefaultProfileIcons are unchanged. Tools/Build/author_pilot_avatar_assets.py reads the close-up boxes from Tools/Build/pilot_art/scene.py (its --check now also checks Docs/Pilots/art/scenes/scenes.json, the manifest a profile screen can place a scene from), and the blind read (blind.py) reads the close-ups.",
+  "why": "Garrett, 2026-11-11, on the four scene samples: 'the scene close ups are categorically better than the previous avatar pictures and should be used in their place', one bespoke scene a pilot at a cinematic wide frame, and 'the main use will be a full screen profile for each pilot accessible through the ark app shell menu'. That profile screen is NOT built here and no profile or app-shell code, prefab or scene changed: the scenes sit under Docs/ until someone builds it.",
+  "branch": "claude/signature-pilot-busts",
+  "pr": 1894,
+  "commit": "c0b694653",
+  "paths": [
+    "Assets/_Graphics/Profile/Pilots",
+    "Docs/Pilots/art/scenes",
+    "Tools/Build/author_pilot_avatar_assets.py",
+    "Tools/Build/pilot_art/blind.py",
+    "Tools/Build/pilot_art/scene.py"
+  ]
+}

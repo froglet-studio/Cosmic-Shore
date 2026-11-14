@@ -170,10 +170,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
-        /// The bundle is hand-assembled JSON: the diag and prof files are embedded VERBATIM as objects
-        /// (JsonUtility cannot nest arbitrary documents), the text answers as strings.
-        /// </summary>
-        /// <summary>
         /// Every enabled camera and what it renders to. A second camera drawing the world (a mode
         /// preview, a Scene view; the old editor Third Eye window did, until it moved onto the game camera) renders the scene again that frame, so a capture taken with one
         /// open measures two frames' worth of rendering; the reader warns when it sees more than one.
@@ -218,6 +214,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static string s_captureGitCommit;
         static string s_captureGitBranch;
 
+        /// <summary>
+        /// The bundle is hand-assembled JSON: the diag and prof files are embedded VERBATIM as objects
+        /// (JsonUtility cannot nest arbitrary documents), the text answers as strings.
+        /// </summary>
         string WriteBundle(string label, int seconds, string burst, string prismPath, string cameras, string editor, string diagPath, string profPath,
                            string renderers, string cells, List<string> notes)
         {

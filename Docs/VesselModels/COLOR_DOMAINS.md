@@ -113,29 +113,73 @@ Under the old rule it sat in the band (the lab's finding 02).
 
 ## Colour sets: unlockable palettes with two pigments per domain
 
-[`colour_sets.json`](colour_sets.json) holds the unlockable colour sets (first: **Dart Frog**, paid track, proposed
-2026-11-02; then **Nocturne**, 2026-11-03, **the game's default palette**: luminous rims in each family's hue over
-deep jewel faces of a different hue, every face in one night-dark band so the rim carries the domain). There a domain is two pigments, a bright rim and a dark face of a different hue, and a pigment is one paint
-from shadow to highlight: a cone segment around a ray from black in OKLab. Four rules hold every set (the band, no
-shared pigment under any light, rim/face contrast, each rim still reading as its family in this truth);
-`Tools/Build/colour_sets.py --check` is the gate, `--report` adds colour-blind separation. A set made for a
-**vision** (2026-11-05: **Contrast** for typical vision, then **Protanopia**, **Deuteranopia**, **Tritanopia**,
-**Achromatopsia** and **Low Vision**) keeps a fifth rule: as that viewer sees the colours the asset paints, every two
-domains' rims, every two domains' faces, and each rim against its face stay `vision_margin` apart. They sit in the Profile's
-colour-set rail with the other sets; Settings > General > Colour sets is a breadcrumb that opens the rail on them.
+[`colour_sets.json`](colour_sets.json) holds the unlockable colour sets: **Nocturne** (2026-11-03, **the game's default
+palette**), **Dart Frog** (paid track, 2026-11-02), **Nacre** (the light set, 2026-11-08), **Contrast** and the five
+vision sets (2026-11-05), plus four worked **examples** that are never written to the game. A domain there is two
+pigments, a rim (the prism's edge, the trail, the HUD) and a face (the prism's body), and a pigment is one paint from
+shadow to highlight: a cone segment around a ray from black in OKLab.
+
+**Seven rules hold every set** (2026-11-10; Garrett: the six families "must be distinguishable and have rules that
+govern the territory of their regions in color space", and "it must be obvious to the player based on a connection
+between their look and their four letter name"). `Tools/Build/colour_sets.py --check` is the gate:
+
+1. **the band**: pigments of different domains at least 0.05 apart;
+2. **lighting-proof**: no light or shadow turns one domain's paint into another's;
+3. **form**: rim and face 0.12 apart in lightness;
+4. **the name**: every rim reads as its own family of this truth, clear of the band, as its swatch, as light (the
+   prism's edge) and as paint (the HUD, the score panels and the vessel tails read `TrailHighlightColor` as sRGB, which
+   turns an orange Gold into Fire);
+5. **communication** (a set made for a vision): as that viewer sees the painted colours, rims (as light and on the
+   HUD), faces and each rim against its face stay the set's margin apart;
+6. **the voice**: each face is its family's own colour, its rim's own paint, or **quiet**: wholly below the night line,
+   L 0.40, where this truth holds only Fire and Blue, so a dark face of any hue reads as night under the rim that carries
+   the name;
+7. **apart**: every two rims at least 0.10 apart as painted.
+
+No rule is waived (Garrett, 2026-11-10). The five colour-blind sets keep rules 4 and 6 **as their viewer sees them**:
+the viewer learned the six names from this truth's anchors through their own eyes (the same vision model), so a rim
+must look nearer its own family's anchors than any other's, as light and on the HUD, and a face is its family's, its
+rim's paint, or quiet in the viewer's own lightness; rule 5 stands in for rule 7. For a deuteranope and an achromat no
+lawful set exists (the anchors crowd one line for them), so those two declare the best name margin the maker found and
+the gate holds it there. Three **styles** add rules of their own: **Photic** (one paint per
+domain; the original, whose colours are this truth's anchors), **Nocturne** (lanterns over quiet jewel faces in one night
+band) and **Nacre** (soft faces of each family's own colour, painted so the gameplay bloom lifts them to pastel).
+
+What the rules taught, measured 2026-11-10:
+
+- **The territories are uneven.** Gold lives only at L 0.70 and above, and a Gold *rim* only at hue 82-96 (the HUD's
+  paint reading turns anything more orange into Fire); Ruby lives only at L 0.50-0.70 with chroma 0.20 or more, so no
+  pastel Ruby exists; below L 0.40 only Fire and Blue exist. `python3 Tools/Build/colour_set_maker.py atlas` prints
+  every family's window.
+- **The face decides how a prism reads**, unless it is dark. Dart Frog's mid-dark faces made its Jade prisms read as
+  bronze and its Blue as forest green; Nacre's light faces made its Gold read as periwinkle and bloomed to white. Both
+  are re-derived: Dart Frog's frogs keep their warning colours as rims over their grounds taken into the night (the
+  Azureus blue on blue), Nacre's bodies are soft tones of their own families.
+- **Nocturne needed one move**: its Gold rim 4 degrees toward yellow (hue 83 to 87), so the HUD shows Gold instead of
+  the Gold/Fire band (the style guide's gold token followed, `#FF8F11` to `#FF9B11`).
+- **The colour-blind sets' HUDs were never measured for their own viewers**: an achromat could tell Gold's and Ruby's
+  HUD colours apart by 1.5 JND, a deutan Fire's and Gold's by 2.4. Rule 5 now counts the HUD and the sets are
+  re-balanced; Contrast, held to every rule, makes every prism its own family at two lightnesses.
+- **Photic, measured** (`colour_sets.py --report`, first block), keeps every rule but one: its Jade prism rim is the
+  azure §6 of `COLOR.md` defers.
+
+**Making a set** from a photograph, a style, a mood, a film's palette or an animal is the **`/colour-set`** skill
+(`.claude/skills/colour-set/SKILL.md`): the atlas, a photograph sampler, `fit` (the nearest set that keeps every rule),
+`preview` and `hero` (the sets as the writer paints them, with the gameplay bloom), in `Tools/Build/colour_set_maker.py`.
 
 **Adding or changing a set reaches four writers; run all of them** (each has `--check`): `author_colour_set_assets.py`
-(the palette asset), `author_colour_set_catalog.py` (the Profile's catalog entry), `author_editor_themes.py` (the editor
-windows' themes) and `Tools/Analytics/console/make_themes.py` (the analytics console's themes), after `colour_sets.py
---check` passes on the definition. The last two read the whole catalog, so a new set changes their output too. Shaped in the Colour Sets lab
-(https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf, source `Docs/Studios/ColourSetsLab.html`). This truth is unchanged
-by them.
+(the palette asset), `author_colour_set_catalog.py` (the Profile's catalog entry; its words live in the asset),
+`author_editor_themes.py` (the editor windows' themes) and `Tools/Analytics/console/make_themes.py` (the analytics
+console's themes); a change to the live set (Nocturne) also reaches `Tools/Build/froglet_style.py` (the style guide's
+tokens). Shaped in the Colour Sets lab (https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf, source
+`Docs/Studios/ColourSetsLab.html`), which judges by the same seven rules and shows Photic and the examples. This truth is
+unchanged by them.
 
-`Tools/Build/author_colour_set_assets.py` writes each set as an `SO_ColorSet` asset (`DartFrogColorSetSO.asset`,
-`NocturneColorSetSO.asset` in `Assets/_SO_Assets/Color Palettes/`). Every field takes its hue from its domain's rim or face
-pigment and keeps `PhoticColorSetSO`'s alpha and tier whiteness; rims keep the original's HDR brightness and faces take
-their pigment's own lightness (the face is most of a prism, so it decides how the prism reads); `--check` fails on drift or on a field in another
-domain's pigment.
+`Tools/Build/author_colour_set_assets.py` writes each set as an `SO_ColorSet` asset (`<Name>ColorSetSO.asset` in
+`Assets/_SO_Assets/Color Palettes/`). Every field takes its hue from its domain's rim or face pigment and keeps
+`PhoticColorSetSO`'s alpha and tier whiteness; rims keep the original's HDR brightness (times the set's
+`rim_brightness`) and faces take their pigment's own lightness (the face is most of a prism, so it decides how the prism
+reads); `--check` fails on drift or on a field in another domain's pigment.
 
 ## What the truth does not change yet
 

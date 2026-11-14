@@ -442,14 +442,6 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ the autopilot
 
         /// <summary>
-        /// Which triggers an autopilot pulls for a target at <paramref name="localTarget"/> (the hull's own
-        /// frame): nothing when it is nearer than <paramref name="minDistance"/> or more than
-        /// <paramref name="maxDegrees"/> off the nose (the pair is laid AHEAD, so it cannot help behind);
-        /// BOTH when it is within <paramref name="straightDegrees"/> — the sink dead ahead, the wormhole
-        /// shoots the hull at the target and the warp boosts it; otherwise the trigger on the target's
-        /// side, so the sink sits that way and the field turns the nose toward it.
-        /// </summary>
-        /// <summary>
         /// Degrees the hull has swept round <paramref name="centre"/> between two positions (unsigned). Summed
         /// over a hold it is how far the autopilot has circled its sink — the orbit cap's measure
         /// (<see cref="StoatDipoleConfigSO.AutopilotMaxOrbitDegrees"/>). 0 when either position sits on the centre.
@@ -492,6 +484,14 @@ namespace CosmicShore.Gameplay
         public static Vector3 AutopilotGauge(Vector3 localSteer, float objectiveRange) =>
             localSteer.sqrMagnitude > 1e-6f ? localSteer.normalized * Mathf.Max(0f, objectiveRange) : localSteer;
 
+        /// <summary>
+        /// Which triggers an autopilot pulls for a target at <paramref name="localTarget"/> (the hull's own
+        /// frame): nothing when it is nearer than <paramref name="minDistance"/> or more than
+        /// <paramref name="maxDegrees"/> off the nose (the pair is laid AHEAD, so it cannot help behind);
+        /// BOTH when it is within <paramref name="straightDegrees"/> — the sink dead ahead, the wormhole
+        /// shoots the hull at the target and the warp boosts it; otherwise the trigger on the target's
+        /// side, so the sink sits that way and the field turns the nose toward it.
+        /// </summary>
         public static bool AutopilotTriggers(Vector3 localTarget, float minDistance, float straightDegrees, float maxDegrees,
             out bool left, out bool right)
         {

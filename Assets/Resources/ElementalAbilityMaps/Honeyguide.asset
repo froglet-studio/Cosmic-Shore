@@ -21,8 +21,8 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Relentless'
+    UpgradeDescription: 'A Flit that strikes a vessel or creature is ready again at once.'
   - Element: 2
     AbilityLabel: 'Hive'
     AbilityDescription: 'Every 45 s (sooner as Mass rises) a hive appears somewhere in the cell. Fly to it to open hive mode.'
@@ -30,8 +30,8 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Hive Chain'
+    UpgradeDescription: 'Reaching a hive plants the next one at once.'
   - Element: 3
     AbilityLabel: 'Peck'
     AbilityDescription: 'Hold RT to see the aim line, let go for three quick shots, every 1 s. Each Space card the Ratel makes (Genesis Lance, Little Bang Grenade, Particle Harmonizer, Fugacity Discharger, Sepia Drone, Thruster Swarm, Hexapod Eyelet Jet) banks three uses on RT; the newest fires first. Hold both triggers to cancel.'
@@ -48,5 +48,5 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Slipstream'
+    UpgradeDescription: 'A slip carries twice the boost out.'

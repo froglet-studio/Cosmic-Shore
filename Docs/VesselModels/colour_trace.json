@@ -1,0 +1,7940 @@
+{
+ "format": "cosmic-shore-colour-trace/1",
+ "doc": "Docs/VesselModels/COLOR_TRACE.md",
+ "tool": "Tools/Build/colour_trace.py",
+ "rule": "Every colour that reaches a pixel comes from the worn colour set. Photic holds the baked values; every other set computes its own from its pigments (colour_trace.py repaint). A colour is inert, a UI theme token, fixed (pure white, pure black), traced (an id below), or untraced (listed below: the work left).",
+ "counts": {
+  "fixed": 2603,
+  "inert": 30365,
+  "token": 4088,
+  "traced": 1933
+ },
+ "inert": {
+  "ambient-mode": 180,
+  "camera-no-clear": 8,
+  "code-fallback": 157,
+  "code-inert": 228,
+  "debug": 107,
+  "field-reviewed": 9,
+  "fog-off": 60,
+  "gradient-key-unused": 78,
+  "kit-legacy-field": 69,
+  "kit-selectable": 1530,
+  "material-stale": 840,
+  "material-unused-prop": 20,
+  "material-vector": 452,
+  "post-identity": 8,
+  "post-inactive": 2,
+  "ps-mode-unused": 491,
+  "ps-module-off": 1206,
+  "scene-not-in-build": 433,
+  "script-missing": 19,
+  "selectable-no-tint": 410,
+  "shader-default": 274,
+  "shader-node-dead": 31,
+  "shader-not-drawn": 19,
+  "stale-field": 17,
+  "subtractive-off": 60,
+  "tmp-colour-twin": 1674,
+  "tmp-face-cache": 1674,
+  "tmp-feature-off": 52,
+  "tmp-gradient-off": 6696,
+  "unreachable": 13561
+ },
+ "inert_why": {
+  "scene-not-in-build": "a colour authored in a scene the player build does not ship (EditorBuildSettings)",
+  "tmp-colour-twin": "TextMeshPro draws m_fontColor; its m_Color is the Graphic field TMP_Text overrides and never reads",
+  "tmp-face-cache": "m_faceColor and m_outlineColor cache the font material's colours; TMP draws the material's",
+  "tmp-gradient-off": "m_fontColorGradient is drawn only with m_enableVertexGradient on (or a gradient preset)",
+  "kit-selectable": "a Kit selectable paints its own graphics; KitSelectableBase.Awake sets its transition to None",
+  "kit-legacy-field": "a colour field a Kit subclass inherits and never reads (it overrides the base hook)",
+  "selectable-no-tint": "a Selectable's ColorBlock tints its target only with the ColorTint transition and a target",
+  "mask-hidden": "a Mask with showMaskGraphic off draws its graphic into the stencil only",
+  "ps-module-off": "a particle module's colours are drawn only while the module is enabled",
+  "ps-mode-unused": "a MinMaxGradient draws only the parts its minMaxState names",
+  "gradient-key-unused": "a gradient draws only its first m_NumColorKeys colour keys",
+  "ps-custom-not-colour": "custom particle data is a colour only in mode 2",
+  "material-vector": "the material's shader declares this property as a vector, not a colour",
+  "material-stale": "the material's shader does not declare this property (left from an earlier shader)",
+  "material-unused-prop": "the property is declared for compatibility and the shader never reads it (URP's _Color)",
+  "camera-no-clear": "a camera's background colour is drawn only when it clears to a solid colour",
+  "fog-off": "the fog colour is drawn only with fog on (no runtime code turns it on)",
+  "ambient-mode": "the scene's ambient mode does not read this ambient colour (or adds black)",
+  "subtractive-off": "the subtractive shadow colour is read only by Mixed lights in Subtractive mode (no scene has one)",
+  "gi-output": "an output of the GI bake that Unity serializes, read by nothing",
+  "post-inactive": "a volume component that is not active, or a parameter whose override is off",
+  "post-identity": "a post-processing parameter at its identity (white tint or filter, zero intensity, grey toning)",
+  "shader-default": "a shader default every material saves over; no code or asset builds a material from the shader",
+  "debug": "logs, gizmos, debug draws, editor-only and development-build-only code and diagnostic overlays (CLAUDE.md excludes them from player-facing rules)",
+  "code-inert": "a C# colour literal that never reaches a pixel (a serialized default every instance overrides, an alpha-0 sentinel, a value overwritten before it draws): colour_trace_review.json says which and why",
+  "code-fallback": "a C# colour literal shown only when a reference is unwired, which no shipped scene leaves unwired: colour_trace_review.json says which and why",
+  "light-off": "a disabled light",
+  "stale-field": "a serialized key the component's class no longer declares (nor names in FormerlySerializedAs): Unity never reads it",
+  "field-reviewed": "a serialized colour field that never reaches a pixel or is shown only when a reference is unwired: colour_trace_review.json says which and why",
+  "shader-node-dead": "a ShaderGraph colour node with no edge path to a Block node or a sub-graph's output: never drawn",
+  "shader-not-drawn": "shader code no reachable material, asset or Shader.Find uses (directly or as a sub-graph or include): compiled at most, never drawn",
+  "unreachable": "an asset no player build can load: no enabled scene, Resources folder, project setting or Addressables group reaches it through any chain of references (colour_trace.py reachable)",
+  "script-missing": "a component whose script is not in the repository (deleted): it never runs",
+  "tmp-feature-off": "a TextMesh Pro material colour whose feature is off (no GLOW_ON, UNDERLAY_ON or BEVEL_ON keyword, outline width 0)"
+ },
+ "tokens": {
+  "ControlActive": 421,
+  "Cta": 295,
+  "Danger": 16,
+  "ElementCharge": 4,
+  "ElementMass": 4,
+  "ElementSpace": 4,
+  "ElementTime": 4,
+  "InactiveLight": 11,
+  "NeutralLightest": 784,
+  "Purchase": 32,
+  "Sea": 7,
+  "Selection": 137,
+  "SurfaceBlack": 221,
+  "SurfaceDark": 456,
+  "SurfaceLight": 226,
+  "SurfaceVeryDark": 298,
+  "TextInactive": 1,
+  "TextLight": 1165,
+  "Tooltip": 2
+ },
+ "ids": {
+  "ui-token:ControlActive": {
+   "role": "ui-token",
+   "photic": [
+    0.0,
+    0.831373,
+    1.0,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "ControlActive"
+  },
+  "ui-token:Cta": {
+   "role": "ui-token",
+   "photic": [
+    0.6,
+    1.0,
+    0.501961,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "Cta"
+  },
+  "ui-token:Danger": {
+   "role": "ui-token",
+   "photic": [
+    1.0,
+    0.294118,
+    0.227451,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "Danger"
+  },
+  "ui-token:ElementCharge": {
+   "role": "ui-token",
+   "photic": [
+    1.0,
+    0.827451,
+    0.301961,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "ElementCharge"
+  },
+  "ui-token:ElementMass": {
+   "role": "ui-token",
+   "photic": [
+    0.498039,
+    0.658824,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "ElementMass"
+  },
+  "ui-token:ElementSpace": {
+   "role": "ui-token",
+   "photic": [
+    0.690196,
+    0.486274,
+    1.0,
+    1.0
+   ],
+   "family": "band",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "ElementSpace"
+  },
+  "ui-token:ElementTime": {
+   "role": "ui-token",
+   "photic": [
+    0.372549,
+    0.941176,
+    0.784314,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "ElementTime"
+  },
+  "ui-token:InactiveLight": {
+   "role": "ui-token",
+   "photic": [
+    0.360784,
+    0.372549,
+    0.439216,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "InactiveLight"
+  },
+  "ui-token:NeutralLightest": {
+   "role": "ui-token",
+   "photic": [
+    0.454902,
+    0.482353,
+    0.678431,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "NeutralLightest"
+  },
+  "ui-token:Purchase": {
+   "role": "ui-token",
+   "photic": [
+    1.0,
+    0.682353,
+    0.0,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "Purchase"
+  },
+  "ui-token:SeaEnd": {
+   "role": "ui-token",
+   "photic": [
+    0.611765,
+    0.54902,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+   ],
+   "token": "SeaEnd"
+  },
+  "ui-token:SeaGlow": {
+   "role": "ui-token",
+   "photic": [
+    0.239216,
+    0.54902,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+   ],
+   "token": "SeaGlow"
+  },
+  "ui-token:SeaLine": {
+   "role": "ui-token",
+   "photic": [
+    0.286274,
+    0.721569,
+    1.0,
+    1.0
+   ],
+   "family": "band",
+   "uses": 0,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+   ],
+   "token": "SeaLine"
+  },
+  "ui-token:SeaMid": {
+   "role": "ui-token",
+   "photic": [
+    0.498039,
+    0.596078,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+   ],
+   "token": "SeaMid"
+  },
+  "ui-token:Selection": {
+   "role": "ui-token",
+   "photic": [
+    0.0,
+    0.831373,
+    1.0,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "Selection"
+  },
+  "ui-token:SurfaceBlack": {
+   "role": "ui-token",
+   "photic": [
+    0.0,
+    0.003922,
+    0.039216,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "SurfaceBlack"
+  },
+  "ui-token:SurfaceDark": {
+   "role": "ui-token",
+   "photic": [
+    0.133333,
+    0.14902,
+    0.270588,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "SurfaceDark"
+  },
+  "ui-token:SurfaceLight": {
+   "role": "ui-token",
+   "photic": [
+    0.262745,
+    0.298039,
+    0.537255,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "SurfaceLight"
+  },
+  "ui-token:SurfaceVeryDark": {
+   "role": "ui-token",
+   "photic": [
+    0.0,
+    0.015686,
+    0.121569,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "SurfaceVeryDark"
+  },
+  "ui-token:TextInactive": {
+   "role": "ui-token",
+   "photic": [
+    0.145098,
+    0.14902,
+    0.176471,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "TextInactive"
+  },
+  "ui-token:TextLight": {
+   "role": "ui-token",
+   "photic": [
+    0.901961,
+    0.913725,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "TextLight"
+  },
+  "ui-token:Tooltip": {
+   "role": "ui-token",
+   "photic": [
+    0.65098,
+    0.0,
+    1.0,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "Tooltip"
+  },
+  "ui:00010A": {
+   "role": "ui",
+   "photic": [
+    0.0,
+    0.003921569,
+    0.039215688,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 222,
+   "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab Image",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI",
+    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
+    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab HexApertureGraphic"
+   ],
+   "token": "SurfaceBlack"
+  },
+  "ui:00020E": {
+   "role": "ui",
+   "photic": [
+    0.0,
+    0.0078431,
+    0.054902,
+    0.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+   ]
+  },
+  "ui:00020F": {
+   "role": "ui",
+   "photic": [
+    0.0,
+    0.008,
+    0.059,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/PreGameCinematic/IntroCameraOverlay.cs code"
+   ]
+  },
+  "ui:00041F": {
+   "role": "ui",
+   "photic": [
+    0.0,
+    0.015686275,
+    0.12156863,
+    0.55
+   ],
+   "family": "blue",
+   "uses": 299,
+   "where": [
+    "Assets/Resources/UI/ToastNotificationItem.prefab Image",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab Image",
+    "Assets/_Prefabs/MaelStrom/MaelstromSummaryScoreCardContainer.prefab Image"
+   ],
+   "token": "SurfaceVeryDark"
+  },
+  "ui:0005BE": {
+   "role": "ui",
+   "photic": [
+    0.0,
+    0.021257328,
+    0.745283,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/In Game/ThreeButtonPanel.prefab Image"
+   ]
+  },
+  "ui:005F78": {
+   "role": "ui",
+   "photic": [
+    0.0,
+    0.37254903,
+    0.47058824,
+    0.5882353
+   ],
+   "family": "band~blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity Image"
+   ]
+  },
+  "ui:00CDF8": {
+   "role": "ui",
+   "photic": [
+    0.0,
+    0.80396444,
+    0.9716981,
+    0.39215687
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Silhouettes/BlockSilhouette.prefab Image"
+   ]
+  },
+  "ui:00D4FF": {
+   "role": "ui",
+   "photic": [
+    0.0,
+    0.83137256,
+    1.0,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 422,
+   "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab Image",
+    "Assets/Resources/UI/ToastNotificationItem.prefab Image",
+    "Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab Image",
+    "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image"
+   ],
+   "token": "ControlActive"
+  },
+  "ui:00FF00": {
+   "role": "ui",
+   "photic": [
+    0,
+    1,
+    0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 3,
+   "where": [
+    "Assets/_Scripts/UI/DomainVolumeHexGraphic.cs code",
+    "Assets/_Scripts/UI/Modals/HangarTrainingModal.cs code",
+    "Assets/_Scripts/UI/View/UrchinVesselHUDView.cs code"
+   ]
+  },
+  "ui:00FFFF": {
+   "role": "ui",
+   "photic": [
+    0,
+    1,
+    1,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/View/UrchinVesselHUDView.cs code"
+   ]
+  },
+  "ui:030722": {
+   "role": "ui",
+   "photic": [
+    0.012,
+    0.027,
+    0.133,
+    0.95
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/PreGameCinematic/IntroCameraOverlay.cs code"
+   ]
+  },
+  "ui:050912": {
+   "role": "ui",
+   "photic": [
+    0.0196078431372549,
+    0.03529411764705882,
+    0.07058823529411765,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 7,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code",
+    "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs code",
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:060A26": {
+   "role": "ui",
+   "photic": [
+    0.024,
+    0.039,
+    0.149,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code"
+   ]
+  },
+  "ui:080D1F": {
+   "role": "ui",
+   "photic": [
+    0.03,
+    0.05,
+    0.12,
+    0.95
+   ],
+   "family": "blue",
+   "uses": 3,
+   "where": [
+    "Assets/_Prefabs/UI Elements/VesselHUD/StarlingHUDVariant.prefab StarlingHUDView",
+    "Assets/_Scripts/UI/View/StarlingHUDView.cs code"
+   ]
+  },
+  "ui:081654": {
+   "role": "ui",
+   "photic": [
+    0.0313725,
+    0.0862745,
+    0.3294118,
+    0.75
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+   ]
+  },
+  "ui:096565": {
+   "role": "ui",
+   "photic": [
+    0.03551085,
+    0.3962264,
+    0.3962264,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity TextMeshProUGUI"
+   ]
+  },
+  "ui:0A1120": {
+   "role": "ui",
+   "photic": [
+    0.04,
+    0.067,
+    0.125,
+    0.78
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:0AB2B2": {
+   "role": "ui",
+   "photic": [
+    0.039215688,
+    0.6981132,
+    0.6981132,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity Image"
+   ]
+  },
+  "ui:141A52": {
+   "role": "ui",
+   "photic": [
+    0.0784,
+    0.102,
+    0.3216,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/PortView.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:161821": {
+   "role": "ui",
+   "photic": [
+    0.086,
+    0.094,
+    0.129,
+    0.9
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/UI/View/RhinoVesselHUDView.cs code",
+    "Assets/_Scripts/UI/View/SparrowHUDView.cs code"
+   ]
+  },
+  "ui:181E56": {
+   "role": "ui",
+   "photic": [
+    0.0941,
+    0.1176,
+    0.3373,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab KitTwoToneGradient"
+   ]
+  },
+  "ui:191B26": {
+   "role": "ui",
+   "photic": [
+    0.098039225,
+    0.10588236,
+    0.14901961,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity Image"
+   ]
+  },
+  "ui:1AB2B2": {
+   "role": "ui",
+   "photic": [
+    0.1,
+    0.7,
+    0.7,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Screens/LeaderboardsMenu.cs code"
+   ]
+  },
+  "ui:1B2262": {
+   "role": "ui",
+   "photic": [
+    0.1059,
+    0.1333,
+    0.3843,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/PortView.prefab Image"
+   ]
+  },
+  "ui:1F1F1F": {
+   "role": "ui",
+   "photic": [
+    0.12,
+    0.12,
+    0.12,
+    0.6
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Grizzly.prefab Image"
+   ]
+  },
+  "ui:222645": {
+   "role": "ui",
+   "photic": [
+    0.13333334,
+    0.14901961,
+    0.27058825,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 457,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab Image",
+    "Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab Image",
+    "Assets/_Prefabs/MaelStrom/MaelstromSummaryScoreCardContainer.prefab Image"
+   ],
+   "token": "SurfaceDark"
+  },
+  "ui:228A93": {
+   "role": "ui",
+   "photic": [
+    0.13391477,
+    0.5406553,
+    0.5754717,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/In Game/ThreeButtonPanel.prefab Image"
+   ]
+  },
+  "ui:242424": {
+   "role": "ui",
+   "photic": [
+    0.14150941,
+    0.14150941,
+    0.14150941,
+    0.392
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Panels/Duel Cell Stats Panel/Panel Heading - Stats Cell.prefab Image"
+   ]
+  },
+  "ui:242B4C": {
+   "role": "ui",
+   "photic": [
+    0.14,
+    0.17,
+    0.3,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Hull_Lit.mat Material(CosmicShore/UI/HullLit)"
+   ]
+  },
+  "ui:242B70": {
+   "role": "ui",
+   "photic": [
+    0.1412,
+    0.1686,
+    0.4392,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab KitTwoToneGradient"
+   ]
+  },
+  "ui:244B84": {
+   "role": "ui",
+   "photic": [
+    0.14032272,
+    0.2930484,
+    0.5188679,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/In Game/Pip.prefab RawImage"
+   ]
+  },
+  "ui:25262D": {
+   "role": "ui",
+   "photic": [
+    0.14509805,
+    0.14901961,
+    0.1764706,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO",
+    "Assets/_Scripts/UI/UITheme.cs code"
+   ],
+   "token": "TextInactive"
+  },
+  "ui:2536A0": {
+   "role": "ui",
+   "photic": [
+    0.1450980392156863,
+    0.21176470588235294,
+    0.6274509803921569,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
+   ]
+  },
+  "ui:272D76": {
+   "role": "ui",
+   "photic": [
+    0.1529,
+    0.1765,
+    0.4627,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow"
+   ]
+  },
+  "ui:2969B8": {
+   "role": "ui",
+   "photic": [
+    0.16,
+    0.41,
+    0.72,
+    0.35
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs code"
+   ]
+  },
+  "ui:2B3266": {
+   "role": "ui",
+   "photic": [
+    0.169,
+    0.196,
+    0.4,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/UI/PreGameCinematic/IntroCameraOverlay.cs code",
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code"
+   ]
+  },
+  "ui:2C2D35": {
+   "role": "ui",
+   "photic": [
+    0.17254902,
+    0.1764706,
+    0.20784314,
+    0.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity Image"
+   ]
+  },
+  "ui:2E5300": {
+   "role": "ui",
+   "photic": [
+    0.1821,
+    0.327,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset KiteNavigatorConfigSO"
+   ]
+  },
+  "ui:323232": {
+   "role": "ui",
+   "photic": [
+    0.19607843,
+    0.19607843,
+    0.19607843,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 8,
+   "where": [
+    "Assets/_Scenes/Authentication.unity TMP_InputField",
+    "Assets/_Scenes/Menu_Main.unity TMP_InputField",
+    "Assets/_Scenes/Menu_Main.unity TextMeshProUGUI"
+   ]
+  },
+  "ui:33FF66": {
+   "role": "ui",
+   "photic": [
+    0.2,
+    1.0,
+    0.4,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/UI/Elements/ScoreNumberAnimator.cs code",
+    "Assets/_Scripts/UI/HUDAnimationSettingsSO.cs code"
+   ]
+  },
+  "ui:3882FF": {
+   "role": "ui",
+   "photic": [
+    0.22,
+    0.51,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 14,
+   "where": [
+    "Assets/_Prefabs/UI Elements/VesselHUD/DolphinHUDVariant.prefab DolphinVesselHUDView",
+    "Assets/_Prefabs/UI Elements/VesselHUD/GobyHUDVariant.prefab GobyPistolHUDView",
+    "Assets/_Prefabs/UI Elements/VesselHUD/UrchinHUDVariant.prefab Image",
+    "Assets/_Prefabs/UI Elements/VesselHUD/UrchinHUDVariant.prefab UrchinVesselHUDView"
+   ]
+  },
+  "ui:39D7A0": {
+   "role": "ui",
+   "photic": [
+    0.224,
+    0.843,
+    0.627,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 3,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image"
+   ]
+  },
+  "ui:3C4296": {
+   "role": "ui",
+   "photic": [
+    0.2353,
+    0.2588,
+    0.5882,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow"
+   ]
+  },
+  "ui:3C5AD2": {
+   "role": "ui",
+   "photic": [
+    0.23529411764705882,
+    0.35294117647058826,
+    0.8235294117647058,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
+   ]
+  },
+  "ui:3CC35C": {
+   "role": "ui",
+   "photic": [
+    0.23429158,
+    0.764151,
+    0.36085045,
+    1.0
+   ],
+   "family": "band~lime",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/NotificationUI.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:3DB2FF": {
+   "role": "ui",
+   "photic": [
+    0.23921569,
+    0.69803923,
+    1.0,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 138,
+   "where": [
+    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab TextMeshProUGUI",
+    "Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab Image",
+    "Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab TextMeshProUGUI",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/ArcadeView.prefab Image"
+   ],
+   "token": "Selection"
+  },
+  "ui:3ED121": {
+   "role": "ui",
+   "photic": [
+    0.24255845,
+    0.8207547,
+    0.127759,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/In Game/EndGameStatsPanel.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:3F7FD8": {
+   "role": "ui",
+   "photic": [
+    0.247,
+    0.498,
+    0.847,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Elements/GoalRow.cs code"
+   ]
+  },
+  "ui:40EDFF": {
+   "role": "ui",
+   "photic": [
+    0.25,
+    0.9305347,
+    1.0,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 10,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity Image"
+   ]
+  },
+  "ui:40FF59": {
+   "role": "ui",
+   "photic": [
+    0.25,
+    1.0,
+    0.35,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/View/GrizzlyHUDView.cs code"
+   ]
+  },
+  "ui:434C89": {
+   "role": "ui",
+   "photic": [
+    0.2627451,
+    0.29803923,
+    0.5372549,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 227,
+   "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab Image",
+    "Assets/Resources/UI/ToastNotificationItem.prefab Image",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image"
+   ],
+   "token": "SurfaceLight"
+  },
+  "ui:44FF00": {
+   "role": "ui",
+   "photic": [
+    0.2660625,
+    1.0,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image"
+   ]
+  },
+  "ui:4C4C4C": {
+   "role": "ui",
+   "photic": [
+    0.3,
+    0.3,
+    0.3,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Elements/GameCard.cs code"
+   ]
+  },
+  "ui:4C99FF": {
+   "role": "ui",
+   "photic": [
+    0.3,
+    0.6,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/View/GrizzlyHUDView.cs code"
+   ]
+  },
+  "ui:4F802E": {
+   "role": "ui",
+   "photic": [
+    0.31,
+    0.5,
+    0.18,
+    0.32
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/ObjectiveArrowGraphic.cs code"
+   ]
+  },
+  "ui:508900": {
+   "role": "ui",
+   "photic": [
+    0.312,
+    0.5361,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset KiteNavigatorConfigSO"
+   ]
+  },
+  "ui:510072": {
+   "role": "ui",
+   "photic": [
+    0.3178478,
+    0.0,
+    0.4481132,
+    0.74509805
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Fonts/LiberationSans SDF Glowing.asset Material(TextMeshPro/Distance Field)"
+   ]
+  },
+  "ui:545454": {
+   "role": "ui",
+   "photic": [
+    0.3301887,
+    0.3301887,
+    0.3301887,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity Image"
+   ]
+  },
+  "ui:59D9FF": {
+   "role": "ui",
+   "photic": [
+    0.35,
+    0.85,
+    1.0,
+    0.95
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Grizzly.prefab Image"
+   ]
+  },
+  "ui:5B66B3": {
+   "role": "ui",
+   "photic": [
+    0.3569,
+    0.4,
+    0.702,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab KitTwoToneGradient"
+   ]
+  },
+  "ui:5C5F70": {
+   "role": "ui",
+   "photic": [
+    0.36078432,
+    0.37254903,
+    0.4392157,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 12,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/ArkView.prefab SquadMateCard",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Hangar/HangarView.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Hangar/HangarView.prefab TextMeshProUGUI"
+   ],
+   "token": "InactiveLight"
+  },
+  "ui:5CC7F2": {
+   "role": "ui",
+   "photic": [
+    0.36,
+    0.78,
+    0.95,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Elements/VesselInfoPopup.cs code"
+   ]
+  },
+  "ui:5FF0C8": {
+   "role": "ui",
+   "photic": [
+    0.372549,
+    0.9411765,
+    0.7843137,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 4,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/SelectionBar.mat Material(CosmicShore/UI/ElementRim)",
+    "Assets/_Graphics/Materials/Shaders/UI/SelectionRim.mat Material(CosmicShore/UI/ElementRim)",
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO",
+    "Assets/_Scripts/UI/UITheme.cs code"
+   ],
+   "token": "ElementTime"
+  },
+  "ui:6B7380": {
+   "role": "ui",
+   "photic": [
+    0.42,
+    0.45,
+    0.5,
+    0.65
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab ConnectingPlayerRoster",
+    "Assets/_Scripts/UI/Elements/ConnectingPlayerRoster.cs code"
+   ]
+  },
+  "ui:73C200": {
+   "role": "ui",
+   "photic": [
+    0.4519,
+    0.7614,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset KiteNavigatorConfigSO"
+   ]
+  },
+  "ui:73FFD9": {
+   "role": "ui",
+   "photic": [
+    0.45,
+    1.0,
+    0.85,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Elements/GameCard.cs code"
+   ]
+  },
+  "ui:747BAD": {
+   "role": "ui",
+   "photic": [
+    0.454902,
+    0.4823529,
+    0.6784314,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 785,
+   "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI",
+    "Assets/_Graphics/Materials/Shaders/UI/Presence_Orb.mat Material(CosmicShore/UI/Presence)",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI"
+   ],
+   "token": "NeutralLightest"
+  },
+  "ui:74F394": {
+   "role": "ui",
+   "photic": [
+    0.4539427,
+    0.9528302,
+    0.57866454,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/_SO_Assets/UI/HUDAnimationSettings.asset HUDAnimationSettingsSO"
+   ]
+  },
+  "ui:758EAB": {
+   "role": "ui",
+   "photic": [
+    0.45812565,
+    0.55815524,
+    0.6698113,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity RawImage"
+   ]
+  },
+  "ui:783C3C": {
+   "role": "ui",
+   "photic": [
+    0.47058823529411764,
+    0.23529411764705882,
+    0.23529411764705882,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Elements/IntensitySelectButton.cs code"
+   ]
+  },
+  "ui:7F98FF": {
+   "role": "ui",
+   "photic": [
+    0.498,
+    0.5961,
+    1.0,
+    0.28
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/PortView.prefab Image"
+   ]
+  },
+  "ui:7FA8FF": {
+   "role": "ui",
+   "photic": [
+    0.4980392,
+    0.6588236,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/SelectionBar.mat Material(CosmicShore/UI/ElementRim)",
+    "Assets/_Graphics/Materials/Shaders/UI/SelectionRim.mat Material(CosmicShore/UI/ElementRim)",
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO",
+    "Assets/_Scripts/UI/UITheme.cs code"
+   ],
+   "token": "ElementMass"
+  },
+  "ui:808080": {
+   "role": "ui",
+   "photic": [
+    0.5,
+    0.5,
+    0.5,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Settings/SettingsView.prefab GameSettingsPanelController",
+    "Assets/_Scripts/UI/Modals/GameSettingsPanelController.cs code"
+   ]
+  },
+  "ui:808599": {
+   "role": "ui",
+   "photic": [
+    0.5,
+    0.52,
+    0.6,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageSlabPage.cs code"
+   ]
+  },
+  "ui:828282": {
+   "role": "ui",
+   "photic": [
+    0.509434,
+    0.509434,
+    0.509434,
+    0.03529412
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Panels/Duel Cell Stats Panel/Duel Cell Stats Panel.prefab Image"
+   ]
+  },
+  "ui:82828A": {
+   "role": "ui",
+   "photic": [
+    0.51,
+    0.51,
+    0.54,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 202,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Hangar/HangarView.prefab Image",
+    "Assets/_Prefabs/UI Elements/VesselHUD/AnglerHUDVariant.prefab Image",
+    "Assets/_Prefabs/UI Elements/VesselHUD/BrittleStarHUDVariant.prefab Image",
+    "Assets/_Prefabs/UI Elements/VesselHUD/DolphinHUDVariant.prefab BlastProfileGraphic"
+   ]
+  },
+  "ui:848484": {
+   "role": "ui",
+   "photic": [
+    0.5188679,
+    0.5188679,
+    0.5188679,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity Image"
+   ]
+  },
+  "ui:8C8C8C": {
+   "role": "ui",
+   "photic": [
+    0.55,
+    0.55,
+    0.55,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureSeatPedestal.prefab Button"
+   ]
+  },
+  "ui:8C8C99": {
+   "role": "ui",
+   "photic": [
+    0.55,
+    0.55,
+    0.6,
+    0.6
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageKit.cs code"
+   ]
+  },
+  "ui:8C93C7": {
+   "role": "ui",
+   "photic": [
+    0.549,
+    0.576,
+    0.78,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code"
+   ]
+  },
+  "ui:8CEB1A": {
+   "role": "ui",
+   "photic": [
+    0.55,
+    0.92,
+    0.1,
+    0.95
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/ObjectiveArrowGraphic.cs code"
+   ]
+  },
+  "ui:8D90A1": {
+   "role": "ui",
+   "photic": [
+    0.5529412,
+    0.5647059,
+    0.6313726,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity TextMeshProUGUI"
+   ]
+  },
+  "ui:9019B7": {
+   "role": "ui",
+   "photic": [
+    0.5660302,
+    0.09920487,
+    0.7169812,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/In Game/ThreeButtonPanel.prefab Image"
+   ]
+  },
+  "ui:959595": {
+   "role": "ui",
+   "photic": [
+    0.5849056,
+    0.5849056,
+    0.5849056,
+    0.5019608
+   ],
+   "family": "blue",
+   "uses": 6,
+   "where": [
+    "Assets/_Prefabs/UI Elements/StoreScreen/CaptainPurchaseCard.prefab Button",
+    "Assets/_Prefabs/UI Elements/StoreScreen/GamePurchaseCard.prefab Button",
+    "Assets/_Scenes/Menu_Main.unity Button"
+   ]
+  },
+  "ui:969AAA": {
+   "role": "ui",
+   "photic": [
+    0.588,
+    0.604,
+    0.667,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/View/ButterflyHUDView.cs code"
+   ]
+  },
+  "ui:96A6C2": {
+   "role": "ui",
+   "photic": [
+    0.59,
+    0.65,
+    0.76,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 14,
+   "where": [
+    "Assets/_Prefabs/UI Elements/VesselHUD/AnglerHUDVariant.prefab AnglerHUDView",
+    "Assets/_Prefabs/UI Elements/VesselHUD/BrittleStarHUDVariant.prefab BrittleStarHUDView",
+    "Assets/_Prefabs/UI Elements/VesselHUD/ShrikeHUDVariant.prefab ShrikeHUDView",
+    "Assets/_Prefabs/UI Elements/VesselHUD/StarlingHUDVariant.prefab StarlingHUDView"
+   ]
+  },
+  "ui:96ACFF": {
+   "role": "ui",
+   "photic": [
+    0.5882,
+    0.6745,
+    1.0,
+    0.9
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab KitTwoToneGradient"
+   ]
+  },
+  "ui:96EB29": {
+   "role": "ui",
+   "photic": [
+    0.59,
+    0.92,
+    0.16,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/UI Elements/VesselHUD/DolphinHUDVariant.prefab DolphinVesselHUDView",
+    "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs code"
+   ]
+  },
+  "ui:98ABEE": {
+   "role": "ui",
+   "photic": [
+    0.59607846,
+    0.67058825,
+    0.93333334,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity RawImage"
+   ]
+  },
+  "ui:999999": {
+   "role": "ui",
+   "photic": [
+    0.6,
+    0.6,
+    0.6,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 18,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab Button",
+    "Assets/_Prefabs/UI Elements/StoreScreen/CaptainPurchaseCard.prefab Image",
+    "Assets/_Prefabs/UI Elements/StoreScreen/CaptainPurchaseCard.prefab TextMeshProUGUI",
+    "Assets/_Prefabs/UI Elements/StoreScreen/GamePurchaseCard.prefab Image"
+   ]
+  },
+  "ui:99FF00": {
+   "role": "ui",
+   "photic": [
+    0.6,
+    1.0,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset KiteNavigatorConfigSO"
+   ]
+  },
+  "ui:99FF7F": {
+   "role": "ui",
+   "photic": [
+    0.6,
+    1.0,
+    0.49803925,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity TextMeshProUGUI"
+   ]
+  },
+  "ui:99FF80": {
+   "role": "ui",
+   "photic": [
+    0.6,
+    1.0,
+    0.5019608,
+    0.0
+   ],
+   "family": "lime",
+   "uses": 296,
+   "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab Image",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
+    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab TextMeshProUGUI"
+   ],
+   "token": "Cta"
+  },
+  "ui:9AA0CC": {
+   "role": "ui",
+   "photic": [
+    0.604,
+    0.627,
+    0.8,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code"
+   ]
+  },
+  "ui:9C8CFF": {
+   "role": "ui",
+   "photic": [
+    0.6118,
+    0.549,
+    1.0,
+    0.15
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab KitTwoToneGradient"
+   ]
+  },
+  "ui:9DFF2E": {
+   "role": "ui",
+   "photic": [
+    0.6156863,
+    1.0,
+    0.1803922,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 8,
+   "where": [
+    "Assets/_Prefabs/UI Elements/VesselHUD/AnglerHUDVariant.prefab AnglerHUDView",
+    "Assets/_Prefabs/UI Elements/VesselHUD/StarlingHUDVariant.prefab StarlingHUDView",
+    "Assets/_Scripts/UI/Controller/GobyPistolHUDController.cs code",
+    "Assets/_Scripts/UI/Controller/JacksHUDController.cs code"
+   ]
+  },
+  "ui:9FB0C8": {
+   "role": "ui",
+   "photic": [
+    0.6235294117647059,
+    0.6901960784313725,
+    0.7843137254901961,
+    0.9
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:9FB2FF": {
+   "role": "ui",
+   "photic": [
+    0.6235,
+    0.698,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/PortView.prefab KitTwoToneGradient"
+   ]
+  },
+  "ui:A600FF": {
+   "role": "ui",
+   "photic": [
+    0.6509804,
+    0.0,
+    1.0,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO",
+    "Assets/_Scripts/UI/UITheme.cs code"
+   ],
+   "token": "Tooltip"
+  },
+  "ui:A6D9FF": {
+   "role": "ui",
+   "photic": [
+    0.65,
+    0.85,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/View/ButterflyHUDView.cs code"
+   ]
+  },
+  "ui:A8CEFF": {
+   "role": "ui",
+   "photic": [
+    0.65882355,
+    0.80784315,
+    1.0,
+    0.7529412
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scenes/Authentication.unity TMP_InputField",
+    "Assets/_Scenes/Menu_Main.unity TMP_InputField"
+   ]
+  },
+  "ui:A9B1E6": {
+   "role": "ui",
+   "photic": [
+    0.6627,
+    0.6941,
+    0.902,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/PortView.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:A9BCFF": {
+   "role": "ui",
+   "photic": [
+    0.6627,
+    0.7373,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 3,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/PortView.prefab KitTwoToneGradient"
+   ]
+  },
+  "ui:AAA0FF": {
+   "role": "ui",
+   "photic": [
+    0.6667,
+    0.6275,
+    1.0,
+    0.35
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow"
+   ]
+  },
+  "ui:AACDFF": {
+   "role": "ui",
+   "photic": [
+    0.6666666666666666,
+    0.803921568627451,
+    1.0,
+    0.85
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:AAFF00": {
+   "role": "ui",
+   "photic": [
+    0.6657382,
+    1.0,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/EpisodePrefab.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:ABABAB": {
+   "role": "ui",
+   "photic": [
+    0.6698113,
+    0.6698113,
+    0.6698113,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity TextMeshProUGUI"
+   ]
+  },
+  "ui:AEB6E8": {
+   "role": "ui",
+   "photic": [
+    0.6824,
+    0.7137,
+    0.9098,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:B07CFF": {
+   "role": "ui",
+   "photic": [
+    0.6901961,
+    0.4862745,
+    1.0,
+    1.0
+   ],
+   "family": "band~ruby",
+   "uses": 4,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/SelectionBar.mat Material(CosmicShore/UI/ElementRim)",
+    "Assets/_Graphics/Materials/Shaders/UI/SelectionRim.mat Material(CosmicShore/UI/ElementRim)",
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO",
+    "Assets/_Scripts/UI/UITheme.cs code"
+   ],
+   "token": "ElementSpace"
+  },
+  "ui:B2B2B2": {
+   "role": "ui",
+   "photic": [
+    0.7,
+    0.7,
+    0.7,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureSeatPedestal.prefab ConfigureTeamStepper"
+   ]
+  },
+  "ui:B3FF59": {
+   "role": "ui",
+   "photic": [
+    0.7019607843137254,
+    1.0,
+    0.34901960784313724,
+    0.95
+   ],
+   "family": "lime",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:B49BFF": {
+   "role": "ui",
+   "photic": [
+    0.7059,
+    0.6078,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/PortView.prefab KitTwoToneGradient"
+   ]
+  },
+  "ui:B4D2FF": {
+   "role": "ui",
+   "photic": [
+    0.7058823529411765,
+    0.8235294117647058,
+    1.0,
+    0.85
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:B7B7B7": {
+   "role": "ui",
+   "photic": [
+    0.7169812,
+    0.7169812,
+    0.7169812,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Squirrel.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:BB06FF": {
+   "role": "ui",
+   "photic": [
+    0.7352193,
+    0.023584902,
+    1.0,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 10,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/UI Elements/Panels/MiniGameHUD.prefab Image"
+   ]
+  },
+  "ui:BFBFC7": {
+   "role": "ui",
+   "photic": [
+    0.75,
+    0.75,
+    0.78,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab ThresherHUDView",
+    "Assets/_Scripts/UI/View/ThresherHUDView.cs code"
+   ]
+  },
+  "ui:BFBFCC": {
+   "role": "ui",
+   "photic": [
+    0.75,
+    0.75,
+    0.8,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 3,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
+   ]
+  },
+  "ui:C2C9F2": {
+   "role": "ui",
+   "photic": [
+    0.7608,
+    0.7882,
+    0.949,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/PortView.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:C8C8C8": {
+   "role": "ui",
+   "photic": [
+    0.78431374,
+    0.78431374,
+    0.78431374,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 296,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Button",
+    "Assets/_Prefabs/Spacevessels/Serpent.prefab Button",
+    "Assets/_Prefabs/UI Elements/In Game/EndGameStatsPanel.prefab Button",
+    "Assets/_Prefabs/UI Elements/In Game/Pip.prefab Button"
+   ]
+  },
+  "ui:C8D2E6": {
+   "role": "ui",
+   "photic": [
+    0.7843137254901961,
+    0.8235294117647058,
+    0.9019607843137255,
+    0.6
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:C8FF5A": {
+   "role": "ui",
+   "photic": [
+    0.784,
+    1.0,
+    0.353,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 3,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
+   ]
+  },
+  "ui:CCCCCC": {
+   "role": "ui",
+   "photic": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 12,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab Button",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureMaelstromView.prefab Button",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab Button"
+   ]
+  },
+  "ui:CCFFC0": {
+   "role": "ui",
+   "photic": [
+    0.8,
+    1.0,
+    0.7509804,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 16,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureMaelstromView.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab Image"
+   ]
+  },
+  "ui:CE6DFF": {
+   "role": "ui",
+   "photic": [
+    0.80605435,
+    0.4292453,
+    1.0,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Fonts/LiberationSans SDF Glowing.asset Material(TextMeshPro/Distance Field)"
+   ]
+  },
+  "ui:CFE4FF": {
+   "role": "ui",
+   "photic": [
+    0.8117647058823529,
+    0.8941176470588236,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:D1D1D1": {
+   "role": "ui",
+   "photic": [
+    0.82,
+    0.82,
+    0.82,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Codex/CodexGuideTile.prefab Button",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Codex/CodexTile.prefab Button",
+    "Assets/_Scenes/Menu_Main.unity Button"
+   ]
+  },
+  "ui:D3DAFF": {
+   "role": "ui",
+   "photic": [
+    0.8275,
+    0.8549,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow"
+   ]
+  },
+  "ui:D6E0F0": {
+   "role": "ui",
+   "photic": [
+    0.84,
+    0.88,
+    0.94,
+    0.3
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs code",
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:D6E2F6": {
+   "role": "ui",
+   "photic": [
+    0.8392156862745098,
+    0.8862745098039215,
+    0.9647058823529412,
+    0.8
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:D6ECFF": {
+   "role": "ui",
+   "photic": [
+    0.8392156862745098,
+    0.9254901960784314,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code",
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:DBFF9E": {
+   "role": "ui",
+   "photic": [
+    0.86,
+    1.0,
+    0.62,
+    1.0
+   ],
+   "family": "band~lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/ObjectiveArrowGraphic.cs code"
+   ]
+  },
+  "ui:DCE0FA": {
+   "role": "ui",
+   "photic": [
+    0.863,
+    0.878,
+    0.98,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/PreGameCinematic/IntroCameraOverlay.cs code"
+   ]
+  },
+  "ui:E0E0E0": {
+   "role": "ui",
+   "photic": [
+    0.8773585,
+    0.8773585,
+    0.8773585,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 7,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Serpent.prefab Image",
+    "Assets/_Prefabs/UI Elements/In Game/Wall Button.prefab Image",
+    "Assets/_Prefabs/UI Elements/Panels/VesselHUD.prefab Image",
+    "Assets/_Prefabs/UI Elements/VesselHUD/ScarabHUDVariant.prefab Image"
+   ]
+  },
+  "ui:E3EBF5": {
+   "role": "ui",
+   "photic": [
+    0.89,
+    0.92,
+    0.96,
+    0.9
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs code"
+   ]
+  },
+  "ui:E6E9FF": {
+   "role": "ui",
+   "photic": [
+    0.902,
+    0.914,
+    1.0,
+    0.16
+   ],
+   "family": "blue",
+   "uses": 1166,
+   "where": [
+    "Assets/Resources/Pilots/PilotProfileView.prefab Image",
+    "Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI",
+    "Assets/Resources/UI/ToastNotificationItem.prefab Image",
+    "Assets/Resources/UI/ToastNotificationItem.prefab TextMeshProUGUI"
+   ],
+   "token": "TextLight"
+  },
+  "ui:ECF13E": {
+   "role": "ui",
+   "photic": [
+    0.92476547,
+    0.9433962,
+    0.24474904,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/EpisodePrefab.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:F2F7FF": {
+   "role": "ui",
+   "photic": [
+    0.95,
+    0.97,
+    1.0,
+    0.92
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:F5F5F5": {
+   "role": "ui",
+   "photic": [
+    0.9607843,
+    0.9607843,
+    0.9607843,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 279,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Button",
+    "Assets/_Prefabs/Spacevessels/Serpent.prefab Button",
+    "Assets/_Prefabs/UI Elements/In Game/EndGameStatsPanel.prefab Button",
+    "Assets/_Prefabs/UI Elements/In Game/Pip.prefab Button"
+   ]
+  },
+  "ui:F5F5FF": {
+   "role": "ui",
+   "photic": [
+    0.96,
+    0.96,
+    1.0,
+    0.3
+   ],
+   "family": "blue",
+   "uses": 44,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Codex/CodexGuideTile.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Codex/CodexTile.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Codex/CodexView.prefab Image"
+   ]
+  },
+  "ui:F6F7FF": {
+   "role": "ui",
+   "photic": [
+    0.9647,
+    0.9686,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:FF0000": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 16,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/UI Elements/VesselHUD/ScarabHUDVariant.prefab ResourceDisplay",
+    "Assets/_Prefabs/UI Elements/VesselHUD/SparrowHUDVariant.prefab ResourceDisplay",
+    "Assets/_Prefabs/UI Elements/VesselHUD/VesselHUDPrefab.prefab ResourceDisplay"
+   ]
+  },
+  "ui:FF1000": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.06119465,
+    0.0,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/UI Elements/VesselHUD/SerpentHUDVariant.prefab ResourceDisplay"
+   ]
+  },
+  "ui:FF4040": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.25,
+    0.25,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/View/GrizzlyHUDView.cs code"
+   ]
+  },
+  "ui:FF4B3A": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.29411766,
+    0.22745098,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 17,
+   "where": [
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/ArkView.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab TextMeshProUGUI",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureMaelstromView.prefab TextMeshProUGUI",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab TextMeshProUGUI"
+   ],
+   "token": "Danger"
+  },
+  "ui:FF4C33": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.3,
+    0.2,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 3,
+   "where": [
+    "Assets/_Scripts/UI/Elements/ScoreNumberAnimator.cs code",
+    "Assets/_Scripts/UI/HUDAnimationSettingsSO.cs code"
+   ]
+  },
+  "ui:FF522E": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.32,
+    0.18,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/View/BrittleStarHUDView.cs code"
+   ]
+  },
+  "ui:FF541A": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.3294,
+    0.102,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 13,
+   "where": [
+    "Assets/_Scripts/UI/View/AnglerHUDView.cs code",
+    "Assets/_Scripts/UI/View/ButterflyHUDView.cs code",
+    "Assets/_Scripts/UI/View/MantaVesselHUDView.cs code",
+    "Assets/_Scripts/UI/View/RhinoVesselHUDView.cs code"
+   ]
+  },
+  "ui:FF58E4": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.3443396,
+    0.893681,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Manta.prefab TextMeshProUGUI"
+   ]
+  },
+  "ui:FF7966": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.4743572,
+    0.4009434,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_SO_Assets/UI/HUDAnimationSettings.asset HUDAnimationSettingsSO"
+   ]
+  },
+  "ui:FF7979": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.4764151,
+    0.4764151,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/UI Elements/VesselHUD/ScarabHUDVariant.prefab Image",
+    "Assets/_Prefabs/UI Elements/VesselHUD/SparrowHUDVariant.prefab Image"
+   ]
+  },
+  "ui:FF8C26": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.55,
+    0.15,
+    0.95
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Grizzly.prefab Image"
+   ]
+  },
+  "ui:FF9933": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.6,
+    0.2,
+    0.9
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Grizzly.prefab Image"
+   ]
+  },
+  "ui:FF9D8F": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.6150805,
+    0.5613208,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_SO_Assets/UI/HUDAnimationSettings.asset HUDAnimationSettingsSO"
+   ]
+  },
+  "ui:FFAE00": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.68235296,
+    0.0,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 33,
+   "where": [
+    "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image",
+    "Assets/_Prefabs/UI Elements/In Game/ScoreboardRow.prefab Image",
+    "Assets/_Prefabs/UI Elements/In Game/ScoreboardVersusRow.prefab Image",
+    "Assets/_Prefabs/UI Elements/Kit/KitCurrencyPill.prefab Image"
+   ],
+   "token": "Purchase"
+  },
+  "ui:FFC000": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.7539954,
+    0.0,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image"
+   ]
+  },
+  "ui:FFC740": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.78,
+    0.25,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 3,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
+   ]
+  },
+  "ui:FFC882": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.7843137254901961,
+    0.5098039215686274,
+    0.0
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:FFC95F": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.78823537,
+    0.37254903,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 6,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity TextMeshProUGUI"
+   ]
+  },
+  "ui:FFCE8C": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.807843137254902,
+    0.5490196078431373,
+    0.45098039215686275
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:FFD173": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.82,
+    0.45,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/View/ButterflyHUDView.cs code"
+   ]
+  },
+  "ui:FFD34D": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.827451,
+    0.3019608,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 4,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/SelectionBar.mat Material(CosmicShore/UI/ElementRim)",
+    "Assets/_Graphics/Materials/Shaders/UI/SelectionRim.mat Material(CosmicShore/UI/ElementRim)",
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO",
+    "Assets/_Scripts/UI/UITheme.cs code"
+   ],
+   "token": "ElementCharge"
+  },
+  "ui:FFD696": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.8392156862745098,
+    0.5882352941176471,
+    0.82
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:FFD940": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.85,
+    0.25,
+    0.95
+   ],
+   "family": "band~gold",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/UI/Elements/SpectatorWatchBadge.cs code"
+   ]
+  },
+  "ui:FFD94C": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.85,
+    0.3,
+    0.9
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Grizzly.prefab Image"
+   ]
+  },
+  "ui:FFD966": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.85,
+    0.4,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs code"
+   ]
+  },
+  "ui:FFDCAA": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.8627450980392157,
+    0.6666666666666666,
+    0.85
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:FFE0A0": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.8784313725490196,
+    0.6274509803921569,
+    0.35
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
+   ]
+  },
+  "ui:FFE2AA": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.8862745098039215,
+    0.6666666666666666,
+    0.9490196078431372
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:FFE8A8": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.91,
+    0.66,
+    0.55
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs code"
+   ]
+  },
+  "ui:FFEB04": {
+   "role": "ui",
+   "photic": [
+    1,
+    0.92,
+    0.016,
+    1.0
+   ],
+   "family": "band~lime",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/UI/DomainVolumeHexGraphic.cs code",
+    "Assets/_Scripts/UI/View/MantaVesselHUDView.cs code"
+   ]
+  },
+  "ui:FFECBE": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.9254901960784314,
+    0.7450980392156863,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
+   ]
+  },
+  "ui:FFEEC4": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.9333333333333333,
+    0.7686274509803922,
+    0.45
+   ],
+   "family": "band~blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code",
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:FFF6DC": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.9647058823529412,
+    0.8627450980392157,
+    0.95
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
+   ]
+  },
+  "ui:FFF8E2": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.9725490196078431,
+    0.8862745098039215,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
+   ]
+  },
+  "ui:FFFAEC": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.9803921568627451,
+    0.9254901960784314,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
+   ]
+  },
+  "ui:FFFCF0": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.9882352941176471,
+    0.9411764705882353,
+    0.85
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code"
+   ]
+  },
+  "ui:FFFFFFx1.10": {
+   "role": "ui",
+   "photic": [
+    1.1,
+    1.1,
+    1.1,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity Button"
+   ]
+  },
+  "world:00004D": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.0,
+    0.3018868,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/BlueCrystalFresnelMateriall.mat Material(Custom/SpreadFresnelShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/MassDepthPrismsInactive.mat Material(Custom/OmniDepthPrismShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniCrystalBodyInactive.mat Material(Custom/OmniCrystalFresnelShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniDepthPrismsInactive.mat Material(Custom/OmniDepthPrismShader)"
+   ]
+  },
+  "world:00007B": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.0,
+    0.4811321,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/BlueVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:000080": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.0,
+    0.5,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/BlueVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:0000A6": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.0,
+    0.6509434,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/BlueOrangeProjectileMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:0000FF": {
+   "role": "world",
+   "photic": [
+    0,
+    0,
+    1,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs code"
+   ]
+  },
+  "world:00010A": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.004,
+    0.039,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
+  "world:00041F": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.015686275,
+    0.12156863,
+    0.86
+   ],
+   "family": "blue",
+   "uses": 7,
+   "where": [
+    "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab LoadCrystalGraphic",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
+  "world:000440": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.015686275,
+    0.25,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/BlueSpreadFresnelMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ],
+   "palette": "BlueColors.DullCrystalColor",
+   "palette_scale": 0.494186
+  },
+  "world:00055A": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.02123571,
+    0.3529412,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 10,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Angler.prefab ForcefieldCrackleController",
+    "Assets/_Prefabs/Spacevessels/BrittleStar.prefab ForcefieldCrackleController",
+    "Assets/_Prefabs/Spacevessels/Dolphin.prefab ForcefieldCrackleController",
+    "Assets/_Prefabs/Spacevessels/Goby.prefab ForcefieldCrackleController"
+   ],
+   "palette": "BlueColors.DullCrystalColor",
+   "palette_scale": 0.697674
+  },
+  "world:0006BF": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.023529412,
+    0.7490196,
+    0.4117647
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CageMaterial.mat Material(Shader Graphs/CageGraph)"
+   ]
+  },
+  "world:0006F5": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.021958865,
+    0.9622642,
+    0.9411765
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/CrystalMaterial.mat Material(Shader Graphs/CrystalGraph)"
+   ]
+  },
+  "world:0007FF": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.027586222,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 10,
+   "where": [
+    "Assets/_Graphics/Materials/AssemblySpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
+    "Assets/_Graphics/Materials/GyroidSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
+    "Assets/_Graphics/Materials/QuadFishSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
+    "Assets/_Graphics/Materials/QuasicrystalSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)"
+   ]
+  },
+  "world:000811": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.03327561,
+    0.06655122,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 6,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/DangerBlockMaterial.mat Material(Shader Graphs/BlockGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/ExplodingBlockMaterial.mat Material(Shader Graphs/ExplodingBlockGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/ImplodingPrismMaterial.mat Material(Shader Graphs/SuctionGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/PrismMaterial.mat Material(Shader Graphs/BlockGraph)"
+   ]
+  },
+  "world:000C11": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.04650986,
+    0.06666667,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/GreenSpreadFresnelMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ]
+  },
+  "world:000C18": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.04901961,
+    0.09411765,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/GreenVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ],
+   "palette": "JadeColors.ShipColor1",
+   "palette_scale": 1.0
+  },
+  "world:000DB4": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.050716996,
+    0.70440245,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:001419": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.07843138,
+    0.09803922,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/Graphs/InverseFringeMaterial.mat Material(Shader Graphs/InverseDynamicFresnelGraph)"
+   ]
+  },
+  "world:001830": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.09411765,
+    0.1882353,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/GreenAccentVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:001913": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.09803922,
+    0.07450981,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/CrystalMaterial.mat Material(Shader Graphs/CrystalGraph)"
+   ]
+  },
+  "world:0020FF": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.12695694,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Components/Jet/VesselJet.prefab ParticleSystem"
+   ]
+  },
+  "world:003F3A": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.2470588,
+    0.227451,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/Graphs/InverseFringeMaterial.mat Material(Shader Graphs/InverseDynamicFresnelGraph)"
+   ]
+  },
+  "world:0048FFx1.50": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.42352942,
+    1.4980392,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/ShieldedBlockMaterial.mat Material(Shader Graphs/BlockGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/TransparentShieldedBlockMaterial.mat Material(Shader Graphs/BlockGraph)"
+   ]
+  },
+  "world:0063BF": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.3882353,
+    0.7490196,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/GreenVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ],
+   "palette": "JadeColors.ShipColor2",
+   "palette_scale": 1.0
+  },
+  "world:006601": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.4019608,
+    0.003921569,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/LimeVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:006699": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.4,
+    0.6,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Environment/StarChanger.cs code"
+   ]
+  },
+  "world:0084FFx1.50": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.7764706,
+    1.4980392,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 5,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/ExplodingBlockMaterial.mat Material(Shader Graphs/ExplodingBlockGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/ImplodingPrismMaterial.mat Material(Shader Graphs/SuctionGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/PrismMaterial.mat Material(Shader Graphs/BlockGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/TransparentPrismMaterial.mat Material(Shader Graphs/ExplodingBlockGraph)"
+   ],
+   "palette": "JadeColors.ShipColor2",
+   "palette_scale": 2.0
+  },
+  "world:00CD02": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.8046225,
+    0.0065952665,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/LimeVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:00D4FF": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.831,
+    1.0,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 3,
+   "where": [
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
+  "world:00E46A": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.89411765,
+    0.41568628,
+    1.0
+   ],
+   "family": "band~lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/CrystalMaterial.mat Material(Shader Graphs/CrystalGraph)"
+   ]
+  },
+  "world:00FF00": {
+   "role": "world",
+   "photic": [
+    0,
+    1,
+    0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs code"
+   ]
+  },
+  "world:00FF38": {
+   "role": "world",
+   "photic": [
+    0.0,
+    1.0,
+    0.21875882,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Manta.prefab MantaVesselHUDView"
+   ]
+  },
+  "world:010201": {
+   "role": "world",
+   "photic": [
+    0.0055484856,
+    0.006289184,
+    0.0044103395,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 5,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/MassDepthPrisms.mat Material(Custom/OmniDepthPrismShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniCrystalBody.mat Material(Custom/OmniCrystalFresnelShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniDepthPrisms.mat Material(Custom/OmniDepthPrismShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/SpaceCrystalFresnelMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ]
+  },
+  "world:020109": {
+   "role": "world",
+   "photic": [
+    0.008,
+    0.005,
+    0.035,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:022263": {
+   "role": "world",
+   "photic": [
+    0.0060816035,
+    0.13338894,
+    0.38679248,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/ShieldedBlockMaterial.mat Material(Shader Graphs/BlockGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/TransparentShieldedBlockMaterial.mat Material(Shader Graphs/BlockGraph)"
+   ]
+  },
+  "world:0300FF": {
+   "role": "world",
+   "photic": [
+    0.011263847,
+    0.0,
+    1.0,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Components/Jet/VesselJet.prefab ParticleSystem"
+   ]
+  },
+  "world:03040A": {
+   "role": "world",
+   "photic": [
+    0.01,
+    0.015,
+    0.04,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/Wormhole.mat Material(CosmicShore/Wormhole)",
+    "Assets/_Graphics/Materials/WormholeSeamless.mat Material(CosmicShore/Wormhole)"
+   ]
+  },
+  "world:030476": {
+   "role": "world",
+   "photic": [
+    0.011629251,
+    0.017624604,
+    0.46226418,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Environment/Materials/FX/fx_BlueCrackle.prefab ParticleSystem"
+   ]
+  },
+  "world:040614": {
+   "role": "world",
+   "photic": [
+    0.01568627450980392,
+    0.023529411764705882,
+    0.0784313725490196,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/StoatPathfinderDots.cs code"
+   ]
+  },
+  "world:040EF8": {
+   "role": "world",
+   "photic": [
+    0.015278174,
+    0.053726934,
+    0.9716981,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/TrailViewerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
+   ]
+  },
+  "world:05060F": {
+   "role": "world",
+   "photic": [
+    0.02,
+    0.025,
+    0.06,
+    0.92
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ThresherLaunchSight.cs code"
+   ]
+  },
+  "world:05070F": {
+   "role": "world",
+   "photic": [
+    0.0196078431372549,
+    0.027450980392156862,
+    0.058823529411764705,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs code"
+   ]
+  },
+  "world:05080D": {
+   "role": "world",
+   "photic": [
+    0.02,
+    0.03,
+    0.05,
+    0.95
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/SniperScopeOverlay.cs code",
+    "Assets/_Scripts/Controller/Vessel/ShrikeScopeOverlay.cs code"
+   ]
+  },
+  "world:058FCA": {
+   "role": "world",
+   "photic": [
+    0.019935858,
+    0.56091785,
+    0.7924528,
+    0.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/GreenConicExplosionMaterial.mat Material(Shader Graphs/LaserGraph)"
+   ],
+   "palette": "JadeColors.AOEConicEdgeColor",
+   "palette_scale": 1.000374
+  },
+  "world:060659": {
+   "role": "world",
+   "photic": [
+    0.021953208,
+    0.021953208,
+    0.3490566,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/BlueBlockMateral.mat Material(Shader Graphs/BlockGraph)"
+   ],
+   "palette": "BlueColors.OutsideBlockColor",
+   "palette_scale": 1.000106
+  },
+  "world:060784": {
+   "role": "world",
+   "photic": [
+    0.023529422,
+    0.027056675,
+    0.5176471,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:060810": {
+   "role": "world",
+   "photic": [
+    0.024,
+    0.031,
+    0.063,
+    0.86
+   ],
+   "family": "blue",
+   "uses": 6,
+   "where": [
+    "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code"
+   ]
+  },
+  "world:070811": {
+   "role": "world",
+   "photic": [
+    0.028,
+    0.033,
+    0.065,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/BlueBaseOpaqueVesselMaterial.mat Material(Shader Graphs/VesselGraph)",
+    "Assets/_Graphics/Materials/BlueBaseVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:0800FF": {
+   "role": "world",
+   "photic": [
+    0.030668736,
+    0.0,
+    1.0,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Components/Jet/VesselJet.prefab TrailRenderer"
+   ]
+  },
+  "world:080614": {
+   "role": "world",
+   "photic": [
+    0.03,
+    0.025,
+    0.08,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:080A0F": {
+   "role": "world",
+   "photic": [
+    0.03,
+    0.04,
+    0.06,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/ScriptableObjects/TheaterConfigSO.cs code"
+   ]
+  },
+  "world:083330": {
+   "role": "world",
+   "photic": [
+    0.03,
+    0.2,
+    0.19,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ThresherBallMaterial.mat Material(CosmicShore/ThresherBallFresnel)"
+   ]
+  },
+  "world:085E0A": {
+   "role": "world",
+   "photic": [
+    0.030081855,
+    0.3679245,
+    0.04080698,
+    0.9411765
+   ],
+   "family": "band~lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ActiveSpaceCrystalMaterial.mat Material(Shader Graphs/CrystalGraph)"
+   ]
+  },
+  "world:090706": {
+   "role": "world",
+   "photic": [
+    0.035,
+    0.028,
+    0.025,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnMid.mat Material(CosmicShore/PrismPaperBurn)",
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnNear.mat Material(CosmicShore/PrismPaperBurn)"
+   ]
+  },
+  "world:09345E": {
+   "role": "world",
+   "photic": [
+    0.03529412,
+    0.20196079,
+    0.36862746,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/SuperShieldedBlockMaterial.mat Material(Shader Graphs/BlockGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/TransparentSuperShieldedBlockMaterial.mat Material(Shader Graphs/BlockGraph)"
+   ],
+   "palette": "JadeColors.SuperShieldedOutsideBlockColor",
+   "palette_scale": 1.0
+  },
+  "world:094F4C": {
+   "role": "world",
+   "photic": [
+    0.03529411,
+    0.30980393,
+    0.2989631,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/GreenConicExplosionMaterial.mat Material(Shader Graphs/LaserGraph)"
+   ],
+   "palette": "JadeColors.AOEConicColor",
+   "palette_scale": 1.0
+  },
+  "world:0A0100": {
+   "role": "world",
+   "photic": [
+    0.03773582,
+    0.0029027553,
+    0.0,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/MazeDangerBlockMateral.mat Material(Shader Graphs/ExplodingBlockGraph)"
+   ]
+  },
+  "world:0A408C": {
+   "role": "world",
+   "photic": [
+    0.04,
+    0.25,
+    0.55,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:0B0D12": {
+   "role": "world",
+   "photic": [
+    0.043,
+    0.051,
+    0.071,
+    0.88
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:0B6000": {
+   "role": "world",
+   "photic": [
+    0.042591315,
+    0.37450984,
+    0.0,
+    0.9411765
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/CrystalMaterial.mat Material(Shader Graphs/CrystalGraph)"
+   ]
+  },
+  "world:0C4400": {
+   "role": "world",
+   "photic": [
+    0.048311464,
+    0.26481843,
+    0.0,
+    1.0
+   ],
+   "family": "band~lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/ExplodingMassCrystalMaterial.mat Material(Shader Graphs/ShepardGraph)"
+   ]
+  },
+  "world:0D413C": {
+   "role": "world",
+   "photic": [
+    0.04966178,
+    0.254717,
+    0.23573042,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Environment/Materials/FX/fx_GreenCrackle.prefab ParticleSystem"
+   ]
+  },
+  "world:0EC0B6": {
+   "role": "world",
+   "photic": [
+    0.054586384,
+    0.754717,
+    0.71214765,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/FresnelMaterial.mat Material(Shader Graphs/FresnelGraph)"
+   ],
+   "palette": "JadeColors.SkimmerColor",
+   "palette_scale": 1.002358
+  },
+  "world:0EC1B6": {
+   "role": "world",
+   "photic": [
+    0.055,
+    0.755,
+    0.712,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
+   ]
+  },
+  "world:0F157B": {
+   "role": "world",
+   "photic": [
+    0.05882353,
+    0.08155897,
+    0.48235294,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/Projectile/AOEConicExplosion.prefab ParticleSystem",
+    "Assets/_Prefabs/Projectile/AOEConicSkyBurst.prefab ParticleSystem"
+   ]
+  },
+  "world:0F299E": {
+   "role": "world",
+   "photic": [
+    0.06,
+    0.16,
+    0.62,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ScreenVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:111684": {
+   "role": "world",
+   "photic": [
+    0.06666667,
+    0.08731091,
+    0.5176471,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/Projectile/AOEConicExplosion.prefab ParticleSystem",
+    "Assets/_Prefabs/Projectile/AOEConicSkyBurst.prefab ParticleSystem"
+   ]
+  },
+  "world:120030": {
+   "role": "world",
+   "photic": [
+    0.07058824,
+    0.0,
+    0.1882353,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/RedAccentVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:121111": {
+   "role": "world",
+   "photic": [
+    0.07,
+    0.065,
+    0.065,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 5,
+   "where": [
+    "Assets/_Graphics/Materials/ThresherChainMaterial.mat Material(CosmicShore/ThresherChainFresnel)",
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset BrittleStarConfigSO",
+    "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset ThresherConfigSO",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/BrittleStarConfigSO.cs code"
+   ]
+  },
+  "world:13142A": {
+   "role": "world",
+   "photic": [
+    0.0733298857,
+    0.079784937,
+    0.164468809,
+    0.411764711
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CageMaterial.mat Material(Shader Graphs/CageGraph)"
+   ]
+  },
+  "world:131820": {
+   "role": "world",
+   "photic": [
+    0.075,
+    0.094,
+    0.125,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:13FFF2": {
+   "role": "world",
+   "photic": [
+    0.075,
+    1.0,
+    0.949,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset HoneyguideConfigSO",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs code"
+   ],
+   "palette": "JadeColors.SkimmerColor",
+   "palette_scale": 1.328125
+  },
+  "world:141BB2": {
+   "role": "world",
+   "photic": [
+    0.07683628,
+    0.10491451,
+    0.6981132,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab ParticleSystem"
+   ]
+  },
+  "world:145976": {
+   "role": "world",
+   "photic": [
+    0.07704399,
+    0.348964,
+    0.46226418,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/GreenSpreadFresnelMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ]
+  },
+  "world:161821": {
+   "role": "world",
+   "photic": [
+    0.086,
+    0.094,
+    0.129,
+    0.9
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code"
+   ]
+  },
+  "world:161B23": {
+   "role": "world",
+   "photic": [
+    0.086,
+    0.106,
+    0.137,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:16B2B9": {
+   "role": "world",
+   "photic": [
+    0.086804256,
+    0.69976443,
+    0.7264151,
+    0.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/GreenSpikeMaterial.mat Material(Shader Graphs/SpikeGraph)"
+   ],
+   "palette": "JadeColors.SpikeLightColor",
+   "palette_scale": 1.001275
+  },
+  "world:17C8CF": {
+   "role": "world",
+   "photic": [
+    0.09019607,
+    0.7841247,
+    0.8117647,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/VolumeDisplayMaterial.mat Material(VolumeDisplayShader.shader)"
+   ]
+  },
+  "world:182098": {
+   "role": "world",
+   "photic": [
+    0.093449585,
+    0.12420599,
+    0.5943396,
+    0.9411765
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/SpaceCrystalMaterial.mat Material(Shader Graphs/CrystalGraph)"
+   ]
+  },
+  "world:1A59FF": {
+   "role": "world",
+   "photic": [
+    0.1,
+    0.35,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ProjectileChargeFieldMaterial.mat Material(Shader Graphs/ProjectileChargeField)"
+   ]
+  },
+  "world:1C1F2B": {
+   "role": "world",
+   "photic": [
+    0.11,
+    0.12,
+    0.17,
+    0.92
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code"
+   ]
+  },
+  "world:1C232D": {
+   "role": "world",
+   "photic": [
+    0.11,
+    0.137,
+    0.176,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:1E1AFF": {
+   "role": "world",
+   "photic": [
+    0.118263744,
+    0.10062885,
+    1.0,
+    0.9411765
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/BlueOrangeProjectileMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:1E39FF": {
+   "role": "world",
+   "photic": [
+    0.11635202,
+    0.22510868,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_SO_Assets/Toys/Toy_Wander.asset WanderToyDefinitionSO"
+   ]
+  },
+  "world:21807B": {
+   "role": "world",
+   "photic": [
+    0.13050312,
+    0.5,
+    0.48195234,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Environment/Materials/FX/fx_GreenCrackle.prefab ParticleSystem"
+   ]
+  },
+  "world:21C0BD": {
+   "role": "world",
+   "photic": [
+    0.129,
+    0.753,
+    0.741,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
+  "world:2472D9": {
+   "role": "world",
+   "photic": [
+    0.14017442,
+    0.44511262,
+    0.8490566,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 10,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Angler.prefab ForcefieldCrackleController",
+    "Assets/_Prefabs/Spacevessels/BrittleStar.prefab ForcefieldCrackleController",
+    "Assets/_Prefabs/Spacevessels/Dolphin.prefab ForcefieldCrackleController",
+    "Assets/_Prefabs/Spacevessels/Goby.prefab ForcefieldCrackleController"
+   ]
+  },
+  "world:25369F": {
+   "role": "world",
+   "photic": [
+    0.14391243,
+    0.20994417,
+    0.6226415,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/SkyboxModelGraphMaterial.mat Material(Shader Graphs/SkyboxModelGraph)"
+   ]
+  },
+  "world:26303C": {
+   "role": "world",
+   "photic": [
+    0.149,
+    0.188,
+    0.235,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:26F28C": {
+   "role": "world",
+   "photic": [
+    0.15,
+    0.95,
+    0.55,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_Scripts/Controller/Toys/ToyFactory.cs code"
+   ]
+  },
+  "world:26FF8C": {
+   "role": "world",
+   "photic": [
+    0.15,
+    1.0,
+    0.55,
+    0.5
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueSettingsSO.cs code"
+   ]
+  },
+  "world:284050": {
+   "role": "world",
+   "photic": [
+    0.1568627450980392,
+    0.25098039215686274,
+    0.3137254901960784,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs code"
+   ]
+  },
+  "world:291C05": {
+   "role": "world",
+   "photic": [
+    0.16,
+    0.11,
+    0.02,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/Games/TandavaSettings.asset TandavaSettingsSO",
+    "Assets/_SO_Assets/Games/TandavaSeveringSettings.asset TandavaSeveringSettingsSO"
+   ]
+  },
+  "world:29C78F": {
+   "role": "world",
+   "photic": [
+    0.16,
+    0.78,
+    0.56,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs code"
+   ]
+  },
+  "world:29C7D1": {
+   "role": "world",
+   "photic": [
+    0.16,
+    0.78,
+    0.82,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs code"
+   ]
+  },
+  "world:2A3340": {
+   "role": "world",
+   "photic": [
+    0.165,
+    0.2,
+    0.25,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:2B2735": {
+   "role": "world",
+   "photic": [
+    0.169,
+    0.153,
+    0.208,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:2C6354": {
+   "role": "world",
+   "photic": [
+    0.17393495,
+    0.38679248,
+    0.33003047,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Environment/Materials/FX/fx_GreenCrackle.prefab ParticleSystem"
+   ]
+  },
+  "world:2D5CFFx1.06": {
+   "role": "world",
+   "photic": [
+    0.18856181,
+    0.38266957,
+    1.0592737,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/SuperShieldedBlockMaterial.mat Material(Shader Graphs/BlockGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/TransparentSuperShieldedBlockMaterial.mat Material(Shader Graphs/BlockGraph)"
+   ]
+  },
+  "world:2E3654": {
+   "role": "world",
+   "photic": [
+    0.18,
+    0.21,
+    0.33,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/BlueBaseOpaqueVesselMaterial.mat Material(Shader Graphs/VesselGraph)",
+    "Assets/_Graphics/Materials/BlueBaseVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:2E5200": {
+   "role": "world",
+   "photic": [
+    0.18,
+    0.3232,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniChargeArcs.mat Material(Custom/CrystalChargeArcsShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniCrystalBody.mat Material(Custom/OmniCrystalFresnelShader)"
+   ],
+   "palette": "EnvironmentColors.ElementalCrystalColors[0]",
+   "palette_scale": 0.988379
+  },
+  "world:2E520D": {
+   "role": "world",
+   "photic": [
+    0.18,
+    0.32,
+    0.05,
+    1.0
+   ],
+   "family": "band~lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalMaterial.mat Material(Shader Graphs/ChargeCrystal)"
+   ],
+   "palette": "EnvironmentColors.DarkCTA",
+   "palette_scale": 0.64
+  },
+  "world:2F6D00": {
+   "role": "world",
+   "photic": [
+    0.18334086,
+    0.42745098,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/ExplodingMassCrystalMaterial.mat Material(Shader Graphs/ShepardGraph)"
+   ]
+  },
+  "world:2F70FF": {
+   "role": "world",
+   "photic": [
+    0.18396229,
+    0.44021127,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab ParticleSystem"
+   ]
+  },
+  "world:300A05": {
+   "role": "world",
+   "photic": [
+    0.19,
+    0.04,
+    0.02,
+    1.0
+   ],
+   "family": "band~fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/EngineVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:303030": {
+   "role": "world",
+   "photic": [
+    0.18867922,
+    0.18867922,
+    0.18867922,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Effects Library/Froglet Stuff/Prefabs/vfx_Projectile_02.prefab ParticleSystem"
+   ]
+  },
+  "world:30D1DC": {
+   "role": "world",
+   "photic": [
+    0.18695846,
+    0.8200566,
+    0.8616352,
+    0.5
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_SO_Assets/Games/AstroLeagueSettings.asset AstroLeagueSettingsSO"
+   ]
+  },
+  "world:333333": {
+   "role": "world",
+   "photic": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/Effects Library/Froglet Stuff/Materials/DistortedFlare01_AB.mat Material(?)",
+    "Assets/Effects Library/Froglet Stuff/Materials/Flare00_AB_2.mat Material(?)",
+    "Assets/_Graphics/Materials/PrismCollisionBurstMaterial.mat Material(CosmicShore/PrismCollisionBurst)",
+    "Assets/_Graphics/Materials/PrismSliceMaterial.mat Material(CosmicShore/PrismSlice)"
+   ]
+  },
+  "world:3373FF": {
+   "role": "world",
+   "photic": [
+    0.2,
+    0.45,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/PrismBurnFxConfig.asset PrismBurnFxConfigSO",
+    "Assets/_Scripts/ScriptableObjects/PrismBurnFxConfigSO.cs code"
+   ]
+  },
+  "world:3380FF": {
+   "role": "world",
+   "photic": [
+    0.2,
+    0.5,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 3,
+   "where": [
+    "Assets/_Prefabs/Environment/AstroLeagueBall.prefab AstroLeagueBall",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameAstroLeague.unity AstroLeagueBall",
+    "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs code"
+   ]
+  },
+  "world:33E6FF": {
+   "role": "world",
+   "photic": [
+    0.2,
+    0.9,
+    1.0,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_SO_Assets/Toys/Toy_Painting.asset PaintingToyDefinitionSO"
+   ]
+  },
+  "world:33EC21": {
+   "role": "world",
+   "photic": [
+    0.20018709,
+    0.9245283,
+    0.12792206,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab ParticleSystem"
+   ]
+  },
+  "world:361480": {
+   "role": "world",
+   "photic": [
+    0.2126609,
+    0.078431375,
+    0.5019608,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:36374F": {
+   "role": "world",
+   "photic": [
+    0.21048416,
+    0.2160862,
+    0.31132078,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/BlueSpreadFresnelMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ]
+  },
+  "world:3882FF": {
+   "role": "world",
+   "photic": [
+    0.22,
+    0.51,
+    1.0,
+    0.55
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
+    "Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO",
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code",
+    "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs code"
+   ]
+  },
+  "world:3A3326": {
+   "role": "world",
+   "photic": [
+    0.227,
+    0.2,
+    0.149,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:3A4250": {
+   "role": "world",
+   "photic": [
+    0.227,
+    0.259,
+    0.314,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:3AA2CC": {
+   "role": "world",
+   "photic": [
+    0.22745098,
+    0.63529414,
+    0.8,
+    0.0
+   ],
+   "family": "band~jade",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/ActiveSpaceCrystalMaterial.mat Material(Shader Graphs/CrystalGraph)",
+    "Assets/_Graphics/Materials/CrystalMaterials/SpaceCrystalMaterial.mat Material(Shader Graphs/CrystalGraph)"
+   ]
+  },
+  "world:3C3A3A": {
+   "role": "world",
+   "photic": [
+    0.23584908,
+    0.22583662,
+    0.22583662,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Environment/Materials/FX/JetFX.prefab ParticleSystem"
+   ]
+  },
+  "world:3C4654": {
+   "role": "world",
+   "photic": [
+    0.235,
+    0.275,
+    0.329,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:3D3D3D": {
+   "role": "world",
+   "photic": [
+    0.23921568627450981,
+    0.23921568627450981,
+    0.23921568627450981,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity IntensitySelectButton"
+   ]
+  },
+  "world:3D99F2": {
+   "role": "world",
+   "photic": [
+    0.24,
+    0.6,
+    0.95,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 27,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO"
+   ]
+  },
+  "world:3E80C8": {
+   "role": "world",
+   "photic": [
+    0.24130766,
+    0.500806,
+    0.7830189,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/GreenSpikeMaterial.mat Material(Shader Graphs/SpikeGraph)"
+   ],
+   "palette": "JadeColors.SpikeDarkColor",
+   "palette_scale": 0.998349
+  },
+  "world:3F7FD8": {
+   "role": "world",
+   "photic": [
+    0.247,
+    0.498,
+    0.847,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 3,
+   "where": [
+    "Assets/_Prefabs/CORE/GameCanvas.prefab GoalRow"
+   ]
+  },
+  "world:408CFF": {
+   "role": "world",
+   "photic": [
+    0.25,
+    0.55,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ProjectileChargeFieldMaterial.mat Material(Shader Graphs/ProjectileChargeField)"
+   ]
+  },
+  "world:4285D9": {
+   "role": "world",
+   "photic": [
+    0.26,
+    0.52,
+    0.85,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/ArkwayRun.Alarm.cs code"
+   ]
+  },
+  "world:434C89": {
+   "role": "world",
+   "photic": [
+    0.263,
+    0.298,
+    0.537,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
+  "world:4878FFx1.60": {
+   "role": "world",
+   "photic": [
+    0.45,
+    0.75,
+    1.6,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/Wormhole.mat Material(CosmicShore/Wormhole)",
+    "Assets/_Graphics/Materials/WormholeSeamless.mat Material(CosmicShore/Wormhole)"
+   ]
+  },
+  "world:4A5566": {
+   "role": "world",
+   "photic": [
+    0.29,
+    0.333,
+    0.4,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:4C73BF": {
+   "role": "world",
+   "photic": [
+    0.3,
+    0.45,
+    0.75,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO",
+    "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolConfigSO.cs code"
+   ]
+  },
+  "world:4C80CC": {
+   "role": "world",
+   "photic": [
+    0.3,
+    0.5,
+    0.8,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/ForcefieldCrackleController.cs code"
+   ]
+  },
+  "world:4C99FF": {
+   "role": "world",
+   "photic": [
+    0.3,
+    0.6,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/ForcefieldCrackleController.cs code"
+   ],
+   "palette": "BlueColors.UIAccentColor",
+   "palette_scale": 1.0
+  },
+  "world:4CCCFF": {
+   "role": "world",
+   "photic": [
+    0.3,
+    0.8,
+    1.0,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/BallTrail.mat Material(CosmicShore/BallTrail)"
+   ]
+  },
+  "world:4CE6D9": {
+   "role": "world",
+   "photic": [
+    0.3,
+    0.9,
+    0.85,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 4,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset BrittleStarConfigSO",
+    "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset ThresherConfigSO",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/BrittleStarConfigSO.cs code",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/ThresherConfigSO.cs code"
+   ]
+  },
+  "world:4CF2E6": {
+   "role": "world",
+   "photic": [
+    0.3,
+    0.95,
+    0.9,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/ThresherBallMaterial.mat Material(CosmicShore/ThresherBallFresnel)",
+    "Assets/_Graphics/Materials/ThresherChainMaterial.mat Material(CosmicShore/ThresherChainFresnel)"
+   ]
+  },
+  "world:4F0300": {
+   "role": "world",
+   "photic": [
+    0.30817598,
+    0.013093073,
+    0.0,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/DangerProjectileMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ]
+  },
+  "world:4F8700": {
+   "role": "world",
+   "photic": [
+    0.3083,
+    0.5298,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 3,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/MassDepthPrisms.mat Material(Custom/OmniDepthPrismShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniCrystalBody.mat Material(Custom/OmniCrystalFresnelShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniDepthPrisms.mat Material(Custom/OmniDepthPrismShader)"
+   ],
+   "palette": "EnvironmentColors.ElementalCrystalColors[1]",
+   "palette_scale": 0.988248
+  },
+  "world:4FD9FF": {
+   "role": "world",
+   "photic": [
+    0.31,
+    0.85,
+    1.0,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 3,
+   "where": [
+    "Assets/_SO_Assets/Environment/SolitonTunnel/SolitonNetwork.asset SolitonTunnelConfigSO",
+    "Assets/_SO_Assets/Environment/SolitonTunnel/SolitonTunnel.asset SolitonTunnelConfigSO",
+    "Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonTunnelConfigSO.cs code"
+   ]
+  },
+  "world:501016": {
+   "role": "world",
+   "photic": [
+    0.3137254901960784,
+    0.06274509803921569,
+    0.08627450980392157,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs code"
+   ]
+  },
+  "world:5359C0": {
+   "role": "world",
+   "photic": [
+    0.32514533,
+    0.3480816,
+    0.754717,
+    0.4117647
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CageMaterial.mat Material(Shader Graphs/CageGraph)"
+   ]
+  },
+  "world:542576": {
+   "role": "world",
+   "photic": [
+    0.3308353,
+    0.1464353,
+    0.461,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/Effects Library/Froglet Stuff/Prefabs/vfx_Projectile_02.prefab ParticleSystem"
+   ]
+  },
+  "world:59CCFF": {
+   "role": "world",
+   "photic": [
+    0.35,
+    0.8,
+    1.0,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset MantaStingConfigSO",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MantaStingConfigSO.cs code"
+   ]
+  },
+  "world:5A086C": {
+   "role": "world",
+   "photic": [
+    0.3535883,
+    0.030704841,
+    0.4245283,
+    1.0
+   ],
+   "family": "band~fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Environment/Materials/FX/fx_RedCrackle.prefab ParticleSystem"
+   ]
+  },
+  "world:5C5F70": {
+   "role": "world",
+   "photic": [
+    0.361,
+    0.373,
+    0.439,
+    0.55
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code"
+   ]
+  },
+  "world:5CB8FF": {
+   "role": "world",
+   "photic": [
+    0.36,
+    0.72,
+    1.0,
+    0.85
+   ],
+   "family": "band~blue",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset HoneyguideConfigSO",
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs code"
+   ]
+  },
+  "world:5D00FFx1.50": {
+   "role": "world",
+   "photic": [
+    0.54901963,
+    0.0,
+    1.4980392,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/RedAccentVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ],
+   "palette": "RubyColors.ShipColor2",
+   "palette_scale": 2.0
+  },
+  "world:5D87FFx1.70": {
+   "role": "world",
+   "photic": [
+    0.62,
+    0.9,
+    1.7,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/SparrowProjectileMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ]
+  },
+  "world:5E65F4": {
+   "role": "world",
+   "photic": [
+    0.36976376,
+    0.39671606,
+    0.9559748,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 9,
+   "where": [
+    "Assets/_Graphics/Materials/AssemblySpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
+    "Assets/_Graphics/Materials/GyroidSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
+    "Assets/_Graphics/Materials/QuadFishSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
+    "Assets/_Graphics/Materials/QuasicrystalSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)"
+   ]
+  },
+  "world:5F670C": {
+   "role": "world",
+   "photic": [
+    0.37077203,
+    0.4056604,
+    0.048475105,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/YellowConicExplosionMaterial.mat Material(Shader Graphs/LaserGraph)"
+   ]
+  },
+  "world:5FF0C8": {
+   "role": "world",
+   "photic": [
+    0.373,
+    0.941,
+    0.784,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code"
+   ]
+  },
+  "world:60431D": {
+   "role": "world",
+   "photic": [
+    0.3773585,
+    0.26409683,
+    0.11510615,
+    1.0
+   ],
+   "family": "band~fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:616180": {
+   "role": "world",
+   "photic": [
+    0.38050312,
+    0.38050312,
+    0.5,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/BlobMaterial.mat Material(Shader Graphs/SnowGraph)",
+    "Assets/_Graphics/Materials/SnowMaterial.mat Material(Shader Graphs/SnowGraph)"
+   ]
+  },
+  "world:6271FFx1.52": {
+   "role": "world",
+   "photic": [
+    0.5828848,
+    0.67113554,
+    1.5193229,
+    0.9411765
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/BlueBlockMateral.mat Material(Shader Graphs/BlockGraph)"
+   ],
+   "palette": "BlueColors.InsideBlockColor",
+   "palette_scale": 1.248636
+  },
+  "world:6293FFx2.60": {
+   "role": "world",
+   "photic": [
+    1.0,
+    1.5,
+    2.6,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/SparrowProjectileMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ]
+  },
+  "world:667AB8": {
+   "role": "world",
+   "photic": [
+    0.4,
+    0.48,
+    0.72,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:6680FF": {
+   "role": "world",
+   "photic": [
+    0.4,
+    0.5,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/ToyFactory.cs code"
+   ],
+   "palette": "BlueColors.TrailHighlightColor",
+   "palette_scale": 1.0
+  },
+  "world:6B1C0A": {
+   "role": "world",
+   "photic": [
+    0.42,
+    0.11,
+    0.04,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/EngineVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:6B450A": {
+   "role": "world",
+   "photic": [
+    0.42,
+    0.27,
+    0.04,
+    1.0
+   ],
+   "family": "band~fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Arcade/Tandava/TandavaGoldBurst.cs code"
+   ]
+  },
+  "world:6B94F2": {
+   "role": "world",
+   "photic": [
+    0.42,
+    0.58,
+    0.95,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/Environment/FulmenConfig.asset FulmenConfigSO",
+    "Assets/_Scripts/Controller/Environment/Fulmen/FulmenConfigSO.cs code"
+   ]
+  },
+  "world:6BB8FF": {
+   "role": "world",
+   "photic": [
+    0.42,
+    0.72,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorView.cs code"
+   ]
+  },
+  "world:6FA8C8": {
+   "role": "world",
+   "photic": [
+    0.435,
+    0.659,
+    0.784,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:72C000": {
+   "role": "world",
+   "photic": [
+    0.4466,
+    0.7524,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniCrystalBody.mat Material(Custom/OmniCrystalFresnelShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/SpaceCrystalFresnelMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ],
+   "palette": "EnvironmentColors.ElementalCrystalColors[2]",
+   "palette_scale": 0.98818
+  },
+  "world:730F05": {
+   "role": "world",
+   "photic": [
+    0.45,
+    0.06,
+    0.02,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/PrismBurn/PrismLaserBurn.mat Material(CosmicShore/PrismLaserBurn)"
+   ]
+  },
+  "world:730F08": {
+   "role": "world",
+   "photic": [
+    0.45,
+    0.06,
+    0.03,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/RhinoBladeCrackleMaterial.mat Material(Shader Graphs/ForcefieldCrackleCapsule)"
+   ]
+  },
+  "world:737070": {
+   "role": "world",
+   "photic": [
+    0.4528302,
+    0.43787825,
+    0.43787825,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Environment/Materials/FX/JetFX.prefab ParticleSystem"
+   ]
+  },
+  "world:747BAD": {
+   "role": "world",
+   "photic": [
+    0.455,
+    0.482,
+    0.678,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 3,
+   "where": [
+    "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
+  "world:783C3C": {
+   "role": "world",
+   "photic": [
+    0.47058823529411764,
+    0.23529411764705882,
+    0.23529411764705882,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 4,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity IntensitySelectButton"
+   ]
+  },
+  "world:7CFC00": {
+   "role": "world",
+   "photic": [
+    0.4862745,
+    0.9882354,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniCrystalBody.mat Material(Custom/OmniCrystalFresnelShader)"
+   ]
+  },
+  "world:7D00A3": {
+   "role": "world",
+   "photic": [
+    0.49019608,
+    0.0,
+    0.6386895,
+    0.0
+   ],
+   "family": "band~ruby",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/ActiveSpaceCrystalMaterial.mat Material(Shader Graphs/CrystalGraph)",
+    "Assets/_Graphics/Materials/CrystalMaterials/SpaceCrystalMaterial.mat Material(Shader Graphs/CrystalGraph)"
+   ]
+  },
+  "world:7D7D7D": {
+   "role": "world",
+   "photic": [
+    0.49019607843137253,
+    0.49019607843137253,
+    0.49019607843137253,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Scenes/Menu_Main.unity IntensitySelectButton"
+   ]
+  },
+  "world:7E7E20": {
+   "role": "world",
+   "photic": [
+    0.4921569,
+    0.4960784,
+    0.1254902,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/Environment/Materials/FX/VfxArcLightning.prefab ArcLightningFallback",
+    "Assets/_Scripts/Controller/FX/ArcLightningFallback.cs code"
+   ]
+  },
+  "world:7FA8FF": {
+   "role": "world",
+   "photic": [
+    0.498,
+    0.659,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code"
+   ]
+  },
+  "world:7FD7FF": {
+   "role": "world",
+   "photic": [
+    0.498,
+    0.843,
+    1.0,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs code"
+   ]
+  },
+  "world:808080": {
+   "role": "world",
+   "photic": [
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "family": "blue",
+   "uses": 3,
+   "where": [
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Graphics/Skyboxes/BlackSkybox.mat Material(?)",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+   ]
+  },
+  "world:8186F1": {
+   "role": "world",
+   "photic": [
+    0.50433123,
+    0.5254401,
+    0.9433962,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/TrailViewerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
+   ]
+  },
+  "world:8197F1": {
+   "role": "world",
+   "photic": [
+    0.50433123,
+    0.59214425,
+    0.9433962,
+    0.9411765
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/SpaceCrystalMaterial.mat Material(Shader Graphs/CrystalGraph)"
+   ]
+  },
+  "world:82828A": {
+   "role": "world",
+   "photic": [
+    0.51,
+    0.51,
+    0.54,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO",
+    "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs code"
+   ]
+  },
+  "world:82879C": {
+   "role": "world",
+   "photic": [
+    0.51,
+    0.53,
+    0.61,
+    0.85
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code"
+   ]
+  },
+  "world:88C6C4": {
+   "role": "world",
+   "photic": [
+    0.5314704,
+    0.7752642,
+    0.7702202,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/FX/ArcLightningFallback.cs code"
+   ]
+  },
+  "world:8A96A6": {
+   "role": "world",
+   "photic": [
+    0.541,
+    0.588,
+    0.651,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:8C5424": {
+   "role": "world",
+   "photic": [
+    0.55,
+    0.33,
+    0.14,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnMid.mat Material(CosmicShore/PrismPaperBurn)",
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnNear.mat Material(CosmicShore/PrismPaperBurn)"
+   ]
+  },
+  "world:8C8070": {
+   "role": "world",
+   "photic": [
+    0.55,
+    0.5,
+    0.44,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnMid.mat Material(CosmicShore/PrismPaperBurn)",
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnNear.mat Material(CosmicShore/PrismPaperBurn)"
+   ]
+  },
+  "world:8C9199": {
+   "role": "world",
+   "photic": [
+    0.55,
+    0.57,
+    0.6,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorJuice.cs code"
+   ]
+  },
+  "world:8C919E": {
+   "role": "world",
+   "photic": [
+    0.55,
+    0.57,
+    0.62,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs code"
+   ]
+  },
+  "world:8CBFFF": {
+   "role": "world",
+   "photic": [
+    0.55,
+    0.75,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_SO_Assets/Toys/Toy_CellSelector.asset CellSelectorToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+   ]
+  },
+  "world:8CD9FF": {
+   "role": "world",
+   "photic": [
+    0.55,
+    0.85,
+    1.0,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/Graphs/CloakGhost.mat Material(CosmicShore/CloakGhost)"
+   ]
+  },
+  "world:96A6C2": {
+   "role": "world",
+   "photic": [
+    0.59,
+    0.65,
+    0.76,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 5,
+   "where": [
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset StoatDipoleConfigSO",
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset StoatDipoleConfigSO",
+    "Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController",
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset StoatDipoleConfigSO"
+   ]
+  },
+  "world:96EB29": {
+   "role": "world",
+   "photic": [
+    0.59,
+    0.92,
+    0.16,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 4,
+   "where": [
+    "Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO",
+    "Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalArcs.mat Material(Custom/CrystalChargeArcsShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalMaterial.mat Material(Shader Graphs/ChargeCrystal)",
+    "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs code"
+   ],
+   "palette": "EnvironmentColors.BrightCTA",
+   "palette_scale": 1.0
+  },
+  "world:97FC00": {
+   "role": "world",
+   "photic": [
+    0.5929,
+    0.9882,
+    0.0,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniCrystalBody.mat Material(Custom/OmniCrystalFresnelShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/TimeCrystalFresnelMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ],
+   "palette": "EnvironmentColors.ElementalCrystalColors[3]",
+   "palette_scale": 0.9882
+  },
+  "world:9999B2": {
+   "role": "world",
+   "photic": [
+    0.6,
+    0.6,
+    0.7,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs code"
+   ]
+  },
+  "world:99A1B2": {
+   "role": "world",
+   "photic": [
+    0.6,
+    0.63,
+    0.7,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ClassLiveryVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:99C7D9": {
+   "role": "world",
+   "photic": [
+    0.6,
+    0.78,
+    0.85,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
+   ]
+  },
+  "world:99D9BF": {
+   "role": "world",
+   "photic": [
+    0.6,
+    0.85,
+    0.75,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
+   ]
+  },
+  "world:99FF80": {
+   "role": "world",
+   "photic": [
+    0.6,
+    1.0,
+    0.5019608,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 3,
+   "where": [
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab LoadCrystalGraphic",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
+  "world:99FF99": {
+   "role": "world",
+   "photic": [
+    0.6,
+    1.0,
+    0.6,
+    1.0
+   ],
+   "family": "band~lime",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+   ]
+  },
+  "world:99FFF7": {
+   "role": "world",
+   "photic": [
+    0.6,
+    1.0,
+    0.97,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
+   ]
+  },
+  "world:9DFF2E": {
+   "role": "world",
+   "photic": [
+    0.6156863,
+    1.0,
+    0.18039216,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 10,
+   "where": [
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset StoatDipoleConfigSO",
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset StoatDipoleConfigSO",
+    "Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController",
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO"
+   ]
+  },
+  "world:9E6BF0": {
+   "role": "world",
+   "photic": [
+    0.62,
+    0.42,
+    0.94,
+    1.0
+   ],
+   "family": "band~ruby",
+   "uses": 27,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO"
+   ]
+  },
+  "world:9ED43D": {
+   "role": "world",
+   "photic": [
+    0.62,
+    0.83,
+    0.24,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs code"
+   ]
+  },
+  "world:9FB4D8": {
+   "role": "world",
+   "photic": [
+    0.6235294117647059,
+    0.7058823529411765,
+    0.8470588235294118,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs code"
+   ]
+  },
+  "world:9FE6FF": {
+   "role": "world",
+   "photic": [
+    0.624,
+    0.902,
+    1.0,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:9FFF97": {
+   "role": "world",
+   "photic": [
+    0.6221651,
+    1.0,
+    0.5911949,
+    0.9411765
+   ],
+   "family": "band~lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ActiveSpaceCrystalMaterial.mat Material(Shader Graphs/CrystalGraph)"
+   ]
+  },
+  "world:A45209": {
+   "role": "world",
+   "photic": [
+    0.6415094,
+    0.32336873,
+    0.034294482,
+    0.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/YellowConicExplosionMaterial.mat Material(Shader Graphs/LaserGraph)"
+   ],
+   "palette": "GoldColors.AOEConicEdgeColor",
+   "palette_scale": 0.997469
+  },
+  "world:A6A6B2": {
+   "role": "world",
+   "photic": [
+    0.65,
+    0.65,
+    0.7,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/ControlGlyphSet.asset ControlGlyphSetSO",
+    "Assets/_Scripts/ScriptableObjects/ControlGlyphSetSO.cs code"
+   ]
+  },
+  "world:A8F3DF": {
+   "role": "world",
+   "photic": [
+    0.6606889,
+    0.9528302,
+    0.87434053,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/Environment/Materials/FX/fx_BlueCrackle.prefab ParticleSystem",
+    "Assets/_Prefabs/Environment/Materials/FX/fx_RedCrackle.prefab ParticleSystem"
+   ]
+  },
+  "world:A8FF2E": {
+   "role": "world",
+   "photic": [
+    0.66,
+    1.0,
+    0.18,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 3,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset HoneyguideConfigSO",
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs code",
+    "Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorView.cs code"
+   ]
+  },
+  "world:AD9ED9": {
+   "role": "world",
+   "photic": [
+    0.68,
+    0.62,
+    0.85,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
+   ]
+  },
+  "world:B07CFF": {
+   "role": "world",
+   "photic": [
+    0.69,
+    0.486,
+    1.0,
+    1.0
+   ],
+   "family": "band~ruby",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code"
+   ]
+  },
+  "world:B1D7FF": {
+   "role": "world",
+   "photic": [
+    0.6933962,
+    0.84506845,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 10,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Angler.prefab ForcefieldCrackleController",
+    "Assets/_Prefabs/Spacevessels/BrittleStar.prefab ForcefieldCrackleController",
+    "Assets/_Prefabs/Spacevessels/Dolphin.prefab ForcefieldCrackleController",
+    "Assets/_Prefabs/Spacevessels/Goby.prefab ForcefieldCrackleController"
+   ]
+  },
+  "world:B27130": {
+   "role": "world",
+   "photic": [
+    0.6981132,
+    0.4444542,
+    0.18879785,
+    1.0
+   ],
+   "family": "band~fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Game/Vessel/Animation/JetMaterial.mat Material(Custom/JetShader)"
+   ]
+  },
+  "world:B2CCFF": {
+   "role": "world",
+   "photic": [
+    0.7,
+    0.8,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ScreenVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:B2D9FF": {
+   "role": "world",
+   "photic": [
+    0.7,
+    0.85,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/ForcefieldCrackleController.cs code"
+   ]
+  },
+  "world:B2E6FF": {
+   "role": "world",
+   "photic": [
+    0.7,
+    0.9,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO",
+    "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs code"
+   ]
+  },
+  "world:B2FF59": {
+   "role": "world",
+   "photic": [
+    0.7,
+    1.0,
+    0.35,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+   ]
+  },
+  "world:B3B3FF": {
+   "role": "world",
+   "photic": [
+    0.7012578,
+    0.7012578,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/BlueCrystalFresnelMateriall.mat Material(Custom/SpreadFresnelShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/MassDepthPrismsInactive.mat Material(Custom/OmniDepthPrismShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniCrystalBodyInactive.mat Material(Custom/OmniCrystalFresnelShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/OmniDepthPrismsInactive.mat Material(Custom/OmniDepthPrismShader)"
+   ]
+  },
+  "world:B3CBFF": {
+   "role": "world",
+   "photic": [
+    0.701410718,
+    0.797737733,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)"
+   ]
+  },
+  "world:B4171D": {
+   "role": "world",
+   "photic": [
+    0.7058824,
+    0.090196066,
+    0.11405901,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ForcefieldCrackleMaterial.mat Material(Shader Graphs/ForcefieldCrackle)"
+   ]
+  },
+  "world:B751FF": {
+   "role": "world",
+   "photic": [
+    0.7176471,
+    0.31764707,
+    1.0,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 2,
+   "where": [
+    "Assets/Effects Library/Froglet Stuff/Prefabs/vfx_Projectile_02.prefab ParticleSystem",
+    "Assets/Effects Library/Froglet Stuff/Prefabs/vfx_Projectile_02.prefab TrailRenderer"
+   ]
+  },
+  "world:B899D9": {
+   "role": "world",
+   "photic": [
+    0.72,
+    0.6,
+    0.85,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
+   ]
+  },
+  "world:B900FF": {
+   "role": "world",
+   "photic": [
+    0.72505856,
+    0.0,
+    1.0,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/VolumeDisplayMaterial.mat Material(VolumeDisplayShader.shader)"
+   ]
+  },
+  "world:BEBEBE": {
+   "role": "world",
+   "photic": [
+    0.745283,
+    0.745283,
+    0.745283,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Prefabs/Environment/Materials/FX/JetFX.prefab ParticleSystem"
+   ]
+  },
+  "world:BFD999": {
+   "role": "world",
+   "photic": [
+    0.75,
+    0.85,
+    0.6,
+    1.0
+   ],
+   "family": "band~lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
+   ]
+  },
+  "world:BFFFD9": {
+   "role": "world",
+   "photic": [
+    0.75,
+    1.0,
+    0.85,
+    1.0
+   ],
+   "family": "band~jade",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_SO_Assets/Toys/Toy_SpawnMatrix.asset SpawnMatrixToyDefinitionSO"
+   ]
+  },
+  "world:C00D00": {
+   "role": "world",
+   "photic": [
+    0.754717,
+    0.05256052,
+    0.0,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 4,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Rhino.prefab ParticleSystem",
+    "Assets/_Prefabs/Spacevessels/Swordfish.prefab ParticleSystem"
+   ]
+  },
+  "world:C08853": {
+   "role": "world",
+   "photic": [
+    0.754717,
+    0.53432167,
+    0.32514533,
+    1.0
+   ],
+   "family": "band~fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:C53512": {
+   "role": "world",
+   "photic": [
+    0.7735849,
+    0.20816465,
+    0.0693307,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 4,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Rhino.prefab ParticleSystem",
+    "Assets/_Prefabs/Spacevessels/Swordfish.prefab ParticleSystem"
+   ]
+  },
+  "world:C7E0FF": {
+   "role": "world",
+   "photic": [
+    0.78,
+    0.88,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code"
+   ]
+  },
+  "world:C7EBFF": {
+   "role": "world",
+   "photic": [
+    0.78,
+    0.92,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/Games/ScarabScrambleSettings.asset ScarabScrambleSettingsSO",
+    "Assets/_Scripts/Controller/Arcade/ScarabScramble/ScarabScrambleSettingsSO.cs code"
+   ]
+  },
+  "world:C87C4A": {
+   "role": "world",
+   "photic": [
+    0.78616345,
+    0.4853058,
+    0.2892487,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:C8A02A": {
+   "role": "world",
+   "photic": [
+    0.78616345,
+    0.62676924,
+    0.16563806,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:CC1700": {
+   "role": "world",
+   "photic": [
+    0.8,
+    0.09093656,
+    0.0,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/MazeDangerBlockMateral.mat Material(Shader Graphs/ExplodingBlockGraph)"
+   ]
+  },
+  "world:D3E1FF": {
+   "role": "world",
+   "photic": [
+    0.82665706,
+    0.88082502,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:D4AF07": {
+   "role": "world",
+   "photic": [
+    0.8301887,
+    0.68795794,
+    0.027411906,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 4,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Rhino.prefab ParticleSystem",
+    "Assets/_Prefabs/Spacevessels/Swordfish.prefab ParticleSystem"
+   ]
+  },
+  "world:D4B015": {
+   "role": "world",
+   "photic": [
+    0.8301887,
+    0.68980634,
+    0.08354094,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/VolumeDisplayMaterial.mat Material(VolumeDisplayShader.shader)"
+   ]
+  },
+  "world:D6F0FF": {
+   "role": "world",
+   "photic": [
+    0.8392156862745098,
+    0.9411764705882353,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs code"
+   ]
+  },
+  "world:D91F14": {
+   "role": "world",
+   "photic": [
+    0.85,
+    0.12,
+    0.08,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset HoneyguideConfigSO",
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs code"
+   ]
+  },
+  "world:D93C24": {
+   "role": "world",
+   "photic": [
+    0.8509804,
+    0.23592502,
+    0.14117648,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ForcefieldCrackleMaterial.mat Material(Shader Graphs/ForcefieldCrackle)"
+   ]
+  },
+  "world:D94CE6": {
+   "role": "world",
+   "photic": [
+    0.85,
+    0.3,
+    0.9,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_SO_Assets/Toys/Toy_DomainChanger.asset DomainChangerToyDefinitionSO"
+   ]
+  },
+  "world:D999B8": {
+   "role": "world",
+   "photic": [
+    0.85,
+    0.6,
+    0.72,
+    1.0
+   ],
+   "family": "band~fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
+   ]
+  },
+  "world:D9B899": {
+   "role": "world",
+   "photic": [
+    0.85,
+    0.72,
+    0.6,
+    1.0
+   ],
+   "family": "band~fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
+   ]
+  },
+  "world:D9C78C": {
+   "role": "world",
+   "photic": [
+    0.85,
+    0.78,
+    0.55,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
+   ]
+  },
+  "world:D9C9A3": {
+   "role": "world",
+   "photic": [
+    0.851,
+    0.788,
+    0.639,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:D9EDFF": {
+   "role": "world",
+   "photic": [
+    0.85,
+    0.93,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/Fulmen/FulmenBolt.mat Material(CosmicShore/FulmenBolt)"
+   ]
+  },
+  "world:D9F2FF": {
+   "role": "world",
+   "photic": [
+    0.85,
+    0.95,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 7,
+   "where": [
+    "Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalArcs.mat Material(Custom/CrystalChargeArcsShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalMaterial.mat Material(Shader Graphs/ChargeCrystal)",
+    "Assets/_Graphics/Materials/CrystalMaterials/MassDepthPrisms.mat Material(Custom/OmniDepthPrismShader)",
+    "Assets/_Graphics/Materials/CrystalMaterials/MassDepthPrismsInactive.mat Material(Custom/OmniDepthPrismShader)"
+   ]
+  },
+  "world:DBB85C": {
+   "role": "world",
+   "photic": [
+    0.86,
+    0.72,
+    0.36,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/Games/TandavaSettings.asset TandavaSettingsSO",
+    "Assets/_SO_Assets/Games/TandavaSeveringSettings.asset TandavaSeveringSettingsSO"
+   ]
+  },
+  "world:DBD4C2": {
+   "role": "world",
+   "photic": [
+    0.86,
+    0.83,
+    0.76,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnMid.mat Material(CosmicShore/PrismPaperBurn)",
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnNear.mat Material(CosmicShore/PrismPaperBurn)"
+   ]
+  },
+  "world:E6D9FF": {
+   "role": "world",
+   "photic": [
+    0.9,
+    0.85,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+   ]
+  },
+  "world:E6E9FF": {
+   "role": "world",
+   "photic": [
+    0.902,
+    0.914,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 8,
+   "where": [
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab GoalRow",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
+  "world:E6F2FF": {
+   "role": "world",
+   "photic": [
+    0.9,
+    0.95,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_SO_Assets/Toys/Toy_ElementCharger.asset ElementChargerToyDefinitionSO"
+   ]
+  },
+  "world:E726AA": {
+   "role": "world",
+   "photic": [
+    0.9056604,
+    0.15094331,
+    0.66856146,
+    0.5
+   ],
+   "family": "band~ruby",
+   "uses": 1,
+   "where": [
+    "Assets/_SO_Assets/Games/AstroLeagueSettings.asset AstroLeagueSettingsSO"
+   ]
+  },
+  "world:E8EDF2": {
+   "role": "world",
+   "photic": [
+    0.91,
+    0.93,
+    0.95,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:E8F1FF": {
+   "role": "world",
+   "photic": [
+    0.9098039215686274,
+    0.9450980392156862,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs code"
+   ]
+  },
+  "world:E8F6FF": {
+   "role": "world",
+   "photic": [
+    0.9098039,
+    0.9647059,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/SwitchbackPathRay.mat Material(Universal Render Pipeline/Lit)"
+   ]
+  },
+  "world:E8F6FFx2.50": {
+   "role": "world",
+   "photic": [
+    2.2745097,
+    2.4117646,
+    2.5,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/SwitchbackPathRay.mat Material(Universal Render Pipeline/Lit)"
+   ]
+  },
+  "world:EAEAFFx2.40": {
+   "role": "world",
+   "photic": [
+    2.2,
+    2.2,
+    2.4,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/PrismSliceMaterial.mat Material(CosmicShore/PrismSlice)"
+   ]
+  },
+  "world:EBEBE6": {
+   "role": "world",
+   "photic": [
+    0.92,
+    0.92,
+    0.9,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ArtifactPickup.mat Material(Universal Render Pipeline/Lit)"
+   ]
+  },
+  "world:ED4561": {
+   "role": "world",
+   "photic": [
+    0.93,
+    0.27,
+    0.38,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 43,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO"
+   ]
+  },
+  "world:F0A043": {
+   "role": "world",
+   "photic": [
+    0.941,
+    0.627,
+    0.263,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Jacks.prefab JacksExecutor",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs code"
+   ]
+  },
+  "world:F10000": {
+   "role": "world",
+   "photic": [
+    0.94509804,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ForcefieldCrackleMaterial.mat Material(Shader Graphs/ForcefieldCrackle)"
+   ]
+  },
+  "world:F2BF40": {
+   "role": "world",
+   "photic": [
+    0.95,
+    0.75,
+    0.25,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+   ]
+  },
+  "world:F2C84B": {
+   "role": "world",
+   "photic": [
+    0.949,
+    0.784,
+    0.294,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 4,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Jacks.prefab JacksExecutor",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs code"
+   ]
+  },
+  "world:F2F7FA": {
+   "role": "world",
+   "photic": [
+    0.95,
+    0.97,
+    0.98,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset OrcaCrewConfigSO",
+    "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrewConfigSO.cs code"
+   ]
+  },
+  "world:F5F0DB": {
+   "role": "world",
+   "photic": [
+    0.96,
+    0.94,
+    0.86,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 3,
+   "where": [
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/Controller/Toys/ToyFactory.cs code",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+   ]
+  },
+  "world:F5F5FF": {
+   "role": "world",
+   "photic": [
+    0.96,
+    0.96,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 15,
+   "where": [
+    "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
+    "Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab GoalRow",
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO"
+   ]
+  },
+  "world:F5F7FF": {
+   "role": "world",
+   "photic": [
+    0.96,
+    0.97,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/ClassLiveryVesselMaterial.mat Material(Shader Graphs/VesselGraph)"
+   ]
+  },
+  "world:FABF2E": {
+   "role": "world",
+   "photic": [
+    0.98,
+    0.75,
+    0.18,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 28,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs code"
+   ]
+  },
+  "world:FAC265": {
+   "role": "world",
+   "photic": [
+    0.9811321,
+    0.76181436,
+    0.39800632,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:FF0000": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.0,
+    0.0,
+    0.7058824
+   ],
+   "family": "fire",
+   "uses": 3,
+   "where": [
+    "Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO",
+    "Assets/_Prefabs/Spacevessels/Components/VesselTail.prefab TrailRenderer",
+    "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs code"
+   ]
+  },
+  "world:FF00F9": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.0,
+    0.976,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 1,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset HoneyguideConfigSO"
+   ],
+   "palette": "RubyColors.SpikeLightColor",
+   "palette_scale": 1.275
+  },
+  "world:FF00FF": {
+   "role": "world",
+   "photic": [
+    1,
+    0,
+    1,
+    1.0
+   ],
+   "family": "ruby",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs code"
+   ]
+  },
+  "world:FF0101x1.50": {
+   "role": "world",
+   "photic": [
+    1.4979111,
+    0.0058463,
+    0.0068495,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 3,
+   "where": [
+    "Assets/_Graphics/Materials/ProjectileChargeFieldMaterial.mat Material(Shader Graphs/ProjectileChargeField)",
+    "Assets/_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleConfigSO.cs code"
+   ],
+   "palette": "EnvironmentColors.Danger",
+   "palette_scale": 1.0
+  },
+  "world:FF0300x1.50": {
+   "role": "world",
+   "photic": [
+    1.4980392,
+    0.015686275,
+    0.0,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/BlockMaterials/DangerBlockMaterial.mat Material(Shader Graphs/BlockGraph)",
+    "Assets/_Graphics/Materials/BlockMaterials/TransparentDangerBlockMaterial.mat Material(Shader Graphs/BlockGraph)"
+   ]
+  },
+  "world:FF0D0D": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.05,
+    0.05,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset ThresherConfigSO",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/ThresherConfigSO.cs code"
+   ]
+  },
+  "world:FF121B": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.072,
+    0.105,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 4,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyTriggerBombConfig.asset GrizzlyTriggerBombConfigSO",
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset OrcaCrewConfigSO",
+    "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrewConfigSO.cs code",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyTriggerBombConfigSO.cs code"
+   ]
+  },
+  "world:FF121Bx1.15": {
+   "role": "world",
+   "photic": [
+    1.1489906,
+    0.08310299,
+    0.121397965,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/DangerProjectileMaterial.mat Material(Custom/SpreadFresnelShader)"
+   ]
+  },
+  "world:FF1F14": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.12,
+    0.08,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/VesselSilenceConfig.asset VesselSilenceConfigSO",
+    "Assets/_Scripts/ScriptableObjects/VesselSilenceConfigSO.cs code"
+   ]
+  },
+  "world:FF2699": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.15,
+    0.6,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 3,
+   "where": [
+    "Assets/_Prefabs/Environment/AstroLeagueBall.prefab AstroLeagueBall",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameAstroLeague.unity AstroLeagueBall",
+    "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs code"
+   ]
+  },
+  "world:FF2E0F": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.18,
+    0.06,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/RhinoBladeCrackleMaterial.mat Material(Shader Graphs/ForcefieldCrackleCapsule)"
+   ]
+  },
+  "world:FF3333": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.2,
+    0.2,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO",
+    "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs code"
+   ]
+  },
+  "world:FF3373": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.2,
+    0.45,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO"
+   ]
+  },
+  "world:FF3859": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.22,
+    0.35,
+    0.5
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueSettingsSO.cs code"
+   ]
+  },
+  "world:FF480Fx6.00": {
+   "role": "world",
+   "photic": [
+    6.0,
+    1.7,
+    0.35,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnMid.mat Material(CosmicShore/PrismPaperBurn)",
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnNear.mat Material(CosmicShore/PrismPaperBurn)"
+   ]
+  },
+  "world:FF4C33": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.3,
+    0.2,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Arcade/CountdownTimer.cs code"
+   ]
+  },
+  "world:FF4C8C": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.3,
+    0.55,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+   ]
+  },
+  "world:FF4D6D": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.302,
+    0.427,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset OrcaCrewConfigSO",
+    "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrewConfigSO.cs code"
+   ]
+  },
+  "world:FF520F": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.32,
+    0.06,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/PrismBurn/PrismLaserBurn.mat Material(CosmicShore/PrismLaserBurn)"
+   ]
+  },
+  "world:FF541A": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.3294,
+    0.102,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 3,
+   "where": [
+    "Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO",
+    "Assets/_Scripts/Controller/Toys/ArkwayRun.Alarm.cs code",
+    "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs code"
+   ]
+  },
+  "world:FF591A": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.35,
+    0.1,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset MantaStingConfigSO",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MantaStingConfigSO.cs code"
+   ]
+  },
+  "world:FF5A3C": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.353,
+    0.235,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Jacks.prefab JacksExecutor",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs code"
+   ]
+  },
+  "world:FF5C6C": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.3607843137254902,
+    0.4235294117647059,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs code"
+   ]
+  },
+  "world:FF731F": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.45,
+    0.12,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/FX/GrizzlyClawConeVisual.cs code"
+   ]
+  },
+  "world:FF7359": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.45,
+    0.35,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
+   ]
+  },
+  "world:FF991A": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.6,
+    0.1,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 3,
+   "where": [
+    "Assets/_Prefabs/Environment/AstroLeagueBall.prefab AstroLeagueBall",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameAstroLeague.unity AstroLeagueBall",
+    "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs code"
+   ]
+  },
+  "world:FF9C39x9.00": {
+   "role": "world",
+   "photic": [
+    9.0,
+    5.5,
+    2.0,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 2,
+   "where": [
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnMid.mat Material(CosmicShore/PrismPaperBurn)",
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnNear.mat Material(CosmicShore/PrismPaperBurn)"
+   ]
+  },
+  "world:FFA0A0": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.6289308,
+    0.6289308,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Game/Vessel/Animation/JetMaterial.mat Material(Custom/JetShader)"
+   ]
+  },
+  "world:FFA700": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.65654284,
+    0.0,
+    0.0
+   ],
+   "family": "gold",
+   "uses": 5,
+   "where": [
+    "Assets/_Prefabs/Spacevessels/Components/VesselTail.prefab TrailRenderer",
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset HoneyguideConfigSO",
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset OrcaCrewConfigSO",
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ],
+   "palette": "GoldColors.TrailHighlightColor",
+   "palette_scale": 1.0
+  },
+  "world:FFB21F": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.698,
+    0.122,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:FFB389": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.7014107,
+    0.5370987,
+    1.0
+   ],
+   "family": "band~fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:FFC740": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.78,
+    0.25,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 6,
+   "where": [
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_SO_Assets/Toys/Wander_WithArk.asset ArkwaySettingsSO",
+    "Assets/_SO_Assets/Toys/Wander_WithoutArk.asset WanderwaySettingsSO",
+    "Assets/_Scripts/ScriptableObjects/Toys/ArkwaySettingsSO.cs code"
+   ]
+  },
+  "world:FFC773": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.78,
+    0.45,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/PrismBurn/PrismLaserBurn.mat Material(CosmicShore/PrismLaserBurn)"
+   ]
+  },
+  "world:FFCC26": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.8,
+    0.15,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_Scripts/Controller/Toys/ToyFactory.cs code"
+   ]
+  },
+  "world:FFCC4C": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.8,
+    0.3,
+    0.45
+   ],
+   "family": "gold",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/Games/TandavaSettings.asset TandavaSettingsSO",
+    "Assets/_SO_Assets/Games/TandavaSeveringSettings.asset TandavaSeveringSettingsSO"
+   ],
+   "palette": "GoldColors.UIAccentColor",
+   "palette_scale": 1.0
+  },
+  "world:FFCC4Cx1.40": {
+   "role": "world",
+   "photic": [
+    1.4,
+    1.12,
+    0.42,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/Games/TandavaSettings.asset TandavaSettingsSO",
+    "Assets/_SO_Assets/Games/TandavaSeveringSettings.asset TandavaSeveringSettingsSO"
+   ],
+   "palette": "GoldColors.UIAccentColor",
+   "palette_scale": 1.4
+  },
+  "world:FFCC8C": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.8,
+    0.55,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code"
+   ]
+  },
+  "world:FFD133": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.82,
+    0.2,
+    0.5
+   ],
+   "family": "band~gold",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/Games/AstroLeagueSettings.asset AstroLeagueSettingsSO",
+    "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueSettingsSO.cs code"
+   ]
+  },
+  "world:FFD140": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.82,
+    0.25,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Arcade/Tandava/TandavaGoldBurst.cs code"
+   ]
+  },
+  "world:FFD152": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.82,
+    0.32,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 2,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorJuice.cs code",
+    "Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorView.cs code"
+   ]
+  },
+  "world:FFD17A": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.82,
+    0.48,
+    0.9
+   ],
+   "family": "gold",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset HoneyguideConfigSO",
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs code"
+   ]
+  },
+  "world:FFD27A": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.824,
+    0.478,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs code"
+   ]
+  },
+  "world:FFD34D": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.827,
+    0.302,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code"
+   ]
+  },
+  "world:FFD573x1.15": {
+   "role": "world",
+   "photic": [
+    1.15,
+    0.96,
+    0.52,
+    0.45
+   ],
+   "family": "gold",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/Games/TandavaSettings.asset TandavaSettingsSO",
+    "Assets/_SO_Assets/Games/TandavaSeveringSettings.asset TandavaSeveringSettingsSO"
+   ]
+  },
+  "world:FFD933": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.85,
+    0.2,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_SO_Assets/Toys/Toy_VesselChanger.asset VesselChangerToyDefinitionSO"
+   ]
+  },
+  "world:FFD973": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.85,
+    0.45,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatOmnicrystalField.cs code"
+   ]
+  },
+  "world:FFDB85": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.86,
+    0.52,
+    0.9
+   ],
+   "family": "gold",
+   "uses": 4,
+   "where": [
+    "Assets/_Prefabs/Projectile/AOEButterflyBloom.prefab ButterflyBloomDust",
+    "Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab ButterflyDustField",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/ButterflyBloomDust.cs code",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/ButterflyDustField.cs code"
+   ]
+  },
+  "world:FFE28A": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.886,
+    0.541,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:FFE5AA": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.8962439,
+    0.6651851,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:FFE7C4": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.906331753,
+    0.767375658,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)"
+   ]
+  },
+  "world:FFEB04": {
+   "role": "world",
+   "photic": [
+    1,
+    0.92,
+    0.016,
+    1.0
+   ],
+   "family": "band~lime",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs code"
+   ]
+  },
+  "world:FFEB99": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.92,
+    0.6,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code"
+   ]
+  },
+  "world:FFEBB2": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.92,
+    0.7,
+    1.0
+   ],
+   "family": "band~gold",
+   "uses": 2,
+   "where": [
+    "Assets/_Prefabs/Projectile/GrizzlyBomb.prefab GrizzlyBombVisual",
+    "Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs code"
+   ]
+  },
+  "world:FFEDCC": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.93,
+    0.8,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/BlackHoleGlow.mat Material(CosmicShore/BlackHoleGlow)"
+   ]
+  },
+  "world:FFF2E6": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.95,
+    0.9,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/RhinoBladeCrackleMaterial.mat Material(Shader Graphs/ForcefieldCrackleCapsule)"
+   ]
+  },
+  "world:FFF3CF": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.953,
+    0.812,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code"
+   ]
+  },
+  "world:FFF4D6": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.95686275,
+    0.8392157,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scenes/Authentication.unity Light"
+   ]
+  },
+  "world:FFF5DB": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.96,
+    0.86,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code"
+   ]
+  },
+  "world:FFF9F1": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.9776916,
+    0.9452769,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
+   ]
+  },
+  "world:FFFAEF": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.982207082,
+    0.935741027,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)"
+   ]
+  },
+  "world:FFFAF0": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.98,
+    0.94,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code"
+   ]
+  },
+  "world:FFFCF3": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.986695246,
+    0.954687172,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)"
+   ]
+  },
+  "world:FFFDF9": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.9911565,
+    0.977691562,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/SolitonTunnel.mat Material(CosmicShore/SolitonTunnel)"
+   ]
+  },
+  "world:FFFFFFx2.00": {
+   "role": "world",
+   "photic": [
+    2.0,
+    2.0,
+    2.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleConfigSO.cs code"
+   ]
+  },
+  "world:FFFFFFx4.00": {
+   "role": "world",
+   "photic": [
+    4.0,
+    4.0,
+    4.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Effects Library/Froglet Stuff/Materials/Flare00_AB_2.mat Material(?)"
+   ]
+  }
+ },
+ "untraced": []
+}

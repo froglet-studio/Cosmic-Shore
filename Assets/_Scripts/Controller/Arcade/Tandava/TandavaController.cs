@@ -552,7 +552,7 @@ namespace CosmicShore.Gameplay
             if (!settings) return;
             FormBurst();
             if (Outcome != TandavaOutcome.Running) return;
-            if (current == DanceForm && DanceForm >= 0) TintTo(settings.AscensionPalette);
+            if (current == DanceForm && DanceForm >= 0) TintTo(settings.WornAscensionPalette());
             else if (previous == DanceForm) RestoreCell();
         }
 

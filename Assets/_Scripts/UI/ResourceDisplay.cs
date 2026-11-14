@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -130,7 +131,7 @@ namespace CosmicShore.UI
                 sliderFillImage.fillAmount = normalizedLevel;
                 if (shouldChangeColor)
                 {
-                    sliderFillImage.color = (normalizedLevel >= 0.99f) ? sliderFullColor : sliderNormalColor;
+                    sliderFillImage.color = SliderColor(normalizedLevel);
                 }
             }
 
@@ -149,6 +150,10 @@ namespace CosmicShore.UI
             if (verboseLogging)
                 CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ResourceDisplay] SegmentedSlider: fill={normalizedLevel}");
         }
+
+        /// <summary>The bar's colour at <paramref name="level"/> (full or normal), as the worn colour set paints it.</summary>
+        private Color SliderColor(float level) =>
+            ColorTrace.Retrace(ColorTrace.Ui, level >= 0.99f ? sliderFullColor : sliderNormalColor);
 
         private void UpdateSpriteSwapDisplay(float normalizedLevel)
         {
@@ -223,7 +228,7 @@ namespace CosmicShore.UI
                 {
                     sliderFillImage.fillAmount = val;
                     if (colorChangeOnFull)
-                        sliderFillImage.color = (val >= 0.99f) ? sliderFullColor : sliderNormalColor;
+                        sliderFillImage.color = SliderColor(val);
                 }
 
                 if (sliderFillSegments is { Count: > 0 })
@@ -244,7 +249,7 @@ namespace CosmicShore.UI
             {
                 sliderFillImage.fillAmount = to;
                 if (colorChangeOnFull)
-                    sliderFillImage.color = (to >= 0.99f) ? sliderFullColor : sliderNormalColor;
+                    sliderFillImage.color = SliderColor(to);
             }
 
             if (sliderFillSegments is not { Count: > 0 }) yield break;

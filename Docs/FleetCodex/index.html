@@ -92,7 +92,34 @@ button{font:inherit;color:inherit}
 .stats .disp{font-size:30px}
 .stats small{display:block;font-size:11px;color:var(--soft)}
 .egs{right:40px;top:40px;width:400px}
-.eg{display:grid;grid-template-columns:18px 76px 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--hair);font-size:15px}
+/* the flight certificate (Rev 84 A, picked 2026-11-10, section 155 of Docs/MENU_REDESIGN_B.md): five checks read from the
+   game, ink for done, Gold only for Arena Ready and an S tier (the style guide's first place); solo vessels only */
+.win.certified{height:1060px}
+.cert{margin-top:18px}
+.cline{display:flex;align-items:baseline;gap:14px;margin:6px 0 10px}
+.cline .disp{font-size:52px;font-variant-numeric:tabular-nums}
+.cline .gold,.fcert .gold{color:var(--fs-gold)}.cline .dim,.fcert .dim{color:var(--soft)}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg i{display:block;height:7px;background:var(--line);opacity:.5}
+.seg i.on{background:var(--ink);opacity:1}
+.seg i.part{background:linear-gradient(90deg,var(--ink) var(--p),var(--line) var(--p));opacity:1}
+.seg.thin i{height:4px}
+.chks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:10px 0 0;padding:0;list-style:none}
+.chks li{display:flex;flex-direction:column;gap:3px;padding:7px 8px;background:color-mix(in srgb,var(--deep) 70%,transparent);box-shadow:inset 0 0 0 1px var(--hair);font-size:12px;line-height:1.3;min-width:0;overflow-wrap:anywhere}
+.chks li b{display:flex;align-items:center;gap:4px;font-weight:600;font-size:13px}
+.chks li span{font-size:10px;letter-spacing:.12em;color:var(--soft);text-transform:uppercase}
+.chks li.no{color:var(--off)}
+.chks svg{width:13px;height:13px;flex:none}
+.next{margin:10px 0 0;font-size:14px;color:var(--sel)}
+.tier{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;font-family:var(--disp);font-weight:700;font-size:17px;flex:none}
+.tier.tS{background:var(--fs-gold);color:var(--fs-ground)}
+.tier.tA{box-shadow:inset 0 0 0 2px var(--ink);color:var(--ink)}
+.tier.tB{box-shadow:inset 0 0 0 1px var(--line);color:var(--soft)}
+.tier.tC{box-shadow:inset 0 0 0 1px var(--hair);color:var(--off)}
+.tier.tu{box-shadow:inset 0 0 0 1px var(--hair);color:var(--off);font-size:14px}
+.tier.tn{color:var(--off);font-size:14px}
+.tier.hot{outline:2px solid var(--sel);outline-offset:1px}
+.eg{display:grid;grid-template-columns:18px 76px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--hair);font-size:15px}
 .eg .flower{width:16px;height:16px}
 .eg span{font-size:11px;letter-spacing:.16em;color:var(--soft)}
 .eg.none{color:var(--off)}
@@ -101,11 +128,16 @@ button{font:inherit;color:inherit}
 .move .mhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .move .mhead .disp{font-size:34px}
 .trig{color:var(--sel);font-size:14px}
-.abrow{position:absolute;right:40px;bottom:40px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 780px)}
+.l5tog{margin-left:auto;display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;height:32px;padding:0 12px;background:transparent;color:var(--soft);box-shadow:inset 0 0 0 1px var(--line);font-family:var(--disp);font-size:15px;letter-spacing:.1em;text-transform:uppercase;transition:color .2s var(--ease),background .2s var(--ease)}
+.l5tog:hover{color:var(--ink)}
+.l5tog[aria-pressed="true"]{background:var(--cta);color:var(--fs-ground);box-shadow:none}
+.mhead .mic{display:inline-flex;align-self:center;width:40px;height:40px}
+.mhead .mic img,.mhead .mic .ico{width:40px;height:40px;object-fit:contain}
+.abrow{position:absolute;right:40px;bottom:40px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 780px)}
 .ab{display:flex;flex-direction:column;align-items:center;gap:6px;width:96px;border:0;cursor:pointer;background:transparent;padding:0;transition:transform .3s var(--ease)}
 .ab .i{width:84px;height:84px;display:flex;align-items:center;justify-content:center;background:transparent;box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .3s var(--ease)}
 .ab .i img,.ab .i .ico{width:58px;height:58px;object-fit:contain}
-.ab small{font-size:12px;color:var(--soft);text-align:center;line-height:1.2}
+.ab small{font-size:12px;color:var(--soft);text-align:center;line-height:1.2;min-height:2.4em}
 .ab:hover{transform:translateY(-4px)}
 .ab[aria-pressed="true"]{transform:translateY(-8px)}
 .ab[aria-pressed="true"] .i{box-shadow:inset 0 0 0 2px var(--sel)}
@@ -157,7 +189,7 @@ button{font:inherit;color:inherit}
 .ph{display:inline-flex;align-items:center;justify-content:space-between;width:74px;height:40px;padding:0 9px;border:2px solid var(--line);border-radius:9px}
 .th{width:14px;height:18px;border-radius:50%;background:var(--soft)}
 .tbtn2{width:40px;height:40px;border-radius:50%;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line);display:flex;align-items:center;justify-content:center}
-.tbtn2 img{width:28px;height:28px}
+.tbtn2 img,.tbtn2 .ico{width:28px;height:28px}
 /* the gestures: tap, hold, hold then release, tap on / tap off; a passive ability just flies */
 .g-tap .pp{animation:p-tap 3.2s var(--ease) infinite}
 .g-hold .pp{animation:p-hold 3.2s var(--ease) infinite}
@@ -275,6 +307,22 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
 .fel .flower{width:22px;height:22px;display:block}
 .fel.none{opacity:.28}
 .fels small{margin-left:auto;font-size:12px;color:var(--soft)}
+.fcert{display:flex;flex-direction:column;gap:6px}
+.fcert .row1{display:flex;align-items:baseline;gap:8px}
+.fcert .row1 b{font-family:var(--disp);font-size:20px;font-variant-numeric:tabular-nums}
+.ftiers{display:flex;gap:6px}
+.ftiers span{display:flex;flex-direction:column;align-items:center;gap:2px}
+.ftiers small{font-size:9px;letter-spacing:.1em;color:var(--soft)}
+/* sort and filter: one quiet row of three dropdowns (Shombith 2026-11-11: the chip rows were "big" and "noisy") */
+.ftools{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;margin-top:22px;padding-top:14px;border-top:1px solid var(--hair)}
+.fsel{position:relative;display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.fsel select{appearance:none;-webkit-appearance:none;height:34px;padding:0 30px 0 12px;border:0;cursor:pointer;background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font:inherit;font-size:14px;letter-spacing:.02em;text-transform:none;transition:box-shadow .2s var(--ease)}
+.fsel select:hover{box-shadow:inset 0 0 0 1px var(--soft)}
+.fsel select.on{box-shadow:inset 0 0 0 1px var(--sel)}
+.fsel select option,.fsel select optgroup{background:var(--fs-ground);color:var(--ink)}
+.fsel svg{position:absolute;right:10px;pointer-events:none;color:var(--soft)}
+.fclear{border:0;background:none;cursor:pointer;color:var(--sel);font-size:13px;padding:6px 2px;text-decoration:underline;text-underline-offset:3px}
+.fcount{margin-left:auto;font-size:13px;color:var(--soft)}
 /* ---------- phone ---------- */
 @media (max-width:1100px){
   .win{height:auto;display:flex;flex-direction:column;gap:22px;background:none;box-shadow:none;overflow:visible}
@@ -292,6 +340,7 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
   .fc3{grid-template-columns:1fr}
   .switch{order:3;width:100%;margin:0}.cur{flex:1;justify-content:center}
   .search{width:auto;flex:1}
+  .win.certified{height:auto}.ftools{gap:10px}.fcount{margin-left:0;width:100%}.chks{grid-template-columns:repeat(2,minmax(0,1fr))}
   .fhead h1{font-size:52px}.fstats{margin-left:0}.fgrid{grid-template-columns:1fr 1fr;gap:8px}.fcard .pic{height:100px}.fname .disp{font-size:20px}.fab span{width:26px;height:26px}.fab img,.fab .ico{width:24px;height:24px}
 }
 @media (max-width:640px){.dc{font-size:11px}.kc{min-width:48px;font-size:11px}.dv{padding:8px 4px}.step span{display:none}.stats{gap:16px}}
@@ -325,7 +374,7 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
 <script>
 (function(){
   var TH = window.FC_THEMES || {themes:[], current:function(){ return ""; }, pick:function(){}};
-  var D = null, query = "", pick = null, filt = "All", dom = "Jade", menuOpen = false;
+  var D = null, query = "", pick = null, filt = "All", dom = "Jade", menuOpen = false, lv5 = false;
   var app = document.getElementById("app"), q = document.getElementById("q"), sw = document.getElementById("switch");
   var L5 = {wired:["good","WIRED"], open:["","OPEN"], off:["warn","SWITCHED OFF"], "label-only":["warn","NAMED, NOT GATED"], "gate-only":["warn","GATED, NOT NAMED"]};
   var HULL_SVG = '<svg viewBox="0 0 46 26" aria-hidden="true"><path d="M2 13 L16 4 L44 13 L16 22 Z" fill="currentColor"/><path d="M2 13 L16 9 L16 17 Z" fill="var(--sel)"/></svg>';
@@ -351,6 +400,33 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
     if(!u) return h + '</span>';
     for(var i = 0; i < 5; i++) h += '<i class="' + (i < lit ? 'on' : '') + '" style="--r:' + (72 * i) + 'deg;--d:' + (i * 0.5).toFixed(1) + 's;-webkit-mask-image:url(' + esc(u) + ');mask-image:url(' + esc(u) + ')"></i>';
     return h + '</span>';
+  }
+  /* ---------- the flight certificate and tiers (solo vessels; fleet_codex.py certificate() / tiers_of()) ---------- */
+  /* only the percentage shows, never a stage name (Shombith 2026-11-10); the completion filter is in percentage bands */
+  var BANDS = ["100%", "80-95%", "60-75%", "Under 60%"], TRANK = {S:0, A:1, B:2, C:3};
+  function band(c){ return c.pct >= 100 ? BANDS[0] : c.pct >= 80 ? BANDS[1] : c.pct >= 60 ? BANDS[2] : BANDS[3]; }
+  var TICK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+  var DASH = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h8"/></svg>';
+  function pctCls(c){ return c.pct >= 100 ? "gold" : c.pct < 60 ? "dim" : ""; }
+  function segs(c, thin){
+    return '<span class="seg' + (thin ? ' thin' : '') + '" aria-hidden="true">' + c.checks.map(function(k, i){
+      return i === 1 && !k.done && c.wired ? '<i class="part" style="--p:' + (c.wired * 25) + '%"></i>' : '<i class="' + (k.done ? 'on' : '') + '"></i>'; }).join("") + '</span>';
+  }
+  function tierRank(t){ return t == null ? 4 : t === "-" ? 5 : TRANK[t]; }
+  function tierBadge(t, el, hot){
+    var cls = t == null ? "tu" : t === "-" ? "tn" : "t" + t, txt = t == null ? "?" : t;
+    var tip = t == null ? el + ": not rated yet" : t === "-" ? el + ": no " + el + " game yet" : el + " tier " + t;
+    return '<span class="tier ' + cls + (hot ? ' hot' : '') + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + txt + '</span>';
+  }
+  function nextWords(c){
+    if(!c.next) return "Certified for the arena";
+    return "Next: " + ({"Abilities":"an ability in every element", "Level 5":"wire its level-5 upgrades", "Time game":"a Time game",
+      "Mass or Space game":"a Mass or a Space game", "Charge game":"a Charge game"}[c.next] || c.next);
+  }
+  function certBlock(c){
+    return '<div class="cert"><div class="lab">Flight certificate</div><div class="cline"><span class="disp ' + pctCls(c) + '">' + c.pct + '%</span></div>' + segs(c) +
+      '<ul class="chks">' + c.checks.map(function(k){ return '<li class="' + (k.done ? '' : 'no') + '"><span>' + esc(k.name) + '</span><b>' + (k.done ? TICK + 'Done' : DASH + 'Not yet') + '</b>' + esc(k.detail) + '</li>'; }).join("") + '</ul>' +
+      '<p class="next">' + esc(nextWords(c)) + '</p></div>';
   }
   function vimg(v){ return v.domainImages && v.domainImages[dom] || v.image; }
   function isCrew(v){ return v.crew && v.crew.seats > 1; }
@@ -497,14 +573,16 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
     } else {
       var pad = r.pad === "LT+RT" ? img(PADMAP.LT, "LT", "pp") + img(PADMAP.RT, "RT", "pp") : PADMAP[r.pad] ? img(PADMAP[r.pad], r.pad, "pp") : '<span class="kc pp">' + esc(r.pad) + '</span>';
       var keys = (r.pc === "Both shifts" ? ["L-Shift", "R-Shift"] : [r.pc]).map(function(k){ return '<span class="kc kp">' + esc(k) + '</span>'; }).join("");
-      var touch = /^lift|thumb/i.test(r.touch || "") ? thumbs(r.touch) : r.touchArt ? '<span class="tbtn2 pp">' + img(r.touchArt, r.touch) + '</span>' : '<span class="kc pp">' + esc(r.touch || "-") + '</span>';
+      var touch = /^lift|thumb/i.test(r.touch || "") ? thumbs(r.touch) : (lv5 && hasL5(p) && /card/i.test(r.touch || "")) ? '<span class="tbtn2 pp">' + iconOf(p) + '</span>' : r.touchArt ? '<span class="tbtn2 pp">' + img(r.touchArt, r.touch) + '</span>' : '<span class="kc pp">' + esc(r.touch || "-") + '</span>';
       cells = [["CONTROLLER", pressable(r.pad) ? pad : '<span class="kc" style="opacity:.5">-</span>', pressable(r.pad) ? r.pad : "No button"],
                ["KEYBOARD", pressable(r.pc) ? keys : '<span class="kc" style="opacity:.5">-</span>', pressable(r.pc) ? r.pc : "No key"],
                ["PHONE", pressable(r.touch) ? touch : '<span class="kc" style="opacity:.5">-</span>', pressable(r.touch) ? r.touch : "No touch"]];
     }
     return {g:g, html:'<div class="dev g-' + g + '">' + cells.map(function(c){ return '<div class="dv"><span class="dl">' + c[0] + '</span><span class="dg">' + c[1] + '</span><span class="dc">' + esc(c[2]) + '</span></div>'; }).join("") + '</div>'};
   }
+  function hasL5(p){ return !!(p.e && p.e.upgrade && p.e.upgrade.icon); }
   function iconOf(p, size){
+    if(lv5 && hasL5(p)){ var u = p.e.upgrade, t5 = (p.e.words && p.e.words.tint) || {}; return ico(u.icon, u.layers, p.name + " level 5", t5.rest); }
     if(p.omni) return p.omni.icon ? ico(p.omni.icon, p.omni.layers, p.name) : img(p.omni.mark, p.name);
     if(p.doc) return flower(p.el, 5, "big");
     var e = p.e, tint = (e.words && e.words.tint) || {};
@@ -534,14 +612,15 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
     var f = v.flight, s = v.status, by = elementGames(v), dv = sel ? devices(v, sel) : null;
     var tag = "VESSEL " + v.id + (isCrew(v) ? " &middot; CREW &middot; " + v.crew.seats + " SEATS" : v.controls ? (v.controls.oneStick ? " &middot; ONE-STICK" : " &middot; TWO-STICK") : "") + (s.inToybox ? " &middot; IN THE VESSEL CHANGER" : "");
     var stats = f ? [[num(f.cruise), "u/s cruise"], [num(f.pitch), "deg/s turn"], [s.upgradesWired + " / 4", "level 5 wired"], [v.cards.length, "games"]] : [[s.upgradesWired + " / 4", "level 5 wired"], [v.cards.length, "games"]];
-    var html = '<section class="win" aria-label="' + esc(crewName(v)) + '">' +
+    var cert = v.certificate, tiers = v.tiers;
+    var html = '<section class="win' + (cert ? ' certified' : '') + '" aria-label="' + esc(crewName(v)) + '">' +
       '<div class="hullbox">' + img(vimg(v), crewName(v) + " in the " + dom + " domain's livery") + '</div>' +
       '<div class="hud brief"><div class="lab" style="color:var(--sel)">' + tag + '</div><h1 class="disp">' + esc(crewName(v)) + '</h1>' + (v.description ? '<p>' + esc(v.description) + '</p>' : '') +
-        '<div class="stats">' + stats.map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") + '</div></div>' +
-      '<div class="hud egs"><div class="lab">Its element games</div><div style="margin-top:8px">' + D.elements.map(function(el){
-          var cs = by[el]; return '<div class="eg' + (cs.length ? '' : ' none') + '">' + flower(el, 5) + '<span>' + el.toUpperCase() + '</span>' + esc(cs.length ? cs.map(function(c){ return c.name; }).join(", ") : "None yet") + '</div>'; }).join("") +
+        (cert ? certBlock(cert) : '<div class="stats">' + stats.map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") + '</div>') + '</div>' +
+      '<div class="hud egs"><div class="lab">' + (tiers ? 'Its element games and tiers' : 'Its element games') + '</div><div style="margin-top:8px">' + D.elements.map(function(el){
+          var cs = by[el]; return '<div class="eg' + (cs.length ? '' : ' none') + '">' + flower(el, 5) + '<span>' + el.toUpperCase() + '</span>' + esc(cs.length ? cs.map(function(c){ return c.name; }).join(", ") : "None yet") + (tiers ? tierBadge(tiers[el], el) : '') + '</div>'; }).join("") +
         '</div>' + (v.cards.length ? '<a class="cta" href="#missions" data-jump="missions">Play the ' + esc(crewName(v)) + '</a>' : '') + '</div>' +
-      (sel ? '<div class="hud move"><div class="mhead"><span class="disp">' + esc(sel.name) + '</span><span class="trig">' + esc(trigOf(sel)) + '</span><span class="lab" style="margin-left:auto">' + GWORD[dv.g] + '</span></div>' + scene(sel.el) + dv.html + '</div>' : '') +
+      (sel ? '<div class="hud move"><div class="mhead"><span class="mic">' + iconOf(sel) + '</span><span class="disp">' + esc(lv5 && sel.e && sel.e.upgrade.label ? sel.e.upgrade.label : sel.name) + '</span><span class="trig">' + esc(trigOf(sel)) + '</span><span class="lab">' + GWORD[dv.g] + '</span>' + (sel.e && !sel.e.open ? '<button type="button" class="l5tog" id="l5tog" aria-pressed="' + lv5 + '" aria-label="Show the level 5 upgrade"' + (hasL5(sel) ? '' : ' title="Level 5 reuses this icon (lockup bloom and plate lift)"') + '>Level 5</button>' : '') + '</div>' + scene(sel.el) + dv.html + '</div>' : '') +
       '<div class="abrow" role="group" aria-label="Abilities">' + ps.map(function(p){
           return '<button type="button" class="ab" data-pick="' + p.key + '" aria-pressed="' + (p === sel) + '"><span class="i">' + iconOf(p) + '</span><small>' + esc(p.name) + '</small></button>'; }).join("") + '</div>' +
       '</section>';
@@ -591,6 +670,8 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
       var n = app.querySelector((inRow ? '.pickhead' : '.ab') + '[data-pick="' + pick + '"]'); if(n) n.focus({preventScroll:true}); }); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-row]"), function(r){ r.addEventListener("click", function(e){
       if(e.target.closest("button,a")) return; var h = r.querySelector(".pickhead"); if(h) h.click(); }); });
+    var tg = document.getElementById("l5tog");
+    if(tg) tg.addEventListener("click", function(){ lv5 = !lv5; var y = window.scrollY; vesselView(v, true); window.scrollTo(0, y); var n = document.getElementById("l5tog"); if(n) n.focus({preventScroll:true}); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-l5]"), function(b){ b.addEventListener("click", function(){
       var f = b.querySelector(".flw .flower"), l = b.closest(".l5"); f.classList.remove("go"); if(l) l.classList.remove("lit"); void f.offsetWidth; f.classList.add("go"); if(l) l.classList.add("lit"); }); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-filt]"), function(b){ b.addEventListener("click", function(){
@@ -622,27 +703,62 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
   }
 
   /* ---------- the whole fleet: one card per vessel, every vessel on a screen or two ---------- */
-  var fleetFilt = "All";
+  var fleetFilt = "All", fleetSort = "Completion", fleetStage = "Any", tierEl = "Time", tierPick = "Any tier";
   function fleetView(){
     var all = listed(), vs = all.filter(matches).filter(function(v){ return fleetFilt === "All" || (fleetFilt === "Crews") === !!isCrew(v); });
     var wired = all.reduce(function(a, v){ return a + v.status.upgradesWired; }, 0);
+    var sortEl = fleetSort === "Completion" ? null : fleetSort.split(" ")[0];
+    /* completion and tier filter and sort the solo vessels on their own (Shombith 2026-11-10: "sort and filter ... as per
+       tier and completion separately"); crews carry no certificate, so a stage or tier filter leaves them out */
+    var certFilter = fleetStage !== "Any" || tierPick !== "Any tier";
     function card(v){
-      var by = elementGames(v), ps = picks(v);
+      var by = elementGames(v), ps = picks(v), c = v.certificate;
       var flowers = D.elements.map(function(el){
         var g = by[el]; return '<span class="fel' + (g.length ? '' : ' none') + '" title="' + esc(el + ': ' + (g.length ? g.map(function(c){ return c.name; }).join(", ") : 'no game yet')) + '">' + flower(el, 5) + '</span>'; }).join("");
+      var cert = c ? '<span class="fcert"><span class="row1"><span class="lab" style="flex:1">Completion</span><b class="' + pctCls(c) + '">' + c.pct + '%</b></span>' + segs(c, true) +
+        '<span class="ftiers">' + D.elements.map(function(el){ return '<span>' + tierBadge(v.tiers[el], el, el === sortEl || (tierPick !== "Any tier" && el === tierEl)) + '<small>' + el.charAt(0) + '</small></span>'; }).join("") +
+        '<small style="margin-left:auto;align-self:center;font-size:12px;color:var(--soft)">' + v.cards.length + ' game' + (v.cards.length === 1 ? '' : 's') + '</small></span></span>' : '';
       return '<a class="fcard" href="#' + esc(v.key) + '"><span class="pic">' + img(vimg(v), "") + (isCrew(v) ? '<span class="seats">' + v.crew.seats + ' seats</span>' : '') + '</span>' +
         '<span class="fbody"><span class="fname"><span class="disp">' + esc(crewName(v)) + '</span><small>' + (isCrew(v) ? 'Crew' : 'Vessel ' + v.id) + ' &middot; L5 ' + v.status.upgradesWired + '/4</small></span>' +
         '<span class="fab">' + ps.slice(0, 6).map(function(p){ return '<span title="' + esc(p.name) + '">' + iconOf(p) + '</span>'; }).join("") + '</span>' +
-        '<span class="fels">' + flowers + '<small>' + v.cards.length + ' game' + (v.cards.length === 1 ? '' : 's') + '</small></span></span></a>';
+        (c ? cert : '<span class="fels">' + flowers + '<small>' + v.cards.length + ' game' + (v.cards.length === 1 ? '' : 's') + '</small></span>') + '</span></a>';
     }
-    var solo = vs.filter(function(v){ return !isCrew(v); }), crews = vs.filter(isCrew);
+    var solo = vs.filter(function(v){ return !isCrew(v) && v.certificate; }).filter(function(v){
+      return (fleetStage === "Any" || band(v.certificate) === fleetStage) && (tierPick === "Any tier" || v.tiers[tierEl] === tierPick); });
+    solo.sort(function(a, b){ return (sortEl ? tierRank(a.tiers[sortEl]) - tierRank(b.tiers[sortEl]) : 0) || (b.certificate.pct - a.certificate.pct) || (a.id - b.id); });
+    var crews = certFilter ? [] : vs.filter(isCrew);
+    var certified = all.filter(function(v){ return v.certificate; });
+    function chips(list, cur, attr, label){ return list.map(function(x){ return '<button type="button" class="chip" data-' + attr + '="' + esc(x) + '" aria-pressed="' + (x === cur) + '">' + esc(label ? label(x) : x) + '</button>'; }).join(""); }
+    function sel(id, label, opts, cur, on){
+      return '<label class="fsel">' + label + '<select id="' + id + '" class="' + (on ? 'on' : '') + '">' + opts.map(function(o){
+        if(o.group) return '<optgroup label="' + esc(o.group) + '">' + o.items.map(function(i){ return '<option value="' + esc(i.v) + '"' + (i.v === cur ? ' selected' : '') + '>' + esc(i.t) + '</option>'; }).join("") + '</optgroup>';
+        return '<option value="' + esc(o.v) + '"' + (o.v === cur ? ' selected' : '') + '>' + esc(o.t) + '</option>'; }).join("") + '</select>' + CARET + '</label>';
+    }
+    var tierCur = tierPick === "Any tier" ? "any" : tierEl + ":" + tierPick;
+    var tools = '<div class="ftools" role="group" aria-label="Sort and filter the solo vessels">' +
+      sel("fsort", "Sort", ["Completion"].concat(D.elements.map(function(e){ return e + " tier"; })).map(function(x){ return {v:x, t:x}; }), fleetSort, false) +
+      sel("fstage", "Completion", [{v:"Any", t:"Any"}].concat(BANDS.map(function(x){ return {v:x, t:x + "  (" + certified.filter(function(v){ return band(v.certificate) === x; }).length + ")"}; })), fleetStage, fleetStage !== "Any") +
+      sel("ftier", "Tier", [{v:"any", t:"Any"}].concat(D.elements.map(function(e){ return {group:e + " games", items:["S", "A", "B", "C"].map(function(t){
+        return {v:e + ":" + t, t:e + " " + t + "  (" + certified.filter(function(v){ return v.tiers[e] === t; }).length + ")"}; })}; })), tierCur, tierPick !== "Any tier") +
+      (certFilter ? '<button type="button" class="fclear" id="fclear">Clear filters</button>' : '') +
+      '<span class="fcount">' + solo.length + ' of ' + certified.length + ' solo vessels</span></div>';
     app.innerHTML = '<div class="fhead"><div><div class="lab" style="color:var(--sel)">The fleet</div><h1 class="disp">Pick a vessel</h1></div>' +
-      '<div class="fstats">' + [[all.length, "vessels"], [all.filter(isCrew).length, "crews"], [wired + " / " + all.length * 4, "level 5 wired"]].map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") + '</div>' +
-      '<div class="filters" role="group" aria-label="Show">' + ["All", "Solo", "Crews"].map(function(x){ return '<button type="button" class="chip" data-ff="' + x + '" aria-pressed="' + (x === fleetFilt) + '">' + x + '</button>'; }).join("") + '</div></div>' +
+      '<div class="fstats">' + [[all.length, "vessels"], [all.filter(isCrew).length, "crews"], [wired + " / " + all.length * 4, "level 5 wired"],
+        [certified.filter(function(v){ return v.certificate.pct >= 100; }).length + " / " + certified.length, "at 100%"]].map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") + '</div>' +
+      '<div class="filters" role="group" aria-label="Show">' + chips(["All", "Solo", "Crews"], fleetFilt, "ff") + '</div></div>' +
+      (fleetFilt !== "Crews" ? tools : '') +
       (solo.length ? '<div class="fgrid">' + solo.map(card).join("") + '</div>' : '') +
-      (crews.length ? '<div class="sec" style="margin-top:36px"><span class="disp">Crews</span><span class="lab">Two or more pilots, one hull</span><span class="rule"></span></div><div class="fgrid">' + crews.map(card).join("") + '</div>' : '') +
-      (vs.length ? '' : '<p class="empty">No vessel matches.</p>');
-    Array.prototype.forEach.call(app.querySelectorAll("[data-ff]"), function(b){ b.addEventListener("click", function(){ fleetFilt = b.dataset.ff; fleetView(); var n = app.querySelector('[data-ff="' + fleetFilt + '"]'); if(n) n.focus(); }); });
+      (crews.length ? '<div class="sec" style="margin-top:36px"><span class="disp">Crews</span><span class="lab">Two or more pilots, one hull &middot; no certificate</span><span class="rule"></span></div><div class="fgrid">' + crews.map(card).join("") + '</div>' : '') +
+      (solo.length || crews.length ? '' : '<p class="empty">' + (certFilter ? 'No solo vessel matches both filters.' : 'No vessel matches.') + '</p>');
+    function bind(attr, set){ Array.prototype.forEach.call(app.querySelectorAll("[data-" + attr + "]"), function(b){ b.addEventListener("click", function(){
+      set(b.getAttribute("data-" + attr)); var y = window.scrollY; fleetView(); window.scrollTo(0, y);
+      var n = app.querySelector('[data-' + attr + '="' + b.getAttribute("data-" + attr) + '"]'); if(n) n.focus({preventScroll:true}); }); }); }
+    bind("ff", function(x){ fleetFilt = x; });
+    function onSel(id, set){ var el = document.getElementById(id); if(el) el.addEventListener("change", function(){
+      set(el.value); var y = window.scrollY; fleetView(); window.scrollTo(0, y); var n = document.getElementById(id); if(n) n.focus({preventScroll:true}); }); }
+    onSel("fsort", function(x){ fleetSort = x; }); onSel("fstage", function(x){ fleetStage = x; });
+    onSel("ftier", function(x){ if(x === "any"){ tierPick = "Any tier"; } else { tierEl = x.split(":")[0]; tierPick = x.split(":")[1]; } });
+    var fc = document.getElementById("fclear"); if(fc) fc.addEventListener("click", function(){ fleetStage = "Any"; tierPick = "Any tier"; fleetView(); });
   }
 
   var PADMAP = {};
@@ -663,6 +779,6 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
     document.getElementById("foot").innerHTML = 'Read from the game&rsquo;s own files every day: the ability maps, the vessel prefabs and their HUDs, the class assets, the touch profiles and the game cards. Every icon is the game&rsquo;s own.';
     route();
   }).catch(function(err){ app.innerHTML = '<p class="empty">The fleet data did not load (' + esc(err.message) + '). Reload the page.</p>'; });
-  window.addEventListener("hashchange", function(){ pick = null; filt = "All"; menuOpen = false; route(); window.scrollTo(0, 0); });
+  window.addEventListener("hashchange", function(){ pick = null; filt = "All"; lv5 = false; menuOpen = false; route(); window.scrollTo(0, 0); });
 })();
 </script>

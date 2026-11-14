@@ -22,6 +22,43 @@ namespace CosmicShore.Gameplay
 
         public Dictionary<Domains, SO_MaterialSet> TeamMaterialSets { get; set; }
 
+        static readonly List<Material> PlaceholderScratch = new(8);
+
+        /// <summary>
+        /// Paints <paramref name="renderer"/>'s domain placeholders in <paramref name="domain"/>'s ship material: every
+        /// slot that holds the base set's ShipMaterial (the template every domain's ship material is cloned from,
+        /// authored jade only because jade is the menu default) or another domain's ship material (a pooled object an
+        /// earlier owner flew). A team's colour is its owner's domain, from the worn colour set (Garrett, 2026-11-10,
+        /// LOCKED: every colour comes from the colour set; Docs/VesselModels/COLOR_TRACE.md). The SkyBurst and
+        /// Explodable projectiles' particles and the AI Gunner's gun drew the template itself, Jade for every pilot.
+        /// Allocates nothing; a no-op before ThemeManager has built the domain sets.
+        /// </summary>
+        public void PaintDomainPlaceholders(Renderer renderer, Domains domain)
+        {
+            if (!renderer || TeamMaterialSets == null || !TeamMaterialSets.TryGetValue(domain, out var set) || !set ||
+                !set.ShipMaterial) return;
+            var template = BaseMaterialSet ? BaseMaterialSet.ShipMaterial : null;
+            PlaceholderScratch.Clear();
+            renderer.GetSharedMaterials(PlaceholderScratch);
+            bool changed = false;
+            for (int i = 0; i < PlaceholderScratch.Count; i++)
+            {
+                var m = PlaceholderScratch[i];
+                if (!m || m == set.ShipMaterial) continue;
+                if (m != template && !IsTeamShipMaterial(m)) continue;
+                PlaceholderScratch[i] = set.ShipMaterial;
+                changed = true;
+            }
+            if (changed) renderer.SetSharedMaterials(PlaceholderScratch);
+        }
+
+        bool IsTeamShipMaterial(Material material)
+        {
+            foreach (var pair in TeamMaterialSets)
+                if (pair.Value && pair.Value.ShipMaterial == material) return true;
+            return false;
+        }
+
         /// <summary>
         /// Null-safe accessor for the single representative domain UI color
         /// (see <see cref="SO_ColorSet.GetDomainUIColor"/>) - the one source every UI

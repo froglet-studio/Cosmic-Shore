@@ -11,7 +11,9 @@ namespace CosmicShore.Gameplay
     ///  • an OPPOSING domain's prism is primed EXPLOSIVE (<see cref="Prism.MakeExplosive"/>): when it dies the prisms
     ///    beside it in its prismscape die too, and an explosive neighbour carries the chain on. A shielded prism keeps
     ///    its armour and is not primed - until SPACE 5, where the skim pops the shield and primes it anyway;
-    ///  • a skimmed prism that is a LIVING CREATURE'S BODY plants a bomb on the creature (graze to plant).
+    ///  • a skimmed prism that is a LIVING CREATURE'S BODY plants a bomb on the creature (graze to plant);
+    ///  • no haptic: skimming is told by sound and the HUD only (Caleb, 2026-11-11). The Manta's pad speaks on a hull
+    ///    collision (the punish thud) and when a bomb is planted (<see cref="HapticController.PlayPlant"/>).
     ///
     /// The energy and the plant gate on simulation authority inside the bay; the priming is a prism state and runs
     /// wherever this effect runs, like every other skim effect on prisms.

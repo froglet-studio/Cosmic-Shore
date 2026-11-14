@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-10-new-editor-hook-worldcolortraceeditor-in-9d0ae2",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-10T21:40:54+00:00",
+  "area": "editor tooling",
+  "summary": "New editor hook WorldColorTraceEditor ([InitializeOnLoad] plus an AssetModificationProcessor): it puts back every asset the runtime world colour painter touched when play ends or before a save during play, and clears their dirty flag. It is a reader of play state only and writes no asset of its own.",
+  "why": "WorldColorTrace paints materials and prefab assets in memory so spawned objects are born in the worn colour set; in the editor those are project assets and must never keep a set's colours.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "537eafa35",
+  "paths": [
+    "Assets/_Scripts/Controller/Managers/WorldColorTrace.cs",
+    "Assets/_Scripts/Editor/WorldColorTraceEditor.cs"
+  ]
+}

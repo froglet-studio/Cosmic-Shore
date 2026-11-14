@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -36,6 +37,23 @@ namespace CosmicShore.UI
             if (graphic) graphic.SetVerticesDirty();
         }
 
+        // A version check rather than OnEnable/OnDisable overrides, whose access differs between the shipped uGUI
+        // (protected) and the compile gate's publicized reference (public).
+        int _colorVersion;
+
+        void LateUpdate()
+        {
+            if (_colorVersion == ColorTrace.Version) return;
+            _colorVersion = ColorTrace.Version;
+            Repaint();
+        }
+
+        // A colour set was worn: the ends are drawn again, as the worn set paints them.
+        void Repaint()
+        {
+            if (graphic) graphic.SetVerticesDirty();
+        }
+
         public override void ModifyMesh(VertexHelper vh)
         {
             if (!IsActive() || vh.currentVertCount == 0) return;
@@ -47,13 +65,15 @@ namespace CosmicShore.UI
             float a = Vector2.Dot(new Vector2(rect.xMin, rect.yMin), dir), b = Vector2.Dot(new Vector2(rect.xMax, rect.yMin), dir);
             float c = Vector2.Dot(new Vector2(rect.xMin, rect.yMax), dir), d = Vector2.Dot(new Vector2(rect.xMax, rect.yMax), dir);
             float min = Mathf.Min(Mathf.Min(a, b), Mathf.Min(c, d)), max = Mathf.Max(Mathf.Max(a, b), Mathf.Max(c, d));
+            // the ends as the worn colour set paints them (the fields keep the authored colours)
+            Color start = ColorTrace.Retrace(ColorTrace.Ui, from), end = ColorTrace.Retrace(ColorTrace.Ui, to);
 
             UIVertex vertex = default;
             for (int i = 0; i < vh.currentVertCount; i++)
             {
                 vh.PopulateUIVertex(ref vertex, i);
                 float t = max > min ? Mathf.InverseLerp(min, max, Vector2.Dot(vertex.position, dir)) : 0f;
-                vertex.color = (Color32)(Color.Lerp(from, to, t) * (Color)vertex.color);
+                vertex.color = (Color32)(Color.Lerp(start, end, t) * (Color)vertex.color);
                 vh.SetUIVertex(vertex, i);
             }
         }

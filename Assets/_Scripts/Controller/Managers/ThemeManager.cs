@@ -67,10 +67,11 @@ namespace CosmicShore.Gameplay
 
             // Last, so Data is never observable before the material sets above are in it.
             Data = _dataContainer;
+            WearTrace();
             WearUITheme();
         }
 
-        // The worn set's UI sweeps: windows and rows instantiated after a repaint (UIThemeLive.Tick, once a second).
+        // The worn set's UI sweeps: windows and rows instantiated after a repaint, before they draw (UIThemeLive.Tick).
         void Update() => UIThemeLive.Tick(Time.unscaledTime);
 
         void OnDestroy()
@@ -79,6 +80,10 @@ namespace CosmicShore.Gameplay
             if (Instance == this)
             {
                 Instance = null;
+                // Not while play is ending: the scenes are being torn down, and in the editor the assets the trace
+                // painted have just been put back (WorldColorTraceEditor), so a repaint now would leave them changed.
+                if (WorldColorTrace.IsStopped) return;
+                ColorTrace.Wear(null, ColorTrace.Authored);
                 UIThemeLive.Clear();
             }
         }
@@ -89,6 +94,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void WearUITheme() =>
             UIThemeLive.Wear(ColorSetUITheme.Build(_dataContainer.UITheme, _dataContainer.ColorSet), _dataContainer.UITheme);
+
+        /// <summary>
+        /// Every colour the game draws outside the domain blocks, from the worn set (Garrett, 2026-11-10;
+        /// Docs/VesselModels/COLOR_TRACE.md): <see cref="ColorTrace.Wear"/> raises Changed, and
+        /// <see cref="WorldColorTrace"/> repaints the sky, materials, particles, lights and the rest at once. Before the
+        /// UI theme, whose repaint asks the trace for every colour that is no token.
+        /// </summary>
+        void WearTrace() =>
+            ColorTrace.Wear(_dataContainer.ColorSet, ColorTrace.FindAuthored(_dataContainer.Catalog));
 
         /// <summary>
         /// The catalog entry saved under <paramref name="savedId"/>, if it is there and the player may wear it (unlocked,
@@ -131,6 +145,9 @@ namespace CosmicShore.Gameplay
             if (set == _dataContainer.ColorSet) return true;
 
             _dataContainer.ColorSet = set;
+            // The traced colours first: the world painter repaints the materials it knows, and the prism entities
+            // drawn with any of them are re-stamped below with the domain sets.
+            WearTrace();
             var repainted = new List<Material>(64);
             foreach (var pair in _dataContainer.TeamMaterialSets)
                 if (pair.Value && set.TryGetColorSetByDomain(pair.Key, out var domainColors))
@@ -138,6 +155,7 @@ namespace CosmicShore.Gameplay
                     PaintDomainMaterialSet(pair.Value, domainColors, pair.Key);
                     CollectMaterials(pair.Value, repainted);
                 }
+            repainted.AddRange(WorldColorTrace.LastPainted);
             HandOffColorSet();
             // What copied its colours out of a material when it spawned does not see a repaint in place: the prism
             // render entities and the crystals' tint blocks (§124). Vessels and settled MeshRenderer prisms draw the
@@ -243,10 +261,10 @@ namespace CosmicShore.Gameplay
                                             materialSet.CrystalMaterial4 })
             {
                 if (!crystal) continue;
-                crystal.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
-                crystal.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
-                crystal.SetColor("_BrightColor", colorSet.BrightCrystalColor);
-                crystal.SetColor("_DarkColor", colorSet.DullCrystalColor);
+                SetDomainColor(crystal, "_BrightCrystalColor", colorSet.BrightCrystalColor);
+                SetDomainColor(crystal, "_DullCrystalColor", colorSet.DullCrystalColor);
+                SetDomainColor(crystal, "_BrightColor", colorSet.BrightCrystalColor);
+                SetDomainColor(crystal, "_DarkColor", colorSet.DullCrystalColor);
                 // The free omni body wears each element's shapes in that element's shade of lime (Docs/PALETTE.md
                 // §2.12); a team omni is the whole crystal in its domain's colour, so its clone turns the shades off.
                 crystal.SetFloat("_ElementShades", 0f);
@@ -256,22 +274,22 @@ namespace CosmicShore.Gameplay
             // actually draws with (PrismDebris reads mesh/material off it) and its colours arrive
             // as PER-ENTITY overrides keyed on the dying prism's kind - so this per-domain copy is
             // never consumed. Kept painted at the PLAIN tier for parity with the other materials.
-            materialSet.ExplodingBlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
-            materialSet.ExplodingBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
+            SetDomainColor(materialSet.ExplodingBlockMaterial, "_BrightColor", colorSet.InsideBlockColor);
+            SetDomainColor(materialSet.ExplodingBlockMaterial, "_DarkColor", colorSet.OutsideBlockColor);
 
-            materialSet.ShipMaterial.SetColor("_Color1", colorSet.ShipColor1);
-            materialSet.ShipMaterial.SetColor("_Color2", colorSet.ShipColor2);
+            SetDomainColor(materialSet.ShipMaterial, "_Color1", colorSet.ShipColor1);
+            SetDomainColor(materialSet.ShipMaterial, "_Color2", colorSet.ShipColor2);
 
-            materialSet.AOEExplosionMaterial.SetColor("_TextureColor", colorSet.AOETextureColor);
-            materialSet.AOEExplosionMaterial.SetColor("_FresnelColor", colorSet.AOEFresnelColor);
+            SetDomainColor(materialSet.AOEExplosionMaterial, "_TextureColor", colorSet.AOETextureColor);
+            SetDomainColor(materialSet.AOEExplosionMaterial, "_FresnelColor", colorSet.AOEFresnelColor);
 
-            materialSet.AOEConicExplosionMaterial.SetColor("_Color", colorSet.AOEConicColor);
-            materialSet.AOEConicExplosionMaterial.SetColor("_EdgeColor", colorSet.AOEConicEdgeColor);
+            SetDomainColor(materialSet.AOEConicExplosionMaterial, "_Color", colorSet.AOEConicColor);
+            SetDomainColor(materialSet.AOEConicExplosionMaterial, "_EdgeColor", colorSet.AOEConicEdgeColor);
 
-            materialSet.SpikeMaterial.SetColor("_LightColor", colorSet.SpikeLightColor);
-            materialSet.SpikeMaterial.SetColor("_DarkColor", colorSet.SpikeDarkColor);
+            SetDomainColor(materialSet.SpikeMaterial, "_LightColor", colorSet.SpikeLightColor);
+            SetDomainColor(materialSet.SpikeMaterial, "_DarkColor", colorSet.SpikeDarkColor);
 
-            materialSet.SkimmerMaterial.SetColor("_Color", colorSet.SkimmerColor);
+            SetDomainColor(materialSet.SkimmerMaterial, "_Color", colorSet.SkimmerColor);
         }
 
         /// <summary>
@@ -292,14 +310,26 @@ namespace CosmicShore.Gameplay
         {
             _dataContainer.ColorSet.GetPrismKindColors(colorSet, kind, out var bright, out var dark);
 
-            opaque.SetColor("_BrightColor", bright);
-            opaque.SetColor("_DarkColor", dark);
+            SetDomainColor(opaque, "_BrightColor", bright);
+            SetDomainColor(opaque, "_DarkColor", dark);
             opaque.SetFloat(PrismLitDomainId, (int)domain);
-            transparent.SetColor("_BrightColor", bright);
-            transparent.SetColor("_DarkColor", dark);
+            SetDomainColor(transparent, "_BrightColor", bright);
+            SetDomainColor(transparent, "_DarkColor", dark);
             transparent.SetFloat(PrismLitDomainId, (int)domain);
         }
 
         static readonly int PrismLitDomainId = Shader.PropertyToID("_PrismLitDomain");
+
+        /// <summary>
+        /// A colour this manager paints from the worn set's domain block. The world colour trace leaves it alone
+        /// (<see cref="WorldColorTrace.Own"/>): a domain colour can equal some set's value for a traced colour, and a
+        /// repaint (a scene load, a preview) would otherwise read it as that one.
+        /// </summary>
+        static void SetDomainColor(Material material, string property, Color color)
+        {
+            int id = Shader.PropertyToID(property);
+            material.SetColor(id, color);
+            WorldColorTrace.Own(material, id);
+        }
     }
 }

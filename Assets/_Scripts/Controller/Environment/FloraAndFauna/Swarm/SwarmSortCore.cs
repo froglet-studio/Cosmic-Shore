@@ -1304,14 +1304,14 @@ namespace CosmicShore.Gameplay
             return -1;
         }
 
-        /// <summary>A member's region: its domain's, unless it TRANSFERRED to another region of the
-        /// current plan (-1: no region in this plan).</summary>
         /// <summary>Member i's body region in the current plan (-1: none) - the harness's view of the regions.</summary>
         public int RegionOf(int i) => EffRole(i);
 
         /// <summary>Round 11d: how far laying has eased back in after the last wound or switch (0..1; 1 = the full LayMax).</summary>
         public float LayEase => _layU;
 
+        /// <summary>A member's region: its domain's, unless it TRANSFERRED to another region of the
+        /// current plan (-1: no region in this plan).</summary>
         int EffRole(int i) => XferPlan[i] == PlanIx && XferPlan[i] >= 0 ? XferRole[i] : RoleOfDom[Math.Clamp(Dom[i], 0, 2)];
 
         void LookOf(int i, int element, out Vector3 half, out int tier, out Vector3 face)

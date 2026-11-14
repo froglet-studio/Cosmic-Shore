@@ -252,3 +252,28 @@ No `unity` binary was available in the authoring session, so none of this has be
 - Camera (`RhinoCameraSettingsSO`): follow 70 → 90 u back, `lookAheadLift` 18 → 0 (no vertical offset).
 - Impact feel (`CameraFeelConfig` Rhino weight 1.25 → 0.42): a third, the camera reading of "triple the mass",
   so ram shakes land lighter. The Rigidbody mass was left at 1 since nothing in the plough reads it.
+
+## The 2026-11-12 rework (Garrett: "Mass has a space identity, charge has no pvp, no omni, etc. it breaks too many fundamentals")
+
+Checked against the fleet convention (`Docs/ElementalAbilitySystem/ARCHITECTURE.md` §1: Space = reach/presence, Time =
+rate/mobility, Charge = threat/energy output, Mass = physical size/volume), silence (P-vessel-11: Charge and Space are
+the attacks), and the omni rule (P-ecology-16: every vessel morphs an omni crystal into its own effect).
+
+| Element | Before | After | Level 5 |
+|---|---|---|---|
+| Charge | Carry (prism strike reach, no rival hit) | **Gore**: ramming a rival is a scored Strike that knocks petals loose (flat Strike price). Charge lowers the minimum ram speed, the Squirrel joust rule: 150 u/s at rest → 50 u/s at Charge 10 (`RhinoGoreSpeed`, a `JoustSpeedConfigSO`, asked through `IContactAdmission`; 2026-11-12) (`RhinoGoreBySkimmerEffectSO`, reported by `VesselCombatHitByGore`, only while faster than the victim, 1.4 s per victim). Carry stays as Charge's prism-side channel. | **Gore Steal** (petals land on the Rhino). Avalanche retired (`avalancheUpgradeElement` None) |
+| Mass | Blade width (a reach, Space's identity) | **Heft**: a heavier plough throws further, 0 → 60 u (`furrowDistance`, now on Mass). LT / RT steer belongs to this card. | **Berm** (unchanged) |
+| Space | Furrow (throw distance) | **Blade**: the blade's width, 14 → 40 u (`RhinoPloughBlade.width`, now on Space) | **Unstoppable** (unchanged; the fleet's Space shield-breaker slot, as on the Swordfish and Manta) |
+| Time | Ramp Spool | unchanged (rate/mobility). Still shared with the Swordfish, which inherited it. | Momentum |
+| Omni | the slow blast, shared with the Swordfish | **Stampede**: the omni crystal is absorbed (`VesselAbsorbCrystalMorphByCrystal`), for 0.1 s per prism ploughed since the last omni crystal (capped at 12 s; nothing ploughed, no stampede: Garrett 2026-11-12, "they can't surge from crystal to crystal and they get rewarded for prisms ploughed") the throttle surges by the crystal's speed buff, the Rhino is invulnerable (a `VesselTimedElementalWard` on the root warding everything: no drain, no theft, no scored hit, no silence), and every gore needs only the Charge 10 speed (50 u/s) and steals (`RhinoStampedeByCrystalEffectSO`, `RhinoStampede`) | - |
+
+Netcode: the gore is decided on the Rhino's owner like every contact take; the stampede is set where omni pickups
+resolve (server, replayed on the owner), so the owner knows it when it decides a gore. Nothing new is simulated per peer.
+
+**Not yet seen in the editor.** Hand test: ram a slower rival above 150 u/s (petals come loose; at Charge 10 a 50 u/s cruise is enough; at Charge 5 they land on you); a
+rival faster than you is not gored; plough prisms, then take an omni crystal (surge, invulnerable, every ram steals, 0.1 s per prism ploughed up to 12 s); take a second crystal straight away (nothing happens beyond the absorb); raise Space (wider
+blade) and Mass (prisms thrown further). The HUD (2026-11-12): Rhino.prefab's overrides on its nested `RhinoHUDVariant` put `Rhino_Gore`, `Rhino_Heft` and
+`Rhino_Blade` (`Tools/Build/icon_kit/specs/rhino.py`) on the Charge, Mass and Space cards and switch the Swordfish's
+sword parts off; Time keeps the Ramp Spool card. The Charge plate is the gore-speed gauge (`RhinoHUDController.PushGore`:
+ram speed over the live minimum, full and lit when a ram counts, a flash when a Stampede starts). The omni Stampede has
+no card (the row is four).

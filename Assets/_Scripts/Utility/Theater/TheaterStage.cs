@@ -72,7 +72,7 @@ namespace CosmicShore.Utility
             HideLiveVessels();
 
             if (config == null || config.hideGameplayUI) HideGameplayUI();
-            if (config != null && config.hideWorld) HideWorld(camera, puppetRoot, config.stageBackground);
+            if (config != null && config.hideWorld) HideWorld(camera, puppetRoot, ColorTrace.Retrace(ColorTrace.World, config.stageBackground));
         }
 
         public void Exit()

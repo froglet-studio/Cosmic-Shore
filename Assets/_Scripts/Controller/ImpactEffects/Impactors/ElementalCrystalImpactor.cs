@@ -1,6 +1,7 @@
 using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -43,6 +44,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         internal SkimmerCrystalEffectSO[] CollectionEffects => elementalCrystalShipEffects;
 
+        /// <summary>
+        /// The one team a skim may take this crystal for, or null (the default) for anyone. Set only by a mode that lays a
+        /// team its OWN crystals: Harvest's I3 Space crystals (<c>HarvestController.LayTeamCrystals</c>,
+        /// Assets/_Scripts/Controller/Arcade/HARVEST.md) and Shatterplane's (<c>ShatterplaneController.Mint</c>,
+        /// SHATTERPLANE.md), the only two callers. Every other elemental crystal - a lifeform's heart, an arena
+        /// scatter, a toy's pickup - leaves it null and is collected by whoever touches it, exactly as before.
+        /// </summary>
+        Domains? _onlyFor;
+
+        /// <summary>Restrict skim collection to <paramref name="domain"/>'s pilots (see <see cref="_onlyFor"/>).</summary>
+        internal void RestrictTo(Domains domain) => _onlyFor = domain;
+
         CrystalCaptureConfigSO CaptureConfig =>
             captureConfigOverride ? captureConfigOverride : CrystalCaptureConfigSO.Load();
 
@@ -59,6 +72,9 @@ namespace CosmicShore.Gameplay
             if (impactee is not SkimmerImpactor skimmerImpactor) return;
 
             if (DefersToItsVesselsSkimmer(skimmerImpactor)) return;
+            // A team's own crystal (Harvest and Shatterplane I3) is left for that team: another team's skim passes through it.
+            if (_onlyFor.HasValue && skimmerImpactor.Skimmer && skimmerImpactor.Skimmer.VesselStatus != null &&
+                skimmerImpactor.Skimmer.VesselStatus.Domain != _onlyFor.Value) return;
             // a hull whose touch leaves crystals alone (the Jacks netting, IHullContactGate) does not skim one up either
             if (!IsSweepDispatch && !VesselTakesByContact(skimmerImpactor)) return;
 

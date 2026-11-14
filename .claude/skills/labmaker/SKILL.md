@@ -325,7 +325,20 @@ always when `/ship` §3.55 sends you here:
 2. **`LEARNINGS.md`**: append one entry per thing the lab taught that cost real time or that the
    next lab would otherwise re-learn: a trap, a technique, a verification that caught something, or
    a process change the human asked for. Use the entry format at the top of that file.
-   - **Grep the id before claiming it.** The next free number is not always the last row (`/ship` §1).
+   - **Grep the id before claiming it, in every branch's copy, right before you push.** The next free
+     number is not always the last row (`/ship` §1), and other branches claim ids at the same moment
+     (on 2026-11-11 one took L-STU-171..174 between two scans of one session). After `git fetch origin`,
+     this prints the highest STU id on any branch in about 3 s:
+     `git for-each-ref --format='%(refname:short)' refs/remotes/origin | while read r; do git show "$r:.claude/skills/labmaker/LEARNINGS.md" 2>/dev/null; done | grep -oE '^### L-STU-[0-9]+' | sort -t- -k3 -n | tail -1`
+   - **When two entries hold one id** (git joins them without a conflict, and `/ship` §3.55's `uniq -d`
+     names it), the entry that MERGED into bleeding-edge second moves to the next id free on every
+     branch, and only the citations that mean it move with it (grep the repo for the old id and split
+     the hits by entry). Read the merge order, not the author dates (two L-STU-41s were written 19 s
+     apart), with `-m`, since an id given in a merge's resolution never shows in a plain `-S`:
+     `git log --first-parent -m -S'### L-STU-<n> — <its title>' origin/bleeding-edge -- .claude/skills/labmaker/LEARNINGS.md`.
+     In a shallow clone deepen first (`git fetch --shallow-since=<a date before both> origin bleeding-edge`),
+     or `-S` credits both entries to the graft commit. L-STU-41, 42 and 102 became 175, 176 and 177
+     this way (2026-11-11).
    - Attribute it: branch, session or contributor, date.
    - **Open the cited source and confirm it says what the entry claims**: the DISCOVERIES
      section, the commit, the file and symbol. A summary, including your own subagent's, is a

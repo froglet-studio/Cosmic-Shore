@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 84 A - On the vessel page: the certificate in the briefing, a tier beside each element game (recommended)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&amp;family=Saira:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#13010C}
+.app{position:relative;overflow:hidden;color:#F5E6EE;background:radial-gradient(ellipse 70% 60% at 50% 30%,#210118,#13010C 72%);font-family:'Saira',sans-serif}
+.app *{box-sizing:border-box}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:2px solid #65E1DF;outline-offset:2px}
+.disp{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.lab{font-size:12px;letter-spacing:.22em;color:#A8869A;text-transform:uppercase}
+.soft{-webkit-mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%)}
+.hud{position:absolute;padding:22px 24px;background:rgba(19,1,12,.88)}
+.chip{border:0;cursor:pointer;height:34px;padding:0 14px;background:transparent;color:#A8869A;box-shadow:inset 0 0 0 1px #70405F;font-size:13px;letter-spacing:.06em;transition:color .2s cubic-bezier(.45,0,.2,1),background .2s cubic-bezier(.45,0,.2,1)}
+.chip:hover{color:#F5E6EE}
+.chip.on{color:#13010C;background:#65E1DF;box-shadow:none}
+/* the certificate: five segments, filled in ink, the stage word in Gold only when it is Arena Ready (a first place) */
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg i{display:block;height:8px;background:#70405F;opacity:.45;transition:opacity .4s cubic-bezier(.45,0,.2,1),background .4s cubic-bezier(.45,0,.2,1)}
+.seg i.on{background:#F5E6EE;opacity:1}
+.seg i.part{background:linear-gradient(90deg,#F5E6EE var(--p),#70405F var(--p));opacity:1}
+.seg.thin i{height:4px}
+.chk{display:grid;grid-template-columns:20px 130px 1fr;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(112,64,95,.5);font-size:14px}
+.chk svg{width:16px;height:16px}
+.chk span{color:#A8869A;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.chk.no{color:#6C5A65}
+.stage{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:30px;letter-spacing:.04em}
+.stage.gold{color:#FFC549}
+.stage.dim{color:#A8869A}
+/* a tier letter: S solid (Gold, a first place), A outlined ink, B soft, C off; a dash is no game of that element */
+.tier{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:22px}
+.tier.tS{background:#FFC549;color:#13010C}
+.tier.tA{box-shadow:inset 0 0 0 2px #F5E6EE;color:#F5E6EE}
+.tier.tB{box-shadow:inset 0 0 0 1px #70405F;color:#A8869A}
+.tier.tC{color:#6C5A65;box-shadow:inset 0 0 0 1px rgba(112,64,95,.5)}
+.tier.t-{color:#6C5A65;font-size:16px}
+.vsel{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:0;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px #70405F;transition:background .2s cubic-bezier(.45,0,.2,1)}
+.vsel.on{background:#3C1D31;box-shadow:inset 0 0 0 1px #65E1DF}
+.vsel img{width:46px;height:26px;object-fit:cover}
+.trow{display:grid;grid-template-columns:64px 170px 300px 70px 160px repeat(4,70px);gap:18px;align-items:center;height:42px;border-bottom:1px solid rgba(112,64,95,.45);font-size:15px}
+.trow img{width:64px;height:36px;object-fit:cover}
+.trow.h{height:34px;font-size:11px;letter-spacing:.2em;color:#A8869A;text-transform:uppercase}
+.fcard{display:flex;flex-direction:column;gap:7px;padding:8px 10px 10px;background:rgba(60,29,49,.42);box-shadow:inset 0 0 0 1px rgba(112,64,95,.6)}
+.fcard img{width:100%;height:62px;object-fit:cover;-webkit-mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 50%,transparent 100%)}
+.fcard b{font-family:'Saira Condensed',sans-serif;font-size:21px;text-transform:uppercase;line-height:1}
+.tier.hot{outline:2px solid #65E1DF;outline-offset:1px}
+.tile{display:flex;flex-direction:column;gap:6px;width:150px;padding:8px;background:rgba(60,29,49,.35);box-shadow:inset 0 0 0 1px rgba(112,64,95,.6)}
+.tile img{width:134px;height:70px;object-fit:cover}
+.tile b{font-family:'Saira Condensed',sans-serif;font-size:19px;text-transform:uppercase;line-height:1}
+.tile small{font-size:11px;color:#A8869A}
+.lane{display:grid;grid-template-columns:90px 1fr;gap:20px;align-items:center;min-height:132px;border-bottom:1px solid rgba(112,64,95,.5);padding:10px 0}
+.lane .tier{width:72px;height:72px;font-size:46px}
+.lane .tiles{display:flex;gap:12px;flex-wrap:wrap}
+.grow{animation:grow .7s cubic-bezier(.45,0,.2,1) both}
+@keyframes grow{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
+@media (prefers-reduced-motion:reduce){.grow{animation:none}}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:1080px">
+<header style="position:absolute;left:64px;right:64px;top:24px;height:52px;display:flex;align-items:center;gap:26px"><span class="disp" style="font-size:28px;letter-spacing:.12em">Fleet Codex</span><span style="font-size:13px;color:#A8869A;letter-spacing:.08em">THE FLEET</span><span style="flex:1"></span><sc-for list="{{vessels}}" as="x" hint-placeholder-count="4"><button type="button" class="{{x.cls}}" onClick="{{x.pick}}"><img src="{{x.img}}" alt=""><span class="disp" style="font-size:20px">{{x.name}}</span></button></sc-for></header>
+<div style="position:absolute;left:0;right:0;top:96px;bottom:0;background:radial-gradient(ellipse at 52% 46%,#480135,transparent 72%)"></div>
+<img class="soft" src="{{v.img}}" alt="" style="position:absolute;left:520px;top:150px;width:900px;height:520px;object-fit:cover">
+<section class="hud" aria-label="Flight certificate" style="left:64px;top:120px;width:560px">
+  <div class="lab" style="color:#65E1DF">VESSEL {{v.id}}</div>
+  <h1 class="disp" style="font-size:88px;margin:6px 0 4px">{{v.name}}</h1>
+  <p style="margin:0 0 22px;font-size:16px;color:#A8869A">{{v.story}}.</p>
+  <div class="lab">FLIGHT CERTIFICATE</div>
+  <div style="display:flex;align-items:baseline;gap:16px;margin:8px 0 12px"><span class="disp num" style="font-size:64px">{{pct}}</span><span class="{{stageCls}}">{{v.stage}}</span></div>
+  <div class="seg"><sc-for list="{{segs}}" as="g" hint-placeholder-count="5"><i class="{{g.cls}}" style="{{g.style}}"></i></sc-for></div>
+  <div style="margin-top:14px"><sc-for list="{{checks}}" as="c" hint-placeholder-count="5"><div class="{{c.cls}}"><sc-if value="{{c.ok}}" hint-placeholder-val="{{true}}"><svg viewBox="0 0 16 16" fill="none" stroke="#F5E6EE" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg></sc-if><sc-if value="{{c.no}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 16 16" fill="none" stroke="#6C5A65" stroke-width="2" aria-hidden="true"><path d="M4 8h8"/></svg></sc-if><span>{{c.label}}</span>{{c.detail}}</div></sc-for></div>
+  <p style="margin:14px 0 0;font-size:14px;color:#65E1DF">{{v.next}}</p>
+</section>
+<section class="hud" aria-label="Element games and tiers" style="right:64px;top:120px;width:470px">
+  <div class="lab">ITS ELEMENT GAMES AND TIERS</div>
+  <div style="margin-top:10px"><sc-for list="{{games}}" as="g" hint-placeholder-count="4">
+    <div style="display:grid;grid-template-columns:80px 1fr 34px;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(112,64,95,.5)">
+      <span class="lab" style="letter-spacing:.16em">{{g.el}}</span><span style="font-size:16px">{{g.names}}</span><span class="{{g.tcls}}">{{g.tier}}</span></div></sc-for></div>
+  <p style="margin:14px 0 0;font-size:13px;color:#A8869A">S is the best of the fleet in that element's game, C the least. A dash: no game of that element yet.</p>
+</section>
+<div class="hud" style="left:64px;right:64px;bottom:40px;padding:16px 24px;display:flex;gap:40px;align-items:center">
+  <span class="lab">THE FLEET</span>
+  <span style="font-size:15px"><b class="disp" style="font-size:26px;margin-right:8px;color:#FFC549">7</b>Arena Ready</span><span style="font-size:15px"><b class="disp" style="font-size:26px;margin-right:8px">1</b>Fleet Ready</span><span style="font-size:15px"><b class="disp" style="font-size:26px;margin-right:8px">5</b>Launch Ready</span><span style="font-size:15px"><b class="disp" style="font-size:26px;margin-right:8px">6</b>In the hangar</span>
+  <span style="flex:1"></span><span style="font-size:13px;color:#A8869A">19 solo vessels &middot; crews are not certified</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: 0 }; }
+
+  segs(v) { return v.done.map((d, i) => i === 1 && !d && v.wired > 0 ? { cls: 'part', style: '--p:' + (v.wired * 25) + '%' } : { cls: d ? 'on' : '', style: '' }); }
+  stageCls(v) { return v.stage === 'Arena Ready' ? 'stage gold' : v.stage === 'In the hangar' ? 'stage dim' : 'stage'; }
+
+  renderVals() {
+    const V = [{"key": "Squirrel", "name": "Squirrel", "id": 6, "img": "/_blob/27617fceea883c9a40458136506eb3ef", "pct": 100, "stage": "Arena Ready", "done": [true, true, true, true, true], "detail": ["All four", "4 of 4 wired", "Skim Race", "Scurry", "Joust"], "wired": 4, "games": {"Charge": ["Joust"], "Mass": ["Scurry"], "Space": [], "Time": ["Skim Race"]}, "next": "Certified for the arena", "tiers": {"Charge": "C", "Mass": "B", "Space": "-", "Time": "S"}, "story": "Get in your flow and stay there"}, {"key": "Grizzly", "name": "Grizzly", "id": 5, "img": "/_blob/c380d140a449b101d472ac01a68fb7f1", "pct": 75, "stage": "In the hangar", "done": [true, false, true, true, false], "detail": ["All four", "3 of 4 wired", "Grizzly Time", "Grizzly Charge", "None yet"], "wired": 3, "games": {"Charge": [], "Mass": [], "Space": ["Grizzly Charge"], "Time": ["Grizzly Time"]}, "next": "Next: the level-5 upgrades", "tiers": {"Charge": "-", "Mass": "-", "Space": "A", "Time": "S"}, "story": "A flying siege tank - big, slow, and explosive"}, {"key": "Rhino", "name": "Rhino", "id": 3, "img": "/_blob/9c2d40deaaf3047946715ff8410e7b8f", "pct": 60, "stage": "Launch Ready", "done": [true, true, true, false, false], "detail": ["All four", "4 of 4 wired", "Headlong", "None yet", "None yet"], "wired": 4, "games": {"Charge": [], "Mass": [], "Space": [], "Time": ["Headlong"]}, "next": "Next: a Mass or Space", "tiers": {"Charge": "-", "Mass": "-", "Space": "-", "Time": "A"}, "story": "A plough"}, {"key": "Shrike", "name": "Shrike", "id": 10, "img": "/_blob/5b7f1c59bcde45979d4913c57e781abc", "pct": 45, "stage": "In the hangar", "done": [true, false, true, false, false], "detail": ["All four", "1 of 4 wired", "Thornline", "None yet", "None yet"], "wired": 1, "games": {"Charge": [], "Mass": [], "Space": [], "Time": ["Thornline"]}, "next": "Next: the level-5 upgrades", "tiers": {"Charge": "-", "Mass": "-", "Space": "-", "Time": "C"}, "story": "A slow sniper that docks to whatever it touches"}], C = ["Abilities", "Level 5", "Time game", "Mass or Space", "Charge game"], E = ["Charge", "Mass", "Space", "Time"];
+    const v = V[this.state.sel];
+    const vessels = V.map((x, i) => ({ name: x.name, img: x.img, cls: i === this.state.sel ? 'vsel on' : 'vsel', pick: () => this.setState({ sel: i }) }));
+    const checks = C.map((c, i) => ({ label: c, detail: v.detail[i], cls: v.done[i] ? 'chk' : 'chk no', ok: v.done[i], no: !v.done[i] }));
+    const games = E.map(e => ({ el: e.toUpperCase(), names: v.games[e].join(', ') || 'None yet', tier: v.tiers[e], tcls: 'tier t' + v.tiers[e], none: !v.games[e].length }));
+    return { vessels, v, checks, games, segs: this.segs(v), stageCls: this.stageCls(v), pct: v.pct + '%' };
+  }
+}
+</script>
+</body>
+</html>

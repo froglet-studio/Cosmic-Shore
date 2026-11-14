@@ -12,4 +12,4 @@ A new doc gets its row in the file for its location, in the same `| Document | L
 | [`references/DOC_INDEX_DOCS_M_Z.md`](references/DOC_INDEX_DOCS_M_Z.md) | 67 | Docs under `Docs/` (top level), names M–Z (and `_`/digits) |
 | [`references/DOC_INDEX_ARCADE.md`](references/DOC_INDEX_ARCADE.md) | 31 | Game-mode docs beside the code in `Assets/_Scripts/Controller/Arcade/` |
 | [`references/DOC_INDEX_SCRIPTS.md`](references/DOC_INDEX_SCRIPTS.md) | 22 | Other docs beside the code in `Assets/_Scripts/` (vessel actions, AI, IO, tests, bootstrap, …) |
-| [`references/DOC_INDEX_OTHER.md`](references/DOC_INDEX_OTHER.md) | 22 | Docs in `Docs/` sub-folders (`Docs/Pilots/`, `Docs/Shaders/`, `Docs/Studios/`, `Docs/claude/`), `.claude/skills/`, and the project root |
+| [`references/DOC_INDEX_OTHER.md`](references/DOC_INDEX_OTHER.md) | 23 | Docs in `Docs/` sub-folders (`Docs/EditorChurn/`, `Docs/Pilots/`, `Docs/Shaders/`, `Docs/Studios/`, `Docs/claude/`), `.claude/skills/`, and the project root |

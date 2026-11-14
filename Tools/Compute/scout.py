@@ -478,7 +478,7 @@ DRIVE_SPACES = {
                     ("engageRunwaySeconds", 0.2, 3.0, 1.5), ("releaseRunwaySeconds", 0.1, 2.0, 0.5),
                     ("alignDegrees", 4, 40, 12), ("releaseAlignDegrees", 8, 60, 25), ("stickBand", 0.1, 0.9, 0.35),
                     ("releaseStickBand", 0.2, 1.0, 0.6), ("throttleSlewPerSecond", 0.5, 10, 4), ("brakeSteerFloor", 0.0, 0.8, 0.3)],
-    "manta_drive": [("BoostStickBand", 0.05, 1.0, 0.35), ("YastriStickBand", 0.3, 1.0, 0.75)],
+    "manta_drive": [("BoostStickBand", 0.05, 1.0, 0.35), ("YawsteryStickBand", 0.3, 1.0, 0.75)],
     "dolphin_drive": [("alignDegrees", 4, 45, 12), ("engageRunwaySeconds", 0.2, 3.5, 2.5), ("spendAtCharge01", 0.3, 1.0, 0.95),
                       ("maxHoldOffSeconds", 0.5, 8.0, 4.0), ("peakMarginUnits", 0.0, 30.0, 3.0),
                       ("minDischargeSeconds", 0.05, 1.0, 0.2), ("minPulseGainUnits", 0.0, 120.0, 30.0)],

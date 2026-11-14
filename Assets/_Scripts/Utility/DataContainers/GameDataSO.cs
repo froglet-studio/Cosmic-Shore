@@ -325,11 +325,6 @@ namespace CosmicShore.Utility
             OnDomainMetricSumsChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Server-authoritative winner name, written by game controllers in their
-        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
-        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
-        /// </summary>
         // ── Match envelope (SERVER authority; replicated by SyncGameConfigToClients_ClientRpc) ──
         // Stamped once by the host so every client emits an IDENTICAL identifier set on
         // game_started. See Docs/Analytics/DATA_ARCHITECTURE.md §6.
@@ -348,6 +343,11 @@ namespace CosmicShore.Utility
         /// <summary>Whether this party was formed through a formal invite rather than presence.</summary>
         [NonSerialized] public bool InviteTriggered;
 
+        /// <summary>
+        /// Server-authoritative winner name, written by game controllers in their
+        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
+        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
         [NonSerialized] public string WinnerName = "";
 
         /// <summary>

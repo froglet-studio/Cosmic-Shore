@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -102,7 +103,8 @@ namespace CosmicShore.Gameplay
         public bool ConvertOnBurnout => convertOnBurnout;
         public PrismBurnSpread BurnSpread => burnSpread;
         public int MaxSegments => maxSegments;
-        public Color Tint => tint;
+        /// <summary>The bolts' tint as the worn colour set paints it (alpha kept).</summary>
+        public Color Tint => ColorTrace.Retrace(ColorTrace.World, tint);
         public float Width => width;
         public Material Material => material;
 

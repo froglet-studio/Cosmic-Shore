@@ -165,19 +165,19 @@ MonoBehaviour:
   abilityIcons:
   - element: 1
     icon: {fileID: 7700000000000001105}
-    upgradedSprite: {fileID: 0}
+    upgradedSprite: {fileID: 21300000, guid: de357d263ae00825a6a04b34964c972b, type: 3}
     gauge: {fileID: 7700000000000001203}
   - element: 2
     icon: {fileID: 7700000000000001115}
-    upgradedSprite: {fileID: 0}
+    upgradedSprite: {fileID: 21300000, guid: 71ba0cfbf60d7df9fa0b4351416abf2c, type: 3}
     gauge: {fileID: 7700000000000001223}
   - element: 3
     icon: {fileID: 7700000000000001125}
-    upgradedSprite: {fileID: 0}
+    upgradedSprite: {fileID: 21300000, guid: 6661ebc4a5556543f8682bf9963ec930, type: 3}
     gauge: {fileID: 7700000000000001213}
   - element: 4
     icon: {fileID: 7700000000000001135}
-    upgradedSprite: {fileID: 0}
+    upgradedSprite: {fileID: 21300000, guid: 0b43684f01895aa4c0dc418620483855, type: 3}
     gauge: {fileID: 7700000000000001233}
   omniAbilitySprite: {fileID: 21300000, guid: 765ce4af4495cbc8f4dc73bac4a1b5ff, type: 3}
   upgradeHighlightScale: 1.15

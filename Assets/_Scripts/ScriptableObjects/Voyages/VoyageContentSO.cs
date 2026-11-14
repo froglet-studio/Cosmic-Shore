@@ -396,31 +396,129 @@ namespace CosmicShore.ScriptableObjects
         public string StoryLog = "YOUR LOG";
         [Tooltip("The log beat: {voyages} sailed, {extracted} finds brought home, {relics}, {charted} places charted, {arks} Arks lost, {kaiju} felled.")]
         public string StoryLogLine = "{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost.";
-        [Tooltip("The Set sail button while a voyage is out: dark, saying when it opens. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardSailAfter = "SET SAIL - AFTER THIS VOYAGE";
-        [Tooltip("The Ark escort's card on the voyage carousel. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardEscortPlace = "Escort the Ark";
-        [Tooltip("Over the escort's difficulty: {from} where the Ark lies, {to} the port it sails for. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardEscortKicker = "ARK ESCORT - {from} TO {to}";
-        [Tooltip("The escort's difficulty between its - and +: {difficulty} the level. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardDifficulty = "Difficulty {difficulty}";
-        [Tooltip("One seat in the squad's line under its hulls: {who} who flies it, {vessel} the hull. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardCrewSeat = "{who} - {vessel}";
-        [Tooltip("Between the seats in the squad's line. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardCrewSeparator = "     ";
-        [Tooltip("Over Ark crew: the voyage the squad is being set for. {n} its number, {title} its title. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardCrewVoyage = "VOYAGE {n} - {title}";
-        [Tooltip("Over a seat's strip of choices: {seat} the seat, {setting} what is being picked. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardPickSetting = "{seat} - {setting}: ONE PRESS PICKS";
-        [Tooltip("A seat's head in Ark crew: {role} the seat's role (CardSeatLeader and the two rogues), {who} who flies it. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardSeatWho = "{role} - {who}";
-        [Tooltip("The pilot setting's label in Ark crew with its callsign's word: {setting} the setting's name, {word} the word. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardSettingWord = "{setting} - {word}";
-        [Tooltip("The Jade domain's chip in Ark crew. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardDomainJade = "JADE";
-        [Tooltip("The Ruby domain's chip in Ark crew. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardDomainRuby = "RUBY";
-        [Tooltip("The Gold domain's chip in Ark crew. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
-        public string CardDomainGold = "GOLD";
+        [Tooltip("A voyage's row on the Voyages list (Rev 81 B5): its number and where it goes.")]
+        public string BoardRowTitle = "{n}  {place}";
+        [Tooltip("Under a row's place: the pilot who brought the voyage.")]
+        public string BoardRowBy = "Brought by {pilot}";
+        [Tooltip("Under a row's place: the voyage's three numbers.")]
+        public string BoardRowMeta = "{ly} ly - {minutes} min - Intensity {intensity}";
+        [Tooltip("Over the open voyage's distance, in the right panel.")]
+        public string BoardDistanceLabel = "DISTANCE";
+        [Tooltip("Over the open voyage's sailing time.")]
+        public string BoardSailLabel = "SAIL";
+        [Tooltip("Over the open voyage's intensity.")]
+        public string BoardIntensityLabel = "INTENSITY";
+        [Tooltip("The open voyage's intensity.")]
+        public string BoardIntensityValue = "{intensity}";
+        [Tooltip("Beside the squad chips over the seat cards.")]
+        public string BoardSquadLabel = "SQUAD";
+        [Tooltip("A squad chip for a squad the player joined.")]
+        public string BoardSquadJoined = "{name} - {owner}'s";
+        [Tooltip("A seat card's first line: who flies it and the pilot.")]
+        public string BoardSeatWho = "{who} - {pilot}";
+        [Tooltip("A seat card's second line on a seat the player may change.")]
+        public string BoardSeatKit = "{element} - {artifact}";
+        [Tooltip("A seat card's second line on a seat the player may not change.")]
+        public string BoardSeatNotYours = "{owner}'s seat";
+        [Tooltip("Over the seat editor (Rev 83 S2): the seat being changed.")]
+        public string BoardEditorTitle = "{role} - {who} - {squad}";
+        [Tooltip("Under the seat editor's pilot.")]
+        public string BoardPilotLine = "Flies the {vessel} for {squad}";
+        [Tooltip("Under a pilot in the editor's list who flies another seat now.")]
+        public string BoardPilotSwaps = "Flies the {vessel} - swaps";
+        [Tooltip("Under the pilot in the editor's list who flies this seat.")]
+        public string BoardPilotFlying = "Flying";
+        [Tooltip("Under the seat editor's element.")]
+        public string BoardElementLine = "The element this seat flies with";
+        [Tooltip("Under the seat editor's artifact when the seat carries none.")]
+        public string BoardNoArtifactLine = "This seat carries no artifact";
+        [Tooltip("The seat editor's close button.")]
+        public string BoardDone = "DONE";
+        [Tooltip("The Set sail button while the voyage is out.")]
+        public string BoardUnderway = "UNDER WAY";
+        [Tooltip("The keycap before Set sail (empty: none).")]
+        public string BoardSailKey = "A";
+        [Tooltip("The keycap before the seat editor's Done (empty: none).")]
+        public string BoardDoneKey = "B";
+        [Tooltip("Over the open voyage's name on the Voyages tab: which voyage it is and who brought it.")]
+        public string BoardKicker = "Voyage {n} of {count} - brought by {pilot}";
+        [Tooltip("Over the open voyage's name when nobody brought it.")]
+        public string BoardKickerAlone = "Voyage {n} of {count}";
+        [Tooltip("Under the open voyage's name: its three numbers on one line.")]
+        public string BoardStats = "{distance}   -   {sail}   -   Intensity {intensity}";
+        [Tooltip("A stepper's step back (a seat's vessel, pilot, element or artifact).")]
+        public string BoardStepBack = "<";
+        [Tooltip("A stepper's step on.")]
+        public string BoardStepOn = ">";
+        [Tooltip("The voyage screen's zoom-in step over the map.")]
+        public string BoardZoomIn = "+";
+        [Tooltip("The voyage screen's zoom-out step over the map.")]
+        public string BoardZoomOut = "-";
+        [Tooltip("The voyage screen's button that opens the squad screen.")]
+        public string BoardConfigure = "CONFIGURE SQUAD";
+        [Tooltip("The pad key drawn before Configure squad.")]
+        public string BoardConfigureKey = "X";
+        [Tooltip("The squad screen's way back to the voyage screen.")]
+        public string BoardBack = "VOYAGES";
+        [Tooltip("The pad key drawn before the squad screen's way back.")]
+        public string BoardBackKey = "B";
+        [Tooltip("The squad screen's button that keeps the squad as a new squad.")]
+        public string BoardSavePreset = "SAVE AS PRESET";
+        [Tooltip("The pad key drawn before Save as preset.")]
+        public string BoardSavePresetKey = "Y";
+        [Tooltip("The squad screen's note at its foot: what changing your own vessel also changes.")]
+        public string BoardHangarNote = "A vessel brings the pilot you keep for it in the Hangar.";
+        [Tooltip("Who flies a squad, under its name on the voyage screen: {leader}, {one} and {two} are the three seats.")]
+        public string BoardPresetWho = "{leader}, {one}, {two}";
+        [Tooltip("Under a pilot who flies another seat of the squad: taking them swaps the two; {vessel} is the vessel they leave.")]
+        public string BoardSwapsWith = "Swaps with {vessel}";
+        [Tooltip("A chip on a table's left (a saga part, a quest): its number and name.")]
+        public string SlabChip = "{n}  {name}";
+        [Tooltip("Under a saga part's chip.")]
+        public string SlabSagaPart = "Part {n} of {count}";
+        [Tooltip("Over the picked saga part's name.")]
+        public string SlabSagaKicker = "Saga - part {n} of {count}";
+        [Tooltip("Over a form's station on the Saga table's front face.")]
+        public string SlabSagaForm = "Form {n}";
+        [Tooltip("Over the episode's name on the Quests table.")]
+        public string SlabQuestsKicker = "Episode 1";
+        [Tooltip("The episode's name over the Quests table.")]
+        public string SlabQuestsName = "The Hypersea";
+        [Tooltip("Under the episode's name: how many quests are claimed.")]
+        public string SlabQuestsProgress = "{claimed} of {total} claimed";
+        [Tooltip("Over the picked quest in the Quests table's right column.")]
+        public string SlabQuestKicker = "Quest {n} of {count}";
+        [Tooltip("A quest that is claimed.")]
+        public string SlabQuestClaimed = "Claimed";
+        [Tooltip("A quest that is done and waits to be claimed.")]
+        public string SlabQuestReady = "Done - claim it";
+        [Tooltip("The quest to play next.")]
+        public string SlabQuestNext = "Next to play";
+        [Tooltip("A locked quest: the quest it opens after.")]
+        public string SlabQuestLocked = "After {name}";
+        [Tooltip("The Quests table's button on a quest that is done.")]
+        public string SlabQuestClaim = "CLAIM";
+        [Tooltip("The Quests table's button on the quest to play next.")]
+        public string SlabQuestPlay = "PLAY QUEST";
+        [Tooltip("Over the next episode's name on the Episodes table.")]
+        public string SlabEpisodesKicker = "Episodes";
+        [Tooltip("The next episode's name.")]
+        public string SlabEpisodesName = "Episode 2";
+        [Tooltip("Under the next episode's name.")]
+        public string SlabEpisodesSoon = "Coming soon";
+        [Tooltip("The Episodes table's one line.")]
+        public string SlabEpisodesLine = "Voyages and the Saga are open now.";
+        [Tooltip("On the Episodes table's front face.")]
+        public string SlabEpisodesFace = "New episodes arrive here";
+        [Tooltip("The Episodes table's button back to the Voyages tab.")]
+        public string SlabEpisodesBack = "BACK TO VOYAGES";
+        [Tooltip("The keycap before the Episodes table's button (empty: none).")]
+        public string SlabEpisodesBackKey = "LB";
+        [Tooltip("Over the saga's name on the Saga table while the saga is locked.")]
+        public string SlabSagaLockedKicker = "Saga";
+        [Tooltip("The locked Saga table's one line.")]
+        public string SlabSagaLockedLine = "Voyages are open now.";
+        [Tooltip("On the locked Saga table's front face.")]
+        public string SlabSagaLockedFace = "The saga opens here";
     }
 }

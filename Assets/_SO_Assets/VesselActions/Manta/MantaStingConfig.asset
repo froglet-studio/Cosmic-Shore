@@ -19,6 +19,14 @@ MonoBehaviour:
   explosiveLift: 0.55
   explosiveLiftFadeSeconds: 0.25
   fuseSeconds: 20
+  fuseScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.5
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
   plantSpeedMargin: 0
   aoePrefabs:
   - {fileID: 3479271500403630839, guid: 457e8bc651da151132eb1c90adb8b3bb, type: 3}

@@ -4,9 +4,9 @@ using UnityEngine;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The open voyage column's rules that hold no UI (Docs/MENU_REDESIGN_B.md sections 119 and 151), so EditMode tests
-    /// can hold them: stepping through the story's beats, cycling a value among options, and where a card stands on the
-    /// coverflow.
+    /// The open voyage card's rules that hold no UI (Docs/MENU_REDESIGN_B.md section 119), so EditMode tests can hold
+    /// them: stepping through the voyages and the story's beats, cycling a seat's setting, and framing the course on the
+    /// card's ground (<see cref="VoyageRoutePoster"/>).
     /// </summary>
     public static class VoyageCardRules
     {
@@ -51,26 +51,37 @@ namespace CosmicShore.UI
             return out_;
         }
 
-        /// <summary>Where a card stands on the coverflow (Rev 71 C, picked): its offset across in card steps, its turn
-        /// about the vertical axis in degrees, its scale and its opacity.</summary>
-        public readonly struct Pose
-        {
-            public readonly float Step, Turn, Scale, Alpha;
-            public Pose(float step, float turn, float scale, float alpha) { Step = step; Turn = turn; Scale = scale; Alpha = alpha; }
-        }
-
         /// <summary>
-        /// The pose of the card <paramref name="offset"/> places from the picked one (negative to the left): the picked
-        /// card faces front at full size; each step out turns 40 degrees away and shrinks by 0.18, stopping at two steps;
-        /// opacity falls 1, 0.7, 0.35 (the boards' numbers, Docs/MENU_REDESIGN_B.md section 148).
+        /// The part of the painted water (<paramref name="lo"/>..<paramref name="hi"/>, map points) the card's ground
+        /// shows: centred on the course, about half again as large as it, at the card's <paramref name="aspect"/>
+        /// (width / height), and never outside the water. Returns the shown corners.
         /// </summary>
-        public static Pose FlowPose(int offset)
+        public static (Vector2 lo, Vector2 hi) Frame(Vector2 lo, Vector2 hi, IReadOnlyList<Vector2> course, float aspect,
+            float margin = 1.5f)
         {
-            int a = Mathf.Abs(offset);
-            float turn = offset == 0 ? 0f : -Mathf.Sign(offset) * 40f;
-            float scale = 1f - Mathf.Min(a, 2) * 0.18f;
-            float alpha = a == 0 ? 1f : a == 1 ? 0.7f : 0.35f;
-            return new Pose(offset, turn, scale, alpha);
+            aspect = Mathf.Max(1e-3f, aspect);
+            var size = hi - lo;
+            if (size.x <= 0f || size.y <= 0f) return (lo, hi);
+            // The largest window of the card's shape that fits the water.
+            float w = size.x, h = size.x / aspect;
+            if (h > size.y) { h = size.y; w = h * aspect; }
+            Vector2 centre = (lo + hi) * 0.5f;
+            if (course != null && course.Count > 0)
+            {
+                Vector2 cmin = course[0], cmax = course[0];
+                foreach (var p in course) { cmin = Vector2.Min(cmin, p); cmax = Vector2.Max(cmax, p); }
+                centre = (cmin + cmax) * 0.5f;
+                var span = (cmax - cmin) * margin;
+                float need = Mathf.Max(span.x, span.y * aspect);
+                if (need > 1e-3f && need < w)
+                {
+                    w = need;
+                    h = w / aspect;
+                }
+            }
+            float x0 = Mathf.Clamp(centre.x - w * 0.5f, lo.x, hi.x - w);
+            float y0 = Mathf.Clamp(centre.y - h * 0.5f, lo.y, hi.y - h);
+            return (new Vector2(x0, y0), new Vector2(x0 + w, y0 + h));
         }
     }
 }

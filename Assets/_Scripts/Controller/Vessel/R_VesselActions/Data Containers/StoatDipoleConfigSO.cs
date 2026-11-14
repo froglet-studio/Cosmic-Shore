@@ -335,8 +335,8 @@ namespace CosmicShore.ScriptableObjects
         public float WorldDotMinPixels => worldDotMinPixels;
         public float DotDepthMinScale => dotDepthMinScale;
         public float DotDepthFade => dotDepthFade;
-        public Color OpenColor => openColor;
-        public Color WarpedColor => warpedColor;
+        public Color OpenColor => ColorTrace.Retrace(ColorTrace.World, openColor);
+        public Color WarpedColor => ColorTrace.Retrace(ColorTrace.World, warpedColor);
         public float ForesightLength => foresightLength;
         public float ForesightRange => foresightRange;
         public int ForesightMaxRivals => Mathf.Clamp(foresightMaxRivals, 1, 6);

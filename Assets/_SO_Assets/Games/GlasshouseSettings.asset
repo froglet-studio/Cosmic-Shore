@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e3467de98fb5fa9a8ddfe769dcf2dcf, type: 3}
+  m_Name: GlasshouseSettings
+  m_EditorClassIdentifier:
+  gardenSampleSeconds: 1
+  leadAnnounceAfterSeconds: 15
+  leadAnnounceMinGapSeconds: 8
+  aiLureHoldSeconds:
+  - 2.5
+  - 3.5
+  - 4.5
+  - 5.5
+  aiRaidAtSchool:
+  - 99
+  - 6
+  - 4
+  - 3
+  aiRaidSeconds:
+  - 0
+  - 6
+  - 9
+  - 12
+  aiSeedReach:
+  - 900
+  - 1400
+  - 2000
+  - 2600
+  aiGardenBandFraction: 0.35
+  aiArriveDistance: 60
+  aiTendIntervalSeconds: 12

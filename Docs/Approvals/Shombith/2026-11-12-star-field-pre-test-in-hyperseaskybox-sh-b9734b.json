@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-12-star-field-pre-test-in-hyperseaskybox-sh-b9734b",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T06:11:07+00:00",
+  "area": "HyperSea sky shader",
+  "summary": "Star field pre-test in HyperSeaSkybox.shader: empty cells rejected before the normalize/pow; bit-identical on all three APIs, 1.06-1.09x on top of W3 (Proven Win W4).",
+  "branch": "claude/proven-win-2",
+  "commit": "8c43757bb"
+}

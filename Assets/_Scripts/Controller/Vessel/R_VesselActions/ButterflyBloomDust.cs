@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
@@ -133,7 +134,8 @@ namespace CosmicShore.Gameplay
             if (_rng == 0) _rng = 0x9E3779B9u;
             _domain = _explosion.Domain;
             _fullRadius = _colliderRadius * _explosion.MaxScale;
-            ButterflyDustField.ResolveMotePalette(_gameData, _domain, dustColor, _colours);
+            // The fallback (a Blue pilot, or no palette) as the worn colour set paints it; the domain tiers are the set's.
+            ButterflyDustField.ResolveMotePalette(_gameData, _domain, ColorTrace.Retrace(ColorTrace.World, dustColor), _colours);
             Build();
         }
 

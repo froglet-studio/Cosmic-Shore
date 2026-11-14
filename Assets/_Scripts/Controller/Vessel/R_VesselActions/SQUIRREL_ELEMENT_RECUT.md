@@ -8,14 +8,46 @@ owns the thing it is **named** for on this hull:
 
 | Element | Ability | Input | Scaling | L5 |
 |---|---|---|---|---|
-| **Charge** | Crystal Joust | passive | petals stolen per overtake ×1 → ×2.5 *(2026-09-28)* | **Shepherd** *(moved from Space)* |
+| **Charge** | Crystal Joust | passive | the least speed a joust needs, 90 → 45 u/s *(2026-11-11; was petals stolen per overtake ×1 → ×2.5 from 2026-09-28)* | **Shepherd** *(moved from Space)* |
 | **Mass** | Boost Ring *(moved from Time)* | RT | cooldown ×1 → ×0.5 | **Twin Rings** |
 | **Space** | Steal | passive | skimmer sphere 15 → 30 *(unchanged)* | **Iron Grip** *(new)* |
 | **Time** | Skimming *(moved from Charge)* | passive | skim energy ×1 → ×2 | **Live Wire** |
 
 Mass's old row — trail VOLUME and the `Heavy Trail` L5 — is **retired to base**, not moved.
 
-## Charge scales the STEAL (filled 2026-09-28)
+## Charge is the joust's SPEED (re-cut 2026-11-11, Garrett)
+
+*"Let's change squirrel's from petals to the minimum speed with which a joust (vessel or fauna) is possible. Show the
+speed gauge on its charge icon with the tick on the threshold."* Petals were too coarse a dial: a steal settles in whole
+petals, so Charge 0 → 10 moved a joust from about one petal per element to two.
+
+- **The rule.** A joust lands only at or above the minimum joust speed: 90 u/s at rest (one and a half times the
+  Squirrel's 60 u/s cruise, so it skims for boost first), 67.5 at Charge 5, 45 at Charge 10 (a cruising Squirrel
+  jousts), 112.5 at Charge −5. It is a FLOOR on top of each joust's own rule, never instead of it: a vessel joust still
+  has to out-run its victim, a lifeform joust its creature (`speedMargin`).
+- **One asset, five readers.** `SquirrelJoustSpeed.asset` (`JoustSpeedConfigSO.minimumSpeed`, an `ElementalFloat` on
+  Charge, read at the replicated level so every deciding machine agrees) is asked by the vessel joust's score and steal
+  (`VesselCombatHitBySkimmerEffectSO`) and by its joust point and impact blast (`VesselExplosionBySkimmerEffectSO`), both
+  through `ContactAdmission.AdmittedBySiblings` and the new `IContactAdmission` on the Squirrel's take, so a slow contact
+  claims no window, takes nothing, scores nothing and counts no joust; by the friendly joust's buff
+  (`VesselOvertakeBySkimmerEffectSO.Execute`); by the lifeform joust (`VesselWitherLifeformByCrystalEffectSO`, the kill
+  and Shepherd's nourish alike); and by the HUD. The two shared skimmer assets (`VesselCombatHitByJoust`,
+  `VesselExplosionBySkimmerEffect`, five hulls each) did not change; the rule lives on the Squirrel's own take, so the
+  Stoat, Shrike, Brittle Star and Thresher joust exactly as before.
+- **The Joust mode changes with it.** `Joust` (`GameModes` 34) seats only Squirrels and counts the joust point, so a
+  joust below the minimum no longer counts there: at Charge 0 a pilot must be skim-boosted past 90 u/s. Its joust target
+  and its AI may want a playtest and a retune (the mode's own levers, never the Squirrel's kit).
+- **The steal is flat.** `stealScale` on `VesselOvertakeBySkimmerEffect.asset` is disabled (×1): every steal takes the
+  priced Strike, 0.8 petal per element. The Swordfish's sword keeps its own Charge-scaled steal.
+- **The Charge card shows it.** The card's plate is now a SPEED gauge (`SquirrelVesselHUDView.SetJoustSpeed`, generated
+  in `EnsureGeneratedAbilityIcons` and adopted by the lockup like an authored gauge), full at the hull's fastest (cruise
+  × skim-boost ceiling, 60 × 5 = 300 u/s, read off its transformer). The minimum is one mark on it, drawn the way the
+  Rhino draws Momentum: a dim tick in from each slanted edge while you are too slow, a gap cut through the fill once you
+  are fast enough. At rest the mark sits at 30% of the plate, at Charge 10 at 15%.
+- **Tests:** `SquirrelJoustSpeedTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Squirrel: Charge is the
+  joust's speed".
+
+## Charge scaled the STEAL (filled 2026-09-28, retired 2026-11-11)
 
 The row shipped as a deliberate hole. It is now filled, by design request: **Charge controls how
 many elemental petals (crystals) a joust steals off an overtaken pilot** —

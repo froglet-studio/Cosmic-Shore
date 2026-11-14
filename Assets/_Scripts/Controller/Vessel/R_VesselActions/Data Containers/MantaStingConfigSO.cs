@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using FMODUnity;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -12,14 +13,16 @@ namespace CosmicShore.Gameplay
     /// (Sting is bound to no input event, so <c>CollectBoundActions</c> can never resolve it).
     ///
     /// Who owns what:
-    ///  • CHARGE (Sting) - how many petals each bloom knocks out of a rival (authored on
-    ///    MantaBombDebuffByExplosionEffect.asset, magnitudeAtFullCharge); Contagion at level 5. The fuse is fixed.
+    ///  • CHARGE (Sting) - how long the shared fuse runs when a plant resets it (<see cref="fuseSeconds"/> times
+    ///    <see cref="fuseScale"/>, read at each reset: <see cref="FuseSecondsFor"/>); Contagion at level 5. Charge
+    ///    no longer touches the petals a bloom knocks out of a rival: a petal is a whole unit, too coarse a dial to
+    ///    tune (Garrett, 2026-11-10), so the bloom's take is flat (MantaBombDebuffByExplosionEffect.asset).
     ///  • SPACE - the skimmer's size (authored on Manta.prefab's Skimmer.Scale, 20 → 40) and the energy the skim
     ///    gathers; skimming an opposing domain's prism primes it EXPLOSIVE, and at level 5 the skim pops its shield
     ///    first. The space card shows the energy.
     ///  • MASS (Decoy) - a collected elemental crystal leaves a decoy behind, which lasts longer with Mass
     ///    (<see cref="DecoyLifetimeFor"/>); at level 5 the omni crystal leaves one too.
-    ///  • TIME - Yastri (the turn) and the soaring speed, with Soar unlocking at level 5 (not this asset).
+    ///  • TIME - Yawstery (the turn) and the soaring speed, with Soar unlocking at level 5 (not this asset).
     /// </summary>
     [CreateAssetMenu(fileName = "MantaStingConfig",
         menuName = "ScriptableObjects/Vessel Actions/Manta Sting Config")]
@@ -52,10 +55,18 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float explosiveLiftFadeSeconds = 0.25f;
 
         [Header("Shared fuse (CHARGE card) - one timer for every bomb")]
-        [Tooltip("The shared fuse, seconds. Every new bomb resets it to the full length, so every bomb on the board " +
-                 "always goes off together. No element scales it (Charge scales the petals a bloom knocks loose). " +
-                 "Bloomrush overrides this per intensity through MantaBombRules.FuseSecondsOverride.")]
+        [Tooltip("The shared fuse at the RESTING Charge level, seconds. Every new bomb resets it to the full length " +
+                 "(this times fuseScale), so every bomb on the board always goes off together. Bloomrush replaces " +
+                 "this resting length per intensity through MantaBombRules.FuseSecondsOverride; Charge still scales " +
+                 "whichever applies.")]
         [SerializeField, Min(1f)] float fuseSeconds = 20f;
+
+        [Tooltip("CHARGE → the fuse: how many times fuseSeconds a plant resets the shared fuse to, by the planter's " +
+                 "Charge at that moment. x1 at rest, Max at Charge 10, extrapolated through the deficit and overcharge " +
+                 "bands; the floor keeps a drained Charge from collapsing the fuse. A plant at a higher Charge buys the " +
+                 "whole board the longer fuse. Charge used to scale the petals a bloom knocks loose - a petal is a whole " +
+                 "unit, too coarse a dial to tune (Garrett, 2026-11-10).")]
+        [SerializeField] ElementalFloat fuseScale = ElementalFloat.Multiplier(1f, 1.5f, Element.Charge, 0.5f);
 
         [Header("Planting")]
         [Tooltip("How much FASTER than the target the Manta must be moving to plant on a VESSEL (u/s). 0 = any " +
@@ -202,8 +213,9 @@ namespace CosmicShore.Gameplay
         public float DecoyTriggerRadiusScale => decoyTriggerRadiusScale;
         public bool ShowFuseMarker => showFuseMarker;
         public float MarkerRadius => markerRadius;
-        public Color MarkerCalmColor => markerCalmColor;
-        public Color MarkerCriticalColor => markerCriticalColor;
+        // the fuse marker is a halo in the world: as the worn colour set paints it
+        public Color MarkerCalmColor => ColorTrace.Retrace(ColorTrace.World, markerCalmColor);
+        public Color MarkerCriticalColor => ColorTrace.Retrace(ColorTrace.World, markerCriticalColor);
         public float MarkerCriticalSeconds => markerCriticalSeconds;
         public float MarkerCalmPulseHz => markerCalmPulseHz;
         public float MarkerCriticalPulseHz => markerCriticalPulseHz;
@@ -236,12 +248,24 @@ namespace CosmicShore.Gameplay
             bombCount <= 1 ? 1f
                 : Mathf.Min(omniScaleMultiplierMax, 1f + omniScalePerExtraBomb * (bombCount - 1));
 
-        /// <summary>The shared fuse length, seconds (the mode override applied first).</summary>
-        public float FuseSecondsFor(IVesselStatus status)
-        {
-            float authored = MantaBombRules.FuseSecondsOverride ?? fuseSeconds;
-            return Mathf.Max(1f, authored);
-        }
+        /// <summary>
+        /// CHARGE → the length a plant resets the shared fuse to, seconds: the resting length (a mode's override when one
+        /// is set, else <see cref="fuseSeconds"/>) times <see cref="fuseScale"/> at the planter's live Charge. The
+        /// executor reads it at each reset, on the one machine that simulates the bombs (no other machine runs the fuse),
+        /// so the continuous level is the right one, and it is finer than any petal.
+        /// </summary>
+        public float FuseSecondsFor(IVesselStatus status) =>
+            Mathf.Max(1f, FuseSecondsAtRest * fuseScale.EvaluateLive(status));
+
+        /// <summary>
+        /// <see cref="FuseSecondsFor"/> at a normalized Charge level (0 at rest, 1 at Charge 10, -0.5 to 1.5 at the band's
+        /// ends): the pure form, for tests and the numbers the docs quote.
+        /// </summary>
+        public float FuseSecondsAtLevel(float chargeLevel01) =>
+            Mathf.Max(1f, FuseSecondsAtRest * fuseScale.EvaluateAtNormalizedLevel(chargeLevel01));
+
+        /// <summary>The fuse at the resting Charge level: the mode's override when one is set, else the authored length.</summary>
+        float FuseSecondsAtRest => MantaBombRules.FuseSecondsOverride ?? fuseSeconds;
 
         /// <summary>MASS → how long one of this vessel's decoys waits to be taken, seconds.</summary>
         public float DecoyLifetimeFor(IVesselStatus status) =>
@@ -252,7 +276,8 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Mode-level dials for the Manta bomb system. A minigame that wants a different fuse (Bloomrush's per-intensity
     /// ladder) sets the override at round start and clears it on teardown; the executor reads it each time a bomb
-    /// resets the shared fuse. Static by design, with the mandatory domain-reload reset.
+    /// resets the shared fuse. The override replaces the RESTING length only: the planter's Charge still scales it
+    /// (<see cref="MantaStingConfigSO.FuseSecondsFor"/>). Static by design, with the mandatory domain-reload reset.
     /// </summary>
     public static class MantaBombRules
     {

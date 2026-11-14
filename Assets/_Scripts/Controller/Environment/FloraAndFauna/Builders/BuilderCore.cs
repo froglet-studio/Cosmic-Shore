@@ -187,13 +187,6 @@ namespace CosmicShore.Gameplay
         public bool Desperate(float stomach) => stomach < Capacity * MathF.Min(OwnDomainBelow, HungryBelow);
     }
 
-    /// <summary>Shared vector helpers (research bestiary/core.py: unit, clamp_len, steer).</summary>
-    /// <summary>
-    /// Round 11f-2 (Docs/ECOLOGY_LOD.md §6.2): a colony COLLAPSED far from every pilot ROOSTS - its members hold still and
-    /// each burns its stomach at the torpor rate, the rule the cores already apply to a roosting member. A roost never kills:
-    /// the owner expands the colony before its emptiest stomach runs out, so starvation is always an individual's death
-    /// (through <c>Kill(k, StarvedBy)</c> and a proxy's crystal). Shared by the three builder cores.
-    /// </summary>
     /// <summary>
     /// Round 11-10 (Docs/SWARM_FAUNA.md §27): the builder cores' mass ledger is EXACT. A stomach is a float and its
     /// metabolism is a few ten-thousandths of a volume a tick, so "stomach -= burn; Metabolised += burn" in float lost
@@ -219,6 +212,12 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// Round 11f-2 (Docs/ECOLOGY_LOD.md §6.2): a colony COLLAPSED far from every pilot ROOSTS - its members hold still and
+    /// each burns its stomach at the torpor rate, the rule the cores already apply to a roosting member. A roost never kills:
+    /// the owner expands the colony before its emptiest stomach runs out, so starvation is always an individual's death
+    /// (through <c>Kill(k, StarvedBy)</c> and a proxy's crystal). Shared by the three builder cores.
+    /// </summary>
     public static class BuilderRoost
     {
         /// <summary>Burns <paramref name="rate"/> x <paramref name="dt"/> from every living member's stomach (never below 0,
@@ -258,6 +257,7 @@ namespace CosmicShore.Gameplay
         KillOnEmpty = 2,
     }
 
+    /// <summary>Shared vector helpers (research bestiary/core.py: unit, clamp_len, steer).</summary>
     public static class BuilderMath
     {
         public static Vector3 Unit(Vector3 v)

@@ -642,6 +642,20 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Settings > REGION: re-creates this player's SOLO party session in the Relay region now chosen
+        /// (<see cref="RelayRegionPreference"/>). A Relay allocation cannot change region, so the session is rebuilt
+        /// through the one cold-boot sequence a solo host already takes when it leaves a party (fade, leave the
+        /// session, shut Netcode down, reload Menu_Main, create the session again; <see cref="LeavePartyAndReturnToMenuAsync"/>).
+        /// The caller checks that nobody else is in the party: a guest would be dropped.
+        /// </summary>
+        public UniTask MoveSoloHostToChosenRegionAsync()
+        {
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[PartyInviteController] Moving the solo party session to region {(RelayRegionPreference.IsAuto ? "auto" : RelayRegionPreference.RegionId)}.");
+            return LeavePartyAndReturnToMenuAsync();
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Public API: Host-side Transition
         // ─────────────────────────────────────────────────────────────────────

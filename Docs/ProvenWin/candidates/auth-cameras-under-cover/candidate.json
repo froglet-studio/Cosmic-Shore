@@ -1,0 +1,22 @@
+{
+ "id": "auth-cameras-under-cover",
+ "title": "Authentication screen: stop the cameras that render under the opaque full-screen background",
+ "owner": "Shombith",
+ "lane": "ui",
+ "kind": "scene",
+ "metricCounter": "Main Thread",
+ "runtimeWriters": "Authentication.unity: Main Camera (line ~397) renders the world every frame; both canvases are Screen Space Overlay (m_RenderMode 0), so the UI does not need a camera; Background (line ~11937) covers the screen. In the real flow the Bootstrap cameras (DontDestroyOnLoad) also render; this bench opens the scene alone, so it measures only its own camera.",
+ "exposure": "Authentication.unity, every launch, while the sign-in screen is up.",
+ "scene": {
+  "common": {
+   "scene": "Assets/_Scenes/Authentication.unity",
+   "toggleTypes": "UnityEngine.Camera",
+   "setupMethod": "none",
+   "ownerType": "none"
+  },
+  "change": {},
+  "neg": {
+   "toggleTypes": "UnityEngine.Camera;UnityEngine.Canvas"
+  }
+ }
+}

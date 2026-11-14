@@ -769,10 +769,29 @@ _METHOD = re.compile(r"^ {8}(?:\[[^\]]*\]\s*)?(?:(?:public|private|protected|int
                      r"async|new)\s+)*[\w<>\[\],.?]+\s+(\w+)\s*\([^;{]*$", re.M)
 
 
+_RETRACE = re.compile(r"\bColorTrace\.Retrace\(\s*(?:ColorTrace\.\w+|\"\w+\")\s*,\s*")
+
+
+def unwrap_retrace(expr):
+    """`ColorTrace.Retrace(role, c)` -> `c`, wherever it sits in the expression. Retrace is the worn colour set's
+    repaint of c at runtime (Docs/VesselModels/COLOR_TRACE.md); the codex reads the authored colour, so it reads c."""
+    while True:
+        m = _RETRACE.search(expr)
+        if not m:
+            return expr
+        depth, i = 1, m.end()
+        while i < len(expr) and depth:
+            depth += {"(": 1, ")": -1}.get(expr[i], 0)
+            i += 1
+        if depth:
+            return expr
+        expr = expr[:m.start()] + expr[m.end():i - 1].strip() + expr[i:]
+
+
 def resolve_colour(expr, method, view_body, aliases=None, depth=0):
     """A colour expression -> a token (domain, shielded, danger, blue, lime, fire, grey, petalwhite, white, hidden),
     an (r, g, b, a) the prefab authors, or None when the script does not say."""
-    expr = " ".join(expr.split())
+    expr = unwrap_retrace(" ".join(expr.split()))
     if "?" in expr and ":" in expr:
         cond, rest = expr.split("?", 1)
         a, b = rest.rsplit(":", 1)
@@ -824,6 +843,9 @@ def hud_colours(hud_path, scripts_by_guid):
         for m in re.finditer(r"(?<![.\w])(_\w+)\s*=(?!=)\s*([^;]+);", text):
             if not MOMENT_METHODS.search(method_at(m.start())):
                 aliases.setdefault(m.group(1), []).append((m.group(2), method_at(m.start())))
+        # a Color property is a name for its expression too (`Color HighLightColor => ColorTrace.Retrace(..., c)`)
+        for m in re.finditer(r"\bColor\s+(\w+)\s*=>\s*([^;]+);", text):
+            aliases.setdefault(m.group(1), []).append((m.group(2), ""))
         painted = {}
         for m in re.finditer(r"\b(\w+)\.color\s*=\s*([^;]+);", text):
             name = method_at(m.start())
@@ -1211,6 +1233,69 @@ def ability_words(key, elements, omni):
             e["words"]["tint"] = words["tint"]
 
 
+TIERS = os.path.join(REPO, "Docs", "FleetCodex", "tiers.json")
+CERT_CHECKS = ["Abilities", "Level 5", "Time game", "Mass or Space game", "Charge game"]
+CERT_STAGES = ["Arena Ready", "Fleet Ready", "Launch Ready", "In the hangar"]
+
+
+def element_games(cards):
+    """The vessel's ELEMENT games: each arcade card (on the ArcadeGames roster, or on no roster) under its first element,
+    the same rule the page uses for 'Its element games'."""
+    out = {e: [] for e in ELEMENTS}
+    for c in cards:
+        els = c.get("elements") or []
+        if els and ("ArcadeGames" in (c.get("rosters") or []) or not c.get("rosters")):
+            out[els[0]].append(c["name"])
+    return out
+
+
+def certificate(v):
+    """The Flight Certificate of a SOLO vessel (Rev 84 A, picked by Shombith 2026-11-10, section 155): five checks, 20 %
+    each - every element's ability in the map; the level-5 upgrades, 5 % per wired one; a Time game; a Mass or a Space
+    game (either); a Charge game. Launch Ready = the first three with all four upgrades wired (the minimum viable pass),
+    Fleet Ready = and the fourth, Arena Ready = all five; below Launch Ready a vessel is In the hangar. Crews and vessels
+    without a map get none (None)."""
+    if not v["status"]["hasMap"] or (v["crew"] or {}).get("seats", 1) > 1:
+        return None
+    els, games = v["elements"], element_games(v["cards"])
+    abil = all(e in els and not els[e]["open"] for e in ELEMENTS)
+    wired = sum(1 for e in ELEMENTS if e in els and els[e]["upgrade"]["status"] == "wired")
+    has = {"time": bool(games["Time"]), "ms": bool(games["Mass"] or games["Space"]), "charge": bool(games["Charge"])}
+    done = [abil, wired == 4, has["time"], has["ms"], has["charge"]]
+    launch = done[0] and done[1] and done[2]
+    stage = ("Arena Ready" if launch and done[3] and done[4] else "Fleet Ready" if launch and done[3]
+             else "Launch Ready" if launch else "In the hangar")
+    detail = ["All four" if abil else f"{sum(1 for e in ELEMENTS if e in els and not els[e]['open'])} of 4",
+              f"{wired} of 4 wired", ", ".join(games["Time"]) or "None yet",
+              ", ".join(games["Mass"] + games["Space"]) or "None yet", ", ".join(games["Charge"]) or "None yet"]
+    return {"pct": 20 * abil + 5 * wired + 20 * sum(has.values()), "stage": stage, "wired": wired,
+            "checks": [{"name": n, "done": d, "detail": t} for n, d, t in zip(CERT_CHECKS, done, detail)],
+            "next": next((n for n, d in zip(CERT_CHECKS, done) if not d), None)}
+
+
+def tiers_of(key, cert, games):
+    """Each element's tier (S, A, B, C) from Docs/FleetCodex/tiers.json, the one place a person rates a vessel: a letter,
+    null for not rated yet, or '-' where the vessel has no game of that element (no letter can be given there; one that is
+    is dropped with a warning)."""
+    if cert is None:
+        return None
+    table = json.load(open(TIERS, encoding="utf-8")).get(key, {}) if os.path.exists(TIERS) else {}
+    out = {}
+    for el in ELEMENTS:
+        letter = table.get(el)
+        if not games[el]:
+            if letter:
+                print(f"tiers.json: {key} {el} is rated {letter}, but {key} has no {el} game: dropped", file=sys.stderr)
+            out[el] = "-"
+        elif letter in ("S", "A", "B", "C"):
+            out[el] = letter
+        else:
+            if letter:
+                print(f"tiers.json: {key} {el} '{letter}' is not S, A, B or C: dropped", file=sys.stderr)
+            out[el] = None
+    return out
+
+
 def hud_l5_fields():
     """{field: element} for every Sprite a vessel HUD view serializes under a "(<ELEMENT> 5)" header - the art the HUD
     script swaps in itself when that upgrade comes on (the Serpent's five-row pellet slots, "Fifth pellet (TIME 5)")."""
@@ -1256,6 +1341,14 @@ def upgrade_art(key, elements, art, pngs_by_dir, png_index=None, l5_fields=None)
         e["upgrade"]["icon"] = art.png(os.path.relpath(hit, REPO), f"ab/{key}_{el}_L5.png") if hit else None
 
 
+def palette_bytes(path):
+    """A colour set's bytes without its TracedColors list. The colour trace (Docs/VesselModels/COLOR_TRACE.md) rewrites
+    that list on every set whenever any colour in the game is traced, and no render reads it, so it must not make every
+    vessel render again."""
+    text = open(path, encoding="utf-8").read()
+    return re.sub(r"^  TracedColors:.*\n(?:  - .*\n|    .*\n)*", "", text, flags=re.M).encode()
+
+
 def domain_images(vessels, preview_by_value, out_dir, render=False):
     """{domain: img/dom/<model>_<Domain>_<hash>.webp} per vessel: the hangar preview rendered in that domain's livery
     by Tools/Build/vessel_model/render_cards.py (its camera, look and the palette's domain colours), for the model the
@@ -1279,7 +1372,7 @@ def domain_images(vessels, preview_by_value, out_dir, render=False):
     tool = hashlib.sha256()
     for f in ("render_cards.py", "vessel_colors.py"):
         tool.update(open(os.path.join(vm, f), "rb").read())
-    tool.update(open(COLOR_SET, "rb").read())
+    tool.update(palette_bytes(COLOR_SET))
     dom_dir = os.path.join(out_dir, "img", "dom")
     os.makedirs(dom_dir, exist_ok=True)
     keep = set()
@@ -1420,6 +1513,8 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
             upgrade_art(v["key"], v["elements"], art, pngs_by_dir, png_index, l5_fields)
         for card in v["cards"]:
             card["art"] = card_art(card.get("asset"), art, png_index, card["name"])
+        v["certificate"] = certificate(v)
+        v["tiers"] = tiers_of(v["key"], v["certificate"], element_games(v["cards"]))
 
     def icon_layers(rel):
         if not rel or not art.enabled:
@@ -1498,7 +1593,9 @@ def main():
     v = data["vessels"]
     print(f"fleet.json: {len(v)} vessels, {sum(x['status']['abilities'] for x in v)} abilities, "
           f"{sum(x['status']['upgradesWired'] for x in v)} L5 upgrades wired, "
-          f"{sum(len(x['cards']) for x in v)} card seats; content {data['contentHash']} at {data['commit']}")
+          f"{sum(len(x['cards']) for x in v)} card seats; "
+          + ", ".join(f"{sum(1 for x in v if (x.get('certificate') or {}).get('stage') == st)} {st}" for st in CERT_STAGES)
+          + f"; content {data['contentHash']} at {data['commit']}")
     print(f"written to {os.path.abspath(a.out)}")
     if a.files_json:
         out = os.path.abspath(a.out)

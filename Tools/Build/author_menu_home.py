@@ -675,7 +675,7 @@ def upnext_node():
              f"  questMeterText: {ref(ctx.c('UpNext/Quest/MeterText', 'tmp'))}\n"
              + K.refs_list("questMeterSegments", [ctx.c(f"UpNext/Quest/Meter{i + 1}", "th") for i in range(4)])
              + f"  weeklyDock: {ref(ctx.c('UpNext/Weekly', 'dock'))}\n  questDock: {ref(ctx.c('UpNext/Quest', 'dock'))}\n"
-             + "  noBestText: None yet\n  readyToClaimText: Ready to claim in Quests\n"
+             + "  noBestText: None yet\n  readyToClaimText: Ready to claim in Voyage\n"
              + "  nextGoalTemplate: 'Next: {goal}'\n  allUnlockedText: Every intensity unlocked\n"
              + "  meterTemplate: Intensity {level} of {max}\n"
              + f"  games: {K.ref(11400000, ARCADE_GAMES, 2)}\n  screenSwitcher: {ref(SWITCHER)}\n  refreshSeconds: 1\n"))

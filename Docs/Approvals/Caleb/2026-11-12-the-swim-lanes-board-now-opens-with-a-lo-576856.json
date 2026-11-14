@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-12-the-swim-lanes-board-now-opens-with-a-lo-576856",
+  "to": "Caleb",
+  "by": "Garrett",
+  "date": "2026-11-12T20:48:41+00:00",
+  "area": "the /swimlanes board and approvals.py (#1896)",
+  "summary": "The swim lanes board now opens with a LOOP tier: every unoccupied vessel is its own lane through the elemental loop with its progress and next step, above work waiting; approvals.py list ranks open entries by loop impact (the loop rework a late catch would cause) and add takes --vessel/--element/--loop-step.",
+  "why": "Garrett 2026-11-12: the loop should dominate /swimlanes and /approve",
+  "branch": "claude/project-thread-d7a2bi",
+  "lane": "claude-tooling",
+  "commit": "e0d9dd83f",
+  "paths": [
+    ".claude/skills/approve/SKILL.md",
+    ".claude/skills/swimlanes/SKILL.md",
+    ".claude/skills/swimlanes/swimlanes.py",
+    "Tools/Build/approvals.py"
+  ]
+}

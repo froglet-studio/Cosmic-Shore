@@ -450,11 +450,6 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        /// <summary>
-        /// A per-pilot offset (in the ring's plane, inside its mouth) added to where an AI aims through ring
-        /// <paramref name="ringNo"/>. Zero by default: every AI aims at the same centre-line points, so in a mode whose
-        /// hulls lay trails each AI flies straight down the trail the one ahead just laid (Switchback, Yash 2026-10-29).
-        /// </summary>
         /// <summary>The per-frame imminent-impact hook installed on every armed AI (<see cref="AIPilot.SetEmergencySteerProvider"/>), or null.</summary>
         protected virtual AIPilot.EmergencySteer AIEmergencySteerFor(IPlayer pilot) => null;
 
@@ -470,6 +465,11 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        /// <summary>
+        /// A per-pilot offset (in the ring's plane, inside its mouth) added to where an AI aims through ring
+        /// <paramref name="ringNo"/>. Zero by default: every AI aims at the same centre-line points, so in a mode whose
+        /// hulls lay trails each AI flies straight down the trail the one ahead just laid (Switchback, Yash 2026-10-29).
+        /// </summary>
         protected virtual Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) => Vector3.zero;
 
         /// <summary>

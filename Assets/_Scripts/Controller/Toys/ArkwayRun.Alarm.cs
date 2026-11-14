@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -26,6 +27,8 @@ namespace CosmicShore.Gameplay
         Ark _alarmArk;
         float _alarmUntil = -1f;
         bool _alarmShown;
+        // The colour set the burning arrow's Fire was painted from (ColorTrace.Version): another one worn repaints it.
+        int _alarmAccentVersion;
         ArkLeashShell _leashShell;
 
         /// <summary>True while the damage alarm burns.</summary>
@@ -59,10 +62,15 @@ namespace CosmicShore.Gameplay
         void SetAlarmShown(bool shown)
         {
             if (!_arrow) { _alarmShown = false; return; }
-            if (shown == _alarmShown) return;
+            if (shown == _alarmShown && (!shown || _alarmAccentVersion == ColorTrace.Version)) return;
             _alarmShown = shown;
             _arrow.ShowWhenOnScreen = shown;
-            if (shown) _arrow.SetAccent(FireColour);
+            if (shown)
+            {
+                // The arrow is drawn on the HUD canvas: Fire as the worn colour set paints it.
+                _alarmAccentVersion = ColorTrace.Version;
+                _arrow.SetAccent(ColorTrace.Retrace(ColorTrace.Ui, FireColour));
+            }
             else _arrow.ClearAccent();
         }
 
@@ -71,7 +79,8 @@ namespace CosmicShore.Gameplay
         void EnsureLeashShell()
         {
             if (_leashShell) return;
-            _leashShell = ArkLeashShell.Create(transform, LeashShellColour);
+            // Its material is made once; a set worn later repaints it there (WorldColorTrace, by value).
+            _leashShell = ArkLeashShell.Create(transform, ColorTrace.Retrace(ColorTrace.World, LeashShellColour));
         }
 
         void DestroyLeashShell()

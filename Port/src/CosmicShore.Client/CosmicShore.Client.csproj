@@ -45,4 +45,8 @@
     <EmbeddedResource Include="Assets/squirrel.mesh" />
   </ItemGroup>
 
+  <!-- UnityEngine.GL has a look-alike (CosmicShore.Engine.GL); in renderer code GL is Silk's OpenGL API. -->
+  <ItemGroup>
+    <Using Include="Silk.NET.OpenGL.GL" Alias="GL" />
+  </ItemGroup>
 </Project>

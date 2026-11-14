@@ -562,6 +562,11 @@ namespace CosmicShore.UI
                     // Rampage's provider again: the nearest managed omni crystal, in the field's clear centre. The
                     // sheaves are in plain sight; the crystal is the windmill - the one thing worth racing to.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Harvest");
+                case GameModes.Glasshouse:
+                    // Rampage's provider: the nearest managed omni crystal. In the garden that crystal is the next
+                    // SEED (and a creature), the one thing a pilot has to go and fetch; the planting and the tending
+                    // happen wherever the pilot lets go of the lure.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Glasshouse");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's
@@ -1151,16 +1156,6 @@ namespace CosmicShore.UI
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
 
         /// <summary>
-        /// Point the goal stack at this mode's objective - its glyph, its name and its target,
-        /// all resolved from the mode's own ScoringRuleSO. Called once the game config is
-        /// authoritative and again at turn start, because a client can reach Start() before the
-        /// config ClientRpc lands; until it does the stack has no metric and draws nothing rather
-        /// than another mode's objective.
-        ///
-        /// The COUNT does not come through here - it arrives on every monitor tick through
-        /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
-        /// </summary>
-        /// <summary>
         /// The eye under the goal stack that appears while somebody is spectating this pilot.
         /// Ensured in code rather than authored: the goal stack lives in two forked GameCanvas
         /// prefabs across a dozen scenes, so an authored badge would be a hand-edit in both and
@@ -1192,6 +1187,16 @@ namespace CosmicShore.UI
             PilotSwapIndicator.Ensure(parent, gameData, stackRect, scoreBar);
         }
 
+        /// <summary>
+        /// Point the goal stack at this mode's objective - its glyph, its name and its target,
+        /// all resolved from the mode's own ScoringRuleSO. Called once the game config is
+        /// authoritative and again at turn start, because a client can reach Start() before the
+        /// config ClientRpc lands; until it does the stack has no metric and draws nothing rather
+        /// than another mode's objective.
+        ///
+        /// The COUNT does not come through here - it arrives on every monitor tick through
+        /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
+        /// </summary>
         protected void RefreshGoalStack()
         {
             var stack = view != null ? view.GoalStack : null;

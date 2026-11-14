@@ -78,10 +78,58 @@ def decoys():
     return [(j, 1.0), (decoy, 0.55)]
 
 
+# ---- level 5 (the vessel pass, 2026-11-13): each the binding's upgradedSprite, swapped in when the upgrade unlocks --
+def attack():
+    """Charge 5 ATTACK: the herd turns on a rival - three creatures converging, noses on a rival hull (the fleet hull)."""
+    import motifs
+    tx, ty = 98.0, 36.0
+    rival = motifs.hull(tx, ty, 24, heading=-90)
+    herd = empty()
+    for x, y in ((62, 70), (88, 84), (44, 54)):
+        herd |= creature(x, y, 40, 22, ang=math.degrees(math.atan2(ty - y, tx - x)))
+    return rival | (herd & ~grow(rival, 4))
+
+
+def mass_clusters():
+    """Mass 5 MASS CLUSTERS: a herd creature laying a cluster of prisms behind it."""
+    import motifs
+    c = creature(84, 40, 64, 34, ang=0)
+    pile = empty()
+    for x, y in ((26, 84), (54, 84), (40, 106), (68, 106)):
+        pile |= motifs.prism(x, y, 16)
+    return c | (pile & ~grow(c, 3))
+
+
+def eat_shields():
+    """Space 5 EAT SHIELDS: a creature biting into a shielded prism, the shield's ring broken where it bites."""
+    import motifs
+    from canvas import band
+    c = creature(56, 64, 50, 28, ang=0)
+    shield = band(88, 64, 28, -140, 140, w=7)
+    core = motifs.prism(90, 64, 20)
+    return c | ((shield | core) & ~grow(c, 4))
+
+
+def second_decoy():
+    """Time 5 SECOND DECOY: a jack and TWO decoys (ghosts of the jack), one for each trigger."""
+    j = jack(68, 46, 84)
+    d1 = jack(54, 34, 34) & ~grow(j, 2.5)
+    d2 = jack(54, 94, 34) & ~grow(j | d1, 2.5)
+    return [(j, 1.0), (d1 | d2, 0.55)]
+
+
 ICONS = [
     dict(name="Jacks_TheCall", element="Mass", act="The Call: the herd called to the point between the jacks",
          draw=the_call, exempt=APART),
     dict(name="Jacks_Wide", element="Space", act="Wide: the view eased out to the whole cell", draw=wide, exempt=APART),
     dict(name="Jacks_Decoys", element="Time", act="Decoys: the decoy a trigger lays, and flies the jacks to",
          draw=decoys, exempt=APART),
+    dict(name="Jacks_Attack", element="Charge", act="Charge 5 Attack: the herd goes for rivals and bites them",
+         draw=attack, exempt=APART),
+    dict(name="Jacks_MassClusters", element="Mass", act="Mass 5 Mass Clusters: a creature lays a cluster of our prisms",
+         draw=mass_clusters, exempt=APART),
+    dict(name="Jacks_EatShields", element="Space", act="Space 5 Eat Shields: the herd eats shielded prisms",
+         draw=eat_shields, exempt=APART),
+    dict(name="Jacks_SecondDecoy", element="Time", act="Time 5 Second Decoy: a decoy for each trigger",
+         draw=second_decoy, exempt=APART),
 ]

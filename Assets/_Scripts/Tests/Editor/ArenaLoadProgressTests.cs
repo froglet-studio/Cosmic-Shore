@@ -17,10 +17,10 @@ namespace CosmicShore.Tests
     [TestFixture]
     public class ArenaLoadProgressTests
     {
-        const float Dt = 1f / 60f;
-
-        static float Step(ArenaLoadProgress p, bool laying, float lay, int grow, bool ready = false)
-            => p.Tick(Dt, laying, lay, grow, ready);
+        // One pilot, already ready, unless a test says otherwise: a solo load.
+        static float Step(ArenaLoadProgress p, bool laying, float lay, int grow, bool ready = false,
+                          int readyPilots = 1, int totalPilots = 1)
+            => p.Tick(laying, lay, grow, ready, readyPilots, totalPilots);
 
         [Test]
         public void NeverGoesBackwards_AcrossTheWholeLoad()
@@ -61,28 +61,54 @@ namespace CosmicShore.Tests
             p.Reset();
             Step(p, true, 0.4f, 0);
 
-            // The bar must reach 1, not 0.95 - a bar that vanishes short reads as an abandoned
+            // The bar must reach 1, not 0.9 - a bar that vanishes short reads as an abandoned
             // load rather than a completed one.
             Assert.AreEqual(1f, Step(p, false, 1f, 0, ready: true), 1e-6f);
         }
 
         [Test]
-        public void IdleCreepMovesButNeverReachesItsCeiling()
+        public void HoldsStillWhereNothingIsMeasured()
         {
-            // Sitting still on an unmeasurable span reads as a hang; jumping ahead lies. The creep
-            // has to do both: always move, never arrive.
+            // "Make the percentage real": the bar shows measurements only. The dwell before a build and a
+            // gap between phases have no denominator, so the value must not move there - it used to creep
+            // on a timer, which showed a number nothing had measured.
             var p = new ArenaLoadProgress();
             p.Reset();
 
-            float first = Step(p, false, 1f, 0);
-            Assert.Greater(first, 0f, "the creep must move on the very first frame");
+            for (int i = 0; i < 10000; i++) Step(p, false, 1f, 0);
+            Assert.AreEqual(0f, p.Value, 1e-6f, "the dwell moved the bar with nothing measured");
 
-            float v = first;
-            for (int i = 0; i < 10000; i++) v = Step(p, false, 1f, 0);
+            float laid = Step(p, true, 0.5f, 0);
+            for (int i = 0; i < 10000; i++) Step(p, false, 1f, 0);
+            Assert.AreEqual(laid, p.Value, 1e-6f, "a gap between phases moved the bar with nothing measured");
+        }
 
-            Assert.LessOrEqual(v, ArenaLoadProgress.DwellCeiling + 1e-4f,
-                "the dwell creep must never pass its ceiling, however long the wait - the bar " +
-                "must not claim a phase that has not started");
+        [Test]
+        public void ThePilotsShareIsReadyPilotsOverPilots()
+        {
+            var p = new ArenaLoadProgress();
+            p.Reset();
+
+            // This machine's arena is built, nobody has reported yet: the bar is at the pilots' floor.
+            Assert.AreEqual(ArenaLoadProgress.PilotsFloor, Step(p, false, 1f, 0, ready: true, readyPilots: 0, totalPilots: 4), 1e-5f);
+
+            // Two of four: half the share.
+            Assert.AreEqual((ArenaLoadProgress.PilotsFloor + 1f) / 2f,
+                            Step(p, false, 1f, 0, ready: true, readyPilots: 2, totalPilots: 4), 1e-5f);
+
+            // A pilot leaving must not take the bar back.
+            Assert.GreaterOrEqual(Step(p, false, 1f, 0, ready: true, readyPilots: 1, totalPilots: 4), (ArenaLoadProgress.PilotsFloor + 1f) / 2f - 1e-5f);
+
+            Assert.AreEqual(1f, Step(p, false, 1f, 0, ready: true, readyPilots: 4, totalPilots: 4), 1e-6f);
+        }
+
+        [Test]
+        public void NoPilotsToWaitOnFinishesTheBar()
+        {
+            // A roster that knows of no humans must never hold a bar short of 1 (it never holds the screen either).
+            var p = new ArenaLoadProgress();
+            p.Reset();
+            Assert.AreEqual(1f, Step(p, false, 1f, 0, ready: true, readyPilots: 0, totalPilots: 0), 1e-6f);
         }
 
         [Test]
@@ -110,7 +136,7 @@ namespace CosmicShore.Tests
                             half, 1e-3f);
 
             // One prism left of 500 is as good as done, but NOT the ready flag - the band's
-            // ceiling is where growing tops out, and only `ready` takes it to 1.
+            // ceiling is where growing tops out, and only the pilots' share takes it to 1.
             float nearlyDone = Step(p, false, 1f, 1);
             Assert.Greater(nearlyDone, ArenaLoadProgress.GrowCeiling - 0.01f);
             Assert.LessOrEqual(nearlyDone, ArenaLoadProgress.GrowCeiling + 1e-4f);

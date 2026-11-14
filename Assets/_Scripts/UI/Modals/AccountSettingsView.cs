@@ -5,6 +5,7 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -106,6 +107,7 @@ namespace CosmicShore.UI
                 {
                     r.mark.sprite = mark;
                     r.mark.enabled = mark;
+                    ColorGrade.KeepAsAuthored(r.mark);   // the provider's own mark: its brand fixes its colours
                 }
             }
             if (signOutButton) signOutButton.onClick.AddListener(ConfirmSignOut);

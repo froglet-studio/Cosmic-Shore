@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// turn rate grows slower than its speed. Every corner is therefore one question - <i>how much
     /// Soar is this corner worth?</i> - and <see cref="SoarRadius"/> is the curve it is asked on.
     /// No corner is tighter than <see cref="SoarOnlyMinimumRadius"/> (both triggers released, the
-    /// stick alone), so the race never needs the trigger DIFFERENCE (Yastri, the Mass ability,
+    /// stick alone), so the race never needs the trigger DIFFERENCE (Yawstery, the Mass ability,
     /// <see cref="CornerRadiusAtBoost"/>'s 82 u pivot) or a roll into pitch. Speed follows the
     /// answer with a 1.5/s exponential lag (<c>VesselTransformer.LERP_AMOUNT</c>), so Soar given up
     /// costs about two seconds to win back.</para>
@@ -128,7 +128,7 @@ namespace CosmicShore.Gameplay
         // stick's, 0.2 v + 30 deg/s. 237 u flat out, 215 u at half, 156 u with both released.
 
         /// <summary>The circle a Manta holds with both triggers at <paramref name="soar"/> in [0,1] and
-        /// the stick hard over: the Time ability alone, no Yastri.</summary>
+        /// the stick hard over: the Time ability alone, no Yawstery.</summary>
         public static float SoarRadius(float soar)
         {
             float v = SpeedAtBoost(soar);
@@ -233,7 +233,7 @@ namespace CosmicShore.Gameplay
         public static float FullSoarRadius(int timeLevel) => SoarRadius(1f, timeLevel);
 
         /// <summary>Both triggers released, the stick alone, at cruise: 175 u at Time 6, 184 at Time 10. A corner tighter
-        /// than this needs the trigger DIFFERENCE (Yastri, the Manta's Time turn).</summary>
+        /// than this needs the trigger DIFFERENCE (Yawstery, the Manta's Time turn).</summary>
         public static float StickAloneRadius(int timeLevel) => StickRadiusAt(CruiseAt(timeLevel));
 
         /// <summary>
@@ -254,7 +254,7 @@ namespace CosmicShore.Gameplay
         /// </code>
         ///
         /// <para>Before 2026-11-04 the hardest corners were 153 / 121 / 99 u at I2-I4, cut against the
-        /// Soar-AND-Yastri curve (<see cref="CornerRadiusAtBoost"/>): below the 156 u Soar alone can
+        /// Soar-AND-Yawstery curve (<see cref="CornerRadiusAtBoost"/>): below the 156 u Soar alone can
         /// make, so they asked for the one-trigger pivot (Mass) or a roll into pitch. Level 4's three
         /// even corners (125/120/115) are what keep it at three costing corners once every corner
         /// must clear 160 u: spreading the turn over four or five corners made all of them WIDER
@@ -307,7 +307,7 @@ namespace CosmicShore.Gameplay
                 }[i - 1],
                 // The floor in the Manta's own units (178 / 205 / 175 / 160 u): the tightest corner
                 // a level may ever deal, each at or above the 156 u Soar alone makes, so no level
-                // needs Yastri. At I2-I4 it is what sets the hardest corner (the profile asks for
+                // needs Yawstery. At I2-I4 it is what sets the hardest corner (the profile asks for
                 // more; the relaxation stops at the floor). CornerRadiusFactor is left at 0 on
                 // purpose: it would be read as a fraction of the RHINO's flat-out radius.
                 CornerRadiusFactor = 0f,

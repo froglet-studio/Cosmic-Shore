@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-11-four-sets-join-the-profile-s-colour-set-5ef58d",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T02:09:03+00:00",
+  "area": "the Profile's colour-set rail and its catalog",
+  "summary": "Four sets join the Profile's colour-set rail after Nacre: Blue-ringed Octopus, Neon Noir, Ukiyo-e and Dusk, the /colour-set skill's worked examples, now game sets (free track, unlocked like every set). author_colour_set_catalog.py SETS gained their four rows; ColorSetCatalog.asset gained four entries whose words are seeded and editable in the inspector; the editor themes (FrogletSeaTheme.Themes.cs) and the console's themes.css/theme.js were regenerated from the catalog.",
+  "why": "Garrett: the artifact lab had some great new color sets (like dusk and neon noir); i just tried bleeding edge and they were not there",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "0562fb3da",
+  "paths": [
+    "Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset",
+    "Assets/_Scripts/Editor/FrogletTools/FrogletSeaTheme.Themes.cs",
+    "Tools/Analytics/console/theme.js",
+    "Tools/Analytics/console/themes.css",
+    "Tools/Build/author_colour_set_catalog.py"
+  ]
+}

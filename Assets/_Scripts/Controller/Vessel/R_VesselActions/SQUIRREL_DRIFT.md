@@ -456,7 +456,7 @@ stranded the held ability, and on the Manta the release stopped an ability that 
 
 1. **`InputStatus.ActiveInputDevice` is an owner-write NetworkVariable** (`n_device`), the same
    pattern as every other field there. Every reader on a replica now sees the OWNER's device, which
-   matters well beyond the action maps: `MantaAnalogTurnBoostExecutor` shapes the Yastri trail
+   matters well beyond the action maps: `MantaAnalogTurnBoostExecutor` shapes the Yawstery trail
    (`SetTurnTrail`) only for pad/keyboard pilots; `VesselTransformer.GetTriggerSum` reads trigger
    depth as analog on a pad and full pull otherwise, and eases non-pad input; `DriftAudioController`
    does the same for the drift sound. The trigger analogs those interpret already replicated; the
@@ -528,7 +528,7 @@ Device Simulator overrides only `UnityEngine.Device.SystemInfo`):
    appeared there. Phone pilot lifts the right thumb to drift: the PC sees the trail. Each pilot's
    Boost Ring appears on the other machine. Prism counts in the drift trail match on both screens.
 3. **Same pair on Mantas.** Phone pilot lifts both thumbs (boost): the PC sees a straight boost, not
-   a trigger turn. PC pilot (pad) holds one trigger: the phone sees the Yastri flared trail.
+   a trigger turn. PC pilot (pad) holds one trigger: the phone sees the Yawstery flared trail.
 4. **Same pair on Rhinos.** PC pilot swipes the shield (pad triggers): the phone shows the swipe.
 5. **Mid-hold switch** (phone with a Bluetooth pad): hold a touch drift, touch the pad, let go — the
    drift ends on BOTH screens (before: it could stay engaged).

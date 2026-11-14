@@ -24,7 +24,9 @@ Vessel mechanics: `_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOO
   (`fuseSecondsByIntensity` on the controller), pushed through the static
   `MantaBombRules.FuseSecondsOverride` on EVERY peer at countdown end — after the config-sync
   gate, so a client can never plant on intensity-1 fuses in an intensity-4 match — and cleared
-  in `OnNetworkDespawn` so freestyle bombs go back to the authored 25 s.
+  in `OnNetworkDespawn` so freestyle bombs go back to the authored 20 s. The ladder sets the RESTING
+  length: the planter's Charge still scales it (`fuseScale`, ×1.5 at Charge 10, so 45 s at intensity 1;
+  `MANTA_STING_KABLOOM.md` §0a, 2026-11-10).
 - Team scoring folds through the standard `ScoringRuleSO` surfaces (`ResolveWinner`,
   `ResolvePlacementOrder`, team-major `BuildResults`), so the mode is **Maelstrom-admissible**
   on the scoring axis (not added to the Maelstrom pool here — that is a design call).

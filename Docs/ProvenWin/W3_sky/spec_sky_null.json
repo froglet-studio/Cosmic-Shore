@@ -1,0 +1,22 @@
+{
+ "material": "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat",
+ "mesh": "builtin:Sphere.fbx",
+ "swapFile": "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader",
+ "clockSpan": 60,
+ "width": 2560,
+ "height": 1440,
+ "cameraDistance": 0.0,
+ "fov": 60,
+ "timepoints": 48,
+ "drawsPerBatch": 16,
+ "chain": 8,
+ "samples": 200,
+ "warmupSeconds": 3,
+ "floats": [],
+ "colors": [],
+ "randomPerMoment": [],
+ "driveGlobalTime": true,
+ "variantA": "D:/ABLab/variants/sky/A.shader",
+ "variantB": "D:/ABLab/variants/sky/Aprime.shader",
+ "outDir": "D:/ABLab/out/sky/null"
+}

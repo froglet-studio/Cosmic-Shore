@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -122,6 +123,18 @@ namespace CosmicShore.Gameplay
             SetVerticesDirty();
         }
 
+        // The mesh is rebuilt when the player wears another colour set (the glass and the outline are the set's,
+        // OnPopulateMesh). A version check rather than an OnEnable override, whose access differs between the shipped
+        // uGUI (protected) and the compile gate's publicized reference (public).
+        int _colorVersion;
+
+        void LateUpdate()
+        {
+            if (_colorVersion == ColorTrace.Version) return;
+            _colorVersion = ColorTrace.Version;
+            SetVerticesDirty();
+        }
+
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
@@ -135,11 +148,15 @@ namespace CosmicShore.Gameplay
                 s_hex.Add(centre + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius);
             }
 
+            // The glass and the outline as the worn colour set paints them (ColorTrace); the fill's bands are the caller's.
+            var glassWorn = ColorTrace.Retrace(ColorTrace.Ui, glass);
+            var outlineWorn = ColorTrace.Retrace(ColorTrace.Ui, outline);
+
             float bottom = centre.y - radius, height = 2f * radius;
-            if (glass.a > 0f)
+            if (glassWorn.a > 0f)
             {
                 int start = vh.currentVertCount;
-                Color32 g = Tint(glass, 1f);
+                Color32 g = Tint(glassWorn, 1f);
                 vh.AddVert(centre, g, Vector2.zero);
                 for (int k = 0; k < 6; k++) vh.AddVert(s_hex[k], g, Vector2.zero);
                 for (int k = 0; k < 6; k++) vh.AddTriangle(start, start + 1 + k, start + 1 + (k + 1) % 6);
@@ -158,12 +175,12 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            var spoke = outline;
+            var spoke = outlineWorn;
             spoke.a *= spokeAlpha;
             for (int k = 0; k < 6; k++)
             {
                 if (spokes) AddLine(vh, centre, s_hex[k], SpokeWidth, spoke);
-                if (outlineWidth > 0f) AddLine(vh, s_hex[k], s_hex[(k + 1) % 6], outlineWidth, outline);
+                if (outlineWidth > 0f) AddLine(vh, s_hex[k], s_hex[(k + 1) % 6], outlineWidth, outlineWorn);
             }
         }
 

@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -87,13 +88,16 @@ namespace CosmicShore.UI
         [Tooltip("The spikes' alpha with no energy gathered.")]
         [SerializeField, Range(0f, 1f)] private float sparksIdleAlpha = 0.45f;
 
-        [Header("Time card parts (Yastri)")]
-        [Tooltip("The Manta from above (Manta_YastriManta), the domain colour.")]
-        [SerializeField] private Image yastriMantaIcon;
-        [Tooltip("The hard corner its turn pair cuts (Manta_YastriTurn), white.")]
-        [SerializeField] private Image yastriTurnIcon;
-        [Tooltip("Soar (Time 5): the boost chevrons ahead of the nose (Manta_YastriSoar), white.")]
-        [SerializeField] private Image yastriSoarIcon;
+        [Header("Time card parts (Yawstery)")]
+        [Tooltip("The Manta from above (Manta_YawsteryManta), the domain colour.")]
+        [FormerlySerializedAs("yastriMantaIcon")]
+        [SerializeField] private Image yawsteryMantaIcon;
+        [Tooltip("The hard corner its turn pair cuts (Manta_YawsteryTurn), white.")]
+        [FormerlySerializedAs("yastriTurnIcon")]
+        [SerializeField] private Image yawsteryTurnIcon;
+        [Tooltip("Soar (Time 5): the boost chevrons ahead of the nose (Manta_YawsterySoar), white.")]
+        [FormerlySerializedAs("yastriSoarIcon")]
+        [SerializeField] private Image yawsterySoarIcon;
 
         [Tooltip("The danger colour the rivals and the trap wear (ElementalBarsConfigSO.FireColor).")]
         [SerializeField] private Color dangerColor = new(1f, 0.3294f, 0.1020f, 1f);
@@ -103,7 +107,7 @@ namespace CosmicShore.UI
         [SerializeField] private Color highlightColor = Color.yellow;
 
         public Color NormalColor => normalColor;
-        public Color HighLightColor => highlightColor;
+        public Color HighLightColor => ColorTrace.Retrace(ColorTrace.Ui, highlightColor);
 
         Color _domain = Color.white;
         int _planted;
@@ -145,28 +149,30 @@ namespace CosmicShore.UI
         void RefreshParts()
         {
             Paint(stingMantaIcon, _domain, 1f);
-            Paint(yastriMantaIcon, _domain, 1f);
+            Paint(yawsteryMantaIcon, _domain, 1f);
             Paint(skimMantaIcon, _domain, 1f);
 
             bool charge5 = IsAbilityUpgraded(Element.Charge);
-            Paint(stingRivalIcon, dangerColor, _planted > 0 ? 1f : rivalIdleAlpha);
+            // The worn colour set's danger (UIThemeLive repaints the parts when another set is worn between refreshes).
+            var danger = ColorTrace.Retrace(ColorTrace.Ui, dangerColor);
+            Paint(stingRivalIcon, danger, _planted > 0 ? 1f : rivalIdleAlpha);
             Paint(stingBomb0Icon, Color.white, _planted >= 1 ? 1f : 0f);
             Paint(stingBomb1Icon, Color.white, _planted >= 2 ? 1f : 0f);
             Paint(stingBomb2Icon, Color.white, _planted >= 3 ? 1f : 0f);
-            Paint(stingContagionRivalIcon, dangerColor, charge5 && _planted > 0 ? 1f : 0f);
+            Paint(stingContagionRivalIcon, danger, charge5 && _planted > 0 ? 1f : 0f);
             Paint(stingContagionBombIcon, Color.white, charge5 && _planted > 0 ? 1f : 0f);
 
             float decoy = _elementalDecoy || _omniDecoy ? 1f : decoyIdleAlpha;
             Paint(decoyCrystalIcon, Color.white, decoy);
-            Paint(decoyTrapIcon, dangerColor, decoy);
+            Paint(decoyTrapIcon, danger, decoy);
             Paint(decoyOmniIcon, Color.white, _omniDecoy ? 1f : 0f);
 
-            Paint(skimPrismsIcon, dangerColor, 1f);
+            Paint(skimPrismsIcon, danger, 1f);
             Paint(skimSparksIcon, Color.white, Mathf.Lerp(sparksIdleAlpha, 1f, _energy01));
             Paint(skimShardsIcon, Color.white, IsAbilityUpgraded(Element.Space) ? 1f : 0f);
 
-            Paint(yastriTurnIcon, Color.white, 1f);
-            Paint(yastriSoarIcon, Color.white, IsAbilityUpgraded(Element.Time) ? 1f : 0f);
+            Paint(yawsteryTurnIcon, Color.white, 1f);
+            Paint(yawsterySoarIcon, Color.white, IsAbilityUpgraded(Element.Time) ? 1f : 0f);
         }
 
         static void Paint(Image part, Color color, float alpha)
@@ -182,7 +188,7 @@ namespace CosmicShore.UI
             if (energyCountText)
             {
                 energyCountText.text = armed.ToString();
-                energyCountText.color = armed >= 1 ? highlightColor : normalColor;
+                energyCountText.color = armed >= 1 ? HighLightColor : normalColor;
             }
 
             float energy01 = capacity > 0 ? Mathf.Clamp01(energy / capacity) : 0f;
@@ -213,7 +219,7 @@ namespace CosmicShore.UI
             if (armedCountText)
             {
                 armedCountText.text = planted.ToString();
-                armedCountText.color = show ? highlightColor : normalColor;
+                armedCountText.color = show ? HighLightColor : normalColor;
             }
 
             if (fuseContainer && fuseContainer.activeSelf != show)

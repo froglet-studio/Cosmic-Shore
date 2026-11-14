@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-10-switchbackpathrays-sharedmaterial-and-bl-1cec61",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-10T23:43:10+00:00",
+  "area": "Switchback path rays and the black-hole glow",
+  "summary": "SwitchbackPathRays.SharedMaterial and BlackHoleGlow.SharedMaterial now call WorldColorTrace.Paint on the material they Resources.Load, so the I4 gauntlet's path rays and the mobile black-hole glow wear the worn colour set from their first frame (they were loaded after the scene's repaint and kept Photic's colours for the whole match). One line each; nothing else in either file changed.",
+  "why": "Colour trace review: a traced Resources material loaded after the repaint was never painted; colour_trace.py --check now fails on any loader that does not paint.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "2873b874d",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackPathRays.cs",
+    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs"
+  ]
+}

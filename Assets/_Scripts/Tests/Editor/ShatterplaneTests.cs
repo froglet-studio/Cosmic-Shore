@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -151,6 +152,76 @@ namespace CosmicShore.Tests
                     if (along >= ShatterplanePlates.CrystalOffset - 1e-2f && (v - st.N * along).magnitude < 1e-2f) onAxis = true;
                 }
                 Assert.IsTrue(onAxis, $"I{intensity}: a crystal site is not on a plate's axis in front of it");
+            }
+        }
+
+        // ── Per intensity: I3's team Space crystals, I4's live elemental fauna (Shombith, 2026-11-10) ──
+
+        [Test]
+        public void CrystalField_I3IsSpace_OneCrystalPerTeam_ElsewhereAnyonesRandom()
+        {
+            var settings = ScriptableObject.CreateInstance<ShatterplaneSettingsSO>();
+            try
+            {
+                Assert.AreEqual(Element.Space, settings.FieldElementFor(3), "I3's crystals are Space");
+                Assert.IsTrue(settings.FieldPerTeamFor(3), "I3 lays one crystal per team present");
+                foreach (int i in new[] { 1, 2, 4 })
+                {
+                    Assert.AreEqual(Element.None, settings.FieldElementFor(i), $"I{i} draws each site's element at random");
+                    Assert.IsFalse(settings.FieldPerTeamFor(i), $"I{i}'s crystals are anyone's");
+                }
+            }
+            finally { Object.DestroyImmediate(settings); }
+        }
+
+        [Test]
+        public void TeamCrystal_IsCollectableByItsTeamAlone()
+        {
+            var go = new GameObject("team crystal");
+            try
+            {
+                var crystal = go.AddComponent<Crystal>();
+                crystal.ApplyDomainPreview(Domains.Ruby);
+                Assert.IsTrue(crystal.CanBeCollected(Domains.Ruby), "its own team takes it");
+                Assert.IsFalse(crystal.CanBeCollected(Domains.Jade), "another team cannot");
+                Assert.IsFalse(crystal.CanBeCollected(Domains.Gold), "another team cannot");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        /// <summary>The spawn profile a shipped cell config points at, and that profile's SupportedFaunas guids.</summary>
+        static List<string> FaunaOf(int intensity)
+        {
+            const string dir = "Assets/_SO_Assets/Cell Configs/Shatterplane Cell";
+            string config = File.ReadAllText(Path.Combine(dir, $"Shatterplane Cell Config {intensity}.asset"));
+            var m = Regex.Match(config, @"^  SpawnProfile: \{fileID: 11400000, guid: ([0-9a-f]{32})", RegexOptions.Multiline);
+            Assert.IsTrue(m.Success, $"I{intensity}'s cell config names no spawn profile");
+            foreach (var path in Directory.GetFiles(dir, "*.asset.meta"))
+            {
+                if (!File.ReadAllText(path).Contains("guid: " + m.Groups[1].Value)) continue;
+                string profile = File.ReadAllText(path.Substring(0, path.Length - ".meta".Length));
+                var list = new List<string>();
+                var block = Regex.Match(profile, @"^  SupportedFaunas:\s*\n((?:  - [^\n]*\n)*)", RegexOptions.Multiline);
+                foreach (Match g in Regex.Matches(block.Groups[1].Value, @"guid: ([0-9a-f]{32})")) list.Add(g.Groups[1].Value);
+                return list;
+            }
+            Assert.Fail($"I{intensity}'s spawn profile is not in {dir}");
+            return null;
+        }
+
+        [Test]
+        public void Fauna_OnlyI4CarriesLiveElementalFauna()
+        {
+            for (int i = 1; i <= 3; i++) Assert.IsEmpty(FaunaOf(i), $"I{i} carries no wildlife");
+            var i4 = FaunaOf(4);
+            Assert.AreEqual(2, i4.Count, "I4 carries the tadpole and the shark");
+            foreach (var guid in i4)
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                var config = UnityEditor.AssetDatabase.LoadAssetAtPath<FaunaConfigurationSO>(path);
+                Assert.IsNotNull(config, $"I4's fauna {guid} is not a FaunaConfigurationSO");
+                Assert.IsTrue(config.SpreadElements, $"{path}: each creature must roll its own element");
+                Assert.AreEqual(4, config.ElementPalette.Count, $"{path}: the palette is the four elements");
             }
         }
 

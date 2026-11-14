@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-10-colours-painted-by-code-in-the-ui-now-go-10a7f7",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-10T22:18:39+00:00",
+  "area": "menus, kit graphics, toys, codex and the Voyage map",
+  "summary": "Colours painted by code in the UI now go through ColorTrace.Retrace: KitTwoToneGradient, FactionMessageRow, ObjectiveArrowGraphic, LoadCrystalGraphic and ConnectingGateView (version checks, no lifecycle overrides), the codex accents (CodexSO.ResolveAccent), every toy's accent (ToyDefinitionSO.AccentColor), the HUD animation flashes, the countdown, and the Voyage map's statics. The Voyage map edits are NOT applied because your claude/epic-fermat-6c7n2l branch occupies the Voyages lane: they wait as Docs/VesselModels/colour_trace_waiting/voyages.patch. ThemeManager now wears the trace before repainting the domain material sets (PreviewColorSet), so prism entities on traced materials are re-stamped with them.",
+  "why": "Garrett, 2026-11-10. Docs/VesselModels/COLOR_TRACE.md.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "537eafa35",
+  "paths": [
+    "Assets/_Scripts/Controller/Managers/ThemeManager.cs",
+    "Assets/_Scripts/ScriptableObjects/Codex/CodexSO.cs",
+    "Assets/_Scripts/ScriptableObjects/Toys/ToyDefinitionSO.cs",
+    "Assets/_Scripts/UI"
+  ]
+}

@@ -58,8 +58,8 @@ namespace CosmicShore.UI
         [Header("Words")]
         [SerializeField, Tooltip("The weekly best when nothing has been played this week. Empty shows nothing.")]
         string noBestText = "None yet";
-        [SerializeField, Tooltip("The quest line when its reward waits in the Quests window.")]
-        string readyToClaimText = "Ready to claim in Quests";
+        [SerializeField, Tooltip("The quest line when its reward waits in the Voyage window.")]
+        string readyToClaimText = "Ready to claim in Voyage";
         [SerializeField, Tooltip("The quest line for the next goal; {goal} is the quest's authored goal.")]
         string nextGoalTemplate = "Next: {goal}";
         [SerializeField, Tooltip("The quest line once every intensity is open.")]
@@ -103,7 +103,7 @@ namespace CosmicShore.UI
 
         void OpenQuest()
         {
-            if (screenSwitcher) screenSwitcher.OnClickQuests();
+            if (screenSwitcher) screenSwitcher.OnClickMissionNav();
         }
 
         // ── Weekly challenge ───────────────────────────────────────────────

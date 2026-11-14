@@ -448,11 +448,6 @@ namespace CosmicShore.Gameplay
         public static float MinSeparationFor(float portRadius, float minStep) =>
             Mathf.Min(0.9f * minStep, 4f * portRadius);
 
-        /// <summary>
-        /// The course, or <c>null</c> when the walk could not satisfy its own constraints inside
-        /// the attempt budget. About one seed in a thousand at the shipped settings - the caller
-        /// re-rolls (<see cref="ReseedAttempts"/>) rather than shortening the race.
-        /// </summary>
         /// <summary>The base ring aims here, leaving the rest of the turn cap for wander.</summary>
         const float CircuitDesignTurn = 0.85f;
 

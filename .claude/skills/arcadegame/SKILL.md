@@ -446,7 +446,28 @@ Corona (the Manta's Charge game, 2026-11-10, `claude/amazing-goldberg-7zn80e`, `
   render the new card by name, and know a named run skips the manifest. Add the new scene to
   `author_preview_spawns.SCENE_FOR_MODE` too: Kelpwood shipped without it and its preview went unchecked.
 
-Harvest (the Thresher's Space game, 2026-11-10, `claude/keen-rubin-rw7p6q`, `HARVEST.md`) taught three:
+Glasshouse (the Angler's Mass game, 2026-11-10, `claude/peaceful-cerf-vpl3x8`, `GLASSHOUSE.md`) taught five:
+- **Mass with no roster owner (flora, laid structure) is credited into the existing stat by DELTAS, never by
+  assignment.** `StatsManager` moves `VolumeRemaining` by += / -= for every trail prism between your samples, so writing
+  the garden's total over it erases the trail. Keep a book of what each pilot was credited (`GlasshouseGarden.ShareBook`)
+  and add only the change; a test interleaves both producers and asserts "trail + garden".
+- **A grazing arena needs a NUCLEUS to be fair.** Without one, a herbivore eats only what is not its own colour and the
+  herds are born in the controlling (leading) colour, so the leader's mass is immune and the trailer's is eaten
+  (Tapestry's reason for having no fauna). With one, everything outside it is edible whatever its colour
+  (`Cell.IsPreyForHerbivore`), and the nucleus is a sanctuary, so count only mass outside it.
+- **A species the cell must KNOW but never plant wild** (the Angler's seed reads `SpawnProfile.SupportedFloras`) is a
+  mode-owned config copy with `SpawnProbability: 0`, no initial batch and no seeder floor: `AllowSpawn` is
+  `Random.value < p`, so 0 never plants, and reproduction (`Flora.SpawnOffspring`, its parent's colour) still spreads it.
+  A non-positive `FloraPopulationScale` is read as 1, so the scale cannot do this.
+- **`ScoreReveal`'s fourth argument is `formatAsTime`, not "did win".** A points mode passes `false` on both sides;
+  Tapestry and Bloomrush passed `true` on victory and so showed a volume as `MM:SS:CS` (fixed 2026-11-11,
+  `claude/wonderful-franklin-x851ah`). `PointsRuleRevealTests.EveryShippedPointsRule_RevealsAWin_AsACount` now fails
+  any scoring-rule asset with `golfRules: 0` whose win reveal formats as a time.
+- **"The next free id" was taken twenty minutes before the push** (Harvest, the Thresher's Space game, on a sibling
+  session of the same plan). Re-scan every branch for the enum value AND the toast id right before the first push,
+  not only at design time. The generator mints guids from names, so a renumber moved only the ids and the
+  always-unlocked row.
+Harvest (the Thresher's Space game, 2026-11-10, `claude/keen-rubin-rw7p6q`, `HARVEST.md`) taught five:
 - **Fly the vessel's own solver round the arena before laying the arena.** The sheaves were built, baked and gated on
   a premise nobody had flown: that a circling Thresher's chain sweeps a sheaf's stalks. Its chain TRAILS (21-60 u behind
   at cruise) and cuts only its own path, so the stalks starved the loop (0-11 cuts a lap). Compiling the shipped
@@ -458,8 +479,16 @@ Harvest (the Thresher's Space game, 2026-11-10, `claude/keen-rubin-rw7p6q`, `HAR
   it per rung (`author_harvest_assets.py`); it cut Harvest's target from 1,500 to 750.
 - **A colour rule over N sheaves must be fair at each rung's N.** "One in three" gave 2 / 1 / 1 among twelve; check
   the counts per domain in the mirror and pin them in a test.
+- **A generator check that the BAKE equals the mirror deadlocks the run that changes the field** (second pass,
+  2026-11-10). The bake reads the prefab on disk, the generator refuses to write the new prefab while the bake is stale,
+  so neither can move first. Gate the comparison on the prefab being unchanged by this run (`g.read(rel) ==
+  g.files[rel]`), print "re-bake, then re-run" otherwise, and let `--check` (which diffs the prefab) carry the rest.
+  Order: generator, `bake_prism_layouts.py`, generator `--check`.
+- **A mode's own creatures are its own COPIES of a species config** (Harvest I4 copies four, Serpentine's
+  `_own_cell_assets` pattern): regex-replace only `m_Name` and the three population numbers, fail if any key is not
+  found exactly once, and mint the guid from the new name. Editing the shared asset retunes every mode that uses it.
 
-Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-ol600q`, `SHATTERPLANE.md`) taught six:
+Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-ol600q`, `SHATTERPLANE.md`) taught seven:
 - **A mode may SIZE an ability that reads the world, through the world.** The ring blast is as wide as the nucleus of the
   cell it blows in, so "make the ring reach a little further" is an ARENA change: give the cell configs the standard
   `NucleusPrefab` (a cell with none cannot be sized, and the blast falls back to the vessel's own constant), then call
@@ -485,6 +514,11 @@ Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-
   (its own enum, generator `MODE_ID`, toast id, preview mapping, test case, docs; the generator re-emits the card, toast
   config, preview and unlock list), skipping ids a third in-flight branch claims (Glasshouse, 89 / 164). Run a duplicate-
   value check over every enum after the merge, and scan EVERY branch for the next free id right before the PR.
+- **...and they get the same FOLLOW-UP too, so a platform hook gets built twice.** "I3 team crystals, I4 fauna" reached
+  Harvest's and Shatterplane's sessions alike; each added its own team gate (`ElementalCrystalImpactor.RestrictTo` and a
+  `TeamElementalCrystalImpactor` subclass). Harvest merged first, so Shatterplane adopted `RestrictTo` and deleted its
+  class. Before adding a hook to a platform class, `git log origin/bleeding-edge -- <that class>` and read the sibling
+  mode's newest commits; when two sessions work one plan, assume the other one is building the same thing.
 
 ## 4. Gates (no Unity needed; run them all)
 

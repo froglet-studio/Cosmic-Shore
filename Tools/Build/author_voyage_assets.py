@@ -83,9 +83,9 @@ LINES_FIELDS = [
     "CardSeatYou", "CardSeatAi", "CardSeatOpen", "CardSettingVessel", "CardSettingPilot", "CardSettingElement",
     "CardSettingArtifact", "CardNoArtifact", "ElementCharge", "ElementMass", "ElementSpace", "ElementTime", "CardStoryHead",
     "CardStoryOptional", "StoryNews", "StoryPlace", "StoryCrew", "StoryCrewBy", "StoryWater", "StoryWaterLine",
-    "StoryWaterBy", "StoryWorld", "StoryWorldBy", "StoryLog", "StoryLogLine", "CardSailAfter", "CardEscortPlace",
-    "CardEscortKicker", "CardDifficulty", "CardCrewSeat", "CardCrewSeparator", "CardCrewVoyage", "CardPickSetting", "CardSeatWho", "CardSettingWord",
-    "CardDomainJade", "CardDomainRuby", "CardDomainGold",
+    "StoryWaterBy", "StoryWorld", "StoryWorldBy", "StoryLog", "StoryLogLine",
+    "BoardRowTitle", "BoardRowBy", "BoardRowMeta", "BoardDistanceLabel", "BoardSailLabel", "BoardIntensityLabel", "BoardIntensityValue", "BoardSquadLabel", "BoardSquadJoined", "BoardSeatWho", "BoardSeatKit", "BoardSeatNotYours", "BoardEditorTitle", "BoardPilotLine", "BoardPilotSwaps", "BoardPilotFlying", "BoardElementLine", "BoardNoArtifactLine", "BoardDone", "BoardUnderway", "BoardSailKey", "BoardDoneKey",
+    "BoardKicker", "BoardKickerAlone", "BoardStats", "BoardStepBack", "BoardStepOn", "BoardZoomIn", "BoardZoomOut", "BoardConfigure", "BoardConfigureKey", "BoardBack", "BoardBackKey", "BoardSavePreset", "BoardSavePresetKey", "BoardHangarNote", "BoardPresetWho", "BoardSwapsWith", "SlabChip", "SlabSagaPart", "SlabSagaKicker", "SlabSagaForm", "SlabQuestsKicker", "SlabQuestsName", "SlabQuestsProgress", "SlabQuestKicker", "SlabQuestClaimed", "SlabQuestReady", "SlabQuestNext", "SlabQuestLocked", "SlabQuestClaim", "SlabQuestPlay", "SlabEpisodesKicker", "SlabEpisodesName", "SlabEpisodesSoon", "SlabEpisodesLine", "SlabEpisodesFace", "SlabEpisodesBack", "SlabEpisodesBackKey", "SlabSagaLockedKicker", "SlabSagaLockedLine", "SlabSagaLockedFace",
 ]
 
 # The world's rates (VoyageWorldRules in VoyageContent.cs): spec key -> (C# field, kind). Every one is written.

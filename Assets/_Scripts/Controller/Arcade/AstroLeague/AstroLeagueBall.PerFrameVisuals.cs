@@ -83,10 +83,10 @@ namespace CosmicShore.Gameplay
             {
                 float phase = (Time.time * colorCycleSpeed) % 3f;
                 emissionColor = phase < 1f
-                    ? Color.Lerp(primaryColor, secondaryColor, phase)
+                    ? Color.Lerp(PrimaryColor, SecondaryColor, phase)
                     : phase < 2f
-                        ? Color.Lerp(secondaryColor, tertiaryColor, phase - 1f)
-                        : Color.Lerp(tertiaryColor, primaryColor, phase - 2f);
+                        ? Color.Lerp(SecondaryColor, TertiaryColor, phase - 1f)
+                        : Color.Lerp(TertiaryColor, PrimaryColor, phase - 2f);
             }
             else
             {
@@ -174,7 +174,7 @@ namespace CosmicShore.Gameplay
                 case Domains.Jade: return settings.JadeGoalColor;
                 case Domains.Ruby: return settings.RubyGoalColor;
                 case Domains.Gold: return settings.GoldGoalColor;
-                default: return primaryColor;
+                default: return PrimaryColor;
             }
         }
 

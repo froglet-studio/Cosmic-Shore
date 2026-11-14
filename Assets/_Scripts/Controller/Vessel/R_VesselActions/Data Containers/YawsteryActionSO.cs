@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
         [Header("Elemental")]
         [Tooltip("Optional element scaling on the turn rate. DISABLED by default, and disabled on " +
                  "both shipped Yawstery assets: the Manta's spec re-cut moved Space from this turn " +
-                 "rate to Kabloom's blast radius, and Yastri's element (Mass) scales the TRAIL it " +
+                 "rate to Kabloom's blast radius, and Yawstery's element (Mass) scales the TRAIL it " +
                  "throws rather than the turn. Kept as the authoring hook for a future design, now " +
                  "in the fleet's one scaling idiom (it was an element PICKER read through the " +
                  "retired generic map multiplier).")]
@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
         [Header("Trail")]
         [Tooltip("Drive the vessel's turn-trail state from this turn's intensity — the outer-" +
                  "lane prism flare, and the Mass-5 Shielded Turn Trails window " +
-                 "(VesselPrismController.SetTurnTrail). The Manta's Yastri assets author ON.")]
+                 "(VesselPrismController.SetTurnTrail). The Manta's Yawstery assets author ON.")]
         [SerializeField] bool driveTrailFlare = false;
 
         [Header("Animation (future)")]

@@ -286,6 +286,26 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
   boards. Re-run `plan` on the fresh index, rename your files to the new number
   (`sed 's/Rev 47/Rev 48/g'` on the titles; the ids inside `/_blob/` ids are hex and need no change), `check`, publish.
 
+- **A picked board built in Unity is not done until a render of the BUILD has been set beside the board** (Voyages,
+  Rev 81 B5 + Rev 83 S2, 2026-11-09/10, `claude/epic-fermat-6c7n2l`; section 159 had promised it). The build compiled,
+  every gate was green, and the person's first screenshot "looks nothing like frogma's design": the window's old framed
+  tabs, the galaxy explorer at galaxy scale with its tier ladder, a cloned call to action at its own small size, square
+  hull renders drawn tiny in a wide box. The second pass, also unseen, kept half of those. A cloud session has no Unity:
+  say so BEFORE building and ask for a session on the person's computer (Remote Control, the `unity` CLI) or a screenshot
+  after each pass; never present a compile as a look.
+- **The UI kit's theming components undo a runtime restyle** (same branch, 2026-11-10). `KitThemedGraphic` (on a
+  frame's Fill, Border and brackets) and `KitText` (on a label) re-apply the kit's colour, face, size and capitals in
+  `OnEnable`, so a restyle made in code holds until the window is next opened. **Disabling them is not enough**
+  (`claude/sweet-mccarthy-ow25e2`, 2026-11-13: Shombith saw the tabs' dark boxes again after that fix): the menu's theme
+  pass (`UIThemeLive.RepaintKit`) calls `Apply()` on every `KitThemedGraphic` and `KitText` it finds, disabled ones
+  included, so a cleared fill turns dark again on the next theme or colour-set change. To take a kit frame away at
+  runtime, switch its pieces off as objects and give the button its own clear hit graphic with no colour transition
+  (`VoyageWindowTabs.Strip`); or change the element in its prefab.
+- **An element's mark is the HUD's flower, never a glyph you draw** (Shombith, 2026-11-12, on Rev 97: "wrong elemental
+  icons, check ecology for the correct ones the ones with petals are the ones we should use"). Five copies of the
+  element's white petal (`Assets/Resources/ElementPetals/<element>_petal.png`) turned 72 degrees about the centre, as
+  `ElementalBarsView.ConfigurePetal` lays them; white, no colour of its own. On a board, compose it in the generator
+  and carry it as a data URI (`r97_voyages.py` `_petals()`); in the game, `VoyageKit.Flower`.
 
 ## The design brief comes first (2026-11-07)
 

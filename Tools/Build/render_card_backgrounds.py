@@ -794,6 +794,9 @@ CAMERAS = {
     # Kelpwood: inside the kelp ball's rim, so the strands radiate across the plate and the lock - the eraser's beam
     # from one pilot onto a rival, a hunter on that rival's hull (the bite, the one thing that scores) - sits across it.
     "Kelpwood": (35, 16, 0.75, 46),
+    # Glasshouse: from outside the gardens, low across the cell, so the three colours' beds stand round the glass
+    # nucleus with its seeds inside, and the lure lighting the near bed (growth, the thing that scores) sits in front.
+    "Glasshouse": (28, 14, 0.82, 46),
     # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
     # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
     "Corona": (37, -10, 0.36, 60),
@@ -1172,6 +1175,37 @@ def recipe(stem, card_path, pal, ends):
                       "vessels": [{"domain": JADE, "r": 0.9, "tilt": 12, "a0": 150, "sweep": 55, "yaw": 0},
                                   {"domain": JADE, "r": 1.3, "tilt": -18, "a0": 200, "sweep": 45, "yaw": 20},
                                   {"domain": JADE, "r": 1.1, "tilt": 30, "a0": 110, "sweep": 40, "yaw": -15}]})
+    elif s == "Glasshouse":
+        # MODEL tier: the cell plants nothing wild, so the card draws what the mode PUTS there at this intensity - each
+        # colour's garden (cactus glyphs on its own bed outside the nucleus, half the rung's shared cap between them,
+        # the plant size read off the shipped leaf and prism scale), the omni crystals (the seeds) inside the glass
+        # nucleus, and the rung's grazers among the beds. Every count is read from the shipped assets.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        prof = read(facts["profile"])
+        flora_cfg = asset(re.findall(r"guid: (\w+)", prof.split("SupportedFloras:")[1].split("FaunaExcludeLocalDomain")[0])[0])
+        cap = int(re.search(r"^  MaxLivePopulation: (\d+)", read(flora_cfg), re.M).group(1))
+        fauna_cfg = asset(re.findall(r"guid: (\w+)", prof.split("SupportedFaunas:")[1])[0])
+        herd = int(re.search(r"^  InitialSpawnCount: (\d+)", read(fauna_cfg), re.M).group(1))
+        scene = read(next((ROOT / "Assets/_Scenes").rglob("MinigameGlasshouse.unity")))
+        extras = [int(x) for x in re.findall(r"ExtraCrystals: (\d+)", scene.split("crystalCountByIntensity:")[1])[:4]]
+        omni = extras[min(INTENSITY - 1, len(extras) - 1)]
+        rows = []
+        band = nuc + 0.35 * (R - nuc)
+        beds = {JADE: v_norm([0.75, 0.05, -0.45]), RUBY: v_norm([-0.7, 0.25, -0.35]), GOLD: v_norm([0.3, -0.62, -0.72])}
+        per = max(1, round(cap * 0.6 / 3))
+        size = R * 0.09
+        for dom, d in beds.items():
+            bed = v_mul(d, band)
+            for k in range(per):
+                off = v_mul(rng.unit(), R * 0.13 * rng.u() ** 0.5)
+                root = v_add(bed, off)
+                plant_glyph("CactiFlora", root, v_norm(root), size * rng.range(0.7, 1.2), dom, rng, rows)
+        layers.append({"kind": "prisms", "rows": rows})
+        for k in range(omni):
+            crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
+        stage["glasshouse"] = {"beds": {str(k): v_mul(v, band) for k, v in beds.items()}, "herd": herd}
+        nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -1196,6 +1230,9 @@ def recipe(stem, card_path, pal, ends):
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
                "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "Thornline", "DecoyRun", "PerchRun", "SlipLine", "Breach"):
         cam["percentile"] = 0.6
+    elif s == "Glasshouse":
+        aim((0.1, -0.05, -0.3), 0.66)
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
@@ -1490,6 +1527,28 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             glow(v_add(pilot, v_add(v_mul(d, -span * (0.05 + 0.02 * k)), v_mul(rng.unit(), span * 0.02))),
                  span * 0.008, JADE, 1.0, 0.6)
         stage["vessels"] = vessels([(JADE, 0.45, 8, 320, 25), (RUBY, 0.28, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
+    elif s == "Glasshouse":
+        # The act that scores: the Jade Angler holding its lure over its own bed (the esca's light, a glow in its
+        # colour, growing every plant in reach), while a Ruby school - thrown at a painted Jade plant - streaks in from
+        # the side. The rung's grazers (tadpoles, wild, no colour of their own) drift among the beds.
+        gh = stage.pop("glasshouse", None)
+        if gh:
+            beds = {int(k): v for k, v in gh["beds"].items()}
+            jade = beds[JADE]
+            glow(v_add(jade, v_mul(v_norm(jade), R * 0.12)), R * 0.03, JADE, 1.4, 0.4)
+            glow(jade, R * 0.17, JADE, 0.5, 0.08)
+            src = v_add(beds[RUBY], v_mul(v_sub(jade, beds[RUBY]), 0.45))
+            for k in range(6):
+                p = v_add(v_add(src, v_mul(v_sub(jade, src), 0.15 * k)), v_mul(rng.unit(), R * 0.015))
+                glow(p, R * 0.009, RUBY, 1.2, 0.7)
+            rows = []
+            keys = list(beds.values())
+            for k in range(gh["herd"]):
+                base = keys[k % len(keys)]
+                p = v_add(base, v_mul(rng.unit(), R * 0.16))
+                creature(p, rng.unit(), R * 0.03, BLUE, rows)
+            layers.append({"kind": "prisms", "rows": rows})
+            stage["vessels"] = vessels([(JADE, 0.62, 6, 330, 10), (RUBY, 0.6, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
     elif s == "Corona":
         # A KABLOOM at the heart: a Manta touched an omni crystal, and the bloom round it catches a rival pilot (a
         # glow in the planter's colour on the rival). Out on the shells, two bombed rivals carry fuse markers (small
@@ -1511,7 +1570,7 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         # omni crystals float in the field's clear centre.
         import harvest_budget as hb
         rung = hb.RUNGS[INTENSITY - 1]
-        sheaves, _ = hb.place(rung)
+        sheaves = hb.build(rung)["sheaves"]
         for k in range(3):
             crystal(v_add(centre, v_mul(rng.unit(), rung["centreClearingRadius"] * 0.6 * rng.u() ** 0.33)), 12.0)
         # The nearest sheaf a Jade pilot SCORES on: not its own colour (an own-colour sheaf is worth nothing).

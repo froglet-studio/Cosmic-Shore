@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-10-the-manta-s-charge-moved-off-the-bloom-s-2271ba",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-10T23:52:32+00:00",
+  "area": "Docs/REFACTOR_BACKLOG.md C2 (element table) and C3 (Bloomrush fuse override)",
+  "summary": "The Manta's Charge moved off the bloom's petals onto the fuse length (fuseScale on MantaStingConfig.asset, 2026-11-10), so the element table now reads the Manta's Charge. C2 now names the Scarab (its shove's Charge still lives on an effect asset the table cannot reach). C3 adds that Bloomrush's override now sets only the resting length of a vessel's element dial, which still bears on the LOCKED mode rule decision.",
+  "branch": "cece/cool-dijkstra-4puf92",
+  "commit": "0cc1b95b1"
+}

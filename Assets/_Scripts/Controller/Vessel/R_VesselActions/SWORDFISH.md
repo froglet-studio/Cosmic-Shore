@@ -12,15 +12,50 @@ The **Swordfish** (`VesselClassType.Swordfish = 30`) is the Rhino's sword kit on
 | Charge | **Energize** / L5 **Sword Steal** | **Carry** / L5 **Avalanche** |
 | Mass | **Afterimage** / L5 **Danger Afterimages** | **Blade** (a plough blade across the nose) / L5 **Berm** |
 | Space | **Blade Reach** / L5 **Shield Breaker** | **Furrow** / L5 **Unstoppable** |
-| Time | **Ramp Spool** / L5 **Momentum** (the same ramp asset) | **Ramp Spool** / L5 **Momentum** |
+| Time | **Quickdraw** / L5 **Flurry** (since 2026-11-12; § "Fundamentals pass") | **Ramp Spool** / L5 **Momentum** |
 | Hull on a prism | **Rams** — destroys it (`VesselDamagePrismEffect`, the fleet ram) | **Ploughs** it aside (`RhinoPloughPrismEffect`) |
-| Omni crystal | **Surge** — the 8 s ring of swords | none yet (open) |
+| Omni crystal | **Surge** — absorbed into the hull, the 8 s ring of swords (no blast since 2026-11-12) | **Stampede** (#1927) |
 | Modes | Cleave (only), Astro League (in the Rhino's place), Broadside (in the Rhino's place), Brood Rush | Headlong, Regatta, Brood Rush |
 
 Everything the sword was is unchanged and still documented where it was: `RHINO_ENERGY_SWORD.md` (the blade, the
 energize, the two keys), `RHINO_SHIELD_SWIPE.md` (the pose rig), `RHINO_SWORD_AFTERIMAGE.md`, `RHINO_SWORD_COMBOS.md`,
 `RHINO_RAMP_BOOST.md`. Read "the Rhino" there as "the Swordfish" for anything about the sword. The code keeps its
 `RhinoSword*` names: the classes are the sword's, and renaming them is a separate change.
+
+## Fundamentals pass (2026-11-12)
+
+Garrett, 2026-11-12: "lets also get the sword fish polished out as well", the way the Rhino was reworked (#1927): each
+element owns its fleet identity (Space = reach, Time = rate, Charge = threat and PvP petals, Mass = physical size),
+Charge has PvP, each vessel morphs the omni crystal into its own effect, and nothing is shared with the Rhino.
+
+| Element | Before | Now | Fundamental |
+|---|---|---|---|
+| Charge | Energize / Sword Steal | unchanged | PvP: a sword hit takes x1 -> x2.5 petals; L5 pockets them |
+| Mass | Afterimage / Danger Afterimages | unchanged | size: the afterimages' volume x1 -> x2.5 |
+| Space | Blade Reach / Shield Breaker | unchanged | reach: the blade 24 -> 40 |
+| Time | Ramp Spool / Momentum, **shared with the Rhino** | **Quickdraw / Flurry** | rate: the sword's rate x1 -> x2.5 |
+| Omni | Surge **plus the Rhino's old crystal blast** (200-500 AOE) and the sphere-blast morph | **Surge** alone, the crystal **absorbed** into the hull | its own effect |
+
+- **Quickdraw** divides the energize hold (1 -> 0.4 s), the energize cooldown (5 -> 2 s) and the swipe recovery
+  (0.35 -> 0.14 s) by Time's rate, x1 at rest to x2.5 at level 10, floored x0.5
+  (`ShieldSkimmerScaleConfigSO.timeSwordRateMultiplier`, `SwordfishShieldSwipeConfigSO.timeSwipeRateMultiplier`, read
+  live; the energize is decided on the owner and replicated, so only the owner's read matters for it). The let-go tail
+  is a duration and stays 5 s. The cooldown's length is taken when it starts, so the HUD veil sweeps what the pilot got.
+- **Flurry** (Time L5) takes the swipe recovery away for good: the sword swings as freely as an energized blade, lit or
+  not (`SwordfishShieldSwipeConfigSO.flurryUpgradeElement`, `IsUpgradeActive(Time)` in
+  `ShieldSwipeActionExecutor.ApplySwipeRecovery`).
+- **The ramp stays** (it is how the Swordfish flies, 840 u/s top speed), on its own asset
+  `SwordfishRampBoostAction.asset` with the Time scaling switched off; `RhinoRampBoostAction.asset` is the Rhino's
+  alone. The Momentum ward (`VesselElementalImmunity`) is gone from `Swordfish.prefab`; it stays on the Rhino.
+- **The Surge** is the one omni effect: `SwordfishImpactorDataContainer` dropped `RhinoVesselExplosionByCrystalEffect`
+  (the slow blast the old Rhino had, with Charge and Space scaling authored inert) and retires the crystal through
+  `VesselAbsorbCrystalMorphByCrystal`, so the crystal flows into the hull and the ring of swords comes out of it.
+- Tests: `SwordfishQuickdrawTests`. The HUD's Time card and the icons follow in the icon pass.
+- **Its own HUD and icons (2026-11-12, icon pass)**: `SwordfishHUDVariant`, `SwordfishVesselHUDView`,
+  `SwordfishHUDController` (the Rhino's HUD is the Rhino's alone now). Charge: the bill follows the real sword and lights
+  while energized, the plate the energize. Mass: the afterimages. Space: the bill's live reach, the prism shattered under
+  Shield Breaker. Time: Quickdraw, the plate the swing's recovery, the swoosh by Time's rate, a flash when Flurry unlocks.
+  Drawn by `Tools/Build/icon_kit/specs/swordfish.py`; tests `SwordfishHUDTests`.
 
 ## A swordfish, and the sword is its bill (2026-11-08)
 
@@ -43,7 +78,7 @@ sword."*
 | Camera | looks 18 units above the hull (`lookAheadLift`) | no offset at rest (`SwordfishCameraSettingsSO`, lift 0); pans by the sword's midpoint, x for the side and y for up (`SwordfishSwordCamera` -> `CustomCameraController.FramingPan`) |
 | Phone, both thumbs off | the sword energizes | it also stands up, and tilt steers as on the Manta (`tiltSteersWhileIdle`, `flipTiltSteerPitch`) |
 
-The mapping is `RhinoShieldSwipeConfigSO.poseMapping = Bill` (`SwordPoseMapping`, with `billSideYawDegrees`,
+The mapping is `SwordfishShieldSwipeConfigSO.poseMapping = Bill` (`SwordPoseMapping`, with `billSideYawDegrees`,
 `billSideRollDegrees`, `billRaiseDegrees`, `billCameraCentring`, `billCameraPanSeconds`); `Chop` is the old swordsman,
 kept for any hull that wants it. `ShieldSwipeActionExecutor.BillChannels` is the pure mapping, tested by
 `SwordfishBillPoseTests` with the camera pan.
@@ -85,8 +120,7 @@ before the plough (2026-10-13).
 | `Assets/Resources/TouchControlProfiles.asset` (`author_touch_profiles.py`) | The Rhino's old phone row (lifts swing, both off energizes) |
 | `Assets/_Prefabs/CORE/NetworkManager.prefab` | ProtocolVersion 25 → 26 (a new network prefab) |
 
-Shared with the Rhino, not copied: the HUD (`RhinoHUDVariant`), the ramp (`RhinoRampBoostAction`), the sword's
-effects. Its own since 2026-11-08: the model (`Swordfish.fbx`), the camera (`SwordfishCameraSettingsSO`), the blade
+Shared with the Rhino, not copied: the sword's effects (the HUD and the ramp are its own since 2026-11-12). Its own since 2026-11-08: the model (`Swordfish.fbx`), the camera (`SwordfishCameraSettingsSO`), the blade
 mesh (`SwordfishBill.asset`); the sword's configs are only the Swordfish's now (the Rhino has no sword).
 
 ## In-editor verification

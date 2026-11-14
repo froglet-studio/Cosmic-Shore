@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-11-three-l-stu-learning-ids-that-two-branch-ccbf57",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T01:29:55+00:00",
+  "area": "the Claude skills (/labmaker LEARNINGS.md)",
+  "summary": "Three L-STU learning ids that two branches had each claimed are renumbered: the Omni Motion Lab's L-STU-41 and L-STU-42 are now L-STU-175 and L-STU-176, and the Concept fleet's L-STU-102 is now L-STU-177; the Thresher Plant Lab (41, 42) and Brittle Star Studio (102) entries keep their ids, and no reference needed to move (every citation of the three ids means an entry that kept its id). Entry text unchanged; nothing changes how the skill decides.",
+  "why": "git joined both entries of each pair without a conflict, so every citation of 41, 42 and 102 was ambiguous. The entry that landed on bleeding-edge later moves (Omni Motion #1082 after Thresher #1077 on 2026-10-13/14; Concept fleet #1201 on 2026-10-25 after Brittle Star #1223 on 2026-10-18), to the next ids free on every remote branch (cece/nifty-cray-41hy43 holds 171-174). The uniq -d check that /ship 3.55 now runs prints nothing.",
+  "branch": "cece/ecstatic-einstein-r019ix",
+  "commit": "e3285c1b2",
+  "paths": [
+    ".claude/skills/labmaker/LEARNINGS.md"
+  ]
+}

@@ -445,12 +445,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Bounded self-healing loop: re-asks the host for the roster until the local
-        /// player's pair resolves. Recovers a dropped request, a dropped reply, or a
-        /// late host-side spawn. Cancelled once the local pair is initialised
-        /// (<see cref="InitializePair"/>) or on despawn.
-        /// </summary>
-        /// <summary>
         /// Tells every peer that a departed pilot's ship is now flown by the AI. The toast feed is
         /// a per-peer surface, so the server's own post does not travel - this carries it.
         /// </summary>
@@ -461,6 +455,12 @@ namespace CosmicShore.Gameplay
             GameToastAPI.Post(GameToastSituation.PilotHandedToAI, (Domains)domain, playerName);
         }
 
+        /// <summary>
+        /// Bounded self-healing loop: re-asks the host for the roster until the local
+        /// player's pair resolves. Recovers a dropped request, a dropped reply, or a
+        /// late host-side spawn. Cancelled once the local pair is initialised
+        /// (<see cref="InitializePair"/>) or on despawn.
+        /// </summary>
         async UniTaskVoid RosterPullRetryLoop(CancellationToken ct)
         {
             // These must cover MORE wall-clock than PartyInviteController.joinReadyTimeoutSeconds,

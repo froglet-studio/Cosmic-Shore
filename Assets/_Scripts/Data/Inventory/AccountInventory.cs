@@ -375,7 +375,7 @@ namespace CosmicShore.Data
                 p.CallsignId = template;
                 p.GivenName = PilotGenerator.Printable(p.GivenName);
                 p.FamilyName = PilotGenerator.Printable(p.FamilyName);
-                p.Backstory = PilotGenerator.Printable(p.Backstory);
+                p.Backstory = PilotGenerator.PrintableText(p.Backstory);
                 p.Chronicle ??= new List<string>();
                 p.Chronicle.RemoveAll(string.IsNullOrWhiteSpace);
                 if (p.Chronicle.Count > PilotRecord.MaxChronicle) p.Chronicle.RemoveRange(0, p.Chronicle.Count - PilotRecord.MaxChronicle);

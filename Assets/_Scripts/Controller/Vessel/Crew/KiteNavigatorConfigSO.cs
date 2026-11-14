@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
@@ -164,6 +165,27 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float faunaChargeCost = 1f;
         [Tooltip("Raised for every ram that steals, as every combat hit is (the scoreboard's channel; the Thresher raises the same one).")]
         [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
+
+        [Header("Element scaling and level-5 upgrades (the vessel pass, Garrett, 2026-11-13)")]
+        [Tooltip("CHARGE: kite power per Charge loop (vessel contract: Charge = threat). Multiplies chargePetals and chargeCap: " +
+                 "x1 at Charge 0 to x2 at Charge 10, so a charged Wrasse's rams take twice the petals.")]
+        [SerializeField] ElementalFloat chargePetalScale = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 1f);
+        [Tooltip("MASS: the cluster's size (vessel contract: Mass = size). Multiplies massPrisms and massPrismCap: x1 at Mass 0 " +
+                 "to x2 at Mass 10.")]
+        [SerializeField] ElementalFloat massClusterScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 1f);
+        [Tooltip("SPACE: the blast's reach (vessel contract: Space = reach). Multiplies spaceMaxScale and spaceMaxScaleCap: x1 at " +
+                 "Space 0 to x2 at Space 10.")]
+        [SerializeField] ElementalFloat spaceReachScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 1f);
+        [Tooltip("CHARGE level-5 'Crystal Steal': a ram steals the rival's petals instead of knocking them loose. None = never.")]
+        [SerializeField] Element crystalStealUpgradeElement = Element.Charge;
+        [Tooltip("MASS level-5 'Shielded Clusters': Mass clusters are laid shielded. None = never.")]
+        [SerializeField] Element shieldedClustersUpgradeElement = Element.Mass;
+        [Tooltip("SPACE level-5 'Shield Breaker': Space blasts destroy shielded and super-shielded prisms. None = never.")]
+        [SerializeField] Element shieldBreakerUpgradeElement = Element.Space;
+        [Tooltip("TIME level-5 'Tailwind': every saved boost lasts tailwindBoostScale times as long. None = never.")]
+        [SerializeField] Element tailwindUpgradeElement = Element.Time;
+        [Tooltip("How much longer a saved boost lasts under Tailwind (x timeBoostSeconds).")]
+        [SerializeField, Min(1f)] float tailwindBoostScale = 1.5f;
 
         [Header("AI squad mate (flies the kite while you fly the hull)")]
         [Tooltip("An AI-flown Wrasse (an AI crew this machine simulates) is flown by TWO AIs: the hull's AIPilot flies the " +
@@ -347,7 +369,8 @@ namespace CosmicShore.Gameplay
         /// <summary>The mote colour of element index <paramref name="e"/> (Element - 1); <paramref name="fallback"/> when
         /// the asset carries none (a config authored before 2026-10-21).</summary>
         public Color ElementColor(int e, Color fallback) =>
-            elementColors != null && e >= 0 && e < elementColors.Length && elementColors[e].a > 0f ? elementColors[e] : fallback;
+            elementColors != null && e >= 0 && e < elementColors.Length && elementColors[e].a > 0f
+                ? ColorTrace.Retrace(ColorTrace.World, elementColors[e]) : fallback;
         public float HeadingAlignDistance => headingAlignDistance;
         public float ViewMargin => viewMargin;
         public float MoteSize => moteSize;
@@ -386,6 +409,57 @@ namespace CosmicShore.Gameplay
         public float StealCooldown => stealCooldown;
         public float FaunaChargeCost => faunaChargeCost;
         public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
+        public ElementalFloat ChargePetalScale => chargePetalScale;
+        public ElementalFloat MassClusterScale => massClusterScale;
+        public ElementalFloat SpaceReachScale => spaceReachScale;
+        public float TailwindBoostScale => tailwindBoostScale;
+
+        static float Live(ElementalFloat f, IVesselStatus status) => f != null ? Mathf.Max(0f, f.EvaluateLive(status)) : 1f;
+
+        /// <summary>Kite power one Charge mote gives <paramref name="status"/>'s kite (chargePetals x Charge).</summary>
+        public float ChargePetalsFor(IVesselStatus status) => chargePetals * Live(chargePetalScale, status);
+        /// <summary>The most kite power <paramref name="status"/>'s kite holds (chargeCap x Charge).</summary>
+        public float ChargeCapFor(IVesselStatus status) => chargeCap * Live(chargePetalScale, status);
+        /// <summary>Prisms one Mass mote lays for <paramref name="status"/> (massPrisms x Mass).</summary>
+        public float MassPrismsFor(IVesselStatus status) => massPrisms * Live(massClusterScale, status);
+        /// <summary>The most prisms one cluster holds for <paramref name="status"/> (massPrismCap x Mass).</summary>
+        public float MassPrismCapFor(IVesselStatus status) => massPrismCap * Live(massClusterScale, status);
+        /// <summary>One Space mote's blast for <paramref name="status"/> (spaceMaxScale x Space).</summary>
+        public float SpaceMaxScaleFor(IVesselStatus status) => spaceMaxScale * Live(spaceReachScale, status);
+        /// <summary>The largest blast for <paramref name="status"/> (spaceMaxScaleCap x Space).</summary>
+        public float SpaceMaxScaleCapFor(IVesselStatus status) => spaceMaxScaleCap * Live(spaceReachScale, status);
+        /// <summary>How long one saved boost runs for <paramref name="status"/>: longer under Tailwind.</summary>
+        public float BoostSecondsFor(IVesselStatus status) =>
+            timeBoostSeconds * (TailwindActive(status) ? tailwindBoostScale : 1f);
+
+        /// <summary>Charge 5 'Crystal Steal': a ram steals instead of ejecting.</summary>
+        public bool CrystalStealActive(IVesselStatus status)
+        {
+            if (crystalStealUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(crystalStealUpgradeElement);
+        }
+        /// <summary>Mass 5 'Shielded Clusters': clusters are laid shielded.</summary>
+        public bool ShieldedClustersActive(IVesselStatus status)
+        {
+            if (shieldedClustersUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(shieldedClustersUpgradeElement);
+        }
+        /// <summary>Space 5 'Shield Breaker': blasts break shields and super shields.</summary>
+        public bool ShieldBreakerActive(IVesselStatus status)
+        {
+            if (shieldBreakerUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(shieldBreakerUpgradeElement);
+        }
+        /// <summary>Time 5 'Tailwind': saved boosts last longer.</summary>
+        public bool TailwindActive(IVesselStatus status)
+        {
+            if (tailwindUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(tailwindUpgradeElement);
+        }
         public KiteNavigatorAI.Skill AISkill => aiSkill;
         public GameDataSO GameData => gameData;
         public EventReference LoopClosedSfx => loopClosedSfx;

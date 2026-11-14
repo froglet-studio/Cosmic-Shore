@@ -93,7 +93,9 @@ namespace CosmicShore.UI
             // A missing sprite would draw a SOLID QUAD in the tint rather than nothing, which is
             // how a retired texture once painted a navy panel over half the screen. Draw nothing.
             if (!_eye.sprite) _eye.enabled = false;
-            _eye.color = new Color(1f, 0.85f, 0.25f, 0.95f);
+            // The eye and its count as the worn colour set paints them (ColorTrace); a set worn later repaints them
+            // with the rest of the canvas (UIThemeLive).
+            _eye.color = ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 0.85f, 0.25f, 0.95f));
 
             var countGo = new GameObject("Count", typeof(RectTransform));
             var countRect = (RectTransform)countGo.transform;
@@ -107,7 +109,7 @@ namespace CosmicShore.UI
             _count.fontSize = 16f;
             _count.alignment = TextAlignmentOptions.MidlineLeft;
             _count.raycastTarget = false;
-            _count.color = new Color(1f, 0.85f, 0.25f, 0.95f);
+            _count.color = ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 0.85f, 0.25f, 0.95f));
             _count.text = string.Empty;
         }
 

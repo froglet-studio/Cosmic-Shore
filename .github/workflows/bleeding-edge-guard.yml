@@ -145,6 +145,15 @@ jobs:
           fi
           skip_it "nothing a Unity build reads was changed"
 
+      # Some generators' --check imports numpy, which the hosted image does not ship; without it
+      # three of them crashed and held bleeding-edge red from 2026-11-09 to the day this step
+      # landed (Docs/Reports/TRUNK_HEALTH.md). The list and why each entry is there:
+      # Tools/CI/requirements-checks.txt. --user leaves the image's own packages (PyYAML) alone.
+      - name: Install the Python packages the checks import
+        run: |
+          python3 -m pip install --user --quiet --break-system-packages --only-binary :all: -r Tools/CI/requirements-checks.txt
+          python3 -c "import numpy; print('numpy', numpy.__version__)"
+
       # These checkers have no-opped while still reporting OK. Prove they can
       # detect their own fixtures BEFORE trusting a clean scan. The roster gate
       # earns its place here: it finds its work by matching a script guid, so a
@@ -464,6 +473,16 @@ jobs:
         run: |
           set -euo pipefail
 
+          # A CANCELLED run has no verdict: a newer push to the same branch superseded
+          # it (concurrency cancel-in-progress). This job still runs (always()), and it
+          # used to fall through to "Recovered ... verified clean" and CLOSE the issue
+          # while the trunk was red: #1867, #1872, #1889 and #1897 were all closed that
+          # way (Docs/Reports/TRUNK_HEALTH.md). Leave the issue alone; the newer run reports.
+          if [ "$VALIDATE" = "cancelled" ] || [ "$UNITY" = "cancelled" ]; then
+            echo "No verdict: this run was cancelled (superseded by a newer push). The tracking issue is left as it is."
+            exit 0
+          fi
+
           # Classify. A skipped unity job means no runner is configured, which is
           # a gap rather than a break, so it must not raise an alarm.
           broken=false
@@ -613,6 +632,7 @@ jobs:
 
             Reproduce first. Run, in this order, and read the output (the same
             steps as the "Static validation" job; keep the two lists in step):
+              python3 -m pip install --user --quiet --break-system-packages --only-binary :all: -r Tools/CI/requirements-checks.txt
               python3 Tools/CI/test_validate_project.py
               python3 Tools/Build/check_conditional_compilation.py --self-test
               python3 Tools/Build/check_gamelist_scenes.py --self-test

@@ -203,8 +203,10 @@ namespace CosmicShore.Tests
             // 80 -> 81 on 2026-11-10: Harvest (88), the Thresher's Space game (88 free on every recent branch that day).
             // 81 -> 82 on 2026-11-10: Shatterplane (90), the Brittle Star's Space game. It first took 88, which Harvest
             // landed with first; 89 is Glasshouse's on claude/peaceful-cerf-vpl3x8 (in flight), so it moved to 90.
+            // 82 -> 83 on 2026-11-11: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest
+            // pushed first; 89 was free on every branch.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(82, values.Length,
+            Assert.AreEqual(83, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

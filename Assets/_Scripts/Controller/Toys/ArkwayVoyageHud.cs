@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -47,7 +48,8 @@ namespace CosmicShore.Gameplay
             _text = textGo.AddComponent<TextMeshProUGUI>();
             _text.alignment = TextAlignmentOptions.Center;
             _text.fontSize = 34f;
-            _text.color = new Color(1f, 0.92f, 0.6f);
+            // a screen-space line: the worn colour set's value (a set worn later repaints it on screen, UIThemeLive)
+            _text.color = ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 0.92f, 0.6f));
             _text.raycastTarget = false;
             if (TMP_Settings.defaultFontAsset) _text.font = TMP_Settings.defaultFontAsset;
         }

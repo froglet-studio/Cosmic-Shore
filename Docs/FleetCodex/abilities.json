@@ -251,7 +251,7 @@
    "ability": "Sting",
    "does": "Graze a rival vessel or creature to plant a bomb without them knowing; each costs the energy your skimming gathers. Every bomb shares one fuse and a new plant resets it, so they all go off together, and none can be scraped off.",
    "trigger": "Passive - skim to arm, graze to plant",
-   "scales": "More Charge makes each bloom knock more petals out of a rival.",
+   "scales": "More Charge makes the shared fuse run longer when a plant resets it: 20 s at rest, 30 s at Charge 10.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Mass": {
@@ -269,7 +269,7 @@
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Time": {
-   "ability": "Yastri",
+   "ability": "Yawstery",
    "does": "Hard, flat turns on the turn pair, one side per direction. Your trail is a plain trail; Time makes the Manta faster, cruising and soaring.",
    "trigger": "Hold, one side per direction",
    "scales": "More Time raises your cruise speed and your soaring speed.",
@@ -389,7 +389,7 @@
    "ability": "Shove",
    "does": "Every hard dash throws a broad flat plate along your path that shreds prisms, kills creatures and debuffs any rival pilot it engulfs, flinging everything the way you dashed. It recovers in a few seconds.",
    "trigger": "Passive - rides your dash",
-   "scales": "More Charge makes the shove's debuff on rival pilots bite harder.",
+   "scales": "More Charge recharges the shove faster: 2.5 s at rest, 1.25 s at Charge 10.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md"
   },
   "Mass": {
@@ -531,10 +531,10 @@
  "Squirrel": {
   "Charge": {
    "ability": "Crystal Joust",
-   "does": "Overtake a creature's crystal while flying faster than it to wither a rival creature, freeing its heart and collecting it. Overtake a rival pilot to steal petals off them.",
+   "does": "Overtake a creature's crystal while flying faster than it to wither a rival creature, freeing its heart and collecting it. Overtake a rival pilot to steal petals off them. Either joust needs at least the minimum joust speed.",
    "trigger": "Passive - overtake",
-   "scales": "More Charge steals more petals with each overtake.",
-   "source": "Assets/Resources/ElementalAbilityMaps/Squirrel.asset"
+   "scales": "More Charge lowers the speed a joust needs: 90 u/s at rest, 45 u/s at Charge 10. The Charge card's gauge marks it.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_ELEMENT_RECUT.md"
   },
   "Mass": {
    "ability": "Boost Ring",
@@ -663,7 +663,7 @@
    "ability": "Surge",
    "does": "For 8 seconds your blade stays energized and a ring of swords surrounds the ship, swinging with your triggers, while the camera pulls back. A blast also breaks prisms round you.",
    "trigger": "Pick up an omni crystal",
-   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs"
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SwordfishVesselSurgeByCrystalEffectSO.cs"
   }
  },
  "Thresher": {

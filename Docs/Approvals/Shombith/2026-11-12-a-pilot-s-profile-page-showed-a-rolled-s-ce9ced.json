@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-12-a-pilot-s-profile-page-showed-a-rolled-s-ce9ced",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T21:59:55+00:00",
+  "area": "menu UI (PilotProfileModal) and the account inventory's starter crew",
+  "summary": "A pilot's profile page showed a rolled stranger's name and story over the painted pilot's scene. The starter crew are now the painted pilots (PaintedCrewSO, repainted on each inventory read, ids kept), the page drops its 'Pictured:' line for them, and author_menu_pilot_profile.py --check fails a painted story longer than the Story row. Garrett asked for it, 2026-11-12.",
+  "branch": "claude/pilot-page-story-matches-art",
+  "commit": "f06225e4e"
+}

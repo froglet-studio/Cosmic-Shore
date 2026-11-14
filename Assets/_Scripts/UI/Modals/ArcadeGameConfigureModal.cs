@@ -652,14 +652,6 @@ namespace CosmicShore.UI
         #region Launch panels
 
         /// <summary>
-        /// Bring up the panel that draws this card and take the others down.
-        ///
-        /// <para>Selection is by <see cref="ArcadeLaunchPanel.Handles"/>, first match wins - a card
-        /// asks the panels which of them draws it rather than the modal switching on a mode enum,
-        /// so a third kind of card is a new subclass and one list entry, with nothing here to
-        /// edit.</para>
-        /// </summary>
-        /// <summary>
         /// Which panel draws this card, with NO side effects - so the routing question can be asked
         /// before anything is shown or hidden.
         /// </summary>
@@ -673,6 +665,22 @@ namespace CosmicShore.UI
             return null;
         }
 
+        /// <summary>
+        /// Whether this copy can launch <paramref name="game"/>: it drives a launch panel that takes the card. Menu_Main
+        /// carries three copies of this component and only one authors panels - the Arena window's and the Maelstrom
+        /// window's are their panels' host modals (<see cref="ArcadeLaunchPanel.HostModal"/>) - so a caller that finds
+        /// "a" modal in the scene must ask this, or it can open the card on a shell that binds nothing.
+        /// </summary>
+        public bool CanOpen(SO_ArcadeGame game) => game && ResolvePanelFor(game) != null;
+
+        /// <summary>
+        /// Bring up the panel that draws this card and take the others down.
+        ///
+        /// <para>Selection is by <see cref="ArcadeLaunchPanel.Handles"/>, first match wins - a card
+        /// asks the panels which of them draws it rather than the modal switching on a mode enum,
+        /// so a third kind of card is a new subclass and one list entry, with nothing here to
+        /// edit.</para>
+        /// </summary>
         void SelectLaunchPanel(SO_ArcadeGame game)
         {
             if (!UsesLaunchPanels) return;
@@ -1194,17 +1202,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Stop anything running in the window and let go of it. Reached from exactly TWO routes -
-        /// the ✕ (<see cref="CloseAndNotifyClients"/>) and the modal being disabled.
-        ///
-        /// <para>This comment used to claim a third, "a launch", and that route does not exist:
-        /// <see cref="HandleAllPlayersReady"/> closes through <c>ModalWindowOut</c>, which fades a
-        /// CanvasGroup and never deactivates the GameObject, so <c>OnDisable</c> never fires. The
-        /// window is taken down on that route by <see cref="HandlePreviewEnded"/> instead, off the
-        /// session's own end event - which is the better place for it anyway, since it holds on
-        /// every stop rather than on the ones the modal happens to hear about.</para>
-        /// </summary>
-        /// <summary>
         /// This modal closed - by any route at all. Take the CONTENT down with the window.
         ///
         /// <para>Re-entrancy is safe: <c>_activePanel.Hide()</c> on a panel with a host modal
@@ -1260,6 +1257,17 @@ namespace CosmicShore.UI
         // apart by the caller saying which one it is.
         bool _launching;
 
+        /// <summary>
+        /// Stop anything running in the window and let go of it. Reached from exactly TWO routes -
+        /// the ✕ (<see cref="CloseAndNotifyClients"/>) and the modal being disabled.
+        ///
+        /// <para>This comment used to claim a third, "a launch", and that route does not exist:
+        /// <see cref="HandleAllPlayersReady"/> closes through <c>ModalWindowOut</c>, which fades a
+        /// CanvasGroup and never deactivates the GameObject, so <c>OnDisable</c> never fires. The
+        /// window is taken down on that route by <see cref="HandlePreviewEnded"/> instead, off the
+        /// session's own end event - which is the better place for it anyway, since it holds on
+        /// every stop rather than on the ones the modal happens to hear about.</para>
+        /// </summary>
         void ShutDownPreview()
         {
             UnsubscribeFromPreviewSession();
@@ -3104,11 +3112,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Hands the launch to <see cref="WeeklyChallengeService"/> when this session is the weekly
-        /// challenge, and clears the flag when it is not. Safe with no service present (the
-        /// feature is simply off) and safe on a card that merely happens to be this week's mode.
-        /// </summary>
-        /// <summary>
         /// False only when this is a weekly-challenge session whose attempt is already spent.
         /// Every ordinary card, and a challenge with an attempt left, answers true.
         /// </summary>
@@ -3153,6 +3156,11 @@ namespace CosmicShore.UI
             return leaderboardModal;
         }
 
+        /// <summary>
+        /// Hands the launch to <see cref="WeeklyChallengeService"/> when this session is the weekly
+        /// challenge, and clears the flag when it is not. Safe with no service present (the
+        /// feature is simply off) and safe on a card that merely happens to be this week's mode.
+        /// </summary>
         void ArmWeeklyChallengeForLaunch()
         {
             if (!gameData) return;
@@ -3369,6 +3377,17 @@ namespace CosmicShore.UI
         const float FreestyleExitGraceSeconds = 6f;
         float _freestyleExitDeadline;
 
+        /// <summary>True when this guest's config no longer matches the host's replicated roster.</summary>
+        bool ClientRosterDrifted(ArcadeConfigSyncManager.LobbySnapshot lobby)
+        {
+            if (config.PlayerCount != Mathf.Max(1, lobby.PlayerCount)) return true;
+            var placed = lobby.PlacedAiDomains();
+            if (config.AIDomains.Count != placed.Length) return true;
+            for (int i = 0; i < placed.Length; i++)
+                if ((int)config.AIDomains[i] != placed[i]) return true;
+            return false;
+        }
+
         /// <summary>
         /// Self-heal: if the host's lobby is open and this guest is not showing it, show it.
         ///
@@ -3385,17 +3404,6 @@ namespace CosmicShore.UI
         /// dismissed the card themselves is not fought with; a host who re-opens (a new
         /// generation) reaches them either way.</para>
         /// </summary>
-        /// <summary>True when this guest's config no longer matches the host's replicated roster.</summary>
-        bool ClientRosterDrifted(ArcadeConfigSyncManager.LobbySnapshot lobby)
-        {
-            if (config.PlayerCount != Mathf.Max(1, lobby.PlayerCount)) return true;
-            var placed = lobby.PlacedAiDomains();
-            if (config.AIDomains.Count != placed.Length) return true;
-            for (int i = 0; i < placed.Length; i++)
-                if ((int)config.AIDomains[i] != placed[i]) return true;
-            return false;
-        }
-
         void ReconcileClientLobby()
         {
             if (!UsesLaunchPanels || !arcadeConfigSyncManager) return;

@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     /// 2026-11-04). Soar is the overlap of the two triggers: both buried is four times cruise, and
     /// easing both together turns tighter, at the price of about two seconds to wind the speed back
     /// up. Every corner asks <i>how much Soar is this corner worth?</i>, and no corner is tighter
-    /// than Soar alone can make, so the race never needs the trigger difference (Yastri, Mass), the
+    /// than Soar alone can make, so the race never needs the trigger difference (Yawstery, Mass), the
     /// Sting or the Kabloom. Intensity 1 is flat out end to end; 2 asks one corner, 3 two, and 4
     /// three (one with the triggers off, one at a third, a knife-edge held flat only by being
     /// exact) through 44 u mouths. See <see cref="RedlineCourse"/> for the curve and the ladder.</para>

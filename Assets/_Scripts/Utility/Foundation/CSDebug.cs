@@ -24,6 +24,18 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
+    /// Human label for a <see cref="CSLogChannel"/> member, read by FrogletTools &gt; Toolbox &gt;
+    /// Logging so a new channel is toggleable the moment it is declared — the toolbox reflects
+    /// over the enum rather than carrying a hand-maintained row table that drifts behind it.
+    /// </summary>
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class CSLogChannelLabelAttribute : System.Attribute
+    {
+        public string Label { get; }
+        public CSLogChannelLabelAttribute(string label) => Label = label;
+    }
+
+    /// <summary>
     /// Opt-in diagnostic channels for BRING-UP TELEMETRY — the dense per-step traces a system
     /// needs while it is being built, which are noise for everyone else once it works.
     ///
@@ -37,18 +49,6 @@ namespace CosmicShore.Utility
     /// <para>Only add a member when you are converting real call sites onto it — an unused
     /// channel is a promise the toolbox cannot keep.</para>
     /// </summary>
-    /// <summary>
-    /// Human label for a <see cref="CSLogChannel"/> member, read by FrogletTools &gt; Toolbox &gt;
-    /// Logging so a new channel is toggleable the moment it is declared — the toolbox reflects
-    /// over the enum rather than carrying a hand-maintained row table that drifts behind it.
-    /// </summary>
-    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
-    public sealed class CSLogChannelLabelAttribute : System.Attribute
-    {
-        public string Label { get; }
-        public CSLogChannelLabelAttribute(string label) => Label = label;
-    }
-
     [System.Flags]
     public enum CSLogChannel
     {

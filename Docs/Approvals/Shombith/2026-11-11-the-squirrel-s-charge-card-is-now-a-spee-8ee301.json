@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-11-the-squirrel-s-charge-card-is-now-a-spee-8ee301",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T00:26:25+00:00",
+  "area": "Squirrel HUD Charge card (Assets/_Scripts/UI) and Docs/REFACTOR_BACKLOG.md C2",
+  "summary": "The Squirrel's Charge card is now a speed gauge with the minimum joust speed marked the way the Rhino marks Momentum (generated in SquirrelVesselHUDView.EnsureGeneratedAbilityIcons, bound through a new VesselHUDView.BindGeneratedAbilityGauge). Backlog C2 is marked resolved: the Scarab's Charge moved to its shove cooldown on Scarab.prefab, so no hull's Charge row sits where element_ability_table.py cannot see it.",
+  "branch": "cece/cool-dijkstra-4puf92",
+  "commit": "e4f478163"
+}

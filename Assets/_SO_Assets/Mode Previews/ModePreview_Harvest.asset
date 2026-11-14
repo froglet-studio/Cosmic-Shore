@@ -33,9 +33,9 @@ MonoBehaviour:
   DurationSeconds: 60
   SpawnFromCellRing: 1
   SpawnDistanceOutsideNucleus: 40
-  SpawnRingRadiusFloor: 880
+  SpawnRingRadiusFloor: 900
   SpawnRingRadiusFloorByIntensity:
-  - 880
+  - 900
   - 960
   - 1020
   - 1080

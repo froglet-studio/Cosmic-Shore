@@ -59,10 +59,16 @@ MonoBehaviour:
   centreClearingRadius: 200
   sheafCount: 16
   coreGap: 180
-  coreRadius: 52
-  coreBlocks: 110
+  coreRadius: 46
+  coreBlocks: 100
   shieldedCores: 1
-  stalkCount: 16
+  stalkCount: 28
   stalkPrisms: 5
+  wheelStalks: 1
   dangerStalkEveryNth: 0
+  chaffClouds: 12
+  chaffCloudRadius: 100
+  strawsPerCloud: 22
+  baleCount: 8
+  baleSize: 3
   colourPattern: 2

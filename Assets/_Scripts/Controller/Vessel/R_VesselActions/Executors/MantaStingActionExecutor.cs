@@ -318,6 +318,9 @@ namespace CosmicShore.Gameplay
             _energy = Mathf.Max(0f, _energy - 1f);
             PushBayState();
             OnBombPlanted?.Invoke();
+
+            // The plant knock: one of the Manta's two haptics (the other is the hull-hit thud). Local human only.
+            if (_status.IsLocalUser && !_status.AutoPilotEnabled) HapticController.PlayPlant();
         }
 
         /// <summary>Per-use snapshot at PLANT time: Contagion (Charge 5) and the shared fuse as it stands.</summary>
@@ -342,6 +345,7 @@ namespace CosmicShore.Gameplay
             };
         }
 
+        // CHARGE: the planter's Charge at this plant sets how long the WHOLE board's fuse now runs.
         void ResetFuse()
         {
             _fuseLength = config ? config.FuseSecondsFor(_status) : 20f;

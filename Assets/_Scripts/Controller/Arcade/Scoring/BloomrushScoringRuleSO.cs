@@ -27,6 +27,16 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Bloomrush", fileName = "BloomrushScoringRule")]
     public class BloomrushScoringRuleSO : ScoringRuleSO
     {
+        [Header("Reveal")]
+        [Tooltip("The reveal's header when the local pilot's domain won.")]
+        [SerializeField] string victoryHeader = "VICTORY";
+
+        [Tooltip("The reveal's header when the local pilot's domain lost.")]
+        [SerializeField] string defeatHeader = "DEFEAT";
+
+        [Tooltip("The reveal's label on both sides (the value is the volume the pilot bloomed, a count, never a time).")]
+        [SerializeField] string revealLabel = "VOLUME BLOOMED";
+
         static int SumFusesBeaten(GameDataSO gameData, Domains domain)
         {
             int sum = 0;
@@ -130,9 +140,9 @@ namespace CosmicShore.Gameplay
             return ScoreResultBuilder.BuildRanked(rows);
         }
 
+        // Points mode: the value is a VOLUME on both sides, so it is never formatted as a time
+        // (the golf-timed rules pass true on a win because their winner's Score IS a finish time).
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
-            didWin
-                ? new ScoreReveal("VICTORY", "VOLUME BLOOMED", LiveMetric(localStats), true)
-                : new ScoreReveal("DEFEAT", "VOLUME BLOOMED", LiveMetric(localStats), false);
+            new ScoreReveal(didWin ? victoryHeader : defeatHeader, revealLabel, LiveMetric(localStats), false);
     }
 }

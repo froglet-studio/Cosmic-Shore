@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,8 +17,8 @@ namespace CosmicShore.UI
     /// <item><b>Time</b> — the boosts the navigator's Time loops have saved for the pilot, as a number, with the
     /// boost's recharge on the card's veil.</item>
     /// </list>
-    /// The view is the Sparrow's HUD (the hull is a Sparrow clone), whose Initialize hides the Charge and Space
-    /// icons until its guns report; the Wrasse has no guns, so this controller shows them. The counts are GENERATED
+    /// The view is the Wrasse's own since 2026-11-13 (<see cref="WrasseHUDView"/>; it was the Sparrow's, whose Initialize
+    /// hid the Charge and Space icons until its guns reported, so this controller still shows them). The counts are GENERATED
     /// into the cards at runtime (the Shrike's missile count is the pattern), so the HUD prefab carries no extra
     /// object. Polled from this hull's own seat, a serialized reference (vessel rule 14), behind the fleet's pilot
     /// gate (rule 5).
@@ -118,7 +119,7 @@ namespace CosmicShore.UI
             if (!text || count == _shown[i]) return;
             _shown[i] = count;
             text.text = string.IsNullOrEmpty(countTemplate) ? string.Empty : countTemplate.Replace("{count}", count.ToString());
-            text.color = count > 0 ? countLiveColor : countEmptyColor;
+            text.color = ColorTrace.Retrace(ColorTrace.Ui, count > 0 ? countLiveColor : countEmptyColor);
         }
     }
 }

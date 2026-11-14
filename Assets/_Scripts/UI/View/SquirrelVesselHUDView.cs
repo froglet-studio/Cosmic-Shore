@@ -15,7 +15,7 @@ namespace CosmicShore.UI
     ///
     ///   [core]  drift         (LT, leans with the drift)       → no element, no upgrade
     ///   [core]  omni crystal  (shielded ring, flashes on pickup) → no element, no upgrade
-    ///   Charge → crystal joust (the skull, impactIcon)          → "Shepherd"
+    ///   Charge → crystal joust (the two hulls + a SPEED gauge)  → "Shepherd"
     ///   Mass   → boost ring    (danger-tinted)                  → "Twin Rings"
     ///   Space  → steal         (GENERATED: reach ring + count)  → "Iron Grip"
     ///   Time   → skimming      (the skim icon + the boost fill) → "Live Wire"
@@ -163,6 +163,23 @@ namespace CosmicShore.UI
         [SerializeField] private ElementalBarsConfigSO barsConfig;
         [SerializeField] private string barsConfigResourcePath = "ElementalBarsConfig";
 
+        [Header("Joust speed (the CHARGE card's gauge - GENERATED, see EnsureGeneratedAbilityIcons)")]
+        [Tooltip("Thickness, in canvas units, of the joust-speed threshold's marks (the Rhino's momentumMarkThickness).")]
+        [SerializeField, Min(0.5f)] private float joustMarkThickness = 2f;
+        [Tooltip("The fleet's lockup style. The mark's colours are ITS: the gap cut through the fill once speed has passed " +
+                 "the threshold is the gauge track colour (the plate showing through), and the ticks while speed is below " +
+                 "it are the gauge fill colour at joustMarkAheadAlpha. Loaded from Resources when left empty; never " +
+                 "author a second copy of either colour.")]
+        [SerializeField] private AbilityLockupStyleSO lockupStyle;
+        [SerializeField] private string lockupStyleResourcePath = "AbilityLockupStyle";
+        [Tooltip("The ticks' opacity: the gauge fill colour at this alpha, so they read as a mark, not as fill.")]
+        [SerializeField, Range(0f, 1f)] private float joustMarkAheadAlpha = 0.35f;
+        [Tooltip("Length, in canvas units, of a tick, in from each edge of the gauge.")]
+        [SerializeField, Min(1f)] private float joustTickLength = 7f;
+        [Tooltip("How far the plate's slanted edge sits in from the gauge's rect at the BOTTOM of the card, in canvas " +
+                 "units (AbilityLockupStyle's trapezoid inset): a tick starts at the slant at its own height.")]
+        [SerializeField, Min(0f)] private float joustTickSlantInset = 9f;
+
         [Header("Boost Ring cooldown (Mass slot)")]
         [Tooltip("The Boost Ring ability's icon. Its RECHARGE is drawn by the fleet's standard " +
                  "cooldown - a radial veil swept over this card by the ability lockup - so nothing " +
@@ -235,6 +252,12 @@ namespace CosmicShore.UI
         private float _driftAngleShown;          // the pair's hull turn, degrees, eased toward the live angle
         private Color _shieldedTint = new Color(0f, 0f, 0f, 0f);   // the domain's shielded colour; alpha 0 = not landed
 
+        // The generated Charge gauge (speed against the least speed a joust needs). Built once by
+        // EnsureGeneratedAbilityIcons and adopted into the card by the lockup.
+        private Image _joustSpeedGauge;
+        private Image _joustGap, _joustTickLeft, _joustTickRight;
+        private float _joustThreshold01 = -1f;
+
         // The generated Space readout. Built once by EnsureGeneratedAbilityIcons.
         private Image _reachIcon;
         private ScopeRingGraphic _reachRing;
@@ -261,6 +284,7 @@ namespace CosmicShore.UI
         /// </summary>
         public override void EnsureGeneratedAbilityIcons()
         {
+            EnsureJoustSpeedGauge();
             if (_reachIcon) return;
 
             var host = transform.Find("StealReachButton") as RectTransform;
@@ -351,6 +375,101 @@ namespace CosmicShore.UI
         /// in steps and a ring that stepped with it would read as a glitch.
         /// </summary>
         public void SetStealReach01(float reach01) => _reachTarget01 = Mathf.Clamp01(reach01);
+
+        /// <summary>
+        /// The CHARGE card's meter: the hull's speed, built at runtime because it is a live measurement (Garrett,
+        /// 2026-11-11: "show the speed gauge on its charge icon with the tick on the threshold"). The lockup adopts it
+        /// like an authored gauge and styles it; until then it is invisible. Idempotent: a rebuild finds it by field,
+        /// and a fresh one is resolved by name.
+        /// </summary>
+        void EnsureJoustSpeedGauge()
+        {
+            if (_joustSpeedGauge) return;
+            if (transform is not RectTransform root) return;
+
+            _joustSpeedGauge = ResolveGeneratedChild<Image>(root, "JoustSpeedGauge");
+            _joustSpeedGauge.color = new Color(1f, 1f, 1f, 0f);   // the lockup's AdoptGauge paints it
+            _joustSpeedGauge.raycastTarget = false;
+            _joustSpeedGauge.fillAmount = 0f;
+            _joustThreshold01 = -1f;
+            BindGeneratedAbilityGauge(Element.Charge, _joustSpeedGauge);
+        }
+
+        /// <summary>
+        /// The joust's speed on the CHARGE card: <paramref name="speed01"/> fills the gauge, and the least speed a joust
+        /// needs (<paramref name="threshold01"/>, the Squirrel's Charge) is ONE mark on it, drawn the way the Rhino draws
+        /// Momentum (<c>RhinoVesselHUDView.SetMomentumMark</c>): a dim tick in from each slanted edge while the speed is
+        /// below it, a gap cut through the fill once the speed has passed it - the moment a joust lands. Both are
+        /// fractions of the fastest this hull flies; a threshold of 0 or less hides the mark.
+        /// </summary>
+        public void SetJoustSpeed(float speed01, float threshold01)
+        {
+            EnsureJoustSpeedGauge();
+            if (!_joustSpeedGauge) return;
+            speed01 = Mathf.Clamp01(speed01);
+            threshold01 = Mathf.Clamp01(threshold01);
+            _joustSpeedGauge.fillAmount = speed01;
+
+            if (!_joustGap)
+            {
+                var parent = _joustSpeedGauge.rectTransform;
+                _joustGap = ResolveGeneratedChild<Image>(parent, "JoustSpeedGap");
+                _joustTickLeft = ResolveGeneratedChild<Image>(parent, "JoustSpeedTickL");
+                _joustTickRight = ResolveGeneratedChild<Image>(parent, "JoustSpeedTickR");
+                _joustGap.raycastTarget = _joustTickLeft.raycastTarget = _joustTickRight.raycastTarget = false;
+                _joustThreshold01 = -1f;
+            }
+
+            if (!Mathf.Approximately(threshold01, _joustThreshold01))
+            {
+                _joustThreshold01 = threshold01;
+                float slant = joustTickSlantInset * (1f - threshold01);   // the plate narrows toward its base
+                PlaceJoustMark(_joustGap, 0f, 1f, threshold01, 0f, 0f);
+                PlaceJoustMark(_joustTickLeft, 0f, 0f, threshold01, joustTickLength, slant);
+                PlaceJoustMark(_joustTickRight, 1f, 1f, threshold01, joustTickLength, -slant);
+            }
+
+            var marks = JoustMarksFor(speed01, threshold01);
+            _joustGap.gameObject.SetActive(marks.Gap);
+            _joustTickLeft.gameObject.SetActive(marks.Ticks);
+            _joustTickRight.gameObject.SetActive(marks.Ticks);
+
+            if (!lockupStyle && !string.IsNullOrEmpty(lockupStyleResourcePath))
+                lockupStyle = Resources.Load<AbilityLockupStyleSO>(lockupStyleResourcePath);
+            if (!lockupStyle) return;
+            _joustGap.color = lockupStyle.GaugeTrackColor;
+            var ahead = lockupStyle.GaugeFillColor;
+            ahead.a *= joustMarkAheadAlpha;
+            _joustTickLeft.color = _joustTickRight.color = ahead;
+        }
+
+        /// <summary>Which joust-speed marks show: the ticks while the speed is below the threshold, the gap once it has
+        /// reached it, nothing for a threshold of 0 (no minimum).</summary>
+        public struct JoustMarks
+        {
+            public bool Ticks, Gap;
+        }
+
+        /// <summary>What <see cref="SetJoustSpeed"/> shows, as a pure function so it is tested without a canvas.</summary>
+        public static JoustMarks JoustMarksFor(float speed01, float threshold01)
+        {
+            bool shown = threshold01 > 0f;
+            bool passed = speed01 >= threshold01;
+            return new JoustMarks { Ticks = shown && !passed, Gap = shown && passed };
+        }
+
+        // A horizontal mark at height y01 of the gauge, spanning anchors x0..x1 (a stretched gap), or `width` canvas units
+        // in from that edge (x0 == x1: a tick, pivoted on the edge so it grows inward, shifted `dx` to the slant). The
+        // Rhino's PlaceMomentumMark.
+        void PlaceJoustMark(Image img, float x0, float x1, float y01, float width, float dx)
+        {
+            var rt = img.rectTransform;
+            rt.anchorMin = new Vector2(x0, y01);
+            rt.anchorMax = new Vector2(x1, y01);
+            rt.pivot = new Vector2(x0, 0.5f);
+            rt.anchoredPosition = new Vector2(dx, 0f);
+            rt.sizeDelta = new Vector2(width, joustMarkThickness);
+        }
 
         /// <summary>The running total of prisms this pilot has taken. Repainted only on a change.</summary>
         public void SetStealCount(int count)

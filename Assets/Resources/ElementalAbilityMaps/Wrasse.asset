@@ -30,8 +30,8 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: ''
-    UpgradeDescription: ''
+    UpgradeLabel: 'Tailwind'
+    UpgradeDescription: 'Every saved boost lasts half as long again.'
   - Element: 2
     AbilityLabel: 'Mass Cluster'
     AbilityDescription: 'A loop of Mass motes lays a cluster of prisms on the kite''s plane. The card flashes when one is laid.'

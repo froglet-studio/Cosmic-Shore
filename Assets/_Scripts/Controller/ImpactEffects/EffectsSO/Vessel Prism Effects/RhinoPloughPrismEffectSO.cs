@@ -10,9 +10,10 @@ namespace CosmicShore.Gameplay
     /// The Rhino's HULL is a plough: a prism it rams is shoved aside, to whichever side of the
     /// hull's centreline it already sat on (or to the side a held trigger steers it,
     /// <see cref="RhinoPloughSteerExecutor"/>), far enough to clear the hull — it is never destroyed.
-    /// Since 2026-11-07 the plough IS the Rhino (the sword split off into the Swordfish): Space
-    /// widens the furrow, Charge carries a thrown prism on to strike another, and three level-5s
-    /// (Unstoppable, Berm, Avalanche) gate here; Mass widens the blade (<see cref="RhinoPloughBlade"/>).
+    /// Since 2026-11-07 the plough IS the Rhino (the sword split off into the Swordfish). Since the
+    /// 2026-11-12 rework: Mass (Heft) throws further, Charge carries a thrown prism on to strike another
+    /// (Charge's rival hit is the Gore, <see cref="RhinoGoreBySkimmerEffectSO"/>), and two level-5s (Unstoppable on
+    /// Space, Berm on Mass) gate here; Space widens the blade (<see cref="RhinoPloughBlade"/>).
     /// Replaces <see cref="VesselDamagePrismEffectSO"/> in the Rhino's vessel container only — every
     /// other hull still rams as before. Design + verification: <c>R_VesselActions/RHINO_PLOUGH.md</c>.
     ///
@@ -50,13 +51,13 @@ namespace CosmicShore.Gameplay
                  "(~1,200 u/s) does not fling mass across the arena.")]
         [SerializeField, Min(0f)] float maxThrowDistance = 90f;   // tripled 2026-11-09 (Garrett)
 
-        [Header("Furrow (Space)")]
-        [Tooltip("SPACE: how much WIDER the furrow is - world units added to every throw, at any speed, on top of " +
-                 "the speed-driven throw above. 0 at rest (the plough as it shipped), 60 at Space 10, floored at 0 " +
-                 "in the deficit band. Read at the Rhino's replicated level, so every peer lands the prism alike.")]
-        [SerializeField] ElementalFloat furrowDistance = ElementalFloat.Multiplier(0f, 60f, Element.Space, 0f);   // tripled 2026-11-09 (Garrett)
+        [Header("Heft (Mass)")]
+        [Tooltip("MASS (Heft): how much further a heavier plough throws - world units added to every throw, at any speed, on top of " +
+                 "the speed-driven throw above. 0 at rest (the plough as it shipped), 60 at Mass 10, floored at 0 " +
+                 "in the deficit band (Space until 2026-11-12: a heavier hull pushes further). Read at the Rhino's replicated level, so every peer lands the prism alike.")]
+        [SerializeField] ElementalFloat furrowDistance = ElementalFloat.Multiplier(0f, 60f, Element.Mass, 0f);   // tripled 2026-11-09, moved to Mass 2026-11-12 (Garrett)
 
-        [Tooltip("SPACE level-5 'Unstoppable': with this element's upgrade active the plough moves SUPER-shielded " +
+        [Tooltip("SPACE level-5 'Unstoppable' (the fleet's Space shield-breaker slot): with this element's upgrade active the plough moves SUPER-shielded " +
                  "mass too (without it super-shielded prisms are the immovable tier and only jiggle). None = never.")]
         [SerializeField] Element unstoppableUpgradeElement = Element.Space;
 
@@ -67,10 +68,10 @@ namespace CosmicShore.Gameplay
                  "still lands where the furrow puts it.")]
         [SerializeField] ElementalFloat carryDistance = ElementalFloat.Multiplier(0f, 40f, Element.Charge, 0f);
 
-        [Tooltip("CHARGE level-5 'Avalanche': with this element's upgrade active a strike carries on - the next " +
+        [Tooltip("'Avalanche' (retired as Charge's level-5 on 2026-11-12, when Gore Steal took the slot; the asset authors None): with this element's upgrade active a strike carries on - the next " +
                  "prism down the line within the carry is thrown on too, and its own strike can throw the next. " +
                  "None = never.")]
-        [SerializeField] Element avalancheUpgradeElement = Element.Charge;
+        [SerializeField] Element avalancheUpgradeElement = Element.None;
 
         [Tooltip("How many further prisms one Avalanche can throw on, after the first strike.")]
         [SerializeField, Min(0)] int avalancheLinks = 3;
@@ -127,6 +128,9 @@ namespace CosmicShore.Gameplay
             // box tier both reporting one ram) is a no-op rather than a double throw.
             float shove = RhinoPlough.ShoveToward(lateral, side, clearance, throwDistance);
             if (shove == 0f) return;
+
+            // Every prism thrown buys stampede time for the next omni crystal (RhinoStampedeByCrystalEffectSO).
+            RhinoStampede.CountPlough(status);
 
             var throwSettings = new ThrowSettings
             {

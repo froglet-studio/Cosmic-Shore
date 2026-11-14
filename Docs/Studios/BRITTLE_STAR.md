@@ -459,3 +459,17 @@ frame clock (display, 120, 60 or 30 fps), with a headless scorecard:
 `BrittleStarRingSmear.shader` (the Unity contract: `R_VesselActions/BRITTLE_STAR.md` §2, "The ring under a spinning
 stick"). The studio's `AimRing` port (`VesselStudio/brittlestar.html`) runs the same forward rule, so
 `studio_to_unity.py --check` maps the three new sweep numbers too.
+
+**Round 3 (2026-11-10): the port drew no ring while it turned.** In the editor the spinning ring was "too dark to see".
+The smear pass redraws the ring into a layer with the hull's own materials, choosing each material's pass by its
+LightMode tag, and the hull's `VesselGraph` is an Unlit Shader Graph whose forward pass has no LightMode tag at all. The
+layer came out empty and the ring, which the hull hides while it smears, vanished whenever it turned more than
+`ringSmearMinDegrees` a frame (1.5° in `BrittleStarConfig.asset`). Fixed on `claude/brittlestar-smear-empty-layer` (the lookup takes the untagged pass, and an empty layer is never
+counted as drawn), compiled against Unity's reference assemblies but not yet run in Unity. The lab's round 3 now draws every scope the game's way: the shipped hull mesh
+(`BrittleStar.fbx`), `VesselGraph`'s formula on the shipped materials and the colour set's domain colours, the gameplay
+bloom (`GamePlay PostProcessing Profile`, LQ) with no tonemapping, from the 38-unit chase camera. In that look the
+averaged smear keeps about 90% of the ring's brightest light at the 1080°/s cap at 60 fps (83% at 30 fps), so the smear itself was not
+what went dark. Round 2 had judged a stand-in ring (a thick neon pentagon, 19 units away) and measured total light only;
+round 3 adds a rendered "brightest plates kept" column, a peak-hold smear and an afterimage beside the shipped one, and
+the bug itself (the ring vanishes) as the scorecard's floor. **Decision needed (Garrett):** keep the averaged smear now
+that it draws, or switch to one of the round 3 looks.

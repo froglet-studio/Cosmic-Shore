@@ -5,7 +5,7 @@ real line, with AIPilot's own stick law and the line's 2026-10-25 fixes.
 manta_drive_sim.py flew the Soar on the old through-the-centre gate steering with a proportional stick, and
 regatta_line_sim.py flew the line at a constant 267 u/s, so neither raced the Manta that ships: the line at the Regatta
 bands (Resources/AIBoostPolicies/MantaSoarAITuning_Regatta, 0.975 / 0.975 since 2026-10-24) where it holds Soar
-(cruise 180 x 4 = 720 u/s, lerp 1.5/s) except on its hardest corners, turning at (0.2 v + 30) deg/s plus the Yastri
+(cruise 180 x 4 = 720 u/s, lerp 1.5/s) except on its hardest corners, turning at (0.2 v + 30) deg/s plus the Yawstery
 trigger pivot (60 deg/s at a full net pull). This one does, and also re-tries the corner cap manta_drive_sim modelled
 and dropped (cut Soar before a corner the Manta cannot make at speed), because on the line a missed 72 u mouth costs a
 re-attack the old model never charged.
@@ -32,7 +32,7 @@ from ai_nose_lead import NoseLead, effective_gain, judge_and_want   # the AI nos
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 REGATTA_TUNING = os.path.join(ROOT, "Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset")
 SHARE, CLEAR, RISK = 0.809, 16, 0.5   # Resources/RaceLines/Manta_Regatta
-DEFAULT_BANDS = (md.BOOST_BAND, md.YASTRI_BAND)
+DEFAULT_BANDS = (md.BOOST_BAND, md.YAWSTERY_BAND)
 OLD_REGATTA_BANDS = (0.8, 0.85)       # 2026-10-17 to 10-24
 
 
@@ -40,7 +40,7 @@ def regatta_bands():
     try:
         text = open(REGATTA_TUNING, encoding="utf-8").read()
         b = float(re.search(r"BoostStickBand:\s*([0-9.]+)", text).group(1))
-        y = float(re.search(r"YastriStickBand:\s*([0-9.]+)", text).group(1))
+        y = float(re.search(r"YawsteryStickBand:\s*([0-9.]+)", text).group(1))
         return b, y
     except (OSError, AttributeError):
         return OLD_REGATTA_BANDS
@@ -134,7 +134,7 @@ def race(intensity, bands=None, cap=None, T=300, dt=1 / 60, own=0, look_s=None, 
         v += (md.CRUISE * (1 + (md.MULT - 1) * boost) - v) * md.LERP * dt
         if boost > 0.5: soar += dt
         top = max(top, v)
-        turn = math.radians((0.2 * v + 30) * s + md.YASTRI_YAW * net) * dt
+        turn = math.radians((0.2 * v + 30) * s + md.YAWSTERY_YAW * net) * dt
         if nose is None:
             fwd = rotate_toward(fwd, to, turn)
         else:

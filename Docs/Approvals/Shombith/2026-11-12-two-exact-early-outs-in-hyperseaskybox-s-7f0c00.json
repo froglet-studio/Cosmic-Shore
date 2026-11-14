@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-12-two-exact-early-outs-in-hyperseaskybox-s-7f0c00",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T05:54:17+00:00",
+  "area": "HyperSea sky shader",
+  "summary": "Two exact early-outs in HyperSeaSkybox.shader (dust off the galactic band, core outside its caps): bit-identical on D3D12, Vulkan and D3D11, 1.09x faster per sky pixel (Proven Win W3, Docs/ProvenWin/WINS.md).",
+  "branch": "claude/proven-win-2",
+  "commit": "371eb6b35"
+}

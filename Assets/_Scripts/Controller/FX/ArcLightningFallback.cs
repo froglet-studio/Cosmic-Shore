@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.VFX;
 
@@ -84,7 +85,8 @@ namespace CosmicShore.Gameplay
             ReadEffectValues();
             _points = new Vector3[Mathf.Max(4, segments)];
             _blue = BuildLine("ArcLightningFallback (blue)", _blueColor, _blueWidth);
-            _white = BuildLine("ArcLightningFallback (white)", whiteColor, whiteWidth);
+            // Built once: a set worn later repaints the line where it lives (WorldColorTrace, by value).
+            _white = BuildLine("ArcLightningFallback (white)", ColorTrace.Retrace(ColorTrace.World, whiteColor), whiteWidth);
         }
 
         void OnDisable()

@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using Unity.Profiling;
 using UnityEngine;
 
@@ -6,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Manages a forcefield crackle overlay on a skimmer surface. Receives impact
     /// points (from <see cref="SkimmerForcefieldCracklePrismEffectSO"/> on the sphere
-    /// skimmers, or from <see cref="RhinoSwordFXController"/> on the sword blade) and
+    /// skimmers, or from <see cref="SwordfishSwordFXController"/> on the sword blade) and
     /// feeds them to the crackle shader via MaterialPropertyBlock each frame.
     ///
     /// Two surface parameterizations, matching the two overlay shaders:
@@ -122,6 +123,16 @@ namespace CosmicShore.Gameplay
 
             _visualParamsDirty = true;
             PushToShader();
+            ColorTrace.Changed += RepaintColors;
+        }
+
+        void OnDisable() => ColorTrace.Changed -= RepaintColors;
+
+        // A colour set was worn: the colours go to the shader again, as the worn set paints them.
+        void RepaintColors()
+        {
+            _visualParamsDirty = true;
+            PushToShader();
         }
 
         void OnValidate()
@@ -214,9 +225,9 @@ namespace CosmicShore.Gameplay
             // Visual params
             if (_visualParamsDirty)
             {
-                _propBlock.SetColor(CrackleColorAId, crackleColorA);
-                _propBlock.SetColor(CrackleColorBId, crackleColorB);
-                _propBlock.SetColor(FresnelRimColorId, fresnelRimColor);
+                _propBlock.SetColor(CrackleColorAId, ColorTrace.Retrace(ColorTrace.World, crackleColorA));
+                _propBlock.SetColor(CrackleColorBId, ColorTrace.Retrace(ColorTrace.World, crackleColorB));
+                _propBlock.SetColor(FresnelRimColorId, ColorTrace.Retrace(ColorTrace.World, fresnelRimColor));
                 _propBlock.SetFloat(ArcDensityId, arcDensity);
                 _propBlock.SetFloat(ArcSharpnessId, arcSharpness);
                 _propBlock.SetFloat(RingThicknessId, ringThickness);

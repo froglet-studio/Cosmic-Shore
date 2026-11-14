@@ -1,0 +1,213 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 404f1cd65bb9cc432422b55b40687996, type: 3}
+  m_Name: PilotSceneCatalog
+  m_EditorClassIdentifier: 
+  scenes:
+  - callsign: 1
+    painted: Veliane Crestward
+    resource: Pilots/Scenes/ENSIGN
+    closeUp: {fileID: 21300000, guid: 980feda988d5964febf179f7d737f212, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.19270833
+      y: 0.6412037
+      width: 0.20182292
+      height: 0.3587963
+    side: 0
+  - callsign: 2
+    painted: Tamako Deephook
+    resource: Pilots/Scenes/MANGER
+    closeUp: {fileID: 21300000, guid: dc9eb1ae245a8dde1016ce7ef7b89510, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.3190104
+      y: 0.3923611
+      width: 0.24088542
+      height: 0.42824075
+    side: 0
+  - callsign: 3
+    painted: Brikon Copperwright
+    resource: Pilots/Scenes/ANVIL
+    closeUp: {fileID: 21300000, guid: ce13b70217b5b47dfd532c41e04d7cdc, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.41666666
+      y: 0.36342594
+      width: 0.3580729
+      height: 0.6365741
+    side: 2
+  - callsign: 4
+    painted: Karenth Amberweaver
+    resource: Pilots/Scenes/VOLT
+    closeUp: {fileID: 21300000, guid: 0566f35f5349973c38ab12bb4389a542, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.09765625
+      y: 0.36342594
+      width: 0.3580729
+      height: 0.6365741
+    side: 0
+  - callsign: 5
+    painted: Ivelia Starreach
+    resource: Pilots/Scenes/ZODIAC
+    closeUp: {fileID: 21300000, guid: 3b11b8dcdfc3b921a34897e25c6e35be, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.5208333
+      y: 0.39814815
+      width: 0.33854166
+      height: 0.6018519
+    side: 2
+  - callsign: 6
+    painted: Delmira Stillwater
+    resource: Pilots/Scenes/SUNDIAL
+    closeUp: {fileID: 21300000, guid: 9f6be8126f01c90dff0f7e90639ff1e9, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.5598958
+      y: 0.49074075
+      width: 0.28645834
+      height: 0.5092593
+    side: 2
+  - callsign: 7
+    painted: Quivera Pearlspark
+    resource: Pilots/Scenes/OPAL
+    closeUp: {fileID: 21300000, guid: 204b82eef2b454d3b3187633409f7df6, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.25716147
+      y: 0.5138889
+      width: 0.2734375
+      height: 0.4861111
+    side: 0
+  - callsign: 8
+    painted: Obelo Stormstone
+    resource: Pilots/Scenes/RAMPART
+    closeUp: {fileID: 21300000, guid: 29a61d769ede32d1caecd4ebe5224115, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.4296875
+      y: 0.4675926
+      width: 0.28645834
+      height: 0.5092593
+    side: 2
+  - callsign: 9
+    painted: Nedira Shellward
+    resource: Pilots/Scenes/CITADEL
+    closeUp: {fileID: 21300000, guid: 206b7156919cf4119499158882b746a3, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.49479166
+      y: 0.4675926
+      width: 0.29947916
+      height: 0.5324074
+    side: 2
+  - callsign: 10
+    painted: Zeko Mirethorn
+    resource: Pilots/Scenes/HORNET
+    closeUp: {fileID: 21300000, guid: 15f49e30e7a0bf308bce70710d070190, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.1171875
+      y: 0.6527778
+      width: 0.1953125
+      height: 0.3472222
+    side: 0
+  - callsign: 11
+    painted: Mathalo Kelpbloom
+    resource: Pilots/Scenes/IVY
+    closeUp: {fileID: 21300000, guid: 668cfdc53523a7636a785bb2973305e8, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.51432294
+      y: 0.5601852
+      width: 0.20833333
+      height: 0.37037036
+    side: 2
+  - callsign: 12
+    painted: Wyvendo Waveline
+    resource: Pilots/Scenes/TALON
+    closeUp: {fileID: 21300000, guid: 9a061d435d17162092748a2047be496c, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.1595052
+      y: 0.43287036
+      width: 0.3190104
+      height: 0.5671296
+    side: 0
+  - callsign: 13
+    painted: Fenlia Moonbell
+    resource: Pilots/Scenes/DOE
+    closeUp: {fileID: 21300000, guid: c541c59175e718b1310806c6f0cb82d8, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.5598958
+      y: 0.525463
+      width: 0.2669271
+      height: 0.47453704
+    side: 2
+  - callsign: 14
+    painted: Jorin Gullwing
+    resource: Pilots/Scenes/WINGMAN
+    closeUp: {fileID: 21300000, guid: 1cdd196f10fdc37c0ade1f14da8ed30e, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.16276042
+      y: 0.4675926
+      width: 0.29947916
+      height: 0.5324074
+    side: 0
+  - callsign: 15
+    painted: Rosh Rusthook
+    resource: Pilots/Scenes/BANDIT
+    closeUp: {fileID: 21300000, guid: ba09e353706319c9b36e4d86d90880fb, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.6770833
+      y: 0.49074075
+      width: 0.234375
+      height: 0.41666666
+    side: 2
+  - callsign: 16
+    painted: Ilia Silvergate
+    resource: Pilots/Scenes/NEEDLE
+    closeUp: {fileID: 21300000, guid: 864557a982b2c90e0afba3d1f26d92c1, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.20833333
+      y: 0.47337964
+      width: 0.29622397
+      height: 0.5266204
+    side: 0
+  - callsign: 17
+    painted: Haradek Anchorkeel
+    resource: Pilots/Scenes/GALLEON
+    closeUp: {fileID: 21300000, guid: f4c614d0da5b0afecdc4e32c9156f0c1, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.234375
+      y: 0.49074075
+      width: 0.28645834
+      height: 0.5092593
+    side: 0
+  - callsign: 18
+    painted: Ekora Hollowbrook
+    resource: Pilots/Scenes/FLUME
+    closeUp: {fileID: 21300000, guid: a3396d4c3b67a83e7ca63dc18d260023, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.14973958
+      y: 0.6412037
+      width: 0.1953125
+      height: 0.3472222
+    side: 0

@@ -820,10 +820,6 @@ namespace CosmicShore.Gameplay
         readonly HashSet<VesselClassType> _arenaHullsInUse = new();
 
         /// <summary>
-        /// Spawns a vessel of the given type, assigns ownership to <paramref name="clientId"/>,
-        /// and updates the player's <see cref="Player.NetVesselId"/>.
-        /// </summary>
-        /// <summary>
         /// Whether a player who leaves mid-match is handed to the AI instead of vanishing.
         /// True for game scenes; the MENU overrides it to false, because an abandoned menu vessel
         /// has no match to finish and would just accumulate autopilot ships in the lava lamp.
@@ -1006,6 +1002,10 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        /// <summary>
+        /// Spawns a vessel of the given type, assigns ownership to <paramref name="clientId"/>,
+        /// and updates the player's <see cref="Player.NetVesselId"/>.
+        /// </summary>
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer, VesselClassType vesselType)
         {
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))

@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-12-party-and-quick-match-relay-sessions-are-38252e",
+  "to": "Yash",
+  "by": "Shombith",
+  "date": "2026-11-12T15:37:28+00:00",
+  "area": "Multiplayer netcode (party sessions)",
+  "summary": "Party and quick-match Relay sessions are now created in the region the host picks in Settings > REGION (WithRelayNetwork(region), Auto fallback once), and a solo host in the menu re-creates its session through the leave-lobby sequence when the region changes.",
+  "why": "A US host put an India guest on a US relay at ~1200 ms; the host can now pick a fair middle region.",
+  "branch": "claude/ecstatic-curie-fjt6ep",
+  "commit": "548ed93f0",
+  "paths": [
+    "Assets/_Scripts/Controller/Multiplayer/MultiplayerSetup.cs",
+    "Assets/_Scripts/Controller/Party/PartyInviteController.cs",
+    "Assets/_Scripts/Controller/Party/Services/PartySessionService.cs"
+  ]
+}

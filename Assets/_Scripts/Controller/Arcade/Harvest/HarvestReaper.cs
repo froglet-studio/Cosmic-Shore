@@ -24,14 +24,18 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The loop.</b></para>
     /// <list type="number">
-    /// <item><b>Take a crystal</b> when a managed omni crystal is within the rung's reach: its windmill (12 s of a
-    /// red-hot ball circling the ship) mows and smashes at once.</item>
+    /// <item><b>Take a crystal</b> when one is within the rung's reach: its own team's Space crystal (I3, a Space level)
+    /// first, then a managed omni crystal, whose windmill (12 s of a red-hot ball circling the ship) mows and smashes
+    /// at once.</item>
     /// <item><b>Choose a sheaf</b>: the nearest one not in its own colour (it would score nothing) that it has not
     /// worked in the last <see cref="HarvestSettingsSO.aiRevisitSeconds"/>.</item>
-    /// <item><b>Mow</b>: circle the sheaf just outside its reach, the sheaf inside the turn, so the ball swings OUTSIDE
-    /// the stalks and the chain crosses them (THRESHER.md §9: a turn throws the ball outward). Every cut banks energy.</item>
-    /// <item><b>Strike</b>: turn in through the core and on past it, dragging the ball across it: the first rival prism
-    /// it meets spends the bank as one blast.</item>
+    /// <item><b>Mow</b>: lap the sheaf at its stalk tips IN THE WHEEL'S PLANE (the plane across
+    /// <see cref="SpawnableHarvest.Sheaf.Axis"/>), so the trailing chain crosses every stalk in turn and the ball
+    /// follows through the path it has just cleared. Every cut banks energy. Measured with the shipped chain solver
+    /// (THRESHER_SPACE.md §10): a lap in the plane cuts 38-92; 20 degrees off it, about 10.</item>
+    /// <item><b>Climb, then dive down the axle</b>: leave the plane to a point on the wheel's axis, then fly straight
+    /// down the axis through the core and on past it. The axle carries no stalk, so the ball reaches the core with its
+    /// bank and spends it there as one blast (straight in through the wheel, it spends it on a stalk).</item>
     /// </list>
     ///
     /// <para><b>What it cannot do</b>: hold its bank on purpose (it blasts on whatever rival prism the ball meets first,
@@ -41,7 +45,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class HarvestReaper
     {
-        enum Phase { Choose, Mow, Strike }
+        enum Phase { Choose, Mow, Climb, Dive }
 
         sealed class Reaper
         {
@@ -58,6 +62,7 @@ namespace CosmicShore.Gameplay
             public float PhaseEndsAt = -1f;
             public float[] WorkedAt;
             public Vector3 Steer;
+            public float AxleSide = 1f;
         }
 
         readonly List<Reaper> _reapers = new();
@@ -65,17 +70,21 @@ namespace CosmicShore.Gameplay
         readonly List<ShipActionSO> _scratch = new(4);
         HarvestSettingsSO _settings;
         Vector3 _centre;
+        System.Func<Vector3, Domains, Vector3?> _nearestTeamCrystal;
 
         public bool IsArmed => _reapers.Count > 0;
 
-        /// <summary>Arms every AI pilot on the roster against <paramref name="sheaves"/> (world space).</summary>
+        /// <summary>Arms every AI pilot on the roster against <paramref name="sheaves"/> (world space).
+        /// <paramref name="nearestTeamCrystal"/> answers the nearest live Space crystal of a team (I3), or null.</summary>
         public void Arm(GameDataSO gameData, HarvestSettingsSO settings, Vector3 centre,
-                        IReadOnlyList<SpawnableHarvest.Sheaf> sheaves)
+                        IReadOnlyList<SpawnableHarvest.Sheaf> sheaves,
+                        System.Func<Vector3, Domains, Vector3?> nearestTeamCrystal = null)
         {
             Disarm();
             if (gameData == null || settings == null) return;
             _settings = settings;
             _centre = centre;
+            _nearestTeamCrystal = nearestTeamCrystal;
             _sheaves.Clear();
             if (sheaves != null) _sheaves.AddRange(sheaves);
 
@@ -129,6 +138,11 @@ namespace CosmicShore.Gameplay
 
                 LeaveMassMode(r, now);
 
+                if (NearestTeamCrystal(r, self.position) is Vector3 mass)
+                {
+                    r.Steer = mass;
+                    continue;
+                }
                 if (NearestCrystal(r, self.position) is Vector3 crystal)
                 {
                     r.Steer = crystal;
@@ -153,18 +167,33 @@ namespace CosmicShore.Gameplay
                             r.PhaseEndsAt = now + HarvestSettingsSO.Rung(_settings.aiMowSeconds, r.Level);
                         if (r.PhaseEndsAt >= 0f && now >= r.PhaseEndsAt)
                         {
-                            r.Phase = Phase.Strike;
-                            r.PhaseEndsAt = now + _settings.aiStrikeSeconds;
-                            var into = sheaf.Centre - self.position;
-                            r.Steer = sheaf.Centre + (into.sqrMagnitude > 1e-4f ? into.normalized : self.forward) *
-                                      _settings.aiStrikeOvershoot;
+                            // Climb to the axle on whichever side the ship already leans to.
+                            r.AxleSide = Vector3.Dot(self.position - sheaf.Centre, sheaf.Axis) >= 0f ? 1f : -1f;
+                            r.Phase = Phase.Climb;
+                            r.PhaseEndsAt = now + _settings.aiClimbSeconds;
+                            r.Steer = AxlePoint(sheaf, r.AxleSide);
                         }
                         else r.Steer = MowPoint(r, self);
                         break;
                     }
 
-                    case Phase.Strike:
-                        // The strike line was fixed when it turned in; hold it.
+                    case Phase.Climb:
+                    {
+                        var sheaf = _sheaves[r.Sheaf];
+                        var axle = AxlePoint(sheaf, r.AxleSide);
+                        r.Steer = axle;
+                        if (now >= r.PhaseEndsAt || (self.position - axle).magnitude <= _settings.aiAxleArrive)
+                        {
+                            // Down the axle, through the core and on past it, dragging the ball through the heart.
+                            r.Phase = Phase.Dive;
+                            r.PhaseEndsAt = now + _settings.aiStrikeSeconds;
+                            r.Steer = sheaf.Centre - sheaf.Axis * (r.AxleSide * _settings.aiStrikeOvershoot);
+                        }
+                        break;
+                    }
+
+                    case Phase.Dive:
+                        // The dive line was fixed when it turned down the axle; hold it.
                         if (now >= r.PhaseEndsAt)
                         {
                             r.WorkedAt[r.Sheaf] = now;
@@ -208,6 +237,15 @@ namespace CosmicShore.Gameplay
             }
             _scratch.Clear();
             return false;
+        }
+
+        /// <summary>Its own team's nearest Space crystal (I3), within its rung's reach; null when none.</summary>
+        Vector3? NearestTeamCrystal(Reaper r, Vector3 from)
+        {
+            if (_nearestTeamCrystal == null) return null;
+            var c = _nearestTeamCrystal(from, r.Player.Domain);
+            float reach = HarvestSettingsSO.Rung(_settings.aiCrystalReach, r.Level);
+            return c is Vector3 p && (p - from).sqrMagnitude <= reach * reach ? p : null;
         }
 
         /// <summary>The nearest managed omni crystal this pilot may take, within its rung's reach; null when none.</summary>
@@ -262,17 +300,26 @@ namespace CosmicShore.Gameplay
         float OrbitRadius(Reaper r, SpawnableHarvest.Sheaf sheaf) =>
             sheaf.Reach + HarvestSettingsSO.Rung(_settings.aiMowStandoff, r.Level);
 
-        /// <summary>A point on the mowing circle a little ahead of the ship, in the plane it is flying in.</summary>
+        /// <summary>
+        /// A point on the mowing circle a little ahead of the ship, IN THE WHEEL'S PLANE (across the sheaf's axis), so the
+        /// lap pulls the ship into the plane its stalks lie in and goes round the way it is already flying.
+        /// </summary>
         Vector3 MowPoint(Reaper r, Transform self)
         {
             var sheaf = _sheaves[r.Sheaf];
-            Vector3 rel = self.position - sheaf.Centre;
-            Vector3 radial = rel.sqrMagnitude > 1e-4f ? rel.normalized : Vector3.right;
-            Vector3 tangent = Vector3.ProjectOnPlane(self.forward, radial);
-            if (tangent.sqrMagnitude < 1e-4f) tangent = Vector3.Cross(radial, Mathf.Abs(radial.y) < 0.9f ? Vector3.up : Vector3.right);
-            tangent.Normalize();
+            Vector3 axis = sheaf.Axis.sqrMagnitude > 1e-4f ? sheaf.Axis.normalized : Vector3.up;
+            Vector3 radial = Vector3.ProjectOnPlane(self.position - sheaf.Centre, axis);
+            if (radial.sqrMagnitude < 1e-4f)
+                radial = Vector3.Cross(axis, Mathf.Abs(axis.y) < 0.9f ? Vector3.up : Vector3.right);
+            radial.Normalize();
+            Vector3 tangent = Vector3.Cross(axis, radial);
+            if (Vector3.Dot(self.forward, tangent) < 0f) tangent = -tangent;
             float lead = _settings.aiMowLeadDegrees * Mathf.Deg2Rad;
             return sheaf.Centre + (radial * Mathf.Cos(lead) + tangent * Mathf.Sin(lead)) * OrbitRadius(r, sheaf);
         }
+
+        /// <summary>The point on the sheaf's axle, outside its reach, that the dive starts from.</summary>
+        Vector3 AxlePoint(SpawnableHarvest.Sheaf sheaf, float side) =>
+            sheaf.Centre + sheaf.Axis.normalized * (side * sheaf.Reach * _settings.aiAxleReachFactor);
     }
 }

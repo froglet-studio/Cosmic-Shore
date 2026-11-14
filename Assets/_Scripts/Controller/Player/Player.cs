@@ -533,10 +533,6 @@ namespace CosmicShore.Gameplay
         internal ThemeManagerDataContainerSO _vesselThemeManagerData;
 
         /// <summary>
-        /// Changes the player's domain at runtime. Used by shape mode to match
-        /// the player's prism color to the collided shape's domain.
-        /// </summary>
-        /// <summary>
         /// Writes the owner's UGS PlayerId once auth is available. Defensive: analytics is
         /// never worth throwing a spawn path over.
         /// </summary>
@@ -553,6 +549,10 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Changes the player's domain at runtime. Used by shape mode to match
+        /// the player's prism color to the collided shape's domain.
+        /// </summary>
         public void SetDomain(Domains newDomain)
         {
             Domain = newDomain;
@@ -591,29 +591,6 @@ namespace CosmicShore.Gameplay
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty();
         }
 
-        /// <summary>
-        /// Owner-side report that THIS player killed a creature - the fauna counterpart of the
-        /// joust round-trip in <c>NetworkVesselImpactor</c>, and the only way a client's kill
-        /// can ever score.
-        ///
-        /// Fauna have no NetworkObject: every peer simulates its OWN swarm and the populations
-        /// diverge (Docs/ECOSYSTEM.md §7 caveat 4). So unlike a prism - which exists at the same
-        /// place on every peer, letting the server's own physics see a client's ram and record
-        /// it - a creature a client just shot may not exist on the server at all. Without this
-        /// RPC a client's kills would silently never register, and only the host could win
-        /// Wildlife Liberation.
-        ///
-        /// IDENTITY COMES FROM OWNERSHIP, NOT FROM A STRING. <c>RequireOwnership = true</c> is
-        /// the default, and the server credits the RoundStats of the Player object the RPC
-        /// arrived on - so a client can only ever credit ITSELF, no matter what it sends.
-        /// </summary>
-        /// <summary>
-        /// Announce that this player's machine has finished loading the arena. Same
-        /// owner-detects / server-records round trip as
-        /// <see cref="ReportFaunaKill_ServerRpc"/> - the arena is built independently on every
-        /// peer (each runs its own spawner), so only the owner can know when ITS build is
-        /// done. Idempotent; safe to call every frame.
-        /// </summary>
         /// <inheritdoc />
         public bool IsArenaReady => !IsSpawned || NetArenaReady.Value;
 
@@ -642,6 +619,13 @@ namespace CosmicShore.Gameplay
             if (NetRematchVote.Value != voted) NetRematchVote.Value = voted;
         }
 
+        /// <summary>
+        /// Announce that this player's machine has finished loading the arena. Same
+        /// owner-detects / server-records round trip as
+        /// <see cref="ReportFaunaKill_ServerRpc"/> - the arena is built independently on every
+        /// peer (each runs its own spawner), so only the owner can know when ITS build is
+        /// done. Idempotent; safe to call every frame.
+        /// </summary>
         public void ReportArenaReady()
         {
             if (NetArenaReady.Value) return;
@@ -729,6 +713,22 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// Owner-side report that THIS player killed a creature - the fauna counterpart of the
+        /// joust round-trip in <c>NetworkVesselImpactor</c>, and the only way a client's kill
+        /// can ever score.
+        ///
+        /// Fauna have no NetworkObject: every peer simulates its OWN swarm and the populations
+        /// diverge (Docs/ECOSYSTEM.md §7 caveat 4). So unlike a prism - which exists at the same
+        /// place on every peer, letting the server's own physics see a client's ram and record
+        /// it - a creature a client just shot may not exist on the server at all. Without this
+        /// RPC a client's kills would silently never register, and only the host could win
+        /// Wildlife Liberation.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP, NOT FROM A STRING. <c>RequireOwnership = true</c> is
+        /// the default, and the server credits the RoundStats of the Player object the RPC
+        /// arrived on - so a client can only ever credit ITSELF, no matter what it sends.
+        /// </summary>
         [ServerRpc]
         public void ReportFaunaKill_ServerRpc()
         {
@@ -1555,11 +1555,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Server-only: when a remote client's owner-written values (name, vessel type)
-        /// replicate, check if we can now raise the spawn event that was deferred
-        /// in OnNetworkSpawn because the owner block was skipped.
-        /// </summary>
-        /// <summary>
         /// Server-only: allow the spawn event to be raised AGAIN for this player, because the
         /// spawner consumed the first one and could not act on it.
         ///
@@ -1588,6 +1583,11 @@ namespace CosmicShore.Gameplay
             TryRaiseDeferredSpawnEvent();
         }
 
+        /// <summary>
+        /// Server-only: when a remote client's owner-written values (name, vessel type)
+        /// replicate, check if we can now raise the spawn event that was deferred
+        /// in OnNetworkSpawn because the owner block was skipped.
+        /// </summary>
         void TryRaiseDeferredSpawnEvent()
         {
             if (IsServer && !_spawnEventRaised && IsSpawnReady())

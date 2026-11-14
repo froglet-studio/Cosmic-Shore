@@ -102,7 +102,7 @@ namespace CosmicShore.Tests
 
         [TestCase(1, 12)]
         [TestCase(2, 16)]
-        [TestCase(2, 22)]
+        [TestCase(2, 20)]
         public void TheSheavesColours_AreSharedFairly(int pattern, int sheaves)
         {
             var counts = new Dictionary<Domains, int> { [Domains.Jade] = 0, [Domains.Ruby] = 0, [Domains.Gold] = 0 };
@@ -122,6 +122,32 @@ namespace CosmicShore.Tests
         {
             for (int s = 0; s < 8; s++)
                 Assert.AreEqual(Domains.Blue, SpawnableHarvest.DomainFor(0, s));
+        }
+
+        [Test]
+        public void Bales_AreNeutralUnlessTheRungColoursAQuarterOfEverything()
+        {
+            for (int b = 0; b < 8; b++)
+            {
+                Assert.AreEqual(Domains.Blue, SpawnableHarvest.BaleDomainFor(0, b));
+                Assert.AreEqual(Domains.Blue, SpawnableHarvest.BaleDomainFor(1, b), "I2's bales stay neutral");
+                Assert.AreEqual(SpawnableHarvest.DomainFor(2, b), SpawnableHarvest.BaleDomainFor(2, b));
+            }
+        }
+
+        [Test]
+        public void TeamSpaceCrystals_AreLaidAtIntensityThreeOnly()
+        {
+            var settings = ScriptableObject.CreateInstance<HarvestSettingsSO>();
+            try
+            {
+                Assert.AreEqual(Element.Space, settings.teamCrystalElement, "the team crystals are Space");
+                Assert.AreEqual(0, settings.TeamCrystalsPerTeam(1));
+                Assert.AreEqual(0, settings.TeamCrystalsPerTeam(2));
+                Assert.Greater(settings.TeamCrystalsPerTeam(3), 0, "I3 lays Space crystals for each team present");
+                Assert.AreEqual(0, settings.TeamCrystalsPerTeam(4), "I4's extra is its creatures, not crystals");
+            }
+            finally { Object.DestroyImmediate(settings); }
         }
 
         private sealed class FakeStats : IRoundStats

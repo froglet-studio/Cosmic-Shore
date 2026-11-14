@@ -342,7 +342,10 @@ CHARGE, MASS, SPACE, TIME = 1, 2, 3, 4
 # lab: the lab owns them and parity.cjs holds the asset to the page. A round that changes them deletes the asset and
 # re-runs this tool (the guid is kept, so no reference moves).
 CONFIG_NUMBERS = [
-    ("hullRadius", "9"), ("boostTank", "3"), ("boostRefill", elemental("0.25", "0.35", TIME, "0.05")), ("shieldBlocks", "144"),
+    ("hullRadius", "9"), ("boostTank", "3"), ("boostRefill", elemental("0.25", "0.35", TIME, "0.05")),
+    # the level-5 upgrades (game only, the fundamentals pass 2026-11-12)
+    ("rearmUpgradeElement", str(CHARGE)), ("rearmSeconds", "12"), ("bulwarkUpgradeElement", str(MASS)), ("bulwarkGap", "14"),
+    ("chainUpgradeElement", str(SPACE)), ("afterburnerUpgradeElement", str(TIME)), ("shieldBlocks", "144"),
     ("shieldMinRadius", "50"), ("shieldMaxRadius", "70"), ("shieldOpenDeg", "45"),
     ("shieldSeconds", elemental("4", "6.1333333", MASS, "0.5")), ("shieldCooldown", "9"),
     ("shieldBlockScale", "{x: 10, y: 1, z: 1}"), ("shieldSuper", "1"), ("shieldLinger", "20"), ("mountSmooth", "0.35"), ("horizonSmooth", "3"), ("turretTurn", "160"),
@@ -489,8 +492,8 @@ ORCA_BINDINGS = W.crew_bindings([(W.RIGHT_STICK_ACTION, W.CREW_RT_GUID), (W.LEFT
 
 # The crew's own cards. Boost Tank names RT and Danger Shield LT, the helm's triggers, so a pad shows its trigger on them
 # and a phone the thumb lift (author_touch_profiles.py); the other two are passive (Input 0): the gunners' Release is the
-# crew's. No level-5 upgrades: none is designed yet (vessel skill §3, the design-approval gate), so every
-# UpgradeLabel is empty. The words are authored data the team edits; written once.
+# crew's. The level-5 upgrades came with the fundamentals pass (Garrett, 2026-11-12, ORCA_CREW.md "Level 5"). The words
+# are authored data the team edits; written once.
 ORCA_MAP_ENTRIES = [
     (1, "Flown Missiles", "Each gunner launches missiles from its own magazine and flies them by hand; Charge makes them "
         "faster and sharper. An omni crystal gives every gunner a missile. The card counts your missiles."),
@@ -503,6 +506,12 @@ ORCA_MAP_ENTRIES = [
         "Time. The card shows the tank."),
 ]
 MAP_INPUTS = {4: W.RIGHT_STICK_ACTION, 2: W.LEFT_STICK_ACTION}
+ORCA_UPGRADES = {
+    1: ('Rearm', "Every gunner's magazine regains a missile every 12 seconds, up to its size, so the crew never runs dry between omni crystals. Gated on IsUpgradeActive(Charge)."),
+    3: ('Chain Burst', 'A missile or bomb burst sets off every other missile of your crew, and its bomb, inside its blast. Gated on IsUpgradeActive(Space).'),
+    2: ('Bulwark', 'The shield is laid twice, a second shell 14 u further out, so the wall the helm carries is twice as thick. Gated on IsUpgradeActive(Mass).'),
+    4: ('Afterburner', 'The tank keeps refilling while the helm burns, so a burn lasts longer and an empty tank recovers under a held trigger. Gated on IsUpgradeActive(Time).'),
+}
 
 
 def map_entries() -> str:
@@ -510,7 +519,8 @@ def map_entries() -> str:
     for element, label, desc in ORCA_MAP_ENTRIES:
         out += (f"  - Element: {element}\n    AbilityLabel: {W.yaml_str(label)}\n    AbilityDescription: {W.yaml_str(desc)}\n"
                 f"    Input: {MAP_INPUTS.get(element, 0)}\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
-                f"    UpgradeLabel: \n    UpgradeDescription: \n")
+                f"    UpgradeLabel: {W.yaml_str(ORCA_UPGRADES[element][0])}\n"
+                f"    UpgradeDescription: {W.yaml_str(ORCA_UPGRADES[element][1])}\n")
     return out
 
 

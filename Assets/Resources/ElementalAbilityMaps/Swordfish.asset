@@ -16,22 +16,22 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: 'Energize'
-    AbilityDescription: 'Hold both triggers to light the blade: it costs nothing and its cooldown is its only limit (the sword has had no energy meter since 2026-10-26). A lit blade lays the afterimages (Mass) and, with the Space level-5 upgrade, pops super-shielded prisms. Charge also scales how many petals a sword hit takes from a rival vessel - x1 at rest (the price Broadside puts on a Strike), x2.5 at level 10, floored at x1 (RhinoSwordStealBySkimmerEffect.stealScale, read at the thief''s replicated level). Below Charge 5 those petals are knocked loose as crystals at the strike; the level-5 upgrade makes the sword pocket them.'
+    AbilityDescription: 'Hold both triggers to light the blade: it costs nothing and its cooldown is its only limit (the sword has had no energy meter since 2026-10-26). A lit blade lays the afterimages (Mass) and, with the Space level-5 upgrade, pops super-shielded prisms. Charge also scales how many petals a sword hit takes from a rival vessel - x1 at rest (the price Broadside puts on a Strike), x2.5 at level 10, floored at x1 (SwordfishSwordStealBySkimmerEffect.stealScale, read at the thief''s replicated level). Below Charge 5 those petals are knocked loose as crystals at the strike; the level-5 upgrade makes the sword pocket them.'
     Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 'Sword Steal'
-    UpgradeDescription: 'A sword hit on a rival vessel STEALS its petals - they land on the Swordfish instead of being knocked loose as crystals at the strike (the same verb and numbers as the Squirrel''s joust). RhinoSwordStealBySkimmerEffect.stealUpgradeElement, gated on IsUpgradeActive(Charge) in VesselOvertakeBySkimmerEffectSO.TakeFrom (Garrett, 2026-10-26).'
+    UpgradeDescription: 'A sword hit on a rival vessel STEALS its petals - they land on the Swordfish instead of being knocked loose as crystals at the strike (the same verb and numbers as the Squirrel''s joust). SwordfishSwordStealBySkimmerEffect.stealUpgradeElement, gated on IsUpgradeActive(Charge) in VesselOvertakeBySkimmerEffectSO.TakeFrom (Garrett, 2026-10-26).'
   - Element: 2
     AbilityLabel: 'Afterimage'
-    AbilityDescription: 'When the energized blade goes out, the sword keeps leaving copies of itself - prisms in the blade''s own shape and pose - for 5 s (RhinoSwordAfterimage, RhinoSwordAfterimageConfig). An omni-crystal surge (8 s, a ring of eight trigger-driven swords round the hull) lays them for its whole length, from the pilot''s blade. Mass scales their VOLUME: x1 at rest, x2.5 at level 10, floored at x0.25, read at the replicated level so every peer lays the same mass. They are not immune to the Swordfish''s own blade: past the 1 s self-trail grace it cuts them like any prism.'
+    AbilityDescription: 'When the energized blade goes out, the sword keeps leaving copies of itself - prisms in the blade''s own shape and pose - for 5 s (SwordfishSwordAfterimage, SwordfishSwordAfterimageConfig). The omni-crystal Surge (the crystal is absorbed into the hull; 8 s, a ring of eight trigger-driven swords round it) lays them for its whole length, from the pilot''s blade. Mass scales their VOLUME: x1 at rest, x2.5 at level 10, floored at x0.25, read at the replicated level so every peer lays the same mass. They are not immune to the Swordfish''s own blade: past the 1 s self-trail grace it cuts them like any prism.'
     Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 'Danger Afterimages'
-    UpgradeDescription: 'The afterimages are laid as DANGER prisms (RhinoSwordAfterimageConfigSO.dangerUpgradeElement, gated on IsUpgradeActive(Mass), snapshotted per afterimage).'
+    UpgradeDescription: 'The afterimages are laid as DANGER prisms (SwordfishSwordAfterimageConfigSO.dangerUpgradeElement, gated on IsUpgradeActive(Mass), snapshotted per afterimage).'
   - Element: 3
     AbilityLabel: 'Blade Reach'
     AbilityDescription: 'Space alone grows the sword: the blade runs 24 at rest to 40 at level 10 (Skimmer.Scale on the Swordfish''s ForceFieldSkimmer, eased in by ShieldSkimmerScaleDriver), and nothing else resizes it - no energy, no surge burst (2026-10-26). The local pilot''s camera pulls back with it, in proportion (ShieldSkimmerScaleConfig.cameraFollowsBladeLength), so the blade reads the same size on screen. Reach is what the blade cuts, what it strikes an Astro League ball with at the tip, and how far the afterimages and the surge''s sword ring reach.'
@@ -42,12 +42,12 @@ MonoBehaviour:
     UpgradeLabel: 'Shield Breaker'
     UpgradeDescription: 'The sword can destroy SUPER-SHIELDED prisms: an energized blade pops them. Without the upgrade the blade binds in hardened mass, energized or not. ShieldSkimmerScaleConfigSO.superShieldUpgradeElement, gated on IsUpgradeActive(Space) (Garrett, 2026-10-26).'
   - Element: 4
-    AbilityLabel: 'Ramp Spool'
-    AbilityDescription: 'Time raises how fast the ramp boost winds the Swordfish up to its top speed: 220 u/s per second at rest, 550 at level 10, 110 at the -5 floor (RampBoostActionSO.timeAccelerationMultiplier, x1 -> x2.5, floored x0.5, read live). It does not raise the ceiling - cruise 50 x maxBoostMultiplier 16.8 = 840 u/s - only how long the run-up takes. Its hull carries no prism slow, so ramming costs it no speed; unlike the Rhino it does not plough - the hull breaks what it rams (the fleet ram, VesselDamagePrismEffect) and the sword cuts ahead of it.'
-    Input: 0
+    AbilityLabel: 'Quickdraw'
+    AbilityDescription: 'Time is the sword''s RATE: it divides the energize hold (1 s at rest, 0.4 s at level 10), the energize cooldown (5 s -> 2 s) and each swipe''s recovery (0.35 s -> 0.14 s), x1 at rest, x2.5 at level 10, floored at x0.5 (ShieldSkimmerScaleConfig.timeSwordRateMultiplier, SwordfishShieldSwipeConfig.timeSwipeRateMultiplier, read live). The let-go tail stays 5 s. The Swordfish''s own Time card since 2026-11-12, replacing the Ramp Spool it shared with the Rhino: its ramp still winds it to 840 u/s (SwordfishRampBoostAction), but no element scales the wind-up.'
+    Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Momentum'
-    UpgradeDescription: 'Above 70% of top speed (588 u/s) danger prisms cannot drain the Swordfish''s elements - the elemental-debuff ward scoped to DangerPrism alone, so an opposing pilot''s blast still lands (VesselElementalImmunity on the root, condition WhileAboveTopSpeedFraction, upgradeGate Time). The Time card lights while the ward is holding.'
+    UpgradeLabel: 'Flurry'
+    UpgradeDescription: 'The swipe recovery is gone for good: the sword swings as freely as an energized blade, lit or not (SwordfishShieldSwipeConfigSO.flurryUpgradeElement, gated on IsUpgradeActive(Time) in ShieldSwipeActionExecutor.ApplySwipeRecovery). Replaces Momentum, which stays the Rhino''s.'
   omniAbilityLabel: Surge

@@ -7,7 +7,7 @@ description: Your approval queue - the changes other people's sessions made to Y
 
 **Why this exists** (Garrett, 2026-11-10): asking for approval before every change to someone else's work was slowing
 everyone down. Now a change goes through unless it **collides with an occupied swim lane** (`/swimlanes`; someone else
-has unmerged work in that vessel or app-shell section right now). Everything else goes through, the session tells
+has unmerged work in that vessel, game, app-shell section or system right now). Everything else goes through, the session tells
 its person whose toes it is on so they talk, and the change lands in the queue of each person whose work it changed.
 This skill is how you read and answer that queue. The rules: `Docs/TEAM.md` rules 3, 12 and 13. The files:
 `Docs/Approvals/README.md`.
@@ -29,14 +29,24 @@ python3 Tools/Build/approvals.py list --person <You>
 
 It reads `Docs/Approvals/<You>/` on `bleeding-edge`, on every branch pushed in the last 60 days, and in the working
 tree. Each entry says who made the change, what changed in your work and why, its files, and **where** it is:
-landed on `bleeding-edge`, or not merged yet (on its branch, with its PR). Entries you answered `discuss` come first,
-then the pending ones, oldest first. `--all` adds the answered ones; `--json` for a page.
+landed on `bleeding-edge`, or not merged yet (on its branch, with its PR).
+
+**The order is loop impact first** (Garrett, 2026-11-12: "prioritizing sign off on the items most likely to affect the
+velocity of things through the process"). Each open entry that changes how a vessel plays carries `LOOP IMPACT <n>`
+and an "answer early" line: the elemental loop work that would be redone NOW if you said it goes against the spirit
+of the vessel - the vessel's fun, intensity and AI steps already doing, built or signed off (a retraining weighs 3, a
+signed-off step double) and the arena environment creator trained against that AI (`elemental_loop.rework`). The
+number grows while the entry waits, as the loop builds on the change, so catching it now is what saves the
+retraining at each step downstream. Then entries you answered `discuss`, then pending, oldest first. Entries about
+the look (HUD, colour, icons, art), tools or docs carry no loop impact. `--all` adds the answered ones; `--json` for a
+page (`loopImpact`, `loopRework`).
 
 If the list is empty, say so in one line and stop.
 
 ## 3. Walk through it with the person
 
-Give a short plain summary of each entry (one or two lines: who, what changed in their work, where it is). For
+Start with the entries that carry a loop impact, highest first, and say in a line what each would send back. Give a
+short plain summary of each entry (one or two lines: who, what changed in their work, where it is). For
 anything that needs a closer look, read the change itself (`git log -p origin/<branch> -- <paths>` or the PR) and say
 what it does in their terms. Then ask, a few entries at a time with `AskUserQuestion` (up to four entries per call,
 one question each):
@@ -110,6 +120,16 @@ python3 Tools/Build/approvals.py check --me <You>
 python3 Tools/Build/approvals.py add --to <Them> --by <You> --area "<their area, in their words>" \
   --summary "<what changed in it, one sentence>" --why "<why>" --paths <the files of theirs it changed>
 ```
+
+Put every file after ONE `--paths`. It takes a list, and argparse accepts `--path` as its abbreviation, so
+`--path a --path b` files only `b` and says nothing (2026-11-10: an entry lost all but its last path that way).
+Read the entry's `paths` back before you commit it.
+
+**A change to how a vessel plays** (its abilities, its arcade game, its intensities or its AI) is where a late
+"that is not this vessel" costs the most retraining, so name it for the loop: `--vessel <Vessel> [--element Time ...]
+[--loop-step 1|2|3]` (1 the vessel or its fun, 2 its intensities, 3 its AI). Left out, the vessel, element and step are
+read from the entry's area and play files; the `--paths` matter for that. The owner's `/approve` then ranks it by what
+it would send back (section 2).
 
 Commit the entry with the change, so it lands with it, and keep the "Affects:" line in the commit or PR.
 

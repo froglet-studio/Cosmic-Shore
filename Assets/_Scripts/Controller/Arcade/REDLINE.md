@@ -40,7 +40,7 @@ The model now flies the flown hull (`TIME_MODEL` "flown": the unlock, the cruise
 PEOPLE as well as the AI: no nose lag, the throttle buried, straight at each mouth's centre, with their own triggers -
 `bury` (both always flat), two habits (`ease` half at every corner; `band` easing only as the stick goes over) and the
 `reader` (each corner flown in its head first: the most Soar at which a hull turning flat out from the gate still
-threads the next mouth, lifted for at the turn-in and the Yastri pull out of a knife).
+threads the next mouth, lifted for at the turn-in and the Yawstery pull out of a knife).
 
 | median race (s) | I1 | I2 | I3 | I4 |
 |---|---:|---:|---:|---:|
@@ -71,6 +71,22 @@ negative control, the shipped AI finishing I1 and I4 at Easy and Legendary, and 
 Checks 9-12 (the 2026-11-07 nose-lead record, run on the old hull) were already red on `bleeding-edge` before this work
 (the same 13 lines, measured on HEAD's own copy); they are left as the record and not re-measured here.
 
+### 0.2 On bleeding-edge, and the step-1 fun pass (2026-11-13)
+
+Round 5 lived only on `Ys-bleeding-edge`, so on `bleeding-edge` Soar stayed dark in Redline until it was cherry-picked
+for the elemental loop's Manta Time step 1 (`Docs/ElementalLoop/PLAYBOOK.md`; Caleb's Manta polish, `Docs/Manta/POLISH.md`,
+touched the trail, haptics and camera, not the race). Re-measured there, nothing re-tuned:
+
+- **The AI's Soar bands are not the floor.** A 5 x 4 grid of `aiBoostStickBand` x `aiYawsteryStickBand` at Legendary
+  (nose 9/s, floor 1, 6 courses an intensity) puts the shipped 0.35 / 0.75 within 3% of the best at I1-I3 and 16% at I4
+  (best 0.2 / 0.5: 61 / 67 / 74 / 88 s against 61 / 64 / 71 / 105 s). The bands are a vessel dial every AI Manta
+  flies, so a change waits for step 3 (`time-arcade`), searched on the signed-off ladder.
+- **The rivals at the fun rung (I2):** the model's ideal person 44 s; Legendary 64 s, Hard 71 s, Medium (the default
+  difficulty) 109 s, Easy 145 s. A first fly test against **Hard** rivals is the one that reads whether they race.
+- **The open question is the verb at speed** (section 0.1): at Time 6 the model's perfect-aim person never gains by
+  lifting at I1-I2. A real pilot misses mouths a perfect aim does not, so whether a lift pays is the fun card's
+  question, and the re-cut of section 9 waits on that flight.
+
 ## 1. What the mode is asking
 
 > **Sections 1-5 are the 2026-11-04 design, on the hull before Soar's unlock; section 0 is how the race is flown now.**
@@ -96,13 +112,13 @@ curve the course is cut against (`RedlineCourse.SoarRadius`):
 | 0.25 | 315 | 194 | slow in, hard out |
 | 0.00 | 180 | **156** | both released, the stick alone - the tightest corner Redline ever deals |
 
-**Nothing else is needed.** The trigger DIFFERENCE (`RT − LT`) is Yastri, the Manta's Mass ability
+**Nothing else is needed.** The trigger DIFFERENCE (`RT − LT`) is Yawstery, the Manta's Mass ability
 (one trigger flat, the other released: an 82 u pivot, `RedlineCourse.CornerRadiusAtBoost`). Before
 2026-11-04 the I3 and I4 corners (121 u, 99 u) were cut for it. Now no corner of any seed is tighter
 than 156 u, so Soar alone makes every one (`RedlineCourseTests.Every_corner_fits_its_absolute_safety_floor`).
 The cell's omni crystal is off, so Mass, Charge and Space are never fed, and the only pickups are
 Time crystals (§4a). The Manta's kit is unchanged (CLAUDE.md, "A game mode never changes the
-vessel"): Yastri still turns, and the Sting and Kabloom still act, but the race never asks for them.
+vessel"): Yawstery still turns, and the Sting and Kabloom still act, but the race never asks for them.
 
 (A Time-10 Manta at 936 u/s holds 247 u; the course is cut for the resting vessel, so a Time
 crystal buys speed and asks for more lift in the corners.)
@@ -154,7 +170,7 @@ its own**. It reuses:
   was). A second copy of the solver would have been the semantic duplicate the ship protocol
   scans for.
 - The Manta's shipped kit for the racing, Soar first. Its other abilities are untouched and
-  never asked for: a Yastri turn trail is laid only by a pilot who holds one trigger, and the
+  never asked for: a Yawstery turn trail is laid only by a pilot who holds one trigger, and the
   Sting and Kabloom need a rival's trail to arm on. None of that is scored; the race is.
 - **The elemental set's Time crystal** (`ElementalCrystalSetSO`, one size, one petal) for the
   course's pickups, laid on every peer from the broadcast course the way Serpent Gulag lays its
@@ -258,14 +274,14 @@ triggers on a straight and eases off to turn), it needs no knowledge of the cour
 gated on the pilot being an AUTOPILOT rather than on the player being an AI, so the menu's
 lava-lamp Manta and a released companion fly the same kit a human does.
 
-**The bot pivots, too.** Past `aiYastriStickBand` (0.75) of YAW stick the drive adds a net
+**The bot pivots, too.** Past `aiYawsteryStickBand` (0.75) of YAW stick the drive adds a net
 trigger on the turn's side: the inner trigger stays at the boost intent and the outer one rises
 by the excess deflection, rescaled over the band's remainder, so a full yaw stick is one trigger
 flat and the other released — the 82 u pivot of §1. The overlap (the boost) is the same at every
 stick as it was before the pivot, and below the band the two triggers stay equal, so a straight
 or an ordinary corner flies exactly as it did; the pivot only adds yaw where the bot is already
 asking for more turn than the stick's 30 + 0.2v gives. It reads the yaw axis alone, so a pitch
-haul never pivots, and the bot lays the Yastri turn trail a human would while it does. Still no
+haul never pivots, and the bot lays the Yawstery turn trail a human would while it does. Still no
 knowledge of the course, so a level-4 hairpin (99 u) is now within the bot's reach rather than
 one it must overshoot (unflown — see §9). (Redline's own corners no longer need it: the Soar-only
 ladder of 2026-11-04 never deals a corner under 156 u, §1. The pivot is the vessel's, for every
@@ -328,7 +344,7 @@ by the compute job `redline-manta-time`.
 | AI steering | `RedlineController.AICommitFromApproachPoint` (code) | the Regatta steering (§5.1) |
 | detection clamp | scene → `maxPlausibleSpeed` | **1400** (the clamp is twice this a frame: a Time-10 Manta at full Soar is 1404 u/s and an overcharged one ~1827, both inside it; the inherited 400 rejected even the old 936) |
 | autopilot boost band | `MantaAnalogTurnBoostExecutor.aiBoostStickBand` (code default; not stored on `Manta.prefab` until it is next saved) | 0.35 |
-| autopilot Yastri band | `MantaAnalogTurnBoostExecutor.aiYastriStickBand` (code default; the prefab has no entry until it is next saved) | 0.75 |
+| autopilot Yawstery band | `MantaAnalogTurnBoostExecutor.aiYawsteryStickBand` (code default; the prefab has no entry until it is next saved) | 0.75 |
 | comeback rate | `ArcadeGameRedline.asset` | **0.21** (ten gates behind, a lap and a quarter of the 8-lap race, buys 2.1 levels; the comeback raises all four elements equally, the platform's law, and on this hull only the Time share changes what a pilot does: +5% cruise and +3% Soar a level) |
 | course shell | scene → `courseOuterRadius` / `courseInnerRadiusFallback` | 1080 / 480 |
 
@@ -364,7 +380,7 @@ and irrelevant: the card's `Vessels` list clamps every AI to the Manta
 5. **Intensity 2-4, Soar only.** I2 has one corner that needs both triggers eased to about half;
    I3 two; I4 three — one with both triggers nearly off, one at a third, and a third you can
    *just* hold flat out on a clean line. **Every corner can be made with both triggers eased
-   together and the stick hard over**: holding one trigger alone (the Yastri pivot) should never
+   together and the stick hard over**: holding one trigger alone (the Yawstery pivot) should never
    be needed.
 6. **Time crystals.** I2 shows one crystal a lap halfway down the leg into its corner, I3 two,
    I4 three just inside the corner exits. Taking one raises your Time level by one (the Time
@@ -400,7 +416,7 @@ and irrelevant: the card's `Vessels` list clamps every AI to the Manta
 - **The autopilot drive is new to the whole fleet's AI Manta**, not just this mode — a
   lava-lamp Manta now Soars on straights. If the menu reads too fast, the dial is
   `aiBoostStickBand` on the Manta's `MantaAnalogTurnBoostExecutor` (0 disables the drive), and the pivot's is
-  `aiYastriStickBand` (1 disables it).
+  `aiYawsteryStickBand` (1 disables it).
 - **Level 4's third corner is a knife-edge by design** (§4). If play-test wants three
   unambiguous corners and a fourth, the lever is a NINTH gate per lap (a 45-gate race), not the profile.
 - **The Soar-only ladder, the Time crystals and the Regatta steering are measured offline only**
@@ -417,10 +433,10 @@ and irrelevant: the card's `Vessels` list clamps every AI to the Manta
 - **The Mentor tips** (`Tips_Redline.asset`, authored once by `author_drill_assets.py` and then
   human-owned) teach Soar alone: hold it, ease both triggers for a corner, wind it back early, and
   what a Time crystal does.
-- **The AI's Yastri pivot is unflown.** It is keyed on a saturated yaw stick, and AIPilot's
+- **The AI's Yawstery pivot is unflown.** It is keyed on a saturated yaw stick, and AIPilot's
   stick (a clamp of heading-angle-in-degrees × cross product) can saturate well short of a
   hairpin, so if play-test shows the bot pivoting on corners it could Soar through (or weaving
-  on a straight), raise `aiYastriStickBand` toward 1
+  on a straight), raise `aiYawsteryStickBand` toward 1
   (1 disables the pivot and restores the band-only drive exactly). If it overshoots a tight
   corner, lower it toward `aiBoostStickBand`. Either way it is a vessel dial, so it
   reaches every AI Manta, not just Redline's — the same fleet-wide scope as the drive itself.

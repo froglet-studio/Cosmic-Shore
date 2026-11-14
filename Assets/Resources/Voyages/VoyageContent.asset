@@ -2809,16 +2809,65 @@ MonoBehaviour:
     StoryWorldBy: '{warnings}'
     StoryLog: YOUR LOG
     StoryLogLine: '{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost.'
-    CardSailAfter: SET SAIL - AFTER THIS VOYAGE
-    CardEscortPlace: Escort the Ark
-    CardEscortKicker: 'ARK ESCORT - {from} TO {to}'
-    CardDifficulty: 'Difficulty {difficulty}'
-    CardCrewSeat: '{who} - {vessel}'
-    CardCrewSeparator: '     '
-    CardCrewVoyage: 'VOYAGE {n} - {title}'
-    CardPickSetting: '{seat} - {setting}: ONE PRESS PICKS'
-    CardSeatWho: '{role} - {who}'
-    CardSettingWord: '{setting} - {word}'
-    CardDomainJade: JADE
-    CardDomainRuby: RUBY
-    CardDomainGold: GOLD
+    BoardRowTitle: '{n}  {place}'
+    BoardRowBy: 'Brought by {pilot}'
+    BoardRowMeta: '{ly} ly - {minutes} min - Intensity {intensity}'
+    BoardDistanceLabel: DISTANCE
+    BoardSailLabel: SAIL
+    BoardIntensityLabel: INTENSITY
+    BoardIntensityValue: '{intensity}'
+    BoardSquadLabel: SQUAD
+    BoardSquadJoined: '{name} - {owner}''s'
+    BoardSeatWho: '{who} - {pilot}'
+    BoardSeatKit: '{element} - {artifact}'
+    BoardSeatNotYours: '{owner}''s seat'
+    BoardEditorTitle: '{role} - {who} - {squad}'
+    BoardPilotLine: 'Flies the {vessel} for {squad}'
+    BoardPilotSwaps: 'Flies the {vessel} - swaps'
+    BoardPilotFlying: Flying
+    BoardElementLine: The element this seat flies with
+    BoardNoArtifactLine: This seat carries no artifact
+    BoardDone: DONE
+    BoardUnderway: UNDER WAY
+    BoardSailKey: A
+    BoardDoneKey: B
+    BoardKicker: 'Voyage {n} of {count} - brought by {pilot}'
+    BoardKickerAlone: 'Voyage {n} of {count}'
+    BoardStats: '{distance}   -   {sail}   -   Intensity {intensity}'
+    BoardStepBack: '<'
+    BoardStepOn: '>'
+    BoardZoomIn: '+'
+    BoardZoomOut: '-'
+    BoardConfigure: CONFIGURE SQUAD
+    BoardConfigureKey: X
+    BoardBack: VOYAGES
+    BoardBackKey: B
+    BoardSavePreset: SAVE AS PRESET
+    BoardSavePresetKey: Y
+    BoardHangarNote: A vessel brings the pilot you keep for it in the Hangar.
+    BoardPresetWho: '{leader}, {one}, {two}'
+    BoardSwapsWith: 'Swaps with {vessel}'
+    SlabChip: '{n}  {name}'
+    SlabSagaPart: 'Part {n} of {count}'
+    SlabSagaKicker: 'Saga - part {n} of {count}'
+    SlabSagaForm: 'Form {n}'
+    SlabQuestsKicker: Episode 1
+    SlabQuestsName: The Hypersea
+    SlabQuestsProgress: '{claimed} of {total} claimed'
+    SlabQuestKicker: 'Quest {n} of {count}'
+    SlabQuestClaimed: Claimed
+    SlabQuestReady: Done - claim it
+    SlabQuestNext: Next to play
+    SlabQuestLocked: 'After {name}'
+    SlabQuestClaim: CLAIM
+    SlabQuestPlay: PLAY QUEST
+    SlabEpisodesKicker: Episodes
+    SlabEpisodesName: Episode 2
+    SlabEpisodesSoon: Coming soon
+    SlabEpisodesLine: Voyages and the Saga are open now.
+    SlabEpisodesFace: New episodes arrive here
+    SlabEpisodesBack: BACK TO VOYAGES
+    SlabEpisodesBackKey: LB
+    SlabSagaLockedKicker: Saga
+    SlabSagaLockedLine: Voyages are open now.
+    SlabSagaLockedFace: The saga opens here

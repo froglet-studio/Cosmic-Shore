@@ -113,10 +113,11 @@ namespace CosmicShore.UI
             // triggers do not slide it, and not in the browser Toybox (replays need a device folder).
             REPLAYS = 19,
 
-            // The Quests window (Docs/MENU_REDESIGN_B.md section 150, Rev 77 "Quests"): the quest tracker left the
-            // Voyage window for a window of its own, opened from Home like the Profile. Not a hub window, so the
-            // triggers do not slide it. Built from Resources/Voyages/QuestsView (EnsureQuestsModal).
-            QUESTS = 20,
+            // A pilot's profile page (Docs/MENU_REDESIGN_B.md section 92.1): the pilot's scene full screen, opened
+            // from the Ark's Pilots tab WITH a pilot (OpenPilotProfile). Not a hub window, never in the browser
+            // Toybox, and never reopened from the return-to-window pref, which carries a type and no pilot. Built
+            // from Resources/Pilots/PilotProfileView (EnsurePilotProfileModal).
+            PILOT_PROFILE = 21,
         }
 
         [System.Serializable]
@@ -620,12 +621,15 @@ namespace CosmicShore.UI
         {
             TrySubscribeFreestyleEvents();
             EnvironmentLoadVeil.Released += PlayCurrentScreenEntrances;
+            SceneTransitionManager.RevealStarted += PlayCurrentScreenEntrances;
         }
 
         /// <summary>
         /// The boot world's veil has started revealing the menu: the screen the player is on plays
         /// its entrances now, so the menu ARRIVES with the world instead of having settled behind
-        /// the cover where nobody saw it (Docs/MENU_REDESIGN_B.md section 25).
+        /// the cover where nobody saw it (Docs/MENU_REDESIGN_B.md section 25). On a boot or a return
+        /// the veil lifts while the splash is still opaque over it, so the entrances play again when
+        /// the splash starts to dissolve (<see cref="SceneTransitionManager.RevealStarted"/>, section 185).
         /// </summary>
         private void PlayCurrentScreenEntrances() => KitEntrance.ReplayUnder(GetScreenRootRT(currentScreen));
 
@@ -633,6 +637,7 @@ namespace CosmicShore.UI
         {
             UnsubscribeFreestyleEvents();
             EnvironmentLoadVeil.Released -= PlayCurrentScreenEntrances;
+            SceneTransitionManager.RevealStarted -= PlayCurrentScreenEntrances;
 
             // Scene-unload safety: the UI module's actions live on a shared asset instance
             // that outlives this scene — never leave Submit/Cancel/Move disabled for the
@@ -694,7 +699,8 @@ namespace CosmicShore.UI
 
             CacheScreenComponents();
             EnsureCreditsModal();
-            EnsureQuestsModal();
+            // Before the first layout: the page's ground is found there as a background that bleeds to the screen's edges.
+            EnsurePilotProfileModal();
             LayoutScreensToViewport();
             MarkDisabledNavLinks();
             UpdateHubButtonsVisibility();
@@ -801,9 +807,11 @@ namespace CosmicShore.UI
             // re-opening the arcade overlay on its own causes stale game configuration to
             // resurface. Coming back from a match re-opens the launched card through
             // MenuReturnCard instead, which carries the card (ReturnToLaunchedCardCoroutine).
+            // PILOT_PROFILE needs its pilot the same way: the type does not say whose page it was.
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
                           or ModalWindows.ARCADE
-                          or ModalWindows.ARENA_GAME_CONFIGURE)
+                          or ModalWindows.ARENA_GAME_CONFIGURE
+                          or ModalWindows.PILOT_PROFILE)
                 yield break;
 
             if (WebToybox.IsBuild && !IsModalInWebToybox(modalType))
@@ -1766,40 +1774,44 @@ namespace CosmicShore.UI
             Modals.Add(modal);
         }
 
-        /// <summary>Where <see cref="EnsureQuestsModal"/> finds the Quests window (Tools/Build/author_voyage_window.py
-        /// writes it).</summary>
-        public const string QuestsWindowResource = "Voyages/QuestsView";
+        /// <summary>Where <see cref="EnsurePilotProfileModal"/> finds a pilot's profile page
+        /// (Tools/Build/author_menu_pilot_profile.py writes it).</summary>
+        public const string PilotProfileWindowResource = "Pilots/PilotProfileView";
 
         /// <summary>
-        /// Builds the Quests window (Docs/MENU_REDESIGN_B.md section 150) beside the Voyage window when the scene
-        /// has none: the quest tracker is its own modal now, opened from Home like the Profile. It stands down when a
-        /// QUESTS modal is already registered, so authoring one into the scene is an ordinary scene edit.
+        /// Adds the pilot profile page to the canvas (Docs/MENU_REDESIGN_B.md section 92.1) when the scene has none,
+        /// as <see cref="EnsureCreditsModal"/> adds the credits screen. Not in the browser Toybox: the Ark is not there,
+        /// and that build keeps the scenes only as 32 px stand-ins (Tools/Build/author_pilot_scene_assets.py), so a
+        /// page opened there would have nothing to show.
         /// </summary>
-        private void EnsureQuestsModal()
+        private void EnsurePilotProfileModal()
         {
+            if (WebToybox.IsBuild) return;
+
             Modals ??= new List<ModalWindowManager>();
             foreach (var authored in Modals)
-                if (authored != null && authored.ModalType == ModalWindows.QUESTS)
+                if (authored != null && authored.ModalType == ModalWindows.PILOT_PROFILE)
                     return;
 
-            var prefab = Resources.Load<ModalWindowManager>(QuestsWindowResource);
+            var prefab = Resources.Load<ModalWindowManager>(PilotProfileWindowResource);
             if (prefab == null)
             {
-                CSDebug.LogWarning($"[ScreenSwitcher] No Quests window at Resources/{QuestsWindowResource} " +
-                                   "(run Tools/Build/author_voyage_window.py); Home's quest card opens the Voyage window.");
+                CSDebug.LogWarning($"[ScreenSwitcher] No pilot profile page at Resources/{PilotProfileWindowResource} " +
+                                   "(run Tools/Build/author_menu_pilot_profile.py); the Ark's pilots do not open.");
                 return;
             }
 
-            // Beside the Voyage window, so it sits in the same layer of the canvas and stretches the same way.
+            // In the Voyage window's layer of the canvas, so it stretches the same way, and last in it: the page covers
+            // the whole screen, and no other window opens while one is up (the pad's Home shortcuts stand down under
+            // any modal; the scene transition's doors hoist themselves above the whole layer).
             var mission = FindModal(ModalWindows.MISSION);
             Transform parent = mission ? mission.transform.parent : _canvasRect;
             var modal = Instantiate(prefab, parent, false);
             modal.name = prefab.name;
-            if (mission) modal.transform.SetSiblingIndex(mission.transform.GetSiblingIndex() + 1);
-            else modal.transform.SetAsLastSibling();
+            modal.transform.SetAsLastSibling();
             if (_container != null)
                 GameObjectInjector.InjectRecursive(modal.gameObject, _container);
-            modal.ModalType = ModalWindows.QUESTS;
+            modal.ModalType = ModalWindows.PILOT_PROFILE;
             modal.AttachScreenSwitcher(this);
             Modals.Add(modal);
         }
@@ -1878,11 +1890,15 @@ namespace CosmicShore.UI
         /// <summary>The home hub's Mission entry.</summary>
         public void OnClickMissionNav() => OpenModal(ModalWindows.MISSION);
 
-        /// <summary>The Quests window (Home's quest card); the Voyage window when the scene has no Quests window.</summary>
-        public void OnClickQuests()
+        /// <summary>
+        /// Opens <paramref name="pilotId"/>'s profile page (the Ark's Pilots tab; a crew pilot's id, or a legacy callsign
+        /// id, which the page resolves to the crew's pilot). False when the page is not in this build or did not open.
+        /// </summary>
+        public bool OpenPilotProfile(string pilotId)
         {
-            if (FindModal(ModalWindows.QUESTS)) OpenModal(ModalWindows.QUESTS);
-            else OnClickMissionNav();
+            if (FindModal(ModalWindows.PILOT_PROFILE) is not PilotProfileModal page) return false;
+            page.SetPilot(pilotId);
+            return OpenModal(ModalWindows.PILOT_PROFILE);
         }
 
         #region Hub window slide (rev 7)

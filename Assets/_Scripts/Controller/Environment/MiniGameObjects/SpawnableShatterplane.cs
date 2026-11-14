@@ -125,12 +125,20 @@ namespace CosmicShore.Gameplay
         /// The crystal sites in this arena's local space: on each plate's axis, in front of its front plate. Read by
         /// <c>ShatterplaneController</c> to lay the crystal field.
         /// </summary>
-        public void CollectCrystalSites(List<Vector3> into)
+        public void CollectCrystalSites(List<Vector3> into) => CollectCrystalSites(into, null);
+
+        /// <summary>The crystal sites, and (when <paramref name="axes"/> is given) the axis of the plate each one floats
+        /// in front of, index for index - so a mode can stand several crystals at one site side by side across it.</summary>
+        public void CollectCrystalSites(List<Vector3> into, List<Vector3> axes)
         {
             var s = Settings();
             var structures = new List<ShatterplanePlates.Structure>(32);
             ShatterplanePlates.Layout(s, structures);
             ShatterplanePlates.CrystalSites(structures, s, crystalCount, into);
+            if (axes == null) return;
+            axes.Clear();
+            for (int k = 0; k < into.Count && structures.Count > 0; k++)
+                axes.Add(structures[k % structures.Count].N);   // CrystalSites walks the structures in this same order
         }
     }
 }

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Glasshouse
+  m_EditorClassIdentifier:
+  Mode: 89
+  Notes: 'The garden cell at each intensity - fewer seeds, more grazers, less room. OPEN-ENDED - it scores
+    on mass standing in your colour, and what a solo preview teaches is the loop - an omni crystal in
+    the core, out past the nucleus, let go of the lure to plant, hold it to grow. Vessel pinned to Angler(17).'
+  PreviewCell: {fileID: 11400000, guid: ce6391741271a45b988b5fad38f02b06, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: ce6391741271a45b988b5fad38f02b06, type: 2}
+  - {fileID: 11400000, guid: 7a05f096d3a5bc8f46cef94d101469ac, type: 2}
+  - {fileID: 11400000, guid: f9b8e1be44853acafa341bacade62c12, type: 2}
+  - {fileID: 11400000, guid: 41d5d81ba3cf12ed1c95e00f24e2594a, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 17
+  ObjectiveText: Take an omni crystal, let go of the lure out past the core to plant it, hold the lure to grow it
+  ObjectiveMetric: 12
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 450
+  SpawnRingRadiusFloorByIntensity:
+  - 450
+  - 450
+  - 450
+  - 450
+  SpawnFormation: 0
+  SpawnPoints: []

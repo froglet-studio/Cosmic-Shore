@@ -231,7 +231,7 @@ namespace CosmicShore.UI
         {
             if (!gauge) return;
             gauge.fillAmount = 0f;
-            gauge.color = gaugeColor;
+            gauge.color = ColorTrace.Retrace(ColorTrace.Ui, gaugeColor);
         }
 
         /// <summary>Builds the header (phase line, swarm size) and each card's name and level labels. Idempotent by name.</summary>
@@ -414,7 +414,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < _handCards.Length; i++)
             {
                 var face = ResolveGeneratedChild<Image>(_handRow, "Card" + i);
-                face.color = handCardBacking;
+                face.color = ColorTrace.Retrace(ColorTrace.Ui, handCardBacking);
                 face.raycastTarget = true;
                 var rt = face.rectTransform;
                 rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
@@ -463,7 +463,7 @@ namespace CosmicShore.UI
             _details.sizeDelta = new Vector2(detailsWidth, _details.sizeDelta.y);
             if (_details.TryGetComponent<Image>(out var face))
             {
-                face.color = detailsBacking;
+                face.color = ColorTrace.Retrace(ColorTrace.Ui, detailsBacking);
                 face.raycastTarget = false;
             }
             if (!_details.TryGetComponent(out _detailsEdge)) _detailsEdge = _details.gameObject.AddComponent<Outline>();
@@ -584,7 +584,7 @@ namespace CosmicShore.UI
             if (!gauge) return;
             gauge.fillAmount = Mathf.Clamp01(fill01);
             float k = 1f - Mathf.Exp(-colorBlendRate * Time.unscaledDeltaTime);
-            gauge.color = Color.Lerp(gauge.color, ready ? readyColor : gaugeColor, k);
+            gauge.color = Color.Lerp(gauge.color, ColorTrace.Retrace(ColorTrace.Ui, ready ? readyColor : gaugeColor), k);
         }
 
         /// <summary>Re-anchor every gauge's rest scale after the base's upgrade handling (vessel contract rule 9).</summary>

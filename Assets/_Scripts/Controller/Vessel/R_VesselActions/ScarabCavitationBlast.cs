@@ -32,11 +32,12 @@ namespace CosmicShore.Gameplay
     /// declines to fire while it is recharging. That split is deliberate: dodging is mobility and
     /// should never be rationed, while the destructive punch is a resource.
     ///
-    /// CHARGE scales how hard the shove DEBUFFS a pilot it engulfs, not how often it fires (Garrett,
-    /// 2026-10-29): the cooldown is a flat <see cref="cooldownSeconds"/>, and the bite is the blast
-    /// container's <see cref="VesselElementalDebuffByExplosionEffectSO"/>, which reads the FIRING
-    /// pilot's Charge level. The retired Charge-5 "Cavitation Shear" (shielded prisms destroyed
-    /// outright) went with it.
+    /// CHARGE sets how often the shove fires (Garrett, 2026-11-11: "scarab charge parameter can switch to the
+    /// cooldown on its shove plate"): the wait is <see cref="cooldownSeconds"/> times <see cref="cooldownScale"/>, 2.5 s
+    /// at rest down to 1.25 s at Charge 10, read at the pilot's REPLICATED level when the plate is asked whether it is
+    /// ready, so every machine that runs the dash agrees. From 2026-10-29 to 2026-11-10 Charge scaled the shove's petal
+    /// bite instead (x1 -> x2.5), a dial in whole petals and too coarse to tune; the bite is the flat price again. The
+    /// retired Charge-5 "Cavitation Shear" (shielded prisms destroyed outright) stays retired.
     ///
     /// CHARGE 5 — "BACKDRAFT": THE PLATE CLAIMS ITS OWN MIRROR IMAGE (SCARAB.md §3.9). At rest the
     /// shove only PUSHES: the volume runs from the hull forward. At Charge 5 it is reflected
@@ -78,19 +79,25 @@ namespace CosmicShore.Gameplay
                  "be measured. Matches the shipped Scarab hull, a single 4.5-unit sphere.")]
         [SerializeField, Min(0.1f)] float fallbackVesselRadius = 4.5f;
 
-        [Header("Cooldown")]
-        [Tooltip("Seconds between blasts. Flat: Charge scales the blast's debuff, not its pace.")]
+        [Header("Cooldown (CHARGE)")]
+        [Tooltip("Seconds between blasts at the RESTING Charge level. Charge scales it (cooldownScale).")]
         [SerializeField, Min(0f)] float cooldownSeconds = 2.5f;
+
+        [Tooltip("CHARGE → the shove's pace: how many times cooldownSeconds the plate waits, by the pilot's replicated " +
+                 "Charge. x1 at rest, x0.5 at Charge 10 (2.5 s → 1.25 s), extrapolated through the deficit and " +
+                 "overcharge bands; the floor keeps an overcharged Scarab from firing every frame.")]
+        [SerializeField] ElementalFloat cooldownScale = ElementalFloat.Multiplier(1f, 0.5f, Element.Charge, 0.25f);
 
         IVesselStatus _status;
         ScarabJukeController _juke;
         VesselImpactor _vesselImpactor;
         float _lastFireTime = float.NegativeInfinity;
+        float _cooldownAtFire;   // the wait the last blast started, snapshotted when it fired (per use)
         bool _wasReady = true;
         bool _warnedUnmeasurableHull;
 
         /// <summary>True while the blast is ready — the HUD's Charge-row readout.</summary>
-        public bool IsBlastReady => Time.time - _lastFireTime >= CurrentCooldown();
+        public bool IsBlastReady => Time.time - _lastFireTime >= _cooldownAtFire;
 
         /// <summary>
         /// Raised on every ready↔recharging edge, carrying the cooldown length that edge was
@@ -124,11 +131,18 @@ namespace CosmicShore.Gameplay
             bool ready = IsBlastReady;
             if (ready == _wasReady) return;
             _wasReady = ready;
-            OnBlastReadyChanged?.Invoke(ready, CurrentCooldown());
+            OnBlastReadyChanged?.Invoke(ready, _cooldownAtFire);
         }
 
-        /// <summary>The wait between blasts — flat; no element paces it.</summary>
-        float CurrentCooldown() => cooldownSeconds;
+        /// <summary>The wait between blasts: the resting cooldown times CHARGE's scale at the pilot's replicated level.
+        /// Snapshotted when a blast fires (<see cref="_cooldownAtFire"/>), so a Charge change mid-recharge moves the
+        /// NEXT wait, never the running one, and the HUD's sweep and the readiness always agree.</summary>
+        float CurrentCooldown() => cooldownSeconds * Mathf.Max(0f, cooldownScale.EvaluateReplicated(_status));
+
+        /// <summary>The same wait at a normalized Charge level (0 at rest, 1 at Charge 10, -0.5 to 1.5 at the band's
+        /// ends): the pure form, for tests and the numbers the docs quote.</summary>
+        public float CooldownSecondsAtLevel(float chargeLevel01) =>
+            cooldownSeconds * Mathf.Max(0f, cooldownScale.EvaluateAtNormalizedLevel(chargeLevel01));
 
         /// <summary>
         /// CHARGE 5, "Backdraft": the plate also claims its mirror image behind the hull, so the
@@ -227,9 +241,10 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            _cooldownAtFire = CurrentCooldown();
             _lastFireTime = Time.time;
             _wasReady = false;
-            OnBlastReadyChanged?.Invoke(false, CurrentCooldown());
+            OnBlastReadyChanged?.Invoke(false, _cooldownAtFire);
 
             var ship = _status.ShipTransform ? _status.ShipTransform : transform;
             Vector3 dir = direction.normalized;
@@ -311,7 +326,7 @@ namespace CosmicShore.Gameplay
             if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
                 CSDebug.LogVerbose(CSLogChannel.ScarabDash,
                     $"[ScarabCavitation] Plate r={radius:F1} along {dir} " +
-                    $"(cooldown {CurrentCooldown():F2}s).");
+                    $"(cooldown {_cooldownAtFire:F2}s).");
         }
     }
 }

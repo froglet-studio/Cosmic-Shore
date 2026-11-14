@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   debuffMagnitude: -0.12
   debuffDuration: 4
-  magnitudeAtFullCharge: 2
+  magnitudeAtFullCharge: 1
   cooldown: 1
   elements:
   - 2
