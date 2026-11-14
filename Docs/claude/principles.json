@@ -3344,7 +3344,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the hull's colour scheme add a family beyond domain, Blue and Fire, or put Lime (the call to action) on the vessel?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-10",
@@ -3584,7 +3584,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Count the levels of form on the model: are there five, each carrying two to five heterarchies, down to micro detail?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-25",
@@ -3600,7 +3600,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the model carry a dome, spike or plinth that serves no form? Remove it.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-26",
