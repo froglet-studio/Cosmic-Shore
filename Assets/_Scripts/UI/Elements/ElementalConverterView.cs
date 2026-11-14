@@ -171,6 +171,7 @@ namespace CosmicShore.UI
         ArkBackdropRun _benchRun = ArkBackdropRun.Loop;
         SquadsPage _squads;
         ArkPilotsPage _pilots;
+        SquadVesselLayer _vessels;
         ArkArtifactsPage _artifactsPage;
         int _lastTab = -1;
         bool _fadingOut;   // the picture is passing into a tab with no room; hidden once it is dark
@@ -224,6 +225,7 @@ namespace CosmicShore.UI
             _active = false;
             if (arkTabs) arkTabs.OnScreenExit();
             if (_backdrop) _backdrop.Release();
+            if (_vessels) _vessels.Release();
             ReleaseTarget();
         }
 
@@ -250,7 +252,11 @@ namespace CosmicShore.UI
         /// not the screen.</summary>
         void ShowBackdrop(ArkPassKind kind, int dir = 1, Vector2? origin = null)
         {
-            if (!UsesBackdrops || !_active || !_pageShown || _room == ArkRoom.None) return;
+            if (!UsesBackdrops || !_active || !_pageShown || _room == ArkRoom.None)
+            {
+                ShowVessels();   // hides them: another room, or no picture
+                return;
+            }
             EnsureBackdrop();
             var run = _room switch
             {
@@ -261,9 +267,27 @@ namespace CosmicShore.UI
             var set = ColorTrace.Worn ? ColorTrace.Worn.name : string.Empty;
             var domain = _squads && _squads.HasHangar ? _squads.HangarDomain : Domains.Jade;
             var clip = _backdropConfig.Find(_room, run, set, domain);
-            if (!clip) return;
+            if (!clip)
+            {
+                if (_vessels) _vessels.Hide();
+                return;
+            }
             _backdrop.Show(clip, !PlaysOnce(run), _backdropConfig.TextureSize, kind, dir, origin);
             if (_surface) _surface.texture = _backdrop.Texture;
+            ShowVessels();
+        }
+
+        /// <summary>The squad's real vessels on the hangar's pads, over its clip (section 202): only while the hangar shows.</summary>
+        void ShowVessels()
+        {
+            bool hangar = UsesBackdrops && _active && _pageShown && _room == ArkRoom.Hangar && _squads && _squads.HasHangar;
+            if (!hangar)
+            {
+                if (_vessels) _vessels.Hide();
+                return;
+            }
+            if (!_vessels && _surface) _vessels = SquadVesselLayer.Create(_surface.rectTransform, _backdropConfig);
+            if (_vessels) _vessels.Show(_squads);
         }
 
         static bool PlaysOnce(ArkBackdropRun run) =>
@@ -341,6 +365,7 @@ namespace CosmicShore.UI
             _pageShown = shown;
             if (!shown)
             {
+                if (_vessels) _vessels.Hide();
                 // Into the dark of a tab with no room (Pilots, Decor), then the picture hides (LateUpdate).
                 if (_backdrop && _backdrop.Material && _active && _surface && _surface.enabled)
                 {
@@ -365,6 +390,7 @@ namespace CosmicShore.UI
         void OnDisable()
         {
             _active = false;
+            if (_vessels) _vessels.Hide();
             ReleaseTarget();
         }
 
@@ -440,6 +466,7 @@ namespace CosmicShore.UI
                     ShowBackdrop(ArkPassKind.Cut);   // the move ended on this very frame
                 }
                 if (_surface && _backdrop && _surface.texture != _backdrop.Texture) _surface.texture = _backdrop.Texture;
+                if (_vessels && _room == ArkRoom.Hangar) _vessels.Tick(_backdrop ? _backdrop.LoopPhase : -1f);
                 DrawOverlay();
                 return;
             }

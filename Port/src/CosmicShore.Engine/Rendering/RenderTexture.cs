@@ -54,6 +54,13 @@ namespace CosmicShore.Engine
         public RenderTextureMemoryless memorylessMode { get; set; }
         public bool isPowerOfTwo { get; set; }
         public int Version { get; private set; }
+
+        /// <summary>
+        /// Amoebius only (no Unity member): pixels a CPU producer wrote into this target - a VideoPlayer's decoded frame
+        /// (<see cref="CosmicShore.Engine.Video.VideoPlayer.FrameDecoder"/>). The renderer draws a target no camera rendered
+        /// from it; null shows nothing new.
+        /// </summary>
+        public Texture2D cpuFrame { get; set; }
         public RenderTextureDescriptor descriptor
         {
             get => new(width, height, format, depth) { msaaSamples = antiAliasing, sRGB = sRGB, useMipMap = useMipMap, enableRandomWrite = enableRandomWrite };

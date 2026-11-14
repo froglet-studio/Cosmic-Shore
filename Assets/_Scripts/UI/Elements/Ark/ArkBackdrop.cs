@@ -84,6 +84,20 @@ namespace CosmicShore.UI
         /// <summary>The clip playing, or the one a change is going to.</summary>
         public VideoClip Current => _pending || _passing ? (_toDark ? null : Back.Clip) : (_frontDark ? null : Front.Clip);
 
+        /// <summary>How far through its loop the clip is, 0..1 (the render's own loop time: the hangar clips' camera breathes
+        /// on it, and SquadVesselLayer moves its camera with it); -1 while nothing plays.</summary>
+        public float LoopPhase
+        {
+            get
+            {
+                if (_frontDark || _passing) return -1f;
+                var slot = Front;
+                if (!slot.Player || !slot.Clip || !slot.Player.isPlaying || slot.Clip.length <= 0.0) return -1f;
+                return Mathf.Repeat((float)(slot.Player.time / slot.Clip.length), 1f);
+            }
+        }
+
+
         /// <summary>True while a change is under way (its clip preparing, or the pass itself).</summary>
         public bool Changing => _pending || _passing;
 

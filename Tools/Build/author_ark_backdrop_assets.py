@@ -7,7 +7,8 @@ ElementalConverterView plays them through ArkBackdrop from ArkBackdropConfigSO.
 Writes (and with --check, compares; fails when a clip or a referenced script is missing):
     Assets/Resources/ArkBackdropConfig.asset (+ .meta)       the clips by room, run, colour set and domain
     Assets/_Graphics/Video/Ark/*.mp4.meta                     VideoClip importers, transcoding off (the clips play as encoded)
-    Assets/_Scripts/ScriptableObjects/Toys/ArkBackdropConfigSO.cs.meta, Assets/_Scripts/UI/Elements/Ark/ArkBackdrop.cs.meta
+    Assets/_Scripts/ScriptableObjects/Toys/ArkBackdropConfigSO.cs.meta, Assets/_Scripts/UI/Elements/Ark/ArkBackdrop.cs.meta,
+    Assets/_Scripts/UI/Elements/Ark/SquadVesselLayer.cs.meta (the squad's real vessels over the hangar clips, section 202)
 
 The clips themselves are encoded by Docs/MenuRedesignB/rounds/r67_ark_backdrop_videos.py from the Frogma renders, and
 the PILOTS tab's bench clips by Docs/MenuRedesignB/rounds/r99_pilots_bench_videos.py (Rev 99 C, section 191).
@@ -26,6 +27,35 @@ NS = uuid.UUID("2b7e5a61-4d0c-4f3a-9c1e-a8b4c2d0e6f1")   # fixed: the guids must
 
 SO_CS = "Assets/_Scripts/ScriptableObjects/Toys/ArkBackdropConfigSO.cs"
 PLAYER_CS = "Assets/_Scripts/UI/Elements/Ark/ArkBackdrop.cs"
+LAYER_CS = "Assets/_Scripts/UI/Elements/Ark/SquadVesselLayer.cs"
+VESSEL_PREFABS = "05f8f1205bd90e14b8e59cf78da1a6f2"   # Assets/_SO_Assets/Vessel Prefab Container.asset
+OFFLINE_LIVERY = "bda6299e6e2046339d7a18b1a1ef8443"   # Assets/_Graphics/Materials/ClassLiveryVesselMaterial.mat (the Hangar's)
+# The squad's real vessels over the hangar clips (Docs/MENU_REDESIGN_B.md section 202): the clips' camera and pads from
+# r67_ark_tabs_render.py (CAM["squads"], SPOTS, Z0) with Blender's z up turned into Unity's y up, (x, z, y). Seat order:
+# the player's pad (the leader, a step back in the middle), then seats two (left) and three (right).
+HANGAR = {
+    "enabled": 1,
+    "cameraPosition": (6.0, -15.6, -85.0),
+    "cameraAim": (6.0, -20.6, -62.0),
+    "verticalFov": 45.75,                  # 2 atan(18 / 24 * 9 / 16): the 24 mm lens on the 36 mm sensor at 16:9
+    "cameraSway": (0.18, 0.08),
+    "aimSway": 0.3,
+    "loopSeconds": 3.2,
+    "pads": [(0.0, -23.0, -66.0), (-9.0, -23.0, -60.5), (9.6, -23.0, -60.5)],
+    "hullLength": 7.5,                     # Rev 110's check: 0.6 of the clip's Sparrow (12.5 m)
+    "hullHeight": 3.4,                     # a round hull (the Urchin) is no taller than this: its pad is 7.5 m across
+    "clearance": 0.6,                      # Amoebius check 2026-11-14: 1.6 left the hulls floating off their pads
+    "hover": 0.12,
+    "rockDegrees": 1.7,
+    "phaseStep": 2.1,
+    "padLightIntensity": 4.0,
+    "padLightRange": 7.0,
+    "lampOffset": (-2.0, 6.0, -4.0),
+    "lampIntensity": 2.0,
+    "lampRange": 16.0,
+    "layerSize": (1920, 1080),
+    "renderRate": 30,
+}
 ASSET = "Assets/Resources/ArkBackdropConfig.asset"
 VIDEO_DIR = "Assets/_Graphics/Video/Ark"
 PASS_SHADER = "Assets/_Graphics/Materials/Shaders/UI/ArkPass.shader"   # the HyperSea pass (MENU_REDESIGN_B.md section 197)
@@ -56,6 +86,23 @@ def clips():
     return out
 
 
+def num(v):
+    return ("%.4f" % v).rstrip("0").rstrip(".") if isinstance(v, float) else str(v)
+
+
+def yaml_value(key, v):
+    if isinstance(v, list):
+        return "\n" + "\n".join("    - " + yaml_value(key, x) for x in v)
+    if isinstance(v, tuple):
+        axes = ("r", "g", "b", "a") if key.endswith("Color") else ("x", "y", "z", "w")
+        return "{" + ", ".join(f"{a}: {num(x)}" for a, x in zip(axes, v)) + "}"
+    return num(v)
+
+
+def hangar_text():
+    return "\n".join(f"    {k}:{'' if isinstance(v, list) else ' '}{yaml_value(k, v)}" for k, v in HANGAR.items())
+
+
 def asset_text():
     rows = []
     for f, room, run, s, d in clips():
@@ -82,6 +129,10 @@ MonoBehaviour:
   clips:
 {chr(10).join(rows)}
   textureSize: {{x: 1920, y: 1080}}
+  hangar:
+{hangar_text()}
+  vesselPrefabs: {{fileID: 11400000, guid: {VESSEL_PREFABS}, type: 2}}
+  offlineLivery: {{fileID: 2100000, guid: {OFFLINE_LIVERY}, type: 2}}
   passShader: {{fileID: 4800000, guid: {guid(PASS_SHADER)}, type: 3}}
   passSeconds: {PASS_SECONDS}
   passStyles:{"".join(chr(10) + "  - " + str(x) for x in PASS_STYLES) if PASS_STYLES else " []"}
@@ -164,6 +215,7 @@ NativeFormatImporter:
 def outputs():
     out = {ASSET: asset_text(), ASSET + ".meta": asset_meta(),
            SO_CS + ".meta": script_meta(SO_CS), PLAYER_CS + ".meta": script_meta(PLAYER_CS),
+           LAYER_CS + ".meta": script_meta(LAYER_CS),
            PASS_SHADER + ".meta": shader_meta()}
     for f, *_ in clips():
         p = VIDEO_DIR + "/" + f
@@ -185,15 +237,20 @@ def validate():
         if not re.search(r"\b" + member + r"\s*=\s*" + str(value) + r"\s*,", so):
             errors.append(f"the asset writes {member} = {value}, which ArkBackdropConfigSO's enums do not declare")
     for field in ("clips", "textureSize", "room", "run", "colourSet", "domain", "anyDomain", "clip", "passShader",
-                  "passSeconds", "dissolveSeconds", "passStyles"):
+                  "passSeconds", "dissolveSeconds", "passStyles", "hangar", "vesselPrefabs", "offlineLivery", *HANGAR):
         if not re.search(r"\b" + field + r"\s*[;=]", so):
             errors.append(f"the asset writes '{field}', which ArkBackdropConfigSO does not declare")
     if not os.path.exists(os.path.join(REPO, PASS_SHADER)):
         errors.append(f"{PASS_SHADER} is missing (the HyperSea pass)")
     elif 'Shader "CosmicShore/UI/ArkPass"' not in open(os.path.join(REPO, PASS_SHADER)).read():
         errors.append(f"{PASS_SHADER} is not the CosmicShore/UI/ArkPass shader")
-    if not os.path.exists(os.path.join(REPO, PLAYER_CS)):
-        errors.append(f"{PLAYER_CS} is missing")
+    for cs in (PLAYER_CS, LAYER_CS):
+        if not os.path.exists(os.path.join(REPO, cs)):
+            errors.append(f"{cs} is missing")
+    for g, what in ((VESSEL_PREFABS, "the Vessel Prefab Container"), (OFFLINE_LIVERY, "the class livery material")):
+        metas = ("Assets/_SO_Assets/Vessel Prefab Container.asset.meta", "Assets/_Graphics/Materials/ClassLiveryVesselMaterial.mat.meta")
+        if not any(os.path.exists(os.path.join(REPO, m)) and f"guid: {g}" in open(os.path.join(REPO, m)).read() for m in metas):
+            errors.append(f"{what} ({g}) is not where the config points")
     return errors
 
 

@@ -37,6 +37,20 @@ namespace CosmicShore.Engine.Video
         /// <summary>Installed by a platform decoder: renders the frame at <c>time</c> into the player's target.</summary>
         public static Action<VideoPlayer, double> FrameDecoder;
 
+        static readonly System.Collections.Generic.List<VideoPlayer> s_Playing = new();
+
+        /// <summary>Advances every playing player's clock and presents its frame: once a frame, after Update (Unity's
+        /// video players advance between Update and rendering).</summary>
+        public static void TickAll()
+        {
+            for (int i = s_Playing.Count - 1; i >= 0; i--)
+            {
+                var p = s_Playing[i];
+                if (p == null || !p.isPlaying) { s_Playing.RemoveAt(i); continue; }
+                p.Tick();
+            }
+        }
+
         VideoClip _clip;
         double _time;
         double _lastTick = -1;
@@ -123,6 +137,7 @@ namespace CosmicShore.Engine.Video
             if (isPlaying) return;
             isPlaying = true;
             isPaused = false;
+            if (!s_Playing.Contains(this)) s_Playing.Add(this);
             _lastTick = Time.unscaledTimeAsDouble;
             started?.Invoke(this);
             Present();

@@ -8517,6 +8517,167 @@ gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; 
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 
+## 194. Rev 106 mockups: the Squads tab in levels, lit like the captains' bridges (2026-11-13, B picked; taken forward in section 200)
+
+**Asked (Shombith, 2026-11-13):** "The UI cards on top of each screen. I do not like them at all ... the worst is the
+ark UI itself, selecting through so many and the text is noisy, it can be broken down in levels if we want." The
+hangar backdrops stay ("I like the backgrounds alright. That's fire for now"). The style for the whole Ark redesign:
+the pilot scenes that show captains inside the Ark ("take the lighting or animation or design ideas from there").
+
+**On the canvas:** tab **Ark**, round "Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like
+the captains' bridges" (canvas version `1794608651-4779`; Rev 104 and 105 on the same tab are the Converter's and the
+Artifacts' rounds from the sibling threads). Copies: `Docs/MenuRedesignB/board/R106*.dc.html`; generator:
+`Docs/MenuRedesignB/rounds/r106_ark_squads.py`, on Rev 67's hangar renders (per domain) and Rev 99's pilot close-ups.
+All five boards pass `frogma.py check`; each was rendered locally with the real backdrop and the flows pressed.
+The cues taken from Jugger's and Scales's scenes (`Docs/Pilots/art/scenes/`, shown on the notes board): the room is
+dark and lit by its display, so no board has a solid card, every panel is light in the squad's own domain colour over
+a faint lattice; the display has depth (a dome); warm lamps and a brass rail frame the cold light; the squad's
+domain is the light, so switching to Ruby turns the tags, the dome and the hangar Ruby.
+- **R106A, Levels (recommended):** level 1 is the hangar with a tag of light over each vessel (the pilot's face, the
+  name, here or not) and Arena; a tag opens that seat on the right (vessel, element, pilot, artifact; Change vessel or
+  Open the seat); a line opens only that list. The squads, Make, Join and the squad's light sit behind the squad's
+  name (Y). About 10 words at rest against about 80 in the build.
+- **R106B, The holo table:** a bridge console in front of the hangar; the three seats stand on a dome of light, the
+  picked one projects its loadout up; the squad dial, Make, Join and the light on the brass rail.
+- **R106C, Seat by seat:** no panel; one seat in large type over the dark side of the hangar, corner brackets round its
+  vessel, D-pad to the next seat, a value changes in place.
+- **R106Compare:** one seat at rest and opened, in the build and in A, B and C, and the presses to change a vessel.
+- **Why A:** the levels cut the text to the names and the light sits on the vessels it describes, so the render stays
+  the screen. B is the most like the bridges but covers the hangar floor with a console; its dome look could dress A's
+  seat panel. C is the calmest but shows one seat at a time.
+
+**Differs from the build:** `author_menu_ark.py`'s Squads page loses the squads row, the domain row, the header and the
+three seat cards (section 190) for the tags (positioned per pad from the render), one seat panel and the squad list;
+`SquadsPage` keeps its data and actions (Change vessel, Open the seat, the presence, a joined squad read-only, Mission
+locked, Arena). Colours from the worn set's domain colours. The Breakers hangar is still Skim Wing's vessels lit Ruby.
+
+Affects: Shombith's Ark screen (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's pilot scenes (read
+as reference, two downscaled copies uploaded to the canvas).
+
+**Picked (Shombith, 2026-11-13):** "B is good." Every setting of B and the vessels in the hangar: section 200.
+
+## 200. Rev 110 mockups: the Squads tab's B with every setting, and the hangar's vessels as real models (2026-11-13; the vessels built in section 202)
+
+**Asked (Shombith, 2026-11-13, picking Rev 106 B):** "B is good. Can you show me all the settings and on changing the
+vessel will the model behind the image change since this is a video so should be put actual vessel models inside and
+check?"
+
+**On the canvas:** tab **Ark**, round "Rev 110 - The Squads tab, option B with every setting; the vessels in the hangar as
+real models" (canvas version `1794610288-7e60`; rounds 107-109 belong to the sibling Ark threads). Copies
+`Docs/MenuRedesignB/board/R110*.dc.html`, generator `Docs/MenuRedesignB/rounds/r110_ark_squads_b.py` (on Rev 106's kit).
+- **R110B:** B, interactive, with a dashed mockup row that jumps to every setting: at rest; your seat; the Vessel,
+  Element, Pilot (with the callsigns' faces) and Artifact lists, each projected over its plate with one line on what it
+  changes; an offline mate and Open the seat; an open seat and who flies it (AI wingmate, or open for a friend: the
+  build's SeatMode); a joined squad (read-only: its leader sets the seats); the squad's light on the rail; Make (a new
+  squad, you and two open seats); Join a friend (friends' squads with an open seat). All of it works by pressing too.
+- **R110Notes:** the vessel check below, with its four renders.
+
+**Does the model change with the vessel? Not today.** Each Squads clip (section 190, one per colour set and domain) has
+the Dolphin, the Sparrow and the Serpent rendered into it; changing a vessel changes the words only.
+
+**The fix, checked offline.** `r67_ark_tabs_render.py` gained `ARK_LINE` (the hulls on the three pads, or `none` for
+empty pads) and `ARK_PASS=vessels` (only the hulls, transparent, the room held out so it still occludes). One frame
+each (Nocturne, Jade, 960 x 540, 24 samples, Blender 5.3 as a Python module): the shipped line-up; the hangar with the
+pads empty; the live layer with a Rhino in your seat; and the Rhino rendered into the room in one pass. The empty
+hangar with the layer laid over it matches the one-pass render to 2.0 of 255 per pixel on average (6.7 inside the
+hulls, which cover 6 % of the frame). The wall boards and windows used stand-in pictures (the Voyage Board charts and
+the cell screenshot of the shipped renders are not in the repo), so these frames are a check, not the new clips.
+Hull sizes for hulls outside the shipped three are scaled to 0.6 of the Sparrow's largest extent (the Manta's rest
+pose, unrigged, splits into pieces in Blender; the game's prefab does not).
+
+**For the build (once approved):** re-render the nine Squads clips with `ARK_LINE=none`; in Unity a camera at the
+render's camera (`CAM["squads"]`: position, aim, 24 mm lens) draws each seat's vessel prefab on its pad into a
+transparent layer over the video, rebuilt only when a seat's vessel changes (the pad positions are `SPOTS` in the
+render script), offline hulls powered down and open pads empty. What only Unity can judge: the hulls' light matching
+the render (the room's lamps and the pad glow as real lights) and haze over them.
+
+Affects: Shombith's Ark screen (`ArkBackdrop`, `SquadsPage`, `author_menu_ark.py`) once built; the Rev 67 render script
+(two env switches added, the default render unchanged).
+
+## 202. Built: the squad's real vessels on the hangar's pads, over empty-pad clips (2026-11-14, claude/project-thread-sdvd40, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-14, of section 200's vessel check):** "Yeah lets build that."
+
+**The clips.** The nine Squads clips (`Assets/_Graphics/Video/Ark/squads_<Set>_<Domain>_loop.mp4`) now play the hangar
+with its three pads empty and all three glowing (any seat may hold a live hull). The hangar was not re-rendered whole:
+the Voyage Board charts and the cell picture the first renders used are not in the repo. Only the box round the hulls
+(x 0-680, y 57-394 at 960 x 540) was re-rendered, with the clips' own settings (32-frame loop, 10 samples,
+`ARK_LINE=none`, `ARK_BORDER`), graded and blown up exactly as the clips were (`r67_ark_backdrop_videos.py`'s grade and
+filter chain), and laid into each shipped clip frame by frame through the hulls' mask (their union over the loop from
+an `ARK_PASS=vessels` render, widened 15 px and feathered 8 px). Where a hull stood in front of a wall board, the board
+is filled from the clip round it rather than from the stand-in picture. Script:
+`Docs/MenuRedesignB/rounds/r110_squads_empty_pads.py` (`render`, `comp`, `preview`).
+
+**The vessels (`SquadVesselLayer`).** The Squads page publishes its shown squad's line-up with its domain
+(`SquadsPage.GetHangarSeat`: each seat's vessel, whether the seat is held, whether its pilot is here; `HangarChanged`
+fires when any of it changes, so Change vessel, Open the seat, a friend coming online and Make's draft all reach the
+hangar). The converter view lays a transparent layer exactly over the picture while the hangar shows and steps it in
+`LateUpdate`:
+- a camera at the render's camera (`ArkBackdropConfigSO.Hangar`: position, aim, 45.75 degrees vertical = the 24 mm lens
+  on a 36 mm sensor at 16:9, Blender's z up turned into Unity's y up), breathing with the clip: `ArkBackdrop.LoopPhase`
+  drives the same sway the render used, so the hulls never slide on their pads. Checked against Blender's own
+  projection at three loop times: the pads land within 0.03 px at 960 x 540;
+- each held seat's hull, a display copy built by `VesselModelBuilder.TryBuildLive` from the Vessel Prefab Container,
+  fitted to 7.5 m (and no taller than 3.4 m, so a round hull like the Urchin does not tower over its pad) and stood
+  0.6 m over it (the player's pad in the middle, a step back; seats two and three left and
+  right, as the clips' line-up was). Live hulls wear the squad's domain ship material, float and rock, and get their pad's
+  glow in the domain colour; an offline mate's hull wears the class livery, holds still and is lit by the bay's white
+  lamp alone; an open seat's pad stays empty. Hulls are rebuilt only when the line-up, the domain or the worn colour set
+  changes;
+- no post-processing on the layer's camera (URP's post pass writes alpha 1), 4x MSAA on its 1920 x 1080 target, up to
+  30 renders a second.
+
+The numbers live on the config asset (`Assets/Resources/ArkBackdropConfig.asset`, written by
+`author_ark_backdrop_assets.py`, `--check` clean). What only Unity can judge: the hulls' light against the video (the
+pad glow, the lamp, the haze in front of them), their size on the pads, and whether the video and the layer stay in step
+on a phone. Hand test: the "squad's real vessels in the hangar" entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+Affects: Shombith's Ark screen (`ElementalConverterView`, `SquadsPage`, `ArkBackdrop`, the backdrop config and its
+generator).
+
+**Run in Amoebius (2026-11-14, Shombith: "run it on amoebius and take screenshots and check").** Amoebius could not play a
+video clip before this (no VideoClip import, no decode), so the port learned to: the MP4 header gives the clip's length,
+size and rate, and the desktop player decodes each clip once through the ffmpeg on the PATH into frames the
+RenderTexture shows; its post pass now keeps the scene's alpha on a camera with post-processing off, as URP does. With
+that, the Squads tab played its Gold clip with the hulls on their pads; changing the leader's vessel (Squirrel to
+Sparrow), seat three's (Urchin to Rhino) and opening seat two to an AI wingmate (the Dolphin appears on the left pad)
+each rebuilt the right hull. The first run showed the hulls too big and floating (the Urchin, fitted to 7.5 m, stood
+7.5 m tall and 1.6 m up), which the height cap and the 0.6 m clearance fixed. Still for Unity: the light, and that the
+player's hull sits partly behind the vessel picker row at 1600 x 900.
+
+## 203. Built: the Squads tab as Rev 110 B, the holo table (2026-11-14, claude/project-thread-sdvd40, not run in Unity)
+
+**Asked (Shombith, 2026-11-14):** "Why do I see this old UI and not the rev 110 UIs ... just fix it first and merge to
+ark-rework. I will open unity and check." Section 202 had built only the vessels on the pads; the panels over them were
+still Rev 67's (the squads row, the domain row, the three seat cards, the picker grid and the two bars).
+
+**Built (board R110B, its numbers, 1920 x 1080 from the screen's foot-centre; `author_menu_ark.py`'s Squads page):**
+- **The bridge:** two warm lamps in the foot's corners and a dome of light (1260 x 520) in the squad's domain colour.
+- **The plates** (`SquadSeatPlate`): one per seat on the dome, Rogue One left, the leader in the middle, Rogue Two right
+  (the pads' order), each 300 x 82: the pilot's face (a plus on an open seat), who flies it, "vessel - element" (an open
+  seat: "Pick who flies it"), the presence diamond; lit in the domain, dimmed while the pilot is away. Pressing one
+  raises it 26 and projects the seat; pressing it again (or B) puts it back.
+- **The projection** over the picked plate, a beam of light down to it: "who - state", then the seat's lines (Who flies
+  it on an AI or open rogue seat, Vessel, Element, Pilot, Artifact), each opening only its list in place (2 x 6 word
+  chips, or 2 x 4 pilots with faces; < > page a longer list) with one line on what the pick changes. A pick is kept at
+  once: there is no Make or Edit mode and no Save any more. Under the lines, the seat's one action: CHANGE VESSEL on
+  yours, WHO FLIES IT on an open seat, OPEN THE SEAT on an offline friend's. A joined squad's seat is read-only, with
+  its join state ("Only Kestrel changes the squad."). B or Escape steps back a level (`IArkTabBack`, section 205).
+- **The brass rail** along the foot (136 high): < the squad's name and whose it is >, MAKE, JOIN, DELETE (LEAVE on a
+  joined squad, "Press again" to confirm); the squad's light (Jade, Ruby, Gold) in the middle; Take into MISSION (the
+  padlock while Home's entry is locked) and ARENA on the right. MAKE makes the squad at once (you and two open seats)
+  and opens Rogue One; JOIN projects the friends' squads with an open seat in the middle of the table.
+- **No squad yet:** the words and MAKE SQUAD over the dome.
+- GIVE TO A SEAT (the Artifacts tab) now gives the artifact to the next plate pressed.
+
+`SquadsPage` keeps its data and rules (the squad book, joining, refresh and publish, Take into, the hangar line-up the
+vessel layer reads). Retired with Rev 67's screen: the seat cards' hull renders and nanobot swap (the real hulls stand
+on the pads), the squads row, the picker grid, the Make / Edit bars and their words. `--check` and `--self-test` hold
+the new wiring and the plates' order (three new negative controls). Not run in Unity: the hand test is the "holo table"
+entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+Affects: Shombith's Ark screen (`SquadsPage`, `author_menu_ark.py`, ArkView.prefab).
+
 ## 195. Rev 104 mockups: the Elemental Converter without the cards, showing the player's real crystals (2026-11-13, B picked, built in section 196)
 
 **Asked** (Shombith, 2026-11-13): "The UI cards on top of each screen. I do not like them at all ... The elemental

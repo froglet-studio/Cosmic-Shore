@@ -13,119 +13,121 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Ark's SQUADS tab as THE DECK (Docs/MENU_REDESIGN_B.md section 95; the Rev 31 boards, Shombith 2026-10-27: "go
-    /// with C, the deck"). A squad is three squad mates, each a card: the seat, who flies it, the hull, and the four picks -
-    /// vessel, element, pilot and artifact - with the pilot stepping out of the card.
+    /// The Ark's SQUADS tab as THE HOLO TABLE (Rev 106 B, every setting drawn as Rev 110 B; Shombith 2026-11-13: "B is
+    /// good"; Docs/MENU_REDESIGN_B.md sections 194, 200 and 203). The hangar is the screen: the squad's real vessels stand on
+    /// its pads (<see cref="SquadVesselLayer"/>), and in front of them a dome of light carries the three seats as plates.
     ///
     /// <list type="bullet">
-    /// <item><b>The list</b> (left): the player's squads, made and joined together, at most <see cref="SquadBook.MaxSquads"/>.
-    /// Pressing one shows it and makes it the active squad.</item>
-    /// <item><b>Make squad</b>: the cards step back (<see cref="makeScale"/>) and the picker opens under them. Press a card,
-    /// then its vessel, pilot, element and artifact; a rogue card is an AI wingmate or held open for a friend. CREATE SQUAD
-    /// adds it to the book. EDIT reopens a made squad the same way (SAVE SQUAD). Nothing is saved before that press.</item>
-    /// <item><b>Take into Mission / Arena</b> shows only for a made squad: it makes the squad active, puts the player in their
-    /// card's vessel and pilot, invites the online squad mates to the party and presses the Home hub's entry for that window
-    /// (<see cref="MenuHubButton.Press"/>), so Mission refuses exactly as it does on Home. No Arcade (2026-10-27).</item>
-    /// <item><b>Domain</b>: Jade, Ruby or Gold, the squad's team colour. A change plays the nanobot swap on each card
-    /// (<see cref="SquadNanobotSwap"/>). Only the squad's leader changes it. Take into carries it to the launch panel
-    /// (<see cref="SquadLaunchIntent"/>, <c>ArcadeGameConfigureModal.RestoreRememberedDomain</c>).</item>
-    /// <item><b>Join a friend's squad</b> lists the friends' squads with a seat open.</item>
+    /// <item><b>The plates</b> (<see cref="SquadSeatPlate"/>): each seat's pilot, who flies it, its vessel and element and
+    /// whether they are here, under its own pad. Pressing one raises it and the table projects the seat over it.</item>
+    /// <item><b>The projection</b>: the seat's Vessel, Element, Pilot and Artifact (and who flies a rogue seat), each a line
+    /// that opens only that list in place; a pick writes the squad at once. Under them the seat's one action: CHANGE VESSEL
+    /// on yours, WHO FLIES IT on an open seat, OPEN THE SEAT on an offline friend's. A joined squad is read-only (its
+    /// leader sets the seats).</item>
+    /// <item><b>The rail</b> (the brass rail of the captains' bridges): the squad dial (the player's squads, made and
+    /// joined, at most <see cref="SquadBook.MaxSquads"/>), MAKE (a new squad: you and two open seats), JOIN (friends'
+    /// squads with a seat open, projected over the table), DELETE or LEAVE; the squad's light (Jade, Ruby or Gold, the
+    /// team colour, only its leader changes it); and Take into MISSION or ARENA.</item>
     /// </list>
+    ///
+    /// <para>Take into makes the squad active, puts the player in their seat's vessel and pilot, invites the online squad
+    /// mates to the party and presses the Home hub's entry for that window (<see cref="MenuHubButton.Press"/>), so Mission
+    /// refuses exactly as it does on Home. The squad's domain rides to the launch panel (<see cref="SquadLaunchIntent"/>).</para>
     ///
     /// <para>The squads are the player's <c>SQUAD_DATA</c> record (<see cref="UGSDataService.SquadRepo"/>). Joining rides each
     /// player's PUBLIC squad record (<see cref="SquadDirectory"/>); <see cref="SquadMembership"/> holds the rules.</para>
     ///
     /// <para><b>Pilots are people, artifacts are one of a kind</b> (Garrett 2026-11-07, Docs/Pilots/INVENTORY.md). A slot's
-    /// pilot id names a person in a crew (<see cref="PilotRecord"/>, <c>pilot.callsign.volt#seed</c>) and its artifact id
-    /// one artifact in a hoard (<see cref="ArtifactRecord"/>, <c>artifact.javelin#seed</c>). The pilot picker lists the
-    /// people in the player's crew whose callsign can fly the card's hull, the artifact picker the hoard's artifacts the
-    /// hull can carry, and each writes the record's own id. The catalog still turns any of those ids into the callsign or
-    /// kind asset (portrait, requirement), so the cards draw every slot through it. Only a slot whose ids are the player's
-    /// (<see cref="IdsAreMine"/>: their own card, and the AI or open cards of a squad they made) is also looked up in the
-    /// player's inventory for the person's name and the artifact's name: a friend's card, and every card of a joined squad
-    /// but the player's own, carry their owner's ids, which this player's crew does not hold (and a bare lookup would
-    /// wrongly find the player's own person on the same callsign).</para>
-    ///
-    /// <para>A slot saved before 2026-11-07 holds a bare callsign or kind id until <see cref="AccountInventory.AdoptSquads"/>
-    /// rewrites it; the picker lights the person or artifact it resolves to (<see cref="PilotLoadoutStore.TryGetPilot"/>,
-    /// <see cref="PilotLoadoutStore.TryGetArtifact"/>), and opening the picker adopts the draft's own cards.</para>
+    /// pilot id names a person in a crew (<see cref="PilotRecord"/>) and its artifact id one artifact in a hoard
+    /// (<see cref="ArtifactRecord"/>). The pilot list offers the people in the player's crew whose callsign can fly the
+    /// seat's hull, the artifact list the hoard's artifacts the hull can carry. Only a slot whose ids are the player's
+    /// (<see cref="IdsAreMine"/>: their own seat, and the AI or open seats of a squad they made) is looked up in the
+    /// player's inventory; a friend's seat is drawn through the catalog only.</para>
     /// </summary>
-    public class SquadsPage : MonoBehaviour, IArkTabPage
+    public class SquadsPage : MonoBehaviour, IArkTabPage, IArkTabBack
     {
-        enum Mode { None = 0, View = 1, Make = 2 }
+        enum Pick { None = 0, Who = 1, Vessel = 2, Element = 3, Pilot = 4, Artifact = 5 }
 
         [Header("Content")]
-        [Tooltip("The vessels a squad card can fly (the Hangar's list); locked ones are skipped.")]
+        [Tooltip("The vessels a seat can fly (the Hangar's list); locked ones are skipped.")]
         [SerializeField] private SO_VesselList vessels;
         [Tooltip("Pilots and artifacts. Empty loads the one in Resources.")]
         [SerializeField] private PilotArtifactCatalogSO catalog;
-        [Tooltip("The hull renders the cards and the vessel tiles show (the Hangar's card art); the vessel's icon without one.")]
-        [SerializeField] private HangarCardArtSO cardArt;
         [Tooltip("The domains' colours (SO_ColorSet.GetDomainSignalColor).")]
         [SerializeField] private SO_ColorSet colors;
 
-        [Header("List")]
-        [SerializeField] private SquadRowView[] squadRows = new SquadRowView[SquadBook.MaxSquads];
-        [SerializeField] private KitText countText;
+        [Header("The rail")]
+        [SerializeField] private KitButton prevSquadButton;
+        [SerializeField] private KitButton nextSquadButton;
+        [SerializeField] private TMP_Text squadNameText;
+        [Tooltip("Whose squad it is, under its name.")]
+        [SerializeField] private TMP_Text whoseText;
         [SerializeField] private KitButton newButton;
         [SerializeField] private KitButton joinButton;
-
-        [Header("Header")]
-        [Tooltip("The squad's kicker, name and line, and the domain chips. Hidden while the player is in no squad.")]
-        [SerializeField] private CanvasGroup headerGroup;
-        [SerializeField] private TMP_Text kickerText;
-        [SerializeField] private TMP_Text squadNameText;
-        [SerializeField] private TMP_Text squadLineText;
-        [Tooltip("One chip per domain, in the order of Domain Order.")]
-        [SerializeField] private SquadPickChip[] domainChips = new SquadPickChip[3];
-        [SerializeField] private Domains[] domainOrder = { Domains.Jade, Domains.Ruby, Domains.Gold };
-
-        [Header("Deck")]
-        [Tooltip("The three cards' parent: scaled down while Make squad's picker is open.")]
-        [SerializeField] private RectTransform deckRoot;
-        [SerializeField, Range(0.5f, 1f)] private float makeScale = 0.8f;
-        [Tooltip("Leader, Rogue One, Rogue Two.")]
-        [SerializeField] private SquadMateCard[] mateCards = new SquadMateCard[SavedSquad.SlotCount];
-        [Tooltip("Shown while the player is in no squad.")]
-        [SerializeField] private CanvasGroup emptyGroup;
-        [SerializeField] private KitButton emptyMakeButton;
-        [Tooltip("Seconds between one card's nanobot swap and the next's.")]
-        [SerializeField, Min(0f)] private float swapStagger = 0.14f;
-
-        [Header("Picker (Make squad)")]
-        [SerializeField] private CanvasGroup pickerGroup;
-        [SerializeField] private SquadPickChip[] vesselTiles = new SquadPickChip[7];
-        [SerializeField] private KitButton vesselPrevButton;
-        [SerializeField] private KitButton vesselNextButton;
-        [Tooltip("Chip 0 is the empty seat; the rest page through the callsign pilots.")]
-        [SerializeField] private SquadPickChip[] pilotChips = new SquadPickChip[5];
-        [SerializeField] private KitButton pilotPrevButton;
-        [SerializeField] private KitButton pilotNextButton;
-        [Tooltip("AI wingmate / Open for a friend; shown for a rogue card.")]
-        [SerializeField] private CanvasGroup seatModeGroup;
-        [SerializeField] private SquadPickChip[] seatModeChips = new SquadPickChip[2];
-        [SerializeField] private SquadPickChip[] elementChips = new SquadPickChip[4];
-        [SerializeField] private SquadPickChip[] artifactChips = new SquadPickChip[8];
-
-        [Header("Bars")]
-        [SerializeField] private CanvasGroup makeBarGroup;
-        [SerializeField] private KitButton cancelButton;
-        [SerializeField] private KitButton createButton;
-        [SerializeField] private TMP_Text createLabel;
-        [SerializeField] private CanvasGroup viewBarGroup;
         [SerializeField] private KitButton removeButton;
         [SerializeField] private TMP_Text removeLabel;
-        [SerializeField] private KitButton editButton;
+        [Tooltip("The squad's light: one per domain, in the order of Domain Order.")]
+        [SerializeField] private SquadPickChip[] domainChips = new SquadPickChip[3];
+        [SerializeField] private Domains[] domainOrder = { Domains.Jade, Domains.Ruby, Domains.Gold };
+        [Tooltip("The rail's squad controls (the light, delete, take into): hidden while the player is in no squad.")]
+        [SerializeField] private CanvasGroup squadGroup;
         [SerializeField] private KitButton missionButton;
         [Tooltip("The padlock on Mission while Home's Mission entry is not open.")]
         [SerializeField] private Graphic missionLock;
         [SerializeField] private KitButton arenaButton;
 
-        [Header("Join")]
+        [Header("The table")]
+        [Tooltip("Lit in the squad's domain colour, each keeping its own alpha: the dome, its rim and the projection's light.")]
+        [SerializeField] private Graphic[] domainLit = { };
+        [Tooltip("Leader, Rogue One, Rogue Two: each under its own pad (Rogue One left, the leader in the middle, Rogue Two right).")]
+        [SerializeField] private SquadSeatPlate[] plates = new SquadSeatPlate[SavedSquad.SlotCount];
+        [Tooltip("Shown while the player is in no squad.")]
+        [SerializeField] private CanvasGroup emptyGroup;
+        [SerializeField] private KitButton emptyMakeButton;
+
+        [Header("The projection")]
+        [Tooltip("What the table projects over the picked plate: the seat, one of its lists, or the friends' squads.")]
+        [SerializeField] private CanvasGroup projectionGroup;
+        [Tooltip("Moved across to stand over the picked plate (the join list stands in the middle); its height follows what it shows.")]
+        [SerializeField] private RectTransform projectionRoot;
+        [SerializeField] private TMP_Text projectionTitle;
+        [Tooltip("Back from a list to the seat, or closes the join list.")]
+        [SerializeField] private KitButton backButton;
+        [Tooltip("Who flies it, Vessel, Element, Pilot, Artifact: a line each (the label is its value, the line its name).")]
+        [SerializeField] private SquadPickChip[] tiles = new SquadPickChip[5];
+        [Tooltip("The chevron on each line: hidden on a seat this player cannot change.")]
+        [SerializeField] private Graphic[] tileChevrons = new Graphic[5];
+        [SerializeField] private KitButton actionButton;
+        [SerializeField] private TMP_Text actionLabel;
+        [Tooltip("Under a joined squad's seat: who sets it.")]
+        [SerializeField] private TMP_Text readOnlyText;
+        [Tooltip("A list's words: vessels, elements, artifacts, who flies it.")]
+        [SerializeField] private CanvasGroup choicesGroup;
+        [SerializeField] private SquadPickChip[] choiceChips = new SquadPickChip[12];
+        [Tooltip("The pilot list: the crew's faces and names.")]
+        [SerializeField] private CanvasGroup pilotChoicesGroup;
+        [SerializeField] private SquadPickChip[] pilotChips = new SquadPickChip[8];
+        [SerializeField] private KitButton choicePrevButton;
+        [SerializeField] private KitButton choiceNextButton;
+        [Tooltip("One line under a list on what the pick changes.")]
+        [SerializeField] private TMP_Text choiceHintText;
+        [Tooltip("The friends' squads with an open seat.")]
         [SerializeField] private CanvasGroup joinGroup;
         [SerializeField] private SquadRowView[] joinRows = { };
         [SerializeField] private KitText joinStatusText;
-        [SerializeField] private KitButton joinCloseButton;
+
+        [Header("The projection's layout (reference pixels)")]
+        [Tooltip("Top of the first line under the title.")]
+        [SerializeField] private float projectionHead = 46f;
+        [Tooltip("One line's step down.")]
+        [SerializeField] private float tileStep = 46f;
+        [SerializeField] private float actionHeight = 44f;
+        [SerializeField] private float readOnlyHeight = 44f;
+        [SerializeField] private float projectionPad = 18f;
+        [Tooltip("The panel's height while it shows a list of words / of pilots / the friends' squads.")]
+        [SerializeField] private float choicesHeight = 380f;
+        [SerializeField] private float pilotChoicesHeight = 330f;
+        [SerializeField] private float joinHeight = 330f;
 
         [Header("Timing")]
         [Tooltip("Seconds between two reads of the friends' squad records.")]
@@ -140,70 +142,79 @@ namespace CosmicShore.UI
         [SerializeField] private Domains newSquadDomain = Domains.Gold;
 
         [Header("Words (empty shows nothing)")]
-        [Tooltip("{count} squads of {max}.")]
-        [SerializeField] private string countLine = "{count} of {max}";
-        [SerializeField] private string madeLine = "Yours";
-        [Tooltip("{open} is how many seats are open.")]
-        [SerializeField] private string madeOpenLine = "Yours - {open} seat open";
-        [SerializeField] private string madeFullLine = "Yours - every seat filled";
-        [Tooltip("A joined squad's row; {owner} is filled in.")]
-        [SerializeField] private string joinedLine = "{owner}'s squad - joined";
-        [SerializeField] private string makingLine = "Making...";
-        [SerializeField] private string ownKicker = "Your squad - you lead";
-        [Tooltip("{owner} and {seat}.")]
-        [SerializeField] private string joinedKicker = "{owner}'s squad - you fly {seat}";
-        [SerializeField] private string makeKicker = "Make squad";
-        [SerializeField] private string editKicker = "Edit squad";
+        [SerializeField] private string ownWhose = "Your squad";
+        [Tooltip("A joined squad; {owner} is filled in.")]
+        [SerializeField] private string joinedWhose = "{owner}'s squad - joined";
         [Tooltip("Toast when GIVE TO A SEAT brings an artifact here ({artifact} = its name): the next seat picked carries it.")]
-        [SerializeField] private string giveHintToast = "Pick the seat that carries {artifact}, then save.";
+        [SerializeField] private string giveHintToast = "Pick the seat that carries {artifact}.";
         [Tooltip("Toast when the picked seat takes the artifact ({artifact}, {seat}).")]
         [SerializeField] private string givenToast = "{seat} carries {artifact}.";
         [Tooltip("Toast when OPEN THE SEAT opens an offline friend's seat ({seat} = the seat's name). Empty shows none.")]
         [SerializeField] private string seatOpenedToast = "{seat} is open: the pad stands empty until someone takes it.";
-        [Tooltip("{open} is how many seats are open.")]
-        [SerializeField] private string ownOpenDetail = "{open} seat open for a friend.";
-        [SerializeField] private string ownFullDetail = "Every seat is filled.";
-        [SerializeField] private string makeDetail = "Pick a card to edit it.";
-        [Tooltip("For a joined squad, by its state; {owner} is filled in.")]
+        [Tooltip("Under a joined squad's seat, by its state; {owner} is filled in.")]
         [SerializeField] private string seatedLine = "Only {owner} changes the squad.";
         [SerializeField] private string pendingLine = "Joined. {owner} seats you when they next open the Ark.";
         [SerializeField] private string seatLostLine = "{owner} gave your seat to someone else. Leave the squad, or ask them to open it again.";
         [SerializeField] private string disbandedLine = "{owner} deleted this squad.";
         [SerializeField] private string offlineLine = "Offline - showing the last copy of {owner}'s squad.";
         [SerializeField] private string[] seatNames = { "Leader", "Rogue One", "Rogue Two" };
-        [Tooltip("The card's number; {n} is its seat, 1 to 3.")]
-        [SerializeField] private string numberLine = "0{n} / 03";
         [SerializeField] private string youLine = "You";
         [SerializeField] private string aiLine = "AI wingmate";
         [SerializeField] private string openLine = "Open seat";
         [SerializeField] private string unknownFriendLine = "A friend";
         [SerializeField] private string aiModeLabel = "AI wingmate";
         [SerializeField] private string openModeLabel = "Open for a friend";
+        [Tooltip("A plate's second line: {vessel} and {element}.")]
+        [SerializeField] private string plateLine = "{vessel} - {element}";
+        [Tooltip("An open seat's plate in a squad the player leads.")]
+        [SerializeField] private string openPlateLine = "Pick who flies it";
+        [Tooltip("An open seat's plate in a joined squad.")]
+        [SerializeField] private string openPlateJoinedLine = "Anyone in the squad can take it";
+        [Tooltip("The projected seat's title: {who} and {state}.")]
+        [SerializeField] private string seatTitle = "{who} - {state}";
+        [SerializeField] private string onlineState = "Online";
+        [SerializeField] private string offlineState = "Offline";
+        [SerializeField] private string openState = "Open";
+        [Tooltip("A list's title; {list} is its name.")]
+        [SerializeField] private string pickTitle = "Pick - {list}";
+        [Tooltip("The lines' names: Who flies it, Vessel, Element, Pilot, Artifact.")]
+        [SerializeField] private string[] tileNames = { "Who flies it", "Vessel", "Element", "Pilot", "Artifact" };
+        [Tooltip("One line under each list: Who flies it, Vessel, Element, Pilot, Artifact.")]
+        [SerializeField] private string[] choiceHints =
+        {
+            "An AI wingmate flies the seat now; a friend who joins takes it from them.",
+            "The seat's pad in the hangar changes to the vessel you pick.",
+            "The vessel's element: which of its four abilities it leads with.",
+            "The pilot's callsign biases how an AI flies this seat.",
+            "Carried into the match; None leaves the slot empty.",
+        };
+        [SerializeField] private string changeVesselWord = "Change vessel";
+        [SerializeField] private string whoFliesWord = "Who flies it";
+        [SerializeField] private string openSeatWord = "Open the seat";
+        [SerializeField] private string joinTitle = "Friends' squads with an open seat";
         [Tooltip("Element names, by Element value (None, Charge, Mass, Space, Time, Omni).")]
         [SerializeField] private string[] elementNames = { "", "Charge", "Mass", "Space", "Time", "Omni" };
         [Tooltip("Domain names, by Domains value (-, Jade, Ruby, Blue, Gold).")]
         [SerializeField] private string[] domainNames = { "", "Jade", "Ruby", "Blue", "Gold" };
-        [Tooltip("A squad card's pilot word when the catalog offers its vessel no pilot at all.")]
+        [Tooltip("A seat's pilot word when the catalog offers its vessel no pilot at all.")]
         [SerializeField] private string basePilotLine = "No pilot";
-        [Tooltip("A pilot's line in the picker; {sight} is what its callsign lights on LB (CallsignSetSO), {callsign} its callsign word, {species} the person's animals.")]
-        [SerializeField] private string pilotDetail = "{sight}";
         [Tooltip("A pilot chip's word: {name} is the person, {callsign} the callsign word (VOLT).")]
         [SerializeField] private string pilotChipWord = "{name} - {callsign}";
+        [Tooltip("A pilot chip's second line; {sight} is what its callsign lights on LB, {callsign} its word, {species} the person's animals.")]
+        [SerializeField] private string pilotDetail = "{sight}";
         [Tooltip("An artifact chip's word is the artifact's name, cut at a word to at most this many characters.")]
         [SerializeField, Min(4)] private int artifactChipChars = 16;
         [SerializeField] private string noArtifactLine = "No artifact";
         [SerializeField] private string noArtifactChip = "None";
-        [SerializeField] private string createWord = "Create squad";
-        [SerializeField] private string saveWord = "Save squad";
         [SerializeField] private string deleteLabel = "Delete";
         [SerializeField] private string leaveLabel = "Leave";
         [SerializeField] private string confirmLabel = "Press again";
         [Tooltip("A new squad's name; {n} is its number. Empty names it \"Squad N\".")]
         [SerializeField] private string newSquadName = "";
         [SerializeField] private string fullLine = "You are in 4 squads. Leave or delete one first.";
-        [Tooltip("Toast after Create squad; {squad} is filled in.")]
-        [SerializeField] private string createdToast = "{squad} made. Take it into a mission or the arena.";
-        [Tooltip("A domain press on a joined squad; {owner} is filled in.")]
+        [Tooltip("Toast after MAKE; {squad} is filled in.")]
+        [SerializeField] private string createdToast = "{squad}: you, and two open seats.";
+        [Tooltip("A press that changes a joined squad; {owner} is filled in.")]
         [SerializeField] private string notLeaderLine = "Only {owner} changes the squad.";
         [SerializeField] private string joinLookingLine = "Looking at your friends' squads...";
         [SerializeField] private string joinNoneLine = "No friend has a seat open right now.";
@@ -228,7 +239,7 @@ namespace CosmicShore.UI
         readonly Dictionary<string, SquadJoinState> _joinStates = new();
         readonly List<(string ownerId, string ownerName, SavedSquad squad)> _offers = new();
         readonly List<SO_Vessel> _offered = new();
-        // The picker's offers: crew people with their callsign assets (index for index), and hoard artifacts. Read into these on each draw (no allocation per draw).
+        // The lists' offers: crew people with their callsign assets (index for index), and hoard artifacts. Read into these on each draw (no allocation per draw).
         readonly List<PilotRecord> _crew = new();
         readonly List<PilotRecord> _pilots = new();
         readonly List<PilotSO> _pilotCallsigns = new();
@@ -237,11 +248,12 @@ namespace CosmicShore.UI
         readonly List<string> _slotted = new();
         readonly Dictionary<ScreenSwitcher.ModalWindows, MenuHubButton> _hubs = new();
 
-        Mode _mode = Mode.None;
-        SavedSquad _draft;
-        int _editIndex = -1, _selected, _seat, _vesselPage, _pilotPage;
+        // The seat projected (-1: none), the list open on it, and the list's page.
+        int _selected, _seat = -1, _page;
+        Pick _pick;
         bool _shown, _refreshing, _joinOpen, _loadingOffers;
         float _lastRefresh = float.NegativeInfinity, _publishAt = -1f, _confirmUntil = -1f;
+        string _giveArtifactId, _giveArtifactName;
 
         SquadBook Book => _data != null && _data.SquadRepo?.Data?.Book != null ? _data.SquadRepo.Data.Book : _offlineBook;
 
@@ -251,45 +263,32 @@ namespace CosmicShore.UI
         void Awake()
         {
             if (!catalog) catalog = PilotArtifactCatalogSO.Load();
-            for (int i = 0; i < squadRows.Length; i++)
-            {
-                int index = i;
-                if (squadRows[i] && squadRows[i].Button) squadRows[i].Button.onClick.AddListener(() => Select(index));
-            }
             for (int i = 0; i < joinRows.Length; i++)
             {
                 int index = i;
                 if (joinRows[i] && joinRows[i].Button) joinRows[i].Button.onClick.AddListener(() => JoinOffer(index));
             }
-            for (int i = 0; i < mateCards.Length; i++)
+            for (int i = 0; i < plates.Length; i++)
             {
                 int seat = i;
-                if (!mateCards[i]) continue;
-                mateCards[i].Pressed += () => PickSeat(seat);
-                mateCards[i].ChangeVesselPressed += () => ChangeVessel(seat);
-                mateCards[i].OpenSeatPressed += () => OpenSeat(seat);
+                if (plates[i] && plates[i].Button) plates[i].Button.onClick.AddListener(() => PressPlate(seat));
             }
             Hook(domainChips, PickDomain);
-            Hook(vesselTiles, PickVessel);
-            Hook(pilotChips, PickPilot);
-            Hook(seatModeChips, PickSeatMode);
-            Hook(elementChips, PickElement);
-            Hook(artifactChips, PickArtifact);
+            Hook(tiles, PressTile);
+            Hook(choiceChips, PickChoice);
+            Hook(pilotChips, PickPilotChip);
+            Listen(prevSquadButton, () => StepSquad(-1));
+            Listen(nextSquadButton, () => StepSquad(1));
             Listen(newButton, Make);
             Listen(emptyMakeButton, Make);
-            Listen(joinButton, OpenJoin);
-            Listen(joinCloseButton, CloseJoin);
-            Listen(vesselPrevButton, () => PageVessels(-1));
-            Listen(vesselNextButton, () => PageVessels(1));
-            Listen(pilotPrevButton, () => PagePilots(-1));
-            Listen(pilotNextButton, () => PagePilots(1));
-            Listen(cancelButton, Cancel);
-            Listen(createButton, Create);
+            Listen(joinButton, ToggleJoin);
+            Listen(backButton, Back);
+            Listen(actionButton, Act);
+            Listen(choicePrevButton, () => PageChoices(-1));
+            Listen(choiceNextButton, () => PageChoices(1));
             Listen(removeButton, Remove);
-            Listen(editButton, Edit);
             Listen(missionButton, () => Play(ScreenSwitcher.ModalWindows.MISSION));
             Listen(arenaButton, () => Play(ScreenSwitcher.ModalWindows.ARENA));
-            if (joinGroup) KitVisibility.SetShown(joinGroup, false);
         }
 
         static void Hook(SquadPickChip[] chips, System.Action<int> pick)
@@ -311,14 +310,12 @@ namespace CosmicShore.UI
             _shown = shown;
             if (!shown)
             {
-                CloseJoin();
+                _joinOpen = false;
+                _seat = -1;
+                _pick = Pick.None;
                 return;
             }
-            if (_mode != Mode.Make)
-            {
-                _selected = Mathf.Clamp(Book.ActiveIndex, 0, Mathf.Max(0, Book.Squads.Count - 1));
-                _mode = Book.Squads.Count > 0 ? Mode.View : Mode.None;
-            }
+            _selected = Mathf.Clamp(Book.ActiveIndex, 0, Mathf.Max(0, Book.Squads.Count - 1));
             Draw(snapDomain: true);
             RefreshAsync(force: false).Forget();
         }
@@ -335,26 +332,35 @@ namespace CosmicShore.UI
             if (_confirmUntil >= 0f && now >= _confirmUntil)
             {
                 _confirmUntil = -1f;
-                DrawBars();
+                DrawRail(Selected());
             }
         }
 
-        // ---- the list ----
+        // ---- the squad dial ----
 
         void Select(int index)
         {
             if (index < 0 || index >= Book.Squads.Count) return;
-            _mode = Mode.View;
-            _draft = null;
             _selected = index;
+            _seat = -1;
+            _pick = Pick.None;
+            _joinOpen = false;
             _confirmUntil = -1f;
-            CloseJoin();
             if (Book.TrySetActive(index)) Saved(publish: false);
             Draw(snapDomain: true);
         }
 
-        // ---- make / edit ----
+        void StepSquad(int step)
+        {
+            int n = Book.Squads.Count;
+            if (n == 0) return;
+            Select(((_selected + step) % n + n) % n);
+        }
 
+        // ---- make / delete ----
+
+        /// <summary>MAKE: a new squad at once - you in the leader's seat on your last hull, and two open seats - and the
+        /// table opens on Rogue One so its rider can be picked.</summary>
         void Make()
         {
             if (!Book.CanAdd())
@@ -362,78 +368,28 @@ namespace CosmicShore.UI
                 Refuse(fullLine);
                 return;
             }
-            CloseJoin();
             var mine = MyDefaultLoadout();
             Offered();
-            SquadSlot Rogue(int n, SquadSeat seat)
+            SquadSlot Rogue(int n)
             {
                 var v = _offered.Count > 0 ? _offered[(Mathf.Max(0, _offered.IndexOf(Vessel(mine.Vessel))) + n) % _offered.Count] : null;
-                return new SquadSlot(v ? v.Class : mine.Vessel, ElementOf(v, ElementCycle[n % ElementCycle.Length])).WithSeat(seat);
+                return new SquadSlot(v ? v.Class : mine.Vessel, ElementOf(v, ElementCycle[n % ElementCycle.Length])).WithSeat(SquadSeat.Open);
             }
-            string name = string.IsNullOrEmpty(newSquadName) ? null
-                : TemplateText.Fill(newSquadName, "n", (Book.Squads.Count + 1).ToString());
-            _draft = new SavedSquad(SquadBook.SanitizeName(name, Book.Squads.Count), mine.WithMember(MyId, MyName),
-                Rogue(1, SquadSeat.Open), Rogue(2, SquadSeat.Ai)) { Domain = newSquadDomain };
-            _editIndex = -1;
-            EnterMake();
-        }
-
-        void Edit()
-        {
-            var squad = Selected();
-            if (squad == null) return;
-            if (squad.IsJoined())
-            {
-                Refuse(TemplateText.Fill(notLeaderLine, "owner", OwnerName(squad)));
-                return;
-            }
-            _draft = SquadMembership.Copy(squad);
-            _editIndex = _selected;
-            EnterMake();
-        }
-
-        void EnterMake()
-        {
-            _mode = Mode.Make;
-            _seat = 0;
-            FillPilots(_draft);
-            ShowVesselPageOf(_draft.Leader.Vessel);
-            ShowPilotPageOf(_draft.Leader);
-            Draw(snapDomain: true);
-        }
-
-        void Cancel()
-        {
-            _draft = null;
-            _mode = Book.Squads.Count > 0 ? Mode.View : Mode.None;
-            Draw(snapDomain: true);
-        }
-
-        void Create()
-        {
-            if (_draft == null) return;
             var book = Book;
-            if (_editIndex >= 0 && _editIndex < book.Squads.Count)
-            {
-                book.Squads[_editIndex] = _draft;
-                _selected = _editIndex;
-            }
-            else
-            {
-                if (!book.CanAdd())
-                {
-                    Refuse(fullLine);
-                    return;
-                }
-                book.Add(_draft);
-                _selected = book.Squads.Count - 1;
-                if (!string.IsNullOrWhiteSpace(createdToast))
-                    ToastNotificationAPI.Show(TemplateText.Fill(createdToast, "squad", _draft.Name), ToastKind.Success);
-            }
+            string name = string.IsNullOrEmpty(newSquadName) ? null
+                : TemplateText.Fill(newSquadName, "n", (book.Squads.Count + 1).ToString());
+            var squad = new SavedSquad(SquadBook.SanitizeName(name, book.Squads.Count), mine.WithMember(MyId, MyName),
+                Rogue(1), Rogue(2)) { Domain = newSquadDomain };
+            FillPilots(squad);
+            book.Add(squad);
+            _selected = book.Squads.Count - 1;
             book.TrySetActive(_selected);
-            _draft = null;
-            _mode = Mode.View;
             Saved(publish: true);
+            if (!string.IsNullOrWhiteSpace(createdToast))
+                ToastNotificationAPI.Show(TemplateText.Fill(createdToast, "squad", squad.Name), ToastKind.Success);
+            _joinOpen = false;
+            _seat = 1;
+            _pick = Pick.None;
             Draw(snapDomain: true);
         }
 
@@ -445,34 +401,102 @@ namespace CosmicShore.UI
             if (_confirmUntil < 0f || now > _confirmUntil)
             {
                 _confirmUntil = now + confirmSeconds;
-                DrawBars();
+                DrawRail(squad);
                 return;
             }
             _confirmUntil = -1f;
             _joinStates.Remove(squad.Id);
             Book.RemoveAt(_selected);
             _selected = Mathf.Clamp(Book.ActiveIndex, 0, Mathf.Max(0, Book.Squads.Count - 1));
-            _mode = Book.Squads.Count > 0 ? Mode.View : Mode.None;
+            _seat = -1;
+            _pick = Pick.None;
             Saved(publish: true);
             Draw(snapDomain: true);
         }
 
-        /// <summary>CHANGE VESSEL on your card: the squad's editor opens on your seat, on the vessel picker's page of your
-        /// vessel (a joined squad is the leader's to edit).</summary>
-        void ChangeVessel(int seat)
+        // ---- the table ----
+
+        void PressPlate(int seat)
         {
             var squad = Selected();
-            if (_mode != Mode.View || squad == null || !IsMySeat(squad, seat)) return;
-            Edit();
-            if (_mode == Mode.Make) PickSeat(seat);
+            if (squad == null) return;
+            _joinOpen = false;
+            if (!string.IsNullOrEmpty(_giveArtifactId))
+            {
+                Give(squad, seat);
+                return;
+            }
+            _seat = _seat == seat ? -1 : seat;
+            _pick = Pick.None;
+            Draw();
         }
 
-        /// <summary>OPEN THE SEAT on an offline friend's card in a squad you lead: the seat opens (its picks kept), its pad
-        /// stands empty, and the first friend who joins takes it.</summary>
-        void OpenSeat(int seat)
+        /// <summary>A line on the projected seat: opens its list on the page of the seat's own pick.</summary>
+        void PressTile(int tile)
         {
             var squad = Selected();
-            if (_mode != Mode.View || squad == null || squad.IsJoined() || seat == 0) return;
+            if (squad == null || _seat < 0) return;
+            if (!Editable(squad, _seat))
+            {
+                Refuse(TemplateText.Fill(notLeaderLine, "owner", OwnerName(squad)));
+                return;
+            }
+            Open((Pick)(tile + 1));
+        }
+
+        void Open(Pick pick)
+        {
+            _pick = pick;
+            _page = PageOfCurrent();
+            Draw();
+        }
+
+        /// <summary>B / Escape (ArkTabsView): a list back to its seat, the seat or the join list back to the table.</summary>
+        public bool TryBack()
+        {
+            if (!_joinOpen && _pick == Pick.None && _seat < 0) return false;
+            Back();
+            return true;
+        }
+
+        void Back()
+        {
+            if (_joinOpen) _joinOpen = false;
+            else if (_pick != Pick.None) _pick = Pick.None;
+            else _seat = -1;
+            Draw();
+        }
+
+        /// <summary>The seat's one action: CHANGE VESSEL on yours, WHO FLIES IT on an open seat, OPEN THE SEAT on an offline
+        /// friend's in a squad you lead.</summary>
+        void Act()
+        {
+            var squad = Selected();
+            if (squad == null || _seat < 0) return;
+            switch (ActionOf(squad, _seat))
+            {
+                case 1: Open(Pick.Vessel); break;
+                case 2: Open(Pick.Who); break;
+                case 3: OpenSeat(squad, _seat); break;
+            }
+        }
+
+        /// <summary>0 none, 1 change vessel, 2 who flies it, 3 open the seat.</summary>
+        int ActionOf(SavedSquad squad, int seat)
+        {
+            if (squad.IsJoined()) return 0;
+            var slot = squad.GetSlot(seat);
+            if (IsMySeat(squad, seat)) return 1;
+            if (slot.IsOpen()) return 2;
+            if (seat > 0 && slot.IsPlayer() && !OnlineFriend(slot.MemberId)) return 3;
+            return 0;
+        }
+
+        /// <summary>OPEN THE SEAT on an offline friend's seat in a squad you lead: the seat opens (its picks kept), its pad
+        /// stands empty, and the first friend who joins takes it.</summary>
+        void OpenSeat(SavedSquad squad, int seat)
+        {
+            if (squad.IsJoined() || seat == 0) return;
             var slot = squad.GetSlot(seat);
             if (!slot.IsPlayer() || OnlineFriend(slot.MemberId)) return;
             squad.SetSlot(seat, slot.WithSeat(SquadSeat.Open));
@@ -482,176 +506,163 @@ namespace CosmicShore.UI
             Draw();
         }
 
-        void PickSeat(int seat)
-        {
-            if (_mode != Mode.Make || !CanEdit(_draft, seat)) return;
-            _seat = seat;
-            ShowVesselPageOf(_draft.GetSlot(seat).Vessel);
-            ShowPilotPageOf(_draft.GetSlot(seat));
-            if (!string.IsNullOrEmpty(_giveArtifactId))
-            {
-                // GIVE TO A SEAT: the seat picked carries the artifact (it leaves any other card that carried it).
-                string id = _giveArtifactId, name = _giveArtifactName;
-                _giveArtifactId = null;
-                EditSlot(s => { s.ArtifactId = id; return s; });
-                if (!string.IsNullOrWhiteSpace(givenToast))
-                    ToastNotificationAPI.Show(TemplateText.Fill(givenToast, "seat", SeatName(seat), "artifact", name), ToastKind.Success);
-                return;
-            }
-            Draw();
-        }
-
-        string _giveArtifactId, _giveArtifactName;
-
         /// <summary>
-        /// GIVE TO A SEAT (the Artifacts tab): the selected squad's editor opens and the next seat picked carries
-        /// <paramref name="artifactId"/>; saving keeps it, as any edit. A joined squad is the leader's to change. False when
-        /// it cannot start (no squad, a joined one).
+        /// GIVE TO A SEAT (the Artifacts tab): the next seat pressed on the table carries <paramref name="artifactId"/> (it
+        /// leaves any other seat that carried it). A joined squad is the leader's to change. False when it cannot start (no
+        /// squad, a joined one).
         /// </summary>
         public bool BeginGive(string artifactId, string artifactName)
         {
-            if (string.IsNullOrEmpty(artifactId)) return false;
-            if (_mode != Mode.Make)
+            var squad = Selected();
+            if (string.IsNullOrEmpty(artifactId) || squad == null) return false;
+            if (squad.IsJoined())
             {
-                if (Selected() == null) return false;
-                Edit();
-                if (_mode != Mode.Make) return false;
+                Refuse(TemplateText.Fill(notLeaderLine, "owner", OwnerName(squad)));
+                return false;
             }
             _giveArtifactId = artifactId;
             _giveArtifactName = artifactName;
+            _seat = -1;
+            _pick = Pick.None;
+            _joinOpen = false;
             if (!string.IsNullOrWhiteSpace(giveHintToast))
                 ToastNotificationAPI.Show(TemplateText.Fill(giveHintToast, "artifact", artifactName), ToastKind.Goal);
+            if (_shown) Draw();
             return true;
         }
 
-        void EditSlot(System.Func<SquadSlot, SquadSlot> change)
+        void Give(SavedSquad squad, int seat)
         {
-            if (_mode != Mode.Make || _draft == null) return;
-            string previousPilot = _draft.GetSlot(_seat).PilotId;
-            _draft.SetSlot(_seat, change(_draft.GetSlot(_seat)));
+            if (!Editable(squad, seat))
+            {
+                Refuse(TemplateText.Fill(notLeaderLine, "owner", OwnerName(squad)));
+                return;
+            }
+            string id = _giveArtifactId, name = _giveArtifactName;
+            _giveArtifactId = null;
+            _seat = seat;
+            _pick = Pick.None;
+            EditSlot(squad, seat, s => { s.ArtifactId = id; return s; });
+            if (!string.IsNullOrWhiteSpace(givenToast))
+                ToastNotificationAPI.Show(TemplateText.Fill(givenToast, "seat", SeatName(seat), "artifact", name), ToastKind.Success);
+        }
+
+        /// <summary>A seat this player changes here: their own seat, and the AI or open seats, of a squad they lead.</summary>
+        static bool Editable(SavedSquad squad, int seat) => squad != null && !squad.IsJoined() && CanEdit(squad, seat);
+
+        /// <summary>Writes the seat and saves the squad: every pick on the table is kept at once.</summary>
+        void EditSlot(SavedSquad squad, int seat, System.Func<SquadSlot, SquadSlot> change)
+        {
+            if (!Editable(squad, seat)) return;
+            string previousPilot = squad.GetSlot(seat).PilotId;
+            squad.SetSlot(seat, change(squad.GetSlot(seat)));
             // Each vessel has its own pilot and artifact: one moved onto this vessel leaves the others (the pilot swaps).
-            _draft.KeepCardsOwn(_seat, previousPilot);
-            FillPilots(_draft);
+            squad.KeepCardsOwn(seat, previousPilot);
+            FillPilots(squad);
+            Saved(publish: true);
             Draw();
         }
 
-        void PickVessel(int tile)
+        // ---- the lists ----
+
+        int PerPage => _pick == Pick.Pilot ? Mathf.Max(1, pilotChips.Length) : Mathf.Max(1, choiceChips.Length);
+
+        /// <summary>How many choices the open list has (the artifact list's first is None).</summary>
+        int ChoiceCount(SquadSlot slot)
         {
-            int index = _vesselPage * vesselTiles.Length + tile;
-            if (index < 0 || index >= _offered.Count) return;
-            var v = _offered[index];
-            bool mine = IsMySeat(_draft, _seat);
-            EditSlot(s =>
+            switch (_pick)
             {
-                var moved = s.WithVessel(v.Class);
-                // The player's own card starts on the person they keep in that vessel's Hangar seat (a crew id).
-                if (mine) moved.PilotId = PilotLoadoutStore.GetPilot(v.Class);
-                return moved;
-            });
-        }
-
-        void PageVessels(int step)
-        {
-            int pages = Mathf.Max(1, Mathf.CeilToInt(_offered.Count / (float)Mathf.Max(1, vesselTiles.Length)));
-            _vesselPage = (_vesselPage + step + pages) % pages;
-            DrawPicker();
-        }
-
-        void ShowVesselPageOf(VesselClassType cls)
-        {
-            Offered();
-            int at = _offered.FindIndex(v => v.Class == cls);
-            _vesselPage = at < 0 ? 0 : at / Mathf.Max(1, vesselTiles.Length);
-        }
-
-        int PilotsPerPage => Mathf.Max(1, pilotChips.Length);
-
-        readonly List<string> _pilotIds = new();
-
-        /// <summary>
-        /// Every vessel needs a pilot: a slot with none (or one another slot flies) takes the next free person of the
-        /// crew, in crew order. First the cards whose ids are the player's are adopted: a legacy callsign id becomes the
-        /// person it resolves to, so the "another slot flies them" test compares people, not a person against a callsign.
-        /// A friend's seated card keeps its owner's ids.
-        /// </summary>
-        void FillPilots(SavedSquad squad)
-        {
-            if (squad == null) return;
-            for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
-            {
-                if (!IdsAreMine(squad, seat)) continue;
-                var slot = squad.GetSlot(seat);
-                if (slot.UsesDefaultPilot() || !PilotLoadoutStore.TryGetPilot(slot.PilotId, out var person) || person.Id == slot.PilotId) continue;
-                slot.PilotId = person.Id;
-                squad.SetSlot(seat, slot);
+                case Pick.Who: return 2;
+                case Pick.Vessel: Offered(); return _offered.Count;
+                case Pick.Element: return ElementCycle.Length;
+                case Pick.Pilot: PilotsFor(slot.Vessel); return _pilots.Count;
+                case Pick.Artifact: ArtifactsFor(slot.Vessel); return _artifacts.Count + 1;
+                default: return 0;
             }
-            PilotLoadoutStore.GetCrew(_crew);
-            _pilotIds.Clear();
-            foreach (var p in _crew)
-                if (!string.IsNullOrEmpty(p.Id)) _pilotIds.Add(p.Id);
-            squad.FillPilots(_pilotIds);
         }
 
-        void PickPilot(int chip)
+        int PageOfCurrent()
         {
-            PilotsFor(_draft.GetSlot(_seat).Vessel);
-            // The chips are one page of the crew's people; there is no empty seat (every vessel needs a pilot).
-            int index = _pilotPage * PilotsPerPage + chip;
-            if (index < 0 || index >= _pilots.Count) return;
-            EditSlot(s =>
+            var squad = Selected();
+            if (squad == null || _seat < 0) return 0;
+            var slot = squad.GetSlot(_seat);
+            int at = -1;
+            switch (_pick)
             {
-                s.PilotId = _pilots[index].Id;
-                return s;
-            });
+                case Pick.Vessel: Offered(); at = _offered.FindIndex(v => v.Class == slot.Vessel); break;
+                case Pick.Pilot: PilotsFor(slot.Vessel); at = IndexOfPilot(slot.PilotId); break;
+                case Pick.Artifact:
+                    ArtifactsFor(slot.Vessel);
+                    if (PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var carried))
+                        at = 1 + _artifacts.FindIndex(a => a.Id == carried.Id);
+                    break;
+            }
+            return at < 0 ? 0 : at / PerPage;
         }
 
-        void PagePilots(int step)
+        void PageChoices(int step)
         {
-            PilotsFor(_draft.GetSlot(_seat).Vessel);
-            int pages = Mathf.Max(1, Mathf.CeilToInt(_pilots.Count / (float)PilotsPerPage));
-            _pilotPage = (_pilotPage + step + pages) % pages;
-            DrawPicker();
+            var squad = Selected();
+            if (squad == null || _seat < 0 || _pick == Pick.None) return;
+            int pages = Mathf.Max(1, Mathf.CeilToInt(ChoiceCount(squad.GetSlot(_seat)) / (float)PerPage));
+            _page = ((_page + step) % pages + pages) % pages;
+            Draw();
         }
 
-        void ShowPilotPageOf(SquadSlot slot)
-        {
-            PilotsFor(slot.Vessel);
-            int at = IndexOfPilot(slot.PilotId);
-            _pilotPage = at < 0 ? 0 : at / PilotsPerPage;
-        }
+        void PickPilotChip(int chip) => PickChoice(chip);
 
-        void PickElement(int chip)
+        void PickChoice(int chip)
         {
-            if (chip < 0 || chip >= ElementCycle.Length) return;
-            EditSlot(s =>
+            var squad = Selected();
+            if (squad == null || _seat < 0 || !Editable(squad, _seat)) return;
+            int index = _page * PerPage + chip;
+            var slot = squad.GetSlot(_seat);
+            int seat = _seat;
+            var pick = _pick;
+            _pick = Pick.None;
+            switch (pick)
             {
-                s.Element = ElementCycle[chip];
-                return s;
-            });
-        }
-
-        void PickArtifact(int chip)
-        {
-            var slot = _draft.GetSlot(_seat);
-            ArtifactsFor(slot.Vessel);
-            EditSlot(s =>
-            {
-                s.ArtifactId = chip == 0 || chip > _artifacts.Count ? null : _artifacts[chip - 1].Id;
-                return s;
-            });
-        }
-
-        void PickSeatMode(int chip)
-        {
-            if (_seat == 0) return;
-            EditSlot(s => s.WithSeat(chip == 0 ? SquadSeat.Ai : SquadSeat.Open));
+                case Pick.Who:
+                    if (seat == 0 || index > 1) return;
+                    EditSlot(squad, seat, s => s.WithSeat(index == 0 ? SquadSeat.Ai : SquadSeat.Open));
+                    break;
+                case Pick.Vessel:
+                    Offered();
+                    if (index >= _offered.Count) return;
+                    var v = _offered[index];
+                    bool mine = IsMySeat(squad, seat);
+                    EditSlot(squad, seat, s =>
+                    {
+                        var moved = s.WithVessel(v.Class);
+                        // The player's own seat starts on the person they keep in that vessel's Hangar seat (a crew id).
+                        if (mine) moved.PilotId = PilotLoadoutStore.GetPilot(v.Class);
+                        return moved;
+                    });
+                    break;
+                case Pick.Element:
+                    if (index >= ElementCycle.Length) return;
+                    EditSlot(squad, seat, s => { s.Element = ElementCycle[index]; return s; });
+                    break;
+                case Pick.Pilot:
+                    PilotsFor(slot.Vessel);
+                    if (index >= _pilots.Count) return;
+                    string pilotId = _pilots[index].Id;
+                    EditSlot(squad, seat, s => { s.PilotId = pilotId; return s; });
+                    break;
+                case Pick.Artifact:
+                    ArtifactsFor(slot.Vessel);
+                    if (index > _artifacts.Count) return;
+                    string artifactId = index == 0 ? null : _artifacts[index - 1].Id;
+                    EditSlot(squad, seat, s => { s.ArtifactId = artifactId; return s; });
+                    break;
+            }
         }
 
         void PickDomain(int chip)
         {
             if (chip < 0 || chip >= domainOrder.Length) return;
             var domain = domainOrder[chip];
-            var squad = Shown();
+            var squad = Selected();
             if (squad == null || squad.Domain == domain) return;
             if (squad.IsJoined())
             {
@@ -659,33 +670,33 @@ namespace CosmicShore.UI
                 return;
             }
             squad.Domain = domain;
-            if (_mode == Mode.View) Saved(publish: true);
-            var color = DomainColor(domain);
-            for (int i = 0; i < mateCards.Length; i++)
-                if (mateCards[i] && mateCards[i].Nanobots) mateCards[i].Nanobots.Play(color, i * swapStagger);
+            Saved(publish: true);
             Draw();
         }
 
         // ---- join ----
 
-        void OpenJoin()
+        void ToggleJoin()
         {
+            if (_joinOpen)
+            {
+                _joinOpen = false;
+                Draw();
+                return;
+            }
             if (!Book.CanAdd())
             {
                 Refuse(fullLine);
                 return;
             }
             _joinOpen = true;
-            if (joinGroup) KitVisibility.SetShown(joinGroup, true);
+            _seat = -1;
+            _pick = Pick.None;
             LoadOffersAsync().Forget();
-            DrawJoin();
+            Draw();
         }
 
-        void CloseJoin()
-        {
-            _joinOpen = false;
-            if (joinGroup) KitVisibility.SetShown(joinGroup, false);
-        }
+        void CloseJoin() => _joinOpen = false;
 
         async UniTaskVoid LoadOffersAsync()
         {
@@ -731,7 +742,8 @@ namespace CosmicShore.UI
             }
             _joinStates[joined.Id] = SquadJoinState.Pending;
             _selected = Book.Squads.Count - 1;
-            _mode = Mode.View;
+            _seat = -1;
+            _pick = Pick.None;
             Book.TrySetActive(_selected);
             Saved(publish: true);
             if (!string.IsNullOrWhiteSpace(joinedToast))
@@ -745,7 +757,7 @@ namespace CosmicShore.UI
         void Play(ScreenSwitcher.ModalWindows target)
         {
             var squad = Selected();
-            if (_mode != Mode.View || squad == null) return;
+            if (squad == null) return;
             var hub = FindHub(target);
             if (!hub) return;
             // A window Home refuses is refused here the same way, before anything changes.
@@ -897,7 +909,7 @@ namespace CosmicShore.UI
             if (changed) Saved(publish: false);
             // Publish after every read: it backfills a record never written, and carries what reconciling seated.
             PublishAsync().Forget();
-            if (_shown && _mode != Mode.Make) Draw(snapDomain: true);
+            if (_shown) Draw(snapDomain: true);
         }
 
         static bool NeedsReconcile(SavedSquad s)
@@ -940,119 +952,132 @@ namespace CosmicShore.UI
 
         // ---- drawing ----
 
-        /// <param name="snapDomain">True when a different squad comes on screen: its hulls take its colour at once, with no swap.</param>
-        /// <summary>The shown squad's domain: the Ark's hangar backdrop plays in it (Docs/MENU_REDESIGN_B.md section 190).
-        /// Raised when it changes.</summary>
+        /// <summary>What stands on one of the hangar's pads: the seat's vessel, whether anyone holds the seat (an open seat's
+        /// pad stands empty) and whether its pilot is here (an offline mate's hull is powered down).</summary>
+        public readonly struct HangarSeat : System.IEquatable<HangarSeat>
+        {
+            public readonly VesselClassType Vessel;
+            public readonly bool Filled;
+            public readonly bool Live;
+
+            public HangarSeat(VesselClassType vessel, bool filled, bool live)
+            {
+                Vessel = vessel;
+                Filled = filled;
+                Live = live;
+            }
+
+            public bool Equals(HangarSeat o) => Vessel == o.Vessel && Filled == o.Filled && Live == o.Live;
+            public override bool Equals(object obj) => obj is HangarSeat o && Equals(o);
+            public override int GetHashCode() => ((int)Vessel * 4) ^ (Filled ? 1 : 0) ^ (Live ? 2 : 0);
+        }
+
+        /// <summary>The shown squad's domain and line-up: the Ark's hangar backdrop plays in the domain (Docs/MENU_REDESIGN_B.md
+        /// section 190) and the seats' real vessels stand on its pads (SquadVesselLayer, section 202). Raised when either
+        /// changes.</summary>
         public event System.Action HangarChanged;
         /// <summary>False until a squad has been drawn (or while none is shown).</summary>
         public bool HasHangar { get; private set; }
         public Domains HangarDomain { get; private set; } = Domains.Jade;
+
+        readonly HangarSeat[] _hangarSeats = new HangarSeat[SavedSquad.SlotCount];
+
+        /// <summary>Seat <paramref name="seat"/> of the shown squad as its pad shows it (an empty pad out of range).</summary>
+        public HangarSeat GetHangarSeat(int seat) =>
+            HasHangar && seat >= 0 && seat < _hangarSeats.Length ? _hangarSeats[seat] : default;
 
         void PublishHangar(SavedSquad squad)
         {
             bool changed = HasHangar != (squad != null) || squad != null && HangarDomain != squad.Domain;
             HasHangar = squad != null;
             if (squad != null) HangarDomain = squad.Domain;
+            for (int i = 0; i < _hangarSeats.Length; i++)
+            {
+                var seat = default(HangarSeat);
+                if (squad != null)
+                {
+                    var slot = squad.GetSlot(i);
+                    seat = new HangarSeat(slot.Vessel, !slot.IsOpen(), SeatLive(squad, i, slot));
+                }
+                if (seat.Equals(_hangarSeats[i])) continue;
+                _hangarSeats[i] = seat;
+                changed = true;
+            }
             if (changed) HangarChanged?.Invoke();
         }
 
+        /// <summary>Whether the seat's pilot is here: the player, an online friend, or an AI (always).</summary>
+        bool SeatLive(SavedSquad squad, int seat, SquadSlot slot) =>
+            IsMySeat(squad, seat) || (slot.IsPlayer() ? OnlineFriend(slot.MemberId)
+                : seat == 0 && squad.IsJoined() ? OnlineFriend(squad.OwnerId) : true);
+
+
+        readonly List<string> _pilotIds = new();
+
+        /// <summary>
+        /// Every vessel needs a pilot: a slot with none (or one another slot flies) takes the next free person of the
+        /// crew, in crew order. First the seats whose ids are the player's are adopted: a legacy callsign id becomes the
+        /// person it resolves to, so the "another slot flies them" test compares people, not a person against a callsign.
+        /// A friend's seated card keeps its owner's ids.
+        /// </summary>
+        void FillPilots(SavedSquad squad)
+        {
+            if (squad == null) return;
+            for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
+            {
+                if (!IdsAreMine(squad, seat)) continue;
+                var slot = squad.GetSlot(seat);
+                if (slot.UsesDefaultPilot() || !PilotLoadoutStore.TryGetPilot(slot.PilotId, out var person) || person.Id == slot.PilotId) continue;
+                slot.PilotId = person.Id;
+                squad.SetSlot(seat, slot);
+            }
+            PilotLoadoutStore.GetCrew(_crew);
+            _pilotIds.Clear();
+            foreach (var p in _crew)
+                if (!string.IsNullOrEmpty(p.Id)) _pilotIds.Add(p.Id);
+            squad.FillPilots(_pilotIds);
+        }
+
+        /// <param name="snapDomain">True when a different squad comes on screen (kept for the callers; the table relights at once).</param>
         void Draw(bool snapDomain = false)
         {
-            DrawList();
-            var squad = Shown();
+            var squad = Selected();
+            if (squad == null)
+            {
+                _seat = -1;
+                _pick = Pick.None;
+            }
             PublishHangar(squad);
-            bool has = squad != null;
-            if (headerGroup) KitVisibility.SetShown(headerGroup, has);
-            if (emptyGroup) KitVisibility.SetShown(emptyGroup, !has);
-            if (deckRoot)
+            var color = squad != null ? DomainColor(squad.Domain) : DomainColor(newSquadDomain);
+            foreach (var g in domainLit)
+                if (g) g.color = new Color(color.r, color.g, color.b, g.color.a);
+            if (emptyGroup) KitVisibility.SetShown(emptyGroup, squad == null && !_joinOpen);
+            DrawRail(squad);
+            for (int i = 0; i < plates.Length; i++)
             {
-                deckRoot.gameObject.SetActive(has);
-                float k = _mode == Mode.Make ? makeScale : 1f;
-                deckRoot.localScale = new Vector3(k, k, 1f);
+                if (!plates[i]) continue;
+                if (squad == null || i >= SavedSquad.SlotCount) plates[i].Hide();
+                else DrawPlate(plates[i], squad, i, color);
             }
-            if (has)
-            {
-                DrawHeader(squad);
-                var color = DomainColor(squad.Domain);
-                for (int i = 0; i < mateCards.Length && i < SavedSquad.SlotCount; i++)
-                {
-                    if (!mateCards[i]) continue;
-                    DrawMate(mateCards[i], squad, i, color);
-                    if (snapDomain && mateCards[i].Nanobots) mateCards[i].Nanobots.SetColor(color);
-                }
-            }
-            if (pickerGroup) KitVisibility.SetShown(pickerGroup, _mode == Mode.Make);
-            if (_mode == Mode.Make) DrawPicker();
-            DrawBars();
-            if (_joinOpen) DrawJoin();
+            DrawProjection(squad);
         }
 
-        void DrawList()
+        void DrawRail(SavedSquad squad)
         {
             var book = Book;
-            int count = book.Squads.Count;
-            if (countText)
-                countText.SetText(TemplateText.Fill(countLine, "count", count.ToString(), "max", SquadBook.MaxSquads.ToString()));
-            bool making = _mode == Mode.Make;
-            for (int i = 0; i < squadRows.Length; i++)
-            {
-                var row = squadRows[i];
-                if (!row) continue;
-                // A new squad being made stands in the first free row until it is created.
-                if (making && _editIndex < 0 && i == count)
-                {
-                    row.Draw(true, _draft.Name, makingLine, true);
-                    row.DrawDomain(DomainName(_draft.Domain), DomainColor(_draft.Domain));
-                    continue;
-                }
-                var s = i < count ? book.Squads[i] : null;
-                bool active = s != null && !making && i == _selected;
-                row.Draw(s != null, s?.Name, s == null ? string.Empty : RowLine(s), active);
-                if (s != null) row.DrawDomain(DomainName(s.Domain), DomainColor(s.Domain));
-            }
+            bool has = squad != null;
+            if (squadNameText) squadNameText.text = has ? squad.Name : string.Empty;
+            if (whoseText) whoseText.text = !has ? string.Empty
+                : squad.IsJoined() ? TemplateText.Fill(joinedWhose, "owner", OwnerName(squad)) : ownWhose;
+            bool several = book.Squads.Count > 1;
+            if (prevSquadButton) prevSquadButton.interactable = several;
+            if (nextSquadButton) nextSquadButton.interactable = several;
             bool full = !book.CanAdd();
-            if (newButton) newButton.interactable = !full && !making;
-            if (joinButton) joinButton.interactable = !full && !making;
-        }
-
-        string RowLine(SavedSquad s)
-        {
-            if (s.IsJoined()) return TemplateText.Fill(joinedLine, "owner", OwnerName(s));
-            int open = OpenSeats(s);
-            return open > 0 ? TemplateText.Fill(madeOpenLine, "open", open.ToString()) : madeFullLine;
-        }
-
-        void DrawHeader(SavedSquad squad)
-        {
-            if (squadNameText) squadNameText.text = squad.Name;
-            string kicker, line;
-            if (_mode == Mode.Make)
-            {
-                kicker = _editIndex >= 0 ? editKicker : makeKicker;
-                line = makeDetail;
-            }
-            else if (squad.IsJoined())
-            {
-                kicker = TemplateText.Fill(joinedKicker, "owner", OwnerName(squad), "seat", SeatName(squad.MySeat));
-                var state = _joinStates.TryGetValue(squad.Id, out var s) ? s : SquadJoinState.Unknown;
-                line = TemplateText.Fill(state switch
-                {
-                    SquadJoinState.Seated => seatedLine,
-                    SquadJoinState.Pending => pendingLine,
-                    SquadJoinState.SeatLost => seatLostLine,
-                    SquadJoinState.Disbanded => disbandedLine,
-                    _ => offlineLine,
-                }, "owner", OwnerName(squad));
-            }
-            else
-            {
-                kicker = ownKicker;
-                int open = OpenSeats(squad);
-                line = open > 0 ? TemplateText.Fill(ownOpenDetail, "open", open.ToString()) : ownFullDetail;
-            }
-            if (kickerText) kickerText.text = kicker;
-            if (squadLineText) squadLineText.text = line;
-
+            if (newButton) newButton.interactable = !full;
+            if (joinButton) joinButton.interactable = !full;
+            if (squadGroup) KitVisibility.SetShown(squadGroup, has);
+            if (!has) return;
+            if (removeLabel) removeLabel.text = _confirmUntil >= 0f ? confirmLabel : squad.IsJoined() ? leaveLabel : deleteLabel;
             for (int i = 0; i < domainChips.Length && i < domainOrder.Length; i++)
             {
                 if (!domainChips[i]) continue;
@@ -1060,19 +1085,92 @@ namespace CosmicShore.UI
                 domainChips[i].Draw(true, DomainName(d), null, null, squad.Domain == d);
                 domainChips[i].Tint(DomainColor(d));
             }
+            if (missionLock)
+            {
+                var hub = FindHub(ScreenSwitcher.ModalWindows.MISSION, reportMissing: false);
+                missionLock.enabled = hub && hub.TryGetComponent<MenuAvailabilityView>(out var gate) && !gate.IsAvailable;
+            }
         }
 
-        void DrawMate(SquadMateCard card, SavedSquad squad, int seat, Color domain)
+        string WhoOf(SavedSquad squad, int seat)
         {
             var slot = squad.GetSlot(seat);
-            string who = IsMySeat(squad, seat) ? youLine
+            return IsMySeat(squad, seat) ? youLine
                 : slot.IsPlayer() ? (string.IsNullOrEmpty(slot.MemberName) ? unknownFriendLine : slot.MemberName)
                 : seat == 0 && squad.IsJoined() ? OwnerName(squad)
                 : slot.IsOpen() ? openLine : aiLine;
+        }
+
+        void DrawPlate(SquadSeatPlate plate, SavedSquad squad, int seat, Color domain)
+        {
+            var slot = squad.GetSlot(seat);
+            var vessel = Vessel(slot.Vessel);
+            bool open = slot.IsOpen();
+            var pilot = catalog && vessel ? catalog.ResolvePilot(slot, vessel.Keywords) : null;
+            string line = open ? (squad.IsJoined() ? openPlateJoinedLine : openPlateLine)
+                : TemplateText.Fill(plateLine, "vessel", vessel ? vessel.CardName : string.Empty, "element", ElementName(slot.Element));
+            plate.Draw(WhoOf(squad, seat), line, pilot ? pilot.Portrait : null, open, SeatLive(squad, seat, slot), seat == _seat, domain);
+        }
+
+        void DrawProjection(SavedSquad squad)
+        {
+            bool seatOn = squad != null && _seat >= 0 && _seat < SavedSquad.SlotCount;
+            bool on = _joinOpen || seatOn;
+            if (projectionGroup) KitVisibility.SetShown(projectionGroup, on);
+            if (!on) return;
+            bool lists = !_joinOpen && _pick != Pick.None, pilotList = lists && _pick == Pick.Pilot;
+            if (joinGroup) KitVisibility.SetShown(joinGroup, _joinOpen);
+            if (choicesGroup) KitVisibility.SetShown(choicesGroup, lists && !pilotList);
+            if (pilotChoicesGroup) KitVisibility.SetShown(pilotChoicesGroup, pilotList);
+            if (backButton) backButton.gameObject.SetActive(_joinOpen || lists);
+            float height;
+            if (_joinOpen)
+            {
+                if (projectionTitle) projectionTitle.text = joinTitle;
+                SetTiles(0, false);
+                SetAction(null);
+                SetReadOnly(null);
+                DrawJoin();
+                height = joinHeight;
+                MoveProjection(plates.Length > 0 && plates[0] ? plates[0].CentreX : 0f);
+            }
+            else if (lists)
+            {
+                SetTiles(0, false);
+                SetAction(null);
+                SetReadOnly(null);
+                if (projectionTitle) projectionTitle.text = TemplateText.Fill(pickTitle, "list", Name(tileNames, (int)_pick - 1));
+                DrawChoices(squad, squad.GetSlot(_seat));
+                height = pilotList ? pilotChoicesHeight : choicesHeight;
+                MoveProjection(PlateX(_seat));
+            }
+            else
+            {
+                height = DrawSeat(squad, _seat);
+                MoveProjection(PlateX(_seat));
+            }
+            if (choiceHintText) choiceHintText.gameObject.SetActive(lists);
+            if (projectionRoot) projectionRoot.sizeDelta = new Vector2(projectionRoot.sizeDelta.x, height);
+        }
+
+        float PlateX(int seat) => seat >= 0 && seat < plates.Length && plates[seat] ? plates[seat].CentreX : 0f;
+
+        void MoveProjection(float x)
+        {
+            if (projectionRoot) projectionRoot.anchoredPosition = new Vector2(x, projectionRoot.anchoredPosition.y);
+        }
+
+        /// <summary>The projected seat: its title, its lines (Who flies it only on a rogue seat an AI or nobody flies), its
+        /// action and, on a joined squad, who sets it. Returns the panel's height.</summary>
+        float DrawSeat(SavedSquad squad, int seat)
+        {
+            var slot = squad.GetSlot(seat);
+            bool live = SeatLive(squad, seat, slot), open = slot.IsOpen();
+            if (projectionTitle)
+                projectionTitle.text = TemplateText.Fill(seatTitle, "who", WhoOf(squad, seat), "state",
+                    open ? openState : !slot.IsPlayer() && seat > 0 ? aiLine : live ? onlineState : offlineState);
             var vessel = Vessel(slot.Vessel);
             var keywords = vessel ? vessel.Keywords : null;
-            // The catalog gives the callsign and kind for anyone's ids; only the player's own ids name a person and an
-            // artifact this inventory holds (a joined squad's other cards carry the owner's).
             var pilot = catalog && vessel ? catalog.ResolvePilot(slot, keywords) : null;
             var artifact = catalog && vessel ? catalog.ResolveArtifact(slot, keywords) : null;
             bool ids = IdsAreMine(squad, seat);
@@ -1082,103 +1180,139 @@ namespace CosmicShore.UI
             string artifactName = !artifact ? noArtifactLine
                 : ids && PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var held) && held.Kind() == artifact.Id
                     ? held.Name : artifact.DisplayName;
-            card.Draw(SeatName(seat), TemplateText.Fill(numberLine, "n", (seat + 1).ToString()), who, HullArt(vessel),
-                vessel ? vessel.CardName : string.Empty, ElementName(slot.Element),
-                pilot ? pilot.Portrait : null, pilotName, artifactName, artifact, slot.IsOpen());
-            bool making = _mode == Mode.Make;
-            card.SetEditing(making && seat == _seat, domain);
-            card.SetPressable(making && CanEdit(squad, seat));
-            bool live = IsMySeat(squad, seat) || (slot.IsPlayer() ? OnlineFriend(slot.MemberId)
-                : seat == 0 && squad.IsJoined() ? OnlineFriend(squad.OwnerId) : true);
-            card.SetPresence(!slot.IsOpen(), live);
-            bool viewing = _mode == Mode.View && !squad.IsJoined();
-            card.SetActions(viewing && IsMySeat(squad, seat),
-                viewing && seat > 0 && slot.IsPlayer() && !OnlineFriend(slot.MemberId));
+            bool rogue = seat > 0 && !slot.IsPlayer();
+            string[] values =
+            {
+                open ? openModeLabel : aiModeLabel,
+                vessel ? vessel.CardName : string.Empty,
+                ElementName(slot.Element),
+                pilotName,
+                artifactName,
+            };
+            bool editable = Editable(squad, seat);
+            int row = 0;
+            for (int i = 0; i < tiles.Length; i++)
+            {
+                bool shown = i < values.Length && (i > 0 || rogue);
+                if (tiles[i])
+                {
+                    tiles[i].Draw(shown, shown ? values[i] : null, Name(tileNames, i), null, false);
+                    if (shown && tiles[i].transform is RectTransform rt)
+                        rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, -(projectionHead + row * tileStep));
+                }
+                if (i < tileChevrons.Length && tileChevrons[i]) tileChevrons[i].enabled = shown && editable;
+                if (shown) row++;
+            }
+            float y = projectionHead + row * tileStep + 8f;
+            int action = ActionOf(squad, seat);
+            SetAction(action switch { 1 => changeVesselWord, 2 => whoFliesWord, 3 => openSeatWord, _ => null }, y);
+            if (action != 0) y += actionHeight + 10f;
+            string readOnly = null;
+            if (squad.IsJoined())
+            {
+                var state = _joinStates.TryGetValue(squad.Id, out var s) ? s : SquadJoinState.Unknown;
+                readOnly = TemplateText.Fill(state switch
+                {
+                    SquadJoinState.Seated => seatedLine,
+                    SquadJoinState.Pending => pendingLine,
+                    SquadJoinState.SeatLost => seatLostLine,
+                    SquadJoinState.Disbanded => disbandedLine,
+                    _ => offlineLine,
+                }, "owner", OwnerName(squad));
+            }
+            SetReadOnly(readOnly, y);
+            if (!string.IsNullOrEmpty(readOnly)) y += readOnlyHeight;
+            return y + projectionPad;
         }
 
-        void DrawPicker()
+        void SetTiles(int from, bool shown)
         {
-            if (_draft == null) return;
-            var slot = _draft.GetSlot(_seat);
-
-            Offered();
-            int start = _vesselPage * vesselTiles.Length;
-            for (int i = 0; i < vesselTiles.Length; i++)
+            for (int i = from; i < tiles.Length; i++)
             {
-                if (!vesselTiles[i]) continue;
-                var v = start + i < _offered.Count ? _offered[start + i] : null;
-                vesselTiles[i].Draw(v, v ? v.CardName : null, null, HullArt(v), v && v.Class == slot.Vessel);
-            }
-            bool paged = _offered.Count > vesselTiles.Length;
-            if (vesselPrevButton) vesselPrevButton.interactable = paged;
-            if (vesselNextButton) vesselNextButton.interactable = paged;
-
-            PilotsFor(slot.Vessel);
-            // The slot may hold a legacy callsign id: the chip lit is the person it resolves to.
-            string seatedId = PilotLoadoutStore.TryGetPilot(slot.PilotId, out var seated) ? seated.Id : null;
-            for (int i = 0; i < pilotChips.Length; i++)
-            {
-                if (!pilotChips[i]) continue;
-                int index = _pilotPage * PilotsPerPage + i;
-                if (index >= _pilots.Count)
-                {
-                    pilotChips[i].Draw(false, null, null, null, false);
-                    continue;
-                }
-                var person = _pilots[index];
-                var p = _pilotCallsigns[index];
-                string word = CallsignWord(p);
-                pilotChips[i].Draw(true, TemplateText.Fill(pilotChipWord, "name", person.DisplayName(), "callsign", word),
-                    TemplateText.Fill(pilotDetail, "sight", SightOf(p), "callsign", word, "species", person.SpeciesCombo()),
-                    p.Portrait, person.Id == seatedId);
-            }
-            bool pilotsPaged = _pilots.Count > PilotsPerPage;
-            if (pilotPrevButton) pilotPrevButton.interactable = pilotsPaged;
-            if (pilotNextButton) pilotNextButton.interactable = pilotsPaged;
-
-            bool rogue = _seat > 0;
-            if (seatModeGroup) KitVisibility.SetShown(seatModeGroup, rogue);
-            if (seatModeChips.Length > 0 && seatModeChips[0]) seatModeChips[0].Draw(rogue, aiModeLabel, null, null, slot.Seat == SquadSeat.Ai);
-            if (seatModeChips.Length > 1 && seatModeChips[1]) seatModeChips[1].Draw(rogue, openModeLabel, null, null, slot.IsOpen());
-
-            for (int i = 0; i < elementChips.Length; i++)
-                if (elementChips[i])
-                    elementChips[i].Draw(i < ElementCycle.Length, i < ElementCycle.Length ? ElementName(ElementCycle[i]) : null, null, null,
-                        i < ElementCycle.Length && slot.Element == ElementCycle[i]);
-
-            ArtifactsFor(slot.Vessel);
-            // The slot may hold a legacy kind id: the chip lit is the artifact it resolves to.
-            string carriedId = PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var carried) ? carried.Id : null;
-            for (int i = 0; i < artifactChips.Length; i++)
-            {
-                if (!artifactChips[i]) continue;
-                if (i == 0)
-                {
-                    artifactChips[i].Draw(true, noArtifactChip, null, null, !slot.CarriesArtifact());
-                    continue;
-                }
-                var a = i - 1 < _artifacts.Count ? _artifacts[i - 1] : null;
-                artifactChips[i].Draw(a != null, a != null ? ShortName(a.Name, artifactChipChars) : null, null, null,
-                    a != null && a.Id == carriedId);
+                if (tiles[i]) tiles[i].Draw(shown, null, null, null, false);
+                if (i < tileChevrons.Length && tileChevrons[i]) tileChevrons[i].enabled = shown;
             }
         }
 
-        void DrawBars()
+        void SetAction(string word, float y = 0f)
         {
-            bool making = _mode == Mode.Make, viewing = _mode == Mode.View;
-            if (makeBarGroup) KitVisibility.SetShown(makeBarGroup, making);
-            if (viewBarGroup) KitVisibility.SetShown(viewBarGroup, viewing);
-            if (createLabel) createLabel.text = _editIndex >= 0 ? saveWord : createWord;
-            var squad = Selected();
-            if (viewing && squad != null)
+            if (!actionButton) return;
+            bool shown = !string.IsNullOrEmpty(word);
+            actionButton.gameObject.SetActive(shown);
+            if (!shown) return;
+            if (actionLabel) actionLabel.text = word;
+            if (actionButton.transform is RectTransform rt) rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, -y);
+        }
+
+        void SetReadOnly(string line, float y = 0f)
+        {
+            if (!readOnlyText) return;
+            bool shown = !string.IsNullOrEmpty(line);
+            readOnlyText.gameObject.SetActive(shown);
+            if (!shown) return;
+            readOnlyText.text = line;
+            if (readOnlyText.transform is RectTransform rt) rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, -y);
+        }
+
+        void DrawChoices(SavedSquad squad, SquadSlot slot)
+        {
+            if (choiceHintText) choiceHintText.text = Name(choiceHints, (int)_pick - 1);
+            int count = ChoiceCount(slot), per = PerPage, start = _page * per;
+            bool paged = count > per;
+            if (choicePrevButton) choicePrevButton.gameObject.SetActive(paged);
+            if (choiceNextButton) choiceNextButton.gameObject.SetActive(paged);
+            if (_pick == Pick.Pilot)
             {
-                if (removeLabel) removeLabel.text = _confirmUntil >= 0f ? confirmLabel : squad.IsJoined() ? leaveLabel : deleteLabel;
-                if (editButton) editButton.interactable = !squad.IsJoined();
+                // The seat may hold a legacy callsign id: the chip lit is the person it resolves to.
+                string seatedId = PilotLoadoutStore.TryGetPilot(slot.PilotId, out var seated) ? seated.Id : null;
+                for (int i = 0; i < pilotChips.Length; i++)
+                {
+                    if (!pilotChips[i]) continue;
+                    int index = start + i;
+                    if (index >= _pilots.Count)
+                    {
+                        pilotChips[i].Draw(false, null, null, null, false);
+                        continue;
+                    }
+                    var person = _pilots[index];
+                    var p = _pilotCallsigns[index];
+                    string word = CallsignWord(p);
+                    pilotChips[i].Draw(true, TemplateText.Fill(pilotChipWord, "name", person.DisplayName(), "callsign", word),
+                        TemplateText.Fill(pilotDetail, "sight", SightOf(p), "callsign", word, "species", person.SpeciesCombo()),
+                        p.Portrait, person.Id == seatedId);
+                }
+                return;
             }
-            if (missionLock)
+            string carriedId = _pick == Pick.Artifact && PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var carried) ? carried.Id : null;
+            for (int i = 0; i < choiceChips.Length; i++)
             {
-                var hub = viewing ? FindHub(ScreenSwitcher.ModalWindows.MISSION, reportMissing: false) : null;
-                missionLock.enabled = hub && hub.TryGetComponent<MenuAvailabilityView>(out var gate) && !gate.IsAvailable;
+                if (!choiceChips[i]) continue;
+                int index = start + i;
+                string word = null;
+                bool picked = false;
+                if (index < count)
+                {
+                    switch (_pick)
+                    {
+                        case Pick.Who:
+                            word = index == 0 ? aiModeLabel : openModeLabel;
+                            picked = index == 0 ? slot.Seat == SquadSeat.Ai : slot.IsOpen();
+                            break;
+                        case Pick.Vessel:
+                            word = _offered[index].CardName;
+                            picked = _offered[index].Class == slot.Vessel;
+                            break;
+                        case Pick.Element:
+                            word = ElementName(ElementCycle[index]);
+                            picked = slot.Element == ElementCycle[index];
+                            break;
+                        case Pick.Artifact:
+                            word = index == 0 ? noArtifactChip : ShortName(_artifacts[index - 1].Name, artifactChipChars);
+                            picked = index == 0 ? !slot.CarriesArtifact() : _artifacts[index - 1].Id == carriedId;
+                            break;
+                    }
+                }
+                choiceChips[i].Draw(word != null, word, null, null, picked);
             }
         }
 
@@ -1205,6 +1339,8 @@ namespace CosmicShore.UI
                     : _offers.Count == 0 ? joinNoneLine : string.Empty);
         }
 
+        static string Name(string[] names, int i) => i >= 0 && i < names.Length ? names[i] : string.Empty;
+
         // ---- helpers ----
 
         SavedSquad Selected()
@@ -1212,9 +1348,6 @@ namespace CosmicShore.UI
             var book = Book;
             return _selected >= 0 && _selected < book.Squads.Count ? book.Squads[_selected] : null;
         }
-
-        /// <summary>The squad on the cards: the draft in Make squad, else the selected one.</summary>
-        SavedSquad Shown() => _mode == Mode.Make ? _draft : _mode == Mode.View ? Selected() : null;
 
         static bool IsMySeat(SavedSquad squad, int seat) => squad.IsJoined() ? seat == squad.MySeat : seat == 0;
 
@@ -1261,13 +1394,6 @@ namespace CosmicShore.UI
 
         SO_Vessel Vessel(VesselClassType cls) =>
             vessels && vessels.TryGetVesselByClass(cls, out var v, reportMissing: false) ? v : null;
-
-        Sprite HullArt(SO_Vessel v)
-        {
-            if (!v) return null;
-            var art = cardArt ? cardArt.For(v) : null;
-            return art ? art : v.IconActive;
-        }
 
         void Offered()
         {

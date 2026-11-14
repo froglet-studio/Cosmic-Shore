@@ -179,6 +179,7 @@ namespace CosmicShore.Engine
                 Scheduler.RunFrame();
                 if (PhaseTiming) Lap(ref mark, "tasks");
                 Animator.TickAll(); // the animation slot: after Update and coroutines, before LateUpdate
+                Video.VideoPlayer.TickAll(); // playing videos advance and present their frame
                 ParticleSystem.TickAll(); // particles move after Update has placed their emitters
                 ProceduralLines.RunFrame(); // code-drawn ribbons (approximate VFX Graphs)
                 if (PhaseTiming) Lap(ref mark, "animator");

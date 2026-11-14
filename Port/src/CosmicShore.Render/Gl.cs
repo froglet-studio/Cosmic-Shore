@@ -112,10 +112,11 @@ namespace CosmicShore.Render
 
         public uint Get(EngineTexture texture)
         {
-            if (texture is RenderTexture && External != null)
+            if (texture is RenderTexture rt)
             {
-                uint external = External(texture);
+                uint external = External != null ? External(texture) : 0;
                 if (external != 0) return external;
+                if (rt.cpuFrame != null) texture = rt.cpuFrame;   // a decoded video frame (VideoPlayer.FrameDecoder)
             }
             if (texture is not Texture2D t2 || !t2.HasPixels) return White;
             var data = t2.GetRawTextureData();

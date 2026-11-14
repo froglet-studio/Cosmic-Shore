@@ -306,17 +306,43 @@ def dark_vessel_mats():
 
 
 if SCENE == "squads":
-    SPARROW = load_vessel("SparrowModel1.fbx", FLEET, nose_y=-1)     # its engines sit at +y: the nose is at -y
-    DOLPHIN = load_vessel("dolphin_shapekey_with_animations.fbx", ARTIST, nose_y=-1)
-    SERPENT = load_vessel("SerpentExport.fbx", FLEET, nose_y=1)       # its engines sit at -y: the nose is at +y
+    # ARK_LINE (Rev 110, the vessel-swap check): the hulls on the three pads, left to right ("Dolphin,Sparrow,Serpent" is
+    # the shipped line-up; "none" leaves the pads empty, the plate a live vessel layer is drawn over). The last one is the
+    # offline mate's, powered down.
+    HULLS = {"Sparrow": ("SparrowModel1.fbx", FLEET, -1), "Dolphin": ("dolphin_shapekey_with_animations.fbx", ARTIST, -1),
+             "Serpent": ("SerpentExport.fbx", FLEET, 1), "Manta": ("Manta_shapekey_rigged.fbx", ARTIST, -1),
+             "Rhino": ("rhino_shapekey_with_animations.fbx", ARTIST, -1)}
+    names = os.environ.get("ARK_LINE", "Dolphin,Sparrow,Serpent")
+    names = [] if names == "none" else names.split(",")
+    meshes = {}
+    for n in names:
+        if n not in meshes:
+            f, roles, ny = HULLS[n]
+            meshes[n] = load_vessel(f, roles, nose_y=ny)
+            zs = [v.co.z for v in meshes[n].vertices]; ys = [v.co.y for v in meshes[n].vertices]
+            if max(zs) - min(zs) > 1.5 * (max(ys) - min(ys)):        # authored nose-up (z): lay it flat, nose to +y
+                meshes[n].transform(Matrix.Rotation(-math.pi / 2, 4, "X"))
+    if "Sparrow" not in meshes and names:            # every hull at the Sparrow's length, as the game's pads scale them
+        meshes["_ref"] = load_vessel(*HULLS["Sparrow"][:2], nose_y=HULLS["Sparrow"][2])
+    ref = meshes.get("Sparrow") or meshes.get("_ref")
+    if ref is not None:
+        span = lambda m: max(max(v.co[i] for v in m.vertices) - min(v.co[i] for v in m.vertices) for i in (0, 1, 2))
+        for n in names:
+            if n not in ("Sparrow", "Dolphin", "Serpent"):           # the shipped three keep the clip's sizes
+                meshes[n].transform(Matrix.Scale(0.6 * span(ref) / span(meshes[n]), 4))
     off = dark_vessel_mats()
     swap = {DOMAIN_V.name: off["domain"], ENGINE.name: off["engine"], WINDOW.name: off["window"]}
-    for i, s in enumerate(SERPENT.materials):
-        if s is not None and s.name in swap:
-            SERPENT.materials[i] = swap[s.name]
     # the squad lined up across the bay, facing the door: Rogue One, the leader a step back in the middle, Rogue Two
-    LINE = [(DOLPHIN, Vector((-9.0, -60.5, Z0 + 2.3)), True), (SPARROW, Vector((0.0, -66.0, Z0 + 2.8)), True),
-            (SERPENT, Vector((9.6, -60.5, Z0 + 2.5)), False)]
+    SPOTS = [Vector((-9.0, -60.5, Z0 + 2.3)), Vector((0.0, -66.0, Z0 + 2.8)), Vector((9.6, -60.5, Z0 + 2.5))]
+    LINE = []
+    for k, n in enumerate(names):
+        me = meshes[n]
+        if k == 2:                                   # the offline mate's hull: its own powered-down copy
+            me = me.copy()
+            for i, s_ in enumerate(me.materials):
+                if s_ is not None and s_.name in swap:
+                    me.materials[i] = swap[s_.name]
+        LINE.append((me, SPOTS[k], k != 2))
     for k, (me, pos, online) in enumerate(LINE):
         o = place(me, "in", pos, (0, -1, 0))
         PAD_LIGHTS.append((Vector((pos.x, pos.y, Z0)), online))
@@ -324,6 +350,8 @@ if SCENE == "squads":
             MOVERS.append((o, o.matrix_world.copy(), k * 2.1))
         else:
             OFFLINE.append(o)
+    if not names:                                    # empty pads all glow: any seat may hold a live hull (the game lights
+        PAD_LIGHTS.extend([(Vector((p.x, p.y, Z0)), True) for p in SPOTS])          # an offline one from its own layer)
 # the HyperSea board between the arches on the left wall; the galaxy on the right wall
 BX = -HW + 0.9
 board = K.image_emission("board_sector", os.path.join(ASSETS, "board_sector.png"), 0.9)
@@ -1333,6 +1361,20 @@ if os.environ.get("ARK_CAM"):              # "x,y,z;ax,ay,az;lens": try a camera
     _c = [tuple(float(v) for v in part.split(",")) for part in os.environ["ARK_CAM"].split(";")]
     CAM = (_c[0], _c[1], _c[2][0], (Vector(_c[1]) - Vector(_c[0])).length, 8.0)
 loc0, aim, lens, focus, fstop = CAM
+if os.environ.get("ARK_PASS") == "vessels":     # the live layer: only the hulls, the room held out (it still occludes)
+    sc.render.film_transparent = True
+    sc.render.image_settings.color_mode = "RGBA"
+    keep = set(VESSEL_OBJS["in"])
+    for o_ in sc.objects:
+        if o_.name.startswith("Cube") and o_.data.materials and o_.data.materials[0].name.startswith("haze"):
+            o_.hide_render = True                    # the haze box encloses the bay: it would hold out everything
+        elif o_.type == "MESH" and o_ not in keep:
+            o_.is_holdout = True
+if os.environ.get("ARK_BORDER"):              # "x0,x1,y0,y1" in pixels from the top left: render only that box (the frame
+    _b = [float(v) for v in os.environ["ARK_BORDER"].split(",")]     # stays full size, black outside it; r110_squads_empty_pads.py re-renders the pads)
+    sc.render.use_border, sc.render.use_crop_to_border = True, False
+    sc.render.border_min_x, sc.render.border_max_x = _b[0] / W, _b[1] / W
+    sc.render.border_min_y, sc.render.border_max_y = 1.0 - _b[3] / H, 1.0 - _b[2] / H
 camd.lens, camd.clip_start, camd.clip_end = lens, 0.1, 3000
 camd.dof.use_dof, camd.dof.focus_distance, camd.dof.aperture_fstop = True, focus, fstop
 sc.view_settings.exposure = {"deck": -0.4, "pier": -0.7}.get(SCENE, -0.9)

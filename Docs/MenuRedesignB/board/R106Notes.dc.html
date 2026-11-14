@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#8C93C7;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;height:48px;padding:0 20px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase}
+.btn.sm{height:40px;padding:0 14px;font-size:14px}
+.commit{background:#A600FF;color:#E6E9FF}
+.cta{background:#99FF80;color:#00010A}
+.def{background:rgba(0,4,31,.55);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.off{background:rgba(0,4,31,.4);color:#5C5F70;box-shadow:inset 0 0 0 1px #222645}
+.btn .kc{border-color:currentColor;color:inherit;opacity:.85}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity 900ms ease-in-out}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lat{background-image:repeating-linear-gradient(60deg,rgba(230,233,255,.05) 0 1px,transparent 1px 24px),repeating-linear-gradient(-60deg,rgba(230,233,255,.05) 0 1px,transparent 1px 24px)}
+.ava{object-fit:cover;display:block}
+.rise{animation:csRise 360ms cubic-bezier(.2,.8,.2,1) both}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:csFade 300ms ease-out both}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="abs" style="left:64px;top:48px;display:flex;flex-direction:column;gap:6px"><span class="lab">Rev 106 - notes</span><span style="font-size:34px">The Squads tab in levels, lit like the captains' bridges</span></div><div class="abs" style="left:64px;top:150px;width:860px;display:flex;flex-direction:column;gap:10px"><span class="lab">Asked - Shombith, 2026-11-13</span><p style="margin:0;font-size:18px;line-height:1.5;color:#E6E9FF">"The UI cards on top of each screen. I do not like them at all ... the worst is the ark UI itself, selecting through so many and the text is noisy, it can be broken down in levels if we want." The hangar backdrops stay ("that's fire"). The style: the pilot scenes that show captains inside the Ark.</p><span class="lab" style="margin-top:18px">Taken from the captains' bridges</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">1. The room is dark and lit by its display. Nothing on these boards is a solid card: every panel is light, the squad's own domain colour, over a faint lattice, so the hangar shows through.</p><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">2. The display has depth. Jugger and Scales look into a dome, not at a sheet. B puts the squad on that dome; A and C keep the light in the room, anchored to the vessels it is about.</p><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">3. Warm practical lamps and a brass rail frame the cold light (B). A and C leave the warm light to the hangar's own render.</p><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">4. The squad's domain IS the light: Jade lights the tags, the dome and the hangar Jade; switch to Ruby and all of it turns Ruby.</p><span class="lab" style="margin-top:18px">Levels (all three)</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">Level 1, the hangar: who is in the squad and Arena. Level 2, one seat: vessel, element, pilot, artifact. Level 3, one choice: the list for that one thing. The squads, Make, Join and the domain move behind the squad's name (Y). Nothing the build does is dropped: four squads, make, join, the light, Change vessel, Open the seat, a joined squad read-only, Mission locked, Arena.</p><span class="lab" style="margin-top:18px">For the build</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">SquadsPage keeps its data and actions; author_menu_ark.py lays out the tags (positions per pad, from the render), the seat panel and the list. The colours come from the worn set's domain colours. The Breakers hangar is still Skim Wing's vessels lit Ruby, as in section 190.</p></div><div class="abs" style="left:1000px;top:150px;width:840px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;gap:16px"><img src="/_blob/4f7de477b02276aa415c32781f1a821a" alt="Jugger on the bridge, a dome of live play under his hand" style="width:400px;height:225px;object-fit:cover"><img src="/_blob/d3c0dc1db64080be767b648fdd7596e2" alt="Scales on a bridge, the cell in a dome of light, a brass rail" style="width:400px;height:225px;object-fit:cover"></div><span class="lab" style="font-size:11px">Jugger and Scales, Docs/Pilots/art/scenes</span><span class="lab" style="margin-top:22px">The options</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA"><b>A - Levels (recommended).</b> At rest only a tag of light over each vessel: the pilot's face, the name, here or not. Press a tag and that seat opens on the right; press a line and only that list shows. About ten words at rest.</p><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA"><b>B - The holo table.</b> The bridge console in front of the hangar: the three seats stand on a dome of light, the picked one projects its loadout up. The squad dial, Make and Join and the light sit on the brass rail.</p><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA"><b>C - Seat by seat.</b> No panel at all: one seat in large type over the dark side of the hangar, corner brackets round its vessel, D-pad to the next seat, a value changes in place.</p><span class="lab" style="margin-top:18px">Why A</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">It answers both words: the levels cut the text to the names, and the light sits on the vessels it describes, so the hangar render stays the screen. B is the most like the bridges but covers the floor of the render with a console; its light-on-a-dome look can dress A's seat panel if wanted. C is the calmest, but shows one seat at a time, so who is offline is read from the brackets only.</p></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

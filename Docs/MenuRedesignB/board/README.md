@@ -666,8 +666,8 @@ Copied on 2026-11-13 from canvas version `1794612096-e4d5` of **Frogma**: Rev 3 
 
 #### Rev 110 - The Squads tab, option B with every setting; the vessels in the hangar as real models
 
-- `R110B.dc.html` (not copied yet) - Rev 110 B - The holo table with every setting: the seat, its four lists, an open seat, the squads, the light, Make, Join - interactive
-- `R110Notes.dc.html` (not copied yet) - Rev 110 - the vessels in the hangar: real models over an empty-pad video, checked
+- [`R110B.dc.html`](R110B.dc.html) - Rev 110 B - The holo table with every setting: the seat, its four lists, an open seat, the squads, the light, Make, Join - interactive
+- [`R110Notes.dc.html`](R110Notes.dc.html) - Rev 110 - the vessels in the hangar: real models over an empty-pad video, checked
 
 #### Rev 109 - The crew PDA itself, redesigned: three devices from the Ark for the hangar bench
 
@@ -679,11 +679,11 @@ Copied on 2026-11-13 from canvas version `1794612096-e4d5` of **Frogma**: Rev 3 
 
 #### Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like the captains' bridges
 
-- `R106Compare.dc.html` (not copied yet) - Rev 106 - one seat at rest and open, in the build and in A, B and C
-- `R106A.dc.html` (not copied yet) - Rev 106 A - Levels: tags over the vessels, a seat opens, one choice at a time (recommended) - interactive
-- `R106B.dc.html` (not copied yet) - Rev 106 B - The holo table: the squad on a bridge console, its seat projected up - interactive
-- `R106C.dc.html` (not copied yet) - Rev 106 C - Seat by seat: one seat in type over the hangar, no panels - interactive
-- `R106Notes.dc.html` (not copied yet) - Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen
+- [`R106Compare.dc.html`](R106Compare.dc.html) - Rev 106 - one seat at rest and open, in the build and in A, B and C
+- [`R106A.dc.html`](R106A.dc.html) - Rev 106 A - Levels: tags over the vessels, a seat opens, one choice at a time (recommended) - interactive
+- [`R106B.dc.html`](R106B.dc.html) - Rev 106 B - The holo table: the squad on a bridge console, its seat projected up - interactive
+- [`R106C.dc.html`](R106C.dc.html) - Rev 106 C - Seat by seat: one seat in type over the hangar, no panels - interactive
+- [`R106Notes.dc.html`](R106Notes.dc.html) - Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen
 
 #### Rev 105 - The Artifacts tab without cards: three levels (the hoard, one artifact, feeding it), the words on the room
 

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 110 B - The holo table with every setting: the seat, its four lists, an open seat, the squads, the light, Make, Join - interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#8C93C7;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;height:48px;padding:0 20px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase}
+.btn.sm{height:40px;padding:0 14px;font-size:14px}
+.commit{background:#A600FF;color:#E6E9FF}
+.cta{background:#99FF80;color:#00010A}
+.def{background:rgba(0,4,31,.55);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.off{background:rgba(0,4,31,.4);color:#5C5F70;box-shadow:inset 0 0 0 1px #222645}
+.btn .kc{border-color:currentColor;color:inherit;opacity:.85}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity 900ms ease-in-out}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lat{background-image:repeating-linear-gradient(60deg,rgba(230,233,255,.05) 0 1px,transparent 1px 24px),repeating-linear-gradient(-60deg,rgba(230,233,255,.05) 0 1px,transparent 1px 24px)}
+.ava{object-fit:cover;display:block}
+.rise{animation:csRise 360ms cubic-bezier(.2,.8,.2,1) both}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:csFade 300ms ease-out both}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<img class="bg" src="{{bg}}" alt="{{bgAlt}}"><div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(0,1,10,.72) 0%,rgba(0,1,10,0) 20%,rgba(0,1,10,0) 72%,rgba(0,1,10,.78) 100%);pointer-events:none"></div><nav aria-label="Menu screens" class="abs" style="left:0;right:0;top:0;height:84px;background:rgba(0,1,10,.78);border-bottom:1px solid #222645;display:flex;align-items:center;justify-content:center;gap:48px;z-index:5"><span class="kc">LT</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/ec690d6b90d6fcdbc430b9bbaacf28a9" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">CODEX</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/34f5a50f1275fef42808fe9df3bf6af5" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HANGAR</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/a5bd4d8d1de7b494567fc3de75525e1e" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HOME</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#E6E9FF"><img src="/_blob/e5b050c5a676193c650e94d873ad40e2" alt="" style="width:26px;height:26px;object-fit:contain;opacity:1">ARK<span class="abs" style="left:0;right:0;bottom:-10px;height:2px;background:#E6E9FF"></span></span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/d0e850bc927559f1a499868d26f2a3de" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">PORT</span><span class="kc">RT</span></nav><div class="abs num" style="right:40px;top:30px;z-index:6;display:flex;align-items:center;gap:8px;font-size:20px;color:#FFAE00"><span style="width:14px;height:18px;background:#FFAE00;clip-path:polygon(50% 0,100% 35%,50% 100%,0 35%)"></span>1,240</div><div class="abs" style="left:40px;right:40px;top:96px;height:52px;display:flex;align-items:center;gap:30px;border-bottom:1px solid rgba(116,123,173,.25);z-index:4"><span class="kc">LB</span><sc-for list="{{tabs}}" as="t" hint-placeholder-count="5"><button class="pick" type="button" onClick="{{t.pick}}" style="position:relative;display:flex;align-items:center;gap:8px;color:{{t.col}}"><sc-if value="{{t.locked}}" hint-placeholder-val="{{ false }}"><svg width="12" height="14" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg></sc-if><span class="cap" style="font-size:16px;color:{{t.col}}">{{t.name}}</span><span class="abs" style="left:0;right:0;bottom:-15px;height:2px;background:{{t.mark}}"></span></button></sc-for><span class="kc">RB</span></div><div class="abs" style="left:40px;top:160px;right:40px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 10px;border:1px dashed rgba(154,160,204,.5);z-index:9"><span class="lab" style="font-size:11px;margin-right:6px">Mockup - every setting</span><sc-for list="{{states}}" as="m" hint-placeholder-count="13"><button class="pick sls" type="button" aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" style="padding:5px 10px;background:rgba(0,1,10,.7);box-shadow:inset 0 0 0 1px {{m.edge}}"><span class="cap" style="font-size:12px;color:{{m.col}}">{{m.name}}</span></button></sc-for></div><div class="abs" style="left:-140px;bottom:-60px;width:420px;height:300px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,174,0,.22),rgba(255,174,0,0));pointer-events:none"></div><div class="abs" style="right:-140px;bottom:-60px;width:420px;height:300px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,174,0,.22),rgba(255,174,0,0));pointer-events:none"></div><div class="abs lat" style="left:330px;top:676px;width:1260px;height:520px;border-radius:50%;background-color:{{domeFill}};box-shadow:inset 0 30px 80px -20px {{lightGlow}},0 -10px 80px -30px {{lightGlow}};border:1px solid {{lightEdge}};z-index:2"></div><div class="abs" style="left:0;right:0;top:944px;height:136px;z-index:3;background:linear-gradient(180deg,#1B1710 0,#0B0A08 40%,#05060A 100%);border-top:3px solid #8A6A3A;box-shadow:0 -1px 0 0 #D2A25A,0 -18px 40px -10px rgba(255,174,0,.18)"></div><sc-for list="{{plates}}" as="t" hint-placeholder-count="3"><button class="pick abs sls lat" type="button" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}" aria-label="{{t.aria}}" style="left:{{t.x}}px;top:{{t.y}}px;width:300px;height:82px;box-sizing:border-box;padding:12px 14px;z-index:4;display:flex;align-items:center;gap:12px;background-color:{{t.fill}};box-shadow:inset 0 0 0 1px {{t.edge}};transform:perspective(900px) rotateX(16deg);transition:top 300ms ease-out;opacity:{{t.op}}"><sc-if value="{{t.hasAva}}" hint-placeholder-val="{{ true }}"><img class="ava sls" src="{{t.avatar}}" alt="" style="width:56px;height:56px;filter:{{t.filter}}"></sc-if><sc-if value="{{t.noAva}}" hint-placeholder-val="{{ false }}"><span class="sls" style="width:56px;height:56px;box-shadow:inset 0 0 0 1px {{t.edge}};display:flex;align-items:center;justify-content:center;color:{{t.edge}}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 1v12M1 7h12"></path></svg></span></sc-if><span style="display:flex;flex-direction:column;gap:4px;min-width:0"><span class="ell" style="font-size:22px">{{t.who}}</span><span class="ell" style="font-size:14px;color:#9AA0CC">{{t.line}}</span></span><span class="abs" style="right:12px;top:12px;width:7px;height:7px;transform:rotate(45deg);background:{{t.dot}}"></span></button></sc-for><sc-if value="{{projOn}}" hint-placeholder-val="{{ true }}"><div class="abs" style="left:{{beamX}}px;top:{{beamTop}}px;width:300px;height:{{beamH}}px;z-index:3;pointer-events:none;background:linear-gradient(0deg,{{lightGlow}},rgba(0,0,0,0));clip-path:polygon(0 100%,100% 100%,90% 0,10% 0);opacity:.6"></div><aside aria-label="{{projAria}}" class="abs rise lat sl" style="left:{{projX}}px;top:{{projY}}px;width:420px;box-sizing:border-box;padding:16px 18px;z-index:5;background-color:rgba(0,1,10,.6);box-shadow:inset 0 0 0 1px {{lightEdge}},inset 0 -80px 120px -60px {{lightGlow}};display:flex;flex-direction:column;gap:4px"><span class="lab" style="padding:2px 6px 8px">{{projTitle}}</span><sc-if value="{{showTiles}}" hint-placeholder-val="{{ true }}"><sc-for list="{{tiles}}" as="k" hint-placeholder-count="4"><button class="pick" type="button" onClick="{{k.pick}}" style="display:flex;align-items:center;gap:14px;height:44px;padding:0 6px;border-bottom:1px solid rgba(116,123,173,.22)"><span class="lab" style="font-size:11px;width:96px">{{k.label}}</span><span style="flex:1;font-size:19px;color:{{k.col}}">{{k.value}}</span><span style="color:#747BAD;display:flex;opacity:{{k.chev}}"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 2l4 4-4 4"></path></svg></span></button></sc-for></sc-if><sc-if value="{{showChoices}}" hint-placeholder-val="{{ false }}"><div class="fade" style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{choices}}" as="c" hint-placeholder-count="5"><button class="pick sls" type="button" onClick="{{c.pick}}" style="display:flex;align-items:center;gap:8px;padding:{{c.pad}};background:{{c.fill}};box-shadow:inset 0 0 0 1px {{c.edge}}"><sc-if value="{{c.hasAva}}" hint-placeholder-val="{{ false }}"><img class="ava sls" src="{{c.avatar}}" alt="" style="width:34px;height:34px"></sc-if><span style="font-size:16px;color:{{c.col}}">{{c.name}}</span></button></sc-for></div><span style="font-size:13px;color:#9AA0CC;padding:8px 6px 0">{{choiceHint}}</span></sc-if><sc-if value="{{showFriends}}" hint-placeholder-val="{{ false }}"><sc-for list="{{friends}}" as="f" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:12px;height:56px;padding:0 6px;border-bottom:1px solid rgba(116,123,173,.22)"><span style="width:9px;height:9px;transform:rotate(45deg);background:{{f.dot}}"></span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:18px">{{f.squad}}</span><span class="lab" style="font-size:10px">{{f.line}}</span></span><button class="btn sm def sls" type="button" onClick="{{f.pick}}"><span>Join</span></button></div></sc-for></sc-if><sc-if value="{{hasAction}}" hint-placeholder-val="{{ true }}"><span style="display:flex;padding-top:10px"><button class="{{actionClass}}" type="button" onClick="{{action}}"><span class="kc">X</span><span>{{actionLabel}}</span></button></span></sc-if><sc-if value="{{readOnly}}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:#9AA0CC;padding:10px 6px 0">{{readOnlyLine}}</span></sc-if></aside></sc-if><div class="abs" style="left:40px;top:972px;z-index:6;display:flex;align-items:center;gap:14px"><button class="pick" type="button" onClick="{{prevSquad}}" aria-label="Previous squad" style="color:#C9CDEA;display:flex;padding:10px"><svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 2L4 6l4 4"></path></svg></button><span style="display:flex;flex-direction:column;gap:3px;min-width:200px"><span style="font-size:26px;line-height:1">{{squadName}}</span><span class="lab" style="font-size:11px">{{whose}}</span></span><button class="pick" type="button" onClick="{{nextSquad}}" aria-label="Next squad" style="color:#C9CDEA;display:flex;padding:10px"><svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 2l4 4-4 4"></path></svg></button><span style="width:1px;height:36px;background:rgba(210,162,90,.35);margin:0 8px"></span><button class="btn sm def sls" type="button" onClick="{{make}}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 1v12M1 7h12"></path></svg><span>Make</span></button><button class="btn sm def sls" type="button" onClick="{{join}}"><span>Join</span></button></div><div class="abs" style="left:50%;top:984px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:22px"><sc-for list="{{domains}}" as="d" hint-placeholder-count="3"><button class="pick" type="button" aria-pressed="{{d.pressed}}" aria-label="{{d.aria}}" onClick="{{d.pick}}" style="display:flex;align-items:center;gap:8px;opacity:{{d.op}}"><span style="width:14px;height:14px;transform:rotate(45deg);background:{{d.dot}};box-shadow:0 0 {{d.glow}} {{d.dot}}"></span><span class="cap" style="font-size:13px;color:{{d.col}}">{{d.name}}</span></button></sc-for></div><sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}"><div class="abs fade" role="status" style="left:50%;top:214px;transform:translateX(-50%);z-index:9;padding:10px 18px;background:rgba(0,1,10,.88);box-shadow:inset 0 0 0 1px {{lightEdge}};font-size:15px;white-space:nowrap">{{toast}}</div></sc-if><div class="abs" style="right:40px;bottom:44px;display:flex;align-items:center;gap:10px;z-index:6"><button class="btn off sl" type="button" onClick="{{mission}}" aria-label="Mission, locked"><svg width="12" height="14" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg><span>Mission</span></button><button class="btn commit sl" type="button" onClick="{{arena}}"><span class="kc">A</span><span>Arena</span></button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+
+const BOOK = [{"name": "Skim Wing", "dom": "Jade", "mine": true, "owner": "You", "seats": [{"who": "You", "v": "Sparrow", "e": "Charge", "p": "VOLT", "a": "Javelin", "on": true, "me": true}, {"who": "Halcyon", "v": "Dolphin", "e": "Space", "p": "ZODIAC", "a": "Hydra", "on": true}, {"who": "Mothwing", "v": "Serpent", "e": "Mass", "p": "ANVIL", "a": "Aegis", "on": false}]}, {"name": "Breakers", "dom": "Ruby", "mine": false, "owner": "Kestrel", "seats": [{"who": "Kestrel", "v": "Rhino", "e": "Mass", "p": "TALON", "a": "Aftershock", "on": true}, {"who": "You", "v": "Manta", "e": "Charge", "p": "HORNET", "a": "Javelin", "on": true, "me": true}, {"who": "Tern", "v": "Serpent", "e": "Space", "p": "NEEDLE", "a": "Hydra", "on": false}]}, {"name": "New squad", "dom": "Jade", "mine": true, "owner": "You", "fresh": true, "seats": [{"who": "You", "v": "Sparrow", "e": "Charge", "p": "VOLT", "a": "Javelin", "on": true, "me": true}, {"who": "Open seat", "v": "Dolphin", "e": "Space", "p": "ZODIAC", "a": "None", "on": false, "open": true}, {"who": "Open seat", "v": "Serpent", "e": "Mass", "p": "ANVIL", "a": "None", "on": false, "open": true}]}];
+const CHOICES = {"v": ["Sparrow", "Dolphin", "Serpent", "Manta", "Rhino", "Squirrel", "Urchin"], "e": ["Charge", "Mass", "Space", "Time"], "p": ["VOLT", "ZODIAC", "ANVIL", "TALON", "HORNET", "NEEDLE", "IVY", "OPAL"], "a": ["Javelin", "Hydra", "Aftershock", "Aegis", "None"]};
+const CLOSE = {"VOLT": "32a9eed26dda493c7334d13cddaf435e", "ZODIAC": "30c5723ab68af43282bfca424757ff31", "ANVIL": "f4c3e0f26d1f48e7d121156e212e4136", "TALON": "77e722ebf367c3b4093b2ae2778762e4", "HORNET": "5bb7e9dc77ccbb917e79991a86168b17", "NEEDLE": "17190fc5544dfc08266eab625c0aa6a2", "IVY": "d750680bcbd6bed6958c9fa98632d348", "OPAL": "02126cf45624881e04e68ab3443b261b"};
+const HANGAR = {"Jade": "/_blob/c2a9b2634cf0ccae357e84f5a3ff5917", "Ruby": "/_blob/cd2a783f5d168b8a448e948e3d67122a", "Gold": "/_blob/48075ef29368f88768c579631ceb3f3d"};
+const DOMC = {"Jade": "#21C0BD", "Ruby": "#BD1BC8", "Gold": "#FF8F11"};
+const FRIENDS = [{"owner": "Kestrel", "squad": "Breakers", "dom": "Ruby", "open": "1 open seat", "sq": 1}, {"owner": "Wren", "squad": "Tidebreak", "dom": "Gold", "open": "2 open seats", "sq": -1}, {"owner": "Halcyon", "squad": "Lantern", "dom": "Jade", "open": "1 open seat", "sq": -1}];
+const STATES = ["At rest", "Your seat", "Vessel", "Element", "Pilot", "Artifact", "Offline mate", "Open seat", "Who flies it", "Joined squad", "Light", "Make", "Join a friend"];
+const TABS = ["Converter", "Squads", "Pilots", "Artifacts", "Decor"];
+const KEYS = [["v", "Vessel"], ["e", "Element"], ["p", "Pilot"], ["a", "Artifact"]];
+const ORDER = [1, 0, 2], XS = [490, 810, 1130];
+function hexA(h, a) { const n = parseInt(h.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+
+class Component extends DCLogic {
+ constructor(props) { super(props); this.state = { sq: 0, doms: BOOK.map((b) => b.dom), seat: -1, picking: '', made: false,
+   joining: false, edits: {}, opened: {}, filled: {}, mode: 0, toast: '' }; this.t = null; }
+ componentWillUnmount() { if (this.t) clearTimeout(this.t); }
+ say(x) { if (this.t) clearTimeout(this.t); this.setState({ toast: x }); this.t = setTimeout(() => this.setState({ toast: '' }), 2600); }
+ squads() { return this.state.made ? [0, 1, 2] : [0, 1]; }
+ seatData(i) {
+  const st = this.state, q = BOOK[st.sq], s = q.seats[i], k = st.sq + ':' + i, e = st.edits[k] || {}, fill = st.filled[k];
+  const open = (!!st.opened[k] || !!s.open) && !fill;
+  const who = fill ? fill : (open ? 'Open seat' : s.who), on = fill === 'AI wingmate' ? true : (open ? false : s.on);
+  return { i, who, on, me: !!s.me, open, mine: q.mine, wait: fill === 'Open for a friend',
+   v: e.v || s.v, e: e.e || s.e, p: e.p || s.p, a: e.a || s.a,
+   state: open ? 'Open' : (fill === 'AI wingmate' ? 'AI wingmate' : (fill ? 'Waiting for a friend' : (on ? 'Online' : 'Offline'))),
+   avatar: '/_blob/' + CLOSE[e.p || s.p] };
+ }
+ canEdit(d) { return BOOK[this.state.sq].mine || d.me; }
+ choose(i, key, val) { const k = this.state.sq + ':' + i, e = Object.assign({}, this.state.edits);
+  e[k] = Object.assign({}, e[k] || {}); e[k][key] = val; this.setState({ edits: e, picking: '' }); }
+ jump(n) {
+  const base = { sq: 0, seat: -1, picking: '', joining: false, made: this.state.made, opened: {}, filled: {}, mode: n, toast: '' };
+  const S = [{}, { seat: 0 }, { seat: 0, picking: 'v' }, { seat: 0, picking: 'e' }, { seat: 0, picking: 'p' }, { seat: 0, picking: 'a' },
+   { seat: 2 }, { seat: 2, opened: { '0:2': true } }, { seat: 2, opened: { '0:2': true }, picking: 'w' }, { sq: 1, seat: 2 },
+   { seat: -1 }, { sq: 2, made: true, seat: 1 }, { joining: true }][n];
+  this.setState(Object.assign(base, S));
+  if (n === 10) this.say('The squad\'s light: pick Jade, Ruby or Gold on the rail. The hangar and the table relight.');
+ }
+ renderVals() {
+  const st = this.state, q = BOOK[st.sq], dom = st.doms[st.sq], dc = DOMC[dom], open = st.seat >= 0, d = this.seatData(open ? st.seat : 0);
+  const states = STATES.map((n, i) => ({ name: n, pressed: i === st.mode ? 'true' : 'false', edge: i === st.mode ? '#00D4FF' : 'rgba(116,123,173,.45)',
+   col: i === st.mode ? '#E6E9FF' : '#9AA0CC', pick: () => this.jump(i) }));
+  const tabs = TABS.map((x, i) => ({ name: x, col: i === 1 ? '#E6E9FF' : (x === 'Decor' ? '#5C5F70' : '#747BAD'),
+   mark: i === 1 ? '#E6E9FF' : 'transparent', locked: x === 'Decor', pick: () => this.say(x + ' is its own thread of this round.') }));
+  const plates = ORDER.map((i, col) => { const s = this.seatData(i), on = i === st.seat, live = s.on && !s.open;
+   return { x: XS[col], y: on ? 744 : 770, who: s.who, avatar: s.avatar, hasAva: !s.open, noAva: s.open,
+    line: s.open ? (q.mine ? 'Pick who flies it' : 'Anyone in the squad can take it') : (s.wait ? 'Waiting for a friend' : s.v + ' - ' + s.e),
+    aria: 'Seat: ' + s.who, pressed: on ? 'true' : 'false', op: live || on ? 1 : 0.72,
+    fill: on ? hexA(dc, 0.26) : hexA(dc, 0.08), edge: on ? dc : hexA(dc, live ? 0.45 : 0.25),
+    dot: live ? dc : '#5C5F70', filter: live ? 'none' : 'grayscale(1) brightness(.6)',
+    pick: () => this.setState({ seat: on ? -1 : i, picking: '', joining: false }) }; });
+  const col = Math.max(0, ORDER.indexOf(st.seat)), px = XS[col], pk = st.picking;
+  const tiles = KEYS.map((k) => ({ label: k[1], value: d[k[0]], col: d.wait ? '#9AA0CC' : '#E6E9FF', chev: this.canEdit(d) ? 1 : 0,
+   pick: () => { if (!this.canEdit(d)) { this.say('Only ' + q.owner + ' changes this seat.'); return; } this.setState({ picking: k[0] }); } }));
+  if (d.wait || d.who === 'AI wingmate') tiles.unshift({ label: 'Who flies it', value: d.who, col: '#E6E9FF', chev: 1, pick: () => this.setState({ picking: 'w' }) });
+  let choices = [], choiceHint = '';
+  if (pk === 'w') { choices = ['AI wingmate', 'Open for a friend'].map((n) => ({ name: n, pad: '10px 16px', col: '#E6E9FF', edge: hexA(dc, 0.6),
+    fill: 'rgba(0,4,31,.4)', hasAva: false, pick: () => { const f = Object.assign({}, st.filled); f[st.sq + ':' + st.seat] = n;
+     this.setState({ filled: f, picking: '' }); } }));
+    choiceHint = 'An AI wingmate flies the seat now; a friend who joins takes it from them.'; }
+  else if (pk) { const cur = d[pk]; choices = CHOICES[pk].map((n) => ({ name: n, pad: pk === 'p' ? '4px 12px 4px 4px' : '9px 14px',
+    col: n === cur ? '#E6E9FF' : '#9AA0CC', edge: n === cur ? dc : 'rgba(116,123,173,.35)', fill: n === cur ? hexA(dc, 0.18) : 'rgba(0,4,31,.4)',
+    hasAva: pk === 'p', avatar: '/_blob/' + CLOSE[n], pick: () => this.choose(st.seat, pk, n) }));
+    choiceHint = { v: 'Your pad in the hangar changes to the vessel you pick.', e: "The vessel's element: which of its four abilities it leads with.",
+     p: "The pilot's callsign biases how an AI flies this seat.", a: 'Carried into the match; None leaves the slot empty.' }[pk]; }
+  const offlineFriend = !d.on && !d.me && !d.open && !d.wait && d.mine;
+  const friends = FRIENDS.map((f) => ({ squad: f.squad, line: f.owner + "'s squad - " + f.open, dot: DOMC[f.dom],
+   pick: () => { this.setState({ joining: false, sq: f.sq >= 0 ? f.sq : st.sq, seat: -1 }); this.say('You joined ' + f.squad + '. Its leader sets the seats.'); } }));
+  const projOn = (open && !(d.open && !q.mine)) || st.joining;
+  const pickName = pk === 'w' ? 'Who flies it' : (pk ? KEYS.find((k) => k[0] === pk)[1] : '');
+  const domains = ['Jade', 'Ruby', 'Gold'].map((k) => { const on = k === dom; return { name: k, dot: DOMC[k], col: on ? '#E6E9FF' : '#9AA0CC',
+   pressed: on ? 'true' : 'false', op: q.mine || on ? 1 : 0.35, glow: on ? '14px' : '0', aria: 'Light the squad ' + k,
+   pick: () => { if (!q.mine) { this.say('Only ' + q.owner + " changes the squad's light."); return; } const dd = st.doms.slice(); dd[st.sq] = k; this.setState({ doms: dd }); } }; });
+  const list = this.squads(), at = list.indexOf(st.sq);
+  const go = (k) => this.setState({ sq: list[(at + k + list.length) % list.length], seat: -1, picking: '', joining: false });
+  return { tabs, states, plates, domains, tiles, choices, choiceHint, friends, dc,
+   bg: HANGAR[dom], bgAlt: 'Inside the Ark: the squad lined up in the hangar, lit ' + dom,
+   lightEdge: hexA(dc, 0.6), lightGlow: hexA(dc, 0.35), domeFill: hexA(dc, 0.07),
+   squadName: q.name, whose: q.fresh ? 'New - yours' : (q.mine ? 'Your squad' : q.owner + "'s squad - joined"),
+   projOn, projAria: st.joining ? 'Join a friend' : 'Seat',
+   projTitle: st.joining ? "Friends' squads with an open seat" : (pk ? 'Pick - ' + pickName : d.who + ' - ' + d.state),
+   showTiles: !st.joining && !pk, showChoices: !st.joining && !!pk, showFriends: st.joining,
+   projX: st.joining ? 750 : px - 60, projY: st.joining ? 420 : (pk ? 300 : 440), beamX: st.joining ? 810 : px, beamTop: pk ? 560 : 640, beamH: pk ? 200 : 120,
+   hasAction: !st.joining && !pk && (d.me || offlineFriend || (d.open && q.mine)),
+   actionLabel: d.me ? 'Change vessel' : (d.open ? 'Who flies it' : 'Open the seat'),
+   actionClass: d.me ? 'btn sm def sls' : (d.open ? 'btn sm def sls' : 'btn sm cta sls'),
+   action: () => { if (d.me) this.setState({ picking: 'v' }); else if (d.open) this.setState({ picking: 'w' });
+    else { const o = Object.assign({}, st.opened); o[st.sq + ':' + st.seat] = true; this.setState({ opened: o });
+     this.say(d.who + ' is offline. The seat is open; the pad stands empty until someone takes it.'); } },
+   readOnly: !q.mine && !st.joining && open, readOnlyLine: q.owner + ' leads this squad and sets its seats; you change only your own.',
+   toast: st.toast, hasToast: st.toast !== '',
+   prevSquad: () => go(-1), nextSquad: () => go(1),
+   make: () => { this.setState({ made: true, sq: 2, seat: 1, picking: '', joining: false, mode: 11 }); this.say('A new squad: you, and two open seats.'); },
+   join: () => this.setState({ joining: !st.joining, seat: -1, picking: '', mode: 12 }),
+   mission: () => this.say('Missions open later.'), arena: () => this.say('Taking ' + q.name + ' into the Arena.') };
+ }
+}
+
+</script>
+</body>
+</html>
