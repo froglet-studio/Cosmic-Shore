@@ -8334,3 +8334,68 @@ Built in `Assets/_Scripts/UI/Views/` (all code-built, no prefab or scene change)
 Every word is a `VoyageLines` field (`Docs/Voyages/voyage_slice.json`, `author_voyage_assets.py`); colours come from
 `VoyageBoardStyleSO` through `ColorTrace`. Seen in Amoebius at 1920x1080 (all three pages, full screen, the crew
 column, the popup). Not opened in Unity: the PR's Verification status lists the hand tests.
+
+## 205. Rebuilt: the three Voyages pages at the boards' own numbers (2026-11-14, claude/project-thread-sbm2ns, not seen in Unity)
+
+Asked (Shombith, on section 204's build): "This looks nothing like our frogma designs... Rev 111 was the final cut. Fix
+this. Don't test in Amoebius, make it and push it and I will check it opening this branch."
+
+What was wrong, measured against the boards: every page was laid out by fractions of the window, so nothing stood
+where the board put it; sea lines ran through the page ground and inside every card (the boards have one faint ground
+and plain glass); the cards had cut corners (the boards' are square); the map printed its own place names (two names on
+one spot overlapped at Galaxy scale) and two caption lines across the table; the route was lime (the board's is light);
+the rewards stayed empty because every window refresh rebuilt the offers and restarted the voyage page's animation; and
+the lone Voyages tab row took height above the steps.
+
+Rebuilt in `Assets/_Scripts/UI/Views/` (code only, no prefab or scene change):
+- **Each page is drawn in the board's units** and scaled evenly to its room: page 1 in Rev 111 Full's 1840 x 748 (and
+  its 1920 x 1080 full screen, eased between), page 2 in P2A's 1840 x 748, page 3 in R108 Lobby/Squad's 1840 x 758, the
+  seat popup as R108 Picker's 1520 x 830 panel on its 1920 x 1080 screen (`VoyageKit.Fit`, `VoyageKit.At`). Every place
+  and size in the code is the board's number.
+- **Page 1 (Rev 111 Full)**: the table 1216 wide at its front, 444 deep, its 96 tall side view as the front face; the
+  map prints no names or caption (`VoyageMapGraphic.Unnamed`, `VoyageEdgeGraphic.Uncaptioned`); each voyage is a pin
+  (stalk 40 + 14 x difficulty, a 20 ring, the place's name in caps 14 from Sector in; picked cyan with its halo), home an
+  amber diamond; the zoom row on its dark band, + and -, Full screen; the crew's 100 x 150 faces (picked: cyan foot,
+  others at .72) and the drawer "Your crew recommends" (rows 112: face, kind, name, pips, pay); the picked voyage's
+  panel and Open voyage.
+- **Page 2 (P2A)**: the pilot's picture filling 520 x 748 and darkening from a quarter down, house, name 28 and story
+  18; kicker, title 36, numbers; the route in light over the dimmed water with 24 rings and their names; the stop
+  reached; the nine levels (picked filled light, the recommendation underlined cyan); the rewards over 1 unit lines
+  (crystals with their flower, "More at a higher difficulty"); Back and Ready your Ark side by side. The animation is
+  keyed by the voyage's name and pilot, so a refresh no longer restarts it.
+- **Page 3 (R108)**: the head and the squad presets (250 x 104 glass, "You - AI - AI", the leader's hull), the voyage
+  with its pilot's face, the three 592 x 540 seat cards (name 24, role or state, the hull over a soft light, the pilot
+  72 x 84, vessel 24, pilot 16, the element's flower, the four settings on your own seat, the artifact on the others),
+  Fly a squad instead, Back and Set sail at the foot.
+- **The seat popup (R108 Picker)**: title 32, the four tabs, the quick kits (242 x 84 with a face), Sees as chips (the
+  picked one filled), six across of 158 x 116, the 400 x 548 preview (house, name 32, what they see), Done as the call
+  to action.
+- **The look**: glass is square, shading from the outline's blue to the deep ground by half way, its edge light at the
+  top left to cyan at the bottom right (`VoyageGradient`, `VoyageOutline`); one near-opaque ground with four faint long
+  waves under the whole Voyages page (`VoyageBoard.BuildGround`); soft buttons as Rev 98's `.soft`; the lone tab row is
+  hidden and the page rises into its room (`VoyageJobsView.HideLoneTab`).
+- **New words** (`voyage_slice.json`): `SeaCrewDrawer`, `ArkSeatAiShort`, `ArkSquadSeparator`; `BriefCrystalsBy` now
+  reads "More at a higher difficulty".
+
+Kept from the earlier build: the Rev 103 Saga and Episodes art strip at page 1's foot (Rev 111 draws two plain locked
+strips there). Not opened in Unity or Amoebius (Shombith asked to check the branch himself).
+
+### 205.1 The boards' motion
+
+Shombith (2026-11-14): "it was pretty smooth here, it should be that smooth experience in the game as well". The
+pages now move on Frogma's own timings, through one easing helper (`VoyageKit.Bezier`, with `Rise`, `Sweep`, `Pop`
+and `Draw` named for the board's curves):
+
+| Motion | Board | Game |
+|---|---|---|
+| Page change | `.rise` .7s cubic-bezier(.2,.7,.2,1), 16 up | `VoyageBoard.Rise`: the page fades in and lifts 16 |
+| Full screen | .9s cubic-bezier(.65,0,.25,1) | `VoyageSeaPage` sweep, same curve and time |
+| Crew drawer | .5s cubic-bezier(.2,.7,.2,1) | the slide on the rise curve |
+| Map tier step / pan | .8s cubic-bezier(.2,.7,.2,1) | `VoyageMapGraphic.StepFlight` on the rise curve (the long dive keeps its in-out) |
+| Picked pin | glow breathes 4 to 12, 2.8s | the halo breathes |
+| Route | `.draw` 2.4s after .3s, cubic-bezier(.4,0,.2,1) | `VoyageBriefPage`, same |
+| Stop names | `.pop` .45s cubic-bezier(.3,1.4,.5,1) | each name pops in as the route reaches it |
+| Rewards | `.rise`, staggered | each row rises in turn |
+| Seat picker | modal .45s (24 up, .97 to 1), dim .35s | `VoyageSeatPicker.Tick`, same |
+
+Not opened in Unity: the feel is for Shombith to judge on the branch.

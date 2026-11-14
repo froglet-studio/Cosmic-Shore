@@ -49,6 +49,27 @@ namespace CosmicShore.UI
             SetVerticesDirty();
         }
 
+        /// <summary>The stops' ring radius before <see cref="LineScale"/> (9: the open card; the voyage page's 24 unit rings
+        /// are 12).</summary>
+        public float StopRadius = 9f;
+        /// <summary>The fill inside a stop's ring (clear: none; the voyage page's are dark, rgba(0,1,10,.75)).</summary>
+        public Color StopFill = new(0f, 0f, 0f, 0f);
+        /// <summary>A stop the drawing has not reached yet: its ring in the sea's dim tint, or, set here, this colour.</summary>
+        public Color? StopAhead;
+
+        /// <summary>Where map point <paramref name="map"/> is drawn in the poster's rect, as the last mesh framed it; false
+        /// before the water is painted (the voyage page names its stops there).</summary>
+        public bool TryLocal(Vector2 map, out Vector2 local)
+        {
+            local = default;
+            var r = rectTransform.rect;
+            if (!_source || r.width < 1f || r.height < 1f || !_source.TrySeaView(out _, out _, out var lo, out var hi)) return false;
+            var (flo, fhi) = VoyageCardRules.Frame(lo, hi, _course, r.width / r.height);
+            local = new Vector2(Mathf.LerpUnclamped(r.xMin, r.xMax, Mathf.InverseLerp(flo.x, fhi.x, map.x)),
+                Mathf.LerpUnclamped(r.yMin, r.yMax, Mathf.InverseLerp(flo.y, fhi.y, map.y)));
+            return true;
+        }
+
         /// <summary>How far along the course (0-1) the stop nearest <paramref name="stop"/> lies.</summary>
         public float ShareAt(Vector2 stop) => VoyageCardRules.ShareAlong(_course, stop);
         // The map's view the mesh was last built for: the poster rebuilds only when the map repaints or moves.
@@ -126,8 +147,15 @@ namespace CosmicShore.UI
                 if (len > left) Segment(vh, At(end), At(b), 2f * LineScale, dim, white);
                 left -= len;
             }
+            var stopFill = ColorTrace.Retrace(ColorTrace.Ui, StopFill);
+            var ahead = StopAhead.HasValue ? ColorTrace.Retrace(ColorTrace.Ui, StopAhead.Value) : dim;
             foreach (var stop in _stops)
-                Ring(vh, At(stop), 9f * LineScale, 2f * LineScale, ShareAt(stop) <= _drawn + 1e-3f ? route : dim, white);
+            {
+                var p = At(stop);
+                float radius = StopRadius * LineScale;
+                if (stopFill.a > 0f) Disc(vh, p, radius, stopFill, white);
+                Ring(vh, p, radius, 2f * LineScale, ShareAt(stop) <= _drawn + 1e-3f ? route : ahead, white);
+            }
             Diamond(vh, At(_course[0]), 9f * LineScale, ark, white);
             if (_drawn >= 0.999f) Diamond(vh, At(_course[^1]), 9f * LineScale, route, white);
         }
@@ -149,6 +177,17 @@ namespace CosmicShore.UI
                 var d0 = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0));
                 var d1 = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1));
                 Quad(vh, p + d0 * (r - width), p + d0 * r, p + d1 * r, p + d1 * (r - width), c, uv, uv, uv, uv);
+            }
+        }
+
+        static void Disc(VertexHelper vh, Vector2 p, float r, Color c, Vector2 uv)
+        {
+            const int Sides = 20;
+            for (int i = 0; i < Sides; i++)
+            {
+                float a0 = i * Mathf.PI * 2f / Sides, a1 = (i + 1) * Mathf.PI * 2f / Sides;
+                Quad(vh, p, p + new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * r, p + new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * r, p,
+                    c, uv, uv, uv, uv);
             }
         }
 

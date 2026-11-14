@@ -381,6 +381,9 @@ namespace CosmicShore.UI
                 tabs.Drop(VoyageWindowTabs.SagaTab);
                 tabs.Drop(VoyageWindowTabs.EpisodesTab);
                 tabs.Plain(style.LabelFont, 15f, 34f);
+                // One tab left is no choice: its row goes and the page rises into the room (Frogma Rev 111 Full draws
+                // no tab row above the steps).
+                HideLoneTab(tabs, page);
                 // The Saga, Quests and Episodes pages take the same table (Rev 90).
                 VoyageSlabPage.Stand(tabs, new VoyageKit(style, lines, template ? template.LabelTemplate : null), vessels, page,
                     sagaLocked);
@@ -388,6 +391,18 @@ namespace CosmicShore.UI
             _lockedStrip = VoyageLockedStrip.Create(page, new VoyageKit(style, lines, template ? template.LabelTemplate : null),
                 sagaArt, lockSprite);
             return true;
+        }
+
+        static void HideLoneTab(VoyageWindowTabs tabs, RectTransform page)
+        {
+            var strip = tabs.TabStrip;
+            if (!strip || tabs.Kept > 1) return;
+            strip.gameObject.SetActive(false);
+            // The page stands under the row in the same parent, its top tied to the parent's top: it now starts where the
+            // row started.
+            if (page.parent != strip.parent || page.anchorMax.y < 1f || strip.anchorMin.y < 1f) return;
+            float stripTop = strip.anchoredPosition.y + (1f - strip.pivot.y) * strip.sizeDelta.y;
+            page.offsetMax = new Vector2(page.offsetMax.x, Mathf.Max(page.offsetMax.y, stripTop));
         }
 
         /// <summary>The map and its edge-on view go into the HyperSea page's table (Rev 108, Rev 111 Full).</summary>

@@ -614,6 +614,8 @@ namespace CosmicShore.ScriptableObjects
         public string SeaOfferPay = "{pay} {element}";
         [Tooltip("Over a voyage on the crew's sliding cards: who recommends it.")]
         public string SeaCrewRecommends = "{pilot} recommends";
+        [Tooltip("The label over the crew's drawer on the HyperSea page (Frogma Rev 111 Full).")]
+        public string SeaCrewDrawer = "YOUR CREW RECOMMENDS";
         [Tooltip("Over the voyage's name on the voyage page.")]
         public string BriefKicker = "{kind} - offered by {pilot}";
         [Tooltip("Under the voyage's name: how far, how long, how many stops.")]
@@ -626,8 +628,8 @@ namespace CosmicShore.ScriptableObjects
         public string BriefRewards = "REWARDS";
         [Tooltip("The crystals the voyage pays at the picked difficulty.")]
         public string BriefCrystals = "{pay} {element} crystals";
-        [Tooltip("Under the crystals: the difficulty they are paid for.")]
-        public string BriefCrystalsBy = "At difficulty {difficulty}";
+        [Tooltip("Under the crystals: that the pay grows with the difficulty; {difficulty} is the one picked.")]
+        public string BriefCrystalsBy = "More at a higher difficulty";
         [Tooltip("A reward: standing with the house of the pilot who offers it.")]
         public string BriefStanding = "Standing with {faction}";
         [Tooltip("Under the standing reward.")]
@@ -666,6 +668,10 @@ namespace CosmicShore.ScriptableObjects
         public string ArkBackToLobby = "BACK TO YOUR LOBBY";
         [Tooltip("Under the voyage's name on the Ark page, before its difficulty.")]
         public string ArkVoyageLine = "{kind}";
+        [Tooltip("On a squad card: an AI wingmate's seat, short (\"You - AI - AI\").")]
+        public string ArkSeatAiShort = "AI";
+        [Tooltip("On a squad card: between the seats' names.")]
+        public string ArkSquadSeparator = " - ";
         [Tooltip("The seat picker's title.")]
         public string PickTitle = "Change your seat";
         [Tooltip("The seat picker's title for an AI seat; {seat} is its place in the squad.")]
