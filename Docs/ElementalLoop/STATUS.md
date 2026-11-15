@@ -15,6 +15,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Grizzly | `b b .` | `x x x` | `x x x` | `b b .` | Charge | - |
 | Honeyguide | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Jacks | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| JewelWasp | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Meerkat | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Orca | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
@@ -26,7 +27,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Squirrel | `b b b` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Stoat | `b b b` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | Regatta |
-| Swordfish | `x x x` | `x x x` | `x x x` | `b b .` | Time, Charge | Broadside, BroodRush |
+| Swordfish | `b b .` | `b b .` | `b b .` | `b b .` | - | Broadside, BroodRush |
 | Thresher | `b b b` | `b b .` | `x x x` | `b b .` | - | - |
 | TigerMoth | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Urchin | `b b ~` | `x x x` | `b b .` | `x x x` | Charge | Regatta, Broadside |
@@ -53,6 +54,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Grizzly | Grizzly Time | - | - | Grizzly Charge |
 | Honeyguide | Slip Line | - | - | - |
 | Jacks | Decoy Run | - | - | - |
+| JewelWasp | - | - | - | - |
 | Manta | Redline | Corona | Scurry (shared) | Bloomrush |
 | Meerkat | Burrow Run, Warpline | - | - | - |
 | Orca | Breach | - | - | - |
@@ -64,7 +66,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Squirrel | Skim Race | Joust | Scurry (shared) | excused |
 | Starling | - | - | - | - |
 | Stoat | Slingshot | - | - | - |
-| Swordfish | - | - | - | Cleave |
+| Swordfish | Spearline | Riposte | Palisade | Cleave |
 | Thresher | Thresher Time | Jackstraw | - | Harvest |
 | TigerMoth | Waystation | Dustup | Tapestry | Sirocco |
 | Urchin | Skein | - | Hijack | - |
