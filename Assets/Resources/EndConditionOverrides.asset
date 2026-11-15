@@ -57,6 +57,7 @@ MonoBehaviour:
   fulmenPrismTarget: 1200
   trawlPrismTarget: 300
   railrushHitTarget: 20
+  standoffBlastTarget: 10
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
   - 1600
@@ -160,6 +161,7 @@ MonoBehaviour:
   fulmenPrismTargetBuild: 1200
   trawlPrismTargetBuild: 300
   railrushHitTargetBuild: 20
+  standoffBlastTargetBuild: 10
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
   - 1600

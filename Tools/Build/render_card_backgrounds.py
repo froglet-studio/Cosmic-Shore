@@ -100,6 +100,7 @@ SOURCES = [
     f"{_MG}/SpawnableFlatline.cs",
     f"{_MG}/SpawnableKelpwood.cs",
     f"{_MG}/SpawnableCorona.cs",
+    f"{_MG}/SpawnableStandoff.cs",
     f"{_MG}/SpawnableHarvest.cs",
     f"{_MG}/ShatterplanePlates.cs",
     f"{_MG}/SpawnableShatterplane.cs",
@@ -823,6 +824,9 @@ CAMERAS = {
     # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
     # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
     "Corona": (37, -10, 0.36, 60),
+    # Standoff: from just outside the ring of posts, low across it, so the posts stand round the open centre and the
+    # payoff - a bomb stuck on a rival in front of a post, going off (the one thing that scores) - sits in the middle.
+    "Standoff": (30, 14, 0.8, 46),
     # Harvest: inside the field, so the sheaves fill the plate, and the payoff - a Thresher's chain bowed round a
     # sheaf's stalks, its red-hot ball in the core and the blast going off there (the act that scores most) - sits
     # in the middle of it.
@@ -2249,6 +2253,28 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         bolt(centre, span * 0.7, 5, 1)
         crystal(v_add(centre, [span * 0.04, 0, 0]), span * 0.02)
         stage["vessels"] = vessels([(JADE, 0.08, 10, 40, 80), (GOLD, 0.35, -6, 220, 70)])
+    elif s == "Standoff":
+        # A STICKY BOMB going off: a Jade Grizzly dug in behind one post fired a trigger bomb across the open centre; it
+        # touched a Ruby rival sheltering at a post on the far side and froze on its hull, and the Jade pilot blew it -
+        # the blast round the rival (the one thing that scores). The omni crystals float at the open centre.
+        import standoff_budget as sb
+        rung = sb.RUNGS[INTENSITY - 1]
+        for k in range(rung["omni"] + 1):
+            crystal(v_mul(rng.unit(), 60 * rng.u() ** 0.33), 7.0)
+        dirs = [sb.post_direction(p, rung) for p in range(rung["postCount"])]
+        home = max(dirs, key=lambda d: v_dot(d, v_norm([0.6, 0.15, -0.75])))
+        far = min(dirs, key=lambda d: v_dot(d, home))
+        R0 = rung["postRadius"]
+        pilot = v_mul(home, R0 + 26)
+        rival = v_mul(far, R0 - 34)
+        glow(pilot, 10, JADE, 1.2, 0.6)
+        streak(v_mul(v_add(pilot, rival), 0.5), v_sub(rival, pilot), math.dist(pilot, rival) * 0.8, JADE)
+        hot = [c * 1.6 for c in pal["danger"][:3]]   # the bomb wears the palette's danger colour
+        layers.append({"kind": "sphere", "c": list(rival), "r": 4.0, "base": [c * 0.6 for c in hot],
+                       "rim": hot, "emissive": hot, "unbound": True})
+        glow(rival, 100, JADE, 1.0, 0.28)            # a full bomb's blast: 100 u round the bomb
+        glow(rival, 12, RUBY, 1.3, 0.6)              # the rival it caught
+        stage["vessels"] = vessels([(JADE, 0.5, 6, 300, 25), (RUBY, 0.35, -8, 150, 30), (GOLD, 0.75, 12, 240, 25)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)

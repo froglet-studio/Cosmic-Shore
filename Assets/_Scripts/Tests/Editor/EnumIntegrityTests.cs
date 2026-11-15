@@ -223,7 +223,8 @@ namespace CosmicShore.Tests
 
             // 108 -> 111 on 2026-11-15: Sentry (105), Warren (106) and CaveIn (107), the Meerkat's Charge, Mass and Space
             // games, on their reserved ids.
-            Assert.AreEqual(111, values.Length,
+            // 111 -> 112 on 2026-11-15: Standoff (125), the Grizzly's Charge game, on the id GAME_KIT_ROSTER.md reserved (row 35).
+            Assert.AreEqual(112, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -290,6 +291,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Sentry, 105)]
         [TestCase(GameModes.Warren, 106)]
         [TestCase(GameModes.CaveIn, 107)]
+        [TestCase(GameModes.Standoff, 125)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

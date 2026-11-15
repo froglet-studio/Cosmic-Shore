@@ -586,7 +586,18 @@ namespace CosmicShore.Data
         CaveIn = 107,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 100) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 112) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 97) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // The Grizzly's CHARGE game (STANDOFF.md): square posts of prism tiles stand on a sphere round an open centre.
+        // A trigger bomb that touches a rival hull freezes on it; pull and release again to blow it. Every rival a blast
+        // of yours catches is a point; Dig In behind a post to aim and recharge. First domain to the target wins.
+        // I1-I4 add posts, an inner ring of posts, shielded rims and danger corners. 125 is the id the game kit roster
+        // reserved for it (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35), so parallel sessions never collide; 91-124
+        // and 126-127 are the roster's other games.
+        Standoff = 125,
+
+        // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
+        // 112) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

@@ -600,6 +600,10 @@ namespace CosmicShore.UI
                     // Shatterplane's answer: the densest standing hostile mass, the nearest big plate still up. A
                     // soliton formed beside it swallows it and fires it at whatever stands past its way out.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_CaveIn");
+                case GameModes.Standoff:
+                    // The Bends' provider again: the nearest pilot this player may blast. The posts hide pilots and
+                    // the bombs fly through them, so the question every second is where the rival is.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Standoff");
                 case GameModes.Harvest:
                     // Rampage's provider again: the nearest managed omni crystal, in the field's clear centre. The
                     // sheaves are in plain sight; the crystal is the windmill - the one thing worth racing to.

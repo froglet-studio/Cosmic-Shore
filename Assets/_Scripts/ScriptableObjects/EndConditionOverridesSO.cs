@@ -149,6 +149,10 @@ namespace CosmicShore.ScriptableObjects
         /// spike reaching a rival hull (a Bullet-class combat hit) - is one point (RailrushScoringRuleSO), summed
         /// across the domain's pilots. An ESTIMATE pending a timed match.</summary>
         public const int DefaultRailrushHitTarget = 20;
+        /// <summary>Standoff blast target used when <see cref="standoffBlastTarget"/> is 0. One BLAST HIT - a rival pilot
+        /// caught in a Grizzly's blast, a trigger bomb's or the charged cannon's (a MissileBlast-class combat hit) - is
+        /// one point (StandoffScoringRuleSO), summed across the domain's pilots. A first cut: nobody has played it.</summary>
+        public const int DefaultStandoffBlastTarget = 10;
 
         /// <summary>Harvest hostile-prism target used when <see cref="harvestPrismTarget"/> is 0. The Thresher's
         /// sheaves never grow back, so three domains' worth of it must fit in the smallest field (the generator,
@@ -716,6 +720,10 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Railrush: spike HITS a DOMAIN needs to win (race to N), the Urchin's charge game. A chain spike " +
                  "reaching a rival hull is one hit, summed across the domain's pilots. 0 = default (20).")]
         [Min(0)] public int railrushHitTarget = 20;
+        [Tooltip("Standoff: BLAST HITS a DOMAIN needs to win (race to N). A rival pilot caught in a Grizzly's blast " +
+                 "(a trigger bomb or the charged cannon) is one blast hit, summed across the domain's pilots. 0 = " +
+                 "default (10).")]
+        [Min(0)] public int standoffBlastTarget = 10;
 
         [Tooltip("Harvest: hostile prisms (other domains' sheaves and neutral ones, rival trails, fauna) a DOMAIN " +
                  "must destroy between them to win (race to N) - with the Thresher's chain, ball or blast; your own " +
@@ -903,6 +911,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int shockfrontRippleTargetBuild = 10;
         [Min(0)] public int fulmenPrismTargetBuild = 1200;
         [Min(0)] public int railrushHitTargetBuild = 20;
+        [Min(0)] public int standoffBlastTargetBuild = 10;
         [Min(0)] public int harvestPrismTargetBuild = 750;
         [Min(0)] public int shatterplanePrismTargetBuild = 1600;
         [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
@@ -1406,6 +1415,11 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetRailrushHitTarget() =>
             railrushHitTarget > 0 ? railrushHitTarget : DefaultRailrushHitTarget;
+        /// Standoff blast target ("first domain to N blast hits"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultStandoffBlastTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetStandoffBlastTarget() =>
+            standoffBlastTarget > 0 ? standoffBlastTarget : DefaultStandoffBlastTarget;
 
         /// <summary>
         /// Harvest prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
@@ -1695,6 +1709,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Shockfront                => GetShockfrontRippleTarget(),
                 GameModes.Fulmen                    => GetFulmenPrismTarget(),
                 GameModes.Railrush                  => GetRailrushHitTarget(),
+                GameModes.Standoff                  => GetStandoffBlastTarget(),
                 GameModes.Harvest                   => GetHarvestPrismTarget(),
                 GameModes.PodHunt                   => GetPodHuntBlastTarget(),
                 GameModes.DepthCharge               => GetDepthChargePrismTarget(),
@@ -1811,6 +1826,7 @@ namespace CosmicShore.ScriptableObjects
             shockfrontRippleTarget == shockfrontRippleTargetBuild &&
             fulmenPrismTarget == fulmenPrismTargetBuild &&
             railrushHitTarget == railrushHitTargetBuild &&
+            standoffBlastTarget == standoffBlastTargetBuild &&
             harvestPrismTarget == harvestPrismTargetBuild &&
             shatterplanePrismTarget == shatterplanePrismTargetBuild &&
             SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
@@ -1902,6 +1918,7 @@ namespace CosmicShore.ScriptableObjects
             shockfrontRippleTarget = shockfrontRippleTargetBuild;
             fulmenPrismTarget = fulmenPrismTargetBuild;
             railrushHitTarget = railrushHitTargetBuild;
+            standoffBlastTarget = standoffBlastTargetBuild;
             harvestPrismTarget = harvestPrismTargetBuild;
             shatterplanePrismTarget = shatterplanePrismTargetBuild;
             shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
@@ -1994,6 +2011,7 @@ namespace CosmicShore.ScriptableObjects
             shockfrontRippleTargetBuild = shockfrontRippleTarget;
             fulmenPrismTargetBuild = fulmenPrismTarget;
             railrushHitTargetBuild = railrushHitTarget;
+            standoffBlastTargetBuild = standoffBlastTarget;
             harvestPrismTargetBuild = harvestPrismTarget;
             shatterplanePrismTargetBuild = shatterplanePrismTarget;
             shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
