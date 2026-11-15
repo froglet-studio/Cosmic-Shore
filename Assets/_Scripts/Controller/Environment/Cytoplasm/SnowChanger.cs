@@ -99,6 +99,11 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker s_submit = new("SnowChanger.RenderMeshInstanced");
         readonly float nodeScaler = 10;
         readonly float nodeSize = .25f;
+
+        /// <summary>How thick a shard is across its length, as a share of the law's width (1 = the law as first authored; 0.35 since 2026-11-15).
+        /// Below 1 the cytoplasm reads as fine streaks instead of capsules, which is what holds up in slow motion
+        /// (footage critique weak link 10). Static so the trailer director can set it before a scene loads.</summary>
+        public static float WidthScale = 0.35f;
         Vector3 origin = Vector3.zero;
         Vector3 targetAxis;
 
@@ -503,8 +508,8 @@ namespace CosmicShore.Gameplay
                 }
 
                 shard.transform.localScale = Vector3.forward * (normalizedDistance * nodeScaler + nodeSize) +
-                                             Vector3.one * (normalizedDistance * nodeScalerOverThree +
-                                                            nodeSize);
+                                             Vector3.one * ((normalizedDistance * nodeScalerOverThree +
+                                                             nodeSize) * WidthScale);
             }
 
             _reorientCursor = end;
@@ -548,7 +553,7 @@ namespace CosmicShore.Gameplay
             }
             float nodeScalerOverThree = nodeScaler / 3;
             scale = Vector3.forward * (normalizedDistance * nodeScaler + nodeSize) +
-                    Vector3.one * (normalizedDistance * nodeScalerOverThree + nodeSize);
+                    Vector3.one * ((normalizedDistance * nodeScalerOverThree + nodeSize) * WidthScale);
         }
 
         public void SetOrigin(Vector3 o) => origin = o;

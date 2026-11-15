@@ -393,6 +393,7 @@ namespace CosmicShore.Editor.Trailer
                 case "weave": Weave(w[1], w[2], F(w[3]), F(w[4]), F(w[5])); return null;
                 case "headon": HeadOn(w[1], w[2], F(w[3]), F(w[4]), F(w[5])); return null;
                 case "quit": TrailerShoot.Quit(); return null;
+                case "shards": CosmicShore.Gameplay.SnowChanger.WidthScale = F(w[1]); Log("cytoplasm shard width x" + w[1]); return null;
                 default: Log("unknown verb " + w[0]); return null;
             }
         }
