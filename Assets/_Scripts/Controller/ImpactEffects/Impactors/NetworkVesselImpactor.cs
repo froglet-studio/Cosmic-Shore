@@ -4,7 +4,8 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     [RequireComponent(typeof(VesselImpactor))]
-    public partial class NetworkVesselImpactor : NetworkBehaviour, IElementalLossRelay, ISilenceRelay
+    public partial class NetworkVesselImpactor : NetworkBehaviour, IElementalLossRelay, ISilenceRelay,
+                                                 ICombatHitCueRelay
     {
         [SerializeField] VesselImpactor vesselImpactor;
 
@@ -276,6 +277,36 @@ namespace CosmicShore.Gameplay
             if (NetworkManager != null && NetworkManager.LocalClientId == decidedBy) return;
             var status = VesselStatusHere;
             if (status != null) VesselSilence.ExtendBy(status, addSeconds);
+        }
+
+        // ── Hit cue (ICombatHitCueRelay, Docs/ElementalAbilitySystem/PETAL_THEFT_CUE.md) ──────
+        //
+        // The decider of a hit (the attacker's owner) draws its own cue when it admits the hit; every
+        // other peer draws it when this publish arrives, so a theft reads on every screen. Same
+        // ServerRpc-then-everyone shape as silence, skipping the decider. UNRELIABLE on purpose: it is
+        // a picture, a Sparrow's stream of rounds sends one per hit, and a dropped one costs a few
+        // shards, never a petal or a point.
+
+        public void PublishHitCue(ICombatHitCueRelay attacker, float petals)
+        {
+            if (!IsSpawned || petals <= 0f) return;
+            if (attacker is not NetworkVesselImpactor attackerImpactor || !attackerImpactor.IsSpawned) return;
+            PublishHitCue_ServerRpc(attackerImpactor, petals);
+        }
+
+        // RequireOwnership = false: the sender is the hit's decider, not this hull's owner.
+        [ServerRpc(RequireOwnership = false, Delivery = RpcDelivery.Unreliable)]
+        void PublishHitCue_ServerRpc(NetworkBehaviourReference attackerRef, float petals,
+                                     ServerRpcParams rpcParams = default) =>
+            PublishHitCue_ClientRpc(attackerRef, petals, rpcParams.Receive.SenderClientId);
+
+        [ClientRpc(Delivery = RpcDelivery.Unreliable)]
+        void PublishHitCue_ClientRpc(NetworkBehaviourReference attackerRef, float petals, ulong decidedBy)
+        {
+            // The decider drew its own cue when it admitted the hit.
+            if (NetworkManager != null && NetworkManager.LocalClientId == decidedBy) return;
+            if (!attackerRef.TryGet(out NetworkVesselImpactor attacker)) return;
+            CombatHitCue.Raise(VesselStatusHere, attacker.VesselStatusHere, petals);
         }
 
         IVesselStatus VesselStatusHere => vesselImpactor ? vesselImpactor.Vessel?.VesselStatus : null;

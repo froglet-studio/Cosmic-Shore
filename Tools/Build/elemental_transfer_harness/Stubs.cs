@@ -161,8 +161,20 @@ namespace CosmicShore.ScriptableObjects
     public class ElementalCrystalSetSO : UnityEngine.ScriptableObject
     {
         public const string ResourcePath = "ElementalCrystalSet";
+        public const float CrystalWorldScale = 3.55f;
         public CosmicShore.Gameplay.SkimmerCrystalEffectSO[] CollectionEffects => null;
         public CosmicShore.Gameplay.Crystal GetPrefab(CosmicShore.Data.Element element) => null;
         public static ElementalCrystalSetSO Load() => null;
+    }
+}
+
+namespace CosmicShore.ScriptableObjects
+{
+    // The colour trace (ColorTrace.cs) repaints an authored colour from the worn set; the harness wears
+    // none, so a colour comes back as authored.
+    public static class ColorTrace
+    {
+        public const string Ui = "ui", World = "world";
+        public static UnityEngine.Color Retrace(string role, UnityEngine.Color authored) => authored;
     }
 }

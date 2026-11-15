@@ -7,7 +7,7 @@ using System.IO;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 
-static class Driver
+static partial class Driver
 {
     const float Petal = 0.1f;
     static int _fail;
@@ -251,6 +251,7 @@ static class Driver
               "an empty mask takes nothing");
 
         T11Silence();
+        T12HitCue();
 
         Console.WriteLine(_fail == 0 ? "\nALL PASS" : $"\n{_fail} FAILED");
         return _fail == 0 ? 0 : 1;
@@ -394,10 +395,104 @@ static class Driver
     }
 }
 
-// A hull's relay as ElementalTransfer sees it: two facts and two calls, recorded. It is also the
-// hull's silence relay (NetworkVesselImpactor implements both), so a publish is recorded too.
-class FakeRelay : IElementalLossRelay, ISilenceRelay
+// THE HIT CUE (Docs/ElementalAbilitySystem/PETAL_THEFT_CUE.md): every hit TryAdmit admits is
+// announced once, with its victim, its attacker and its worth in petals, so it can be drawn as the
+// theft it is. A refused hit (warded, silenced attacker, latched repeat) announces nothing, exactly as
+// it scores nothing. Networked, the decider publishes it through the victim's relay to every other peer.
+static partial class Driver
 {
+    static void T12HitCue()
+    {
+        Console.WriteLine("T12 an admitted hit is announced once, with who hit whom and its worth; a refused one is not");
+        double now = 500d;
+        VesselSilence.Clock = () => now;
+        VesselSilence.ClearAll();
+
+        int cues = 0;
+        IVesselStatus lastVictim = null, lastAttacker = null;
+        float lastPetals = 0f;
+        Action<IVesselStatus, IVesselStatus, float> listen = (v, a, p) =>
+        {
+            cues++; lastVictim = v; lastAttacker = a; lastPetals = p;
+        };
+        CombatHitCue.Landed += listen;
+        try
+        {
+            var shooter = FakeStatus.On(null);
+            var victim = FakeStatus.On(null);
+            Check(CombatHitDrain.TryAdmit(victim, shooter, CombatHitClass.MissileShockwave, 0f,
+                                          ElementalDebuffSources.Explosion, out _) &&
+                  cues == 1 && lastVictim == victim && lastAttacker == shooter && Math.Abs(lastPetals - 4f) < 1e-4f,
+                  $"a shockwave (10 points) is announced once as victim <- shooter, worth 4 petals ({cues}, {lastPetals})");
+
+            var cut = FakeStatus.On(null);
+            Check(CombatHitDrain.TryAdmitPetals(cut, shooter, CombatHitClass.Strike, 0f,
+                                                ElementalDebuffSources.VesselContact, 1f) &&
+                  cues == 2 && lastVictim == cut && Math.Abs(lastPetals - 1f) < 1e-4f,
+                  "a take priced in petals (the Tiger Moth's shred) is announced at its petals");
+
+            var warded = FakeStatus.On(null);
+            warded.ResourceSystem.Ward = ElementalDebuffSources.Other;
+            Check(!CombatHitDrain.TryAdmit(warded, shooter, CombatHitClass.Bullet, 0f, ElementalDebuffSources.Other, out _) &&
+                  cues == 2, "a warded victim is not announced (no score, no picture)");
+
+            // `victim` is silenced by the shockwave: its hits are refused, and so is their picture.
+            Check(!CombatHitDrain.TryAdmit(shooter, victim, CombatHitClass.Bullet, 0f, ElementalDebuffSources.Other, out _) &&
+                  cues == 2, "a silenced attacker's hit is not announced");
+
+            // A fresh pair with a 5 s latch: the first hit opens the window, the repeat inside it is refused.
+            var latchShooter = FakeStatus.On(null);
+            var latchVictim = FakeStatus.On(null);
+            CombatHitDrain.TryAdmit(latchVictim, latchShooter, CombatHitClass.MissileShockwave, 5f,
+                                    ElementalDebuffSources.Explosion, out _);
+            int before = cues;
+            CombatHitDrain.TryAdmit(latchVictim, latchShooter, CombatHitClass.MissileShockwave, 5f, ElementalDebuffSources.Explosion, out _);
+            Check(cues == before && before >= 3, "a repeat inside the latch window is not announced again");
+
+            // Networked: the decider announces here and publishes once to the other peers, naming the attacker's relay.
+            var victimRelay = new FakeRelay { Networked = true, Owned = false };
+            var shooterRelay = new FakeRelay { Networked = true, Owned = true };
+            var netVictim = FakeStatus.On(victimRelay);
+            var netShooter = FakeStatus.On(shooterRelay);
+            before = cues;
+            CombatHitDrain.TryAdmit(netVictim, netShooter, CombatHitClass.Bullet, 0f, ElementalDebuffSources.Other, out _);
+            Check(cues == before + 1 && victimRelay.CuePublishes == 1 && victimRelay.LastCueAttacker == shooterRelay &&
+                  Math.Abs(victimRelay.LastCuePetals - 0.4f) < 1e-4f,
+                  "networked: drawn here once, and published once to every other peer with the shooter's relay");
+
+            var offRelay = new FakeRelay { Networked = false };
+            var offVictim = FakeStatus.On(offRelay);
+            CombatHitDrain.TryAdmit(offVictim, FakeStatus.On(null), CombatHitClass.Bullet, 0f, ElementalDebuffSources.Other, out _);
+            Check(offRelay.CuePublishes == 0, "offline: drawn here, published nowhere");
+
+            // Negative control: a peer's Raise draws without publishing again (no echo).
+            before = cues;
+            CombatHitCue.Raise(netVictim, netShooter, 2f);
+            Check(cues == before + 1 && victimRelay.CuePublishes == 1, "a peer's Raise draws once and does not publish again");
+            CombatHitCue.Raise(netVictim, null, 2f);
+            CombatHitCue.Raise(netVictim, netShooter, 0f);
+            Check(cues == before + 1, "  ... and a cue with no attacker, or no worth, draws nothing");
+        }
+        finally
+        {
+            CombatHitCue.Landed -= listen;
+            VesselSilence.ClearAll();
+        }
+    }
+}
+
+// A hull's relay as ElementalTransfer sees it: two facts and two calls, recorded. It is also the
+// hull's silence relay and hit-cue relay (NetworkVesselImpactor implements all three), so a publish
+// of either is recorded too.
+class FakeRelay : IElementalLossRelay, ISilenceRelay, ICombatHitCueRelay
+{
+    public int CuePublishes;
+    public float LastCuePetals;
+    public ICombatHitCueRelay LastCueAttacker;
+    public void PublishHitCue(ICombatHitCueRelay attacker, float petals)
+    {
+        CuePublishes++; LastCuePetals = petals; LastCueAttacker = attacker;
+    }
     public int Publishes;
     public float LastPublished;
     public void PublishSilence(float seconds) { Publishes++; LastPublished = seconds; }

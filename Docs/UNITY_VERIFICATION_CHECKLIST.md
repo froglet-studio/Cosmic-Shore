@@ -23551,3 +23551,21 @@ The cloud reference compile found 0 errors in the changed files (its 30 others a
 2. **Play one Regatta match to the end screen**, then open the newest `Recordings/*.replay.json`: `MatchId` is a
    32-character id, the same `match_id` the game sent on `game_started` (Analytics console, Matches page).
 3. **Watch that replay from My Replays**: it plays as before.
+## 🔴 A PvP hit is drawn as petal theft (2026-11-13, Garrett, NOT RUN IN EDITOR BY A PERSON)
+
+Branch `claude/project-thread-jd2kqa`; `Docs/ElementalAbilitySystem/PETAL_THEFT_CUE.md`. New `CombatHitCue`,
+`PetalTheftFeedback`, `PetalTheftShapes`, `PetalTheftCueConfigSO` (+ `Resources/PetalTheftCueConfig.asset`), a
+`PublishHitCue` RPC pair on `NetworkVesselImpactor` (protocol version 31). Compiled with `unity_refcompile`; the cue's
+wiring passes the elemental transfer harness T12 (negative-controlled). The look was filmed on Gbox with the trailer
+director (clips in the PR); `PetalTheftShapesTests` not yet run in an editor.
+
+1. **Run the EditMode tests** `PetalTheftShapesTests`.
+2. **Dog Fight or Grizzly Time against an AI, sound off.** When you hit the AI: its hull flashes in the danger colour,
+   shards in its colour tear off and stream to your hull, and your hull pulses in your colour as they land. When it
+   hits you, the same runs the other way. A bullet is one shard; a missile is a burst.
+3. **Silence.** A silenced hull carries danger shards orbiting it, fewer as the silence drains, gone when it ends.
+4. **Two machines.** Host and client both see the theft for a hit either one decides (host's AI on the client, the
+   client's shot on the host's AI).
+5. **A replay** (`replay latest`) of a match with hits shows the same cue.
+6. **Nothing else changed**: the score, the ejected crystals and the silence are the same as before.
+
