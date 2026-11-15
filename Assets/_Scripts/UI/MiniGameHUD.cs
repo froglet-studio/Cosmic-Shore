@@ -500,6 +500,10 @@ namespace CosmicShore.UI
                     // Switchback's answer on the Shrike's sling race: neutral rings, a per-viewer arrow (the thorn sits
                     // straight behind the ring it points at).
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Thornline");
+                case GameModes.Spearline:
+                    // Switchback's answer on the Swordfish's sealed circuit: neutral rings, a per-viewer arrow (the seal
+                    // sits in the ring's mouth, so the arrow points at what to cut).
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Spearline");
                 case GameModes.DecoyRun:
                     // the Jacks' Time race: neutral rings, a per-viewer arrow.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_DecoyRun");
@@ -550,6 +554,10 @@ namespace CosmicShore.UI
                     // The Bends' provider: the nearest pilot this player may hit. The panes hide pilots from rounds
                     // and the cords reach through them, so the question every second is where the rival is.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Flatline");
+                case GameModes.Riposte:
+                    // The Bends' provider again: the nearest pilot this player may strike. The sword lands only while
+                    // the Swordfish is the faster, so the arrow answers where and the ramp answers how.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Riposte");
                 case GameModes.Kelpwood:
                     // The Bends' provider again: the nearest pilot this player may bite. In the kelp the hard half is
                     // keeping them under the nose long enough to lock; the arrow answers where.
@@ -558,6 +566,12 @@ namespace CosmicShore.UI
                     // The Bends' provider again: the nearest pilot this player may graze. The way to them is through
                     // the gates, and the cash-out is always the heart, so the arrow only has to answer who.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Corona");
+                case GameModes.Shockfront:
+                    // The Stoat's charge duel: the arrow answers "which rival do I sling past?", Dustup's question.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Shockfront");
+                case GameModes.Fulmen:
+                    // The Stoat's space race: the contested omni crystal IS the weapon, Rampage's question.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Fulmen");
                 case GameModes.Harvest:
                     // Rampage's provider again: the nearest managed omni crystal, in the field's clear centre. The
                     // sheaves are in plain sight; the crystal is the windmill - the one thing worth racing to.
@@ -591,6 +605,10 @@ namespace CosmicShore.UI
                     // wake is laid behind them. The PAINT half needs no arrow - you paint where
                     // you are.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Tapestry");
+                case GameModes.Palisade:
+                    // Tapestry's answer: the nearest rival, whose freshest afterimages are behind them. Building needs no
+                    // arrow - you build where you are.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Palisade");
                 case GameModes.Bends:
                     // The provider was written for this mode and borrowed by three others before
                     // the mode itself was registered: the nearest pilot this player may bend.

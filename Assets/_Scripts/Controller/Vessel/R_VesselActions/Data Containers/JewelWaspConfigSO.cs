@@ -96,15 +96,52 @@ namespace CosmicShore.Gameplay
         [SerializeField] CombatHitClass burstHitClass = CombatHitClass.MissileBlast;
 
         [Header("A plant (Mass, LT at flora)")]
-        [Tooltip("How much faster a possessed plant grows: Mass's parameter, x2 at rest to x6 at Mass 10 (Garrett, " +
-                 "2026-11-14: \"possessing flora should cause them to grow based on your mass level while in possession\").")]
-        [SerializeField] ElementalFloat floraGrowth = ElementalFloat.Multiplier(2f, 6f, Element.Mass, 1.2f);
+        [Tooltip("How much faster a possessed plant grows: Mass's parameter, x3.5 at rest to x7 at Mass 10 (Garrett, " +
+                 "2026-11-14: \"possessing flora should cause them to grow based on your mass level while in possession\"; " +
+                 "2026-11-15: the base raised from x2 to make up for the time the wasp lays no trail inside a creature).")]
+        [SerializeField] ElementalFloat floraGrowth = ElementalFloat.Multiplier(3.5f, 7f, Element.Mass, 2.2f);
         [Tooltip("MASS LEVEL 5, Overgrowth: every plant within this radius of the one possessed grows as fast (u).")]
         [SerializeField, Min(0f)] float overgrowthRadius = 200f;
-        [Tooltip("How far the camera stands back while the wasp rides a plant (u): far, so the next host is easy to pick.")]
+
+        [Header("The camera on a plant (Garrett, 2026-11-15)")]
+        [Tooltip("The farthest the camera stands from the plant (u).")]
         [SerializeField, Min(10f)] float floraCameraDistance = 650f;
-        [Tooltip("How fast the sticks turn the camera round a plant (degrees per second at full stick).")]
+        [Tooltip("The nearest the camera comes to the plant's middle (u).")]
+        [SerializeField, Min(1f)] float floraMinDistance = 18f;
+        [Tooltip("The resting stand-back, in plant radii: the whole plant fills the view and the camera draws back as it grows.")]
+        [SerializeField, Min(0.5f)] float floraFitRadii = 3.2f;
+        [Tooltip("How far the second thumb's spread (X-diff) zooms: the closest and farthest, as multiples of the resting " +
+                 "stand-back.")]
+        [SerializeField] Vector2 floraZoomRange = new(0.3f, 4f);
+        [Tooltip("How fast X-diff zooms (doublings per second at full spread).")]
+        [SerializeField, Min(0.05f)] float floraZoomRate = 1.4f;
+        [Tooltip("How fast the thumbs together (X-sum, Y-sum) turn the camera round the plant (degrees per second at full " +
+                 "stick). The turn is about the camera's own axes, so it never locks or flips over the top.")]
         [SerializeField, Min(1f)] float floraOrbitDegrees = 100f;
+        [Tooltip("How fast Y-diff rolls the camera about its own view axis (degrees per second at full stick).")]
+        [SerializeField, Min(0f)] float floraRollDegrees = 110f;
+        [Tooltip("How fast the camera's centre and fit follow the plant as it grows (1/s).")]
+        [SerializeField, Min(0.1f)] float floraFollowEase = 3f;
+
+        [Header("Choosing the next host (RT a creature, LT a plant)")]
+        [Tooltip("How long a newly chosen creature or plant flashes bright before it settles to the held glow (s).")]
+        [SerializeField, Min(0f)] float selectPulseSeconds = 0.35f;
+        [Tooltip("The glow of the flash (the held glow is 1.6: colours x 2.6).")]
+        [SerializeField, Min(0f)] float selectPulseGlow = 4f;
+        [Tooltip("From a plant, the camera leans toward what the held trigger has chosen (degrees per second), so the choice " +
+                 "settles to the middle of the view.")]
+        [SerializeField, Min(0f)] float floraAimAssistDegrees = 35f;
+
+        [Header("What others see of the wasp inside a host")]
+        [Tooltip("The tail's width while the wasp rides, as a share of its own (Garrett, 2026-11-15: \"the fauna can still " +
+                 "have a tail to an astute observer\").")]
+        [SerializeField, Range(0f, 1f)] float nestedTailWidth = 0.3f;
+        [Tooltip("The nested wasp's glow in its pilot's own colours (VesselAnimation.FlareBody amount, 0..1): it lights up " +
+                 "inside its host the way the Dolphin's Charge 5 lights up a pilot.")]
+        [SerializeField, Range(0f, 1f)] float nestedGlow = 0.35f;
+        [Tooltip("The flash when the wasp uses an ability from inside a host (FlareBody amount, 0..1), and how long it fades (s).")]
+        [SerializeField, Range(0f, 1f)] float abilityFlashGlow = 1f;
+        [SerializeField, Min(0.05f)] float abilityFlashSeconds = 0.6f;
 
         [Header("The camera on a host")]
         [Tooltip("The chase camera stands back this many host body radii, plus the base below.")]
@@ -137,6 +174,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] FMODUnity.EventReference attackEvent;
         [SerializeField] FMODUnity.EventReference suctionEvent;
         [SerializeField] FMODUnity.EventReference burstEvent;
+        [Tooltip("A held trigger chooses a new creature or plant.")]
+        [SerializeField] FMODUnity.EventReference selectEvent;
 
         public float AimConeDegrees => aimConeDegrees;
         public float StingRangeOutsideCell => stingRangeOutsideCell;
@@ -173,6 +212,19 @@ namespace CosmicShore.Gameplay
         public float OvergrowthRadius => overgrowthRadius;
         public float FloraCameraDistance => floraCameraDistance;
         public float FloraOrbitDegrees => floraOrbitDegrees;
+        public float FloraMinDistance => floraMinDistance;
+        public float FloraFitRadii => floraFitRadii;
+        public Vector2 FloraZoomRange => floraZoomRange;
+        public float FloraZoomRate => floraZoomRate;
+        public float FloraRollDegrees => floraRollDegrees;
+        public float FloraFollowEase => floraFollowEase;
+        public float SelectPulseSeconds => selectPulseSeconds;
+        public float SelectPulseGlow => selectPulseGlow;
+        public float FloraAimAssistDegrees => floraAimAssistDegrees;
+        public float NestedTailWidth => nestedTailWidth;
+        public float NestedGlow => nestedGlow;
+        public float AbilityFlashGlow => abilityFlashGlow;
+        public float AbilityFlashSeconds => abilityFlashSeconds;
         public float HostCameraBodies => hostCameraBodies;
         public float HostCameraBase => hostCameraBase;
         public float CameraEase => cameraEase;
@@ -186,5 +238,6 @@ namespace CosmicShore.Gameplay
         public FMODUnity.EventReference AttackEvent => attackEvent;
         public FMODUnity.EventReference SuctionEvent => suctionEvent;
         public FMODUnity.EventReference BurstEvent => burstEvent;
+        public FMODUnity.EventReference SelectEvent => selectEvent;
     }
 }
