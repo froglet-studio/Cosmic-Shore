@@ -43,6 +43,7 @@ namespace CosmicShore.Tests
             (GameModes.Waystation, "MinigameWaystation", "Controller/Arcade/Waystation/WaystationController.cs"),
             (GameModes.Breach,          "MinigameBreach",          "Controller/Arcade/Breach/BreachController.cs"),
             (GameModes.Thornline,       "MinigameThornline",       "Controller/Arcade/Thornline/ThornlineController.cs"),
+            (GameModes.Spearline,       "MinigameSpearline",       "Controller/Arcade/Spearline/SpearlineController.cs"),
             (GameModes.ThresherTime,    "MinigameThresherTime",    "Controller/Arcade/ThresherTime/ThresherTimeController.cs"),
             (GameModes.GrizzlyTime,     "MinigameGrizzlyTime",     "Controller/Arcade/GrizzlyTime/GrizzlyTimeController.cs"),
             (GameModes.ScarabRally,     "MinigameScarabRally",     "Controller/Arcade/ScarabRally/ScarabRallyController.cs"),

@@ -446,6 +446,74 @@ namespace CosmicShore.Data
         // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
         Shatterplane = 90,
 
+        // The Swordfish's TIME game (SPEARLINE.md): three laps of Headlong's circuit, the rings sealed with panes of
+        // prisms. A sealed ring counts only through a hole, and the hull alone rams too small a one, so each seal asks for
+        // a swing of the bill; Quickdraw (Time) is the sword's rate. Reserved 96 in Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Spearline = 96,
+
+        // The Swordfish's CHARGE game (RIPOSTE.md): a sword duel in Jackstraw's heap of sticks. A sword hit on a rival
+        // (a Strike, which lands only while the Swordfish is faster than its victim) is one point; first domain to the
+        // target wins. The sticks are cover the blade cuts and the hull rams through. Reserved 97 (GAME_KIT_ROSTER.md).
+        Riposte = 97,
+
+        // The Swordfish's MASS game (PALISADE.md): a timed build-and-raid in the bare Barren cell. The afterimages (the
+        // blade's prism copies of itself, Mass scales their volume) and the trail are your mass; every rival's sword
+        // cuts it. Most volume standing at the whistle wins (VolumeRemaining). Reserved 98 (GAME_KIT_ROSTER.md).
+        Palisade = 98,
+        // RESERVED 91-127 (2026-11-15): the missing elemental arcade games, one id per game, assigned by vessel and
+        // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
+        // building one of those games takes ITS row's id; anything else takes 128 or above.
+
+        // The Shrike's CHARGE game (LARDER.md): a duel in the Dog Fight's wreckage (the Boneyard cells). Every crystal
+        // becomes a missile plant and every nest is crowned with one; paint a rival with the Targeting Array and every
+        // plant with a ready missile launches at them. A missile that reaches a rival hull is a point. First domain to
+        // the target wins. I1-I4 are the Boneyard's own ladder (more wreckage to hide behind) and fewer crystals.
+        // Reserved for it by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 12).
+        Larder = 102,
+
+        // The Shrike's MASS game (THORNBUSH.md): a timed nest-building match in Jackstraw's heap of sticks. Dock on a
+        // stick, press Mass to leave a super-shielded nest, and hold the mass standing in your colour at the whistle
+        // (VolumeRemaining: nests plus trail). Rival missiles crack shields; a Void-Pierce lance breaks them. I1-I4 are
+        // the heap's own ladder. Reserved by GAME_KIT_ROSTER.md (row 13).
+        Thornbush = 103,
+
+        // The Shrike's SPACE game (LANCEFALL.md): Shatterplane's plates, broken by the Void Lance. The beam breaks every
+        // block it passes, so a plate taken EDGE-ON gives up a whole strip; face-on it gives up a few tiles. First
+        // domain to the prism target wins. I1-I4 are the plates' own ladder; I4's super-shielded ribs need Void Pierce.
+        // Reserved by GAME_KIT_ROSTER.md (row 14).
+        Lancefall = 104,
+
+        // The Stoat's CHARGE game (SHOCKFRONT.md): a duel in Dog Fight's Boneyard. Sling round and let the pair close:
+        // the annihilation's ripple strips a petal of every element from each rival its front sweeps over, and every
+        // rival stripped is one point. Ids 119 / toast 194 reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 29).
+        Shockfront = 119,
+
+        // The Stoat's SPACE game (FULMEN.md): Rampage's forest, its omni crystals contested in the nucleus. Each one you
+        // take throws a Fulmen bolt that burns the forest; a crystal a branch reaches bolts again. Hostile prisms
+        // destroyed score. Ids 120 / toast 195 reserved by GAME_KIT_ROSTER.md (row 30).
+        Fulmen = 120,
+        // The Honeyguide's three element games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 18-20, ids reserved there on
+        // 2026-11-15 so the parallel builds of the roster never collide).
+        // CHARGE (FLITSTRIKE.md): hold LT for the Flit's lane, let go to dart through a rival - every strike is a point.
+        // Dog Fight's Boneyard; first domain to the strike target wins.
+        Flitstrike = 108,
+        // MASS (HONEYCOMB.md): a timed build in the Barren cell. An omni crystal is a hive, a comb of your prisms behind
+        // you while the Ratel plays the hive puzzle; the volume standing in your colour at the whistle wins.
+        Honeycomb = 109,
+        // SPACE (WOODPECKER.md): a pecking race through Rampage's cactus forest. RT's three quick shots chip hostile
+        // prisms; first domain to the prism target wins.
+        Woodpecker = 110,
+        // The Jacks' CHARGE game (STINGHERD.md): herd your danger creatures into rival hulls. A danger creature of your
+        // herd that touches a rival stings it (a Strike, Danger Share) and is spent; first domain to the sting target
+        // wins. Played in Kelpwood's ball of kelp, whose grazing tadpoles join the herd. Id reserved by the game kit
+        // roster (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 27); 91-116 belong to other vessels' games in flight.
+        Stingherd = 117,
+
+        // The Jacks' SPACE game (TRAWL.md): the net drags prisms, and a dragged prism that hits another destroys both
+        // (PRISM_MOTION.md). First domain to destroy the hostile-prism target wins, in Harvest's field of sheaves.
+        // Id reserved by the game kit roster (row 28).
+        Trawl = 118,
+
         // The Urchin's CHARGE game (RAILRUSH.md): Hijack's Switchyard of open rails, scored on chain-spike hits on rival
         // hulls. A spike flies at its muzzle speed PLUS the hull's, so a volley thrown off a friendly third at grind
         // speed reaches about three times as far as one thrown at cruise: ride a rail, launch, and lance a rival. First
@@ -453,7 +521,7 @@ namespace CosmicShore.Data
         Railrush = 124,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 84) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 97) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

@@ -47,8 +47,12 @@ MonoBehaviour:
   - 90
   - 90
   jackstrawStrikeTarget: 3
+  riposteStrikeTarget: 6
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
+  shockfrontRippleTarget: 10
+  fulmenPrismTarget: 1200
+  trawlPrismTarget: 300
   railrushHitTarget: 20
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
@@ -57,9 +61,17 @@ MonoBehaviour:
   - 2000
   - 1000
   harvestPrismTarget: 750
+  stingherdStingTarget: 12
   tapestryRoundSeconds: 90
+  palisadeRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  larderMissileTarget: 16
+  thornbushRoundSeconds: 90
+  lancefallPrismTarget: 600
   siroccoPrismTarget: 400
+  flitstrikeStrikeTarget: 5
+  honeycombRoundSeconds: 90
+  woodpeckerPrismTarget: 150
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
   tandavaHaloRingsToBreak: 9
@@ -82,6 +94,7 @@ MonoBehaviour:
   brittleStarTimeGateTarget: 16
   lanternRunGateTarget: 16
   thornlineGateTarget: 16
+  spearlineGateTarget: 24
   decoyRunGateTarget: 12
   perchRunGateTarget: 16
   slipLineGateTarget: 16
@@ -123,8 +136,12 @@ MonoBehaviour:
   - 90
   - 90
   jackstrawStrikeTargetBuild: 3
+  riposteStrikeTargetBuild: 6
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
+  shockfrontRippleTargetBuild: 10
+  fulmenPrismTargetBuild: 1200
+  trawlPrismTargetBuild: 300
   railrushHitTargetBuild: 20
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
@@ -133,9 +150,17 @@ MonoBehaviour:
   - 2000
   - 1000
   harvestPrismTargetBuild: 750
+  stingherdStingTargetBuild: 12
   tapestryRoundSecondsBuild: 90
+  palisadeRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  larderMissileTargetBuild: 16
+  thornbushRoundSecondsBuild: 90
+  lancefallPrismTargetBuild: 600
   siroccoPrismTargetBuild: 400
+  flitstrikeStrikeTargetBuild: 5
+  honeycombRoundSecondsBuild: 90
+  woodpeckerPrismTargetBuild: 150
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35
   tandavaHaloRingsToBreakBuild: 9
@@ -158,6 +183,7 @@ MonoBehaviour:
   brittleStarTimeGateTargetBuild: 16
   lanternRunGateTargetBuild: 16
   thornlineGateTargetBuild: 16
+  spearlineGateTargetBuild: 24
   decoyRunGateTargetBuild: 12
   perchRunGateTargetBuild: 16
   slipLineGateTargetBuild: 16
