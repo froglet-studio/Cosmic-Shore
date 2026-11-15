@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 946cfa6e46a6ab2df3198b613ca7b504, type: 3}
+  m_Name: StandoffSettings
+  m_EditorClassIdentifier:
+  aiRetargetSeconds:
+  - 1.4
+  - 1
+  - 0.7
+  - 0.5
+  aiHuntRange:
+  - 300
+  - 420
+  - 560
+  - 720
+  aiLeadSeconds:
+  - 0
+  - 0.2
+  - 0.4
+  - 0.6
+  aiPassOffset:
+  - 70
+  - 55
+  - 40
+  - 28
+  aiBreakOffWhenSilencedChance:
+  - 0
+  - 0.5
+  - 1
+  - 1
+  aiSilencedPreyFocus:
+  - 1
+  - 1
+  - 1.5
+  - 2
+  aiHumanFocus: 2
+  aiCoverStandoff: 30
+  aiPostReachedDistance: 60

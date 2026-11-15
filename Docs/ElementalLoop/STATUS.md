@@ -12,12 +12,12 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | BrittleStar | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Goby | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
-| Grizzly | `b b .` | `x x x` | `- - -` | `b b .` | Charge | - |
+| Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Jacks | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
 | Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Meerkat | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| Meerkat | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Orca | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
@@ -51,12 +51,12 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | BrittleStar | Brittle Star Time | Flatline | Starweave | Shatterplane |
 | Dolphin | Switchback | The Bends | excused | Rampage |
 | Goby | Perch Run | - | - | - |
-| Grizzly | Grizzly Time | - | excused | Grizzly Charge |
+| Grizzly | Grizzly Time | Standoff | excused | Grizzly Charge |
 | Honeyguide | Slip Line | Flitstrike | Honeycomb | Woodpecker |
 | Jacks | Decoy Run | Stingherd | excused | Trawl |
 | JewelWasp | - | Marionette | - | Gorge |
 | Manta | Redline | Corona | Scurry (shared) | Bloomrush |
-| Meerkat | Burrow Run, Warpline | - | - | - |
+| Meerkat | Burrow Run, Warpline | Sentry | Warren | Cave-in |
 | Orca | Breach | Pod Hunt | Ice Shelf | Depth Charge |
 | Rhino | Headlong | Bullrush | Windrow | Landslide |
 | Scarab | Scarab Rally | Undertow | Scarab Scramble, Tollway | Wrecking Ball |

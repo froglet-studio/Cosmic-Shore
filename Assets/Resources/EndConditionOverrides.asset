@@ -57,6 +57,7 @@ MonoBehaviour:
   fulmenPrismTarget: 1200
   trawlPrismTarget: 300
   railrushHitTarget: 20
+  standoffBlastTarget: 10
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
   - 1600
@@ -81,6 +82,9 @@ MonoBehaviour:
   larderMissileTarget: 16
   thornbushRoundSeconds: 90
   lancefallPrismTarget: 600
+  sentryZapTarget: 40
+  warrenRoundSeconds: 90
+  caveInPrismTarget: 1000
   siroccoPrismTarget: 400
   flitstrikeStrikeTarget: 5
   honeycombRoundSeconds: 90
@@ -159,6 +163,7 @@ MonoBehaviour:
   fulmenPrismTargetBuild: 1200
   trawlPrismTargetBuild: 300
   railrushHitTargetBuild: 20
+  standoffBlastTargetBuild: 10
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
   - 1600
@@ -183,6 +188,9 @@ MonoBehaviour:
   larderMissileTargetBuild: 16
   thornbushRoundSecondsBuild: 90
   lancefallPrismTargetBuild: 600
+  sentryZapTargetBuild: 40
+  warrenRoundSecondsBuild: 90
+  caveInPrismTargetBuild: 1000
   siroccoPrismTargetBuild: 400
   flitstrikeStrikeTargetBuild: 5
   honeycombRoundSecondsBuild: 90

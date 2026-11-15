@@ -221,11 +221,13 @@ namespace CosmicShore.Tests
             // Space games, on their reserved ids.
             // 103 -> 108 on 2026-11-15: Chum (91), Starweave (92), Haul (93), Hedgerow (94) and Longshot (95), rows 1-5 of
             // GAME_KIT_ROSTER.md's reserved ids.
-            // 108 -> 110 on 2026-11-15: Marionette (126) and Gorge (127), the Jewel Wasp's Charge and Space games, on
-            // the ids the roster reserved for it (rows 36-37).
             var values = Enum.GetValues(typeof(GameModes));
 
-            Assert.AreEqual(110, values.Length,
+            // 108 -> 111 on 2026-11-15: Sentry (105), Warren (106) and CaveIn (107), the Meerkat's Charge, Mass and Space
+            // games, on their reserved ids.
+            // 111 -> 112 on 2026-11-15: Standoff (125), the Grizzly's Charge game, on the id GAME_KIT_ROSTER.md reserved (row 35).
+            // 112 -> 114 on 2026-11-15: Marionette (126) and Gorge (127), the Jewel Wasp's Charge and Space games (rows 36-37).
+            Assert.AreEqual(114, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -289,6 +291,10 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Palisade, 98)]
         [TestCase(GameModes.Shockfront, 119)]
         [TestCase(GameModes.Fulmen, 120)]
+        [TestCase(GameModes.Sentry, 105)]
+        [TestCase(GameModes.Warren, 106)]
+        [TestCase(GameModes.CaveIn, 107)]
+        [TestCase(GameModes.Standoff, 125)]
         [TestCase(GameModes.Marionette, 126)]
         [TestCase(GameModes.Gorge, 127)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)

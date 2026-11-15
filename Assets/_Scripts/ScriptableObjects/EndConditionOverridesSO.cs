@@ -149,6 +149,10 @@ namespace CosmicShore.ScriptableObjects
         /// spike reaching a rival hull (a Bullet-class combat hit) - is one point (RailrushScoringRuleSO), summed
         /// across the domain's pilots. An ESTIMATE pending a timed match.</summary>
         public const int DefaultRailrushHitTarget = 20;
+        /// <summary>Standoff blast target used when <see cref="standoffBlastTarget"/> is 0. One BLAST HIT - a rival pilot
+        /// caught in a Grizzly's blast, a trigger bomb's or the charged cannon's (a MissileBlast-class combat hit) - is
+        /// one point (StandoffScoringRuleSO), summed across the domain's pilots. A first cut: nobody has played it.</summary>
+        public const int DefaultStandoffBlastTarget = 10;
 
         /// <summary>Harvest hostile-prism target used when <see cref="harvestPrismTarget"/> is 0. The Thresher's
         /// sheaves never grow back, so three domains' worth of it must fit in the smallest field (the generator,
@@ -249,6 +253,20 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Longshot round length in seconds, used when <see cref="longshotRoundSeconds"/> is 0. Longshot is TIMED:
         /// a rival's trail is always there to shoot, so only the clock can end it.</summary>
         public const int DefaultLongshotRoundSeconds = 90;
+        /// <summary>Sentry zap target used when <see cref="sentryZapTarget"/> is 0. One ZAP - a Meerkat's sentinel
+        /// striking a rival hull in its guard (a Bullet-class combat hit, about five a second while a rival stays in
+        /// it) - is one point (SentryScoringRuleSO), summed across the domain's pilots. A first cut, unplayed.</summary>
+        public const int DefaultSentryZapTarget = 40;
+
+        /// <summary>Warren round length in seconds, used when <see cref="warrenRoundSeconds"/> is 0. Warren is TIMED,
+        /// Tapestry's reason: its score (the mass a domain's Meerkats hold standing, trail and exit portals) is a live
+        /// stock rival solitons swallow, so "most standing at the whistle" is the only honest end condition.</summary>
+        public const int DefaultWarrenRoundSeconds = 90;
+
+        /// <summary>Cave-in prism target used when <see cref="caveInPrismTarget"/> is 0. Hostile prisms a DOMAIN breaks
+        /// (Shatterplane's neutral plates, rival mass), summed across its pilots (CaveInScoringRuleSO, Rampage's rule).
+        /// A first cut, unplayed: under a fifth of the smallest rung's breakable plate mass.</summary>
+        public const int DefaultCaveInPrismTarget = 1000;
 
         /// <summary>Marionette strike target used when <see cref="marionetteStrikeTarget"/> is 0. One STRIKE - a possessed
         /// creature's attack landing on a rival hull - is one point, and so is each hull a Charge 5 burst catches
@@ -711,6 +729,10 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Railrush: spike HITS a DOMAIN needs to win (race to N), the Urchin's charge game. A chain spike " +
                  "reaching a rival hull is one hit, summed across the domain's pilots. 0 = default (20).")]
         [Min(0)] public int railrushHitTarget = 20;
+        [Tooltip("Standoff: BLAST HITS a DOMAIN needs to win (race to N). A rival pilot caught in a Grizzly's blast " +
+                 "(a trigger bomb or the charged cannon) is one blast hit, summed across the domain's pilots. 0 = " +
+                 "default (10).")]
+        [Min(0)] public int standoffBlastTarget = 10;
 
         [Tooltip("Harvest: hostile prisms (other domains' sheaves and neutral ones, rival trails, fauna) a DOMAIN " +
                  "must destroy between them to win (race to N) - with the Thresher's chain, ball or blast; your own " +
@@ -800,6 +822,18 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Longshot: round length in SECONDS, the Serpent's space game. The mode is timed - the domain that broke the " +
                  "most hostile prisms (lance prisms and rivals' mass) wins. 0 = default (90).")]
         [Min(0)] public int longshotRoundSeconds = 90;
+        [Tooltip("Sentry: ZAPS a DOMAIN needs to win (race to N). A Meerkat's sentinel striking a rival hull in its " +
+                 "guard is one zap (about five a second while the rival stays in it), summed across the domain's " +
+                 "pilots. 0 = default (40).")]
+        [Min(0)] public int sentryZapTarget = 40;
+
+        [Tooltip("Warren: round length in SECONDS. The mode is timed - the domain with the most mass standing in its own " +
+                 "colour (its Meerkats' trail and exit portals) when the clock runs out wins. 0 = default (90).")]
+        [Min(0)] public int warrenRoundSeconds = 90;
+
+        [Tooltip("Cave-in: hostile prisms (Shatterplane's neutral plates, rival mass) a DOMAIN must break to win (race " +
+                 "to N); a swallowed prism fired into another breaks both. 0 = default (1000).")]
+        [Min(0)] public int caveInPrismTarget = 1000;
 
         [Tooltip("Marionette: STRIKES a DOMAIN needs to win (race to N), the Jewel Wasp's charge game. A possessed " +
                  "creature's attack landing on a rival hull is one, and so is each hull a Charge 5 burst catches. " +
@@ -896,6 +930,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int shockfrontRippleTargetBuild = 10;
         [Min(0)] public int fulmenPrismTargetBuild = 1200;
         [Min(0)] public int railrushHitTargetBuild = 20;
+        [Min(0)] public int standoffBlastTargetBuild = 10;
         [Min(0)] public int harvestPrismTargetBuild = 750;
         [Min(0)] public int shatterplanePrismTargetBuild = 1600;
         [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
@@ -920,6 +955,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int flitstrikeStrikeTargetBuild = 5;
         [Min(0)] public int honeycombRoundSecondsBuild = 90;
         [Min(0)] public int woodpeckerPrismTargetBuild = 150;
+        [Min(0)] public int sentryZapTargetBuild = 40;
+        [Min(0)] public int warrenRoundSecondsBuild = 90;
+        [Min(0)] public int caveInPrismTargetBuild = 1000;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
@@ -1398,6 +1436,11 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetRailrushHitTarget() =>
             railrushHitTarget > 0 ? railrushHitTarget : DefaultRailrushHitTarget;
+        /// Standoff blast target ("first domain to N blast hits"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultStandoffBlastTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetStandoffBlastTarget() =>
+            standoffBlastTarget > 0 ? standoffBlastTarget : DefaultStandoffBlastTarget;
 
         /// <summary>
         /// Harvest prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
@@ -1553,6 +1596,25 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetLongshotRoundSeconds() =>
             longshotRoundSeconds > 0 ? longshotRoundSeconds : DefaultLongshotRoundSeconds;
+        /// Sentry zap target ("first domain to N zaps"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultSentryZapTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetSentryZapTarget() =>
+            sentryZapTarget > 0 ? sentryZapTarget : DefaultSentryZapTarget;
+
+        /// <summary>
+        /// Warren round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultWarrenRoundSeconds"/>. Read by WarrenTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetWarrenRoundSeconds() =>
+            warrenRoundSeconds > 0 ? warrenRoundSeconds : DefaultWarrenRoundSeconds;
+
+        /// <summary>
+        /// Cave-in prism target ("race to N" hostile prisms broken): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultCaveInPrismTarget"/>. Compared against a DOMAIN's summed hostile prisms destroyed.
+        /// </summary>
+        public int GetCaveInPrismTarget() =>
+            caveInPrismTarget > 0 ? caveInPrismTarget : DefaultCaveInPrismTarget;
 
         /// <summary>
         /// Marionette strike target ("first domain to N strikes"): the configured value when &gt; 0, otherwise
@@ -1682,6 +1744,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Shockfront                => GetShockfrontRippleTarget(),
                 GameModes.Fulmen                    => GetFulmenPrismTarget(),
                 GameModes.Railrush                  => GetRailrushHitTarget(),
+                GameModes.Standoff                  => GetStandoffBlastTarget(),
                 GameModes.Harvest                   => GetHarvestPrismTarget(),
                 GameModes.PodHunt                   => GetPodHuntBlastTarget(),
                 GameModes.DepthCharge               => GetDepthChargePrismTarget(),
@@ -1704,6 +1767,12 @@ namespace CosmicShore.ScriptableObjects
                 // (haulRoundSeconds), Hedgerow (hedgerowRoundSeconds), Longshot (longshotRoundSeconds) and Gorge
                 // (gorgeRoundSeconds) are timed for the same reason and are absent too, and so is Palisade
                 // (palisadeRoundSeconds).
+                GameModes.Sentry                    => GetSentryZapTarget(),
+                GameModes.CaveIn                    => GetCaveInPrismTarget(),
+                // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
+                // deliberately absent here and reads as "no target", like Bloomrush. Glasshouse
+                // (glasshouseRoundSeconds) and Warren (warrenRoundSeconds) are timed for the same
+                // reason and are absent too.
                 // Per PILOT, not a total - the race target scales with team size and is only known at
                 // runtime, so the editor's authored-target readout shows the rate.
                 GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
@@ -1790,6 +1859,7 @@ namespace CosmicShore.ScriptableObjects
             shockfrontRippleTarget == shockfrontRippleTargetBuild &&
             fulmenPrismTarget == fulmenPrismTargetBuild &&
             railrushHitTarget == railrushHitTargetBuild &&
+            standoffBlastTarget == standoffBlastTargetBuild &&
             harvestPrismTarget == harvestPrismTargetBuild &&
             shatterplanePrismTarget == shatterplanePrismTargetBuild &&
             SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
@@ -1814,6 +1884,9 @@ namespace CosmicShore.ScriptableObjects
             flitstrikeStrikeTarget == flitstrikeStrikeTargetBuild &&
             honeycombRoundSeconds == honeycombRoundSecondsBuild &&
             woodpeckerPrismTarget == woodpeckerPrismTargetBuild &&
+            sentryZapTarget == sentryZapTargetBuild &&
+            warrenRoundSeconds == warrenRoundSecondsBuild &&
+            caveInPrismTarget == caveInPrismTargetBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
             tandavaBreakPercent == tandavaBreakPercentBuild &&
@@ -1880,6 +1953,7 @@ namespace CosmicShore.ScriptableObjects
             shockfrontRippleTarget = shockfrontRippleTargetBuild;
             fulmenPrismTarget = fulmenPrismTargetBuild;
             railrushHitTarget = railrushHitTargetBuild;
+            standoffBlastTarget = standoffBlastTargetBuild;
             harvestPrismTarget = harvestPrismTargetBuild;
             shatterplanePrismTarget = shatterplanePrismTargetBuild;
             shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
@@ -1904,6 +1978,9 @@ namespace CosmicShore.ScriptableObjects
             flitstrikeStrikeTarget = flitstrikeStrikeTargetBuild;
             honeycombRoundSeconds = honeycombRoundSecondsBuild;
             woodpeckerPrismTarget = woodpeckerPrismTargetBuild;
+            sentryZapTarget = sentryZapTargetBuild;
+            warrenRoundSeconds = warrenRoundSecondsBuild;
+            caveInPrismTarget = caveInPrismTargetBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
             tandavaBreakPercent = tandavaBreakPercentBuild;
@@ -1971,6 +2048,7 @@ namespace CosmicShore.ScriptableObjects
             shockfrontRippleTargetBuild = shockfrontRippleTarget;
             fulmenPrismTargetBuild = fulmenPrismTarget;
             railrushHitTargetBuild = railrushHitTarget;
+            standoffBlastTargetBuild = standoffBlastTarget;
             harvestPrismTargetBuild = harvestPrismTarget;
             shatterplanePrismTargetBuild = shatterplanePrismTarget;
             shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
@@ -1995,6 +2073,9 @@ namespace CosmicShore.ScriptableObjects
             flitstrikeStrikeTargetBuild = flitstrikeStrikeTarget;
             honeycombRoundSecondsBuild = honeycombRoundSeconds;
             woodpeckerPrismTargetBuild = woodpeckerPrismTarget;
+            sentryZapTargetBuild = sentryZapTarget;
+            warrenRoundSecondsBuild = warrenRoundSeconds;
+            caveInPrismTargetBuild = caveInPrismTarget;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
             tandavaBreakPercentBuild = tandavaBreakPercent;

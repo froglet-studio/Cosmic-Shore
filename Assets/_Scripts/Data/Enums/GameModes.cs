@@ -570,6 +570,20 @@ namespace CosmicShore.Data
         // speed reaches about three times as far as one thrown at cruise: ride a rail, launch, and lance a rival. First
         // domain to the hit target wins. 124 is the id GAME_KIT_ROSTER.md reserved for it (row 34).
         Railrush = 124,
+        // The Meerkat's CHARGE game (SENTRY.md): Corona's shells round a crystal heart. Turn Sentinel Mode on and every
+        // soliton leaves a sentinel at its way in that zaps rival hulls in its guard; each ZAP (a Bullet-class combat hit)
+        // is one point, first domain to the target wins. Reserved for it by Docs/ElementalLoop/GAME_KIT_ROSTER.md row 15.
+        Sentry = 105,
+
+        // The Meerkat's MASS game (WARREN.md): a TIMED round in the bare Barren cell, scored on the volume standing in your
+        // colour at the whistle (VolumeRemaining). Every soliton rings its way out with an Exit Portal; a rival's soliton
+        // swallows your mass and fires it back into the rest of it. Roster row 16.
+        Warren = 106,
+
+        // The Meerkat's SPACE game (CAVEIN.md): Shatterplane's plates of neutral prisms, referenced read-only. Form a
+        // soliton beside a plate and it swallows the plate's prisms and fires them out of the way out; each fired prism
+        // that hits another breaks both. Hostile prisms broken score, first domain to the target wins. Roster row 17.
+        CaveIn = 107,
 
         // The Jewel Wasp's CHARGE game (MARIONETTE.md): a duel among Kelpwood's kelp and herds. Sting a creature, ride it
         // into a rival pilot: its attack is a Strike, one point, and with Charge 5 leaving it bursts it on every rival
@@ -581,8 +595,16 @@ namespace CosmicShore.Data
         // creature). Most prisms taken off the board when the clock runs out wins. 127, the roster's (rows 36-37).
         Gorge = 127,
 
+        // The Grizzly's CHARGE game (STANDOFF.md): square posts of prism tiles stand on a sphere round an open centre.
+        // A trigger bomb that touches a rival hull freezes on it; pull and release again to blow it. Every rival a blast
+        // of yours catches is a point; Dig In behind a post to aim and recharge. First domain to the target wins.
+        // I1-I4 add posts, an inner ring of posts, shielded rims and danger corners. 125 is the id the game kit roster
+        // reserved for it (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35), so parallel sessions never collide; 91-124
+        // and 126-127 are the roster's other games.
+        Standoff = 125,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 110) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 114) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
