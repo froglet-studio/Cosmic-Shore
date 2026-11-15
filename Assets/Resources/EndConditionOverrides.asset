@@ -65,6 +65,9 @@ MonoBehaviour:
   tapestryRoundSeconds: 90
   palisadeRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  podHuntBlastTarget: 15
+  iceShelfRoundSeconds: 90
+  depthChargePrismTarget: 1500
   larderMissileTarget: 16
   thornbushRoundSeconds: 90
   lancefallPrismTarget: 600
@@ -154,6 +157,9 @@ MonoBehaviour:
   tapestryRoundSecondsBuild: 90
   palisadeRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  podHuntBlastTargetBuild: 15
+  iceShelfRoundSecondsBuild: 90
+  depthChargePrismTargetBuild: 1500
   larderMissileTargetBuild: 16
   thornbushRoundSecondsBuild: 90
   lancefallPrismTargetBuild: 600
