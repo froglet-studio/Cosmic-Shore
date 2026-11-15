@@ -62,6 +62,9 @@ MonoBehaviour:
   starweaveRoundSeconds: 90
   haulRoundSeconds: 90
   hedgerowRoundSeconds: 90
+  larderMissileTarget: 16
+  thornbushRoundSeconds: 90
+  lancefallPrismTarget: 600
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -141,6 +144,9 @@ MonoBehaviour:
   starweaveRoundSecondsBuild: 90
   haulRoundSecondsBuild: 90
   hedgerowRoundSecondsBuild: 90
+  larderMissileTargetBuild: 16
+  thornbushRoundSecondsBuild: 90
+  lancefallPrismTargetBuild: 600
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35

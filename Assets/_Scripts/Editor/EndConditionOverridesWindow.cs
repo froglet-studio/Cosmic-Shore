@@ -139,6 +139,12 @@ namespace CosmicShore.Editor
                 "and rival mass included, wins), default " + EndConditionOverridesSO.DefaultHaulRoundSeconds + ".\n" +
                 "  • Hedgerow: round length in SECONDS (timed - most volume STANDING in a domain's colour, walled hedges " +
                 "and rival mass included, wins), default " + EndConditionOverridesSO.DefaultHedgerowRoundSeconds + ".\n" +
+                "  • Larder: missile hits a DOMAIN needs - a missile from a Shrike's plants reaching a rival hull is 1, " +
+                "default " + EndConditionOverridesSO.DefaultLarderMissileTarget + ".\n" +
+                "  • Thornbush: round length in SECONDS (timed - most nests and trail STANDING in a domain's colour at " +
+                "the whistle wins), default " + EndConditionOverridesSO.DefaultThornbushRoundSeconds + ".\n" +
+                "  • Lancefall: hostile prisms a DOMAIN must break with the Void Lance (race to N), default " +
+                EndConditionOverridesSO.DefaultLancefallPrismTarget + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget + ".\n" +
                 "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
@@ -358,6 +364,9 @@ namespace CosmicShore.Editor
             int stw = Mathf.Max(0, EditorGUILayout.IntField("Starweave - Round Seconds", _config.starweaveRoundSeconds));
             int hau = Mathf.Max(0, EditorGUILayout.IntField("Haul - Round Seconds", _config.haulRoundSeconds));
             int hdg = Mathf.Max(0, EditorGUILayout.IntField("Hedgerow - Round Seconds", _config.hedgerowRoundSeconds));
+            int ld  = Mathf.Max(0, EditorGUILayout.IntField("Larder - Missile Target", _config.larderMissileTarget));
+            int tb  = Mathf.Max(0, EditorGUILayout.IntField("Thornbush - Round Seconds", _config.thornbushRoundSeconds));
+            int lf  = Mathf.Max(0, EditorGUILayout.IntField("Lancefall - Prism Target", _config.lancefallPrismTarget));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             int tv  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Break PERCENT", _config.tandavaBreakPercent), 0, 100);
@@ -424,6 +433,9 @@ namespace CosmicShore.Editor
                     _config.starweaveRoundSeconds = stw;
                     _config.haulRoundSeconds = hau;
                     _config.hedgerowRoundSeconds = hdg;
+                    _config.larderMissileTarget = ld;
+                    _config.thornbushRoundSeconds = tb;
+                    _config.lancefallPrismTarget = lf;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
                     _config.tandavaBreakPercent = tv;
@@ -501,6 +513,9 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Starweave (seconds)", stw > 0 ? stw.ToString() : EndConditionOverridesSO.DefaultStarweaveRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Haul (seconds)", hau > 0 ? hau.ToString() : EndConditionOverridesSO.DefaultHaulRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Hedgerow (seconds)", hdg > 0 ? hdg.ToString() : EndConditionOverridesSO.DefaultHedgerowRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Larder", ld > 0 ? ld.ToString() : EndConditionOverridesSO.DefaultLarderMissileTarget + " (default)");
+            EditorGUILayout.LabelField("Thornbush (seconds)", tb > 0 ? tb.ToString() : EndConditionOverridesSO.DefaultThornbushRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Lancefall", lf > 0 ? lf.ToString() : EndConditionOverridesSO.DefaultLancefallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUILayout.LabelField("Tandava (break %)", tv > 0 ? tv.ToString() : EndConditionOverridesSO.DefaultTandavaBreakPercent + " (default)");
@@ -592,6 +607,9 @@ namespace CosmicShore.Editor
                    "Starweave (seconds): " + Fmt(_config.starweaveRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultStarweaveRoundSeconds) + "\n" +
                    "Haul (seconds): " + Fmt(_config.haulRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultHaulRoundSeconds) + "\n" +
                    "Hedgerow (seconds): " + Fmt(_config.hedgerowRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultHedgerowRoundSeconds) + "\n" +
+                   "Larder: " + Fmt(_config.larderMissileTargetBuild, "default " + EndConditionOverridesSO.DefaultLarderMissileTarget) + "\n" +
+                   "Thornbush (seconds): " + Fmt(_config.thornbushRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultThornbushRoundSeconds) + "\n" +
+                   "Lancefall: " + Fmt(_config.lancefallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultLancefallPrismTarget) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +
                    "Tandava (break %): " + Fmt(_config.tandavaBreakPercentBuild, "default " + EndConditionOverridesSO.DefaultTandavaBreakPercent) + "\n" +
