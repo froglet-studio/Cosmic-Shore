@@ -446,6 +446,21 @@ namespace CosmicShore.Data
         // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
         Shatterplane = 90,
 
+        // The Swordfish's TIME game (SPEARLINE.md): three laps of Headlong's circuit, the rings sealed with panes of
+        // prisms. A sealed ring counts only through a hole, and the hull alone rams too small a one, so each seal asks for
+        // a swing of the bill; Quickdraw (Time) is the sword's rate. Reserved 96 in Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Spearline = 96,
+
+        // The Swordfish's CHARGE game (RIPOSTE.md): a sword duel in Jackstraw's heap of sticks. A sword hit on a rival
+        // (a Strike, which lands only while the Swordfish is faster than its victim) is one point; first domain to the
+        // target wins. The sticks are cover the blade cuts and the hull rams through. Reserved 97 (GAME_KIT_ROSTER.md).
+        Riposte = 97,
+
+        // The Swordfish's MASS game (PALISADE.md): a timed build-and-raid in the bare Barren cell. The afterimages (the
+        // blade's prism copies of itself, Mass scales their volume) and the trail are your mass; every rival's sword
+        // cuts it. Most volume standing at the whistle wins (VolumeRemaining). Reserved 98 (GAME_KIT_ROSTER.md).
+        Palisade = 98,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 83) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
