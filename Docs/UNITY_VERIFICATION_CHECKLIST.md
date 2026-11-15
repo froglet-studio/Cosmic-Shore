@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🟡 One authentication facade per Play: no competing UGS sign-in at boot (`Ys-bleeding-edge`, 2026-11-15, Yash)
+
+Affects: Shombith's UGS layer and the DI root (`AppManager.InstallBindings`).
+
+**What landed.** AppManager's bindings are installed into two Reflex containers (the root scope from the prefab asset,
+the Bootstrap scene's scope from its instance), so AppManager and every later scene each got their own
+`AuthenticationServiceFacade`. The Authentication scene's facade could not join the boot sign-in and could start a second
+one (`[UGS Auth] Sign-in failed ... The player is already signing in`, twice), or raise `OnSignedIn` a second time. The
+binding now hands out `AuthenticationServiceFacade.Shared` (one per Play, reset on entering Play), and
+`ResetStartupState` keeps a sign-in that is still in flight. Test: `AuthenticationFacadeSingleInstanceTests`.
+
+**Verified (2026-11-15, open editor, no batch mode).** Compiled in the editor. The 3 new tests pass (run by reflection
+through the Pipeline eval, not the Test Runner window). Before the fix a trace showed two facade instances on 11 of 11
+boots and `[FriendsInitializer] Friends service did not come up` on each. After: 6 boots with
+`CosmicShore.OfflinePreferred` = 1 and 3 with 0; AppManager's facade and the root container's facade are the same
+object on all 9; no `already signing in`, no Friends warning; the online boots reached `state=InParty`.
+
+**Not verified.**
+1. The SDK refusal itself was not reproduced before the fix on this machine (sign-in finished before the scene asked),
+   so the proof is the two-instance trace plus the code path, not a before/after of the warning.
+2. Menu online/offline toggle (ReconnectService): go offline, go online, confirm sign-in and the party come back.
+3. A player build (the shared instance is reset by `RuntimeInitializeOnLoadMethod`; a build starts with none).
+4. `unity_refcompile` and `gates.sh` did not run (Windows).
+
 ### 🔴 The Jacks' vessel pass: authored element scaling, four level-5 cards, their own HUD (`claude/jacks-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/JACKS.md` § 2. The four element curves moved from `JacksMath`'s formulas onto
