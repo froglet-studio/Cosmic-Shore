@@ -145,6 +145,12 @@ namespace CosmicShore.Editor
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Glasshouse: round length in SECONDS (timed - most trail and garden STANDING in a " +
                 "domain's colour at the whistle wins), default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + ".\n" +
+                "  • Pod Hunt: blasts a DOMAIN needs - a crew's flown missile or bomb bursting on a rival " +
+                "hull is 1, default " + EndConditionOverridesSO.DefaultPodHuntBlastTarget + ".\n" +
+                "  • Ice Shelf: round length in SECONDS (timed - most mass STANDING in a domain's colour at " +
+                "the whistle, as the server counts it, wins), default " + EndConditionOverridesSO.DefaultIceShelfRoundSeconds + ".\n" +
+                "  • Depth Charge: hostile prisms a DOMAIN must destroy in Rampage's forest (race to N), " +
+                "default " + EndConditionOverridesSO.DefaultDepthChargePrismTarget + ".\n" +
                 "  • Larder: missile hits a DOMAIN needs - a missile from a Shrike's plants reaching a rival hull is 1, " +
                 "default " + EndConditionOverridesSO.DefaultLarderMissileTarget + ".\n" +
                 "  • Thornbush: round length in SECONDS (timed - most nests and trail STANDING in a domain's colour at " +
@@ -379,6 +385,9 @@ namespace CosmicShore.Editor
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int pls = Mathf.Max(0, EditorGUILayout.IntField("Palisade - Round Seconds", _config.palisadeRoundSeconds));
             int gh  = Mathf.Max(0, EditorGUILayout.IntField("Glasshouse - Round Seconds", _config.glasshouseRoundSeconds));
+            int ph  = Mathf.Max(0, EditorGUILayout.IntField("Pod Hunt - Blast Target", _config.podHuntBlastTarget));
+            int ish = Mathf.Max(0, EditorGUILayout.IntField("Ice Shelf - Round Seconds", _config.iceShelfRoundSeconds));
+            int dc  = Mathf.Max(0, EditorGUILayout.IntField("Depth Charge - Prism Target", _config.depthChargePrismTarget));
             int ld  = Mathf.Max(0, EditorGUILayout.IntField("Larder - Missile Target", _config.larderMissileTarget));
             int tb  = Mathf.Max(0, EditorGUILayout.IntField("Thornbush - Round Seconds", _config.thornbushRoundSeconds));
             int lf  = Mathf.Max(0, EditorGUILayout.IntField("Lancefall - Prism Target", _config.lancefallPrismTarget));
@@ -454,6 +463,9 @@ namespace CosmicShore.Editor
                     _config.tapestryRoundSeconds = tp;
                     _config.palisadeRoundSeconds = pls;
                     _config.glasshouseRoundSeconds = gh;
+                    _config.podHuntBlastTarget = ph;
+                    _config.iceShelfRoundSeconds = ish;
+                    _config.depthChargePrismTarget = dc;
                     _config.larderMissileTarget = ld;
                     _config.thornbushRoundSeconds = tb;
                     _config.lancefallPrismTarget = lf;
@@ -540,6 +552,9 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Palisade (seconds)", pls > 0 ? pls.ToString() : EndConditionOverridesSO.DefaultPalisadeRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Glasshouse (seconds)", gh > 0 ? gh.ToString() : EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Pod Hunt", ph > 0 ? ph.ToString() : EndConditionOverridesSO.DefaultPodHuntBlastTarget + " (default)");
+            EditorGUILayout.LabelField("Ice Shelf (seconds)", ish > 0 ? ish.ToString() : EndConditionOverridesSO.DefaultIceShelfRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Depth Charge", dc > 0 ? dc.ToString() : EndConditionOverridesSO.DefaultDepthChargePrismTarget + " (default)");
             EditorGUILayout.LabelField("Larder", ld > 0 ? ld.ToString() : EndConditionOverridesSO.DefaultLarderMissileTarget + " (default)");
             EditorGUILayout.LabelField("Thornbush (seconds)", tb > 0 ? tb.ToString() : EndConditionOverridesSO.DefaultThornbushRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Lancefall", lf > 0 ? lf.ToString() : EndConditionOverridesSO.DefaultLancefallPrismTarget + " (default)");
@@ -640,6 +655,9 @@ namespace CosmicShore.Editor
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Palisade (seconds): " + Fmt(_config.palisadeRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultPalisadeRoundSeconds) + "\n" +
                    "Glasshouse (seconds): " + Fmt(_config.glasshouseRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds) + "\n" +
+                   "Pod Hunt: " + Fmt(_config.podHuntBlastTargetBuild, "default " + EndConditionOverridesSO.DefaultPodHuntBlastTarget) + "\n" +
+                   "Ice Shelf (seconds): " + Fmt(_config.iceShelfRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultIceShelfRoundSeconds) + "\n" +
+                   "Depth Charge: " + Fmt(_config.depthChargePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultDepthChargePrismTarget) + "\n" +
                    "Larder: " + Fmt(_config.larderMissileTargetBuild, "default " + EndConditionOverridesSO.DefaultLarderMissileTarget) + "\n" +
                    "Thornbush (seconds): " + Fmt(_config.thornbushRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultThornbushRoundSeconds) + "\n" +
                    "Lancefall: " + Fmt(_config.lancefallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultLancefallPrismTarget) + "\n" +

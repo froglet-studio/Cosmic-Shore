@@ -581,6 +581,18 @@ namespace CosmicShore.UI
                     // SEED (and a creature), the one thing a pilot has to go and fetch; the planting and the tending
                     // happen wherever the pilot lets go of the lure.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Glasshouse");
+                case GameModes.PodHunt:
+                    // The Bends' provider: the nearest pilot this crew may blast. The gunners fly the missiles; the
+                    // helm's job is to bring a rival into their reach.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_PodHunt");
+                case GameModes.IceShelf:
+                    // Rampage's provider: the nearest managed omni crystal - a missile for every seat, the ammunition
+                    // that keeps rival gunners off the shelf.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_IceShelf");
+                case GameModes.DepthCharge:
+                    // Rampage's provider, in Rampage's own forest: the nearest managed omni crystal (a missile per
+                    // seat). The forest itself is in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_DepthCharge");
                 case GameModes.Flitstrike:
                     // The Bends' provider: the nearest pilot this player may strike. The Flit is a short dart along the
                     // nose, so the whole question is where the rival is and how to come at them dead ahead.

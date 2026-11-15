@@ -186,11 +186,17 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHarvest.unity
     guid: 2e26345893828d0fd7d69132808c3728
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameDepthCharge.unity
+    guid: ed1f56b8a9cd98bcd77e5e6a7c0d8f6b
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTrawl.unity
     guid: e84a1b16550ff6d405359562bec5f41a
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameKelpwood.unity
     guid: 750b1dc75ea9084b39ab73f51caa180b
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigamePodHunt.unity
+    guid: 94bae8a66a4b63c7c201e0cbb1c862ad
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameLarder.unity
     guid: 47971cec2a440abf34eebb61d916d358
@@ -200,6 +206,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameGlasshouse.unity
     guid: 1669f64150fcf334bc67aa5165c0e331
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameIceShelf.unity
+    guid: e1bb3e7f24377026ff7f16af98f85112
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameThornbush.unity
     guid: 469ee2883a5b56d3d63e37d47a6a4d5f
