@@ -156,6 +156,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity
     guid: b333e163445729830970f182e1e64fc0
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameRailrush.unity
+    guid: 53c15fdcd05a840d2ebb5ff106ade43d
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSkein.unity
     guid: 7a176232b6f8f7a3277106d997031bdd
   - enabled: 1

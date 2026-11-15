@@ -539,8 +539,14 @@ namespace CosmicShore.Data
         // and the Blade's width (Space) is how many ribs a pass catches. First domain to the target wins.
         Landslide = 123,
 
+        // The Urchin's CHARGE game (RAILRUSH.md): Hijack's Switchyard of open rails, scored on chain-spike hits on rival
+        // hulls. A spike flies at its muzzle speed PLUS the hull's, so a volley thrown off a friendly third at grind
+        // speed reaches about three times as far as one thrown at cruise: ride a rail, launch, and lance a rival. First
+        // domain to the hit target wins. 124 is the id GAME_KIT_ROSTER.md reserved for it (row 34).
+        Railrush = 124,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 94) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 100) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

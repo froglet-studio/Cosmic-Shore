@@ -145,6 +145,10 @@ namespace CosmicShore.ScriptableObjects
         /// bolts (and anything else it does) destroy in Rampage's forest, summed across its pilots; the generator
         /// (author_fulmen_assets.py) holds it under a quarter of intensity 4's forest.</summary>
         public const int DefaultFulmenPrismTarget = 1200;
+        /// <summary>Railrush hit target used when <see cref="railrushHitTarget"/> is 0. One HIT - an Urchin's chain
+        /// spike reaching a rival hull (a Bullet-class combat hit) - is one point (RailrushScoringRuleSO), summed
+        /// across the domain's pilots. An ESTIMATE pending a timed match.</summary>
+        public const int DefaultRailrushHitTarget = 20;
 
         /// <summary>Harvest hostile-prism target used when <see cref="harvestPrismTarget"/> is 0. The Thresher's
         /// sheaves never grow back, so three domains' worth of it must fit in the smallest field (the generator,
@@ -674,6 +678,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Fulmen: hostile prisms a DOMAIN must destroy between them to win (race to N) - Rampage's forest burnt " +
                  "by the Stoat's omni-crystal bolts; your own colour never counts. 0 = default (1200).")]
         [Min(0)] public int fulmenPrismTarget = 1200;
+        [Tooltip("Railrush: spike HITS a DOMAIN needs to win (race to N), the Urchin's charge game. A chain spike " +
+                 "reaching a rival hull is one hit, summed across the domain's pilots. 0 = default (20).")]
+        [Min(0)] public int railrushHitTarget = 20;
 
         [Tooltip("Harvest: hostile prisms (other domains' sheaves and neutral ones, rival trails, fauna) a DOMAIN " +
                  "must destroy between them to win (race to N) - with the Thresher's chain, ball or blast; your own " +
@@ -828,6 +835,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int coronaBloomTargetBuild = 15;
         [Min(0)] public int shockfrontRippleTargetBuild = 10;
         [Min(0)] public int fulmenPrismTargetBuild = 1200;
+        [Min(0)] public int railrushHitTargetBuild = 20;
         [Min(0)] public int harvestPrismTargetBuild = 750;
         [Min(0)] public int shatterplanePrismTargetBuild = 1600;
         [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
@@ -1318,6 +1326,11 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetFulmenPrismTarget() =>
             fulmenPrismTarget > 0 ? fulmenPrismTarget : DefaultFulmenPrismTarget;
+        /// Railrush hit target ("first domain to N spike hits"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultRailrushHitTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetRailrushHitTarget() =>
+            railrushHitTarget > 0 ? railrushHitTarget : DefaultRailrushHitTarget;
 
         /// <summary>
         /// Harvest prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
@@ -1554,6 +1567,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Corona                    => GetCoronaBloomTarget(),
                 GameModes.Shockfront                => GetShockfrontRippleTarget(),
                 GameModes.Fulmen                    => GetFulmenPrismTarget(),
+                GameModes.Railrush                  => GetRailrushHitTarget(),
                 GameModes.Harvest                   => GetHarvestPrismTarget(),
                 GameModes.PodHunt                   => GetPodHuntBlastTarget(),
                 GameModes.DepthCharge               => GetDepthChargePrismTarget(),
@@ -1658,6 +1672,7 @@ namespace CosmicShore.ScriptableObjects
             coronaBloomTarget == coronaBloomTargetBuild &&
             shockfrontRippleTarget == shockfrontRippleTargetBuild &&
             fulmenPrismTarget == fulmenPrismTargetBuild &&
+            railrushHitTarget == railrushHitTargetBuild &&
             harvestPrismTarget == harvestPrismTargetBuild &&
             shatterplanePrismTarget == shatterplanePrismTargetBuild &&
             SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
@@ -1740,6 +1755,7 @@ namespace CosmicShore.ScriptableObjects
             coronaBloomTarget = coronaBloomTargetBuild;
             shockfrontRippleTarget = shockfrontRippleTargetBuild;
             fulmenPrismTarget = fulmenPrismTargetBuild;
+            railrushHitTarget = railrushHitTargetBuild;
             harvestPrismTarget = harvestPrismTargetBuild;
             shatterplanePrismTarget = shatterplanePrismTargetBuild;
             shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
@@ -1823,6 +1839,7 @@ namespace CosmicShore.ScriptableObjects
             coronaBloomTargetBuild = coronaBloomTarget;
             shockfrontRippleTargetBuild = shockfrontRippleTarget;
             fulmenPrismTargetBuild = fulmenPrismTarget;
+            railrushHitTargetBuild = railrushHitTarget;
             harvestPrismTargetBuild = harvestPrismTarget;
             shatterplanePrismTargetBuild = shatterplanePrismTarget;
             shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);

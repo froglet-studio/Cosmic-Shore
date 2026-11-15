@@ -56,6 +56,7 @@ MonoBehaviour:
   shockfrontRippleTarget: 10
   fulmenPrismTarget: 1200
   trawlPrismTarget: 300
+  railrushHitTarget: 20
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
   - 1600
@@ -150,6 +151,7 @@ MonoBehaviour:
   shockfrontRippleTargetBuild: 10
   fulmenPrismTargetBuild: 1200
   trawlPrismTargetBuild: 300
+  railrushHitTargetBuild: 20
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
   - 1600
