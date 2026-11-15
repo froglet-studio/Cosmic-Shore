@@ -211,8 +211,9 @@ namespace CosmicShore.Tests
             // 86 -> 88 on 2026-11-15: Shockfront (119) and Fulmen (120), the Stoat's Charge and Space games, on its reserved ids.
             // 88 -> 91 on 2026-11-15: Spearline (96), Riposte (97) and Palisade (98), the Swordfish's Time, Charge and
             // Mass games, on their reserved ids.
+            // 91 -> 94 on 2026-11-15: the Honeyguide's Flitstrike (108), Honeycomb (109) and Woodpecker (110), on its reserved ids.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(91, values.Length,
+            Assert.AreEqual(94, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

@@ -492,9 +492,20 @@ namespace CosmicShore.Data
         // take throws a Fulmen bolt that burns the forest; a crystal a branch reaches bolts again. Hostile prisms
         // destroyed score. Ids 120 / toast 195 reserved by GAME_KIT_ROSTER.md (row 30).
         Fulmen = 120,
+        // The Honeyguide's three element games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 18-20, ids reserved there on
+        // 2026-11-15 so the parallel builds of the roster never collide).
+        // CHARGE (FLITSTRIKE.md): hold LT for the Flit's lane, let go to dart through a rival - every strike is a point.
+        // Dog Fight's Boneyard; first domain to the strike target wins.
+        Flitstrike = 108,
+        // MASS (HONEYCOMB.md): a timed build in the Barren cell. An omni crystal is a hive, a comb of your prisms behind
+        // you while the Ratel plays the hive puzzle; the volume standing in your colour at the whistle wins.
+        Honeycomb = 109,
+        // SPACE (WOODPECKER.md): a pecking race through Rampage's cactus forest. RT's three quick shots chip hostile
+        // prisms; first domain to the prism target wins.
+        Woodpecker = 110,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 86) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 94) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

@@ -66,6 +66,9 @@ MonoBehaviour:
   thornbushRoundSeconds: 90
   lancefallPrismTarget: 600
   siroccoPrismTarget: 400
+  flitstrikeStrikeTarget: 5
+  honeycombRoundSeconds: 90
+  woodpeckerPrismTarget: 150
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
   tandavaHaloRingsToBreak: 9
@@ -149,6 +152,9 @@ MonoBehaviour:
   thornbushRoundSecondsBuild: 90
   lancefallPrismTargetBuild: 600
   siroccoPrismTargetBuild: 400
+  flitstrikeStrikeTargetBuild: 5
+  honeycombRoundSecondsBuild: 90
+  woodpeckerPrismTargetBuild: 150
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35
   tandavaHaloRingsToBreakBuild: 9
