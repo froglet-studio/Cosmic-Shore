@@ -152,6 +152,22 @@ namespace CosmicShore.ScriptableObjects
         /// the arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
         public const int DefaultGlasshouseRoundSeconds = 90;
 
+        /// <summary>Larder missile target used when <see cref="larderMissileTarget"/> is 0. One MISSILE HIT - a missile
+        /// from a Shrike's plants reaching a rival hull (a missile-class combat hit) - is one point (LarderScoringRuleSO),
+        /// summed across the domain's pilots. A first cut, unplayed.</summary>
+        public const int DefaultLarderMissileTarget = 16;
+
+        /// <summary>Thornbush round length in seconds, used when <see cref="thornbushRoundSeconds"/> is 0. Thornbush is
+        /// TIMED, Tapestry's reason: its score (nests + trail standing in a domain's colour) is a live stock rival
+        /// missiles and lances take down, so "most standing at the whistle" is the only honest end condition.</summary>
+        public const int DefaultThornbushRoundSeconds = 90;
+
+        /// <summary>Lancefall prism target used when <see cref="lancefallPrismTarget"/> is 0. Hostile prisms (the neutral
+        /// plates) a DOMAIN breaks, summed across its pilots (LancefallScoringRuleSO, Rampage's rule). The plates never
+        /// grow back, so three domains' worth must fit in the smallest rung's breakable plates (author_lancefall_assets.py
+        /// asserts it). A first cut, unplayed.</summary>
+        public const int DefaultLancefallPrismTarget = 600;
+
         /// <summary>Sirocco hostile-prism target used when <see cref="siroccoPrismTarget"/> is 0.
         /// Far under Rampage's 2000: the dust takes one prism in three it touches, where a Dolphin
         /// cone takes hundreds at once.</summary>
@@ -603,6 +619,18 @@ namespace CosmicShore.ScriptableObjects
                  "wins. 0 = default (90).")]
         [Min(0)] public int glasshouseRoundSeconds = 90;
 
+        [Tooltip("Larder: MISSILE HITS a DOMAIN needs to win (race to N), the Shrike's charge game. A missile from a " +
+                 "Shrike's plants reaching a rival hull is one hit, summed across the domain's pilots. 0 = default (16).")]
+        [Min(0)] public int larderMissileTarget = 16;
+
+        [Tooltip("Thornbush: round length in SECONDS, the Shrike's mass game. The mode is timed - the domain with the " +
+                 "most mass standing in its own colour (nests plus trail) when the clock runs out wins. 0 = default (90).")]
+        [Min(0)] public int thornbushRoundSeconds = 90;
+
+        [Tooltip("Lancefall: hostile PRISMS a DOMAIN must break to win (race to N), the Shrike's space game. The plates " +
+                 "are neutral, so every plate tile the Void Lance breaks counts. 0 = default (600).")]
+        [Min(0)] public int lancefallPrismTarget = 600;
+
         [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
                  "mass never counts. 0 = default (400).")]
@@ -687,6 +715,9 @@ namespace CosmicShore.ScriptableObjects
         [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int glasshouseRoundSecondsBuild = 90;
+        [Min(0)] public int larderMissileTargetBuild = 16;
+        [Min(0)] public int thornbushRoundSecondsBuild = 90;
+        [Min(0)] public int lancefallPrismTargetBuild = 600;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
@@ -1173,6 +1204,27 @@ namespace CosmicShore.ScriptableObjects
             glasshouseRoundSeconds > 0 ? glasshouseRoundSeconds : DefaultGlasshouseRoundSeconds;
 
         /// <summary>
+        /// Larder missile target ("first domain to N missile hits"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultLarderMissileTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetLarderMissileTarget() =>
+            larderMissileTarget > 0 ? larderMissileTarget : DefaultLarderMissileTarget;
+
+        /// <summary>
+        /// Thornbush round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultThornbushRoundSeconds"/>. Read by ThornbushTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetThornbushRoundSeconds() =>
+            thornbushRoundSeconds > 0 ? thornbushRoundSeconds : DefaultThornbushRoundSeconds;
+
+        /// <summary>
+        /// Lancefall prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultLancefallPrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
+        /// </summary>
+        public int GetLancefallPrismTarget() =>
+            lancefallPrismTarget > 0 ? lancefallPrismTarget : DefaultLancefallPrismTarget;
+
+        /// <summary>
         /// Sirocco prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSiroccoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
@@ -1284,6 +1336,9 @@ namespace CosmicShore.ScriptableObjects
                 // Scalar only, as for Cleave and Flatline: the real answer is per-intensity (GetShatterplanePrismTarget(int)).
                 GameModes.Shatterplane              => GetShatterplanePrismTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
+                GameModes.Larder                    => GetLarderMissileTarget(),
+                GameModes.Lancefall                 => GetLancefallPrismTarget(),
+                // Thornbush (thornbushRoundSeconds) is timed, Glasshouse's reason, and is absent.
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush. Glasshouse
                 // (glasshouseRoundSeconds) is timed for the same reason and is absent too.
@@ -1372,6 +1427,9 @@ namespace CosmicShore.ScriptableObjects
             SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             glasshouseRoundSeconds == glasshouseRoundSecondsBuild &&
+            larderMissileTarget == larderMissileTargetBuild &&
+            thornbushRoundSeconds == thornbushRoundSecondsBuild &&
+            lancefallPrismTarget == lancefallPrismTargetBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
             tandavaBreakPercent == tandavaBreakPercentBuild &&
@@ -1437,6 +1495,9 @@ namespace CosmicShore.ScriptableObjects
             shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             glasshouseRoundSeconds = glasshouseRoundSecondsBuild;
+            larderMissileTarget = larderMissileTargetBuild;
+            thornbushRoundSeconds = thornbushRoundSecondsBuild;
+            lancefallPrismTarget = lancefallPrismTargetBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
             tandavaBreakPercent = tandavaBreakPercentBuild;
@@ -1503,6 +1564,9 @@ namespace CosmicShore.ScriptableObjects
             shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             glasshouseRoundSecondsBuild = glasshouseRoundSeconds;
+            larderMissileTargetBuild = larderMissileTarget;
+            thornbushRoundSecondsBuild = thornbushRoundSeconds;
+            lancefallPrismTargetBuild = lancefallPrismTarget;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
             tandavaBreakPercentBuild = tandavaBreakPercent;
