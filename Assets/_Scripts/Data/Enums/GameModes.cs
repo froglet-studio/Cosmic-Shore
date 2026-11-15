@@ -446,6 +446,10 @@ namespace CosmicShore.Data
         // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
         Shatterplane = 90,
 
+        // RESERVED 91-127 (2026-11-15): the missing elemental arcade games, one id per game, assigned by vessel and
+        // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
+        // building one of those games takes ITS row's id; anything else takes 128 or above.
+
         // The Shrike's CHARGE game (LARDER.md): a duel in the Dog Fight's wreckage (the Boneyard cells). Every crystal
         // becomes a missile plant and every nest is crowned with one; paint a rival with the Targeting Array and every
         // plant with a ready missile launches at them. A missile that reaches a rival hull is a point. First domain to
