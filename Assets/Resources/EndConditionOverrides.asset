@@ -58,6 +58,9 @@ MonoBehaviour:
   harvestPrismTarget: 750
   tapestryRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  larderMissileTarget: 16
+  thornbushRoundSeconds: 90
+  lancefallPrismTarget: 600
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -133,6 +136,9 @@ MonoBehaviour:
   harvestPrismTargetBuild: 750
   tapestryRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  larderMissileTargetBuild: 16
+  thornbushRoundSecondsBuild: 90
+  lancefallPrismTargetBuild: 600
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35
