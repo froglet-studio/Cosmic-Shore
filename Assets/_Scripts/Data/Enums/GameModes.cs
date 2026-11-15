@@ -517,6 +517,16 @@ namespace CosmicShore.Data
         // SPACE (WOODPECKER.md): a pecking race through Rampage's cactus forest. RT's three quick shots chip hostile
         // prisms; first domain to the prism target wins.
         Woodpecker = 110,
+        // The Jacks' CHARGE game (STINGHERD.md): herd your danger creatures into rival hulls. A danger creature of your
+        // herd that touches a rival stings it (a Strike, Danger Share) and is spent; first domain to the sting target
+        // wins. Played in Kelpwood's ball of kelp, whose grazing tadpoles join the herd. Id reserved by the game kit
+        // roster (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 27); 91-116 belong to other vessels' games in flight.
+        Stingherd = 117,
+
+        // The Jacks' SPACE game (TRAWL.md): the net drags prisms, and a dragged prism that hits another destroys both
+        // (PRISM_MOTION.md). First domain to destroy the hostile-prism target wins, in Harvest's field of sheaves.
+        // Id reserved by the game kit roster (row 28).
+        Trawl = 118,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 94) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
