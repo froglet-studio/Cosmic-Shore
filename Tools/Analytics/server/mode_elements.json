@@ -69,6 +69,10 @@
       "Charge",
       null
     ],
+    "Flitstrike": [
+      "Charge",
+      null
+    ],
     "Fulmen": [
       "Space",
       null
@@ -94,6 +98,10 @@
       null
     ],
     "Hijack": [
+      "Mass",
+      null
+    ],
+    "Honeycomb": [
       "Mass",
       null
     ],
@@ -125,6 +133,10 @@
       "Time",
       null
     ],
+    "Palisade": [
+      "Mass",
+      null
+    ],
     "PerchRun": [
       "Time",
       null
@@ -139,6 +151,10 @@
     ],
     "Regatta": [
       "Time",
+      null
+    ],
+    "Riposte": [
+      "Charge",
       null
     ],
     "Salvo": [
@@ -193,7 +209,15 @@
       "Time",
       null
     ],
+    "Spearline": [
+      "Time",
+      null
+    ],
     "Standoff": [
+      "Charge",
+      null
+    ],
+    "Stingherd": [
       "Charge",
       null
     ],
@@ -229,6 +253,10 @@
       "Mass",
       null
     ],
+    "Trawl": [
+      "Space",
+      null
+    ],
     "Undertow": [
       "Charge",
       null
@@ -242,6 +270,10 @@
       null
     ],
     "WildlifeLiberation": [
+      "Space",
+      null
+    ],
+    "Woodpecker": [
       "Space",
       null
     ],
@@ -300,6 +332,7 @@
     "DogFight": "CombatPoints",
     "Dustup": "CombatPoints",
     "Flatline": "CombatPoints",
+    "Flitstrike": "CombatPoints",
     "Fulmen": "PrismsDestroyed",
     "Glasshouse": "VolumeRemaining",
     "GrizzlyCharge": "PrismsDestroyed",
@@ -307,6 +340,7 @@
     "Harvest": "PrismsDestroyed",
     "Headlong": "SwitchesThreaded",
     "Hijack": "PrismsStolen",
+    "Honeycomb": "VolumeRemaining",
     "Jackstraw": "CombatPoints",
     "Joust": "Jousts",
     "Kelpwood": "CombatPoints",
@@ -314,10 +348,12 @@
     "LanternRun": "SwitchesThreaded",
     "Larder": "CombatPoints",
     "Multiplayer2v2CoOpVsAI": "Crystals",
+    "Palisade": "VolumeRemaining",
     "PerchRun": "SwitchesThreaded",
     "Rampage": "PrismsDestroyed",
     "Redline": "SwitchesThreaded",
     "Regatta": "SwitchesThreaded",
+    "Riposte": "CombatPoints",
     "Salvo": "PrismsDestroyed",
     "ScarabRally": "SwitchesThreaded",
     "ScarabScramble": "Goals",
@@ -331,7 +367,9 @@
     "SkimRace": "Crystals",
     "Slingshot": "SwitchesThreaded",
     "SlipLine": "SwitchesThreaded",
+    "Spearline": "SwitchesThreaded",
     "Standoff": "CombatPoints",
+    "Stingherd": "CombatPoints",
     "Switchback": "SwitchesThreaded",
     "Tandava": "LifeformsKilled",
     "TandavaSevering": "LifeformsKilled",
@@ -340,10 +378,12 @@
     "Thornline": "SwitchesThreaded",
     "ThresherTime": "SwitchesThreaded",
     "Tollway": "Goals",
+    "Trawl": "PrismsDestroyed",
     "Undertow": "CombatPoints",
     "Warpline": "SwitchesThreaded",
     "Waystation": "SwitchesThreaded",
     "WildlifeLiberation": "LifeformsKilled",
+    "Woodpecker": "PrismsDestroyed",
     "WrasseRun": "SwitchesThreaded",
     "WreckingBall": "PrismsDestroyed"
   },
@@ -380,6 +420,7 @@
     "Dustup",
     "Elimination",
     "Flatline",
+    "Flitstrike",
     "Fulmen",
     "Glasshouse",
     "GrizzlyCharge",
@@ -387,6 +428,7 @@
     "Harvest",
     "Headlong",
     "Hijack",
+    "Honeycomb",
     "Jackstraw",
     "Joust",
     "Kelpwood",
@@ -399,12 +441,14 @@
     "MazeRun",
     "Multiplayer2v2CoOpVsAI",
     "ObstacleCourse",
+    "Palisade",
     "PerchRun",
     "ProtectMission",
     "PumpNDump",
     "Rampage",
     "Redline",
     "Regatta",
+    "Riposte",
     "RiskyDriftness",
     "Salvo",
     "ScarabRally",
@@ -422,7 +466,9 @@
     "SlipLine",
     "SlipNStride",
     "Soar",
+    "Spearline",
     "Standoff",
+    "Stingherd",
     "Switchback",
     "Tandava",
     "TandavaSevering",
@@ -431,11 +477,13 @@
     "Thornline",
     "ThresherTime",
     "Tollway",
+    "Trawl",
     "Undertow",
     "Warpline",
     "Waystation",
     "WildlifeBlitz",
     "WildlifeLiberation",
+    "Woodpecker",
     "WrasseRun",
     "WreckingBall"
   ]

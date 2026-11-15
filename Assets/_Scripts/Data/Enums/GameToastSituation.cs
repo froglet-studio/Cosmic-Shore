@@ -249,6 +249,11 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // The Swordfish's three games (SPEARLINE.md, RIPOSTE.md, PALISADE.md), ids reserved in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only, once, at the start.
+        SpearlineHint = 171,            // a sealed ring counts only through a hole: swing the bill on the way through
+        RiposteHint = 172,              // a sword hit lands only while you are faster: cut a straight lane, ramp, strike
+        PalisadeHint = 173,             // light the blade and let go to lay afterimages; cut the rivals' walls down
         // The Shrike's games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 12-14 reserved 177-179). Posted to the LOCAL
         // pilot only. Larder's race beats are the shared 128-130 and a missile hit is 81 (MissileHitsLanded rose);
         // Thornbush's lead change is the shared 130, sampled by its controller (a timed mode has no target);
@@ -262,6 +267,17 @@ namespace CosmicShore.Data
         // prism milestone 83. Ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 29-30). LOCAL pilot only.
         ShockfrontHint = 194,           // once, at the start: sling round and let the pair close beside a rival
         FulmenHint = 195,               // once, at the start: take the omni crystals in the heart; each throws a bolt
+        // The Honeyguide's element games (FLITSTRIKE.md, HONEYCOMB.md, WOODPECKER.md), at the toast ids
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved (166-202 are that roster's). Flitstrike's and Woodpecker's race
+        // beats are the shared 128-130 (DomainRaceToasts); Honeycomb's lead change is the shared 130, sampled by its
+        // controller because a timed mode has no target. Posted to the LOCAL pilot only.
+        FlitstrikeHint = 183,           // once, at the start: hold LT to see the dart, let go to Flit through a rival
+        HoneycombHint = 184,            // once, at the start: an omni crystal is a hive; what stands in your colour scores
+        WoodpeckerHint = 185,           // once, at the start: hold RT to aim, let go to peck the hostile forest
+        // Stingherd and Trawl, the Jacks' Charge and Space games (STINGHERD.md, TRAWL.md). Race beats are the shared 128-130
+        // (DomainRaceToasts); ids reserved by the game kit roster (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 27-28).
+        StingherdHint = 192,            // once, at the start: herd your danger creatures into a rival hull to sting it
+        TrawlHint = 193,                // once, at the start: drag prisms in the net and smash them into each other
         // Standoff, the Grizzly's charge game (_Scripts/Controller/Arcade/STANDOFF.md). Its race beats are the shared
         // 128-130 (DomainRaceToasts); a blast hit is 81 (MissileHitsLanded). Posted to the LOCAL pilot only. 200 is the
         // hint id the game kit roster reserved for it (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35).

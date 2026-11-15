@@ -209,11 +209,13 @@ namespace CosmicShore.Tests
             // 83 -> 86 on 2026-11-15: Larder (102), Thornbush (103) and Lancefall (104), the Shrike's Charge, Mass and
             // Space games, on the ids GAME_KIT_ROSTER.md reserved for them (other roster games land beside them).
             // 86 -> 88 on 2026-11-15: Shockfront (119) and Fulmen (120), the Stoat's Charge and Space games, on its reserved ids.
-            // 88 -> 89 on 2026-11-15: Standoff (125), the Grizzly's Charge game, on the id the game kit roster reserved
-            // (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35). The roster's other games land beside it in parallel, each
-            // adding one here: a merge conflict on this number is expected and is resolved by counting the members.
+            // 88 -> 91 on 2026-11-15: Spearline (96), Riposte (97) and Palisade (98), the Swordfish's Time, Charge and
+            // Mass games, on their reserved ids.
+            // 91 -> 94 on 2026-11-15: the Honeyguide's Flitstrike (108), Honeycomb (109) and Woodpecker (110), on its reserved ids.
+            // 94 -> 96 on 2026-11-15: Stingherd (117) and Trawl (118), the Jacks' Charge and Space games.
+            // 96 -> 97 on 2026-11-15: Standoff (125), the Grizzly's Charge game, on the id GAME_KIT_ROSTER.md reserved (row 35).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(89, values.Length,
+            Assert.AreEqual(97, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -267,6 +269,9 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Flatline, 84)]
         [TestCase(GameModes.Corona, 87)]
         [TestCase(GameModes.Shatterplane, 90)]
+        [TestCase(GameModes.Spearline, 96)]
+        [TestCase(GameModes.Riposte, 97)]
+        [TestCase(GameModes.Palisade, 98)]
         [TestCase(GameModes.Shockfront, 119)]
         [TestCase(GameModes.Fulmen, 120)]
         [TestCase(GameModes.Standoff, 125)]
