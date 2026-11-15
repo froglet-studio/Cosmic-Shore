@@ -79,6 +79,9 @@ MonoBehaviour:
   larderMissileTarget: 16
   thornbushRoundSeconds: 90
   lancefallPrismTarget: 600
+  sentryZapTarget: 40
+  warrenRoundSeconds: 90
+  caveInPrismTarget: 1000
   siroccoPrismTarget: 400
   flitstrikeStrikeTarget: 5
   honeycombRoundSeconds: 90
@@ -179,6 +182,9 @@ MonoBehaviour:
   larderMissileTargetBuild: 16
   thornbushRoundSecondsBuild: 90
   lancefallPrismTargetBuild: 600
+  sentryZapTargetBuild: 40
+  warrenRoundSecondsBuild: 90
+  caveInPrismTargetBuild: 1000
   siroccoPrismTargetBuild: 400
   flitstrikeStrikeTargetBuild: 5
   honeycombRoundSecondsBuild: 90

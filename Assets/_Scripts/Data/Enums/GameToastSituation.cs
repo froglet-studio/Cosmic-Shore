@@ -320,6 +320,13 @@ namespace CosmicShore.Data
         RedlineSoarDark = 365,          // the pilot's Time fell below Soar's relock (4): Soar is dark until a crystal
         RedlineRedline = 366,           // once a race: the pilot reached the redline: {0} = the speed in u/s
 
+        // The Meerkat's games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 15-17). Their race beats are the shared 128-130
+        // (DomainRaceToasts; Warren samples its own lead change, 130, because a timed mode has no target). Posted to the
+        // LOCAL pilot only.
+        SentryHint = 180,               // once, at the start: Y for Sentinel Mode, form solitons where rivals pass
+        WarrenHint = 181,               // once, at the start: every soliton rings its exit with your prisms; raid theirs
+        CaveInHint = 182,               // once, at the start: form a soliton beside a plate and fire it into the next
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

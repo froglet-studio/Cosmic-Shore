@@ -587,6 +587,19 @@ namespace CosmicShore.UI
                 case GameModes.Fulmen:
                     // The Stoat's space race: the contested omni crystal IS the weapon, Rampage's question.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Fulmen");
+                case GameModes.Sentry:
+                    // The Bends' provider again: the nearest pilot this player may zap. A sentinel stands where the
+                    // soliton formed, so the question is where the rival is about to fly; the heart is always the
+                    // other answer, and the shells make it plain.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Sentry");
+                case GameModes.Warren:
+                    // Tapestry's answer: the nearest opposing pilot is where their freshest mass is, laid behind them,
+                    // and so where a soliton's swallow raids. Your own mass needs no arrow - you lay it where you fly.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Warren");
+                case GameModes.CaveIn:
+                    // Shatterplane's answer: the densest standing hostile mass, the nearest big plate still up. A
+                    // soliton formed beside it swallows it and fires it at whatever stands past its way out.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_CaveIn");
                 case GameModes.Harvest:
                     // Rampage's provider again: the nearest managed omni crystal, in the field's clear centre. The
                     // sheaves are in plain sight; the crystal is the windmill - the one thing worth racing to.

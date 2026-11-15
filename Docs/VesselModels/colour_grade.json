@@ -268,6 +268,13 @@
    "sha": "f7255588735adc64",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/CaveIn.png": {
+   "coloured": 1.0,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "035f1628d787fb6c",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Cleave.png": {
    "coloured": 0.9958,
    "graded": "ui",
@@ -485,6 +492,13 @@
    "sha": "37ad434aa8afde0b",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Sentry.png": {
+   "coloured": 0.999,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "02406d97dead77a6",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/SerpentHood.png": {
    "coloured": 0.9953,
    "graded": "ui",
@@ -609,6 +623,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "6f8e54a17d3d6cba",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Warren.png": {
+   "coloured": 0.999,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "f9a6de223998ec97",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Waystation.png": {

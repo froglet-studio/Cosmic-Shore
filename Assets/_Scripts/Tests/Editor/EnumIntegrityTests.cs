@@ -221,7 +221,9 @@ namespace CosmicShore.Tests
             // Space games, on their reserved ids.
             var values = Enum.GetValues(typeof(GameModes));
 
-            Assert.AreEqual(108, values.Length,
+            // 108 -> 111 on 2026-11-15: Sentry (105), Warren (106) and CaveIn (107), the Meerkat's Charge, Mass and Space
+            // games, on their reserved ids.
+            Assert.AreEqual(111, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -285,6 +287,9 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Palisade, 98)]
         [TestCase(GameModes.Shockfront, 119)]
         [TestCase(GameModes.Fulmen, 120)]
+        [TestCase(GameModes.Sentry, 105)]
+        [TestCase(GameModes.Warren, 106)]
+        [TestCase(GameModes.CaveIn, 107)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

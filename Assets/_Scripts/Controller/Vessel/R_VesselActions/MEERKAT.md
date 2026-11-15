@@ -221,6 +221,7 @@ line for line:
 
 - **The Toybox Vessel Changer (lava lamp):** `ToyVesselRoster.Default` + `Vessel Prefab Container`.
 - **Its Time mini-game:** `GameModes.BurrowRun = 71` (`Arcade/BURROWRUN.md`), in the arcade list.
+- **Its Charge, Mass and Space games** (2026-11-15, `Arcade/MEERKAT_GAMES.md`): Sentry (`GameModes.Sentry = 105`, Sentinel Mode), Warren (`Warren = 106`, the exit portal) and Cave-in (`CaveIn = 107`, the soliton swallow and fire), in the arcade list. Each changes nothing about the kit and steers the AI only.
 - **Its class card** (`SO_Class_Meerkat`, the Stoat's icons as placeholders) is in `SO_Classlist_All` / `_Classes`.
 
 ## 5. Stand-ins and open slots

@@ -847,6 +847,13 @@ CAMERAS = {
     "Flitstrike": (295, 16, 0.56, 48),
     "Woodpecker": (95, 18, 0.62, 46),
     "Honeycomb": (220, 22, 0.9, 44),
+    # The Meerkat's three. Sentry: Corona's shells from the side Corona is not shot from, closer in, so a gate of the
+    # inner shell fills the plate with the sentinel standing in it. Warren: the bare Barren cell (MODEL tier), the
+    # burrows' trails and exit portals across it. Cave-in: Shatterplane's Gallery from the far side, low, so a tunnel's
+    # fired prisms run on from one plate into the next.
+    "Sentry": (215, 6, 0.62, 54),
+    "Warren": (130, 20, 0.92, 44),
+    "CaveIn": (255, 8, 0.74, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1044,6 +1051,41 @@ def recipe(stem, card_path, pal, ends):
             pt = v_add(list(a), v_mul(v_sub(list(b), list(a)), j / 12))
             layers.append({"kind": "sphere", "c": pt, "r": 7.0, "base": [0.3, 0.2, 0.5],
                            "rim": [1.2, 0.8, 1.8], "emissive": [0.8, 0.5, 1.3], "unbound": True})
+        nucleus()
+    elif s == "Warren":
+        # MODEL tier: the arena is the bare Barren cell, so the card draws what the mode PUTS there - each colour's
+        # burrow, a long arc of Meerkat trail at the shipped key size (BaseScale 20/2 x 0.75 x 5.5, one per 7 u:
+        # Meerkat.prefab's BaseScale, XScaler 1 and initialWavelength), with an EXIT PORTAL every so often along it
+        # (six of the pilot's prisms on a hexagon round the line, MeerkatExitPortal). The Ruby burrow has a RAID cut
+        # out of it, the gap a Jade soliton swallowed - the other half of the mode.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        rows = []
+        key = [10.0, 0.75, 5.5]
+        for k, dom in enumerate((JADE, RUBY, GOLD, JADE, RUBY, GOLD)):
+            rad = R * rng.range(0.4, 0.7)
+            tilt = rng.range(-0.9, 0.9)
+            a0 = rng.range(0, 2 * math.pi)
+            sweep = rng.range(1.4, 2.2)
+            f = arc([0, 0, 0], rad, a0, a0 + sweep, tilt, bank=0.4)
+            n = int(rad * sweep / 7.0)
+            cut = (int(n * 0.4), int(n * 0.55)) if k == 1 else (n + 1, n + 1)
+            for i in range(n):
+                if cut[0] <= i < cut[1]:
+                    continue
+                t = i / max(1, n - 1)
+                pt = f(t)
+                ahead = f(min(1.0, t + 1.0 / max(1, n)))
+                fwd = v_sub(ahead, pt) if t < 1.0 else v_sub(pt, f(max(0.0, t - 1.0 / max(1, n))))
+                rows.append(prism(pt, fwd, v_norm(pt), key, dom))
+                if i % 60 == 30:
+                    fd = v_norm(fwd)
+                    side = v_norm(v_cross(v_norm(pt), fd)); up = v_cross(fd, side)
+                    for h in range(6):
+                        a = h * math.pi / 3
+                        q = v_add(pt, v_add(v_mul(side, 48 * math.cos(a)), v_mul(up, 48 * math.sin(a))))
+                        rows.append(prism(q, fd, v_norm(v_sub(q, pt)), [30.0, 2.5, 16.0], dom))
+        layers.append({"kind": "prisms", "rows": rows})
         nucleus()
     elif s == "Tapestry":
         # MODEL tier: the arena is the bare Barren cell, so what the card shows is what the mode
@@ -2247,6 +2289,53 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         p = jitter(0.3)
         crystal(p, span * 0.03)
         glow(p, span * 0.12, JADE, 0.7, 0.2)
+    elif s == "Sentry":
+        # A ZAP at a gate: a Jade Meerkat's sentinel (an afterimage of the hull, a glow in its colour) stands at the way
+        # in of a soliton it formed, its guard round it, and a thin zap runs from it onto a Ruby rival coming through.
+        post = v_add(centre, v_mul(v_norm([0.5, 0.1, -0.6]), span * 0.18))
+        glow(post, span * 0.02, JADE, 1.4, 0.7)
+        glow(post, span * 0.09, JADE, 0.5, 0.12)
+        rival = v_add(post, v_mul(v_norm([-0.7, 0.15, 0.5]), span * 0.07))
+        glow(rival, span * 0.012, RUBY, 1.2, 0.6)
+        d = v_sub(rival, post)
+        streak(v_mul(v_add(post, rival), 0.5), d, math.sqrt(v_dot(d, d)), JADE)
+        tube = v_add(post, v_mul(v_norm([0.2, -0.1, 1.0]), span * 0.05))
+        for k in range(6):
+            glow(v_add(tube, v_mul(v_norm([0.2, -0.1, 1.0]), span * 0.02 * k)), span * 0.012, JADE, 0.8, 0.25)
+        stage["vessels"] = vessels([(JADE, 0.2, 4, 300, 20), (RUBY, 0.25, -6, 140, 30), (GOLD, 0.6, 10, 230, 25)])
+    elif s == "CaveIn":
+        # A CAVE-IN: on the plate nearest the frame's centre a Jade soliton's tube runs into the face (a run of glows,
+        # the tunnel), and out of its far end a spray of the plate's own prisms, fired, runs on toward the plate behind
+        # - the one act that scores.
+        import shatterplane_budget as sb
+        rung = sb.RUNGS[INTENSITY - 1]
+        structs, _ = sb.layout(rung)
+        az, el = math.radians(cam["azimuth"]), math.radians(cam["elevation"])
+        view = [math.cos(el) * math.sin(az), math.sin(el), math.cos(el) * math.cos(az)]
+
+        def framing(st):
+            off = v_sub([float(x) for x in st["c"]], centre)
+            across = v_sub(off, v_mul(view, v_dot(off, view)))
+            return -math.sqrt(v_dot(across, across))
+        plate = max(structs, key=framing)
+        pc = [float(x) for x in plate["c"]]
+        pn = [float(x) for x in plate["n"]]
+        if v_dot(pn, view) < 0:
+            pn = v_mul(pn, -1.0)
+        side = v_norm(v_cross([0, 1, 0], pn))
+        mouth = v_add(pc, v_mul(pn, 60))
+        for k in range(8):
+            glow(v_add(mouth, v_mul(pn, -18 * k)), 30 - 2 * k, JADE, 0.9, 0.3)
+        out = v_sub(pc, v_mul(pn, 80))
+        rows = []
+        for k in range(18):
+            d = v_norm(v_add(v_mul(pn, -1.0), v_mul(rng.unit(), 0.35)))
+            p = v_add(out, v_mul(d, 30 + 14 * k))
+            rows.append(prism(p, d, side, [6.0, 6.0, 10.0], JADE))
+            if k % 4 == 3:
+                glow(p, 6, JADE, 1.2, 0.5)
+        layers.append({"kind": "prisms", "rows": rows})
+        glow(v_add(mouth, v_mul(pn, 120)), 9, JADE, 1.2, 0.6)
     elif s == "Tapestry":
         # Dust mode over the cut in the Ruby wake: the raid that made the gap.
         p = jitter(0.2)
