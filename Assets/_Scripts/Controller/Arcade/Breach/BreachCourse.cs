@@ -31,13 +31,16 @@ namespace CosmicShore.Gameplay
     /// <item><b>I1 Open water:</b> gentle bends. Burn on every straight; learn the tank (empty is fine, full is waste).</item>
     /// <item><b>I2 Hard turns:</b> every other leg turns 90-120 degrees, and it is short (160-220 u). Burn into one and the hull swings
     /// so wide it overshoots the ring: coast the turn, burn out of it.</item>
-    /// <item><b>I3 Walls:</b> every other ring has a WALL of danger prisms standing square across its line 110 u before
+    /// <item><b>I3 Walls:</b> every other ring has a see-through WALL of danger prisms standing square across its line 110 u before
     /// it, 16 u wider than the ring and rounded on the inside of the turn. A danger prism stops the hull dead. Swing round the wall's edge and back into the ring:
     /// at cruise the hull turns that dog-leg easily, burning it cannot. Or let the crew's guns breach it first: they
     /// shoot hostile prisms, so a wall met at cruise is often open by the time the hull is there.</item>
     /// <item><b>I4 Breach:</b> hard turns and walls in turn (a wall on the ring after each hard one), with the smallest
     /// rings and the widest (22 u), nearest (90 u) walls.</item>
     /// </list>
+    ///
+    /// <para><b>A wall is a checkerboard</b> (<see cref="WallSpacing"/>): its prisms touch at their corners, so from the
+    /// ring before you see the next ring through it, and no hole is wide enough for the hull.</para>
     ///
     /// <para><b>The walls are a function of the broadcast rings</b> (<see cref="WallsFor"/>): which rings are walled is
     /// the ring's index, and the wall stands on the ring's axis. Nothing new is replicated. The vessel kit is
@@ -76,8 +79,12 @@ namespace CosmicShore.Gameplay
 
         public const float CoreMargin = 60f, MinRingSeparation = 160f, RingClearance = 25f;
 
-        /// <summary>The wall: danger prisms on a hex grid square to its ring's axis, this far apart, each this wide and thick.</summary>
-        public const float WallSpacing = 9f, WallPrismSize = 7f, WallPrismDepth = 1.5f;
+        /// <summary>The wall: a CHECKERBOARD of danger prisms square to its ring's axis, each this wide and thick, one in every
+        /// other cell of this pitch, so neighbours touch at their corners and every hole is a closed square one prism wide.
+        /// You see the ring through the wall and cannot fly through it (Garrett, 2026-11-15: "make the ring visible and
+        /// maintain the spirit of the level"). Until then the wall was a solid hex disc (9 u apart), and from the ring
+        /// before it hid the lime ring on 39% of I3 legs and 22% of I4's (Docs/Reports/SIGHT_LINES.md).</summary>
+        public const float WallSpacing = 7f, WallPrismSize = 7f, WallPrismDepth = 1.5f;
 
         /// <summary>The line round a wall passes its edge this far out (the hull's own width and a little).</summary>
         public const float WallClear = 10f;
@@ -248,8 +255,12 @@ namespace CosmicShore.Gameplay
         public static bool PastWall(Vector3 hull, IReadOnlyList<RaceGate> rings, int k, in BreachSettings s) =>
             !IsWalled(k, s) || Vector3.Dot(hull - WallCentre(rings, k, s), rings[k].Axis) > 0f;
 
-        /// <summary>Every wall prism: points on a hex grid in each wall's plane within its radius, each with its ring (for
-        /// the prism's facing).</summary>
+        /// <summary>Whether cell (<paramref name="col"/>, <paramref name="row"/>) of a wall's checkerboard holds a prism (the
+        /// others are its holes).</summary>
+        public static bool IsWallCell(int col, int row) => ((col + row) & 1) == 0;
+
+        /// <summary>Every wall prism: the checkerboard's prism cells (<see cref="IsWallCell"/>) in each wall's plane within its
+        /// radius, each with its ring (for the prism's facing).</summary>
         public static void WallsFor(IReadOnlyList<RaceGate> rings, in BreachSettings s, List<(Vector3 position, int ring)> wall)
         {
             wall.Clear();
@@ -263,11 +274,11 @@ namespace CosmicShore.Gameplay
                 Vector3 e2 = Vector3.Cross(g.Axis, e1);
                 float reach = WallRadius(g, s);
                 int n = Mathf.CeilToInt(reach / WallSpacing) + 1;
-                float rowH = WallSpacing * 0.8660254f;
                 for (int row = -n; row <= n; row++)
                 for (int col = -n; col <= n; col++)
                 {
-                    float x = (col + ((row & 1) != 0 ? 0.5f : 0f)) * WallSpacing, y = row * rowH;
+                    if (!IsWallCell(col, row)) continue;
+                    float x = col * WallSpacing, y = row * WallSpacing;
                     if (x * x + y * y > reach * reach) continue;
                     wall.Add((c + e1 * x + e2 * y, k));
                 }
