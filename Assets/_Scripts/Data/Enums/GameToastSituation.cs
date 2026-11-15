@@ -249,6 +249,11 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // The Swordfish's three games (SPEARLINE.md, RIPOSTE.md, PALISADE.md), ids reserved in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only, once, at the start.
+        SpearlineHint = 171,            // a sealed ring counts only through a hole: swing the bill on the way through
+        RiposteHint = 172,              // a sword hit lands only while you are faster: cut a straight lane, ramp, strike
+        PalisadeHint = 173,             // light the blade and let go to lay afterimages; cut the rivals' walls down
         // The Shrike's games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 12-14 reserved 177-179). Posted to the LOCAL
         // pilot only. Larder's race beats are the shared 128-130 and a missile hit is 81 (MissileHitsLanded rose);
         // Thornbush's lead change is the shared 130, sampled by its controller (a timed mode has no target);
