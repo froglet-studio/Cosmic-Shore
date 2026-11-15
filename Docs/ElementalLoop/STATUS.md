@@ -22,7 +22,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Rhino | `b b b` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
 | Serpent | `b b b` | `b b .` | `x x x` | `x x x` | Mass or Space | Regatta, BroodRush |
-| Shrike | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| Shrike | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Sparrow | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Squirrel | `b b b` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
@@ -61,7 +61,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Rhino | Headlong | - | - | - |
 | Scarab | Scarab Rally | Undertow | Scarab Scramble, Tollway | Wrecking Ball |
 | Serpent | Serpentine | Hood | - | - |
-| Shrike | Thornline | - | - | - |
+| Shrike | Thornline | Larder | Thornbush | Lancefall |
 | Sparrow | Breakwater | Dog Fight | Scurry (shared) | Salvo, Wildlife Liberation |
 | Squirrel | Skim Race | Joust | Scurry (shared) | excused |
 | Starling | - | - | - | - |

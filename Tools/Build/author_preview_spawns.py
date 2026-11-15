@@ -91,6 +91,9 @@ SCENE_FOR_MODE = {
     90: 'MinigameShatterplane',
     91: 'MinigameChum',
     92: 'MinigameStarweave',
+    102: 'MinigameLarder',
+    103: 'MinigameThornbush',
+    104: 'MinigameLancefall',
 }
 
 

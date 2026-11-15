@@ -461,8 +461,27 @@ namespace CosmicShore.Data
         // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
         // building one of those games takes ITS row's id; anything else takes 128 or above.
 
+        // The Shrike's CHARGE game (LARDER.md): a duel in the Dog Fight's wreckage (the Boneyard cells). Every crystal
+        // becomes a missile plant and every nest is crowned with one; paint a rival with the Targeting Array and every
+        // plant with a ready missile launches at them. A missile that reaches a rival hull is a point. First domain to
+        // the target wins. I1-I4 are the Boneyard's own ladder (more wreckage to hide behind) and fewer crystals.
+        // Reserved for it by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 12).
+        Larder = 102,
+
+        // The Shrike's MASS game (THORNBUSH.md): a timed nest-building match in Jackstraw's heap of sticks. Dock on a
+        // stick, press Mass to leave a super-shielded nest, and hold the mass standing in your colour at the whistle
+        // (VolumeRemaining: nests plus trail). Rival missiles crack shields; a Void-Pierce lance breaks them. I1-I4 are
+        // the heap's own ladder. Reserved by GAME_KIT_ROSTER.md (row 13).
+        Thornbush = 103,
+
+        // The Shrike's SPACE game (LANCEFALL.md): Shatterplane's plates, broken by the Void Lance. The beam breaks every
+        // block it passes, so a plate taken EDGE-ON gives up a whole strip; face-on it gives up a few tiles. First
+        // domain to the prism target wins. I1-I4 are the plates' own ladder; I4's super-shielded ribs need Void Pierce.
+        // Reserved by GAME_KIT_ROSTER.md (row 14).
+        Lancefall = 104,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 83) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 86) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
