@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Chum Cell Config 4
+  m_EditorClassIdentifier:
+  CellName: Chum
+  Description: 'Barrier - intensity 4 of Chum: sixteen crusted shoals out by the membrane, two crystals
+    and fifteen grazers racing you. The standard 1200 u cell with its nucleus (~392 u). No
+    environment prefab - the reef (16 shoals, 2,832 prisms of 7 u, 1,808 of them shielded
+    crust) is laid by ChumController. 15 tameable tadpoles graze it outside the nucleus; 2
+    omni crystals respawn inside it (the scene''s CrystalManager). Frenzy sits 25% above the
+    full arena (4,889 prisms, 1,141,090 volume). Authored by
+    Tools/Build/author_chum_assets.py - re-run it rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 4
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 0
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: 2a64bae319421f530897329d92fb61c8, type: 2}
+  EnvironmentPrefab: {fileID: 0}
+  EnvironmentIntensity: 4
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 428
+    RestlessExit: 306
+    FrenzyEnter: 6111
+    FrenzyExit: 5194
+    RestlessEnterVolume: 99845
+    RestlessExitVolume: 71318
+    FrenzyEnterVolume: 1426363
+    FrenzyExitVolume: 1212409
