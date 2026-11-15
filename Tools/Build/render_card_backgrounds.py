@@ -726,6 +726,8 @@ CAMERAS = {
     "Rampage": (30, 14, 0.66, 46), "Cleave": (38, 26, 0.8, 42), "WildlifeLiberation": (30, 18, 0.82, 42),
     "DogFight": (20, 12, 0.62, 46), "Bends": (110, 30, 0.72, 44), "ScarabScramble": (25, 26, 0.95, 42),
     "Salvo": (140, 28, 0.7, 44), "Switchback": (35, 34, 0.88, 42), "Hijack": (24, 30, 0.9, 40),
+    # Railrush rides Hijack's Switchyard: the opposite side of the yard, lower, so the two cards read apart.
+    "Railrush": (215, 12, 0.85, 42),
     "Tollway": (40, 24, 0.8, 42), "Headlong": (35, 34, 0.88, 42), "Breakwater": (20, 24, 0.75, 44),
     "Skein": (60, 22, 0.85, 42), "Bloomrush": (200, 6, 0.6, 48), "Redline": (35, 34, 0.88, 42),
     "WreckingBall": (300, 22, 1.1, 40), "Undertow": (205, -14, 0.7, 46), "AstroLeague": (30, 28, 0.9, 42),
@@ -1224,6 +1226,9 @@ def recipe(stem, card_path, pal, ends):
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Hijack":
         aim((0.55, 0.0, 0.55), 0.42, base=900)
+    elif s == "Railrush":
+        aim((-0.55, 0.1, -0.5), 0.46, base=900)
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "SkimRace":
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})

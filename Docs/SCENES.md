@@ -71,6 +71,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameSalvo** | `_Scenes/Multiplayer Scenes/` | `Salvo (44)` | `SalvoController` |
 | **MinigameSwitchback** | `_Scenes/Multiplayer Scenes/` | `Switchback (45)` | `SwitchbackController` |
 | **MinigameHijack** | `_Scenes/Multiplayer Scenes/` | `Hijack (46)` | `HijackController` |
+| **MinigameRailrush** | `_Scenes/Multiplayer Scenes/` | `Railrush (124)` | `RailrushController` |
 | **MinigameTollway** | `_Scenes/Multiplayer Scenes/` | `Tollway (48)` | `TollwayController` |
 | **MinigameWreckingBall** | `_Scenes/Multiplayer Scenes/` | `WreckingBall (54)` | `WreckingBallController` |
 | **MinigameUndertow** | `_Scenes/Multiplayer Scenes/` | `Undertow (55)` | `UndertowController` |
@@ -324,6 +325,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 44 | `Salvo` | MP | MinigameSalvo | `SalvoController` (Sparrow demolition race — see `SALVO.md`) |
 | 45 | `Switchback` | MP | MinigameSwitchback | `SwitchbackController` (Dolphin gate race, Blast Run only since 2026-10-29 — see `SWITCHBACK.md`) |
 | 46 | `Hijack` | MP | MinigameHijack | `HijackController` (Urchin rail heist — see `HIJACK.md`) |
+| 124 | `Railrush` | MP | MinigameRailrush | `RailrushController` (Urchin joust on rails, Hijack's yard — see `RAILRUSH.md`) |
 | 48 | `Tollway` | MP | MinigameTollway | `TollwayController` (Scarab ring race — see `TOLLWAY.md`) |
 | 54 | `WreckingBall` | MP | MinigameWreckingBall | `WreckingBallController` ("Wrecking Ball" — Scarab demolition race, see `WRECKING_BALL.md`) |
 | 55 | `Undertow` | MP | MinigameUndertow | `UndertowController` (Scarab cavitation duel — see `UNDERTOW.md`) |
@@ -603,6 +605,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
 | `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Slingshot, Warpline, Thresher Time, Wrasse Run, Scarab Rally, Thornline, Decoy Run, Perch Run, Slip Line, Breach, Serpent Time, Brittle Star Time, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
+| `RailrushHitTurnMonitor` | `TurnMonitors/` | A domain's summed spike-hit CombatPoints reach the Railrush target |
 | `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
 | `WreckingBallPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed (ball + plate) reach the Wrecking Ball target |
 | `UndertowPointTurnMonitor` | `TurnMonitors/` | A domain's bends (CombatPoints) plus creature kills reach the Undertow target (on `CombatPointTurnMonitorBase`) |

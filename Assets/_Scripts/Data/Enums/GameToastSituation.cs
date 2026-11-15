@@ -249,6 +249,9 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // Railrush, the Urchin's charge game (_Scripts/Controller/Arcade/RAILRUSH.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. 199 is the id GAME_KIT_ROSTER.md reserved (row 34).
+        RailrushHint = 199,             // once, at the start: grind your colour's rail, launch, spike a rival at speed
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.

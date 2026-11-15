@@ -459,6 +459,10 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
                 case GameModes.Hijack:
                     return CreateProviderComponent<HijackObjectiveProvider>("ObjectiveProvider_Hijack");
+                case GameModes.Railrush:
+                    // Dog Fight's provider on purpose: the nearest OPPOSING pilot. The score is a spike in a
+                    // rival's hull, so "which way is the fight" is the one question; the rails are in plain sight.
+                    return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_Railrush");
                 case GameModes.Skein:
                     // Mandatory rather than a nicety, for Switchback's reason: every ring on the
                     // cable is neutral Blue, so nothing in the SHARED world says whose turn a ring
