@@ -507,6 +507,38 @@ expects 82 modes).
 
 ---
 
+### 🔴 Standoff, the Grizzly's Charge game (GameModes 125) (`claude/grizzly-standoff`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/STANDOFF.md`. Grizzly-only duel among square posts of prism tiles round an open
+centre (`SpawnableStandoff`, four baked prefabs), scored on blasts (a rival hull caught in a Grizzly blast,
+MissileBlast-class CombatPoints, target 10), omni crystals at the centre, AI gunners that only steer
+(`StandoffGunner`; the hull's own autopilot bomb-jump is their weapon). New platform rows: `GameModes.Standoff = 125`,
+`standoffBlastTarget`, toast situation 200. Checked offline: `author_standoff_assets.py --check` (watched it fail on a
+mutated prefab and a mutated C# constant), the reference compile, the `/ship` gates, the bake (200 / 432 / 568 / 978
+prisms, 0 clipping), the card render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 84 modes).
+
+**Verify in editor:**
+1. Arcade → Standoff card: the posts-and-blast card art, Grizzly only, 2-4 players, intensities 1-4, the Charge badge.
+2. Launch I1 with one AI, as the HOST: you spawn on a ring just outside eight posts; three omni crystals at the
+   centre; the arrow points at the rival; the hint toast (200) shows once.
+3. Stick: squeeze a trigger and let go aimed at the rival: the bomb flies through the posts and freezes on the
+   rival's hull when it touches it. Does a cruising bomb reliably catch a moving hull?
+4. Blow: pull and release that trigger again: the blast (25 u tap to 100 u full squeeze) scores 1 per rival inside
+   it (toast 81), takes petals and silences the victim. At most one per victim per 0.5 s.
+5. Cannon (X / Q): a charged shot landing beside a rival scores the same way.
+6. Dig In behind a post: the hull stops, the gun turns, Energy regenerates faster with Charge.
+7. AI: it flies passes beside you inside a blast's reach and bomb-jumps (fires, freezes 18 u ahead, blows it); at
+   Hard / Legendary it breaks off behind a post when silenced. Watch for it flying into posts or circling.
+8. First domain to 10 blasts wins: results "N blasts" / "N Blasts Left"; reveal STANDOFF TIME / BLASTS LEFT. Replay.
+9. I2-I4: 12 / 14 / 18 outer posts, an inner ring from I3, shielded rims from I3 (two hits), danger corners at I4.
+10. Blasts wear posts away: after a full match is there still cover?
+11. Time a 2v2 at I2 with Medium AI; 10 is a first cut (End Game Conditions → Standoff).
+12. Game Mode Prefab Kit ▸ Validate on `MinigameStandoff.unity`; Measure Cell Environment Baselines agrees with the census.
+
+**First-pass tuning:** target 10, comeback 0.4, the posts in `standoff_budget.RUNGS`, the AI ladders in `STANDOFF.md`.
+
+---
+
 ### 🔴 Corona, the Manta's Charge game (GameModes 87) (`claude/amazing-goldberg-7zn80e`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/CORONA.md`. Manta stings round a crystal heart in nested prism shells

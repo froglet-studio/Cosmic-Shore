@@ -206,8 +206,11 @@ namespace CosmicShore.Tests
             // landed with first; 89 is Glasshouse's on claude/peaceful-cerf-vpl3x8 (in flight), so it moved to 90.
             // 82 -> 83 on 2026-11-11: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest
             // pushed first; 89 was free on every branch.
+            // 83 -> 84 on 2026-11-15: Standoff (125), the Grizzly's Charge game, on the id the game kit roster reserved
+            // (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35). The roster's other games land beside it in parallel, each
+            // adding one here: a merge conflict on this number is expected and is resolved by counting the members.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(83, values.Length,
+            Assert.AreEqual(84, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -261,6 +264,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Flatline, 84)]
         [TestCase(GameModes.Corona, 87)]
         [TestCase(GameModes.Shatterplane, 90)]
+        [TestCase(GameModes.Standoff, 125)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

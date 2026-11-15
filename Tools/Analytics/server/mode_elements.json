@@ -49,6 +49,10 @@
       "Space",
       null
     ],
+    "Corona": [
+      "Charge",
+      null
+    ],
     "DecoyRun": [
       "Time",
       null
@@ -61,12 +65,24 @@
       "Charge",
       null
     ],
+    "Flatline": [
+      "Charge",
+      null
+    ],
+    "Glasshouse": [
+      "Mass",
+      null
+    ],
     "GrizzlyCharge": [
       "Space",
       null
     ],
     "GrizzlyTime": [
       "Time",
+      null
+    ],
+    "Harvest": [
+      "Space",
       null
     ],
     "Headlong": [
@@ -77,7 +93,15 @@
       "Mass",
       null
     ],
+    "Jackstraw": [
+      "Charge",
+      null
+    ],
     "Joust": [
+      "Charge",
+      null
+    ],
+    "Kelpwood": [
       "Charge",
       null
     ],
@@ -129,6 +153,10 @@
       "Time",
       null
     ],
+    "Shatterplane": [
+      "Space",
+      null
+    ],
     "Sirocco": [
       "Space",
       null
@@ -147,6 +175,10 @@
     ],
     "SlipLine": [
       "Time",
+      null
+    ],
+    "Standoff": [
+      "Charge",
       null
     ],
     "Switchback": [
@@ -243,14 +275,20 @@
     "BroodRush": "Goals",
     "BurrowRun": "SwitchesThreaded",
     "Cleave": "PrismsDestroyed",
+    "Corona": "CombatPoints",
     "DecoyRun": "SwitchesThreaded",
     "DogFight": "CombatPoints",
     "Dustup": "CombatPoints",
+    "Flatline": "CombatPoints",
+    "Glasshouse": "VolumeRemaining",
     "GrizzlyCharge": "PrismsDestroyed",
     "GrizzlyTime": "SwitchesThreaded",
+    "Harvest": "PrismsDestroyed",
     "Headlong": "SwitchesThreaded",
     "Hijack": "PrismsStolen",
+    "Jackstraw": "CombatPoints",
     "Joust": "Jousts",
+    "Kelpwood": "CombatPoints",
     "LanternRun": "SwitchesThreaded",
     "Multiplayer2v2CoOpVsAI": "Crystals",
     "PerchRun": "SwitchesThreaded",
@@ -263,11 +301,13 @@
     "Scurry": "Crystals",
     "SerpentHood": "CombatPoints",
     "SerpentTime": "SwitchesThreaded",
+    "Shatterplane": "PrismsDestroyed",
     "Sirocco": "PrismsDestroyed",
     "Skein": "SwitchesThreaded",
     "SkimRace": "Crystals",
     "Slingshot": "SwitchesThreaded",
     "SlipLine": "SwitchesThreaded",
+    "Standoff": "CombatPoints",
     "Switchback": "SwitchesThreaded",
     "Tandava": "LifeformsKilled",
     "TandavaSevering": "LifeformsKilled",
@@ -304,6 +344,7 @@
     "CellularBrawl",
     "Cleave",
     "CoOpWildlifeBlitz",
+    "Corona",
     "Curvatious",
     "DashNGrab",
     "DecoyRun",
@@ -313,11 +354,16 @@
     "DolphinDarts",
     "Dustup",
     "Elimination",
+    "Flatline",
+    "Glasshouse",
     "GrizzlyCharge",
     "GrizzlyTime",
+    "Harvest",
     "Headlong",
     "Hijack",
+    "Jackstraw",
     "Joust",
+    "Kelpwood",
     "KickinMass",
     "LanternRun",
     "Maelstrom",
@@ -338,6 +384,7 @@
     "Scurry",
     "SerpentHood",
     "SerpentTime",
+    "Shatterplane",
     "ShootingGallery",
     "Sirocco",
     "Skein",
@@ -346,6 +393,7 @@
     "SlipLine",
     "SlipNStride",
     "Soar",
+    "Standoff",
     "Switchback",
     "Tandava",
     "TandavaSevering",

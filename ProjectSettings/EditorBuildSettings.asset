@@ -183,6 +183,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameCorona.unity
     guid: 7dae0b29437b3069d777364648ac3eaf
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameStandoff.unity
+    guid: 6ec42d4ffa4e7d08c91a9788a5411e20
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTapestry.unity
     guid: 66ee08b9dff6ca4fd973337baf4857af
   - enabled: 1

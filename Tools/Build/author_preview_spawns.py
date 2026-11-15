@@ -89,6 +89,7 @@ SCENE_FOR_MODE = {
     88: 'MinigameHarvest',
     89: 'MinigameGlasshouse',
     90: 'MinigameShatterplane',
+    125: 'MinigameStandoff',
 }
 
 

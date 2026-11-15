@@ -12,9 +12,10 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | BrittleStar | `b b .` | `b b .` | `x x x` | `b b .` | - | - |
 | Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Goby | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
-| Grizzly | `b b .` | `x x x` | `x x x` | `b b .` | Charge | - |
+| Grizzly | `b b .` | `b b .` | `x x x` | `b b .` | - | - |
 | Honeyguide | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Jacks | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| JewelWasp | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Meerkat | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Orca | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
@@ -50,9 +51,10 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | BrittleStar | Brittle Star Time | Flatline | - | Shatterplane |
 | Dolphin | Switchback | The Bends | excused | Rampage |
 | Goby | Perch Run | - | - | - |
-| Grizzly | Grizzly Time | - | - | Grizzly Charge |
+| Grizzly | Grizzly Time | Standoff | - | Grizzly Charge |
 | Honeyguide | Slip Line | - | - | - |
 | Jacks | Decoy Run | - | - | - |
+| JewelWasp | - | - | - | - |
 | Manta | Redline | Corona | Scurry (shared) | Bloomrush |
 | Meerkat | Burrow Run, Warpline | - | - | - |
 | Orca | Breach | - | - | - |

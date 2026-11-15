@@ -446,6 +446,14 @@ namespace CosmicShore.Data
         // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
         Shatterplane = 90,
 
+        // The Grizzly's CHARGE game (STANDOFF.md): square posts of prism tiles stand on a sphere round an open centre.
+        // A trigger bomb that touches a rival hull freezes on it; pull and release again to blow it. Every rival a blast
+        // of yours catches is a point; Dig In behind a post to aim and recharge. First domain to the target wins.
+        // I1-I4 add posts, an inner ring of posts, shielded rims and danger corners. 125 is the id the game kit roster
+        // reserved for it (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35), so parallel sessions never collide; 91-124
+        // and 126-127 are the roster's other games.
+        Standoff = 125,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 83) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.

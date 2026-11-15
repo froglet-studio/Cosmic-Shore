@@ -249,6 +249,10 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // Standoff, the Grizzly's charge game (_Scripts/Controller/Arcade/STANDOFF.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a blast hit is 81 (MissileHitsLanded). Posted to the LOCAL pilot only. 200 is the
+        // hint id the game kit roster reserved for it (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35).
+        StandoffHint = 200,             // once, at the start: a bomb that touches a rival sticks; pull and release to blow it
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.
