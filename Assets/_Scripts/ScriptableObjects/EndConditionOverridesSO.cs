@@ -145,6 +145,16 @@ namespace CosmicShore.ScriptableObjects
         /// Rampage's rule). An ESTIMATE pending a timed match: about 30% of a rung's breakable plate mass
         /// (shatterplane_budget.py).</summary>
         public const int DefaultShatterplanePrismTarget = 1600;
+        /// <summary>Stingherd sting target used when <see cref="stingherdStingTarget"/> is 0. One STING - a danger
+        /// creature of a Jacks' herd touching a rival hull, a Strike-class combat hit (StingherdScoringRuleSO) - summed
+        /// across the domain's pilots. A first cut, unplayed: Kelpwood's 12 bites is the nearest shipped number.</summary>
+        public const int DefaultStingherdStingTarget = 12;
+        /// <summary>Trawl prism target used when <see cref="trawlPrismTarget"/> is 0. Hostile prisms a DOMAIN destroys,
+        /// summed across its pilots (TrawlScoringRuleSO, Rampage's rule): a prism the Jacks' net drags that runs into
+        /// another destroys both, scored to the net. Harvest's field never regrows and the net cannot break shielded
+        /// mass, so three domains' worth of the field's unshielded hostile prisms must fit in the smallest rung
+        /// (author_trawl_assets.py asserts it). An estimate, unplayed.</summary>
+        public const int DefaultTrawlPrismTarget = 300;
 
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
@@ -180,6 +190,20 @@ namespace CosmicShore.ScriptableObjects
         /// grow back, so three domains' worth must fit in the smallest rung's breakable plates (author_lancefall_assets.py
         /// asserts it). A first cut, unplayed.</summary>
         public const int DefaultLancefallPrismTarget = 600;
+        /// <summary>Flitstrike strike target used when <see cref="flitstrikeStrikeTarget"/> is 0. One strike - a
+        /// Honeyguide's Flit (or a Charge upgrade on its trigger) reaching a rival hull - is one point
+        /// (FlitstrikeScoringRuleSO). The Flit is a short dart every 2 s, so a strike is earned, not sprayed.</summary>
+        public const int DefaultFlitstrikeStrikeTarget = 5;
+
+        /// <summary>Honeycomb round length in seconds, used when <see cref="honeycombRoundSeconds"/> is 0. TIMED,
+        /// Tapestry's reason: the score is mass standing in a domain's colour, a live stock rival pecks chip. 90 s is the
+        /// arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
+        public const int DefaultHoneycombRoundSeconds = 90;
+
+        /// <summary>Woodpecker hostile-prism target used when <see cref="woodpeckerPrismTarget"/> is 0. A Peck burst is
+        /// three shots a second at best, each one prism, so 150 is a little under a minute of steady pecking for one
+        /// pilot (Sirocco's 400 is a dust that takes a third of a stand per pass).</summary>
+        public const int DefaultWoodpeckerPrismTarget = 150;
 
         /// <summary>Starweave round length in seconds, used when <see cref="starweaveRoundSeconds"/> is 0. Starweave is
         /// TIMED: its score is a live stock (volume standing), so only the clock can end it. 90 s is the arcade's target
@@ -651,6 +675,14 @@ namespace CosmicShore.ScriptableObjects
                  "entry or a missing rung falls back to the scalar.")]
         public List<int> shatterplanePrismTargetByIntensity = new() { 1600, 1600, 2000, 1000 };
 
+        [Tooltip("Stingherd: STINGS a DOMAIN needs to win (race to N). A danger creature of a Jacks' herd touching a " +
+                 "rival hull is one sting, summed across the domain's pilots. 0 = default (12).")]
+        [Min(0)] public int stingherdStingTarget = 12;
+
+        [Tooltip("Trawl: hostile prisms a DOMAIN must destroy between them to win (race to N) - a prism the Jacks' net " +
+                 "drags that runs into another destroys both; your own colour never counts. 0 = default (300).")]
+        [Min(0)] public int trawlPrismTarget = 300;
+
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
         [Min(0)] public int tapestryRoundSeconds = 90;
@@ -679,6 +711,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Lancefall: hostile PRISMS a DOMAIN must break to win (race to N), the Shrike's space game. The plates " +
                  "are neutral, so every plate tile the Void Lance breaks counts. 0 = default (600).")]
         [Min(0)] public int lancefallPrismTarget = 600;
+        [Tooltip("Flitstrike: STRIKES a DOMAIN needs to win (race to N). One strike - a Honeyguide's Flit (or a Charge " +
+                 "upgrade on its left trigger) reaching a rival hull - is 1. 0 = default (5).")]
+        [Min(0)] public int flitstrikeStrikeTarget = 5;
+
+        [Tooltip("Honeycomb: round length in SECONDS. The mode is timed - the domain with the most mass standing in its " +
+                 "own colour (trail and hive comb) when the clock runs out wins. 0 = default (90).")]
+        [Min(0)] public int honeycombRoundSeconds = 90;
+
+        [Tooltip("Woodpecker: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a DOMAIN must break " +
+                 "with the Honeyguide's pecks and Space upgrades to win (race to N). 0 = default (150).")]
+        [Min(0)] public int woodpeckerPrismTarget = 150;
 
         [Tooltip("Starweave: round length in SECONDS, the Brittle Star's mass game. The mode is timed - the domain " +
                  "with the most volume standing in its colour when the clock runs out wins. 0 = default (90).")]
@@ -780,6 +823,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int harvestPrismTargetBuild = 750;
         [Min(0)] public int shatterplanePrismTargetBuild = 1600;
         [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
+        [Min(0)] public int stingherdStingTargetBuild = 12;
+        [Min(0)] public int trawlPrismTargetBuild = 300;
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int palisadeRoundSecondsBuild = 90;
         [Min(0)] public int glasshouseRoundSecondsBuild = 90;
@@ -791,6 +836,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int larderMissileTargetBuild = 16;
         [Min(0)] public int thornbushRoundSecondsBuild = 90;
         [Min(0)] public int lancefallPrismTargetBuild = 600;
+        [Min(0)] public int flitstrikeStrikeTargetBuild = 5;
+        [Min(0)] public int honeycombRoundSecondsBuild = 90;
+        [Min(0)] public int woodpeckerPrismTargetBuild = 150;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
@@ -1272,6 +1320,20 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
+        /// Stingherd sting target ("first domain to N stings"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultStingherdStingTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetStingherdStingTarget() =>
+            stingherdStingTarget > 0 ? stingherdStingTarget : DefaultStingherdStingTarget;
+
+        /// <summary>
+        /// Trawl prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultTrawlPrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
+        /// </summary>
+        public int GetTrawlPrismTarget() =>
+            trawlPrismTarget > 0 ? trawlPrismTarget : DefaultTrawlPrismTarget;
+
+        /// <summary>
         /// Tapestry round length in seconds: the configured value when &gt; 0, otherwise
         /// <see cref="DefaultTapestryRoundSeconds"/>. Read by TapestryTimeTurnMonitor at
         /// StartMonitor on every peer, so the clock and the whistle cannot disagree.
@@ -1316,6 +1378,25 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetLancefallPrismTarget() =>
             lancefallPrismTarget > 0 ? lancefallPrismTarget : DefaultLancefallPrismTarget;
+        /// Flitstrike strike target ("first domain to N strikes"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultFlitstrikeStrikeTarget"/>. Compared against a DOMAIN's summed CombatPoints, so teammates pool.
+        /// </summary>
+        public int GetFlitstrikeStrikeTarget() =>
+            flitstrikeStrikeTarget > 0 ? flitstrikeStrikeTarget : DefaultFlitstrikeStrikeTarget;
+
+        /// <summary>
+        /// Honeycomb round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultHoneycombRoundSeconds"/>. Read by HoneycombTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetHoneycombRoundSeconds() =>
+            honeycombRoundSeconds > 0 ? honeycombRoundSeconds : DefaultHoneycombRoundSeconds;
+
+        /// <summary>
+        /// Woodpecker prism target ("race to N" hostile prisms destroyed): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultWoodpeckerPrismTarget"/>. Compared against a DOMAIN's summed destruction count.
+        /// </summary>
+        public int GetWoodpeckerPrismTarget() =>
+            woodpeckerPrismTarget > 0 ? woodpeckerPrismTarget : DefaultWoodpeckerPrismTarget;
 
         /// <summary>
         /// Starweave round length in seconds: the configured value when &gt; 0, otherwise
@@ -1458,10 +1539,15 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Harvest                   => GetHarvestPrismTarget(),
                 // Scalar only, as for Cleave and Flatline: the real answer is per-intensity (GetShatterplanePrismTarget(int)).
                 GameModes.Shatterplane              => GetShatterplanePrismTarget(),
+                GameModes.Stingherd                 => GetStingherdStingTarget(),
+                GameModes.Trawl                     => GetTrawlPrismTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 GameModes.Larder                    => GetLarderMissileTarget(),
                 GameModes.Lancefall                 => GetLancefallPrismTarget(),
                 // Thornbush (thornbushRoundSeconds) is timed, Glasshouse's reason, and is absent.
+                GameModes.Flitstrike                => GetFlitstrikeStrikeTarget(),
+                GameModes.Woodpecker                => GetWoodpeckerPrismTarget(),
+                // Honeycomb (honeycombRoundSeconds) is timed, Tapestry's reason, and is absent here too.
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush. Glasshouse
                 // (glasshouseRoundSeconds), Chum (chumRoundSeconds), Starweave (starweaveRoundSeconds), Haul (haulRoundSeconds), Hedgerow (hedgerowRoundSeconds) and Longshot (longshotRoundSeconds) are timed for the same reason and are absent too.
@@ -1556,6 +1642,8 @@ namespace CosmicShore.ScriptableObjects
             harvestPrismTarget == harvestPrismTargetBuild &&
             shatterplanePrismTarget == shatterplanePrismTargetBuild &&
             SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
+            stingherdStingTarget == stingherdStingTargetBuild &&
+            trawlPrismTarget == trawlPrismTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             palisadeRoundSeconds == palisadeRoundSecondsBuild &&
             glasshouseRoundSeconds == glasshouseRoundSecondsBuild &&
@@ -1567,6 +1655,9 @@ namespace CosmicShore.ScriptableObjects
             larderMissileTarget == larderMissileTargetBuild &&
             thornbushRoundSeconds == thornbushRoundSecondsBuild &&
             lancefallPrismTarget == lancefallPrismTargetBuild &&
+            flitstrikeStrikeTarget == flitstrikeStrikeTargetBuild &&
+            honeycombRoundSeconds == honeycombRoundSecondsBuild &&
+            woodpeckerPrismTarget == woodpeckerPrismTargetBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
             tandavaBreakPercent == tandavaBreakPercentBuild &&
@@ -1632,6 +1723,8 @@ namespace CosmicShore.ScriptableObjects
             harvestPrismTarget = harvestPrismTargetBuild;
             shatterplanePrismTarget = shatterplanePrismTargetBuild;
             shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
+            stingherdStingTarget = stingherdStingTargetBuild;
+            trawlPrismTarget = trawlPrismTargetBuild;
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             palisadeRoundSeconds = palisadeRoundSecondsBuild;
             glasshouseRoundSeconds = glasshouseRoundSecondsBuild;
@@ -1643,6 +1736,9 @@ namespace CosmicShore.ScriptableObjects
             larderMissileTarget = larderMissileTargetBuild;
             thornbushRoundSeconds = thornbushRoundSecondsBuild;
             lancefallPrismTarget = lancefallPrismTargetBuild;
+            flitstrikeStrikeTarget = flitstrikeStrikeTargetBuild;
+            honeycombRoundSeconds = honeycombRoundSecondsBuild;
+            woodpeckerPrismTarget = woodpeckerPrismTargetBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
             tandavaBreakPercent = tandavaBreakPercentBuild;
@@ -1709,6 +1805,8 @@ namespace CosmicShore.ScriptableObjects
             harvestPrismTargetBuild = harvestPrismTarget;
             shatterplanePrismTargetBuild = shatterplanePrismTarget;
             shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
+            stingherdStingTargetBuild = stingherdStingTarget;
+            trawlPrismTargetBuild = trawlPrismTarget;
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             palisadeRoundSecondsBuild = palisadeRoundSeconds;
             glasshouseRoundSecondsBuild = glasshouseRoundSeconds;
@@ -1720,6 +1818,9 @@ namespace CosmicShore.ScriptableObjects
             larderMissileTargetBuild = larderMissileTarget;
             thornbushRoundSecondsBuild = thornbushRoundSeconds;
             lancefallPrismTargetBuild = lancefallPrismTarget;
+            flitstrikeStrikeTargetBuild = flitstrikeStrikeTarget;
+            honeycombRoundSecondsBuild = honeycombRoundSeconds;
+            woodpeckerPrismTargetBuild = woodpeckerPrismTarget;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
             tandavaBreakPercentBuild = tandavaBreakPercent;

@@ -186,11 +186,17 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHarvest.unity
     guid: 2e26345893828d0fd7d69132808c3728
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameTrawl.unity
+    guid: e84a1b16550ff6d405359562bec5f41a
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameKelpwood.unity
     guid: 750b1dc75ea9084b39ab73f51caa180b
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameLarder.unity
     guid: 47971cec2a440abf34eebb61d916d358
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameStingherd.unity
+    guid: a3c80437e3b66101ee3cf31218255080
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameGlasshouse.unity
     guid: 1669f64150fcf334bc67aa5165c0e331
@@ -224,6 +230,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSirocco.unity
     guid: f3efa5204ad2461ebf22bc57e2170a5a
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameFlitstrike.unity
+    guid: 35fa57d34fbedf49c3f8bc3afd1971a8
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameHoneycomb.unity
+    guid: 9d584dcf5fabb9932c11257846b31b18
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWoodpecker.unity
+    guid: d7791f46a804528d618f8cbcf15e0beb
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameFulmen.unity
     guid: 318961b8adea15589d03545c16d5a1f9

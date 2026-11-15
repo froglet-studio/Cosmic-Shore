@@ -581,6 +581,18 @@ namespace CosmicShore.UI
                     // SEED (and a creature), the one thing a pilot has to go and fetch; the planting and the tending
                     // happen wherever the pilot lets go of the lure.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Glasshouse");
+                case GameModes.Flitstrike:
+                    // The Bends' provider: the nearest pilot this player may strike. The Flit is a short dart along the
+                    // nose, so the whole question is where the rival is and how to come at them dead ahead.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Flitstrike");
+                case GameModes.Honeycomb:
+                    // Rampage's provider: the nearest managed omni crystal. In Honeycomb that crystal is the next HIVE -
+                    // the comb of your prisms and the Ratel's hive puzzle - the one thing worth flying to.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Honeycomb");
+                case GameModes.Woodpecker:
+                    // Densest standing hostile mass (Sirocco's answer): the forest rings the cell, and the arrow names the
+                    // stand worth pecking through - the point Woodpecker's AI pecking runs steer to.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Woodpecker");
                 case GameModes.Haul:
                     // Rampage's provider: the nearest managed omni crystal - a Windmill, whose spinning ball steals
                     // everything it sweeps. The bales hang in plain sight.
@@ -634,6 +646,14 @@ namespace CosmicShore.UI
                 case GameModes.Lancefall:
                     // Shatterplane's provider: the densest standing hostile mass - the nearest big plate still standing.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Lancefall");
+                case GameModes.Stingherd:
+                    // The Bends' provider: the nearest pilot this player may sting. The herd is driven, not flown, so
+                    // the question is which rival hull to drive it at.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Stingherd");
+                case GameModes.Trawl:
+                    // Densest standing hostile mass: the net scores where prisms are packed tight enough to smash into
+                    // each other, so the arrow names the nearest big sheaf still standing.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Trawl");
                 case GameModes.Sirocco:
                     // Same provider, same reason: the forest rings the cell, so the arrow names
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs

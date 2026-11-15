@@ -13,8 +13,8 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Goby | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Grizzly | `b b .` | `x x x` | `- - -` | `b b .` | Charge | - |
-| Honeyguide | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
-| Jacks | `b b .` | `x x x` | `- - -` | `x x x` | Charge, Space | - |
+| Honeyguide | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| Jacks | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | JewelWasp | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Meerkat | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
@@ -52,8 +52,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Dolphin | Switchback | The Bends | excused | Rampage |
 | Goby | Perch Run | - | - | - |
 | Grizzly | Grizzly Time | - | excused | Grizzly Charge |
-| Honeyguide | Slip Line | - | - | - |
-| Jacks | Decoy Run | - | excused | - |
+| Honeyguide | Slip Line | Flitstrike | Honeycomb | Woodpecker |
+| Jacks | Decoy Run | Stingherd | excused | Trawl |
 | JewelWasp | - | - | - | - |
 | Manta | Redline | Corona | Scurry (shared) | Bloomrush |
 | Meerkat | Burrow Run, Warpline | - | - | - |

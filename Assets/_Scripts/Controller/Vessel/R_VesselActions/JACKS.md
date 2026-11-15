@@ -399,3 +399,21 @@ person already has:
   person's controls make (the jacks to points on the board, a trigger to lay a decoy, the seat swap under
   `PilotSwap.CooldownSeconds`, a trigger to fly to a decoy). Null everywhere outside the race, so the shipped AI is
   unchanged; a person's hull ignores it.
+
+## 8. The Charge and Space games: Stingherd and Trawl (2026-11-15)
+
+Garrett asked for every missing elemental game on 2026-11-15; the game kit roster (rows 27-28) named these two. The
+Jacks' Mass game is a recorded skip. Neither game changes the kit (the LOCKED vessel rule): their levers are the arena,
+the start levels and an AI on the race-coach seam above.
+
+- **Stingherd** (`GameModes.Stingherd` 117, `Arcade/STINGHERD.md`), Charge: herd your danger creatures into rival
+  hulls. A sting is a Strike point (`CombatPoints`), first domain to 12. Kelpwood's arena, referenced. The card's
+  start levels carry the ladder (Charge 5 at I1, 3, 1, at rest at I4). The AI is `StingherdDrover`, a coach whose
+  cycles run the two jacks to the far side of the herd from a rival hull; it lays no decoy.
+- **Trawl** (`GameModes.Trawl` 118, `Arcade/TRAWL.md`), Space: sweep a field with the net (§1.1). Dragged prisms
+  that break each other score `PrismsDestroyed`, first domain to 300. Harvest's field, referenced. The AI is
+  `TrawlSkipper`, a coach that never offers a cycle, so the AI nets the whole match; it steers the autopilot through
+  the densest hostile stand.
+
+Both were authored headless and have not been compiled or run in Unity.
+

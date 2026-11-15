@@ -211,14 +211,13 @@ namespace CosmicShore.Tests
             // 86 -> 88 on 2026-11-15: Shockfront (119) and Fulmen (120), the Stoat's Charge and Space games, on its reserved ids.
             // 88 -> 91 on 2026-11-15: Spearline (96), Riposte (97) and Palisade (98), the Swordfish's Time, Charge and
             // Mass games, on their reserved ids.
+            // 91 -> 94 on 2026-11-15: the Honeyguide's Flitstrike (108), Honeycomb (109) and Woodpecker (110), on its reserved ids.
+            // 94 -> 96 on 2026-11-15: Stingherd (117) and Trawl (118), the Jacks' Charge and Space games.
             var values = Enum.GetValues(typeof(GameModes));
 
-            // 91 -> 92 on 2026-11-15: Chum (91), the Angler's Space game, row 1 of GAME_KIT_ROSTER.md's reserved ids.
-            // 92 -> 93 on 2026-11-15: Starweave (92), the Brittle Star's Mass game, row 2 of the same roster.
-            // 93 -> 94 on 2026-11-15: Haul (93), the Thresher's Mass game, row 3 of the same roster.
-            // 94 -> 95 on 2026-11-15: Hedgerow (94), the Serpent's Mass game, row 4 of the same roster.
-            // 95 -> 96 on 2026-11-15: Longshot (95), the Serpent's Space game, row 5 of the same roster.
-            Assert.AreEqual(96, values.Length,
+            // 96 -> 101 on 2026-11-15: Chum (91), Starweave (92), Haul (93), Hedgerow (94) and Longshot (95), rows 1-5
+            // of GAME_KIT_ROSTER.md's reserved ids.
+            Assert.AreEqual(101, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

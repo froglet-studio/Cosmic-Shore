@@ -52,6 +52,7 @@ MonoBehaviour:
   coronaBloomTarget: 15
   shockfrontRippleTarget: 10
   fulmenPrismTarget: 1200
+  trawlPrismTarget: 300
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
   - 1600
@@ -59,6 +60,7 @@ MonoBehaviour:
   - 2000
   - 1000
   harvestPrismTarget: 750
+  stingherdStingTarget: 12
   tapestryRoundSeconds: 90
   palisadeRoundSeconds: 90
   glasshouseRoundSeconds: 90
@@ -71,6 +73,9 @@ MonoBehaviour:
   thornbushRoundSeconds: 90
   lancefallPrismTarget: 600
   siroccoPrismTarget: 400
+  flitstrikeStrikeTarget: 5
+  honeycombRoundSeconds: 90
+  woodpeckerPrismTarget: 150
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
   tandavaHaloRingsToBreak: 9
@@ -140,6 +145,7 @@ MonoBehaviour:
   coronaBloomTargetBuild: 15
   shockfrontRippleTargetBuild: 10
   fulmenPrismTargetBuild: 1200
+  trawlPrismTargetBuild: 300
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
   - 1600
@@ -147,6 +153,7 @@ MonoBehaviour:
   - 2000
   - 1000
   harvestPrismTargetBuild: 750
+  stingherdStingTargetBuild: 12
   tapestryRoundSecondsBuild: 90
   palisadeRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
@@ -159,6 +166,9 @@ MonoBehaviour:
   thornbushRoundSecondsBuild: 90
   lancefallPrismTargetBuild: 600
   siroccoPrismTargetBuild: 400
+  flitstrikeStrikeTargetBuild: 5
+  honeycombRoundSecondsBuild: 90
+  woodpeckerPrismTargetBuild: 150
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35
   tandavaHaloRingsToBreakBuild: 9
