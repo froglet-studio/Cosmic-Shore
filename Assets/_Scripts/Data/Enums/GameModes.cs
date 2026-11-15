@@ -571,8 +571,18 @@ namespace CosmicShore.Data
         // domain to the hit target wins. 124 is the id GAME_KIT_ROSTER.md reserved for it (row 34).
         Railrush = 124,
 
+        // The Jewel Wasp's CHARGE game (MARIONETTE.md): a duel among Kelpwood's kelp and herds. Sting a creature, ride it
+        // into a rival pilot: its attack is a Strike, one point, and with Charge 5 leaving it bursts it on every rival
+        // hull near it. First domain to the target wins. 126 is the id GAME_KIT_ROSTER.md reserved for it (rows 36-37).
+        Marionette = 126,
+
+        // The Jewel Wasp's SPACE game (GORGE.md): a timed feast on Chum's reef. Ride a creature to a shoal of neutral
+        // prisms and hold RT: its suction pulls them in (Space widens the reach; every shield is food to a possessed
+        // creature). Most prisms taken off the board when the clock runs out wins. 127, the roster's (rows 36-37).
+        Gorge = 127,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 100) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 110) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
