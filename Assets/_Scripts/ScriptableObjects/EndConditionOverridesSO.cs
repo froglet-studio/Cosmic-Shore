@@ -182,6 +182,19 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Palisade round length in seconds, used when <see cref="palisadeRoundSeconds"/> is 0. Timed like
         /// Tapestry: the score is the Swordfish's mass standing (trail and afterimages), which rival swords cut.</summary>
         public const int DefaultPalisadeRoundSeconds = 90;
+        /// <summary>Cleaner Ram ram target used when <see cref="cleanerRamStrikeTarget"/> is 0. One RAM - the Wrasse's
+        /// charged kite reaching a rival hull (a Strike-class combat hit) - is one point (CleanerRamScoringRuleSO), summed
+        /// across the domain's pilots. A first cut, unplayed: a ram needs a Charge loop first, so it is rarer than a bite.</summary>
+        public const int DefaultCleanerRamStrikeTarget = 8;
+
+        /// <summary>Reefbuild round length in seconds, used when <see cref="reefbuildRoundSeconds"/> is 0. TIMED, Tapestry's
+        /// reason: the score (the reef standing) is a live stock that rival kites pop and blast.</summary>
+        public const int DefaultReefbuildRoundSeconds = 90;
+
+        /// <summary>Blastline hostile-prism target used when <see cref="blastlinePrismTarget"/> is 0. Hostile prisms a
+        /// DOMAIN destroys with the Wrasse's Space blasts and kite pops, summed across its pilots (BlastlineScoringRuleSO,
+        /// Rampage's rule). Rampage's forest regrows, so the field cannot run dry; a first cut, unplayed.</summary>
+        public const int DefaultBlastlinePrismTarget = 600;
 
         /// <summary>Glasshouse round length in seconds, used when <see cref="glasshouseRoundSeconds"/> is 0. Glasshouse
         /// is TIMED, Tapestry's reason: its score (trail + garden standing in a domain's colour) is a live stock that
@@ -840,6 +853,18 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Cave-in: hostile prisms (Shatterplane's neutral plates, rival mass) a DOMAIN must break to win (race " +
                  "to N); a swallowed prism fired into another breaks both. 0 = default (1000).")]
         [Min(0)] public int caveInPrismTarget = 1000;
+        [Tooltip("Cleaner Ram: RAMS a DOMAIN needs to win (race to N). The Wrasse's charged kite reaching a rival hull " +
+                 "is one ram, summed across the domain's pilots. 0 = default (8).")]
+        [Min(0)] public int cleanerRamStrikeTarget = 8;
+
+        [Tooltip("Reefbuild: round length in SECONDS. The mode is timed - the domain with the most prism volume " +
+                 "STANDING (Mass clusters and trail) when the clock runs out wins. 0 = default (90).")]
+        [Min(0)] public int reefbuildRoundSeconds = 90;
+
+        [Tooltip("Blastline: hostile prisms (Rampage's forest, rival trails and clusters, fauna) a DOMAIN must destroy " +
+                 "between them to win (race to N) - with the Wrasse's Space blasts and kite pops; your own colour " +
+                 "never counts. 0 = default (600).")]
+        [Min(0)] public int blastlinePrismTarget = 600;
         [Tooltip("Snap: RING HITS a DOMAIN needs to win (race to N), the Goby & Pistol's Charge game. A vortex ring the " +
                  "Pistol fired reaching a rival hull is one hit, summed across the domain's pilots. 0 = default (5).")]
         [Min(0)] public int snapHitTarget = 5;
@@ -965,6 +990,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int sentryZapTargetBuild = 40;
         [Min(0)] public int warrenRoundSecondsBuild = 90;
         [Min(0)] public int caveInPrismTargetBuild = 1000;
+        [Min(0)] public int cleanerRamStrikeTargetBuild = 8;
+        [Min(0)] public int reefbuildRoundSecondsBuild = 90;
+        [Min(0)] public int blastlinePrismTargetBuild = 600;
         [Min(0)] public int snapHitTargetBuild = 5;
         [Min(0)] public int denBuilderRoundSecondsBuild = 150;
         [Min(0)] public int riptidePrismTargetBuild = 600;
@@ -1625,6 +1653,25 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetCaveInPrismTarget() =>
             caveInPrismTarget > 0 ? caveInPrismTarget : DefaultCaveInPrismTarget;
+        /// Cleaner Ram ram target ("first domain to N rams"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultCleanerRamStrikeTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetCleanerRamStrikeTarget() =>
+            cleanerRamStrikeTarget > 0 ? cleanerRamStrikeTarget : DefaultCleanerRamStrikeTarget;
+
+        /// <summary>
+        /// Reefbuild round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultReefbuildRoundSeconds"/>. Read by ReefbuildTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetReefbuildRoundSeconds() =>
+            reefbuildRoundSeconds > 0 ? reefbuildRoundSeconds : DefaultReefbuildRoundSeconds;
+
+        /// <summary>
+        /// Blastline prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultBlastlinePrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
+        /// </summary>
+        public int GetBlastlinePrismTarget() =>
+            blastlinePrismTarget > 0 ? blastlinePrismTarget : DefaultBlastlinePrismTarget;
         /// Snap ring-hit target ("first domain to N ring hits"): the configured value when &gt; 0, otherwise
         /// <see cref="DefaultSnapHitTarget"/>. Compared against a DOMAIN's summed CombatPoints.
         /// </summary>
@@ -1775,6 +1822,9 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Flitstrike                => GetFlitstrikeStrikeTarget(),
                 GameModes.Woodpecker                => GetWoodpeckerPrismTarget(),
                 // Honeycomb (honeycombRoundSeconds) is timed, Tapestry's reason, and is absent here too.
+                GameModes.CleanerRam                => GetCleanerRamStrikeTarget(),
+                // Reefbuild is TIMED (reefbuildRoundSeconds), Tapestry's reason: absent, reads as "no target".
+                GameModes.Blastline                 => GetBlastlinePrismTarget(),
                 GameModes.Snap                      => GetSnapHitTarget(),
                 GameModes.Riptide                   => GetRiptidePrismTarget(),
                 // Den Builder (denBuilderRoundSeconds) is timed, Glasshouse's reason, and absent here too.
@@ -1905,6 +1955,9 @@ namespace CosmicShore.ScriptableObjects
             sentryZapTarget == sentryZapTargetBuild &&
             warrenRoundSeconds == warrenRoundSecondsBuild &&
             caveInPrismTarget == caveInPrismTargetBuild &&
+            cleanerRamStrikeTarget == cleanerRamStrikeTargetBuild &&
+            reefbuildRoundSeconds == reefbuildRoundSecondsBuild &&
+            blastlinePrismTarget == blastlinePrismTargetBuild &&
             snapHitTarget == snapHitTargetBuild &&
             denBuilderRoundSeconds == denBuilderRoundSecondsBuild &&
             riptidePrismTarget == riptidePrismTargetBuild &&
@@ -2000,6 +2053,9 @@ namespace CosmicShore.ScriptableObjects
             sentryZapTarget = sentryZapTargetBuild;
             warrenRoundSeconds = warrenRoundSecondsBuild;
             caveInPrismTarget = caveInPrismTargetBuild;
+            cleanerRamStrikeTarget = cleanerRamStrikeTargetBuild;
+            reefbuildRoundSeconds = reefbuildRoundSecondsBuild;
+            blastlinePrismTarget = blastlinePrismTargetBuild;
             snapHitTarget = snapHitTargetBuild;
             denBuilderRoundSeconds = denBuilderRoundSecondsBuild;
             riptidePrismTarget = riptidePrismTargetBuild;
@@ -2096,6 +2152,9 @@ namespace CosmicShore.ScriptableObjects
             sentryZapTargetBuild = sentryZapTarget;
             warrenRoundSecondsBuild = warrenRoundSeconds;
             caveInPrismTargetBuild = caveInPrismTarget;
+            cleanerRamStrikeTargetBuild = cleanerRamStrikeTarget;
+            reefbuildRoundSecondsBuild = reefbuildRoundSeconds;
+            blastlinePrismTargetBuild = blastlinePrismTarget;
             snapHitTargetBuild = snapHitTarget;
             denBuilderRoundSecondsBuild = denBuilderRoundSeconds;
             riptidePrismTargetBuild = riptidePrismTarget;

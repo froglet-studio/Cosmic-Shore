@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameBlastline
+  m_EditorClassIdentifier:
+  Mode: 113
+  IsMultiplayer: 1
+  DisplayName: Blastline
+  Description: 'Wrasse and Grouper only - clean the overgrown reef. The Wrasse loops its tail round
+    Space motes and a blast goes off where the loop closed, destroying hostile prisms and
+    sparing yours; the more motes in the loop, the bigger the blast. Between blasts the
+    kite''s head pops what it touches. Gather Space crystals and more Space motes come to
+    the board. Higher intensities grow a wilder forest and thin the crystals. First team to
+    the target wins.'
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: ba46b8f3b82d4c8c82276ca5c101dff8, type: 3}
+  GolfScoring: 1
+  SceneName: MinigameBlastline
+  Vessels:
+  - {fileID: 11400000, guid: db96e34a6c3b4cb1b498f0529f765db1, type: 2}
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 4
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  ViewUserAction: 0
+  PlayUserAction: 0
+  ComebackRatePerScoreDeficit: 0.01

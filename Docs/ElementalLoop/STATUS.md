@@ -31,7 +31,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | - |
 | TigerMoth | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside |
-| Wrasse | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| Wrasse | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 
 ## 2. Arena games
 
@@ -70,7 +70,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Thresher | Thresher Time | Jackstraw | Haul | Harvest |
 | TigerMoth | Waystation | Dustup | Tapestry | Sirocco |
 | Urchin | Skein | Railrush | Hijack | excused |
-| Wrasse | Wrasse Run | - | - | - |
+| Wrasse | Wrasse Run | Cleaner Ram | Reefbuild | Blastline |
 
 ## 4. Recorded steps
 

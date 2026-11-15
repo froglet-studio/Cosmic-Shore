@@ -665,6 +665,18 @@ namespace CosmicShore.UI
                     // Tapestry's answer: the nearest rival, whose freshest afterimages are behind them. Building needs no
                     // arrow - you build where you are.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Palisade");
+                case GameModes.CleanerRam:
+                    // The Bends' provider again: the nearest pilot this player may ram. The ram happens on the kite's
+                    // board, so the Grouper's whole job is putting a rival under it; the arrow answers where.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_CleanerRam");
+                case GameModes.Reefbuild:
+                    // Tapestry's answer: the BUILD half needs no arrow (the kite lays the reef where it loops), and the
+                    // nearest opposing pilot is where the freshest opposing reef is - the raid half.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Reefbuild");
+                case GameModes.Blastline:
+                    // Shatterplane's provider: the densest mass this player may destroy - where a Space loop's blast
+                    // takes the most.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Blastline");
                 case GameModes.Bends:
                     // The provider was written for this mode and borrowed by three others before
                     // the mode itself was registered: the nearest pilot this player may bend.

@@ -130,6 +130,9 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameSentry** | `_Scenes/Multiplayer Scenes/` | `Sentry (105)` | `SentryController` |
 | **MinigameWarren** | `_Scenes/Multiplayer Scenes/` | `Warren (106)` | `WarrenController` |
 | **MinigameCaveIn** | `_Scenes/Multiplayer Scenes/` | `CaveIn (107)` | `CaveInController` |
+| **MinigameCleanerRam** | `_Scenes/Multiplayer Scenes/` | `CleanerRam (111)` | `CleanerRamController` |
+| **MinigameReefbuild** | `_Scenes/Multiplayer Scenes/` | `Reefbuild (112)` | `ReefbuildController` |
+| **MinigameBlastline** | `_Scenes/Multiplayer Scenes/` | `Blastline (113)` | `BlastlineController` |
 | **MinigameSnap** | `_Scenes/Multiplayer Scenes/` | `Snap (114)` | `SnapController` |
 | **MinigameDenBuilder** | `_Scenes/Multiplayer Scenes/` | `DenBuilder (115)` | `DenBuilderController` |
 | **MinigameRiptide** | `_Scenes/Multiplayer Scenes/` | `Riptide (116)` | `RiptideController` |
@@ -412,6 +415,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 105 | `Sentry` | MP | MinigameSentry | `SentryController` (Meerkat guard war, Charge - Sentinel Mode leaves a sentinel at every soliton's way in that zaps rival hulls; each zap is a point; Corona's shells read-only; `SENTRY.md`) |
 | 106 | `Warren` | MP | MinigameWarren | `WarrenController` (Meerkat burrow war, Mass - timed, trail + exit portals standing in your colour wins; a soliton beside rival mass swallows and fires it; the bare Barren cell, I3/I4 start at Mass 5 / Space 5; `WARREN.md`) |
 | 107 | `CaveIn` | MP | MinigameCaveIn | `CaveInController` (Meerkat tunnelling, Space - a soliton swallows a plate's prisms and fires them out to smash the rest; first domain to the prism target; Shatterplane's plates read-only; `CAVEIN.md`) |
+| 111 | `CleanerRam` | MP | MinigameCleanerRam | `CleanerRamController` (Wrasse and Grouper ram duel, Charge - loop Charge motes to power the kite, ram a rival for a point; first domain to 8. See `WRASSEREEF.md`) |
+| 112 | `Reefbuild` | MP | MinigameReefbuild | `ReefbuildController` (Wrasse and Grouper reef war, Mass - loop Mass motes to lay clusters; timed, volume standing wins. See `WRASSEREEF.md`) |
+| 113 | `Blastline` | MP | MinigameBlastline | `BlastlineController` (Wrasse and Grouper clean-up race, Space - loop Space motes to blast hostile prisms in Rampage's forest; first domain to 600. See `WRASSEREEF.md`) |
 | 114 | `Snap` | MP | MinigameSnap | `SnapController` (Goby & Pistol duel, Charge - Kelpwood's kelp ball; a Pistol vortex ring on a rival pilot is one point, first domain to 5. See `SNAP.md`) |
 | 115 | `DenBuilder` | MP | MinigameDenBuilder | `DenBuilderController` (Goby & Pistol timed build, Mass - Glasshouse's cell with nothing planted; the dens and island trails standing in your colour at the whistle win. See `DEN_BUILDER.md`) |
 | 116 | `Riptide` | MP | MinigameRiptide | `RiptideController` (Goby & Pistol plate race, Space - Shatterplane's plates; the undertow pulls loose tiles into the Pistol's plane and the rings smash them, first domain to 600. See `RIPTIDE.md`) |

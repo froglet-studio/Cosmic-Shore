@@ -23824,6 +23824,22 @@ conditional-compilation, self-referential-local and using-directive gates, `chec
 6. Both cards: listed in Arcade, Jacks only, preview opens on the right arena, hint toast shows once. Card art is the
    placeholder until `/cardart` runs.
 
+## 🔴 Wrasse reef games: Cleaner Ram, Reefbuild, Blastline (2026-11-15, Garrett's project thread, `claude/wrasse-arcade-games`, NOT RUN IN EDITOR)
+
+Authored headless (`author_cleaner_ram_assets.py`, `author_reefbuild_assets.py`, `author_blastline_assets.py`, all
+`--check` green; `unity_refcompile` reports 0 errors in the changed files, its 30 others are packages this sandbox cannot
+build). Nothing below has been run. Design: `Assets/_Scripts/Controller/Arcade/WRASSEREEF.md`.
+
+- [ ] The three scenes open without missing scripts and compile; each appears on the Arcade grid with its card art.
+- [ ] A match of each starts with you plus AI Wrasses; the reef of crystals appears at countdown end, the same on host
+      and client, and a taken crystal regrows about 12 s later somewhere else.
+- [ ] Cleaner Ram: loop Charge motes, ram a rival: one point on the scoreboard; the race ends at 8 (End Game Conditions).
+- [ ] Reefbuild: a Mass loop's cluster counts toward your volume; the whistle goes at 90 s and the most volume wins; a lead
+      change after 20 s shows the lead toast.
+- [ ] Blastline: a Space blast and the kite's head count hostile prisms destroyed, never your own; the forest regrows fast
+      enough that 600 is reachable.
+- [ ] AI Groupers fly to crystals and rivals (Hunt / Build / Clean); the kite AI still loops and rams on its own.
+- [ ] Each mode's hint toast (186 / 187 / 188) shows when you idle.
 ## 🔴 Goby & Pistol games: Snap, Den Builder, Riptide (2026-11-15, Garrett's project thread, `claude/goby-games`, NOT RUN IN EDITOR)
 
 Three new arcade modes (GameModes 114-116), authored headless by `Tools/Build/goby_games_lib.py`. The reference compile

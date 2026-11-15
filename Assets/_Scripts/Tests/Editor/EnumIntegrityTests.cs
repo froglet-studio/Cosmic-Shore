@@ -224,9 +224,11 @@ namespace CosmicShore.Tests
             // 108 -> 111 on 2026-11-15: Sentry (105), Warren (106) and CaveIn (107), the Meerkat's Charge, Mass and Space
             // games, on their reserved ids.
             // 111 -> 112 on 2026-11-15: Standoff (125), the Grizzly's Charge game, on the id GAME_KIT_ROSTER.md reserved (row 35).
-            // 112 -> 115 on 2026-11-15: Snap (114), DenBuilder (115), Riptide (116), the Goby & Pistol's Charge, Mass and
+            // 112 -> 115 on 2026-11-15: CleanerRam (111), Reefbuild (112) and Blastline (113), the Wrasse's Charge, Mass
+            // and Space games, on the ids GAME_KIT_ROSTER.md reserved for them (rows 21-23).
+            // 115 -> 118 on 2026-11-15: Snap (114), DenBuilder (115), Riptide (116), the Goby & Pistol's Charge, Mass and
             // Space games, on the ids Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for them.
-            Assert.AreEqual(115, values.Length,
+            Assert.AreEqual(118, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
