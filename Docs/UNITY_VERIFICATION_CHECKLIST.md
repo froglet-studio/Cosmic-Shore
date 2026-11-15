@@ -23857,7 +23857,12 @@ Not compiled: the editor was in use by the multiplayer testing session. Files: `
 - Step 2 **PASSED on its outcome**: Player 2 left 36 s into the race (`party leave`); the race then ended by itself, the
   host's hull at 26 gates in 2:46, and the leaver's hull scored (166) where before it stayed at 2 gates and the race
   never ended. Its gate count was not read gate by gate and nobody watched it fly.
-- Step 3 **not run** (a rejoin after this fix).
+- Step 3 **PASSED as a state check (second run, 2026-11-15, `1d1391ae40`)**: two-player Switchback on Dolphins, the
+  host's hull handed to the AI, Player 2 dropped; the host showed YS2's hull AI-flown (`NetIsAI` true, autopilot on).
+  Player 2 pressed REJOIN: it was back in its seat with the turn running and no READY button; on both machines YS2
+  was then `NetIsAI` false, autopilot off, input not paused. The race ended by itself when the host's hull finished
+  (26 gates, 2:16); both scoreboards listed both pilots (YS2 3 gates). Nobody flew Player 2's hull after the rejoin,
+  so "its own flying threads gates" still needs a person.
 - Step 4 **PASSED**: the host's call returned false with "ys1's hull is flown on their machine: the host's AI cannot
   steer it"; the host's own hull handed over as before.
 - Step 5: the host's hull took 2:46 this time, not 6 minutes, so the slow run went with Player 2's wandering hull.

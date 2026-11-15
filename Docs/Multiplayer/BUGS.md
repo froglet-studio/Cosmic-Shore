@@ -67,6 +67,9 @@ Third MPPM run of 2026-11-15 (`8b6d91b909`; buttons pressed as pointer clicks on
 - After a rejoin, Player 2's input is not paused and its hull is not AI-flown (state check on both machines after
   `rejoinedRunningTurn` / `seatReclaimed`; not flown by a person).
 - A rejoiner's READY in a multi-turn mode: NOT RUN, no such mode exists (row above).
+- A rejoin after the Switchback leaver fix (`9a851bf91b`): PASSED as a state check. The leaver's hull went to the AI,
+  REJOIN gave the seat back with the turn running and no READY, the hull was no longer AI-flown on either machine, and
+  the race ended by itself (checklist "A leaver's hull flies the gates", step 3).
 
 ## Not bugs, missing features (tracked in [`TODO.md`](TODO.md))
 
