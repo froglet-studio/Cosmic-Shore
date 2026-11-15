@@ -454,7 +454,7 @@ def class_asset(donor_class: str) -> str:
     text, n = re.subn(r"  isLocked: \d\n", "  isLocked: 0\n  ownedFromStart: 1\n", text, count=1)
     if n != 1:
         raise RuntimeError("donor drifted: the class isLocked line was not found")
-    return text
+    return W.cards_retrofit(text, "Orca")   # its own card, rendered from Orca.fbx (2026-11-15)
 
 
 def register_class_list(text: str) -> str:
@@ -629,6 +629,8 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
     want(f"  Class: {ORCA_CLASS_ID}\n" in cls and "  ownedFromStart: 1\n" in cls and "  isLocked: 0\n" in cls,
          "SO_Class_Orca: wrong class, locked, or not owned from the start")
     want(SEATS in cls, "SO_Class_Orca: SeatCount is not 4 (its card must say it seats four)")
+    for e in W.cards_errors(cls, "Orca"):
+        want(False, e)
     want(f"  vesselClass: {ORCA_CLASS_ID}\n" in kmap and "  m_Name: Orca\n" in kmap, "ElementalAbilityMaps/Orca: wrong class or name")
     inputs = W.map_inputs(kmap)
     want(inputs == {e: MAP_INPUTS.get(e, 0) for e in (1, 2, 3, 4)},

@@ -921,9 +921,11 @@ def self_test():
     expect(check_prefab(good.replace(MEERKAT_FBX_GUID, STOAT_FBX_GUID)), 1, "the Stoat's hull")
     expect(check_prefab(good.replace("CosmicShore.UI.MeerkatHUDView", "CosmicShore.UI.StoatHUDView").replace(
         script_guid("MeerkatHUDView"), STOAT_HUD_VIEW_GUID)), 1, "the Stoat's HUD view")
-    hud = build_hud_variant(read(HUD_DONOR))
+    # The HUD clone is a spent one-shot once MeerkatHUDVariant is committed: the Stoat's HUD (its donor) moved on to new
+    # icons (2026-11), so the positive control is the SHIPPED variant, and the clone runs only while it is absent.
+    hud = read(HUD_VARIANT) if os.path.exists(HUD_VARIANT) else build_hud_variant(read(HUD_DONOR))
     hud_errs = [e for e in check_hud_variant(hud) if ".png (+ .meta)" not in e]   # the icons are the kit's, checked on disk
-    expect(hud_errs, 0, "a fresh HUD variant passes")
+    expect(hud_errs, 0, "the HUD variant passes")
     expect(check_hud_variant(hud.replace(script_guid("MeerkatHUDView"), STOAT_HUD_VIEW_GUID)), 1, "the Stoat's view in the variant")
     expect(check_hud_variant(hud.replace(I.guid_for(I.ICONS[2]), STOAT_ICONS[2])), 1, "the Stoat's Space sprite")
     expect(check_hud_variant(re.sub(r"(  sentinelGauge: \{fileID: )\d+", r"\g<1>0", hud)), 1, "the Sentinel gauge unwired")
