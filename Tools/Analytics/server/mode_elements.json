@@ -69,6 +69,10 @@
       "Charge",
       null
     ],
+    "Fulmen": [
+      "Space",
+      null
+    ],
     "Glasshouse": [
       "Mass",
       null
@@ -105,8 +109,16 @@
       "Charge",
       null
     ],
+    "Lancefall": [
+      "Space",
+      null
+    ],
     "LanternRun": [
       "Time",
+      null
+    ],
+    "Larder": [
+      "Charge",
       null
     ],
     "Multiplayer2v2CoOpVsAI": [
@@ -157,6 +169,10 @@
       "Space",
       null
     ],
+    "Shockfront": [
+      "Charge",
+      null
+    ],
     "Sirocco": [
       "Space",
       null
@@ -194,6 +210,10 @@
       null
     ],
     "Tapestry": [
+      "Mass",
+      null
+    ],
+    "Thornbush": [
       "Mass",
       null
     ],
@@ -280,6 +300,7 @@
     "DogFight": "CombatPoints",
     "Dustup": "CombatPoints",
     "Flatline": "CombatPoints",
+    "Fulmen": "PrismsDestroyed",
     "Glasshouse": "VolumeRemaining",
     "GrizzlyCharge": "PrismsDestroyed",
     "GrizzlyTime": "SwitchesThreaded",
@@ -289,7 +310,9 @@
     "Jackstraw": "CombatPoints",
     "Joust": "Jousts",
     "Kelpwood": "CombatPoints",
+    "Lancefall": "PrismsDestroyed",
     "LanternRun": "SwitchesThreaded",
+    "Larder": "CombatPoints",
     "Multiplayer2v2CoOpVsAI": "Crystals",
     "PerchRun": "SwitchesThreaded",
     "Rampage": "PrismsDestroyed",
@@ -302,6 +325,7 @@
     "SerpentHood": "CombatPoints",
     "SerpentTime": "SwitchesThreaded",
     "Shatterplane": "PrismsDestroyed",
+    "Shockfront": "CombatPoints",
     "Sirocco": "PrismsDestroyed",
     "Skein": "SwitchesThreaded",
     "SkimRace": "Crystals",
@@ -312,6 +336,7 @@
     "Tandava": "LifeformsKilled",
     "TandavaSevering": "LifeformsKilled",
     "Tapestry": "VolumeRemaining",
+    "Thornbush": "VolumeRemaining",
     "Thornline": "SwitchesThreaded",
     "ThresherTime": "SwitchesThreaded",
     "Tollway": "Goals",
@@ -355,6 +380,7 @@
     "Dustup",
     "Elimination",
     "Flatline",
+    "Fulmen",
     "Glasshouse",
     "GrizzlyCharge",
     "GrizzlyTime",
@@ -365,7 +391,9 @@
     "Joust",
     "Kelpwood",
     "KickinMass",
+    "Lancefall",
     "LanternRun",
+    "Larder",
     "Maelstrom",
     "MasterExploder",
     "MazeRun",
@@ -385,6 +413,7 @@
     "SerpentHood",
     "SerpentTime",
     "Shatterplane",
+    "Shockfront",
     "ShootingGallery",
     "Sirocco",
     "Skein",
@@ -398,6 +427,7 @@
     "Tandava",
     "TandavaSevering",
     "Tapestry",
+    "Thornbush",
     "Thornline",
     "ThresherTime",
     "Tollway",

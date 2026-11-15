@@ -33,6 +33,8 @@ MonoBehaviour:
   shedSpeed: 8
   siphonOnChargeUpgrade: 1
   killsFauna: 1
+  hitCooldownSeconds: 0.5
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   rippleEvent:
     Guid:
       Data1: 0
