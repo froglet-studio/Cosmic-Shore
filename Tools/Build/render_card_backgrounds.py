@@ -734,6 +734,9 @@ CAMERAS = {
     # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
     "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
     "Sirocco": (320, 10, 0.66, 46),
+    # The Rhino's three games. Bullrush shares Jackstraw's heap and Landslide Cleave's arenas, so each gets its own
+    # angle; Windrow is Tapestry's bare cell, shot closer because a Rhino row is a few units wide, not a Butterfly wake.
+    "Bullrush": (215, 16, 0.72, 44), "Windrow": (60, 30, 0.42, 42), "Landslide": (250, 30, 0.8, 42),
     # Grizzly Charge is the Boneyard's fourth card (with Dog Fight / Salvo / Broadside / Dustup):
     # low, close, and down the axis of the Grizzly's run.
     "GrizzlyCharge": (75, 6, 0.55, 48),
@@ -1031,6 +1034,37 @@ def recipe(stem, card_path, pal, ends):
                 ahead = f(min(1.0, t + 1.0 / max(1, n)))
                 fwd = v_sub(ahead, pt) if t < 1.0 else v_sub(pt, f(max(0.0, t - 1.0 / max(1, n))))
                 rows.append(prism(pt, fwd, v_norm(pt), key, dom))
+        layers.append({"kind": "prisms", "rows": rows})
+        nucleus()
+    elif s == "Windrow":
+        # MODEL tier: the bare Barren cell again (Tapestry's), so the card shows what the mode PUTS there - Rhino
+        # trail rows, one broad arc per pilot, a pair of blocks every 5 u at the shipped block size (BaseScale 3 x 3
+        # x 0.5 with XScaler 1, halved per side, Gap 2: Rhino.prefab). One Jade row has a RAID through it: a gap where
+        # a Ruby plough threw the row into itself, with the few blocks it threw clear lying off to one side.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        rows = []
+        block = [1.5, 3.0, 0.5]
+        for k, dom in enumerate((JADE, RUBY, GOLD, JADE, RUBY)):
+            rad = R * rng.range(0.16, 0.34)
+            tilt = rng.range(-0.7, 0.7)
+            a0 = rng.range(0, 2 * math.pi)
+            sweep = rng.range(1.8, 2.8)
+            f = arc([0, 0, 0], rad, a0, a0 + sweep, tilt, bank=0.5)
+            n = int(rad * sweep / 5.0)
+            cut = (int(n * 0.40), int(n * 0.55)) if k == 0 else (n + 1, n + 1)
+            for i in range(n):
+                t = i / max(1, n - 1)
+                pt = f(t)
+                ahead = f(min(1.0, t + 1.0 / max(1, n)))
+                fwd = v_sub(ahead, pt) if t < 1.0 else v_sub(pt, f(max(0.0, t - 1.0 / max(1, n))))
+                side = v_norm(v_cross(fwd, v_norm(pt)))
+                if cut[0] <= i < cut[1]:
+                    if i % 4 == 0:   # thrown clear: off to one side of the furrow, still standing
+                        rows.append(prism(v_add(pt, v_mul(side, 22.0 + rng.range(0, 14))), fwd, v_norm(pt), block, dom))
+                    continue
+                for sgn in (-1.0, 1.0):
+                    rows.append(prism(v_add(pt, v_mul(side, sgn * 2.0)), fwd, v_norm(pt), block, dom))
         layers.append({"kind": "prisms", "rows": rows})
         nucleus()
     elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco"):

@@ -100,6 +100,9 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameDustup** | `_Scenes/Multiplayer Scenes/` | `Dustup (59)` | `DustupController` |
 | **MinigameSerpentHood** | `_Scenes/Multiplayer Scenes/` | `SerpentHood (77)` | `SerpentHoodController` |
 | **MinigameJackstraw** | `_Scenes/Multiplayer Scenes/` | `Jackstraw (85)` | `JackstrawController` |
+| **MinigameBullrush** | `_Scenes/Multiplayer Scenes/` | `Bullrush (121)` | `BullrushController` |
+| **MinigameWindrow** | `_Scenes/Multiplayer Scenes/` | `Windrow (122)` | `WindrowController` |
+| **MinigameLandslide** | `_Scenes/Multiplayer Scenes/` | `Landslide (123)` | `LandslideController` |
 | **MinigameFlatline** | `_Scenes/Multiplayer Scenes/` | `Flatline (84)` | `FlatlineController` |
 | **MinigameKelpwood** | `_Scenes/Multiplayer Scenes/` | `Kelpwood (86)` | `KelpwoodController` |
 | **MinigameCorona** | `_Scenes/Multiplayer Scenes/` | `Corona (87)` | `CoronaController` |
@@ -354,6 +357,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 59 | `Dustup` | MP | MinigameDustup | `DustupController` (Butterfly dust duel, Charge — a pass OVER a rival is one Strike point; Boneyard. See `DUSTUP.md`) |
 | 77 | `SerpentHood` | MP | MinigameSerpentHood | `SerpentHoodController` (Hood, the Serpent sniper duel, Charge - a snipe on a rival pilot is one Debuff point; a 3,600 u cell, a crystal heart in the middle, Serpentine's ring shapes bent into hoods as perches round it, shutters at I3-I4, a hood falls when its core breaks; was Serpent Gulag. See `SERPENTHOOD.md`) |
 | 85 | `Jackstraw` | MP | MinigameJackstraw | `JackstrawController` (Thresher brawl, Charge - the ball or chain on a rival pilot is one Strike point; a 0G heap of pick-up sticks in the standard cell, crystals in its clearings; I1-I4 grow the heap 34 -> 230 sticks, add jacks, red tips and ironwood; JACKSTRAW.md) |
+| 121 | `Bullrush` | MP | MinigameBullrush | `BullrushController : JackstrawController` (Rhino joust, Charge - a gore, ramming a rival faster than it and above the gore speed, is one point; Jackstraw's heap, referenced; BULLRUSH.md) |
+| 122 | `Windrow` | MP | MinigameWindrow | `WindrowController` (Rhino, Mass - timed, most trail standing wins; plough strikes break rival rows, Heft steers, Berm armours; the bare Barren cell; WINDROW.md) |
+| 123 | `Landslide` | MP | MinigameLandslide | `LandslideController : CleaveController` (Rhino, Space - every prism scored is a plough strike; Cleave's four arenas, referenced; the Blade's width is the lever; LANDSLIDE.md) |
 | 86 | `Kelpwood` | MP | MinigameKelpwood | `KelpwoodController` (Angler hunt, Charge - sweep the eraser onto a rival to lock it, one creature hunts it, each bite is one Strike point; a 0G ball of kelp strands in the standard cell, tadpole herds and omni crystals for the school; I1-I4 grow the kelp 28 -> 88 strands, thin the herds and crystals, add danger tips and collars) |
 | 87 | `Corona` | MP | MinigameCorona | `CoronaController` (Manta stings, Charge - skim a shell to arm a bomb, graze a rival to plant it, touch an omni crystal in the heart to set every bomb off; each rival a bloom catches is one Debuff point; nested prism shells round a crystal heart in the standard cell; I1-I4 add shells 1 -> 4, narrow and rim the gates, thin the heart's crystals 4 -> 1) |
 | 88 | `Harvest` | MP | MinigameHarvest | `HarvestController` (Thresher destruction race, Space - mow a sheaf's stalks with the chain to charge the ball, smash it into the core for one blast; hostile prisms destroyed, first domain to 750; a field of sheaves round a clear centre in the standard cell, omni crystals in the centre; I1-I4 8 -> 22 sheaves, shielded cores, team colours, danger stalks) |
@@ -610,6 +616,9 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DustupPointTurnMonitor` | `TurnMonitors/` | A domain's summed dustings (Strike-class CombatPoints) reach the Dustup target (on `CombatPointTurnMonitorBase`) |
 | `SerpentHoodSnipeTurnMonitor` | `TurnMonitors/` | A domain's summed snipes (Debuff-class CombatPoints) reach the Hood target (on `CombatPointTurnMonitorBase`) |
 | `JackstrawStrikeTurnMonitor` | `TurnMonitors/` | A domain's summed strikes (Strike-class CombatPoints) reach the Jackstraw target (on `CombatPointTurnMonitorBase`) |
+| `BullrushStrikeTurnMonitor` | `TurnMonitors/` | A domain's summed gores (Strike-class CombatPoints) reach the Bullrush target (on `CombatPointTurnMonitorBase`) |
+| `WindrowTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (length from `EndConditionOverridesSO.GetWindrowRoundSeconds`) |
+| `LandslidePrismTurnMonitor` | `TurnMonitors/` | A domain's summed HostilePrismsDestroyed reach the Landslide target |
 | `FlatlinePointTurnMonitor` | `TurnMonitors/` | A domain's summed CombatPoints (rounds 1, cord Strikes 8) reach Flatline's target (90 at every intensity, per-intensity list) (on `CombatPointTurnMonitorBase`) |
 | `KelpwoodBiteTurnMonitor` | `TurnMonitors/` | A domain's summed bites (Strike-class CombatPoints) reach the Kelpwood target (on `CombatPointTurnMonitorBase`) |
 | `ShatterplanePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Shatterplane target, resolved per intensity on the server and replicated (Sirocco's shape) |
