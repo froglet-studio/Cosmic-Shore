@@ -49,6 +49,8 @@ MonoBehaviour:
   jackstrawStrikeTarget: 3
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
+  shockfrontRippleTarget: 10
+  fulmenPrismTarget: 1200
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
   - 1600
@@ -61,6 +63,9 @@ MonoBehaviour:
   cleanerRamStrikeTarget: 8
   reefbuildRoundSeconds: 90
   blastlinePrismTarget: 600
+  larderMissileTarget: 16
+  thornbushRoundSeconds: 90
+  lancefallPrismTarget: 600
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -127,6 +132,8 @@ MonoBehaviour:
   jackstrawStrikeTargetBuild: 3
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
+  shockfrontRippleTargetBuild: 10
+  fulmenPrismTargetBuild: 1200
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
   - 1600
@@ -139,6 +146,9 @@ MonoBehaviour:
   cleanerRamStrikeTargetBuild: 8
   reefbuildRoundSecondsBuild: 90
   blastlinePrismTargetBuild: 600
+  larderMissileTargetBuild: 16
+  thornbushRoundSecondsBuild: 90
+  lancefallPrismTargetBuild: 600
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35

@@ -259,6 +259,7 @@ model number (standing rule).
 
 | Date | What moved |
 |---|---|
+| 2026-11-15 | **Garrett**: "make all the missing games you can" (one per element is ideal). Step 0 rostered for the whole fleet in `GAME_KIT_ROSTER.md`: 35 games with reserved `GameModes` ids 91-125 (126-127 for the Jewel Wasp) and hint toasts 166-202; Grizzly, Jacks and Stoat Mass and Urchin Space excused in `no_game_ok` (kits make nothing to score); Starling waits for its kit |
 | 2026-11-12 | **Garrett**: the loop dominates `/swimlanes` and `/approve`. The swim lanes board now opens with every unoccupied vessel as its own loop lane (progress and next step, `elemental_loop.vessel_lanes`); the approval queues rank entries by loop impact, the rework a late "against the vessel's spirit" catch would cause (`elemental_loop.rework`) |
 | 2026-11-12 | **Garrett** decided the fun card: it opens in Unity right after Play, after every arcade match (the newest answer per vessel, game and rung wins), and the per-rung bars are defaults, then learned from the card. Built: `FunCard.cs`, the Bug Hunt kind `fun`, `fun_cards.py`, `rung_bars.py`, `rung_bars.json` (scaffolding 1 and 2) |
 | 2026-11-12 | **Garrett** decided 1 and 2: one human's fun sign-off gates step 1 to step 2 and step 2 to step 3 (`elemental_loop.py` refuses a step 1 or 2 `done` that is not `--kind human`, and a step `done` before the one below it); vessel tunings go through and queue for his `/approve` without waiting |
