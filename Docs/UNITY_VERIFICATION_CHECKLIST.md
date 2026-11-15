@@ -311,6 +311,37 @@ new errors; without the shims it fails on `RelayRegionProbe.cs`). No Unity edito
 **Open:** the tab was not drawn on Frogma first (Docs/MENU_REDESIGN_B.md); the region names in the generator's
 `REGION_NAMES` name UGS's ids, and an id UGS does not list is simply never offered online.
 
+### 🔴 Hedgerow, the Serpent's Mass game (GameModes 94) (`claude/serpent-mass-hedgerow`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/HEDGEROW.md`. A timed steal in a bare nucleus cell: hedges of neutral (Blue) bricks,
+the Serpent trail's own 3 x 6 x 0.5 prism, laid on every peer from the intensity (`HedgerowField`). Stop dead short of
+a hedge, flying across it, and the stance's seed wall eats along it into your colour (SERPENT_SEED_WALL.md); it eats a
+rival's trail the same way. The score is `VolumeRemaining`, credited by the platform's steal path. The AI
+(`HedgerowWarden`) presses only the stop toggle: line up, run in across a hedge, stop 22 u short, hold, fly on; raid the
+densest rival mass when it trails. New platform rows: `GameModes.Hedgerow = 94`, `hedgerowRoundSeconds` (90),
+`GameToastSituation.HedgerowHint = 169`, the HUD arrow (Rampage's provider). Nothing about the Serpent changed.
+Authored by `Tools/Build/author_hedgerow_assets.py`. Ran headless: the generator `--check`, the `/arcadegame` gates, the
+card render, `unity_refcompile` player and editor. No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Hedgerow card: the wall card art, Serpent only, 1-4 players, intensities 1-4, the **Mass** petal.
+2. Run the edit-mode tests `HedgerowTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. Solo, I2: twelve blue hedges (32 bricks long, 2 high) stand between the nucleus and the membrane.
+4. Fly across a hedge and stop (B) about 20 u short: the wall grows across your path and eats along the hedge, every
+   brick turning your colour, and your Hold volume climbs (9 a brick at rest).
+5. Fly on: the wall stands and stops eating. Stop at the next hedge.
+6. With an AI rival: it lines up, runs in, stops short of a hedge and its wall eats it; it never cloaks. At Medium and
+   up, when it trails, it stops beside your trail and eats that.
+7. Take an omni crystal while stopped: the wall re-shields.
+8. At the whistle: the domain with the most volume standing wins; the results show "{n} Volume" and "{n} stolen".
+9. FrogletTools > Game Modes > End Game Conditions: Hedgerow - Round Seconds reads 90.
+10. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameHedgerow.unity`.
+
+**First-pass tuning (not settled):** round 90 s; hedges 8 / 12 / 12 / 16 of 64 / 64 / 120 / 120 bricks; omni
+4 / 3 / 3 / 2; AI stop 22 u short, hold 8 / 12 / 15 / 18 s; comeback 0.003472 per volume. The open questions: does
+the seed land within the wall's 40 u reach of the hedge when the AI stops 22 u short, and does flying (laying trail)
+out-score stopping? If trail wins, the hedges need to be bigger or the round longer.
+
 ### 🔴 Haul, the Thresher's Mass game (GameModes 93) (`claude/thresher-mass-haul`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/HAUL.md`. A timed steal in a bare nucleus cell: bales of neutral (Blue) prisms laid

@@ -258,6 +258,10 @@ namespace CosmicShore.Data
         // Haul, the Thresher's mass game (_Scripts/Controller/Arcade/HAUL.md). 168 is its row in
         // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
         HaulHint = 168,                 // once, at the start: swing the ball through a bale to steal it into your colour
+
+        // Hedgerow, the Serpent's mass game (_Scripts/Controller/Arcade/HEDGEROW.md). 169 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        HedgerowHint = 169,             // once, at the start: stop dead short of a hedge and your wall eats along it
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.

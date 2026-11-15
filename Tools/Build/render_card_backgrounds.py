@@ -806,6 +806,9 @@ CAMERAS = {
     # Haul: close beside one bale of the I2 field, so its shells fill the plate with hauled bales of every colour behind,
     # and the Jade ball on its chain swinging through it (the steal, what scores) sits on its near half.
     "Haul": (34, 12, 0.7, 46),
+    # Hedgerow: close beside one hedge of the I2 field, side-on to its approach, so the hedge runs across the plate and
+    # the Jade seed wall eating along it (the steal, what scores) stands in its middle with the stopped Serpent behind.
+    "Hedgerow": (34, 12, 0.7, 46),
     # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
     # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
     "Corona": (37, -10, 0.36, 60),
@@ -1355,6 +1358,70 @@ def recipe(stem, card_path, pal, ends):
             crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
         stage["haul"] = {"bale": near, "reach": reach}
         nucleus()
+    elif s == "Hedgerow":
+        # MODEL tier: the cell grows nothing, so the card draws what the mode LAYS there at this intensity -
+        # HedgerowField's hedges (the rung and the constants read off HedgerowField.cs) - with the nearest one half
+        # eaten by a Jade seed wall: the eaten bricks stand in the wall's herringbone, the rest are still no team's.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        field_cs = read(ROOT / "Assets/_Scripts/Controller/Arcade/Hedgerow/HedgerowField.cs")
+        spacing = float(re.search(r"public const float Spacing = ([\d.]+)f;", field_cs).group(1))
+        inner_c = float(re.search(r"public const float InnerClearance = ([\d.]+)f;", field_cs).group(1))
+        outer_c = float(re.search(r"public const float OuterClearance = ([\d.]+)f;", field_cs).group(1))
+        bx, by, bz = (float(x) for x in re.search(r"BrickScale = new\(([\d.]+)f, ([\d.]+)f, ([\d.]+)f\);",
+                                                   field_cs).groups())
+        rungs = re.findall(r"(\d|_) => new Rung\((\d+), (\d+), (\d+), ([\d.]+)f\)", field_cs)
+        _, nrows, length, ranks, band = rungs[min(INTENSITY - 1, len(rungs) - 1)]
+        nrows, length, ranks, band = int(nrows), int(length), int(ranks), float(band)
+
+        def fib(i, n):
+            y = 1 - 2 * (i + 0.5) / max(1, n)
+            ring = math.sqrt(max(0.0, 1 - y * y))
+            th = i * 2.39996323
+            return [ring * math.cos(th), y, ring * math.sin(th)]
+
+        lo = nuc + inner_c
+        radius = lo + (max(lo, R - outer_c) - lo) * band
+        hedges = []
+        for row in range(nrows):
+            n = fib(row, nrows)
+            t = v_norm(v_cross(n, [1, 0, 0] if abs(n[1]) > 0.9 else [0, 1, 0]))
+            b = v_cross(n, t)
+            a = row * 2.39996323
+            along = v_norm(v_add(v_mul(t, math.cos(a)), v_mul(b, math.sin(a))))
+            hedges.append((v_mul(n, radius), n, along, v_cross(n, along)))
+        az = math.radians(cam["azimuth"])
+        toward = v_norm([math.sin(az), 0.2, math.cos(az)])
+        # Three-quarters face-on: a wall and a hedge are flat bricks facing the approach, so seen side-on they vanish.
+        near = min(hedges, key=lambda h: abs(abs(v_dot(h[1], toward)) - 0.75) - 0.2 * h[1][1])
+        hoards = {1: RUBY, 4: GOLD, 7: JADE}
+        rows = []
+        hl, hr = (length - 1) * 0.5, (ranks - 1) * 0.5
+        for idx, (mid, n, along, up) in enumerate(hedges):
+            dom = hoards.get(idx, BLUE) if near is not hedges[idx] else BLUE
+            for k in range(length):
+                if near is hedges[idx] and abs(k - hl) < length * 0.3:
+                    continue                          # the stretch the wall has already eaten
+                for h in range(ranks):
+                    pos = v_add(mid, v_add(v_mul(along, (k - hl) * spacing), v_mul(up, (h - hr) * spacing)))
+                    rows.append(prism(pos, n, along, [bx, by, bz], dom))
+        # The wall: a herringbone in the plane across the approach, 22 u short of the hedge, grown along it.
+        mid, n, along, up = near
+        seed = v_sub(mid, v_mul(n, 22.0))
+        pitch = 5 * bx
+        span_k = int(length * spacing * 0.3 / pitch) + 1
+        for i in range(-span_k, span_k + 1):
+            for j in range(-3, 4):
+                pos = v_add(seed, v_add(v_mul(along, i * pitch), v_mul(up, j * pitch)))
+                long_axis = along if (i + j) % 2 else up
+                rows.append(prism(pos, n, long_axis, [bx, by, bz], JADE, SHIELDED if abs(i) + abs(j) < 3 else PLAIN))
+        layers.append({"kind": "prisms", "rows": rows})
+        scene = read(next((ROOT / "Assets/_Scenes").rglob("MinigameHedgerow.unity")))
+        extras = [int(x) for x in re.findall(r"ExtraCrystals: (\d+)", scene.split("crystalCountByIntensity:")[1])[:4]]
+        for k in range(extras[min(INTENSITY - 1, len(extras) - 1)]):
+            crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
+        stage["hedgerow"] = {"seed": seed, "n": n, "reach": length * spacing * 0.5}
+        nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -1395,6 +1462,11 @@ def recipe(stem, card_path, pal, ends):
         ha = stage.get("haul")
         cam["target"] = list(ha["bale"])
         cam["radius"] = ha["reach"] * 5.0
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "Hedgerow":
+        hg = stage.get("hedgerow")
+        cam["target"] = list(hg["seed"])
+        cam["radius"] = hg["reach"] * 0.75
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1769,6 +1841,18 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                 sag = math.sin(math.pi * t) * reach * 0.4
                 p = v_add(v_add(ball, v_mul(v_sub(hull, ball), t)), [0, -sag, 0])
                 glow(p, reach * 0.04, JADE, 1.0, 0.7)
+            stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "Hedgerow":
+        # The stop: a Jade Serpent standing dead behind its seed (a glow in the domain's lit colour), and a few loose
+        # bricks of the hedge still in flight to the wall's edge.
+        hg = stage.pop("hedgerow", None)
+        if hg:
+            seed, n = hg["seed"], hg["n"]
+            glow(v_sub(seed, v_mul(n, 14.0)), 6.0, JADE, 1.4, 0.8)
+            glow(seed, 4.0, JADE, 1.2, 0.6)
+            for k in range(6):
+                p = v_add(v_add(seed, v_mul(n, 8.0 + 2.5 * k)), v_mul(rng.unit(), 30.0))
+                streak(p, v_mul(n, -1.0), 10.0, JADE)
             stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
     elif s == "Corona":
         # A KABLOOM at the heart: a Manta touched an omni crystal, and the bloom round it catches a rival pilot (a

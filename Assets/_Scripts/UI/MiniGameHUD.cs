@@ -571,6 +571,10 @@ namespace CosmicShore.UI
                     // Rampage's provider: the nearest managed omni crystal - a Windmill, whose spinning ball steals
                     // everything it sweeps. The bales hang in plain sight.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Haul");
+                case GameModes.Hedgerow:
+                    // Rampage's provider: the nearest managed omni crystal - each one re-shields every active wall
+                    // the Serpent owns. The hedges stand in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Hedgerow");
                 case GameModes.Chum:
                     // Rampage's provider: the nearest managed omni crystal, which is a creature for the school - the
                     // one thing to fetch. The reef's shoals hang in plain sight; the brush finds them.

@@ -462,6 +462,11 @@ namespace CosmicShore.Data
         // at the whistle wins. Row 3 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
         Haul = 93,
 
+        // The Serpent's MASS game (HEDGEROW.md): a timed steal. Hedges of neutral bricks stand round the core; stop dead
+        // short of one and your seed wall eats along it into your colour, and a rival's trail the same way. Volume
+        // standing in your colour at the whistle wins. Row 4 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Hedgerow = 94,
+
         // RESERVED 91-127 (2026-11-15): the missing elemental arcade games, one id per game, assigned by vessel and
         // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
         // building one of those games takes ITS row's id; anything else takes 128 or above.

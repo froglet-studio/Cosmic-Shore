@@ -156,6 +156,10 @@ namespace CosmicShore.ScriptableObjects
         /// is a live stock (volume standing, which a rival's ball steals back), so only the clock can end it.</summary>
         public const int DefaultHaulRoundSeconds = 90;
 
+        /// <summary>Hedgerow round length in seconds, used when <see cref="hedgerowRoundSeconds"/> is 0. Hedgerow is TIMED:
+        /// its score is a live stock (volume standing, which a rival's wall steals back), so only the clock can end it.</summary>
+        public const int DefaultHedgerowRoundSeconds = 90;
+
         /// <summary>Sirocco hostile-prism target used when <see cref="siroccoPrismTarget"/> is 0.
         /// Far under Rampage's 2000: the dust takes one prism in three it touches, where a Dolphin
         /// cone takes hundreds at once.</summary>
@@ -612,6 +616,10 @@ namespace CosmicShore.ScriptableObjects
                  "volume standing in its colour (stolen bales, stolen rival mass and its own trail) wins. 0 = default (90).")]
         [Min(0)] public int haulRoundSeconds = 90;
 
+        [Tooltip("Hedgerow: round length in SECONDS, the Serpent's mass game. The mode is timed - the domain with the most " +
+                 "volume standing in its colour (walled hedges, walled rival mass and its own trail) wins. 0 = default (90).")]
+        [Min(0)] public int hedgerowRoundSeconds = 90;
+
         [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
                  "mass never counts. 0 = default (400).")]
@@ -697,6 +705,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int chumRoundSecondsBuild = 90;
         [Min(0)] public int starweaveRoundSecondsBuild = 90;
         [Min(0)] public int haulRoundSecondsBuild = 90;
+        [Min(0)] public int hedgerowRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
@@ -1190,6 +1199,13 @@ namespace CosmicShore.ScriptableObjects
             haulRoundSeconds > 0 ? haulRoundSeconds : DefaultHaulRoundSeconds;
 
         /// <summary>
+        /// Hedgerow round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultHedgerowRoundSeconds"/>. Read by HedgerowTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetHedgerowRoundSeconds() =>
+            hedgerowRoundSeconds > 0 ? hedgerowRoundSeconds : DefaultHedgerowRoundSeconds;
+
+        /// <summary>
         /// Sirocco prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSiroccoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
@@ -1301,7 +1317,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush. Glasshouse
-                // (glasshouseRoundSeconds), Chum (chumRoundSeconds), Starweave (starweaveRoundSeconds) and Haul (haulRoundSeconds) are timed for the same reason and are absent too.
+                // (glasshouseRoundSeconds), Chum (chumRoundSeconds), Starweave (starweaveRoundSeconds), Haul (haulRoundSeconds) and Hedgerow (hedgerowRoundSeconds) are timed for the same reason and are absent too.
                 // Per PILOT, not a total - the race target scales with team size and is only known at
                 // runtime, so the editor's authored-target readout shows the rate.
                 GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
@@ -1388,6 +1404,7 @@ namespace CosmicShore.ScriptableObjects
             chumRoundSeconds == chumRoundSecondsBuild &&
             starweaveRoundSeconds == starweaveRoundSecondsBuild &&
             haulRoundSeconds == haulRoundSecondsBuild &&
+            hedgerowRoundSeconds == hedgerowRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
             tandavaBreakPercent == tandavaBreakPercentBuild &&
@@ -1454,6 +1471,7 @@ namespace CosmicShore.ScriptableObjects
             chumRoundSeconds = chumRoundSecondsBuild;
             starweaveRoundSeconds = starweaveRoundSecondsBuild;
             haulRoundSeconds = haulRoundSecondsBuild;
+            hedgerowRoundSeconds = hedgerowRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
             tandavaBreakPercent = tandavaBreakPercentBuild;
@@ -1521,6 +1539,7 @@ namespace CosmicShore.ScriptableObjects
             chumRoundSecondsBuild = chumRoundSeconds;
             starweaveRoundSecondsBuild = starweaveRoundSeconds;
             haulRoundSecondsBuild = haulRoundSeconds;
+            hedgerowRoundSecondsBuild = hedgerowRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
             tandavaBreakPercentBuild = tandavaBreakPercent;

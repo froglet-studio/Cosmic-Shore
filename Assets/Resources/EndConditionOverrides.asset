@@ -61,6 +61,7 @@ MonoBehaviour:
   chumRoundSeconds: 90
   starweaveRoundSeconds: 90
   haulRoundSeconds: 90
+  hedgerowRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -139,6 +140,7 @@ MonoBehaviour:
   chumRoundSecondsBuild: 90
   starweaveRoundSecondsBuild: 90
   haulRoundSecondsBuild: 90
+  hedgerowRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35

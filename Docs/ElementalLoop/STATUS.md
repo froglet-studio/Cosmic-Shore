@@ -21,7 +21,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Orca | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Rhino | `b b b` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
-| Serpent | `b b b` | `b b .` | `x x x` | `x x x` | Mass or Space | Regatta, BroodRush |
+| Serpent | `b b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
 | Shrike | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Sparrow | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Squirrel | `b b b` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside, BroodRush |
@@ -60,7 +60,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Orca | Breach | - | - | - |
 | Rhino | Headlong | - | - | - |
 | Scarab | Scarab Rally | Undertow | Scarab Scramble, Tollway | Wrecking Ball |
-| Serpent | Serpentine | Hood | - | - |
+| Serpent | Serpentine | Hood | Hedgerow | - |
 | Shrike | Thornline | - | - | - |
 | Sparrow | Breakwater | Dog Fight | Scurry (shared) | Salvo, Wildlife Liberation |
 | Squirrel | Skim Race | Joust | Scurry (shared) | excused |
