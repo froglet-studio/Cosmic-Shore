@@ -1,11 +1,11 @@
 {
  "inputs": {
-  "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader": "d4bb24729a63dda0c2c83e6e70fcfb8c5ca1308446097fb01dd9fbafd8ba2abf",
-  "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat": "f6c324db76831a0d6cacbdbdd3448362de6999d2f6e383b25e298c8f7a717b87",
+  "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader": "5a1f309d844512b21294115448d569aca59492421cd6bde421c3527bf51626ea",
+  "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat": "123668d8051f6d98d1cb76ed95586a430b550cd6b39f1350dffb95ca7c56e20b",
   "Tools/Build/static_skybox_harness/hlsl_shim.h": "d4338d5aff100d47ca330d86f7b573493f5e22716f62a6284a2c6f33db4a2561",
-  "bake code": "1f14c213aa0c749b2c257d47a0df993078fb2386f7201a1ee7677c9f82ccfabc"
+  "bake code": "a733f884cbbe8754c079550a7ca45d245b072a9d6a2d183c468289fa8c8d24d8"
  },
- "png": "0ab35b4a54a69f27776c7e82170e6e36cc6e1f5fb3b9de6fe680acfc830c6f55",
+ "png": "6bf57bb9f55e5b53ad7dbe2bec3534fe6ff11aef4f64aed425213322021920f8",
  "size": [
   4096,
   2048
