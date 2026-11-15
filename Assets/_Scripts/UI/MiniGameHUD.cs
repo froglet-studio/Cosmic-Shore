@@ -558,6 +558,12 @@ namespace CosmicShore.UI
                     // The Bends' provider again: the nearest pilot this player may graze. The way to them is through
                     // the gates, and the cash-out is always the heart, so the arrow only has to answer who.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Corona");
+                case GameModes.Shockfront:
+                    // The Stoat's charge duel: the arrow answers "which rival do I sling past?", Dustup's question.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Shockfront");
+                case GameModes.Fulmen:
+                    // The Stoat's space race: the contested omni crystal IS the weapon, Rampage's question.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Fulmen");
                 case GameModes.Sentry:
                     // The Bends' provider again: the nearest pilot this player may zap. A sentinel stands where the
                     // soliton formed, so the question is where the rival is about to fly; the heart is always the
@@ -600,6 +606,17 @@ namespace CosmicShore.UI
                     // arrow names the nearest big plate still standing. Not a crystal: a crystal is a spare ring, and
                     // it already floats on a plate's axis in front of it.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Shatterplane");
+                case GameModes.Larder:
+                    // The Bends' provider: the nearest pilot this player may hit. Paint is a cone off the nose, so the
+                    // question every second is where the rival is; the wreckage hides them from the missiles.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Larder");
+                case GameModes.Thornbush:
+                    // Rampage's provider: the nearest managed crystal. To a Shrike a crystal is a missile plant where it
+                    // was taken, the one thing worth fetching; the nests go wherever the pilot docks in the heap.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Thornbush");
+                case GameModes.Lancefall:
+                    // Shatterplane's provider: the densest standing hostile mass - the nearest big plate still standing.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Lancefall");
                 case GameModes.Sirocco:
                     // Same provider, same reason: the forest rings the cell, so the arrow names
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs
