@@ -142,6 +142,21 @@ namespace CosmicShore.ScriptableObjects
         /// the arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
         public const int DefaultGlasshouseRoundSeconds = 90;
 
+        /// <summary>Flitstrike strike target used when <see cref="flitstrikeStrikeTarget"/> is 0. One strike - a
+        /// Honeyguide's Flit (or a Charge upgrade on its trigger) reaching a rival hull - is one point
+        /// (FlitstrikeScoringRuleSO). The Flit is a short dart every 2 s, so a strike is earned, not sprayed.</summary>
+        public const int DefaultFlitstrikeStrikeTarget = 5;
+
+        /// <summary>Honeycomb round length in seconds, used when <see cref="honeycombRoundSeconds"/> is 0. TIMED,
+        /// Tapestry's reason: the score is mass standing in a domain's colour, a live stock rival pecks chip. 90 s is the
+        /// arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
+        public const int DefaultHoneycombRoundSeconds = 90;
+
+        /// <summary>Woodpecker hostile-prism target used when <see cref="woodpeckerPrismTarget"/> is 0. A Peck burst is
+        /// three shots a second at best, each one prism, so 150 is a little under a minute of steady pecking for one
+        /// pilot (Sirocco's 400 is a dust that takes a third of a stand per pass).</summary>
+        public const int DefaultWoodpeckerPrismTarget = 150;
+
         /// <summary>Sirocco hostile-prism target used when <see cref="siroccoPrismTarget"/> is 0.
         /// Far under Rampage's 2000: the dust takes one prism in three it touches, where a Dolphin
         /// cone takes hundreds at once.</summary>
@@ -585,6 +600,18 @@ namespace CosmicShore.ScriptableObjects
                  "wins. 0 = default (90).")]
         [Min(0)] public int glasshouseRoundSeconds = 90;
 
+        [Tooltip("Flitstrike: STRIKES a DOMAIN needs to win (race to N). One strike - a Honeyguide's Flit (or a Charge " +
+                 "upgrade on its left trigger) reaching a rival hull - is 1. 0 = default (5).")]
+        [Min(0)] public int flitstrikeStrikeTarget = 5;
+
+        [Tooltip("Honeycomb: round length in SECONDS. The mode is timed - the domain with the most mass standing in its " +
+                 "own colour (trail and hive comb) when the clock runs out wins. 0 = default (90).")]
+        [Min(0)] public int honeycombRoundSeconds = 90;
+
+        [Tooltip("Woodpecker: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a DOMAIN must break " +
+                 "with the Honeyguide's pecks and Space upgrades to win (race to N). 0 = default (150).")]
+        [Min(0)] public int woodpeckerPrismTarget = 150;
+
         [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
                  "mass never counts. 0 = default (400).")]
@@ -667,6 +694,9 @@ namespace CosmicShore.ScriptableObjects
         [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int glasshouseRoundSecondsBuild = 90;
+        [Min(0)] public int flitstrikeStrikeTargetBuild = 5;
+        [Min(0)] public int honeycombRoundSecondsBuild = 90;
+        [Min(0)] public int woodpeckerPrismTargetBuild = 150;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
@@ -1139,6 +1169,27 @@ namespace CosmicShore.ScriptableObjects
             glasshouseRoundSeconds > 0 ? glasshouseRoundSeconds : DefaultGlasshouseRoundSeconds;
 
         /// <summary>
+        /// Flitstrike strike target ("first domain to N strikes"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultFlitstrikeStrikeTarget"/>. Compared against a DOMAIN's summed CombatPoints, so teammates pool.
+        /// </summary>
+        public int GetFlitstrikeStrikeTarget() =>
+            flitstrikeStrikeTarget > 0 ? flitstrikeStrikeTarget : DefaultFlitstrikeStrikeTarget;
+
+        /// <summary>
+        /// Honeycomb round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultHoneycombRoundSeconds"/>. Read by HoneycombTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetHoneycombRoundSeconds() =>
+            honeycombRoundSeconds > 0 ? honeycombRoundSeconds : DefaultHoneycombRoundSeconds;
+
+        /// <summary>
+        /// Woodpecker prism target ("race to N" hostile prisms destroyed): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultWoodpeckerPrismTarget"/>. Compared against a DOMAIN's summed destruction count.
+        /// </summary>
+        public int GetWoodpeckerPrismTarget() =>
+            woodpeckerPrismTarget > 0 ? woodpeckerPrismTarget : DefaultWoodpeckerPrismTarget;
+
+        /// <summary>
         /// Sirocco prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSiroccoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
@@ -1248,6 +1299,9 @@ namespace CosmicShore.ScriptableObjects
                 // Scalar only, as for Cleave and Flatline: the real answer is per-intensity (GetShatterplanePrismTarget(int)).
                 GameModes.Shatterplane              => GetShatterplanePrismTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
+                GameModes.Flitstrike                => GetFlitstrikeStrikeTarget(),
+                GameModes.Woodpecker                => GetWoodpeckerPrismTarget(),
+                // Honeycomb (honeycombRoundSeconds) is timed, Tapestry's reason, and is absent here too.
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush. Glasshouse
                 // (glasshouseRoundSeconds) is timed for the same reason and is absent too.
@@ -1334,6 +1388,9 @@ namespace CosmicShore.ScriptableObjects
             SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             glasshouseRoundSeconds == glasshouseRoundSecondsBuild &&
+            flitstrikeStrikeTarget == flitstrikeStrikeTargetBuild &&
+            honeycombRoundSeconds == honeycombRoundSecondsBuild &&
+            woodpeckerPrismTarget == woodpeckerPrismTargetBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
             tandavaBreakPercent == tandavaBreakPercentBuild &&
@@ -1397,6 +1454,9 @@ namespace CosmicShore.ScriptableObjects
             shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             glasshouseRoundSeconds = glasshouseRoundSecondsBuild;
+            flitstrikeStrikeTarget = flitstrikeStrikeTargetBuild;
+            honeycombRoundSeconds = honeycombRoundSecondsBuild;
+            woodpeckerPrismTarget = woodpeckerPrismTargetBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
             tandavaBreakPercent = tandavaBreakPercentBuild;
@@ -1461,6 +1521,9 @@ namespace CosmicShore.ScriptableObjects
             shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             glasshouseRoundSecondsBuild = glasshouseRoundSeconds;
+            flitstrikeStrikeTargetBuild = flitstrikeStrikeTarget;
+            honeycombRoundSecondsBuild = honeycombRoundSeconds;
+            woodpeckerPrismTargetBuild = woodpeckerPrismTarget;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
             tandavaBreakPercentBuild = tandavaBreakPercent;

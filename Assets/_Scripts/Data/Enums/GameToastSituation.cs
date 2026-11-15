@@ -249,6 +249,13 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // The Honeyguide's element games (FLITSTRIKE.md, HONEYCOMB.md, WOODPECKER.md), at the toast ids
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved (166-202 are that roster's). Flitstrike's and Woodpecker's race
+        // beats are the shared 128-130 (DomainRaceToasts); Honeycomb's lead change is the shared 130, sampled by its
+        // controller because a timed mode has no target. Posted to the LOCAL pilot only.
+        FlitstrikeHint = 183,           // once, at the start: hold LT to see the dart, let go to Flit through a rival
+        HoneycombHint = 184,            // once, at the start: an omni crystal is a hive; what stands in your colour scores
+        WoodpeckerHint = 185,           // once, at the start: hold RT to aim, let go to peck the hostile forest
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.
