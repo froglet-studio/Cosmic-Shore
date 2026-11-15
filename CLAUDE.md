@@ -472,6 +472,19 @@ can judge (the final look, feel, audio). A clip never replaces the verify rule (
 For the FINAL LOOK, the look sheet (`Docs/LOOK_SHEET.md`, `/unity-look`, built 2026-11-07, not yet run in Unity) captures the real
 renderer headless (menu screens, a race with the AI on every seat), gated and laid out, locally or through the `Look sheet` CI job.
 
+## Spend few tokens (recommended to every collaborator, Yash, 2026-11-15)
+
+A session re-reads its whole history on every turn, so a long session costs more for the same answer.
+- **Start a new session for a new task**, and for an old task whose session is days old or long: brief it in a few
+  lines (the files, what done looks like) or point it at a hand-over note. Do not wake a long session to ask it one thing.
+- **Leave a short hand-over note** when a task is parked (where things are, commands, traps), so the next session reads
+  one page and not the old transcript.
+- **No workflows or subagent fan-outs unless the person asks.** One session, one task.
+- **Search before reading, and read the part you need**: grep for the line, then read that range. Do not paste large
+  tool output, logs or whole files into the chat.
+- **Prefer something the person runs for free** (a build, a script, a button in the editor) over a session doing the
+  same thing by hand each time: watching a game is a launch the person clicks, not a session flying it.
+
 ## Code Style
 
 - Clean, maintainable C# — favor readability over cleverness
