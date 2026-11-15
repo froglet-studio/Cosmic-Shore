@@ -66,15 +66,28 @@ MonoBehaviour:
   burstHitClass: 3
   floraGrowth:
     Enabled: 1
-    Value: 2
-    Min: 2
-    Max: 6
+    Value: 3.5
+    Min: 3.5
+    Max: 7
     element: 2
     UseFloor: 1
-    Floor: 1.2
+    Floor: 2.2
   overgrowthRadius: 200
   floraCameraDistance: 650
+  floraMinDistance: 18
+  floraFitRadii: 3.2
+  floraZoomRange: {x: 0.3, y: 4}
+  floraZoomRate: 1.4
   floraOrbitDegrees: 100
+  floraRollDegrees: 110
+  floraFollowEase: 3
+  selectPulseSeconds: 0.35
+  selectPulseGlow: 4
+  floraAimAssistDegrees: 35
+  nestedTailWidth: 0.3
+  nestedGlow: 0.35
+  abilityFlashGlow: 1
+  abilityFlashSeconds: 0.6
   hostCameraBodies: 6
   hostCameraBase: 30
   cameraEase: 4
@@ -126,6 +139,13 @@ MonoBehaviour:
       Data4: 0
     Path: 
   burstEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  selectEvent:
     Guid:
       Data1: 0
       Data2: 0

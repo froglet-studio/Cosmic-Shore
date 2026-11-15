@@ -23561,6 +23561,15 @@ Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor conf
 - [ ] Multiplayer, a CLIENT hull (host + one client, `Docs/MULTIPLAYER_START_HERE.md`): the client stings a creature and
       flies it from its own sticks; the host sees the wasp nested and the creature steered; RT attack and suction, LT
       burst and A leave all work from the client; the client's HUD shows the recharges; a second client sees the same.
+- [ ] On a plant (2026-11-15, `claude/jewel-wasp-flora-camera`): the camera eases off the chase into an orbit framing
+      the whole plant; thumbs together turn it up, down, left and right without flipping over the top; Y-diff rolls the
+      view; X-diff zooms (apart in, together out); the camera draws back as the plant grows; Mass 0 still grows it fast.
+- [ ] From a plant, hold RT / LT: the creature or plant in the middle of the view flashes and settles to its glow, the
+      view leans onto it; let go and the wasp flies into it; leaving the plant eases the camera back to the chase.
+- [ ] Inside a creature, from a rival's view: a thin tail behind the creature, the wasp at its heart glowing in its
+      pilot's colours, flashing on an attack, a suction bite and a burst; free again, the tail is full width and the glow off.
+- [ ] Multiplayer, a client on a plant: the orbit, roll and zoom answer its sticks smoothly; a client hull on autopilot
+      stings and rides creatures (the server runs its AI); the client's ride writes one `possession_*.json`.
 - [ ] After a ride of 3 s or more, `Documents/CosmicShore Diagnostics/Flights/possession_<scene>_<species>_<time>.json` exists
       and is sent with the flights after Play.
 
