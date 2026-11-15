@@ -58,6 +58,9 @@ MonoBehaviour:
   harvestPrismTarget: 750
   tapestryRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  riptidePrismTarget: 600
+  denBuilderRoundSeconds: 150
+  snapHitTarget: 5
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -133,6 +136,9 @@ MonoBehaviour:
   harvestPrismTargetBuild: 750
   tapestryRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  riptidePrismTargetBuild: 600
+  denBuilderRoundSecondsBuild: 150
+  snapHitTargetBuild: 5
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35

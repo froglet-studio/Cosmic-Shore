@@ -131,6 +131,12 @@ namespace CosmicShore.Editor
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Glasshouse: round length in SECONDS (timed - most trail and garden STANDING in a " +
                 "domain's colour at the whistle wins), default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + ".\n" +
+                "  • Snap: ring hits a DOMAIN needs - a Goby & Pistol vortex ring reaching a rival hull is 1, " +
+                "default " + EndConditionOverridesSO.DefaultSnapHitTarget + ".\n" +
+                "  • Den Builder: round length in SECONDS (timed - most dens, perches and trail STANDING in a " +
+                "domain's colour at the whistle wins), default " + EndConditionOverridesSO.DefaultDenBuilderRoundSeconds + ".\n" +
+                "  • Riptide: hostile prisms a DOMAIN must break with the Goby & Pistol's rings and body (race to N), " +
+                "default " + EndConditionOverridesSO.DefaultRiptidePrismTarget + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget + ".\n" +
                 "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
@@ -346,6 +352,9 @@ namespace CosmicShore.Editor
             EditorGUI.indentLevel--;
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int gh  = Mathf.Max(0, EditorGUILayout.IntField("Glasshouse - Round Seconds", _config.glasshouseRoundSeconds));
+            int snp = Mathf.Max(0, EditorGUILayout.IntField("Snap - Ring Hit Target", _config.snapHitTarget));
+            int dnb = Mathf.Max(0, EditorGUILayout.IntField("Den Builder - Round Seconds", _config.denBuilderRoundSeconds));
+            int rpt = Mathf.Max(0, EditorGUILayout.IntField("Riptide - Prism Target", _config.riptidePrismTarget));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             int tv  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Break PERCENT", _config.tandavaBreakPercent), 0, 100);
@@ -408,6 +417,9 @@ namespace CosmicShore.Editor
                     _config.shatterplanePrismTargetByIntensity = spByIntensity;
                     _config.tapestryRoundSeconds = tp;
                     _config.glasshouseRoundSeconds = gh;
+                    _config.snapHitTarget = snp;
+                    _config.denBuilderRoundSeconds = dnb;
+                    _config.riptidePrismTarget = rpt;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
                     _config.tandavaBreakPercent = tv;
@@ -481,6 +493,9 @@ namespace CosmicShore.Editor
                 v => v > 0 ? v.ToString() : shatterplaneEffective)));
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Glasshouse (seconds)", gh > 0 ? gh.ToString() : EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Snap", snp > 0 ? snp.ToString() : EndConditionOverridesSO.DefaultSnapHitTarget + " (default)");
+            EditorGUILayout.LabelField("Den Builder (seconds)", dnb > 0 ? dnb.ToString() : EndConditionOverridesSO.DefaultDenBuilderRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Riptide", rpt > 0 ? rpt.ToString() : EndConditionOverridesSO.DefaultRiptidePrismTarget + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUILayout.LabelField("Tandava (break %)", tv > 0 ? tv.ToString() : EndConditionOverridesSO.DefaultTandavaBreakPercent + " (default)");
@@ -568,6 +583,9 @@ namespace CosmicShore.Editor
                    " (per intensity " + string.Join(" / ", _config.shatterplanePrismTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Glasshouse (seconds): " + Fmt(_config.glasshouseRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds) + "\n" +
+                   "Snap: " + Fmt(_config.snapHitTargetBuild, "default " + EndConditionOverridesSO.DefaultSnapHitTarget) + "\n" +
+                   "Den Builder (seconds): " + Fmt(_config.denBuilderRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultDenBuilderRoundSeconds) + "\n" +
+                   "Riptide: " + Fmt(_config.riptidePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRiptidePrismTarget) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +
                    "Tandava (break %): " + Fmt(_config.tandavaBreakPercentBuild, "default " + EndConditionOverridesSO.DefaultTandavaBreakPercent) + "\n" +

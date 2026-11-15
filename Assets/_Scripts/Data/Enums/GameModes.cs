@@ -446,8 +446,23 @@ namespace CosmicShore.Data
         // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
         Shatterplane = 90,
 
+        // The Goby & Pistol's three element games (GAME_KIT_ROSTER.md rows 24-26; ids reserved there, 2026-11-15, so the
+        // parallel sessions building the other vessels' games never take them). Nothing about the pair changes: each
+        // game turns one of its abilities into the score.
+        // Snap (114): the CHARGE game (SNAP.md) - a hunt in Kelpwood's kelp ball. The Goby locks a rival, and a vortex
+        // ring the Pistol fires while that rival is on its screen homes on them; every ring hit (Vortex Sting, a
+        // MissileDirect-class combat hit) is one point. First domain to the target wins.
+        Snap = 114,
+        // Den Builder (115): the MASS game (DEN_BUILDER.md) - timed, in Glasshouse's grazed cell. Jump the trail to
+        // earn energy, rest at each perch to build a den from it; the mass standing in your colour at the whistle
+        // (VolumeRemaining: dens, perches and the islands' trail) wins.
+        DenBuilder = 115,
+        // Riptide (116): the SPACE game (RIPTIDE.md) - Shatterplane's neutral plates. The undertow pulls their tiles
+        // into the Pistol's plane and its vortex rings smash them; first domain to the hostile-prism target wins.
+        Riptide = 116,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 83) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 86) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

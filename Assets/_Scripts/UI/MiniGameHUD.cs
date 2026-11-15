@@ -587,6 +587,18 @@ namespace CosmicShore.UI
                     // arrow names the nearest big plate still standing. Not a crystal: a crystal is a spare ring, and
                     // it already floats on a plate's axis in front of it.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Shatterplane");
+                case GameModes.Snap:
+                    // The Bends' provider: the nearest pilot this pair may hit. The Goby's half of the hunt is turning
+                    // its nose onto them to lock; the arrow answers where.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Snap");
+                case GameModes.DenBuilder:
+                    // Rampage's provider, Glasshouse's reason: the nearest omni crystal is the one thing to fetch; the
+                    // dens are built wherever the pair perches.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_DenBuilder");
+                case GameModes.Riptide:
+                    // Densest standing hostile mass, Shatterplane's reason: the plates are the field, and the Goby AI
+                    // routes its islands through the same question.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Riptide");
                 case GameModes.Sirocco:
                     // Same provider, same reason: the forest rings the cell, so the arrow names
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs

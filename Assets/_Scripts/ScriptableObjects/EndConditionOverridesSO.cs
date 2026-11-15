@@ -142,6 +142,22 @@ namespace CosmicShore.ScriptableObjects
         /// the arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
         public const int DefaultGlasshouseRoundSeconds = 90;
 
+        /// <summary>Snap ring-hit target used when <see cref="snapHitTarget"/> is 0. One RING HIT - a vortex ring the
+        /// Goby &amp; Pistol fired reaching a rival hull (Vortex Sting, a MissileDirect-class combat hit) - is one point
+        /// (SnapScoringRuleSO), summed across the domain's pilots. An ESTIMATE pending a timed match.</summary>
+        public const int DefaultSnapHitTarget = 5;
+
+        /// <summary>Den Builder round length in seconds, used when <see cref="denBuilderRoundSeconds"/> is 0. TIMED,
+        /// Glasshouse's reason (the score is a live stock that grazers and rival rings eat). Longer than the arcade's 90 s
+        /// because a den needs an island ridden first (900-1800 u of Tiny Wings hills per den).</summary>
+        public const int DefaultDenBuilderRoundSeconds = 150;
+
+        /// <summary>Riptide hostile-prism target used when <see cref="riptidePrismTarget"/> is 0. Hostile prisms a DOMAIN
+        /// breaks (Shatterplane's neutral plates, rival trails and dens), summed across its pilots (RiptideScoringRuleSO,
+        /// Rampage's rule). An ESTIMATE pending a timed match; three domains' worth fits the smallest plate field
+        /// (author_riptide_assets.py asserts it).</summary>
+        public const int DefaultRiptidePrismTarget = 600;
+
         /// <summary>Sirocco hostile-prism target used when <see cref="siroccoPrismTarget"/> is 0.
         /// Far under Rampage's 2000: the dust takes one prism in three it touches, where a Dolphin
         /// cone takes hundreds at once.</summary>
@@ -585,6 +601,20 @@ namespace CosmicShore.ScriptableObjects
                  "wins. 0 = default (90).")]
         [Min(0)] public int glasshouseRoundSeconds = 90;
 
+        [Tooltip("Snap: RING HITS a DOMAIN needs to win (race to N), the Goby & Pistol's Charge game. A vortex ring the " +
+                 "Pistol fired reaching a rival hull is one hit, summed across the domain's pilots. 0 = default (5).")]
+        [Min(0)] public int snapHitTarget = 5;
+
+        [Tooltip("Den Builder: round length in SECONDS, the Goby & Pistol's Mass game. Timed - the domain with the most " +
+                 "mass standing in its colour (dens, perches, the islands' trail) when the clock runs out wins. " +
+                 "0 = default (150).")]
+        [Min(0)] public int denBuilderRoundSeconds = 150;
+
+        [Tooltip("Riptide: hostile PRISMS a DOMAIN must break to win (race to N), the Goby & Pistol's Space game - the " +
+                 "plates' tiles the undertow pulls into the Pistol's plane and its rings smash, rival trails and dens. " +
+                 "0 = default (600).")]
+        [Min(0)] public int riptidePrismTarget = 600;
+
         [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
                  "mass never counts. 0 = default (400).")]
@@ -667,6 +697,9 @@ namespace CosmicShore.ScriptableObjects
         [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int glasshouseRoundSecondsBuild = 90;
+        [Min(0)] public int snapHitTargetBuild = 5;
+        [Min(0)] public int denBuilderRoundSecondsBuild = 150;
+        [Min(0)] public int riptidePrismTargetBuild = 600;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
@@ -1139,6 +1172,27 @@ namespace CosmicShore.ScriptableObjects
             glasshouseRoundSeconds > 0 ? glasshouseRoundSeconds : DefaultGlasshouseRoundSeconds;
 
         /// <summary>
+        /// Snap ring-hit target ("first domain to N ring hits"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultSnapHitTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetSnapHitTarget() =>
+            snapHitTarget > 0 ? snapHitTarget : DefaultSnapHitTarget;
+
+        /// <summary>
+        /// Den Builder round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultDenBuilderRoundSeconds"/>. Read by DenBuilderTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetDenBuilderRoundSeconds() =>
+            denBuilderRoundSeconds > 0 ? denBuilderRoundSeconds : DefaultDenBuilderRoundSeconds;
+
+        /// <summary>
+        /// Riptide prism target ("race to N" hostile prisms destroyed): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultRiptidePrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
+        /// </summary>
+        public int GetRiptidePrismTarget() =>
+            riptidePrismTarget > 0 ? riptidePrismTarget : DefaultRiptidePrismTarget;
+
+        /// <summary>
         /// Sirocco prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSiroccoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
@@ -1248,6 +1302,9 @@ namespace CosmicShore.ScriptableObjects
                 // Scalar only, as for Cleave and Flatline: the real answer is per-intensity (GetShatterplanePrismTarget(int)).
                 GameModes.Shatterplane              => GetShatterplanePrismTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
+                GameModes.Snap                      => GetSnapHitTarget(),
+                GameModes.Riptide                   => GetRiptidePrismTarget(),
+                // Den Builder (denBuilderRoundSeconds) is timed, Glasshouse's reason, and absent here too.
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush. Glasshouse
                 // (glasshouseRoundSeconds) is timed for the same reason and is absent too.
@@ -1334,6 +1391,9 @@ namespace CosmicShore.ScriptableObjects
             SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             glasshouseRoundSeconds == glasshouseRoundSecondsBuild &&
+            snapHitTarget == snapHitTargetBuild &&
+            denBuilderRoundSeconds == denBuilderRoundSecondsBuild &&
+            riptidePrismTarget == riptidePrismTargetBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
             tandavaBreakPercent == tandavaBreakPercentBuild &&
@@ -1397,6 +1457,9 @@ namespace CosmicShore.ScriptableObjects
             shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             glasshouseRoundSeconds = glasshouseRoundSecondsBuild;
+            snapHitTarget = snapHitTargetBuild;
+            denBuilderRoundSeconds = denBuilderRoundSecondsBuild;
+            riptidePrismTarget = riptidePrismTargetBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
             tandavaBreakPercent = tandavaBreakPercentBuild;
@@ -1461,6 +1524,9 @@ namespace CosmicShore.ScriptableObjects
             shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             glasshouseRoundSecondsBuild = glasshouseRoundSeconds;
+            snapHitTargetBuild = snapHitTarget;
+            denBuilderRoundSecondsBuild = denBuilderRoundSeconds;
+            riptidePrismTargetBuild = riptidePrismTarget;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
             tandavaBreakPercentBuild = tandavaBreakPercent;
