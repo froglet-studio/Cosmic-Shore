@@ -135,6 +135,8 @@ namespace CosmicShore.Editor
                 "off the reef plus the hulls', wins), default " + EndConditionOverridesSO.DefaultChumRoundSeconds + ".\n" +
                 "  • Starweave: round length in SECONDS (timed - most volume STANDING in a domain's colour at the " +
                 "whistle wins), default " + EndConditionOverridesSO.DefaultStarweaveRoundSeconds + ".\n" +
+                "  • Haul: round length in SECONDS (timed - most volume STANDING in a domain's colour, stolen bales " +
+                "and rival mass included, wins), default " + EndConditionOverridesSO.DefaultHaulRoundSeconds + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget + ".\n" +
                 "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
@@ -352,6 +354,7 @@ namespace CosmicShore.Editor
             int gh  = Mathf.Max(0, EditorGUILayout.IntField("Glasshouse - Round Seconds", _config.glasshouseRoundSeconds));
             int ch  = Mathf.Max(0, EditorGUILayout.IntField("Chum - Round Seconds", _config.chumRoundSeconds));
             int stw = Mathf.Max(0, EditorGUILayout.IntField("Starweave - Round Seconds", _config.starweaveRoundSeconds));
+            int hau = Mathf.Max(0, EditorGUILayout.IntField("Haul - Round Seconds", _config.haulRoundSeconds));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             int tv  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Break PERCENT", _config.tandavaBreakPercent), 0, 100);
@@ -416,6 +419,7 @@ namespace CosmicShore.Editor
                     _config.glasshouseRoundSeconds = gh;
                     _config.chumRoundSeconds = ch;
                     _config.starweaveRoundSeconds = stw;
+                    _config.haulRoundSeconds = hau;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
                     _config.tandavaBreakPercent = tv;
@@ -491,6 +495,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Glasshouse (seconds)", gh > 0 ? gh.ToString() : EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Chum (seconds)", ch > 0 ? ch.ToString() : EndConditionOverridesSO.DefaultChumRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Starweave (seconds)", stw > 0 ? stw.ToString() : EndConditionOverridesSO.DefaultStarweaveRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Haul (seconds)", hau > 0 ? hau.ToString() : EndConditionOverridesSO.DefaultHaulRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUILayout.LabelField("Tandava (break %)", tv > 0 ? tv.ToString() : EndConditionOverridesSO.DefaultTandavaBreakPercent + " (default)");
@@ -580,6 +585,7 @@ namespace CosmicShore.Editor
                    "Glasshouse (seconds): " + Fmt(_config.glasshouseRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds) + "\n" +
                    "Chum (seconds): " + Fmt(_config.chumRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultChumRoundSeconds) + "\n" +
                    "Starweave (seconds): " + Fmt(_config.starweaveRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultStarweaveRoundSeconds) + "\n" +
+                   "Haul (seconds): " + Fmt(_config.haulRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultHaulRoundSeconds) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +
                    "Tandava (break %): " + Fmt(_config.tandavaBreakPercentBuild, "default " + EndConditionOverridesSO.DefaultTandavaBreakPercent) + "\n" +

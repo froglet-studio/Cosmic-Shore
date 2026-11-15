@@ -803,6 +803,9 @@ CAMERAS = {
     # Starweave: close among the weaves, so the five-line tubes of three colours sweep across the plate, and a rival's
     # rounds tearing a gap in the near Jade weave (the raid, what takes score off the board) sit in the middle.
     "Starweave": (132, 14, 0.75, 46),
+    # Haul: close beside one bale of the I2 field, so its shells fill the plate with hauled bales of every colour behind,
+    # and the Jade ball on its chain swinging through it (the steal, what scores) sits on its near half.
+    "Haul": (34, 12, 0.7, 46),
     # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
     # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
     "Corona": (37, -10, 0.36, 60),
@@ -1304,6 +1307,54 @@ def recipe(stem, card_path, pal, ends):
             crystal(v_add(hub, v_mul(rng.unit(), 260 * rng.u() ** 0.5)), 5.0, (0.55, 1.2, 0.25))
         stage["starweave"] = {"weaves": weaves, "hub": hub}
         nucleus()
+    elif s == "Haul":
+        # MODEL tier: the cell grows nothing, so the card draws what the mode LAYS there at this intensity - HaulField's
+        # bales on Chum's reef geometry (the rung read off HaulField.cs, the constants off ChumReef.cs) - part-hauled:
+        # some bales already wear a domain's colour (a hoard), the rest are still no team's.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        reef_cs = read(ROOT / "Assets/_Scripts/Controller/Arcade/Chum/ChumReef.cs")
+        field_cs = read(ROOT / "Assets/_Scripts/Controller/Arcade/Haul/HaulField.cs")
+        size = float(re.search(r"public const float PrismSize = ([\d.]+)f;", reef_cs).group(1))
+        spacing = float(re.search(r"public const float Spacing = ([\d.]+)f;", reef_cs).group(1))
+        rungs = re.findall(r"(\d|_) => new ChumReef\.Rung\((\d+), (\d+), ([\d.]+)f, (true|false)\)", field_cs)
+        _, bales, shells, band, crusted = rungs[min(INTENSITY - 1, len(rungs) - 1)]
+        bales, shells, band, crusted = int(bales), int(shells), float(band), crusted == "true"
+
+        def fib(i, n):
+            y = 1 - 2 * (i + 0.5) / max(1, n)
+            ring = math.sqrt(max(0.0, 1 - y * y))
+            th = i * 2.39996323
+            return [ring * math.cos(th), y, ring * math.sin(th)]
+
+        reach = shells * spacing + size
+        inner, outer = nuc + reach, max(nuc + reach, R - reach)
+        radius = inner + (outer - inner) * band
+        centres = [v_mul(fib(k, bales), radius) for k in range(bales)]
+        az = math.radians(cam["azimuth"])
+        toward = [math.sin(az), 0.2, math.cos(az)]
+        near = min(centres, key=lambda c: abs(v_dot(v_norm(c), v_norm(toward))) - 0.3 * v_norm(c)[1])
+        hoards = {0: JADE, 3: RUBY, 6: GOLD, 9: JADE}
+        rows = []
+        for idx, c in enumerate(centres):
+            dom = BLUE if c is near else hoards.get(idx, BLUE)
+            rows.append(prism(c, [0, 0, 1], [0, 1, 0], [size] * 3, dom))
+            for sh in range(1, shells + 1):
+                n = max(6, int(math.floor(4 * math.pi * sh * sh + 0.5)))
+                kind = SHIELDED if (crusted and sh == shells) or dom != BLUE else PLAIN
+                for k in range(n):
+                    pos = v_add(c, v_mul(fib(k, n), sh * spacing))
+                    d = dom
+                    if c is near and v_dot(v_sub(pos, c), v_norm(v_cross([0, 1, 0], c))) < 0:
+                        d = JADE                     # the half the ball has already swept is Jade
+                    rows.append(prism(pos, [0, 0, 1], [0, 1, 0], [size] * 3, d, kind))
+        layers.append({"kind": "prisms", "rows": rows})
+        scene = read(next((ROOT / "Assets/_Scenes").rglob("MinigameHaul.unity")))
+        extras = [int(x) for x in re.findall(r"ExtraCrystals: (\d+)", scene.split("crystalCountByIntensity:")[1])[:4]]
+        for k in range(extras[min(INTENSITY - 1, len(extras) - 1)]):
+            crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
+        stage["haul"] = {"bale": near, "reach": reach}
+        nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -1339,6 +1390,11 @@ def recipe(stem, card_path, pal, ends):
     elif s == "Starweave":
         cam["target"] = list(stage["starweave"]["hub"])
         cam["radius"] = 260.0
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "Haul":
+        ha = stage.get("haul")
+        cam["target"] = list(ha["bale"])
+        cam["radius"] = ha["reach"] * 5.0
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1698,6 +1754,22 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                 p = v_add(v_add(shooter, v_mul(v_sub(hit, shooter), 0.2 + 0.15 * k)), v_mul(rng.unit(), 4.0))
                 streak(p, v_sub(hit, shooter), 18.0, RUBY)
             stage["vessels"] = vessels([(JADE, 0.3, 6, 320, 15), (RUBY, 0.35, -8, 160, 25), (GOLD, 0.5, 12, 250, 25)])
+    elif s == "Haul":
+        # The steal: a Jade Thresher's ball in the middle of its swing through the bale (a glow in the domain's lit
+        # colour - Mass Mode never shows red), its chain back to the hull, the swept half of the bale already Jade.
+        ha = stage.pop("haul", None)
+        if ha:
+            bale, reach = ha["bale"], ha["reach"]
+            side = v_mul(v_norm(v_cross([0, 1, 0], bale)), -1.0)   # the swept (Jade) half, toward the camera
+            ball = v_add(bale, v_mul(side, reach * 0.9))
+            glow(ball, reach * 0.18, JADE, 1.4, 0.8)
+            hull = v_add(ball, v_add(v_mul(side, reach * 3.2), v_mul(v_norm(bale), reach * 1.5)))
+            for k in range(1, 12):
+                t = k / 12
+                sag = math.sin(math.pi * t) * reach * 0.4
+                p = v_add(v_add(ball, v_mul(v_sub(hull, ball), t)), [0, -sag, 0])
+                glow(p, reach * 0.04, JADE, 1.0, 0.7)
+            stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
     elif s == "Corona":
         # A KABLOOM at the heart: a Manta touched an omni crystal, and the bloom round it catches a rival pilot (a
         # glow in the planter's colour on the rival). Out on the shells, two bombed rivals carry fuse markers (small

@@ -107,6 +107,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameGlasshouse** | `_Scenes/Multiplayer Scenes/` | `Glasshouse (89)` | `GlasshouseController` |
 | **MinigameChum** | `_Scenes/Multiplayer Scenes/` | `Chum (91)` | `ChumController` |
 | **MinigameStarweave** | `_Scenes/Multiplayer Scenes/` | `Starweave (92)` | `StarweaveController` |
+| **MinigameHaul** | `_Scenes/Multiplayer Scenes/` | `Haul (93)` | `HaulController` |
 | **MinigameShatterplane** | `_Scenes/Multiplayer Scenes/` | `Shatterplane (90)` | `ShatterplaneController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
@@ -362,6 +363,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 89 | `Glasshouse` | MP | MinigameGlasshouse | `GlasshouseController` (Angler garden, Mass - an omni crystal is a seed, let go of the lure to plant it in your colour, hold it to grow; timed, trail + garden standing in your colour wins; `GLASSHOUSE.md`) |
 | 91 | `Chum` | MP | MinigameChum | `ChumController` (Angler feed, Space - paint a shoal of the reef and throw your school at it; timed, prisms your hull breaks plus prisms your school eats; `CHUM.md`) |
 | 92 | `Starweave` | MP | MinigameStarweave | `StarweaveController` (Brittle Star weaving war, Mass - Creation Mode lays five trails at half speed; timed, volume standing in your colour wins; `STARWEAVE.md`) |
+| 93 | `Haul` | MP | MinigameHaul | `HaulController` (Thresher steal, Mass - the Mass Mode ball steals neutral bales into your colour and shields your hoard; timed, volume standing in your colour wins; `HAUL.md`) |
 | 90 | `Shatterplane` | MP | MinigameShatterplane | `ShatterplaneController` (Brittle Star plate race, Space - square up to a plate and the ring's flat blast erases it whole, the guns chew the rest; prisms destroyed to a per-intensity target. See `SHATTERPLANE.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
@@ -622,6 +624,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `GlasshouseTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`glasshouseRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
 | `ChumTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`chumRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most prisms taken off the board wins |
 | `StarweaveTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`starweaveRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
+| `HaulTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`haulRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |
 | `TandavaTurnMonitor` | `TurnMonitors/` | Server-side: the turn ends the moment the swarm's outcome stops being Running (the cycle completed, or it was shattered, starved, or its dance broken - there is no clock), read off `TandavaScoringRuleSO`; the goal stack draws the mode's own rows (`TandavaController` is its `IGoalSource`: the form and its progress, what it is doing and its body, the halo and the drum) and this monitor's display is what rebuilds it each tick |

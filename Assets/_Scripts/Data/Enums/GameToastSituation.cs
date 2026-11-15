@@ -255,6 +255,9 @@ namespace CosmicShore.Data
         // Starweave, the Brittle Star's mass game (_Scripts/Controller/Arcade/STARWEAVE.md). 167 is its row in
         // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
         StarweaveHint = 167,            // once, at the start: Creation Mode lays five trails; what stands at the whistle scores
+        // Haul, the Thresher's mass game (_Scripts/Controller/Arcade/HAUL.md). 168 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        HaulHint = 168,                 // once, at the start: swing the ball through a bale to steal it into your colour
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.

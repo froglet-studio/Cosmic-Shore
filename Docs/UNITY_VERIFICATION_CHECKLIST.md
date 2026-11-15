@@ -311,6 +311,34 @@ new errors; without the shims it fails on `RelayRegionProbe.cs`). No Unity edito
 **Open:** the tab was not drawn on Frogma first (Docs/MENU_REDESIGN_B.md); the region names in the generator's
 `REGION_NAMES` name UGS's ids, and an id UGS does not list is simply never offered online.
 
+### 🔴 Haul, the Thresher's Mass game (GameModes 93) (`claude/thresher-mass-haul`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/HAUL.md`. A timed steal in a bare nucleus cell: bales of neutral (Blue) prisms laid
+on every peer from the intensity (`HaulField`, on Chum's reef geometry). The Mass Mode ball steals them into your colour,
+shields your hoard and lays a trail; the score is `VolumeRemaining`, credited by the platform's steal path. I3-I4 bales
+carry a shielded crust (two passes). The AI only steers (circle a bale, or raid the densest rival mass); an autopiloted
+Thresher stays in Mass Mode. New platform rows: `GameModes.Haul = 93`, `haulRoundSeconds` (90),
+`GameToastSituation.HaulHint = 168`, the HUD arrow (Rampage's provider). Nothing about the Thresher changed. Authored by
+`Tools/Build/author_haul_assets.py`. Ran headless: the generator `--check` (with a negative control), the `/arcadegame`
+gates, the card render, `unity_refcompile` player and editor. No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Haul card: the bale card art, Thresher only, 1-4 players, intensities 1-4, the **Mass** petal.
+2. Run the edit-mode tests `HaulTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. Solo, I2: fourteen blue bales hang between the nucleus and the membrane; you spawn in Mass Mode.
+4. Swing the ball through a bale: every prism it touches turns your colour and your Hold volume jumps (343 a prism).
+5. Swing through your own hoard: its prisms shield.
+6. With an AI rival: it circles a bale and its ball steals it; at Medium and up, when it trails, it raids your hoard.
+7. I3: the bales' outer shell is shielded; the first pass sheds the shield, the second steals.
+8. Take an omni crystal: the Windmill spins the ball round you for 12 s and steals everything it sweeps.
+9. At the whistle: the domain with the most volume standing wins; the results show "{n} Volume" and "{n} stolen".
+10. FrogletTools > Game Modes > End Game Conditions: Haul - Round Seconds reads 90.
+11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameHaul.unity`.
+
+**First-pass tuning (not settled):** round 90 s; bales 10 / 14 / 14 / 18 of 64 / 64 / 177 / 177 prisms; omni
+4 / 3 / 3 / 2; AI orbit 160 u; comeback 0.000078 per volume. The open question: does circling at 160 u swing the ball
+through a bale?
+
 ### 🔴 Starweave, the Brittle Star's Mass game (GameModes 92) (`claude/brittlestar-mass`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/STARWEAVE.md`. A timed weaving war in a bare nucleus cell (no flora, no fauna):

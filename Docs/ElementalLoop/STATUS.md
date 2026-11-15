@@ -28,7 +28,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Stoat | `b b b` | `x x x` | `- - -` | `x x x` | Charge, Space | Regatta |
 | Swordfish | `x x x` | `x x x` | `x x x` | `b b .` | Time, Charge | Broadside, BroodRush |
-| Thresher | `b b b` | `b b .` | `x x x` | `b b .` | - | - |
+| Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | - |
 | TigerMoth | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Urchin | `b b ~` | `x x x` | `b b .` | `- - -` | Charge | Regatta, Broadside |
 | Wrasse | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
@@ -67,7 +67,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Starling | - | - | - | - |
 | Stoat | Slingshot | - | excused | - |
 | Swordfish | - | - | - | Cleave |
-| Thresher | Thresher Time | Jackstraw | - | Harvest |
+| Thresher | Thresher Time | Jackstraw | Haul | Harvest |
 | TigerMoth | Waystation | Dustup | Tapestry | Sirocco |
 | Urchin | Skein | - | Hijack | excused |
 | Wrasse | Wrasse Run | - | - | - |

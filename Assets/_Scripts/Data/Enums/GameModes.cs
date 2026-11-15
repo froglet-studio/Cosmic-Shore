@@ -457,6 +457,11 @@ namespace CosmicShore.Data
         // guns, cords and ring are aimed at it. Row 2 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
         Starweave = 92,
 
+        // The Thresher's MASS game (HAUL.md): a timed steal. Bales of neutral prisms hang in the cell; the Mass Mode ball
+        // steals what it touches into your colour, shields your own and lays your trail. Volume standing in your colour
+        // at the whistle wins. Row 3 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Haul = 93,
+
         // RESERVED 91-127 (2026-11-15): the missing elemental arcade games, one id per game, assigned by vessel and
         // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
         // building one of those games takes ITS row's id; anything else takes 128 or above.
