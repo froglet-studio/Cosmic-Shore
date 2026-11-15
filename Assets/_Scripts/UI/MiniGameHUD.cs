@@ -558,6 +558,12 @@ namespace CosmicShore.UI
                     // The Bends' provider again: the nearest pilot this player may graze. The way to them is through
                     // the gates, and the cash-out is always the heart, so the arrow only has to answer who.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Corona");
+                case GameModes.Shockfront:
+                    // The Stoat's charge duel: the arrow answers "which rival do I sling past?", Dustup's question.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Shockfront");
+                case GameModes.Fulmen:
+                    // The Stoat's space race: the contested omni crystal IS the weapon, Rampage's question.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Fulmen");
                 case GameModes.Harvest:
                     // Rampage's provider again: the nearest managed omni crystal, in the field's clear centre. The
                     // sheaves are in plain sight; the crystal is the windmill - the one thing worth racing to.

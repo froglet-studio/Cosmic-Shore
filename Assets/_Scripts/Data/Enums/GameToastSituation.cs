@@ -256,6 +256,12 @@ namespace CosmicShore.Data
         LarderHint = 177,               // once, at the start: paint a rival and every missile plant launches at them
         ThornbushHint = 178,            // once, at the start: dock on a stick, press Mass to leave a nest; hold your mass
         LancefallHint = 179,            // once, at the start: take a plate edge-on and the lance breaks a whole strip
+
+        // Shockfront and Fulmen, the Stoat's charge and space games (_Scripts/Controller/Arcade/SHOCKFRONT.md, FULMEN.md).
+        // Their race beats are the shared 128-130 (DomainRaceToasts); a ripple hit is 82 (DebuffHitsLanded rose), a
+        // prism milestone 83. Ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 29-30). LOCAL pilot only.
+        ShockfrontHint = 194,           // once, at the start: sling round and let the pair close beside a rival
+        FulmenHint = 195,               // once, at the start: take the omni crystals in the heart; each throws a bolt
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.

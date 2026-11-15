@@ -92,6 +92,8 @@ SCENE_FOR_MODE = {
     102: 'MinigameLarder',
     103: 'MinigameThornbush',
     104: 'MinigameLancefall',
+    119: 'MinigameShockfront',
+    120: 'MinigameFulmen',
 }
 
 
