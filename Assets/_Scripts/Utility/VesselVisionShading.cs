@@ -157,6 +157,9 @@ namespace CosmicShore.Utility
             CollectTargets(vessel, entry.Targets);
             Apply(entry);
 
+            // The hull light's rim wears the same domain colour, and is never cleared for the local pilot.
+            VesselHullLighting.StampDomain(vessel, domainSignalColor);
+
             if (entry.Targets.Count == 0)
                 VesselVisionDiagnostics.WarnUnmarkableVessel(vessel);
         }
@@ -361,6 +364,7 @@ namespace CosmicShore.Utility
             CollectTargets(model, _scratchTargets);
             WriteTint(_scratchTargets, domainSignalColor);
             _scratchTargets.Clear();
+            VesselHullLighting.StampDomain(model, domainSignalColor);
         }
 
         /// <summary>

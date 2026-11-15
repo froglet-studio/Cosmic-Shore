@@ -559,6 +559,9 @@ namespace CosmicShore.Utility
 
                 if (model == null) model = BuildProxy(color);
 
+                // The hull light's rim in the pilot's domain, as the live ship wears it (VesselHullLighting).
+                if (colorSet != null) VesselHullLighting.StampDomain(model.transform, color);
+
                 model.name = $"Ghost_{track.PlayerName}";
                 model.transform.SetParent(_root.transform, false);
                 float radius = MeasureRadius(model.transform);
