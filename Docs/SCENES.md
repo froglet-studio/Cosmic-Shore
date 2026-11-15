@@ -130,6 +130,9 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameSentry** | `_Scenes/Multiplayer Scenes/` | `Sentry (105)` | `SentryController` |
 | **MinigameWarren** | `_Scenes/Multiplayer Scenes/` | `Warren (106)` | `WarrenController` |
 | **MinigameCaveIn** | `_Scenes/Multiplayer Scenes/` | `CaveIn (107)` | `CaveInController` |
+| **MinigameCleanerRam** | `_Scenes/Multiplayer Scenes/` | `CleanerRam (111)` | `CleanerRamController` |
+| **MinigameReefbuild** | `_Scenes/Multiplayer Scenes/` | `Reefbuild (112)` | `ReefbuildController` |
+| **MinigameBlastline** | `_Scenes/Multiplayer Scenes/` | `Blastline (113)` | `BlastlineController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameShockfront** | `_Scenes/Multiplayer Scenes/` | `Shockfront (119)` | `ShockfrontController` |
 | **MinigameFulmen** | `_Scenes/Multiplayer Scenes/` | `Fulmen (120)` | `FulmenController` |
@@ -409,6 +412,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 105 | `Sentry` | MP | MinigameSentry | `SentryController` (Meerkat guard war, Charge - Sentinel Mode leaves a sentinel at every soliton's way in that zaps rival hulls; each zap is a point; Corona's shells read-only; `SENTRY.md`) |
 | 106 | `Warren` | MP | MinigameWarren | `WarrenController` (Meerkat burrow war, Mass - timed, trail + exit portals standing in your colour wins; a soliton beside rival mass swallows and fires it; the bare Barren cell, I3/I4 start at Mass 5 / Space 5; `WARREN.md`) |
 | 107 | `CaveIn` | MP | MinigameCaveIn | `CaveInController` (Meerkat tunnelling, Space - a soliton swallows a plate's prisms and fires them out to smash the rest; first domain to the prism target; Shatterplane's plates read-only; `CAVEIN.md`) |
+| 111 | `CleanerRam` | MP | MinigameCleanerRam | `CleanerRamController` (Wrasse and Grouper ram duel, Charge - loop Charge motes to power the kite, ram a rival for a point; first domain to 8. See `WRASSEREEF.md`) |
+| 112 | `Reefbuild` | MP | MinigameReefbuild | `ReefbuildController` (Wrasse and Grouper reef war, Mass - loop Mass motes to lay clusters; timed, volume standing wins. See `WRASSEREEF.md`) |
+| 113 | `Blastline` | MP | MinigameBlastline | `BlastlineController` (Wrasse and Grouper clean-up race, Space - loop Space motes to blast hostile prisms in Rampage's forest; first domain to 600. See `WRASSEREEF.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 119 | `Shockfront` | MP | MinigameShockfront | `ShockfrontController` (Stoat Charge duel in the Boneyard: each rival a ripple strips is one Debuff point, first domain to 10. See `SHOCKFRONT.md`) |
 | 120 | `Fulmen` | MP | MinigameFulmen | `FulmenController` (Stoat Space race in Rampage's forest: prisms burnt by Fulmen bolts score for the collector, `PrismsDestroyed`, first domain to 1200. See `FULMEN.md`) |

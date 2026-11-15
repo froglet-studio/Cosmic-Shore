@@ -313,6 +313,12 @@ namespace CosmicShore.Data
         // 128-130 (DomainRaceToasts); a blast hit is 81 (MissileHitsLanded). Posted to the LOCAL pilot only. 200 is the
         // hint id the game kit roster reserved for it (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35).
         StandoffHint = 200,             // once, at the start: a bomb that touches a rival sticks; pull and release to blow it
+        // The Wrasse and Grouper's reef games (_Scripts/Controller/Arcade/WRASSEREEF.md), ids reserved by
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 21-23). Race beats are the shared 128-130 (DomainRaceToasts; Reefbuild,
+        // timed, posts only 130 from its own lead sampler). Posted to the LOCAL pilot only.
+        CleanerRamHint = 186,           // once, at the start: loop Charge motes, then ram a rival on the kite's board
+        ReefbuildHint = 187,            // once, at the start: loop Mass motes to lay your reef; what stands at the whistle scores
+        BlastlineHint = 188,            // once, at the start: loop Space motes, the blast clears hostile prisms where it closed
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.

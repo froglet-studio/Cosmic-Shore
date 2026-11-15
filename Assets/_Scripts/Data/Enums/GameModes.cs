@@ -586,7 +586,7 @@ namespace CosmicShore.Data
         CaveIn = 107,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 112) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 115) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // 97) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // The Grizzly's CHARGE game (STANDOFF.md): square posts of prism tiles stand on a sphere round an open centre.
         // A trigger bomb that touches a rival hull freezes on it; pull and release again to blow it. Every rival a blast
@@ -597,7 +597,21 @@ namespace CosmicShore.Data
         Standoff = 125,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 112) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 115) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // The Wrasse and Grouper's three reef games (WRASSEREEF.md), ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md
+        // (rows 21-23, 2026-11-15) so the parallel sessions building the missing games never take the same number.
+        // The CHARGE game: loop Charge motes to power the kite's ram, ram rival hulls; each ram is one point. A reef of
+        // mostly Charge crystals in the bare Barren cell; I1-I4 thin the crystals.
+        CleanerRam = 111,
+        // The MASS game: a timed reef war. Loop Mass motes and the kite lays a cluster of your prisms; most volume
+        // STANDING at the whistle wins (VolumeRemaining). Mostly Mass crystals in the bare Barren cell; I1-I4 thin them.
+        Reefbuild = 112,
+        // The SPACE game: loop Space motes and a blast destroys hostile prisms where the loop closed; first domain to the
+        // prism target wins. Rampage's living forest, read-only, with mostly Space crystals; I1-I4 are Rampage's rungs.
+        Blastline = 113,
+
+        // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
+        // 115) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
