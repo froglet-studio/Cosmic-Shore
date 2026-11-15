@@ -1944,3 +1944,24 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: in the game, read what actually happened (the hull's displacement since the last loop), never a rate times dt; when the lab models a loop, put its update order in the model (`/labmaker` §2), and feed the pacing tests long frames (a hitch every ~100 frames), not just jitter.
 - Evidence: `VesselPrismController.ShapedSpawnLoopAsync`; `TrailSpeedShape.StepLay` / `NextLay`; `TrailSpeedShapeTests.StepLay_LaysEvenlyAtEverySpeed_ThroughJitterAndHitches`; `Docs/Manta/POLISH.md` fly tests 1-3.
 - Promoted: no
+
+### L-STU-181 — Three seeds can be one run three times: check that the seed reaches what the column measures
+- Lab: Fauna Possession Lab (`Docs/Studios/FaunaLab.html`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-15
+- What happened: the scorecard averaged seeds 1-3. In the vessel, Ark-approach and slalom games the seed only shuffled the prism cluster and the Ark's socket kinds, which those games never read, so every seed gave the same number to the decimal (slalom 27.6, 27.6, 27.6) and a 0.1 s lead looked like a result. With the host's start seeded (up to 30 u and 12 degrees off) the same columns spread 0.8 to 4, and the "lead" was inside it.
+- Do instead: print each column per seed before quoting it. A spread of exactly 0 across seeds means the seed does not reach the column: seed the start conditions of the thing being scored. `verify_lab.cjs` checks a batch is repeatable, never that its seeds differ.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 1, Found 4; `playGame` in the page (the seeded `placeCreature`).
+- Promoted: no
+
+### L-STU-182 — A pilot that holds the trigger measures the trigger rule, not the creature
+- Lab: Fauna Possession Lab · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-15
+- What happened: the wasp's RT attacks a vessel within three reaches, the strike lands only 35% to 100% of the way through a 0.6 s attack and only within one reach, and the recharge is spent on the press. The first scorecard pilot held RT, so a creature with a LONGER reach attacked earlier, missed, and scored 1 where a short-reach one scored 5: the design looked worse for being better. The pilot now presses when the gap will have closed by the strike (it watches the gap), and the rookie setting keeps the held trigger.
+- Do instead: when an ability has a commit window, give the skilled pilot the timing a person would learn and keep the naive press as the rookie column. Fix the pilot before the creature (section 2.4), and write the rule the pilot exposed into Found: it is a design fact about the game.
+- Evidence: `pilot()` in the page; `Docs/Studios/FAUNA_LAB.md` round 1, Found 3.
+- Promoted: no
+
+### L-STU-183 — A stand-in opponent that chases will orbit: give it committed passes
+- Lab: Fauna Possession Lab · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-15
+- What happened: the "vessel attacks you" stand-in steered at the host every frame with a capped turn. Against a slow host it settled into a circle of its own turn radius (80 u/s at 1.6 /s is 50 u), outside every strike reach, so the brawl column read 1 for most creatures and rewarded the ones erratic enough to break the orbit. A pass it commits to (line up, fly straight through a point beside the host and 240 u past, come about) gives every creature the same six chances a minute.
+- Do instead: a stand-in that must come within a distance flies a path that provably does, and the write-up says it is a stand-in. Print the closest approach per run before trusting a contact column.
+- Evidence: `stepVessel` level 3 in the page; `Docs/Studios/FAUNA_LAB.md` round 1, Found 6.
+- Promoted: no

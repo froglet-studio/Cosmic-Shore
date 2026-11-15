@@ -31,7 +31,7 @@
   [hidden] { display: none !important; }
   html, body { margin: 0; height: 100%; }
   body { background: var(--bg); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; overflow: hidden; }
-  #app { display: grid; height: 100vh; grid-template-columns: minmax(0, 1fr) 350px; grid-template-rows: auto minmax(0, 1fr) 210px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 350px; grid-template-rows: auto minmax(0, 1fr) 210px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
   header { grid-area: head; display: flex; gap: 12px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
   header h1 { font-size: 15px; margin: 0; }
   header .meta { color: var(--muted); }
@@ -516,12 +516,16 @@ const DATA = {"creatures":[{"id":"tadpole","name":"Tadpole","origin":"shipped","
     const g = GAMES[gameId], saved = { ev: P.dpVesselEvade, vs: P.dpVesselSpeed }, dt = 1 / 60;
     P.dpVesselEvade = g.evade; if (g.vesselSpeed) P.dpVesselSpeed = g.vesselSpeed; headless = true;
     reset(s, Object.assign({ creature: creatureId, element: 'Charge', noWild: true }, g.setup()));   // Charge: every body at scale 1 and its own base speed
+    // a seed must change the run, or three seeds are one run three times: the host starts up to 30 u off its mark and
+    // up to 12 degrees off its line, from the seeded stream
+    const h = world.host, j = [(rng() - 0.5) * 60, (rng() - 0.5) * 60, (rng() - 0.5) * 60], yaw = (rng() - 0.5) * 24;
+    placeCreature(h, V.add(h.pos, j), V.norm(Qn.rot(Qn.axis([0, 1, 0], yaw), h.fwd))); possess(h); stepCamera(0);
     const r = rng();
     for (let i = 0; i < g.seconds / dt; i++) { const inp = pilot(g.aim(), r, world.t, g.vessel); if (rtOff) inp.rt = false; simStep(dt, inp); if (g.done && g.done()) break; }
     const out = g.done && !g.done() ? g.seconds : g.score(); P.dpVesselEvade = saved.ev; P.dpVesselSpeed = saved.vs; headless = false; return out;
   }
   function runBatch(opts) {
-    opts = opts || {}; const seeds = opts.seeds || [1, 2, 3], ids = opts.creatures || DEFS.map((d) => d.id), games = opts.games || Object.keys(GAMES);
+    opts = opts || {}; const seeds = opts.seeds || [1, 2, 3, 4, 5], ids = opts.creatures || DEFS.map((d) => d.id), games = opts.games || Object.keys(GAMES);
     const keep = { seed, sel: Object.assign({}, sel), P: Object.assign({}, P) }, rows = [];
     for (const id of ids) {
       const row = { creature: DEF[id].name, id, origin: DEF[id].origin };
@@ -795,7 +799,7 @@ const DATA = {"creatures":[{"id":"tadpole","name":"Tadpole","origin":"shipped","
 
   function scorecardPanel() {
     const box = el('div');
-    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score every creature</button> <button class="btn" id="runRookie">Score with a rookie rider</button> <span class="hint">headless, an input-only rider, seeds 1-3, every creature at scale 1 and its own base speed (the Charge form), your Rider settings. Each new creature is designed to win one column (hover a column for its game); the control (RT never pressed) must score nothing.</span></p><table id="scoreTable"></table>';
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score every creature</button> <button class="btn" id="runRookie">Score with a rookie rider</button> <span class="hint">headless, an input-only rider, seeds 1-5 (each starts the host a little off its mark), every creature at scale 1 and its own base speed (the Charge form), your Rider settings. Each new creature is designed to win one column (hover a column for its game); the control (RT never pressed) must score nothing.</span></p><table id="scoreTable"></table>';
     const run = (noise) => {
       const keepNoise = P.aiNoise; P.aiNoise = noise;
       const rows = runBatch(), t = box.querySelector('#scoreTable'), games = Object.keys(GAMES), real = rows.filter((r) => r.origin !== 'control'); P.aiNoise = keepNoise;

@@ -60,6 +60,7 @@ that out of the HyperSea's own parts.
 | L8 | **The four element forms are written down.** Mass: every plain prism shielded, the body grown until the heart's 12.44 u swing clears every shield. Charge: every prism danger, spindles part hardest. Space: 1.6477× Mass's span, spindles eroded where thickest, every prism refit as a needle, the stinger too. Time: the base body (scale 1), 1.4× faster. | ECOSYSTEM.md §64.8-9, §65 (Garrett 2026-10-27/28); Garrett 2026-11-01 (Time, the stinger) |
 | L9 | **No Earth anatomy names** (leg, belly, back, eye, antenna, wing, thorax...). Name a part for what it is here: spine, vane, rib, plate, sting, tine. | this skill |
 | L10 | **A premise and a role.** What it is, the feeling it is for ("surrounded ... scary", Garrett on the substrate), and what it does in the food web. Every lifeform feeds and reproduces. | Garrett 2026-10-08; SUBSTRATE_FAUNA.md |
+| L11 | **What a rider gets.** Any creature can be possessed (the Jewel Wasp), so a spec has a `possession` block: `top_speed` (`Fauna.PossessionTopSpeed`), `mouth_reach` (`PossessionMouthReach`) and an `attack` the BODY can play: the game whips a body whose hub carries three limb chains or more and lunges any other (`FaunaAttackDriver.Scan`), whatever the spec hopes; `charge` is an attack of its own (the worm's lunge). Section 8. | Garrett 2026-11-14 (`JEWEL_WASP.md`), 2026-11-15 |
 
 Laws the checker cannot see, and you still owe: nothing pops in or out (spawns bloom, deaths wither); no lifespan or
 despawn timer; nothing in the world looks flat (facets read, never washed out); every heart drops as one Etherion;
@@ -89,6 +90,10 @@ reshape the body's own meshes, never stretch through the hierarchy (the heart mu
 python3 Tools/Build/fauna_kit/celestial.py <species>            # the laws; exit 1 on any break
 python3 Tools/Build/fauna_kit/celestial.py --self-test          # every law catches a planted defect
 python3 Tools/Build/fauna_kit/preview.py <species> --out <png>  # four views; LOOK at it before building
+python3 Tools/Build/fauna_kit/dossier.py [<creature>] --sheet <png>   # the shipped creatures, measured (section 8)
+python3 Tools/Build/fauna_kit/recreate.py --check               # every shipped creature rebuilt from its spec, differenced
+python3 Tools/Build/fauna_kit/celestial.py --shipped            # the laws each shipped body breaks (a report)
+python3 Tools/Build/fauna_kit/lab_export.py [--check]           # the Fauna Possession Lab's data block, from the kit
 ```
 
 1. **Write `Tools/Build/fauna_kit/specs/<species>.py`** (`SPEC = {...}`; `specs/bee.py` documents the schema). World
@@ -153,9 +158,35 @@ python3 Tools/Build/fauna_kit/preview.py <species> --out <png>  # four views; LO
   stretches z. Render the BUILT prefab (`render_prefab.py`) and look: the spec preview drew idealised braids and could
   not show it.
 
+- **A model's mesh fileID can be derived; its inner transforms are named by the rig** (2026-11-15). Unity's id for a
+  model's mesh sub-asset is `xxHash64("Type:Mesh-><name>0")`, signed (`fbx_model.mesh_file_id`; it reproduces the
+  QuadFish's and the Shark's shipped ids). The same string does NOT give a Transform's or a GameObject's id. A prism
+  parented to a bone INSIDE a model instance is placed another way: a rig GameObject named "D2" whose
+  `m_ConstrainedObject` is that stripped transform says it is the bone ending in "D2" (`prefab_read.py`). That is how
+  the Brittlestar's ten prisms were found on bones 3 and 5 of each arm. /fauna section 7's "cannot derive" is now
+  narrower than it reads.
+- **A Z-up model has its ROOT nodes turned** by (0, 0.7071, 0.7071, 0) on import (the Shark, the Brittlestar); a Y-up
+  one does not. `dossier.py --self-test` holds `fbx_model.py` to the Shark prefab's own bones (an unpacked copy).
+- **State a repeated part in (radius, z) and turn it** (`_kit.polar`), never as a rounded xyz you then rotate: the
+  Medusa's five stings differed by 1e-6 in z from six-decimal rounding and law L5 refused the body. The checker was
+  right; the spec was fixed.
+- **A sheared parent makes a prism's rotation non-unit.** The QuadFish's spindle is (10.14, 10.14, 13.29), so its
+  fins' world matrices are sheared; a quaternion read off one without normalising made two identical boxes measure
+  0.015 apart. Normalise before comparing (`dossier._rot_of`).
+- **`PossessionBodyRadius` is the root's SCALE, not the body's size** (`max(2, lossyScale)`): 2 for a 56 u Shark. A
+  rider's camera stand-back and strike reach both read it. A spec that needs more states `possession.body_radius`,
+  which is a species override to write in Unity (`Docs/Studios/FAUNA_LAB.md`, Found 1-2: open with Garrett).
+- **A trait that only changes a number rarely changes the ride.** The Medusa's longer reach won nothing until the
+  scorecard was asked a question reach answers, and then it only tied. Give a new creature a different VERB under
+  the same four controls (a charge, a latch, a pulse, a funnel) and let the lab say whether it earned its column.
+
 ## 6. Open decisions (ask; do not default)
 
 - **Symmetry order per species** where 3 is not obvious (3 is right for the bee).
+- **May a limb wear a shipped limb mesh as well as the braid?** (2026-11-15.) L2 says braid only, and the five new
+  bodies are plain beside the sculpted ones. The Brittlestar's arm segments, the Shark's vanes and the worm's ribs are
+  all braided wire meshes a spec could place like a braid (a parts library). It changes L2, so it is Garrett's.
+- **Should `PossessionBodyRadius` be the body's measured reach?** (Section 5; `FAUNA_LAB.md` Found 1-2.)
 
 Decided by Garrett, 2026-11-01 (now laws, not questions):
 - **Time is the base body, faster**: "time makes them faster, but it is the base essentially". Time's `body_scale` is 1
@@ -168,7 +199,7 @@ Decided by Garrett, 2026-11-01 (now laws, not questions):
 
 The kit is spec-first so the same move works for every kingdom:
 
-1. **Fauna retrofits.** Write a spec for each shipped species and run `celestial.py` on it; the breaks are the redesign
+1. **Fauna retrofits.** (The list exists since 2026-11-15: `specs/shipped/` and `celestial.py --shipped`.) Write a spec for each shipped species and run `celestial.py` on it; the breaks are the redesign
    list (most steer with world up; the shark, brittlestar, quadfish and clawfish are sculpted skins). Fix one species
    per round, Garrett's pick first.
 2. **Swarms, colonies, substrates and NCA creatures.** Their MEMBER is the body (a swarm tadpole, a substrate agent): a
@@ -181,7 +212,61 @@ The kit is spec-first so the same move works for every kingdom:
 5. **Learnings.** Every species adds what it taught to §5 here, the way `/labmaker` LEARNINGS does.
 
 
+## 8. Learn the shipped fauna, recreate it, and let a person ride it (2026-11-15)
+
+Garrett: "first our goal is the skill that can make great fauna ... try to get to a point where you can recreate the
+existing fauna like you did when you learned to create better vessels." Three tools and one page; the record is
+`Docs/Studios/FAUNA_LAB.md`.
+
+**The dossier** (`dossier.py`, with `prefab_read.py` and `fbx_model.py`). Every creature a rider can take (a class that
+does not say `CanBePossessed => false`), measured from the prefab, the model files and the config assets: the wires its
+spindles draw, every prism with pose, size and kind, the heart's seat, the limbs its attack whips (the game's own
+`FaunaAttackDriver.Scan` rule, run on the measured tree) and the numbers its possession reads. Use it before designing:
+`dossier.py --sheet <png>` draws all of them from three sides, and it is the fastest way to see what "as good as the
+shipped ones" means. A new shipped species joins `dossier.ROSTER`.
+
+**The recreation gate** (`recreate.py --check`). Each shipped creature has a spec; `body.from_spec` builds its body the
+way it builds a new species; the gate measures the largest difference to the prefab measured again (prisms, wires,
+heart, attack limbs, numbers). Two kinds of spec, and the difference matters when you quote the table:
+- **generative**: the Bee (`specs/bee.py`), rebuilt from rules. This is the proof that a spec becomes the body the
+  game ships.
+- **transcribed**: the other six (`specs/shipped/`, written by `recreate.py --write-specs`). They state the shipped
+  meshes by reference. They prove the language can STATE the body and that nothing is lost, not that the kit can
+  generate it. Re-run `--write-specs` when a shipped prefab changes on purpose; an unexplained difference is a drift.
+
+**The rider's law and the possession block** (L11). `"possession": {"top_speed", "mouth_reach", "attack"}` are what
+the game reads. The rest are PROPOSALS a species brings as its own override, named so a port knows what to write:
+
+| key | what it is | where it would live in Unity |
+|---|---|---|
+| `turn_rate` | how fast its heading follows the rider's (the rider asks for 10) | its class's response to `TrySteer` (the worm has its own) |
+| `charge` | a dash along the aim (`speed_scale`, `seconds`) | `PlayPossessionAttack` (the worm's lunge is the precedent) |
+| `suction` | the mouth's shape: `funnel` (a cone, `half_angle`), `all` (every side), `bites_scale` | `PossessedSuction` (the swarm overrides it) |
+| `latch` | a strike that rides the hull (`seconds`, `rest`, `recharge_scale`) | the species' attack; the plate latch is the wild precedent |
+| `motion` | `pulse`: a kick then a glide it turns in | its class's motion |
+| `body_radius`, `aim_cone` | reach and camera; where a strike may aim | `PossessionBodyRadius`; the executor's aim cone |
+| `for`, `feel` | the lab column it is designed to win; one line shown to the rider | the lab only |
+
+**The lab** (`Docs/Studios/FaunaLab.html`, https://claude.ai/artifact/PMh24N63DgLuEJphkrbcV4). `lab_export.py` writes
+its data block from the kit, so a spec edit plus one command puts a creature in front of a person, in any element
+form, against a vessel, an Ark and a prism cluster. The loop for a new creature:
+1. worksheet (section 3), spec (`specs/_kit.py`: `polar`, `spindle`, `chain`, `on`; `elements` solves Mass's scale);
+2. `celestial.py <species>` until celestial; `preview.py` or `dossier.sheet` and LOOK;
+3. add it to `lab_export.NEW_SPECIES`, run `lab_export.py`, then `verify_lab.cjs`;
+4. the Scorecard tab: does it win the column its `for` names? A miss is a finding, not a number to tune the yardstick
+   round (round 1: the Nautilus and the Medusa tied; they were reported, not rescued);
+5. publish to the same artifact; the person rides it and leaves feedback (the Feedback tab);
+6. the next round starts with `ArtifactData list decisions` and applies it.
+Only then does a creature earn a Unity build (section 4, steps 4-8).
+
 ## Round status and what each gate still owes (2026-11-07, measured for Docs/SKILL_TRAINING_PLAN.md 3.7)
+
+**Round 3 (2026-11-15, `Docs/Studios/FAUNA_LAB.md`):** the dossier and the recreation gate (seven shipped creatures,
+largest difference 0.00002 u; the Bee rebuilt from rules), law L11, five new species as specs and lab proposals
+(Marlin, Basker, Medusa, Nautilus, Teredo: nothing in Unity), the Fauna Possession Lab. New gates and their controls:
+`dossier.py --self-test` (the mesh id rule and the axis rule each have a control), `prefab_read.py --self-test`,
+`recreate.py --self-test` (nine planted drifts), `lab_export.py --check`; `celestial.py --self-test` gained L11's three.
+Still owed from the table below: `build.read_back` and `render_prefab.py` self-tests.
 
 **Rounds so far:** one species through the kit, the bee (`Tools/Build/fauna_kit/specs/bee.py`, rounds 1-2 on
 2026-11-01, Garrett: "a fine start"); nine fauna models ship without a spec (shark, bonita, swordfish, three worms,
