@@ -349,6 +349,14 @@ extent against the spawn ring and membrane, and the painting balance.
 
 ---
 
+### A second game on this yard: Railrush (2026-11-15)
+
+`RailrushController` (the Urchin's Charge game, `RAILRUSH.md`) inherits this controller for the yard, the ownership
+ledger and the raider AI. The seams it overrides (`ZeroScoredStats`, `Read/WriteScoredStat`,
+`Read/WriteBreakdownStat`, `TryOverrideAITarget`, `ChooseRail`, `SpikeVolley`, `Update`) default to exactly what Hijack
+did before, and `SyncFinalScores_ClientRpc` carries one more array (the breakdown, empty here). Hijack's behaviour is
+unchanged; change a seam's default only with Railrush in mind.
+
 ## 9. Verification status
 
 **Nothing below has been run in the Unity editor** — this branch was built headlessly. Every

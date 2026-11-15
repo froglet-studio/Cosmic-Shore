@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameStingherd
+  m_EditorClassIdentifier:
+  Mode: 117
+  IsMultiplayer: 1
+  DisplayName: Stingherd
+  Description: 'Jacks only - herd your danger creatures into rival hulls. Part of your herd is
+    dangerous; run your jacks behind it and it swims away from them, toward whoever you want
+    stung. A danger creature that touches a rival stings it - one point - and is spent, so
+    keep your herd fed and big. The tadpoles grazing the kelp join a herd that comes near
+    them. On the easy levels half your herd is dangerous and it goes for rivals by itself;
+    on the hardest only a quarter, in the thickest kelp. First team to the target wins.'
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  GolfScoring: 1
+  SceneName: MinigameStingherd
+  Vessels:
+  - {fileID: 11400000, guid: 8a41c6e2f0d94b7c9e35a1d7c4b8e2f6, type: 2}
+  MinPlayersAllowed: 2
+  MaxPlayersAllowed: 4
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  ViewUserAction: 0
+  PlayUserAction: 0
+  StartingElements:
+  - Class: 22
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0.5
+      Space: 0
+      Time: 0
+  - Class: 22
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0.3
+      Space: 0
+      Time: 0
+  - Class: 22
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0.1
+      Space: 0
+      Time: 0
+  ComebackRatePerScoreDeficit: 0.4

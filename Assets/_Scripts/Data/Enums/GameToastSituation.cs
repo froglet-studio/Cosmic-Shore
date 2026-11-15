@@ -249,6 +249,33 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // Chum, the Angler's space game (_Scripts/Controller/Arcade/CHUM.md). 166 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md (166-202 are reserved there, one per missing game). Posted to the LOCAL pilot only.
+        ChumHint = 166,                 // once, at the start: tame a school, paint a shoal, let go to throw it
+        // Starweave, the Brittle Star's mass game (_Scripts/Controller/Arcade/STARWEAVE.md). 167 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        StarweaveHint = 167,            // once, at the start: Creation Mode lays five trails; what stands at the whistle scores
+        // Haul, the Thresher's mass game (_Scripts/Controller/Arcade/HAUL.md). 168 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        HaulHint = 168,                 // once, at the start: swing the ball through a bale to steal it into your colour
+
+        // Hedgerow, the Serpent's mass game (_Scripts/Controller/Arcade/HEDGEROW.md). 169 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        HedgerowHint = 169,             // once, at the start: stop dead short of a hedge and your wall eats along it
+
+        // Longshot, the Serpent's space game (_Scripts/Controller/Arcade/LONGSHOT.md). 170 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        LongshotHint = 170,             // once, at the start: line up along a lance and the round breaks the whole run
+        // The Orca's three element games (PODHUNT.md, ICESHELF.md, DEPTHCHARGE.md). Ids 174-176 reserved by
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 9-11). Race beats are the shared 128-130 (DomainRaceToasts).
+        PodHuntHint = 174,              // once, at the start: fly your missiles into rival hulls; the bomb counts too
+        IceShelfHint = 175,             // once, at the start: lay trail and drop shields late - only what stands counts
+        DepthChargeHint = 176,          // once, at the start: burst missiles and the bomb in the canopy
+        // The Swordfish's three games (SPEARLINE.md, RIPOSTE.md, PALISADE.md), ids reserved in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only, once, at the start.
+        SpearlineHint = 171,            // a sealed ring counts only through a hole: swing the bill on the way through
+        RiposteHint = 172,              // a sword hit lands only while you are faster: cut a straight lane, ramp, strike
+        PalisadeHint = 173,             // light the blade and let go to lay afterimages; cut the rivals' walls down
         // The Shrike's games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 12-14 reserved 177-179). Posted to the LOCAL
         // pilot only. Larder's race beats are the shared 128-130 and a missile hit is 81 (MissileHitsLanded rose);
         // Thornbush's lead change is the shared 130, sampled by its controller (a timed mode has no target);
@@ -262,6 +289,26 @@ namespace CosmicShore.Data
         // prism milestone 83. Ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 29-30). LOCAL pilot only.
         ShockfrontHint = 194,           // once, at the start: sling round and let the pair close beside a rival
         FulmenHint = 195,               // once, at the start: take the omni crystals in the heart; each throws a bolt
+        // The Honeyguide's element games (FLITSTRIKE.md, HONEYCOMB.md, WOODPECKER.md), at the toast ids
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved (166-202 are that roster's). Flitstrike's and Woodpecker's race
+        // beats are the shared 128-130 (DomainRaceToasts); Honeycomb's lead change is the shared 130, sampled by its
+        // controller because a timed mode has no target. Posted to the LOCAL pilot only.
+        FlitstrikeHint = 183,           // once, at the start: hold LT to see the dart, let go to Flit through a rival
+        HoneycombHint = 184,            // once, at the start: an omni crystal is a hive; what stands in your colour scores
+        WoodpeckerHint = 185,           // once, at the start: hold RT to aim, let go to peck the hostile forest
+        // Stingherd and Trawl, the Jacks' Charge and Space games (STINGHERD.md, TRAWL.md). Race beats are the shared 128-130
+        // (DomainRaceToasts); ids reserved by the game kit roster (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 27-28).
+        StingherdHint = 192,            // once, at the start: herd your danger creatures into a rival hull to sting it
+        TrawlHint = 193,                // once, at the start: drag prisms in the net and smash them into each other
+        // Railrush, the Urchin's charge game (_Scripts/Controller/Arcade/RAILRUSH.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. 199 is the id GAME_KIT_ROSTER.md reserved (row 34).
+        RailrushHint = 199,             // once, at the start: grind your colour's rail, launch, spike a rival at speed
+        // The Rhino's three games (GAME_KIT_ROSTER.md rows 31-33 reserved 196-198). Each is posted once, at the start, to
+        // the LOCAL pilot only. Their race beats are the shared 128-130 (Bullrush: DomainRaceToasts; Windrow: the lead
+        // change, sampled by its controller because a timed mode has no target), Landslide's are Cleave's 50-52.
+        BullrushHint = 196,             // a gore is a ram on a rival from behind, faster than it: wind up the Ramp Spool
+        WindrowHint = 197,              // your standing trail is your score; plough through rival rows to break them
+        LandslideHint = 198,            // ploughed prisms break what they hit; a wider blade catches more ribs
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.
