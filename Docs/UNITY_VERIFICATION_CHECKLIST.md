@@ -23564,3 +23564,13 @@ DepthCharge --check`, and `unity_refcompile` (see the PR for its result). Nothin
       hulls fly to plants that are not their colour.
 - [ ] End Game Conditions window shows the three new rows; changing one moves the game.
 - [ ] Multiplayer (host + one client): a client's Orca crew fires its own seats and its blasts and breaks score.
+
+## 🔴 Breach: see-through checkerboard walls (2026-11-15, `claude/project-thread-v8enx0`, NOT RUN IN EDITOR)
+
+Garrett picked it (Docs/Reports/SIGHT_LINES.md). Headless: `breach_harness/run.sh` 12 passed and `--self-test` ok; the
+new sight test fails on the old solid wall (27% clear against a 40% bar). Helm sweep unchanged. Breach card re-rendered.
+
+1. Breach I3 and I4: from each ring, the next walled ring's lime rim shows through its wall's checkerboard.
+2. Fly straight into a wall, level and rolled: the Orca stops dead every time and never slips through a hole (the hit box
+   is still the Sparrow's 10.3 x 0.46 u; a hole is 9.9 u corner to corner).
+3. Let the gunners breach a wall: a shot opens a gap a little sooner than before; it grows back 6 s later.

@@ -109,6 +109,9 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigamePodHunt** | `_Scenes/Multiplayer Scenes/` | `PodHunt (99)` | `PodHuntController` |
 | **MinigameIceShelf** | `_Scenes/Multiplayer Scenes/` | `IceShelf (100)` | `IceShelfController` |
 | **MinigameDepthCharge** | `_Scenes/Multiplayer Scenes/` | `DepthCharge (101)` | `DepthChargeController` |
+| **MinigameLarder** | `_Scenes/Multiplayer Scenes/` | `Larder (102)` | `LarderController` |
+| **MinigameThornbush** | `_Scenes/Multiplayer Scenes/` | `Thornbush (103)` | `ThornbushController` |
+| **MinigameLancefall** | `_Scenes/Multiplayer Scenes/` | `Lancefall (104)` | `LancefallController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
 | **MinigameTandava** | `_Scenes/Multiplayer Scenes/` | `Tandava (69)` | `TandavaController` |
@@ -365,6 +368,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 99 | `PodHunt` | MP | MinigamePodHunt | `PodHuntController` (Orca missile hunt, Charge - every blast that reaches a rival hull, missile or bomb, is a point; golf, first domain to the target; Boneyard cells; `PODHUNT.md`) |
 | 100 | `IceShelf` | MP | MinigameIceShelf | `IceShelfController` (Orca timed hold, Mass - mass standing in your colour at the whistle, measured by a census because the shield and pen retire prisms without a destroyed event; Glasshouse cells; `ICESHELF.md`) |
 | 101 | `DepthCharge` | MP | MinigameDepthCharge | `DepthChargeController` (Orca forest raid, Space - hostile prisms destroyed in Rampage's forest; golf, first domain to the target; `DEPTHCHARGE.md`) |
+| 102 | `Larder` | MP | MinigameLarder | `LarderController` (Shrike missile duel in the Boneyard, Charge - crystals become missile plants, paint a rival to fire; missile hits to 16. See `LARDER.md`) |
+| 103 | `Thornbush` | MP | MinigameThornbush | `ThornbushController` (Shrike timed nest-building in Jackstraw's heap, Mass - volume standing at the whistle, `VolumeRemaining`. See `THORNBUSH.md`) |
+| 104 | `Lancefall` | MP | MinigameLancefall | `LancefallController` (Shrike plate race on Shatterplane's plates, Space - an edge-on lance breaks a whole strip; prisms destroyed to 600. See `LANCEFALL.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
 | 69 | `Tandava` | MP | MinigameTandava | `TandavaController` (UNLISTED since 2026-10-25: on no roster, card in `Games/_Archive`; co-op ARENA hunt in a closed cell - Rhino / Squirrel / Sparrow on one domain against one creature that forages where it likes, rolls up round its meal behind a ring of guards while it feeds, and evolves Great Serpent -> Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion; a variant of each form per match; the cell glows gold for the dance alone. See `TANDAVA.md`) |
@@ -619,6 +625,9 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `FlatlinePointTurnMonitor` | `TurnMonitors/` | A domain's summed CombatPoints (rounds 1, cord Strikes 8) reach Flatline's target (90 at every intensity, per-intensity list) (on `CombatPointTurnMonitorBase`) |
 | `KelpwoodBiteTurnMonitor` | `TurnMonitors/` | A domain's summed bites (Strike-class CombatPoints) reach the Kelpwood target (on `CombatPointTurnMonitorBase`) |
 | `ShatterplanePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Shatterplane target, resolved per intensity on the server and replicated (Sirocco's shape) |
+| `LarderMissileTurnMonitor` | `TurnMonitors/` | A domain's summed missile hits (MissileBlast-class CombatPoints) reach the Larder target (on `CombatPointTurnMonitorBase`) |
+| `ThornbushTimeTurnMonitor` | `TurnMonitors/` | The Thornbush round clock (`thornbushRoundSeconds`), Glasshouse's shape |
+| `LancefallPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Lancefall target (Shatterplane's shape, scalar target) |
 | `CoronaBloomTurnMonitor` | `TurnMonitors/` | A domain's summed bloom hits (Debuff-class CombatPoints) reach the Corona target (on `CombatPointTurnMonitorBase`) |
 | `HarvestPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Harvest target (Wrecking Ball's shape) |
 | `GlasshouseTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`glasshouseRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |

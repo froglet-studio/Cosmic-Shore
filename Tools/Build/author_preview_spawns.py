@@ -92,6 +92,9 @@ SCENE_FOR_MODE = {
     99: 'MinigamePodHunt',
     100: 'MinigameIceShelf',
     101: 'MinigameDepthCharge',
+    102: 'MinigameLarder',
+    103: 'MinigameThornbush',
+    104: 'MinigameLancefall',
 }
 
 

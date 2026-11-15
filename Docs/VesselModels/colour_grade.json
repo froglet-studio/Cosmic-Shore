@@ -2,7 +2,7 @@
  "counts": {
   "exempt": 7,
   "grey": 556,
-  "ui": 632,
+  "ui": 635,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -234,10 +234,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Breach.png": {
-   "coloured": 0.9982,
+   "coloured": 0.9987,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "bc3a8e9932eb0500",
+   "sha": "0654714968c60b9a",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Breakwater.png": {
@@ -387,11 +387,25 @@
    "sha": "5f3652989428d28b",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Lancefall.png": {
+   "coloured": 1.0,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d86d695fc297b2dd",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/LanternRun.png": {
    "coloured": 0.9997,
    "graded": "ui",
    "kind": "sprite",
    "sha": "fe5b001b698c310f",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Larder.png": {
+   "coloured": 0.9972,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "88d4a2af5d137210",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Maelstrom.png": {
@@ -539,6 +553,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "cc09c802088c0b94",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Thornbush.png": {
+   "coloured": 0.9998,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d99d903271ccc671",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Thornline.png": {

@@ -61,6 +61,9 @@ MonoBehaviour:
   podHuntBlastTarget: 15
   iceShelfRoundSeconds: 90
   depthChargePrismTarget: 1500
+  larderMissileTarget: 16
+  thornbushRoundSeconds: 90
+  lancefallPrismTarget: 600
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -139,6 +142,9 @@ MonoBehaviour:
   podHuntBlastTargetBuild: 15
   iceShelfRoundSecondsBuild: 90
   depthChargePrismTargetBuild: 1500
+  larderMissileTargetBuild: 16
+  thornbushRoundSecondsBuild: 90
+  lancefallPrismTargetBuild: 600
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35
