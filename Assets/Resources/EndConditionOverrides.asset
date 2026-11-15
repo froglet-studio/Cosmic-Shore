@@ -58,6 +58,7 @@ MonoBehaviour:
   - 1000
   harvestPrismTarget: 750
   tapestryRoundSeconds: 90
+  palisadeRoundSeconds: 90
   glasshouseRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
@@ -135,6 +136,7 @@ MonoBehaviour:
   - 1000
   harvestPrismTargetBuild: 750
   tapestryRoundSecondsBuild: 90
+  palisadeRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100

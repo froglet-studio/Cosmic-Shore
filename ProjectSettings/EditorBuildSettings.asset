@@ -192,6 +192,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTapestry.unity
     guid: 66ee08b9dff6ca4fd973337baf4857af
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigamePalisade.unity
+    guid: f922aaca2eae16aba1ae0ed6c7bb9603
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSirocco.unity
     guid: f3efa5204ad2461ebf22bc57e2170a5a
   - enabled: 1
