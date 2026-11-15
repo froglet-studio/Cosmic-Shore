@@ -797,6 +797,9 @@ CAMERAS = {
     # Glasshouse: from outside the gardens, low across the cell, so the three colours' beds stand round the glass
     # nucleus with its seeds inside, and the lure lighting the near bed (growth, the thing that scores) sits in front.
     "Glasshouse": (28, 14, 0.82, 46),
+    # Chum: close beside one shoal of the I2 reef, so its shells of neutral prisms fill the plate with the next shoals
+    # hanging behind it, and the Jade school thrown into its painted half (the meal, the thing that scores) sits on it.
+    "Chum": (34, 12, 0.7, 46),
     # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
     # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
     "Corona": (37, -10, 0.36, 60),
@@ -1206,6 +1209,54 @@ def recipe(stem, card_path, pal, ends):
             crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
         stage["glasshouse"] = {"beds": {str(k): v_mul(v, band) for k, v in beds.items()}, "herd": herd}
         nucleus()
+    elif s == "Chum":
+        # MODEL tier: the cell grows nothing, so the card draws what the mode LAYS there at this intensity - the reef
+        # (ChumReef's shoals: a centre prism and shells on a Fibonacci sphere, read off the C# rung table and constants,
+        # in the no-team colour, the crust shielded), the omni crystals inside the glass nucleus, and the rung's grazers
+        # among the shoals. Every count is read from the shipped assets.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        reef_cs = read(ROOT / "Assets/_Scripts/Controller/Arcade/Chum/ChumReef.cs")
+        size = float(re.search(r"public const float PrismSize = ([\d.]+)f;", reef_cs).group(1))
+        spacing = float(re.search(r"public const float Spacing = ([\d.]+)f;", reef_cs).group(1))
+        rungs = re.findall(r"(\d|_) => new Rung\((\d+), (\d+), ([\d.]+)f, (true|false)\)", reef_cs)
+        _, shoals, shells, band, crusted = rungs[min(INTENSITY - 1, len(rungs) - 1)]
+        shoals, shells, band, crusted = int(shoals), int(shells), float(band), crusted == "true"
+
+        def fib(i, n):
+            y = 1 - 2 * (i + 0.5) / max(1, n)
+            ring = math.sqrt(max(0.0, 1 - y * y))
+            th = i * 2.39996323
+            return [ring * math.cos(th), y, ring * math.sin(th)]
+
+        reach = shells * spacing + size
+        inner, outer = nuc + reach, max(nuc + reach, R - reach)
+        radius = inner + (outer - inner) * band
+        centres = [v_mul(fib(k, shoals), radius) for k in range(shoals)]
+        rows = []
+        for c in centres:
+            rows.append(prism(c, [0, 0, 1], [0, 1, 0], [size] * 3, BLUE))
+            for sh in range(1, shells + 1):
+                n = max(6, int(math.floor(4 * math.pi * sh * sh + 0.5)))
+                kind = SHIELDED if crusted and sh == shells else PLAIN
+                for k in range(n):
+                    rows.append(prism(v_add(c, v_mul(fib(k, n), sh * spacing)), [0, 0, 1], [0, 1, 0], [size] * 3,
+                                      BLUE, kind))
+        layers.append({"kind": "prisms", "rows": rows})
+        prof = read(facts["profile"])
+        fauna_cfg = asset(re.findall(r"guid: (\w+)", prof.split("SupportedFaunas:")[1])[0])
+        herd = int(re.search(r"^  InitialSpawnCount: (\d+)", read(fauna_cfg), re.M).group(1))
+        scene = read(next((ROOT / "Assets/_Scenes").rglob("MinigameChum.unity")))
+        extras = [int(x) for x in re.findall(r"ExtraCrystals: (\d+)", scene.split("crystalCountByIntensity:")[1])[:4]]
+        omni = extras[min(INTENSITY - 1, len(extras) - 1)]
+        for k in range(omni):
+            crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
+        # the card sits beside a shoal side-on to the camera, so the glass nucleus falls out of the frame behind it
+        az = math.radians(cam["azimuth"])
+        toward = [math.sin(az), 0.2, math.cos(az)]
+        near = min(centres, key=lambda c: abs(v_dot(v_norm(c), v_norm(toward))) - 0.3 * v_norm(c)[1])
+        stage["chum"] = {"shoal": near, "reach": reach, "herd": herd, "others": centres}
+        nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -1232,6 +1283,11 @@ def recipe(stem, card_path, pal, ends):
         cam["percentile"] = 0.6
     elif s == "Glasshouse":
         aim((0.1, -0.05, -0.3), 0.66)
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "Chum":
+        ch = stage.get("chum")
+        cam["target"] = list(ch["shoal"])
+        cam["radius"] = ch["reach"] * 5.0
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1549,6 +1605,33 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                 creature(p, rng.unit(), R * 0.03, BLUE, rows)
             layers.append({"kind": "prisms", "rows": rows})
             stage["vessels"] = vessels([(JADE, 0.62, 6, 330, 10), (RUBY, 0.6, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "Chum":
+        # The act that scores: a Jade Angler's school thrown into the shoal it painted (the near half of the shoal
+        # glows in the painter's colour), the creatures streaking in from the pilot. Two wild grazers (no colour of
+        # their own) graze the next shoal over.
+        ch = stage.pop("chum", None)
+        if ch:
+            shoal, reach = ch["shoal"], ch["reach"]
+            out = v_norm(shoal)
+            side = v_norm(v_cross([0, 1, 0], out))
+            face = v_norm(v_add(out, v_mul(side, 0.8)))
+            glow(v_add(shoal, v_mul(face, reach * 0.45)), reach * 0.75, JADE, 0.9, 0.22)
+            pilot = v_add(shoal, v_mul(face, reach * 5.5))
+            rows = []
+            for k in range(4):
+                t = 0.25 + 0.17 * k
+                p = v_add(v_add(pilot, v_mul(v_sub(shoal, pilot), t)), v_mul(rng.unit(), reach * 0.25))
+                creature(p, v_sub(shoal, pilot), reach * 0.55, JADE, rows)
+                streak(v_add(p, v_mul(v_norm(v_sub(pilot, shoal)), reach * 0.5)), v_sub(shoal, pilot), reach * 1.4, JADE)
+            others = sorted((c for c in ch["others"] if c != shoal),
+                            key=lambda c: v_dot(v_sub(c, shoal), v_sub(c, shoal)))
+            if others:
+                nxt = others[0]
+                for k in range(min(2, ch["herd"])):
+                    p = v_add(nxt, v_mul(rng.unit(), reach * 1.4))
+                    creature(p, v_sub(nxt, p), reach * 0.5, BLUE, rows)
+            layers.append({"kind": "prisms", "rows": rows})
+            stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
     elif s == "Corona":
         # A KABLOOM at the heart: a Manta touched an omni crystal, and the bloom round it catches a rival pilot (a
         # glow in the planter's colour on the rival). Out on the shells, two bombed rivals carry fuse markers (small

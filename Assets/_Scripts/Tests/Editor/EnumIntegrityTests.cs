@@ -207,7 +207,8 @@ namespace CosmicShore.Tests
             // 82 -> 83 on 2026-11-11: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest
             // pushed first; 89 was free on every branch.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(83, values.Length,
+            // 83 -> 84 on 2026-11-15: Chum (91), the Angler's Space game, row 1 of GAME_KIT_ROSTER.md's reserved ids.
+            Assert.AreEqual(84, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -261,6 +262,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Flatline, 84)]
         [TestCase(GameModes.Corona, 87)]
         [TestCase(GameModes.Shatterplane, 90)]
+        [TestCase(GameModes.Chum, 91)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

@@ -311,6 +311,40 @@ new errors; without the shims it fails on `RelayRegionProbe.cs`). No Unity edito
 **Open:** the tab was not drawn on Frogma first (Docs/MENU_REDESIGN_B.md); the region names in the generator's
 `REGION_NAMES` name UGS's ids, and an id UGS does not list is simply never offered online.
 
+### 🔴 Chum, the Angler's Space game (GameModes 91) (`claude/angler-space-chum`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/CHUM.md`. A timed feed: shoals of neutral (Blue) prisms laid by the controller on
+every peer from the intensity alone (`ChumReef`, pure). Paint a shoal and the school is thrown at it and eats it. The
+score is `PrismsDestroyed` (HostilePrismsDestroyed): the hull's breaks (StatsManager) plus the school's meals (the
+controller credits a prism that dies by a creature to the pilot whose Angler leashes the nearest creature). From I3 the
+outer shell is shielded and the card starts the Angler at Space 5 (Paint Shields). AI `ChumForager` steers and holds the
+lure only. New platform rows: `GameModes.Chum = 91`, `chumRoundSeconds` (90), `GameToastSituation.ChumHint = 166`, the
+HUD arrow (Rampage's provider). Nothing about the Angler changed. Authored by `Tools/Build/author_chum_assets.py`. Ran
+headless: the generator `--check` (with a negative control), the `/arcadegame` gates, the card render, `unity_refcompile`
+player and editor (0 errors in changed files). No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Chum card: the reef card art, Angler only, 1-4 players, intensities 1-4, the **Space** petal.
+2. Run the edit-mode tests `ChumReefTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. Solo, I2: twelve shoals of blue prisms hang between the nucleus and the membrane; the arrow points at an omni crystal.
+4. Take a crystal (one creature), fly to a shoal, paint it with the brush and let go: the school eats it, and the score
+   rises by one for every prism eaten. Ramming a shoal with the hull also scores.
+5. Hold the lure near a wild tadpole: it joins the school; a bigger school eats faster.
+6. Wild tadpoles eat the reef too: their meals credit nobody.
+7. I3: the outer shell of each shoal is shielded; tadpoles do not eat it; the Angler starts at Space 5 and its paint
+   cracks it.
+8. With a 2-domain lobby (AI): an AI Angler grows a school (crystals, then lured grazers), then circles a shoal, paints
+   and throws.
+9. At the whistle: the domain with the most prisms wins; the results show "{n} Prisms" and "{n} eaten".
+10. FrogletTools > Game Modes > End Game Conditions: Chum - Round Seconds reads 90.
+11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameChum.unity`.
+12. Profiler: the I4 reef (2,832 prisms) plus four trails stays inside the collider budget; the reef settle is one pass a
+    frame over the live list.
+
+**First-pass tuning (not settled):** round 90 s; shoals 8 / 12 / 12 / 16 of 64 / 64 / 177 / 177 prisms; omni
+4 / 3 / 3 / 2; grazers 6 / 9 / 12 / 15; comeback 0.025. The open question is the retire condition: does the school
+matter against ramming with the hull?
+
 ### 🔴 Glasshouse, the Angler's Mass game (GameModes 89) (`claude/peaceful-cerf-vpl3x8`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/GLASSHOUSE.md`. A timed garden: an omni crystal is a creature and a seed, letting go

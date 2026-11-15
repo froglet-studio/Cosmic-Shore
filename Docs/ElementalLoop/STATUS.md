@@ -8,7 +8,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 
 | Vessel | Time 1 2 3 | Charge 1 2 3 | Mass 1 2 3 | Space 1 2 3 | Kit missing | Arenas |
 |---|---|---|---|---|---|---|
-| Angler | `b b .` | `b b .` | `b b .` | `x x x` | - | - |
+| Angler | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | BrittleStar | `b b .` | `b b .` | `x x x` | `b b .` | - | - |
 | Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Goby | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
@@ -47,7 +47,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 
 | Vessel | Time | Charge | Mass | Space |
 |---|---|---|---|---|
-| Angler | Lantern Run | Kelpwood | Glasshouse | - |
+| Angler | Lantern Run | Kelpwood | Glasshouse | Chum |
 | BrittleStar | Brittle Star Time | Flatline | - | Shatterplane |
 | Dolphin | Switchback | The Bends | excused | Rampage |
 | Goby | Perch Run | - | - | - |

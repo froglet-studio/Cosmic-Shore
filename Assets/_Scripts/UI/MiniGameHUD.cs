@@ -567,6 +567,10 @@ namespace CosmicShore.UI
                     // SEED (and a creature), the one thing a pilot has to go and fetch; the planting and the tending
                     // happen wherever the pilot lets go of the lure.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Glasshouse");
+                case GameModes.Chum:
+                    // Rampage's provider: the nearest managed omni crystal, which is a creature for the school - the
+                    // one thing to fetch. The reef's shoals hang in plain sight; the brush finds them.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Chum");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's

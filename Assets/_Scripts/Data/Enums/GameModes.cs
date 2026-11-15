@@ -446,6 +446,12 @@ namespace CosmicShore.Data
         // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
         Shatterplane = 90,
 
+        // The Angler's SPACE game (CHUM.md): a timed feed on a reef. Shoals of neutral prisms hang in the cell; paint one,
+        // let go, and half the school is thrown at it and eats it. Score = prisms taken off the board (hull + school).
+        // I1-I4: few near shoals, more and farther, shielded crusts (Space starts at 5 for Paint Shields), the farthest.
+        // Row 1 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Chum = 91,
+
         // RESERVED 91-127 (2026-11-15): the missing elemental arcade games, one id per game, assigned by vessel and
         // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
         // building one of those games takes ITS row's id; anything else takes 128 or above.
