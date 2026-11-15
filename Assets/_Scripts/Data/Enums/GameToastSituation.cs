@@ -252,6 +252,13 @@ namespace CosmicShore.Data
         // Chum, the Angler's space game (_Scripts/Controller/Arcade/CHUM.md). 166 is its row in
         // Docs/ElementalLoop/GAME_KIT_ROSTER.md (166-202 are reserved there, one per missing game). Posted to the LOCAL pilot only.
         ChumHint = 166,                 // once, at the start: tame a school, paint a shoal, let go to throw it
+        // The Shrike's games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 12-14 reserved 177-179). Posted to the LOCAL
+        // pilot only. Larder's race beats are the shared 128-130 and a missile hit is 81 (MissileHitsLanded rose);
+        // Thornbush's lead change is the shared 130, sampled by its controller (a timed mode has no target);
+        // Lancefall's race beats are the shared 128-130.
+        LarderHint = 177,               // once, at the start: paint a rival and every missile plant launches at them
+        ThornbushHint = 178,            // once, at the start: dock on a stick, press Mass to leave a nest; hold your mass
+        LancefallHint = 179,            // once, at the start: take a plate edge-on and the lance breaks a whole strip
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.
