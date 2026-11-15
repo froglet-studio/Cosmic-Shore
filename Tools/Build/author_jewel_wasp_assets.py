@@ -127,6 +127,16 @@ BUTTERFLY_MODEL_GUID = "1c6e4c75c81047ddb894f8966caea0af"
 # possession in a networked match and every peer mirrors it (JEWEL_WASP.md section 6.1).
 RELAY_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "JewelWaspNetworkRelay.cs.meta")
 RELAY_ID = "7741000000000003101"
+# The Tiger Moth's Dust-mode capsule (ButterflyDustSkimmer), dead weight on the wasp: switched off and driven by nothing
+# once SpreadWings went, yet still the near-field skimmer and the trail's clearance skimmer. Retired 2026-11-15: the trail
+# measures its clearance off the always-on crystal catcher (its far-field skimmer), and the near-field slot is empty
+# (the Termite's and the Falcon's shape: VesselController skips an empty slot).
+DUST_SKIMMER_INSTANCE = "7526780584530545883"
+DUST_SKIMMER_DOCS = ("7526780584530545883", "281340694002912670", "878149464122343524", "7700000000000002001")
+DUST_SKIMMER = "281340694002912670"          # its Skimmer (stripped)
+DUST_SKIMMER_TRANSFORM = "878149464122343524"
+DUST_SKIMMER_PREFAB_GUID = "744c7a43f1156e7bde213ac0f51abc71"
+CRYSTAL_SKIMMER = "92358954707176188"        # ButterflyCrystalSkimmer's Skimmer (stripped), the far-field slot
 # The HUD: the wasp's own JewelWaspHUDVariant (Tools/Build/author_jewel_wasp_hud.py), never the Tiger Moth's.
 BUTTERFLY_HUD_GUID = "dd198b52721e3c346970524ad4972959"
 OWN_HUD_META = os.path.join(ROOT, "Assets", "_Prefabs", "UI Elements", "VesselHUD", "JewelWaspHUDVariant.prefab.meta")
@@ -215,6 +225,13 @@ def empty_event(key: str) -> str:
     return f"  {key}:\n    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
 
 
+FMOD_SLOTS = ("stingEvent", "nestEvent", "leaveEvent", "attackEvent", "suctionEvent", "burstEvent", "selectEvent")
+FLORA_VIEW = ("  floraMinDistance: 18\n  floraFitRadii: 3.2\n  floraZoomRange: {x: 0.3, y: 4}\n  floraZoomRate: 1.4\n"
+              "  floraOrbitDegrees: 100\n  floraRollDegrees: 110\n  floraFollowEase: 3\n"
+              "  selectPulseSeconds: 0.35\n  selectPulseGlow: 4\n  floraAimAssistDegrees: 35\n"
+              "  nestedTailWidth: 0.3\n  nestedGlow: 0.35\n  abilityFlashGlow: 1\n  abilityFlashSeconds: 0.6\n")
+
+
 def config_asset() -> str:
     t = so_head(guid_of(CONFIG_SO_META), "JewelWaspConfig", "CosmicShore.Gameplay.JewelWaspConfigSO")
     t += ("  aimConeDegrees: 14\n  stingRangeOutsideCell: 3000\n  stingSpeed: 1400\n  stingSeconds: 0.35\n"
@@ -228,13 +245,14 @@ def config_asset() -> str:
     t += efloat("attackCooldown", 3, 0.8, 1, 0.4)
     t += "  attackSeconds: 0.6\n  attackReach: 22\n  attackAimReaches: 3\n  attackHitClass: 5\n"
     t += "  leaveSpeed: 90\n  leaveGraceSeconds: 0.6\n  burstRadius: 60\n  burstHitClass: 3\n"
-    t += efloat("floraGrowth", 2, 6, 2, 1.2)
-    t += "  overgrowthRadius: 200\n  floraCameraDistance: 650\n  floraOrbitDegrees: 100\n"
+    t += efloat("floraGrowth", 3.5, 7, 2, 2.2)
+    t += "  overgrowthRadius: 200\n  floraCameraDistance: 650\n"
+    t += FLORA_VIEW
     t += "  hostCameraBodies: 6\n  hostCameraBase: 30\n  cameraEase: 4\n"
     t += "  omniPredators:\n" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in OMNI_PREDATORS)
     t += "  aiHostSeconds: 14\n  aiLookSeconds: 1.5\n"
     t += f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_EVENT_GUID}, type: 2}}\n"
-    for k in ("stingEvent", "nestEvent", "leaveEvent", "attackEvent", "suctionEvent", "burstEvent"):
+    for k in FMOD_SLOTS:
         t += empty_event(k)   # LOCKED FMOD convention: every slot ships EMPTY, never a borrowed event
     return t
 
@@ -321,6 +339,19 @@ def network_entry() -> str:
             "    SourcePrefabToOverride: {fileID: 0}\n    SourceHashToOverride: 0\n    OverridingTargetPrefab: {fileID: 0}\n")
 
 
+def retire_dust_skimmer(t: str) -> str:
+    """Take the Moth's dust capsule off the hull (idempotent): its four documents, its place under the root, and the two
+    slots that named it."""
+    if f"guid: {DUST_SKIMMER_PREFAB_GUID}" not in t:
+        return t
+    for fid in DUST_SKIMMER_DOCS:
+        t = re.sub(rf"--- !u!\d+ &{fid}( stripped)?\n.*?(?=--- !u!|\Z)", "", t, count=1, flags=re.S)
+    t = t.replace(f"  - {{fileID: {DUST_SKIMMER_TRANSFORM}}}\n", "", 1)
+    t = t.replace(f"  skimmer: {{fileID: {DUST_SKIMMER}}}\n", f"  skimmer: {{fileID: {CRYSTAL_SKIMMER}}}\n", 1)
+    t = t.replace(f"  _nearFieldSkimmer: {{fileID: {DUST_SKIMMER}}}\n", "  _nearFieldSkimmer: {fileID: 0}\n", 1)
+    return t
+
+
 def wear_own_hull(t: str) -> str:
     """The prefab after the clone: the wasp's own model in place of the Butterfly (a guid swap: the names, bones and
     sub-asset ids are the Butterfly's) and a wasp's wingbeat. Idempotent: it runs on the committed prefab every time."""
@@ -340,7 +371,7 @@ def wear_own_hull(t: str) -> str:
             f"  m_Script: {{fileID: 11500000, guid: {guid_of(RELAY_META)}, type: 3}}\n  m_Name: \n"
             f"  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.JewelWaspNetworkRelay\n"
             f"  ShowTopMostFoldoutHeaderGroup: 1\n")
-    return t
+    return retire_dust_skimmer(t)
 
 
 # ----------------------------------------------------------------------------- author + check
@@ -422,6 +453,10 @@ def errors() -> list:
                      and f"guid: {guid_of(RELAY_META)}" in block(pf, RELAY_ID)) if os.path.exists(RELAY_META) else False
     need(relay_on_root, "JewelWaspNetworkRelay is not on the root beside the NetworkObject (the server cannot hand "
                         "a client its possession)")
+    need(f"guid: {DUST_SKIMMER_PREFAB_GUID}" not in pf and f"  _nearFieldSkimmer: {{fileID: 0}}\n" in pf
+         and f"  skimmer: {{fileID: {CRYSTAL_SKIMMER}}}\n" in pf,
+         "the Tiger Moth's dust capsule is still on the hull (or the trail's clearance skimmer is not the crystal catcher)")
+    need(f"  _farFieldSkimmer: {{fileID: {CRYSTAL_SKIMMER}}}\n" in pf, "the crystal catcher is not the far-field skimmer")
     for key, _, new in WING_BEAT:
         need(f"\n  {key}: {new}\n" in pf, f"the wingbeat's {key} is not the wasp's ({new})")
     need(os.path.exists(OWN_HUD_META) and f"guid: {guid_of(OWN_HUD_META)}" in pf and BUTTERFLY_HUD_GUID not in pf,
@@ -444,7 +479,7 @@ def errors() -> list:
         need(f"guid: {g}" in cfg, "an omni predator is missing from the config")
     need(f"onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_EVENT_GUID}" in cfg,
          "the attack scores on no channel (PvP is petals only: every hit is a scored hit)")
-    need(len(re.findall(r"^    Path: \n", cfg, re.M)) == 6 and not re.search(r"^    Path: \S", cfg, re.M)
+    need(len(re.findall(r"^    Path: \n", cfg, re.M)) == len(FMOD_SLOTS) and not re.search(r"^    Path: \S", cfg, re.M)
          and not re.search(r"^      Data\d: [1-9-]", cfg, re.M), "an FMOD slot is not empty (LOCKED: slots ship empty)")
     # one parameter per element (the fleet's rule), each its own element
     for key, element in (("hostSpeedScale", 4), ("suctionReachScale", 3), ("attackCooldown", 1), ("floraGrowth", 2)):
@@ -493,6 +528,7 @@ def self_test() -> int:
         "the Butterfly's model": good.replace(f"guid: {guid_of(MODEL_FBX + '.meta')}", f"guid: {BUTTERFLY_MODEL_GUID}"),
         "a butterfly's beat": good.replace("\n  beatHz: 5\n", "\n  beatHz: 1.15\n"),
         "no network relay": good.replace(f"  - component: {{fileID: {RELAY_ID}}}\n", "", 1),
+        "the dust capsule back": good.replace("  _nearFieldSkimmer: {fileID: 0}\n", f"  _nearFieldSkimmer: {{fileID: {DUST_SKIMMER}}}\n"),
         "the Moth's HUD": good.replace(f"guid: {guid_of(OWN_HUD_META)}", f"guid: {BUTTERFLY_HUD_GUID}"),
     }
     failed = 0

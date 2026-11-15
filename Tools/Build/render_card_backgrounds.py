@@ -734,6 +734,9 @@ CAMERAS = {
     # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
     "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
     "Sirocco": (320, 10, 0.66, 46),
+    # The Stoat's two element games share those arenas too: Shockfront the Boneyard (low, from the far side), Fulmen
+    # the forest (looking back at the heart the bolts root in).
+    "Shockfront": (230, 16, 0.6, 46), "Fulmen": (75, 22, 1.05, 44),
     # The Rhino's three games. Bullrush shares Jackstraw's heap and Landslide Cleave's arenas, so each gets its own
     # angle; Windrow is Tapestry's bare cell, shot closer because a Rhino row is a few units wide, not a Butterfly wake.
     "Bullrush": (215, 16, 0.72, 44), "Windrow": (60, 30, 0.42, 42), "Landslide": (250, 30, 0.8, 42),
@@ -810,6 +813,23 @@ CAMERAS = {
     # Shatterplane: from beside the I2 Gallery, so the plates read as thin round sheets at mixed angles and the square
     # ring blast (the spike that scores) lies flat in the plate nearest the camera.
     "Shatterplane": (75, -12, 0.78, 46),
+    # The Orca's three games (GAME_KIT_ROSTER.md rows 9-11). Pod Hunt shares the Boneyard with Dog Fight / Salvo /
+    # Broadside / Dustup / Grizzly Charge, so it takes its own side of the wreck: low, with a missile crossing the gap
+    # and its blast on a rival hull (the one act that scores).
+    "PodHunt": (250, 12, 0.74, 44),
+    # Ice Shelf: from outside the glass nucleus, so each colour's shelf - a trail ring round its home with a dropped
+    # shield standing in it (the mass that scores at the whistle) - stands round the core.
+    "IceShelf": (205, 16, 0.84, 46),
+    # Depth Charge: into the Rampage forest from the far side to Rampage's own card, a missile and a bomb burst going
+    # off in a plant of a rival colour.
+    "DepthCharge": (165, 10, 0.66, 46),
+    # The Honeyguide's three element games. Flitstrike is the Boneyard's fifth card (Dog Fight / Salvo / Broadside /
+    # Dustup / Grizzly Charge), so it is shot from the side none of them use, low and close on the dart; Woodpecker is
+    # the forest's fifth (Rampage / Bends / Bloomrush / Sirocco), from above a stand; Honeycomb is the bare Barren cell
+    # like Tapestry, from the other side, on the combs.
+    "Flitstrike": (295, 16, 0.56, 48),
+    "Woodpecker": (95, 18, 0.62, 46),
+    "Honeycomb": (220, 22, 0.9, 44),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1067,7 +1087,46 @@ def recipe(stem, card_path, pal, ends):
                     rows.append(prism(v_add(pt, v_mul(side, sgn * 2.0)), fwd, v_norm(pt), block, dom))
         layers.append({"kind": "prisms", "rows": rows})
         nucleus()
-    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco"):
+    elif s == "Honeycomb":
+        # MODEL tier: the arena is the bare Barren cell, so what the card shows is what the mode PUTS there - hive
+        # combs, each a flat hexagonal comb of trail prisms square to the hull's flight (HoneyguideCrew.Hive.cs: a
+        # cell every hiveCellSpacing on the Dynamo's hex grid), a third of each comb in its builder's colour and
+        # super-shielded, the rest the other two colours; and one trail arc per pilot laid between hives.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        rows = []
+        cfg_text = read(ROOT / "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset")
+        m = re.search(r"^  hiveCellSpacing: ([\d.]+)$", cfg_text, re.M)
+        sp = float(m.group(1)) if m else 5.0
+        sp = sp * 4.0   # drawn four times the shipped spacing: at cell scale a true comb is a few pixels
+        doms = (JADE, RUBY, GOLD)
+        for k, own in enumerate((JADE, RUBY, GOLD, JADE, RUBY)):
+            c = v_mul(rng.unit(), R * rng.range(0.25, 0.6))
+            n = v_norm(rng.unit())
+            up0 = [0, 1, 0] if abs(n[1]) < 0.9 else [1, 0, 0]
+            right = v_norm(v_cross(up0, n)); up = v_cross(n, right)
+            for q in range(-3, 4):
+                for r in range(-3, 4):
+                    if abs(q + r) > 3:
+                        continue
+                    pos = v_add(c, v_add(v_mul(right, sp * math.sqrt(3) * (q + r / 2)), v_mul(up, -sp * 1.5 * r)))
+                    dom = doms[(q - r) % 3]
+                    rows.append(prism(pos, n, up, [sp * 1.4, sp * 1.4, sp * 0.5], dom,
+                                      SUPER if dom == own else PLAIN))
+        for dom in (JADE, RUBY, GOLD):
+            rad = R * rng.range(0.35, 0.65)
+            a0 = rng.range(0, 2 * math.pi)
+            f = arc([0, 0, 0], rad, a0, a0 + rng.range(1.2, 2.0), rng.range(-0.8, 0.8), bank=0.4)
+            nkeys = int(rad * 1.6 / 12.0)
+            for i in range(nkeys):
+                t = i / max(1, nkeys - 1)
+                pt = f(t)
+                ahead = f(min(1.0, t + 1.0 / max(1, nkeys)))
+                fwd = v_sub(ahead, pt) if t < 1.0 else v_sub(pt, f(max(0.0, t - 1.0 / max(1, nkeys))))
+                rows.append(prism(pt, fwd, v_norm(pt), [8.0, 4.0, 10.0], dom))
+        layers.append({"kind": "prisms", "rows": rows})
+        nucleus()
+    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco", "Fulmen", "Woodpecker", "DepthCharge"):
         tier = "MODEL"
         layers.append(forest_layer(facts, s, plant_size=R * (0.05 if s == "Tollway" else 0.06)))
         nucleus()
@@ -1240,6 +1299,42 @@ def recipe(stem, card_path, pal, ends):
             crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
         stage["glasshouse"] = {"beds": {str(k): v_mul(v, band) for k, v in beds.items()}, "herd": herd}
         nucleus()
+    elif s == "IceShelf":
+        # MODEL tier: the cell plants nothing wild, so the card draws what the mode PUTS there - each colour's shelf as
+        # IceShelfController's helm lays it: a trail ring (the Orca's own 2 x 2 x 5 trail prism) round a home spread
+        # round the nucleus at 0.6 of its radius, loop radius off IceShelfSettings, and one dropped danger shield
+        # (144 prisms of the crew config's shield block) standing in the Jade ring. The rung's grazers come from the
+        # cell's own fauna config, as Glasshouse's card reads them.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        st = read(next((ROOT / "Assets/_SO_Assets").rglob("IceShelfSettings.asset")))
+        loop = float(re.search(r"^  aiShelfLoopRadius: ([\d.]+)", st, re.M).group(1))
+        prof = read(facts["profile"])
+        fauna_cfg = asset(re.findall(r"guid: (\w+)", prof.split("SupportedFaunas:")[1])[0])
+        herd = int(re.search(r"^  InitialSpawnCount: (\d+)", read(fauna_cfg), re.M).group(1))
+        rows = []
+        homes = {}
+        for k, dom in enumerate((JADE, RUBY, GOLD)):
+            a = 2 * math.pi * k / 3 + 0.5
+            home = [math.cos(a) * nuc * 0.6, nuc * 0.12 * (k - 1), math.sin(a) * nuc * 0.6]
+            homes[dom] = home
+            n = 56
+            for j in range(n):
+                t = 2 * math.pi * j / n
+                pt = v_add(home, [math.cos(t) * loop, math.sin(t * 2) * loop * 0.12, math.sin(t) * loop])
+                fwd = [-math.sin(t), math.cos(t * 2) * 0.24, math.cos(t)]
+                rows.append(prism(pt, fwd, [0, 1, 0], [2 * 3, 2 * 3, 5 * 3], dom))
+        # the dropped shield: a hemisphere of 144 danger blocks round where the Jade hull stood (a GLYPH scale, x2)
+        c = homes[JADE]
+        for j in range(144):
+            phi = math.acos(1 - (j + 0.5) / 144)          # the upper hemisphere, evenly
+            th = math.pi * (1 + 5 ** 0.5) * j
+            d = [math.sin(phi) * math.cos(th), math.cos(phi), math.sin(phi) * math.sin(th)]
+            rows.append(prism(v_add(c, v_mul(d, loop * 0.45)), v_cross(d, [0, 1, 0]) if abs(d[1]) < 0.95 else [1, 0, 0],
+                              d, [20, 2, 2], JADE, DANGER))
+        layers.append({"kind": "prisms", "rows": rows})
+        stage["glasshouse"] = {"beds": {str(k): v for k, v in homes.items()}, "herd": herd}
+        nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -1252,9 +1347,11 @@ def recipe(stem, card_path, pal, ends):
         base = base or R
         cam["target"] = [c * base for c in point_frac]
         cam["radius"] = radius_frac * base
-    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco"):
+    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco", "Fulmen", "Woodpecker", "DepthCharge"):
         aim({"Rampage": (0.62, 0.0, 0.3), "Bends": (-0.35, 0.3, 0.55), "Bloomrush": (0.1, -0.45, -0.5),
-             "Sirocco": (-0.5, -0.25, -0.45)}[s], 0.36)
+             "Sirocco": (-0.5, -0.25, -0.45), "Fulmen": (0.0, 0.05, 0.0), "Woodpecker": (0.25, 0.5, -0.55),
+             "DepthCharge": (-0.55, 0.2, 0.35)}[s],
+            0.45 if s == "Fulmen" else 0.36)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Hijack":
         aim((0.55, 0.0, 0.55), 0.42, base=900)
@@ -1266,6 +1363,10 @@ def recipe(stem, card_path, pal, ends):
         cam["percentile"] = 0.6
     elif s == "Glasshouse":
         aim((0.1, -0.05, -0.3), 0.66)
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "IceShelf":
+        # The shelves stand inside the glass (homes at 0.6 of the nucleus), so the shot is the nucleus, not the cell.
+        aim((0.0, 0.0, 0.0), 1.25, base=nuc)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1369,6 +1470,19 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             p = v_add(v_add(start, v_mul(d, span * 0.07 * k)), v_mul(side, span * 0.02 * (1 if k % 2 else -1)))
             glow(p, span * (0.02 + 0.008 * k), JADE, 0.9, 0.35)
         streak(v_add(start, v_mul(d, span * 0.45)), d, span * 0.12, JADE)
+    elif s in ("PodHunt", "DepthCharge"):
+        # The act that scores: a Jade gunner's missile (a streak) flown across the gap into its target, the blast
+        # going off there - a rival HULL in Pod Hunt, a rival-coloured PLANT in Depth Charge - and the bomb's burst
+        # beside it. Omni crystals (the reload) float in the wreck.
+        target = jitter(0.35)
+        src = v_add(target, v_mul(v_norm([0.8, 0.15, -0.55]), span * 0.55))
+        streak(v_mul(v_add(src, target), 0.5), v_sub(target, src), span * 0.5, JADE)
+        glow(target, span * 0.07, RUBY if s == "PodHunt" else GOLD, 1.3, 0.5)
+        glow(v_add(target, v_mul(rng.unit(), span * 0.16)), span * 0.1, JADE, 0.9, 0.3)
+        if s == "PodHunt":
+            for k in range(3):
+                crystal(jitter(0.9), span * 0.03)
+            stage["vessels"] = vessels([(JADE, 0.4, 6, 40, 25), (RUBY, 0.18, -8, 200, 25), (GOLD, 0.7, 12, 300, 30)])
     elif s == "Salvo":
         for k in range(4):
             glow(jitter(0.8), span * rng.range(0.06, 0.12), (GOLD, JADE, RUBY, GOLD)[k], 1.1, 0.4)
@@ -1583,6 +1697,26 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                 creature(p, rng.unit(), R * 0.03, BLUE, rows)
             layers.append({"kind": "prisms", "rows": rows})
             stage["vessels"] = vessels([(JADE, 0.62, 6, 330, 10), (RUBY, 0.6, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "IceShelf":
+        # The act that scores, and the one that takes it away: the Jade shield standing in its ring (mass at the
+        # whistle), and a Ruby gunner's missile streaking into it. The rung's grazers drift outside the glass, where
+        # the herds graze.
+        gh = stage.pop("glasshouse", None)
+        if gh:
+            homes = {int(k): v for k, v in gh["beds"].items()}
+            jade = homes[JADE]
+            glow(jade, R * 0.09, JADE, 0.6, 0.12)
+            src = v_add(homes[RUBY], v_mul(v_sub(jade, homes[RUBY]), 0.35))
+            streak(v_mul(v_add(src, jade), 0.5), v_sub(jade, src), math.sqrt(v_dot(v_sub(jade, src), v_sub(jade, src))) * 0.8,
+                   RUBY)
+            rows = []
+            nuc_r = max(1.0, math.sqrt(v_dot(jade, jade)) / 0.6)
+            keys = list(homes.values())
+            for k in range(gh["herd"]):
+                d = v_norm(v_add(v_norm(keys[k % len(keys)]), v_mul(rng.unit(), 0.5)))
+                creature(v_mul(d, nuc_r * rng.range(1.15, 1.5)), rng.unit(), R * 0.018, BLUE, rows)
+            layers.append({"kind": "prisms", "rows": rows})
+            stage["vessels"] = vessels([(JADE, 0.2, 6, 330, 30), (RUBY, 0.22, -8, 160, 30), (GOLD, 0.24, 12, 250, 30)])
     elif s == "Corona":
         # A KABLOOM at the heart: a Manta touched an omni crystal, and the bloom round it catches a rival pilot (a
         # glow in the planter's colour on the rival). Out on the shells, two bombed rivals carry fuse markers (small
@@ -1635,6 +1769,40 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                        "rim": hot, "emissive": hot, "unbound": True})
         glow(core, rung["coreRadius"] * 1.7, JADE, 1.0, 0.3)
         stage["vessels"] = vessels([(JADE, 0.42, 8, 320, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
+    elif s == "Shockfront":
+        # The RIPPLE: a thin sphere of the Stoat's colour expanding from where its pair met, a rival inside the front
+        # (the strip - its petals shed as motes) and the Stoat slinging away on the tangent.
+        at = v_add(centre, [span * 0.05, span * 0.12, 0])
+        ring_r = span * 0.22
+        for k in range(220):
+            p = v_add(at, v_mul(rng.unit(), ring_r))
+            glow(p, span * 0.009, JADE, 1.8, 0.7)
+        glow(at, span * 0.03, JADE, 1.0, 0.45)
+        rival = v_add(at, [ring_r * 0.7, -ring_r * 0.2, ring_r * 0.3])
+        for k in range(10):
+            glow(v_add(rival, v_mul(rng.unit(), span * 0.03)), span * 0.006, RUBY, 1.2, 0.6)
+        stage["vessels"] = vessels([(JADE, 0.3, 12, 300, 60), (RUBY, 0.3, -8, 160, 60)])
+    elif s == "Fulmen":
+        # A FULMEN bolt: jagged branching streams of cold light from the heart out through the forest, a child bolt
+        # thrown from a second crystal, and burning plants (danger-hot glows) along the streams.
+        def bolt(origin, length, roots, depth):
+            for r in range(roots):
+                d = v_norm(rng.unit())
+                p = origin
+                steps = 9
+                for k in range(steps):
+                    d = v_norm(v_add(d, v_mul(rng.unit(), 0.45)))
+                    q = v_add(p, v_mul(d, length / steps))
+                    for t in range(4):
+                        glow(v_add(p, v_mul(v_sub(q, p), t / 4)), span * 0.009, GOLD, 2.4, 0.9)
+                    if rng.u() < 0.35:
+                        glow(q, span * 0.03, RUBY, 1.4, 0.45)
+                    p = q
+                if depth > 0:
+                    bolt(p, length * 0.4, 2, depth - 1)
+        bolt(centre, span * 0.7, 5, 1)
+        crystal(v_add(centre, [span * 0.04, 0, 0]), span * 0.02)
+        stage["vessels"] = vessels([(JADE, 0.08, 10, 40, 80), (GOLD, 0.35, -6, 220, 70)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)
@@ -1650,6 +1818,31 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             tgt = v_add(body, [rng.range(-150, 150), rng.range(-20, 30), rng.range(-30, 30)])
             src = v_add(tgt, [rng.range(-260, -120), rng.range(40, 120), rng.range(-160, 160)])
             streak(v_mul(v_add(src, tgt), 0.5), v_sub(tgt, src), math.dist(src, tgt), JADE)
+    elif s == "Flitstrike":
+        # The Flit: a short dart along a Honeyguide's nose, its afterimages behind it, through a rival - and the strike
+        # ring on the rival (the one thing that scores).
+        a = jitter(0.3)
+        d = v_norm(rng.unit())
+        b = v_add(a, v_mul(d, span * 0.35))
+        for k in range(5):
+            glow(v_add(a, v_mul(v_sub(b, a), k / 5)), span * 0.012, JADE, 0.9, 0.18 + 0.12 * k)
+        streak(v_mul(v_add(a, b), 0.5), d, span * 0.35, JADE)
+        hit = v_add(a, v_mul(v_sub(b, a), 0.8))
+        glow(hit, span * 0.05, RUBY, 1.2, 0.35)
+        glow(hit, span * 0.09, JADE, 0.8, 0.15)
+        stage["vessels"] = vessels([(JADE, 0.3, 6, 300, 60), (RUBY, 0.3, -8, 120, 60)])
+    elif s == "Woodpecker":
+        # The Peck: three quick rounds from one hull into a stand of another colour's forest, a chip where each lands.
+        src = jitter(0.5)
+        for k in range(3):
+            tgt = v_add(centre, v_mul(rng.unit(), span * 0.25))
+            streak(v_mul(v_add(src, tgt), 0.5), v_sub(tgt, src), math.dist(src, tgt) * 0.5, GOLD)
+            glow(tgt, span * 0.02, GOLD, 1.3, 0.5)
+    elif s == "Honeycomb":
+        # The hive: an omni crystal turning into a comb behind the hull, the comb's own cells glowing shielded.
+        p = jitter(0.3)
+        crystal(p, span * 0.03)
+        glow(p, span * 0.12, JADE, 0.7, 0.2)
     elif s == "Tapestry":
         # Dust mode over the cut in the Ruby wake: the raid that made the gap.
         p = jitter(0.2)

@@ -500,6 +500,10 @@ namespace CosmicShore.UI
                     // Switchback's answer on the Shrike's sling race: neutral rings, a per-viewer arrow (the thorn sits
                     // straight behind the ring it points at).
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Thornline");
+                case GameModes.Spearline:
+                    // Switchback's answer on the Swordfish's sealed circuit: neutral rings, a per-viewer arrow (the seal
+                    // sits in the ring's mouth, so the arrow points at what to cut).
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Spearline");
                 case GameModes.DecoyRun:
                     // the Jacks' Time race: neutral rings, a per-viewer arrow.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_DecoyRun");
@@ -561,6 +565,10 @@ namespace CosmicShore.UI
                     // The Bends' provider: the nearest pilot this player may hit. The panes hide pilots from rounds
                     // and the cords reach through them, so the question every second is where the rival is.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Flatline");
+                case GameModes.Riposte:
+                    // The Bends' provider again: the nearest pilot this player may strike. The sword lands only while
+                    // the Swordfish is the faster, so the arrow answers where and the ramp answers how.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Riposte");
                 case GameModes.Kelpwood:
                     // The Bends' provider again: the nearest pilot this player may bite. In the kelp the hard half is
                     // keeping them under the nose long enough to lock; the arrow answers where.
@@ -569,6 +577,12 @@ namespace CosmicShore.UI
                     // The Bends' provider again: the nearest pilot this player may graze. The way to them is through
                     // the gates, and the cash-out is always the heart, so the arrow only has to answer who.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Corona");
+                case GameModes.Shockfront:
+                    // The Stoat's charge duel: the arrow answers "which rival do I sling past?", Dustup's question.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Shockfront");
+                case GameModes.Fulmen:
+                    // The Stoat's space race: the contested omni crystal IS the weapon, Rampage's question.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Fulmen");
                 case GameModes.Harvest:
                     // Rampage's provider again: the nearest managed omni crystal, in the field's clear centre. The
                     // sheaves are in plain sight; the crystal is the windmill - the one thing worth racing to.
@@ -578,12 +592,40 @@ namespace CosmicShore.UI
                     // SEED (and a creature), the one thing a pilot has to go and fetch; the planting and the tending
                     // happen wherever the pilot lets go of the lure.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Glasshouse");
+                case GameModes.PodHunt:
+                    // The Bends' provider: the nearest pilot this crew may blast. The gunners fly the missiles; the
+                    // helm's job is to bring a rival into their reach.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_PodHunt");
+                case GameModes.IceShelf:
+                    // Rampage's provider: the nearest managed omni crystal - a missile for every seat, the ammunition
+                    // that keeps rival gunners off the shelf.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_IceShelf");
+                case GameModes.DepthCharge:
+                    // Rampage's provider, in Rampage's own forest: the nearest managed omni crystal (a missile per
+                    // seat). The forest itself is in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_DepthCharge");
+                case GameModes.Flitstrike:
+                    // The Bends' provider: the nearest pilot this player may strike. The Flit is a short dart along the
+                    // nose, so the whole question is where the rival is and how to come at them dead ahead.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Flitstrike");
+                case GameModes.Honeycomb:
+                    // Rampage's provider: the nearest managed omni crystal. In Honeycomb that crystal is the next HIVE -
+                    // the comb of your prisms and the Ratel's hive puzzle - the one thing worth flying to.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Honeycomb");
+                case GameModes.Woodpecker:
+                    // Densest standing hostile mass (Sirocco's answer): the forest rings the cell, and the arrow names the
+                    // stand worth pecking through - the point Woodpecker's AI pecking runs steer to.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Woodpecker");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's
                     // wake is laid behind them. The PAINT half needs no arrow - you paint where
                     // you are.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Tapestry");
+                case GameModes.Palisade:
+                    // Tapestry's answer: the nearest rival, whose freshest afterimages are behind them. Building needs no
+                    // arrow - you build where you are.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Palisade");
                 case GameModes.Bends:
                     // The provider was written for this mode and borrowed by three others before
                     // the mode itself was registered: the nearest pilot this player may bend.
@@ -598,6 +640,25 @@ namespace CosmicShore.UI
                     // arrow names the nearest big plate still standing. Not a crystal: a crystal is a spare ring, and
                     // it already floats on a plate's axis in front of it.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Shatterplane");
+                case GameModes.Larder:
+                    // The Bends' provider: the nearest pilot this player may hit. Paint is a cone off the nose, so the
+                    // question every second is where the rival is; the wreckage hides them from the missiles.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Larder");
+                case GameModes.Thornbush:
+                    // Rampage's provider: the nearest managed crystal. To a Shrike a crystal is a missile plant where it
+                    // was taken, the one thing worth fetching; the nests go wherever the pilot docks in the heap.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Thornbush");
+                case GameModes.Lancefall:
+                    // Shatterplane's provider: the densest standing hostile mass - the nearest big plate still standing.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Lancefall");
+                case GameModes.Stingherd:
+                    // The Bends' provider: the nearest pilot this player may sting. The herd is driven, not flown, so
+                    // the question is which rival hull to drive it at.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Stingherd");
+                case GameModes.Trawl:
+                    // Densest standing hostile mass: the net scores where prisms are packed tight enough to smash into
+                    // each other, so the arrow names the nearest big sheaf still standing.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Trawl");
                 case GameModes.Sirocco:
                     // Same provider, same reason: the forest rings the cell, so the arrow names
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs
