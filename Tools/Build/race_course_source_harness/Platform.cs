@@ -75,6 +75,7 @@ namespace CosmicShore.ScriptableObjects
         public int GetBrittleStarTimeGateTarget() => 0;
         public int GetSlingshotGateTarget() => 0;
         public int GetSerpentTimeGateTarget() => 0;
+        public int GetSpearlineGateTarget() => 0;
     }
 }
 
