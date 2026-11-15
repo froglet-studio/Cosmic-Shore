@@ -128,6 +128,10 @@ namespace CosmicShore.Editor
                 "hull is 1, default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget + ".\n" +
                 "  • Corona: bloom hits a DOMAIN needs - a rival pilot caught in a bloom of a bomb a Manta " +
                 "planted is 1, default " + EndConditionOverridesSO.DefaultCoronaBloomTarget + ".\n" +
+                "  • Shockfront: ripple hits a DOMAIN needs - a rival pilot stripped by the front of a Stoat's " +
+                "annihilation ripple is 1, default " + EndConditionOverridesSO.DefaultShockfrontRippleTarget + ".\n" +
+                "  • Fulmen: hostile prisms a DOMAIN must destroy, mostly with the Stoat's omni-crystal bolts " +
+                "(race to N), default " + EndConditionOverridesSO.DefaultFulmenPrismTarget + ".\n" +
                 "  • Harvest: hostile prisms a DOMAIN must destroy with the Thresher's chain, ball or " +
                 "blast (race to N), default " + EndConditionOverridesSO.DefaultHarvestPrismTarget + ".\n" +
                 "  • Shatterplane: hostile prisms a DOMAIN must break, PER INTENSITY - every neutral plate tile a " +
@@ -137,6 +141,12 @@ namespace CosmicShore.Editor
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Glasshouse: round length in SECONDS (timed - most trail and garden STANDING in a " +
                 "domain's colour at the whistle wins), default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + ".\n" +
+                "  • Larder: missile hits a DOMAIN needs - a missile from a Shrike's plants reaching a rival hull is 1, " +
+                "default " + EndConditionOverridesSO.DefaultLarderMissileTarget + ".\n" +
+                "  • Thornbush: round length in SECONDS (timed - most nests and trail STANDING in a domain's colour at " +
+                "the whistle wins), default " + EndConditionOverridesSO.DefaultThornbushRoundSeconds + ".\n" +
+                "  • Lancefall: hostile prisms a DOMAIN must break with the Void Lance (race to N), default " +
+                EndConditionOverridesSO.DefaultLancefallPrismTarget + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget + ".\n" +
                 "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
@@ -338,6 +348,8 @@ namespace CosmicShore.Editor
             EditorGUI.indentLevel--;
             int kw  = Mathf.Max(0, EditorGUILayout.IntField("Kelpwood - Bite Target", _config.kelpwoodBiteTarget));
             int cr  = Mathf.Max(0, EditorGUILayout.IntField("Corona - Bloom Target", _config.coronaBloomTarget));
+            int sf  = Mathf.Max(0, EditorGUILayout.IntField("Shockfront - Ripple Target", _config.shockfrontRippleTarget));
+            int fu  = Mathf.Max(0, EditorGUILayout.IntField("Fulmen - Prism Target", _config.fulmenPrismTarget));
             int hv  = Mathf.Max(0, EditorGUILayout.IntField("Harvest - Prism Target", _config.harvestPrismTarget));
             int sp  = Mathf.Max(0, EditorGUILayout.IntField("Shatterplane - Prism Target", _config.shatterplanePrismTarget));
             // Per-intensity, like Flatline's: each rung hangs a different amount of plate. 0 falls back to the scalar.
@@ -355,6 +367,9 @@ namespace CosmicShore.Editor
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int pls = Mathf.Max(0, EditorGUILayout.IntField("Palisade - Round Seconds", _config.palisadeRoundSeconds));
             int gh  = Mathf.Max(0, EditorGUILayout.IntField("Glasshouse - Round Seconds", _config.glasshouseRoundSeconds));
+            int ld  = Mathf.Max(0, EditorGUILayout.IntField("Larder - Missile Target", _config.larderMissileTarget));
+            int tb  = Mathf.Max(0, EditorGUILayout.IntField("Thornbush - Round Seconds", _config.thornbushRoundSeconds));
+            int lf  = Mathf.Max(0, EditorGUILayout.IntField("Lancefall - Prism Target", _config.lancefallPrismTarget));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             int tv  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Break PERCENT", _config.tandavaBreakPercent), 0, 100);
@@ -414,12 +429,17 @@ namespace CosmicShore.Editor
                     _config.flatlinePointTargetByIntensity = flByIntensity;
                     _config.kelpwoodBiteTarget = kw;
                     _config.coronaBloomTarget = cr;
+                    _config.shockfrontRippleTarget = sf;
+                    _config.fulmenPrismTarget = fu;
                     _config.harvestPrismTarget = hv;
                     _config.shatterplanePrismTarget = sp;
                     _config.shatterplanePrismTargetByIntensity = spByIntensity;
                     _config.tapestryRoundSeconds = tp;
                     _config.palisadeRoundSeconds = pls;
                     _config.glasshouseRoundSeconds = gh;
+                    _config.larderMissileTarget = ld;
+                    _config.thornbushRoundSeconds = tb;
+                    _config.lancefallPrismTarget = lf;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
                     _config.tandavaBreakPercent = tv;
@@ -488,6 +508,8 @@ namespace CosmicShore.Editor
                 v => v > 0 ? v.ToString() : flatlineEffective)));
             EditorGUILayout.LabelField("Kelpwood", kw > 0 ? kw.ToString() : EndConditionOverridesSO.DefaultKelpwoodBiteTarget + " (default)");
             EditorGUILayout.LabelField("Corona", cr > 0 ? cr.ToString() : EndConditionOverridesSO.DefaultCoronaBloomTarget + " (default)");
+            EditorGUILayout.LabelField("Shockfront", sf > 0 ? sf.ToString() : EndConditionOverridesSO.DefaultShockfrontRippleTarget + " (default)");
+            EditorGUILayout.LabelField("Fulmen", fu > 0 ? fu.ToString() : EndConditionOverridesSO.DefaultFulmenPrismTarget + " (default)");
             EditorGUILayout.LabelField("Harvest", hv > 0 ? hv.ToString() : EndConditionOverridesSO.DefaultHarvestPrismTarget + " (default)");
             string shatterplaneEffective = sp > 0 ? sp.ToString()
                 : EndConditionOverridesSO.DefaultShatterplanePrismTarget + " (default)";
@@ -496,6 +518,9 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Palisade (seconds)", pls > 0 ? pls.ToString() : EndConditionOverridesSO.DefaultPalisadeRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Glasshouse (seconds)", gh > 0 ? gh.ToString() : EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Larder", ld > 0 ? ld.ToString() : EndConditionOverridesSO.DefaultLarderMissileTarget + " (default)");
+            EditorGUILayout.LabelField("Thornbush (seconds)", tb > 0 ? tb.ToString() : EndConditionOverridesSO.DefaultThornbushRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Lancefall", lf > 0 ? lf.ToString() : EndConditionOverridesSO.DefaultLancefallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUILayout.LabelField("Tandava (break %)", tv > 0 ? tv.ToString() : EndConditionOverridesSO.DefaultTandavaBreakPercent + " (default)");
@@ -580,12 +605,17 @@ namespace CosmicShore.Editor
                    " (per intensity " + string.Join(" / ", _config.flatlinePointTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Kelpwood: " + Fmt(_config.kelpwoodBiteTargetBuild, "default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget) + "\n" +
                    "Corona: " + Fmt(_config.coronaBloomTargetBuild, "default " + EndConditionOverridesSO.DefaultCoronaBloomTarget) + "\n" +
+                   "Shockfront: " + Fmt(_config.shockfrontRippleTargetBuild, "default " + EndConditionOverridesSO.DefaultShockfrontRippleTarget) + "\n" +
+                   "Fulmen: " + Fmt(_config.fulmenPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultFulmenPrismTarget) + "\n" +
                    "Harvest: " + Fmt(_config.harvestPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultHarvestPrismTarget) + "\n" +
                    "Shatterplane: " + Fmt(_config.shatterplanePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultShatterplanePrismTarget) +
                    " (per intensity " + string.Join(" / ", _config.shatterplanePrismTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Palisade (seconds): " + Fmt(_config.palisadeRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultPalisadeRoundSeconds) + "\n" +
                    "Glasshouse (seconds): " + Fmt(_config.glasshouseRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds) + "\n" +
+                   "Larder: " + Fmt(_config.larderMissileTargetBuild, "default " + EndConditionOverridesSO.DefaultLarderMissileTarget) + "\n" +
+                   "Thornbush (seconds): " + Fmt(_config.thornbushRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultThornbushRoundSeconds) + "\n" +
+                   "Lancefall: " + Fmt(_config.lancefallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultLancefallPrismTarget) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +
                    "Tandava (break %): " + Fmt(_config.tandavaBreakPercentBuild, "default " + EndConditionOverridesSO.DefaultTandavaBreakPercent) + "\n" +

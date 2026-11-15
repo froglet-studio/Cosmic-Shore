@@ -50,6 +50,8 @@ MonoBehaviour:
   riposteStrikeTarget: 6
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
+  shockfrontRippleTarget: 10
+  fulmenPrismTarget: 1200
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
   - 1600
@@ -60,6 +62,9 @@ MonoBehaviour:
   tapestryRoundSeconds: 90
   palisadeRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  larderMissileTarget: 16
+  thornbushRoundSeconds: 90
+  lancefallPrismTarget: 600
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -128,6 +133,8 @@ MonoBehaviour:
   riposteStrikeTargetBuild: 6
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
+  shockfrontRippleTargetBuild: 10
+  fulmenPrismTargetBuild: 1200
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
   - 1600
@@ -138,6 +145,9 @@ MonoBehaviour:
   tapestryRoundSecondsBuild: 90
   palisadeRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  larderMissileTargetBuild: 16
+  thornbushRoundSecondsBuild: 90
+  lancefallPrismTargetBuild: 600
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35
