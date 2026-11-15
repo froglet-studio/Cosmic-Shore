@@ -14,7 +14,7 @@ One line per bug, with its current state. Full entries (repro, root cause, fix) 
 | **The display-name duplicate check does not work** (2026-11-15): renaming to YS2 logged `[DisplayNameRegistry] Availability check for 'ys2' failed: query does not use an index` (Cloud Save index on `display_name_norm`), then `Availability unknown ... allowing the change (fail-open policy)`. Any name is accepted, so two players CAN share one | Open. The index is on the UGS dashboard: Shombith's backend. Until it exists, names are not unique |
 | `[UGS Auth] Sign-in failed ... The player is already signing in`, twice at boot (2026-11-15) | Open, low. Seen on 2 of 3 boots with "play offline" preferred, on none of about 8 online boots. UGS is in fact signed in afterwards; the facade's own `SignInAnonymouslyCore` call (from `TrySignInCachedAsync`) is refused. Who starts the other sign-in is not found |
 | "The host left" notice appears over a NEW match (2026-11-15) | Fixed 2026-11-15: `DisconnectNotice.CheckRejoin` now runs on Menu_Main only (it was written for the menu and never stopped in a game scene, so an old drop record was given up over the next match). Compiled in the editor; not replayed with a stale drop record |
-| A rejoiner and READY in a multi-turn mode (2026-11-15) | Not checked. After a forced turn end the host went back to READY and the rejoiner showed no READY button; the end was forced, so this needs a real multi-turn match (checklist "B50" step 6) |
+| A rejoiner and READY in a multi-turn mode (2026-11-15) | Cannot be run: no shipped mode has more than one turn or round (all 54 multiplayer scene controllers serialize 1 and 1, and code sets 1). In a one-turn match the rejoiner gets the scoreboard, REMATCH and LEAVE LOBBY at the natural end (Brood Rush, 2026-11-15). Check again when a mode gains a second turn (checklist "B50" step 6) |
 | No scripted MPPM scenarios and no automatic host/join harness: every multiplayer run needs a person | Open, see [`TODO.md`](TODO.md) |
 | Amoebius edit-mode suite no longer builds (102 missing engine APIs) | Open, harness owner |
 
@@ -56,6 +56,17 @@ Second MPPM run of 2026-11-15 (Bloomrush; the session called the game's own hand
 - Relay region: with Settings > REGION set to `asia-south1` the host's session reported that region and the guest
   joined it (2/4). The preference was put back to Auto.
 - A second hull for B21 (scoring): Mantas report and sync Prisms Damaged like the Dolphins did.
+
+Third MPPM run of 2026-11-15 (`8b6d91b909`; buttons pressed as pointer clicks on the live Buttons):
+- P-B18 / P-B22, the BUTTONS: PASSED. Play Again / REMATCH, Main Menu, Leave Lobby and the pause menu's Leave are wired
+  in code (one runtime listener each, no inspector target) on both machines. The guest's Leave (pause menu mid-match,
+  and Leave Lobby on the scoreboard) took it to its own menu and party; the host stayed and kept the guest's ship and
+  score row. Guest REMATCH plus host PLAY AGAIN started a rematch with stats cleared.
+- B21 (scoring) on different hulls: PASSED. Brood Rush, Dolphin and Squirrel: both scoreboards show both pilots, their
+  hulls and all three stat rows.
+- After a rejoin, Player 2's input is not paused and its hull is not AI-flown (state check on both machines after
+  `rejoinedRunningTurn` / `seatReclaimed`; not flown by a person).
+- A rejoiner's READY in a multi-turn mode: NOT RUN, no such mode exists (row above).
 
 ## Not bugs, missing features (tracked in [`TODO.md`](TODO.md))
 

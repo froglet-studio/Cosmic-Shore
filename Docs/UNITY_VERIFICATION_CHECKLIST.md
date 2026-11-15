@@ -589,6 +589,19 @@ editor's command server; the AI flew the hulls, nobody was at the controls):
 - Step 5 **PASSED**: after Play Again and READY, every pilot's stats were empty on both machines, locally and in the
   synced list.
 - Still not run: different hulls in one match (the modes tried are single-hull), step 4 by a person, step 6.
+**Fourth run, 2026-11-15** (`8b6d91b909`, the editor + MPPM Player 2, driven by a session; every button below was
+pressed as a pointer click on the live `UnityEngine.UI.Button` through `ExecuteEvents`, so the scene's own wiring ran):
+- **Buttons (B18 / B22) PASSED.** Two-player Bloomrush ended on its timer. On both machines Play Again, Main Menu,
+  Leave Lobby and the pause menu's Leave each carry one runtime listener (wired in code; no inspector call, so there is
+  no `{fileID: 0}` target left to break). Guest REMATCH then host PLAY AGAIN started a rematch with every stat empty on
+  both machines (step 5 by click). Guest pause menu > Leave mid-match: the guest landed on its menu in its own party
+  (1/4), the host kept YS2's Manta (AI-flown) and its score row to the end. Guest LEAVE LOBBY on the scoreboard: same,
+  and the host stayed on its scoreboard. Host MAIN MENU: back to Menu_Main in its party (three times).
+- **Different hulls (step 3) PASSED.** Brood Rush (the card allows seven hulls), host on a Dolphin, Player 2 on a
+  Squirrel; the match ended by itself. Both scoreboards listed both pilots with their hulls ("YS2 Jade Squirrel 3
+  Broods", "ys1 Jade Dolphin 0 Broods") and all three stat rows for both (host "ys1 33 · YS2 -", Player 2
+  "YS2 0 · ys1 33"). The "0" against "-" cosmetic is still there.
+- Still not run: step 4 by a person, step 6.
 2. Solo, fly a Dolphin (or Manta, Rhino, Serpent, Swordfish) in any arcade mode and ram some prisms. **Pass:** the
    scoreboard's Prisms Damaged is above 0, and Longest Drift / Max Boost show your values. The console no longer
    warns "[TelemetryBootstrap] ... serialized stat SO refs will be null".
@@ -626,6 +639,22 @@ Player 2 was dropped by shutting its Netcode client down mid-race, not by stoppi
 - Step 6 **OPEN, one thing to look at**: when the turn was ended from the host by raising the turn-end condition by
   hand, the host went back to READY and Player 2 (the rejoiner) showed no READY button. That end was forced, so it is
   not proof of a fault; a multi-turn mode needs the check (does a rejoiner get READY for the next turn?).
+**Second run, 2026-11-15** (`8b6d91b909`, the editor + MPPM Player 2, Brood Rush, host Dolphin, Player 2 Squirrel):
+- Step 3 **PASSED again**: drop, then REJOIN once the notice was shown; the host marked `seatReclaimed`, Player 2
+  marked `rejoinedRunningTurn`.
+- **Input after the rejoin: a state check, not a flight.** On Player 2 after `rejoinedRunningTurn`: its Player is the
+  local pilot and owner, `InputStatus.Paused` false, `NetIsAI` false, `IsInitializedAsAI` false, the vessel's
+  `AutoPilotEnabled` false; the host agrees (`NetIsAI` false, autopilot false). Nobody flew the ship: a person still
+  owes the flight.
+- Step 5 **PASSED**: the match ended by itself for both; Player 2 (the rejoiner) got the scoreboard with its row,
+  REMATCH and LEAVE LOBBY.
+- Step 6 **NOT RUN, cannot be run today**: no shipped mode has more than one turn or round. All 54 controllers in
+  `Assets/_Scenes/Multiplayer Scenes/*.unity` serialize `numberOfRounds: 1` and `numberOfTurnsPerRound: 1`, and every
+  controller that sets them in code sets 1. A rejoiner's READY between turns can only be checked once a mode has a
+  second turn.
+- Harness trap: the first REJOIN of this run was refused ("ys1's party is no longer available"). The script had
+  invoked `Rejoin` on a hidden notice whose `_rejoinVia` was a snapshot from an older session. Not a game fault (a
+  hidden notice has no button to press); the script now presses only a shown notice.
 2. Two players (main editor + MPPM Player 2, or the editor + a dev build), a party match of any arcade mode, both press
    READY, the race starts. Drop Player 2 mid-race (stop its Play, or kill the build) and wait for "handed to the AI".
 3. Player 2 comes back and presses REJOIN. **Pass:** after the connecting panel, Player 2 is flying its old ship at
