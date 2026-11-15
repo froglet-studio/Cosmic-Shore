@@ -56,6 +56,10 @@ SPEC = {
     "symmetry": 3,
     "steering_up": "carried",
     "mouth": "none",   # a pollinator does not eat: it stings with the stinger and carries the mass home
+    # what a rider gets (the Jewel Wasp; schema in the /fauna-creation skill, section 8): the numbers BeeFauna.prefab's
+    # own component states (maxSpeed 26; mouth reach = max(trailBlockInteractionRadius 20, feedingClusterRadius 10, 6)),
+    # held to the prefab by recreate.py. The body whips: its Spine carries four child limbs (FaunaAttackDriver.Scan).
+    "possession": {"top_speed": 26.0, "mouth_reach": 20.0, "attack": "whip"},
     "spindles": [
         {"name": "Spine", "parent": None, "mesh": "braid", "from": [0.0, 0.0, -1.5], "to": [0.0, 0.0, -11.0]},
         _vane(0), _vane(1), _vane(2),

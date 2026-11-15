@@ -326,13 +326,78 @@ def check(spec):
         if bad:
             errs.append(f"L9 part '{thing['name']}' is named for Earth anatomy ({bad[0]}): name it for what it is in the HyperSea")
 
+    # L11 what a rider gets (the Jewel Wasp possesses any creature): the numbers its possession reads, and an attack
+    # the body can actually play. FaunaAttackDriver whips a body whose hub carries three limb chains or more and
+    # lunges any other, whatever the spec hopes; a species with an attack of its own (the worm's lunge) says 'charge'.
+    pos = spec.get("possession")
+    want(isinstance(pos, dict), "L11 no possession block: say what a rider gets (top_speed, mouth_reach, attack)")
+    if isinstance(pos, dict):
+        want(pos.get("top_speed", 0) > 0 and pos.get("mouth_reach", 0) > 0,
+             "L11 possession needs top_speed (Fauna.PossessionTopSpeed, u/s) and mouth_reach (PossessionMouthReach, u)")
+        want(pos.get("attack") in ("whip", "lunge", "charge"), "L11 possession.attack is whip, lunge or charge (its own)")
+        limbs = limb_chains(spec)
+        if pos.get("attack") == "whip":
+            want(limbs >= 3, f"L11 attack 'whip' but the body has {limbs} limb chain(s) under one hub: the game whips three or "
+                             "more (FaunaAttackDriver.Scan) and lunges anything else")
+        if pos.get("attack") == "lunge":
+            want(limbs < 3, f"L11 attack 'lunge' but the body has {limbs} limb chains under one hub: the game will whip it")
+        want(pos.get("for") in (None, "duel", "brawl", "siege", "graze", "sprint", "slalom"),
+             "L11 possession.for names the lab column the creature is designed to win (duel / brawl / siege / graze / sprint / slalom)")
+
     # L10 the premise and the role are written
     want(bool(spec.get("premise")), "L10 no premise: say what this lifeform is and the feeling it is for")
     want(spec.get("role") in ("herbivore", "predator", "pollinator", "omnivore"), "L10 no role (herbivore / predator / pollinator / omnivore)")
     return errs
 
 
+def limb_chains(spec):
+    """How many limb chains the game's FaunaAttackDriver would find: the most child spindles any one spindle carries
+    (build.py gives every spindle a Braid child, so every child spindle is a chain: a child with a child)."""
+    count = {}
+    for s in spec.get("spindles", []):
+        if s.get("parent") is not None:
+            count[s["parent"]] = count.get(s["parent"], 0) + 1
+    return max(count.values()) if count else 0
+
+
 # ------------------------------------------------------------------ loading and the self-test
+
+def check_shipped(spec):
+    """The laws a SHIPPED creature's transcription breaks (specs/shipped/): what can be read off a body that was not
+    written in the generative language. A report for the redesign list, never a gate."""
+    if not spec.get("shipped"):
+        return check(spec)
+    errs = []
+    parts = list(spec["segments"].values()) if "segments" in spec else [spec]
+    heart_r = HEART_WORLD / 2
+    for part in parts:
+        scale = part.get("root_scale", 1.0) or 1.0
+        prisms = part["prisms"]
+        if any(sk["mesh"] != "Assets/_Models/Fauna/bonita.fbx#BezierCurve.001" for sk in part["skin"]):
+            errs.append("L2 the body wears a sculpted model (" + ", ".join(sorted({sk["mesh"].split("#")[1] for sk in part["skin"]}))
+                        + "), not braid spindles from the Etherion")
+        if part.get("heart"):
+            h = part["heart"]["at"]
+            ahead = [p["name"] for p in prisms if (p["at"][2] - h[2]) * scale > -heart_r]
+            if ahead:
+                errs.append(f"L1 {len(ahead)} prism(s) sit level with or ahead of the heart: {ahead[:4]}")
+            # no up: every prism needs a partner a third of a turn (or less) round the travel axis
+            for n in (3, 4, 5, 6):
+                ang = 2 * math.pi / n
+                if all(any(q["kind"] == p["kind"] and norm(sub(rot_z(sub(p["at"], h), ang), sub(q["at"], h))) <= 0.05 * max(1.0, norm(p["at"]))
+                           for q in prisms) for p in prisms):
+                    break
+            else:
+                errs.append("L6 the prisms repeat round the travel axis in no order from 3 to 6: the body has an up")
+        if sum(1 for p in prisms if p["kind"] == "health") < 3:
+            errs.append(f"L4 {sum(1 for p in prisms if p['kind'] == 'health')} health prism(s): a body needs three at least")
+        st = [p for p in prisms if p["kind"] == "danger" and max(p["size"]) >= STINGER_MIN_LENGTH / scale
+              and max(p["size"]) >= STINGER_ASPECT * sorted(p["size"])[1]]
+        if not st:
+            errs.append("L5 no long skinny danger prism (a stinger)")
+    errs.append("L6 steers with world up (SafeLookRotation's default), not a carried one" if spec.get("klass") != "BeeFauna" else "")
+    return [e for e in errs if e]
+
 
 def load(name):
     path = os.path.join(SPECS, name + ".py")
@@ -377,6 +442,10 @@ def self_test():
         h = [p for p in s["prisms"] if p.get("kind") == "health"][0]
         s["prisms"].append(dict(h, name=h["name"] + "Twin", at=list(h["at"])))
     planted("two prisms in one place", overlap, "L7")
+    planted("no possession block", lambda s: s.pop("possession"), "L11")
+    planted("a lunge on a body the game will whip", lambda s: s["possession"].update(attack="lunge"), "L11")
+    planted("a whip on a body with no limbs",
+            lambda s: [sp.update(parent=None, **{"from": [0.0, 0.0, -1.5]}) for sp in s["spindles"] if sp["name"].startswith("Vane")], "L11")
     planted("a limb floating free", lambda s: s["spindles"][-1].update(**{"from": [0.0, 0.0, -40.0], "to": [0.0, 0.0, -42.0]}), "L2")
     return fails
 
@@ -388,6 +457,14 @@ def main(argv):
             print("FAIL:", f)
         print("celestial self-test:", "ok" if not fails else f"{len(fails)} problem(s)")
         return 1 if fails else 0
+    if "--shipped" in argv:   # the redesign list: the laws each creature the game already ships breaks (a report)
+        import recreate
+        for key in recreate.dossier_keys():
+            errs = check_shipped(recreate.load_spec(key))
+            print(f"{key}: " + ("celestial" if not errs else f"{len(errs)} law(s) broken"))
+            for e in errs:
+                print("   ", e)
+        return 0
     names = sorted(f[:-3] for f in os.listdir(SPECS) if f.endswith(".py") and not f.startswith("_")) if "--all" in argv \
         else [a for a in argv if not a.startswith("-")]
     if not names:
