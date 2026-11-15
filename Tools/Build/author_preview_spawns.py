@@ -110,6 +110,10 @@ SCENE_FOR_MODE = {
     110: 'MinigameWoodpecker',
     117: 'MinigameStingherd',
     118: 'MinigameTrawl',
+    124: 'MinigameRailrush',
+    121: 'MinigameBullrush',
+    122: 'MinigameWindrow',
+    123: 'MinigameLandslide',
 }
 
 

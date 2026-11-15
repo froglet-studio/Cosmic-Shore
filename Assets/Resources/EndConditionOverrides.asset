@@ -48,11 +48,15 @@ MonoBehaviour:
   - 90
   jackstrawStrikeTarget: 3
   riposteStrikeTarget: 6
+  bullrushGoreTarget: 5
+  windrowRoundSeconds: 90
+  landslidePrismTarget: 500
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
   shockfrontRippleTarget: 10
   fulmenPrismTarget: 1200
   trawlPrismTarget: 300
+  railrushHitTarget: 20
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
   - 1600
@@ -144,11 +148,15 @@ MonoBehaviour:
   - 90
   jackstrawStrikeTargetBuild: 3
   riposteStrikeTargetBuild: 6
+  bullrushGoreTargetBuild: 5
+  windrowRoundSecondsBuild: 90
+  landslidePrismTargetBuild: 500
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
   shockfrontRippleTargetBuild: 10
   fulmenPrismTargetBuild: 1200
   trawlPrismTargetBuild: 300
+  railrushHitTargetBuild: 20
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
   - 1600

@@ -121,6 +121,12 @@ namespace CosmicShore.Editor
                 "(3 laps x 8), default " + EndConditionOverridesSO.DefaultSpearlineGateTarget + ".\n" +
                 "  • Palisade: round length in SECONDS (timed - most Swordfish mass STANDING at the whistle " +
                 "wins), default " + EndConditionOverridesSO.DefaultPalisadeRoundSeconds + ".\n" +
+                "  • Bullrush: gores a DOMAIN needs - one Rhino ramming a rival faster than it and above the " +
+                "gore speed is 1, default " + EndConditionOverridesSO.DefaultBullrushGoreTarget + ".\n" +
+                "  • Windrow: round length in SECONDS (timed - most Rhino trail STANDING at the whistle " +
+                "wins), default " + EndConditionOverridesSO.DefaultWindrowRoundSeconds + ".\n" +
+                "  • Landslide: hostile prisms a DOMAIN's plough strikes must destroy in Cleave's arenas, " +
+                "default " + EndConditionOverridesSO.DefaultLandslidePrismTarget + ".\n" +
                 "  • Flatline: points a DOMAIN needs, PER INTENSITY - a Brittle Star round on a rival " +
                 "hull is 1, a cord or thrown-saber Strike 8, the ring blast 0. A rung left at 0 falls back " +
                 "to the mode scalar (default " + EndConditionOverridesSO.DefaultFlatlinePointTarget + ").\n" +
@@ -132,6 +138,8 @@ namespace CosmicShore.Editor
                 "annihilation ripple is 1, default " + EndConditionOverridesSO.DefaultShockfrontRippleTarget + ".\n" +
                 "  • Fulmen: hostile prisms a DOMAIN must destroy, mostly with the Stoat's omni-crystal bolts " +
                 "(race to N), default " + EndConditionOverridesSO.DefaultFulmenPrismTarget + ".\n" +
+                "  • Railrush: spike hits a DOMAIN needs - an Urchin's chain spike reaching a rival hull " +
+                "is 1, default " + EndConditionOverridesSO.DefaultRailrushHitTarget + ".\n" +
                 "  • Harvest: hostile prisms a DOMAIN must destroy with the Thresher's chain, ball or " +
                 "blast (race to N), default " + EndConditionOverridesSO.DefaultHarvestPrismTarget + ".\n" +
                 "  • Shatterplane: hostile prisms a DOMAIN must break, PER INTENSITY - every neutral plate tile a " +
@@ -359,6 +367,9 @@ namespace CosmicShore.Editor
             int sg  = Mathf.Max(0, EditorGUILayout.IntField("Hood (Serpent) - Snipe Target", _config.serpentHoodSnipeTarget));
             int js  = Mathf.Max(0, EditorGUILayout.IntField("Jackstraw - Strike Target", _config.jackstrawStrikeTarget));
             int rps = Mathf.Max(0, EditorGUILayout.IntField("Riposte - Strike Target", _config.riposteStrikeTarget));
+            int brg = Mathf.Max(0, EditorGUILayout.IntField("Bullrush - Gore Target", _config.bullrushGoreTarget));
+            int wrs = Mathf.Max(0, EditorGUILayout.IntField("Windrow - Round Seconds", _config.windrowRoundSeconds));
+            int lsp = Mathf.Max(0, EditorGUILayout.IntField("Landslide - Prism Target", _config.landslidePrismTarget));
             int fl  = Mathf.Max(0, EditorGUILayout.IntField("Flatline - Point Target", _config.flatlinePointTarget));
             // Per-intensity, like Cleave's: the denser panes put more fights inside cord reach. 0 falls back to the scalar.
             var flByIntensity = new List<int>(4);
@@ -376,6 +387,7 @@ namespace CosmicShore.Editor
             int cr  = Mathf.Max(0, EditorGUILayout.IntField("Corona - Bloom Target", _config.coronaBloomTarget));
             int sf  = Mathf.Max(0, EditorGUILayout.IntField("Shockfront - Ripple Target", _config.shockfrontRippleTarget));
             int fu  = Mathf.Max(0, EditorGUILayout.IntField("Fulmen - Prism Target", _config.fulmenPrismTarget));
+            int rr  = Mathf.Max(0, EditorGUILayout.IntField("Railrush - Hit Target", _config.railrushHitTarget));
             int hv  = Mathf.Max(0, EditorGUILayout.IntField("Harvest - Prism Target", _config.harvestPrismTarget));
             int sp  = Mathf.Max(0, EditorGUILayout.IntField("Shatterplane - Prism Target", _config.shatterplanePrismTarget));
             // Per-intensity, like Flatline's: each rung hangs a different amount of plate. 0 falls back to the scalar.
@@ -464,12 +476,16 @@ namespace CosmicShore.Editor
                     _config.serpentHoodSnipeTarget = sg;
                     _config.jackstrawStrikeTarget = js;
                     _config.riposteStrikeTarget = rps;
+                    _config.bullrushGoreTarget = brg;
+                    _config.windrowRoundSeconds = wrs;
+                    _config.landslidePrismTarget = lsp;
                     _config.flatlinePointTarget = fl;
                     _config.flatlinePointTargetByIntensity = flByIntensity;
                     _config.kelpwoodBiteTarget = kw;
                     _config.coronaBloomTarget = cr;
                     _config.shockfrontRippleTarget = sf;
                     _config.fulmenPrismTarget = fu;
+                    _config.railrushHitTarget = rr;
                     _config.harvestPrismTarget = hv;
                     _config.shatterplanePrismTarget = sp;
                     _config.shatterplanePrismTargetByIntensity = spByIntensity;
@@ -554,6 +570,9 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Hood (Serpent)", sg > 0 ? sg.ToString() : EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget + " (default)");
             EditorGUILayout.LabelField("Jackstraw", js > 0 ? js.ToString() : EndConditionOverridesSO.DefaultJackstrawStrikeTarget + " (default)");
             EditorGUILayout.LabelField("Riposte", rps > 0 ? rps.ToString() : EndConditionOverridesSO.DefaultRiposteStrikeTarget + " (default)");
+            EditorGUILayout.LabelField("Bullrush", brg > 0 ? brg.ToString() : EndConditionOverridesSO.DefaultBullrushGoreTarget + " (default)");
+            EditorGUILayout.LabelField("Windrow (seconds)", wrs > 0 ? wrs.ToString() : EndConditionOverridesSO.DefaultWindrowRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Landslide", lsp > 0 ? lsp.ToString() : EndConditionOverridesSO.DefaultLandslidePrismTarget + " (default)");
             string flatlineEffective = fl > 0 ? fl.ToString()
                 : EndConditionOverridesSO.DefaultFlatlinePointTarget + " (default)";
             EditorGUILayout.LabelField("Flatline", string.Join(" / ", flByIntensity.ConvertAll(
@@ -562,6 +581,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Corona", cr > 0 ? cr.ToString() : EndConditionOverridesSO.DefaultCoronaBloomTarget + " (default)");
             EditorGUILayout.LabelField("Shockfront", sf > 0 ? sf.ToString() : EndConditionOverridesSO.DefaultShockfrontRippleTarget + " (default)");
             EditorGUILayout.LabelField("Fulmen", fu > 0 ? fu.ToString() : EndConditionOverridesSO.DefaultFulmenPrismTarget + " (default)");
+            EditorGUILayout.LabelField("Railrush", rr > 0 ? rr.ToString() : EndConditionOverridesSO.DefaultRailrushHitTarget + " (default)");
             EditorGUILayout.LabelField("Harvest", hv > 0 ? hv.ToString() : EndConditionOverridesSO.DefaultHarvestPrismTarget + " (default)");
             string shatterplaneEffective = sp > 0 ? sp.ToString()
                 : EndConditionOverridesSO.DefaultShatterplanePrismTarget + " (default)";
@@ -666,12 +686,16 @@ namespace CosmicShore.Editor
                    "Hood (Serpent): " + Fmt(_config.serpentHoodSnipeTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget) + "\n" +
                    "Jackstraw: " + Fmt(_config.jackstrawStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultJackstrawStrikeTarget) + "\n" +
                    "Riposte: " + Fmt(_config.riposteStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultRiposteStrikeTarget) + "\n" +
+                   "Bullrush: " + Fmt(_config.bullrushGoreTargetBuild, "default " + EndConditionOverridesSO.DefaultBullrushGoreTarget) + "\n" +
+                   "Windrow (seconds): " + Fmt(_config.windrowRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultWindrowRoundSeconds) + "\n" +
+                   "Landslide: " + Fmt(_config.landslidePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultLandslidePrismTarget) + "\n" +
                    "Flatline: " + Fmt(_config.flatlinePointTargetBuild, "default " + EndConditionOverridesSO.DefaultFlatlinePointTarget) +
                    " (per intensity " + string.Join(" / ", _config.flatlinePointTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Kelpwood: " + Fmt(_config.kelpwoodBiteTargetBuild, "default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget) + "\n" +
                    "Corona: " + Fmt(_config.coronaBloomTargetBuild, "default " + EndConditionOverridesSO.DefaultCoronaBloomTarget) + "\n" +
                    "Shockfront: " + Fmt(_config.shockfrontRippleTargetBuild, "default " + EndConditionOverridesSO.DefaultShockfrontRippleTarget) + "\n" +
                    "Fulmen: " + Fmt(_config.fulmenPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultFulmenPrismTarget) + "\n" +
+                   "Railrush: " + Fmt(_config.railrushHitTargetBuild, "default " + EndConditionOverridesSO.DefaultRailrushHitTarget) + "\n" +
                    "Harvest: " + Fmt(_config.harvestPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultHarvestPrismTarget) + "\n" +
                    "Shatterplane: " + Fmt(_config.shatterplanePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultShatterplanePrismTarget) +
                    " (per intensity " + string.Join(" / ", _config.shatterplanePrismTargetByIntensityBuild ?? new List<int>()) + ")\n" +

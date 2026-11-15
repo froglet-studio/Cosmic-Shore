@@ -19,7 +19,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Meerkat | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Orca | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
-| Rhino | `b b b` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | Regatta, BroodRush |
+| Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
 | Serpent | `b b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
 | Shrike | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
@@ -30,7 +30,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Swordfish | `b b .` | `b b .` | `b b .` | `b b .` | - | Broadside, BroodRush |
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | - |
 | TigerMoth | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
-| Urchin | `b b ~` | `x x x` | `b b .` | `- - -` | Charge | Regatta, Broadside |
+| Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside |
 | Wrasse | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 
 ## 2. Arena games
@@ -58,7 +58,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Manta | Redline | Corona | Scurry (shared) | Bloomrush |
 | Meerkat | Burrow Run, Warpline | - | - | - |
 | Orca | Breach | Pod Hunt | Ice Shelf | Depth Charge |
-| Rhino | Headlong | - | - | - |
+| Rhino | Headlong | Bullrush | Windrow | Landslide |
 | Scarab | Scarab Rally | Undertow | Scarab Scramble, Tollway | Wrecking Ball |
 | Serpent | Serpentine | Hood | Hedgerow, Longshot | - |
 | Shrike | Thornline | Larder | Thornbush | Lancefall |
@@ -69,7 +69,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Swordfish | Spearline | Riposte | Palisade | Cleave |
 | Thresher | Thresher Time | Jackstraw | Haul | Harvest |
 | TigerMoth | Waystation | Dustup | Tapestry | Sirocco |
-| Urchin | Skein | - | Hijack | excused |
+| Urchin | Skein | Railrush | Hijack | excused |
 | Wrasse | Wrasse Run | - | - | - |
 
 ## 4. Recorded steps

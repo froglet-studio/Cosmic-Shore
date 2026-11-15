@@ -300,6 +300,15 @@ namespace CosmicShore.Data
         // (DomainRaceToasts); ids reserved by the game kit roster (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 27-28).
         StingherdHint = 192,            // once, at the start: herd your danger creatures into a rival hull to sting it
         TrawlHint = 193,                // once, at the start: drag prisms in the net and smash them into each other
+        // Railrush, the Urchin's charge game (_Scripts/Controller/Arcade/RAILRUSH.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. 199 is the id GAME_KIT_ROSTER.md reserved (row 34).
+        RailrushHint = 199,             // once, at the start: grind your colour's rail, launch, spike a rival at speed
+        // The Rhino's three games (GAME_KIT_ROSTER.md rows 31-33 reserved 196-198). Each is posted once, at the start, to
+        // the LOCAL pilot only. Their race beats are the shared 128-130 (Bullrush: DomainRaceToasts; Windrow: the lead
+        // change, sampled by its controller because a timed mode has no target), Landslide's are Cleave's 50-52.
+        BullrushHint = 196,             // a gore is a ram on a rival from behind, faster than it: wind up the Ramp Spool
+        WindrowHint = 197,              // your standing trail is your score; plough through rival rows to break them
+        LandslideHint = 198,            // ploughed prisms break what they hit; a wider blade catches more ribs
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.

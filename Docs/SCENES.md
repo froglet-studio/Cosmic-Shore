@@ -71,6 +71,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameSalvo** | `_Scenes/Multiplayer Scenes/` | `Salvo (44)` | `SalvoController` |
 | **MinigameSwitchback** | `_Scenes/Multiplayer Scenes/` | `Switchback (45)` | `SwitchbackController` |
 | **MinigameHijack** | `_Scenes/Multiplayer Scenes/` | `Hijack (46)` | `HijackController` |
+| **MinigameRailrush** | `_Scenes/Multiplayer Scenes/` | `Railrush (124)` | `RailrushController` |
 | **MinigameTollway** | `_Scenes/Multiplayer Scenes/` | `Tollway (48)` | `TollwayController` |
 | **MinigameWreckingBall** | `_Scenes/Multiplayer Scenes/` | `WreckingBall (54)` | `WreckingBallController` |
 | **MinigameUndertow** | `_Scenes/Multiplayer Scenes/` | `Undertow (55)` | `UndertowController` |
@@ -100,6 +101,9 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameDustup** | `_Scenes/Multiplayer Scenes/` | `Dustup (59)` | `DustupController` |
 | **MinigameSerpentHood** | `_Scenes/Multiplayer Scenes/` | `SerpentHood (77)` | `SerpentHoodController` |
 | **MinigameJackstraw** | `_Scenes/Multiplayer Scenes/` | `Jackstraw (85)` | `JackstrawController` |
+| **MinigameBullrush** | `_Scenes/Multiplayer Scenes/` | `Bullrush (121)` | `BullrushController` |
+| **MinigameWindrow** | `_Scenes/Multiplayer Scenes/` | `Windrow (122)` | `WindrowController` |
+| **MinigameLandslide** | `_Scenes/Multiplayer Scenes/` | `Landslide (123)` | `LandslideController` |
 | **MinigameFlatline** | `_Scenes/Multiplayer Scenes/` | `Flatline (84)` | `FlatlineController` |
 | **MinigameKelpwood** | `_Scenes/Multiplayer Scenes/` | `Kelpwood (86)` | `KelpwoodController` |
 | **MinigameCorona** | `_Scenes/Multiplayer Scenes/` | `Corona (87)` | `CoronaController` |
@@ -342,6 +346,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 44 | `Salvo` | MP | MinigameSalvo | `SalvoController` (Sparrow demolition race — see `SALVO.md`) |
 | 45 | `Switchback` | MP | MinigameSwitchback | `SwitchbackController` (Dolphin gate race, Blast Run only since 2026-10-29 — see `SWITCHBACK.md`) |
 | 46 | `Hijack` | MP | MinigameHijack | `HijackController` (Urchin rail heist — see `HIJACK.md`) |
+| 124 | `Railrush` | MP | MinigameRailrush | `RailrushController` (Urchin joust on rails, Hijack's yard — see `RAILRUSH.md`) |
 | 48 | `Tollway` | MP | MinigameTollway | `TollwayController` (Scarab ring race — see `TOLLWAY.md`) |
 | 54 | `WreckingBall` | MP | MinigameWreckingBall | `WreckingBallController` ("Wrecking Ball" — Scarab demolition race, see `WRECKING_BALL.md`) |
 | 55 | `Undertow` | MP | MinigameUndertow | `UndertowController` (Scarab cavitation duel — see `UNDERTOW.md`) |
@@ -372,6 +377,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 59 | `Dustup` | MP | MinigameDustup | `DustupController` (Butterfly dust duel, Charge — a pass OVER a rival is one Strike point; Boneyard. See `DUSTUP.md`) |
 | 77 | `SerpentHood` | MP | MinigameSerpentHood | `SerpentHoodController` (Hood, the Serpent sniper duel, Charge - a snipe on a rival pilot is one Debuff point; a 3,600 u cell, a crystal heart in the middle, Serpentine's ring shapes bent into hoods as perches round it, shutters at I3-I4, a hood falls when its core breaks; was Serpent Gulag. See `SERPENTHOOD.md`) |
 | 85 | `Jackstraw` | MP | MinigameJackstraw | `JackstrawController` (Thresher brawl, Charge - the ball or chain on a rival pilot is one Strike point; a 0G heap of pick-up sticks in the standard cell, crystals in its clearings; I1-I4 grow the heap 34 -> 230 sticks, add jacks, red tips and ironwood; JACKSTRAW.md) |
+| 121 | `Bullrush` | MP | MinigameBullrush | `BullrushController : JackstrawController` (Rhino joust, Charge - a gore, ramming a rival faster than it and above the gore speed, is one point; Jackstraw's heap, referenced; BULLRUSH.md) |
+| 122 | `Windrow` | MP | MinigameWindrow | `WindrowController` (Rhino, Mass - timed, most trail standing wins; plough strikes break rival rows, Heft steers, Berm armours; the bare Barren cell; WINDROW.md) |
+| 123 | `Landslide` | MP | MinigameLandslide | `LandslideController : CleaveController` (Rhino, Space - every prism scored is a plough strike; Cleave's four arenas, referenced; the Blade's width is the lever; LANDSLIDE.md) |
 | 86 | `Kelpwood` | MP | MinigameKelpwood | `KelpwoodController` (Angler hunt, Charge - sweep the eraser onto a rival to lock it, one creature hunts it, each bite is one Strike point; a 0G ball of kelp strands in the standard cell, tadpole herds and omni crystals for the school; I1-I4 grow the kelp 28 -> 88 strands, thin the herds and crystals, add danger tips and collars) |
 | 87 | `Corona` | MP | MinigameCorona | `CoronaController` (Manta stings, Charge - skim a shell to arm a bomb, graze a rival to plant it, touch an omni crystal in the heart to set every bomb off; each rival a bloom catches is one Debuff point; nested prism shells round a crystal heart in the standard cell; I1-I4 add shells 1 -> 4, narrow and rim the gates, thin the heart's crystals 4 -> 1) |
 | 88 | `Harvest` | MP | MinigameHarvest | `HarvestController` (Thresher destruction race, Space - mow a sheaf's stalks with the chain to charge the ball, smash it into the core for one blast; hostile prisms destroyed, first domain to 750; a field of sheaves round a clear centre in the standard cell, omni crystals in the centre; I1-I4 8 -> 22 sheaves, shielded cores, team colours, danger stalks) |
@@ -639,6 +647,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
 | `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Slingshot, Warpline, Thresher Time, Wrasse Run, Scarab Rally, Thornline, Decoy Run, Perch Run, Slip Line, Breach, Serpent Time, Brittle Star Time, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
+| `RailrushHitTurnMonitor` | `TurnMonitors/` | A domain's summed spike-hit CombatPoints reach the Railrush target |
 | `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
 | `WreckingBallPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed (ball + plate) reach the Wrecking Ball target |
 | `UndertowPointTurnMonitor` | `TurnMonitors/` | A domain's bends (CombatPoints) plus creature kills reach the Undertow target (on `CombatPointTurnMonitorBase`) |
@@ -646,6 +655,9 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DustupPointTurnMonitor` | `TurnMonitors/` | A domain's summed dustings (Strike-class CombatPoints) reach the Dustup target (on `CombatPointTurnMonitorBase`) |
 | `SerpentHoodSnipeTurnMonitor` | `TurnMonitors/` | A domain's summed snipes (Debuff-class CombatPoints) reach the Hood target (on `CombatPointTurnMonitorBase`) |
 | `JackstrawStrikeTurnMonitor` | `TurnMonitors/` | A domain's summed strikes (Strike-class CombatPoints) reach the Jackstraw target (on `CombatPointTurnMonitorBase`) |
+| `BullrushStrikeTurnMonitor` | `TurnMonitors/` | A domain's summed gores (Strike-class CombatPoints) reach the Bullrush target (on `CombatPointTurnMonitorBase`) |
+| `WindrowTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (length from `EndConditionOverridesSO.GetWindrowRoundSeconds`) |
+| `LandslidePrismTurnMonitor` | `TurnMonitors/` | A domain's summed HostilePrismsDestroyed reach the Landslide target |
 | `FlatlinePointTurnMonitor` | `TurnMonitors/` | A domain's summed CombatPoints (rounds 1, cord Strikes 8) reach Flatline's target (90 at every intensity, per-intensity list) (on `CombatPointTurnMonitorBase`) |
 | `KelpwoodBiteTurnMonitor` | `TurnMonitors/` | A domain's summed bites (Strike-class CombatPoints) reach the Kelpwood target (on `CombatPointTurnMonitorBase`) |
 | `ShatterplanePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Shatterplane target, resolved per intensity on the server and replicated (Sirocco's shape) |
