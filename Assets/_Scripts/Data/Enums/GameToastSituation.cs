@@ -254,6 +254,11 @@ namespace CosmicShore.Data
         PodHuntHint = 174,              // once, at the start: fly your missiles into rival hulls; the bomb counts too
         IceShelfHint = 175,             // once, at the start: lay trail and drop shields late - only what stands counts
         DepthChargeHint = 176,          // once, at the start: burst missiles and the bomb in the canopy
+        // The Swordfish's three games (SPEARLINE.md, RIPOSTE.md, PALISADE.md), ids reserved in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only, once, at the start.
+        SpearlineHint = 171,            // a sealed ring counts only through a hole: swing the bill on the way through
+        RiposteHint = 172,              // a sword hit lands only while you are faster: cut a straight lane, ramp, strike
+        PalisadeHint = 173,             // light the blade and let go to lay afterimages; cut the rivals' walls down
         // The Shrike's games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 12-14 reserved 177-179). Posted to the LOCAL
         // pilot only. Larder's race beats are the shared 128-130 and a missile hit is 81 (MissileHitsLanded rose);
         // Thornbush's lead change is the shared 130, sampled by its controller (a timed mode has no target);
@@ -267,6 +272,13 @@ namespace CosmicShore.Data
         // prism milestone 83. Ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 29-30). LOCAL pilot only.
         ShockfrontHint = 194,           // once, at the start: sling round and let the pair close beside a rival
         FulmenHint = 195,               // once, at the start: take the omni crystals in the heart; each throws a bolt
+        // The Honeyguide's element games (FLITSTRIKE.md, HONEYCOMB.md, WOODPECKER.md), at the toast ids
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved (166-202 are that roster's). Flitstrike's and Woodpecker's race
+        // beats are the shared 128-130 (DomainRaceToasts); Honeycomb's lead change is the shared 130, sampled by its
+        // controller because a timed mode has no target. Posted to the LOCAL pilot only.
+        FlitstrikeHint = 183,           // once, at the start: hold LT to see the dart, let go to Flit through a rival
+        HoneycombHint = 184,            // once, at the start: an omni crystal is a hive; what stands in your colour scores
+        WoodpeckerHint = 185,           // once, at the start: hold RT to aim, let go to peck the hostile forest
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.

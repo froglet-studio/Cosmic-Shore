@@ -23561,6 +23561,15 @@ Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor conf
 - [ ] Multiplayer, a CLIENT hull (host + one client, `Docs/MULTIPLAYER_START_HERE.md`): the client stings a creature and
       flies it from its own sticks; the host sees the wasp nested and the creature steered; RT attack and suction, LT
       burst and A leave all work from the client; the client's HUD shows the recharges; a second client sees the same.
+- [ ] On a plant (2026-11-15, `claude/jewel-wasp-flora-camera`): the camera eases off the chase into an orbit framing
+      the whole plant; thumbs together turn it up, down, left and right without flipping over the top; Y-diff rolls the
+      view; X-diff zooms (apart in, together out); the camera draws back as the plant grows; Mass 0 still grows it fast.
+- [ ] From a plant, hold RT / LT: the creature or plant in the middle of the view flashes and settles to its glow, the
+      view leans onto it; let go and the wasp flies into it; leaving the plant eases the camera back to the chase.
+- [ ] Inside a creature, from a rival's view: a thin tail behind the creature, the wasp at its heart glowing in its
+      pilot's colours, flashing on an attack, a suction bite and a burst; free again, the tail is full width and the glow off.
+- [ ] Multiplayer, a client on a plant: the orbit, roll and zoom answer its sticks smoothly; a client hull on autopilot
+      stings and rides creatures (the server runs its AI); the client's ride writes one `possession_*.json`.
 - [ ] After a ride of 3 s or more, `Documents/CosmicShore Diagnostics/Flights/possession_<scene>_<species>_<time>.json` exists
       and is sent with the flights after Play.
 
@@ -23595,3 +23604,23 @@ new sight test fails on the old solid wall (27% clear against a 40% bar). Helm s
 2. Fly straight into a wall, level and rolled: the Orca stops dead every time and never slips through a hole (the hit box
    is still the Sparrow's 10.3 x 0.46 u; a hole is 9.9 u corner to corner).
 3. Let the gunners breach a wall: a shot opens a gap a little sooner than before; it grows back 6 s later.
+
+## 🔴 Honeyguide games: Flitstrike, Honeycomb, Woodpecker (2026-11-15, Garrett's project thread, `claude/honeyguide-games`, NOT RUN IN EDITOR)
+
+Authored headless by `Tools/Build/author_{flitstrike,honeycomb,woodpecker}_assets.py` (all `--check` green). No Unity
+compile ran: `unity_refcompile` and the card render need a dotnet 8 SDK this session could not install. Docs:
+`Assets/_Scripts/Controller/Arcade/FLITSTRIKE.md`, `HONEYCOMB.md`, `WOODPECKER.md`.
+
+- [ ] The project compiles (the three controllers, settings, scoring rules and turn monitors; `EndConditionOverridesSO`
+      and its window; `MiniGameHUD`'s three provider rows; `EnumIntegrityTests` counts 86 modes).
+- [ ] Arcade grid: the three Honeyguide cards show (placeholder backgrounds until `/cardart` renders them) and each opens
+      its own scene with the Honeyguide.
+- [ ] Flitstrike (108): hold LT, let go through a rival hull: the score goes up by one per Strike; the first domain to 5
+      wins; the AI flies at intercepts on the nearest rival; the hint toast shows once.
+- [ ] Honeycomb (109): a 90 s round on the Barren cell; elemental crystals are scattered at the countdown; an omni crystal
+      grows a hive behind the hull; the HUD shows standing volume; the lead toast fires; the whistle ranks by volume.
+- [ ] Woodpecker (110): RT pecks chip cactus-forest prisms; the prism milestone toast every 50; first domain to 150 wins;
+      the AI flies toward the densest hostile prisms.
+- [ ] End Game Conditions window shows and saves the three new values.
+- [ ] Run `python3 Tools/Build/render_card_backgrounds.py Flitstrike Honeycomb Woodpecker` on a machine with dotnet 8,
+      then re-run the three generators.

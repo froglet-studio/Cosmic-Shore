@@ -820,6 +820,13 @@ CAMERAS = {
     # Depth Charge: into the Rampage forest from the far side to Rampage's own card, a missile and a bomb burst going
     # off in a plant of a rival colour.
     "DepthCharge": (165, 10, 0.66, 46),
+    # The Honeyguide's three element games. Flitstrike is the Boneyard's fifth card (Dog Fight / Salvo / Broadside /
+    # Dustup / Grizzly Charge), so it is shot from the side none of them use, low and close on the dart; Woodpecker is
+    # the forest's fifth (Rampage / Bends / Bloomrush / Sirocco), from above a stand; Honeycomb is the bare Barren cell
+    # like Tapestry, from the other side, on the combs.
+    "Flitstrike": (295, 16, 0.56, 48),
+    "Woodpecker": (95, 18, 0.62, 46),
+    "Honeycomb": (220, 22, 0.9, 44),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1046,7 +1053,46 @@ def recipe(stem, card_path, pal, ends):
                 rows.append(prism(pt, fwd, v_norm(pt), key, dom))
         layers.append({"kind": "prisms", "rows": rows})
         nucleus()
-    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco", "Fulmen", "DepthCharge"):
+    elif s == "Honeycomb":
+        # MODEL tier: the arena is the bare Barren cell, so what the card shows is what the mode PUTS there - hive
+        # combs, each a flat hexagonal comb of trail prisms square to the hull's flight (HoneyguideCrew.Hive.cs: a
+        # cell every hiveCellSpacing on the Dynamo's hex grid), a third of each comb in its builder's colour and
+        # super-shielded, the rest the other two colours; and one trail arc per pilot laid between hives.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        rows = []
+        cfg_text = read(ROOT / "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset")
+        m = re.search(r"^  hiveCellSpacing: ([\d.]+)$", cfg_text, re.M)
+        sp = float(m.group(1)) if m else 5.0
+        sp = sp * 4.0   # drawn four times the shipped spacing: at cell scale a true comb is a few pixels
+        doms = (JADE, RUBY, GOLD)
+        for k, own in enumerate((JADE, RUBY, GOLD, JADE, RUBY)):
+            c = v_mul(rng.unit(), R * rng.range(0.25, 0.6))
+            n = v_norm(rng.unit())
+            up0 = [0, 1, 0] if abs(n[1]) < 0.9 else [1, 0, 0]
+            right = v_norm(v_cross(up0, n)); up = v_cross(n, right)
+            for q in range(-3, 4):
+                for r in range(-3, 4):
+                    if abs(q + r) > 3:
+                        continue
+                    pos = v_add(c, v_add(v_mul(right, sp * math.sqrt(3) * (q + r / 2)), v_mul(up, -sp * 1.5 * r)))
+                    dom = doms[(q - r) % 3]
+                    rows.append(prism(pos, n, up, [sp * 1.4, sp * 1.4, sp * 0.5], dom,
+                                      SUPER if dom == own else PLAIN))
+        for dom in (JADE, RUBY, GOLD):
+            rad = R * rng.range(0.35, 0.65)
+            a0 = rng.range(0, 2 * math.pi)
+            f = arc([0, 0, 0], rad, a0, a0 + rng.range(1.2, 2.0), rng.range(-0.8, 0.8), bank=0.4)
+            nkeys = int(rad * 1.6 / 12.0)
+            for i in range(nkeys):
+                t = i / max(1, nkeys - 1)
+                pt = f(t)
+                ahead = f(min(1.0, t + 1.0 / max(1, nkeys)))
+                fwd = v_sub(ahead, pt) if t < 1.0 else v_sub(pt, f(max(0.0, t - 1.0 / max(1, nkeys))))
+                rows.append(prism(pt, fwd, v_norm(pt), [8.0, 4.0, 10.0], dom))
+        layers.append({"kind": "prisms", "rows": rows})
+        nucleus()
+    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco", "Fulmen", "Woodpecker", "DepthCharge"):
         tier = "MODEL"
         layers.append(forest_layer(facts, s, plant_size=R * (0.05 if s == "Tollway" else 0.06)))
         nucleus()
@@ -1267,10 +1313,11 @@ def recipe(stem, card_path, pal, ends):
         base = base or R
         cam["target"] = [c * base for c in point_frac]
         cam["radius"] = radius_frac * base
-    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco", "Fulmen", "DepthCharge"):
+    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco", "Fulmen", "Woodpecker", "DepthCharge"):
         aim({"Rampage": (0.62, 0.0, 0.3), "Bends": (-0.35, 0.3, 0.55), "Bloomrush": (0.1, -0.45, -0.5),
-             "Sirocco": (-0.5, -0.25, -0.45), "Fulmen": (0.0, 0.05, 0.0),
-             "DepthCharge": (-0.55, 0.2, 0.35)}[s], 0.45 if s == "Fulmen" else 0.36)
+             "Sirocco": (-0.5, -0.25, -0.45), "Fulmen": (0.0, 0.05, 0.0), "Woodpecker": (0.25, 0.5, -0.55),
+             "DepthCharge": (-0.55, 0.2, 0.35)}[s],
+            0.45 if s == "Fulmen" else 0.36)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Hijack":
         aim((0.55, 0.0, 0.55), 0.42, base=900)
@@ -1737,6 +1784,31 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             tgt = v_add(body, [rng.range(-150, 150), rng.range(-20, 30), rng.range(-30, 30)])
             src = v_add(tgt, [rng.range(-260, -120), rng.range(40, 120), rng.range(-160, 160)])
             streak(v_mul(v_add(src, tgt), 0.5), v_sub(tgt, src), math.dist(src, tgt), JADE)
+    elif s == "Flitstrike":
+        # The Flit: a short dart along a Honeyguide's nose, its afterimages behind it, through a rival - and the strike
+        # ring on the rival (the one thing that scores).
+        a = jitter(0.3)
+        d = v_norm(rng.unit())
+        b = v_add(a, v_mul(d, span * 0.35))
+        for k in range(5):
+            glow(v_add(a, v_mul(v_sub(b, a), k / 5)), span * 0.012, JADE, 0.9, 0.18 + 0.12 * k)
+        streak(v_mul(v_add(a, b), 0.5), d, span * 0.35, JADE)
+        hit = v_add(a, v_mul(v_sub(b, a), 0.8))
+        glow(hit, span * 0.05, RUBY, 1.2, 0.35)
+        glow(hit, span * 0.09, JADE, 0.8, 0.15)
+        stage["vessels"] = vessels([(JADE, 0.3, 6, 300, 60), (RUBY, 0.3, -8, 120, 60)])
+    elif s == "Woodpecker":
+        # The Peck: three quick rounds from one hull into a stand of another colour's forest, a chip where each lands.
+        src = jitter(0.5)
+        for k in range(3):
+            tgt = v_add(centre, v_mul(rng.unit(), span * 0.25))
+            streak(v_mul(v_add(src, tgt), 0.5), v_sub(tgt, src), math.dist(src, tgt) * 0.5, GOLD)
+            glow(tgt, span * 0.02, GOLD, 1.3, 0.5)
+    elif s == "Honeycomb":
+        # The hive: an omni crystal turning into a comb behind the hull, the comb's own cells glowing shielded.
+        p = jitter(0.3)
+        crystal(p, span * 0.03)
+        glow(p, span * 0.12, JADE, 0.7, 0.2)
     elif s == "Tapestry":
         # Dust mode over the cut in the Ruby wake: the raid that made the gap.
         p = jitter(0.2)
