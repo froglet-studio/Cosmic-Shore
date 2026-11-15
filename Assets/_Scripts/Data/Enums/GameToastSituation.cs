@@ -319,6 +319,11 @@ namespace CosmicShore.Data
         CleanerRamHint = 186,           // once, at the start: loop Charge motes, then ram a rival on the kite's board
         ReefbuildHint = 187,            // once, at the start: loop Mass motes to lay your reef; what stands at the whistle scores
         BlastlineHint = 188,            // once, at the start: loop Space motes, the blast clears hostile prisms where it closed
+        // The Goby & Pistol's games (SNAP.md, DEN_BUILDER.md, RIPTIDE.md; ids reserved in GAME_KIT_ROSTER.md). Race beats
+        // are the shared 128-130 (DomainRaceToasts; Den Builder samples its own lead change, 130). LOCAL pilot only.
+        SnapHint = 189,                 // once, at the start: lock a rival from the Goby, fire rings from the Pistol when they are on screen
+        DenBuilderHint = 190,           // once, at the start: jump the trail for energy, rest at a perch to build a den
+        RiptideHint = 191,              // once, at the start: ride through the plates, the undertow pulls them in, the rings smash them
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.

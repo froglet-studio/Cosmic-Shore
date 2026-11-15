@@ -23840,3 +23840,20 @@ build). Nothing below has been run. Design: `Assets/_Scripts/Controller/Arcade/W
       enough that 600 is reachable.
 - [ ] AI Groupers fly to crystals and rivals (Hunt / Build / Clean); the kite AI still loops and rams on its own.
 - [ ] Each mode's hint toast (186 / 187 / 188) shows when you idle.
+## 🔴 Goby & Pistol games: Snap, Den Builder, Riptide (2026-11-15, Garrett's project thread, `claude/goby-games`, NOT RUN IN EDITOR)
+
+Three new arcade modes (GameModes 114-116), authored headless by `Tools/Build/goby_games_lib.py`. The reference compile
+ran (0 errors in changed files; the 30 it reports sit in untouched Cinemachine / Multiplayer Sessions files this
+environment's package fetch could not resolve). No Unity editor, Play mode or EditMode test run. Docs:
+`Assets/_Scripts/Controller/Arcade/SNAP.md`, `DEN_BUILDER.md`, `RIPTIDE.md`.
+
+- [ ] The project compiles in the editor; `EnumIntegrityTests` passes (GameModes count 86).
+- [ ] The Arcade grid shows three Goby cards (Snap, Den Builder, Riptide) with their rendered backgrounds; each card's
+      preview opens and Test Flight works.
+- [ ] Snap (Charge): two domains in Kelpwood's kelp; a Pistol vortex ring landing on a rival pilot adds one point and the
+      hint toast posts; first domain to 5 wins; the end screen shows each player's ring hits (also on a client).
+- [ ] Den Builder (Mass): 150 s in Glasshouse's cell with no gardens; dens and island trails count as volume standing;
+      lead toasts fire; the higher domain at the whistle wins; the breakdown shows prisms standing.
+- [ ] Riptide (Space): Shatterplane's plates; the undertow pulls loose tiles, the ring collapse smashes them and
+      PrismsDestroyed rises; first domain to 600 wins; the end screen breakdown matches the server's.
+- [ ] An all-AI seat in each mode plays (the crew AI locks, snaps, routes islands); the console is clean.

@@ -118,6 +118,9 @@ SCENE_FOR_MODE = {
     111: 'MinigameCleanerRam',
     112: 'MinigameReefbuild',
     113: 'MinigameBlastline',
+    114: 'MinigameSnap',
+    115: 'MinigameDenBuilder',
+    116: 'MinigameRiptide',
 }
 
 

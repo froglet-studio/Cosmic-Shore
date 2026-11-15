@@ -585,8 +585,6 @@ namespace CosmicShore.Data
         // that hits another breaks both. Hostile prisms broken score, first domain to the target wins. Roster row 17.
         CaveIn = 107,
 
-        // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 115) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // 97) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // The Grizzly's CHARGE game (STANDOFF.md): square posts of prism tiles stand on a sphere round an open centre.
         // A trigger bomb that touches a rival hull freezes on it; pull and release again to blow it. Every rival a blast
@@ -596,8 +594,22 @@ namespace CosmicShore.Data
         // and 126-127 are the roster's other games.
         Standoff = 125,
 
-        // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 115) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+
+        // The Goby & Pistol's three element games (GAME_KIT_ROSTER.md rows 24-26; ids reserved there, 2026-11-15, so the
+        // parallel sessions building the other vessels' games never take them). Nothing about the pair changes: each
+        // game turns one of its abilities into the score.
+        // Snap (114): the CHARGE game (SNAP.md) - a hunt in Kelpwood's kelp ball. The Goby locks a rival, and a vortex
+        // ring the Pistol fires while that rival is on its screen homes on them; every ring hit (Vortex Sting, a
+        // MissileDirect-class combat hit) is one point. First domain to the target wins.
+        Snap = 114,
+        // Den Builder (115): the MASS game (DEN_BUILDER.md) - timed, in Glasshouse's grazed cell. Jump the trail to
+        // earn energy, rest at each perch to build a den from it; the mass standing in your colour at the whistle
+        // (VolumeRemaining: dens, perches and the islands' trail) wins.
+        DenBuilder = 115,
+        // Riptide (116): the SPACE game (RIPTIDE.md) - Shatterplane's neutral plates. The undertow pulls their tiles
+        // into the Pistol's plane and its vortex rings smash them; first domain to the hostile-prism target wins.
+        Riptide = 116,
+
         // The Wrasse and Grouper's three reef games (WRASSEREEF.md), ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md
         // (rows 21-23, 2026-11-15) so the parallel sessions building the missing games never take the same number.
         // The CHARGE game: loop Charge motes to power the kite's ram, ram rival hulls; each ram is one point. A reef of
@@ -611,7 +623,7 @@ namespace CosmicShore.Data
         Blastline = 113,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 115) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 118) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

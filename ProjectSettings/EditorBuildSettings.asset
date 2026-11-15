@@ -180,6 +180,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameShatterplane.unity
     guid: 2a77c10f7818170d6e23f70515343042
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameRiptide.unity
+    guid: 0ed5001dc2eb1b98da90752a0ea6dba0
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameLancefall.unity
     guid: 7f639ef5d8a9baa92d88c7b2967bf07d
   - enabled: 1
@@ -207,6 +210,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameKelpwood.unity
     guid: 750b1dc75ea9084b39ab73f51caa180b
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameSnap.unity
+    guid: f97c43ab08a5c73ec87579c4e1ed568c
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameCleanerRam.unity
     guid: fb8e9640cb8e4d6fcfbec4fc8cfe5e2d
   - enabled: 1
@@ -221,6 +227,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameGlasshouse.unity
     guid: 1669f64150fcf334bc67aa5165c0e331
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameDenBuilder.unity
+    guid: 1634eb13953802b947c92d49938f75de
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameChum.unity
     guid: 88e45b8e8325f38bf7fa3f20142387d1
