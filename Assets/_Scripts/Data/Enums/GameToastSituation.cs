@@ -267,6 +267,13 @@ namespace CosmicShore.Data
         // prism milestone 83. Ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 29-30). LOCAL pilot only.
         ShockfrontHint = 194,           // once, at the start: sling round and let the pair close beside a rival
         FulmenHint = 195,               // once, at the start: take the omni crystals in the heart; each throws a bolt
+        // The Honeyguide's element games (FLITSTRIKE.md, HONEYCOMB.md, WOODPECKER.md), at the toast ids
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved (166-202 are that roster's). Flitstrike's and Woodpecker's race
+        // beats are the shared 128-130 (DomainRaceToasts); Honeycomb's lead change is the shared 130, sampled by its
+        // controller because a timed mode has no target. Posted to the LOCAL pilot only.
+        FlitstrikeHint = 183,           // once, at the start: hold LT to see the dart, let go to Flit through a rival
+        HoneycombHint = 184,            // once, at the start: an omni crystal is a hive; what stands in your colour scores
+        WoodpeckerHint = 185,           // once, at the start: hold RT to aim, let go to peck the hostile forest
         // Stingherd and Trawl, the Jacks' Charge and Space games (STINGHERD.md, TRAWL.md). Race beats are the shared 128-130
         // (DomainRaceToasts); ids reserved by the game kit roster (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 27-28).
         StingherdHint = 192,            // once, at the start: herd your danger creatures into a rival hull to sting it
