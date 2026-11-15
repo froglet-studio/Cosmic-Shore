@@ -249,6 +249,11 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // Shockfront and Fulmen, the Stoat's charge and space games (_Scripts/Controller/Arcade/SHOCKFRONT.md, FULMEN.md).
+        // Their race beats are the shared 128-130 (DomainRaceToasts); a ripple hit is 82 (DebuffHitsLanded rose), a
+        // prism milestone 83. Ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 29-30). LOCAL pilot only.
+        ShockfrontHint = 194,           // once, at the start: sling round and let the pair close beside a rival
+        FulmenHint = 195,               // once, at the start: take the omni crystals in the heart; each throws a bolt
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.
