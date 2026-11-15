@@ -9,6 +9,11 @@ namespace CosmicShore.Gameplay
 
         protected IInputStatus inputStatus;
 
+        /// <summary>The triggers as the last <see cref="DispatchTriggers"/> read them.</summary>
+        protected bool prevLeftTriggerActive;
+        protected bool prevRightTriggerActive;
+        private System.Action<CosmicShore.Data.InputEvents, bool> raiseTriggerEdge;
+
         public virtual void Initialize(IInputStatus inputStatus)
         {
             this.inputStatus = inputStatus; 
@@ -55,6 +60,31 @@ namespace CosmicShore.Gameplay
 
             if (inputStatus.InvertThrottleEnabled)
                 inputStatus.XDiff = 1f - inputStatus.XDiff;
+        }
+
+        /// <summary>
+        /// Writes the two analog triggers and raises every press and release their change makes, by the
+        /// pad's one rule (<see cref="TriggerEdges"/>). Calling it again with the same values raises nothing.
+        /// </summary>
+        protected void DispatchTriggers(float leftTriggerValue, float rightTriggerValue)
+        {
+            inputStatus.LeftTriggerAnalog = leftTriggerValue;
+            inputStatus.RightTriggerAnalog = rightTriggerValue;
+
+            bool left = leftTriggerValue > TriggerEdges.Deadzone;
+            bool right = rightTriggerValue > TriggerEdges.Deadzone;
+            bool wasLeft = prevLeftTriggerActive, wasRight = prevRightTriggerActive;
+            prevLeftTriggerActive = left;
+            prevRightTriggerActive = right;
+
+            raiseTriggerEdge ??= RaiseTriggerEdge;
+            TriggerEdges.Dispatch(wasLeft, wasRight, left, right, raiseTriggerEdge);
+        }
+
+        private void RaiseTriggerEdge(CosmicShore.Data.InputEvents e, bool pressed)
+        {
+            if (pressed) inputStatus.OnButtonPressed.Raise(e);
+            else inputStatus.OnButtonReleased.Raise(e);
         }
 
         protected virtual float Ease(float input)

@@ -46,6 +46,8 @@ namespace CosmicShore.UI
             Instance = this;
             transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
+            // A colour set bought in the Profile (Rev 112 D) is one of the player's unlocked rewards.
+            ColorSetCatalogSO.Purchased = id => IsRewardUnlocked(ColorSetCatalogSO.RewardId(id));
 
             CreateLocalDefaultProfile(null);
         }
@@ -53,7 +55,10 @@ namespace CosmicShore.UI
         void OnDestroy()
         {
             if (Instance == this)
+            {
                 Instance = null;
+                ColorSetCatalogSO.Purchased = null;
+            }
 
             var ds = _ugsDataService;
             if (ds != null)
@@ -715,6 +720,21 @@ namespace CosmicShore.UI
             _analytics?.RecordCrystalsSpent(amount, source, CurrentProfile.Economy.CrystalBalance);
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             if (ServerEconomyGate.Enabled && reportToServer) ConfirmWithServer(ServerEconomy.SpendAsync(source ?? DebugSource, amount, source));
+            return true;
+        }
+
+        /// <summary>
+        /// Buys the colour set <paramref name="setId"/> for <paramref name="price"/> crystals (the Profile's Unlock,
+        /// Rev 112 D): the crystals are spent and the set kept as an unlocked reward. True when the player owns it
+        /// afterwards (already bought included); false, and nothing spent, when the balance is short.
+        /// </summary>
+        public bool TryUnlockColorSet(string setId, int price)
+        {
+            if (string.IsNullOrEmpty(setId)) return false;
+            var reward = ColorSetCatalogSO.RewardId(setId);
+            if (IsRewardUnlocked(reward)) return true;
+            if (price > 0 && !TrySpendCrystals(price, "colour_set")) return false;
+            UnlockReward(reward);
             return true;
         }
 

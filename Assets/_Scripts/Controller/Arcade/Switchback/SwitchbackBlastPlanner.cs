@@ -444,8 +444,11 @@ namespace CosmicShore.Gameplay
             float slow = ThreadSlowAtEye18 * (18f / _eye) + (st.DoubleDoor ? DoubleDoorSlow : 0f);
             float threadPen;
             int laneHits;
-            if (gauntlet) threadPen = PathPenalty(world, self, ring, ThreadLanePad, clock + 0.5f * eta, out laneHits);
-            else threadPen = LanePenalty(s, world, self, ring, ThreadLanePad, clock + 0.5f * eta, skill.TimingErrorSeconds,
+            // The doors hang behind the ring (SwitchbackBlastRun.DoorSetback), so the thread's lane runs on through them.
+            Vector3 past = !st.Final ? ring
+                : ring + st.FlowAxis * ((st.DoubleDoor ? SwitchbackBlastRun.SecondDoorSetback : SwitchbackBlastRun.DoorSetback) + 6f);
+            if (gauntlet) threadPen = PathPenalty(world, self, past, ThreadLanePad, clock + 0.5f * eta, out laneHits);
+            else threadPen = LanePenalty(s, world, self, past, ThreadLanePad, clock + 0.5f * eta, skill.TimingErrorSeconds,
                                          null, default, default, default, out laneHits, out _);
             d.LaneHits = laneHits;
             d.CostThread = eta * (1f + slow) + threadPen;
@@ -472,7 +475,7 @@ namespace CosmicShore.Gameplay
                 Vector3 u = (Quaternion.AngleAxis(rollErr, f) * Vector3.ProjectOnPlane(u0, f)).normalized;
 
                 float keyEta = toKey / v;
-                Vector3 laneEnd = st.Final ? ring : st.Target;
+                Vector3 laneEnd = st.Final ? past : st.Target;
                 float blastPen = LanePenalty(s, world, st.Key, laneEnd, BlastLanePad, clock + keyEta, skill.TimingErrorSeconds,
                                              _slot, st.Key, f, u, out int hits, out int covered);
                 Vector3 approach = (st.Key - self).normalized;
@@ -488,7 +491,7 @@ namespace CosmicShore.Gameplay
                         rest += Vector3.Distance(_layout.Stations[k].Key, _layout.Stations[k].Target);
                     rest += Vector3.Distance(st.Door, ring);
                 }
-                float detour = (toKey + Vector3.Distance(st.Key, laneEnd) + rest - l) / v;
+                float detour = (toKey + Vector3.Distance(st.Key, st.Final ? ring : st.Target) + rest - l) / v;
                 float pathPen = gauntlet ? PathPenalty(world, self, st.Key, ThreadLanePad, clock, out _) : 0f;
                 d.CostBlast = (eta + Mathf.Max(detour, 0f) + align + KeyContactSeconds * (1 + laterKeys) + blastPen + pathPen)
                               * Mathf.Max(skill.BlastBias, 0.01f);

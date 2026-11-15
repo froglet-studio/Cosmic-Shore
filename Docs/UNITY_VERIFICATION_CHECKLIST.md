@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Stoat's Charge and Space games: Shockfront (119) and Fulmen (120), and the Ripple as a scored hit (`claude/stoat-arcade-games`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Arcade/SHOCKFRONT.md`, `Arcade/FULMEN.md`. Shockfront is a Stoat-only Charge duel in Dog Fight's
+Boneyard scored on CombatPoints (a ripple strip pays 1, target 10); its AI hunts the nearest rival through
+`SetExternalTargetProvider` and the Stoat's own autopilot slings. Fulmen is a Stoat-only Space race in Rampage's forest
+scored on PrismsDestroyed (target 1200): prisms burnt by Fulmen bolts score for the collector. Vessel change:
+`StoatRippleExecutor` now admits each strip through `CombatHitDrain.TryAdmitPetals` (Debuff, 4 petals, Explosion,
+0.5 s cooldown) and raises `Event_CombatHitStats`; a silenced Stoat's ripple strips nothing. Ran: `unity_refcompile`
+(0 errors in changed files; the player build's `MultiplayerSetup.cs` errors are already on bleeding-edge), `/ship`
+gates (green apart from that and a `SwitchbackBlastRunTests` doc-summary failure, both pre-existing),
+`author_shockfront_assets.py --check`, `author_fulmen_assets.py --check`, `author_stoat_assets.py --check`,
+`render_card_backgrounds.py --check` on both cards. Not run: Unity, any EditMode test.
+
+1. Arcade grid: Shockfront and Fulmen cards show their own art and open a Test Flight preview.
+2. Shockfront I2 vs AI: let a dipole go near a rival; the rival loses a petal of each element, your score ticks +1,
+   and the hit toast shows. The AI Stoats chase you and their ripples score against you. First domain to 10 wins.
+3. Shockfront: get silenced by a hit, then let a pair go into a rival; nothing is stripped and no point scores.
+4. Fulmen I2: a Fulmen bolt that burns prisms raises your PrismsDestroyed; the objective arrow points at crystals;
+   the every-200 toast fires; first domain to 1200 wins. Check the target is reachable in a fair time.
+5. Any other mode with a Stoat: ripples still strip and kill fauna as before, and now also show the hit toast.
+
 ### 🔴 The Jacks' vessel pass: authored element scaling, four level-5 cards, their own HUD (`claude/jacks-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/JACKS.md` § 2. The four element curves moved from `JacksMath`'s formulas onto
@@ -23325,6 +23346,21 @@ against Unity reference assemblies (`unity_refcompile`), not opened in the edito
 3. **The story** reads as three short paragraphs with a blank line between, inside the panel, on every pilot.
 4. **A voyage's jobs** for a starter come from the painted faction (VOLT: a Merchant's courier and convoy work).
 
+## 🔴 Both thumbs off pulls both triggers and steers by gyro (2026-11-14, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/project-thread-wlkcla`; `Docs/claude/ARCHITECTURE_CORE.md` § Input Strategy (the touch profile line),
+`Tools/Build/author_touch_profiles.py` (`BOTH_OFF`). Compiled against Unity reference assemblies (`unity_refcompile`,
+player and editor), not opened in the editor; `TouchControlsTests` not run.
+
+1. **Run the EditMode tests** `TouchControlsTests` (three new: the per-hull both-thumbs-off judgement and the two
+   `TriggerEdges` cases) and `InputInversionTests`.
+2. **A pad and a keyboard still fly as before**: LT, RT and both together on the Squirrel, the Rhino and the Sparrow
+   (the trigger rule moved into `TriggerEdges` unchanged).
+3. **On a phone, lift both thumbs** on the Squirrel, Rhino, Tiger Moth, Orca, Wrasse, Goby and Meerkat: both triggers'
+   abilities fire as on a pad, and tilting steers (pitch turned over, as the Manta's soar). Put a thumb back: they let go.
+4. **Unchanged on a phone**: the Manta's soar, the Thresher's launch, the Swordfish's raised sword, the Dolphin, the
+   Honeyguide's both-off cancel, and every totem-button hull (nothing fires when the phone is set down).
+5. **The one-thumb gyro roll** (now `gyroRollOnOneThumb`) still rolls the Dolphin and the Squirrel one to one.
 ## 🔴 Loading screen into a game: the tour (Rev 91 F) (2026-11-13, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/gracious-faraday-h2ny3a`. Record: `Docs/MENU_REDESIGN_B.md` section 178, `Docs/CONNECTING_PANEL.md`.
@@ -23512,3 +23548,95 @@ is kept, so no prefab or asset reference changes. Compiled against the Unity ref
 Not run in a Unity editor. Headless: `switchback_sim_harness/run.sh tests` 78 passed (the new sight-line test failed
 85,404 / 147,200 on the old layout). Hand test: Scarab Rally I4, leave each ring and check the next lime ring's whole
 rim shows through the field; no doors on the rings; Switchback I1-I4 unchanged.
+
+## 🔴 Switchback: every door hangs behind its ring (2026-11-14, `claude/project-thread-v8enx0`, NOT RUN IN EDITOR)
+
+Garrett picked "move them off the sight line" (Docs/Reports/SIGHT_LINES.md). Headless: `switchback_sim_harness/run.sh
+tests` 81 passed; the new `TheDoorsHangBehindTheirRing` fails on every intensity with the door back in front. Offline
+Legendary pace (8 seeds) moved by under 5 s a race (I1 62 -> 58, I2 101 -> 102, I3 100 -> 105, I4 145 -> 148).
+
+1. Switchback (Dolphin) I2 and I3: leave a ring; the next blocked ring's lime rim shows in full, with its door just
+   behind it. Fly through without the key: the door (or its eye) stops you just past the ring, as before.
+2. Take a key facing the ring: the blast opens the door behind it.
+3. I4: both doors sit behind the ring (8 u and 24 u). The gauntlet tunnels still hide the ring on about half the legs.
+4. AI seats still blast most blocked gates and do not stall on a door.
+
+## 🔴 Profile Colour sets: Rev 112 D, one scrolling list over the real cell (2026-11-14, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/clever-clarke-7uxwca`; `Docs/MENU_REDESIGN_B.md` sections 187-188. Compiled with `unity_refcompile`;
+`author_menu_profile.py` `--check` / `--self-test`, `author_colour_set_catalog.py`, `author_colour_set_glyphs.py`,
+`colour_trace.py` pass. Never opened in the Unity editor: no editor in the cloud session.
+
+- [ ] Menu_Main > Profile > RB (Colour sets): the cell shows through; the list is docked right (520 wide) with ALL 14,
+      COLOR BLIND SUPPORTED (FREE) 6, PREMIUM 6 on one line; nothing overlaps the nav or the tabs.
+- [ ] The list shows Yours from the start (Nocturne, Photic), Color Blind supported (Free) with the eye (six), Premium
+      (six, each OWNED in gold). Each row's four prisms are that set's colours; the sea lines run behind every row.
+- [ ] Scroll with the mouse wheel and with the pad: moving onto a row previews it on the cell and the row comes into view.
+- [ ] Each filter shows only its group (Yours from the start shows under All only); counts are right.
+- [ ] The left side: kind line, name, line and four pigments change with the row; APPLY repaints and the veil rises; Equipped
+      on the worn set.
+- [ ] The four tiles along the foot repaint with each set: prisms in three shields, the Squirrel / Sparrow / Dolphin / Manta
+      icons tinted their domain with a trail of prisms behind each, the crystals, the menus mock. Sea lines in each tile.
+- [ ] Unlock (set a Premium set's `unlocked` off in ColorSetCatalog.asset): the row shows the crystal price, the gold
+      UNLOCK 1,200 button; short of crystals shows "Not enough crystals"; with enough, the crystals go and APPLY appears.
+- [ ] Settings > General > Colour sets opens the Profile on the Color Blind supported filter, first set shown.
+- [ ] (Section 189) Behind the page, the set's world: prisms in depth, three vessels on prism trails, each domain's glow;
+      it repaints as you browse. The Vessels tile shows the real hull icons (no squares); the Crystals tile shows the
+      Codex's Omni and four elemental crystals.
+- [ ] (Section 190) In the Vessels tile each hull reads (lit, in its team colour) and sits at the head of its own prism
+      trail; the tiles' sea lines sit back behind the prisms; the world's prisms and hulls are where the board puts them.
+
+## 🔴 Jewel Wasp: the possession vessel, class 31 (2026-11-14, Garrett's project thread, `claude/jewel-wasp`, NOT RUN IN EDITOR)
+
+Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor configurations: 0 errors in the changed files);
+`author_jewel_wasp_assets.py --check` and `--self-test`, `author_jewel_wasp_hud.py --check`, `icon_kit/author.py JewelWasp
+--check` and `vessel_model/build.py JewelWasp --check` pass. Nothing has been run in Unity. Design:
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/JEWEL_WASP.md`. Fly it from the Toybox's Vessel Changer.
+
+- [ ] The Vessel Changer offers the Jewel Wasp; it spawns flying as the wasp's own model (JewelWasp.fbx: compound eyes,
+      masts, banded gaster, four glass wings), its class card and hangar preview show the wasp; the console is clean.
+- [ ] The wings beat fast and shallow, fore and hind together (no butterfly glide); each element at 10 morphs the hull
+      (Charge needle and prongs, Mass gaster swells, Space masts and wings reach, Time wings sweep).
+- [ ] A sting: the gaster curls under on arrival; nested, it stays half curled and the wings fold.
+- [ ] Hold RT: the creature ahead lights in your hue. Let go: the hull flies to its heart, tucks in small beside the crystal,
+      and the sticks fly the creature (both together pitch and yaw, one up one down rolls, apart is faster).
+- [ ] A Brittlestar host: RT at a rival vessel whips all five arms out at it, and the rival loses petals (a Strike). A shark or
+      a fish with no rig lunges instead.
+- [ ] RT at rival prisms in a host: prisms are pulled into its mouth (the suction implosion), shielded and super-shielded ones
+      too; your own team's prisms are never taken. Space raises the reach; Space 5 (Maw) pulls from all sides.
+- [ ] LT in a host: a speed burst; the Time card's veil shows its recharge. A leaves: the wasp pops out and flies on, and the
+      host is not jousted by it. Charge 5 (Burst): leaving kills the host and hits rival vessels within 60 u.
+- [ ] A worm segment: the whole worm is taken and steered by its head. A tadpole of a murmuration: the whole murmuration
+      follows the sticks.
+- [ ] Hold LT at a plant and let go: the wasp roots in it, the camera stands far back and the sticks orbit it, the plant grows
+      faster (Mass); RT or LT from there aims and stings the next host; A leaves.
+- [ ] An omni crystal hatches a Shark or a Worm Colony where you took it, and you are in it at once.
+- [ ] Phone: the four cards are buttons; the Charge card is A (leave); holding the Space card aims while the other thumb flies.
+- [ ] Ark escort, a hostile world: a creature that reaches a squad vessel plays its attack at it and the vessel loses petals;
+      on a pacified world nothing strikes. (Affects Shombith's Voyages.)
+- [ ] The HUD is the wasp's own (no Moth dust, drop or keys): Attack, Root, Sting, Swim; in a host the Space card shows
+      the Suction and the Time card the Dash, and they swap back on leaving; a level-5 card keeps its upgrade picture.
+- [ ] Multiplayer, a CLIENT hull (host + one client, `Docs/MULTIPLAYER_START_HERE.md`): the client stings a creature and
+      flies it from its own sticks; the host sees the wasp nested and the creature steered; RT attack and suction, LT
+      burst and A leave all work from the client; the client's HUD shows the recharges; a second client sees the same.
+- [ ] On a plant (2026-11-15, `claude/jewel-wasp-flora-camera`): the camera eases off the chase into an orbit framing
+      the whole plant; thumbs together turn it up, down, left and right without flipping over the top; Y-diff rolls the
+      view; X-diff zooms (apart in, together out); the camera draws back as the plant grows; Mass 0 still grows it fast.
+- [ ] From a plant, hold RT / LT: the creature or plant in the middle of the view flashes and settles to its glow, the
+      view leans onto it; let go and the wasp flies into it; leaving the plant eases the camera back to the chase.
+- [ ] Inside a creature, from a rival's view: a thin tail behind the creature, the wasp at its heart glowing in its
+      pilot's colours, flashing on an attack, a suction bite and a burst; free again, the tail is full width and the glow off.
+- [ ] Multiplayer, a client on a plant: the orbit, roll and zoom answer its sticks smoothly; a client hull on autopilot
+      stings and rides creatures (the server runs its AI); the client's ride writes one `possession_*.json`.
+- [ ] After a ride of 3 s or more, `Documents/CosmicShore Diagnostics/Flights/possession_<scene>_<species>_<time>.json` exists
+      and is sent with the flights after Play.
+
+## 🔴 Breach: see-through checkerboard walls (2026-11-15, `claude/project-thread-v8enx0`, NOT RUN IN EDITOR)
+
+Garrett picked it (Docs/Reports/SIGHT_LINES.md). Headless: `breach_harness/run.sh` 12 passed and `--self-test` ok; the
+new sight test fails on the old solid wall (27% clear against a 40% bar). Helm sweep unchanged. Breach card re-rendered.
+
+1. Breach I3 and I4: from each ring, the next walled ring's lime rim shows through its wall's checkerboard.
+2. Fly straight into a wall, level and rolled: the Orca stops dead every time and never slips through a hole (the hit box
+   is still the Sparrow's 10.3 x 0.46 u; a hole is 9.9 u corner to corner).
+3. Let the gunners breach a wall: a shot opens a gap a little sooner than before; it grows back 6 s later.

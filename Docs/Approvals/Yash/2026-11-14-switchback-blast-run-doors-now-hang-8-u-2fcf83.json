@@ -1,0 +1,25 @@
+{
+  "id": "2026-11-14-switchback-blast-run-doors-now-hang-8-u-2fcf83",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-14T15:28:21+00:00",
+  "area": "Switchback Blast Run",
+  "summary": "Switchback Blast Run doors now hang 8 u behind their ring (I4's second 24 u), keys 16 u nearer, planner lanes run through the doors, so the next lime ring stays in sight",
+  "why": "Garrett chose 'move them off the sight line' (Docs/Reports/SIGHT_LINES.md): the plug in front hid the ring on 12-67% of legs at I2-I4",
+  "branch": "claude/project-thread-v8enx0",
+  "lane": "switchback",
+  "commit": "26f5beb85",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastPlanner.cs",
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastRun.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Dolphin"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "2"
+  }
+}

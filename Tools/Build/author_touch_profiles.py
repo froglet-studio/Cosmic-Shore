@@ -8,7 +8,7 @@ The decisions are Garrett's, 2026-10-21 (Docs/Reports/MOBILE_VESSELS.md section 
   * thumb-lift hulls keep their lifts and show a glyph on the card the lift drives;
   * a hull that needs its cards gets TotemButtons: no thumb-lift abilities, the cards (plus the extra
     buttons below) laid out round the right thumb;
-  * the Dolphin's one-thumb aim rolls one to one with the phone (2026-10-22: "like augmented reality"); the Manta soars and the Thresher aims its launch with no
+  * the one-thumb gyro roll (gyroRollOnOneThumb: the Dolphin, the Squirrel) rolls one to one with the phone (2026-10-22: "like augmented reality"); the Manta soars and the Thresher aims its launch with no
     thumb down, steering by tilt (the Manta's pitch turned over); the Rhino energizes with no thumb down;
   * the Scarab has a set-and-hold throttle slider and a drift button, the Brittle Star two fire buttons
     whose drag aims, the Shrike a fire button and a zoom toggle, the Serpent's scope latches.
@@ -25,7 +25,7 @@ SCRIPT_META = "Assets/_Scripts/Controller/IO/TouchControls/TouchControlProfileLi
 
 VESSEL = dict(Manta=1, Dolphin=2, Rhino=3, Urchin=4, Grizzly=5, Squirrel=6, Serpent=7, Shrike=10, Sparrow=11,
               Scarab=12, Thresher=14, Stoat=15, BrittleStar=16, Angler=17, Goby=18, Wrasse=19, Orca=20, Honeyguide=23,
-              Meerkat=28, TigerMoth=29, Swordfish=30)
+              Meerkat=28, TigerMoth=29, Swordfish=30, JewelWasp=31)
 INPUT = dict(RightStick=1, LeftStick=2, Flip=3, Idle=4, A=6, B=7, X=8, Y=14)
 ELEMENT = dict(none=0, Charge=1, Mass=2, Space=3, Time=4)
 SCHEME = dict(ThumbLifts=0, TotemButtons=1)
@@ -56,11 +56,22 @@ def profile(vessel, scheme, **kw):
     return p
 
 
+# Both thumbs off reads as both triggers pulled and switches to gyro controls (Garrett, 2026-11-14: "both thumbs
+# off should read as both triggers pulled and switch to gyro controls"; "you don't need to do something silly when a
+# judgement call can make a better decision"). Tilt steers as the Manta's soar does, pitch turned over the same way.
+# A thumb-lift hull takes it unless its both-thumbs-off already has a job of its own:
+#   the Manta soars (IdleAction, throttle flat out) and keeps its gyro; the Thresher's planted spin has its own
+#   launch (ThresherTouchLaunch) and keeps its gyro; the Dolphin was redesigned around one-thumb flight and its
+#   gyro roll; the Honeyguide's both-thumbs-off cancels its preview.
+# TotemButtons hulls keep a released pad: their triggers are on-screen buttons (bombs, fire, orbits), and a
+# phone set down must not fire them.
+BOTH_OFF = dict(idleTriggers=True, tiltSteer=True, tiltFlipPitch=True)
+
 PROFILES = [
     # ---- Thumb lifts: lift the RIGHT thumb = the pad's LT, the LEFT = RT, both = IdleAction.
     # Carve (prototype, 2026-11-02, Yash; needs Garrett's sign-off): while one thumb flies (the drift's right lift, the
     # tube's left lift) the phone rolls the hull 1:1 like the Dolphin's (TouchAttitudeRoll -> VesselTransformer.ApplyHeldRoll).
-    profile("Squirrel", "ThumbLifts", tiltRoll=True,
+    profile("Squirrel", "ThumbLifts", **BOTH_OFF, tiltRoll=True,
             glyphs=[("Mass", "LiftLeftThumb")], coreGlyphs=[("Drift", "LiftRightThumb")]),
     # Lift EITHER thumb: drift and Echo Sight together (touch overrides on the prefab); the phone rolls
     # the hull one to one while that thumb aims (TouchAttitudeRoll). One-thumb flight is softened at home and
@@ -82,11 +93,11 @@ PROFILES = [
                     ("Time", "ThumbsApart")]),
     # The Rhino (the plough, 2026-11-07): a lift is that side's trigger - a little shove that way, and the plough
     # throws to that side while the thumb stays up. Carry and Blade are passive; nothing energizes any more.
-    profile("Rhino", "ThumbLifts",
+    profile("Rhino", "ThumbLifts", **BOTH_OFF,
             glyphs=[("Space", "LiftEitherThumb"), ("Time", "ThumbsApart")]),
     # The Tiger Moth (the Butterfly's airframe with the Drop; the Butterfly retired 2026-10-29) keeps its LT binding: lift
     # the right thumb to drop, put it back to land (R_VesselActions/TIGER_MOTH.md).
-    profile("TigerMoth", "ThumbLifts",
+    profile("TigerMoth", "ThumbLifts", **BOTH_OFF,
             glyphs=[("Mass", "LiftLeftThumb"), ("Time", "LiftRightThumb")]),
     # Plant on the right lift, Winch on the left; both off aims the launch by tilt. The Mass Mode card
     # is a button, so a lift waits 0.12 s and is dropped if the finger lands on it.
@@ -95,13 +106,13 @@ PROFILES = [
     # The crew hulls read their triggers through CrewTriggerActionSO / HoneyguideTriggerActionSO (RT = RightStickAction,
     # LT = LeftStickAction), so a lift is the trigger. The Wrasse's pilot (the Grouper) spends its saved boosts on RT: lift
     # the left thumb and fly on with the right ("The grouper can not use boost on mobile", Garrett, 2026-10-21).
-    profile("Wrasse", "ThumbLifts", glyphs=[("Time", "LiftLeftThumb")]),
+    profile("Wrasse", "ThumbLifts", **BOTH_OFF, glyphs=[("Time", "LiftLeftThumb")]),
     # The Orca's helm: RT boosts while the tank lasts, LT raises the shield.
-    profile("Orca", "ThumbLifts", glyphs=[("Time", "LiftLeftThumb"), ("Mass", "LiftRightThumb")]),
+    profile("Orca", "ThumbLifts", **BOTH_OFF, glyphs=[("Time", "LiftLeftThumb"), ("Mass", "LiftRightThumb")]),
     # The Goby perches and aims, then darts (Garrett, 2026-10-22): its Dart and Lock, and the Pistol seat's Ghost, Snap and
     # Back, are each seat's own buttons round the right thumb, drawn by the seat (GobyPistolButtons), not profile extras
     # (only the seat the person is in shows them). Nothing is bound to its thumb lifts, so lifting a thumb fires nothing.
-    profile("Goby", "ThumbLifts"),
+    profile("Goby", "ThumbLifts", **BOTH_OFF),
     # The Honeyguide (lab round 8, 2026-11-01): LT is its Charge active (Flit and the Charge upgrades), RT its Space active
     # (Peck and the Space upgrades); lift a thumb to preview, touch it back down to fire, lift both to cancel. No boost.
     profile("Honeyguide", "ThumbLifts", glyphs=[("Charge", "LiftLeftThumb"), ("Space", "LiftRightThumb")]),
@@ -110,7 +121,7 @@ PROFILES = [
     # reticle. Lift the left thumb to form the soliton (RT; held while riding it is the slide's push), lift the right to
     # lengthen its straight shaft (LT, which ramps on touch). Sentinel Mode is the Charge card's tap, so a lift waits 0.12 s
     # and is dropped if the finger lands on it. A bend needs the right thumb down, so a long shaft forms straight.
-    profile("Meerkat", "ThumbLifts", liftDefer=0.12, glyphs=[("Space", "LiftLeftThumb")]),
+    profile("Meerkat", "ThumbLifts", **BOTH_OFF, liftDefer=0.12, glyphs=[("Space", "LiftLeftThumb")]),
 
     # ---- Totem buttons: no thumb-lift abilities; cards (and extras) round the right thumb.
     profile("Urchin", "TotemButtons"),
@@ -136,6 +147,11 @@ PROFILES = [
     # The Angler's squad pick and recall were retired on 2026-10-21 (two alternating groups, ANGLER.md §1m): its four cards
     # are everything, so it takes no extra buttons.
     profile("Angler", "TotemButtons"),
+    # The Jewel Wasp (2026-11-14, Garrett): its four cards are its buttons - the Space card is RT (aim at a creature, let go
+    # to sting; in a creature, suction or the attack), the Mass card LT (aim at a plant), the Time card LT in a creature
+    # (the burst) and the Charge card the pad's A, which leaves a host ("the "a" button, which is on screen on mobile").
+    # A thumb anywhere else steers, so a held card aims while the other thumb flies (R_VesselActions/JEWEL_WASP.md §5).
+    profile("JewelWasp", "TotemButtons"),
 ]
 
 
@@ -153,7 +169,7 @@ def render_button(b):
 
 
 def render_profile(p):
-    out = "vessel: %d\nscheme: %d\nliftDeferSeconds: %s\ntiltRollOnOneThumb: %d\ntiltSteersWhileIdle: %d\n" % (
+    out = "vessel: %d\nscheme: %d\nliftDeferSeconds: %s\ngyroRollOnOneThumb: %d\ntiltSteersWhileIdle: %d\n" % (
         p["vessel"], p["scheme"], p["liftDefer"], int(p["tiltRoll"]), int(p["tiltSteer"]))
     out += "flipTiltSteerPitch: %d\nflipTiltSteerYaw: %d\n" % (int(p["tiltFlipPitch"]), int(p["tiltFlipYaw"]))
     out += "oneThumbResponseCurve: %s\n" % p["oneThumbCurve"]

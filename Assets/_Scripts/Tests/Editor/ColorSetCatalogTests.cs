@@ -129,32 +129,67 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheVisionSets_HaveTheirOwnRail_OnTheRight()
+        public void TheList_GroupsStartersThenColorBlindThenPremium()
         {
-            // The Showroom's left rail holds only the looks, the right rail only the sets made for a vision, each in
-            // the catalog's order.
+            // Rev 112 D (section 187): one list, Yours from the start first, then Color Blind supported (Free), then
+            // Premium, each in the catalog's card order; every set appears once.
             var catalog = Catalog;
-            var looks = new System.Collections.Generic.List<int>();
-            var vision = new System.Collections.Generic.List<int>();
-            ProfileColorSetsPanel.SplitRails(catalog, looks, vision);
-            Assert.AreEqual(catalog.Count, looks.Count + vision.Count);
-            Assert.IsNotEmpty(looks);
-            Assert.IsNotEmpty(vision);
-            foreach (var i in looks) Assert.AreEqual(ColourVision.None, catalog.Get(i).vision, catalog.Get(i).id);
-            foreach (var i in vision) Assert.AreNotEqual(ColourVision.None, catalog.Get(i).vision, catalog.Get(i).id);
-            Assert.AreEqual(catalog.IndexOfFirstVisionSet(), vision[0], "the Settings breadcrumb opens the right rail's first set");
+            var order = new System.Collections.Generic.List<int>();
+            ProfileColorSetsPanel.ListOrder(catalog, order);
+            Assert.AreEqual(catalog.Count, order.Count);
+            Assert.AreEqual(catalog.Count, new System.Collections.Generic.HashSet<int>(order).Count, "a set appears twice");
+            int last = -1;
+            foreach (var i in order)
+            {
+                int kind = (int)ColorSetCatalogSO.KindOf(catalog.Get(i));
+                Assert.GreaterOrEqual(kind, last, $"'{catalog.Get(i).id}' is out of its group");
+                last = kind;
+            }
+            Assert.AreEqual(catalog.IndexOfFirstVisionSet(),
+                order.Find(i => ColorSetCatalogSO.KindOf(catalog.Get(i)) == ColorSetKind.ColorBlind),
+                "the Settings breadcrumb opens the first Color Blind supported set");
         }
 
         [Test]
-        public void TheRail_IsAWindowOntoTheWholeCatalog()
+        public void AVisionSet_IsColorBlindSupported_AndFree_WhateverItsPrice()
         {
-            // Three tiles over nine sets: the window moves only as far as it must to put the set shown on a tile.
-            Assert.AreEqual(0, ProfileColorSetsPanel.WindowStart(0, 2, 3, 9));
-            Assert.AreEqual(1, ProfileColorSetsPanel.WindowStart(0, 3, 3, 9), "one past the last tile slides by one");
-            Assert.AreEqual(6, ProfileColorSetsPanel.WindowStart(0, 8, 3, 9), "stepping back from the first set wraps to the end");
-            Assert.AreEqual(4, ProfileColorSetsPanel.WindowStart(5, 4, 3, 9), "one before the first tile slides back by one");
-            Assert.AreEqual(6, ProfileColorSetsPanel.WindowStart(7, 7, 3, 9), "never past the last full window");
-            Assert.AreEqual(0, ProfileColorSetsPanel.WindowStart(4, 2, 3, 3), "a catalog that fits never slides");
+            var entry = new ColorSetCatalogSO.Entry { vision = ColourVision.Deuteranopia, price = 900, unlocked = false };
+            Assert.AreEqual(ColorSetKind.ColorBlind, ColorSetCatalogSO.KindOf(entry));
+            Assert.AreEqual(ColorSetKind.Premium, ColorSetCatalogSO.KindOf(new ColorSetCatalogSO.Entry { price = 900 }));
+            Assert.AreEqual(ColorSetKind.Starter, ColorSetCatalogSO.KindOf(new ColorSetCatalogSO.Entry()));
+        }
+
+        [Test]
+        public void TheFilters_ShowTheirOwnKind_AndAllShowsEvery()
+        {
+            foreach (ColorSetKind kind in System.Enum.GetValues(typeof(ColorSetKind)))
+                Assert.IsTrue(ProfileColorSetsPanel.Shows(ProfileColorSetsPanel.Filter.All, kind), kind.ToString());
+            Assert.IsTrue(ProfileColorSetsPanel.Shows(ProfileColorSetsPanel.Filter.ColorBlind, ColorSetKind.ColorBlind));
+            Assert.IsFalse(ProfileColorSetsPanel.Shows(ProfileColorSetsPanel.Filter.ColorBlind, ColorSetKind.Starter),
+                "Nocturne and Photic are not colour-blind sets");
+            Assert.IsTrue(ProfileColorSetsPanel.Shows(ProfileColorSetsPanel.Filter.Premium, ColorSetKind.Premium));
+            Assert.IsFalse(ProfileColorSetsPanel.Shows(ProfileColorSetsPanel.Filter.Premium, ColorSetKind.ColorBlind));
+        }
+
+        [Test]
+        public void ABoughtSet_IsPickable_ThroughThePlayersRewards()
+        {
+            var look = ScriptableObject.CreateInstance<SO_ColorSet>();
+            var entry = new ColorSetCatalogSO.Entry { id = "boughtset", colorSet = look, unlocked = false, price = 800 };
+            var before = ColorSetCatalogSO.Purchased;
+            try
+            {
+                ColorSetCatalogSO.Purchased = null;
+                Assert.IsFalse(ColorSetCatalogSO.IsPickable(entry), "not bought, not unlocked");
+                ColorSetCatalogSO.Purchased = id => id == "boughtset";
+                Assert.IsTrue(ColorSetCatalogSO.IsPickable(entry), "bought");
+                Assert.AreEqual("colorset:boughtset", ColorSetCatalogSO.RewardId("boughtset"));
+            }
+            finally
+            {
+                ColorSetCatalogSO.Purchased = before;
+                Object.DestroyImmediate(look);
+            }
         }
 
         [Test]

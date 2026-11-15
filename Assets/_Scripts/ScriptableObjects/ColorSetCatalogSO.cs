@@ -19,6 +19,17 @@ namespace CosmicShore.ScriptableObjects
     }
 
     /// <summary>
+    /// The three kinds of set the Profile's list shows apart (Rev 112 D, Docs/MENU_REDESIGN_B.md §187). Read from an
+    /// entry, never saved.
+    /// </summary>
+    public enum ColorSetKind
+    {
+        Starter = 0,     // yours from the start (price 0, picked for its looks)
+        ColorBlind = 1,  // made for a vision: Color Blind supported, always free
+        Premium = 2,     // unlocked with crystals
+    }
+
+    /// <summary>
     /// The colour sets a player can pick in the Profile (Docs/MENU_REDESIGN_B.md §122-123; Garrett's sets,
     /// Docs/VesselModels/colour_sets.json). Each entry names one <see cref="SO_ColorSet"/> and the words the
     /// Profile shows for it. The game's palette is still the one slot on <c>ThemeManagerDataContainer.asset</c>;
@@ -49,6 +60,10 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("The vision this set is made for (colour_sets.json rule 5). None: a set picked for its looks. " +
                      "Settings > General > Colour sets opens the Profile's rail on the first set made for a vision.")]
             public ColourVision vision = ColourVision.None;
+            [Tooltip("Crystals to unlock it in the Profile's list (Rev 112 D): above 0 the set is Premium, 0 it is " +
+                     "yours from the start. A set made for a vision is Color Blind supported and always free, " +
+                     "whatever this says.")]
+            [Min(0)] public int price;
         }
 
         [Header("Sets, in card order")]
@@ -62,7 +77,25 @@ namespace CosmicShore.ScriptableObjects
         /// (Shombith, 2026-11-09). A question, never an error.
         /// </summary>
         public static bool IsPickable(Entry entry) =>
-            entry != null && entry.colorSet && (entry.unlocked || entry.vision != ColourVision.None);
+            entry != null && entry.colorSet && (entry.unlocked || entry.vision != ColourVision.None || IsPurchased(entry));
+
+        /// <summary>
+        /// Answers whether the player bought the set with this id. Set by <c>PlayerDataService</c> (the player's
+        /// unlocked rewards, <see cref="RewardId"/>); unset, nothing is bought. A question, never an error.
+        /// </summary>
+        public static Func<string, bool> Purchased;
+
+        /// <summary>The reward id a bought set is kept under in the player's profile.</summary>
+        public static string RewardId(string setId) => "colorset:" + setId;
+
+        static bool IsPurchased(Entry entry) => !string.IsNullOrEmpty(entry.id) && Purchased != null && Purchased(entry.id);
+
+        /// <summary>Which of the list's three kinds <paramref name="entry"/> is (Rev 112 D).</summary>
+        public static ColorSetKind KindOf(Entry entry) =>
+            entry == null ? ColorSetKind.Starter
+            : entry.vision != ColourVision.None ? ColorSetKind.ColorBlind
+            : entry.price > 0 ? ColorSetKind.Premium
+            : ColorSetKind.Starter;
 
         /// <summary>The pigment words for domain <paramref name="domainIndex"/> (Jade 0 .. Blue 3), or empty.</summary>
         public static string Pigment(Entry entry, int domainIndex) =>

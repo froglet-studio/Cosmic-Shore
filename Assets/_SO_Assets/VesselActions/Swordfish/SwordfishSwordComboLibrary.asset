@@ -542,7 +542,7 @@ MonoBehaviour:
       pitch: -35
       thrust: 0
     - time: 0.46
-      yaw: 125
+      yaw: 105
       roll: 100
       pitch: 55
       thrust: 0.25

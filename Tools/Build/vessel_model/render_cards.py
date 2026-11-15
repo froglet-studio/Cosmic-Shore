@@ -98,6 +98,11 @@ VESSELS = {
     "Goby": {"fbx": MODELS + "Goby.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_goby_assets.py"},
     # the Jacks' card is one jack (the marlin's model waits for its own swordsman class, 2026-10-21)
     "Jacks": {"fbx": MODELS + "Jack.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_jacks_assets.py"},
+    "JewelWasp": {"fbx": MODELS + "JewelWasp.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_jewel_wasp_assets.py"},
+    "Swordfish": {"fbx": MODELS + "Swordfish.fbx", "roles": ARTIST_SLOTS, "class_owner": "Tools/Build/author_swordfish_assets.py"},
+    "Orca": {"fbx": MODELS + "Orca.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_orca_assets.py"},
+    # the Wrasse's card is its carrier hull, the Grouper (the class's drawn geometry; the kite rides on its plane)
+    "Wrasse": {"fbx": MODELS + "Grouper.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_wrasse_assets.py"},
     # the artist hulls: rendered in place over the files their class assets (and other UI) already reference
     "Squirrel": {"fbx": MODELS + "SquirrelVessel_CosmicShoresTest1.fbx", "roles": FLEET_SLOTS},
     "Dolphin": {"fbx": MODELS + "dolphin_shapekey_with_animations.fbx", "roles": ARTIST_SLOTS,
@@ -113,7 +118,7 @@ VESSELS = {
                               "Rhino_large.png", "Rhino_Hangar_Preview.png")},
     "Urchin": {"fbx": MODELS + "urchan_shapekey_with_animations.fbx", "roles": ARTIST_SLOTS, "hangar_size": (1620, 920),
                "files": _files("Urchin_Square.png", "Urchin_Inactive.png", "Urchin_Square_silhouette.png",
-                               None, "Urchin.png")},
+                               "Urchin_large.png", "Urchin.png")},
 }
 
 OUT_SIZE = 256

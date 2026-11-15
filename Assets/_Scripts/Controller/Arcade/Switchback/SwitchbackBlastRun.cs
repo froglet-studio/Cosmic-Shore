@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
         public readonly Vector3 Door;       // the (first) door's centre
         public readonly Vector3 FlowAxis;   // unit: the gate's axis, pointing the way the leg flows through it
         public readonly float Port;
-        public readonly bool DoubleDoor;    // I4: a second door the same distance DOWNSTREAM of the ring
+        public readonly bool DoubleDoor;    // I4: a second door behind the first (SecondDoorSetback past the ring)
         public readonly BlastRunWorld World;
         public readonly int WorldPrisms;    // the station's own prisms after the doors: its tunnel, then (the last) the field
         public readonly Vector3 Target;     // where this key's blast is aimed: the door, or (a gauntlet's earlier key) the next key
@@ -153,7 +153,7 @@ namespace CosmicShore.Gameplay
     /// <c>Tools/Build/audit_prism_clipping.py</c> hold it without a scene.
     ///
     /// <para><b>The loop.</b> Some gates are BLOCKED (<see cref="IsBlocked"/>): a Breakwater door hangs
-    /// <see cref="DoorSetback"/> in front of the ring and seals all of it but the 18 u eye, and the leg in holds a
+    /// <see cref="DoorSetback"/> BEHIND the ring and seals all of it but the 18 u eye, and the leg in holds a
     /// BLOCK FIELD. On that leg's line, <see cref="KeyLeadFor"/> before the gate, floats a KEY crystal (laid by
     /// <see cref="CrystalManager.SetCourseKeys"/>; it respawns in place). Collecting it fires the Dolphin's forward
     /// conic blast along the gape, so a key taken while facing the gate blows the field and the door away in one go.
@@ -195,7 +195,13 @@ namespace CosmicShore.Gameplay
     public static class SwitchbackBlastRun
     {
         // ── stations ─────────────────────────────────────────────────────
-        public const float DoorSetback = 8f;            // u upstream of the ring plane (and downstream, for I4's second door)
+        /// <summary>u DOWNSTREAM of the ring plane the door hangs. It hung this far in front until 2026-11-14, where its
+        /// plug (wider than the ring) hid the lime ring from the ring you leave on 12-67% of legs at I2-I4 (Garrett:
+        /// "respect sight lines from one ring to another"; Docs/Reports/SIGHT_LINES.md). Behind the ring, the ring is in
+        /// sight and the door still stops a pilot who has not blasted it or threaded its eye.</summary>
+        public const float DoorSetback = 8f;
+        /// <summary>u downstream of the ring plane for I4's second door, behind the first.</summary>
+        public const float SecondDoorSetback = 3f * DoorSetback;
         public const float KeyLeadShare = 0.62f;        // of the leg...
         public const float KeyLeadMin = 230f;           // ...clamped: inside the blast's 400 u minimum length...
         public const float KeyLeadMax = 400f;           // ...and never past it
@@ -361,7 +367,9 @@ namespace CosmicShore.Gameplay
         /// <paramref name="previousRadius"/>; below <see cref="KeyMinLead"/> the station is dropped.</summary>
         public static float KeyLeadFor(float legLength, float previousRadius)
         {
-            float lead = Mathf.Clamp(KeyLeadShare * legLength, KeyLeadMin, KeyLeadMax);
+            // The door hangs DoorSetback past the gate (it hung that far in front until 2026-11-14), so the key stands
+            // twice that nearer: the door is no farther from its key than it was, inside the blast and short of its tip.
+            float lead = Mathf.Clamp(KeyLeadShare * legLength, KeyLeadMin, KeyLeadMax - 2f * DoorSetback);
             return Mathf.Min(lead, legLength - (previousRadius + SwitchbackFeatures.MouthClearance));
         }
 
@@ -437,8 +445,8 @@ namespace CosmicShore.Gameplay
                 if (!PointClear(course, centre, clearRadius, key, 0f, KeyClearance, g - 1, -1)) continue;
 
                 Vector3 axis = FlowAxis(course[g], dir);
-                Vector3 door = b - axis * DoorSetback;
-                Vector3 door2 = b + axis * DoorSetback;
+                Vector3 door = b + axis * DoorSetback;          // behind the ring: the ring stays in sight
+                Vector3 door2 = b + axis * SecondDoorSetback;
                 if (!DoorClear(course, centre, clearRadius, door, port, g)) continue;
                 if (Crowded(layout.Stations, door)) continue;
                 bool dbl = HasDoubleDoor(intensity);
@@ -586,7 +594,7 @@ namespace CosmicShore.Gameplay
                 if (st.Final)
                 {
                     into.Add(st.Door);
-                    into.Add(course[st.Gate].Position + st.FlowAxis * (DoorSetback + RayExit));
+                    into.Add(course[st.Gate].Position + st.FlowAxis * (SecondDoorSetback + RayExit));
                 }
             }
         }

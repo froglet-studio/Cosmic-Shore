@@ -239,11 +239,12 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void OnlyTheMantaTurnsItsIdleTiltPitchOver()
+        public void TheMantaTurnsItsIdleTiltPitchOver_TheThresherDoesNot()
         {
             // Garrett, 2026-10-22: the Manta's soar steered the opposite way on both axes; 2026-10-25: its yaw
             // was then flipped from intended, so only pitch stays turned over. The Thresher's launch aim reads
-            // the same tilt and keeps it as is.
+            // the same tilt and keeps it as is. The hulls that took both-thumbs-off gyro on 2026-11-14 fly
+            // the Manta's way.
             var library = Resources.Load<TouchControlProfileLibrarySO>(TouchControlProfileLibrarySO.ResourcePath);
             Assert.That(library, Is.Not.Null);
             Assert.That(library.Find(VesselClassType.Manta).flipTiltSteerPitch, Is.True);
@@ -253,13 +254,76 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void BothThumbsOffPullsBothTriggersAndSteersByGyro_UnlessTheHullGaveItAnotherJob()
+        {
+            // Garrett, 2026-11-14: "both thumbs off should read as both triggers pulled and switch to gyro
+            // controls", with a judgement call where a hull's both-thumbs-off already does something else.
+            var library = Resources.Load<TouchControlProfileLibrarySO>(TouchControlProfileLibrarySO.ResourcePath);
+            foreach (var hull in new[] { VesselClassType.Squirrel, VesselClassType.Rhino, VesselClassType.TigerMoth,
+                         VesselClassType.Wrasse, VesselClassType.Orca, VesselClassType.Goby, VesselClassType.Meerkat,
+                         VesselClassType.Swordfish })
+            {
+                var p = library.Find(hull);
+                Assert.That(p.idlePullsBothTriggers && p.tiltSteersWhileIdle, Is.True, hull + " both thumbs off");
+            }
+
+            // The Manta soars and the Thresher launches: gyro, but their own both-thumbs-off, not the triggers.
+            foreach (var hull in new[] { VesselClassType.Manta, VesselClassType.Thresher })
+            {
+                var p = library.Find(hull);
+                Assert.That(p.tiltSteersWhileIdle, Is.True, hull + " gyro");
+                Assert.That(p.idlePullsBothTriggers, Is.False, hull + " triggers");
+            }
+
+            // The Dolphin flies one-thumb with its gyro roll; the Honeyguide's both-thumbs-off cancels.
+            Assert.That(library.Find(VesselClassType.Dolphin).idlePullsBothTriggers, Is.False);
+            Assert.That(library.Find(VesselClassType.Honeyguide).idlePullsBothTriggers, Is.False);
+
+            // A totem-button hull's triggers are on-screen buttons: a phone set down fires nothing.
+            foreach (var hull in new[] { VesselClassType.Grizzly, VesselClassType.Shrike, VesselClassType.Stoat })
+                Assert.That(library.Find(hull).idlePullsBothTriggers, Is.False, hull + " totem");
+        }
+
+        [Test]
+        public void BothTriggersPulledRaisesWhatAPadRaises_AndLettingGoReleasesIt()
+        {
+            var raised = new List<string>();
+            void Raise(InputEvents e, bool pressed) => raised.Add((pressed ? "+" : "-") + e);
+
+            TriggerEdges.Dispatch(false, false, true, true, Raise);
+            Assert.That(raised, Is.EqualTo(new[] { "+LeftStickAction", "+RightStickAction", "+BothSticksAction" }));
+
+            raised.Clear();
+            TriggerEdges.Dispatch(true, true, true, true, Raise);
+            Assert.That(raised, Is.Empty, "holding raises nothing new");
+
+            raised.Clear();
+            TriggerEdges.Dispatch(true, true, false, false, Raise);
+            Assert.That(raised, Is.EqualTo(new[] { "-LeftStickAction", "-RightStickAction", "-BothSticksAction" }));
+        }
+
+        [Test]
+        public void OneTriggerThenTheOther_RaisesTheOnlyAndBothEdges()
+        {
+            var raised = new List<string>();
+            void Raise(InputEvents e, bool pressed) => raised.Add((pressed ? "+" : "-") + e);
+
+            TriggerEdges.Dispatch(false, false, true, false, Raise);
+            Assert.That(raised, Is.EqualTo(new[] { "+LeftStickAction", "+OnlyLeftStickAction" }));
+
+            raised.Clear();
+            TriggerEdges.Dispatch(true, false, true, true, Raise);
+            Assert.That(raised, Is.EqualTo(new[] { "+RightStickAction", "-OnlyLeftStickAction", "+BothSticksAction" }));
+        }
+
+        [Test]
         public void TheSquirrelCarvesWithThePhoneWhileOneThumbFlies()
         {
             // Yash, 2026-11-02 (prototype, Garrett's sign-off pending): the Dolphin's 1:1 roll on the Squirrel's drift.
             var library = Resources.Load<TouchControlProfileLibrarySO>(TouchControlProfileLibrarySO.ResourcePath);
             var squirrel = library.Find(VesselClassType.Squirrel);
             Assert.That(squirrel.scheme, Is.EqualTo(TouchScheme.ThumbLifts));
-            Assert.That(squirrel.tiltRollOnOneThumb, Is.True);
+            Assert.That(squirrel.gyroRollOnOneThumb, Is.True);
         }
 
         [Test]

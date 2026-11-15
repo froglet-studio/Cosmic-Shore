@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-14-both-thumbs-off-now-pulls-both-triggers-ccf643",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-14T20:11:33+00:00",
+  "area": "phone touch profiles (Meerkat, Squirrel, Goby, Orca, Wrasse)",
+  "summary": "Both thumbs off now pulls both triggers (the pad's presses, not only the analog values) and steers by gyro on every thumb-lift hull whose both-off had no other job, Meerkat and Squirrel included; tiltRollOnOneThumb renamed gyroRollOnOneThumb (FormerlySerializedAs). Garrett's call, 2026-11-14.",
+  "branch": "claude/project-thread-wlkcla",
+  "commit": "8fcdca1a1"
+}
