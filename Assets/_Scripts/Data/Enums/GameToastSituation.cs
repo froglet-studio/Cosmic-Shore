@@ -249,6 +249,19 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // The Shrike's games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 12-14 reserved 177-179). Posted to the LOCAL
+        // pilot only. Larder's race beats are the shared 128-130 and a missile hit is 81 (MissileHitsLanded rose);
+        // Thornbush's lead change is the shared 130, sampled by its controller (a timed mode has no target);
+        // Lancefall's race beats are the shared 128-130.
+        LarderHint = 177,               // once, at the start: paint a rival and every missile plant launches at them
+        ThornbushHint = 178,            // once, at the start: dock on a stick, press Mass to leave a nest; hold your mass
+        LancefallHint = 179,            // once, at the start: take a plate edge-on and the lance breaks a whole strip
+
+        // Shockfront and Fulmen, the Stoat's charge and space games (_Scripts/Controller/Arcade/SHOCKFRONT.md, FULMEN.md).
+        // Their race beats are the shared 128-130 (DomainRaceToasts); a ripple hit is 82 (DebuffHitsLanded rose), a
+        // prism milestone 83. Ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 29-30). LOCAL pilot only.
+        ShockfrontHint = 194,           // once, at the start: sling round and let the pair close beside a rival
+        FulmenHint = 195,               // once, at the start: take the omni crystals in the heart; each throws a bolt
         // The Goby & Pistol's games (SNAP.md, DEN_BUILDER.md, RIPTIDE.md; ids reserved in GAME_KIT_ROSTER.md). Race beats
         // are the shared 128-130 (DomainRaceToasts; Den Builder samples its own lead change, 130). LOCAL pilot only.
         SnapHint = 189,                 // once, at the start: lock a rival from the Goby, fire rings from the Pistol when they are on screen

@@ -159,6 +159,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameDustup.unity
     guid: e22eb90422d763de08d219612851e916
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameShockfront.unity
+    guid: 9811c73356e2a45bc90c5f94907aad24
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSerpentHood.unity
     guid: f1dafdd792e362cf255b47c56fcc1ffd
   - enabled: 1
@@ -167,6 +170,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameShatterplane.unity
     guid: 2a77c10f7818170d6e23f70515343042
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameLancefall.unity
+    guid: 7f639ef5d8a9baa92d88c7b2967bf07d
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRiptide.unity
     guid: 0ed5001dc2eb1b98da90752a0ea6dba0
@@ -180,11 +186,17 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameKelpwood.unity
     guid: 750b1dc75ea9084b39ab73f51caa180b
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameLarder.unity
+    guid: 47971cec2a440abf34eebb61d916d358
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSnap.unity
     guid: f97c43ab08a5c73ec87579c4e1ed568c
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameGlasshouse.unity
     guid: 1669f64150fcf334bc67aa5165c0e331
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameThornbush.unity
+    guid: 469ee2883a5b56d3d63e37d47a6a4d5f
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameDenBuilder.unity
     guid: 1634eb13953802b947c92d49938f75de
@@ -197,6 +209,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSirocco.unity
     guid: f3efa5204ad2461ebf22bc57e2170a5a
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameFulmen.unity
+    guid: 318961b8adea15589d03545c16d5a1f9
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity
     guid: a596bbcaeca9b07498a4875cacea431c
