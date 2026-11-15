@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Stoat's Charge and Space games: Shockfront (119) and Fulmen (120), and the Ripple as a scored hit (`claude/stoat-arcade-games`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Arcade/SHOCKFRONT.md`, `Arcade/FULMEN.md`. Shockfront is a Stoat-only Charge duel in Dog Fight's
+Boneyard scored on CombatPoints (a ripple strip pays 1, target 10); its AI hunts the nearest rival through
+`SetExternalTargetProvider` and the Stoat's own autopilot slings. Fulmen is a Stoat-only Space race in Rampage's forest
+scored on PrismsDestroyed (target 1200): prisms burnt by Fulmen bolts score for the collector. Vessel change:
+`StoatRippleExecutor` now admits each strip through `CombatHitDrain.TryAdmitPetals` (Debuff, 4 petals, Explosion,
+0.5 s cooldown) and raises `Event_CombatHitStats`; a silenced Stoat's ripple strips nothing. Ran: `unity_refcompile`
+(0 errors in changed files; the player build's `MultiplayerSetup.cs` errors are already on bleeding-edge), `/ship`
+gates (green apart from that and a `SwitchbackBlastRunTests` doc-summary failure, both pre-existing),
+`author_shockfront_assets.py --check`, `author_fulmen_assets.py --check`, `author_stoat_assets.py --check`,
+`render_card_backgrounds.py --check` on both cards. Not run: Unity, any EditMode test.
+
+1. Arcade grid: Shockfront and Fulmen cards show their own art and open a Test Flight preview.
+2. Shockfront I2 vs AI: let a dipole go near a rival; the rival loses a petal of each element, your score ticks +1,
+   and the hit toast shows. The AI Stoats chase you and their ripples score against you. First domain to 10 wins.
+3. Shockfront: get silenced by a hit, then let a pair go into a rival; nothing is stripped and no point scores.
+4. Fulmen I2: a Fulmen bolt that burns prisms raises your PrismsDestroyed; the objective arrow points at crystals;
+   the every-200 toast fires; first domain to 1200 wins. Check the target is reachable in a fair time.
+5. Any other mode with a Stoat: ripples still strip and kill fauna as before, and now also show the hit toast.
+
 ### 🔴 The Jacks' vessel pass: authored element scaling, four level-5 cards, their own HUD (`claude/jacks-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/JACKS.md` § 2. The four element curves moved from `JacksMath`'s formulas onto

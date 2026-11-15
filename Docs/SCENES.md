@@ -107,6 +107,8 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameGlasshouse** | `_Scenes/Multiplayer Scenes/` | `Glasshouse (89)` | `GlasshouseController` |
 | **MinigameShatterplane** | `_Scenes/Multiplayer Scenes/` | `Shatterplane (90)` | `ShatterplaneController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
+| **MinigameShockfront** | `_Scenes/Multiplayer Scenes/` | `Shockfront (119)` | `ShockfrontController` |
+| **MinigameFulmen** | `_Scenes/Multiplayer Scenes/` | `Fulmen (120)` | `FulmenController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
 | **MinigameTandava** | `_Scenes/Multiplayer Scenes/` | `Tandava (69)` | `TandavaController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller. **Out of the build since 2026-10-13** (Garrett's call, DESIGN_CALLS 12.3): the scene stays on disk, its entry is gone from `EditorBuildSettings.asset` and its card is in `_SO_Assets/Games/_Archive/`. |
@@ -360,6 +362,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 89 | `Glasshouse` | MP | MinigameGlasshouse | `GlasshouseController` (Angler garden, Mass - an omni crystal is a seed, let go of the lure to plant it in your colour, hold it to grow; timed, trail + garden standing in your colour wins; `GLASSHOUSE.md`) |
 | 90 | `Shatterplane` | MP | MinigameShatterplane | `ShatterplaneController` (Brittle Star plate race, Space - square up to a plate and the ring's flat blast erases it whole, the guns chew the rest; prisms destroyed to a per-intensity target. See `SHATTERPLANE.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
+| 119 | `Shockfront` | MP | MinigameShockfront | `ShockfrontController` (Stoat Charge duel in the Boneyard: each rival a ripple strips is one Debuff point, first domain to 10. See `SHOCKFRONT.md`) |
+| 120 | `Fulmen` | MP | MinigameFulmen | `FulmenController` (Stoat Space race in Rampage's forest: prisms burnt by Fulmen bolts score for the collector, `PrismsDestroyed`, first domain to 1200. See `FULMEN.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
 | 69 | `Tandava` | MP | MinigameTandava | `TandavaController` (UNLISTED since 2026-10-25: on no roster, card in `Games/_Archive`; co-op ARENA hunt in a closed cell - Rhino / Squirrel / Sparrow on one domain against one creature that forages where it likes, rolls up round its meal behind a ring of guards while it feeds, and evolves Great Serpent -> Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion; a variant of each form per match; the cell glows gold for the dance alone. See `TANDAVA.md`) |
 
