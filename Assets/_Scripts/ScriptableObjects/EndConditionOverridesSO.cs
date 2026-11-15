@@ -175,6 +175,20 @@ namespace CosmicShore.ScriptableObjects
         /// finite and the wild herds eat it too, so a prism target could fall out of every domain's reach once the shoals
         /// are stripped. 90 s is the arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
         public const int DefaultChumRoundSeconds = 90;
+        /// <summary>Pod Hunt blast target used when <see cref="podHuntBlastTarget"/> is 0. One BLAST - a flown missile or
+        /// the bomb bursting on a rival hull, a MissileBlast-class hit - is 1 (PodHuntScoringRuleSO), summed across the
+        /// domain's pilots. A first cut, unplayed.</summary>
+        public const int DefaultPodHuntBlastTarget = 15;
+
+        /// <summary>Ice Shelf round length in seconds, used when <see cref="iceShelfRoundSeconds"/> is 0. TIMED, Glasshouse's
+        /// reason: the score (the mass standing in a domain's colour, as the server counts it) is a live stock rival guns
+        /// and grazers eat. 90 s is the arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
+        public const int DefaultIceShelfRoundSeconds = 90;
+
+        /// <summary>Depth Charge hostile-prism target used when <see cref="depthChargePrismTarget"/> is 0. Under Rampage's
+        /// 2000 in the same forest: one Orca brings three guns, but every one of them is a slower, rarer thing than a
+        /// skimming hull's contact. A first cut, unplayed.</summary>
+        public const int DefaultDepthChargePrismTarget = 1500;
         /// <summary>Larder missile target used when <see cref="larderMissileTarget"/> is 0. One MISSILE HIT - a missile
         /// from a Shrike's plants reaching a rival hull (a missile-class combat hit) - is one point (LarderScoringRuleSO),
         /// summed across the domain's pilots. A first cut, unplayed.</summary>
@@ -700,6 +714,18 @@ namespace CosmicShore.ScriptableObjects
                  "took the most prisms off the board (their schools' meals off the reef plus their hulls) when the clock " +
                  "runs out wins. 0 = default (90).")]
         [Min(0)] public int chumRoundSeconds = 90;
+        [Tooltip("Pod Hunt: BLASTS a DOMAIN needs to win (race to N). A crew's flown missile or bomb bursting on a rival " +
+                 "hull is 1. 0 = default (15).")]
+        [Min(0)] public int podHuntBlastTarget = 15;
+
+        [Tooltip("Ice Shelf: round length in SECONDS. The mode is timed - the domain with the most mass standing in its " +
+                 "own colour (trail, pen strokes and shields, as the server counts it) when the clock runs out wins. " +
+                 "0 = default (90).")]
+        [Min(0)] public int iceShelfRoundSeconds = 90;
+
+        [Tooltip("Depth Charge: hostile prisms (Rampage's forest, rival mass) a DOMAIN must destroy to win (race to N); " +
+                 "your own team's mass never counts. 0 = default (1500).")]
+        [Min(0)] public int depthChargePrismTarget = 1500;
         [Tooltip("Larder: MISSILE HITS a DOMAIN needs to win (race to N), the Shrike's charge game. A missile from a " +
                  "Shrike's plants reaching a rival hull is one hit, summed across the domain's pilots. 0 = default (16).")]
         [Min(0)] public int larderMissileTarget = 16;
@@ -833,6 +859,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int haulRoundSecondsBuild = 90;
         [Min(0)] public int hedgerowRoundSecondsBuild = 90;
         [Min(0)] public int longshotRoundSecondsBuild = 90;
+        [Min(0)] public int podHuntBlastTargetBuild = 15;
+        [Min(0)] public int iceShelfRoundSecondsBuild = 90;
+        [Min(0)] public int depthChargePrismTargetBuild = 1500;
         [Min(0)] public int larderMissileTargetBuild = 16;
         [Min(0)] public int thornbushRoundSecondsBuild = 90;
         [Min(0)] public int lancefallPrismTargetBuild = 600;
@@ -1359,6 +1388,27 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetChumRoundSeconds() =>
             chumRoundSeconds > 0 ? chumRoundSeconds : DefaultChumRoundSeconds;
+        /// Pod Hunt blast target ("first domain to N blasts"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultPodHuntBlastTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetPodHuntBlastTarget() =>
+            podHuntBlastTarget > 0 ? podHuntBlastTarget : DefaultPodHuntBlastTarget;
+
+        /// <summary>
+        /// Ice Shelf round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultIceShelfRoundSeconds"/>. Read by IceShelfTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetIceShelfRoundSeconds() =>
+            iceShelfRoundSeconds > 0 ? iceShelfRoundSeconds : DefaultIceShelfRoundSeconds;
+
+        /// <summary>
+        /// Depth Charge prism target ("race to N" hostile prisms destroyed): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultDepthChargePrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
+        /// </summary>
+        public int GetDepthChargePrismTarget() =>
+            depthChargePrismTarget > 0 ? depthChargePrismTarget : DefaultDepthChargePrismTarget;
+
+        /// <summary>
         /// Larder missile target ("first domain to N missile hits"): the configured value when &gt; 0, otherwise
         /// <see cref="DefaultLarderMissileTarget"/>. Compared against a DOMAIN's summed CombatPoints.
         /// </summary>
@@ -1537,6 +1587,9 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Shockfront                => GetShockfrontRippleTarget(),
                 GameModes.Fulmen                    => GetFulmenPrismTarget(),
                 GameModes.Harvest                   => GetHarvestPrismTarget(),
+                GameModes.PodHunt                   => GetPodHuntBlastTarget(),
+                GameModes.DepthCharge               => GetDepthChargePrismTarget(),
+                // Ice Shelf (iceShelfRoundSeconds) is timed, like Glasshouse, and is absent.
                 // Scalar only, as for Cleave and Flatline: the real answer is per-intensity (GetShatterplanePrismTarget(int)).
                 GameModes.Shatterplane              => GetShatterplanePrismTarget(),
                 GameModes.Stingherd                 => GetStingherdStingTarget(),
@@ -1652,6 +1705,9 @@ namespace CosmicShore.ScriptableObjects
             haulRoundSeconds == haulRoundSecondsBuild &&
             hedgerowRoundSeconds == hedgerowRoundSecondsBuild &&
             longshotRoundSeconds == longshotRoundSecondsBuild &&
+            podHuntBlastTarget == podHuntBlastTargetBuild &&
+            iceShelfRoundSeconds == iceShelfRoundSecondsBuild &&
+            depthChargePrismTarget == depthChargePrismTargetBuild &&
             larderMissileTarget == larderMissileTargetBuild &&
             thornbushRoundSeconds == thornbushRoundSecondsBuild &&
             lancefallPrismTarget == lancefallPrismTargetBuild &&
@@ -1733,6 +1789,9 @@ namespace CosmicShore.ScriptableObjects
             haulRoundSeconds = haulRoundSecondsBuild;
             hedgerowRoundSeconds = hedgerowRoundSecondsBuild;
             longshotRoundSeconds = longshotRoundSecondsBuild;
+            podHuntBlastTarget = podHuntBlastTargetBuild;
+            iceShelfRoundSeconds = iceShelfRoundSecondsBuild;
+            depthChargePrismTarget = depthChargePrismTargetBuild;
             larderMissileTarget = larderMissileTargetBuild;
             thornbushRoundSeconds = thornbushRoundSecondsBuild;
             lancefallPrismTarget = lancefallPrismTargetBuild;
@@ -1815,6 +1874,9 @@ namespace CosmicShore.ScriptableObjects
             haulRoundSecondsBuild = haulRoundSeconds;
             hedgerowRoundSecondsBuild = hedgerowRoundSeconds;
             longshotRoundSecondsBuild = longshotRoundSeconds;
+            podHuntBlastTargetBuild = podHuntBlastTarget;
+            iceShelfRoundSecondsBuild = iceShelfRoundSeconds;
+            depthChargePrismTargetBuild = depthChargePrismTarget;
             larderMissileTargetBuild = larderMissileTarget;
             thornbushRoundSecondsBuild = thornbushRoundSeconds;
             lancefallPrismTargetBuild = lancefallPrismTarget;

@@ -490,6 +490,20 @@ namespace CosmicShore.Data
         // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
         // building one of those games takes ITS row's id; anything else takes 128 or above.
 
+        // The Orca's CHARGE game (PODHUNT.md): a missile hunt through the Boneyard's wreckage. Every blast a crew's flown
+        // missile or bomb lands on a rival hull is one point; first domain to the target wins. Ids 99 / toast 174
+        // reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 9).
+        PodHunt = 99,
+
+        // The Orca's MASS game (ICESHELF.md): a timed hold in Glasshouse's cell. The score is the mass standing in your
+        // colour at the whistle - trail, pen strokes and the helm's danger shield, which lingers 20 s where it drops, as
+        // the server counts it. Roster row 10 (100 / toast 175).
+        IceShelf = 100,
+
+        // The Orca's SPACE game (DEPTHCHARGE.md): a demolition race through Rampage's regrowing forest. Missiles and the
+        // bomb burst in the canopy, the sniper's line breaks everything on it; hostile prisms destroyed score, first
+        // domain to the target wins. Roster row 11 (101 / toast 176).
+        DepthCharge = 101,
         // The Shrike's CHARGE game (LARDER.md): a duel in the Dog Fight's wreckage (the Boneyard cells). Every crystal
         // becomes a missile plant and every nest is crowned with one; paint a rival with the Targeting Array and every
         // plant with a ready missile launches at them. A missile that reaches a rival hull is a point. First domain to

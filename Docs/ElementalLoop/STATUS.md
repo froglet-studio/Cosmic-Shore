@@ -18,7 +18,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | JewelWasp | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Meerkat | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
-| Orca | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| Orca | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Rhino | `b b b` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
 | Serpent | `b b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
@@ -57,7 +57,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | JewelWasp | - | - | - | - |
 | Manta | Redline | Corona | Scurry (shared) | Bloomrush |
 | Meerkat | Burrow Run, Warpline | - | - | - |
-| Orca | Breach | - | - | - |
+| Orca | Breach | Pod Hunt | Ice Shelf | Depth Charge |
 | Rhino | Headlong | - | - | - |
 | Scarab | Scarab Rally | Undertow | Scarab Scramble, Tollway | Wrecking Ball |
 | Serpent | Serpentine | Hood | Hedgerow, Longshot | - |

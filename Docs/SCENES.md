@@ -111,6 +111,9 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameHedgerow** | `_Scenes/Multiplayer Scenes/` | `Hedgerow (94)` | `HedgerowController` |
 | **MinigameLongshot** | `_Scenes/Multiplayer Scenes/` | `Longshot (95)` | `LongshotController` |
 | **MinigameShatterplane** | `_Scenes/Multiplayer Scenes/` | `Shatterplane (90)` | `ShatterplaneController` |
+| **MinigamePodHunt** | `_Scenes/Multiplayer Scenes/` | `PodHunt (99)` | `PodHuntController` |
+| **MinigameIceShelf** | `_Scenes/Multiplayer Scenes/` | `IceShelf (100)` | `IceShelfController` |
+| **MinigameDepthCharge** | `_Scenes/Multiplayer Scenes/` | `DepthCharge (101)` | `DepthChargeController` |
 | **MinigameLarder** | `_Scenes/Multiplayer Scenes/` | `Larder (102)` | `LarderController` |
 | **MinigameThornbush** | `_Scenes/Multiplayer Scenes/` | `Thornbush (103)` | `ThornbushController` |
 | **MinigameLancefall** | `_Scenes/Multiplayer Scenes/` | `Lancefall (104)` | `LancefallController` |
@@ -379,6 +382,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 94 | `Hedgerow` | MP | MinigameHedgerow | `HedgerowController` (Serpent steal, Mass - stop dead short of a hedge of neutral bricks and the seed wall eats along it into your colour, and a rival's trail the same way; timed, volume standing in your colour wins; `HEDGEROW.md`) |
 | 95 | `Longshot` | MP | MinigameLongshot | `LongshotController` (Serpent shoot, Space - line up along a lance of neutral prisms and the sniper round breaks the whole run, a rival's straight trail the same way; timed, most hostile prisms broken wins; `LONGSHOT.md`) |
 | 90 | `Shatterplane` | MP | MinigameShatterplane | `ShatterplaneController` (Brittle Star plate race, Space - square up to a plate and the ring's flat blast erases it whole, the guns chew the rest; prisms destroyed to a per-intensity target. See `SHATTERPLANE.md`) |
+| 99 | `PodHunt` | MP | MinigamePodHunt | `PodHuntController` (Orca missile hunt, Charge - every blast that reaches a rival hull, missile or bomb, is a point; golf, first domain to the target; Boneyard cells; `PODHUNT.md`) |
+| 100 | `IceShelf` | MP | MinigameIceShelf | `IceShelfController` (Orca timed hold, Mass - mass standing in your colour at the whistle, measured by a census because the shield and pen retire prisms without a destroyed event; Glasshouse cells; `ICESHELF.md`) |
+| 101 | `DepthCharge` | MP | MinigameDepthCharge | `DepthChargeController` (Orca forest raid, Space - hostile prisms destroyed in Rampage's forest; golf, first domain to the target; `DEPTHCHARGE.md`) |
 | 102 | `Larder` | MP | MinigameLarder | `LarderController` (Shrike missile duel in the Boneyard, Charge - crystals become missile plants, paint a rival to fire; missile hits to 16. See `LARDER.md`) |
 | 103 | `Thornbush` | MP | MinigameThornbush | `ThornbushController` (Shrike timed nest-building in Jackstraw's heap, Mass - volume standing at the whistle, `VolumeRemaining`. See `THORNBUSH.md`) |
 | 104 | `Lancefall` | MP | MinigameLancefall | `LancefallController` (Shrike plate race on Shatterplane's plates, Space - an edge-on lance breaks a whole strip; prisms destroyed to 600. See `LANCEFALL.md`) |
@@ -659,6 +665,9 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `HaulTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`haulRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
 | `HedgerowTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`hedgerowRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
 | `LongshotTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`longshotRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most hostile prisms broken wins |
+| `PodHuntBlastTurnMonitor` | `TurnMonitors/` | A domain's summed blasts (missile and bomb hits, CombatPoints) reach the Pod Hunt target (`podHuntBlastTarget`) |
+| `IceShelfTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`iceShelfRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most mass standing wins |
+| `DepthChargePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Depth Charge target (`depthChargePrismTarget`) |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |
 | `TandavaTurnMonitor` | `TurnMonitors/` | Server-side: the turn ends the moment the swarm's outcome stops being Running (the cycle completed, or it was shattered, starved, or its dance broken - there is no clock), read off `TandavaScoringRuleSO`; the goal stack draws the mode's own rows (`TandavaController` is its `IGoalSource`: the form and its progress, what it is doing and its body, the halo and the drum) and this monitor's display is what rebuilds it each tick |

@@ -213,11 +213,12 @@ namespace CosmicShore.Tests
             // Mass games, on their reserved ids.
             // 91 -> 94 on 2026-11-15: the Honeyguide's Flitstrike (108), Honeycomb (109) and Woodpecker (110), on its reserved ids.
             // 94 -> 96 on 2026-11-15: Stingherd (117) and Trawl (118), the Jacks' Charge and Space games.
+            // 96 -> 99 on 2026-11-15: PodHunt (99), IceShelf (100), DepthCharge (101), the Orca's Charge, Mass and Space
+            // games, on the ids Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for them (parallel sessions build the
+            // other rows' games at the same time; each adds its own count).
             var values = Enum.GetValues(typeof(GameModes));
 
-            // 96 -> 101 on 2026-11-15: Chum (91), Starweave (92), Haul (93), Hedgerow (94) and Longshot (95), rows 1-5
-            // of GAME_KIT_ROSTER.md's reserved ids.
-            Assert.AreEqual(101, values.Length,
+            Assert.AreEqual(104, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

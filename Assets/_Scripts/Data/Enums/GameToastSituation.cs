@@ -266,6 +266,11 @@ namespace CosmicShore.Data
         // Longshot, the Serpent's space game (_Scripts/Controller/Arcade/LONGSHOT.md). 170 is its row in
         // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
         LongshotHint = 170,             // once, at the start: line up along a lance and the round breaks the whole run
+        // The Orca's three element games (PODHUNT.md, ICESHELF.md, DEPTHCHARGE.md). Ids 174-176 reserved by
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 9-11). Race beats are the shared 128-130 (DomainRaceToasts).
+        PodHuntHint = 174,              // once, at the start: fly your missiles into rival hulls; the bomb counts too
+        IceShelfHint = 175,             // once, at the start: lay trail and drop shields late - only what stands counts
+        DepthChargeHint = 176,          // once, at the start: burst missiles and the bomb in the canopy
         // The Swordfish's three games (SPEARLINE.md, RIPOSTE.md, PALISADE.md), ids reserved in
         // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only, once, at the start.
         SpearlineHint = 171,            // a sealed ring counts only through a hole: swing the bill on the way through

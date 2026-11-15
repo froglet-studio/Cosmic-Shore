@@ -23722,6 +23722,28 @@ Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor conf
 - [ ] After a ride of 3 s or more, `Documents/CosmicShore Diagnostics/Flights/possession_<scene>_<species>_<time>.json` exists
       and is sent with the flights after Play.
 
+## 🔴 The Orca's game kit: Pod Hunt (99), Ice Shelf (100), Depth Charge (101) (2026-11-15, Garrett's project thread, `claude/orca-games`, NOT RUN IN EDITOR)
+
+Authored headless from the game kit roster (rows 9-11). Run offline: the three generators' `--check` (each watched fail on
+a mutated card or a mutated C# needle), `arcade_mode_lib.py --self-test`, `check_switch_label_collisions.py`,
+`check_enum_member_references.py`, `check_console_logging.py`, `check_conditional_compilation.py`,
+`author_preview_spawns.py --check`, `author_preview_intensities.py --check`, `render_card_backgrounds.py PodHunt IceShelf
+DepthCharge --check`, and `unity_refcompile` (see the PR for its result). Nothing has been run in Unity. Docs:
+`Assets/_Scripts/Controller/Arcade/PODHUNT.md`, `ICESHELF.md`, `DEPTHCHARGE.md`.
+
+- [ ] Each of the three cards is in the Arcade grid with its rendered background, Orca only; each scene loads at all four
+      intensities with four Orca AI seats and a clean console.
+- [ ] Pod Hunt: a missile flown into a rival hull scores 1, so does the bomb's burst; a gun hit scores nothing; the first
+      domain to 15 wins; an omni crystal in the wreck reloads every gunner seat. The AI hulls stand off a rival, swung to one
+      side, and fetch a crystal when their magazines run dry.
+- [ ] Ice Shelf: the round lasts 90 s; the scoreboard's volume falls when a dropped shield expires (the census) and the shelf
+      column shows the shield's share; the lead toast fires; the final board matches what stood at the whistle on every peer.
+      The AI hulls loop round their own homes inside the nucleus.
+- [ ] Depth Charge: only rival-coloured forest counts; the first domain to 1,500 wins; the 250-prism toast fires; the AI
+      hulls fly to plants that are not their colour.
+- [ ] End Game Conditions window shows the three new rows; changing one moves the game.
+- [ ] Multiplayer (host + one client): a client's Orca crew fires its own seats and its blasts and breaks score.
+
 ## 🔴 Breach: see-through checkerboard walls (2026-11-15, `claude/project-thread-v8enx0`, NOT RUN IN EDITOR)
 
 Garrett picked it (Docs/Reports/SIGHT_LINES.md). Headless: `breach_harness/run.sh` 12 passed and `--self-test` ok; the
