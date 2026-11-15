@@ -2644,6 +2644,70 @@ clones are waiting and neither of those, a Profiler capture of that swap on that
 off) is what decides it. Changing the prism pool or the lay budgets before that is guessing (CLAUDE.md, Debugging
 Methodology); that work is Yash's (`EnvironmentPrismPool`) and the perf branch's.
 
+### B45 measured (2026-11-15): the frozen frame is a Single scene load, and it grows with the prisms alive
+
+Editor and MPPM Player 2 in one party on `Ys-bleeding-edge` `3ae828d03b`, one Play of 70 minutes, driven by scripts
+(`mp-drive/`: `run_match.sh`, `run_prof.sh`, `run_idle.sh`). Frame times are from `FrameStallWatch` and Load Time
+Insights; the split is the editor Profiler's hierarchy of that frame on the host, `ProfilerRecorder`s on Player 2,
+and a stopwatch around every `sceneLoaded` / `activeSceneChanged` subscriber.
+
+| Load | Prisms alive when it began (host / guest) | Longest frame, host | Longest frame, guest |
+|---|---|---|---|
+| Menu to Bloomrush, fresh Play | about 1,500 | 2.1 s | 2.2 s |
+| Menu to Bloomrush, right after a return | 9,600 / 8,900 | 2.6 s (3.8 s with the Profiler) | 2.2 s |
+| Menu to Switchback, menu idle 16 min | 30,600 / 19,400 | 5.3 s | 4.4 s |
+| Menu to Switchback, menu idle 17 min | 64,400 / 48,300 | **13.4 s** (stall 11.8 s) | not recorded; **the guest was dropped** ("Host disconnected", host `clientLeft`, `leaverToAI`) |
+| Menu to Switchback, menu idle 21 min | 50,900 / 57,100 | 8.3 s | **11.6 s** (stall 11.3 s, no drop) |
+| Bloomrush (90 s) to menu, twice | 71,100 / 65,700 and 68,100 / 67,900 | 9.4 s, **10.4 s** | 9.0 s, **11.1 s** |
+| Switchback to menu | 6,700 / 5,500 | 5.0 s | 4.8 s |
+
+**What the frame is.** Every one is the frame in which Unity activates a Single-mode load
+(`EarlyUpdate.UpdatePreloading` > `Application.LoadLevelAsync Integrate`): destroy the old scene, collect, wake the
+new one, run the `sceneLoaded` handlers. No one step owns it. It is a sum, and each part grows with the number of
+prism GameObjects alive at that moment:
+
+- Bloomrush to menu, 10.4 s on the host: destroying the old scene 4.4 s (68,000 prisms: 2.1 s native destroy, 1.9 s
+  their `OnDisable`), `GC.Collect` 1.1 s, the rest of the integrate 1.9 s, `sceneLoaded` handlers 0.6 s, the menu's
+  first `Start`s 1.1 s and its first UI layout 0.7 s. The menu's own load is about 5 s of it (the Switchback return,
+  with 6,700 prisms, is 5.0 s).
+- Menu to Switchback after 21 idle minutes, 8.3 s on the host: `sceneLoaded` handlers 2.5 s
+  (`UIThemeLive.OnSceneLoaded` 1.96 s, `WorldColorTrace.OnSceneLoaded` 0.35 s, `TouchDragThreshold` 0.19 s; the same
+  handlers total 0.27 s on a fresh menu), integrate self time 1.5 s, `GC.Collect` 1.15 s, destroy 0.7 s, the load's
+  completion callback 0.6 s, the HUD's first `Start`s 0.8 s. On the guest also
+  `InteractivePrismPoolManager.HandleActiveSceneChanged` 1.15 s (a client releases the whole trail in one go; the
+  host releases it 100 a frame) and `UIThemeLive` 2.28 s.
+
+**Where the menu's prisms come from.** The menu vessel's trail. `SquirrelPrismPool` (DontDestroyOnLoad) held 2,300
+active prisms a few minutes after a return and 24,200 nine minutes later, about 2,500 a minute, with no ceiling;
+flora adds 1,000-2,300. So the launch freeze grows by roughly half a second for every minute a player sits on the
+menu, and reaches Relay's 10 s after about 20 minutes on this machine. The 17.9 s guest freeze of 2026-11-15 was a
+Player 2 that had been in Play for over an hour.
+
+**What it is not.**
+- Not focus: the same Bloomrush return froze the guest 9.0 s focused and 11.2 s unfocused, the host 10.0 s focused.
+- Not memory and not a leak per match: Unity reserved 3.0-4.4 GB of 32 GB throughout, and a launch right after the
+  third match took 2.6 s. It follows the time spent on the menu, not the matches played.
+- Not only the freezing player's problem: in the 13.4 s case the HOST froze and the GUEST lost the connection.
+
+**Real or editor-only.** Real: the work is the game's and Unity's, and it scales with a count a build has too. The
+editor adds to it (its heap makes the collect about 1.1 s; `UIThemeLive` also repaints prefab assets in memory and
+runs only when a colour set other than Photic is worn), so a build should be shorter. No build has been measured.
+
+**Nothing was changed.** No step is both the owner of the frame and small. The levers, by what they would take off:
+1. Bound the menu vessel's trail, or drain it behind the launch veil before the load (the cell swap's 12 ms slices,
+   `Cell.ReleaseRetiredWorld`). This removes the long-menu launch freeze on both players. A menu / vessel decision.
+2. Bloomrush's teardown: drain the prisms in slices behind the return veil before the Single load (lever L14 (b) in
+   `Docs/PERFORMANCE_OPTIMIZATION.md` §3.3; its go/no-go, a return frame over 5 s, is now met: 9.4-11.1 s).
+3. `UIThemeLive.RepaintAll` on every scene load: eleven `FindObjects` passes, 2.0-2.3 s with 50,000 prisms alive.
+4. The menu's own 5 s load frame is left after 1-3; under Relay's limit, but half of it.
+
+**A measuring trap.** The editor Profiler with a 2,000-frame buffer on both players took 30 GB of commit and crashed
+both editors. `prof_on.cs` now keeps the default 300 frames, on one player, switched on just before the load and off
+after it; `rec_on.cs` / `rec_get.cs` (ProfilerRecorders, the worst frame's markers) cost nothing and run on both.
+
+**Still to confirm:** the same loads in a development build (two machines or two builds on one), and the same on a
+second machine, to learn how much of each frame the editor adds.
+
 ## B48 - a reaped party session rebuilt in place leaves the pilot unpaired, and the next match seats them on the wrong domain (2026-11-07)
 
 **Seen.** Yash, solo in the editor, opened Thresher Time and placed himself on Jade with AIs on Ruby and Gold
