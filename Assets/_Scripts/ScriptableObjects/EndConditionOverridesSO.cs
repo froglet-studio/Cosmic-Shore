@@ -142,6 +142,21 @@ namespace CosmicShore.ScriptableObjects
         /// the arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
         public const int DefaultGlasshouseRoundSeconds = 90;
 
+        /// <summary>Pod Hunt blast target used when <see cref="podHuntBlastTarget"/> is 0. One BLAST - a flown missile or
+        /// the bomb bursting on a rival hull, a MissileBlast-class hit - is 1 (PodHuntScoringRuleSO), summed across the
+        /// domain's pilots. A first cut, unplayed.</summary>
+        public const int DefaultPodHuntBlastTarget = 15;
+
+        /// <summary>Ice Shelf round length in seconds, used when <see cref="iceShelfRoundSeconds"/> is 0. TIMED, Glasshouse's
+        /// reason: the score (the mass standing in a domain's colour, as the server counts it) is a live stock rival guns
+        /// and grazers eat. 90 s is the arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
+        public const int DefaultIceShelfRoundSeconds = 90;
+
+        /// <summary>Depth Charge hostile-prism target used when <see cref="depthChargePrismTarget"/> is 0. Under Rampage's
+        /// 2000 in the same forest: one Orca brings three guns, but every one of them is a slower, rarer thing than a
+        /// skimming hull's contact. A first cut, unplayed.</summary>
+        public const int DefaultDepthChargePrismTarget = 1500;
+
         /// <summary>Sirocco hostile-prism target used when <see cref="siroccoPrismTarget"/> is 0.
         /// Far under Rampage's 2000: the dust takes one prism in three it touches, where a Dolphin
         /// cone takes hundreds at once.</summary>
@@ -585,6 +600,19 @@ namespace CosmicShore.ScriptableObjects
                  "wins. 0 = default (90).")]
         [Min(0)] public int glasshouseRoundSeconds = 90;
 
+        [Tooltip("Pod Hunt: BLASTS a DOMAIN needs to win (race to N). A crew's flown missile or bomb bursting on a rival " +
+                 "hull is 1. 0 = default (15).")]
+        [Min(0)] public int podHuntBlastTarget = 15;
+
+        [Tooltip("Ice Shelf: round length in SECONDS. The mode is timed - the domain with the most mass standing in its " +
+                 "own colour (trail, pen strokes and shields, as the server counts it) when the clock runs out wins. " +
+                 "0 = default (90).")]
+        [Min(0)] public int iceShelfRoundSeconds = 90;
+
+        [Tooltip("Depth Charge: hostile prisms (Rampage's forest, rival mass) a DOMAIN must destroy to win (race to N); " +
+                 "your own team's mass never counts. 0 = default (1500).")]
+        [Min(0)] public int depthChargePrismTarget = 1500;
+
         [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
                  "mass never counts. 0 = default (400).")]
@@ -667,6 +695,9 @@ namespace CosmicShore.ScriptableObjects
         [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int glasshouseRoundSecondsBuild = 90;
+        [Min(0)] public int podHuntBlastTargetBuild = 15;
+        [Min(0)] public int iceShelfRoundSecondsBuild = 90;
+        [Min(0)] public int depthChargePrismTargetBuild = 1500;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
@@ -1139,6 +1170,27 @@ namespace CosmicShore.ScriptableObjects
             glasshouseRoundSeconds > 0 ? glasshouseRoundSeconds : DefaultGlasshouseRoundSeconds;
 
         /// <summary>
+        /// Pod Hunt blast target ("first domain to N blasts"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultPodHuntBlastTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetPodHuntBlastTarget() =>
+            podHuntBlastTarget > 0 ? podHuntBlastTarget : DefaultPodHuntBlastTarget;
+
+        /// <summary>
+        /// Ice Shelf round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultIceShelfRoundSeconds"/>. Read by IceShelfTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetIceShelfRoundSeconds() =>
+            iceShelfRoundSeconds > 0 ? iceShelfRoundSeconds : DefaultIceShelfRoundSeconds;
+
+        /// <summary>
+        /// Depth Charge prism target ("race to N" hostile prisms destroyed): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultDepthChargePrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
+        /// </summary>
+        public int GetDepthChargePrismTarget() =>
+            depthChargePrismTarget > 0 ? depthChargePrismTarget : DefaultDepthChargePrismTarget;
+
+        /// <summary>
         /// Sirocco prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSiroccoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
@@ -1245,6 +1297,9 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Kelpwood                  => GetKelpwoodBiteTarget(),
                 GameModes.Corona                    => GetCoronaBloomTarget(),
                 GameModes.Harvest                   => GetHarvestPrismTarget(),
+                GameModes.PodHunt                   => GetPodHuntBlastTarget(),
+                GameModes.DepthCharge               => GetDepthChargePrismTarget(),
+                // Ice Shelf (iceShelfRoundSeconds) is timed, like Glasshouse, and is absent.
                 // Scalar only, as for Cleave and Flatline: the real answer is per-intensity (GetShatterplanePrismTarget(int)).
                 GameModes.Shatterplane              => GetShatterplanePrismTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
@@ -1334,6 +1389,9 @@ namespace CosmicShore.ScriptableObjects
             SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             glasshouseRoundSeconds == glasshouseRoundSecondsBuild &&
+            podHuntBlastTarget == podHuntBlastTargetBuild &&
+            iceShelfRoundSeconds == iceShelfRoundSecondsBuild &&
+            depthChargePrismTarget == depthChargePrismTargetBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
             tandavaBreakPercent == tandavaBreakPercentBuild &&
@@ -1397,6 +1455,9 @@ namespace CosmicShore.ScriptableObjects
             shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             glasshouseRoundSeconds = glasshouseRoundSecondsBuild;
+            podHuntBlastTarget = podHuntBlastTargetBuild;
+            iceShelfRoundSeconds = iceShelfRoundSecondsBuild;
+            depthChargePrismTarget = depthChargePrismTargetBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
             tandavaBreakPercent = tandavaBreakPercentBuild;
@@ -1461,6 +1522,9 @@ namespace CosmicShore.ScriptableObjects
             shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             glasshouseRoundSecondsBuild = glasshouseRoundSeconds;
+            podHuntBlastTargetBuild = podHuntBlastTarget;
+            iceShelfRoundSecondsBuild = iceShelfRoundSeconds;
+            depthChargePrismTargetBuild = depthChargePrismTarget;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
             tandavaBreakPercentBuild = tandavaBreakPercent;

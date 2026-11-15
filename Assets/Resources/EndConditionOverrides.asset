@@ -58,6 +58,9 @@ MonoBehaviour:
   harvestPrismTarget: 750
   tapestryRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  podHuntBlastTarget: 15
+  iceShelfRoundSeconds: 90
+  depthChargePrismTarget: 1500
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -133,6 +136,9 @@ MonoBehaviour:
   harvestPrismTargetBuild: 750
   tapestryRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  podHuntBlastTargetBuild: 15
+  iceShelfRoundSecondsBuild: 90
+  depthChargePrismTargetBuild: 1500
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35

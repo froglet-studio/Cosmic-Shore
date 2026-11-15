@@ -249,6 +249,11 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // The Orca's three element games (PODHUNT.md, ICESHELF.md, DEPTHCHARGE.md). Ids 174-176 reserved by
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 9-11). Race beats are the shared 128-130 (DomainRaceToasts).
+        PodHuntHint = 174,              // once, at the start: fly your missiles into rival hulls; the bomb counts too
+        IceShelfHint = 175,             // once, at the start: lay trail and drop shields late - only what stands counts
+        DepthChargeHint = 176,          // once, at the start: burst missiles and the bomb in the canopy
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.
