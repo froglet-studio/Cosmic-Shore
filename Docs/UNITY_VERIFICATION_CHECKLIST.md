@@ -579,6 +579,14 @@ editor's command server; the AI flew the hulls, nobody was at the controls):
   old value (4) because the guest's stats were not in the list that is cleared. Step 5 (Play Again) cannot be judged
   until Player 2 has another name. Whether two real players can share a display name is the open question
   (`Docs/Multiplayer/BUGS.md`, Open).
+
+**Third run, 2026-11-15** (Player 2's test account renamed YS2; two-player Bloomrush, Mantas, `efb09adaec`):
+- Step 3 **PASSED**: both scoreboards listed both pilots with the same scores (ys1 970 Volume, YS2 0), and the stat
+  block matched with each machine's own pilot first (host "ys1 9 · YS2 -", Player 2 "YS2 0 · ys1 9"). One cosmetic
+  difference: a pilot with nothing reported reads "0" on their own machine and "-" on the other.
+- Step 5 **PASSED**: after Play Again and READY, every pilot's stats were empty on both machines, locally and in the
+  synced list.
+- Still not run: different hulls in one match (the modes tried are single-hull), step 4 by a person, step 6.
 2. Solo, fly a Dolphin (or Manta, Rhino, Serpent, Swordfish) in any arcade mode and ram some prisms. **Pass:** the
    scoreboard's Prisms Damaged is above 0, and Longest Drift / Max Boost show your values. The console no longer
    warns "[TelemetryBootstrap] ... serialized stat SO refs will be null".
