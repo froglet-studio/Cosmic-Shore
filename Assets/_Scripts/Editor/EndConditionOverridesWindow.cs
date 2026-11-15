@@ -183,6 +183,12 @@ namespace CosmicShore.Editor
                 "colour at the whistle wins), default " + EndConditionOverridesSO.DefaultHoneycombRoundSeconds + ".\n" +
                 "  • Woodpecker: hostile prisms a DOMAIN must break with the Honeyguide's pecks (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultWoodpeckerPrismTarget + ".\n" +
+                "  • Sentry: zaps a DOMAIN needs - a Meerkat's sentinel striking a rival hull in its guard is 1, " +
+                "default " + EndConditionOverridesSO.DefaultSentryZapTarget + ".\n" +
+                "  • Warren: round length in SECONDS (timed - most trail and exit portals STANDING in a domain's " +
+                "colour at the whistle wins), default " + EndConditionOverridesSO.DefaultWarrenRoundSeconds + ".\n" +
+                "  • Cave-in: hostile prisms a DOMAIN must break (race to N) - a swallowed prism fired into another " +
+                "breaks both, default " + EndConditionOverridesSO.DefaultCaveInPrismTarget + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget + ".\n" +
                 "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
@@ -424,6 +430,9 @@ namespace CosmicShore.Editor
             int fls = Mathf.Max(0, EditorGUILayout.IntField("Flitstrike - Strike Target", _config.flitstrikeStrikeTarget));
             int hcb = Mathf.Max(0, EditorGUILayout.IntField("Honeycomb - Round Seconds", _config.honeycombRoundSeconds));
             int wpk = Mathf.Max(0, EditorGUILayout.IntField("Woodpecker - Prism Target", _config.woodpeckerPrismTarget));
+            int st  = Mathf.Max(0, EditorGUILayout.IntField("Sentry - Zap Target", _config.sentryZapTarget));
+            int wr  = Mathf.Max(0, EditorGUILayout.IntField("Warren - Round Seconds", _config.warrenRoundSeconds));
+            int ci  = Mathf.Max(0, EditorGUILayout.IntField("Cave-in - Prism Target", _config.caveInPrismTarget));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             int tv  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Break PERCENT", _config.tandavaBreakPercent), 0, 100);
@@ -512,6 +521,9 @@ namespace CosmicShore.Editor
                     _config.flitstrikeStrikeTarget = fls;
                     _config.honeycombRoundSeconds = hcb;
                     _config.woodpeckerPrismTarget = wpk;
+                    _config.sentryZapTarget = st;
+                    _config.warrenRoundSeconds = wr;
+                    _config.caveInPrismTarget = ci;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
                     _config.tandavaBreakPercent = tv;
@@ -611,6 +623,9 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Flitstrike", fls > 0 ? fls.ToString() : EndConditionOverridesSO.DefaultFlitstrikeStrikeTarget + " (default)");
             EditorGUILayout.LabelField("Honeycomb (seconds)", hcb > 0 ? hcb.ToString() : EndConditionOverridesSO.DefaultHoneycombRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Woodpecker", wpk > 0 ? wpk.ToString() : EndConditionOverridesSO.DefaultWoodpeckerPrismTarget + " (default)");
+            EditorGUILayout.LabelField("Sentry", st > 0 ? st.ToString() : EndConditionOverridesSO.DefaultSentryZapTarget + " (default)");
+            EditorGUILayout.LabelField("Warren (seconds)", wr > 0 ? wr.ToString() : EndConditionOverridesSO.DefaultWarrenRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Cave-in", ci > 0 ? ci.ToString() : EndConditionOverridesSO.DefaultCaveInPrismTarget + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUILayout.LabelField("Tandava (break %)", tv > 0 ? tv.ToString() : EndConditionOverridesSO.DefaultTandavaBreakPercent + " (default)");
@@ -724,6 +739,9 @@ namespace CosmicShore.Editor
                    "Flitstrike: " + Fmt(_config.flitstrikeStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultFlitstrikeStrikeTarget) + "\n" +
                    "Honeycomb (seconds): " + Fmt(_config.honeycombRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultHoneycombRoundSeconds) + "\n" +
                    "Woodpecker: " + Fmt(_config.woodpeckerPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultWoodpeckerPrismTarget) + "\n" +
+                   "Sentry: " + Fmt(_config.sentryZapTargetBuild, "default " + EndConditionOverridesSO.DefaultSentryZapTarget) + "\n" +
+                   "Warren (seconds): " + Fmt(_config.warrenRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultWarrenRoundSeconds) + "\n" +
+                   "Cave-in: " + Fmt(_config.caveInPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultCaveInPrismTarget) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +
                    "Tandava (break %): " + Fmt(_config.tandavaBreakPercentBuild, "default " + EndConditionOverridesSO.DefaultTandavaBreakPercent) + "\n" +

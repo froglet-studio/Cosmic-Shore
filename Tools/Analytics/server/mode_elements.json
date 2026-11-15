@@ -49,6 +49,10 @@
       "Time",
       null
     ],
+    "CaveIn": [
+      "Space",
+      null
+    ],
     "Chum": [
       "Space",
       null
@@ -213,6 +217,10 @@
       "Mass",
       null
     ],
+    "Sentry": [
+      "Charge",
+      null
+    ],
     "SerpentHood": [
       "Charge",
       null
@@ -309,6 +317,10 @@
       "Time",
       null
     ],
+    "Warren": [
+      "Mass",
+      null
+    ],
     "Waystation": [
       "Time",
       null
@@ -375,6 +387,7 @@
     "BroodRush": "Goals",
     "Bullrush": "CombatPoints",
     "BurrowRun": "SwitchesThreaded",
+    "CaveIn": "PrismsDestroyed",
     "Chum": "PrismsDestroyed",
     "Cleave": "PrismsDestroyed",
     "Corona": "CombatPoints",
@@ -416,6 +429,7 @@
     "ScarabRally": "SwitchesThreaded",
     "ScarabScramble": "Goals",
     "Scurry": "Crystals",
+    "Sentry": "CombatPoints",
     "SerpentHood": "CombatPoints",
     "SerpentTime": "SwitchesThreaded",
     "Shatterplane": "PrismsDestroyed",
@@ -440,6 +454,7 @@
     "Trawl": "PrismsDestroyed",
     "Undertow": "CombatPoints",
     "Warpline": "SwitchesThreaded",
+    "Warren": "VolumeRemaining",
     "Waystation": "SwitchesThreaded",
     "WildlifeLiberation": "LifeformsKilled",
     "Windrow": "VolumeRemaining",
@@ -467,6 +482,7 @@
     "Bullrush",
     "BurrowRun",
     "CatNMouse",
+    "CaveIn",
     "CellularBrawl",
     "Chum",
     "Cleave",
@@ -524,6 +540,7 @@
     "ScarabRally",
     "ScarabScramble",
     "Scurry",
+    "Sentry",
     "SerpentHood",
     "SerpentTime",
     "Shatterplane",
@@ -551,6 +568,7 @@
     "Trawl",
     "Undertow",
     "Warpline",
+    "Warren",
     "Waystation",
     "WildlifeBlitz",
     "WildlifeLiberation",

@@ -570,9 +570,23 @@ namespace CosmicShore.Data
         // speed reaches about three times as far as one thrown at cruise: ride a rail, launch, and lance a rival. First
         // domain to the hit target wins. 124 is the id GAME_KIT_ROSTER.md reserved for it (row 34).
         Railrush = 124,
+        // The Meerkat's CHARGE game (SENTRY.md): Corona's shells round a crystal heart. Turn Sentinel Mode on and every
+        // soliton leaves a sentinel at its way in that zaps rival hulls in its guard; each ZAP (a Bullet-class combat hit)
+        // is one point, first domain to the target wins. Reserved for it by Docs/ElementalLoop/GAME_KIT_ROSTER.md row 15.
+        Sentry = 105,
+
+        // The Meerkat's MASS game (WARREN.md): a TIMED round in the bare Barren cell, scored on the volume standing in your
+        // colour at the whistle (VolumeRemaining). Every soliton rings its way out with an Exit Portal; a rival's soliton
+        // swallows your mass and fires it back into the rest of it. Roster row 16.
+        Warren = 106,
+
+        // The Meerkat's SPACE game (CAVEIN.md): Shatterplane's plates of neutral prisms, referenced read-only. Form a
+        // soliton beside a plate and it swallows the plate's prisms and fires them out of the way out; each fired prism
+        // that hits another breaks both. Hostile prisms broken score, first domain to the target wins. Roster row 17.
+        CaveIn = 107,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 109) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 112) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // 97) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // The Grizzly's CHARGE game (STANDOFF.md): square posts of prism tiles stand on a sphere round an open centre.
         // A trigger bomb that touches a rival hull freezes on it; pull and release again to blow it. Every rival a blast
@@ -583,7 +597,7 @@ namespace CosmicShore.Data
         Standoff = 125,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 109) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 112) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

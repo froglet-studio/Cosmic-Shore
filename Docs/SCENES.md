@@ -127,6 +127,9 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameWoodpecker** | `_Scenes/Multiplayer Scenes/` | `Woodpecker (110)` | `WoodpeckerController` |
 | **MinigameStingherd** | `_Scenes/Multiplayer Scenes/` | `Stingherd (117)` | `StingherdController` |
 | **MinigameTrawl** | `_Scenes/Multiplayer Scenes/` | `Trawl (118)` | `TrawlController` |
+| **MinigameSentry** | `_Scenes/Multiplayer Scenes/` | `Sentry (105)` | `SentryController` |
+| **MinigameWarren** | `_Scenes/Multiplayer Scenes/` | `Warren (106)` | `WarrenController` |
+| **MinigameCaveIn** | `_Scenes/Multiplayer Scenes/` | `CaveIn (107)` | `CaveInController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameShockfront** | `_Scenes/Multiplayer Scenes/` | `Shockfront (119)` | `ShockfrontController` |
 | **MinigameFulmen** | `_Scenes/Multiplayer Scenes/` | `Fulmen (120)` | `FulmenController` |
@@ -403,6 +406,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 110 | `Woodpecker` | MP | MinigameWoodpecker | `WoodpeckerController` (Honeyguide Space - peck hostile prisms in Rampage's cactus forest to a target. See `WOODPECKER.md`) |
 | 117 | `Stingherd` | MP | MinigameStingherd | `StingherdController` (Jacks herd duel, Charge - herd your danger creatures into rival hulls; a sting is a Strike point, first domain to 12; Kelpwood's arena) |
 | 118 | `Trawl` | MP | MinigameTrawl | `TrawlController` (Jacks net sweep, Space - dragged prisms that break each other score; prisms destroyed to 300; Harvest's field) |
+| 105 | `Sentry` | MP | MinigameSentry | `SentryController` (Meerkat guard war, Charge - Sentinel Mode leaves a sentinel at every soliton's way in that zaps rival hulls; each zap is a point; Corona's shells read-only; `SENTRY.md`) |
+| 106 | `Warren` | MP | MinigameWarren | `WarrenController` (Meerkat burrow war, Mass - timed, trail + exit portals standing in your colour wins; a soliton beside rival mass swallows and fires it; the bare Barren cell, I3/I4 start at Mass 5 / Space 5; `WARREN.md`) |
+| 107 | `CaveIn` | MP | MinigameCaveIn | `CaveInController` (Meerkat tunnelling, Space - a soliton swallows a plate's prisms and fires them out to smash the rest; first domain to the prism target; Shatterplane's plates read-only; `CAVEIN.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 119 | `Shockfront` | MP | MinigameShockfront | `ShockfrontController` (Stoat Charge duel in the Boneyard: each rival a ripple strips is one Debuff point, first domain to 10. See `SHOCKFRONT.md`) |
 | 120 | `Fulmen` | MP | MinigameFulmen | `FulmenController` (Stoat Space race in Rampage's forest: prisms burnt by Fulmen bolts score for the collector, `PrismsDestroyed`, first domain to 1200. See `FULMEN.md`) |

@@ -17,7 +17,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Jacks | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | JewelWasp | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Meerkat | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| Meerkat | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Orca | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
@@ -56,7 +56,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Jacks | Decoy Run | Stingherd | excused | Trawl |
 | JewelWasp | - | - | - | - |
 | Manta | Redline | Corona | Scurry (shared) | Bloomrush |
-| Meerkat | Burrow Run, Warpline | - | - | - |
+| Meerkat | Burrow Run, Warpline | Sentry | Warren | Cave-in |
 | Orca | Breach | Pod Hunt | Ice Shelf | Depth Charge |
 | Rhino | Headlong | Bullrush | Windrow | Landslide |
 | Scarab | Scarab Rally | Undertow | Scarab Scramble, Tollway | Wrecking Ball |
