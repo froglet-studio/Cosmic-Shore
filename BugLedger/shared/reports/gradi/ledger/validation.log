@@ -482,3 +482,10 @@
 2026-11-13T23:34:53.132Z PlayMode session ended (342s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c703a8f80b
 2026-11-14T00:56:24.996Z editor load: play=False capture=True minPlay=15s issues=211
 2026-11-14T01:39:08.310Z PlayMode session ended (2536s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-33876f4909 E-af714de326
+2026-11-14T16:43:57.885Z EditMode session ended (947min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-ae8d2e4fa2 E-ca127debd0 E-33876f4909 E-af714de326
+2026-11-14T16:44:27.067Z editor load: play=False capture=True minPlay=15s issues=211
+2026-11-15T00:03:23.514Z auto-issue cap reached (150 open issues seen in 30 days): E-bdee889b4e and later new errors are not filed
+2026-11-15T00:04:05.125Z EditMode session ended (440min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-ae8d2e4fa2 E-a37cf7bdab E-bdee889b4e E-8a2913d6d7 E-ff4a78239d E-dfe0a6ddf2 E-a766fd139c E-8f5e4e5d19 E-350d0737d2 E-40c555c90c E-4ce608a789 E-62a0e35c77 E-520f186fbc E-9d9afff4e4 E-e945bea51c E-1e09f84ab5 E-a1fcc962ae E-2ec8cc0ded E-c8a2e88404 E-82cf2f51a7 E-705f11f798 E-a1032f681f E-cf0308d71a E-aff862fa39 E-8dc7bef1a9 E-93b05c310c E-5e68045d08 E-2bc37ed46f E-2dba6d3d01 E-a8b8638a3d
+2026-11-15T00:04:34.664Z scripts compiled clean: closed 1 compile error(s)
+2026-11-15T00:04:34.666Z editor load: play=False capture=True minPlay=15s issues=211
+2026-11-15T01:18:45.797Z PlayMode session ended (939s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-33876f4909
