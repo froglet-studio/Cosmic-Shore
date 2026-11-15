@@ -108,6 +108,35 @@ class Ingest(StoreCase):
                                          "humans_on_my_domain": 2}), "mixed")
 
 
+class ActivityReturns(StoreCase):
+    """activity_returns: what players come back to, per mode, vessel and Toybox, with no player id (story pipeline)."""
+
+    def test_counts_players_by_the_days_they_came_back(self):
+        d = 86400 * 1000
+        self.store.ingest([
+            # p1 races SkimRace on three days, the first and last 9 days apart; p2 once
+            started("p1", "a1", T0 - 9 * d), started("p1", "a2", T0 - 1 * d), started("p1", "a3", T0),
+            started("p2", "b1", T0, game_mode="Regatta", vessel_class="Sparrow"),
+            # the Toybox: p1 on two days, p2 once; a near-duplicate entry counts once
+            ev("freestyle_entered", "p1", T0 - d, vessel_class="Dolphin"),
+            ev("freestyle_entered", "p1", T0, vessel_class="Dolphin"),
+            ev("freestyle_entered", "p2", T0, vessel_class="Rhino"),
+            ev("freestyle_entered", "p2", T0 + 2, vessel_class="Rhino"),
+        ])
+        self.store.rebuild_aggregates()
+        agg = sqlite3.connect(self.store.agg_path)
+        row = lambda kind, name: agg.execute(
+            "SELECT players, players_2_days, players_3_days, players_week_apart, uses FROM activity_returns "
+            "WHERE build_kind='*' AND kind=? AND name=?", (kind, name)).fetchone()
+        self.assertEqual(row("mode", "SkimRace"), (1, 1, 1, 1, 3))
+        self.assertEqual(row("mode", "Regatta"), (1, 0, 0, 0, 1))
+        self.assertEqual(row("vessel", "Squirrel"), (1, 1, 1, 1, 3))
+        self.assertEqual(row("toybox", "Toybox"), (2, 1, 0, 0, 3))
+        self.assertEqual(row("toybox_vessel", "Rhino")[:2], (1, 0))
+        columns = [c[1] for c in agg.execute("PRAGMA table_info(activity_returns)")]
+        self.assertNotIn("distinct_id", columns)
+
+
 class Erasure(StoreCase):
     def test_the_in_game_delete_button_now_really_deletes(self):
         self.store.ingest([started("p1", "m1", T0), started("p2", "m2", T0),

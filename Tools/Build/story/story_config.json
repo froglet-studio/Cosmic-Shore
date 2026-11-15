@@ -1,0 +1,85 @@
+{
+  "_doc": "The daily story's editable rules (Docs/StoryFlywheel/README.md). story.py reads this; nothing else. Garrett steers here: the song and its beat slots, the end card, which part of the game an activity belongs to, and how a name is said on screen.",
+  "song": {
+    "music": "Assets/_Audio/Music/Full Quality MP3/SKY FIRE.mp3",
+    "_slots": "SKY FIRE, 123 BPM: the bar-aligned cut points of trailer v2 (Tools/Build/trailer/edl-v2.json). The drop is 46.08.",
+    "slots": [
+      26.88,
+      32.64,
+      38.4,
+      42.24,
+      46.08,
+      50.4,
+      53.76,
+      58.08,
+      61.92
+    ],
+    "end": 65.76
+  },
+  "opener": {
+    "path": "S01",
+    "src_in": 1.0
+  },
+  "closer": {
+    "path": "S16b",
+    "src_in": 0.0
+  },
+  "endcard": {
+    "dur": 6.12,
+    "tagline": "EVERY TRAIL TELLS A TALE",
+    "platforms": "COMING SOON  ·  iOS  ·  ANDROID  ·  STEAM"
+  },
+  "default_pillar": "arcade",
+  "pillars": {},
+  "labels": {
+    "SkimRace": "Skim Race",
+    "Toybox": "the Toybox"
+  },
+  "_elements": "Every cut shows PvP, maneuvering, destruction and creation (Garrett, 2026-11-12). staged_elements says which element a staged trailer shot shows; real clips carry theirs in their names. camera is how shoot.py films each element: wide, slow, never tight (min_distance, min_chase_back).",
+  "staged_elements": {
+    "S02": "maneuvering",
+    "S07": "maneuvering",
+    "S09a": "pvp",
+    "S10": "maneuvering",
+    "S11a": "destruction",
+    "S11b": "destruction",
+    "S12": "creation",
+    "S14a": "creation",
+    "S14e": "destruction",
+    "S16a": "creation",
+    "S16b": "creation"
+  },
+  "camera": {
+    "_why": "Garrett 2026-11-12: a 14-unit chase showed only the vessel; the first wide pass (110/55/300) made it a speck. These are about 60% of that. Round 3: a 33 chase lost the hull in trail fields and PvP at 70 read as two trails, so maneuvering is a side-on tracking shot and PvP sits at 45 on duels within 30 units. Round 4: PvP framed on both at 45 made two dots, so PvP is over the shoulder of one pilot looking at the other (ots).",
+    "min_distance": 40,
+    "min_chase_back": 28,
+    "pvp": {
+      "verbs": [
+        "ots local {rival} 30 8 6 2"
+      ],
+      "slowmo": 3,
+      "game_seconds": 3.0
+    },
+    "maneuvering": {
+      "verbs": [
+        "tq local 40 90 8 0 3"
+      ],
+      "slowmo": 2,
+      "game_seconds": 3.5
+    },
+    "destruction": {
+      "verbs": [
+        "tq local 52 -40 18 6"
+      ],
+      "slowmo": 4,
+      "game_seconds": 2.5
+    },
+    "creation": {
+      "verbs": [
+        "crane local 0,18,-42 0,95,-180 {frames} 3"
+      ],
+      "slowmo": 1,
+      "game_seconds": 6.0
+    }
+  }
+}

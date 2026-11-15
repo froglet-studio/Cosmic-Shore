@@ -309,7 +309,7 @@ CREATE TABLE IF NOT EXISTS presets(
 AGG_SCHEMA = """
 -- build_kind '*' (the Build filter's All: every build, each player once) appears ONLY in the tables of distinct
 -- players: player_counts, active_rolling, session_players, daily_players, players_in_window, returns, players_by_platform,
--- players_by_country, funnel, ftue_steps, launches, balances, settings, cohort_weeks, cohort_days and their _device
+-- players_by_country, funnel, ftue_steps, launches, activity_returns, balances, settings, cohort_weeks, cohort_days and their _device
 -- twins. Leave it out (build_kind <> '*') when summing those across builds; every other table is rows, summed as is.
 CREATE TABLE plays(              -- one row per (player, match) from game_started; NO player id
     match_id TEXT, day TEXT, start_ms INTEGER, build_kind TEXT, platform TEXT, app_version TEXT,
@@ -402,6 +402,19 @@ CREATE TABLE returns(            -- players by the play type of their first play
     first_day TEXT, build_kind TEXT, play_type TEXT, players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER,
     imported INTEGER,            -- the source of that first play (1 = PostHog history)
     device TEXT                  -- the device of that first play (as plays.device)
+);
+CREATE TABLE activity_returns(     -- what players come back to (the story pipeline's first question): per activity,
+                                   -- the players who did it on 1+, 2+ and 3+ distinct days; NO player id
+    build_kind TEXT,               -- includes '*' (each player once across builds)
+    kind TEXT,                     -- mode (game_started.game_mode) | vessel (game_started.vessel_class) |
+                                   -- toybox (freestyle_entered, name 'Toybox') | toybox_vessel (its vessel_class)
+    name TEXT,
+    players INTEGER,               -- did it at least once
+    players_2_days INTEGER,        -- did it on 2+ distinct days
+    players_3_days INTEGER,        -- did it on 3+ distinct days
+    players_week_apart INTEGER,    -- did it on two days 7+ days apart (came back to it a week later)
+    uses INTEGER,                  -- matches started (mode, vessel) or Toybox entries (toybox, toybox_vessel)
+    first_day TEXT, last_day TEXT  -- the first and last day anyone did it
 );
 CREATE TABLE players_by_platform(  -- distinct players per platform seen in the last N days
     build_kind TEXT, platform TEXT, days INTEGER, players INTEGER
@@ -1735,6 +1748,7 @@ class Store:
         out.executemany("INSERT INTO returns VALUES(?,?,?,?,?,?,?,?)",
                         [(d, b, p, v[0], v[1], v[2], i, dv) for (d, b, p, i, dv), v in sorted(cohorts.items())])
         _rebuild_details(reader, out, first_day, days_seen)
+        _rebuild_activity_returns(reader, out, starts)
         _rebuild_freestyle(reader, out)
         eras = [dict(id=r[0], start=r[1], end=r[2], source=r[3], builds=json.loads(r[4])) for r in reader.execute(
             "SELECT id, from_day, to_day, source, builds FROM eras ORDER BY position")]
@@ -2037,6 +2051,45 @@ def recovered_switches(reader, distinct_id=None):
         if found:
             out[player] = found
     return out
+
+
+def _rebuild_activity_returns(reader, out, starts):
+    """activity_returns: for each game mode, vessel, the Toybox and each Toybox vessel, how many players did it on one,
+    two, three or more distinct days, and on two days a week apart. Answers "what do they come back to" without a
+    player id leaving this function. Near-duplicate Toybox rows are left out; matches are already one per
+    (player, match) in `starts`."""
+    days = {}                      # (build, kind, name) -> player -> set(day)
+    uses = {}                      # (build, kind, name) -> count
+    span = {}                      # (kind, name) -> [first_day, last_day]
+
+    def note(build, kind, name, player, day):
+        for b in (build, "*"):
+            days.setdefault((b, kind, name), {}).setdefault(player, set()).add(day)
+        uses[(build, kind, name)] = uses.get((build, kind, name), 0) + 1
+        uses[("*", kind, name)] = uses.get(("*", kind, name), 0) + 1
+        first_last = span.setdefault((kind, name), [day, day])
+        first_last[0], first_last[1] = min(first_last[0], day), max(first_last[1], day)
+
+    for (player, _match), start in starts.items():
+        day, build, props = day_of(start[0]), start[1], start[4]
+        note(build, "mode", str(props.get("game_mode") or "unknown"), player, day)
+        note(build, "vessel", str(props.get("vessel_class") or "unknown"), player, day)
+    for player, day, build, raw in reader.execute(
+            "SELECT distinct_id, day, build_kind, props FROM events WHERE event='freestyle_entered' AND near_dup = 0"):
+        note(build, "toybox", "Toybox", player, day)
+        note(build, "toybox_vessel", str(json.loads(raw).get("vessel_class") or "unknown"), player, day)
+
+    rows = []
+    for (build, kind, name), by_player in sorted(days.items()):
+        two = three = week = 0
+        for seen in by_player.values():
+            two += len(seen) >= 2
+            three += len(seen) >= 3
+            ordered = sorted(seen)
+            week += (datetime.strptime(ordered[-1], "%Y-%m-%d") - datetime.strptime(ordered[0], "%Y-%m-%d")).days >= 7
+        first, last = span[(kind, name)]
+        rows.append((build, kind, name, len(by_player), two, three, week, uses.get((build, kind, name), 0), first, last))
+    out.executemany("INSERT INTO activity_returns VALUES(?,?,?,?,?,?,?,?,?,?)", rows)
 
 
 def _rebuild_freestyle(reader, out):

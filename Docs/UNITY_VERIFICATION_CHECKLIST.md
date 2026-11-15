@@ -23542,3 +23542,12 @@ Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor conf
       burst and A leave all work from the client; the client's HUD shows the recharges; a second client sees the same.
 - [ ] After a ride of 3 s or more, `Documents/CosmicShore Diagnostics/Flights/possession_<scene>_<species>_<time>.json` exists
       and is sent with the flights after Play.
+## 🔴 Replays carry their analytics match id (2026-11-12, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-qhoug0`. Why: the story flywheel joins footage to analytics (`Docs/StoryFlywheel/README.md`).
+The cloud reference compile found 0 errors in the changed files (its 30 others are packages the cloud could not fetch).
+
+1. **Run `ReplayStoreTests`** (EditMode): `Summary_RoundTripsThroughJson` checks `MatchId` survives the JSON.
+2. **Play one Regatta match to the end screen**, then open the newest `Recordings/*.replay.json`: `MatchId` is a
+   32-character id, the same `match_id` the game sent on `game_started` (Analytics console, Matches page).
+3. **Watch that replay from My Replays**: it plays as before.
