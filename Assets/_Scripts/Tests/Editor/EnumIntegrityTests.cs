@@ -208,7 +208,8 @@ namespace CosmicShore.Tests
             // pushed first; 89 was free on every branch.
             var values = Enum.GetValues(typeof(GameModes));
             // 83 -> 84 on 2026-11-15: Chum (91), the Angler's Space game, row 1 of GAME_KIT_ROSTER.md's reserved ids.
-            Assert.AreEqual(84, values.Length,
+            // 84 -> 85 on 2026-11-15: Starweave (92), the Brittle Star's Mass game, row 2 of the same roster.
+            Assert.AreEqual(85, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -263,6 +264,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Corona, 87)]
         [TestCase(GameModes.Shatterplane, 90)]
         [TestCase(GameModes.Chum, 91)]
+        [TestCase(GameModes.Starweave, 92)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

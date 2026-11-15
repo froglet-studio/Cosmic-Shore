@@ -59,6 +59,7 @@ MonoBehaviour:
   tapestryRoundSeconds: 90
   glasshouseRoundSeconds: 90
   chumRoundSeconds: 90
+  starweaveRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -135,6 +136,7 @@ MonoBehaviour:
   tapestryRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
   chumRoundSecondsBuild: 90
+  starweaveRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35

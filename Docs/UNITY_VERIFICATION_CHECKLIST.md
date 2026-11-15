@@ -311,6 +311,32 @@ new errors; without the shims it fails on `RelayRegionProbe.cs`). No Unity edito
 **Open:** the tab was not drawn on Frogma first (Docs/MENU_REDESIGN_B.md); the region names in the generator's
 `REGION_NAMES` name UGS's ids, and an id UGS does not list is simply never offered online.
 
+### 🔴 Starweave, the Brittle Star's Mass game (GameModes 92) (`claude/brittlestar-mass`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/STARWEAVE.md`. A timed weaving war in a bare nucleus cell (no flora, no fauna):
+Creation Mode lays five trails at half speed, and the score is `VolumeRemaining` (StatsManager, every mode). Elemental
+crystal scatter 24 / 16 / 10 / 6; on I3-I4 the card starts every hull at Space 3 / 5. The AI only steers (weave orbit or
+raid at the densest rival mass); the Brittle Star's own autopilot presses the modes. New platform rows:
+`GameModes.Starweave = 92`, `starweaveRoundSeconds` (90), `GameToastSituation.StarweaveHint = 167`, the HUD arrow
+(Tapestry's provider). Nothing about the Brittle Star changed. Authored by `Tools/Build/author_starweave_assets.py`.
+Ran headless: the generator `--check` (with a negative control), the `/arcadegame` gates, the card render,
+`unity_refcompile` player and editor. No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Starweave card: the weave card art, Brittle Star only, 2-4 players, intensities 1-4, the **Mass** petal.
+2. Run the edit-mode tests `StarweaveScoringTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. With one AI rival, I2: no grazers or plants in the cell; elemental crystals scattered round it.
+4. Press B (Creation): five trails, the hull at half speed; your Hold volume climbs faster than cruising.
+5. Pick up a Mass crystal: the blocks fatten and the volume climbs faster.
+6. Watch the AI: on its orbit it weaves (five trails); when its domain trails it flies at your weave and its guns take it.
+7. I3 / I4: every hull starts at Space 3 / 5 (longer gun range).
+8. At the whistle: the domain with the most volume standing wins; the results show "{n} Volume" and "{n} prisms standing".
+9. FrogletTools > Game Modes > End Game Conditions: Starweave - Round Seconds reads 90.
+10. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameStarweave.unity`.
+
+**First-pass tuning (not settled):** round 90 s; crystals 24 / 16 / 10 / 6; omni 4 / 3 / 3 / 2; starting Space 0 / 0 / 3
+/ 5; comeback 0.000593 per volume. The open question is the retire condition: is Creation Mode worth its half speed?
+
 ### 🔴 Chum, the Angler's Space game (GameModes 91) (`claude/angler-space-chum`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/CHUM.md`. A timed feed: shoals of neutral (Blue) prisms laid by the controller on

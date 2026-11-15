@@ -800,6 +800,9 @@ CAMERAS = {
     # Chum: close beside one shoal of the I2 reef, so its shells of neutral prisms fill the plate with the next shoals
     # hanging behind it, and the Jade school thrown into its painted half (the meal, the thing that scores) sits on it.
     "Chum": (34, 12, 0.7, 46),
+    # Starweave: close among the weaves, so the five-line tubes of three colours sweep across the plate, and a rival's
+    # rounds tearing a gap in the near Jade weave (the raid, what takes score off the board) sit in the middle.
+    "Starweave": (132, 14, 0.75, 46),
     # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
     # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
     "Corona": (37, -10, 0.36, 60),
@@ -1257,6 +1260,50 @@ def recipe(stem, card_path, pal, ends):
         near = min(centres, key=lambda c: abs(v_dot(v_norm(c), v_norm(toward))) - 0.3 * v_norm(c)[1])
         stage["chum"] = {"shoal": near, "reach": reach, "herd": herd, "others": centres}
         nucleus()
+    elif s == "Starweave":
+        # MODEL tier: the cell grows nothing, so the card draws what the mode's pilots LAY - each colour's weave, the
+        # Brittle Star's Creation Mode (five lines, one per ring corner, read off the shipped ring radius, spacing and
+        # block) bent along a broad arc, fattened to the Mass a crystal buys - and the rung's elemental crystals.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        prefab = read(ROOT / "Assets/_Prefabs/Spacevessels/BrittleStar.prefab")
+        base = [float(v) for v in re.search(r"^  BaseScale: \{x: ([0-9.]+), y: ([0-9.]+), z: ([0-9.]+)\}",
+                                             prefab, re.M).groups()]
+        cfg = read(ROOT / "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset")
+        spacing = float(re.search(r"^  creationSpacing: ([0-9.]+)$", cfg, re.M).group(1))
+        ring = 6.0                       # BRITTLE_STAR.md 2: the ring's radius
+        fat = 1.6                        # a Mass crystal or two: blocks x1.6 on x and y
+        settings = read(ROOT / "Assets/_SO_Assets/Games/StarweaveSettings.asset")
+        counts = [int(x) for x in re.findall(r"^  - (\d+)$", settings.split("elementalCrystalCountByIntensity:")[1]
+                                                                    .split("crystalScatterRadius")[0], re.M)]
+        hub = v_mul(v_norm([0.55, 0.12, 0.6]), nuc + 0.75 * (R - nuc))
+        rows = []
+        weaves = {}
+        for dom, (tilt, phase, rad) in {JADE: (10, 0.0, 140.0), RUBY: (-25, 1.9, 170.0), GOLD: (40, 3.8, 120.0)}.items():
+            n = v_norm([math.sin(math.radians(tilt)), math.cos(math.radians(tilt)), 0.3])
+            a = v_norm(v_cross(n, [0, 0, 1]))
+            b = v_cross(n, a)
+            centre = v_add(hub, v_mul(v_add(v_mul(a, math.cos(phase)), v_mul(b, math.sin(phase))), rad * 0.45))
+            L = rad * 1.6
+            steps = int(L / spacing)
+            path = []
+            for k in range(steps):
+                th = phase + (k / steps - 0.5) * (L / rad)
+                path.append(v_add(centre, v_mul(v_add(v_mul(a, math.cos(th)), v_mul(b, math.sin(th))), rad)))
+            weaves[dom] = path
+            for k in range(1, len(path)):
+                fwd = v_norm(v_sub(path[k], path[k - 1]))
+                side = v_norm(v_cross(n, fwd))
+                up = v_cross(fwd, side)
+                for c in range(5):
+                    ang = 2 * math.pi * c / 5
+                    off = v_add(v_mul(side, ring * math.cos(ang)), v_mul(up, ring * math.sin(ang)))
+                    rows.append(prism(v_add(path[k], off), fwd, up, [base[0] * fat, base[1] * fat, base[2]], dom))
+        layers.append({"kind": "prisms", "rows": rows})
+        for k in range(counts[min(INTENSITY - 1, len(counts) - 1)] // 4):
+            crystal(v_add(hub, v_mul(rng.unit(), 260 * rng.u() ** 0.5)), 5.0, (0.55, 1.2, 0.25))
+        stage["starweave"] = {"weaves": weaves, "hub": hub}
+        nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -1288,6 +1335,10 @@ def recipe(stem, card_path, pal, ends):
         ch = stage.get("chum")
         cam["target"] = list(ch["shoal"])
         cam["radius"] = ch["reach"] * 5.0
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "Starweave":
+        cam["target"] = list(stage["starweave"]["hub"])
+        cam["radius"] = 260.0
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1632,6 +1683,21 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                     creature(p, v_sub(nxt, p), reach * 0.5, BLUE, rows)
             layers.append({"kind": "prisms", "rows": rows})
             stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "Starweave":
+        # The raid: a Ruby Brittle Star's five guns tearing into the near Jade weave (a gap where rounds have struck,
+        # streaks of its colour reaching it), while the Jade weaver lays on at the far end, its ring a glow.
+        sw = stage.pop("starweave", None)
+        if sw:
+            jade = sw["weaves"][JADE]
+            tip = jade[-1]
+            glow(tip, 9.0, JADE, 1.3, 0.5)
+            hit = jade[len(jade) // 2]
+            glow(hit, 14.0, RUBY, 1.0, 0.3)
+            shooter = v_add(hit, v_mul(v_norm(v_add(v_sub(hit, sw["hub"]), [0, 0.6, 0])), 90.0))
+            for k in range(5):
+                p = v_add(v_add(shooter, v_mul(v_sub(hit, shooter), 0.2 + 0.15 * k)), v_mul(rng.unit(), 4.0))
+                streak(p, v_sub(hit, shooter), 18.0, RUBY)
+            stage["vessels"] = vessels([(JADE, 0.3, 6, 320, 15), (RUBY, 0.35, -8, 160, 25), (GOLD, 0.5, 12, 250, 25)])
     elif s == "Corona":
         # A KABLOOM at the heart: a Manta touched an omni crystal, and the bloom round it catches a rival pilot (a
         # glow in the planter's colour on the rival). Out on the shells, two bombed rivals carry fuse markers (small

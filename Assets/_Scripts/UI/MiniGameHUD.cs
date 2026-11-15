@@ -571,7 +571,9 @@ namespace CosmicShore.UI
                     // Rampage's provider: the nearest managed omni crystal, which is a creature for the school - the
                     // one thing to fetch. The reef's shoals hang in plain sight; the brush finds them.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Chum");
+                case GameModes.Starweave:
                 case GameModes.Tapestry:
+                    // (Starweave shares it: a rival's freshest weave is behind them, which is where a raid goes.)
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's
                     // wake is laid behind them. The PAINT half needs no arrow - you paint where

@@ -98,4 +98,5 @@ Unity is claimed: every one of these is authored headless until a person flies i
 | # | Game | Branch / PR | State |
 |---|---|---|---|
 | 1 | Chum (Angler Space) | `claude/angler-space-chum` | built headless, not run in Unity (2026-11-15) |
+| 2 | Starweave (Brittle Star Mass) | `claude/brittlestar-mass` | built headless, not run in Unity (2026-11-15) |
 | 1-37 | all | | not started (2026-11-15) |

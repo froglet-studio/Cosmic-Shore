@@ -452,6 +452,11 @@ namespace CosmicShore.Data
         // Row 1 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
         Chum = 91,
 
+        // The Brittle Star's MASS game (STARWEAVE.md): a timed weaving war in the bare cell. Creation Mode lays five
+        // trails from the ring's corners; the volume standing in your colour at the whistle wins, and every rival's
+        // guns, cords and ring are aimed at it. Row 2 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Starweave = 92,
+
         // RESERVED 91-127 (2026-11-15): the missing elemental arcade games, one id per game, assigned by vessel and
         // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
         // building one of those games takes ITS row's id; anything else takes 128 or above.
