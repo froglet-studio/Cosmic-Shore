@@ -174,8 +174,14 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHarvest.unity
     guid: 2e26345893828d0fd7d69132808c3728
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameBlastline.unity
+    guid: 9dbe0a33d2df322bd0428005da67e705
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameKelpwood.unity
     guid: 750b1dc75ea9084b39ab73f51caa180b
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameCleanerRam.unity
+    guid: fb8e9640cb8e4d6fcfbec4fc8cfe5e2d
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameGlasshouse.unity
     guid: 1669f64150fcf334bc67aa5165c0e331
@@ -185,6 +191,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTapestry.unity
     guid: 66ee08b9dff6ca4fd973337baf4857af
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameReefbuild.unity
+    guid: e6005374c108d6d0e89657be78fb1340
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSirocco.unity
     guid: f3efa5204ad2461ebf22bc57e2170a5a

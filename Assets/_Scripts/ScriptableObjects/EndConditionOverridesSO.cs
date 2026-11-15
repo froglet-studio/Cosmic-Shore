@@ -136,6 +136,20 @@ namespace CosmicShore.ScriptableObjects
         /// "most standing at the whistle" is the only honest end condition.</summary>
         public const int DefaultTapestryRoundSeconds = 90;
 
+        /// <summary>Cleaner Ram ram target used when <see cref="cleanerRamStrikeTarget"/> is 0. One RAM - the Wrasse's
+        /// charged kite reaching a rival hull (a Strike-class combat hit) - is one point (CleanerRamScoringRuleSO), summed
+        /// across the domain's pilots. A first cut, unplayed: a ram needs a Charge loop first, so it is rarer than a bite.</summary>
+        public const int DefaultCleanerRamStrikeTarget = 8;
+
+        /// <summary>Reefbuild round length in seconds, used when <see cref="reefbuildRoundSeconds"/> is 0. TIMED, Tapestry's
+        /// reason: the score (the reef standing) is a live stock that rival kites pop and blast.</summary>
+        public const int DefaultReefbuildRoundSeconds = 90;
+
+        /// <summary>Blastline hostile-prism target used when <see cref="blastlinePrismTarget"/> is 0. Hostile prisms a
+        /// DOMAIN destroys with the Wrasse's Space blasts and kite pops, summed across its pilots (BlastlineScoringRuleSO,
+        /// Rampage's rule). Rampage's forest regrows, so the field cannot run dry; a first cut, unplayed.</summary>
+        public const int DefaultBlastlinePrismTarget = 600;
+
         /// <summary>Glasshouse round length in seconds, used when <see cref="glasshouseRoundSeconds"/> is 0. Glasshouse
         /// is TIMED, Tapestry's reason: its score (trail + garden standing in a domain's colour) is a live stock that
         /// grazers and rival schools eat, so "most standing at the whistle" is the only honest end condition. 90 s is
@@ -585,6 +599,19 @@ namespace CosmicShore.ScriptableObjects
                  "wins. 0 = default (90).")]
         [Min(0)] public int glasshouseRoundSeconds = 90;
 
+        [Tooltip("Cleaner Ram: RAMS a DOMAIN needs to win (race to N). The Wrasse's charged kite reaching a rival hull " +
+                 "is one ram, summed across the domain's pilots. 0 = default (8).")]
+        [Min(0)] public int cleanerRamStrikeTarget = 8;
+
+        [Tooltip("Reefbuild: round length in SECONDS. The mode is timed - the domain with the most prism volume " +
+                 "STANDING (Mass clusters and trail) when the clock runs out wins. 0 = default (90).")]
+        [Min(0)] public int reefbuildRoundSeconds = 90;
+
+        [Tooltip("Blastline: hostile prisms (Rampage's forest, rival trails and clusters, fauna) a DOMAIN must destroy " +
+                 "between them to win (race to N) - with the Wrasse's Space blasts and kite pops; your own colour " +
+                 "never counts. 0 = default (600).")]
+        [Min(0)] public int blastlinePrismTarget = 600;
+
         [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
                  "mass never counts. 0 = default (400).")]
@@ -667,6 +694,9 @@ namespace CosmicShore.ScriptableObjects
         [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int glasshouseRoundSecondsBuild = 90;
+        [Min(0)] public int cleanerRamStrikeTargetBuild = 8;
+        [Min(0)] public int reefbuildRoundSecondsBuild = 90;
+        [Min(0)] public int blastlinePrismTargetBuild = 600;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
@@ -1139,6 +1169,27 @@ namespace CosmicShore.ScriptableObjects
             glasshouseRoundSeconds > 0 ? glasshouseRoundSeconds : DefaultGlasshouseRoundSeconds;
 
         /// <summary>
+        /// Cleaner Ram ram target ("first domain to N rams"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultCleanerRamStrikeTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetCleanerRamStrikeTarget() =>
+            cleanerRamStrikeTarget > 0 ? cleanerRamStrikeTarget : DefaultCleanerRamStrikeTarget;
+
+        /// <summary>
+        /// Reefbuild round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultReefbuildRoundSeconds"/>. Read by ReefbuildTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetReefbuildRoundSeconds() =>
+            reefbuildRoundSeconds > 0 ? reefbuildRoundSeconds : DefaultReefbuildRoundSeconds;
+
+        /// <summary>
+        /// Blastline prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultBlastlinePrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
+        /// </summary>
+        public int GetBlastlinePrismTarget() =>
+            blastlinePrismTarget > 0 ? blastlinePrismTarget : DefaultBlastlinePrismTarget;
+
+        /// <summary>
         /// Sirocco prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSiroccoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
@@ -1248,6 +1299,9 @@ namespace CosmicShore.ScriptableObjects
                 // Scalar only, as for Cleave and Flatline: the real answer is per-intensity (GetShatterplanePrismTarget(int)).
                 GameModes.Shatterplane              => GetShatterplanePrismTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
+                GameModes.CleanerRam                => GetCleanerRamStrikeTarget(),
+                // Reefbuild is TIMED (reefbuildRoundSeconds), Tapestry's reason: absent, reads as "no target".
+                GameModes.Blastline                 => GetBlastlinePrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush. Glasshouse
                 // (glasshouseRoundSeconds) is timed for the same reason and is absent too.
@@ -1334,6 +1388,9 @@ namespace CosmicShore.ScriptableObjects
             SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             glasshouseRoundSeconds == glasshouseRoundSecondsBuild &&
+            cleanerRamStrikeTarget == cleanerRamStrikeTargetBuild &&
+            reefbuildRoundSeconds == reefbuildRoundSecondsBuild &&
+            blastlinePrismTarget == blastlinePrismTargetBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
             tandavaBreakPercent == tandavaBreakPercentBuild &&
@@ -1397,6 +1454,9 @@ namespace CosmicShore.ScriptableObjects
             shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             glasshouseRoundSeconds = glasshouseRoundSecondsBuild;
+            cleanerRamStrikeTarget = cleanerRamStrikeTargetBuild;
+            reefbuildRoundSeconds = reefbuildRoundSecondsBuild;
+            blastlinePrismTarget = blastlinePrismTargetBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
             tandavaBreakPercent = tandavaBreakPercentBuild;
@@ -1461,6 +1521,9 @@ namespace CosmicShore.ScriptableObjects
             shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             glasshouseRoundSecondsBuild = glasshouseRoundSeconds;
+            cleanerRamStrikeTargetBuild = cleanerRamStrikeTarget;
+            reefbuildRoundSecondsBuild = reefbuildRoundSeconds;
+            blastlinePrismTargetBuild = blastlinePrismTarget;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
             tandavaBreakPercentBuild = tandavaBreakPercent;

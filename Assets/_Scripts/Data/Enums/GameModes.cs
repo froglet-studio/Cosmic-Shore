@@ -446,6 +446,18 @@ namespace CosmicShore.Data
         // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
         Shatterplane = 90,
 
+        // The Wrasse and Grouper's three reef games (WRASSEREEF.md), ids reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md
+        // (rows 21-23, 2026-11-15) so the parallel sessions building the missing games never take the same number.
+        // The CHARGE game: loop Charge motes to power the kite's ram, ram rival hulls; each ram is one point. A reef of
+        // mostly Charge crystals in the bare Barren cell; I1-I4 thin the crystals.
+        CleanerRam = 111,
+        // The MASS game: a timed reef war. Loop Mass motes and the kite lays a cluster of your prisms; most volume
+        // STANDING at the whistle wins (VolumeRemaining). Mostly Mass crystals in the bare Barren cell; I1-I4 thin them.
+        Reefbuild = 112,
+        // The SPACE game: loop Space motes and a blast destroys hostile prisms where the loop closed; first domain to the
+        // prism target wins. Rampage's living forest, read-only, with mostly Space crystals; I1-I4 are Rampage's rungs.
+        Blastline = 113,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 83) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
