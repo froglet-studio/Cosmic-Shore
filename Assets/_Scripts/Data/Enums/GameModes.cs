@@ -452,6 +452,20 @@ namespace CosmicShore.Data
         // Row 1 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
         Chum = 91,
 
+        // The Swordfish's TIME game (SPEARLINE.md): three laps of Headlong's circuit, the rings sealed with panes of
+        // prisms. A sealed ring counts only through a hole, and the hull alone rams too small a one, so each seal asks for
+        // a swing of the bill; Quickdraw (Time) is the sword's rate. Reserved 96 in Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Spearline = 96,
+
+        // The Swordfish's CHARGE game (RIPOSTE.md): a sword duel in Jackstraw's heap of sticks. A sword hit on a rival
+        // (a Strike, which lands only while the Swordfish is faster than its victim) is one point; first domain to the
+        // target wins. The sticks are cover the blade cuts and the hull rams through. Reserved 97 (GAME_KIT_ROSTER.md).
+        Riposte = 97,
+
+        // The Swordfish's MASS game (PALISADE.md): a timed build-and-raid in the bare Barren cell. The afterimages (the
+        // blade's prism copies of itself, Mass scales their volume) and the trail are your mass; every rival's sword
+        // cuts it. Most volume standing at the whistle wins (VolumeRemaining). Reserved 98 (GAME_KIT_ROSTER.md).
+        Palisade = 98,
         // RESERVED 91-127 (2026-11-15): the missing elemental arcade games, one id per game, assigned by vessel and
         // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
         // building one of those games takes ITS row's id; anything else takes 128 or above.
@@ -474,6 +488,16 @@ namespace CosmicShore.Data
         // domain to the prism target wins. I1-I4 are the plates' own ladder; I4's super-shielded ribs need Void Pierce.
         // Reserved by GAME_KIT_ROSTER.md (row 14).
         Lancefall = 104,
+
+        // The Stoat's CHARGE game (SHOCKFRONT.md): a duel in Dog Fight's Boneyard. Sling round and let the pair close:
+        // the annihilation's ripple strips a petal of every element from each rival its front sweeps over, and every
+        // rival stripped is one point. Ids 119 / toast 194 reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 29).
+        Shockfront = 119,
+
+        // The Stoat's SPACE game (FULMEN.md): Rampage's forest, its omni crystals contested in the nucleus. Each one you
+        // take throws a Fulmen bolt that burns the forest; a crystal a branch reaches bolts again. Hostile prisms
+        // destroyed score. Ids 120 / toast 195 reserved by GAME_KIT_ROSTER.md (row 30).
+        Fulmen = 120,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 86) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
