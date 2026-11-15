@@ -118,7 +118,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void FormatPerPilot_PilotWithNoValue_ShowsADash()
+        public void FormatPerPilot_PilotWithNoValue_ShowsTheZeroValue()
         {
             var stat = Stat("MaxBoost", ValueFormatType.TimeSeconds);
             var text = EventDrivenStatsProvider.FormatPerPilot(stat, new[]
@@ -127,7 +127,28 @@ namespace CosmicShore.Tests
                 new EventDrivenStatsProvider.PilotValue("Garrett", false, 0f),
             });
 
-            Assert.AreEqual("Yash 1.50s  ·  Garrett -", text);
+            Assert.AreEqual("Yash 1.50s  ·  Garrett 0.00s", text);
+        }
+
+        [Test]
+        public void FormatPerPilot_NoValue_ReadsTheSameForLocalAndRemote()
+        {
+            // The local pilot is given its own (default 0) value, a remote pilot with no report has none:
+            // both must print the same text on every machine.
+            var stat = Stat("PrismsDamaged");
+            var text = EventDrivenStatsProvider.FormatPerPilot(stat, new[]
+            {
+                new EventDrivenStatsProvider.PilotValue("ys1", true, 9f),
+                new EventDrivenStatsProvider.PilotValue("YS2", false, 0f),
+            });
+            var local = EventDrivenStatsProvider.FormatPerPilot(stat, new[]
+            {
+                new EventDrivenStatsProvider.PilotValue("YS2", true, 0f),
+                new EventDrivenStatsProvider.PilotValue("ys1", true, 9f),
+            });
+
+            Assert.AreEqual("ys1 9  ·  YS2 0", text);
+            Assert.AreEqual("YS2 0  ·  ys1 9", local);
         }
     }
 }

@@ -569,6 +569,8 @@ editor's command server; the AI flew the hulls, nobody was at the controls):
   race (host 29 / guest 185, then 425 / 210 on both). Not covered: different hulls (both spawned on Dolphins) and the
   final scoreboard's rows (the guest's hull never finished the course, so the race did not end by itself).
 - Steps 4-6 **NOT RUN** (Play Again reset, the per-ram count judged by a person, a Sparrow or Squirrel match).
+- **Missing value reads zero everywhere (2026-11-15, NOT COMPILED, not played).** Compile, run `VesselStatsSyncTests` (8), then play two players where one never scores a stat (no prisms damaged).
+- Look for: that pilot reads "0" (or "0.00s") on BOTH machines, in the same position order rules as before; no "-" anywhere in the stat block.
 
 **Second run, 2026-11-15** (two-player Bloomrush, both on Mantas, the match ended on its 90 s timer):
 - Step 3, the final scoreboard **PASSED for the stat block**: the host showed Prisms Damaged "ys1 5 · ys1 4" and

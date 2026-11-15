@@ -236,12 +236,12 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>"Yash 12 · Garrett 39": each pilot in order, a dash for one with no value for this stat.</summary>
+        /// <summary>"Yash 12 · Garrett 39": each pilot in order, a pilot with no report reads the stat's zero value, the same on every machine.</summary>
         public static string FormatPerPilot(VesselStatEventSO stat, IReadOnlyList<PilotValue> pilots)
         {
             var parts = new List<string>(pilots.Count);
             foreach (var p in pilots)
-                parts.Add($"{(string.IsNullOrEmpty(p.Name) ? "?" : p.Name)} {(p.Has ? stat.Format(p.Value) : "-")}");
+                parts.Add($"{(string.IsNullOrEmpty(p.Name) ? "?" : p.Name)} {stat.Format(p.Has ? p.Value : 0f)}");
             return string.Join("  ·  ", parts);
         }
 
