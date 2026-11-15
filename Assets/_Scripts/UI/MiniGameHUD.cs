@@ -459,6 +459,10 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
                 case GameModes.Hijack:
                     return CreateProviderComponent<HijackObjectiveProvider>("ObjectiveProvider_Hijack");
+                case GameModes.Railrush:
+                    // Dog Fight's provider on purpose: the nearest OPPOSING pilot. The score is a spike in a
+                    // rival's hull, so "which way is the fight" is the one question; the rails are in plain sight.
+                    return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_Railrush");
                 case GameModes.Skein:
                     // Mandatory rather than a nicety, for Switchback's reason: every ring on the
                     // cable is neutral Blue, so nothing in the SHARED world says whose turn a ring
@@ -550,6 +554,17 @@ namespace CosmicShore.UI
                     // The Bends' provider again: the nearest pilot this player may strike. In the heap the hard half
                     // is finding a line through the sticks to them; the arrow answers where, the whip answers how.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Jackstraw");
+                case GameModes.Bullrush:
+                    // The Bends' provider again: the nearest pilot this player may gore. A gore is a ram from behind at
+                    // speed, so the arrow answers who; the Ramp Spool's straight line answers how.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Bullrush");
+                case GameModes.Windrow:
+                    // Tapestry's answer: the nearest opposing pilot is where their freshest row is, because a trail is
+                    // laid behind its pilot. That is the raid half; laying your own needs no arrow.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Windrow");
+                case GameModes.Landslide:
+                    // Cleave's answer: the densest hostile mass still standing, where a plough pass breaks the most.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Landslide");
                 case GameModes.Flatline:
                     // The Bends' provider: the nearest pilot this player may hit. The panes hide pilots from rounds
                     // and the cords reach through them, so the question every second is where the rival is.
@@ -585,6 +600,18 @@ namespace CosmicShore.UI
                     // SEED (and a creature), the one thing a pilot has to go and fetch; the planting and the tending
                     // happen wherever the pilot lets go of the lure.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Glasshouse");
+                case GameModes.PodHunt:
+                    // The Bends' provider: the nearest pilot this crew may blast. The gunners fly the missiles; the
+                    // helm's job is to bring a rival into their reach.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_PodHunt");
+                case GameModes.IceShelf:
+                    // Rampage's provider: the nearest managed omni crystal - a missile for every seat, the ammunition
+                    // that keeps rival gunners off the shelf.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_IceShelf");
+                case GameModes.DepthCharge:
+                    // Rampage's provider, in Rampage's own forest: the nearest managed omni crystal (a missile per
+                    // seat). The forest itself is in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_DepthCharge");
                 case GameModes.Flitstrike:
                     // The Bends' provider: the nearest pilot this player may strike. The Flit is a short dart along the
                     // nose, so the whole question is where the rival is and how to come at them dead ahead.

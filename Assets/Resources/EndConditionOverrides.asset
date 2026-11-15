@@ -48,11 +48,15 @@ MonoBehaviour:
   - 90
   jackstrawStrikeTarget: 3
   riposteStrikeTarget: 6
+  bullrushGoreTarget: 5
+  windrowRoundSeconds: 90
+  landslidePrismTarget: 500
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
   shockfrontRippleTarget: 10
   fulmenPrismTarget: 1200
   trawlPrismTarget: 300
+  railrushHitTarget: 20
   standoffBlastTarget: 10
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
@@ -65,6 +69,9 @@ MonoBehaviour:
   tapestryRoundSeconds: 90
   palisadeRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  podHuntBlastTarget: 15
+  iceShelfRoundSeconds: 90
+  depthChargePrismTarget: 1500
   larderMissileTarget: 16
   thornbushRoundSeconds: 90
   lancefallPrismTarget: 600
@@ -137,11 +144,15 @@ MonoBehaviour:
   - 90
   jackstrawStrikeTargetBuild: 3
   riposteStrikeTargetBuild: 6
+  bullrushGoreTargetBuild: 5
+  windrowRoundSecondsBuild: 90
+  landslidePrismTargetBuild: 500
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
   shockfrontRippleTargetBuild: 10
   fulmenPrismTargetBuild: 1200
   trawlPrismTargetBuild: 300
+  railrushHitTargetBuild: 20
   standoffBlastTargetBuild: 10
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
@@ -154,6 +165,9 @@ MonoBehaviour:
   tapestryRoundSecondsBuild: 90
   palisadeRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  podHuntBlastTargetBuild: 15
+  iceShelfRoundSecondsBuild: 90
+  depthChargePrismTargetBuild: 1500
   larderMissileTargetBuild: 16
   thornbushRoundSecondsBuild: 90
   lancefallPrismTargetBuild: 600

@@ -89,6 +89,9 @@ SCENE_FOR_MODE = {
     88: 'MinigameHarvest',
     89: 'MinigameGlasshouse',
     90: 'MinigameShatterplane',
+    99: 'MinigamePodHunt',
+    100: 'MinigameIceShelf',
+    101: 'MinigameDepthCharge',
     96: 'MinigameSpearline',
     97: 'MinigameRiposte',
     98: 'MinigamePalisade',
@@ -102,6 +105,10 @@ SCENE_FOR_MODE = {
     110: 'MinigameWoodpecker',
     117: 'MinigameStingherd',
     118: 'MinigameTrawl',
+    124: 'MinigameRailrush',
+    121: 'MinigameBullrush',
+    122: 'MinigameWindrow',
+    123: 'MinigameLandslide',
     125: 'MinigameStandoff',
 }
 

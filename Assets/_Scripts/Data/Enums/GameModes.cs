@@ -464,6 +464,20 @@ namespace CosmicShore.Data
         // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
         // building one of those games takes ITS row's id; anything else takes 128 or above.
 
+        // The Orca's CHARGE game (PODHUNT.md): a missile hunt through the Boneyard's wreckage. Every blast a crew's flown
+        // missile or bomb lands on a rival hull is one point; first domain to the target wins. Ids 99 / toast 174
+        // reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 9).
+        PodHunt = 99,
+
+        // The Orca's MASS game (ICESHELF.md): a timed hold in Glasshouse's cell. The score is the mass standing in your
+        // colour at the whistle - trail, pen strokes and the helm's danger shield, which lingers 20 s where it drops, as
+        // the server counts it. Roster row 10 (100 / toast 175).
+        IceShelf = 100,
+
+        // The Orca's SPACE game (DEPTHCHARGE.md): a demolition race through Rampage's regrowing forest. Missiles and the
+        // bomb burst in the canopy, the sniper's line breaks everything on it; hostile prisms destroyed score, first
+        // domain to the target wins. Roster row 11 (101 / toast 176).
+        DepthCharge = 101,
         // The Shrike's CHARGE game (LARDER.md): a duel in the Dog Fight's wreckage (the Boneyard cells). Every crystal
         // becomes a missile plant and every nest is crowned with one; paint a rival with the Targeting Array and every
         // plant with a ready missile launches at them. A missile that reaches a rival hull is a point. First domain to
@@ -513,8 +527,26 @@ namespace CosmicShore.Data
         // (PRISM_MOTION.md). First domain to destroy the hostile-prism target wins, in Harvest's field of sheaves.
         // Id reserved by the game kit roster (row 28).
         Trawl = 118,
+        // The Rhino's three missing games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 31-33, ids reserved there on
+        // 2026-11-15 so the parallel sessions building the roster never take one another's numbers).
+        // CHARGE (BULLRUSH.md): a joust on speed in Jackstraw's heap. A gore - ramming a rival while faster than it and
+        // above the gore speed, which Charge lowers from 150 to 50 u/s - is one point; first domain to the target wins.
+        Bullrush = 121,
+        // MASS (WINDROW.md): a timed war over standing trail in the bare Barren cell. The plough's throws break rival
+        // rows (a thrown prism that hits another destroys both); Heft steers them and Berm banks your own into armour.
+        Windrow = 122,
+        // SPACE (LANDSLIDE.md): a demolition race through Cleave's four arenas. Every prism scored is a plough strike,
+        // and the Blade's width (Space) is how many ribs a pass catches. First domain to the target wins.
+        Landslide = 123,
+
+        // The Urchin's CHARGE game (RAILRUSH.md): Hijack's Switchyard of open rails, scored on chain-spike hits on rival
+        // hulls. A spike flies at its muzzle speed PLUS the hull's, so a volley thrown off a friendly third at grind
+        // speed reaches about three times as far as one thrown at cruise: ride a rail, launch, and lance a rival. First
+        // domain to the hit target wins. 124 is the id GAME_KIT_ROSTER.md reserved for it (row 34).
+        Railrush = 124,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
+        // 100) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // 97) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // The Grizzly's CHARGE game (STANDOFF.md): square posts of prism tiles stand on a sphere round an open centre.
         // A trigger bomb that touches a rival hull freezes on it; pull and release again to blow it. Every rival a blast
@@ -525,7 +557,7 @@ namespace CosmicShore.Data
         Standoff = 125,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 89) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 104) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
