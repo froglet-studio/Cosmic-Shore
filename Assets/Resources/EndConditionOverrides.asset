@@ -47,6 +47,7 @@ MonoBehaviour:
   - 90
   - 90
   jackstrawStrikeTarget: 3
+  riposteStrikeTarget: 6
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
   shatterplanePrismTarget: 1600
@@ -123,6 +124,7 @@ MonoBehaviour:
   - 90
   - 90
   jackstrawStrikeTargetBuild: 3
+  riposteStrikeTargetBuild: 6
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
   shatterplanePrismTargetBuild: 1600
