@@ -26,8 +26,8 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Sparrow | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Squirrel | `b b b` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
-| Stoat | `b b b` | `x x x` | `- - -` | `x x x` | Charge, Space | Regatta |
-| Swordfish | `x x x` | `x x x` | `x x x` | `b b .` | Time, Charge | Broadside, BroodRush |
+| Stoat | `b b b` | `b b .` | `- - -` | `b b .` | - | Regatta |
+| Swordfish | `b b .` | `b b .` | `b b .` | `b b .` | - | Broadside, BroodRush |
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | - |
 | TigerMoth | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Urchin | `b b ~` | `x x x` | `b b .` | `- - -` | Charge | Regatta, Broadside |
@@ -65,8 +65,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Sparrow | Breakwater | Dog Fight | Scurry (shared) | Salvo, Wildlife Liberation |
 | Squirrel | Skim Race | Joust | Scurry (shared) | excused |
 | Starling | - | - | - | - |
-| Stoat | Slingshot | - | excused | - |
-| Swordfish | - | - | - | Cleave |
+| Stoat | Slingshot | Shockfront | excused | Fulmen |
+| Swordfish | Spearline | Riposte | Palisade | Cleave |
 | Thresher | Thresher Time | Jackstraw | Haul | Harvest |
 | TigerMoth | Waystation | Dustup | Tapestry | Sirocco |
 | Urchin | Skein | - | Hijack | excused |

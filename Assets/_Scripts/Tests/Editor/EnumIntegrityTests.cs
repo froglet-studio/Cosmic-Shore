@@ -208,11 +208,15 @@ namespace CosmicShore.Tests
             // pushed first; 89 was free on every branch.
             // 83 -> 86 on 2026-11-15: Larder (102), Thornbush (103) and Lancefall (104), the Shrike's Charge, Mass and
             // Space games, on the ids GAME_KIT_ROSTER.md reserved for them (other roster games land beside them).
+            // 86 -> 88 on 2026-11-15: Shockfront (119) and Fulmen (120), the Stoat's Charge and Space games, on its reserved ids.
+            // 88 -> 91 on 2026-11-15: Spearline (96), Riposte (97) and Palisade (98), the Swordfish's Time, Charge and
+            // Mass games, on their reserved ids.
             var values = Enum.GetValues(typeof(GameModes));
-            // 86 -> 87 on 2026-11-15: Chum (91), the Angler's Space game, row 1 of GAME_KIT_ROSTER.md's reserved ids.
-            // 87 -> 88 on 2026-11-15: Starweave (92), the Brittle Star's Mass game, row 2 of the same roster.
-            // 88 -> 89 on 2026-11-15: Haul (93), the Thresher's Mass game, row 3 of the same roster.
-            Assert.AreEqual(89, values.Length,
+
+            // 91 -> 92 on 2026-11-15: Chum (91), the Angler's Space game, row 1 of GAME_KIT_ROSTER.md's reserved ids.
+            // 92 -> 93 on 2026-11-15: Starweave (92), the Brittle Star's Mass game, row 2 of the same roster.
+            // 93 -> 94 on 2026-11-15: Haul (93), the Thresher's Mass game, row 3 of the same roster.
+            Assert.AreEqual(94, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -269,6 +273,11 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Chum, 91)]
         [TestCase(GameModes.Starweave, 92)]
         [TestCase(GameModes.Haul, 93)]
+        [TestCase(GameModes.Spearline, 96)]
+        [TestCase(GameModes.Riposte, 97)]
+        [TestCase(GameModes.Palisade, 98)]
+        [TestCase(GameModes.Shockfront, 119)]
+        [TestCase(GameModes.Fulmen, 120)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,
