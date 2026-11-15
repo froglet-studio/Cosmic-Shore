@@ -17,7 +17,7 @@ reaches past its ring's rim, so it shows up as a blocker.
 |---|---|---|---|---|---|
 | Scarab Rally (Scarab) | 0 | 0 | 0 | 0 | nothing, after #1950 and #1979 |
 | Switchback (Dolphin) | 1% | 12% | 14% | 67% | the **doors**: the plug across a blocked ring reaches past its rim, so the lime ring behind it is hidden until it is blasted. At I4 the gauntlet's plugged **tunnels** on the line add to it. The field alone hides 1% of legs at I1 and none at I2-I4. **Fixed 2026-11-14, below: now 1% / 0 / 0 / 50%.** |
-| Breach (Orca) | 0 | 0 | 39% | 22% | the **walls**: a wall stands square across the line 110 u before its ring and 16-22 u wider than it, so from the ring you leave it covers the ring. |
+| Breach (Orca) | 0 | 0 | 39% | 22% | the **walls**: a wall stands square across the line 110 u before its ring and 16-22 u wider than it, so from the ring you leave it covers the ring. **Fixed 2026-11-15, below: now 0 / 0 / 1% / 0.** |
 | Headlong (Rhino) | 16% | 34% | 16% | 16% | the **hedges** you plough through. Rhino is on hold, so this is not changed. |
 | Skein (Urchin) | 0 | 0 | 0 | 3% | the rails, partly (13% of rays at I4) |
 | Regatta | 0 | 0 | 0 | 0 | rails cover 12-21% of the rim, but never most of it |
@@ -57,3 +57,12 @@ rim showed took about 42 u. That puts the line that rounds the wall inside the r
 In the offline helm sweep (200 seeds), the pulsing helm got 32 s faster at I3, and burning stopped paying there
 (-2% against +10.5%). The same held when only the rim's last 4 u were kept in sight. I3's lesson ("coast the wall")
 would be lost, so the walls are unchanged until Garrett chooses.
+
+**Breach, 2026-11-15: the walls are see-through.** Garrett wanted the ring visible and the level's spirit kept, with
+no new signals ("there has got to be a way to make the ring visible and maintain the spirit of the level without
+introducing new signaling to players like lighting walls"). Each wall is now a checkerboard of its 7 u prisms touching
+at their corners: every hole is a closed 7 u square, too small for the hull, so the wall still stops the Orca and must
+be rounded or breached, but the ring shows through it. Hidden legs: I3 39% to 1%, I4 22% to 0. The helm sweep's burn
+lesson is unchanged (10.5% at I3, 17.1% at I4), and each wall uses 27% fewer prisms. Caveat for the editor: the Orca
+still carries the old Sparrow hit box (10.3 u wide, 0.46 u thick); a hole is 9.9 u corner to corner, so it stops that box,
+but only just.
