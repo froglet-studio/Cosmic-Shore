@@ -106,6 +106,9 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameHarvest** | `_Scenes/Multiplayer Scenes/` | `Harvest (88)` | `HarvestController` |
 | **MinigameGlasshouse** | `_Scenes/Multiplayer Scenes/` | `Glasshouse (89)` | `GlasshouseController` |
 | **MinigameShatterplane** | `_Scenes/Multiplayer Scenes/` | `Shatterplane (90)` | `ShatterplaneController` |
+| **MinigameSentry** | `_Scenes/Multiplayer Scenes/` | `Sentry (105)` | `SentryController` |
+| **MinigameWarren** | `_Scenes/Multiplayer Scenes/` | `Warren (106)` | `WarrenController` |
+| **MinigameCaveIn** | `_Scenes/Multiplayer Scenes/` | `CaveIn (107)` | `CaveInController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
 | **MinigameTandava** | `_Scenes/Multiplayer Scenes/` | `Tandava (69)` | `TandavaController` |
@@ -359,6 +362,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 88 | `Harvest` | MP | MinigameHarvest | `HarvestController` (Thresher destruction race, Space - mow a sheaf's stalks with the chain to charge the ball, smash it into the core for one blast; hostile prisms destroyed, first domain to 750; a field of sheaves round a clear centre in the standard cell, omni crystals in the centre; I1-I4 8 -> 22 sheaves, shielded cores, team colours, danger stalks) |
 | 89 | `Glasshouse` | MP | MinigameGlasshouse | `GlasshouseController` (Angler garden, Mass - an omni crystal is a seed, let go of the lure to plant it in your colour, hold it to grow; timed, trail + garden standing in your colour wins; `GLASSHOUSE.md`) |
 | 90 | `Shatterplane` | MP | MinigameShatterplane | `ShatterplaneController` (Brittle Star plate race, Space - square up to a plate and the ring's flat blast erases it whole, the guns chew the rest; prisms destroyed to a per-intensity target. See `SHATTERPLANE.md`) |
+| 105 | `Sentry` | MP | MinigameSentry | `SentryController` (Meerkat guard war, Charge - Sentinel Mode leaves a sentinel at every soliton's way in that zaps rival hulls; each zap is a point; Corona's shells read-only; `SENTRY.md`) |
+| 106 | `Warren` | MP | MinigameWarren | `WarrenController` (Meerkat burrow war, Mass - timed, trail + exit portals standing in your colour wins; a soliton beside rival mass swallows and fires it; the bare Barren cell, I3/I4 start at Mass 5 / Space 5; `WARREN.md`) |
+| 107 | `CaveIn` | MP | MinigameCaveIn | `CaveInController` (Meerkat tunnelling, Space - a soliton swallows a plate's prisms and fires them out to smash the rest; first domain to the prism target; Shatterplane's plates read-only; `CAVEIN.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
 | 69 | `Tandava` | MP | MinigameTandava | `TandavaController` (UNLISTED since 2026-10-25: on no roster, card in `Games/_Archive`; co-op ARENA hunt in a closed cell - Rhino / Squirrel / Sparrow on one domain against one creature that forages where it likes, rolls up round its meal behind a ring of guards while it feeds, and evolves Great Serpent -> Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion; a variant of each form per match; the cell glows gold for the dance alone. See `TANDAVA.md`) |

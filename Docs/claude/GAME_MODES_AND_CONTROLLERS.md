@@ -1011,6 +1011,13 @@ inside the rooms.
 `flatline_budget.py`, exact), AI `FlatlineHunter` (steers only; the hull's own autopilot keeps the triggers), generator
 `author_flatline_assets.py`. See `_Scripts/Controller/Arcade/FLATLINE.md`. Authored headless.
 
+`Sentry(105)`, `Warren(106)` and `CaveIn(107)` are the **Meerkat's Charge, Mass and Space games** (2026-11-15,
+`GAME_KIT_ROSTER.md` rows 15-17; `Arcade/MEERKAT_GAMES.md`). Sentry pays one point for every zap a Sentinel Mode sentinel
+lands (`CombatPoints`, Corona's shells read-only). Warren is timed and scores the volume standing in your colour, which is
+your trail plus your exit portals (`VolumeRemaining`, the bare Barren cell, I3/I4 starting at Mass 5 / Space 5). Cave-in
+races to a target of prisms broken by what a soliton swallows and fires (`PrismsDestroyed`, Shatterplane's plates
+read-only). All three share one steering-only AI hook, `MeerkatArcadeSteer`, and change nothing about the Meerkat.
+
 `Shatterplane(90)` is the **Brittle Star's SPACE game** (Shombith, 2026-11-10; plan `Docs/MassAndSpaceGames/BRITTLE_STAR_SPACE.md`):
 wide, thin round PLATES of neutral prisms hang in the cell. The ring's blast is a flat disk under 2 u thick, so **square to a
 plate it erases the whole plate**, a few degrees off it cuts one band, and the guns chew what it misses. Every crystal (a

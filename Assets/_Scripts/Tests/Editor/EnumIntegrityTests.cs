@@ -206,8 +206,11 @@ namespace CosmicShore.Tests
             // landed with first; 89 is Glasshouse's on claude/peaceful-cerf-vpl3x8 (in flight), so it moved to 90.
             // 82 -> 83 on 2026-11-11: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest
             // pushed first; 89 was free on every branch.
+            // 83 -> 86 on 2026-11-15: Sentry (105), Warren (106) and CaveIn (107), the Meerkat's Charge, Mass and Space
+            // games, on the ids Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for them (91-127 are reserved there, one
+            // per game, for the sessions building the fleet's missing games in parallel: add yours to this count).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(83, values.Length,
+            Assert.AreEqual(86, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -261,6 +264,9 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Flatline, 84)]
         [TestCase(GameModes.Corona, 87)]
         [TestCase(GameModes.Shatterplane, 90)]
+        [TestCase(GameModes.Sentry, 105)]
+        [TestCase(GameModes.Warren, 106)]
+        [TestCase(GameModes.CaveIn, 107)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,
