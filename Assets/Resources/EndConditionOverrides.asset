@@ -49,6 +49,8 @@ MonoBehaviour:
   jackstrawStrikeTarget: 3
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
+  shockfrontRippleTarget: 10
+  fulmenPrismTarget: 1200
   trawlPrismTarget: 300
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
@@ -60,6 +62,9 @@ MonoBehaviour:
   stingherdStingTarget: 12
   tapestryRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  larderMissileTarget: 16
+  thornbushRoundSeconds: 90
+  lancefallPrismTarget: 600
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -126,6 +131,8 @@ MonoBehaviour:
   jackstrawStrikeTargetBuild: 3
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
+  shockfrontRippleTargetBuild: 10
+  fulmenPrismTargetBuild: 1200
   trawlPrismTargetBuild: 300
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
@@ -137,6 +144,9 @@ MonoBehaviour:
   stingherdStingTargetBuild: 12
   tapestryRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  larderMissileTargetBuild: 16
+  thornbushRoundSecondsBuild: 90
+  lancefallPrismTargetBuild: 600
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35
