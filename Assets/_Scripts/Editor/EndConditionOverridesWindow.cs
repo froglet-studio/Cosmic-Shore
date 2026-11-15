@@ -132,6 +132,8 @@ namespace CosmicShore.Editor
                 "annihilation ripple is 1, default " + EndConditionOverridesSO.DefaultShockfrontRippleTarget + ".\n" +
                 "  • Fulmen: hostile prisms a DOMAIN must destroy, mostly with the Stoat's omni-crystal bolts " +
                 "(race to N), default " + EndConditionOverridesSO.DefaultFulmenPrismTarget + ".\n" +
+                "  • Railrush: spike hits a DOMAIN needs - an Urchin's chain spike reaching a rival hull " +
+                "is 1, default " + EndConditionOverridesSO.DefaultRailrushHitTarget + ".\n" +
                 "  • Harvest: hostile prisms a DOMAIN must destroy with the Thresher's chain, ball or " +
                 "blast (race to N), default " + EndConditionOverridesSO.DefaultHarvestPrismTarget + ".\n" +
                 "  • Shatterplane: hostile prisms a DOMAIN must break, PER INTENSITY - every neutral plate tile a " +
@@ -366,6 +368,7 @@ namespace CosmicShore.Editor
             int cr  = Mathf.Max(0, EditorGUILayout.IntField("Corona - Bloom Target", _config.coronaBloomTarget));
             int sf  = Mathf.Max(0, EditorGUILayout.IntField("Shockfront - Ripple Target", _config.shockfrontRippleTarget));
             int fu  = Mathf.Max(0, EditorGUILayout.IntField("Fulmen - Prism Target", _config.fulmenPrismTarget));
+            int rr  = Mathf.Max(0, EditorGUILayout.IntField("Railrush - Hit Target", _config.railrushHitTarget));
             int hv  = Mathf.Max(0, EditorGUILayout.IntField("Harvest - Prism Target", _config.harvestPrismTarget));
             int sp  = Mathf.Max(0, EditorGUILayout.IntField("Shatterplane - Prism Target", _config.shatterplanePrismTarget));
             // Per-intensity, like Flatline's: each rung hangs a different amount of plate. 0 falls back to the scalar.
@@ -455,6 +458,7 @@ namespace CosmicShore.Editor
                     _config.coronaBloomTarget = cr;
                     _config.shockfrontRippleTarget = sf;
                     _config.fulmenPrismTarget = fu;
+                    _config.railrushHitTarget = rr;
                     _config.harvestPrismTarget = hv;
                     _config.shatterplanePrismTarget = sp;
                     _config.shatterplanePrismTargetByIntensity = spByIntensity;
@@ -542,6 +546,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Corona", cr > 0 ? cr.ToString() : EndConditionOverridesSO.DefaultCoronaBloomTarget + " (default)");
             EditorGUILayout.LabelField("Shockfront", sf > 0 ? sf.ToString() : EndConditionOverridesSO.DefaultShockfrontRippleTarget + " (default)");
             EditorGUILayout.LabelField("Fulmen", fu > 0 ? fu.ToString() : EndConditionOverridesSO.DefaultFulmenPrismTarget + " (default)");
+            EditorGUILayout.LabelField("Railrush", rr > 0 ? rr.ToString() : EndConditionOverridesSO.DefaultRailrushHitTarget + " (default)");
             EditorGUILayout.LabelField("Harvest", hv > 0 ? hv.ToString() : EndConditionOverridesSO.DefaultHarvestPrismTarget + " (default)");
             string shatterplaneEffective = sp > 0 ? sp.ToString()
                 : EndConditionOverridesSO.DefaultShatterplanePrismTarget + " (default)";
@@ -647,6 +652,7 @@ namespace CosmicShore.Editor
                    "Corona: " + Fmt(_config.coronaBloomTargetBuild, "default " + EndConditionOverridesSO.DefaultCoronaBloomTarget) + "\n" +
                    "Shockfront: " + Fmt(_config.shockfrontRippleTargetBuild, "default " + EndConditionOverridesSO.DefaultShockfrontRippleTarget) + "\n" +
                    "Fulmen: " + Fmt(_config.fulmenPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultFulmenPrismTarget) + "\n" +
+                   "Railrush: " + Fmt(_config.railrushHitTargetBuild, "default " + EndConditionOverridesSO.DefaultRailrushHitTarget) + "\n" +
                    "Harvest: " + Fmt(_config.harvestPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultHarvestPrismTarget) + "\n" +
                    "Shatterplane: " + Fmt(_config.shatterplanePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultShatterplanePrismTarget) +
                    " (per intensity " + string.Join(" / ", _config.shatterplanePrismTargetByIntensityBuild ?? new List<int>()) + ")\n" +

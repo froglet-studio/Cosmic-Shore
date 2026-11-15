@@ -216,8 +216,9 @@ namespace CosmicShore.Tests
             // 96 -> 99 on 2026-11-15: PodHunt (99), IceShelf (100), DepthCharge (101), the Orca's Charge, Mass and Space
             // games, on the ids Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for them (parallel sessions build the
             // other rows' games at the same time; each adds its own count).
+            // 99 -> 100 on 2026-11-15: Railrush (124), the Urchin's Charge game, on its reserved id.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(99, values.Length,
+            Assert.AreEqual(100, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
