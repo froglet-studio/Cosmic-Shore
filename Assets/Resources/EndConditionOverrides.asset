@@ -52,6 +52,7 @@ MonoBehaviour:
   coronaBloomTarget: 15
   shockfrontRippleTarget: 10
   fulmenPrismTarget: 1200
+  trawlPrismTarget: 300
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
   - 1600
@@ -59,6 +60,7 @@ MonoBehaviour:
   - 2000
   - 1000
   harvestPrismTarget: 750
+  stingherdStingTarget: 12
   tapestryRoundSeconds: 90
   palisadeRoundSeconds: 90
   glasshouseRoundSeconds: 90
@@ -138,6 +140,7 @@ MonoBehaviour:
   coronaBloomTargetBuild: 15
   shockfrontRippleTargetBuild: 10
   fulmenPrismTargetBuild: 1200
+  trawlPrismTargetBuild: 300
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
   - 1600
@@ -145,6 +148,7 @@ MonoBehaviour:
   - 2000
   - 1000
   harvestPrismTargetBuild: 750
+  stingherdStingTargetBuild: 12
   tapestryRoundSecondsBuild: 90
   palisadeRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90

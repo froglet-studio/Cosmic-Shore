@@ -628,6 +628,14 @@ namespace CosmicShore.UI
                 case GameModes.Lancefall:
                     // Shatterplane's provider: the densest standing hostile mass - the nearest big plate still standing.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Lancefall");
+                case GameModes.Stingherd:
+                    // The Bends' provider: the nearest pilot this player may sting. The herd is driven, not flown, so
+                    // the question is which rival hull to drive it at.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Stingherd");
+                case GameModes.Trawl:
+                    // Densest standing hostile mass: the net scores where prisms are packed tight enough to smash into
+                    // each other, so the arrow names the nearest big sheaf still standing.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Trawl");
                 case GameModes.Sirocco:
                     // Same provider, same reason: the forest rings the cell, so the arrow names
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs

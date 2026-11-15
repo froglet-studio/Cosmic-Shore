@@ -23602,3 +23602,22 @@ compile ran: `unity_refcompile` and the card render need a dotnet 8 SDK this ses
 - [ ] End Game Conditions window shows and saves the three new values.
 - [ ] Run `python3 Tools/Build/render_card_backgrounds.py Flitstrike Honeycomb Woodpecker` on a machine with dotnet 8,
       then re-run the three generators.
+## 🔴 Jacks: Stingherd (Charge, 117) and Trawl (Space, 118) (2026-11-15, Garrett's project thread, `claude/jacks-games`, NOT RUN IN EDITOR, NOT COMPILED)
+
+Authored headless. `unity_refcompile` did not run: the container could not install a .NET SDK. Offline:
+`author_stingherd_assets.py --check` and `author_trawl_assets.py --check` pass (each watched fail on a mutated settings
+asset); Kelpwood's and Harvest's generators still pass; the switch-label, enum-reference, console-logging,
+conditional-compilation, self-referential-local and using-directive gates, `check_gamelist_scenes.py`,
+`author_preview_spawns.py --check`, `author_preview_intensities.py --check` pass.
+
+1. Compile. Open `MinigameStingherd` and `MinigameTrawl`: no missing scripts, four Jacks AI templates each.
+2. Stingherd I1 vs three AI: the herd (Charge 5) attacks a rival hull within 200 u; each sting adds one point to the
+   stinger's domain; first domain to 12 wins and the end screen shows stings. I2-I4: start Charge 3, 1, 0.
+3. Stingherd AI: an AI Jacks runs its jacks behind its herd from the nearest rival, takes off and lands behind the
+   herd; it never lays a decoy. Does the herd actually reach a rival? Note stings per minute.
+4. Trawl I1 solo: take off, fly the net through a sheaf; dragged prisms break what they hit and the count rises;
+   your own colour scores nothing; shielded cores (I2+) bounce. First domain to 300 wins.
+5. Trawl AI: an AI Jacks never lands to herd and sweeps through dense stands. Note prisms per minute at each rung.
+6. Both cards: listed in Arcade, Jacks only, preview opens on the right arena, hint toast shows once. Card art is the
+   placeholder until `/cardart` runs.
+

@@ -112,6 +112,8 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameFlitstrike** | `_Scenes/Multiplayer Scenes/` | `Flitstrike (108)` | `FlitstrikeController` |
 | **MinigameHoneycomb** | `_Scenes/Multiplayer Scenes/` | `Honeycomb (109)` | `HoneycombController` |
 | **MinigameWoodpecker** | `_Scenes/Multiplayer Scenes/` | `Woodpecker (110)` | `WoodpeckerController` |
+| **MinigameStingherd** | `_Scenes/Multiplayer Scenes/` | `Stingherd (117)` | `StingherdController` |
+| **MinigameTrawl** | `_Scenes/Multiplayer Scenes/` | `Trawl (118)` | `TrawlController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameShockfront** | `_Scenes/Multiplayer Scenes/` | `Shockfront (119)` | `ShockfrontController` |
 | **MinigameFulmen** | `_Scenes/Multiplayer Scenes/` | `Fulmen (120)` | `FulmenController` |
@@ -373,6 +375,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 108 | `Flitstrike` | MP | MinigameFlitstrike | `FlitstrikeController` (Honeyguide Charge - dart through rival hulls, one point a Strike, first domain to the strike target. See `FLITSTRIKE.md`) |
 | 109 | `Honeycomb` | MP | MinigameHoneycomb | `HoneycombController` (Honeyguide Mass - timed hive-building war scored on prism volume standing in your colour. See `HONEYCOMB.md`) |
 | 110 | `Woodpecker` | MP | MinigameWoodpecker | `WoodpeckerController` (Honeyguide Space - peck hostile prisms in Rampage's cactus forest to a target. See `WOODPECKER.md`) |
+| 117 | `Stingherd` | MP | MinigameStingherd | `StingherdController` (Jacks herd duel, Charge - herd your danger creatures into rival hulls; a sting is a Strike point, first domain to 12; Kelpwood's arena) |
+| 118 | `Trawl` | MP | MinigameTrawl | `TrawlController` (Jacks net sweep, Space - dragged prisms that break each other score; prisms destroyed to 300; Harvest's field) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 119 | `Shockfront` | MP | MinigameShockfront | `ShockfrontController` (Stoat Charge duel in the Boneyard: each rival a ripple strips is one Debuff point, first domain to 10. See `SHOCKFRONT.md`) |
 | 120 | `Fulmen` | MP | MinigameFulmen | `FulmenController` (Stoat Space race in Rampage's forest: prisms burnt by Fulmen bolts score for the collector, `PrismsDestroyed`, first domain to 1200. See `FULMEN.md`) |
@@ -637,6 +641,8 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `WoodpeckerPrismTurnMonitor` | `TurnMonitors/` | A domain's hostile prisms destroyed reach the Woodpecker target (Sirocco's shape) |
 | `CoronaBloomTurnMonitor` | `TurnMonitors/` | A domain's summed bloom hits (Debuff-class CombatPoints) reach the Corona target (on `CombatPointTurnMonitorBase`) |
 | `HarvestPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Harvest target (Wrecking Ball's shape) |
+| `StingherdStingTurnMonitor` | `TurnMonitors/` | A domain's summed Strike points reach the Stingherd target (`CombatPointTurnMonitorBase`) |
+| `TrawlPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Trawl target (Harvest's shape) |
 | `GlasshouseTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`glasshouseRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |
