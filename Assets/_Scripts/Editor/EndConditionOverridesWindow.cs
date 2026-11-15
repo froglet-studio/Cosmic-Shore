@@ -354,7 +354,7 @@ namespace CosmicShore.Editor
             int gh  = Mathf.Max(0, EditorGUILayout.IntField("Glasshouse - Round Seconds", _config.glasshouseRoundSeconds));
             int crm = Mathf.Max(0, EditorGUILayout.IntField("Cleaner Ram - Ram Target", _config.cleanerRamStrikeTarget));
             int rfb = Mathf.Max(0, EditorGUILayout.IntField("Reefbuild - Round Seconds", _config.reefbuildRoundSeconds));
-            int bl  = Mathf.Max(0, EditorGUILayout.IntField("Blastline - Prism Target", _config.blastlinePrismTarget));
+            int blp = Mathf.Max(0, EditorGUILayout.IntField("Blastline - Prism Target", _config.blastlinePrismTarget));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             int tv  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Break PERCENT", _config.tandavaBreakPercent), 0, 100);
@@ -419,7 +419,7 @@ namespace CosmicShore.Editor
                     _config.glasshouseRoundSeconds = gh;
                     _config.cleanerRamStrikeTarget = crm;
                     _config.reefbuildRoundSeconds = rfb;
-                    _config.blastlinePrismTarget = bl;
+                    _config.blastlinePrismTarget = blp;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
                     _config.tandavaBreakPercent = tv;
@@ -495,7 +495,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Glasshouse (seconds)", gh > 0 ? gh.ToString() : EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Cleaner Ram", crm > 0 ? crm.ToString() : EndConditionOverridesSO.DefaultCleanerRamStrikeTarget + " (default)");
             EditorGUILayout.LabelField("Reefbuild (seconds)", rfb > 0 ? rfb.ToString() : EndConditionOverridesSO.DefaultReefbuildRoundSeconds + " (default)");
-            EditorGUILayout.LabelField("Blastline", bl > 0 ? bl.ToString() : EndConditionOverridesSO.DefaultBlastlinePrismTarget + " (default)");
+            EditorGUILayout.LabelField("Blastline", blp > 0 ? blp.ToString() : EndConditionOverridesSO.DefaultBlastlinePrismTarget + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUILayout.LabelField("Tandava (break %)", tv > 0 ? tv.ToString() : EndConditionOverridesSO.DefaultTandavaBreakPercent + " (default)");
