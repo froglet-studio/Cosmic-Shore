@@ -602,6 +602,11 @@ pressed as a pointer click on the live `UnityEngine.UI.Button` through `ExecuteE
   Broods", "ys1 Jade Dolphin 0 Broods") and all three stat rows for both (host "ys1 33 · YS2 -", Player 2
   "YS2 0 · ys1 33"). The "0" against "-" cosmetic is still there.
 - Still not run: step 4 by a person, step 6.
+**Fifth run, 2026-11-15** (`a1942abe89` compiled in the open editor, 0 errors; two-player Bloomrush to its timer, Player 2 idle):
+- Missing value reads zero **PASSED for Longest Drift and Max Boost**: neither pilot reported them, and both scoreboards
+  read "0.00s" for both pilots (host "ys1 0.00s · YS2 0.00s", Player 2 "YS2 0.00s · ys1 0.00s"), no "-" anywhere.
+  Prisms Damaged was not a missing value this time (Player 2's idle hull damaged 1 prism; both read "1" on both
+  machines), so its "0" case was not exercised. Read from the scoreboard's text, no screenshot. `VesselStatsSyncTests` not run.
 2. Solo, fly a Dolphin (or Manta, Rhino, Serpent, Swordfish) in any arcade mode and ram some prisms. **Pass:** the
    scoreboard's Prisms Damaged is above 0, and Longest Drift / Max Boost show your values. The console no longer
    warns "[TelemetryBootstrap] ... serialized stat SO refs will be null".
