@@ -121,6 +121,12 @@ namespace CosmicShore.Editor
                 "(3 laps x 8), default " + EndConditionOverridesSO.DefaultSpearlineGateTarget + ".\n" +
                 "  • Palisade: round length in SECONDS (timed - most Swordfish mass STANDING at the whistle " +
                 "wins), default " + EndConditionOverridesSO.DefaultPalisadeRoundSeconds + ".\n" +
+                "  • Bullrush: gores a DOMAIN needs - one Rhino ramming a rival faster than it and above the " +
+                "gore speed is 1, default " + EndConditionOverridesSO.DefaultBullrushGoreTarget + ".\n" +
+                "  • Windrow: round length in SECONDS (timed - most Rhino trail STANDING at the whistle " +
+                "wins), default " + EndConditionOverridesSO.DefaultWindrowRoundSeconds + ".\n" +
+                "  • Landslide: hostile prisms a DOMAIN's plough strikes must destroy in Cleave's arenas, " +
+                "default " + EndConditionOverridesSO.DefaultLandslidePrismTarget + ".\n" +
                 "  • Flatline: points a DOMAIN needs, PER INTENSITY - a Brittle Star round on a rival " +
                 "hull is 1, a cord or thrown-saber Strike 8, the ring blast 0. A rung left at 0 falls back " +
                 "to the mode scalar (default " + EndConditionOverridesSO.DefaultFlatlinePointTarget + ").\n" +
@@ -351,6 +357,9 @@ namespace CosmicShore.Editor
             int sg  = Mathf.Max(0, EditorGUILayout.IntField("Hood (Serpent) - Snipe Target", _config.serpentHoodSnipeTarget));
             int js  = Mathf.Max(0, EditorGUILayout.IntField("Jackstraw - Strike Target", _config.jackstrawStrikeTarget));
             int rps = Mathf.Max(0, EditorGUILayout.IntField("Riposte - Strike Target", _config.riposteStrikeTarget));
+            int brg = Mathf.Max(0, EditorGUILayout.IntField("Bullrush - Gore Target", _config.bullrushGoreTarget));
+            int wrs = Mathf.Max(0, EditorGUILayout.IntField("Windrow - Round Seconds", _config.windrowRoundSeconds));
+            int lsp = Mathf.Max(0, EditorGUILayout.IntField("Landslide - Prism Target", _config.landslidePrismTarget));
             int fl  = Mathf.Max(0, EditorGUILayout.IntField("Flatline - Point Target", _config.flatlinePointTarget));
             // Per-intensity, like Cleave's: the denser panes put more fights inside cord reach. 0 falls back to the scalar.
             var flByIntensity = new List<int>(4);
@@ -452,6 +461,9 @@ namespace CosmicShore.Editor
                     _config.serpentHoodSnipeTarget = sg;
                     _config.jackstrawStrikeTarget = js;
                     _config.riposteStrikeTarget = rps;
+                    _config.bullrushGoreTarget = brg;
+                    _config.windrowRoundSeconds = wrs;
+                    _config.landslidePrismTarget = lsp;
                     _config.flatlinePointTarget = fl;
                     _config.flatlinePointTargetByIntensity = flByIntensity;
                     _config.kelpwoodBiteTarget = kw;
@@ -538,6 +550,9 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Hood (Serpent)", sg > 0 ? sg.ToString() : EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget + " (default)");
             EditorGUILayout.LabelField("Jackstraw", js > 0 ? js.ToString() : EndConditionOverridesSO.DefaultJackstrawStrikeTarget + " (default)");
             EditorGUILayout.LabelField("Riposte", rps > 0 ? rps.ToString() : EndConditionOverridesSO.DefaultRiposteStrikeTarget + " (default)");
+            EditorGUILayout.LabelField("Bullrush", brg > 0 ? brg.ToString() : EndConditionOverridesSO.DefaultBullrushGoreTarget + " (default)");
+            EditorGUILayout.LabelField("Windrow (seconds)", wrs > 0 ? wrs.ToString() : EndConditionOverridesSO.DefaultWindrowRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Landslide", lsp > 0 ? lsp.ToString() : EndConditionOverridesSO.DefaultLandslidePrismTarget + " (default)");
             string flatlineEffective = fl > 0 ? fl.ToString()
                 : EndConditionOverridesSO.DefaultFlatlinePointTarget + " (default)";
             EditorGUILayout.LabelField("Flatline", string.Join(" / ", flByIntensity.ConvertAll(
@@ -646,6 +661,9 @@ namespace CosmicShore.Editor
                    "Hood (Serpent): " + Fmt(_config.serpentHoodSnipeTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget) + "\n" +
                    "Jackstraw: " + Fmt(_config.jackstrawStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultJackstrawStrikeTarget) + "\n" +
                    "Riposte: " + Fmt(_config.riposteStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultRiposteStrikeTarget) + "\n" +
+                   "Bullrush: " + Fmt(_config.bullrushGoreTargetBuild, "default " + EndConditionOverridesSO.DefaultBullrushGoreTarget) + "\n" +
+                   "Windrow (seconds): " + Fmt(_config.windrowRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultWindrowRoundSeconds) + "\n" +
+                   "Landslide: " + Fmt(_config.landslidePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultLandslidePrismTarget) + "\n" +
                    "Flatline: " + Fmt(_config.flatlinePointTargetBuild, "default " + EndConditionOverridesSO.DefaultFlatlinePointTarget) +
                    " (per intensity " + string.Join(" / ", _config.flatlinePointTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Kelpwood: " + Fmt(_config.kelpwoodBiteTargetBuild, "default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget) + "\n" +

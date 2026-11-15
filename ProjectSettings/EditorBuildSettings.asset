@@ -147,6 +147,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameCleave.unity
     guid: 654b78c48ae68265c22ff31443204daf
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameLandslide.unity
+    guid: 353261fc3ca9bded2b2c4fc26baea3ea
+  - enabled: 1
     path: Assets/_Scenes/Singleplayer Scenes/MinigameGrizzlyCharge.unity
     guid: 9c6c183efabe4e30af0befd2d114d054
   - enabled: 1
@@ -186,6 +189,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRiposte.unity
     guid: ba5c63cd97570af42b349f82b5c65826
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameBullrush.unity
+    guid: 56311b135784dba528fad2185ae5d13c
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHarvest.unity
     guid: 2e26345893828d0fd7d69132808c3728
   - enabled: 1
@@ -224,6 +230,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigamePalisade.unity
     guid: f922aaca2eae16aba1ae0ed6c7bb9603
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWindrow.unity
+    guid: b925355b6fc64bb1095911ec4a73a5bc
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSirocco.unity
     guid: f3efa5204ad2461ebf22bc57e2170a5a

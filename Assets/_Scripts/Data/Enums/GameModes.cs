@@ -527,6 +527,17 @@ namespace CosmicShore.Data
         // (PRISM_MOTION.md). First domain to destroy the hostile-prism target wins, in Harvest's field of sheaves.
         // Id reserved by the game kit roster (row 28).
         Trawl = 118,
+        // The Rhino's three missing games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 31-33, ids reserved there on
+        // 2026-11-15 so the parallel sessions building the roster never take one another's numbers).
+        // CHARGE (BULLRUSH.md): a joust on speed in Jackstraw's heap. A gore - ramming a rival while faster than it and
+        // above the gore speed, which Charge lowers from 150 to 50 u/s - is one point; first domain to the target wins.
+        Bullrush = 121,
+        // MASS (WINDROW.md): a timed war over standing trail in the bare Barren cell. The plough's throws break rival
+        // rows (a thrown prism that hits another destroys both); Heft steers them and Berm banks your own into armour.
+        Windrow = 122,
+        // SPACE (LANDSLIDE.md): a demolition race through Cleave's four arenas. Every prism scored is a plough strike,
+        // and the Blade's width (Space) is how many ribs a pass catches. First domain to the target wins.
+        Landslide = 123,
 
         // The Urchin's CHARGE game (RAILRUSH.md): Hijack's Switchyard of open rails, scored on chain-spike hits on rival
         // hulls. A spike flies at its muzzle speed PLUS the hull's, so a volley thrown off a friendly third at grind

@@ -217,8 +217,10 @@ namespace CosmicShore.Tests
             // games, on the ids Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for them (parallel sessions build the
             // other rows' games at the same time; each adds its own count).
             // 99 -> 100 on 2026-11-15: Railrush (124), the Urchin's Charge game, on its reserved id.
+            // 100 -> 103 on 2026-11-15: Bullrush (121), Windrow (122) and Landslide (123), the Rhino's Charge, Mass and
+            // Space games, on their reserved ids.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(100, values.Length,
+            Assert.AreEqual(103, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

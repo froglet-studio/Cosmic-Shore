@@ -110,6 +110,16 @@ namespace CosmicShore.ScriptableObjects
         /// hit on a rival hull (a Strike-class combat hit, which lands only while the Swordfish is the faster) - is one
         /// point (RiposteScoringRuleSO), summed across the domain's pilots.</summary>
         public const int DefaultRiposteStrikeTarget = 6;
+        /// <summary>Bullrush gore target used when <see cref="bullrushGoreTarget"/> is 0. One GORE - the Rhino ramming a
+        /// rival faster than it and above the gore speed (a Strike-class combat hit) - is one point (a
+        /// JackstrawScoringRuleSO asset), summed across the domain's pilots.</summary>
+        public const int DefaultBullrushGoreTarget = 5;
+        /// <summary>Windrow round length in seconds, used when <see cref="windrowRoundSeconds"/> is 0. TIMED, Tapestry's
+        /// reason: its score (a domain's trail standing) is a live stock the plough's strikes can take away.</summary>
+        public const int DefaultWindrowRoundSeconds = 90;
+        /// <summary>Landslide hostile-prism target used when <see cref="landslidePrismTarget"/> is 0. Every prism is a
+        /// plough strike (a thrown prism and the one it hits, both scored to the Rhino) in Cleave's arenas.</summary>
+        public const int DefaultLandslidePrismTarget = 500;
         /// <summary>Flatline point target used when <see cref="flatlinePointTarget"/> is 0 and the rung authors
         /// nothing. Points are the fleet price (CombatHitDrain.PointsFor): a round on a rival hull is 1, a cord or
         /// thrown-saber Strike 8, ten points to the petal; the ring blast pays nothing (FlatlineScoringRuleSO),
@@ -632,6 +642,16 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Riposte: STRIKES a DOMAIN needs to win (race to N). A Swordfish sword hit on a rival hull is one " +
                  "strike, summed across the domain's pilots. 0 = default (6).")]
         [Min(0)] public int riposteStrikeTarget = 6;
+        [Tooltip("Bullrush: GORES a DOMAIN needs to win (race to N), the Rhino's Charge game. A gore - ramming a rival " +
+                 "while faster than it and above the gore speed - is one point, summed across the domain's pilots. " +
+                 "0 = default (5).")]
+        [Min(0)] public int bullrushGoreTarget = 5;
+        [Tooltip("Windrow: round length in SECONDS, the Rhino's Mass game. Timed - the domain with the most trail " +
+                 "STANDING at the whistle wins. 0 = default (90).")]
+        [Min(0)] public int windrowRoundSeconds = 90;
+        [Tooltip("Landslide: hostile prisms a DOMAIN's plough strikes must destroy to win (race to N), the Rhino's " +
+                 "Space game in Cleave's arenas. 0 = default (500).")]
+        [Min(0)] public int landslidePrismTarget = 500;
         [Tooltip("Flatline: POINTS a DOMAIN needs to win (race to N), the Brittle Star's charge game. A round " +
                  "on a rival hull is 1 point, a cord or thrown-saber Strike 8 (the fleet price, ten points to " +
                  "the petal); the ring blast scores nothing. 0 = default (90). The per-intensity list below " +
@@ -806,6 +826,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int serpentHoodSnipeTargetBuild = 3;
         [Min(0)] public int jackstrawStrikeTargetBuild = 3;
         [Min(0)] public int riposteStrikeTargetBuild = 6;
+        [Min(0)] public int bullrushGoreTargetBuild = 5;
+        [Min(0)] public int windrowRoundSecondsBuild = 90;
+        [Min(0)] public int landslidePrismTargetBuild = 500;
         [Min(0)] public int flatlinePointTargetBuild = 90;
         [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 90, 90, 90, 90 };
         [Min(0)] public int kelpwoodBiteTargetBuild = 12;
@@ -1234,6 +1257,27 @@ namespace CosmicShore.ScriptableObjects
             riposteStrikeTarget > 0 ? riposteStrikeTarget : DefaultRiposteStrikeTarget;
 
         /// <summary>
+        /// Bullrush gore target ("first domain to N gores"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultBullrushGoreTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetBullrushGoreTarget() =>
+            bullrushGoreTarget > 0 ? bullrushGoreTarget : DefaultBullrushGoreTarget;
+
+        /// <summary>
+        /// Windrow round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultWindrowRoundSeconds"/>. Read by WindrowTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetWindrowRoundSeconds() =>
+            windrowRoundSeconds > 0 ? windrowRoundSeconds : DefaultWindrowRoundSeconds;
+
+        /// <summary>
+        /// Landslide prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultLandslidePrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
+        /// </summary>
+        public int GetLandslidePrismTarget() =>
+            landslidePrismTarget > 0 ? landslidePrismTarget : DefaultLandslidePrismTarget;
+
+        /// <summary>
         /// Flatline point target ("first domain to N points"): the configured value when &gt; 0, otherwise
         /// <see cref="DefaultFlatlinePointTarget"/>. Compared against a DOMAIN's summed CombatPoints.
         /// </summary>
@@ -1514,6 +1558,9 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.SerpentHood              => GetSerpentHoodSnipeTarget(),
                 GameModes.Jackstraw                 => GetJackstrawStrikeTarget(),
                 GameModes.Riposte                   => GetRiposteStrikeTarget(),
+                GameModes.Bullrush                  => GetBullrushGoreTarget(),
+                GameModes.Landslide                 => GetLandslidePrismTarget(),
+                // Windrow is TIMED (windrowRoundSeconds), Tapestry's shape: no race target, deliberately absent.
                 // Scalar only, as for Cleave: the real answer is per-intensity (GetFlatlinePointTarget(int)).
                 GameModes.Flatline                  => GetFlatlinePointTarget(),
                 GameModes.Kelpwood                  => GetKelpwoodBiteTarget(),
@@ -1616,6 +1663,9 @@ namespace CosmicShore.ScriptableObjects
             serpentHoodSnipeTarget == serpentHoodSnipeTargetBuild &&
             jackstrawStrikeTarget == jackstrawStrikeTargetBuild &&
             riposteStrikeTarget == riposteStrikeTargetBuild &&
+            bullrushGoreTarget == bullrushGoreTargetBuild &&
+            windrowRoundSeconds == windrowRoundSecondsBuild &&
+            landslidePrismTarget == landslidePrismTargetBuild &&
             flatlinePointTarget == flatlinePointTargetBuild &&
             SameInts(flatlinePointTargetByIntensity, flatlinePointTargetByIntensityBuild) &&
             kelpwoodBiteTarget == kelpwoodBiteTargetBuild &&
@@ -1696,6 +1746,9 @@ namespace CosmicShore.ScriptableObjects
             serpentHoodSnipeTarget = serpentHoodSnipeTargetBuild;
             jackstrawStrikeTarget = jackstrawStrikeTargetBuild;
             riposteStrikeTarget = riposteStrikeTargetBuild;
+            bullrushGoreTarget = bullrushGoreTargetBuild;
+            windrowRoundSeconds = windrowRoundSecondsBuild;
+            landslidePrismTarget = landslidePrismTargetBuild;
             flatlinePointTarget = flatlinePointTargetBuild;
             flatlinePointTargetByIntensity = CopyInts(flatlinePointTargetByIntensityBuild);
             kelpwoodBiteTarget = kelpwoodBiteTargetBuild;
@@ -1777,6 +1830,9 @@ namespace CosmicShore.ScriptableObjects
             serpentHoodSnipeTargetBuild = serpentHoodSnipeTarget;
             jackstrawStrikeTargetBuild = jackstrawStrikeTarget;
             riposteStrikeTargetBuild = riposteStrikeTarget;
+            bullrushGoreTargetBuild = bullrushGoreTarget;
+            windrowRoundSecondsBuild = windrowRoundSeconds;
+            landslidePrismTargetBuild = landslidePrismTarget;
             flatlinePointTargetBuild = flatlinePointTarget;
             flatlinePointTargetByIntensityBuild = CopyInts(flatlinePointTargetByIntensity);
             kelpwoodBiteTargetBuild = kelpwoodBiteTarget;
