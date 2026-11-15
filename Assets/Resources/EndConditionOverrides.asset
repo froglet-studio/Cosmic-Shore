@@ -49,6 +49,7 @@ MonoBehaviour:
   jackstrawStrikeTarget: 3
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
+  trawlPrismTarget: 300
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
   - 1600
@@ -56,6 +57,7 @@ MonoBehaviour:
   - 2000
   - 1000
   harvestPrismTarget: 750
+  stingherdStingTarget: 12
   tapestryRoundSeconds: 90
   glasshouseRoundSeconds: 90
   siroccoPrismTarget: 400
@@ -124,6 +126,7 @@ MonoBehaviour:
   jackstrawStrikeTargetBuild: 3
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
+  trawlPrismTargetBuild: 300
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
   - 1600
@@ -131,6 +134,7 @@ MonoBehaviour:
   - 2000
   - 1000
   harvestPrismTargetBuild: 750
+  stingherdStingTargetBuild: 12
   tapestryRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400

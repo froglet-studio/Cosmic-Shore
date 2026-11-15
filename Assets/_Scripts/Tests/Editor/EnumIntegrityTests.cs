@@ -206,8 +206,11 @@ namespace CosmicShore.Tests
             // landed with first; 89 is Glasshouse's on claude/peaceful-cerf-vpl3x8 (in flight), so it moved to 90.
             // 82 -> 83 on 2026-11-11: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest
             // pushed first; 89 was free on every branch.
+            // 83 -> 85 on 2026-11-15: Stingherd (117) and Trawl (118), the Jacks' Charge and Space games, on the ids the
+            // game kit roster reserved (Docs/ElementalLoop/GAME_KIT_ROSTER.md). The roster's other games (91-127) land
+            // in parallel and each adds its own; count the members on the merged enum, not this line's history.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(83, values.Length,
+            Assert.AreEqual(85, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

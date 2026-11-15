@@ -106,6 +106,8 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameHarvest** | `_Scenes/Multiplayer Scenes/` | `Harvest (88)` | `HarvestController` |
 | **MinigameGlasshouse** | `_Scenes/Multiplayer Scenes/` | `Glasshouse (89)` | `GlasshouseController` |
 | **MinigameShatterplane** | `_Scenes/Multiplayer Scenes/` | `Shatterplane (90)` | `ShatterplaneController` |
+| **MinigameStingherd** | `_Scenes/Multiplayer Scenes/` | `Stingherd (117)` | `StingherdController` |
+| **MinigameTrawl** | `_Scenes/Multiplayer Scenes/` | `Trawl (118)` | `TrawlController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
 | **MinigameTandava** | `_Scenes/Multiplayer Scenes/` | `Tandava (69)` | `TandavaController` |
@@ -359,6 +361,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 88 | `Harvest` | MP | MinigameHarvest | `HarvestController` (Thresher destruction race, Space - mow a sheaf's stalks with the chain to charge the ball, smash it into the core for one blast; hostile prisms destroyed, first domain to 750; a field of sheaves round a clear centre in the standard cell, omni crystals in the centre; I1-I4 8 -> 22 sheaves, shielded cores, team colours, danger stalks) |
 | 89 | `Glasshouse` | MP | MinigameGlasshouse | `GlasshouseController` (Angler garden, Mass - an omni crystal is a seed, let go of the lure to plant it in your colour, hold it to grow; timed, trail + garden standing in your colour wins; `GLASSHOUSE.md`) |
 | 90 | `Shatterplane` | MP | MinigameShatterplane | `ShatterplaneController` (Brittle Star plate race, Space - square up to a plate and the ring's flat blast erases it whole, the guns chew the rest; prisms destroyed to a per-intensity target. See `SHATTERPLANE.md`) |
+| 117 | `Stingherd` | MP | MinigameStingherd | `StingherdController` (Jacks herd duel, Charge - herd your danger creatures into rival hulls; a sting is a Strike point, first domain to 12; Kelpwood's arena) |
+| 118 | `Trawl` | MP | MinigameTrawl | `TrawlController` (Jacks net sweep, Space - dragged prisms that break each other score; prisms destroyed to 300; Harvest's field) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
 | 69 | `Tandava` | MP | MinigameTandava | `TandavaController` (UNLISTED since 2026-10-25: on no roster, card in `Games/_Archive`; co-op ARENA hunt in a closed cell - Rhino / Squirrel / Sparrow on one domain against one creature that forages where it likes, rolls up round its meal behind a ring of guards while it feeds, and evolves Great Serpent -> Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion; a variant of each form per match; the cell glows gold for the dance alone. See `TANDAVA.md`) |
@@ -615,6 +619,8 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `ShatterplanePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Shatterplane target, resolved per intensity on the server and replicated (Sirocco's shape) |
 | `CoronaBloomTurnMonitor` | `TurnMonitors/` | A domain's summed bloom hits (Debuff-class CombatPoints) reach the Corona target (on `CombatPointTurnMonitorBase`) |
 | `HarvestPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Harvest target (Wrecking Ball's shape) |
+| `StingherdStingTurnMonitor` | `TurnMonitors/` | A domain's summed Strike points reach the Stingherd target (`CombatPointTurnMonitorBase`) |
+| `TrawlPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Trawl target (Harvest's shape) |
 | `GlasshouseTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`glasshouseRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |

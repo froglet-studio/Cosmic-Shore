@@ -249,6 +249,10 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // Stingherd and Trawl, the Jacks' Charge and Space games (STINGHERD.md, TRAWL.md). Race beats are the shared 128-130
+        // (DomainRaceToasts); ids reserved by the game kit roster (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 27-28).
+        StingherdHint = 192,            // once, at the start: herd your danger creatures into a rival hull to sting it
+        TrawlHint = 193,                // once, at the start: drag prisms in the net and smash them into each other
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.
