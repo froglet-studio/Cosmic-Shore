@@ -805,6 +805,21 @@ CAMERAS = {
     # Glasshouse: from outside the gardens, low across the cell, so the three colours' beds stand round the glass
     # nucleus with its seeds inside, and the lure lighting the near bed (growth, the thing that scores) sits in front.
     "Glasshouse": (28, 14, 0.82, 46),
+    # Chum: close beside one shoal of the I2 reef, so its shells of neutral prisms fill the plate with the next shoals
+    # hanging behind it, and the Jade school thrown into its painted half (the meal, the thing that scores) sits on it.
+    "Chum": (34, 12, 0.7, 46),
+    # Starweave: close among the weaves, so the five-line tubes of three colours sweep across the plate, and a rival's
+    # rounds tearing a gap in the near Jade weave (the raid, what takes score off the board) sit in the middle.
+    "Starweave": (132, 14, 0.75, 46),
+    # Haul: close beside one bale of the I2 field, so its shells fill the plate with hauled bales of every colour behind,
+    # and the Jade ball on its chain swinging through it (the steal, what scores) sits on its near half.
+    "Haul": (34, 12, 0.7, 46),
+    # Hedgerow: close beside one hedge of the I2 field, side-on to its approach, so the hedge runs across the plate and
+    # the Jade seed wall eating along it (the steal, what scores) stands in its middle with the stopped Serpent behind.
+    "Hedgerow": (34, 12, 0.7, 46),
+    # Longshot: low along one lance of the I2 field, so its run of cubes reaches away across the plate and the Jade
+    # sniper round tearing down it (the shot, what scores) draws one line from the shooter into the distance.
+    "Longshot": (34, 8, 0.7, 46),
     # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
     # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
     "Corona": (37, -10, 0.36, 60),
@@ -1301,6 +1316,283 @@ def recipe(stem, card_path, pal, ends):
             crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
         stage["glasshouse"] = {"beds": {str(k): v_mul(v, band) for k, v in beds.items()}, "herd": herd}
         nucleus()
+    elif s == "Chum":
+        # MODEL tier: the cell grows nothing, so the card draws what the mode LAYS there at this intensity - the reef
+        # (ChumReef's shoals: a centre prism and shells on a Fibonacci sphere, read off the C# rung table and constants,
+        # in the no-team colour, the crust shielded), the omni crystals inside the glass nucleus, and the rung's grazers
+        # among the shoals. Every count is read from the shipped assets.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        reef_cs = read(ROOT / "Assets/_Scripts/Controller/Arcade/Chum/ChumReef.cs")
+        size = float(re.search(r"public const float PrismSize = ([\d.]+)f;", reef_cs).group(1))
+        spacing = float(re.search(r"public const float Spacing = ([\d.]+)f;", reef_cs).group(1))
+        rungs = re.findall(r"(\d|_) => new Rung\((\d+), (\d+), ([\d.]+)f, (true|false)\)", reef_cs)
+        _, shoals, shells, band, crusted = rungs[min(INTENSITY - 1, len(rungs) - 1)]
+        shoals, shells, band, crusted = int(shoals), int(shells), float(band), crusted == "true"
+
+        def fib(i, n):
+            y = 1 - 2 * (i + 0.5) / max(1, n)
+            ring = math.sqrt(max(0.0, 1 - y * y))
+            th = i * 2.39996323
+            return [ring * math.cos(th), y, ring * math.sin(th)]
+
+        reach = shells * spacing + size
+        inner, outer = nuc + reach, max(nuc + reach, R - reach)
+        radius = inner + (outer - inner) * band
+        centres = [v_mul(fib(k, shoals), radius) for k in range(shoals)]
+        rows = []
+        for c in centres:
+            rows.append(prism(c, [0, 0, 1], [0, 1, 0], [size] * 3, BLUE))
+            for sh in range(1, shells + 1):
+                n = max(6, int(math.floor(4 * math.pi * sh * sh + 0.5)))
+                kind = SHIELDED if crusted and sh == shells else PLAIN
+                for k in range(n):
+                    rows.append(prism(v_add(c, v_mul(fib(k, n), sh * spacing)), [0, 0, 1], [0, 1, 0], [size] * 3,
+                                      BLUE, kind))
+        layers.append({"kind": "prisms", "rows": rows})
+        prof = read(facts["profile"])
+        fauna_cfg = asset(re.findall(r"guid: (\w+)", prof.split("SupportedFaunas:")[1])[0])
+        herd = int(re.search(r"^  InitialSpawnCount: (\d+)", read(fauna_cfg), re.M).group(1))
+        scene = read(next((ROOT / "Assets/_Scenes").rglob("MinigameChum.unity")))
+        extras = [int(x) for x in re.findall(r"ExtraCrystals: (\d+)", scene.split("crystalCountByIntensity:")[1])[:4]]
+        omni = extras[min(INTENSITY - 1, len(extras) - 1)]
+        for k in range(omni):
+            crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
+        # the card sits beside a shoal side-on to the camera, so the glass nucleus falls out of the frame behind it
+        az = math.radians(cam["azimuth"])
+        toward = [math.sin(az), 0.2, math.cos(az)]
+        near = min(centres, key=lambda c: abs(v_dot(v_norm(c), v_norm(toward))) - 0.3 * v_norm(c)[1])
+        stage["chum"] = {"shoal": near, "reach": reach, "herd": herd, "others": centres}
+        nucleus()
+    elif s == "Starweave":
+        # MODEL tier: the cell grows nothing, so the card draws what the mode's pilots LAY - each colour's weave, the
+        # Brittle Star's Creation Mode (five lines, one per ring corner, read off the shipped ring radius, spacing and
+        # block) bent along a broad arc, fattened to the Mass a crystal buys - and the rung's elemental crystals.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        prefab = read(ROOT / "Assets/_Prefabs/Spacevessels/BrittleStar.prefab")
+        base = [float(v) for v in re.search(r"^  BaseScale: \{x: ([0-9.]+), y: ([0-9.]+), z: ([0-9.]+)\}",
+                                             prefab, re.M).groups()]
+        cfg = read(ROOT / "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset")
+        spacing = float(re.search(r"^  creationSpacing: ([0-9.]+)$", cfg, re.M).group(1))
+        ring = 6.0                       # BRITTLE_STAR.md 2: the ring's radius
+        fat = 1.6                        # a Mass crystal or two: blocks x1.6 on x and y
+        settings = read(ROOT / "Assets/_SO_Assets/Games/StarweaveSettings.asset")
+        counts = [int(x) for x in re.findall(r"^  - (\d+)$", settings.split("elementalCrystalCountByIntensity:")[1]
+                                                                    .split("crystalScatterRadius")[0], re.M)]
+        hub = v_mul(v_norm([0.55, 0.12, 0.6]), nuc + 0.75 * (R - nuc))
+        rows = []
+        weaves = {}
+        for dom, (tilt, phase, rad) in {JADE: (10, 0.0, 140.0), RUBY: (-25, 1.9, 170.0), GOLD: (40, 3.8, 120.0)}.items():
+            n = v_norm([math.sin(math.radians(tilt)), math.cos(math.radians(tilt)), 0.3])
+            a = v_norm(v_cross(n, [0, 0, 1]))
+            b = v_cross(n, a)
+            centre = v_add(hub, v_mul(v_add(v_mul(a, math.cos(phase)), v_mul(b, math.sin(phase))), rad * 0.45))
+            L = rad * 1.6
+            steps = int(L / spacing)
+            path = []
+            for k in range(steps):
+                th = phase + (k / steps - 0.5) * (L / rad)
+                path.append(v_add(centre, v_mul(v_add(v_mul(a, math.cos(th)), v_mul(b, math.sin(th))), rad)))
+            weaves[dom] = path
+            for k in range(1, len(path)):
+                fwd = v_norm(v_sub(path[k], path[k - 1]))
+                side = v_norm(v_cross(n, fwd))
+                up = v_cross(fwd, side)
+                for c in range(5):
+                    ang = 2 * math.pi * c / 5
+                    off = v_add(v_mul(side, ring * math.cos(ang)), v_mul(up, ring * math.sin(ang)))
+                    rows.append(prism(v_add(path[k], off), fwd, up, [base[0] * fat, base[1] * fat, base[2]], dom))
+        layers.append({"kind": "prisms", "rows": rows})
+        for k in range(counts[min(INTENSITY - 1, len(counts) - 1)] // 4):
+            crystal(v_add(hub, v_mul(rng.unit(), 260 * rng.u() ** 0.5)), 5.0, (0.55, 1.2, 0.25))
+        stage["starweave"] = {"weaves": weaves, "hub": hub}
+        nucleus()
+    elif s == "Haul":
+        # MODEL tier: the cell grows nothing, so the card draws what the mode LAYS there at this intensity - HaulField's
+        # bales on Chum's reef geometry (the rung read off HaulField.cs, the constants off ChumReef.cs) - part-hauled:
+        # some bales already wear a domain's colour (a hoard), the rest are still no team's.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        reef_cs = read(ROOT / "Assets/_Scripts/Controller/Arcade/Chum/ChumReef.cs")
+        field_cs = read(ROOT / "Assets/_Scripts/Controller/Arcade/Haul/HaulField.cs")
+        size = float(re.search(r"public const float PrismSize = ([\d.]+)f;", reef_cs).group(1))
+        spacing = float(re.search(r"public const float Spacing = ([\d.]+)f;", reef_cs).group(1))
+        rungs = re.findall(r"(\d|_) => new ChumReef\.Rung\((\d+), (\d+), ([\d.]+)f, (true|false)\)", field_cs)
+        _, bales, shells, band, crusted = rungs[min(INTENSITY - 1, len(rungs) - 1)]
+        bales, shells, band, crusted = int(bales), int(shells), float(band), crusted == "true"
+
+        def fib(i, n):
+            y = 1 - 2 * (i + 0.5) / max(1, n)
+            ring = math.sqrt(max(0.0, 1 - y * y))
+            th = i * 2.39996323
+            return [ring * math.cos(th), y, ring * math.sin(th)]
+
+        reach = shells * spacing + size
+        inner, outer = nuc + reach, max(nuc + reach, R - reach)
+        radius = inner + (outer - inner) * band
+        centres = [v_mul(fib(k, bales), radius) for k in range(bales)]
+        az = math.radians(cam["azimuth"])
+        toward = [math.sin(az), 0.2, math.cos(az)]
+        near = min(centres, key=lambda c: abs(v_dot(v_norm(c), v_norm(toward))) - 0.3 * v_norm(c)[1])
+        hoards = {0: JADE, 3: RUBY, 6: GOLD, 9: JADE}
+        rows = []
+        for idx, c in enumerate(centres):
+            dom = BLUE if c is near else hoards.get(idx, BLUE)
+            rows.append(prism(c, [0, 0, 1], [0, 1, 0], [size] * 3, dom))
+            for sh in range(1, shells + 1):
+                n = max(6, int(math.floor(4 * math.pi * sh * sh + 0.5)))
+                kind = SHIELDED if (crusted and sh == shells) or dom != BLUE else PLAIN
+                for k in range(n):
+                    pos = v_add(c, v_mul(fib(k, n), sh * spacing))
+                    d = dom
+                    if c is near and v_dot(v_sub(pos, c), v_norm(v_cross([0, 1, 0], c))) < 0:
+                        d = JADE                     # the half the ball has already swept is Jade
+                    rows.append(prism(pos, [0, 0, 1], [0, 1, 0], [size] * 3, d, kind))
+        layers.append({"kind": "prisms", "rows": rows})
+        scene = read(next((ROOT / "Assets/_Scenes").rglob("MinigameHaul.unity")))
+        extras = [int(x) for x in re.findall(r"ExtraCrystals: (\d+)", scene.split("crystalCountByIntensity:")[1])[:4]]
+        for k in range(extras[min(INTENSITY - 1, len(extras) - 1)]):
+            crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
+        stage["haul"] = {"bale": near, "reach": reach}
+        nucleus()
+    elif s == "Hedgerow":
+        # MODEL tier: the cell grows nothing, so the card draws what the mode LAYS there at this intensity -
+        # HedgerowField's hedges (the rung and the constants read off HedgerowField.cs) - with the nearest one half
+        # eaten by a Jade seed wall: the eaten bricks stand in the wall's herringbone, the rest are still no team's.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        field_cs = read(ROOT / "Assets/_Scripts/Controller/Arcade/Hedgerow/HedgerowField.cs")
+        spacing = float(re.search(r"public const float Spacing = ([\d.]+)f;", field_cs).group(1))
+        inner_c = float(re.search(r"public const float InnerClearance = ([\d.]+)f;", field_cs).group(1))
+        outer_c = float(re.search(r"public const float OuterClearance = ([\d.]+)f;", field_cs).group(1))
+        bx, by, bz = (float(x) for x in re.search(r"BrickScale = new\(([\d.]+)f, ([\d.]+)f, ([\d.]+)f\);",
+                                                   field_cs).groups())
+        rungs = re.findall(r"(\d|_) => new Rung\((\d+), (\d+), (\d+), ([\d.]+)f\)", field_cs)
+        _, nrows, length, ranks, band = rungs[min(INTENSITY - 1, len(rungs) - 1)]
+        nrows, length, ranks, band = int(nrows), int(length), int(ranks), float(band)
+
+        def fib(i, n):
+            y = 1 - 2 * (i + 0.5) / max(1, n)
+            ring = math.sqrt(max(0.0, 1 - y * y))
+            th = i * 2.39996323
+            return [ring * math.cos(th), y, ring * math.sin(th)]
+
+        lo = nuc + inner_c
+        radius = lo + (max(lo, R - outer_c) - lo) * band
+        hedges = []
+        for row in range(nrows):
+            n = fib(row, nrows)
+            t = v_norm(v_cross(n, [1, 0, 0] if abs(n[1]) > 0.9 else [0, 1, 0]))
+            b = v_cross(n, t)
+            a = row * 2.39996323
+            along = v_norm(v_add(v_mul(t, math.cos(a)), v_mul(b, math.sin(a))))
+            hedges.append((v_mul(n, radius), n, along, v_cross(n, along)))
+        az = math.radians(cam["azimuth"])
+        toward = v_norm([math.sin(az), 0.2, math.cos(az)])
+        # Three-quarters face-on: a wall and a hedge are flat bricks facing the approach, so seen side-on they vanish.
+        near = min(hedges, key=lambda h: abs(abs(v_dot(h[1], toward)) - 0.75) - 0.2 * h[1][1])
+        hoards = {1: RUBY, 4: GOLD, 7: JADE}
+        rows = []
+        hl, hr = (length - 1) * 0.5, (ranks - 1) * 0.5
+        for idx, (mid, n, along, up) in enumerate(hedges):
+            dom = hoards.get(idx, BLUE) if near is not hedges[idx] else BLUE
+            for k in range(length):
+                if near is hedges[idx] and abs(k - hl) < length * 0.3:
+                    continue                          # the stretch the wall has already eaten
+                for h in range(ranks):
+                    pos = v_add(mid, v_add(v_mul(along, (k - hl) * spacing), v_mul(up, (h - hr) * spacing)))
+                    rows.append(prism(pos, n, along, [bx, by, bz], dom))
+        # The wall: a herringbone in the plane across the approach, 22 u short of the hedge, grown along it.
+        mid, n, along, up = near
+        seed = v_sub(mid, v_mul(n, 22.0))
+        pitch = 5 * bx
+        span_k = int(length * spacing * 0.3 / pitch) + 1
+        for i in range(-span_k, span_k + 1):
+            for j in range(-3, 4):
+                pos = v_add(seed, v_add(v_mul(along, i * pitch), v_mul(up, j * pitch)))
+                long_axis = along if (i + j) % 2 else up
+                rows.append(prism(pos, n, long_axis, [bx, by, bz], JADE, SHIELDED if abs(i) + abs(j) < 3 else PLAIN))
+        layers.append({"kind": "prisms", "rows": rows})
+        scene = read(next((ROOT / "Assets/_Scenes").rglob("MinigameHedgerow.unity")))
+        extras = [int(x) for x in re.findall(r"ExtraCrystals: (\d+)", scene.split("crystalCountByIntensity:")[1])[:4]]
+        for k in range(extras[min(INTENSITY - 1, len(extras) - 1)]):
+            crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
+        stage["hedgerow"] = {"seed": seed, "n": n, "reach": length * spacing * 0.5}
+        nucleus()
+    elif s == "Longshot":
+        # MODEL tier: the cell grows nothing, so the card draws what the mode LAYS there at this intensity -
+        # LongshotField's lances (the rung and the constants read off LongshotField.cs) - with the nearest run half
+        # broken by a Jade sniper round fired down its line.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        field_cs = read(ROOT / "Assets/_Scripts/Controller/Arcade/Longshot/LongshotField.cs")
+        size = float(re.search(r"public const float PrismSize = ([\d.]+)f;", field_cs).group(1))
+        spacing = float(re.search(r"public const float Spacing = ([\d.]+)f;", field_cs).group(1))
+        knee = float(re.search(r"public const float KneeDegrees = ([\d.]+)f;", field_cs).group(1))
+        inner_c = float(re.search(r"public const float InnerClearance = ([\d.]+)f;", field_cs).group(1))
+        outer_c = float(re.search(r"public const float OuterClearance = ([\d.]+)f;", field_cs).group(1))
+        rungs = re.findall(r"(\d|_) => new Rung\((\d+), (\d+), (\d+), ([\d.]+)f\)", field_cs)
+        _, nl, length, segs, band = rungs[min(INTENSITY - 1, len(rungs) - 1)]
+        nl, length, segs, band = int(nl), int(length), max(1, int(segs)), float(band)
+
+        def fib(i, n):
+            y = 1 - 2 * (i + 0.5) / max(1, n)
+            ring = math.sqrt(max(0.0, 1 - y * y))
+            th = i * 2.39996323
+            return [ring * math.cos(th), y, ring * math.sin(th)]
+
+        def turn(v, axis, deg):
+            a = math.radians(deg)
+            c, sn = math.cos(a), math.sin(a)
+            return v_add(v_add(v_mul(v, c), v_mul(v_cross(axis, v), sn)), v_mul(axis, v_dot(axis, v) * (1 - c)))
+
+        lo = nuc + inner_c
+        radius = lo + (max(lo, R - outer_c) - lo) * band
+        per = length // segs
+        runs = []                       # (start, end, [positions])
+        for li in range(nl):
+            n = fib(li, nl)
+            t = v_norm(v_cross(n, [1, 0, 0] if abs(n[1]) > 0.9 else [0, 1, 0]))
+            b = v_cross(n, t)
+            a = li * 2.39996323
+            base = v_norm(v_add(v_mul(t, math.cos(a)), v_mul(b, math.sin(a))))
+            at, mine = [0.0, 0.0, 0.0], []
+            for r_ in range(segs):
+                cnt = length - per * (segs - 1) if r_ == segs - 1 else per
+                d = turn(base, n, 0.0 if segs == 1 else (knee if r_ % 2 == 0 else -knee))
+                st = at if r_ == 0 else v_add(at, v_mul(d, spacing))
+                mine.append([v_add(st, v_mul(d, k * spacing)) for k in range(cnt)])
+                at = mine[-1][-1]
+            flat = [p for run in mine for p in run]
+            cen = v_mul([sum(p[k] for p in flat) for k in range(3)], 1.0 / len(flat))
+            shift = v_sub(v_mul(n, radius), cen)
+            for run in mine:
+                pts = [v_add(p, shift) for p in run]
+                runs.append((pts[0], pts[-1], pts))
+        az = math.radians(cam["azimuth"])
+        toward = v_norm([math.sin(az), 0.15, math.cos(az)])
+        # The run seen most nearly along its line, so it reaches away across the plate.
+        near = max(runs, key=lambda r_: abs(v_dot(v_norm(v_sub(r_[1], r_[0])), toward)) + 0.1 * v_norm(r_[0])[1])
+        st, en, pts = near
+        d = v_norm(v_sub(en, st))
+        if v_dot(d, toward) > 0:        # the round runs AWAY from the camera
+            st, en, pts, d = en, st, pts[::-1], v_mul(d, -1.0)
+        rows = []
+        hoards = {2: RUBY, 5: GOLD}
+        for idx, (_, _, rp) in enumerate(runs):
+            for k, p in enumerate(rp):
+                if rp is pts and k < len(rp) * 0.55:
+                    continue                  # the stretch the round has already broken
+                dom = hoards.get(idx, BLUE)
+                rows.append(prism(p, [0, 0, 1], [0, 1, 0], [size] * 3, dom))
+        layers.append({"kind": "prisms", "rows": rows})
+        scene = read(next((ROOT / "Assets/_Scenes").rglob("MinigameLongshot.unity")))
+        extras = [int(x) for x in re.findall(r"ExtraCrystals: (\d+)", scene.split("crystalCountByIntensity:")[1])[:4]]
+        for k in range(extras[min(INTENSITY - 1, len(extras) - 1)]):
+            crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
+        stage["longshot"] = {"start": st, "end": en, "dir": d, "broken": pts[: int(len(pts) * 0.55)],
+                             "span": math.dist(st, en)}
     elif s == "IceShelf":
         # MODEL tier: the cell plants nothing wild, so the card draws what the mode PUTS there - each colour's shelf as
         # IceShelfController's helm lays it: a trail ring (the Orca's own 2 x 2 x 5 trail prism) round a home spread
@@ -1369,6 +1661,29 @@ def recipe(stem, card_path, pal, ends):
     elif s == "Glasshouse":
         aim((0.1, -0.05, -0.3), 0.66)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "Chum":
+        ch = stage.get("chum")
+        cam["target"] = list(ch["shoal"])
+        cam["radius"] = ch["reach"] * 5.0
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "Starweave":
+        cam["target"] = list(stage["starweave"]["hub"])
+        cam["radius"] = 260.0
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "Haul":
+        ha = stage.get("haul")
+        cam["target"] = list(ha["bale"])
+        cam["radius"] = ha["reach"] * 5.0
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "Hedgerow":
+        hg = stage.get("hedgerow")
+        cam["target"] = list(hg["seed"])
+        cam["radius"] = hg["reach"] * 0.75
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "Longshot":
+        ls = stage.get("longshot")
+        cam["target"] = list(v_add(ls["start"], v_mul(ls["dir"], ls["span"] * 0.45)))
+        cam["radius"] = ls["span"] * 0.42
     elif s == "IceShelf":
         # The shelves stand inside the glass (homes at 0.6 of the nucleus), so the shot is the nucleus, not the cell.
         aim((0.0, 0.0, 0.0), 1.25, base=nuc)
@@ -1702,6 +2017,90 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                 creature(p, rng.unit(), R * 0.03, BLUE, rows)
             layers.append({"kind": "prisms", "rows": rows})
             stage["vessels"] = vessels([(JADE, 0.62, 6, 330, 10), (RUBY, 0.6, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "Chum":
+        # The act that scores: a Jade Angler's school thrown into the shoal it painted (the near half of the shoal
+        # glows in the painter's colour), the creatures streaking in from the pilot. Two wild grazers (no colour of
+        # their own) graze the next shoal over.
+        ch = stage.pop("chum", None)
+        if ch:
+            shoal, reach = ch["shoal"], ch["reach"]
+            out = v_norm(shoal)
+            side = v_norm(v_cross([0, 1, 0], out))
+            face = v_norm(v_add(out, v_mul(side, 0.8)))
+            glow(v_add(shoal, v_mul(face, reach * 0.45)), reach * 0.75, JADE, 0.9, 0.22)
+            pilot = v_add(shoal, v_mul(face, reach * 5.5))
+            rows = []
+            for k in range(4):
+                t = 0.25 + 0.17 * k
+                p = v_add(v_add(pilot, v_mul(v_sub(shoal, pilot), t)), v_mul(rng.unit(), reach * 0.25))
+                creature(p, v_sub(shoal, pilot), reach * 0.55, JADE, rows)
+                streak(v_add(p, v_mul(v_norm(v_sub(pilot, shoal)), reach * 0.5)), v_sub(shoal, pilot), reach * 1.4, JADE)
+            others = sorted((c for c in ch["others"] if c != shoal),
+                            key=lambda c: v_dot(v_sub(c, shoal), v_sub(c, shoal)))
+            if others:
+                nxt = others[0]
+                for k in range(min(2, ch["herd"])):
+                    p = v_add(nxt, v_mul(rng.unit(), reach * 1.4))
+                    creature(p, v_sub(nxt, p), reach * 0.5, BLUE, rows)
+            layers.append({"kind": "prisms", "rows": rows})
+            stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "Starweave":
+        # The raid: a Ruby Brittle Star's five guns tearing into the near Jade weave (a gap where rounds have struck,
+        # streaks of its colour reaching it), while the Jade weaver lays on at the far end, its ring a glow.
+        sw = stage.pop("starweave", None)
+        if sw:
+            jade = sw["weaves"][JADE]
+            tip = jade[-1]
+            glow(tip, 9.0, JADE, 1.3, 0.5)
+            hit = jade[len(jade) // 2]
+            glow(hit, 14.0, RUBY, 1.0, 0.3)
+            shooter = v_add(hit, v_mul(v_norm(v_add(v_sub(hit, sw["hub"]), [0, 0.6, 0])), 90.0))
+            for k in range(5):
+                p = v_add(v_add(shooter, v_mul(v_sub(hit, shooter), 0.2 + 0.15 * k)), v_mul(rng.unit(), 4.0))
+                streak(p, v_sub(hit, shooter), 18.0, RUBY)
+            stage["vessels"] = vessels([(JADE, 0.3, 6, 320, 15), (RUBY, 0.35, -8, 160, 25), (GOLD, 0.5, 12, 250, 25)])
+    elif s == "Haul":
+        # The steal: a Jade Thresher's ball in the middle of its swing through the bale (a glow in the domain's lit
+        # colour - Mass Mode never shows red), its chain back to the hull, the swept half of the bale already Jade.
+        ha = stage.pop("haul", None)
+        if ha:
+            bale, reach = ha["bale"], ha["reach"]
+            side = v_mul(v_norm(v_cross([0, 1, 0], bale)), -1.0)   # the swept (Jade) half, toward the camera
+            ball = v_add(bale, v_mul(side, reach * 0.9))
+            glow(ball, reach * 0.18, JADE, 1.4, 0.8)
+            hull = v_add(ball, v_add(v_mul(side, reach * 3.2), v_mul(v_norm(bale), reach * 1.5)))
+            for k in range(1, 12):
+                t = k / 12
+                sag = math.sin(math.pi * t) * reach * 0.4
+                p = v_add(v_add(ball, v_mul(v_sub(hull, ball), t)), [0, -sag, 0])
+                glow(p, reach * 0.04, JADE, 1.0, 0.7)
+            stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "Longshot":
+        # The shot: a Jade Serpent behind the run's near end, its round a line of glow down the run's axis, and the
+        # broken stretch of the run bursting into debris along it.
+        ls = stage.pop("longshot", None)
+        if ls:
+            st, d, span = ls["start"], ls["dir"], ls["span"]
+            shooter = v_sub(st, v_mul(d, 120.0))
+            glow(shooter, 6.0, JADE, 1.4, 0.8)
+            for k in range(60):
+                glow(v_add(shooter, v_mul(d, 120.0 + span * 1.1 * k / 59)), 3.0, JADE, 1.4, 0.8)
+            for p in ls["broken"]:
+                for _ in range(2):
+                    streak(v_add(p, v_mul(rng.unit(), 4.0)), v_add(d, v_mul(rng.unit(), 0.6)), 6.0, BLUE)
+            stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "Hedgerow":
+        # The stop: a Jade Serpent standing dead behind its seed (a glow in the domain's lit colour), and a few loose
+        # bricks of the hedge still in flight to the wall's edge.
+        hg = stage.pop("hedgerow", None)
+        if hg:
+            seed, n = hg["seed"], hg["n"]
+            glow(v_sub(seed, v_mul(n, 14.0)), 6.0, JADE, 1.4, 0.8)
+            glow(seed, 4.0, JADE, 1.2, 0.6)
+            for k in range(6):
+                p = v_add(v_add(seed, v_mul(n, 8.0 + 2.5 * k)), v_mul(rng.unit(), 30.0))
+                streak(p, v_mul(n, -1.0), 10.0, JADE)
+            stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
     elif s == "IceShelf":
         # The act that scores, and the one that takes it away: the Jade shield standing in its ring (mass at the
         # whistle), and a Ruby gunner's missile streaking into it. The rung's grazers drift outside the glass, where

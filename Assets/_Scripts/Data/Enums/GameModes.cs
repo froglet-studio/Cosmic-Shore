@@ -446,6 +446,32 @@ namespace CosmicShore.Data
         // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
         Shatterplane = 90,
 
+        // The Angler's SPACE game (CHUM.md): a timed feed on a reef. Shoals of neutral prisms hang in the cell; paint one,
+        // let go, and half the school is thrown at it and eats it. Score = prisms taken off the board (hull + school).
+        // I1-I4: few near shoals, more and farther, shielded crusts (Space starts at 5 for Paint Shields), the farthest.
+        // Row 1 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Chum = 91,
+
+        // The Brittle Star's MASS game (STARWEAVE.md): a timed weaving war in the bare cell. Creation Mode lays five
+        // trails from the ring's corners; the volume standing in your colour at the whistle wins, and every rival's
+        // guns, cords and ring are aimed at it. Row 2 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Starweave = 92,
+
+        // The Thresher's MASS game (HAUL.md): a timed steal. Bales of neutral prisms hang in the cell; the Mass Mode ball
+        // steals what it touches into your colour, shields your own and lays your trail. Volume standing in your colour
+        // at the whistle wins. Row 3 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Haul = 93,
+
+        // The Serpent's MASS game (HEDGEROW.md): a timed steal. Hedges of neutral bricks stand round the core; stop dead
+        // short of one and your seed wall eats along it into your colour, and a rival's trail the same way. Volume
+        // standing in your colour at the whistle wins. Row 4 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Hedgerow = 94,
+
+        // The Serpent's SPACE game (LONGSHOT.md): a timed shoot. Lances of neutral prisms hang round the core; line up
+        // along one and the sniper round breaks the whole run. Most hostile prisms broken at the whistle wins. Row 5 of
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Longshot = 95,
+
         // The Swordfish's TIME game (SPEARLINE.md): three laps of Headlong's circuit, the rings sealed with panes of
         // prisms. A sealed ring counts only through a hole, and the hull alone rams too small a one, so each seal asks for
         // a swing of the bill; Quickdraw (Time) is the sword's rate. Reserved 96 in Docs/ElementalLoop/GAME_KIT_ROSTER.md.

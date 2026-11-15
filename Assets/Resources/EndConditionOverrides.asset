@@ -68,6 +68,11 @@ MonoBehaviour:
   tapestryRoundSeconds: 90
   palisadeRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  chumRoundSeconds: 90
+  starweaveRoundSeconds: 90
+  haulRoundSeconds: 90
+  hedgerowRoundSeconds: 90
+  longshotRoundSeconds: 90
   podHuntBlastTarget: 15
   iceShelfRoundSeconds: 90
   depthChargePrismTarget: 1500
@@ -163,6 +168,11 @@ MonoBehaviour:
   tapestryRoundSecondsBuild: 90
   palisadeRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  chumRoundSecondsBuild: 90
+  starweaveRoundSecondsBuild: 90
+  haulRoundSecondsBuild: 90
+  hedgerowRoundSecondsBuild: 90
+  longshotRoundSecondsBuild: 90
   podHuntBlastTargetBuild: 15
   iceShelfRoundSecondsBuild: 90
   depthChargePrismTargetBuild: 1500

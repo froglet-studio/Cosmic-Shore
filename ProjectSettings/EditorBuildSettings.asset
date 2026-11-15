@@ -216,6 +216,21 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameGlasshouse.unity
     guid: 1669f64150fcf334bc67aa5165c0e331
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameChum.unity
+    guid: 88e45b8e8325f38bf7fa3f20142387d1
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameStarweave.unity
+    guid: 6bf643e375a710f2479f932104e05fed
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameHaul.unity
+    guid: 1e77e52473568aa91af2d86b7e5cd3c7
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameHedgerow.unity
+    guid: c4f05de1af65c3e6bee3b9feffd7316d
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameLongshot.unity
+    guid: 28c339a863274a88bb4f89d15e1d4bdc
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameIceShelf.unity
     guid: e1bb3e7f24377026ff7f16af98f85112
   - enabled: 1

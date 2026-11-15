@@ -620,7 +620,25 @@ namespace CosmicShore.UI
                     // Densest standing hostile mass (Sirocco's answer): the forest rings the cell, and the arrow names the
                     // stand worth pecking through - the point Woodpecker's AI pecking runs steer to.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Woodpecker");
+                case GameModes.Haul:
+                    // Rampage's provider: the nearest managed omni crystal - a Windmill, whose spinning ball steals
+                    // everything it sweeps. The bales hang in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Haul");
+                case GameModes.Hedgerow:
+                    // Rampage's provider: the nearest managed omni crystal - each one re-shields every active wall
+                    // the Serpent owns. The hedges stand in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Hedgerow");
+                case GameModes.Longshot:
+                    // Rampage's provider: the nearest managed omni crystal. The lances hang in plain sight, and the
+                    // scope's reticle is the aid that matters.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Longshot");
+                case GameModes.Chum:
+                    // Rampage's provider: the nearest managed omni crystal, which is a creature for the school - the
+                    // one thing to fetch. The reef's shoals hang in plain sight; the brush finds them.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Chum");
+                case GameModes.Starweave:
                 case GameModes.Tapestry:
+                    // (Starweave shares it: a rival's freshest weave is behind them, which is where a raid goes.)
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's
                     // wake is laid behind them. The PAINT half needs no arrow - you paint where
