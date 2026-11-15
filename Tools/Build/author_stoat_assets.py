@@ -1455,7 +1455,10 @@ def ripple_config_asset() -> str:
             "  petalsPerElement: 1\n"
             "  shedSpeed: 8\n"
             "  siphonOnChargeUpgrade: 1\n"
-            "  killsFauna: 1\n" +
+            "  killsFauna: 1\n"
+            "  hitCooldownSeconds: 0.5\n"
+            # Event_CombatHitStats.asset: every rival a ripple strips is a scored Debuff hit (Shockfront, 2026-11-15)
+            "  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}\n" +
             empty_event("rippleEvent") + empty_event("stripEvent"))
 
 

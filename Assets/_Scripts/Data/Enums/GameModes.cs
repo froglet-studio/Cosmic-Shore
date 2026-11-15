@@ -446,6 +446,10 @@ namespace CosmicShore.Data
         // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
         Shatterplane = 90,
 
+        // RESERVED 91-127 (2026-11-15): the missing elemental arcade games, one id per game, assigned by vessel and
+        // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
+        // building one of those games takes ITS row's id; anything else takes 128 or above.
+
         // The Orca's CHARGE game (PODHUNT.md): a missile hunt through the Boneyard's wreckage. Every blast a crew's flown
         // missile or bomb lands on a rival hull is one point; first domain to the target wins. Ids 99 / toast 174
         // reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 9).
@@ -478,6 +482,16 @@ namespace CosmicShore.Data
         // domain to the prism target wins. I1-I4 are the plates' own ladder; I4's super-shielded ribs need Void Pierce.
         // Reserved by GAME_KIT_ROSTER.md (row 14).
         Lancefall = 104,
+
+        // The Stoat's CHARGE game (SHOCKFRONT.md): a duel in Dog Fight's Boneyard. Sling round and let the pair close:
+        // the annihilation's ripple strips a petal of every element from each rival its front sweeps over, and every
+        // rival stripped is one point. Ids 119 / toast 194 reserved by Docs/ElementalLoop/GAME_KIT_ROSTER.md (row 29).
+        Shockfront = 119,
+
+        // The Stoat's SPACE game (FULMEN.md): Rampage's forest, its omni crystals contested in the nucleus. Each one you
+        // take throws a Fulmen bolt that burns the forest; a crystal a branch reaches bolts again. Hostile prisms
+        // destroyed score. Ids 120 / toast 195 reserved by GAME_KIT_ROSTER.md (row 30).
+        Fulmen = 120,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 86) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved

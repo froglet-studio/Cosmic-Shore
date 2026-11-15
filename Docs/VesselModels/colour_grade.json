@@ -2,7 +2,7 @@
  "counts": {
   "exempt": 7,
   "grey": 556,
-  "ui": 635,
+  "ui": 637,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -317,6 +317,13 @@
    "sha": "d504af88671cecd3",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Fulmen.png": {
+   "coloured": 0.998,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "f6b1b65016a6770a",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Glasshouse.png": {
    "coloured": 0.9984,
    "graded": "ui",
@@ -497,6 +504,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "d2c3e64b1eb44f57",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Shockfront.png": {
+   "coloured": 0.9928,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "695e38f5f8d1d7d2",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Sirocco.png": {
