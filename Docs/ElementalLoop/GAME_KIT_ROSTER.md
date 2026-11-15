@@ -20,8 +20,10 @@ cards). Kits read from `Docs/FleetCodex/abilities.json` and each hull's `R_Vesse
 `VolumeDestroyed`, `LifeformsKilled`). A game turns the hull's own ability (or its omni crystal) for that element into
 the score, and never changes the vessel (LOCKED, Shombith 2026-10-31).
 
-A **joust** is the platform's overtake (a faster skimmer sweeping past a slower rival, `JOUST.md`), so every hull can
-joust. A hull whose Charge ability never touches a rival hull (Rhino, Urchin) gets a joust game built on its SPEED kit.
+A **joust** is the platform's overtake (a faster skimmer sweeping past a slower rival, `JOUST.md`), but only a hull
+that carries `VesselExplosionBySkimmerEffect` can score one: today the Squirrel, Stoat, Shrike, Brittle Star and
+Thresher. A hull whose Charge ability never touches a rival hull (Rhino, Urchin) gets a Charge game built on what its
+kit really lands on a rival, not on a joust it cannot score.
 
 ## 2. The roster and the reserved ids
 
@@ -61,10 +63,10 @@ freely before it lands (the generator mints guids from the name), but keep the i
 | 28 | Jacks | Space | Trawl | 118 | 193 | The net drags prisms; a dragged prism that hits another destroys both |
 | 29 | Stoat | Charge | Shockfront | 119 | 194 | Ripple: a collapsing hole pair strips a petal of every element from each rival |
 | 30 | Stoat | Space | Fulmen | 120 | 195 | Omni crystal: a branching bolt sets prisms burning; a crystal it reaches bolts again |
-| 31 | Rhino | Charge | Bullrush | 121 | 196 | Joust on Ramp Spool's top speed (the plough never touches a hull) |
+| 31 | Rhino | Charge | Bullrush | 121 | 196 | Charge on Ramp Spool's top speed (the plough never touches a hull; the Rhino has no joust effect, so its own thread picks what scores) |
 | 32 | Rhino | Mass | Windrow | 122 | 197 | Blade and Berm: shove the field's prisms into your zone and hold them |
 | 33 | Rhino | Space | Avalanche | 123 | 198 | Carry: a thrown prism smashes the next one; chain the field apart |
-| 34 | Urchin | Charge | Railrush | 124 | 199 | Joust off the rail: ride a trail, launch at grind speed past a rival |
+| 34 | Urchin | Charge | Railrush | 124 | 199 | Chain-spike hits off the rail (PR #1997) |
 | 35 | Grizzly | Charge | Standoff | 125 | 200 | Weapon Systems and the Charged Cannon on rival hulls, Dig In to hold a post |
 | 36-37 | Jewel Wasp | Time, Charge, Mass or Space | (after PR #1993 lands) | 126-127 | 201-202 | its reworked kit; designed last |
 
