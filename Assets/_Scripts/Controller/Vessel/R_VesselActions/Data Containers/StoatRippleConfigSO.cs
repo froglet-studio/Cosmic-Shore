@@ -79,6 +79,16 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Creatures inside the front are killed (on the fauna's simulating machine).")]
         [SerializeField] bool killsFauna = true;
 
+        [Header("The scored hit (SILENCE.md: every scored hit and every petal theft are one event)")]
+        [Tooltip("Every rival a front strips is ONE scored Debuff-class combat hit, admitted through " +
+                 "CombatHitDrain.TryAdmitPetals on the machine that owns this Stoat: it silences the rival for the petals " +
+                 "the ripple takes, and a mode's rule may pay it (Shockfront does). A ripple strikes each victim once " +
+                 "anyway; this is the shared latch window between two ripples on the same rival, seconds.")]
+        [SerializeField, Range(0f, 5f)] float hitCooldownSeconds = 0.5f;
+
+        [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager scores combat hits on. Fail-loud.")]
+        [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
+
         [Header("Audio (FMOD) — slots shipped EMPTY, wire in the inspector")]
         [Tooltip("Played at the meeting point when the ripple is born. Empty = silent.")]
         [SerializeField] EventReference rippleEvent;
@@ -95,6 +105,8 @@ namespace CosmicShore.ScriptableObjects
         public int PetalsPerElement => Mathf.Max(0, petalsPerElement);
         public float ShedSpeed => Mathf.Max(0f, shedSpeed);
         public bool KillsFauna => killsFauna;
+        public float HitCooldownSeconds => Mathf.Max(0f, hitCooldownSeconds);
+        public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
         public ElementalFloat Reach => reach;
         public EventReference RippleEvent => rippleEvent;
         public EventReference StripEvent => stripEvent;

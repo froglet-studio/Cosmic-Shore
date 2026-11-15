@@ -734,6 +734,9 @@ CAMERAS = {
     # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
     "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
     "Sirocco": (320, 10, 0.66, 46),
+    # The Stoat's two element games share those arenas too: Shockfront the Boneyard (low, from the far side), Fulmen
+    # the forest (looking back at the heart the bolts root in).
+    "Shockfront": (230, 16, 0.6, 46), "Fulmen": (75, 22, 1.05, 44),
     # Grizzly Charge is the Boneyard's fourth card (with Dog Fight / Salvo / Broadside / Dustup):
     # low, close, and down the axis of the Grizzly's run.
     "GrizzlyCharge": (75, 6, 0.55, 48),
@@ -1039,7 +1042,7 @@ def recipe(stem, card_path, pal, ends):
                 rows.append(prism(pt, fwd, v_norm(pt), key, dom))
         layers.append({"kind": "prisms", "rows": rows})
         nucleus()
-    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco"):
+    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco", "Fulmen"):
         tier = "MODEL"
         layers.append(forest_layer(facts, s, plant_size=R * (0.05 if s == "Tollway" else 0.06)))
         nucleus()
@@ -1316,9 +1319,9 @@ def recipe(stem, card_path, pal, ends):
         base = base or R
         cam["target"] = [c * base for c in point_frac]
         cam["radius"] = radius_frac * base
-    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco"):
+    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco", "Fulmen"):
         aim({"Rampage": (0.62, 0.0, 0.3), "Bends": (-0.35, 0.3, 0.55), "Bloomrush": (0.1, -0.45, -0.5),
-             "Sirocco": (-0.5, -0.25, -0.45)}[s], 0.36)
+             "Sirocco": (-0.5, -0.25, -0.45), "Fulmen": (0.0, 0.05, 0.0)}[s], 0.45 if s == "Fulmen" else 0.36)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Hijack":
         aim((0.55, 0.0, 0.55), 0.42, base=900)
@@ -1750,6 +1753,40 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                        "rim": hot, "emissive": hot, "unbound": True})
         glow(core, rung["coreRadius"] * 1.7, JADE, 1.0, 0.3)
         stage["vessels"] = vessels([(JADE, 0.42, 8, 320, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
+    elif s == "Shockfront":
+        # The RIPPLE: a thin sphere of the Stoat's colour expanding from where its pair met, a rival inside the front
+        # (the strip - its petals shed as motes) and the Stoat slinging away on the tangent.
+        at = v_add(centre, [span * 0.05, span * 0.12, 0])
+        ring_r = span * 0.22
+        for k in range(220):
+            p = v_add(at, v_mul(rng.unit(), ring_r))
+            glow(p, span * 0.009, JADE, 1.8, 0.7)
+        glow(at, span * 0.03, JADE, 1.0, 0.45)
+        rival = v_add(at, [ring_r * 0.7, -ring_r * 0.2, ring_r * 0.3])
+        for k in range(10):
+            glow(v_add(rival, v_mul(rng.unit(), span * 0.03)), span * 0.006, RUBY, 1.2, 0.6)
+        stage["vessels"] = vessels([(JADE, 0.3, 12, 300, 60), (RUBY, 0.3, -8, 160, 60)])
+    elif s == "Fulmen":
+        # A FULMEN bolt: jagged branching streams of cold light from the heart out through the forest, a child bolt
+        # thrown from a second crystal, and burning plants (danger-hot glows) along the streams.
+        def bolt(origin, length, roots, depth):
+            for r in range(roots):
+                d = v_norm(rng.unit())
+                p = origin
+                steps = 9
+                for k in range(steps):
+                    d = v_norm(v_add(d, v_mul(rng.unit(), 0.45)))
+                    q = v_add(p, v_mul(d, length / steps))
+                    for t in range(4):
+                        glow(v_add(p, v_mul(v_sub(q, p), t / 4)), span * 0.009, GOLD, 2.4, 0.9)
+                    if rng.u() < 0.35:
+                        glow(q, span * 0.03, RUBY, 1.4, 0.45)
+                    p = q
+                if depth > 0:
+                    bolt(p, length * 0.4, 2, depth - 1)
+        bolt(centre, span * 0.7, 5, 1)
+        crystal(v_add(centre, [span * 0.04, 0, 0]), span * 0.02)
+        stage["vessels"] = vessels([(JADE, 0.08, 10, 40, 80), (GOLD, 0.35, -6, 220, 70)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)
