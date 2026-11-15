@@ -11,7 +11,7 @@ namespace CosmicShore.Tests
     /// <summary>
     /// Breach, the Orca's Time race (BREACH.md): every seed at every intensity walks a full valid course, every pilot starts
     /// the same distance behind ring 0, every peer lays the same walls from the rings, every wall shuts its ring's line
-    /// and is rounded on the inside of the turn, the dog-leg round a wall is a cruise turn and not a burning one, the burn
+    /// to the hull and shows the ring through its holes, and is rounded on the inside of the turn, the dog-leg round a wall is a cruise turn and not a burning one, the burn
     /// coasts hard turns and walls, each level adds one thing, and the course's Orca numbers are Orca.prefab's,
     /// OrcaCrewConfig.asset's and the danger slow's. Runs offline too: Tools/Build/breach_harness/run.sh.
     /// </summary>
@@ -114,14 +114,29 @@ namespace CosmicShore.Tests
                         Vector3 e2 = Vector3.Cross(g.Axis, e1);
                         foreach (var w in wall)
                             if (w.ring == k) Assert.Less(Mathf.Abs(Vector3.Dot(w.position - c, g.Axis)), 0.01f, $"I{i} seed {seed}: wall {k} is not square to its ring");
-                        float reach = BreachCourse.WallSpacing * 0.6f;
-                        for (int a = 0; a < 36; a++)
-                            for (float r = 0f; r < wr - 4f; r += 7f)
+                        // The checkerboard: every point inside the wall is a prism's cell or a hole whose four sides are prisms
+                        // (a hole at the rim may open outward: a notch no wider than a hole).
+                        float p = BreachCourse.WallSpacing;
+                        var cells = new HashSet<(int, int)>();
+                        foreach (var w in wall)
+                            if (w.ring == k)
                             {
-                                Vector3 pt = c + (e1 * Mathf.Cos(a * 10f * Mathf.Deg2Rad) + e2 * Mathf.Sin(a * 10f * Mathf.Deg2Rad)) * r;
-                                bool covered = false;
-                                foreach (var w in wall) if (w.ring == k && (w.position - pt).magnitude <= reach) { covered = true; break; }
-                                Assert.IsTrue(covered, $"I{i} seed {seed}: wall {k} is open at {r:F0} u, {a * 10} degrees");
+                                Vector3 d = w.position - c;
+                                float lx = Vector3.Dot(d, e1) / p, ly = Vector3.Dot(d, e2) / p;
+                                Assert.Less(Mathf.Abs(lx - Mathf.RoundToInt(lx)) + Mathf.Abs(ly - Mathf.RoundToInt(ly)), 1e-3f, $"I{i} seed {seed}: wall {k} prism off the grid");
+                                cells.Add((Mathf.RoundToInt(lx), Mathf.RoundToInt(ly)));
+                            }
+                        for (int a = 0; a < 72; a++)
+                            for (float r = 0f; r < wr - 4f; r += 3f)
+                            {
+                                Vector3 pt = c + (e1 * Mathf.Cos(a * 5f * Mathf.Deg2Rad) + e2 * Mathf.Sin(a * 5f * Mathf.Deg2Rad)) * r;
+                                int cx = Mathf.RoundToInt(Vector3.Dot(pt - c, e1) / p), cy = Mathf.RoundToInt(Vector3.Dot(pt - c, e2) / p);
+                                if (BreachCourse.IsWallCell(cx, cy)) { Assert.IsTrue(cells.Contains((cx, cy)), $"I{i} seed {seed}: wall {k} is open at {r:F0} u, {a * 5} degrees"); continue; }
+                                foreach (var (nx, ny) in new[] { (cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1) })
+                                {
+                                    bool inside = (nx * p) * (nx * p) + (ny * p) * (ny * p) <= wr * wr;
+                                    Assert.IsTrue(!inside || cells.Contains((nx, ny)), $"I{i} seed {seed}: wall {k}'s hole at {r:F0} u, {a * 5} degrees is open to the next");
+                                }
                             }
                         Vector3 round = BreachCourse.RoundPoint(rings, k, s);
                         foreach (var w in wall)
@@ -131,6 +146,82 @@ namespace CosmicShore.Tests
                     Assert.GreaterOrEqual(walled, 4, $"I{i} seed {seed}: only {walled} walls");
                 }
             }
+        }
+
+        /// <summary>No hole in a wall admits the hull: a hole is one prism wide, and even corner to corner it is narrower than
+        /// the hull (<see cref="BreachCourse.WallClear"/>, its own width and a little).</summary>
+        [Test]
+        public void No_hole_in_a_wall_admits_the_hull()
+        {
+            Assert.AreEqual(BreachCourse.WallPrismSize, BreachCourse.WallSpacing, 1e-4f, "the prisms do not touch at their corners");
+            Assert.Less(BreachCourse.WallSpacing * Mathf.Sqrt(2f), BreachCourse.WallClear, "a hole is as wide as the hull corner to corner");
+        }
+
+        /// <summary>From the ring before a walled ring, the ring shows through its wall (Garrett, 2026-11-14: "respect sight
+        /// lines from ring k-1 (its centre and four points at half its radius) to sixteen points on ring k's rim, at least
+        /// 40% pass every prism of the wall on average and 25% on every wall (measured 2026-11-15: 46% and 32% at I3). The
+        /// solid wall this replaced let 27% through at I3, and 11% on its worst wall.</summary>
+        [Test]
+        public void The_ring_shows_through_its_wall_from_the_ring_before()
+        {
+            for (int i = 3; i <= 4; i++)
+            {
+                var s = BreachCourse.ForIntensity(i);
+                int walls = 0; long rays = 0, clear = 0; float worst = 1f;
+                for (int seed = 1; seed <= 60; seed++)
+                {
+                    var rings = Course(i, seed);
+                    var wall = WallOf(rings, i);
+                    for (int k = 1; k < rings.Count; k++)
+                    {
+                        if (!BreachCourse.IsWalled(k, s)) continue;
+                        RaceGate from = rings[k - 1], to = rings[k];
+                        // a wall prism is square to the ring: its sides lie along the wall's own e1 / e2 (WallsFor) and the axis
+                        float[] h = { BreachCourse.WallPrismSize * 0.5f, BreachCourse.WallPrismSize * 0.5f, BreachCourse.WallPrismDepth * 0.5f };
+                        Vector3 a1 = RaceCourseGeometry.SafeNormalize(Vector3.Cross(from.Axis, Vector3.up), Vector3.forward), a2 = Vector3.Cross(from.Axis, a1);
+                        Vector3 b1 = RaceCourseGeometry.SafeNormalize(Vector3.Cross(to.Axis, Vector3.up), Vector3.forward), b2 = Vector3.Cross(to.Axis, b1);
+                        int legRays = 0, legClear = 0;
+                        for (int e = 0; e < 5; e++)
+                        {
+                            float ae = e * 0.4f * Mathf.PI;
+                            Vector3 eye = e == 4 ? from.Position : from.Position + (a1 * Mathf.Cos(ae) + a2 * Mathf.Sin(ae)) * (0.5f * from.Radius);
+                            for (int j = 0; j < 16; j++)
+                            {
+                                float bj = j * Mathf.PI / 8f;
+                                Vector3 rim = to.Position + (b1 * Mathf.Cos(bj) + b2 * Mathf.Sin(bj)) * to.Radius;
+                                bool blocked = false;
+                                foreach (var w in wall)
+                                    if (w.ring == k && SegmentHitsBox(Local(eye - w.position, b1, b2, to.Axis), Local(rim - w.position, b1, b2, to.Axis), h)) { blocked = true; break; }
+                                legRays++;
+                                if (!blocked) legClear++;
+                            }
+                        }
+                        walls++; rays += legRays; clear += legClear;
+                        float share = legClear / (float)legRays;
+                        if (share < worst) worst = share;
+                    }
+                }
+                Assert.Greater(walls, 100, $"I{i}: too few walls sampled");
+                Assert.GreaterOrEqual(clear / (float)rays, 0.40f, $"I{i}: only {clear / (float)rays:P0} of the lines to the ring clear its wall");
+                Assert.GreaterOrEqual(worst, 0.25f, $"I{i}: a wall leaves only {worst:P0} of the lines to its ring clear");
+            }
+        }
+
+        static float[] Local(Vector3 v, Vector3 x, Vector3 y, Vector3 z) => new[] { Vector3.Dot(v, x), Vector3.Dot(v, y), Vector3.Dot(v, z) };
+
+        static bool SegmentHitsBox(float[] la, float[] lb, float[] h)
+        {
+            float[] d = { lb[0] - la[0], lb[1] - la[1], lb[2] - la[2] };
+            float t0 = 0f, t1 = 1f;
+            for (int k = 0; k < 3; k++)
+            {
+                if (Mathf.Abs(d[k]) < 1e-6f) { if (Mathf.Abs(la[k]) > h[k]) return false; continue; }
+                float u = (-h[k] - la[k]) / d[k], v = (h[k] - la[k]) / d[k];
+                if (u > v) (u, v) = (v, u);
+                t0 = Mathf.Max(t0, u); t1 = Mathf.Min(t1, v);
+                if (t0 > t1) return false;
+            }
+            return true;
         }
 
         /// <summary>The line rounds every wall on the inside of the turn into its leg (away from where the leg before
