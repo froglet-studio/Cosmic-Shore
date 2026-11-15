@@ -189,6 +189,10 @@ namespace CosmicShore.ScriptableObjects
         /// the arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
         public const int DefaultGlasshouseRoundSeconds = 90;
 
+        /// <summary>Chum round length in seconds, used when <see cref="chumRoundSeconds"/> is 0. Chum is TIMED: its reef is
+        /// finite and the wild herds eat it too, so a prism target could fall out of every domain's reach once the shoals
+        /// are stripped. 90 s is the arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
+        public const int DefaultChumRoundSeconds = 90;
         /// <summary>Pod Hunt blast target used when <see cref="podHuntBlastTarget"/> is 0. One BLAST - a flown missile or
         /// the bomb bursting on a rival hull, a MissileBlast-class hit - is 1 (PodHuntScoringRuleSO), summed across the
         /// domain's pilots. A first cut, unplayed.</summary>
@@ -232,6 +236,23 @@ namespace CosmicShore.ScriptableObjects
         /// three shots a second at best, each one prism, so 150 is a little under a minute of steady pecking for one
         /// pilot (Sirocco's 400 is a dust that takes a third of a stand per pass).</summary>
         public const int DefaultWoodpeckerPrismTarget = 150;
+
+        /// <summary>Starweave round length in seconds, used when <see cref="starweaveRoundSeconds"/> is 0. Starweave is
+        /// TIMED: its score is a live stock (volume standing), so only the clock can end it. 90 s is the arcade's target
+        /// length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
+        public const int DefaultStarweaveRoundSeconds = 90;
+
+        /// <summary>Haul round length in seconds, used when <see cref="haulRoundSeconds"/> is 0. Haul is TIMED: its score
+        /// is a live stock (volume standing, which a rival's ball steals back), so only the clock can end it.</summary>
+        public const int DefaultHaulRoundSeconds = 90;
+
+        /// <summary>Hedgerow round length in seconds, used when <see cref="hedgerowRoundSeconds"/> is 0. Hedgerow is TIMED:
+        /// its score is a live stock (volume standing, which a rival's wall steals back), so only the clock can end it.</summary>
+        public const int DefaultHedgerowRoundSeconds = 90;
+
+        /// <summary>Longshot round length in seconds, used when <see cref="longshotRoundSeconds"/> is 0. Longshot is TIMED:
+        /// a rival's trail is always there to shoot, so only the clock can end it.</summary>
+        public const int DefaultLongshotRoundSeconds = 90;
 
         /// <summary>Sirocco hostile-prism target used when <see cref="siroccoPrismTarget"/> is 0.
         /// Far under Rampage's 2000: the dust takes one prism in three it touches, where a Dolphin
@@ -724,6 +745,10 @@ namespace CosmicShore.ScriptableObjects
                  "wins. 0 = default (90).")]
         [Min(0)] public int glasshouseRoundSeconds = 90;
 
+        [Tooltip("Chum: round length in SECONDS, the Angler's space game. The mode is timed - the domain whose pilots " +
+                 "took the most prisms off the board (their schools' meals off the reef plus their hulls) when the clock " +
+                 "runs out wins. 0 = default (90).")]
+        [Min(0)] public int chumRoundSeconds = 90;
         [Tooltip("Pod Hunt: BLASTS a DOMAIN needs to win (race to N). A crew's flown missile or bomb bursting on a rival " +
                  "hull is 1. 0 = default (15).")]
         [Min(0)] public int podHuntBlastTarget = 15;
@@ -758,6 +783,22 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Woodpecker: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a DOMAIN must break " +
                  "with the Honeyguide's pecks and Space upgrades to win (race to N). 0 = default (150).")]
         [Min(0)] public int woodpeckerPrismTarget = 150;
+
+        [Tooltip("Starweave: round length in SECONDS, the Brittle Star's mass game. The mode is timed - the domain " +
+                 "with the most volume standing in its colour when the clock runs out wins. 0 = default (90).")]
+        [Min(0)] public int starweaveRoundSeconds = 90;
+
+        [Tooltip("Haul: round length in SECONDS, the Thresher's mass game. The mode is timed - the domain with the most " +
+                 "volume standing in its colour (stolen bales, stolen rival mass and its own trail) wins. 0 = default (90).")]
+        [Min(0)] public int haulRoundSeconds = 90;
+
+        [Tooltip("Hedgerow: round length in SECONDS, the Serpent's mass game. The mode is timed - the domain with the most " +
+                 "volume standing in its colour (walled hedges, walled rival mass and its own trail) wins. 0 = default (90).")]
+        [Min(0)] public int hedgerowRoundSeconds = 90;
+
+        [Tooltip("Longshot: round length in SECONDS, the Serpent's space game. The mode is timed - the domain that broke the " +
+                 "most hostile prisms (lance prisms and rivals' mass) wins. 0 = default (90).")]
+        [Min(0)] public int longshotRoundSeconds = 90;
 
         [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
@@ -853,6 +894,11 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int palisadeRoundSecondsBuild = 90;
         [Min(0)] public int glasshouseRoundSecondsBuild = 90;
+        [Min(0)] public int chumRoundSecondsBuild = 90;
+        [Min(0)] public int starweaveRoundSecondsBuild = 90;
+        [Min(0)] public int haulRoundSecondsBuild = 90;
+        [Min(0)] public int hedgerowRoundSecondsBuild = 90;
+        [Min(0)] public int longshotRoundSecondsBuild = 90;
         [Min(0)] public int podHuntBlastTargetBuild = 15;
         [Min(0)] public int iceShelfRoundSecondsBuild = 90;
         [Min(0)] public int depthChargePrismTargetBuild = 1500;
@@ -1408,6 +1454,11 @@ namespace CosmicShore.ScriptableObjects
             glasshouseRoundSeconds > 0 ? glasshouseRoundSeconds : DefaultGlasshouseRoundSeconds;
 
         /// <summary>
+        /// Chum round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultChumRoundSeconds"/>. Read by ChumTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetChumRoundSeconds() =>
+            chumRoundSeconds > 0 ? chumRoundSeconds : DefaultChumRoundSeconds;
         /// Pod Hunt blast target ("first domain to N blasts"): the configured value when &gt; 0, otherwise
         /// <see cref="DefaultPodHuntBlastTarget"/>. Compared against a DOMAIN's summed CombatPoints.
         /// </summary>
@@ -1467,6 +1518,34 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetWoodpeckerPrismTarget() =>
             woodpeckerPrismTarget > 0 ? woodpeckerPrismTarget : DefaultWoodpeckerPrismTarget;
+
+        /// <summary>
+        /// Starweave round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultStarweaveRoundSeconds"/>. Read by StarweaveTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetStarweaveRoundSeconds() =>
+            starweaveRoundSeconds > 0 ? starweaveRoundSeconds : DefaultStarweaveRoundSeconds;
+
+        /// <summary>
+        /// Haul round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultHaulRoundSeconds"/>. Read by HaulTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetHaulRoundSeconds() =>
+            haulRoundSeconds > 0 ? haulRoundSeconds : DefaultHaulRoundSeconds;
+
+        /// <summary>
+        /// Hedgerow round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultHedgerowRoundSeconds"/>. Read by HedgerowTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetHedgerowRoundSeconds() =>
+            hedgerowRoundSeconds > 0 ? hedgerowRoundSeconds : DefaultHedgerowRoundSeconds;
+
+        /// <summary>
+        /// Longshot round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultLongshotRoundSeconds"/>. Read by LongshotTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetLongshotRoundSeconds() =>
+            longshotRoundSeconds > 0 ? longshotRoundSeconds : DefaultLongshotRoundSeconds;
 
         /// <summary>
         /// Sirocco prism target ("race to N" hostile prisms destroyed): the configured value when
@@ -1600,6 +1679,11 @@ namespace CosmicShore.ScriptableObjects
                 // Honeycomb (honeycombRoundSeconds) is timed, Tapestry's reason, and is absent here too.
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush. Glasshouse
+                // (glasshouseRoundSeconds), Chum (chumRoundSeconds), Starweave (starweaveRoundSeconds), Haul (haulRoundSeconds), Hedgerow (hedgerowRoundSeconds) and Longshot (longshotRoundSeconds) are timed for the same reason and are absent too.
+                // (glasshouseRoundSeconds), Chum (chumRoundSeconds), Starweave (starweaveRoundSeconds), Haul (haulRoundSeconds) and Hedgerow (hedgerowRoundSeconds) are timed for the same reason and are absent too.
+                // (glasshouseRoundSeconds), Chum (chumRoundSeconds), Starweave (starweaveRoundSeconds) and Haul (haulRoundSeconds) are timed for the same reason and are absent too.
+                // (glasshouseRoundSeconds), Chum (chumRoundSeconds) and Starweave (starweaveRoundSeconds) are timed for the same reason and are absent too.
+                // (glasshouseRoundSeconds) and Chum (chumRoundSeconds) are timed for the same reason and are absent too.
                 // (glasshouseRoundSeconds) is timed for the same reason and is absent too, and so is Palisade
                 // (palisadeRoundSeconds).
                 // Per PILOT, not a total - the race target scales with team size and is only known at
@@ -1697,6 +1781,11 @@ namespace CosmicShore.ScriptableObjects
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             palisadeRoundSeconds == palisadeRoundSecondsBuild &&
             glasshouseRoundSeconds == glasshouseRoundSecondsBuild &&
+            chumRoundSeconds == chumRoundSecondsBuild &&
+            starweaveRoundSeconds == starweaveRoundSecondsBuild &&
+            haulRoundSeconds == haulRoundSecondsBuild &&
+            hedgerowRoundSeconds == hedgerowRoundSecondsBuild &&
+            longshotRoundSeconds == longshotRoundSecondsBuild &&
             podHuntBlastTarget == podHuntBlastTargetBuild &&
             iceShelfRoundSeconds == iceShelfRoundSecondsBuild &&
             depthChargePrismTarget == depthChargePrismTargetBuild &&
@@ -1781,6 +1870,11 @@ namespace CosmicShore.ScriptableObjects
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             palisadeRoundSeconds = palisadeRoundSecondsBuild;
             glasshouseRoundSeconds = glasshouseRoundSecondsBuild;
+            chumRoundSeconds = chumRoundSecondsBuild;
+            starweaveRoundSeconds = starweaveRoundSecondsBuild;
+            haulRoundSeconds = haulRoundSecondsBuild;
+            hedgerowRoundSeconds = hedgerowRoundSecondsBuild;
+            longshotRoundSeconds = longshotRoundSecondsBuild;
             podHuntBlastTarget = podHuntBlastTargetBuild;
             iceShelfRoundSeconds = iceShelfRoundSecondsBuild;
             depthChargePrismTarget = depthChargePrismTargetBuild;
@@ -1866,6 +1960,11 @@ namespace CosmicShore.ScriptableObjects
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             palisadeRoundSecondsBuild = palisadeRoundSeconds;
             glasshouseRoundSecondsBuild = glasshouseRoundSeconds;
+            chumRoundSecondsBuild = chumRoundSeconds;
+            starweaveRoundSecondsBuild = starweaveRoundSeconds;
+            haulRoundSecondsBuild = haulRoundSeconds;
+            hedgerowRoundSecondsBuild = hedgerowRoundSeconds;
+            longshotRoundSecondsBuild = longshotRoundSeconds;
             podHuntBlastTargetBuild = podHuntBlastTarget;
             iceShelfRoundSecondsBuild = iceShelfRoundSeconds;
             depthChargePrismTargetBuild = depthChargePrismTarget;

@@ -249,6 +249,23 @@ namespace CosmicShore.Data
         // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // Chum, the Angler's space game (_Scripts/Controller/Arcade/CHUM.md). 166 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md (166-202 are reserved there, one per missing game). Posted to the LOCAL pilot only.
+        ChumHint = 166,                 // once, at the start: tame a school, paint a shoal, let go to throw it
+        // Starweave, the Brittle Star's mass game (_Scripts/Controller/Arcade/STARWEAVE.md). 167 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        StarweaveHint = 167,            // once, at the start: Creation Mode lays five trails; what stands at the whistle scores
+        // Haul, the Thresher's mass game (_Scripts/Controller/Arcade/HAUL.md). 168 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        HaulHint = 168,                 // once, at the start: swing the ball through a bale to steal it into your colour
+
+        // Hedgerow, the Serpent's mass game (_Scripts/Controller/Arcade/HEDGEROW.md). 169 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        HedgerowHint = 169,             // once, at the start: stop dead short of a hedge and your wall eats along it
+
+        // Longshot, the Serpent's space game (_Scripts/Controller/Arcade/LONGSHOT.md). 170 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        LongshotHint = 170,             // once, at the start: line up along a lance and the round breaks the whole run
         // The Orca's three element games (PODHUNT.md, ICESHELF.md, DEPTHCHARGE.md). Ids 174-176 reserved by
         // Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 9-11). Race beats are the shared 128-130 (DomainRaceToasts).
         PodHuntHint = 174,              // once, at the start: fly your missiles into rival hulls; the bomb counts too

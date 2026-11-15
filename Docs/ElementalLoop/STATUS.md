@@ -8,8 +8,8 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 
 | Vessel | Time 1 2 3 | Charge 1 2 3 | Mass 1 2 3 | Space 1 2 3 | Kit missing | Arenas |
 |---|---|---|---|---|---|---|
-| Angler | `b b .` | `b b .` | `b b .` | `x x x` | - | - |
-| BrittleStar | `b b .` | `b b .` | `x x x` | `b b .` | - | - |
+| Angler | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| BrittleStar | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Goby | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
@@ -21,14 +21,14 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Orca | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
-| Serpent | `b b b` | `b b .` | `x x x` | `x x x` | Mass or Space | Regatta, BroodRush |
+| Serpent | `b b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
 | Shrike | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Sparrow | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Squirrel | `b b b` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Stoat | `b b b` | `b b .` | `- - -` | `b b .` | - | Regatta |
 | Swordfish | `b b .` | `b b .` | `b b .` | `b b .` | - | Broadside, BroodRush |
-| Thresher | `b b b` | `b b .` | `x x x` | `b b .` | - | - |
+| Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | - |
 | TigerMoth | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside |
 | Wrasse | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
@@ -47,8 +47,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 
 | Vessel | Time | Charge | Mass | Space |
 |---|---|---|---|---|
-| Angler | Lantern Run | Kelpwood | Glasshouse | - |
-| BrittleStar | Brittle Star Time | Flatline | - | Shatterplane |
+| Angler | Lantern Run | Kelpwood | Glasshouse | Chum |
+| BrittleStar | Brittle Star Time | Flatline | Starweave | Shatterplane |
 | Dolphin | Switchback | The Bends | excused | Rampage |
 | Goby | Perch Run | - | - | - |
 | Grizzly | Grizzly Time | Standoff | excused | Grizzly Charge |
@@ -60,14 +60,14 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Orca | Breach | Pod Hunt | Ice Shelf | Depth Charge |
 | Rhino | Headlong | Bullrush | Windrow | Landslide |
 | Scarab | Scarab Rally | Undertow | Scarab Scramble, Tollway | Wrecking Ball |
-| Serpent | Serpentine | Hood | - | - |
+| Serpent | Serpentine | Hood | Hedgerow, Longshot | - |
 | Shrike | Thornline | Larder | Thornbush | Lancefall |
 | Sparrow | Breakwater | Dog Fight | Scurry (shared) | Salvo, Wildlife Liberation |
 | Squirrel | Skim Race | Joust | Scurry (shared) | excused |
 | Starling | - | - | - | - |
 | Stoat | Slingshot | Shockfront | excused | Fulmen |
 | Swordfish | Spearline | Riposte | Palisade | Cleave |
-| Thresher | Thresher Time | Jackstraw | - | Harvest |
+| Thresher | Thresher Time | Jackstraw | Haul | Harvest |
 | TigerMoth | Waystation | Dustup | Tapestry | Sirocco |
 | Urchin | Skein | Railrush | Hijack | excused |
 | Wrasse | Wrasse Run | - | - | - |

@@ -49,6 +49,10 @@
       "Time",
       null
     ],
+    "Chum": [
+      "Space",
+      null
+    ],
     "Cleave": [
       "Space",
       null
@@ -101,8 +105,16 @@
       "Space",
       null
     ],
+    "Haul": [
+      "Mass",
+      null
+    ],
     "Headlong": [
       "Time",
+      null
+    ],
+    "Hedgerow": [
+      "Mass",
       null
     ],
     "Hijack": [
@@ -143,6 +155,10 @@
     ],
     "Larder": [
       "Charge",
+      null
+    ],
+    "Longshot": [
+      "Mass",
       null
     ],
     "Multiplayer2v2CoOpVsAI": [
@@ -239,6 +255,10 @@
     ],
     "Standoff": [
       "Charge",
+      null
+    ],
+    "Starweave": [
+      "Mass",
       null
     ],
     "Stingherd": [
@@ -355,6 +375,7 @@
     "BroodRush": "Goals",
     "Bullrush": "CombatPoints",
     "BurrowRun": "SwitchesThreaded",
+    "Chum": "PrismsDestroyed",
     "Cleave": "PrismsDestroyed",
     "Corona": "CombatPoints",
     "DecoyRun": "SwitchesThreaded",
@@ -368,7 +389,9 @@
     "GrizzlyCharge": "PrismsDestroyed",
     "GrizzlyTime": "SwitchesThreaded",
     "Harvest": "PrismsDestroyed",
+    "Haul": "VolumeRemaining",
     "Headlong": "SwitchesThreaded",
+    "Hedgerow": "VolumeRemaining",
     "Hijack": "PrismsStolen",
     "Honeycomb": "VolumeRemaining",
     "IceShelf": "VolumeRemaining",
@@ -379,6 +402,7 @@
     "Landslide": "PrismsDestroyed",
     "LanternRun": "SwitchesThreaded",
     "Larder": "CombatPoints",
+    "Longshot": "VolumeRemaining",
     "Multiplayer2v2CoOpVsAI": "Crystals",
     "Palisade": "VolumeRemaining",
     "PerchRun": "SwitchesThreaded",
@@ -403,6 +427,7 @@
     "SlipLine": "SwitchesThreaded",
     "Spearline": "SwitchesThreaded",
     "Standoff": "CombatPoints",
+    "Starweave": "VolumeRemaining",
     "Stingherd": "CombatPoints",
     "Switchback": "SwitchesThreaded",
     "Tandava": "LifeformsKilled",
@@ -443,6 +468,7 @@
     "BurrowRun",
     "CatNMouse",
     "CellularBrawl",
+    "Chum",
     "Cleave",
     "CoOpWildlifeBlitz",
     "Corona",
@@ -463,7 +489,9 @@
     "GrizzlyCharge",
     "GrizzlyTime",
     "Harvest",
+    "Haul",
     "Headlong",
+    "Hedgerow",
     "Hijack",
     "Honeycomb",
     "IceShelf",
@@ -475,6 +503,7 @@
     "Landslide",
     "LanternRun",
     "Larder",
+    "Longshot",
     "Maelstrom",
     "MasterExploder",
     "MazeRun",
@@ -509,6 +538,7 @@
     "Soar",
     "Spearline",
     "Standoff",
+    "Starweave",
     "Stingherd",
     "Switchback",
     "Tandava",

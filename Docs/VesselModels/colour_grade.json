@@ -2,7 +2,7 @@
  "counts": {
   "exempt": 7,
   "grey": 556,
-  "ui": 642,
+  "ui": 647,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -275,6 +275,13 @@
    "sha": "d2ca4e35ce85ad52",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Chum.png": {
+   "coloured": 1.0,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "9811117d23d70771",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Cleave.png": {
    "coloured": 0.9958,
    "graded": "ui",
@@ -359,11 +366,25 @@
    "sha": "f690ed0a48b54726",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Haul.png": {
+   "coloured": 1.0,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "1d336846d18fe65e",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Headlong.png": {
    "coloured": 0.9984,
    "graded": "ui",
    "kind": "sprite",
    "sha": "1fd5d98af69c45fb",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Hedgerow.png": {
+   "coloured": 0.9997,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "50d485efca75c5a2",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Hijack.png": {
@@ -427,6 +448,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "88d4a2af5d137210",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Longshot.png": {
+   "coloured": 0.9997,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "43939e19c98e02c8",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Maelstrom.png": {
@@ -574,6 +602,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "7a5beff2eeaf1d1c",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Starweave.png": {
+   "coloured": 0.9992,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "6645f988309a6047",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Switchback.png": {

@@ -155,6 +155,16 @@ namespace CosmicShore.Editor
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Glasshouse: round length in SECONDS (timed - most trail and garden STANDING in a " +
                 "domain's colour at the whistle wins), default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + ".\n" +
+                "  • Chum: round length in SECONDS (timed - most prisms taken off the board, the schools' meals " +
+                "off the reef plus the hulls', wins), default " + EndConditionOverridesSO.DefaultChumRoundSeconds + ".\n" +
+                "  • Starweave: round length in SECONDS (timed - most volume STANDING in a domain's colour at the " +
+                "whistle wins), default " + EndConditionOverridesSO.DefaultStarweaveRoundSeconds + ".\n" +
+                "  • Haul: round length in SECONDS (timed - most volume STANDING in a domain's colour, stolen bales " +
+                "and rival mass included, wins), default " + EndConditionOverridesSO.DefaultHaulRoundSeconds + ".\n" +
+                "  • Hedgerow: round length in SECONDS (timed - most volume STANDING in a domain's colour, walled hedges " +
+                "and rival mass included, wins), default " + EndConditionOverridesSO.DefaultHedgerowRoundSeconds + ".\n" +
+                "  • Longshot: round length in SECONDS (timed - most hostile prisms BROKEN by a domain, lance prisms " +
+                "and rival mass included, wins), default " + EndConditionOverridesSO.DefaultLongshotRoundSeconds + ".\n" +
                 "  • Pod Hunt: blasts a DOMAIN needs - a crew's flown missile or bomb bursting on a rival " +
                 "hull is 1, default " + EndConditionOverridesSO.DefaultPodHuntBlastTarget + ".\n" +
                 "  • Ice Shelf: round length in SECONDS (timed - most mass STANDING in a domain's colour at " +
@@ -400,6 +410,11 @@ namespace CosmicShore.Editor
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int pls = Mathf.Max(0, EditorGUILayout.IntField("Palisade - Round Seconds", _config.palisadeRoundSeconds));
             int gh  = Mathf.Max(0, EditorGUILayout.IntField("Glasshouse - Round Seconds", _config.glasshouseRoundSeconds));
+            int ch  = Mathf.Max(0, EditorGUILayout.IntField("Chum - Round Seconds", _config.chumRoundSeconds));
+            int stw = Mathf.Max(0, EditorGUILayout.IntField("Starweave - Round Seconds", _config.starweaveRoundSeconds));
+            int hau = Mathf.Max(0, EditorGUILayout.IntField("Haul - Round Seconds", _config.haulRoundSeconds));
+            int hdg = Mathf.Max(0, EditorGUILayout.IntField("Hedgerow - Round Seconds", _config.hedgerowRoundSeconds));
+            int lsh = Mathf.Max(0, EditorGUILayout.IntField("Longshot - Round Seconds", _config.longshotRoundSeconds));
             int ph  = Mathf.Max(0, EditorGUILayout.IntField("Pod Hunt - Blast Target", _config.podHuntBlastTarget));
             int ish = Mathf.Max(0, EditorGUILayout.IntField("Ice Shelf - Round Seconds", _config.iceShelfRoundSeconds));
             int dc  = Mathf.Max(0, EditorGUILayout.IntField("Depth Charge - Prism Target", _config.depthChargePrismTarget));
@@ -483,6 +498,11 @@ namespace CosmicShore.Editor
                     _config.tapestryRoundSeconds = tp;
                     _config.palisadeRoundSeconds = pls;
                     _config.glasshouseRoundSeconds = gh;
+                    _config.chumRoundSeconds = ch;
+                    _config.starweaveRoundSeconds = stw;
+                    _config.haulRoundSeconds = hau;
+                    _config.hedgerowRoundSeconds = hdg;
+                    _config.longshotRoundSeconds = lsh;
                     _config.podHuntBlastTarget = ph;
                     _config.iceShelfRoundSeconds = ish;
                     _config.depthChargePrismTarget = dc;
@@ -577,6 +597,11 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Palisade (seconds)", pls > 0 ? pls.ToString() : EndConditionOverridesSO.DefaultPalisadeRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Glasshouse (seconds)", gh > 0 ? gh.ToString() : EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Chum (seconds)", ch > 0 ? ch.ToString() : EndConditionOverridesSO.DefaultChumRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Starweave (seconds)", stw > 0 ? stw.ToString() : EndConditionOverridesSO.DefaultStarweaveRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Haul (seconds)", hau > 0 ? hau.ToString() : EndConditionOverridesSO.DefaultHaulRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Hedgerow (seconds)", hdg > 0 ? hdg.ToString() : EndConditionOverridesSO.DefaultHedgerowRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Longshot (seconds)", lsh > 0 ? lsh.ToString() : EndConditionOverridesSO.DefaultLongshotRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Pod Hunt", ph > 0 ? ph.ToString() : EndConditionOverridesSO.DefaultPodHuntBlastTarget + " (default)");
             EditorGUILayout.LabelField("Ice Shelf (seconds)", ish > 0 ? ish.ToString() : EndConditionOverridesSO.DefaultIceShelfRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Depth Charge", dc > 0 ? dc.ToString() : EndConditionOverridesSO.DefaultDepthChargePrismTarget + " (default)");
@@ -685,6 +710,11 @@ namespace CosmicShore.Editor
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Palisade (seconds): " + Fmt(_config.palisadeRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultPalisadeRoundSeconds) + "\n" +
                    "Glasshouse (seconds): " + Fmt(_config.glasshouseRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds) + "\n" +
+                   "Chum (seconds): " + Fmt(_config.chumRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultChumRoundSeconds) + "\n" +
+                   "Starweave (seconds): " + Fmt(_config.starweaveRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultStarweaveRoundSeconds) + "\n" +
+                   "Haul (seconds): " + Fmt(_config.haulRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultHaulRoundSeconds) + "\n" +
+                   "Hedgerow (seconds): " + Fmt(_config.hedgerowRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultHedgerowRoundSeconds) + "\n" +
+                   "Longshot (seconds): " + Fmt(_config.longshotRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultLongshotRoundSeconds) + "\n" +
                    "Pod Hunt: " + Fmt(_config.podHuntBlastTargetBuild, "default " + EndConditionOverridesSO.DefaultPodHuntBlastTarget) + "\n" +
                    "Ice Shelf (seconds): " + Fmt(_config.iceShelfRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultIceShelfRoundSeconds) + "\n" +
                    "Depth Charge: " + Fmt(_config.depthChargePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultDepthChargePrismTarget) + "\n" +

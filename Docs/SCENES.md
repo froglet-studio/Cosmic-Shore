@@ -110,6 +110,11 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameStandoff** | `_Scenes/Multiplayer Scenes/` | `Standoff (125)` | `StandoffController` |
 | **MinigameHarvest** | `_Scenes/Multiplayer Scenes/` | `Harvest (88)` | `HarvestController` |
 | **MinigameGlasshouse** | `_Scenes/Multiplayer Scenes/` | `Glasshouse (89)` | `GlasshouseController` |
+| **MinigameChum** | `_Scenes/Multiplayer Scenes/` | `Chum (91)` | `ChumController` |
+| **MinigameStarweave** | `_Scenes/Multiplayer Scenes/` | `Starweave (92)` | `StarweaveController` |
+| **MinigameHaul** | `_Scenes/Multiplayer Scenes/` | `Haul (93)` | `HaulController` |
+| **MinigameHedgerow** | `_Scenes/Multiplayer Scenes/` | `Hedgerow (94)` | `HedgerowController` |
+| **MinigameLongshot** | `_Scenes/Multiplayer Scenes/` | `Longshot (95)` | `LongshotController` |
 | **MinigameShatterplane** | `_Scenes/Multiplayer Scenes/` | `Shatterplane (90)` | `ShatterplaneController` |
 | **MinigamePodHunt** | `_Scenes/Multiplayer Scenes/` | `PodHunt (99)` | `PodHuntController` |
 | **MinigameIceShelf** | `_Scenes/Multiplayer Scenes/` | `IceShelf (100)` | `IceShelfController` |
@@ -381,6 +386,11 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 125 | `Standoff` | MP | MinigameStandoff | `StandoffController` (Grizzly duel, Charge - square prism posts round an open centre; a trigger bomb sticks where it touches a rival's hull and the next pull blows it; each rival a blast catches is one MissileBlast point; Dig In behind a post; `STANDOFF.md`) |
 | 88 | `Harvest` | MP | MinigameHarvest | `HarvestController` (Thresher destruction race, Space - mow a sheaf's stalks with the chain to charge the ball, smash it into the core for one blast; hostile prisms destroyed, first domain to 750; a field of sheaves round a clear centre in the standard cell, omni crystals in the centre; I1-I4 8 -> 22 sheaves, shielded cores, team colours, danger stalks) |
 | 89 | `Glasshouse` | MP | MinigameGlasshouse | `GlasshouseController` (Angler garden, Mass - an omni crystal is a seed, let go of the lure to plant it in your colour, hold it to grow; timed, trail + garden standing in your colour wins; `GLASSHOUSE.md`) |
+| 91 | `Chum` | MP | MinigameChum | `ChumController` (Angler feed, Space - paint a shoal of the reef and throw your school at it; timed, prisms your hull breaks plus prisms your school eats; `CHUM.md`) |
+| 92 | `Starweave` | MP | MinigameStarweave | `StarweaveController` (Brittle Star weaving war, Mass - Creation Mode lays five trails at half speed; timed, volume standing in your colour wins; `STARWEAVE.md`) |
+| 93 | `Haul` | MP | MinigameHaul | `HaulController` (Thresher steal, Mass - the Mass Mode ball steals neutral bales into your colour and shields your hoard; timed, volume standing in your colour wins; `HAUL.md`) |
+| 94 | `Hedgerow` | MP | MinigameHedgerow | `HedgerowController` (Serpent steal, Mass - stop dead short of a hedge of neutral bricks and the seed wall eats along it into your colour, and a rival's trail the same way; timed, volume standing in your colour wins; `HEDGEROW.md`) |
+| 95 | `Longshot` | MP | MinigameLongshot | `LongshotController` (Serpent shoot, Space - line up along a lance of neutral prisms and the sniper round breaks the whole run, a rival's straight trail the same way; timed, most hostile prisms broken wins; `LONGSHOT.md`) |
 | 90 | `Shatterplane` | MP | MinigameShatterplane | `ShatterplaneController` (Brittle Star plate race, Space - square up to a plate and the ring's flat blast erases it whole, the guns chew the rest; prisms destroyed to a per-intensity target. See `SHATTERPLANE.md`) |
 | 99 | `PodHunt` | MP | MinigamePodHunt | `PodHuntController` (Orca missile hunt, Charge - every blast that reaches a rival hull, missile or bomb, is a point; golf, first domain to the target; Boneyard cells; `PODHUNT.md`) |
 | 100 | `IceShelf` | MP | MinigameIceShelf | `IceShelfController` (Orca timed hold, Mass - mass standing in your colour at the whistle, measured by a census because the shield and pen retire prisms without a destroyed event; Glasshouse cells; `ICESHELF.md`) |
@@ -665,6 +675,11 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `StingherdStingTurnMonitor` | `TurnMonitors/` | A domain's summed Strike points reach the Stingherd target (`CombatPointTurnMonitorBase`) |
 | `TrawlPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Trawl target (Harvest's shape) |
 | `GlasshouseTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`glasshouseRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
+| `ChumTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`chumRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most prisms taken off the board wins |
+| `StarweaveTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`starweaveRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
+| `HaulTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`haulRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
+| `HedgerowTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`hedgerowRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
+| `LongshotTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`longshotRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most hostile prisms broken wins |
 | `PodHuntBlastTurnMonitor` | `TurnMonitors/` | A domain's summed blasts (missile and bomb hits, CombatPoints) reach the Pod Hunt target (`podHuntBlastTarget`) |
 | `IceShelfTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`iceShelfRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most mass standing wins |
 | `DepthChargePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Depth Charge target (`depthChargePrismTarget`) |
