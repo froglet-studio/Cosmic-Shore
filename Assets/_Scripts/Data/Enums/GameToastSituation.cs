@@ -262,6 +262,10 @@ namespace CosmicShore.Data
         // Hedgerow, the Serpent's mass game (_Scripts/Controller/Arcade/HEDGEROW.md). 169 is its row in
         // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
         HedgerowHint = 169,             // once, at the start: stop dead short of a hedge and your wall eats along it
+
+        // Longshot, the Serpent's space game (_Scripts/Controller/Arcade/LONGSHOT.md). 170 is its row in
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only.
+        LongshotHint = 170,             // once, at the start: line up along a lance and the round breaks the whole run
         // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
         // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
         // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.

@@ -211,7 +211,8 @@ namespace CosmicShore.Tests
             // 84 -> 85 on 2026-11-15: Starweave (92), the Brittle Star's Mass game, row 2 of the same roster.
             // 85 -> 86 on 2026-11-15: Haul (93), the Thresher's Mass game, row 3 of the same roster.
             // 86 -> 87 on 2026-11-15: Hedgerow (94), the Serpent's Mass game, row 4 of the same roster.
-            Assert.AreEqual(87, values.Length,
+            // 87 -> 88 on 2026-11-15: Longshot (95), the Serpent's Space game, row 5 of the same roster.
+            Assert.AreEqual(88, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -269,6 +270,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Starweave, 92)]
         [TestCase(GameModes.Haul, 93)]
         [TestCase(GameModes.Hedgerow, 94)]
+        [TestCase(GameModes.Longshot, 95)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

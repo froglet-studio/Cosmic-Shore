@@ -467,6 +467,11 @@ namespace CosmicShore.Data
         // standing in your colour at the whistle wins. Row 4 of Docs/ElementalLoop/GAME_KIT_ROSTER.md.
         Hedgerow = 94,
 
+        // The Serpent's SPACE game (LONGSHOT.md): a timed shoot. Lances of neutral prisms hang round the core; line up
+        // along one and the sniper round breaks the whole run. Most hostile prisms broken at the whistle wins. Row 5 of
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md.
+        Longshot = 95,
+
         // RESERVED 91-127 (2026-11-15): the missing elemental arcade games, one id per game, assigned by vessel and
         // element in Docs/ElementalLoop/GAME_KIT_ROSTER.md section 2 (hint toasts 166-202 the same way). A session
         // building one of those games takes ITS row's id; anything else takes 128 or above.

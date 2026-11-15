@@ -60,7 +60,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Orca | Breach | - | - | - |
 | Rhino | Headlong | - | - | - |
 | Scarab | Scarab Rally | Undertow | Scarab Scramble, Tollway | Wrecking Ball |
-| Serpent | Serpentine | Hood | Hedgerow | - |
+| Serpent | Serpentine | Hood | Hedgerow, Longshot | - |
 | Shrike | Thornline | - | - | - |
 | Sparrow | Breakwater | Dog Fight | Scurry (shared) | Salvo, Wildlife Liberation |
 | Squirrel | Skim Race | Joust | Scurry (shared) | excused |

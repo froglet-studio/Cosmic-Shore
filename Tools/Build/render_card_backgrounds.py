@@ -809,6 +809,9 @@ CAMERAS = {
     # Hedgerow: close beside one hedge of the I2 field, side-on to its approach, so the hedge runs across the plate and
     # the Jade seed wall eating along it (the steal, what scores) stands in its middle with the stopped Serpent behind.
     "Hedgerow": (34, 12, 0.7, 46),
+    # Longshot: low along one lance of the I2 field, so its run of cubes reaches away across the plate and the Jade
+    # sniper round tearing down it (the shot, what scores) draws one line from the shooter into the distance.
+    "Longshot": (34, 8, 0.7, 46),
     # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
     # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
     "Corona": (37, -10, 0.36, 60),
@@ -1422,6 +1425,80 @@ def recipe(stem, card_path, pal, ends):
             crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
         stage["hedgerow"] = {"seed": seed, "n": n, "reach": length * spacing * 0.5}
         nucleus()
+    elif s == "Longshot":
+        # MODEL tier: the cell grows nothing, so the card draws what the mode LAYS there at this intensity -
+        # LongshotField's lances (the rung and the constants read off LongshotField.cs) - with the nearest run half
+        # broken by a Jade sniper round fired down its line.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        field_cs = read(ROOT / "Assets/_Scripts/Controller/Arcade/Longshot/LongshotField.cs")
+        size = float(re.search(r"public const float PrismSize = ([\d.]+)f;", field_cs).group(1))
+        spacing = float(re.search(r"public const float Spacing = ([\d.]+)f;", field_cs).group(1))
+        knee = float(re.search(r"public const float KneeDegrees = ([\d.]+)f;", field_cs).group(1))
+        inner_c = float(re.search(r"public const float InnerClearance = ([\d.]+)f;", field_cs).group(1))
+        outer_c = float(re.search(r"public const float OuterClearance = ([\d.]+)f;", field_cs).group(1))
+        rungs = re.findall(r"(\d|_) => new Rung\((\d+), (\d+), (\d+), ([\d.]+)f\)", field_cs)
+        _, nl, length, segs, band = rungs[min(INTENSITY - 1, len(rungs) - 1)]
+        nl, length, segs, band = int(nl), int(length), max(1, int(segs)), float(band)
+
+        def fib(i, n):
+            y = 1 - 2 * (i + 0.5) / max(1, n)
+            ring = math.sqrt(max(0.0, 1 - y * y))
+            th = i * 2.39996323
+            return [ring * math.cos(th), y, ring * math.sin(th)]
+
+        def turn(v, axis, deg):
+            a = math.radians(deg)
+            c, sn = math.cos(a), math.sin(a)
+            return v_add(v_add(v_mul(v, c), v_mul(v_cross(axis, v), sn)), v_mul(axis, v_dot(axis, v) * (1 - c)))
+
+        lo = nuc + inner_c
+        radius = lo + (max(lo, R - outer_c) - lo) * band
+        per = length // segs
+        runs = []                       # (start, end, [positions])
+        for li in range(nl):
+            n = fib(li, nl)
+            t = v_norm(v_cross(n, [1, 0, 0] if abs(n[1]) > 0.9 else [0, 1, 0]))
+            b = v_cross(n, t)
+            a = li * 2.39996323
+            base = v_norm(v_add(v_mul(t, math.cos(a)), v_mul(b, math.sin(a))))
+            at, mine = [0.0, 0.0, 0.0], []
+            for r_ in range(segs):
+                cnt = length - per * (segs - 1) if r_ == segs - 1 else per
+                d = turn(base, n, 0.0 if segs == 1 else (knee if r_ % 2 == 0 else -knee))
+                st = at if r_ == 0 else v_add(at, v_mul(d, spacing))
+                mine.append([v_add(st, v_mul(d, k * spacing)) for k in range(cnt)])
+                at = mine[-1][-1]
+            flat = [p for run in mine for p in run]
+            cen = v_mul([sum(p[k] for p in flat) for k in range(3)], 1.0 / len(flat))
+            shift = v_sub(v_mul(n, radius), cen)
+            for run in mine:
+                pts = [v_add(p, shift) for p in run]
+                runs.append((pts[0], pts[-1], pts))
+        az = math.radians(cam["azimuth"])
+        toward = v_norm([math.sin(az), 0.15, math.cos(az)])
+        # The run seen most nearly along its line, so it reaches away across the plate.
+        near = max(runs, key=lambda r_: abs(v_dot(v_norm(v_sub(r_[1], r_[0])), toward)) + 0.1 * v_norm(r_[0])[1])
+        st, en, pts = near
+        d = v_norm(v_sub(en, st))
+        if v_dot(d, toward) > 0:        # the round runs AWAY from the camera
+            st, en, pts, d = en, st, pts[::-1], v_mul(d, -1.0)
+        rows = []
+        hoards = {2: RUBY, 5: GOLD}
+        for idx, (_, _, rp) in enumerate(runs):
+            for k, p in enumerate(rp):
+                if rp is pts and k < len(rp) * 0.55:
+                    continue                  # the stretch the round has already broken
+                dom = hoards.get(idx, BLUE)
+                rows.append(prism(p, [0, 0, 1], [0, 1, 0], [size] * 3, dom))
+        layers.append({"kind": "prisms", "rows": rows})
+        scene = read(next((ROOT / "Assets/_Scenes").rglob("MinigameLongshot.unity")))
+        extras = [int(x) for x in re.findall(r"ExtraCrystals: (\d+)", scene.split("crystalCountByIntensity:")[1])[:4]]
+        for k in range(extras[min(INTENSITY - 1, len(extras) - 1)]):
+            crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
+        stage["longshot"] = {"start": st, "end": en, "dir": d, "broken": pts[: int(len(pts) * 0.55)],
+                             "span": math.dist(st, en)}
+        nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -1467,6 +1544,11 @@ def recipe(stem, card_path, pal, ends):
         hg = stage.get("hedgerow")
         cam["target"] = list(hg["seed"])
         cam["radius"] = hg["reach"] * 0.75
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
+    elif s == "Longshot":
+        ls = stage.get("longshot")
+        cam["target"] = list(v_add(ls["start"], v_mul(ls["dir"], ls["span"] * 0.45)))
+        cam["radius"] = ls["span"] * 0.42
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1841,6 +1923,20 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                 sag = math.sin(math.pi * t) * reach * 0.4
                 p = v_add(v_add(ball, v_mul(v_sub(hull, ball), t)), [0, -sag, 0])
                 glow(p, reach * 0.04, JADE, 1.0, 0.7)
+            stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "Longshot":
+        # The shot: a Jade Serpent behind the run's near end, its round a line of glow down the run's axis, and the
+        # broken stretch of the run bursting into debris along it.
+        ls = stage.pop("longshot", None)
+        if ls:
+            st, d, span = ls["start"], ls["dir"], ls["span"]
+            shooter = v_sub(st, v_mul(d, 120.0))
+            glow(shooter, 6.0, JADE, 1.4, 0.8)
+            for k in range(60):
+                glow(v_add(shooter, v_mul(d, 120.0 + span * 1.1 * k / 59)), 3.0, JADE, 1.4, 0.8)
+            for p in ls["broken"]:
+                for _ in range(2):
+                    streak(v_add(p, v_mul(rng.unit(), 4.0)), v_add(d, v_mul(rng.unit(), 0.6)), 6.0, BLUE)
             stage["vessels"] = vessels([(JADE, 0.5, 6, 320, 15), (RUBY, 0.62, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
     elif s == "Hedgerow":
         # The stop: a Jade Serpent standing dead behind its seed (a glow in the domain's lit colour), and a few loose

@@ -311,6 +311,36 @@ new errors; without the shims it fails on `RelayRegionProbe.cs`). No Unity edito
 **Open:** the tab was not drawn on Frogma first (Docs/MENU_REDESIGN_B.md); the region names in the generator's
 `REGION_NAMES` name UGS's ids, and an id UGS does not list is simply never offered online.
 
+### 🔴 Longshot, the Serpent's Space game (GameModes 95) (`claude/serpent-space-longshot`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/LONGSHOT.md`. A timed shoot in a bare nucleus cell: lances of neutral (Blue) 6 u
+cubes, 12 u apart, laid on every peer from the intensity (`LongshotField`), bent into two or three runs at I3 and I4.
+The sniper round breaks every hostile prism in its cone (SERPENT_SNIPER_SCOPE.md), so a round fired down a run takes
+all of it. The generator measures that from the AI's line-up point on every run: 100% along a run, at most 2 prisms
+across one. A rival's straight trail scores the same way. The score is `PrismsDestroyed` (hostile only), credited by
+the platform. The AI (`LongshotRifleman`) presses only LT and RT: line up 260 u back on a run, follow a carrot onto
+the line, scope, and fire when the cone would take its rung's share. New platform rows: `GameModes.Longshot = 95`,
+`longshotRoundSeconds` (90), `GameToastSituation.LongshotHint = 170`, the HUD arrow (Rampage's provider). Nothing about
+the Serpent changed. Authored by `Tools/Build/author_longshot_assets.py`. Ran headless: the generator `--check`, the
+`/arcadegame` gates, the card render, `unity_refcompile` player and editor. No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Longshot card: the lance card art, Serpent only, 1-4 players, intensities 1-4, the **Space** petal.
+2. Run the edit-mode tests `LongshotTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. Solo, I2: twelve straight blue lances of 48 cubes hang between the nucleus and the membrane.
+4. Line up along a lance, hold LT, fire RT: the whole run breaks and your score climbs by 48. Fire across one and you
+   get a prism or two.
+5. I3: every lance is bent at the knee, so one shot takes one run of 24.
+6. With an AI rival: it lines up on a run, scopes and fires; at Hard most of the run goes. It never cloaks.
+7. Shoot along a rival's straight trail: those prisms score. Your own trail never does.
+8. At the whistle: the domain with the most prisms broken wins; the results show "{n} Prisms" and "{n} Volume".
+9. FrogletTools > Game Modes > End Game Conditions: Longshot - Round Seconds reads 90.
+10. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameLongshot.unity`.
+
+**First-pass tuning (not settled):** round 90 s; lances 8 / 12 / 12 / 16 of 48 in 1 / 1 / 2 / 3 runs; omni
+4 / 3 / 3 / 2; AI stand-off 260 u, fire fraction 0.25 / 0.45 / 0.65 / 0.8; comeback 0.041667 per prism. The open
+question: can the autopilot hold a run's line to within the cone's 6 u near end while scoped?
+
 ### 🔴 Hedgerow, the Serpent's Mass game (GameModes 94) (`claude/serpent-mass-hedgerow`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/HEDGEROW.md`. A timed steal in a bare nucleus cell: hedges of neutral (Blue) bricks,

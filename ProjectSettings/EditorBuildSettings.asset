@@ -192,6 +192,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHedgerow.unity
     guid: c4f05de1af65c3e6bee3b9feffd7316d
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameLongshot.unity
+    guid: 28c339a863274a88bb4f89d15e1d4bdc
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameCorona.unity
     guid: 7dae0b29437b3069d777364648ac3eaf
   - enabled: 1
