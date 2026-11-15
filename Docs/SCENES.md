@@ -107,6 +107,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameFlatline** | `_Scenes/Multiplayer Scenes/` | `Flatline (84)` | `FlatlineController` |
 | **MinigameKelpwood** | `_Scenes/Multiplayer Scenes/` | `Kelpwood (86)` | `KelpwoodController` |
 | **MinigameCorona** | `_Scenes/Multiplayer Scenes/` | `Corona (87)` | `CoronaController` |
+| **MinigameStandoff** | `_Scenes/Multiplayer Scenes/` | `Standoff (125)` | `StandoffController` |
 | **MinigameHarvest** | `_Scenes/Multiplayer Scenes/` | `Harvest (88)` | `HarvestController` |
 | **MinigameGlasshouse** | `_Scenes/Multiplayer Scenes/` | `Glasshouse (89)` | `GlasshouseController` |
 | **MinigameChum** | `_Scenes/Multiplayer Scenes/` | `Chum (91)` | `ChumController` |
@@ -126,6 +127,9 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameWoodpecker** | `_Scenes/Multiplayer Scenes/` | `Woodpecker (110)` | `WoodpeckerController` |
 | **MinigameStingherd** | `_Scenes/Multiplayer Scenes/` | `Stingherd (117)` | `StingherdController` |
 | **MinigameTrawl** | `_Scenes/Multiplayer Scenes/` | `Trawl (118)` | `TrawlController` |
+| **MinigameSentry** | `_Scenes/Multiplayer Scenes/` | `Sentry (105)` | `SentryController` |
+| **MinigameWarren** | `_Scenes/Multiplayer Scenes/` | `Warren (106)` | `WarrenController` |
+| **MinigameCaveIn** | `_Scenes/Multiplayer Scenes/` | `CaveIn (107)` | `CaveInController` |
 | **MinigameSnap** | `_Scenes/Multiplayer Scenes/` | `Snap (114)` | `SnapController` |
 | **MinigameDenBuilder** | `_Scenes/Multiplayer Scenes/` | `DenBuilder (115)` | `DenBuilderController` |
 | **MinigameRiptide** | `_Scenes/Multiplayer Scenes/` | `Riptide (116)` | `RiptideController` |
@@ -385,6 +389,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 123 | `Landslide` | MP | MinigameLandslide | `LandslideController : CleaveController` (Rhino, Space - every prism scored is a plough strike; Cleave's four arenas, referenced; the Blade's width is the lever; LANDSLIDE.md) |
 | 86 | `Kelpwood` | MP | MinigameKelpwood | `KelpwoodController` (Angler hunt, Charge - sweep the eraser onto a rival to lock it, one creature hunts it, each bite is one Strike point; a 0G ball of kelp strands in the standard cell, tadpole herds and omni crystals for the school; I1-I4 grow the kelp 28 -> 88 strands, thin the herds and crystals, add danger tips and collars) |
 | 87 | `Corona` | MP | MinigameCorona | `CoronaController` (Manta stings, Charge - skim a shell to arm a bomb, graze a rival to plant it, touch an omni crystal in the heart to set every bomb off; each rival a bloom catches is one Debuff point; nested prism shells round a crystal heart in the standard cell; I1-I4 add shells 1 -> 4, narrow and rim the gates, thin the heart's crystals 4 -> 1) |
+| 125 | `Standoff` | MP | MinigameStandoff | `StandoffController` (Grizzly duel, Charge - square prism posts round an open centre; a trigger bomb sticks where it touches a rival's hull and the next pull blows it; each rival a blast catches is one MissileBlast point; Dig In behind a post; `STANDOFF.md`) |
 | 88 | `Harvest` | MP | MinigameHarvest | `HarvestController` (Thresher destruction race, Space - mow a sheaf's stalks with the chain to charge the ball, smash it into the core for one blast; hostile prisms destroyed, first domain to 750; a field of sheaves round a clear centre in the standard cell, omni crystals in the centre; I1-I4 8 -> 22 sheaves, shielded cores, team colours, danger stalks) |
 | 89 | `Glasshouse` | MP | MinigameGlasshouse | `GlasshouseController` (Angler garden, Mass - an omni crystal is a seed, let go of the lure to plant it in your colour, hold it to grow; timed, trail + garden standing in your colour wins; `GLASSHOUSE.md`) |
 | 91 | `Chum` | MP | MinigameChum | `ChumController` (Angler feed, Space - paint a shoal of the reef and throw your school at it; timed, prisms your hull breaks plus prisms your school eats; `CHUM.md`) |
@@ -404,6 +409,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 110 | `Woodpecker` | MP | MinigameWoodpecker | `WoodpeckerController` (Honeyguide Space - peck hostile prisms in Rampage's cactus forest to a target. See `WOODPECKER.md`) |
 | 117 | `Stingherd` | MP | MinigameStingherd | `StingherdController` (Jacks herd duel, Charge - herd your danger creatures into rival hulls; a sting is a Strike point, first domain to 12; Kelpwood's arena) |
 | 118 | `Trawl` | MP | MinigameTrawl | `TrawlController` (Jacks net sweep, Space - dragged prisms that break each other score; prisms destroyed to 300; Harvest's field) |
+| 105 | `Sentry` | MP | MinigameSentry | `SentryController` (Meerkat guard war, Charge - Sentinel Mode leaves a sentinel at every soliton's way in that zaps rival hulls; each zap is a point; Corona's shells read-only; `SENTRY.md`) |
+| 106 | `Warren` | MP | MinigameWarren | `WarrenController` (Meerkat burrow war, Mass - timed, trail + exit portals standing in your colour wins; a soliton beside rival mass swallows and fires it; the bare Barren cell, I3/I4 start at Mass 5 / Space 5; `WARREN.md`) |
+| 107 | `CaveIn` | MP | MinigameCaveIn | `CaveInController` (Meerkat tunnelling, Space - a soliton swallows a plate's prisms and fires them out to smash the rest; first domain to the prism target; Shatterplane's plates read-only; `CAVEIN.md`) |
 | 114 | `Snap` | MP | MinigameSnap | `SnapController` (Goby & Pistol duel, Charge - Kelpwood's kelp ball; a Pistol vortex ring on a rival pilot is one point, first domain to 5. See `SNAP.md`) |
 | 115 | `DenBuilder` | MP | MinigameDenBuilder | `DenBuilderController` (Goby & Pistol timed build, Mass - Glasshouse's cell with nothing planted; the dens and island trails standing in your colour at the whistle win. See `DEN_BUILDER.md`) |
 | 116 | `Riptide` | MP | MinigameRiptide | `RiptideController` (Goby & Pistol plate race, Space - Shatterplane's plates; the undertow pulls loose tiles into the Pistol's plane and the rings smash them, first domain to 600. See `RIPTIDE.md`) |
@@ -677,6 +685,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DenBuilderTimeTurnMonitor` | `TurnMonitors/` | Den Builder's round clock (`NetworkTimeBasedTurnMonitor`, duration from EndConditionOverrides) |
 | `RiptidePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Riptide target (Shatterplane's monitor, one scalar target) |
 | `CoronaBloomTurnMonitor` | `TurnMonitors/` | A domain's summed bloom hits (Debuff-class CombatPoints) reach the Corona target (on `CombatPointTurnMonitorBase`) |
+| `StandoffBlastTurnMonitor` | `TurnMonitors/` | A domain's summed blast hits (MissileBlast-class CombatPoints) reach the Standoff target (on `CombatPointTurnMonitorBase`) |
 | `HarvestPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Harvest target (Wrecking Ball's shape) |
 | `StingherdStingTurnMonitor` | `TurnMonitors/` | A domain's summed Strike points reach the Stingherd target (`CombatPointTurnMonitorBase`) |
 | `TrawlPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Trawl target (Harvest's shape) |

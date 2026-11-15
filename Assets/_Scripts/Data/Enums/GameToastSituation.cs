@@ -309,6 +309,10 @@ namespace CosmicShore.Data
         BullrushHint = 196,             // a gore is a ram on a rival from behind, faster than it: wind up the Ramp Spool
         WindrowHint = 197,              // your standing trail is your score; plough through rival rows to break them
         LandslideHint = 198,            // ploughed prisms break what they hit; a wider blade catches more ribs
+        // Standoff, the Grizzly's charge game (_Scripts/Controller/Arcade/STANDOFF.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a blast hit is 81 (MissileHitsLanded). Posted to the LOCAL pilot only. 200 is the
+        // hint id the game kit roster reserved for it (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35).
+        StandoffHint = 200,             // once, at the start: a bomb that touches a rival sticks; pull and release to blow it
         // The Goby & Pistol's games (SNAP.md, DEN_BUILDER.md, RIPTIDE.md; ids reserved in GAME_KIT_ROSTER.md). Race beats
         // are the shared 128-130 (DomainRaceToasts; Den Builder samples its own lead change, 130). LOCAL pilot only.
         SnapHint = 189,                 // once, at the start: lock a rival from the Goby, fire rings from the Pistol when they are on screen
@@ -324,6 +328,13 @@ namespace CosmicShore.Data
         RedlineCleanLap = 364,          // every gate of a lap threaded clean: {0} = the lap
         RedlineSoarDark = 365,          // the pilot's Time fell below Soar's relock (4): Soar is dark until a crystal
         RedlineRedline = 366,           // once a race: the pilot reached the redline: {0} = the speed in u/s
+
+        // The Meerkat's games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 15-17). Their race beats are the shared 128-130
+        // (DomainRaceToasts; Warren samples its own lead change, 130, because a timed mode has no target). Posted to the
+        // LOCAL pilot only.
+        SentryHint = 180,               // once, at the start: Y for Sentinel Mode, form solitons where rivals pass
+        WarrenHint = 181,               // once, at the start: every soliton rings its exit with your prisms; raid theirs
+        CaveInHint = 182,               // once, at the start: form a soliton beside a plate and fire it into the next
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

@@ -2,7 +2,7 @@
  "counts": {
   "exempt": 7,
   "grey": 556,
-  "ui": 649,
+  "ui": 653,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -273,6 +273,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "d2ca4e35ce85ad52",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/CaveIn.png": {
+   "coloured": 1.0,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "035f1628d787fb6c",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Chum.png": {
@@ -548,6 +555,13 @@
    "sha": "37ad434aa8afde0b",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Sentry.png": {
+   "coloured": 0.999,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "02406d97dead77a6",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/SerpentHood.png": {
    "coloured": 0.9953,
    "graded": "ui",
@@ -618,6 +632,13 @@
    "sha": "638414c5316c1f82",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Standoff.png": {
+   "coloured": 0.9992,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "7a5beff2eeaf1d1c",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Starweave.png": {
    "coloured": 0.9992,
    "graded": "ui",
@@ -686,6 +707,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "6f8e54a17d3d6cba",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Warren.png": {
+   "coloured": 0.999,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "f9a6de223998ec97",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Waystation.png": {
