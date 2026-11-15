@@ -94,6 +94,9 @@ SCENE_FOR_MODE = {
     93: 'MinigameHaul',
     94: 'MinigameHedgerow',
     95: 'MinigameLongshot',
+    102: 'MinigameLarder',
+    103: 'MinigameThornbush',
+    104: 'MinigameLancefall',
 }
 
 
