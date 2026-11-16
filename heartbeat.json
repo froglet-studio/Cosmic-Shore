@@ -15,12 +15,12 @@
  },
  "cores": 23,
  "current": {
-  "job": "unity-train~r20261105-090126-c1cb",
-  "max_evals": 148,
+  "job": "unity-train~r20261105-090209-a196",
+  "max_evals": 200,
   "minutes": 60.0,
   "phase": "starting",
-  "request": "r20261105-090126-c1cb",
-  "since": 1794867279,
+  "request": "r20261105-090209-a196",
+  "since": 1794867388,
   "unit": "regatta-serpent-i1"
  },
  "host": "desktop-lqtg35e",
@@ -389,7 +389,7 @@
  "totals": {
   "sessions": 4521
  },
- "updated": 1794867279,
+ "updated": 1794867388,
  "user": "belacstein",
  "version": "1"
 }
