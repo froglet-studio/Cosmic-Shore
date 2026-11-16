@@ -40,8 +40,31 @@ namespace CosmicShore.Gameplay
         readonly List<Vector3> _claimed = new();
         readonly List<float> _claimedRadius = new();
         readonly Dictionary<long, List<int>> _claimGrid = new();
+        readonly Vector3 _shellCentre;
+        readonly float _nucleus = RegattaCourseGenome.NucleusCarve;
+        readonly float _membrane = RegattaCourseGenome.MembraneCarve;
         float _maxClaimRadius;
         float _spineReach;   // half the longest spine segment: how far a segment's nearest point can be from both ends
+
+        /// <summary>A carve for a course with no rails (any gate race's own course: <see cref="TrainingCourseOverlay"/>):
+        /// the line is the closed polyline through <paramref name="spine"/>, the shell is the sphere about
+        /// <paramref name="shellCentre"/> between <paramref name="nucleus"/> and <paramref name="membrane"/>.</summary>
+        public RegattaPlacementCarve(IReadOnlyList<Vector3> spine, IEnumerable<RaceGate> rings, float lineClearance,
+                                     Vector3 shellCentre, float nucleus, float membrane)
+            : this(null, rings, lineClearance)
+        {
+            _shellCentre = shellCentre;
+            _nucleus = nucleus;
+            _membrane = membrane;
+            _spine = new Vector3[spine?.Count ?? 0];
+            for (int i = 0; i < _spine.Length; i++)
+            {
+                _spine[i] = spine[i];
+                Add(_spineGrid, _spine[i], i);
+            }
+            for (int i = 0; i < _spine.Length && _spine.Length > 1; i++)
+                _spineReach = Mathf.Max(_spineReach, 0.5f * (_spine[(i + 1) % _spine.Length] - _spine[i]).magnitude);
+        }
 
         public RegattaPlacementCarve(RegattaRailLayout layout, IEnumerable<RaceGate> rings, float lineClearance)
         {
@@ -117,8 +140,8 @@ namespace CosmicShore.Gameplay
         /// (<see cref="RegattaPlacement.CrossRail"/>) the rails are not carved either.</summary>
         public Verdict Test(Vector3 p, float r, bool crossLine = false, bool crossRail = false)
         {
-            float d = p.magnitude;
-            if (d - r < RegattaCourseGenome.NucleusCarve || d + r > RegattaCourseGenome.MembraneCarve) return Verdict.Shell;
+            float d = (p - _shellCentre).magnitude;
+            if (d - r < _nucleus || d + r > _membrane) return Verdict.Shell;
             if (!crossLine && SpineDistance(p, _line + r) < _line + r) return Verdict.Line;
             for (int i = 0; i < _rings.Count; i++)
             {

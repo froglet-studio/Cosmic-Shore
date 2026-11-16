@@ -136,7 +136,7 @@ namespace CosmicShore.Player
             var genome = _spec["genome"] as JsonObject;
             int intensity = Math.Clamp(_spec["intensity"]?.GetValue<int>() ?? genome?["intensity"]?.GetValue<int>() ?? 1, 1, 4);
             if (IsRegatta) ApplyCourse(genome, intensity);
-            else if (genome != null) _notes.Add($"genome ignored: {_mode} lays its own course");
+            else ApplyTrainingOverlay(genome);
 
             var all = new[] { "Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow" }
                 .Select(Enum.Parse<VesselClassType>);
@@ -202,6 +202,8 @@ namespace CosmicShore.Player
                 CosmicShore.Engine.Random.InitState(unchecked(seed * 7919 + 17));
                 int total = controller.AuthoritativeGateCount;
                 race["gates_total"] = total;
+                if (!IsRegatta && TrainingCourseOverlay.Override != null)
+                    race["training_prisms"] = TrainingCourseOverlay.LastReports.Sum(r => r.Laid);
                 if (IsRegatta) race["laps_total"] = total / RegattaCourse.RingsPerLap;
                 race["course_seed"] = IsRegatta && RegattaCourseSource.TryResolveLiveRails(out var rails, out _) ? rails.CourseSeed : controller.CourseSeed;
                 race["host_hull"] = hostHull.ToString();
@@ -483,6 +485,28 @@ namespace CosmicShore.Player
             ["hull"] = hull, ["finish_s"] = null, ["gates"] = 0, ["laps"] = 0, ["lap_s"] = new JsonArray(),
             ["prism_hits"] = null, ["dnf_reason"] = why,
         };
+
+        /// <summary>Any game but Regatta: the genome's placements laid round that game's own gates
+        /// (<see cref="TrainingCourseOverlay"/>); its course still comes from the mode and the seed. The prism is the
+        /// one Regatta's rails lay (its I1 cell config's environment).</summary>
+        void ApplyTrainingOverlay(JsonObject genome)
+        {
+            var g = genome != null ? RegattaCourseGenome.FromJson(genome.ToJsonString()) : null;
+            TrainingCourseOverlay.Override = g is { Placements.Count: > 0 } ? g : null;
+            if (TrainingCourseOverlay.Override == null)
+            {
+                if (genome != null) _notes.Add($"course: {_mode}'s own (the genome has no placements)");
+                return;
+            }
+            var config = TrainingHost.LoadAsset(_runtime, string.Format(CellConfigPath, 1)) as CellConfigDataSO;
+            var rails = config ? config.EnvironmentPrefab as SpawnableRegattaRails : null;
+            TrainingCourseOverlay.PrismPrefab = rails
+                ? typeof(CellEnvironmentSpawnableBase).GetField("prism", Any)?.GetValue(rails) as Prism
+                : null;
+            if (!TrainingCourseOverlay.PrismPrefab)
+                throw new InvalidOperationException("Regatta Cell Config 1's rails carry no prism for the training overlay");
+            _notes.Add($"course: {_mode}'s own, with {g.Placements.Count} genome placements");
+        }
 
         /// <summary>Lay the genome's course: the expressive genome's own Override when the game has it, otherwise the
         /// pool entry for the intensity, its seed and its features.</summary>
