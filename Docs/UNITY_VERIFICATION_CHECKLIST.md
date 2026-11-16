@@ -23951,3 +23951,25 @@ Branch `claude/editor-churn-w1-harness`; `Docs/EditorChurn/TRACKER.md`. `Tools/B
    `summary.md`, whose measurement row goes into the tracker's Measurements table.
 3. **Compare with the tracker**: every dirty file is an existing row or a new `seen` row; a file in open 2's
    "changed BY open 2" list is a writer that never settles.
+
+## 🔴 Jewel Wasp games: Marionette (Charge, 126) and Gorge (Space, 127) (2026-11-15, Garrett's project thread, `claude/jewel-wasp-games`, NOT RUN IN EDITOR)
+
+Authored headless by `Tools/Build/author_marionette_assets.py` and `author_gorge_assets.py` (both `--check` green,
+shared checks in `wasp_games_common.py`). `unity_refcompile` ran in both configs: 0 errors in this branch's files (the 30
+it reports are the existing UGS package gaps on bleeding-edge). Card art rendered by `/cardart`. Docs:
+`Assets/_Scripts/Controller/Arcade/MARIONETTE.md`, `GORGE.md`.
+
+- [ ] The project compiles in the real editor (the two controllers, settings, scoring rules, AI helpers, turn monitors,
+      `WaspGames/WaspSeats.cs`; `EndConditionOverridesSO` and its window; `MiniGameHUD`'s two provider rows;
+      `EnumIntegrityTests` counts 120 modes after the merges with the Meerkat, Standoff, Wrasse and Goby games).
+- [ ] Arcade grid: both Jewel Wasp cards show their renders and open their own scenes with the wasp.
+- [ ] Marionette (126): sting a tadpole in Kelpwood's kelp, fly it at a rival, RT lands a Strike: the score goes up by
+      one; with Charge 5 a burst on leaving scores each rival within 60 u; first domain to 12 wins; the hint toast shows.
+- [ ] Marionette AI: a free AI wasp turns toward a creature near its chosen rival (Legendary picks well, Easy picks any)
+      and never steers while in a host.
+- [ ] Gorge (127): Chum's reef is laid at the countdown; ride a creature to a shoal and hold RT: prisms are sucked in and
+      the score counts them (and only once, for host and client); 90 s round, most prisms wins.
+- [ ] Gorge AI: free AI wasps head for creatures near the fuller shoals on the higher difficulties; in a host, check
+      whether the wasp's own AI feeds or chases rivals (it chases the nearest rival within 400 u).
+- [ ] Gorge in multiplayer: whether a client's local reef visibly shrinks when a creature feeds on the server.
+- [ ] End Game Conditions window shows and saves `marionetteStrikeTarget` and `gorgeRoundSeconds`.
