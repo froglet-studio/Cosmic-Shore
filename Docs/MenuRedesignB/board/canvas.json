@@ -4073,6 +4073,131 @@
       "page": "voyages",
       "title": "Rev 111 Full - The table animates to full screen: no border, zoom inside the map, back from full screen, Galaxy to Cell - interactive",
       "is_interactive": true
+    },
+    "R112Compare.dc.html": {
+      "x": 0,
+      "y": 43684,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 - the four layouts side by side, and how a Free and a Premium row read in each"
+    },
+    "R112A.dc.html": {
+      "x": 2100,
+      "y": 43684,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 A - Stage and list: a scrolling list on the left, Free then Premium; the set's world and what it repaints fill the right (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R112B.dc.html": {
+      "x": 4200,
+      "y": 43684,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 B - Wall: the world and what it repaints across the top; every set as a tile below, a wall that scrolls, Free and Premium as two shelves - interactive",
+      "is_interactive": true
+    },
+    "R112C.dc.html": {
+      "x": 0,
+      "y": 44944,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 C - Two shelves: Free down the left, Premium down the right, the world and what it repaints between them - interactive",
+      "is_interactive": true
+    },
+    "R112D.dc.html": {
+      "x": 2100,
+      "y": 44944,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 D - The real cell: the world is the whole screen; a docked list on the right with Free / Premium filters, what it repaints along the foot - interactive",
+      "is_interactive": true
+    },
+    "R112Notes.dc.html": {
+      "x": 0,
+      "y": 46204,
+      "w": 1920,
+      "h": 900,
+      "page": "menu-redesign-c",
+      "title": "Rev 112 - notes: what was asked, the four, Free vs Premium, how it maps to the built Showroom, decisions"
+    },
+    "R113Compare.dc.html": {
+      "x": 0,
+      "y": 17540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 - the toasts across one voyage, each beside the moment that raises it"
+    },
+    "R113Lobby.dc.html": {
+      "x": 2100,
+      "y": 17540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Lobby - Your Ark, lobby only: what you pick is what you fly, read back beside Set sail (recommended)"
+    },
+    "R113Picker.dc.html": {
+      "x": 4200,
+      "y": 17540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Picker - The seat popup on Vessel: one press saves your seat for this voyage, and says so"
+    },
+    "R113Crew.dc.html": {
+      "x": 0,
+      "y": 18800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Crew - Crew recommends as a popup: Escort the Ark and Crystal Run open, the rest by faction, locked"
+    },
+    "R113Hud.dc.html": {
+      "x": 2100,
+      "y": 18800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Hud - Escort the Ark HUD: the objective box (goal, five worlds, hull and breach line, your job) and a threat toast"
+    },
+    "R113Run.dc.html": {
+      "x": 4200,
+      "y": 18800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Run - Crystal Run HUD: the crystal counter leads, calm and hostile cells on the route"
+    },
+    "R113Score.dc.html": {
+      "x": 0,
+      "y": 20060,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Score - The end: the Ark's hull, a row per seat, rewards, Finish and Venture further"
+    },
+    "R113Notes.dc.html": {
+      "x": 0,
+      "y": 21320,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 113 - notes: what each board fixes from Shombith's Milestone 1 list"
+    },
+    "R113Sea.dc.html": {
+      "x": 2100,
+      "y": 20060,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Sea - the HyperSea page with the popup closed: two open voyages and one Crew recommends button where the list was",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -4207,6 +4332,8 @@
     "sec-rev110",
     "sec-rev111",
     "sec-rev100",
+    "sec-rev112",
+    "sec-rev113",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4297,7 +4424,9 @@
     "rev108",
     "rev109",
     "rev110",
-    "rev111"
+    "rev111",
+    "rev112",
+    "rev113"
   ],
   "notes": {
     "hud_end": {
@@ -6988,6 +7117,54 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev112": {
+      "kind": "title1",
+      "text": "Rev 112 - Colour sets for a growing catalog: a world preview, one scrolling list, Free and Premium apart, no empty middle",
+      "x": 0,
+      "y": 43284,
+      "w": 240,
+      "maxW": 6120,
+      "page": "menu-redesign-c"
+    },
+    "sec-rev112": {
+      "kind": "rect",
+      "x": -160,
+      "y": 43124,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "menu-redesign-c"
+    },
+    "rev113": {
+      "kind": "title1",
+      "text": "Rev 113 - Milestone 1: Escort the Ark and Crystal Run, end to end - lobby first, crew popup by faction, the voyage HUD, the scoreboard",
+      "x": 0,
+      "y": 17140,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev113": {
+      "kind": "rect",
+      "x": -160,
+      "y": 16980,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -7483,7 +7660,22 @@
     "R109Notes.dc.html",
     "R110B.dc.html",
     "R110Notes.dc.html",
-    "R111Full.dc.html"
+    "R111Full.dc.html",
+    "R112Compare.dc.html",
+    "R112A.dc.html",
+    "R112B.dc.html",
+    "R112C.dc.html",
+    "R112D.dc.html",
+    "R112Notes.dc.html",
+    "R113Compare.dc.html",
+    "R113Lobby.dc.html",
+    "R113Picker.dc.html",
+    "R113Crew.dc.html",
+    "R113Hud.dc.html",
+    "R113Run.dc.html",
+    "R113Score.dc.html",
+    "R113Sea.dc.html",
+    "R113Notes.dc.html"
   ],
   "pages": [
     {

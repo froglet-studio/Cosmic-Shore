@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-13 from the canvas of **Frogma**: Rev 3 to Rev 111, 493 boards on 13 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-16 from canvas version `1794852387-6df2` of **Frogma**: Rev 3 to Rev 113, 508 boards on 13 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -548,6 +548,15 @@ Copied on 2026-11-13 from the canvas of **Frogma**: Rev 3 to Rev 111, 493 boards
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
+#### Rev 112 - Colour sets for a growing catalog: a world preview, one scrolling list, Free and Premium apart, no empty middle
+
+- `R112Compare.dc.html` (not copied yet) - Rev 112 - the four layouts side by side, and how a Free and a Premium row read in each
+- `R112A.dc.html` (not copied yet) - Rev 112 A - Stage and list: a scrolling list on the left, Free then Premium; the set's world and what it repaints fill the right (recommended) - interactive
+- `R112B.dc.html` (not copied yet) - Rev 112 B - Wall: the world and what it repaints across the top; every set as a tile below, a wall that scrolls, Free and Premium as two shelves - interactive
+- `R112C.dc.html` (not copied yet) - Rev 112 C - Two shelves: Free down the left, Premium down the right, the world and what it repaints between them - interactive
+- `R112D.dc.html` (not copied yet) - Rev 112 D - The real cell: the world is the whole screen; a docked list on the right with Free / Premium filters, what it repaints along the foot - interactive
+- `R112Notes.dc.html` (not copied yet) - Rev 112 - notes: what was asked, the four, Free vs Premium, how it maps to the built Showroom, decisions
+
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 
 - [`R54Compare.dc.html`](R54Compare.dc.html) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
@@ -739,6 +748,18 @@ Copied on 2026-11-13 from the canvas of **Frogma**: Rev 3 to Rev 111, 493 boards
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 113 - Milestone 1: Escort the Ark and Crystal Run, end to end - lobby first, crew popup by faction, the voyage HUD, the scoreboard
+
+- [`R113Compare.dc.html`](R113Compare.dc.html) - Rev 113 - the toasts across one voyage, each beside the moment that raises it
+- [`R113Lobby.dc.html`](R113Lobby.dc.html) - Rev 113 Lobby - Your Ark, lobby only: what you pick is what you fly, read back beside Set sail (recommended)
+- [`R113Picker.dc.html`](R113Picker.dc.html) - Rev 113 Picker - The seat popup on Vessel: one press saves your seat for this voyage, and says so
+- [`R113Crew.dc.html`](R113Crew.dc.html) - Rev 113 Crew - Crew recommends as a popup: Escort the Ark and Crystal Run open, the rest by faction, locked
+- [`R113Hud.dc.html`](R113Hud.dc.html) - Rev 113 Hud - Escort the Ark HUD: the objective box (goal, five worlds, hull and breach line, your job) and a threat toast
+- [`R113Run.dc.html`](R113Run.dc.html) - Rev 113 Run - Crystal Run HUD: the crystal counter leads, calm and hostile cells on the route
+- [`R113Score.dc.html`](R113Score.dc.html) - Rev 113 Score - The end: the Ark's hull, a row per seat, rewards, Finish and Venture further
+- [`R113Sea.dc.html`](R113Sea.dc.html) - Rev 113 Sea - the HyperSea page with the popup closed: two open voyages and one Crew recommends button where the list was - interactive
+- [`R113Notes.dc.html`](R113Notes.dc.html) - Rev 113 - notes: what each board fixes from Shombith's Milestone 1 list
 
 #### Rev 111 Voyages: the table opens to full screen, down to one Cell
 
