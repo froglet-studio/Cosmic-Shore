@@ -3591,10 +3591,10 @@
    "owner": "Garrett",
    "date": "2026-11-16",
    "words": "solitons should be enterable from outside, but in a one-way fashion. so the exit is the only source and the entrance is the only sink, but the tube wall can be entered and not exited",
-   "rule": "A soliton is a standing, one-way tunnel through space that keeps its shape and is seen only by the way it bends the world (no grid, no surface): anything may enter through its entrance mouth or its wall, nothing leaves except through its exit mouth, so the entrance is its only sink and the exit its only source. Any vessel or scene may make use of one (it is a fundamental, not a Meerkat-only effect), anyone may ride one, what it fires is a moving prism scored to its maker, and it never deletes mass.",
+   "rule": "A tubular soliton is a standing, one-way tunnel through space that keeps its shape and is seen only by the way it bends the world (no grid, no surface): anything may enter through its entrance mouth or its wall, nothing leaves except through its exit mouth, so the entrance is its only sink and the exit its only source. Any vessel or scene may make use of one (it is a fundamental, not a Meerkat-only effect), anyone may ride one, what it fires is a moving prism scored to its maker, and it never deletes mass.",
    "source": {
     "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
-    "line": 357
+    "line": 358
    },
    "kind": "quote",
    "area": "vessel",
@@ -3607,15 +3607,31 @@
    "owner": "Garrett",
    "date": "2026-11-16",
    "words": "also solitons should feel like a waterslide where there is a sense of \"down\" and sliding up and down the walls like a skater in a halfpipe. down should be defined by their entering orientation and controlling the vessel should feel like a fun sense of control over riding up and down the walls of the water slide. some mix of going with the flow and deciding how to roll with it.",
-   "rule": "Riding a soliton feels like a waterslide: the rider's orientation as it enters sets the tunnel's \"down\", the flow carries it along, and steering rolls it up and down the walls like a skater in a halfpipe; the fun is a mix of going with the flow and choosing how to ride it.",
+   "rule": "Riding a tubular soliton feels like a waterslide: the rider's orientation as it enters sets the tunnel's \"down\", the flow carries it along, and steering rolls it up and down the walls like a skater in a halfpipe; the fun is a mix of going with the flow and choosing how to ride it.",
    "source": {
     "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
-    "line": 358
+    "line": 359
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
    "test": "Does a rider feel a down set by how it entered, get carried by the flow, and choose how high up the walls to carve?",
+   "status": "confirmed"
+  },
+  {
+   "id": "P-vessel-40",
+   "owner": "Garrett",
+   "date": "2026-11-16",
+   "words": "we can generalize solitons to structured vector fields. Thus what we just detailed are tubular solitons, but the pistol's vortex ring should be a moving ring soliton. the stoats source and sink should be point solitons.",
+   "rule": "A soliton is a structured vector field that keeps its shape, in three shapes so far: tubular (the Meerkat's tunnel), a moving ring (the Pistol's vortex ring) and a point (the Stoat's source and sink); every shape is one fundamental and follows the soliton's rules, and a new shape of field joins this family rather than becoming a new system.",
+   "source": {
+    "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
+    "line": 357
+   },
+   "kind": "quote",
+   "area": "vessel",
+   "retired": "",
+   "test": "Is this field one of the soliton shapes (tube, moving ring, point), built on the soliton fundamental rather than as its own system?",
    "status": "confirmed"
   },
   {
