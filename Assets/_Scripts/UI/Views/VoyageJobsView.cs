@@ -409,6 +409,7 @@ namespace CosmicShore.UI
             }
             _lockedStrip = VoyageLockedStrip.Create(page, new VoyageKit(style, lines, template ? template.LabelTemplate : null),
                 lockSprite);
+            _board.LockSprite = lockSprite;
             return true;
         }
 
@@ -462,7 +463,9 @@ namespace CosmicShore.UI
                 Title = job.Title,
                 Place = to?.Name,
                 Pilot = person?.Name,
+                Key = VoyageSeatRecord.JobKey(job),
                 Faction = PilotLoadoutStore.TryGetPilot(job.PilotId, out var record) ? record.FactionName : null,
+                House = record != null ? record.FactionType : person?.Faction ?? FactionType.None,
                 Story = !string.IsNullOrEmpty(job.Summary) ? job.Summary : person?.Story,
                 Portrait = callsign ? callsign.Portrait : null,
                 Ly = sea != null ? sea.LightYears.ToString("N0", CultureInfo.InvariantCulture) : null,
@@ -538,7 +541,9 @@ namespace CosmicShore.UI
             string d = difficulty.ToString(CultureInfo.InvariantCulture);
             var offer = new VoyageBoard.Offer
             {
+                Key = VoyageSeatRecord.EscortKey,
                 Kind = lines?.KindEscort,
+                Picture = VoyageBoardStyleSO.Load() is { } look ? look.ArkPicture : null,
                 Title = TemplateText.Fill(escort.CardTitle, "difficulty", d, "legs", legs),
                 Story = TemplateText.Fill(escort.CardLine, "legs", legs, "difficulty", d),
                 Recommended = VoyageDifficulty.Clamp(difficulty),
@@ -892,11 +897,16 @@ namespace CosmicShore.UI
         }
 
         // Set sail loads the voyage scene with the choice (VoyageLaunch); freestyle is not involved.
+        // The seats the Ark page set for this voyage sail (VoyageSeatRecord); with none made, the active squad.
         static void SetSailEscort(int difficulty) =>
-            VoyageLaunch.Begin(VoyageLaunchRequest.ForEscort(difficulty));
+            VoyageLaunch.Begin(VoyageLaunchRequest.ForEscort(difficulty, VoyageSeatRecord.Get(VoyageSeatRecord.EscortKey)));
 
-        static void SetSail(VoyageJob job) =>
-            VoyageLaunch.Begin(VoyageLaunchRequest.ForJob(job));
+        static void SetSail(VoyageJob job)
+        {
+            var request = VoyageLaunchRequest.ForJob(job);
+            request.Squad = VoyageSeatRecord.Get(VoyageSeatRecord.JobKey(job));
+            VoyageLaunch.Begin(request);
+        }
 
         // ── The open voyage (slides over the cards) ──────────────────────────
 

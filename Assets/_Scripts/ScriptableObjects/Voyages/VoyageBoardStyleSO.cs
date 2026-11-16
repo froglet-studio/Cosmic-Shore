@@ -27,6 +27,10 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Buttons' and rows' slivered 1-unit border (kit_sliver10_line1).")]
         public Sprite Sliver10Line;
 
+        [Header("Pictures")]
+        [Tooltip("The Ark, for the Ark escort's card where a job shows its pilot (Frogma Rev 113 Sea and Crew).")]
+        public Sprite ArkPicture;
+
         [Header("Type")]
         [Tooltip("Labels and tabs (Chakra Petch SemiBold, set in capitals). Empty: the window's own face.")]
         public TMP_FontAsset LabelFont;
