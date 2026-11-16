@@ -5,7 +5,7 @@ using CosmicShore.ScriptableObjects;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// What the HyperSea page's "Open now" column and the crew popup show, with no drawing in it (Frogma Rev 113 Sea and
+    /// What the HyperSea page's "Open now" column and the crew screen show, with no drawing in it (Frogma Rev 113 Sea and
     /// Crew; Docs/MENU_REDESIGN_B.md section 209.1): the voyages that sail now (the escort and the jobs Milestone 1 leaves
     /// open, <see cref="VoyageToyDefinitionSO.IsJobOpen"/>), and every other crew voyage under the faction of the pilot who
     /// brings it, read from that pilot's record (<see cref="PilotRecord.FactionType"/>).
@@ -58,6 +58,39 @@ namespace CosmicShore.UI
                 g.Offers.Add(i);
             }
             into.AddRange(byHouse.Values);
+        }
+
+        /// <summary>
+        /// Your crew across the top of the crew screen (Frogma Rev 114 C2, pilot first): every offer once, the ones that sail
+        /// now first and then the locked ones, each in the board's order.
+        /// </summary>
+        public static void Crew(IReadOnlyList<VoyageBoard.Offer> offers, List<int> into)
+        {
+            into.Clear();
+            if (offers == null) return;
+            for (int i = 0; i < offers.Count; i++)
+                if (offers[i] != null && !offers[i].Locked) into.Add(i);
+            for (int i = 0; i < offers.Count; i++)
+                if (offers[i] != null && offers[i].Locked) into.Add(i);
+        }
+
+        /// <summary>The voyage the Y button offers instead of <paramref name="picked"/>: the first other one that can set
+        /// sail now, or -1.</summary>
+        public static int OtherOpen(IReadOnlyList<VoyageBoard.Offer> offers, int picked)
+        {
+            if (offers == null) return -1;
+            for (int i = 0; i < offers.Count; i++)
+                if (i != picked && offers[i] is { SetSail: not null }) return i;
+            return -1;
+        }
+
+        /// <summary>A pilot's first name for their tile ("Tamako" of "Tamako Deephook").</summary>
+        public static string FirstName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return name;
+            name = name.Trim();
+            int space = name.IndexOf(' ');
+            return space > 0 ? name.Substring(0, space) : name;
         }
 
         /// <summary>A faction's group name in the content's words (Hunters, Pirates...).</summary>

@@ -28,6 +28,7 @@ STYLE_CS = "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs"
 BOARD_CS = "Assets/_Scripts/UI/Views/VoyageBoard.cs"
 TOKENS = "Docs/UI/froglet-tokens.json"
 KIT = "Assets/_Graphics/UI/Kit"
+PILOT_SCENES = "Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset"  # Rev 114 C2: the job told over its pilot's scene
 LABEL_FONT = "Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset"
 
 SPRITES = [  # field, kit file
@@ -104,6 +105,7 @@ def asset(style_guid):
         out.append(f"  {field}: {{fileID: 21300000, guid: {meta_guid(f'{KIT}/{kit}.png')}, type: 3}}")
     for field, png in PICTURES:
         out.append(f"  {field}: {{fileID: 21300000, guid: {meta_guid(png)}, type: 3}}")
+    out.append(f"  PilotScenes: {{fileID: 11400000, guid: {meta_guid(PILOT_SCENES)}, type: 2}}")
     out.append(f"  LabelFont: {{fileID: 11400000, guid: {meta_guid(LABEL_FONT)}, type: 2}}")
     for field, hexv, alpha in COLOURS:
         out.append(f"  {field}: {colour(hexv, alpha)}")

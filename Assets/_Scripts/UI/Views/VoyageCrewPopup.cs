@@ -9,71 +9,57 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Crew recommends, as a popup over the HyperSea page (Frogma Rev 113 Crew, picked by Shombith 2026-11-16;
-    /// Docs/MENU_REDESIGN_B.md section 209.1). The factions your crew has work for run down the left with their counts
-    /// ("All" first), the voyages that sail now stand on top with Open, and every other crew voyage sits under its
-    /// faction, showing its pilot, its job and its difficulty, locked for Milestone 1: pressing one says it opens after
-    /// Milestone 1 (<see cref="VoyageLines.CrewLockedPress"/>). Grouping is <see cref="VoyageCrewRules"/>'s.
-    /// <para>Drawn in the board's own units: a 1520 x 900 panel at (200, 124) of the 1920 x 1080 screen, in its own canvas
-    /// over the window, as the seat popup is.</para>
+    /// The crew screen, pilot first (Frogma Rev 114 C2, picked by Shombith 2026-11-16; Docs/MENU_REDESIGN_B.md section
+    /// 210.1), opened from the HyperSea page's "Crew recommends" button. Your crew runs across the top, one portrait tile
+    /// each with their faction, first name and job; the picked tile carries one thin cyan line, and a locked one is dimmed
+    /// with the gold lock. Below, the picked pilot's job is told in their own words: their scene on the left, and on the
+    /// right "&lt;pilot&gt;, &lt;faction&gt;, asks", the quote, the difficulty, the worlds and the crystals it pays, with
+    /// Take the job (A) and the other open voyage (Y). A locked pilot's job says it opens after Milestone 1 instead of
+    /// Take the job (the lock is PR #2021's, <see cref="VoyageToyDefinitionSO.IsJobOpen"/>). XP and a pilot's trust are
+    /// left out: the game has no voyage XP yet (Shombith, 2026-11-16: "not needed, remove from UI as well").
+    /// <para>Drawn in the board's own units: a 1680 x 920 panel at (120, 40) of the 1920 x 1080 screen, in its own canvas
+    /// over the window, as the seat popup is. Ordering is <see cref="VoyageCrewRules"/>'s.</para>
     /// </summary>
     public sealed class VoyageCrewPopup
     {
         static readonly Vector2 Screen = new(1920f, 1080f);
-        const float Width = 1520f, Height = 900f, PanelX = 200f, PanelY = 124f;
-        const float RailX = 40f, RailY = 130f, RailWidth = 280f, RailRow = 54f;
-        const float RightX = 360f, RightWidth = 1120f, OpenHeight = 176f, OpenGap = 18f, RowHeight = 100f, RowGap = 14f;
-        const float OpenSeconds = 0.45f, DimSeconds = 0.35f;
+        const float Width = 1680f, Height = 920f, PanelX = 120f, PanelY = 40f, Pad = 40f;
+        const float StripY = 120f, TileWidth = 248f, TileGap = 22f, FaceHeight = 250f, StripHeight = 350f;
+        const float JobY = 560f, PictureWidth = 620f, JobHeight = 330f, WordsX = Pad + PictureWidth + 40f;
+        const float LockedAlpha = 0.62f, OpenSeconds = 0.45f, DimSeconds = 0.35f;
 
         readonly VoyageBoard _board;
         readonly VoyageKit _kit;
         readonly VoyageLines _lines;
         readonly RectTransform _root, _frame, _panel;
-        RectTransform _overlay, _rail, _openArea, _crewHead, _scroll, _list;
-        TMP_Text _railNote, _message;
-        Image _crewLock;
+        RectTransform _overlay, _strip, _tiles, _buttons, _lockedRow;
         CanvasGroup _rootGroup, _frameGroup;
         Vector2 _fitFor = new(-1f, -1f);
         float _openT = 1f, _dimT = 1f, _fitK = 1f;
+        Sprite _lockSprite;
+
+        // The picked pilot's job.
+        Image _picture, _lockedIcon;
+        RawImage _scene;
+        Texture2D _sceneTexture;
+        string _sceneResource;
+        TMP_Text _asks, _quote, _difficulty, _worlds, _rewards, _lockedWords, _insteadWords;
+        VoyagePips _pips;
+        Button _take, _instead;
 
         readonly List<VoyageBoard.Offer> _offers = new();
-        readonly List<int> _open = new();
-        readonly List<VoyageCrewRules.Group> _groups = new();
-        readonly List<RailView> _railViews = new();
-        readonly List<OpenView> _openViews = new();
-        readonly List<GroupView> _groupViews = new();
-        FactionType? _house;
+        readonly List<int> _crew = new();
+        readonly List<TileView> _tileViews = new();
+        int _picked = -1;
 
-        sealed class RailView
+        sealed class TileView
         {
             public RectTransform Root;
-            public Image Ground, Edge;
-            public TMP_Text Name, Count;
-        }
-
-        sealed class OpenView
-        {
-            public RectTransform Root;
-            public Image Picture;
-            public TMP_Text Kind, Title, Difficulty, Meta;
-            public VoyagePips Pips;
-            public Button Open;
-        }
-
-        sealed class GroupView
-        {
-            public RectTransform Root, Grid;
-            public TMP_Text Name;
-            public readonly List<RowView> Rows = new();
-        }
-
-        sealed class RowView
-        {
-            public RectTransform Root;
-            public Button Button;
+            public CanvasGroup Group;
             public Image Face, Lock;
-            public TMP_Text By, Title, Difficulty;
-            public VoyagePips Pips;
+            public VoyageOutline Line;
+            public TMP_Text Faction, Name, Job;
+            public Button Button;
         }
 
         public bool IsOpen => _root.gameObject.activeSelf;
@@ -97,51 +83,22 @@ namespace CosmicShore.UI
             if (_panel.TryGetComponent<VoyageHoverLift>(out var lift)) lift.enabled = false;
             var c = glass.Content;
 
+            // "Your crew, and the work they bring" (28) over how to use it (15, Sub); Close at the top right.
             var title = _kit.Text(c, 28, _kit.Light, TextAlignmentOptions.Left);
-            VoyageKit.At(title.rectTransform, 40f, 30f, 1200f, 36f);
+            VoyageKit.At(title.rectTransform, Pad, 34f, 1400f, 36f);
             VoyageKit.Set(title, _lines?.CrewTitle);
             var line = _kit.Text(c, 15, _kit.Sub, TextAlignmentOptions.Left);
-            VoyageKit.At(line.rectTransform, 40f, 76f, 1200f, 22f);
+            VoyageKit.At(line.rectTransform, Pad, 78f, 1400f, 22f);
             VoyageKit.Set(line, _lines?.CrewLine);
-            _kit.Square(At("Close", Width - 40f - 44f, 30f, 44f, 44f, c), _lines?.PickClose, Close);
+            _kit.Square(At("Close", Width - Pad - 44f, 34f, 44f, 44f, c), _lines?.PickClose, Close);
 
-            _rail = At("Factions", RailX, RailY, RailWidth, Height - RailY - 40f, c);
-            _railNote = _kit.Text(_rail, 14, VoyageKit.Fade(_kit.Sub, 0.8f), TextAlignmentOptions.TopLeft);
-            _railNote.textWrappingMode = TextWrappingModes.Normal;
-            VoyageKit.Set(_railNote, _lines?.CrewLeftOut);
-
-            var openLabel = _kit.Label(c, 14, _kit.Light);
-            VoyageKit.At(openLabel.rectTransform, RightX, RailY, RightWidth, 20f);
-            VoyageKit.Set(openLabel, _lines?.CrewOpenNow);
-            _openArea = At("OpenNow", RightX, RailY + 32f, RightWidth, OpenHeight, c);
-
-            _crewHead = At("CrewVoyages", RightX, 0f, RightWidth, 24f, c);
-            var head = _kit.Label(_crewHead, 14, _kit.Sub);
-            VoyageKit.Stretch(head.rectTransform);
-            VoyageKit.Set(head, _lines?.CrewVoyages);
-            var lockedRow = VoyageKit.Node("Locked", _crewHead);
-            lockedRow.anchorMin = lockedRow.anchorMax = lockedRow.pivot = new Vector2(1f, 0.5f);
-            lockedRow.sizeDelta = new Vector2(420f, 24f);
-            VoyageKit.Row(lockedRow, 8f, TextAnchor.MiddleRight);
-            var lockBox = VoyageKit.Node("Lock", lockedRow);
-            var lle = VoyageKit.Le(lockBox);
-            lle.preferredWidth = lle.minWidth = lle.preferredHeight = 16f;
-            _crewLock = lockBox.gameObject.AddComponent<Image>();
-            _crewLock.preserveAspect = true;
-            _crewLock.raycastTarget = false;
-            var lockedWords = _kit.Text(lockedRow, 15, Amber, TextAlignmentOptions.Right);
-            lockedWords.overflowMode = TextOverflowModes.Overflow;
-            VoyageKit.Set(lockedWords, _lines?.CrewLocked);
-
-            BuildList(c);
-            _message = _kit.Text(c, 16, _kit.Light, TextAlignmentOptions.Left);
-            VoyageKit.At(_message.rectTransform, RightX, Height - 40f - 24f, RightWidth, 24f);
-
+            BuildStrip(c);
+            BuildJob(c);
             _root.gameObject.SetActive(false);
         }
 
-        // The board's lock amber (#FFAE00 on the board), the Ark's own amber read through the worn colour set.
-        Color Amber => ColorTrace.Retrace(ColorTrace.Ui, VoyageKit.ArkAuthored);
+        // The board's lock gold (#FFAE00 on the board), the Ark's own amber read through the worn colour set.
+        Color Gold => ColorTrace.Retrace(ColorTrace.Ui, VoyageKit.ArkAuthored);
 
         Color Opaque(Color c)
         {
@@ -156,38 +113,300 @@ namespace CosmicShore.UI
             return rt;
         }
 
-        void BuildList(RectTransform c)
+        // ── Your crew, across the top ────────────────────────────────────────
+
+        void BuildStrip(RectTransform c)
         {
-            _scroll = At("Voyages", RightX, 0f, RightWidth, 100f, c);
-            _scroll.gameObject.AddComponent<RectMask2D>();
-            var hit = VoyageKit.Block(_scroll, VoyageKit.Clear, hit: true);
-            var scroll = _scroll.gameObject.AddComponent<ScrollRect>();
-            scroll.horizontal = false;
+            // Six tiles show at once (the board's six columns); a larger crew scrolls sideways.
+            _strip = At("Crew", Pad, StripY, Width - 2f * Pad, StripHeight, c);
+            _strip.gameObject.AddComponent<RectMask2D>();
+            var hit = VoyageKit.Block(_strip, VoyageKit.Clear, hit: true);
+            hit.raycastTarget = true;
+            var scroll = _strip.gameObject.AddComponent<ScrollRect>();
+            scroll.vertical = false;
             scroll.movementType = ScrollRect.MovementType.Clamped;
             scroll.scrollSensitivity = 30f;
-            _list = VoyageKit.Node("List", _scroll);
-            _list.anchorMin = new Vector2(0f, 1f);
-            _list.anchorMax = Vector2.one;
-            _list.pivot = new Vector2(0.5f, 1f);
-            _list.sizeDelta = Vector2.zero;
-            var column = VoyageKit.Column(_list, 22f, TextAnchor.UpperLeft);
-            column.childForceExpandWidth = true;
-            column.childControlWidth = true;
-            column.childControlHeight = true;
-            column.childForceExpandHeight = false;
-            var fit = _list.gameObject.AddComponent<ContentSizeFitter>();
-            fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            scroll.content = _list;
-            scroll.viewport = _scroll;
-            hit.raycastTarget = true;
+            _tiles = VoyageKit.Node("Tiles", _strip);
+            _tiles.anchorMin = Vector2.zero;
+            _tiles.anchorMax = new Vector2(0f, 1f);
+            _tiles.pivot = new Vector2(0f, 0.5f);
+            _tiles.sizeDelta = Vector2.zero;
+            scroll.content = _tiles;
+            scroll.viewport = _strip;
+        }
+
+        TileView TileFor(int index)
+        {
+            while (_tileViews.Count <= index)
+            {
+                int slot = _tileViews.Count;
+                var view = new TileView { Root = At("Pilot" + slot, slot * (TileWidth + TileGap), 0f, TileWidth, StripHeight, _tiles) };
+                view.Group = view.Root.gameObject.AddComponent<CanvasGroup>();
+                var ground = VoyageKit.Block(view.Root, VoyageKit.Clear, hit: true);
+                view.Button = view.Root.gameObject.AddComponent<Button>();
+                view.Button.targetGraphic = ground;
+                view.Button.transition = Selectable.Transition.None;
+                view.Button.onClick.AddListener(() => PickSlot(slot));
+
+                // The portrait (250 tall), the picked one inside one thin cyan line, the gold lock at its top right.
+                var face = At("Face", 0f, 0f, TileWidth, FaceHeight, view.Root);
+                VoyageKit.Block(face, VoyageKit.Fade(_kit.Popup, 0.6f));
+                var inner = At("Picture", 3f, 3f, TileWidth - 6f, FaceHeight - 6f, face);
+                view.Face = VoyageKit.CoverBox(inner);
+                var edge = VoyageKit.Node("Line", face);
+                VoyageKit.Stretch(edge);
+                view.Line = edge.gameObject.AddComponent<VoyageOutline>();
+                view.Line.raycastTarget = false;
+                view.Line.Width = 2f;
+                view.Line.Solid(_kit.Cyan);
+                var lockRt = At("Lock", TileWidth - 10f - 20f, 10f, 20f, 20f, face);
+                view.Lock = lockRt.gameObject.AddComponent<Image>();
+                view.Lock.preserveAspect = true;
+                view.Lock.raycastTarget = false;
+
+                // Its faction (caps 13), first name (17) and job (14, Sub), 10 apart under the portrait.
+                view.Faction = _kit.Label(At("Faction", 0f, FaceHeight + 10f, TileWidth, 18f, view.Root), 13, _kit.Sub);
+                VoyageKit.Stretch(view.Faction.rectTransform);
+                view.Name = _kit.Text(At("Name", 0f, FaceHeight + 38f, TileWidth, 24f, view.Root), 17, _kit.Light,
+                    TextAlignmentOptions.Left);
+                VoyageKit.Stretch(view.Name.rectTransform);
+                view.Job = _kit.Text(At("Job", 0f, FaceHeight + 70f, TileWidth, 20f, view.Root), 14, _kit.Sub,
+                    TextAlignmentOptions.Left);
+                VoyageKit.Stretch(view.Job.rectTransform);
+                view.Job.overflowMode = TextOverflowModes.Ellipsis;
+                _tileViews.Add(view);
+            }
+            return _tileViews[index];
+        }
+
+        void DrawStrip()
+        {
+            for (int i = 0; i < _crew.Count; i++)
+            {
+                var view = TileFor(i);
+                view.Root.gameObject.SetActive(true);
+                int index = _crew[i];
+                var offer = _offers[index];
+                bool escort = string.IsNullOrEmpty(offer.Pilot);
+                VoyageKit.ShowCover(view.Face, offer.Portrait ? offer.Portrait : offer.Picture,
+                    new Vector2(TileWidth - 6f, FaceHeight - 6f), offer.Portrait ? VoyageKit.FaceFocus : new Vector2(0.5f, 0.5f));
+                VoyageKit.Set(view.Faction, escort ? offer.Kind : VoyageCrewRules.FactionName(_lines, offer.House));
+                VoyageKit.Set(view.Name, escort ? _lines?.CrewArk : VoyageCrewRules.FirstName(offer.Pilot));
+                VoyageKit.Set(view.Job, offer.Title);
+                view.Line.enabled = index == _picked;
+                view.Group.alpha = offer.Locked ? LockedAlpha : 1f;
+                view.Lock.sprite = _lockSprite;
+                view.Lock.enabled = offer.Locked && _lockSprite;
+                view.Lock.color = Gold;
+            }
+            for (int i = _crew.Count; i < _tileViews.Count; i++) _tileViews[i].Root.gameObject.SetActive(false);
+            _tiles.sizeDelta = new Vector2(Mathf.Max(0f, _crew.Count * (TileWidth + TileGap) - TileGap), 0f);
+        }
+
+        void PickSlot(int slot)
+        {
+            if (slot < 0 || slot >= _crew.Count) return;
+            Pick(_crew[slot]);
+        }
+
+        void Pick(int index)
+        {
+            _picked = index;
+            DrawStrip();
+            DrawJob();
+        }
+
+        // ── The picked pilot's job ───────────────────────────────────────────
+
+        void BuildJob(RectTransform c)
+        {
+            // The place: the pilot's scene (the Ark for the escort), 620 x 330, inside a faint line.
+            var picture = At("Place", Pad, JobY, PictureWidth, JobHeight, c);
+            VoyageKit.Block(picture, VoyageKit.Fade(_kit.Popup, 0.6f));
+            picture.gameObject.AddComponent<RectMask2D>();
+            _picture = VoyageKit.CoverBox(At("Picture", 0f, 0f, PictureWidth, JobHeight, picture));
+            var sceneRt = At("Scene", 0f, 0f, PictureWidth, JobHeight, picture);
+            _scene = sceneRt.gameObject.AddComponent<RawImage>();
+            _scene.raycastTarget = false;
+            _scene.enabled = false;
+            var edge = VoyageKit.Node("Edge", picture);
+            VoyageKit.Stretch(edge);
+            var outline = edge.gameObject.AddComponent<VoyageOutline>();
+            outline.raycastTarget = false;
+            outline.Solid(VoyageKit.Fade(_kit.Outline, 0.5f));
+
+            // Their words: who asks (caps 14, Light), the quote (34), the difficulty, the worlds and what it pays (15, Sub).
+            float w = Width - Pad - WordsX;
+            _asks = _kit.Label(At("Asks", WordsX, JobY, w, 20f, c), 14, _kit.Light);
+            VoyageKit.Stretch(_asks.rectTransform);
+            _quote = _kit.Text(At("Quote", WordsX, JobY + 36f, w, 170f, c), 34, _kit.Light, TextAlignmentOptions.TopLeft);
+            VoyageKit.Stretch(_quote.rectTransform);
+            _quote.textWrappingMode = TextWrappingModes.Normal;
+            _quote.overflowMode = TextOverflowModes.Ellipsis;
+            _quote.lineSpacing = -6f;
+
+            var meta = At("Meta", WordsX, JobY + 222f, w, 20f, c);
+            var row = VoyageKit.Row(meta, 14f);
+            row.childForceExpandWidth = false;
+            _pips = _kit.Pips(meta);
+            _difficulty = _kit.Text(meta, 15, _kit.Sub, TextAlignmentOptions.Left);
+            VoyageKit.Le(_difficulty).minWidth = VoyageKit.Le(_difficulty).preferredWidth = 16f;
+            _worlds = _kit.Text(meta, 15, _kit.Sub, TextAlignmentOptions.Left);
+            _worlds.overflowMode = TextOverflowModes.Overflow;
+            _rewards = _kit.Text(meta, 15, _kit.Sub, TextAlignmentOptions.Left);
+            _rewards.overflowMode = TextOverflowModes.Overflow;
+            VoyageKit.Le(_rewards).flexibleWidth = 1f;
+
+            // Take the job (A) and the other open voyage (Y) at the bottom; a locked job's line in their place.
+            _buttons = At("Buttons", WordsX, JobY + JobHeight - 52f, w, 52f, c);
+            var take = At("Take", 0f, 0f, 260f, 52f, _buttons);
+            (_take, _) = _kit.Cta(take, _lines?.BoardSailKey, _lines?.CrewTake, TakeJob);
+            _lockedRow = At("Locked", 0f, 0f, 420f, 52f, _buttons);
+            VoyageKit.Row(_lockedRow, 10f, TextAnchor.MiddleLeft);
+            var lockBox = VoyageKit.Node("Lock", _lockedRow);
+            var lle = VoyageKit.Le(lockBox);
+            lle.preferredWidth = lle.minWidth = lle.preferredHeight = 18f;
+            _lockedIcon = lockBox.gameObject.AddComponent<Image>();
+            _lockedIcon.preserveAspect = true;
+            _lockedIcon.raycastTarget = false;
+            _lockedWords = _kit.Text(_lockedRow, 16, Gold, TextAlignmentOptions.Left);
+            _lockedWords.overflowMode = TextOverflowModes.Overflow;
+            var instead = At("Instead", 280f, 2f, 420f, 48f, _buttons);
+            _instead = _kit.Quiet(instead, _lines?.CrewInsteadKey, null, PickOther, out _insteadWords);
+            _insteadWords.fontSize = 15;
+        }
+
+        void DrawJob()
+        {
+            var offer = _picked >= 0 && _picked < _offers.Count ? _offers[_picked] : null;
+            if (offer == null)
+            {
+                VoyageKit.Set(_asks, null);
+                VoyageKit.Set(_quote, null);
+                _buttons.gameObject.SetActive(false);
+                ShowPlace(null);
+                return;
+            }
+            bool escort = string.IsNullOrEmpty(offer.Pilot);
+            string faction = !string.IsNullOrEmpty(offer.Faction) ? offer.Faction : VoyageCrewRules.FactionName(_lines, offer.House);
+            VoyageKit.Set(_asks, escort ? _lines?.CrewArkAsks : TemplateText.Fill(_lines?.CrewAsks, "pilot", offer.Pilot, "faction", faction));
+            VoyageKit.Set(_quote, string.IsNullOrEmpty(offer.Story) ? null : TemplateText.Fill(_lines?.CrewQuote, "quote", offer.Story));
+            _pips.Lit = offer.Recommended;
+            VoyageKit.Set(_difficulty, offer.Recommended.ToString(CultureInfo.InvariantCulture));
+            VoyageKit.Set(_worlds, offer.Stops.Count > 0
+                ? TemplateText.Fill(_lines?.CrewWorlds, "worlds", offer.Stops.Count.ToString(CultureInfo.InvariantCulture))
+                : null);
+            VoyageKit.Set(_rewards, offer.Pays
+                ? TemplateText.Fill(_lines?.CrewRewards, "pay", offer.Pay.ToString(CultureInfo.InvariantCulture))
+                : null);
+            ShowPlace(offer);
+
+            _buttons.gameObject.SetActive(true);
+            bool sails = offer.SetSail != null;
+            _take.gameObject.SetActive(sails);
+            _lockedRow.gameObject.SetActive(!sails);
+            _lockedIcon.sprite = _lockSprite;
+            _lockedIcon.enabled = offer.Locked && _lockSprite;
+            _lockedIcon.color = Gold;
+            // A locked job opens after Milestone 1; a voyage under way says so.
+            VoyageKit.Set(_lockedWords, offer.Locked ? TemplateText.Fill(_lines?.CrewLockedPress, "title", offer.Title) : offer.SailLabel);
+            int other = VoyageCrewRules.OtherOpen(_offers, _picked);
+            _instead.gameObject.SetActive(other >= 0);
+            if (other >= 0) VoyageKit.Set(_insteadWords, TemplateText.Fill(_lines?.CrewInstead, "title", _offers[other].Title));
+            // The other button sits after whichever stands first.
+            float x = sails ? 280f : 440f;
+            VoyageKit.At(_instead.GetComponent<RectTransform>(), x, 2f, Mathf.Min(420f, _buttons.rect.width - x), 48f);
+        }
+
+        void TakeJob()
+        {
+            if (_picked < 0 || _picked >= _offers.Count || _offers[_picked].SetSail == null) return;
+            int index = _picked;
+            Close();
+            _board.Pick(index);
+            _board.OpenPicked();
+        }
+
+        void PickOther()
+        {
+            int other = VoyageCrewRules.OtherOpen(_offers, _picked);
+            if (other >= 0) Pick(other);
+        }
+
+        // The escort shows the Ark; a job shows its pilot's scene, cut around their face, else their portrait.
+        void ShowPlace(VoyageBoard.Offer offer)
+        {
+            var scene = SceneOf(offer);
+            if (scene != null && LoadScene(scene.resource))
+            {
+                _picture.enabled = false;
+                _scene.enabled = true;
+                _scene.texture = _sceneTexture;
+                _scene.uvRect = Crop(_sceneTexture.width, _sceneTexture.height, PictureWidth / JobHeight, scene.face);
+                return;
+            }
+            ReleaseScene();
+            _scene.enabled = false;
+            var sprite = offer == null ? null : offer.Picture ? offer.Picture : offer.Portrait;
+            VoyageKit.ShowCover(_picture, sprite, new Vector2(PictureWidth, JobHeight),
+                offer != null && !offer.Picture && offer.Portrait ? VoyageKit.FaceFocus : new Vector2(0.5f, 0.5f));
+        }
+
+        static PilotSceneCatalogSO.Entry SceneOf(VoyageBoard.Offer offer)
+        {
+            if (offer == null || string.IsNullOrEmpty(offer.Callsign)) return null;
+            var scenes = VoyageBoardStyleSO.Load() is { } style ? style.PilotScenes : null;
+            var catalog = PilotArtifactCatalogSO.Load();
+            if (!scenes || !catalog || !catalog.TryGetPilot(offer.Callsign, out var pilot) || !pilot) return null;
+            return scenes.TryGet(pilot.Vision, out var entry) ? entry : null;
+        }
+
+        bool LoadScene(string resource)
+        {
+            if (string.IsNullOrEmpty(resource)) return false;
+            if (_sceneTexture && resource == _sceneResource) return true;
+            var next = Resources.Load<Texture2D>(resource);
+            ReleaseScene();
+            _sceneTexture = next;
+            _sceneResource = next ? resource : null;
+            return next;
+        }
+
+        // A scene is loaded only while it is shown (PilotSceneCatalogSO names, never references, them).
+        void ReleaseScene()
+        {
+            var old = _sceneTexture;
+            _sceneTexture = null;
+            _sceneResource = null;
+            if (_scene) _scene.texture = null;
+            if (old) Resources.UnloadAsset(old);
+        }
+
+        /// <summary>
+        /// The part of a <paramref name="width"/> x <paramref name="height"/> picture that fills a box of
+        /// <paramref name="aspect"/> (width over height), centred on <paramref name="face"/> (0..1 from the bottom left)
+        /// as far as the picture allows.
+        /// </summary>
+        public static Rect Crop(int width, int height, float aspect, Rect face)
+        {
+            if (width <= 0 || height <= 0 || aspect <= 0f) return new Rect(0f, 0f, 1f, 1f);
+            float picture = (float)width / height;
+            float w = picture > aspect ? aspect / picture : 1f;
+            float h = picture > aspect ? 1f : picture / aspect;
+            var centre = face.width > 0f && face.height > 0f ? face.center : new Vector2(0.5f, 0.5f);
+            float x = Mathf.Clamp(centre.x - w * 0.5f, 0f, 1f - w);
+            float y = Mathf.Clamp(centre.y - h * 0.5f, 0f, 1f - h);
+            return new Rect(x, y, w, h);
         }
 
         // ── Opening ──────────────────────────────────────────────────────────
 
-        /// <summary>Open over the page with <paramref name="offers"/>; <paramref name="lockSprite"/> is the tabs' lock.</summary>
+        /// <summary>Open over the page with <paramref name="offers"/>, the first that sails picked;
+        /// <paramref name="lockSprite"/> is the tabs' lock.</summary>
         public void Open(IReadOnlyList<VoyageBoard.Offer> offers, Sprite lockSprite)
         {
-            _house = null;
+            _picked = -1;
+            _lockSprite = lockSprite;
             Lift();
             _root.gameObject.SetActive(true);
             _root.SetAsLastSibling();
@@ -195,10 +414,6 @@ namespace CosmicShore.UI
             if (!_rootGroup && !_root.TryGetComponent(out _rootGroup)) _rootGroup = _root.gameObject.AddComponent<CanvasGroup>();
             if (!_frameGroup && !_frame.TryGetComponent(out _frameGroup)) _frameGroup = _frame.gameObject.AddComponent<CanvasGroup>();
             _openT = _dimT = 0f;
-            _crewLock.sprite = lockSprite;
-            _crewLock.enabled = lockSprite;
-            _crewLock.color = Amber;
-            VoyageKit.Set(_message, null);
             Show(offers);
             Tick(0f);
         }
@@ -208,22 +423,22 @@ namespace CosmicShore.UI
         {
             _offers.Clear();
             if (offers != null) _offers.AddRange(offers);
-            VoyageCrewRules.OpenNow(_offers, _open);
-            VoyageCrewRules.Groups(_offers, _groups);
-            if (_house != null && !_groups.Exists(g => g.House == _house)) _house = null;
-            DrawRail();
-            DrawOpen();
-            DrawGroups();
+            VoyageCrewRules.Crew(_offers, _crew);
+            if (_picked < 0 || _picked >= _offers.Count) _picked = _crew.Count > 0 ? _crew[0] : -1;
+            DrawStrip();
+            DrawJob();
         }
 
         public void Close()
         {
+            ReleaseScene();
             _root.gameObject.SetActive(false);
             if (_overlay) _overlay.gameObject.SetActive(false);
         }
 
         public void Dispose()
         {
+            ReleaseScene();
             if (_overlay) Object.Destroy(_overlay.gameObject);
         }
 
@@ -266,237 +481,6 @@ namespace CosmicShore.UI
             _frame.anchoredPosition = new Vector2(0f, -24f * (1f - e) * _fitK);
             if (_frameGroup) _frameGroup.alpha = e;
             if (_rootGroup) _rootGroup.alpha = Mathf.SmoothStep(0f, 1f, _dimT);
-        }
-
-        // ── The faction rail ─────────────────────────────────────────────────
-
-        void DrawRail()
-        {
-            int rows = 1 + _groups.Count;
-            for (int i = 0; i < rows; i++)
-            {
-                var view = RailFor(i);
-                view.Root.gameObject.SetActive(true);
-                FactionType? house = i == 0 ? null : _groups[i - 1].House;
-                int count = i == 0 ? _offers.Count : _groups[i - 1].Offers.Count;
-                bool on = house == _house;
-                VoyageKit.Set(view.Name, i == 0 ? _lines?.CrewAll : VoyageCrewRules.FactionName(_lines, house.Value));
-                VoyageKit.Set(view.Count, count.ToString(CultureInfo.InvariantCulture));
-                // The picked row: a 2 unit cyan line at its left over a faint cyan ground; the others in Sub.
-                view.Ground.color = on ? VoyageKit.Fade(_kit.Cyan, 0.06f) : VoyageKit.Clear;
-                view.Edge.enabled = on;
-                view.Name.color = view.Count.color = on ? _kit.Light : _kit.Sub;
-            }
-            for (int i = rows; i < _railViews.Count; i++) _railViews[i].Root.gameObject.SetActive(false);
-            VoyageKit.At(_railNote.rectTransform, 18f, rows * RailRow + 18f, RailWidth - 36f, 60f);
-        }
-
-        RailView RailFor(int index)
-        {
-            while (_railViews.Count <= index)
-            {
-                int i = _railViews.Count;
-                var view = new RailView { Root = At("Faction" + i, 0f, i * RailRow, RailWidth, RailRow, _rail) };
-                view.Ground = VoyageKit.Block(view.Root, VoyageKit.Clear, hit: true);
-                var b = view.Root.gameObject.AddComponent<Button>();
-                b.targetGraphic = view.Ground;
-                b.transition = Selectable.Transition.None;
-                b.onClick.AddListener(() => PickHouse(i));
-                var edge = VoyageKit.Node("Edge", view.Root);
-                edge.anchorMin = Vector2.zero;
-                edge.anchorMax = new Vector2(0f, 1f);
-                edge.pivot = new Vector2(0f, 0.5f);
-                edge.sizeDelta = new Vector2(2f, 0f);
-                view.Edge = VoyageKit.Block(edge, _kit.Cyan);
-                view.Name = _kit.Label(view.Root, 15, _kit.Sub);
-                VoyageKit.Stretch(view.Name.rectTransform);
-                view.Name.rectTransform.offsetMin = new Vector2(18f, 0f);
-                view.Count = _kit.Text(view.Root, 15, _kit.Sub, TextAlignmentOptions.Right);
-                VoyageKit.Stretch(view.Count.rectTransform);
-                view.Count.rectTransform.offsetMax = new Vector2(-18f, 0f);
-                _railViews.Add(view);
-            }
-            return _railViews[index];
-        }
-
-        void PickHouse(int row)
-        {
-            _house = row <= 0 || row > _groups.Count ? null : _groups[row - 1].House;
-            VoyageKit.Set(_message, null);
-            DrawRail();
-            DrawGroups();
-        }
-
-        // ── Open now ─────────────────────────────────────────────────────────
-
-        void DrawOpen()
-        {
-            float w = (RightWidth - OpenGap) * 0.5f;
-            int rows = Mathf.Max(1, (_open.Count + 1) / 2);
-            for (int i = 0; i < _open.Count; i++)
-            {
-                var view = OpenFor(i);
-                view.Root.gameObject.SetActive(true);
-                VoyageKit.At(view.Root, i % 2 * (w + OpenGap), i / 2 * (OpenHeight + OpenGap), w, OpenHeight);
-                int index = _open[i];
-                var offer = _offers[index];
-                VoyageKit.ShowCover(view.Picture, offer.Portrait ? offer.Portrait : offer.Picture, new Vector2(150f, 80f),
-                    offer.Portrait ? VoyageKit.FaceFocus : new Vector2(0.5f, 0.5f));
-                VoyageKit.Set(view.Kind, offer.Kind);
-                VoyageKit.Set(view.Title, offer.Title);
-                view.Pips.Lit = offer.Recommended;
-                VoyageKit.Set(view.Difficulty, offer.Recommended.ToString(CultureInfo.InvariantCulture));
-                VoyageKit.Set(view.Meta, offer.Stops.Count > 0
-                    ? TemplateText.Fill(_lines?.CrewStops, "stops", offer.Stops.Count.ToString(CultureInfo.InvariantCulture))
-                    : null);
-                view.Open.onClick.RemoveAllListeners();
-                view.Open.onClick.AddListener(() => OpenVoyage(index));
-            }
-            for (int i = _open.Count; i < _openViews.Count; i++) _openViews[i].Root.gameObject.SetActive(false);
-            float openH = rows * OpenHeight + (rows - 1) * OpenGap;
-            _openArea.sizeDelta = new Vector2(RightWidth, openH);
-            float headY = RailY + 32f + openH + 26f;
-            VoyageKit.At(_crewHead, RightX, headY, RightWidth, 24f);
-            float listY = headY + 24f + 18f;
-            VoyageKit.At(_scroll, RightX, listY, RightWidth, Mathf.Max(100f, Height - 40f - 36f - listY));
-        }
-
-        OpenView OpenFor(int index)
-        {
-            while (_openViews.Count <= index)
-            {
-                // A glass card with the picked voyage's cyan line: its picture, kind and name, its difficulty and length,
-                // Open at the bottom right.
-                var view = new OpenView { Root = VoyageKit.Node("Open" + _openViews.Count, _openArea) };
-                var card = _kit.Glass(view.Root, hit: false);
-                card.Edge.Solid(_kit.Cyan);
-                card.Edge.Width = 1f;
-                var c = card.Content;
-                var pic = At("Picture", 24f, 22f, 150f, 80f, c);
-                view.Picture = VoyageKit.CoverBox(pic);
-                var words = At("Words", 196f, 22f, 330f, 80f, c);
-                VoyageKit.Column(words, 8f, TextAnchor.UpperLeft);
-                view.Kind = _kit.Label(words, 14, _kit.Light);
-                view.Title = _kit.Text(words, 23, _kit.Light, TextAlignmentOptions.TopLeft);
-                view.Title.textWrappingMode = TextWrappingModes.Normal;
-                VoyageKit.Le(view.Title).preferredHeight = 58f;
-                var meta = At("Meta", 24f, OpenHeight - 24f - 18f, 280f, 18f, c);
-                var row = VoyageKit.Row(meta, 12f);
-                row.childForceExpandWidth = false;
-                view.Pips = _kit.Pips(meta);
-                view.Difficulty = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
-                VoyageKit.Le(view.Difficulty).minWidth = VoyageKit.Le(view.Difficulty).preferredWidth = 16f;
-                view.Meta = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
-                VoyageKit.Le(view.Meta).flexibleWidth = 1f;
-                var open = VoyageKit.Node("Open", c);
-                open.anchorMin = open.anchorMax = open.pivot = new Vector2(1f, 0f);
-                open.sizeDelta = new Vector2(220f, 48f);
-                open.anchoredPosition = new Vector2(-20f, 16f);
-                (view.Open, _) = _kit.Cta(open, _lines?.BoardSailKey, _lines?.CrewOpen, null);
-                _openViews.Add(view);
-            }
-            return _openViews[index];
-        }
-
-        void OpenVoyage(int index)
-        {
-            Close();
-            _board.Pick(index);
-            _board.OpenPicked();
-        }
-
-        // ── Crew voyages, by faction ─────────────────────────────────────────
-
-        void DrawGroups()
-        {
-            int shown = 0;
-            foreach (var g in _groups)
-            {
-                if (_house != null && g.House != _house) continue;
-                var view = GroupFor(shown++);
-                view.Root.gameObject.SetActive(true);
-                VoyageKit.Set(view.Name, VoyageCrewRules.FactionName(_lines, g.House));
-                int rows = (g.Offers.Count + 1) / 2;
-                VoyageKit.Le(view.Grid).preferredHeight = rows * RowHeight + Mathf.Max(0, rows - 1) * RowGap;
-                for (int i = 0; i < g.Offers.Count; i++)
-                {
-                    var row = RowFor(view, i);
-                    row.Root.gameObject.SetActive(true);
-                    var offer = _offers[g.Offers[i]];
-                    VoyageKit.ShowCover(row.Face, offer.Portrait, new Vector2(58f, 70f), VoyageKit.FaceFocus);
-                    VoyageKit.Set(row.By, string.IsNullOrEmpty(offer.Pilot) ? offer.Kind
-                        : TemplateText.Fill(_lines?.SeaCrewRecommends, "pilot", offer.Pilot));
-                    VoyageKit.Set(row.Title, offer.Title);
-                    row.Pips.Lit = offer.Recommended;
-                    VoyageKit.Set(row.Difficulty, offer.Recommended.ToString(CultureInfo.InvariantCulture));
-                    row.Lock.sprite = _crewLock.sprite;
-                    row.Lock.enabled = _crewLock.sprite;
-                    row.Lock.color = Amber;
-                    string title = offer.Title;
-                    row.Button.onClick.RemoveAllListeners();
-                    row.Button.onClick.AddListener(() => VoyageKit.Set(_message, TemplateText.Fill(_lines?.CrewLockedPress, "title", title)));
-                }
-                for (int i = g.Offers.Count; i < view.Rows.Count; i++) view.Rows[i].Root.gameObject.SetActive(false);
-            }
-            for (int i = shown; i < _groupViews.Count; i++) _groupViews[i].Root.gameObject.SetActive(false);
-            _crewHead.gameObject.SetActive(_groups.Count > 0);
-            LayoutRebuilder.MarkLayoutForRebuild(_list);
-        }
-
-        GroupView GroupFor(int index)
-        {
-            while (_groupViews.Count <= index)
-            {
-                var view = new GroupView { Root = VoyageKit.Node("Group" + _groupViews.Count, _list) };
-                VoyageKit.Column(view.Root, 10f, TextAnchor.UpperLeft).childForceExpandWidth = true;
-                view.Name = _kit.Label(view.Root, 13, _kit.Sub);
-                view.Grid = VoyageKit.Node("Voyages", view.Root);
-                var g = view.Grid.gameObject.AddComponent<GridLayoutGroup>();
-                g.cellSize = new Vector2((RightWidth - RowGap) * 0.5f, RowHeight);
-                g.spacing = new Vector2(RowGap, RowGap);
-                g.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-                g.constraintCount = 2;
-                _groupViews.Add(view);
-            }
-            return _groupViews[index];
-        }
-
-        RowView RowFor(GroupView group, int index)
-        {
-            while (group.Rows.Count <= index)
-            {
-                // A locked voyage: the pilot's face, who recommends it, the job, its difficulty, the lock; dimmed to .72.
-                var view = new RowView { Root = VoyageKit.Node("Voyage" + group.Rows.Count, group.Grid) };
-                var (fill, _) = _kit.Box(view.Root, VoyageKit.Fade(_kit.Popup, 0.7f), VoyageKit.Fade(_kit.Outline, 0.6f), hit: true);
-                view.Root.gameObject.AddComponent<CanvasGroup>().alpha = 0.72f;
-                view.Button = view.Root.gameObject.AddComponent<Button>();
-                view.Button.targetGraphic = fill;
-                view.Button.transition = Selectable.Transition.None;
-                var face = At("Face", 18f, 15f, 58f, 70f, view.Root);
-                view.Face = VoyageKit.CoverBox(face);
-                var words = VoyageKit.Node("Words", view.Root);
-                VoyageKit.Stretch(words);
-                words.offsetMin = new Vector2(18f + 58f + 16f, 10f);
-                words.offsetMax = new Vector2(-18f - 20f - 16f, -10f);
-                VoyageKit.Column(words, 6f, TextAnchor.MiddleLeft);
-                view.By = _kit.Label(words, 13, _kit.Light);
-                view.Title = _kit.Text(words, 18, _kit.Light, TextAlignmentOptions.Left);
-                var meta = VoyageKit.Node("Meta", words);
-                var row = VoyageKit.Row(meta, 10f);
-                row.childForceExpandWidth = false;
-                VoyageKit.Le(meta).preferredHeight = 16f;
-                view.Pips = _kit.Pips(meta);
-                view.Difficulty = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
-                var lockRt = VoyageKit.Node("Lock", view.Root);
-                lockRt.anchorMin = lockRt.anchorMax = lockRt.pivot = new Vector2(1f, 0.5f);
-                lockRt.sizeDelta = new Vector2(20f, 20f);
-                lockRt.anchoredPosition = new Vector2(-18f, 0f);
-                view.Lock = lockRt.gameObject.AddComponent<Image>();
-                view.Lock.preserveAspect = true;
-                view.Lock.raycastTarget = false;
-                group.Rows.Add(view);
-            }
-            return group.Rows[index];
         }
     }
 }
