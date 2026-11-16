@@ -23497,6 +23497,24 @@ reports are in multiplayer and camera files this change does not touch). `author
 5. Configure / go to the squad screen: the strip is gone and the map fills the page; back to the voyage screen, it returns.
 6. Wear another colour set: the cards repaint with it.
 
+## 🔴 Voyages: galaxy at Sector and Region, Galaxy view on open, one-line Saga strip, sharp route map, Ark seats (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-hllqh5` (PR into `voyages`). Record: `Docs/MENU_REDESIGN_B.md` section 205.3. The changed
+files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files; the 30 it
+reports are in multiplayer and camera files this change does not touch). No Unity editor ran.
+
+1. Menu_Main, open the Voyage window: the table shows the whole galaxy (Galaxy underlined in the zoom row).
+2. Zoom to Arm, Sector and Region with the zoom row, the wheel and a drag: the galaxy's water, stars and pins show at every
+   step (before, the whole map vanished at Sector and Region). No "Mesh can not have more than 65000 vertices" in the Console.
+3. Pick a voyage, close the window and open it again: it opens at Galaxy view again.
+4. At the page's foot: two single-line strips, 600 x 44: lock, SAGA, "Tandava and The Severing", COMING SOON; the same for
+   Episodes. Press one: the name reads "Not open yet. Voyages are open now."; press again: the name is back.
+5. Open voyage: the map on the voyage page is sharp (the course's water, not a blur of a few texels).
+6. Set sail through to the Ark page: every seat card has a soft blue glow on its edges, yours brighter. Seats that are not
+   yours show an "AI" tag and "AI wingmate" (or "AI flies for <name> until they join" for a squad member not in your lobby);
+   no card says "Open seat". "Fly a squad instead" / "Fly without a squad" switches between the two.
+7. With two friends in your party: the Ark page shows you and both friends, no AI; set sail: three players and no AI
+   wingmates. With one friend: you, the friend and one AI; set sail: one AI wingmate.
 ## 🔴 Voyage jobs come from the active squad only, and a starter squad (2026-11-16, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/project-thread-j3ua9b` (PR into `voyages`). The board offers one job per pilot in the active squad (no

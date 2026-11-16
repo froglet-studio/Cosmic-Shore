@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,10 +8,15 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The open voyage card's ground (Rev 49 C, "Route poster", Docs/MENU_REDESIGN_B.md section 119): the real course on
-    /// the HyperSea map behind the card. It draws the water the window's own <see cref="VoyageMapGraphic"/> painted
-    /// (<see cref="VoyageMapGraphic.TrySeaView"/>, the same texture, never a second paint: the map's atlas is shared),
-    /// framed on the course at the card's shape (<see cref="VoyageCardRules.Frame"/>), with the course over it as a lit
-    /// line and its two ends marked. With no painted water it draws nothing and the card's own fill shows.
+    /// the HyperSea map behind the card, framed on the course at the card's shape (<see cref="VoyageCardRules.Frame"/>),
+    /// with the course over it as a lit line and its two ends marked.
+    ///
+    /// <para>It paints its own water for that frame (<see cref="HyperSea.Density"/> coloured by
+    /// <see cref="HyperSea.SeaColor"/>, as the map does), once per course and size. It used to crop the map's own painted
+    /// water, which is about 190 texels across the whole table's view, so a short course was a few texels blown up: the
+    /// voyage page's map read blurred (Shombith, 2026-11-16), and with the table opening at Galaxy view it would have been
+    /// one texel. The map still says whether a charted sea is on show (<see cref="VoyageMapGraphic.TrySeaView"/>); without
+    /// one it draws nothing and the card's own fill shows.</para>
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public class VoyageRoutePoster : MaskableGraphic
@@ -63,8 +69,8 @@ namespace CosmicShore.UI
         {
             local = default;
             var r = rectTransform.rect;
-            if (!_source || r.width < 1f || r.height < 1f || !_source.TrySeaView(out _, out _, out var lo, out var hi)) return false;
-            var (flo, fhi) = VoyageCardRules.Frame(lo, hi, _course, r.width / r.height);
+            if (!_source || r.width < 1f || r.height < 1f || !_source.TrySeaView(out _, out _, out _, out _)) return false;
+            var (flo, fhi) = OwnFrame(r.width / r.height);
             local = new Vector2(Mathf.LerpUnclamped(r.xMin, r.xMax, Mathf.InverseLerp(flo.x, fhi.x, map.x)),
                 Mathf.LerpUnclamped(r.yMin, r.yMax, Mathf.InverseLerp(flo.y, fhi.y, map.y)));
             return true;
@@ -72,11 +78,79 @@ namespace CosmicShore.UI
 
         /// <summary>How far along the course (0-1) the stop nearest <paramref name="stop"/> lies.</summary>
         public float ShareAt(Vector2 stop) => VoyageCardRules.ShareAlong(_course, stop);
-        // The map's view the mesh was last built for: the poster rebuilds only when the map repaints or moves.
-        Vector2 _drawnLo, _drawnHi;
         Rect _drawnRect;
 
+        // Its own water: the frame painted, the texture holding it (a white row on top for the solid shapes), and the
+        // frame and size it was painted for.
+        const int MaxTexWidth = 320, MinTexWidth = 64, WhiteRows = 2;
+        /// <summary>The least a frame shows across, ly, so a short course keeps its surroundings (the map's focus minimum).</summary>
+        const float MinFrameLy = 360f;
+        Texture2D _own;
+        Vector2 _frameLo, _frameHi, _white;
+        int _seaRows;
+        string _paintedFor;
+        bool _charted;
+
         public override Texture mainTexture => _texture ? _texture : s_WhiteTexture;
+
+
+        /// <summary>The frame the poster shows: the course at the card's shape, at least <see cref="MinFrameLy"/> across.</summary>
+        (Vector2 lo, Vector2 hi) OwnFrame(float aspect)
+        {
+            const float half = 50000f;
+            if (_course.Count == 0) return (new Vector2(-half, -half), new Vector2(half, half));
+            var (lo, hi) = VoyageCardRules.Frame(new Vector2(-half, -half), new Vector2(half, half), _course, aspect);
+            var size = hi - lo;
+            if (size.x >= MinFrameLy) return (lo, hi);
+            var centre = (lo + hi) * 0.5f;
+            var want = new Vector2(MinFrameLy, MinFrameLy / Mathf.Max(1e-3f, aspect)) * 0.5f;
+            return (centre - want, centre + want);
+        }
+
+        /// <summary>Paint the water of the frame for this rect, unless it is already painted.</summary>
+        bool PaintOwn(Rect r)
+        {
+            float aspect = r.width / r.height;
+            var (lo, hi) = OwnFrame(aspect);
+            int w = Mathf.Clamp(Mathf.RoundToInt(r.width * 0.5f), MinTexWidth, MaxTexWidth);
+            int rows = Mathf.Clamp(Mathf.RoundToInt(w / aspect), 16, MaxTexWidth);
+            string key = $"{lo.x:F1},{lo.y:F1},{hi.x:F1},{hi.y:F1}:{w}x{rows}";
+            if (_own && _paintedFor == key) return true;
+            int h = rows + WhiteRows;
+            if (!_own || _own.width != w || _own.height != h)
+            {
+                if (_own) Destroy(_own);
+                _own = new Texture2D(w, h, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Bilinear,
+                    hideFlags = HideFlags.HideAndDontSave,
+                    name = "VoyageRouteSea",
+                };
+                // Destroyed with the poster (VoyageOwnedTexture).
+                if (!TryGetComponent(out VoyageOwnedTexture owner)) owner = gameObject.AddComponent<VoyageOwnedTexture>();
+                owner.Texture = _own;
+            }
+            var px = new Color32[w * h];
+            for (int y = 0; y < rows; y++)
+            for (int x = 0; x < w; x++)
+            {
+                // Map points flip y back to the board's frame (VoyageMapGraphic.MapPoint).
+                double gx = lo.x + (hi.x - lo.x) * (x + 0.5) / w;
+                double gy = -(lo.y + (hi.y - lo.y) * (y + 0.5) / rows);
+                var (cr, cg, cb) = HyperSea.SeaColor(HyperSea.Density(gx, gy));
+                px[y * w + x] = new Color32((byte)cr, (byte)cg, (byte)cb, 255);
+            }
+            for (int i = rows * w; i < px.Length; i++) px[i] = new Color32(255, 255, 255, 255);
+            _own.SetPixels32(px);
+            _own.Apply(false);
+            _paintedFor = key;
+            _frameLo = lo;
+            _frameHi = hi;
+            _seaRows = rows;
+            _white = new Vector2((w - 0.5f) / w, (h - 0.5f) / h);
+            return true;
+        }
 
         /// <summary>Show <paramref name="course"/> (map points, <see cref="VoyageMapGraphic.MapPoint"/>) on
         /// <paramref name="source"/>'s water. A null or empty course shows the water alone.</summary>
@@ -88,19 +162,22 @@ namespace CosmicShore.UI
             _route = route;
             _ark = ark;
             _sea = seaTint;
+            _paintedFor = null;
             raycastTarget = false;
             SetVerticesDirty();
             SetMaterialDirty();
         }
 
-        // The map repaints its water as it is panned and zoomed; the card follows it, rebuilding only on a change.
+        // The card paints its own water once per course and size; it waits for the map to show a charted sea first.
         void LateUpdate()
         {
             if (!_source) return;
-            bool painted = _source.TrySeaView(out var tex, out _, out var lo, out var hi);
-            if (!painted) tex = null;
-            if (tex != _texture) SetMaterialDirty();
-            if (tex != _texture || lo != _drawnLo || hi != _drawnHi || rectTransform.rect != _drawnRect) SetVerticesDirty();
+            bool charted = _source.TrySeaView(out _, out _, out _, out _);
+            if (charted != _charted || rectTransform.rect != _drawnRect)
+            {
+                SetMaterialDirty();
+                SetVerticesDirty();
+            }
         }
 
         protected override void OnPopulateMesh(VertexHelper vh)
@@ -109,14 +186,14 @@ namespace CosmicShore.UI
             _texture = null;
             var r = rectTransform.rect;
             _drawnRect = r;
-            if (!_source || !_source.TrySeaView(out var tex, out var uv, out var lo, out var hi)) return;
-            _texture = tex;
-            _drawnLo = lo;
-            _drawnHi = hi;
-            if (r.width < 1f || r.height < 1f) return;
-            var (flo, fhi) = VoyageCardRules.Frame(lo, hi, _course, r.width / r.height);
-            Vector2 Uv(Vector2 m) => new(uv.x + uv.width * Mathf.InverseLerp(lo.x, hi.x, m.x),
-                uv.y + uv.height * Mathf.InverseLerp(lo.y, hi.y, m.y));
+            _charted = _source && _source.TrySeaView(out _, out _, out _, out _);
+            if (!_charted || r.width < 1f || r.height < 1f || !PaintOwn(r)) return;
+            _texture = _own;
+            Vector2 flo = _frameLo, fhi = _frameHi;
+            // Texel centres at the edges, so the white row above the water never bleeds into its top.
+            float h = _own.height, rows = _seaRows;
+            Vector2 Uv(Vector2 m) => new(Mathf.InverseLerp(flo.x, fhi.x, m.x),
+                (0.5f + (rows - 1f) * Mathf.InverseLerp(flo.y, fhi.y, m.y)) / h);
             Vector2 At(Vector2 m) => new(Mathf.LerpUnclamped(r.xMin, r.xMax, Mathf.InverseLerp(flo.x, fhi.x, m.x)),
                 Mathf.LerpUnclamped(r.yMin, r.yMax, Mathf.InverseLerp(flo.y, fhi.y, m.y)));
 
@@ -130,7 +207,7 @@ namespace CosmicShore.UI
                 sea, Uv(flo), Uv(new Vector2(flo.x, fhi.y)), Uv(fhi), Uv(new Vector2(fhi.x, flo.y)));
 
             if (_course.Count < 2) return;
-            var white = _source.WhiteUv;
+            var white = _white;
             // A soft wide line under a thin bright one: the course lit on the water, drawn up to Drawn of its length.
             var glow = new Color(route.r, route.g, route.b, 0.22f);
             float total = VoyageCardRules.Length(_course), left = total * _drawn;
