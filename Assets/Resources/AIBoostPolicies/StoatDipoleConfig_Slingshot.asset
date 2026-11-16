@@ -29,7 +29,7 @@ MonoBehaviour:
     Max: 2
     element: 3
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   sourcePush: 1
   sourceSofteningHorizons: 2
   accelerationCap: 3000
@@ -63,7 +63,7 @@ MonoBehaviour:
     Max: 5
     element: 4
     UseFloor: 1
-    Floor: 1
+    Floor: 1.25
   boostRise: 20
   boostFadeSeconds: 0.6
   dotPixels: 4

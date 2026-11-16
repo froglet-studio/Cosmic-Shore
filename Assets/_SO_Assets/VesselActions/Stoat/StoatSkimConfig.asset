@@ -22,7 +22,7 @@ MonoBehaviour:
     Max: 1.4
     element: 3
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   tidepoolScale: 1.6
   catchDegrees: 60
   poleHalfGap: 0.35

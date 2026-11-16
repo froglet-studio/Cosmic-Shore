@@ -178,12 +178,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] ElementalFloat dangerShare = ElementalFloat.Multiplier(0.25f, 0.75f, Element.Charge, 0f);
         [Tooltip("MASS: how much faster the herd breeds (a birth takes the species' feeds over this). The lab's 1 at -5, " +
                  "3 at 15: 1.5 at rest, 2.5 at level 10.")]
-        [SerializeField] ElementalFloat herdBirthRate = ElementalFloat.Multiplier(1.5f, 2.5f, Element.Mass, 1f);
+        [SerializeField] ElementalFloat herdBirthRate = ElementalFloat.Multiplier(1.5f, 2.5f, Element.Mass, 0.75f);
         [Tooltip("SPACE: every herder's ring, as a multiple of the thumb floor (RingFloor). The lab's floor at -5, +6% per " +
                  "level: 1.3 at rest, 1.9 at level 10.")]
-        [SerializeField] ElementalFloat ringScale = ElementalFloat.Multiplier(1.3f, 1.9f, Element.Space, 1f);
+        [SerializeField] ElementalFloat ringScale = ElementalFloat.Multiplier(1.3f, 1.9f, Element.Space, 0.65f);
         [Tooltip("TIME: the herd's speed multiplier. The lab's +6% per level, floored at x0.4: 1 at rest, 1.6 at level 10.")]
-        [SerializeField] ElementalFloat herdSpeed = ElementalFloat.Multiplier(1f, 1.6f, Element.Time, 0.4f);
+        [SerializeField] ElementalFloat herdSpeed = ElementalFloat.Multiplier(1f, 1.6f, Element.Time, 0.5f);
 
         [Header("Level 5")]
         [Tooltip("pooEvery: Mass L5, seconds between clusters.")]

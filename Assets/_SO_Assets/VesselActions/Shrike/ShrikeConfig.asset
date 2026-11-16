@@ -34,7 +34,7 @@ MonoBehaviour:
     Max: 5
     element: 1
     UseFloor: 1
-    Floor: 0.5
+    Floor: 0.75
   lanceDebrisSpeed: 60
   lanceBeamSeconds: 0.3
   slingRange: 1600
@@ -57,7 +57,7 @@ MonoBehaviour:
     Max: 14
     element: 3
     UseFloor: 1
-    Floor: 2
+    Floor: 2.5
   missileSpeed: 220
   missileTurn: 140
   missileBlast: 18

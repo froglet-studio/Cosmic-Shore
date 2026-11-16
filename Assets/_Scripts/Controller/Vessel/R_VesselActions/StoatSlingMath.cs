@@ -255,10 +255,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The slingshot's kick for a release: the squeeze's boost (<see cref="SlingBoost"/>) scaled by the timing —
         /// <paramref name="missShare"/> of it for a release outside the window, all of it inside — and by Time's
-        /// <paramref name="rate"/> (the Stoat's boost ratio, ≥ 1).
+        /// <paramref name="rate"/> (the launch-power multiplier, ≥ 0; its config floor holds it at half in the deficit band).
         /// </summary>
         public static float TimedKick(float squeezeBoost, float sweetSpot01, float missShare, float rate) =>
-            Mathf.Max(0f, squeezeBoost) * Mathf.Lerp(Mathf.Clamp01(missShare), 1f, Mathf.Clamp01(sweetSpot01)) * Mathf.Max(1f, rate);
+            Mathf.Max(0f, squeezeBoost) * Mathf.Lerp(Mathf.Clamp01(missShare), 1f, Mathf.Clamp01(sweetSpot01)) * Mathf.Max(0f, rate);
 
         // ------------------------------------------------------------------ Time mode: the catch (STOAT_DIPOLE.md §1b)
 

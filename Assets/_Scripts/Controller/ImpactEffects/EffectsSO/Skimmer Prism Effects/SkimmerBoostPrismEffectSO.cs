@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
                  "shape. Charge is the historical default so an unauthored asset is unchanged.")]
         [SerializeField] private Element dangerBonusElement = Element.Charge;
 
-        /// <summary>Skim energy per hit: x1 at the resting level, x2 at level 10, floored at x0.25.
+        /// <summary>Skim energy per hit: x1 at the resting level, x2 at level 10, floored at x0.5 (the fleet floor rule: half the resting value).
         /// The ELEMENT is authored on this field, not fixed in code - the Squirrel maps it to Time.
         /// Migrated verbatim from the retired ElementalAbilityMapSO generic
         /// multiplier (atFull 2, minMultiplier 0.25) — see
@@ -38,7 +38,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         [FormerlySerializedAs("chargeEnergyMultiplier")]
         [SerializeField] ElementalFloat energyMultiplier =
-            ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.25f);
+            ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.5f);
 
         [Header("Shared Config (single source of truth)")]
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier; // initial/base

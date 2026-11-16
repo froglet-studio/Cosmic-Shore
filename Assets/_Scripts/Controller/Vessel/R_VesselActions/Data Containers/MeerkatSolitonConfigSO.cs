@@ -62,7 +62,7 @@ namespace CosmicShore.ScriptableObjects
                  "Min the page's networkReachAtZero (0.5, at Mass 0), Max its networkReachAtFull (1, the whole cell, at Mass 10). " +
                  "Read when the omnicrystal is taken (EvaluateLive). An ElementalFloat block, so studio_to_unity.py cannot write it: " +
                  "keep it equal to the page's two keys by hand.")]
-        [SerializeField] ElementalFloat networkReach = ElementalFloat.Multiplier(0.5f, 1f, Element.Mass, 0.05f);
+        [SerializeField] ElementalFloat networkReach = ElementalFloat.Multiplier(0.5f, 1f, Element.Mass, 0.25f);
         [Tooltip("Omnicrystals on the course (a new course or reset places them)")]
         [SerializeField, Range(0, 12)] int omniCount = 3;
 
@@ -119,7 +119,7 @@ namespace CosmicShore.ScriptableObjects
         // (surfaceArea, suck*, swallowShare, fireSpeed, fireGlideSeconds; MeerkatSwallow; carrySpeed is retired, round 25).
         [Header("Kit · Time, the ride (the artifact's Kit > Time)")]
         [Tooltip("The rush: the throat's speed ×, Time L0 -> ...at Time L10 (every soliton's ride, its own or anyone's)")]
-        [SerializeField] ElementalFloat rush = ElementalFloat.Multiplier(1f, 1.4f, Element.Time, 0.05f);
+        [SerializeField] ElementalFloat rush = ElementalFloat.Multiplier(1f, 1.4f, Element.Time, 0.5f);
         [Tooltip("Kit L5 Boost out: out of every soliton at (× the exit)")]
         [SerializeField, Range(1f, 3f)] float boostOut = 1.5f;
 
@@ -133,7 +133,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("An empty sentinel's AI zaps (a second)")]
         [SerializeField, Range(0f, 12f)] float aiZapRate = 5f;
         [Tooltip("A zap knocks out, Charge L0 (petal) -> ...at Charge L10 (petal), on each element, a sub-petal tick through the economy's accrual")]
-        [SerializeField] ElementalFloat zapPetals = ElementalFloat.Multiplier(0.1f, 0.25f, Element.Charge, 0f);
+        [SerializeField] ElementalFloat zapPetals = ElementalFloat.Multiplier(0.1f, 0.25f, Element.Charge, 0.05f);
         [Tooltip("Unity only: the seconds before a sentinel's zap can score on the same rival again (VesselCombatHitLatch; 0 = every zap is a scored hit)")]
         [SerializeField, Min(0f)] float zapCooldownSeconds;
         [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager scores combat hits on. Fail-loud.")]
@@ -143,7 +143,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Exit portal: the hexagon out at (× the exit radius)")]
         [SerializeField, Range(1f, 4f)] float portalShare = 1.5f;
         [Tooltip("Its prisms' size, Mass L0 (× a prism) -> ...at Mass L10 (× the hull's trail prism)")]
-        [SerializeField] ElementalFloat portalSize = ElementalFloat.Multiplier(0.4f, 0.9f, Element.Mass, 0.05f);
+        [SerializeField] ElementalFloat portalSize = ElementalFloat.Multiplier(0.4f, 0.9f, Element.Mass, 0.2f);
 
         [Header("Kit · Audio (FMOD; shipped empty until sound design wires them)")]
         [Tooltip("A sentinel zaps a rival (at the rival).")]

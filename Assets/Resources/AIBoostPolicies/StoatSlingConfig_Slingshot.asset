@@ -30,7 +30,7 @@ MonoBehaviour:
     Max: 1.4
     element: 3
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   radiusFollowRate: 3
   radialCorrectionRate: 5
   innerPullRate: 1
@@ -69,7 +69,7 @@ MonoBehaviour:
     Max: 9
     element: 3
     UseFloor: 1
-    Floor: 1.5
+    Floor: 3
   aiSlingMinTurnDegrees: 147.951
   aiReleaseConeDegrees: 15.999
   aiCatchGiveUpSeconds: 4

@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hullRadius: 9
   boostTank: 3
-  boostRefill: 
+  boostRefill:
     Enabled: 1
     Value: 0.25
     Min: 0.25
     Max: 0.35
     element: 4
     UseFloor: 1
-    Floor: 0.05
+    Floor: 0.125
   rearmUpgradeElement: 1
   rearmSeconds: 12
   bulwarkUpgradeElement: 2
@@ -32,14 +32,14 @@ MonoBehaviour:
   shieldMinRadius: 50
   shieldMaxRadius: 70
   shieldOpenDeg: 45
-  shieldSeconds: 
+  shieldSeconds:
     Enabled: 1
     Value: 4
     Min: 4
     Max: 6.1333333
     element: 2
     UseFloor: 1
-    Floor: 0.5
+    Floor: 2
   shieldCooldown: 9
   shieldBlockScale: {x: 10, y: 1, z: 1}
   shieldSuper: 1
@@ -60,14 +60,14 @@ MonoBehaviour:
     Floor: 0.5
   missileLife: 5
   launchCooldown: 0.6
-  blastRadius: 
+  blastRadius:
     Enabled: 1
     Value: 30
     Min: 30
     Max: 46
     element: 3
     UseFloor: 1
-    Floor: 5
+    Floor: 15
   blastSeconds: 0.5
   missileCollectRadius: 9
   missileContactRadius: 3.46
@@ -124,14 +124,14 @@ MonoBehaviour:
   fastGunPenScale: {x: 0.8, y: 0.5, z: 4.6}
   bombSpeed: 90
   bombFuse: 10
-  bombBlastRadius: 
+  bombBlastRadius:
     Enabled: 1
     Value: 50
     Min: 50
     Max: 76.666667
     element: 3
     UseFloor: 1
-    Floor: 10
+    Floor: 25
   bombScale: 3.75
   bombColor: {r: 1, g: 0.072, b: 0.105, a: 1}
   bombLitStrength: 1

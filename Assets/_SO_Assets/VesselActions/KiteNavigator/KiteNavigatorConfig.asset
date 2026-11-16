@@ -66,7 +66,7 @@ MonoBehaviour:
     Max: 2
     element: 1
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   massClusterScale:
     Enabled: 1
     Value: 1
@@ -74,7 +74,7 @@ MonoBehaviour:
     Max: 2
     element: 2
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   spaceReachScale:
     Enabled: 1
     Value: 1
@@ -82,7 +82,7 @@ MonoBehaviour:
     Max: 2
     element: 3
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   crystalStealUpgradeElement: 1
   shieldedClustersUpgradeElement: 2
   shieldBreakerUpgradeElement: 3
