@@ -24,7 +24,37 @@ One process boots in ~20 s wall, then races its seeds back to back through Play 
 time on one core). Alone mode runs one process per hull in parallel: **27 races (9 hulls x 3 seeds) in 3.5 min on 4
 cores**, about 2 races per core-minute. A 6-hull field race: ~10 s wall per race after boot.
 
-## Calibration against the editor benchmark (I1, the shipped course, no features, each AI alone, 3 seeds)
+## Today's baseline (2026-11-16, bleeding-edge 51323414, after #2037 and #2038)
+
+Each AI alone, I1, the shipped course with no features, Legendary, 4 seeds (`--calibrate --seeds 1,2,3,4`, 36 races in
+3.3 min on 4 cores). **This is the reference the course search scores against**; the 11-03 editor column below is kept
+for history.
+
+| Hull | Mean | sd | Finished | vs Urchin |
+|---|---|---|---|---|
+| Rhino | 35.4 s | 2.6 | 4/4 | 0.69x |
+| Stoat | 46.1 s | 5.4 | 4/4 | 0.90x |
+| Scarab | 47.2 s | 4.9 | **2/4** | 0.93x |
+| Urchin | 51.0 s | 0.3 | 4/4 | 1.00x |
+| Squirrel | 80.1 s | 2.8 | 4/4 | 1.57x |
+| Manta | 82.3 s | 0.8 | 4/4 | 1.61x |
+| Sparrow | 90.5 s | 1.2 | 4/4 | 1.77x |
+| Serpent | 107.0 s | 6.2 | 4/4 | 2.10x |
+| Dolphin | 131.0 s | 23.8 | 4/4 | 2.57x |
+
+Spread (slowest / fastest finisher): **3.7x**. Fixed today: the Stoat (239 s, its trampoline AI never pressed on the race
+line: `StoatSlingConfig_Regatta` presses for the warp at 400 u, #2037) and the Dolphin (never finished: its race-line nose
+lead 2.5 made it overshoot and circle; 1.0, #2038).
+
+**Open: the Scarab** at its nose lead 2.5 is fast when it finishes (44-51 s) but stalls in half its races (15-16 of 24
+gates at 400 s). At 1.0 it finishes 10 of 10 but in 88-173 s; at 0, 141-211 s. Left as it is: a choice between a fast,
+fragile AI and a slow, reliable one.
+
+**Determinism.** One process is deterministic for a (seed, race index) pair: two processes with the same seeds give the
+same times to the millisecond. The arena's SegmentSpawner re-seeds `UnityEngine.Random` with the course seed while it lays
+the course, so the judge seeds the race again as the turn starts; the seed then feeds the race's own draws.
+
+## Calibration against the 11-03 editor benchmark (first run, before #2037 and #2038; 3 seeds)
 
 | Hull | Port (mean, sd) | Editor 2026-11-03 | Ratio | Why |
 |---|---|---|---|---|

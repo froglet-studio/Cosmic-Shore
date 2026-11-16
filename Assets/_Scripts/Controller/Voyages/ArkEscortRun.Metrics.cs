@@ -143,7 +143,7 @@ namespace CosmicShore.Gameplay
             if (!ark) return;
             _hookedArk = ark;
             ark.HullPrismLost += OnHullPrismLost;
-            ark.RegrowAllowed = false;   // no healing until a held nucleus (TickChaos)
+            ark.RegrowOverride = false;   // no healing until a held nucleus (TickChaos)
             ark.HullPrismRegrown += OnHullPrismRegrown;
         }
 

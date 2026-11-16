@@ -185,6 +185,10 @@ namespace CosmicShore.Player
                     yield break;
                 }
 
+                // The arena's SegmentSpawner re-seeds UnityEngine.Random with the course seed while it lays the course,
+                // so a seed set before launch is spent by then. Seeding again as the turn starts makes the race's own
+                // draws (AI risk rolls, mistakes, spawns) follow this race's seed.
+                CosmicShore.Engine.Random.InitState(unchecked(seed * 7919 + 17));
                 int total = controller.AuthoritativeGateCount;
                 race["gates_total"] = total;
                 race["laps_total"] = total / RegattaCourse.RingsPerLap;
