@@ -143,6 +143,8 @@ namespace CosmicShore.Gameplay
             _context = context;
             _root = toyboxRoot;
             _onEnded = onEnded;
+            // Voyages fly the chase camera while the escort is out (Rev 114 F1); the sim (every seat AI) has no camera to frame.
+            VoyageChaseCamera.Attach(gameObject, () => _active && !_aiLocal, LocalVessel);
         }
 
         // ── Set sail ─────────────────────────────────────────────────────────
@@ -628,6 +630,8 @@ namespace CosmicShore.Gameplay
             var sea = new GameObject("ArkEscortArkwayRun");
             sea.transform.SetParent(_root, false);
             _sea = sea.AddComponent<ArkwayRun>();
+            // A toast never plays under the intro: it waits, and is read when the pilot has the stick.
+            _sea.HoldBanners = () => VoyageIntro.IsPlaying;
             _sea.Underway += OnUnderway;
             _sea.RouteEnded += OnRouteEnded;
             _sea.ArkFallen += OnArkFallen;

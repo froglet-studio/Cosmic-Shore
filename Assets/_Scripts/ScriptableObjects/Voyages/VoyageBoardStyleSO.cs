@@ -30,6 +30,9 @@ namespace CosmicShore.ScriptableObjects
         [Header("Pictures")]
         [Tooltip("The Ark, for the Ark escort's card where a job shows its pilot (Frogma Rev 113 Sea and Crew).")]
         public Sprite ArkPicture;
+        [Tooltip("The pilots' widescreen scenes (Docs/Pilots/PORTRAITS.md 8): the crew screen shows the picked pilot's job " +
+                 "over their scene (Frogma Rev 114 C2). Its scenes are named, not referenced, so this loads none of them.")]
+        public PilotSceneCatalogSO PilotScenes;
 
         [Header("Type")]
         [Tooltip("Labels and tabs (Chakra Petch SemiBold, set in capitals). Empty: the window's own face.")]

@@ -7,8 +7,8 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The voyage intro (Shombith, 2026-11-16, Milestone 1): the escort ships one, it introduces the Ark, the squad and
-    /// the objective in that order, every line it shows is authored, and its camera maths frames what each shot names.
+    /// The voyage intro (Shombith, 2026-11-16, Milestone 1): the escort and Crystal Run ship Rev 114's Departure: the Ark
+    /// wide and along its hull, your vessel, the wingmates, the title and route, then GO, every line it shows is authored, and its camera maths frames what each shot names.
     /// </summary>
     public class VoyageIntroTests
     {
@@ -28,21 +28,36 @@ namespace CosmicShore.Tests
                 "VoyageIntroSO.LoadEscort() finds nothing at its Resources path.");
         }
 
-        [Test]
-        public void EscortIntro_ShowsTheArk_ThenTheSquad_ThenTheObjective()
+        static void AssertDeparture(VoyageIntroSO intro)
         {
-            var shots = Intro().Shots;
-            Assert.AreEqual(3, shots.Count);
-            Assert.AreEqual(VoyageIntroSO.Subject.Ark, shots[0].Subject);
-            Assert.AreEqual(VoyageIntroSO.Subject.Squad, shots[1].Subject);
-            Assert.AreEqual(VoyageIntroSO.Subject.Course, shots[2].Subject);
-            foreach (var s in shots)
-            {
-                Assert.IsFalse(string.IsNullOrEmpty(s.Title), $"A {s.Subject} shot has no title.");
-                Assert.Greater(s.Seconds, 0.4f);
-            }
-            StringAssert.Contains("{vessel}", shots[1].Title, "The squad shot does not name the vessel.");
-            StringAssert.Contains("{worlds}", shots[2].Line, "The objective does not name the worlds to cross.");
+            var shots = intro.Shots;
+            Assert.AreEqual(5, shots.Count, "Departure (Rev 114) is five shots and the hand-over.");
+            Assert.AreEqual(VoyageIntroSO.Subject.Ark, shots[0].Subject, "Shot 1 is wide on the Ark.");
+            Assert.IsTrue(string.IsNullOrEmpty(shots[0].Title) && string.IsNullOrEmpty(shots[0].Line), "Shot 1 has no words.");
+            Assert.AreEqual(VoyageIntroSO.Subject.Ark, shots[1].Subject, "Shot 2 pushes along the Ark's hull.");
+            StringAssert.Contains("{hull}", shots[1].Title, "The hull caption does not show the hull.");
+            Assert.AreEqual(VoyageIntroSO.Subject.You, shots[2].Subject, "Shot 3 is your own vessel.");
+            Assert.AreEqual(VoyageIntroSO.Subject.Wingmates, shots[3].Subject, "Shot 4 is the wingmates.");
+            Assert.AreEqual(VoyageIntroSO.Subject.Course, shots[4].Subject, "Shot 5 is the title and the route.");
+            Assert.IsFalse(string.IsNullOrEmpty(shots[4].Title), "The course shot has no title.");
+            StringAssert.Contains("{objective}", shots[4].Line, "The goal line is not the objective's own words.");
+            Assert.IsFalse(string.IsNullOrEmpty(intro.GoWord), "No GO over the hand-over.");
+            StringAssert.Contains("{pilot}", intro.CardLine, "The name card does not name the pilot.");
+            Assert.IsNotNull(intro.Vessels, "The intro reads no vessel list: the name cards would have no vessel.");
+            Assert.That(intro.Duration(3), Is.EqualTo(9f).Within(0.01f), "A three-seat Departure runs nine seconds.");
+            Assert.That(intro.Duration(1), Is.EqualTo(8f).Within(0.01f), "Alone: no wingmate shots.");
+            Assert.IsTrue(intro.SkippableAfterFirstRun, "The first run plays through; later ones may be skipped.");
+        }
+
+        [Test]
+        public void EscortIntro_IsTheDeparture() => AssertDeparture(Intro());
+
+        [Test]
+        public void MaySkip_OnlyAfterTheFirstRun()
+        {
+            Assert.IsFalse(VoyageIntro.MaySkip(skippableAfterFirstRun: true, seenBefore: false));
+            Assert.IsTrue(VoyageIntro.MaySkip(skippableAfterFirstRun: true, seenBefore: true));
+            Assert.IsTrue(VoyageIntro.MaySkip(skippableAfterFirstRun: false, seenBefore: false));
         }
 
         [Test]
@@ -53,6 +68,14 @@ namespace CosmicShore.Tests
             Assert.IsFalse(string.IsNullOrEmpty(intro.SkipHint), "The skip is not shown.");
             Assert.LessOrEqual(intro.HoldToSkipSeconds, 1f);
             Assert.LessOrEqual(intro.Duration(3), 25f, "A three-seat intro runs longer than 25 s.");
+        }
+
+        [Test]
+        public void CrystalRunIntro_LoadsFromResources_AndIsTheDeparture()
+        {
+            var intro = Resources.Load<VoyageIntroSO>(VoyageIntroSO.CrystalRunResourcePath);
+            Assert.IsNotNull(intro, "VoyageIntroSO.LoadCrystalRun() finds nothing: Crystal Run would open with no intro.");
+            AssertDeparture(intro);
         }
 
         [Test]

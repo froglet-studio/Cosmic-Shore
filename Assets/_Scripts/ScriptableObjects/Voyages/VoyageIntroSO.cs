@@ -19,6 +19,8 @@ namespace CosmicShore.ScriptableObjects
     {
         /// <summary>Under Resources: the escort's intro.</summary>
         public const string EscortResourcePath = "Voyages/ArkEscortIntro";
+        /// <summary>Crystal Run's intro (job.raid.crystals): the same reel, its own words.</summary>
+        public const string CrystalRunResourcePath = "Voyages/CrystalRunIntro";
 
         public enum Subject
         {
@@ -26,8 +28,13 @@ namespace CosmicShore.ScriptableObjects
             Ark = 0,
             /// <summary>One shot per vessel in the squad, the player's own last (size: the hull's bounds).</summary>
             Squad = 1,
-            /// <summary>The Ark again, aimed down its course at what is ahead (the objective).</summary>
+            /// <summary>The Ark again, aimed down its course at what is ahead (the objective): the title, the goal and the
+            /// route drawn in as a line of stops.</summary>
             Course = 2,
+            /// <summary>The player's own vessel, with its name card (Rev 114 Departure, shot 3).</summary>
+            You = 3,
+            /// <summary>One shot per wingmate in seat order, each adding its name card (Rev 114 Departure, shot 4).</summary>
+            Wingmates = 4,
         }
 
         [Serializable]
@@ -36,8 +43,14 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("What the shot frames.")]
             public Subject Subject;
 
-            [Min(0.5f), Tooltip("Seconds on screen (per vessel for a Squad shot).")]
+            [Min(0.2f), Tooltip("Seconds on screen (per vessel for a Squad or Wingmates shot).")]
             public float Seconds = 4f;
+
+            [Tooltip("Cut to this shot on the beat instead of easing into it.")]
+            public bool HardCut;
+
+            [Tooltip("Played as the shot starts (a sting, a whoosh). Empty plays nothing.")]
+            public FMODUnity.EventReference Sound;
 
             [Tooltip("Where the camera starts around the subject, in degrees: 0 dead ahead, 90 to starboard, 180 astern.")]
             public float FromAzimuth;
@@ -58,7 +71,9 @@ namespace CosmicShore.ScriptableObjects
                      "course with it).")]
             public float LookAhead;
 
-            [Tooltip("The shot's title. Tokens: {voyage} {difficulty} {legs} {worlds} {first} {vessel} {seat} {who}.")]
+            [Tooltip("The shot's title. Tokens: {voyage} {difficulty} {legs} {worlds} {first} {hull} {objective} {vessel} " +
+                     "{seat} {who} and each voyage's own ({goal} {to} {breach} for Crystal Run). On a vessel's shot it is " +
+                     "the name card's first line; on an Ark shot a small caption; on a Course shot the big title.")]
             public string Title;
 
             [TextArea, Tooltip("The line under the title (same tokens).")]
@@ -75,9 +90,26 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("Between world names in {worlds}.")]
         string worldSeparator = " · ";
 
+        [SerializeField, Tooltip("A name card's second line. Tokens: {pilot} {element} {seat} {who}.")]
+        string cardLine = "{pilot} · {element}";
+
+        [Header("Sound")]
+        [SerializeField, Tooltip("Played as the intro starts (the low music). Empty plays nothing.")]
+        FMODUnity.EventReference openingSound;
+
+        [SerializeField, Tooltip("Played with the GO word as the camera swings in behind the pilot. Empty plays nothing.")]
+        FMODUnity.EventReference goSound;
+
+        [Header("Go")]
+        [SerializeField, Tooltip("The word over the hand-over, as the stick comes back. Empty shows nothing.")]
+        string goWord = "GO";
+
         [Header("Skip")]
-        [SerializeField, Tooltip("Shown in the corner while the intro plays. Empty shows nothing.")]
-        string skipHint = "Hold any button to skip";
+        [SerializeField, Tooltip("Shown in the corner while the intro may be skipped. Empty shows nothing.")]
+        string skipHint = "Hold B to skip";
+
+        [SerializeField, Tooltip("The first time a pilot sees this intro it plays through; after that it can be skipped.")]
+        bool skippableAfterFirstRun = true;
 
         [SerializeField, Min(0.1f), Tooltip("Seconds a button is held to skip.")]
         float holdToSkipSeconds = 0.6f;
@@ -109,6 +141,11 @@ namespace CosmicShore.ScriptableObjects
 
         public IReadOnlyList<Shot> Shots => shots;
         public SO_VesselList Vessels => vessels;
+        public string CardLine => cardLine;
+        public FMODUnity.EventReference OpeningSound => openingSound;
+        public FMODUnity.EventReference GoSound => goSound;
+        public string GoWord => goWord;
+        public bool SkippableAfterFirstRun => skippableAfterFirstRun;
         public string WorldSeparator => worldSeparator;
         public string SkipHint => skipHint;
         public float HoldToSkipSeconds => holdToSkipSeconds;
@@ -126,20 +163,32 @@ namespace CosmicShore.ScriptableObjects
         {
             float t = handOverSeconds;
             foreach (var s in shots)
-                if (s != null) t += s.Subject == Subject.Squad ? s.Seconds * Mathf.Max(0, squadVessels) : s.Seconds;
+                if (s != null) t += s.Subject switch
+                {
+                    Subject.Squad => s.Seconds * Mathf.Max(0, squadVessels),
+                    Subject.Wingmates => s.Seconds * Mathf.Max(0, squadVessels - 1),
+                    _ => s.Seconds,
+                };
             return t;
         }
 
-        static VoyageIntroSO s_escort;
+        static VoyageIntroSO s_escort, s_crystalRun;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => s_escort = null;
+        static void ResetStatics() => s_escort = s_crystalRun = null;
 
         /// <summary>The escort's intro, or null when none is shipped (the escort then opens as it always did).</summary>
         public static VoyageIntroSO LoadEscort()
         {
             if (!s_escort) s_escort = Resources.Load<VoyageIntroSO>(EscortResourcePath);
             return s_escort;
+        }
+
+        /// <summary>Crystal Run's intro, or null when none is shipped (the run then opens on its first toast).</summary>
+        public static VoyageIntroSO LoadCrystalRun()
+        {
+            if (!s_crystalRun) s_crystalRun = Resources.Load<VoyageIntroSO>(CrystalRunResourcePath);
+            return s_crystalRun;
         }
     }
 }

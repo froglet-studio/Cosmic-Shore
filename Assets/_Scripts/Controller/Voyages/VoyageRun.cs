@@ -148,6 +148,8 @@ namespace CosmicShore.Gameplay
             _root = toyboxRoot;
             _onEnded = onEnded;
             _content = definition ? definition.Content : VoyageContentSO.Load();
+            // Voyages fly the chase camera while a job is out (Rev 114 F1).
+            VoyageChaseCamera.Attach(gameObject, () => _active, LocalVessel);
         }
 
         VoyageContent Content => _content ? _content.Content : null;
@@ -440,6 +442,7 @@ namespace CosmicShore.Gameplay
             SaveState();
             VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.Leg, State = _state, Job = job, Route = route });
 
+            ArmIntro(job, firstLeg: !_sea.IsRunning);
             if (_sea.IsRunning)
             {
                 if (!_sea.ContinueRoute(route))
@@ -499,6 +502,7 @@ namespace CosmicShore.Gameplay
             _underway = true;
             BringWingmates(force: true);
             OnAssaultUnderway();
+            BeginIntro();
         }
 
         void OnRouteEnded()
@@ -541,6 +545,7 @@ namespace CosmicShore.Gameplay
         {
             if (!_active) return;
             _fallen = true;
+            StopIntro();
             string where = _state.AtSea && _state.Current != null ? _state.Current.To : _state.At;
             var stake = StakeByElement();
             var lost = _state.Current;
@@ -1057,6 +1062,7 @@ namespace CosmicShore.Gameplay
             _following = false;
             _pendingLeg = null;
             _underway = false;
+            StopIntro();
             ArkFall.Settled -= OnFallSettled;
             if (_killHooked) Fauna.Killed -= OnFaunaKilled;
             _killHooked = false;
@@ -1117,6 +1123,8 @@ namespace CosmicShore.Gameplay
             var sea = new GameObject("VoyageArkwayRun");
             sea.transform.SetParent(_root, false);
             _sea = sea.AddComponent<ArkwayRun>();
+            // A toast never plays under the intro: it waits, and is read when the pilot has the stick.
+            _sea.HoldBanners = () => VoyageIntro.IsPlaying;
             _sea.Underway += OnUnderway;
             _sea.RouteEnded += OnRouteEnded;
             _sea.ArkFallen += OnArkFallen;
@@ -1176,6 +1184,7 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            StopIntro();
             ArkFall.Settled -= OnFallSettled;
             if (_killHooked) Fauna.Killed -= OnFaunaKilled;
             _killHooked = false;

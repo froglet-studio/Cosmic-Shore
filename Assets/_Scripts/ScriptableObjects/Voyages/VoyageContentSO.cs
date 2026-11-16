@@ -720,10 +720,10 @@ namespace CosmicShore.ScriptableObjects
         public string SeaCrewKey = "Y";
         [Tooltip("Under the crew button. {count} is how many are locked; empty hides it.")]
         public string SeaLockedLine = "{count} crew voyages, locked for Milestone 1";
-        [Tooltip("The crew popup's title (Rev 113 Crew).")]
-        public string CrewTitle = "Your crew recommends";
+        [Tooltip("The crew screen's title (Rev 113 Crew, Rev 114 C2).")]
+        public string CrewTitle = "Your crew, and the work they bring";
         [Tooltip("Under the crew popup's title.")]
-        public string CrewLine = "Each pilot on your Ark has work they would like you to take.";
+        public string CrewLine = "Pick a pilot to hear their job. The open voyages sail now; the others open after Milestone 1.";
         [Tooltip("The faction rail's first row: every voyage.")]
         public string CrewAll = "All";
         [Tooltip("Under the faction rail.")]
@@ -740,6 +740,24 @@ namespace CosmicShore.ScriptableObjects
         public string CrewStops = "{stops} stops";
         [Tooltip("Said when a locked voyage is pressed. {title} is its name.")]
         public string CrewLockedPress = "{title} opens after Milestone 1.";
+        [Tooltip("The escort's tile name on the crew screen (Rev 114 C2), where a job shows its pilot's first name.")]
+        public string CrewArk = "The Ark";
+        [Tooltip("Over the escort's words on the crew screen, where a job says who asks.")]
+        public string CrewArkAsks = "The Ark asks";
+        [Tooltip("Over the picked pilot's job on the crew screen. {pilot} is their name, {faction} their faction.")]
+        public string CrewAsks = "{pilot}, {faction}, asks";
+        [Tooltip("The picked pilot's job in their own words. {quote} is the job's line.")]
+        public string CrewQuote = "\"{quote}\"";
+        [Tooltip("How many worlds the picked job sails through. {worlds} is the count.")]
+        public string CrewWorlds = "{worlds} worlds";
+        [Tooltip("What the picked job pays. {pay} is the crystals. Empty hides it.")]
+        public string CrewRewards = "Rewards: {pay} crystals";
+        [Tooltip("The crew screen's call to action: opens the picked job's voyage.")]
+        public string CrewTake = "TAKE THE JOB";
+        [Tooltip("The Y button: the other open voyage. {title} is its name.")]
+        public string CrewInstead = "{title} instead";
+        [Tooltip("The other open voyage button's keycap.")]
+        public string CrewInsteadKey = "Y";
         [Tooltip("The group for a voyage whose pilot has no faction.")]
         public string FactionNone = "Crew";
         [Tooltip("The Merchant faction's group.")]
@@ -1011,6 +1029,18 @@ namespace CosmicShore.ScriptableObjects
         public string ObjectiveEscortHostile = "Hostile world: its fauna go for the Ark until you pacify it";
         [Tooltip("The escort's action line in a calm world.")]
         public string ObjectiveEscortCalm = "A world you hold: gather crystals and stay with the Ark";
+        [Tooltip("Objective strip (Rev 114 O1): the escort's title on its first line.")]
+        public string ObjectiveStripEscort = "ESCORT THE ARK";
+        [Tooltip("Objective strip: the hull figure on the first line's right. {hull} is the percent.")]
+        public string ObjectiveStripHull = "{hull}%";
+        [Tooltip("Objective strip: the world and its state. {place} is the world, {state} hostile or calm.")]
+        public string ObjectiveStripPlace = "{place} - {state}";
+        [Tooltip("Objective strip: the {state} word for a hostile world.")]
+        public string ObjectiveStripHostile = "hostile";
+        [Tooltip("Objective strip: the {state} word for a calm world.")]
+        public string ObjectiveStripCalm = "calm";
+        [Tooltip("Objective strip: the count beside each element flower. {count} is the crystals of that element.")]
+        public string ObjectiveStripElement = "{count}";
         [Tooltip("Scoreboard column: creatures felled near the Ark.")]
         public string ScoreColGuarded = "Off the Ark";
         [Tooltip("Scoreboard column: the seat's score.")]

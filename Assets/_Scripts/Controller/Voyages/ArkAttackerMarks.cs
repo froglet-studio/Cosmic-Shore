@@ -18,6 +18,11 @@ namespace CosmicShore.Gameplay
     {
         const float RefreshSeconds = 0.25f;
         const int MaxMarks = 24;
+        /// <summary>Red lights at the attackers nearest their marks' order (Rev 114 F1: "their light falls on the Ark's
+        /// plates"). Few, because every point light costs each lit object a slot.</summary>
+        const int MaxLights = 4;
+        const float LightIntensity = 3f;
+        const float LightRangeMax = 140f;
         public const int MaxPips = 6;
         /// <summary>How far in front of the camera the edge arrow floats, and how far in from the screen's edge.</summary>
         const float ArrowDepth = 24f;
@@ -32,6 +37,9 @@ namespace CosmicShore.Gameplay
         readonly List<Transform> _marks = new();
         Transform _arrow;
         readonly List<Transform> _pips = new();
+        readonly List<Light> _lights = new();
+        Vector3 _arkAt;
+        bool _hasArk;
         Material _material;
         Mesh _diamond, _arrowMesh;
         float _nextRefresh;
@@ -86,7 +94,12 @@ namespace CosmicShore.Gameplay
             {
                 _nextRefresh = Time.unscaledTime + RefreshSeconds;
                 var ark = _ark?.Invoke();
-                if (ark && _host != null) _host.CountThreats(ark.Position, ArkEscortPilot.GuardRadius, _attackers);
+                _hasArk = ark && _host != null;
+                if (_hasArk)
+                {
+                    _arkAt = ark.Position;
+                    _host.CountThreats(_arkAt, ArkEscortPilot.GuardRadius, _attackers);
+                }
                 else _attackers.Clear();
             }
             PlaceMarks();
@@ -100,6 +113,8 @@ namespace CosmicShore.Gameplay
             if (_material.HasProperty("_BaseColor")) _material.SetColor("_BaseColor", c);
             if (_material.HasProperty("_EmissionColor")) _material.SetColor("_EmissionColor", c * 0.6f);
             _material.color = c;
+            foreach (var l in _lights)
+                if (l) l.color = c;
         }
 
         /// <summary>A diamond over each live attacker, turning slowly, sized to the creature.</summary>
@@ -117,10 +132,38 @@ namespace CosmicShore.Gameplay
                 mark.gameObject.SetActive(true);
                 mark.SetPositionAndRotation(f.transform.position + Vector3.up * size * 1.6f, Quaternion.Euler(0f, spin, 0f));
                 mark.localScale = Vector3.one * size;
+                if (n <= MaxLights) PlaceLight(n - 1, f.transform.position, size);
             }
             for (int i = n; i < _marks.Count; i++)
                 if (_marks[i].gameObject.activeSelf) _marks[i].gameObject.SetActive(false);
+            for (int i = Mathf.Min(n, MaxLights); i < _lights.Count; i++)
+                if (_lights[i] && _lights[i].enabled) _lights[i].enabled = false;
         }
+
+        /// <summary>A red point light on an attacker, reaching the Ark so the plates it bites glow with it.</summary>
+        void PlaceLight(int index, Vector3 at, float size)
+        {
+            while (_lights.Count <= index)
+            {
+                var go = new GameObject("AttackerLight");
+                go.transform.SetParent(transform, false);
+                var l = go.AddComponent<Light>();
+                l.type = LightType.Point;
+                l.color = Threat;
+                l.intensity = LightIntensity;
+                l.shadows = LightShadows.None;
+                l.renderMode = LightRenderMode.Auto;
+                _lights.Add(l);
+            }
+            var light = _lights[index];
+            light.transform.position = at;
+            light.range = LightRange(at, _hasArk ? _arkAt : at, size);
+            if (!light.enabled) light.enabled = true;
+        }
+
+        /// <summary>Far enough to reach the Ark's hull from the attacker, never past <see cref="LightRangeMax"/>. Pure.</summary>
+        public static float LightRange(Vector3 attacker, Vector3 ark, float size) =>
+            Mathf.Clamp(Mathf.Max(size * 4f, Vector3.Distance(attacker, ark) * 1.25f), 8f, LightRangeMax);
 
         static float MarkSize(Fauna f)
         {

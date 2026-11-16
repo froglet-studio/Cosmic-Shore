@@ -468,6 +468,7 @@ namespace CosmicShore.UI
                 House = record != null ? record.FactionType : person?.Faction ?? FactionType.None,
                 Story = !string.IsNullOrEmpty(job.Summary) ? job.Summary : person?.Story,
                 Portrait = callsign ? callsign.Portrait : null,
+                Callsign = callsign ? callsign.Id : null,
                 Ly = sea != null ? sea.LightYears.ToString("N0", CultureInfo.InvariantCulture) : null,
                 Minutes = sea != null ? sea.Minutes.ToString("N0", CultureInfo.InvariantCulture) : null,
                 Role = VoyageRules.RoleName(content, job.Role),

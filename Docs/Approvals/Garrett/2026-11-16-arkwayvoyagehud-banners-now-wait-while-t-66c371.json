@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-arkwayvoyagehud-banners-now-wait-while-t-66c371",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T20:50:19+00:00",
+  "area": "Arkway run and its voyage HUD (Controller/Toys)",
+  "summary": "ArkwayVoyageHud banners now wait while the load veil is up and while a voyage intro plays (ArkwayRun.HoldBanners), so a toast raised as a voyage sets sail is read when the screen opens instead of expiring unseen behind the veil.",
+  "branch": "claude/project-thread-a5f46g",
+  "commit": "846ce38d1"
+}
