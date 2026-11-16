@@ -74,6 +74,8 @@ namespace CosmicShore.Gameplay
 
         static IEnumerable<int> Near(Dictionary<long, List<int>> grid, Vector3 p, float r)
         {
+            // A non-finite point or reach would floor to int.MaxValue and the cell loop below would never end.
+            if (!(float.IsFinite(p.x) && float.IsFinite(p.y) && float.IsFinite(p.z) && float.IsFinite(r))) yield break;
             int x0 = Mathf.FloorToInt((p.x - r) / Cell), x1 = Mathf.FloorToInt((p.x + r) / Cell);
             int y0 = Mathf.FloorToInt((p.y - r) / Cell), y1 = Mathf.FloorToInt((p.y + r) / Cell);
             int z0 = Mathf.FloorToInt((p.z - r) / Cell), z1 = Mathf.FloorToInt((p.z + r) / Cell);
@@ -111,8 +113,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Whether a prism (bounding radius <paramref name="r"/>) at <paramref name="p"/> may be laid. With
         /// <paramref name="crossLine"/> (<see cref="RegattaPlacement.CrossLine"/>) the line's tube is not carved; the
-        /// ring mouths, the rails and the shell still are.</summary>
-        public Verdict Test(Vector3 p, float r, bool crossLine = false)
+        /// ring mouths, the rails and the shell still are; with <paramref name="crossRail"/>
+        /// (<see cref="RegattaPlacement.CrossRail"/>) the rails are not carved either.</summary>
+        public Verdict Test(Vector3 p, float r, bool crossLine = false, bool crossRail = false)
         {
             float d = p.magnitude;
             if (d - r < RegattaCourseGenome.NucleusCarve || d + r > RegattaCourseGenome.MembraneCarve) return Verdict.Shell;
@@ -127,8 +130,9 @@ namespace CosmicShore.Gameplay
                 float radial = (v - axis * along).magnitude;
                 if (radial < g.Radius + RingMargin + r) return Verdict.Ring;
             }
-            foreach (int i in Near(_railGrid, p, RailRadius + r))
-                if ((_rails[i] - p).sqrMagnitude < (RailRadius + r) * (RailRadius + r)) return Verdict.Rail;
+            if (!crossRail)
+                foreach (int i in Near(_railGrid, p, RailRadius + r))
+                    if ((_rails[i] - p).sqrMagnitude < (RailRadius + r) * (RailRadius + r)) return Verdict.Rail;
             if (_claimed.Count > 0)
                 foreach (int i in Near(_claimGrid, p, r + _maxClaimRadius))
                 {

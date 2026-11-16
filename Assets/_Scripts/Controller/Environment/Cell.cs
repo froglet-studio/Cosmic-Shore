@@ -1514,7 +1514,13 @@ namespace CosmicShore.Gameplay
             // moment the first prism is added. Assets authored before volume became
             // the spine derive their volume ladder from the count fields (×16).
             var t = cfg.PhaseThresholds;
-            return t.IsAllZero ? CellPhaseThresholds.Default : t.WithDerivedVolumeScale();
+            t = t.IsAllZero ? CellPhaseThresholds.Default : t.WithDerivedVolumeScale();
+            // An environment that laid more than its config was measured on (a Regatta course genome's placements)
+            // raises the ladder by what it added, so the course opens in the phase the measured one does.
+            if (cfg.EnvironmentPrefab is ICellPhaseBaseline baseline
+                && (baseline.PhaseBaselineVolume > 0f || baseline.PhaseBaselinePrisms > 0))
+                t = t.Raised(baseline.PhaseBaselineVolume, baseline.PhaseBaselinePrisms);
+            return t;
         }
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();

@@ -12,24 +12,28 @@ A course is a JSON genome. The empty genome `{}` is today's course. A genome can
 - **placements**: up to 24 of any of the 39 placeable segment spawners and cell worlds, each with its own leg,
   cylindrical offset about the spine (`radius`, `bearing`, `along`), size, rotation, team colour, prism kind
   (Plain, Danger, Shielded, SuperShielded), seed, density, every one of the spawner's own parameters, and
-  `cross_line`: whether it may stand on the race line.
+  `cross_line`: whether it may stand on the race line, and `cross_rail`: whether it may stand on or across a rail
+  section.
 
 Every prism a placement lays is carved, one by one, out of the ring mouths, the rails, the nucleus and the membrane,
-away from the placements before it, and (unless the placement has `cross_line`) out of the race line's tube; at most
-12,000 placement prisms per course. A placement is sized by the radius that holds 90% of its prisms, so a projecting
+away from the placements before it, out of the race line's tube unless the placement has `cross_line`, and off the
+rails unless it has `cross_rail`; the ring mouths, the nucleus and the membrane are always carved. At most
+6,000 placement prisms per course. A placement is sized by the radius that holds 90% of its prisms, so a projecting
 spawner's few far outliers (the Hopf fibration's) do not shrink the rest below the finest prism.
 
 **Why `cross_line`.** The first judge run (2026-11-16: 5 random genomes against their placement-free twins, Urchin,
 Squirrel, Serpent and Rhino alone) gave the same finish times to the millisecond: about 9,000 prisms were laid, but the
 carve kept the tube round the line open and every AI flies that line, so no placement ever met a pilot. A course whose
 genes cannot touch the race cannot be searched for balance. With `cross_line` the obstacle stands on the line; the ring
-mouths stay open, so every ring can still be threaded.
+mouths stay open, so every ring can still be threaded. `cross_rail` does the same for the rails, so a rail rider (the
+Urchin) must leave its rail or go round.
 
-**The cell's phase ladder** (held for the Ecology lane). A Regatta cell's `PhaseThresholds` are measured on the rails'
-laid volume, and the placements add to it. `SpawnableRegattaRails.PhaseBaselineVolume` / `PhaseBaselinePrisms` report
-what they laid; raising the ladder by it touches `Cell` and `CellPhaseThresholds`, an occupied lane, so that half waits
-as a patch (`/mnt/project-files/regatta-flywheel/w2/phase_baseline.patch`) for its occupants' yes. Until then a course
-with many placements can open Restless or Frenzy; a Regatta cell is Barren, so no fauna act on it.
+**The cell's phase ladder, and how much a course may hold** (Garrett, 2026-11-16: "if you make more then set a higher
+limit. but that also might be a flag that you are making too much"). A Regatta cell's `PhaseThresholds` are measured on
+the rails' laid volume. `SpawnableRegattaRails` reports what its placements laid (`ICellPhaseBaseline`) and the cell
+raises every boundary by it, so a course opens in the phase the measured one does and the band left for players' trails
+is unchanged. A course is capped at 6,000 placement prisms (about three rail sets), and the search sees `est_prisms`, so
+a loss can charge for content as well as reward balance.
 
 ## The pieces
 
@@ -62,8 +66,33 @@ The prior proposes; the judge scores. It stores hulls, counts and file stamps, n
 usable flights of 189 (the rest threaded no ring). On I1 and I3 people beat the median AI on most legs; on I2 they
 trail it everywhere. v1 compares with the median of every rival, whatever its hull; a per-hull ratio is the next step.
 
+## Which genes move which hull (judge, 2026-11-16)
+
+I1 default circuit, each hull alone, seed 1, finish seconds (prism hits in brackets). A gene that moves no hull's time is
+dead for the search; every hull below has at least one live gene.
+
+| Genome | Urchin | Rhino | Serpent | Squirrel |
+|---|---|---|---|---|
+| none (I1) | 51.1 (0) | 31.6 (515) | 102.1 (898) | 79.0 (3) |
+| 2 SuperShielded placements, `cross_line` + `cross_rail` | 51.1 | 31.6 (520) | 102.1 | 84.6 |
+| 2 Plain placements on the rail | 51.1 | 31.6 (671) | 102.1 | 91.9 |
+| 2 Danger placements on the rail | 51.1 | 31.6 (671) | 100.2 | 83.8 |
+| 2 Plain placements on the line | 51.1 | 31.6 (671) | 102.1 | 96.4 |
+| rail gaps (every leg, 30-70%) | 59.4 | 35.6 | 214.4 | 84.1 |
+| rail detour 150 u (every leg) | 60.8 | no finish (7 of 24 rings) | 165.8 | 150.8 |
+| Plain rails | 53.3 | 31.6 (610) | 101.6 (2103) | 182.9 |
+| neutral rails | 287.9 | 31.6 | 102.1 | 89.1 |
+
+What this says: placements reach only the Squirrel (and the Serpent a little through Danger). The Urchin rides its rail at
+a steady 300 u/s and never touches them; the Rhino ploughs through every kind, SuperShielded included, at no cost in
+time. The rail features are the live levers for all four: neutral rails take the Urchin's ride away (+237 s), gaps and
+detours cost every hull, and Plain rails cost the Squirrel most. The search should keep rail features in every genome and
+treat placements as the Squirrel's and Serpent's lever until a placement kind is found that slows a Rhino. One seed;
+the detour Rhino timeout needs a second look (it may be the Rhino AI, not the course).
+
 ## Known gaps
 
+- A spawner that lays a prism at infinity is skipped prism by prism (Linked Rings did, with 20+ rings of 64 blocks,
+  until its slide was fixed on 2026-11-16; the carve's grid looped forever on such a point).
 - Lifeform species still come from the cell config's spawn profile; `flora_preset` is recorded only.
-- The cell phase ladder does not count placements yet (above).
 - Spawners that need an authored Vector3 scale or waypoints are left out (reading prefab values is the v2 idea).
