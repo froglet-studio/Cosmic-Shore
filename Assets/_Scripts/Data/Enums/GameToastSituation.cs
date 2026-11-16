@@ -313,6 +313,17 @@ namespace CosmicShore.Data
         // 128-130 (DomainRaceToasts); a blast hit is 81 (MissileHitsLanded). Posted to the LOCAL pilot only. 200 is the
         // hint id the game kit roster reserved for it (Docs/ElementalLoop/GAME_KIT_ROSTER.md row 35).
         StandoffHint = 200,             // once, at the start: a bomb that touches a rival sticks; pull and release to blow it
+        // The Wrasse and Grouper's reef games (_Scripts/Controller/Arcade/WRASSEREEF.md), ids reserved by
+        // Docs/ElementalLoop/GAME_KIT_ROSTER.md (rows 21-23). Race beats are the shared 128-130 (DomainRaceToasts; Reefbuild,
+        // timed, posts only 130 from its own lead sampler). Posted to the LOCAL pilot only.
+        CleanerRamHint = 186,           // once, at the start: loop Charge motes, then ram a rival on the kite's board
+        ReefbuildHint = 187,            // once, at the start: loop Mass motes to lay your reef; what stands at the whistle scores
+        BlastlineHint = 188,            // once, at the start: loop Space motes, the blast clears hostile prisms where it closed
+        // The Goby & Pistol's games (SNAP.md, DEN_BUILDER.md, RIPTIDE.md; ids reserved in GAME_KIT_ROSTER.md). Race beats
+        // are the shared 128-130 (DomainRaceToasts; Den Builder samples its own lead change, 130). LOCAL pilot only.
+        SnapHint = 189,                 // once, at the start: lock a rival from the Goby, fire rings from the Pistol when they are on screen
+        DenBuilderHint = 190,           // once, at the start: jump the trail for energy, rest at a perch to build a den
+        RiptideHint = 191,              // once, at the start: ride through the plates, the undertow pulls them in, the rings smash them
         // The Jewel Wasp's two games (GAME_KIT_ROSTER.md rows 36-37 reserved 201-202). Each is posted once, at the start,
         // to the LOCAL pilot only. Marionette's race beats are the shared 128-130 (DomainRaceToasts) and a hit is 81;
         // Gorge's lead change is the shared 130, sampled by its controller (a timed mode has no target).

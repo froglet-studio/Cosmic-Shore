@@ -115,6 +115,12 @@ SCENE_FOR_MODE = {
     122: 'MinigameWindrow',
     123: 'MinigameLandslide',
     125: 'MinigameStandoff',
+    111: 'MinigameCleanerRam',
+    112: 'MinigameReefbuild',
+    113: 'MinigameBlastline',
+    114: 'MinigameSnap',
+    115: 'MinigameDenBuilder',
+    116: 'MinigameRiptide',
     126: 'MinigameMarionette',
     127: 'MinigameGorge',
 }

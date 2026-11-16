@@ -106,3 +106,4 @@ Unity is claimed: every one of these is authored headless until a person flies i
 | 4 | Hedgerow (Serpent Mass) | `claude/serpent-mass-hedgerow` | built headless, not run in Unity (2026-11-15) |
 | 5 | Longshot (Serpent Space) | `claude/serpent-space-longshot` | built headless, not run in Unity (2026-11-15) |
 | 1-37 | all | | not started (2026-11-15) |
+| 24-26 | Snap, Den Builder, Riptide | `claude/goby-games`, #2003 | built and merged headless, not run in Unity (2026-11-15) |

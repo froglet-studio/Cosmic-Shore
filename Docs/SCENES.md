@@ -132,6 +132,12 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameSentry** | `_Scenes/Multiplayer Scenes/` | `Sentry (105)` | `SentryController` |
 | **MinigameWarren** | `_Scenes/Multiplayer Scenes/` | `Warren (106)` | `WarrenController` |
 | **MinigameCaveIn** | `_Scenes/Multiplayer Scenes/` | `CaveIn (107)` | `CaveInController` |
+| **MinigameCleanerRam** | `_Scenes/Multiplayer Scenes/` | `CleanerRam (111)` | `CleanerRamController` |
+| **MinigameReefbuild** | `_Scenes/Multiplayer Scenes/` | `Reefbuild (112)` | `ReefbuildController` |
+| **MinigameBlastline** | `_Scenes/Multiplayer Scenes/` | `Blastline (113)` | `BlastlineController` |
+| **MinigameSnap** | `_Scenes/Multiplayer Scenes/` | `Snap (114)` | `SnapController` |
+| **MinigameDenBuilder** | `_Scenes/Multiplayer Scenes/` | `DenBuilder (115)` | `DenBuilderController` |
+| **MinigameRiptide** | `_Scenes/Multiplayer Scenes/` | `Riptide (116)` | `RiptideController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameShockfront** | `_Scenes/Multiplayer Scenes/` | `Shockfront (119)` | `ShockfrontController` |
 | **MinigameFulmen** | `_Scenes/Multiplayer Scenes/` | `Fulmen (120)` | `FulmenController` |
@@ -413,6 +419,12 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 105 | `Sentry` | MP | MinigameSentry | `SentryController` (Meerkat guard war, Charge - Sentinel Mode leaves a sentinel at every soliton's way in that zaps rival hulls; each zap is a point; Corona's shells read-only; `SENTRY.md`) |
 | 106 | `Warren` | MP | MinigameWarren | `WarrenController` (Meerkat burrow war, Mass - timed, trail + exit portals standing in your colour wins; a soliton beside rival mass swallows and fires it; the bare Barren cell, I3/I4 start at Mass 5 / Space 5; `WARREN.md`) |
 | 107 | `CaveIn` | MP | MinigameCaveIn | `CaveInController` (Meerkat tunnelling, Space - a soliton swallows a plate's prisms and fires them out to smash the rest; first domain to the prism target; Shatterplane's plates read-only; `CAVEIN.md`) |
+| 111 | `CleanerRam` | MP | MinigameCleanerRam | `CleanerRamController` (Wrasse and Grouper ram duel, Charge - loop Charge motes to power the kite, ram a rival for a point; first domain to 8. See `WRASSEREEF.md`) |
+| 112 | `Reefbuild` | MP | MinigameReefbuild | `ReefbuildController` (Wrasse and Grouper reef war, Mass - loop Mass motes to lay clusters; timed, volume standing wins. See `WRASSEREEF.md`) |
+| 113 | `Blastline` | MP | MinigameBlastline | `BlastlineController` (Wrasse and Grouper clean-up race, Space - loop Space motes to blast hostile prisms in Rampage's forest; first domain to 600. See `WRASSEREEF.md`) |
+| 114 | `Snap` | MP | MinigameSnap | `SnapController` (Goby & Pistol duel, Charge - Kelpwood's kelp ball; a Pistol vortex ring on a rival pilot is one point, first domain to 5. See `SNAP.md`) |
+| 115 | `DenBuilder` | MP | MinigameDenBuilder | `DenBuilderController` (Goby & Pistol timed build, Mass - Glasshouse's cell with nothing planted; the dens and island trails standing in your colour at the whistle win. See `DEN_BUILDER.md`) |
+| 116 | `Riptide` | MP | MinigameRiptide | `RiptideController` (Goby & Pistol plate race, Space - Shatterplane's plates; the undertow pulls loose tiles into the Pistol's plane and the rings smash them, first domain to 600. See `RIPTIDE.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 119 | `Shockfront` | MP | MinigameShockfront | `ShockfrontController` (Stoat Charge duel in the Boneyard: each rival a ripple strips is one Debuff point, first domain to 10. See `SHOCKFRONT.md`) |
 | 120 | `Fulmen` | MP | MinigameFulmen | `FulmenController` (Stoat Space race in Rampage's forest: prisms burnt by Fulmen bolts score for the collector, `PrismsDestroyed`, first domain to 1200. See `FULMEN.md`) |
@@ -681,6 +693,9 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `FlitstrikeStrikeTurnMonitor` | `TurnMonitors/` | A domain's Strike hits reach the Flitstrike target (`CombatPointTurnMonitorBase`) |
 | `HoneycombTimeTurnMonitor` | `TurnMonitors/` | The Honeycomb round clock (`NetworkTimeBasedTurnMonitor`, End Game Conditions seconds) |
 | `WoodpeckerPrismTurnMonitor` | `TurnMonitors/` | A domain's hostile prisms destroyed reach the Woodpecker target (Sirocco's shape) |
+| `SnapHitTurnMonitor` | `TurnMonitors/` | A domain's summed ring hits (CombatPoints) reach the Snap target (on `CombatPointTurnMonitorBase`) |
+| `DenBuilderTimeTurnMonitor` | `TurnMonitors/` | Den Builder's round clock (`NetworkTimeBasedTurnMonitor`, duration from EndConditionOverrides) |
+| `RiptidePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Riptide target (Shatterplane's monitor, one scalar target) |
 | `CoronaBloomTurnMonitor` | `TurnMonitors/` | A domain's summed bloom hits (Debuff-class CombatPoints) reach the Corona target (on `CombatPointTurnMonitorBase`) |
 | `StandoffBlastTurnMonitor` | `TurnMonitors/` | A domain's summed blast hits (MissileBlast-class CombatPoints) reach the Standoff target (on `CombatPointTurnMonitorBase`) |
 | `HarvestPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Harvest target (Wrecking Ball's shape) |

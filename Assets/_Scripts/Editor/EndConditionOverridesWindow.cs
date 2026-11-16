@@ -193,6 +193,18 @@ namespace CosmicShore.Editor
                 "colour at the whistle wins), default " + EndConditionOverridesSO.DefaultWarrenRoundSeconds + ".\n" +
                 "  • Cave-in: hostile prisms a DOMAIN must break (race to N) - a swallowed prism fired into another " +
                 "breaks both, default " + EndConditionOverridesSO.DefaultCaveInPrismTarget + ".\n" +
+                "  • Cleaner Ram: rams a DOMAIN needs - one charged Wrasse kite reaching a rival hull is 1, " +
+                "default " + EndConditionOverridesSO.DefaultCleanerRamStrikeTarget + ".\n" +
+                "  • Reefbuild: round length in SECONDS (timed - most Wrasse reef STANDING at the whistle wins), " +
+                "default " + EndConditionOverridesSO.DefaultReefbuildRoundSeconds + ".\n" +
+                "  • Blastline: hostile prisms a DOMAIN must destroy with the Wrasse's Space blasts and kite pops " +
+                "(race to N), default " + EndConditionOverridesSO.DefaultBlastlinePrismTarget + ".\n" +
+                "  • Snap: ring hits a DOMAIN needs - a Goby & Pistol vortex ring reaching a rival hull is 1, " +
+                "default " + EndConditionOverridesSO.DefaultSnapHitTarget + ".\n" +
+                "  • Den Builder: round length in SECONDS (timed - most dens, perches and trail STANDING in a " +
+                "domain's colour at the whistle wins), default " + EndConditionOverridesSO.DefaultDenBuilderRoundSeconds + ".\n" +
+                "  • Riptide: hostile prisms a DOMAIN must break with the Goby & Pistol's rings and body (race to N), " +
+                "default " + EndConditionOverridesSO.DefaultRiptidePrismTarget + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget + ".\n" +
                 "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
@@ -439,6 +451,12 @@ namespace CosmicShore.Editor
             int st  = Mathf.Max(0, EditorGUILayout.IntField("Sentry - Zap Target", _config.sentryZapTarget));
             int wr  = Mathf.Max(0, EditorGUILayout.IntField("Warren - Round Seconds", _config.warrenRoundSeconds));
             int ci  = Mathf.Max(0, EditorGUILayout.IntField("Cave-in - Prism Target", _config.caveInPrismTarget));
+            int crm = Mathf.Max(0, EditorGUILayout.IntField("Cleaner Ram - Ram Target", _config.cleanerRamStrikeTarget));
+            int rfb = Mathf.Max(0, EditorGUILayout.IntField("Reefbuild - Round Seconds", _config.reefbuildRoundSeconds));
+            int blp = Mathf.Max(0, EditorGUILayout.IntField("Blastline - Prism Target", _config.blastlinePrismTarget));
+            int snp = Mathf.Max(0, EditorGUILayout.IntField("Snap - Ring Hit Target", _config.snapHitTarget));
+            int dnb = Mathf.Max(0, EditorGUILayout.IntField("Den Builder - Round Seconds", _config.denBuilderRoundSeconds));
+            int rpt = Mathf.Max(0, EditorGUILayout.IntField("Riptide - Prism Target", _config.riptidePrismTarget));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             int tv  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Break PERCENT", _config.tandavaBreakPercent), 0, 100);
@@ -532,6 +550,12 @@ namespace CosmicShore.Editor
                     _config.sentryZapTarget = st;
                     _config.warrenRoundSeconds = wr;
                     _config.caveInPrismTarget = ci;
+                    _config.cleanerRamStrikeTarget = crm;
+                    _config.reefbuildRoundSeconds = rfb;
+                    _config.blastlinePrismTarget = blp;
+                    _config.snapHitTarget = snp;
+                    _config.denBuilderRoundSeconds = dnb;
+                    _config.riptidePrismTarget = rpt;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
                     _config.tandavaBreakPercent = tv;
@@ -636,6 +660,12 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Sentry", st > 0 ? st.ToString() : EndConditionOverridesSO.DefaultSentryZapTarget + " (default)");
             EditorGUILayout.LabelField("Warren (seconds)", wr > 0 ? wr.ToString() : EndConditionOverridesSO.DefaultWarrenRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Cave-in", ci > 0 ? ci.ToString() : EndConditionOverridesSO.DefaultCaveInPrismTarget + " (default)");
+            EditorGUILayout.LabelField("Cleaner Ram", crm > 0 ? crm.ToString() : EndConditionOverridesSO.DefaultCleanerRamStrikeTarget + " (default)");
+            EditorGUILayout.LabelField("Reefbuild (seconds)", rfb > 0 ? rfb.ToString() : EndConditionOverridesSO.DefaultReefbuildRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Blastline", blp > 0 ? blp.ToString() : EndConditionOverridesSO.DefaultBlastlinePrismTarget + " (default)");
+            EditorGUILayout.LabelField("Snap", snp > 0 ? snp.ToString() : EndConditionOverridesSO.DefaultSnapHitTarget + " (default)");
+            EditorGUILayout.LabelField("Den Builder (seconds)", dnb > 0 ? dnb.ToString() : EndConditionOverridesSO.DefaultDenBuilderRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Riptide", rpt > 0 ? rpt.ToString() : EndConditionOverridesSO.DefaultRiptidePrismTarget + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUILayout.LabelField("Tandava (break %)", tv > 0 ? tv.ToString() : EndConditionOverridesSO.DefaultTandavaBreakPercent + " (default)");
@@ -754,6 +784,12 @@ namespace CosmicShore.Editor
                    "Sentry: " + Fmt(_config.sentryZapTargetBuild, "default " + EndConditionOverridesSO.DefaultSentryZapTarget) + "\n" +
                    "Warren (seconds): " + Fmt(_config.warrenRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultWarrenRoundSeconds) + "\n" +
                    "Cave-in: " + Fmt(_config.caveInPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultCaveInPrismTarget) + "\n" +
+                   "Cleaner Ram: " + Fmt(_config.cleanerRamStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultCleanerRamStrikeTarget) + "\n" +
+                   "Reefbuild (seconds): " + Fmt(_config.reefbuildRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultReefbuildRoundSeconds) + "\n" +
+                   "Blastline: " + Fmt(_config.blastlinePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultBlastlinePrismTarget) + "\n" +
+                   "Snap: " + Fmt(_config.snapHitTargetBuild, "default " + EndConditionOverridesSO.DefaultSnapHitTarget) + "\n" +
+                   "Den Builder (seconds): " + Fmt(_config.denBuilderRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultDenBuilderRoundSeconds) + "\n" +
+                   "Riptide: " + Fmt(_config.riptidePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRiptidePrismTarget) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +
                    "Tandava (break %): " + Fmt(_config.tandavaBreakPercentBuild, "default " + EndConditionOverridesSO.DefaultTandavaBreakPercent) + "\n" +

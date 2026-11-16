@@ -11,7 +11,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Angler | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | BrittleStar | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Goby | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| Goby | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Jacks | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
@@ -31,7 +31,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | - |
 | TigerMoth | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside |
-| Wrasse | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| Wrasse | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 
 ## 2. Arena games
 
@@ -50,7 +50,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Angler | Lantern Run | Kelpwood | Glasshouse | Chum |
 | BrittleStar | Brittle Star Time | Flatline | Starweave | Shatterplane |
 | Dolphin | Switchback | The Bends | excused | Rampage |
-| Goby | Perch Run | - | - | - |
+| Goby | Perch Run | Snap | Den Builder | Riptide |
 | Grizzly | Grizzly Time | Standoff | excused | Grizzly Charge |
 | Honeyguide | Slip Line | Flitstrike | Honeycomb | Woodpecker |
 | Jacks | Decoy Run | Stingherd | excused | Trawl |
@@ -70,7 +70,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Thresher | Thresher Time | Jackstraw | Haul | Harvest |
 | TigerMoth | Waystation | Dustup | Tapestry | Sirocco |
 | Urchin | Skein | Railrush | Hijack | excused |
-| Wrasse | Wrasse Run | - | - | - |
+| Wrasse | Wrasse Run | Cleaner Ram | Reefbuild | Blastline |
 
 ## 4. Recorded steps
 

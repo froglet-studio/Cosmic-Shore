@@ -751,14 +751,14 @@ Copied on 2026-11-14 from canvas version `1794681676-3efd` of **Frogma**: Rev 3 
 
 #### Rev 111 Voyages: the table opens to full screen, down to one Cell
 
-- `R111Full.dc.html` (not copied yet) - Rev 111 Full - The table animates to full screen: no border, zoom inside the map, back from full screen, Galaxy to Cell - interactive
+- [`R111Full.dc.html`](R111Full.dc.html) - Rev 111 Full - The table animates to full screen: no border, zoom inside the map, back from full screen, Galaxy to Cell - interactive
 
 #### Rev 108 Voyages: flatter table, cooler Ark cards, squad mode, seat popup
 
-- `R108Table.dc.html` (not copied yet) - Rev 108 Table - P1A again: table flatter at 34 deg, feathered round edges, slow float and sheen, side view upright beneath - interactive
-- `R108Lobby.dc.html` (not copied yet) - Rev 108 Lobby - P3A again: glass cards with glowing rims and hover lift; your card opens the seat popup - interactive
-- `R108Squad.dc.html` (not copied yet) - Rev 108 Squad - Fly a squad instead: squad choices on top, AI wingmates fill the seats, lobby kept - interactive
-- `R108Picker.dc.html` (not copied yet) - Rev 108 Picker - Seat popup: vessel, pilot, element, artifact tabs, quick kits, Sees filter, one press per pick - interactive
+- [`R108Table.dc.html`](R108Table.dc.html) - Rev 108 Table - P1A again: table flatter at 34 deg, feathered round edges, slow float and sheen, side view upright beneath - interactive
+- [`R108Lobby.dc.html`](R108Lobby.dc.html) - Rev 108 Lobby - P3A again: glass cards with glowing rims and hover lift; your card opens the seat popup - interactive
+- [`R108Squad.dc.html`](R108Squad.dc.html) - Rev 108 Squad - Fly a squad instead: squad choices on top, AI wingmates fill the seats, lobby kept - interactive
+- [`R108Picker.dc.html`](R108Picker.dc.html) - Rev 108 Picker - Seat popup: vessel, pilot, element, artifact tabs, quick kits, Sees filter, one press per pick - interactive
 
 #### Rev 103 - Saga and Episodes locked together: one coming-soon strip at the foot of the Voyages screen
 
@@ -770,10 +770,10 @@ Copied on 2026-11-14 from canvas version `1794681676-3efd` of **Frogma**: Rev 3 
 
 #### Rev 100 - Voyages, new: the HyperSea and your crew's voyages, the voyage opened, your Ark
 
-- `R100P1A.dc.html` (not copied yet) - Rev 100 P1A - Page 1 Table top: the HyperSea on a chart table, its edge view the front; the crew's voyages on the right (recommended) - interactive
-- `R100P2A.dc.html` (not copied yet) - Rev 100 P2A - Page 2 Briefing: the pilot's story, the route drawing itself, the rewards arriving; difficulty 1-9 (recommended) - interactive
-- `R100P3A.dc.html` (not copied yet) - Rev 100 P3A - Page 3 Lobby: your lobby's three seats; your seat changes in place; Set sail (recommended) - interactive
-- `R100Notes.dc.html` (not copied yet) - Rev 100 - notes: what was asked, each page, the new rules to confirm
+- [`R100P1A.dc.html`](R100P1A.dc.html) - Rev 100 P1A - Page 1 Table top: the HyperSea on a chart table, its edge view the front; the crew's voyages on the right (recommended) - interactive
+- [`R100P2A.dc.html`](R100P2A.dc.html) - Rev 100 P2A - Page 2 Briefing: the pilot's story, the route drawing itself, the rewards arriving; difficulty 1-9 (recommended) - interactive
+- [`R100P3A.dc.html`](R100P3A.dc.html) - Rev 100 P3A - Page 3 Lobby: your lobby's three seats; your seat changes in place; Set sail (recommended) - interactive
+- [`R100Notes.dc.html`](R100Notes.dc.html) - Rev 100 - notes: what was asked, each page, the new rules to confirm
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 
@@ -805,17 +805,17 @@ Copied on 2026-11-14 from canvas version `1794681676-3efd` of **Frogma**: Rev 3 
 
 #### Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no episode
 
-- `R107Compare.dc.html` (not copied yet) - Rev 107 - the colour set reward, drawn three ways
-- `R107D.dc.html` (not copied yet) - Rev 107 D - Route on top: the course across, the quest, its reward and Claim side by side below (recommended) - interactive
-- `R107E.dc.html` (not copied yet) - Rev 107 E - Route as the list: the course down the left, the quest and its checkpoints in the middle, the reward beside Claim - interactive
-- `R107Notes.dc.html` (not copied yet) - Rev 107 - notes: the two mixes, the proposed reward per quest, what changed from Rev 101
+- [`R107Compare.dc.html`](R107Compare.dc.html) - Rev 107 - the colour set reward, drawn three ways
+- [`R107D.dc.html`](R107D.dc.html) - Rev 107 D - Route on top: the course across, the quest, its reward and Claim side by side below (recommended) - interactive
+- [`R107E.dc.html`](R107E.dc.html) - Rev 107 E - Route as the list: the course down the left, the quest and its checkpoints in the middle, the reward beside Claim - interactive
+- [`R107Notes.dc.html`](R107Notes.dc.html) - Rev 107 - notes: the two mixes, the proposed reward per quest, what changed from Rev 101
 
 #### Rev 101 - Quests as a screen of its own: the episode's five quests, each one's goals, claim and what it opens
 
-- `R101Compare.dc.html` (not copied yet) - Rev 101 - one quest's goals and its claim, as each option draws them
-- `R101A.dc.html` (not copied yet) - Rev 101 A - Star chart: the five quests as stars on the HyperSea, joined by the current that opens them (recommended) - interactive
-- `R101B.dc.html` (not copied yet) - Rev 101 B - Quest log: a calm list on the left, the open quest's goals as a ladder in the middle - interactive
-- `R101C.dc.html` (not copied yet) - Rev 101 C - The route: the quests as stations along one course across the screen - interactive
-- `R101Notes.dc.html` (not copied yet) - Rev 101 - notes: where the screen opens from, what each option changes, what is real data
+- [`R101Compare.dc.html`](R101Compare.dc.html) - Rev 101 - one quest's goals and its claim, as each option draws them
+- [`R101A.dc.html`](R101A.dc.html) - Rev 101 A - Star chart: the five quests as stars on the HyperSea, joined by the current that opens them (recommended) - interactive
+- [`R101B.dc.html`](R101B.dc.html) - Rev 101 B - Quest log: a calm list on the left, the open quest's goals as a ladder in the middle - interactive
+- [`R101C.dc.html`](R101C.dc.html) - Rev 101 C - The route: the quests as stations along one course across the screen - interactive
+- [`R101Notes.dc.html`](R101Notes.dc.html) - Rev 101 - notes: where the screen opens from, what each option changes, what is real data
 
 <!-- frogma.py readme: end -->

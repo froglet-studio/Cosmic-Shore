@@ -864,6 +864,23 @@ CAMERAS = {
     "Sentry": (215, 6, 0.62, 54),
     "Warren": (130, 20, 0.92, 44),
     "CaveIn": (255, 8, 0.74, 46),
+    # The Wrasse's reef games (WRASSEREEF.md). Cleaner Ram: low across the crystal reef, the kite's ram on a rival in
+    # front. Reefbuild: from above, so the domains' clusters read as reefs among the crystals. Blastline: Rampage's
+    # forest from the side Rampage is not shot from, the kite's blast going off in it.
+    "CleanerRam": (60, 28, 0.85, 44),
+    "Reefbuild": (230, 34, 0.9, 42),
+    "Blastline": (150, 16, 0.66, 46),
+    # Snap: Kelpwood's kelp ball from inside its rim (the arena it references), so the strands radiate across the
+    # plate and the shot - a Pistol's vortex ring homing down its lock onto a rival Goby (the hit that scores) -
+    # crosses it.
+    "Snap": (35, 16, 0.75, 46),
+    # Den Builder: Glasshouse's cell from outside the beds, low, so each colour's den (cubes laid in a shell round
+    # its Goby's islands) stands round the glass nucleus and the Pistol's arc over its own trail sits in front.
+    "DenBuilder": (28, 14, 0.82, 46),
+    # Riptide: Shatterplane's field from beside the I2 Gallery, so the plates read as thin sheets and the undertow -
+    # a plate's loose tiles streaming into the Pistol's plane and a collapsing ring smashing them - sits on the
+    # nearest one.
+    "Riptide": (75, -12, 0.78, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1195,7 +1212,8 @@ def recipe(stem, card_path, pal, ends):
                 rows.append(prism(pt, fwd, v_norm(pt), [8.0, 4.0, 10.0], dom))
         layers.append({"kind": "prisms", "rows": rows})
         nucleus()
-    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco", "Fulmen", "Woodpecker", "DepthCharge"):
+    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco", "Fulmen", "Woodpecker", "DepthCharge",
+               "Blastline"):
         tier = "MODEL"
         layers.append(forest_layer(facts, s, plant_size=R * (0.05 if s == "Tollway" else 0.06)))
         nucleus()
@@ -1681,6 +1699,66 @@ def recipe(stem, card_path, pal, ends):
                               d, [20, 2, 2], JADE, DANGER))
         layers.append({"kind": "prisms", "rows": rows})
         stage["glasshouse"] = {"beds": {str(k): v for k, v in homes.items()}, "herd": herd}
+    elif s in ("CleanerRam", "Reefbuild"):
+        # MODEL tier: the Wrasse's reef games fly the bare Barren cell, so the card shows what the mode PUTS there
+        # (WRASSEREEF.md): the element-weighted crystal reef, laid from the settings' own seed and rung exactly as
+        # WrasseReefCrystals.Grow does (equal-volume ball of crystalScatterRadius), and - for Reefbuild - the reefs
+        # the kites' Mass loops build: one-element clusters (a kite's cluster, KiteNavigatorConfig) in each domain.
+        tier = "MODEL"
+        st = read(next((ROOT / "Assets/_SO_Assets/Games").glob(f"{s}Settings.asset")))
+        scatter = float(re.search(r"crystalScatterRadius: ([\d.]+)", st).group(1))
+        count = int(re.findall(r"^  - (\d+)", st.split("crystalCountByIntensity:")[1], re.M)[INTENSITY - 1])
+        rng = Rng(stable_seed(s))
+        for k in range(count):
+            crystal(v_mul(rng.unit(), scatter * rng.u() ** (1 / 3)), 22.0)
+        if s == "Reefbuild":
+            rows = []
+            for k, dom in enumerate((JADE, RUBY, GOLD, JADE, RUBY, GOLD, JADE, RUBY, GOLD)):
+                c = v_mul(rng.unit(), scatter * rng.range(0.35, 0.8))
+                for i in range(24):
+                    p = v_add(c, v_mul(rng.unit(), 80.0 * rng.u() ** 0.5))
+                    rows.append(prism(p, rng.unit(), v_norm(p), [18.0, 6.0, 24.0], dom))
+            layers.append({"kind": "prisms", "rows": rows})
+        cam["radius"] = scatter * 0.7
+        stage.update({"centre": [0, 0, 0], "radius": scatter * 0.45})
+    elif s == "DenBuilder":
+        # MODEL tier: Glasshouse's cell with nothing planted - the card draws what the PAIR builds there: each colour's
+        # den (a dome of cubes, GobyDen's shell, on its bed outside the nucleus), the island trail its Goby laid to it
+        # (a curve of plain prisms), and the rung's grazers (read off the shipped profile) among the beds.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        prof = read(facts["profile"])
+        fauna = re.findall(r"guid: (\w+)", prof.split("SupportedFaunas:")[1]) if "SupportedFaunas:" in prof else []
+        herd = int(re.search(r"^  InitialSpawnCount: (\d+)", read(asset(fauna[0])), re.M).group(1)) if fauna else 0
+        rows = []
+        band = nuc + 0.35 * (R - nuc)
+        beds = {JADE: v_norm([0.75, 0.05, -0.45]), RUBY: v_norm([-0.7, 0.25, -0.35]), GOLD: v_norm([0.3, -0.62, -0.72])}
+        cube = R * 0.014
+        for dom, d in beds.items():
+            bed = v_mul(d, band)
+            up = v_norm(bed)
+            side = v_norm(v_cross(up, [0.0, 0.0, 1.0] if abs(up[2]) < 0.9 else [1.0, 0.0, 0.0]))
+            fwd = v_cross(side, up)
+            # the den: three shells of a hemisphere opening outward, fuller near the floor (laid first)
+            for shell, (rad, n) in enumerate(((R * 0.05, 26), (R * 0.068, 34), (R * 0.086, 30))):
+                for k in range(n):
+                    a = 2 * math.pi * (k + 0.5 * shell) / n
+                    h = rng.u() ** (1.6 + shell) * 0.95
+                    ring = math.sqrt(max(0.0, 1 - h * h))
+                    pos = v_add(bed, v_add(v_mul(side, rad * ring * math.cos(a)),
+                                           v_add(v_mul(fwd, rad * ring * math.sin(a)), v_mul(up, rad * h))))
+                    rows.append(prism(pos, fwd, up, [cube, cube, cube], dom, PLAIN))
+            # the trail its Goby laid in: a bowed arc of plain prisms from the open side of the cell to the den
+            start = v_add(bed, v_add(v_mul(side, R * 0.32), v_mul(up, R * 0.12)))
+            ctrl = v_add(bed, v_add(v_mul(side, R * 0.12), v_mul(up, R * 0.22)))
+            prev = start
+            for k in range(1, 28):
+                t = k / 28
+                q = v_add(v_add(v_mul(start, (1 - t) ** 2), v_mul(ctrl, 2 * t * (1 - t))), v_mul(bed, t * t))
+                rows.append(prism(q, v_norm(v_sub(q, prev)), up, [R * 0.004, R * 0.012, R * 0.02], dom, PLAIN))
+                prev = q
+        layers.append({"kind": "prisms", "rows": rows})
+        stage["denbuilder"] = {"beds": {str(k): v_mul(v, band) for k, v in beds.items()}, "herd": herd}
         nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
@@ -1694,10 +1772,10 @@ def recipe(stem, card_path, pal, ends):
         base = base or R
         cam["target"] = [c * base for c in point_frac]
         cam["radius"] = radius_frac * base
-    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco", "Fulmen", "Woodpecker", "DepthCharge"):
+    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco", "Fulmen", "Woodpecker", "DepthCharge", "Blastline"):
         aim({"Rampage": (0.62, 0.0, 0.3), "Bends": (-0.35, 0.3, 0.55), "Bloomrush": (0.1, -0.45, -0.5),
              "Sirocco": (-0.5, -0.25, -0.45), "Fulmen": (0.0, 0.05, 0.0), "Woodpecker": (0.25, 0.5, -0.55),
-             "DepthCharge": (-0.55, 0.2, 0.35)}[s],
+             "DepthCharge": (-0.55, 0.2, 0.35), "Blastline": (-0.3, 0.2, -0.6)}[s],
             0.45 if s == "Fulmen" else 0.36)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Hijack":
@@ -1711,7 +1789,7 @@ def recipe(stem, card_path, pal, ends):
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
                "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "Thornline", "DecoyRun", "PerchRun", "SlipLine", "Breach"):
         cam["percentile"] = 0.6
-    elif s == "Glasshouse":
+    elif s in ("Glasshouse", "DenBuilder"):
         aim((0.1, -0.05, -0.3), 0.66)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s in ("Chum", "Gorge"):
@@ -2220,6 +2298,93 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                 creature(v_mul(d, nuc_r * rng.range(1.15, 1.5)), rng.unit(), R * 0.018, BLUE, rows)
             layers.append({"kind": "prisms", "rows": rows})
             stage["vessels"] = vessels([(JADE, 0.2, 6, 330, 30), (RUBY, 0.22, -8, 160, 30), (GOLD, 0.24, 12, 250, 30)])
+    elif s == "Snap":
+        # A SNAP down a lock: a Jade Pistol (on its Goby's plane) has locked a Ruby Goby - the lock a thread in its
+        # colour - and its vortex ring, a small SUPER ring in flight, closes on the rival's hull. Kelpwood's crystals
+        # float round the core. Nothing here is a hunter: the ring is the only weapon the pair brings.
+        for k in range(3):
+            crystal(v_add(centre, v_mul(rng.unit(), span * 0.12 * rng.u() ** 0.33)), span * 0.013)
+        pilot = v_add(centre, v_mul(v_norm([0.7, 0.2, -0.65]), span * 0.45))
+        rival = v_add(centre, v_mul(v_norm([-0.45, -0.1, 0.3]), span * 0.28))
+        beam = v_sub(rival, pilot)
+        d = v_norm(beam)
+        side = v_norm(v_cross([0, 1, 0], d)); u = v_cross(d, side)
+        L = math.sqrt(v_dot(beam, beam))
+        w = span * 0.0015
+        sig = domain_signal(pal, JADE, 0.8)
+        layers.append({"kind": "box", "c": v_mul(v_add(pilot, rival), 0.5), "ax": v_mul(side, w), "ay": v_mul(u, w),
+                       "az": v_mul(d, L / 2), "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+        ring_at = v_add(pilot, v_mul(d, L * 0.72))
+        for k, frac in enumerate((1.0, 0.7)):
+            layers.append({"kind": "ring", "c": ring_at, "n": d, "R": span * 0.035 * frac, "r": span * 0.004,
+                           "domain": JADE, "tier": SUPER, "emissive": domain_signal(pal, JADE, 1.3), "unbound": True})
+        for k in range(5):
+            glow(v_add(pilot, v_mul(d, L * (0.15 + 0.11 * k))), span * 0.006, JADE, 0.9, 0.5)
+        glow(rival, span * 0.05, RUBY, 0.9, 0.25)
+        glow(rival, span * 0.02, JADE, 1.2, 0.5)
+        glow(pilot, span * 0.012, JADE, 1.2, 0.6)
+        stage["vessels"] = vessels([(JADE, 0.45, 8, 320, 25), (RUBY, 0.28, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
+    elif s == "DenBuilder":
+        # The act that scores: the Jade Pistol snapping an arc of rings over its Goby's trail into its den (glows in
+        # its colour along the arc), while the rung's grazers - wild, no colour - drift among the dens and nibble.
+        db = stage.pop("denbuilder", None)
+        if db:
+            beds = {int(k): v for k, v in db["beds"].items()}
+            jade = beds[JADE]
+            up = v_norm(jade)
+            side = v_norm(v_cross(up, [0.0, 0.0, 1.0] if abs(up[2]) < 0.9 else [1.0, 0.0, 0.0]))
+            for k in range(7):
+                t = k / 6
+                p = v_add(jade, v_add(v_mul(side, R * 0.24 * (1 - t)), v_mul(up, R * (0.1 + 0.18 * math.sin(math.pi * t)))))
+                glow(p, R * 0.008, JADE, 1.2, 0.6)
+            glow(v_add(jade, v_mul(up, R * 0.04)), R * 0.1, JADE, 0.5, 0.08)
+            rows = []
+            keys = list(beds.values())
+            for k in range(db["herd"]):
+                p = v_add(keys[k % len(keys)], v_mul(rng.unit(), R * 0.16))
+                creature(p, rng.unit(), R * 0.03, BLUE, rows)
+            if rows:
+                layers.append({"kind": "prisms", "rows": rows})
+            stage["vessels"] = vessels([(JADE, 0.62, 6, 330, 10), (RUBY, 0.6, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "Riptide":
+        # The UNDERTOW on a plate: on the plate the camera sees most nearly face-on, a ragged patch of its loose tiles
+        # (plain prisms) streams off the face toward a Jade Pistol's plane, and a vortex ring collapsing in that stream
+        # smashes what it gathered - the act that scores. Shatterplane's crystals float on the plates' axes.
+        import shatterplane_budget as sb
+        rung = sb.RUNGS[INTENSITY - 1]
+        structs, _ = sb.layout(rung)
+        for site in sb.crystal_sites(structs, rung, rung["crystalCount"]):
+            crystal(site, 10.0)
+        az, el = math.radians(cam["azimuth"]), math.radians(cam["elevation"])
+        view = [math.cos(el) * math.sin(az), math.sin(el), math.cos(el) * math.cos(az)]
+        def framing(st):
+            off = v_sub([float(x) for x in st["c"]], centre)
+            across = v_sub(off, v_mul(view, v_dot(off, view)))
+            return abs(v_dot([float(x) for x in st["n"]], view)) - math.sqrt(v_dot(across, across)) / span
+        plate = max(structs, key=framing)
+        pc = [float(x) for x in plate["c"]]
+        pn = [float(x) for x in plate["n"]]
+        face = v_add(pc, v_mul(pn, float(sb.half_depth(rung))))
+        pr = (rung["plateRadius"] + 0.5) * sb.TILE
+        side = v_norm(v_cross(pn, [0.0, 1.0, 0.0] if abs(pn[1]) < 0.9 else [1.0, 0.0, 0.0]))
+        plane = v_add(face, v_add(v_mul(pn, pr * 0.9), v_mul(side, pr * 0.5)))
+        rows = []
+        for k in range(90):
+            t = rng.u() ** 0.7
+            src = v_add(face, v_mul(rng.unit(), pr * 0.35))
+            src = v_sub(src, v_mul(pn, v_dot(v_sub(src, face), pn)))
+            p = v_add(v_mul(src, 1 - t), v_mul(plane, t))
+            p = v_add(p, v_mul(rng.unit(), 6 + 14 * t))
+            rows.append(prism(p, rng.unit(), pn, [sb.TILE * 0.9] * 3, BLUE, PLAIN))
+        layers.append({"kind": "prisms", "rows": rows})
+        ring_at = v_add(v_mul(face, 0.35), v_mul(plane, 0.65))
+        flow = v_norm(v_sub(plane, face))
+        for k, frac in enumerate((1.0, 0.55)):
+            layers.append({"kind": "ring", "c": ring_at, "n": flow, "R": pr * 0.3 * frac, "r": pr * 0.02,
+                           "domain": JADE, "tier": SUPER, "emissive": domain_signal(pal, JADE, 1.3), "unbound": True})
+        glow(ring_at, pr * 0.12, JADE, 0.9, 0.2)
+        glow(plane, 9, JADE, 1.2, 0.6)
+        streak(v_add(plane, v_mul(flow, 30)), flow, 60, JADE)
     elif s == "Corona":
         # A KABLOOM at the heart: a Manta touched an omni crystal, and the bloom round it catches a rival pilot (a
         # glow in the planter's colour on the rival). Out on the shells, two bombed rivals carry fuse markers (small
@@ -2328,6 +2493,35 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         glow(rival, 100, JADE, 1.0, 0.28)            # a full bomb's blast: 100 u round the bomb
         glow(rival, 12, RUBY, 1.3, 0.6)              # the rival it caught
         stage["vessels"] = vessels([(JADE, 0.5, 6, 300, 25), (RUBY, 0.35, -8, 150, 30), (GOLD, 0.75, 12, 240, 25)])
+    elif s in ("CleanerRam", "Blastline"):
+        # The Wrasse kite's act (KITE_NAVIGATOR.md): a Jade kite's tether from its Grouper, the kite at its end. Cleaner
+        # Ram: the kite RAMS a rival (the strike, the one thing that scores) - red-hot at the hit, a glow in the
+        # striker's colour. Blastline: the kite's Space loop BLASTS a stand of rival mass (hostile prisms, the score).
+        grouper = v_add(centre, v_mul(v_norm([0.7, 0.1, -0.5]), span * 0.4))
+        kite = v_add(centre, v_mul(v_norm([-0.3, 0.0, 0.3]), span * 0.18))
+        links = 14
+        prev = grouper
+        sig = domain_signal(pal, JADE, 1.3)
+        for k in range(1, links + 1):
+            q = v_add(grouper, v_mul(v_sub(kite, grouper), k / links))
+            d = v_norm(v_sub(q, prev))
+            sx = v_norm(v_cross([0, 1, 0] if abs(d[1]) < 0.9 else [1, 0, 0], d)); sy = v_cross(d, sx)
+            w = span * (0.004 if s == "CleanerRam" else 0.002)
+            layers.append({"kind": "box", "c": v_mul(v_add(prev, q), 0.5), "ax": v_mul(sx, w), "ay": v_mul(sy, w),
+                           "az": v_mul(d, math.sqrt(v_dot(v_sub(q, prev), v_sub(q, prev))) * 0.42),
+                           "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+            prev = q
+        if s == "CleanerRam":
+            hot = [c * 1.6 for c in pal["danger"][:3]]
+            layers.append({"kind": "sphere", "c": list(kite), "r": span * 0.025, "base": [c * 0.6 for c in hot],
+                           "rim": hot, "emissive": hot, "unbound": True})
+            glow(kite, span * 0.1, JADE, 1.0, 0.3)
+            glow(kite, span * 0.045, JADE, 1.4, 0.55)
+            stage["vessels"] = vessels([(JADE, 0.4, 6, 330, 25), (RUBY, 0.18, -4, 120, 20), (GOLD, 0.6, 10, 230, 25)])
+        else:
+            glow(kite, span * 0.16, JADE, 1.0, 0.3)
+            glow(kite, span * 0.05, JADE, 1.4, 0.55)
+            stage["vessels"] = vessels([(JADE, 0.42, 8, 320, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)

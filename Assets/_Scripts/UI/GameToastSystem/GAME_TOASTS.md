@@ -76,6 +76,7 @@ config entry's `everyN` says how often the total must cross a multiple before th
 | `SiroccoLeadChanged` (126) | `SiroccoController` (after 20% of the target) | `{0}` domain, `{1}` prisms, `{2}` target |
 | `SiroccoDustHint` (127) | controller config (idle hint) | — |
 | `StingherdHint` (192) / `TrawlHint` (193) | `StingherdController` / `TrawlController` (once, a few seconds after the countdown) | — |
+| `CleanerRamHint` (186) / `ReefbuildHint` (187) / `BlastlineHint` (188) | controller config (idle hints; the Wrasse reef games, `WRASSEREEF.md`) | — |
 | `DomainRaceQuarter` (128) / `DomainRaceHalf` (129) / `DomainRaceLeadChanged` (130) / `DomainRaceHomeStretch` (131) / `DomainRaceFinalLap` (132) | `DomainRaceToasts`, ticked by `GateRaceController` (every gate race) and by `RampageController` / `SalvoController` / `HijackController` | `{0}` leading domain, `{1}` its score, `{2}` target, `{3}` its best single pilot |
 | `AstroLeagueGoal` (133) / `AstroLeagueMatchPoint` (134) | `AstroLeagueController.AnnounceGoal_ClientRpc` | goal: `{0}` scorer, `{1}` their domain's goals, `{2}` goal limit; match point: `{0}` domain, same `{1}` `{2}` |
 | `AstroLeagueGoldenGoal` (135) | `AstroLeagueController.AnnounceOvertime_ClientRpc` | — |

@@ -69,6 +69,12 @@ MonoBehaviour:
   tapestryRoundSeconds: 90
   palisadeRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  riptidePrismTarget: 600
+  denBuilderRoundSeconds: 150
+  snapHitTarget: 5
+  cleanerRamStrikeTarget: 8
+  reefbuildRoundSeconds: 90
+  blastlinePrismTarget: 600
   chumRoundSeconds: 90
   starweaveRoundSeconds: 90
   haulRoundSeconds: 90
@@ -175,6 +181,12 @@ MonoBehaviour:
   tapestryRoundSecondsBuild: 90
   palisadeRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  riptidePrismTargetBuild: 600
+  denBuilderRoundSecondsBuild: 150
+  snapHitTargetBuild: 5
+  cleanerRamStrikeTargetBuild: 8
+  reefbuildRoundSecondsBuild: 90
+  blastlinePrismTargetBuild: 600
   chumRoundSecondsBuild: 90
   starweaveRoundSecondsBuild: 90
   haulRoundSecondsBuild: 90

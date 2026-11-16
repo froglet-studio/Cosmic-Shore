@@ -2,7 +2,7 @@
  "counts": {
   "exempt": 7,
   "grey": 556,
-  "ui": 650,
+  "ui": 656,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -226,6 +226,13 @@
    "sha": "998687d0e055a854",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Blastline.png": {
+   "coloured": 0.9982,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "0c1c1c3a0f81db20",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Bloomrush.png": {
    "coloured": 0.9985,
    "graded": "ui",
@@ -289,6 +296,13 @@
    "sha": "9811117d23d70771",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/CleanerRam.png": {
+   "coloured": 0.9985,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "48a687d8b352e27c",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Cleave.png": {
    "coloured": 0.9958,
    "graded": "ui",
@@ -308,6 +322,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "3adc8575a155e5f7",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/DenBuilder.png": {
+   "coloured": 0.9998,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "670b1c703e8dde70",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/DepthCharge.png": {
@@ -506,11 +527,25 @@
    "sha": "4e042b95cb11b86b",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Reefbuild.png": {
+   "coloured": 0.9958,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "e7b33080e2fb6439",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Regatta.png": {
    "coloured": 0.995,
    "graded": "ui",
    "kind": "sprite",
    "sha": "4f8838a24ea889be",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Riptide.png": {
+   "coloured": 0.9971,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "cb4dd134ac7ff1eb",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Salvo.png": {
@@ -609,6 +644,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "57fe6b4405f435ed",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Snap.png": {
+   "coloured": 0.9998,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "638414c5316c1f82",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Standoff.png": {

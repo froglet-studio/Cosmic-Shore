@@ -665,6 +665,18 @@ namespace CosmicShore.UI
                     // Tapestry's answer: the nearest rival, whose freshest afterimages are behind them. Building needs no
                     // arrow - you build where you are.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Palisade");
+                case GameModes.CleanerRam:
+                    // The Bends' provider again: the nearest pilot this player may ram. The ram happens on the kite's
+                    // board, so the Grouper's whole job is putting a rival under it; the arrow answers where.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_CleanerRam");
+                case GameModes.Reefbuild:
+                    // Tapestry's answer: the BUILD half needs no arrow (the kite lays the reef where it loops), and the
+                    // nearest opposing pilot is where the freshest opposing reef is - the raid half.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Reefbuild");
+                case GameModes.Blastline:
+                    // Shatterplane's provider: the densest mass this player may destroy - where a Space loop's blast
+                    // takes the most.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Blastline");
                 case GameModes.Bends:
                     // The provider was written for this mode and borrowed by three others before
                     // the mode itself was registered: the nearest pilot this player may bend.
@@ -706,6 +718,18 @@ namespace CosmicShore.UI
                     // Densest standing hostile mass: the net scores where prisms are packed tight enough to smash into
                     // each other, so the arrow names the nearest big sheaf still standing.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Trawl");
+                case GameModes.Snap:
+                    // The Bends' provider: the nearest pilot this pair may hit. The Goby's half of the hunt is turning
+                    // its nose onto them to lock; the arrow answers where.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Snap");
+                case GameModes.DenBuilder:
+                    // Rampage's provider, Glasshouse's reason: the nearest omni crystal is the one thing to fetch; the
+                    // dens are built wherever the pair perches.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_DenBuilder");
+                case GameModes.Riptide:
+                    // Densest standing hostile mass, Shatterplane's reason: the plates are the field, and the Goby AI
+                    // routes its islands through the same question.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Riptide");
                 case GameModes.Sirocco:
                     // Same provider, same reason: the forest rings the cell, so the arrow names
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs
