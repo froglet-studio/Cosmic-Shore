@@ -10,9 +10,9 @@ namespace CosmicShore.UI
     /// "Which games can this run draw?" — the Maelstrom launch panel's answer, redrawn every time
     /// the intensity changes.
     ///
-    /// <para>The ladder lives in the data (<see cref="MaelstromDataSO.IntensityTiers"/>), not
-    /// here: this view asks the asset what intensity N unlocks and draws the whole roster with the
-    /// rest greyed, so raising the intensity visibly fills the list in.</para>
+    /// <para>The tiers live in the data (<see cref="MaelstromDataSO.IntensityTiers"/>), not
+    /// here: this view asks the asset which games intensity N deals and draws the whole roster with
+    /// the rest greyed, each greyed row naming the intensity that does deal it.</para>
     /// </summary>
     public class MaelstromPoolListView : MonoBehaviour
     {
