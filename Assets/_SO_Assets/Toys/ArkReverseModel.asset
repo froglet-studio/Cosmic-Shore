@@ -17,6 +17,13 @@ MonoBehaviour:
   scale: 1
   domainReplacesMaterials:
   - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
+  hullShader: {fileID: 4800000, guid: 1f5bb4068ae445a9bf5c9ec91ee85780, type: 3}
+  albedoGain: 2.2
+  keyLight: 1.2
+  specular: 0.8
+  rim: 0.5
+  bodyFill: 0.18
+  glowFill: 0.85
   yawRateFull: 40
   pitchRateFull: 40
   bankFromYaw: 0.8

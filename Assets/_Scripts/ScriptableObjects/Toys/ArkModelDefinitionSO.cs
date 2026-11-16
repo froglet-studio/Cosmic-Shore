@@ -46,6 +46,31 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 2f), Tooltip("The Engine slot (the jets' ember, clamp pads, running lights).")]
         float engineBrightness = 0.6f;
 
+        [Header("Shading - the Ark's own light and shadow (Shombith, 2026-11-16: the voyage Ark looked nothing like its render)")]
+        [SerializeField, Tooltip("The Ark's hull shader (CosmicShore/Ark Hull, ArkHullShader.shader): the same colours as the vessel " +
+                                 "materials, with a key light fixed to the camera, a fill floor, a specular and the rim, so the panels, " +
+                                 "ribs and jets read. Empty = the vessels' flat unlit VesselGraph look.")]
+        Shader hullShader;
+
+        [SerializeField, Range(0f, 4f), Tooltip("Scale on each slot's colour under the hull shader (its brightness above still applies). " +
+                                                "Lit surfaces lose light that the flat look did not, so this gives it back.")]
+        float albedoGain = 2.2f;
+
+        [SerializeField, Range(0f, 2f), Tooltip("Strength of the key light (upper left of the camera, toward it).")]
+        float keyLight = 1.2f;
+
+        [SerializeField, Range(0f, 2f), Tooltip("Strength of the specular glint on the hull's flats.")]
+        float specular = 0.8f;
+
+        [SerializeField, Range(0f, 1f), Tooltip("How much of the vessels' silhouette rim the hull keeps.")]
+        float rim = 0.5f;
+
+        [SerializeField, Range(0f, 1f), Tooltip("Fill on the Body slot: how much of the gunmetal shows where the key does not reach.")]
+        float bodyFill = 0.18f;
+
+        [SerializeField, Range(0f, 1f), Tooltip("Fill on the glowing slots (Domain seams, Windows, Engine): near 1, they glow whatever the light.")]
+        float glowFill = 0.85f;
+
         [Header("Puppetry - how hard a turn plays a take in full")]
         [SerializeField, Min(1f), Tooltip("Yaw rate, degrees per second, that plays the yaw take in full (the Ark turns at up to 40).")]
         float yawRateFull = 40f;
@@ -103,5 +128,12 @@ namespace CosmicShore.ScriptableObjects
         public float BodyBrightness => bodyBrightness;
         public float WindowBrightness => windowBrightness;
         public float EngineBrightness => engineBrightness;
+        public Shader HullShader => hullShader;
+        public float AlbedoGain => albedoGain;
+        public float KeyLight => keyLight;
+        public float Specular => specular;
+        public float Rim => rim;
+        public float BodyFill => bodyFill;
+        public float GlowFill => glowFill;
     }
 }

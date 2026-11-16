@@ -408,13 +408,7 @@ namespace CosmicShore.Gameplay
                     if (!m || _doubleSided.ContainsValue(m)) continue;
                     if (!_doubleSided.TryGetValue(m, out var copy))
                     {
-                        copy = new Material(m) { name = m.name + " (Ark, both faces)", doubleSidedGI = true };
-                        if (copy.HasProperty("_Cull")) copy.SetFloat("_Cull", 0f);          // ShaderGraph / URP: Off
-                        if (copy.HasProperty("_CullMode")) copy.SetFloat("_CullMode", 0f);
-                        if (copy.HasProperty("_RenderFace")) copy.SetFloat("_RenderFace", 0f); // URP Lit: Both
-                        MakeOpaque(copy);
-                        if (copy.HasProperty(ColorMultiplierId))
-                            copy.SetFloat(ColorMultiplierId, copy.GetFloat(ColorMultiplierId) * SlotBrightness(SlotOf(m)));
+                        copy = _def.HullShader ? Shaded(m) : FlatBothFaces(m);
                         _doubleSided[m] = copy;
                     }
                     materials[i] = copy;
@@ -422,6 +416,49 @@ namespace CosmicShore.Gameplay
                 }
                 if (changed) renderer.sharedMaterials = materials;
             }
+        }
+
+        /// <summary>The vessels' own (unlit) look on a per-Ark copy: both faces, opaque, the slot's brightness.</summary>
+        Material FlatBothFaces(Material m)
+        {
+            var copy = new Material(m) { name = m.name + " (Ark, both faces)", doubleSidedGI = true };
+            if (copy.HasProperty("_Cull")) copy.SetFloat("_Cull", 0f);          // ShaderGraph / URP: Off
+            if (copy.HasProperty("_CullMode")) copy.SetFloat("_CullMode", 0f);
+            if (copy.HasProperty("_RenderFace")) copy.SetFloat("_RenderFace", 0f); // URP Lit: Both
+            MakeOpaque(copy);
+            if (copy.HasProperty(ColorMultiplierId))
+                copy.SetFloat(ColorMultiplierId, copy.GetFloat(ColorMultiplierId) * SlotBrightness(SlotOf(m)));
+            return copy;
+        }
+
+        static readonly int Color1Id = Shader.PropertyToID("_Color1");
+        static readonly int Color2Id = Shader.PropertyToID("_Color2");
+        static readonly int AlbedoGainId = Shader.PropertyToID("_ArkAlbedoGain");
+        static readonly int FillId = Shader.PropertyToID("_ArkFill");
+        static readonly int KeyId = Shader.PropertyToID("_ArkKey");
+        static readonly int SpecularId = Shader.PropertyToID("_ArkSpecular");
+        static readonly int RimId = Shader.PropertyToID("_ArkRim");
+
+        /// <summary>
+        /// The Ark's own shading (<see cref="ArkModelDefinitionSO.HullShader"/>) on a per-Ark material: the slot's two
+        /// tones and brightness copied from the vessel material it replaces (so every colour still comes from the colour
+        /// set and the domain's ship material), lit by the hull shader's key, fill, specular and rim. Shombith,
+        /// 2026-11-16: under the flat vessel look the voyage Ark "looks nothing like" its render.
+        /// </summary>
+        Material Shaded(Material m)
+        {
+            int slot = SlotOf(m);
+            var copy = new Material(_def.HullShader) { name = m.name + " (Ark, shaded)", doubleSidedGI = true };
+            if (m.HasProperty(Color1Id)) copy.SetColor(Color1Id, m.GetColor(Color1Id));
+            if (m.HasProperty(Color2Id)) copy.SetColor(Color2Id, m.GetColor(Color2Id));
+            float baseMultiplier = m.HasProperty(ColorMultiplierId) ? m.GetFloat(ColorMultiplierId) : 1f;
+            copy.SetFloat(ColorMultiplierId, baseMultiplier * SlotBrightness(slot));
+            copy.SetFloat(AlbedoGainId, _def.AlbedoGain);
+            copy.SetFloat(FillId, slot == SlotBody ? _def.BodyFill : _def.GlowFill);
+            copy.SetFloat(KeyId, _def.KeyLight);
+            copy.SetFloat(SpecularId, _def.Specular);
+            copy.SetFloat(RimId, _def.Rim);
+            return copy;
         }
 
         /// <summary>

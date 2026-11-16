@@ -23531,3 +23531,11 @@ the new `VoyageStarterSquadTests` (editor) were not compiled or run. No Unity ed
    TALON, ANVIL and CITADEL's people. The Ark's Squads tab now lists "Starter Squad": Sparrow in Charge (you), Squirrel
    in Mass and Dolphin in Space on AI. Restart the game: the squad is still there.
 4. Escort the Ark with the starter squad: the two wingmates spawn as the Squirrel and the Dolphin.
+
+## 2026-11-16 - the Ark's own shading (CosmicShore/Ark Hull), branch claude/project-thread-8cf2n8 into voyages
+- Not run in Unity: no editor in the cloud session. The reference compile reports 0 errors in the changed files (the
+  player tier fails on MultiplayerSetup.cs because the multiplayer package could not be fetched, unrelated).
+- To check: the shader compiles in the editor (no pink Ark); in a voyage (Escort the Ark) the hull shows light and shadow
+  on its panels, ribs and jets, the trim wears the squad's domain colour, no part vanishes from either side, and the
+  Ark is not a lamp. Tune albedoGain / keyLight / specular / bodyFill / glowFill on ArkReverseModel.asset. Clearing
+  hullShader brings back the old flat look.

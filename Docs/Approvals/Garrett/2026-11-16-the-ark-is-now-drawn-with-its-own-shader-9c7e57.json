@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-the-ark-is-now-drawn-with-its-own-shader-9c7e57",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T18:18:28+00:00",
+  "area": "The Ark model's look (ArkModel, ArkReverseModel.asset)",
+  "summary": "The Ark is now drawn with its own shader (CosmicShore/Ark Hull): the same vessel-material colours and slot brightness, plus a key light fixed to the camera, fill, specular and rim, so the panels, ribs and jets read in voyages the way the studio render shows them. Shombith's call, 2026-11-16. Clearing hullShader on the asset restores the flat VesselGraph look.",
+  "branch": "claude/project-thread-8cf2n8",
+  "commit": "89bfa4956"
+}
