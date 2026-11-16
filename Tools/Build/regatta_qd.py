@@ -383,7 +383,7 @@ def course_features(g, course):
         for p in g.get("placements") or ():
             k = "kind:" + str(p.get("kind"))
             x[k] = x.get(k, 0.0) + 1.0
-    return x
+    return add_families(x)
 
 
 def kinds_used(g, x):
@@ -531,7 +531,8 @@ def evaluate(job):
             tb = {st["hull"]: st.get("backend", backend) for race in r1["races"] for st in race["seats"]}
             return {"genome": g, "game_genome": gg, "valid": False, "partial": True, "x": x,
                     "seconds": {h: done.get(h) for h in t1}, "timed_by": tb, "stage1_spread": round(lb, 4),
-                    "kinds": kinds_used(gg, x), "error": f"stage 1 spread {lb:.2f}x > gate {gate:.2f}x: stopped",
+                    "kinds": kinds_used(gg, x), "error": (f"stage 1: {', '.join(h for h in stage1 if h not in done)} did not finish: stopped"
+                              if len(done) < len(stage1) else f"stage 1 spread {lb:.2f}x > gate {gate:.2f}x: stopped"),
                     "backend": backend, "engine_commit": r1.get("engine_commit")}
         r2 = _judge(gg, course, backend, seeds, hulls=[h for h in HULLS if h not in stage1])
         r = dict(r2, races=r1["races"] + r2["races"])
@@ -683,28 +684,113 @@ def engine_only(records):
     return out
 
 
-def feature_names(records):
-    extra = sorted({k for r in records if usable(r) for k in r["x"] if k not in FEATURES})
-    return list(FEATURES) + extra
+PER_KIND = ("w2:count_by_kind:", "w2:mean_scale_by_kind:", "kind:")
+
+# W2's 52 placement kinds pooled by what a pilot meets (W3's grouping, 2026-11-16): the surrogate learns one input per
+# family until there are enough courses for one per kind. The rail features (neutral, gaps, plain, shielded, detours)
+# are their own family already: FEATURES.
+FAMILIES = {
+    "walls": ("Wall", "Panes", "Shatterplane", "Flatline", "Breakwater", "Standoff", "DartBoard", "ShapeSign"),
+    "surfaces": ("Gyroid", "SchwarzPSurface", "Spherene", "Helicoid", "Ellipsoid", "Geode", "Caldera", "Pumpkin", "Swell"),
+    "rings": ("FiveRings", "LinkedRings", "CliffordTorus", "HopfFibration", "TorusKnot", "Ourobor", "Orrery", "Corona",
+              "Garland", "Twistbands"),
+    "strands": ("Helix", "Skein", "Jackstraw", "SingleTrailBlock", "Comet", "Zephyr", "Harvest", "RaceTrack",
+                "WaypointTrack", "RegattaRails", "SwitchbackFeatures", "Switchyard"),
+    "growth": ("LSystem", "Yggdra", "Kelpwood", "Hesperides", "Ribcage", "Boneyard", "Flora"),
+    "structures": ("Atlantis", "Batman", "Daedala", "WildlifeCage", "ShapeBase", "Crystal"),
+}
+_FAMILY_OF = {k: f for f, ks in FAMILIES.items() for k in ks}
 
 
-def fit_trusted(records, seed=0, min_n=30):
-    """Fit on 80% of the judged records, score on the 20% it never saw, then refit on all (the held-out score stays the
-    one reported). None with too few records."""
+def add_families(x):
+    """x with one count per placement family ("fam:<family>"), from its per-kind counts. Idempotent, so records judged
+    before the families existed are featurised the same way."""
+    fam = {f"fam:{f}": 0.0 for f in FAMILIES}
+    fam["fam:other"] = 0.0
+    for k, v in x.items():
+        for pre in ("w2:count_by_kind:", "kind:"):
+            if k.startswith(pre):
+                fam["fam:" + _FAMILY_OF.get(k[len(pre):], "other")] += float(v)
+    x.update(fam)
+    return x
+
+
+def feature_names(records, per_kind=None):
+    """The surrogate's inputs: FEATURES plus W2's aggregate descriptors. One input per placement kind (about 60 of them)
+    is only added once there are 10 courses per input, or ridge fits the noise (held-out R^2 -0.64 on 22 courses,
+    2026-11-16). Inputs that never vary are dropped."""
+    rs = [r for r in records if usable(r)]
+    for r in rs:
+        add_families(r["x"])
+    extra = sorted({k for r in rs for k in r["x"] if k not in FEATURES})
+    agg = [k for k in extra if not k.startswith(PER_KIND)]
+    kinds = [k for k in extra if k.startswith(PER_KIND)]
+    names = list(FEATURES) + agg
+    if per_kind or (per_kind is None and len(rs) >= 10 * (len(names) + len(kinds))):
+        names += kinds
+    return [n for n in names if len({float(r["x"].get(n, 0.0)) for r in rs}) > 1]
+
+
+def fit_trusted(records, seed=0, min_n=30, folds=5):
+    """Held-out accuracy by K-fold cross-validation (every course is predicted once by a fit that never saw it, so a
+    few dozen courses still give a stable score), then one fit on all of them. Two scores: each hull's ln time, and its
+    STANDING (ln time minus the field's mean ln time on that course), which is what a pool cancels. None with too few
+    records."""
     valid = [r for r in records if usable(r)]
     if len(valid) < min_n:
         return None
+    np = _np()
     rng = random.Random(seed)
     idx = list(range(len(valid)))
     rng.shuffle(idx)
-    cut = int(0.8 * len(idx))
-    train, test = [valid[i] for i in idx[:cut]], [valid[i] for i in idx[cut:]]
     names = feature_names(valid)
     hulls = [h for h in HULLS if sum(1 for r in valid if r["seconds"].get(h)) >= 3]
-    s = Surrogate(names).fit(train, hulls=hulls)
-    held = s.score(test, hulls=[h for h in SCORED if h in hulls])
-    full = Surrogate(names).fit(valid, hulls=hulls, alpha=s.alpha)
-    full.held_out = held
+    scored = [h for h in SCORED if h in hulls]
+    full = Surrogate(names).fit(valid, hulls=hulls)
+    pred = {}                                    # record index -> {hull: predicted seconds}, out of fold
+    for k in range(folds):
+        te = [i for j, i in enumerate(idx) if j % folds == k]
+        tr = [i for j, i in enumerate(idx) if j % folds != k]
+        if not te or len(tr) < 3:
+            continue
+        sk = Surrogate(names).fit([valid[i] for i in tr], hulls=hulls, alpha=full.alpha)
+        for i in te:
+            pred[i] = sk.predict(valid[i]["x"])
+    per = {}
+    for h in scored:
+        rows = [(math.log(pred[i][h]), math.log(valid[i]["seconds"][h])) for i in pred
+                if valid[i]["seconds"].get(h) and h in pred[i]]
+        if len(rows) < 3:
+            continue
+        p, y = np.array([a for a, _ in rows]), np.array([b for _, b in rows])
+        ss = float(((y - y.mean()) ** 2).sum())
+        per[h] = {"r2": round(1.0 - float(((p - y) ** 2).sum()) / ss, 3) if ss > 1e-12 else None,
+                  "mae_s": round(float(np.abs(np.exp(p) - np.exp(y)).mean()), 2), "n": len(rows)}
+    fulls = [i for i in pred if all(valid[i]["seconds"].get(h) for h in scored) and all(h in pred[i] for h in scored)]
+    stand, sp, so, right = {h: ([], []) for h in scored}, [], [], 0
+    for i in fulls:
+        lp = {h: math.log(pred[i][h]) for h in scored}
+        ly = {h: math.log(valid[i]["seconds"][h]) for h in scored}
+        mp, my = sum(lp.values()) / len(lp), sum(ly.values()) / len(ly)
+        for h in scored:
+            stand[h][0].append(lp[h] - mp)
+            stand[h][1].append(ly[h] - my)
+        sp.append(max(lp.values()) - min(lp.values()))
+        so.append(max(ly.values()) - min(ly.values()))
+        right += min(lp, key=lp.get) == min(ly, key=ly.get)
+
+    def r2(p, y):
+        p, y = np.array(p), np.array(y)
+        ss = float(((y - y.mean()) ** 2).sum()) if len(y) >= 3 else 0.0
+        return round(1.0 - float(((p - y) ** 2).sum()) / ss, 3) if ss > 1e-12 else None
+
+    standing = {h: r2(*stand[h]) for h in scored}
+    r2s = [v["r2"] for v in per.values() if v["r2"] is not None]
+    st2 = [v for v in standing.values() if v is not None]
+    full.held_out = {"per_hull": per, "mean_r2": round(sum(r2s) / len(r2s), 3) if r2s else None,
+                     "standing_r2": standing, "mean_standing_r2": round(sum(st2) / len(st2), 3) if st2 else None,
+                     "spread_r2": r2(sp, so), "leader_right": round(right / len(fulls), 3) if fulls else None,
+                     "n": len(fulls), "folds": folds, "courses": len(valid)}
     return full
 
 
@@ -719,7 +805,8 @@ STEPS = {"lap_u": (500.0, "500 u more lap"), "lane_over_spine": (0.05, "lanes 5%
          "shielded": (0.1, "a tenth of the lap as shielded (not super-shielded) rail"), "gap_count": (1.0, "one more rail gap"),
          "free_stretches": (1.0, "one more stretch off the rail"), "detour_u": (100.0, "100 u more rail detour"),
          "alternates": (1.0, "one more alternate ring"), "alt_offset": (100.0, "alternate rings 100 u further out"),
-         "crystals": (1.0, "one more crystal on the line")}
+         "crystals": (1.0, "one more crystal on the line"),
+         **{f"fam:{f}": (1.0, f"one more placement from the {f} family") for f in list(FAMILIES) + ["other"]}}
 
 
 def reference_seconds(recs):
@@ -771,9 +858,13 @@ def equations_md(s, ref_seconds, records, backend):
              f"Mean R^2 of ln(time) over the scored hulls: **{ho.get('mean_r2')}** (it may screen the search at >= "
              f"{TRUST_R2}); R^2 of the course's ln(spread): **{ho.get('spread_r2')}**; it names the right fastest hull on "
              f"**{ho.get('leader_right')}** of {ho.get('n')} held-out courses.", "",
-             "| hull | held-out R^2 | mean error (s) |", "|---|---|---|"]
+             f"Each course is predicted by a fit that never saw it ({ho.get('folds', 1)}-fold cross-validation over "
+             f"{ho.get('courses', n)} courses). STANDING is a hull's ln time minus the field's mean on that course: the "
+             f"quantity a pool cancels, so its R^2 is the one that says whether the equations can steer a pool (mean "
+             f"**{ho.get('mean_standing_r2')}**).", "",
+             "| hull | held-out R^2, time | R^2, standing | mean error (s) |", "|---|---|---|---|"]
     for h, v in sorted(ho.get("per_hull", {}).items()):
-        lines.append(f"| {h} | {v['r2']} | {v['mae_s']} |")
+        lines.append(f"| {h} | {v['r2']} | {(ho.get('standing_r2') or {}).get(h)} | {v['mae_s']} |")
     lines += ["", "## What each feature does to each hull (seconds, against today's course)", "",
               "| change | " + " | ".join(hulls) + " |", "|---|" + "---|" * len(hulls)]
     order = sorted(eff, key=lambda k: -max([abs(v) for v in eff[k].values()] or [0]))

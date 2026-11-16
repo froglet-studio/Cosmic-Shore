@@ -90,6 +90,30 @@ detours cost every hull, and Plain rails cost the Squirrel most. The search shou
 treat placements as the Squirrel's and Serpent's lever until a placement kind is found that slows a Rhino. One seed;
 the detour Rhino timeout needs a second look (it may be the Rhino AI, not the course).
 
+## Wider training courses for the AIs (round 4)
+
+Several AIs broke on Regatta situations their own Time game never showed them (FINDINGS 4, 5, 7, 13). The genome now
+widens those games for training, without touching Regatta (the AIs train in their own Time games, `AI_PLAN.md`):
+
+- `TrainingCourseOverlay.Override` (null in shipped play) is a course genome that `GateRaceController.ApplyCourse`
+  lays round ANY gate race's own gates, after the mode's own geometry. It uses the same builder and carve:
+  - the ring mouths are always kept open;
+  - the line tube (the gates' polyline) is carved unless a placement has `cross_line`;
+  - the frame is taken about the gates' centroid;
+  - legs are rescaled from eight gates to the mode's count;
+  - the shell is the mode's own.
+  Rail features, flora and circuit genes are Regatta's only.
+- The judge sets it from a spec's `genome` whenever `mode` is not Regatta, and records `training_prisms` per race.
+- `regatta_genome.py --random N --curriculum W --for-mode <Card>` (`training_genome`) runs from narrow to wide:
+  - W=0 is the mode's own course.
+  - Up to W=1, the number of placements, their size, their share on the line, the share of hard prisms (Danger,
+    Shielded, SuperShielded) and the tightness of the line tube all grow with W.
+  - For Regatta, rail sections, alternate rings and circuit changes grow with W too.
+
+Proof (judge, 2026-11-16, Dolphin alone in Switchback I1, seed 1): its own course took 101.4 s. Two wide genomes
+(`--curriculum 1 --for-mode Switchback`) laid 5,719 and 808 prisms round its gates; the Dolphin still threaded all 26
+gates, in 132.1 s and 155.0 s.
+
 ## Known gaps
 
 - A spawner that lays a prism at infinity is skipped prism by prism (Linked Rings did, with 20+ rings of 64 blocks,

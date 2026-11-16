@@ -24516,6 +24516,8 @@ nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed
    placement stands on a rail while the ring mouths stay open. Run the EditMode tests `CellPhaseRulesTests`
    (`Raised_*`). A Linked Rings spawner with 20+ rings of 64 blocks no longer lays blocks at infinity (it hung the
    course before). Refcompile: 0 errors in the changed files; the editor did not run.
+5. Round 4 (`TrainingCourseOverlay`): play any gate race (Switchback, Redline) normally. Nothing changes, because the
+   overlay is null outside the judge and the trainers. The judge proves the overlay in Amoebius. The editor did not run.
 
 ## 🔴 The standard element ladder: I2 start, I3 team crystals, I4 fauna, the crystal-detour gene (2026-11-16, Garrett's project thread, #2055 #2059 #2060, NOT RUN IN EDITOR)
 
@@ -24551,3 +24553,6 @@ ran (see the PR's verification line); the generators' `--check` and `--self-test
 5. The Hangar's PILOTS list for a vessel shows every person whose callsign can fly it, each with their own close-up,
    and seating one still lights IN THE SEAT.
 6. Phone build size: the 32 added 1536x864 scenes should add about 40 MB; measure it.
+6. Harvest at I4 (authored fauna, now pinned): every shark, piranha, brittle star and tadpole is the Space variant, not
+   a spread across elements; at I3 and below Harvest's fauna are unchanged. Spot-check Wildlife Liberation and Chum at
+   I4 still play (their creatures are one element now). Not run in editor; refcompile 0 errors in the changed files.

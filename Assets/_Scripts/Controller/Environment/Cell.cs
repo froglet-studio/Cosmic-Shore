@@ -88,9 +88,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The fauna species this cell spawns and the fauna sync indexes: its spawn profile's
-        /// <c>SupportedFaunas</c>, and - at I4 of an arcade match, when the profile carries no fauna of its own - the
-        /// standard element ladder's species pinned to the game's element (<see cref="ElementLadderFaunaSO"/>,
-        /// Garrett 2026-11-16). Every reader that used to walk <c>SpawnProfile.SupportedFaunas</c> for SPAWNING or SYNC
+        /// <c>SupportedFaunas</c>, except at I4+ of an arcade match (the standard element ladder, Garrett 2026-11-16),
+        /// where every species is a clone pinned to the game's element - the profile's own species when it authors
+        /// any, else <see cref="ElementLadderFaunaSO"/>'s. Every reader that used to walk <c>SpawnProfile.SupportedFaunas</c> for SPAWNING or SYNC
         /// walks this, so both spawners, reproduction and the sync agree. Built once per config and identical on every
         /// peer: the inputs (mode, intensity, arena flag) are the synced game config, and the clones follow the
         /// ladder asset's list order. Fauna wear the cell's controlling colour as always.
@@ -112,19 +112,33 @@ namespace CosmicShore.Gameplay
             DestroyLadderFauna();
 
             var authored = config && config.SpawnProfile ? config.SpawnProfile.SupportedFaunas : null;
-            if (authored is { Count: > 0 })
+            Element element = default;
+            bool ladder = config && LadderFaunaApplies(out element);
+            if (!ladder)
             {
-                _faunaRoster.AddRange(authored);
+                if (authored != null) _faunaRoster.AddRange(authored);
                 return;
             }
-            if (!config || !LadderFaunaApplies(out var element)) return;
 
-            var ladder = ElementLadderFaunaSO.Load();
-            if (!ladder) return;
-            for (int i = 0; i < ladder.Species.Count; i++)
+            // The ladder's I4: a profile that authors fauna keeps its species, every one born in the game's element
+            // (Garrett's card, 2026-11-16: "arenas with fauna keep theirs, recoloured to the element"); a profile with
+            // none gets the ladder's species. Either way the roster is pinned clones in list order on every peer.
+            IReadOnlyList<FaunaConfigurationSO> source = authored;
+            if (source is not { Count: > 0 })
             {
-                var species = ladder.Species[i];
-                if (!species || !species.FaunaPrefab) continue;
+                var asset = ElementLadderFaunaSO.Load();
+                source = asset ? asset.Species : null;
+            }
+            if (source == null) return;
+            for (int i = 0; i < source.Count; i++)
+            {
+                var species = source[i];
+                if (!species || !species.FaunaPrefab)
+                {
+                    // Keep the slot so the sync's config index still lines up with the authored list.
+                    _faunaRoster.Add(species);
+                    continue;
+                }
                 var pinned = ElementLadderFaunaSO.PinnedTo(species, element);
                 _ladderFauna.Add(pinned);
                 _faunaRoster.Add(pinned);

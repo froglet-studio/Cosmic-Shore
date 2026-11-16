@@ -13023,13 +13023,18 @@ Garrett's standard element ladder (`Docs/ElementalLoop/PLAYBOOK.md` step 2) make
 in the cell's colour (his answer kept the locked one-colour rule: "it is more consistent"). A cell whose I4 spawn
 profile carries NO fauna now gets `Resources/ElementLadderFauna`'s species (Harvest's I4 four, Shombith 2026-11-10),
 each a runtime clone with `SpreadElements` off and `Element` pinned to the game's element (the palette sibling's
-variant block when the species has one). A profile that authors fauna is untouched.
+variant block when the species has one). A profile that authors fauna keeps its species, and under the same gate each
+is pinned the same way (Garrett's I4 card: "arenas with fauna keep theirs, recoloured to the element"). That reaches
+fourteen I4 profiles: Harvest, Shatterplane, Thresher Time, Serpentine, Rampage, Wildlife Liberation, Chum, Tollway,
+Glasshouse, Boneyard, Wrecking Ball, Kelpwood and the two Ark Escort cells (any of them a two-element or arena card
+stands down). No mode scores on a creature's element, so the change is the variant's look and stats, not a rule.
 
 - **One roster.** `Cell.FaunaRoster` is the profile's `SupportedFaunas` or, under the ladder gate (an arcade
-  controller in the scene, not an arena card, I4+, a one-element game), the pinned clones. Both spawners
+  controller in the scene, not an arena card, I4+, a one-element game), pinned clones of the authored species or, when
+  there are none, of the ladder's. Both spawners
   (`IntensityWiseLifeSpawner`, `RandomLifeSpawner`) and `FaunaNetworkSync` (capture and resolve) read it, so the
   config index means the same creature on every peer. Reproduction rides `SourceConfig` (the clone) unchanged.
-- **No asset is edited.** The clones live with the cell and are destroyed with it; nothing writes Harvest's assets.
+- **No asset is edited.** A null or prefab-less authored slot stays in place so the index still lines up. The clones live with the cell and are destroyed with it; nothing writes Harvest's assets.
 - **Invariants.** Continuity, no imposed death, wither-to-crystal: unchanged (same species, same code paths). Domain:
   controlling colour, unchanged. **Collider budget:** at most 23 live creatures (3 + 10 + 4 + 6, the species' own
   `MaxLivePopulation`), the set Harvest's 5,000-prism arena was sized with; arenas lighter than Harvest have more
