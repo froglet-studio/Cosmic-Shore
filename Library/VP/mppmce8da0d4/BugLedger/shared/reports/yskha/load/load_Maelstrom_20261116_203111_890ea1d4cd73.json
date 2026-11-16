@@ -1,0 +1,188 @@
+{
+    "schemaVersion": 1,
+    "reportId": "890ea1d4cd73",
+    "timestamp": "2026-11-16T20:31:11.2405957Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "Ys-bleeding-edge",
+    "gitCommitHash": "036c5f3054",
+    "trigger": "Cell swap -> Skim Race",
+    "loadKind": "launch",
+    "completionReason": "Cell swap: nothing to build behind a veil",
+    "interrupted": false,
+    "sceneFrom": "Maelstrom",
+    "sceneTo": "Maelstrom",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Client",
+    "connectedClients": 0,
+    "totalMs": 120.4406967163086,
+    "visualReadyMs": -1.0,
+    "waitMs": 56.37879943847656,
+    "humanWaitMs": 0.0,
+    "workMs": 64.06189727783203,
+    "unattributedMs": 2.1385951042175295,
+    "framesDuringLoad": 3,
+    "avgFpsDuringLoad": 24.908523559570314,
+    "worstFrameMs": 428.305908203125,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 1.260200023651123,
+            "endMs": 57.638999938964847,
+            "durationMs": 56.37879943847656,
+            "exclusiveMs": 56.37879943847656,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: 0 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 57.64649963378906,
+            "endMs": 104.37779998779297,
+            "durationMs": 46.731300354003909,
+            "exclusiveMs": 46.731300354003909,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 104.38510131835938,
+            "endMs": 119.46209716796875,
+            "durationMs": 15.076995849609375,
+            "exclusiveMs": 15.076995849609375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 120.31759643554688,
+            "endMs": 120.43260192871094,
+            "durationMs": 0.1150054931640625,
+            "exclusiveMs": 0.1150054931640625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 61.923301696777347,
+            "percent": 51.413936614990237,
+            "spanCount": 3,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 56.37879943847656,
+            "percent": 46.810420989990237,
+            "spanCount": 1,
+            "waitMs": 56.37879943847656
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 2.1385951042175295,
+            "percent": 1.7756415605545045,
+            "spanCount": 0,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 56.37879943847656,
+            "exclusiveMs": 56.37879943847656,
+            "maxSingleMs": 56.37879943847656,
+            "isWait": true
+        },
+        {
+            "label": "Cell swap: 0 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 46.731300354003909,
+            "exclusiveMs": 46.731300354003909,
+            "maxSingleMs": 46.731300354003909,
+            "isWait": false
+        },
+        {
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 15.076995849609375,
+            "exclusiveMs": 15.076995849609375,
+            "maxSingleMs": 15.076995849609375,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.1150054931640625,
+            "exclusiveMs": 0.1150054931640625,
+            "maxSingleMs": 0.1150054931640625,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 57.04560089111328,
+            "durationMs": 428.305908203125,
+            "during": "Cell swap: the retiring world suctions away (1.1s)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Cell swap -> Skim Race"
+        }
+    ],
+    "counters": [],
+    "accumulators": [],
+    "errors": [],
+    "hints": []
+}
