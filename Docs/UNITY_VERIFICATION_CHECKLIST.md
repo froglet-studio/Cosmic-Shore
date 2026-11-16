@@ -23924,3 +23924,16 @@ environment's package fetch could not resolve). No Unity editor, Play mode or Ed
 - [ ] Riptide (Space): Shatterplane's plates; the undertow pulls loose tiles, the ring collapse smashes them and
       PrismsDestroyed rises; first domain to 600 wins; the end screen breakdown matches the server's.
 - [ ] An all-AI seat in each mode plays (the crew AI locks, snaps, routes islands); the console is clean.
+
+## 🔴 Editor Churn W1: the open-and-diff harness against a real Unity (2026-11-13, Caleb, NOT RUN IN UNITY)
+
+Branch `claude/editor-churn-w1-harness`; `Docs/EditorChurn/TRACKER.md`. `Tools/Build/editor_churn.py` is Python only
+(no C#). Its `--self-test` passes, and `measure` was run end to end with stand-in editors; no real Unity ran.
+
+1. **Clone `bleeding-edge` fresh** (a full checkout, no `Library/`) and run
+   `UNITY=<path to 6000.3.17f1> python3 Tools/Build/editor_churn.py measure --project <clone> --machine <name>`
+   on Windows (Git Bash) and on macOS. It opens the project twice in batchmode (the first import is slow).
+2. **It writes** `open1/` and `open2/` (status, `churn.patch`, what each open changed, `classified.txt`) and
+   `summary.md`, whose measurement row goes into the tracker's Measurements table.
+3. **Compare with the tracker**: every dirty file is an existing row or a new `seen` row; a file in open 2's
+   "changed BY open 2" list is a writer that never settles.
