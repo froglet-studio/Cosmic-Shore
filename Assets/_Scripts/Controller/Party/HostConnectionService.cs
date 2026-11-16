@@ -1467,6 +1467,20 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Disconnected = the front-door init has not joined the presence lobby yet (or the layer was
+            // reset or signed out). That init owns the first transition and ends in this method itself,
+            // so a caller that arrives early (the boot's Relay retry, the retry button) must not start a
+            // host here: both transitions below are refused from Disconnected, the host used to come up
+            // anyway, and the init's own call then returned at the fast path, leaving the machine in
+            // InPresenceLobby with a live host for the whole session (seen 2026-11-17).
+            if (!IsInitialized)
+            {
+                if (!_joining && !ApplicationLifecycleManager.IsQuitting &&
+                    authenticationDataVariable != null && IsAuthSignedInAndHasId())
+                    await EnsureInitializedAsync();
+                return;
+            }
+
             // Fast path - already hosting, no work to do.
             if (IsHostingParty) return;
 
@@ -1486,8 +1500,11 @@ namespace CosmicShore.Gameplay
                 // must never tear down a live offline host (HARDENING_PLAN_STEAM_LAUNCH.md §4.2).
                 if (OfflineSessionBegan("while session creation waited for its turn")) return;
 
-                if (_stateMachine.CurrentState != PartyState.HostingParty)
-                    _stateMachine.TryTransition(PartyState.HostingParty);
+                // Refused only from Disconnected: the layer was reset or signed out while this call
+                // waited for its turn. No host is built on a machine that does not know about it.
+                if (_stateMachine.CurrentState != PartyState.HostingParty &&
+                    !_stateMachine.TryTransition(PartyState.HostingParty))
+                    return;
 
                 using var shutdownCts = new System.Threading.CancellationTokenSource();
                 // .AsMainThread() guarantees the continuation (and the SOAP raise

@@ -75,7 +75,20 @@ count were recorded around each run: no change, no import, in any of the three.
   (attempt 1/3)`, `[PartyStateMachine] Illegal transition: Disconnected -> HostingParty` and `-> InParty`, then
   `[PresenceLobbyService] Converge join ... failed (SessionException): player is already a member of the lobby`.
   The party panel then read `state=InPresenceLobby` with a session and one connection for the rest of the 5 minutes.
-  Seen once; not investigated.
+- **Cause and fix (same day).** The presence-lobby join was slow, so the state machine was still in its initial
+  `Disconnected` when the boot's Relay wait timed out. The boot's "retrying HCS init" does not run the init: it calls
+  `HostConnectionService.EnsurePartySessionAsync` directly, which had no check for a `Disconnected` machine and
+  ignored both refused transitions, so it built the Relay host anyway. When the join finished, the init moved
+  `Disconnected -> InPresenceLobby` and its own session call returned at the "already hosting" fast path. Nothing
+  moves `InPresenceLobby -> InParty` after that, so the host could not show `Inviting` either.
+  Fixed in `EnsurePartySessionAsync`: on a `Disconnected` machine it starts no host (it returns if the init is in
+  flight, else runs the init), and a refused `HostingParty` transition now stops the call. `LegalTransitions` is
+  unchanged. Held by `OfflineSessionTests.EnsurePartySession_WhileThePresenceJoinIsStillRunning_StartsNoHost`.
+  Checked live: a boot that again logged "Relay session not ready (attempt 1/3)" refused no transition and was
+  `role=host state=InParty` 38 s after Play. No B number assigned (B48 is taken twice; Yash's call).
+- Not fixed: why the presence join is slow on a repeated Play (`Still listed in <lobby> from an earlier join or Play
+  - leaving it and joining again`, then the converge join failing as "already a member"). The boot now waits for it
+  instead of racing it; a join slower than the boot's three 15 s waits ends in the offline host.
 
 ## How the runs were made
 

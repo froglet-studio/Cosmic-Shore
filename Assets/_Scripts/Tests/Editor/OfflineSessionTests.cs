@@ -273,6 +273,7 @@ namespace CosmicShore.Tests
             var transition = new FakeTransition { Shutdown = () => shutdown.Task };
             var session = new FakePartySession();
             var hcs = NewService(gameData, transition, session, new FakePresenceLobby());
+            Machine(hcs).TryTransition(PartyState.InPresenceLobby);   // the presence join has finished
 
             // Online at entry: the call passes its entry check and starts shutting the host down.
             var ensure = hcs.EnsurePartySessionAsync();
@@ -289,7 +290,32 @@ namespace CosmicShore.Tests
             Assert.AreEqual(UniTaskStatus.Succeeded, ensure.Status);
         }
 
+        // ── The boot's Relay retry must not outrun the presence join (2026-11-17) ───────────
+
+        [Test]
+        public void EnsurePartySession_WhileThePresenceJoinIsStillRunning_StartsNoHost()
+        {
+            var gameData = Track(ScriptableObject.CreateInstance<GameDataSO>());
+            var transition = new FakeTransition();
+            var session = new FakePartySession();
+            var lobby = new FakePresenceLobby();
+            var hcs = NewService(gameData, transition, session, lobby);
+            Set(hcs, "_joining", true);   // EnsureInitializedAsync is awaiting the lobby join
+
+            var ensure = hcs.EnsurePartySessionAsync();   // what AuthenticationSceneController's retry calls
+
+            Assert.AreEqual(UniTaskStatus.Succeeded, ensure.Status);
+            Assert.AreEqual(PartyState.Disconnected, Machine(hcs).CurrentState);
+            Assert.AreEqual(0, transition.ShutdownCalls, "the retry must leave the NetworkManager to the init in flight");
+            Assert.AreEqual(0, session.CreateCalls, "a host built now is one the state machine never learns about");
+            Assert.AreEqual(0, lobby.JoinCalls);
+        }
+
         // ── Fixtures ─────────────────────────────────────────────────────────────────────
+
+        static PartyStateMachine Machine(HostConnectionService hcs) =>
+            (PartyStateMachine)typeof(HostConnectionService)
+                .GetField("_stateMachine", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(hcs);
 
         HostConnectionService NewService(GameDataSO gameData, INetworkTransitionService transition,
                                          IPartySessionService session, IPresenceLobbyService lobby)
