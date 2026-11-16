@@ -9,7 +9,7 @@ namespace CosmicShore.ScriptableObjects
     /// The standard element ladder's I4 rung, as a platform default (Garrett, 2026-11-16; <see cref="ElementLadder"/>):
     /// at I4, a cell whose own spawn profile carries NO fauna gets these species, every one born in the game's element
     /// and, like all cell fauna, in the cell's controlling colour (the locked one-colour rule). A cell that authors fauna
-    /// of its own keeps exactly what it authored.
+    /// of its own keeps its species, each pinned to the game's element through <see cref="PinnedTo"/> the same way.
     ///
     /// <para>The species are Harvest's I4 set (Shombith, 2026-11-10: shark, piranha, brittle star, tadpole, 23 live at
     /// most), the one I4 fauna roster already play-tested against a mode's collider budget. Each is CLONED at runtime
