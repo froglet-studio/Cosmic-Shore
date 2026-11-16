@@ -8417,3 +8417,37 @@ Shombith asked for three more fixes:
 - **The voyage page's map is sharp.** The route poster used to crop the table's own painted water (about 190 texels across the whole table's view), so a short course was a few texels blown up. It now paints its own water for the course's frame (`VoyageRoutePoster.PaintOwn`, up to 320 texels across, at least 360 ly), once per course and size.
 - **The Ark's seats.** Each seat card has a blue (the worn set's cyan) glow along its edges (`VoyageEdgeGlow`), brighter on your own. No seat is "open" any more: you, then the friends in your lobby in the seats after yours, then an AI wingmate in every seat left (`VoyageRules.FriendAt`), each AI seat tagged "AI". A squad member who is not in your lobby reads "AI flies for {name} until they join". The way between your squad and no squad is always there ("Fly a squad instead" / "Fly without a squad").
 - **Friends fly their seats.** The voyage (and the Ark escort) releases AI wingmates only in seats no connected friend flies, by the same rule, so three friends in a lobby sail as three players, as in Arena. Queued for Garrett's `/approve` (his voyage runs).
+
+## 209. Rev 113 mockups: Voyages Milestone 1, Escort the Ark and Crystal Run end to end (2026-11-16, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-16): "When I go to app shell I am confused as select your squad or use the lobby approach. For
+this milestone I want lobby approach to be the main task. Now when I select a vessel it doesnt really get applied in the
+voyage I selected", "rework the crew rocemmends voyages screen it should be a popup from that window and categorization
+between hunters, pirates etc", "There is no in game hud for the voyage like which cell is coming what the ark is doing we
+should use both the toast and the objective box", "At the end of the voyage there should be a scoreboard with rewards and
+another button called venture into the voage or finish", "Lets keep all other voyages from crew locked for now", then "It
+can be something steal these many elemental crystals during the voyage and few cells attack you few dont" and "Please use
+frogma to draw under the voyages track". Numbers follow the Milestone 1 game plan (Claude Docs, "Voyages Milestone 1: game
+plan"): Escort the Ark is five worlds to The Maw, breach line 25% at difficulty 2; Crystal Run is 20 crystals over 4
+cells, 2 of them hostile, breach line 40%.
+
+**On the canvas**: tab Voyages, "Rev 113 - Milestone 1: Escort the Ark and Crystal Run, end to end". Copies in
+`Docs/MenuRedesignB/board/R113*.dc.html`, generator `Docs/MenuRedesignB/rounds/r113_voyages.py` (on Rev 108's kit).
+- **Compare**: the seven toasts across one voyage, each beside the moment that raises it.
+- **Lobby** (recommended): your Ark, lobby only. Seats fill you, friends who join, AI wingmates; a saved squad is one
+  line (Y) that fills only the open AI seats. "Flies this voyage" on your card and "You sail as Manta · Space" beside
+  Set sail are read from the record the voyage spawns from.
+- **Picker**: the seat popup on Vessel; one press saves the seat for this voyage and the line under the grid says so.
+- **Crew**: crew recommends as a popup from one button on the map; Escort the Ark and Crystal Run open, every other crew
+  voyage under its faction (Hunters, Pirates, Merchants, Thieves), locked for Milestone 1. The factions drawn are examples.
+- **Hud**: Escort the Ark in flight; the objective box (goal, the five worlds, the hull with the breach line, the Ark's
+  state, one action line), a threat toast, red markers on the fauna at the Ark.
+- **Run**: Crystal Run in flight; the 12 / 20 counter leads with its split by element, each cell marked calm or hostile.
+- **Score**: the Ark's hull at the core, a row per seat, rewards (crystals by difficulty, XP, the pilot's trust),
+  Finish (B) and Venture further (A).
+- **Notes**.
+
+**Differs from the build**: `VoyageArkPage` today opens on the lobby or the squad view and keeps "Fly a squad instead";
+Lobby drops that toggle for a squad shortcut that fills AI seats. The crew list on the HyperSea page becomes a popup.
+The objective box, the toast set and the end scoreboard are new HUD and end screens (today's `ShowBanner` lines stay as
+the toast). A first draft of the same screens was a standalone review page (https://claude.ai/artifact/L21DdQk9Gd5gzfBmdaynrk).
