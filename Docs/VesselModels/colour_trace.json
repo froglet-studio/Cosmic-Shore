@@ -7,7 +7,7 @@
   "fixed": 2756,
   "inert": 30384,
   "token": 4076,
-  "traced": 2064
+  "traced": 2065
  },
  "inert": {
   "ambient-mode": 180,
@@ -7230,6 +7230,20 @@
    "where": [
     "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnMid.mat Material(CosmicShore/PrismPaperBurn)",
     "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnNear.mat Material(CosmicShore/PrismPaperBurn)"
+   ]
+  },
+  "world:FF4B3A": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.294,
+    0.227,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Voyages/ArkAttackerMarks.cs code"
    ]
   },
   "world:FF4C33": {
