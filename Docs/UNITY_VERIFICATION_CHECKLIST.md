@@ -23448,3 +23448,19 @@ is kept, so no prefab or asset reference changes. Compiled against the Unity ref
 1. Open the project: no "missing script" or "class name does not match file name" warnings for any Swordfish* script.
 2. Fly the Swordfish in the Toybox: swipe, energize, afterimages, combos and the Surge ring all work as before.
 3. The Rhino and the Jacks fly as before (they share only `RhinoAnimation` and `RhinoAIBoostPolicy`, which keep their names).
+## 🔴 Manta: the bomb drop, contact detonation, and blasts that set each other off (2026-11-16, Caleb's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/manta-bomb-drop`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch; the new edit-mode tests sit in an
+`Editor/` folder the player-config compile skips). `author_manta_kit_assets.py --check` clean. No Unity editor ran.
+
+1. Toybox, Manta. Skim until one bomb is armed, press pad A (keyboard: the key bound to Button1). The bomb leaves with
+   the Manta's speed and curves toward the Manta's own belly; roll first and it curves sideways. The energy pip empties.
+2. Drop beside a primed (explosive) run: it goes off on the first prism it passes and the run chains. Drop toward a rival
+   vessel: it goes off on contact. It never goes off on your own hull in the first ~0.35 s.
+3. Press again while one is still falling: nothing happens. Once it has gone off (or fizzled after 15 s with no bloom),
+   the next press drops.
+4. Joust a bomb onto a rival, then catch the rival in a dropped bomb's bloom or a primed run's chain: the jousted bomb
+   goes off too. A primed run crossing another primed run sets it off.
+5. With Charge 5 (Contagion), set off a board near fauna: the chain ends (no endless wave of re-planted bombs).
+6. Multiplayer: a peer sees the drop's bloom (relayed) and a bomb that peer planted goes off if the bloom reaches it.

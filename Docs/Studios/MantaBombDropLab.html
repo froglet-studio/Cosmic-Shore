@@ -1,0 +1,691 @@
+<!doctype html>
+<!--
+  LAB TEMPLATE — copy this file, rename it, and replace the three marked regions:
+    (1) LAB meta + SHIPPED  — every constant copied from a named asset/class field
+    (2) SPEC                — one row per slider (group, key, range, label, tooltip)
+    (3) THE MODEL           — reset / simStep / render / score
+  Everything else (the contract the /labmaker skill describes) is already wired:
+  manual clock + window.__lab hooks, seeded RNG, headless batch scoring, the shipped-vs-yours
+  diff, the decision log (artifact db with a browser fallback), PC/phone detection,
+  an editor-style layout with no page scroll. Verify with:
+    node .claude/skills/labmaker/verify_lab.cjs <this file>
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Manta Bomb Drop Lab</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1b1f24; --muted: #5d6673; --line: #dde1e6;
+    --accent: #2f6fdb; --warn: #b4560b; --ok: #1f7a43; --stage: #0b0e14; --changed: #2f6fdb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1216; --panel: #171b21; --ink: #e6e9ee; --muted: #98a2b0; --line: #2a313b;
+      --accent: #6ea0ff; --warn: #f0a050; --ok: #5cc98a; --stage: #05070a; --changed: #6ea0ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1216; --panel: #171b21; --ink: #e6e9ee; --muted: #98a2b0; --line: #2a313b;
+    --accent: #6ea0ff; --warn: #f0a050; --ok: #5cc98a; --stage: #05070a; --changed: #6ea0ff;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }   /* outside the claude.ai viewer a component rule can beat [hidden] */
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; overflow: hidden; }
+  /* The editor layout: header / stage + right dock / bottom dock. Nothing scrolls the PAGE. */
+  #app { display: grid; height: 100vh; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: auto minmax(0, 1fr) 200px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 12px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 15px; margin: 0; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); }
+  #stage { width: 100%; height: 100%; display: block; }
+  #hud { position: absolute; left: 12px; top: 10px; color: #cfd6e0; font: 12px/1.5 ui-monospace, monospace; pointer-events: none; white-space: pre; }
+  .hint { color: var(--muted); }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; }
+  .row label .key { color: var(--muted); font: 11px ui-monospace, monospace; }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); }
+  .best { font-weight: 700; color: var(--ok); }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  textarea, select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  /* Below 900 px the docks stack under the stage; the page may scroll there, the stage keeps a 16:10 box. */
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 16 / 10; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); }
+    header, #dock, #bottom { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="resetAll">Shipped</button>
+  </header>
+  <div id="stageWrap"><canvas id="stage"></canvas><div id="hud"></div></div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= (1) LAB meta + the shipped numbers =================
+  // A READER of the shipped numbers. Every constant names the asset or field it was copied from
+  // (bleeding-edge bbee6b66b, 2026-11-13). Keys marked "lab" have no game field: they are this round's proposal.
+  const LAB = { name: 'Manta Bomb Drop Lab', branch: 'claude/manta-bomb-drop', round: 1, doc: 'Docs/Manta/POLISH.md' };
+  const SHIPPED = {
+    // MantaStingConfig.asset (Assets/_SO_Assets/VesselActions/Manta)
+    energyPerSkim: 0.34,     // MantaStingConfigSO.energyPerSkim
+    energyCapacity: 1,       // MantaStingConfigSO.energyCapacity (1 energy = 1 bomb)
+    perPrismCooldown: 1.5,   // MantaStingConfigSO.perPrismEnergyCooldown (s)
+    fuseSeconds: 20,         // MantaStingConfigSO.fuseSeconds (x fuseScale 1 at Charge 0)
+    fuseBlastScale: 70,      // MantaStingConfigSO.fuseBlastScale (AOEMantaBloom SphereCollider r 0.5 -> 35 m)
+    kabloomBlastScale: 140,  // MantaStingConfigSO.kabloomBlastScale
+    omniPerExtraBomb: 0.35,  // MantaStingConfigSO.omniScalePerExtraBomb
+    omniMultMax: 3,          // MantaStingConfigSO.omniScaleMultiplierMax
+    bloomGrowSeconds: 2.5,   // MantaStingConfigSO.bloomGrowSeconds
+    omniGrowSeconds: 4,      // MantaStingConfigSO.omniBloomGrowSeconds
+    chainBeat: 0.12,         // PrismExplosiveChain.BeatSeconds
+    chainReach: 1.6,         // PrismExplosiveChain.ReachInExtents (x the prism's largest extent, 8 m)
+    skimScale: 20,           // Manta.prefab Skimmer.Scale.Value (20 at Space 0; sphere r = scale x 0.5)
+    cruise: 180,             // Manta.prefab VesselTransformer.DefaultThrottleScaler (full throttle, Time 0)
+    // lab: the proposal under test (no game field yet)
+    detonator: 0,            // lab: 0 none (shipped), 1 DROP, 2 LAUNCH
+    ownFuse: 0,              // lab: 0 = a dropped/launched bomb joins the shared fuse (resets it); >0 = its own fuse (s)
+    launchSpeed: 400,        // lab: launched bomb speed over the Manta's (u/s)
+    launchRange: 300,        // lab: a launched bomb that hits nothing stops here and waits (m)
+    mineCap: 0,              // lab: most loose bombs (dropped or launched) alive at once; 0 = no cap
+    // lab: the world (a stand-in for a rival-trail-rich cell)
+    trailEvery: 10,          // lab: a new rival trail every N s
+    trailLife: 40,           // lab: a rival trail prism lives this long (s)
+    floraCount: 8,           // lab: joustable flora in the 1600 x 1000 m board
+    // lab: the input-only AI pilot
+    aiRam: 1,                // lab: with no detonator, may the AI ram (1) or must it joust (0)?
+    aiRun: 20,               // lab: primed prisms in a run before the AI sets it off
+    aiOffset: 9,             // lab: how far off the trail's centre line the AI skims (m)
+    aiNoise: 0.08,           // lab: stick noise (0.08 skilled; the rookie column uses 0.5)
+  };
+
+  // ================= (2) SPEC =================
+  const SPEC = [
+    ['Proposal', 'detonator',   0, 2, 1,    'Detonator (0 none, 1 drop, 2 launch)', 'The control under test. 0 is the shipped kit: ram a primed prism or joust a bomb onto a lifeform near it.'],
+    ['Proposal', 'ownFuse',     0, 10, 0.5, 'Loose bomb fuse (0 = shared)', '0: a dropped or launched bomb joins the bay\'s ONE fuse and resets it, like a plant (§0). Above 0: it blooms on its own after this many seconds, outside the shared fuse.'],
+    ['Proposal', 'launchSpeed', 100, 900, 10, 'Launch speed (u/s)', 'Added to the Manta\'s own speed along its nose.'],
+    ['Proposal', 'launchRange', 50, 800, 10, 'Launch range (m)', 'A launched bomb that touches nothing stops here and waits, like a dropped one.'],
+    ['Proposal', 'mineCap',     0, 6, 1,    'Loose bombs at once (0 = no cap)', 'Refuse a drop or launch while this many loose bombs are out. 0 = only the energy pool limits it.'],
+    ['Kit',      'energyPerSkim', 0.05, 1, 0.01, 'Energy per skim', 'MantaStingConfigSO.energyPerSkim. One energy is one bomb.'],
+    ['Kit',      'energyCapacity', 1, 4, 1, 'Energy capacity', 'MantaStingConfigSO.energyCapacity.'],
+    ['Kit',      'perPrismCooldown', 0, 5, 0.1, 'Per-prism cooldown (s)', 'MantaStingConfigSO.perPrismEnergyCooldown.'],
+    ['Kit',      'fuseSeconds', 5, 40, 1,   'Shared fuse (s)', 'MantaStingConfigSO.fuseSeconds at Charge 0.'],
+    ['Kit',      'fuseBlastScale', 20, 200, 5, 'Fuse bloom scale', 'Radius = scale x 0.5 m.'],
+    ['Kit',      'kabloomBlastScale', 40, 300, 5, 'Omni bloom scale', 'Radius = scale x 0.5 m, times the omni multiplier.'],
+    ['Kit',      'omniPerExtraBomb', 0, 1, 0.05, 'Omni +per extra bomb', 'MantaStingConfigSO.omniScalePerExtraBomb.'],
+    ['Kit',      'omniMultMax', 1, 5, 0.1, 'Omni multiplier cap', 'MantaStingConfigSO.omniScaleMultiplierMax.'],
+    ['Kit',      'bloomGrowSeconds', 0.2, 6, 0.1, 'Bloom grow (s)', 'MantaStingConfigSO.bloomGrowSeconds.'],
+    ['Kit',      'omniGrowSeconds', 0.2, 8, 0.1, 'Omni bloom grow (s)', 'MantaStingConfigSO.omniBloomGrowSeconds.'],
+    ['Kit',      'chainBeat', 0.02, 1, 0.01, 'Chain beat (s)', 'PrismExplosiveChain.BeatSeconds.'],
+    ['Kit',      'chainReach', 0, 3, 0.1, 'Chain reach (extents)', 'PrismExplosiveChain.ReachInExtents. 0 turns the chain off (a control).'],
+    ['Kit',      'skimScale', 20, 40, 1, 'Skimmer scale', 'Manta.prefab Skimmer.Scale (Space 0 = 20, Space 10 = 40).'],
+    ['Kit',      'cruise', 90, 600, 10, 'Speed (u/s)', '180 is full throttle at Time 0; 600 is about Soar.'],
+    ['World',    'trailEvery', 4, 30, 1, 'New rival trail every (s)', 'lab'],
+    ['World',    'trailLife', 10, 120, 1, 'Rival prism life (s)', 'lab'],
+    ['World',    'floraCount', 0, 30, 1, 'Flora on the board', 'lab: joust targets for the shipped way'],
+    ['AI',       'aiRam', 0, 1, 1, 'No detonator: ram (1) or joust (0)', 'lab'],
+    ['AI',       'aiRun', 3, 60, 1, 'Run length before setting it off', 'lab: primed prisms in a row'],
+    ['AI',       'aiOffset', 5, 16, 0.5, 'Skim offset (m)', 'lab: centre line to hull; a prism is 8 m wide'],
+    ['AI',       'aiNoise', 0, 1, 0.01, 'Stick noise', 'lab: 0.08 skilled, 0.5 rookie'],
+  ];
+
+  const LS_KEY = 'lab:' + LAB.name + ':P';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet(LS_KEY, {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  // ================= (3) THE MODEL =================
+  // Top-down 2D. Rival trails are lines of prisms 6 m apart (the Manta trail's 5.5 m Z plus a gap), 8 m wide.
+  // The Manta skims them (skimmer sphere r = skimScale/2 + the prism's half width), which primes each one explosive and
+  // pays energy. A hull contact (r 3 m + 4 m) destroys the prism, sets off every planted or loose bomb at the fuse scale
+  // and loses all energy (§0). An explosive prism's death destroys the prisms within chainReach x 8 m on its trail after
+  // chainBeat; explosive ones carry it on. Blooms destroy every rival prism inside their growing radius.
+  const W = 1600, H = 1000, SPACING = 6, PRISM_HALF = 4, PRISM_EXTENT = 8, HULL_R = 3, TURN_RATE = 1.75; // rad/s: lab
+  let world = null, seed = 7, input = { stick: 0, drop: false, launch: false }, humanDrive = false;
+  // trial = one long rival trail laid ahead of the Manta, nothing else spawns, no omni crystal: "you have primed a run,
+  // now set it off" with nothing else going on. The free board (trial false) is the Space destruction game.
+  let trialMode = false;
+  function reset(s, trial) {
+    if (s != null) seed = s >>> 0;
+    if (trial != null) trialMode = !!trial;
+    const rnd = mulberry32(seed);
+    const flora = [];
+    for (let i = 0; i < Math.round(P.floraCount); i++) flora.push({ x: 80 + rnd() * (W - 160), y: 80 + rnd() * (H - 160), bombed: false });
+    world = {
+      t: 0, rnd, noiseRnd: mulberry32(seed ^ 0x9e3779b9), noise: 0,
+      m: { x: W / 2, y: H / 2, h: 0, energy: 0, hullHits: 0, lastHit: -9, energyLost: 0, prevDrop: false, prevLaunch: false },
+      trails: [], nextTrail: 0, flora, omni: { x: 200 + rnd() * (W - 400), y: 150 + rnd() * (H - 300), respawnAt: -1 },
+      bombs: [],        // {x,y,kind:'flora'|'loose', flora?, ownAt?, vx,vy, travel, moving}
+      fuseAt: Infinity, blooms: [], chainQ: [],
+      stats: { destroyed: 0, primed: 0, primedDestroyed: 0, chains: 0, blooms: 0, peakBlooms: 0, bombsUsed: 0, waitSum: 0, looseOut: 0, omni: 0 },
+      ai: { run: 0, mode: 'skim', target: null, trail: -1 }, hitLog: [],
+    };
+    if (!trialMode) { spawnTrail(); spawnTrail(); return; }
+    // the trial: a 240-prism line starting 40 m ahead, gently curving, the Manta parallel to it at aiOffset
+    world.m.x = 100; world.m.y = H / 2 - P.aiOffset; world.m.h = 0;
+    const prisms = []; let x = 140, y = H / 2, h = 0; const bend = (rnd() - 0.5) * 0.004;
+    for (let i = 0; i < 240; i++) { h += bend + (rnd() - 0.5) * 0.004; x += Math.cos(h) * SPACING; y += Math.sin(h) * SPACING; prisms.push({ x, y, h, alive: true, primed: false, primedAt: 0, skimAt: -99, dieAt: Infinity }); }
+    const xs = prisms.map((p) => p.x), ys = prisms.map((p) => p.y);
+    world.trails.push({ prisms, minX: Math.min(...xs) - 30, maxX: Math.max(...xs) + 30, minY: Math.min(...ys) - 30, maxY: Math.max(...ys) + 30 });
+    world.nextTrail = Infinity; world.omni.respawnAt = Infinity;
+    for (const f of flora) { const p = prisms[20 + Math.floor(rnd() * 200)]; const off = (15 + rnd() * 185) * (rnd() < 0.5 ? -1 : 1); f.x = p.x - Math.sin(p.h) * off; f.y = p.y + Math.cos(p.h) * off; }
+  }
+  function spawnTrail() {
+    const r = world.rnd, n = 80 + Math.floor(r() * 60);
+    let x = 150 + r() * (W - 300), y = 120 + r() * (H - 240), h = r() * Math.PI * 2, bend = (r() - 0.5) * 0.02;
+    if (world.m && Math.hypot(x - world.m.x, y - world.m.y) < 250) { x = (x + W / 2) % W; y = (y + H / 2) % H; } // never lay a trail on the hull
+    const prisms = [];
+    for (let i = 0; i < n; i++) {
+      h += bend + (r() - 0.5) * 0.01;
+      // keep inside the board: steer back toward the centre near the walls
+      if (x < 80 || x > W - 80 || y < 80 || y > H - 80) h += 0.12 * Math.sign(Math.sin(Math.atan2(H / 2 - y, W / 2 - x) - h) || 1);
+      x += Math.cos(h) * SPACING; y += Math.sin(h) * SPACING;
+      prisms.push({ x, y, h, alive: true, primed: false, primedAt: 0, skimAt: -99, dieAt: world.t + P.trailLife + i * 0.02 });
+    }
+    const xs = prisms.map((p) => p.x), ys = prisms.map((p) => p.y);
+    world.trails.push({ prisms, minX: Math.min(...xs) - 30, maxX: Math.max(...xs) + 30, minY: Math.min(...ys) - 30, maxY: Math.max(...ys) + 30 });
+    world.nextTrail = world.t + P.trailEvery;
+  }
+  function killPrism(tr, i, why) {
+    const p = tr.prisms[i]; if (!p.alive) return; p.alive = false;
+    if (why !== 'expire') {
+      world.stats.destroyed++;
+      if (p.primed) { world.stats.primedDestroyed++; world.stats.waitSum += world.t - p.primedAt; if (world.stats.firstBoom == null) world.stats.firstBoom = world.t; }
+    }
+    if (p.primed && why !== 'expire' && P.chainReach > 0) {
+      const reach = P.chainReach * PRISM_EXTENT, k = Math.max(1, Math.floor(reach / SPACING));
+      for (let j = Math.max(0, i - k); j <= Math.min(tr.prisms.length - 1, i + k); j++) if (j !== i && tr.prisms[j].alive) world.chainQ.push({ tr, j, at: world.t + P.chainBeat });
+    }
+  }
+  function bloom(x, y, scale, grow) {
+    world.blooms.push({ x, y, R: scale * 0.5, grow: Math.max(0.05, grow), t0: world.t, chainsBefore: 0 });
+    world.stats.blooms++;
+  }
+  function liveBombs() { return world.bombs.filter((b) => !b.done); }
+  function looseOut() { return world.bombs.filter((b) => !b.done && b.kind === 'loose').length; }
+  function detonateAll(scaleFn, grow) {
+    const live = liveBombs(); const m = world.m;
+    live.sort((a, b) => Math.hypot(a.x - m.x, a.y - m.y) - Math.hypot(b.x - m.x, b.y - m.y));
+    for (const b of live) { b.done = true; if (b.flora) b.flora.bombed = false; bloom(b.x, b.y, scaleFn(live.length), grow); }
+    world.fuseAt = Infinity;
+  }
+  function spendBomb() { world.m.energy -= 1; world.stats.bombsUsed++; }
+  function resetFuse() { world.fuseAt = world.t + P.fuseSeconds; }
+
+  function simStep(dt, inp) {
+    const w = world, m = w.m;
+    inp = inp || (humanDrive ? input : aiInput(dt));
+    // --- fly (inputs only: stick + two buttons) ---
+    m.h += Math.max(-1, Math.min(1, inp.stick)) * TURN_RATE * dt;
+    m.x += Math.cos(m.h) * P.cruise * dt; m.y += Math.sin(m.h) * P.cruise * dt;
+    // the board wraps, so a pilot never stalls on a wall
+    if (m.x < 0) m.x += W; if (m.x > W) m.x -= W; if (m.y < 0) m.y += H; if (m.y > H) m.y -= H;
+    // --- world ---
+    if (w.t >= w.nextTrail) spawnTrail();
+    for (const tr of w.trails) for (let i = 0; i < tr.prisms.length; i++) { const p = tr.prisms[i]; if (p.alive && w.t >= p.dieAt) killPrism(tr, i, 'expire'); }
+    // --- skim + hull ---
+    const skimR = P.skimScale * 0.5 + PRISM_HALF, hullR = HULL_R + PRISM_HALF;
+    let hit = null;
+    for (const tr of w.trails) {
+      if (m.x < tr.minX - skimR || m.x > tr.maxX + skimR || m.y < tr.minY - skimR || m.y > tr.maxY + skimR) continue;
+      for (let i = 0; i < tr.prisms.length; i++) {
+        const p = tr.prisms[i]; if (!p.alive) continue;
+        const d = Math.hypot(p.x - m.x, p.y - m.y);
+        if (d < skimR) {
+          if (!p.primed) { p.primed = true; p.primedAt = w.t; w.stats.primed++; w.ai.run++; }
+          if (w.t - p.skimAt >= P.perPrismCooldown) { p.skimAt = w.t; m.energy = Math.min(P.energyCapacity, m.energy + P.energyPerSkim); }
+        }
+        if (d < hullR && !hit) hit = { tr, i };
+      }
+    }
+    if (hit && inp.over) hit = null;   // pitched over the ribbon on purpose (the 3D escape this 2D board lacks)
+    if (hit) {
+      const fresh = w.t - m.lastHit > 0.5; m.lastHit = w.t;    // one crash = one scrape, however many prisms it plows
+      if (fresh && hit.tr.prisms[hit.i].primed) w.stats.chains++;   // a ram into a primed prism sets its run off
+      if (fresh) m.hullHits++; m.energyLost += m.energy; m.energy = 0;
+      if (w.hitLog.length < 200) { const hp = hit.tr.prisms[hit.i]; w.hitLog.push({ t: +w.t.toFixed(2), rel: +angleTo(m.h - hp.h).toFixed(2), primed: hp.primed, mode: w.ai.ramming ? 'ram' : 'skim', trail: w.trails.indexOf(hit.tr), idx: hit.i, n: hit.tr.prisms.length }); }
+      killPrism(hit.tr, hit.i, 'hull');
+      detonateAll(() => P.fuseBlastScale, P.bloomGrowSeconds);
+      w.ai.run = 0;
+    }
+    // --- the proposal: a drop or a launch, on a press edge, from the same pool ---
+    const pressDrop = inp.drop && !m.prevDrop, pressLaunch = inp.launch && !m.prevLaunch;
+    m.prevDrop = !!inp.drop; m.prevLaunch = !!inp.launch;
+    const wants = (P.detonator === 1 && pressDrop) || (P.detonator === 2 && pressLaunch);
+    if (wants && m.energy >= 1 - 1e-9 && (P.mineCap <= 0 || looseOut() < P.mineCap)) {
+      spendBomb();
+      const b = { kind: 'loose', x: m.x, y: m.y, vx: 0, vy: 0, travel: 0, moving: P.detonator === 2, ownAt: P.ownFuse > 0 ? w.t + P.ownFuse : null };
+      if (b.moving) { const v = P.cruise + P.launchSpeed; b.vx = Math.cos(m.h) * v; b.vy = Math.sin(m.h) * v; }
+      w.bombs.push(b); w.stats.looseOut++;
+      if (!b.ownAt) resetFuse();
+      w.ai.run = 0;
+    }
+    // --- launched bombs fly until they touch a prism or a flora, or reach their range ---
+    for (const b of w.bombs) {
+      if (b.done || !b.moving) continue;
+      const steps = Math.max(1, Math.ceil(Math.hypot(b.vx, b.vy) * dt / 3));
+      for (let s = 0; s < steps && b.moving; s++) {
+        b.x += b.vx * dt / steps; b.y += b.vy * dt / steps; b.travel += Math.hypot(b.vx, b.vy) * dt / steps;
+        if (b.travel >= P.launchRange) { b.moving = false; break; }
+        for (const tr of w.trails) {
+          if (b.x < tr.minX || b.x > tr.maxX || b.y < tr.minY || b.y > tr.maxY) continue;
+          for (const p of tr.prisms) if (p.alive && Math.hypot(p.x - b.x, p.y - b.y) < PRISM_HALF + 1) { b.moving = false; break; }
+          if (!b.moving) break;
+        }
+      }
+    }
+    // --- the shipped plant: jousting a flora (the hull reaches it) ---
+    for (const f of w.flora) {
+      if (f.bombed || m.energy < 1 - 1e-9) continue;
+      if (Math.hypot(f.x - m.x, f.y - m.y) < 10) { spendBomb(); f.bombed = true; w.bombs.push({ kind: 'flora', flora: f, x: f.x, y: f.y }); resetFuse(); w.ai.run = 0; }
+    }
+    // --- omni crystal = cash out ---
+    const o = w.omni;
+    if (o.respawnAt < 0 && Math.hypot(o.x - m.x, o.y - m.y) < 14) {
+      const n = liveBombs().length;
+      if (n) { w.stats.omni++; detonateAll((k) => P.kabloomBlastScale * Math.min(P.omniMultMax, 1 + P.omniPerExtraBomb * (k - 1)), P.omniGrowSeconds); }
+      o.respawnAt = w.t + 8;
+    } else if (o.respawnAt >= 0 && w.t >= o.respawnAt) { o.x = 200 + w.rnd() * (W - 400); o.y = 150 + w.rnd() * (H - 300); o.respawnAt = -1; }
+    // --- fuses ---
+    if (w.t >= w.fuseAt) {
+      const shared = liveBombs().filter((b) => !b.ownAt);
+      for (const b of shared) { b.done = true; if (b.flora) b.flora.bombed = false; bloom(b.x, b.y, P.fuseBlastScale, P.bloomGrowSeconds); }
+      w.fuseAt = Infinity;
+    }
+    for (const b of w.bombs) if (!b.done && b.ownAt && w.t >= b.ownAt) { b.done = true; bloom(b.x, b.y, P.fuseBlastScale, P.bloomGrowSeconds); }
+    // --- blooms grow and destroy what they reach ---
+    let live = 0;
+    for (const bl of w.blooms) {
+      const a = (w.t - bl.t0) / bl.grow; if (a > 1.3) continue; live++;
+      const r = bl.R * Math.sin(Math.min(1, a) * Math.PI / 2);
+      const before = w.stats.primedDestroyed;
+      for (const tr of w.trails) {
+        if (bl.x < tr.minX - r || bl.x > tr.maxX + r || bl.y < tr.minY - r || bl.y > tr.maxY + r) continue;
+        for (let i = 0; i < tr.prisms.length; i++) { const p = tr.prisms[i]; if (p.alive && Math.hypot(p.x - bl.x, p.y - bl.y) < r + PRISM_HALF) killPrism(tr, i, 'bloom'); }
+      }
+      if (w.stats.primedDestroyed > before && !bl.chained) { bl.chained = true; w.stats.chains++; }
+    }
+    w.stats.peakBlooms = Math.max(w.stats.peakBlooms, live);
+    // --- the explosive chain ---
+    if (w.chainQ.length) {
+      const due = w.chainQ.filter((c) => c.at <= w.t); w.chainQ = w.chainQ.filter((c) => c.at > w.t);
+      for (const c of due) killPrism(c.tr, c.j, 'chain');
+    }
+    w.t += dt;
+  }
+
+  // ================= the AI: writes only { stick, drop, launch } =================
+  function angleTo(a) { return Math.atan2(Math.sin(a), Math.cos(a)); }
+  function aiInput(dt) {
+    const w = world, m = w.m, ai = w.ai;
+    w.noise += (-(w.noise) * 2 + (w.noiseRnd() - 0.5) * 6) * dt; // smoothed noise
+    let aim = null, offset = P.aiOffset;
+    const armed = m.energy >= 1 - 1e-9, carrying = liveBombs().length > 0;
+    const ready = armed && ai.run >= P.aiRun;
+    if (ready && w.stats.readyAt == null) w.stats.readyAt = w.t;
+    let drop = false, launch = false, over = false;
+    // 1. cash out when carrying bombs and the omni crystal is near
+    if (carrying && w.omni.respawnAt < 0 && Math.hypot(w.omni.x - m.x, w.omni.y - m.y) < 450) { aim = { x: w.omni.x, y: w.omni.y }; over = true; }
+    // 2. the shipped joust: a flora within a fuse bloom of a primed prism
+    if (!aim && ready && P.detonator === 0 && !P.aiRam) {
+      let best = null, bd = 400;
+      for (const f of w.flora) {
+        if (f.bombed) continue;
+        const d = Math.hypot(f.x - m.x, f.y - m.y); if (d > bd) continue;
+        if (nearPrimed(f.x, f.y, P.fuseBlastScale * 0.5)) { best = f; bd = d; }
+      }
+      if (best) { aim = { x: best.x, y: best.y }; over = true; }
+    }
+    // 3. otherwise skim the nearest unprimed live prism's line
+    if (!aim) {
+      let best = null, bd = Infinity;
+      for (const tr of w.trails) for (let i = 0; i < tr.prisms.length; i++) {
+        const p = tr.prisms[i]; if (!p.alive || p.primed) continue;
+        const ahead = Math.cos(Math.atan2(p.y - m.y, p.x - m.x) - m.h);
+        const d = Math.hypot(p.x - m.x, p.y - m.y) * (ahead > 0.2 ? 1 : 3);
+        if (d < bd) { bd = d; best = { tr, i }; }
+      }
+      if (best) {
+        const tr = best.tr, n = tr.prisms.length;
+        // fly along the trail in whichever direction the nose already points
+        const nx = tr.prisms[Math.min(n - 1, best.i + 1)], px = tr.prisms[Math.max(0, best.i - 1)];
+        const dir = Math.cos(Math.atan2(nx.y - px.y, nx.x - px.x) - m.h) >= 0 ? 1 : -1;
+        const lead = 5 + Math.floor(Math.hypot(tr.prisms[best.i].x - m.x, tr.prisms[best.i].y - m.y) / 5); // lead the line further when far from it: a shallow join
+        const j = Math.max(0, Math.min(n - 1, best.i + dir * lead)), q = tr.prisms[j];
+        const th = q.h + (dir < 0 ? Math.PI : 0);
+        // stay on the side of the line the hull is already on, so the pilot never cuts across it
+        const side = (Math.cos(th) * (m.y - q.y) - Math.sin(th) * (m.x - q.x)) >= 0 ? 1 : -1;
+        if (ready && P.detonator === 0 && P.aiRam) offset = 0;      // the shipped ram: turn in and hit it
+        aim = { x: q.x - Math.sin(th) * offset * side, y: q.y + Math.cos(th) * offset * side };
+        ai.ramming = offset === 0;
+      } else aim = { x: W / 2, y: H / 2 };
+    }
+    if (ready && P.detonator === 1) drop = true;
+    if (ready && P.detonator === 2) launch = true;
+    const want = Math.atan2(aim.y - m.y, aim.x - m.x);
+    let stick = Math.max(-1, Math.min(1, angleTo(want - m.h) * 2.2));
+    // avoid: a live prism in the hull's path in the next ~0.25 s (unless ramming on purpose) pushes the nose away
+    if (!ai.ramming && !over) {
+      const ch = Math.cos(m.h), sh = Math.sin(m.h), look = P.cruise * 0.35 + 8;
+      let push = 0, nearest = Infinity;
+      for (const tr of w.trails) {
+        if (m.x < tr.minX - look || m.x > tr.maxX + look || m.y < tr.minY - look || m.y > tr.maxY + look) continue;
+        for (const p of tr.prisms) {
+          if (!p.alive) continue;
+          const dx = p.x - m.x, dy = p.y - m.y, along = dx * ch + dy * sh, lat = -dx * sh + dy * ch;
+          const crossing = Math.abs(Math.sin(p.h - m.h)) > 0.35, win = HULL_R + PRISM_HALF + 1 + (crossing ? along * 0.08 : 0);
+          if (along > -2 && along < look && Math.abs(lat) < win && along < nearest) { nearest = along; push = lat >= 0 ? -1 : 1; }
+        }
+      }
+      if (push) stick = push;
+    }
+    stick += w.noise * P.aiNoise;
+    // release the buttons every other frame so a held intent is a stream of presses (a masher)
+    const tick = Math.round(w.t * 60) % 2 === 0;
+    return { stick, drop: drop && tick, launch: launch && tick, over };
+  }
+  function nearPrimed(x, y, r) {
+    for (const tr of world.trails) {
+      if (x < tr.minX - r || x > tr.maxX + r || y < tr.minY - r || y > tr.maxY + r) continue;
+      for (const p of tr.prisms) if (p.alive && p.primed && Math.hypot(p.x - x, p.y - y) < r) return true;
+    }
+    return false;
+  }
+
+  // One number per column. Per minute so runs of any length compare.
+  function score() {
+    const s = world.stats, min = Math.max(1e-6, world.t / 60);
+    return {
+      destroyedPerMin: +(s.destroyed / min).toFixed(1),
+      primedSetOffPct: s.primed ? +(100 * s.primedDestroyed / s.primed).toFixed(1) : 0,
+      chainsPerMin: +(s.chains / min).toFixed(2),
+      hullHitsPerMin: +(world.m.hullHits / min).toFixed(2),
+      energyLostPerMin: +(world.m.energyLost / min).toFixed(2),
+      waitS: s.primedDestroyed ? +(s.waitSum / s.primedDestroyed).toFixed(1) : 0,
+      bombsPerMin: +(s.bombsUsed / min).toFixed(1),
+      bloomsPerMin: +(s.blooms / min).toFixed(1),
+      peakBlooms: s.peakBlooms,
+      t: +world.t.toFixed(2),
+    };
+  }
+
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  function render() {
+    const cw = canvas.width, ch = canvas.height, sc = Math.min(cw / W, ch / H);
+    ctx.fillStyle = '#070a10'; ctx.fillRect(0, 0, cw, ch);
+    ctx.save(); ctx.translate((cw - W * sc) / 2, (ch - H * sc) / 2); ctx.scale(sc, sc);
+    ctx.strokeStyle = '#1c2533'; ctx.lineWidth = 2; ctx.strokeRect(0, 0, W, H);
+    for (const tr of world.trails) for (const p of tr.prisms) {
+      if (!p.alive) continue;
+      ctx.fillStyle = p.primed ? '#ff8a3d' : '#b0405a';
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.h); ctx.fillRect(-2.75, -PRISM_HALF, 5.5, PRISM_HALF * 2); ctx.restore();
+    }
+    for (const f of world.flora) { ctx.fillStyle = f.bombed ? '#ffd23d' : '#3fbf6a'; ctx.beginPath(); ctx.arc(f.x, f.y, 7, 0, 7); ctx.fill(); }
+    const o = world.omni; if (o.respawnAt < 0) { ctx.fillStyle = '#f2f6ff'; ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(Math.PI / 4); ctx.fillRect(-7, -7, 14, 14); ctx.restore(); }
+    for (const b of world.bombs) { if (b.done || b.kind !== 'loose') continue; ctx.fillStyle = '#ffd23d'; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, 7); ctx.fill(); ctx.strokeStyle = 'rgba(255,210,61,.25)'; ctx.beginPath(); ctx.arc(b.x, b.y, P.fuseBlastScale * 0.5, 0, 7); ctx.stroke(); }
+    for (const bl of world.blooms) {
+      const a = (world.t - bl.t0) / bl.grow; if (a > 1.3) continue;
+      const r = bl.R * Math.sin(Math.min(1, a) * Math.PI / 2);
+      ctx.fillStyle = 'rgba(255,190,90,' + (0.35 * (1.3 - a)) + ')'; ctx.beginPath(); ctx.arc(bl.x, bl.y, r, 0, 7); ctx.fill();
+    }
+    const m = world.m;
+    ctx.strokeStyle = 'rgba(120,200,255,.35)'; ctx.beginPath(); ctx.arc(m.x, m.y, P.skimScale * 0.5, 0, 7); ctx.stroke();
+    ctx.fillStyle = '#7fd0ff'; ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.h);
+    ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-7, 9); ctx.lineTo(-4, 0); ctx.lineTo(-7, -9); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.restore();
+    const s = score(), names = ['none (shipped)', 'DROP', 'LAUNCH'];
+    $('hud').textContent = 'seed ' + seed + '  t ' + s.t.toFixed(1) + ' s  ' + (humanDrive ? 'YOU fly' : 'AI flies') + '  detonator ' + names[P.detonator] +
+      (P.detonator ? (P.ownFuse > 0 ? ' (own ' + P.ownFuse + ' s fuse)' : ' (shared fuse)') : '') +
+      '\nenergy ' + m.energy.toFixed(2) + '  bombs out ' + liveBombs().length + '  fuse ' + (isFinite(world.fuseAt) ? (world.fuseAt - world.t).toFixed(1) + ' s' : '-') +
+      '\ndestroyed/min ' + s.destroyedPerMin + '  primed set off ' + s.primedSetOffPct + '%  hull hits ' + m.hullHits + (paused ? '  [paused]' : '');
+  }
+
+  // ================= headless batch: the scorecard =================
+  const VARIANTS = [
+    { name: 'Shipped: ram it',               v: { detonator: 0, aiRam: 1 } },
+    { name: 'Shipped: joust a flora',        v: { detonator: 0, aiRam: 0 } },
+    { name: 'Drop, shared fuse',             v: { detonator: 1, ownFuse: 0 } },
+    { name: 'Drop, own 2 s fuse',            v: { detonator: 1, ownFuse: 2 } },
+    { name: 'Launch, shared fuse',           v: { detonator: 2, ownFuse: 0 } },
+    { name: 'Launch, own 2 s fuse',          v: { detonator: 2, ownFuse: 2 } },
+    { name: 'Drop, masher (run 3, no cap)',  v: { detonator: 1, ownFuse: 2, aiRun: 3 } },
+    { name: 'Drop, masher, cap 1',           v: { detonator: 1, ownFuse: 2, aiRun: 3, mineCap: 1 } },
+    { name: 'Control: no way to set it off', v: { detonator: 0, aiRam: 0, floraCount: 0 } },
+    { name: 'Control: drop, chain off',      v: { detonator: 1, ownFuse: 0, chainReach: 0 } },
+  ];
+  const COLS = ['destroyedPerMin', 'primedSetOffPct', 'chainsPerMin', 'hullHitsPerMin', 'energyLostPerMin', 'waitS', 'bombsPerMin', 'bloomsPerMin', 'peakBlooms'];
+  // The trial scorecard: same variants, 12 seeded trials of 45 s each, one primed run apiece.
+  const TCOLS = ['setOffPct', 'trialsSetOff', 'secondsToBoom', 'crashes', 'energyLost', 'bombs'];
+  function runTrials(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], seconds = opts.seconds || 45, dt = 1 / 60, saved = Object.assign({}, P), savedSeed = seed, savedHuman = humanDrive, savedTrial = trialMode, rows = [];
+    const pilots = opts.pilots || [['skilled', SHIPPED.aiNoise], ['rookie', 0.5]];
+    humanDrive = false;
+    for (const va of VARIANTS) for (const [pname, noise] of pilots) {
+      let pct = 0, hitN = 0, boom = 0, boomN = 0, crashes = 0, lost = 0, bombs = 0;
+      for (const s of seeds) {
+        Object.assign(P, saved, { aiNoise: noise, floraCount: 3 }, va.v); reset(s, true);
+        for (let i = 0; i < seconds / dt; i++) simStep(dt);
+        const st = world.stats; pct += st.primed ? st.primedDestroyed / st.primed : 0;
+        if (st.primedDestroyed > 0) { hitN++; if (st.readyAt != null && st.firstBoom != null) { boom += Math.max(0, st.firstBoom - st.readyAt); boomN++; } }
+        crashes += world.m.hullHits; lost += world.m.energyLost; bombs += st.bombsUsed;
+      }
+      const n = seeds.length;
+      rows.push({ variant: va.name, pilot: pname, setOffPct: +(100 * pct / n).toFixed(1), trialsSetOff: hitN + '/' + n, secondsToBoom: boomN ? +(boom / boomN).toFixed(1) : '-', crashes: +(crashes / n).toFixed(2), energyLost: +(lost / n).toFixed(2), bombs: +(bombs / n).toFixed(1) });
+    }
+    Object.assign(P, saved); humanDrive = savedHuman; reset(savedSeed, savedTrial);
+    return rows;
+  }
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2, 3, 4, 5], seconds = opts.seconds || 120, dt = 1 / 60, saved = Object.assign({}, P), savedSeed = seed, savedHuman = humanDrive, savedTrial = trialMode, rows = [];
+    const pilots = opts.pilots || [['skilled', SHIPPED.aiNoise], ['rookie', 0.5]];
+    humanDrive = false;
+    for (const va of VARIANTS) for (const [pname, noise] of pilots) {
+      const sum = {}; for (const c of COLS) sum[c] = 0;
+      for (const s of seeds) {
+        Object.assign(P, saved, { aiNoise: noise }, va.v); reset(s, false);
+        for (let i = 0; i < seconds / dt; i++) simStep(dt);
+        const sc = score(); for (const c of COLS) sum[c] += sc[c];
+      }
+      const row = { variant: va.name, pilot: pname }; for (const c of COLS) row[c] = +(sum[c] / seeds.length).toFixed(2);
+      rows.push(row);
+    }
+    Object.assign(P, saved); humanDrive = savedHuman; reset(savedSeed, savedTrial);
+    return rows;
+  }
+
+  // ================= platform: shell + device, answered once =================
+  // A native host (Amoebius) sets window.__labHost = { shell, device } before this script runs; the
+  // page never sniffs inside a native host. Touchscreen laptops keep a fine pointer → PC.
+  function detectPlatform() {
+    const host = window.__labHost || {};
+    const ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = 'Running on ' + (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= UI: tabs, sliders, shipped-vs-yours =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
+  function refreshDiff() {
+    const changed = Object.keys(SHIPPED).filter((k) => Math.abs(P[k] - SHIPPED[k]) > 1e-9);
+    $('diff').textContent = changed.length ? changed.length + ' setting' + (changed.length > 1 ? 's differ' : ' differs') + ' from shipped' : 'shipped numbers';
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key]; }
+  }
+  function setParam(key, v) { P[key] = v; lsSet(LS_KEY, diffOnly()); if (key === 'floraCount') reset(); refreshDiff(); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) {
+      for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name));
+      body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name);
+    }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key] });
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  const groups = [...new Set(SPEC.map((r) => r[0]))];
+  makeTabs('dockTabs', 'dockBody', groups.map((g) => ({ name: g, build: () => sliderGroup(g) })), 'lab:' + LAB.name + ':dock');
+
+  // ================= the decision log =================
+  // Shared log = the artifact's db collection "decisions" (Claude reads it with ArtifactData list).
+  // Outside the claude.ai viewer, or signed out, it falls back to this browser + Copy log.
+  let db = null, me = '', remote = [], localLog = lsGet('lab:' + LAB.name + ':log', []);
+  function snapshot() { return { round: LAB.round, seed, changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('lab:' + LAB.name + ':log', localLog); return 'local';
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><input type="text" id="logTopic" placeholder="Topic (e.g. Pair feel)"><textarea id="logChoice" rows="2" placeholder="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><table id="logTable"></table>';
+    const status = box.querySelector('#logStatus');
+    status.textContent = db ? 'Shared log: saved with the lab, readable by Claude.' : 'Kept in this browser (Copy log to send it).';
+    status.className = db ? 'status-ok' : 'status-warn';
+    box.querySelector('#logChoice').value = 'Settings: ' + (Object.keys(diffOnly()).length ? JSON.stringify(diffOnly()) : 'shipped');
+    box.querySelector('#logSave').onclick = async () => { const where = await record(box.querySelector('#logTopic').value || 'General', box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); navigator.clipboard && navigator.clipboard.writeText(t); };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+  })();
+
+  const COL_NAMES = { destroyedPerMin: 'Destroyed /min', primedSetOffPct: 'Primed set off %', chainsPerMin: 'Chains /min', hullHitsPerMin: 'Crashes /min', energyLostPerMin: 'Energy lost /min', waitS: 'Wait prime to boom (s)', bombsPerMin: 'Bombs /min', bloomsPerMin: 'Blooms /min', peakBlooms: 'Peak blooms' };
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runTrials">Score the trials</button> <span class="hint">one primed run, nothing else going on: 12 seeded trials of 45 s</span> &nbsp; <button class="btn" id="trialView">Fly a trial</button> <button class="btn" id="boardView">Fly the free board</button></p><p><button class="btn primary" id="runBatch">Score the free board</button> <span class="hint">headless: seeds 1-5, 120 s each, a skilled and a rookie AI (stick noise 0.5); your settings are the base</span></p><div style="overflow:auto"><table id="scoreTable"></table></div>';
+    box.querySelector('#trialView').onclick = () => reset(null, true);
+    box.querySelector('#boardView').onclick = () => reset(null, false);
+    box.querySelector('#runTrials').onclick = () => {
+      const rows = runTrials(), t = box.querySelector('#scoreTable'), names = { setOffPct: 'Primed set off %', trialsSetOff: 'Trials set off', secondsToBoom: 'Seconds ready to boom', crashes: 'Crashes', energyLost: 'Energy lost', bombs: 'Bombs spent' };
+      t.innerHTML = '<tr><th>Variant</th><th>Pilot</th>' + TCOLS.map((c) => '<th>' + names[c] + '</th>').join('') + '</tr>';
+      for (const r of rows) { const tr = document.createElement('tr'); for (const v of [r.variant, r.pilot].concat(TCOLS.map((c) => r[c]))) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+    };
+    box.querySelector('#runBatch').onclick = () => {
+      const rows = runBatch(), t = box.querySelector('#scoreTable');
+      t.innerHTML = '<tr><th>Variant</th><th>Pilot</th>' + COLS.map((c) => '<th>' + COL_NAMES[c] + '</th>').join('') + '</tr>';
+      for (const r of rows) { const tr = document.createElement('tr'); for (const v of [r.variant, r.pilot].concat(COLS.map((c) => r[c]))) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+    };
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p id="aboutHead"></p><p><b>The question.</b> The Manta primes rival prisms explosive by skimming them, but today it can only set them off by ramming one (which also sets off every bomb at the small scale and loses all its energy) or by jousting a bomb onto a lifeform that happens to sit near them. Would a DROP or a LAUNCH, spending a bomb from the same pool, let it set its own explosive prisms off, and at what cost?</p>' +
+      '<p><b>Fly it.</b> Press <b>Y</b> (or tap the stage) to take the stick: A/D or left/right turn, hold <b>W</b> or up to pitch over a trail (2D stand-in for 3D), <b>Space</b> drops, <b>F</b> launches (only the detonator you picked works). Press Y again to give it back to the AI.</p>' +
+      '<p class="hint"><b>What this does NOT model:</b> it is top-down 2D (no pitch, no 3D trails); the rival trails are a stand-in (straight-ish lines that appear every few seconds and expire, no rival pilots, no PvP petals, no silence); crossing a trail is a free \'pitch over\' input the AI uses only to reach a flora or the omni crystal; no Soar and no Yawstery turn (a flat 100 deg/s turn); no fauna, no heart crystals, no decoys, no Contagion; the omni crystal sits still and respawns 8 s after pickup; bloom damage is a growing circle that destroys every rival prism inside (shields, super-shields and the Space 5 Shield Breaker are not modelled); the hull radius (3 m) and the turn rate are lab guesses; frame cost is counted as blooms, never measured on a GPU; no network.</p>';
+    box.querySelector('#aboutHead').textContent = LAB.name + ' - round ' + LAB.round + ' - ' + LAB.branch + ' - write-up: ' + LAB.doc;
+    return box;
+  }
+  // ================= the human pilot: the same input object the AI writes =================
+  const keys = {};
+  addEventListener('keydown', (e) => {
+    keys[e.code] = true;
+    if (e.code === 'KeyY') { humanDrive = !humanDrive; }
+    if (e.code === 'Space') e.preventDefault();
+  });
+  addEventListener('keyup', (e) => { keys[e.code] = false; });
+  canvas.addEventListener('pointerdown', () => { humanDrive = true; });
+  function readHuman() {
+    let stick = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+    let drop = !!keys.Space, launch = !!keys.KeyF, over = !!keys.KeyW || !!keys.ArrowUp;
+    try { const gp = (navigator.getGamepads ? navigator.getGamepads() : [])[0]; if (gp) { if (Math.abs(gp.axes[0]) > 0.15) stick = gp.axes[0]; drop = drop || gp.buttons[0].pressed; launch = launch || gp.buttons[2].pressed; } } catch (e) { /* the viewer may block the Gamepad API */ }
+    input = { stick, drop, launch, over };
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], 'lab:' + LAB.name + ':bottom');
+
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round;
+  let paused = false;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet(LS_KEY, {}); for (const k in outputs) outputs[k].inp.value = P[k]; reset(); refreshDiff(); };
+
+  // ================= sizing + loop (with a manual clock for recorders) =================
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) { resize(); if (!paused) { if (humanDrive) readHuman(); simStep(dt); } render(); }
+    requestAnimationFrame(frame);
+  }
+  reset(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  // ================= the test surface =================
+  // Everything a recorder, the verifier or a future Claude needs, and nothing it must not touch.
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, PLATFORM, VARIANTS,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
+    reset, score, runBatch, runTrials, set trial(v) { reset(null, !!v); }, setParam, record,
+    state: () => ({ t: world.t, seed, energy: world.m.energy, bombs: liveBombs().length, human: humanDrive, stats: Object.assign({}, world.stats), hitLog: world.hitLog.slice() }),
+    set humanDrive(v) { humanDrive = !!v; }, setInput(i) { input = Object.assign({ stick: 0, drop: false, launch: false }, i); },
+  };
+})();
+</script>
+</body>
+</html>

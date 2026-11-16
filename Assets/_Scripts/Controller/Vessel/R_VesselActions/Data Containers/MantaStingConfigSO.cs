@@ -141,6 +141,43 @@ namespace CosmicShore.Gameplay
         [Tooltip("The decoy's trigger radius as a fraction of the source crystal's collider (1 = the real pickup's).")]
         [SerializeField, Range(0.25f, 3f)] float decoyTriggerRadiusScale = 1f;
 
+        [Header("Drop (Caleb, 2026-11-16) - pad A lets a bomb go")]
+        [Tooltip("Loose (dropped) bombs one Manta may have in the air at once. A drop with one still falling is refused. " +
+                 "Caleb: \"one dropped loose bomb at a time\".")]
+        [SerializeField, Min(1)] int maxDroppedBombs = 1;
+
+        [Tooltip("Seconds after a drop before the next may go. 0 = only the loose-bomb limit gates it (Caleb: consider " +
+                 "a cooldown if dropping still seems too frequent).")]
+        [SerializeField, Min(0f)] float dropCooldownSeconds = 0f;
+
+        [Tooltip("How fast a dropped bomb falls along the Manta's own down (its -Y at the moment of the drop), u/s^2. " +
+                 "It leaves with the Manta's velocity; this bends that line into an arc. 0 = a straight line.")]
+        [SerializeField, Min(0f)] float dropFallAcceleration = 30f;
+
+        [Tooltip("Seconds a dropped bomb ignores the Manta that dropped it, so it does not go off on the hull it left.")]
+        [SerializeField, Min(0f)] float dropArmSeconds = 0.35f;
+
+        [Tooltip("A dropped bomb goes off when its path passes within this many units of a prism's centre (any prism, " +
+                 "any domain).")]
+        [SerializeField, Min(0.1f)] float dropPrismContactRadius = 5f;
+
+        [Tooltip("A dropped bomb goes off when its path passes within this many units of a vessel (any vessel; the " +
+                 "dropper too, once it has armed).")]
+        [SerializeField, Min(0.1f)] float dropVesselContactRadius = 8f;
+
+        [Tooltip("Safety limit, not a fuse: a dropped bomb that has touched nothing after this many seconds fizzles " +
+                 "with no bloom and the Manta may drop again.")]
+        [SerializeField, Min(1f)] float dropMaxSeconds = 15f;
+
+        [Tooltip("Blast MaxScale (sphere diameter) of a dropped bomb's bloom.")]
+        [SerializeField, Min(1f)] float dropBlastScale = 70f;
+
+        [Header("Blasts set each other off (Caleb, 2026-11-16)")]
+        [Tooltip("A Manta bloom or an explosive prism's death sets off any Manta bomb its growing front reaches - " +
+                 "planted, jousted or dropped - so a bomb you jousted onto a rival goes off when a drop or a primed " +
+                 "run catches them. Only blasts that started after the bomb was there count.")]
+        [SerializeField] bool blastsSetOffBombs = true;
+
         [Header("Fuse marker (the planter sees their own bombs)")]
         [Tooltip("Draw a halo on each bombed target, visible ONLY to the local human pilot who planted it.")]
         [SerializeField] bool showFuseMarker = true;
@@ -189,6 +226,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("A rival took one of this Manta's decoys and it morphed into danger prisms.")]
         [SerializeField] EventReference decoySprungEvent;
 
+        [Tooltip("The Manta let a bomb go (the drop).")]
+        [SerializeField] EventReference bombDroppedEvent;
+
+        [Tooltip("A dropped bomb touched a vessel or a prism and went off. Fires at the bomb.")]
+        [SerializeField] EventReference droppedBombContactEvent;
+
         public int EnergyCapacity => energyCapacity;
         public float EnergyPerSkim => energyPerSkim;
         public float PerPrismEnergyCooldown => perPrismEnergyCooldown;
@@ -228,6 +271,17 @@ namespace CosmicShore.Gameplay
         public EventReference KabloomEvent => kabloomEvent;
         public EventReference CascadeBloomEvent => cascadeBloomEvent;
         public EventReference DecoySprungEvent => decoySprungEvent;
+        public EventReference BombDroppedEvent => bombDroppedEvent;
+        public EventReference DroppedBombContactEvent => droppedBombContactEvent;
+        public int MaxDroppedBombs => maxDroppedBombs;
+        public float DropCooldownSeconds => dropCooldownSeconds;
+        public float DropFallAcceleration => dropFallAcceleration;
+        public float DropArmSeconds => dropArmSeconds;
+        public float DropPrismContactRadius => dropPrismContactRadius;
+        public float DropVesselContactRadius => dropVesselContactRadius;
+        public float DropMaxSeconds => dropMaxSeconds;
+        public float DropBlastScale => dropBlastScale;
+        public bool BlastsSetOffBombs => blastsSetOffBombs;
 
         /// <summary>
         /// Per-bomb delay in an omni cascade of <paramref name="count"/> bombs: the authored stagger, compressed so

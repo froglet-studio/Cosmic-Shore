@@ -50,6 +50,7 @@ SCRIPT = {
     "SkimmerImpactorDataContainerSO":  "07132fee89b7c9d4ea24a34ffcf1d9f3",  # resolved below
     "VesselImpactorDataContainerSO":   "fde7d8c2dacf45f99e46799ffeea15e6",
     "ElementalAbilityMapSO":           "4b3f2a8c8f344355b16a4d4296ae3f98",
+    "MantaDropBombActionSO":           "bfa387aea1594ff3a16ce3223f0c30c5",
 }
 
 # ── Existing asset guids (referenced, never re-minted) ───────────────────────
@@ -74,6 +75,7 @@ KABLOOM_EFFECT_GUID = guid_for("MantaKabloomByCrystalEffect.asset")
 JOUST_PLANT_EFFECT_GUID = guid_for("MantaPlantBombByLifeformJoustEffect.asset")
 DETONATE_EFFECT_GUID = guid_for("MantaDetonateByPrismEffect.asset")
 DECOY_EFFECT_GUID = guid_for("MantaDecoyByCrystalEffect.asset")
+DROP_ACTION_GUID = guid_for("MantaDropBombAction.asset")
 
 # The decoy is built from the real crystal prefabs: the omni one is referenced here, the four elemental
 # ones come from Resources/ElementalCrystalSet at runtime. The morph is the fleet's danger-block hemisphere.
@@ -250,6 +252,18 @@ FILES["Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset"] = (
              f"  - {{fileID: {DANGER_BLOCKS_COMPONENT_FILEID}, guid: {DANGER_BLOCKS_PREFAB_GUID}, type: 3}}\n"
              "  decoyMorphScale: 60\n"
              "  decoyTriggerRadiusScale: 1\n"
+             # The drop (Caleb, 2026-11-16): pad A lets one bomb go with the Manta's velocity, falling along its own
+             # down; it goes off on the first vessel or prism it touches, one loose bomb at a time, no cooldown yet.
+             "  maxDroppedBombs: 1\n"
+             "  dropCooldownSeconds: 0\n"
+             "  dropFallAcceleration: 30\n"
+             "  dropArmSeconds: 0.35\n"
+             "  dropPrismContactRadius: 5\n"
+             "  dropVesselContactRadius: 8\n"
+             "  dropMaxSeconds: 15\n"
+             "  dropBlastScale: 70\n"
+             # Manta blooms and explosive prisms set off the bombs their blast reaches (Caleb, 2026-11-16).
+             "  blastsSetOffBombs: 1\n"
              "  showFuseMarker: 1\n"
              "  markerRadius: 14\n"
              "  markerCalmColor: {r: 0.35, g: 0.8, b: 1, a: 1}\n"
@@ -259,6 +273,11 @@ FILES["Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset"] = (
              "  markerCriticalPulseHz: 5\n"
              "  markerFadeSeconds: 0.22\n"),
     ASSET_META.format(guid=STING_CONFIG_GUID))
+
+# The drop's press (Caleb, 2026-11-16), bound to pad A (InputEvents.Button1Action) on Manta.prefab.
+FILES["Assets/_SO_Assets/VesselActions/Manta/MantaDropBombAction.asset"] = (
+    so_asset("MantaDropBombActionSO", "MantaDropBombAction", ""),
+    ASSET_META.format(guid=DROP_ACTION_GUID))
 
 FILES["Assets/_SO_Assets/Effects/Vessel Prism Effects/MantaDetonateByPrismEffect.asset"] = (
     so_asset("MantaDetonateByPrismEffectSO", "MantaDetonateByPrismEffect", ""),
@@ -351,9 +370,12 @@ MAP_BODY = """  vesselClass: 1
   - Element: 1
     AbilityLabel: Sting
     AbilityDescription: Skimming a rival plants a bomb that costs one bomb of energy. Every
-      bomb shares ONE fuse, reset by each plant, so they all go off together. Charge sets how
-      long the fuse runs when a plant resets it (MantaStingConfig.asset fuseSeconds x fuseScale,
-      20 s at rest to 30 s at level 10).
+      planted bomb shares ONE fuse, reset by each plant, so they all go off together. Pad A
+      drops a bomb instead - it keeps the Manta's speed, falls along the Manta's own down, and
+      goes off on the first vessel or prism it touches, one loose bomb at a time. Any Manta
+      bloom or explosive prism blast sets off the bombs and explosive prisms it reaches. Charge
+      sets how long the fuse runs when a plant resets it (MantaStingConfig.asset fuseSeconds x
+      fuseScale, 20 s at rest to 30 s at level 10).
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
