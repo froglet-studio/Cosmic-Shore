@@ -722,6 +722,17 @@ STEPS = {"lap_u": (500.0, "500 u more lap"), "lane_over_spine": (0.05, "lanes 5%
          "crystals": (1.0, "one more crystal on the line")}
 
 
+def reference_seconds(recs):
+    """Each hull's median time over the courses it finished: the reference the equations' seconds are read at. (A
+    stage-1 record has no time for the hulls it never raced, so no single record is the reference.)"""
+    ref = {}
+    for h in HULLS:
+        ts = sorted(r["seconds"][h] for r in recs if r.get("valid") and r["seconds"].get(h) is not None)
+        if ts:
+            ref[h] = ts[len(ts) // 2]
+    return ref
+
+
 def effects(s, ref_seconds):
     """{feature: {hull: seconds}}: what one STEPS step of each feature does to each hull's race at the reference course
     (the model is linear in ln time, so the step multiplies the hull's time by exp(b * step / sd))."""
@@ -993,6 +1004,27 @@ def read_jsonl(path):
     return out
 
 
+def genome_key(g):
+    """One string per distinct course (the genome without its free-text notes)."""
+    return json.dumps({k: v for k, v in g.items() if k != "notes"}, sort_keys=True)
+
+
+def dedupe(recs):
+    """Each distinct course once: the race of a course judged twice (a restarted runner, two runners drawing the same
+    seed course) is the same deterministic race, so the first full record wins."""
+    out, at = [], {}
+    for r in recs:
+        key = genome_key(r["genome"]) if r.get("genome") else None
+        if key is None:
+            out.append(r)
+        elif key not in at:
+            at[key] = len(out)
+            out.append(r)
+        elif not out[at[key]].get("valid") and r.get("valid"):
+            out[at[key]] = r
+    return out
+
+
 def shard_files(root):
     """Every shard's records file under `root` (root/shard_K/records.jsonl)."""
     if not os.path.isdir(root):
@@ -1012,10 +1044,12 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
     os.makedirs(out, exist_ok=True)
     root = os.path.dirname(os.path.abspath(out.rstrip("/")))
     mine = os.path.join(out, "records.jsonl")
-    rng = random.Random(1_000_003 * (k + 1) + n)
     rand_g, mut, cross, _ = ops()
     seeds = (0,) if backend == "model" else ENGINE_SEEDS
     own = read_jsonl(mine)
+    # The stream depends on how far this shard got and on its start condition, so a restarted runner (or an L5 runner
+    # with the same K) never replays courses already raced.
+    rng = random.Random(f"{k}/{n}/{START}/{len(own)}")
     peers, s, t0 = [], None, time.time()
     log(f"[shard {k}/{n}] {len(own)} courses already in {mine}")
     while len(own) < budget:
@@ -1054,6 +1088,11 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
                 g = best[1] if best else child()
             else:
                 g = child()
+        seen = {genome_key(r["genome"]) for r in every if r.get("genome")}
+        for _ in range(8):                       # a course already raced is mutated until it is new
+            if genome_key(g) not in seen:
+                break
+            g = mut(g, rng)
         r = evaluate((g, backend, seeds, gate))
         r.update(start=START, shard=k, at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
         with open(mine, "a", encoding="utf-8") as fh:
@@ -1084,6 +1123,10 @@ def merge_records(recs, out, root, log=print):
     os.makedirs(out, exist_ok=True)
     if not recs:
         return {"courses": 0}
+    n_raw = len(recs)
+    recs = dedupe(recs)
+    if len(recs) < n_raw:
+        log(f"[merge] {n_raw - len(recs)} repeated courses folded ({len(recs)} distinct)")
     set_hulls(sorted({h for r in recs if r.get("valid") for h in r["seconds"]}) or HULLS)
     backend = next((r.get("backend") for r in recs if r.get("valid")), "engine")
     archive = {}
@@ -1095,7 +1138,7 @@ def merge_records(recs, out, root, log=print):
     open(os.path.join(out, "SEARCH.md"), "w").write(search_report(recs, backend, s))
     if s:
         json.dump(s.to_json(), open(os.path.join(out, "surrogate.json"), "w"), indent=1)
-        ref = next(r for r in recs if r.get("valid"))["seconds"]
+        ref = reference_seconds(recs)
         open(os.path.join(out, "EQUATIONS.md"), "w").write(equations_md(s, ref, recs, backend))
     rep = pick_pool(list(archive.values()) + top_passing(recs, 60), out, backend)
     summary = {"courses": len(recs), "raced_full": sum(1 for r in recs if r.get("valid")),
@@ -1121,10 +1164,17 @@ def search_report(records, backend, surrogate=None):
     ok = [r for r in records if r.get("valid") and r["loss"].get("spread_x")]
     if not ok:
         return "# Regatta search\n\nNo course finished.\n"
-    hulls = [h for h in SCORED if all(r["seconds"].get(h) for r in ok[:1])]
-    full = [r for r in ok if all(r["seconds"].get(h) for h in hulls)]
+    # Every scored hull that finished on most raced courses (a stage-1 record carries only four of them).
+    hulls = [h for h in SCORED if sum(1 for r in ok if r["seconds"].get(h)) >= 0.5 * len(ok)]
+    full = [r for r in ok if all(r["seconds"].get(h) for h in hulls)] or ok
+    ok = [r for r in ok if all(r["seconds"].get(h) for h in hulls)] or ok
     spreads = [r["loss"]["spread_x"] for r in ok]
-    today = ok[0]
+    def plain(r):     # today's course: no placements, flora, features or circuit overrides
+        g = r.get("genome") or {}
+        f = g.get("features") or {}
+        return not (g.get("placements") or g.get("flora") or f.get("Sections") or f.get("AlternateGates")
+                    or (f.get("Crystals") or {}).get("PerLap") or g.get("circuit")) and int(g.get("intensity", 1)) == 1
+    today = next((r for r in ok if plain(r)), ok[0])
     lines = [f"# Regatta course search ({time.strftime('%Y-%m-%d')}, backend `{backend}`)", "",
              f"{len(records)} genomes judged, {len(ok)} raced to a result, {len(records) - len(ok)} not raced or not "
              f"finished (guard fails, DNFs). Hulls scored: {', '.join(hulls)}.", "",
@@ -1350,7 +1400,7 @@ def main():
                                               "shard", "merge"))
     ap.add_argument("--shard", type=int, default=0, help="shard: this runner's index K (0-based)")
     ap.add_argument("--of", type=int, default=1, help="shard: how many runners N")
-    ap.add_argument("--start", default=None, choices=("card", "L5"),
+    ap.add_argument("--start", default=None, choices=("card", "rest", "L5"),
                     help="the start condition every hull races under (default card, or REGATTA_START)")
     ap.add_argument("dirs", nargs="*")
     ap.add_argument("--budget", type=int, default=1500)
@@ -1404,7 +1454,7 @@ def main():
         open(os.path.join(a.out, "SEARCH.md"), "w").write(md)
         s = fit_trusted([r for r in recs if r.get("valid")], min_n=20)
         if s:
-            ref = next(r for r in recs if r.get("valid"))["seconds"]
+            ref = reference_seconds(recs)
             open(os.path.join(a.out, "EQUATIONS.md"), "w").write(equations_md(s, ref, recs, backend))
         print(md)
     elif a.cmd == "engine-report":
@@ -1416,7 +1466,7 @@ def main():
     else:
         recs = [json.loads(l) for d in a.dirs for l in open(os.path.join(d, "records.jsonl"), encoding="utf-8")]
         s = fit_trusted(recs)
-        ref = next(r for r in recs if r.get("valid"))["seconds"]
+        ref = reference_seconds(recs)
         backend = next(r for r in recs if r.get("valid")).get("backend", "model")
         md = equations_md(s, ref, recs, backend)
         open(os.path.join(a.out, "EQUATIONS.md") if a.out else "EQUATIONS.md", "w").write(md)
