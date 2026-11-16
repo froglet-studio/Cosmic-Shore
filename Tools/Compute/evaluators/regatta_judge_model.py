@@ -58,13 +58,28 @@ def today_genome():
             "placements": [], "flora": [], "crystals": {}}
 
 
+def is_full_circuit(genome):
+    """A genome written by this module's today_genome() (a FULL circuit row and a raw generator seed), as against W2's
+    contract genome (circuit = overrides of RegattaCourse.ForIntensity, seed run through SeedForIntensity, 0 = default)."""
+    return "GateCount" in (genome.get("circuit") or {})
+
+
 def lay(genome):
-    """The genome's course as regatta_features lays it (the C#-gated port). Raises when the generator finds no circuit."""
+    """The genome's course as regatta_features lays it (the C#-gated port). Raises when the generator finds no circuit.
+    A W2 genome's circuit and seed resolve as RegattaCourseGenome does (regatta_genome.circuit_settings); its
+    placements, flora and rails are not laid here (the engine lays them)."""
     import regatta_features as rf
-    c = dict(genome["circuit"])
-    if isinstance(c.get("FirstGateDirection"), list):
-        c["FirstGateDirection"] = tuple(c["FirstGateDirection"])
-    return rf.course(settings=c, seed=int(genome["seed"]), features=copy.deepcopy(genome.get("features")) or None)
+    feats = copy.deepcopy(genome.get("features")) or None
+    if is_full_circuit(genome):
+        c = dict(genome["circuit"])
+        if isinstance(c.get("FirstGateDirection"), list):
+            c["FirstGateDirection"] = tuple(c["FirstGateDirection"])
+        return rf.course(settings=c, seed=int(genome["seed"]), features=feats)
+    import course_port as cp
+    import regatta_genome as rg
+    intensity = int(genome.get("intensity", 1))
+    seed = cp.seed_for_intensity(int(genome.get("seed", 0)) or cp.REGATTA_DEFAULT_SEED, intensity)
+    return rf.course(settings=rg.circuit_settings(genome), seed=seed, features=feats)
 
 
 def roster(job=ROSTER_JOB):
