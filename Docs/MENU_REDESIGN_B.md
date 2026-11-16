@@ -8520,3 +8520,25 @@ Built, with nothing new on the wire (no protocol bump):
 
 Not seen in Unity or with two machines: the hand test is a host and a friend in one party, the friend changing vessel,
 pilot and element on their Ark page, the host's card showing the new hull, and the friend spawning in it at the berth.
+
+### 210.1 Built: the crew screen, pilot first (Rev 114 C2; 2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
+
+Asked (Shombith, on Rev 114): "I like c2 ... build them in the game"; the HyperSea page stays as built. Build prompt A of
+`/mnt/project-files/milestone1-mockups/rev114-build-prompts.md`.
+
+Built in code (`VoyageCrewPopup`, no prefab or scene change), at the board's own numbers (`R114C2.dc.html`):
+- A 1680 x 920 glass panel at (120, 40): "Your crew, and the work they bring" (28), the line under it (15, Sub), Close.
+- **Your crew across the top**: a 248 x 250 portrait tile per voyage, 22 apart (six show; a larger crew scrolls
+  sideways), with its faction (caps 13), first name (17) and job (14, Sub); the voyages that sail come first
+  (`VoyageCrewRules.Crew`). The picked tile carries one thin cyan line; a locked one is dimmed to .62 with the gold lock.
+  The escort's tile is the Ark ("The Ark"), since it has no pilot.
+- **The picked pilot's job** at y 560: their widescreen scene, 620 x 330, cut round their face
+  (`VoyageBoardStyleSO.PilotScenes`, the shipped `PilotSceneCatalog`; loaded only while shown; the Ark for the escort);
+  then "<pilot>, <faction>, asks", the job's line as a quote (34), the difficulty pips, the worlds and the crystals it
+  pays; Take the job (A) and "<other open voyage> instead" (Y, `VoyageCrewRules.OtherOpen`). A locked job shows the gold
+  lock and "<job> opens after Milestone 1." in place of Take the job. The lock is PR #2021's.
+- **Left out on purpose**: XP and a pilot's trust in the rewards (Shombith, 2026-11-16: the game has no voyage XP yet,
+  "not needed, remove from UI as well"); the Rev 113 faction rail and grouped list, which C2 replaces.
+
+Every word is a `VoyageLines` field (nine new, `CrewTitle` and `CrewLine` reworded); colours from the kit and the worn set.
+Not seen in Unity: a render of the screen still needs to sit beside the board.

@@ -60,6 +60,8 @@ namespace CosmicShore.UI
             /// <summary>Who recommends it, their house and their portrait; empty for the escort.</summary>
             public string Pilot, Faction, Story;
             public Sprite Portrait;
+            /// <summary>The callsign id of the pilot who brings it (their scene on the crew screen); empty for the escort.</summary>
+            public string Callsign;
             /// <summary>Its numbers: light years and minutes (empty when the course is not charted).</summary>
             public string Ly, Minutes;
             /// <summary>The squad's role on it, already in words.</summary>

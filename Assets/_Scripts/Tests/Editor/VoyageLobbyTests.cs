@@ -4,6 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace CosmicShore.Tests
 {
@@ -163,6 +164,60 @@ namespace CosmicShore.Tests
             Assert.AreEqual(FactionType.None, groups[2].House, "A pilot with no faction must come last.");
         }
 
+        // ── The crew screen, pilot first (Rev 114 C2) ────────────────────────
+
+        [Test]
+        public void Crew_PutsWhatSailsFirst_ThenTheLocked_EachInOrder()
+        {
+            var offers = new List<VoyageBoard.Offer>
+            {
+                Offer(FactionType.Hunter, false), Offer(FactionType.Thief, true), Offer(FactionType.Pirate, false),
+                Offer(FactionType.None, true),
+            };
+            var crew = new List<int>();
+            VoyageCrewRules.Crew(offers, crew);
+            CollectionAssert.AreEqual(new[] { 1, 3, 0, 2 }, crew);
+        }
+
+        [Test]
+        public void OtherOpen_IsTheNextVoyageThatSails_NeverThePickedOne()
+        {
+            var offers = new List<VoyageBoard.Offer>
+            {
+                Offer(FactionType.Hunter, false), Offer(FactionType.Thief, true),
+                new() { House = FactionType.None, SailLabel = "Under way" }, Offer(FactionType.None, true),
+            };
+            Assert.AreEqual(1, VoyageCrewRules.OtherOpen(offers, 0), "A locked pick offers the first voyage that sails.");
+            Assert.AreEqual(3, VoyageCrewRules.OtherOpen(offers, 1), "A voyage under way cannot be taken instead.");
+            Assert.AreEqual(-1, VoyageCrewRules.OtherOpen(new List<VoyageBoard.Offer> { Offer(FactionType.None, true) }, 0));
+        }
+
+        [Test]
+        public void FirstName_IsTheFirstWord()
+        {
+            Assert.AreEqual("Tamako", VoyageCrewRules.FirstName("Tamako Deephook"));
+            Assert.AreEqual("Volt", VoyageCrewRules.FirstName(" Volt "));
+            Assert.IsNull(VoyageCrewRules.FirstName(null));
+        }
+
+        [Test]
+        public void Crop_FillsTheBox_AroundTheFace()
+        {
+            float box = 620f / 330f;
+            // A square scene in the 620 x 330 box: full width, the height cut, centred on the face.
+            var r = VoyageCrewPopup.Crop(1000, 1000, box, new Rect(0.45f, 0.6f, 0.1f, 0.2f));
+            Assert.AreEqual(1f, r.width, 1e-4f);
+            Assert.AreEqual(1f / box, r.height, 1e-4f);
+            Assert.AreEqual(0.7f, r.center.y, 1e-4f, "The cut is not centred on the face.");
+            // A face at the very top keeps the cut inside the picture.
+            Assert.AreEqual(1f, VoyageCrewPopup.Crop(1000, 1000, box, new Rect(0.45f, 0.9f, 0.1f, 0.1f)).yMax, 1e-4f);
+            // A scene wider than the box: full height, the width cut round the face.
+            var wide = VoyageCrewPopup.Crop(3000, 1000, box, new Rect(0.35f, 0.4f, 0.1f, 0.2f));
+            Assert.AreEqual(1f, wide.height, 1e-4f);
+            Assert.AreEqual(box / 3f, wide.width, 1e-4f);
+            Assert.AreEqual(0.4f, wide.center.x, 1e-4f);
+        }
+
         [Test]
         public void EveryFaction_HasAuthoredGroupWords()
         {
@@ -172,10 +227,13 @@ namespace CosmicShore.Tests
                 Assert.IsFalse(string.IsNullOrEmpty(VoyageCrewRules.FactionName(content.Lines, f)), $"{f} has no group name.");
             var l = content.Lines;
             foreach (var line in new[] { l.SeaOpenNow, l.SeaCrewButton, l.CrewTitle, l.CrewLockedPress, l.ArkSailAs, l.ArkFillSquad,
-                         l.ArkInvite, l.ArkChangeWingmate, l.PickSaved, l.PickSavedSeat })
+                         l.ArkInvite, l.ArkChangeWingmate, l.PickSaved, l.PickSavedSeat, l.CrewAsks, l.CrewQuote, l.CrewWorlds,
+                         l.CrewTake, l.CrewInstead, l.CrewArk, l.CrewArkAsks })
                 Assert.IsFalse(string.IsNullOrEmpty(line), "A Rev 113 line is empty in the shipped content.");
             StringAssert.Contains("{vessel}", l.ArkSailAs);
             StringAssert.Contains("{voyage}", l.PickSaved);
+            StringAssert.Contains("{quote}", l.CrewQuote);
+            StringAssert.Contains("{pilot}", l.CrewAsks);
         }
     }
 }
