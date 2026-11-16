@@ -531,7 +531,8 @@ def evaluate(job):
             tb = {st["hull"]: st.get("backend", backend) for race in r1["races"] for st in race["seats"]}
             return {"genome": g, "game_genome": gg, "valid": False, "partial": True, "x": x,
                     "seconds": {h: done.get(h) for h in t1}, "timed_by": tb, "stage1_spread": round(lb, 4),
-                    "kinds": kinds_used(gg, x), "error": f"stage 1 spread {lb:.2f}x > gate {gate:.2f}x: stopped",
+                    "kinds": kinds_used(gg, x), "error": (f"stage 1: {', '.join(h for h in stage1 if h not in done)} did not finish: stopped"
+                              if len(done) < len(stage1) else f"stage 1 spread {lb:.2f}x > gate {gate:.2f}x: stopped"),
                     "backend": backend, "engine_commit": r1.get("engine_commit")}
         r2 = _judge(gg, course, backend, seeds, hulls=[h for h in HULLS if h not in stage1])
         r = dict(r2, races=r1["races"] + r2["races"])
