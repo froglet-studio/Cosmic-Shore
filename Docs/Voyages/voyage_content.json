@@ -1778,7 +1778,7 @@
    "OnSuccess": "",
    "OnFail": "",
    "Verb": 3,
-   "Goal": 20,
+   "Goal": 50,
    "HullFloor": 0,
    "NoKill": false,
    "Role": 3,
@@ -1795,7 +1795,7 @@
     1,
     1
    ],
-   "BreachHull": 0.4,
+   "BreachHull": 0.1,
    "Always": true,
    "CountsUnderway": true,
    "Cells": 4,

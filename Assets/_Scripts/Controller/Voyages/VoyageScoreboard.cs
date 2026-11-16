@@ -198,6 +198,12 @@ namespace CosmicShore.Gameplay
         public bool AnchorClosing;
         /// <summary>Crystals the local pilot carries and has not banked at the Ark (P6).</summary>
         public int Carried;
+        /// <summary>The Ark's hull is below its leak line: banked crystals are falling out of the hold.</summary>
+        public bool Leaking;
+        /// <summary>The hull share below which the hold leaks (for the strip's words).</summary>
+        public float LeakLine;
+        /// <summary>The goal is met and the pause window offers to complete the run here and set sail.</summary>
+        public bool CanComplete;
 
         /// <summary>Copy the Ark's live state from an escort or a job voyage's <see cref="ArkEscortStatus"/>.</summary>
         public void TakeArk(in ArkEscortStatus s)

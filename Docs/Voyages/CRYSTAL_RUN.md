@@ -7,10 +7,10 @@ R113Compare, R113Score). Not yet run in the Unity editor: `Docs/UNITY_VERIFICATI
 ## 1. The rules (Shombith's answers, 2026-11-16)
 
 - "Steal these many elemental crystals during the voyage; a few cells attack you, a few don't."
-- The goal is **20 crystals**, between the whole squad. Any elemental crystal counts (Space, Time, Charge, Mass); an
+- The goal is **50 crystals** (20 until round 3, 2026-11-16), between the whole squad. Any elemental crystal counts (Space, Time, Charge, Mass); an
   omni crystal does not.
 - The leg is **4 cells: 1 calm, then 3 hostile** (`hostileCells` [false, true, true, true]). The breach line is
-  **40%**: below it the Ark falls.
+  **10%** (40% until round 3, so the hold can leak below 30% before the Ark falls).
 - Crystals count from the moment the Ark sets sail, through every cell, not only at the stop.
 - **Any pilot can bring it**: the job is on every board (`always`), credited to the first seated pilot.
 - At the stop the job resolves: met the goal, it succeeds and its pay is owed too; missed, it fails and only what was
@@ -97,7 +97,7 @@ From the playtest ("Shouldnt the ark park at each cell and give us time to steal
 Voyage HUD and fun pass doc (https://claude.ai/artifact/JTaRK8Rb8798GrD3FXMFZt).
 
 - **The Ark anchors (P1).** On reaching each cell of a Crystal Run's leg the Ark stops at the core for a raid window:
-  `raidAnchorHostileSeconds` (60) in a hostile cell, `raidAnchorCalmSeconds` (35) in a calm one, the final cell
+  `raidAnchorHostileSeconds` (30) in a hostile cell, `raidAnchorCalmSeconds` (30) in a calm one, the final cell
   included. `raidAnchorWarnSeconds` (10) before it sails the horn (`arkHornSound`, shipped empty) and a threat toast
   warn; then it weighs anchor. The strip's job line shows the clock. The hook is `ArkwayRun.AnchorSeconds`; only
   `VoyageRun` sets it, so the escort and the Arkway toy never stop.
@@ -110,3 +110,46 @@ Voyage HUD and fun pass doc (https://claude.ai/artifact/JTaRK8Rb8798GrD3FXMFZt).
   ToastSpilled(+Sub), ObjectiveStripAnchor, ObjectiveStripCarried.
 - **Not yet:** spilled crystals are per-peer like every loose crystal, and the hull-contact event is raised on the
   peer that runs the contact, so a party friend's spill and bank are only as good as that path; not run in Unity.
+
+## 7. Round 3: hull raids, completing early and the way home (Shombith, 2026-11-16)
+
+"Increase the number from 20 to 50 ... make the cell's fauna attack the hull, if the hull's health drops below 30% it
+loses banked crystals one by one. It should dock at a cell for 30 seconds ... if at any cell the ark feels like crystal
+goal has been reached we should have the option says complete and set sail ... When set sailing the fauna needs to get
+aggressive more and also between cells bigger faunas should start spawning ... The health of the ark should be shown on
+the left too." Then: "make the cell big by 50%".
+
+- **Goal 50, 30 s in every cell, breach 10%** (voyage_slice.json and `Voyage.asset`'s defaults).
+- **Goal met: no more anchoring.** Once the banked count reaches the goal the Ark weighs anchor at once and does not
+  stop again (`RaidAnchorSeconds` answers 0), the goal toast says how to finish, and the strip reads
+  ObjectiveStripComplete.
+- **Complete and set sail.** While the goal is met, the host's pause window shows one more button under Resume, labelled
+  PauseCompleteAndSail (`IPauseMenuAction` / `PauseMenuAction`, a copy of the Resume button made in code, no prefab
+  change). It ends the leg where the Ark is (`ArkwayRun.EndRouteHere`): the Ark holds at the cell it is at or bound for,
+  the run resolves as at its stop, and the scoreboard asks Venture further or Finish. After Venture further the next run
+  (goal +10) offers the same button once its goal is met. A party friend's Ark finishes its own leg and then takes the
+  host's next one, as before.
+- **The cells' fauna go for the hull.** A Crystal Run's calm cells now lure `raidCalmLureShare` (0.2) of their fauna's
+  goal picks onto the Ark; hostile cells keep the escort tier's share and assaults.
+- **The leaking hold.** Below `raidHullLeakBelow` (30%) of its hull the Ark loses one banked crystal every
+  `raidHullLeakSeconds` (1.5 s): this leg's banked crystals first (`VoyageRaidTally.Leak`, the richest seat's most
+  plentiful element), then what earlier legs owe (`VoyageState.LeakOwed`). Each one spills out of the Ark into the sea
+  (`ElementalCrystalEjector.ShedOntoSphere`), where any pilot can take it back and bank it again. One toast per dip
+  (ToastHullLeaking), the strip's job line (ObjectiveStripLeaking) and the hull line turn to the threat colour. The host
+  decides; a friend sees it through the host's count.
+- **The way home is harder.** On the return leg every cell may assault the Ark, and every lure is multiplied by
+  `homewardLureFactor` (2; calm cells start from the calm share). In the open water between cells, every
+  `homewardRaiderSeconds` (12 s) a wave of `homewardRaiderCount` (2) raiders comes in `homewardRaiderDistance` (260 u)
+  ahead and to the side of the Ark, while fewer than `homewardRaiderMax` (6) are alive: the predators (else any species)
+  of a leg cell held by another colour, born in that cell's colour through `CellLifeSpawnerBase.SpawnFaunaWithDomain`
+  and grown `homewardRaiderScale` (1.8x) by `Fauna.GrowBody` in the spawn frame. No cell of another colour, no raiders.
+  First wave: ToastRaiders.
+- **The Ark's hull on the strip.** A Crystal Run's strip shows ObjectiveStripArkHull ("Ark hull 72%") under the hull bar.
+- **Bigger cells.** `cellScale` (1.5) on `Voyage.asset` reaches the corridor as `ArkwayConfig.CellScale`: each voyage
+  cell's membrane (`CapsuleMembrane.SetRuntimeScale`, its baked wobble kept) and nucleus are 1.5x, so
+  `Cell.MembraneRadius`, the sense radius, the density grids, spawn points, the Ark's approach and the leash all see the
+  bigger world, and the spacing grows 1.5x so cells never overlap. The cell's environment mass keeps its authored size.
+  The Arkway toy and the escort keep 1.
+- **Not run in Unity.** To check by hand: the pause button's look (it copies Resume), whether lured fauna really bring a
+  hull under 30% in a calm cell, the raiders' size and whether they leave their cell's water, and the bigger membrane
+  against the environment.

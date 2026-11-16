@@ -13,9 +13,12 @@ namespace CosmicShore.Gameplay
     /// scoreboard (Venture further sails the next run from here, Finish sails the Ark home with the squad escorting it),
     /// and docking home or a fallen Ark shows the last board. The rules are <see cref="VoyageRaid"/>.
     /// </summary>
-    public sealed partial class VoyageRun : IVoyageObjectiveSource
+    public sealed partial class VoyageRun : IVoyageObjectiveSource, IPauseMenuAction
     {
         readonly VoyageRaidTally _raid = new();
+        /// <summary>Every leg of this voyage already sailed, seat by seat: <see cref="_raid"/> starts over each leg, and
+        /// the way home's docked board shows the whole voyage (Shombith's 2026-11-16 playtest: a docked board of zeros).</summary>
+        readonly VoyageRaidTally _voyageRaid = new();
         readonly Dictionary<Cell, int> _legIndex = new();
         bool _raidHooked;
         bool _goalToastShown;
@@ -27,6 +30,17 @@ namespace CosmicShore.Gameplay
         float _nextBankCheck;
         readonly Dictionary<string, float> _spillReadyAt = new();
         const float BankCheckSeconds = 0.2f;
+        float _nextLeak;
+        bool _leakToasted;
+
+        /// <summary>The run's banked crystals reach its goal: the Ark stops anchoring, and the pause window offers to
+        /// complete the run here (Shombith, 2026-11-16).</summary>
+        bool GoalMet => Raiding && _state.Current.Goal > 0f && _raid.Total >= Mathf.CeilToInt(_state.Current.Goal);
+
+        /// <summary>The pause window's "Complete and set sail": the host, with the goal met, sailing a leg it has not
+        /// finished.</summary>
+        bool CanComplete => _active && !_following && !_fallen && GoalMet && _sea && _sea.IsRunning
+                            && !_sea.IsHoldingAtRouteEnd && !VoyageScoreboard.IsOpen;
 
         /// <summary>A Crystal Run carries its crystals until they are banked at the Ark (P6), unless the settings turn it
         /// off.</summary>
@@ -50,7 +64,9 @@ namespace CosmicShore.Gameplay
             _goalToastShown = false;
             _anchorWarned = false;
             _spillReadyAt.Clear();
+            _leakToasted = false;
             _legStartedAt = Time.time;
+            _voyageRaid.Absorb(_raid);
             _raid.Clear();
             HookRaid(job is { CountsUnderway: true });
         }
@@ -103,7 +119,51 @@ namespace CosmicShore.Gameplay
             var job = _state?.Current;
             if (job == null || _goalToastShown || _raid.Total < job.Goal) return;
             _goalToastShown = true;
-            VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Good, TemplateText.Fill(Lines.ToastGoalReached, "goal", Mathf.CeilToInt(job.Goal).ToString()));
+            VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Good, TemplateText.Fill(Lines.ToastGoalReached, "goal", Mathf.CeilToInt(job.Goal).ToString()),
+                _following ? string.Empty : Lines.ToastGoalReachedSub);
+        }
+
+        // ── Complete and set sail (Shombith, 2026-11-16) ────────────────────
+
+        public string PauseActionLabel => CanComplete ? Lines.PauseCompleteAndSail : string.Empty;
+
+        /// <summary>The run ends where the Ark is: it holds there and the scoreboard asks what next (Venture further, or
+        /// Finish and sail home).</summary>
+        public void OnPauseAction()
+        {
+            if (CanComplete) _sea.EndRouteHere();
+        }
+
+        // ── The leaking hold (Shombith, 2026-11-16: "if the hull's health drops below 30% it loses banked crystals one
+        //    by one") ─────────────────────────────────────────────────────────
+
+        /// <summary>Below the leak line the hold loses a banked crystal every few seconds: this leg's first, then what is
+        /// owed from earlier legs. Each one spills out of the Ark into the sea, where any pilot can take it back. The host
+        /// decides; a party friend sees it through the host's count.</summary>
+        void TickHullLeak()
+        {
+            if (!_active || _following || _fallen || _docked || !_def || _state is not { AtSea: true }) return;
+            var ark = Ark;
+            float line = _def.RaidHullLeakBelow;
+            if (!ark || line <= 0f || ark.TotalCount == 0) return;
+            if (ark.HealthFraction >= line)
+            {
+                _leakToasted = false;
+                return;
+            }
+            if (Time.time < _nextLeak) return;
+            _nextLeak = Time.time + _def.RaidHullLeakSeconds;
+            var lost = Raiding ? _raid.Leak() : Element.None;
+            if (lost != Element.None) _tallyDirty = true;
+            else lost = _state.LeakOwed();
+            if (lost == Element.None) return;
+            ElementalCrystalEjector.ShedOntoSphere(ark.Position, HullHalfLength, ark.Position + Random.onUnitSphere,
+                180f, lost, 1, 0f, "Ark");
+            if (_leakToasted) return;
+            _leakToasted = true;
+            string pct = Mathf.RoundToInt(line * 100f).ToString();
+            VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Threat, Lines.ToastHullLeaking,
+                TemplateText.Fill(Lines.ToastHullLeakingSub, "line", pct));
         }
 
         // ── P1: the raid window (Shombith, 2026-11-16: "the ark park at each cell and give us time to steal") ──
@@ -112,7 +172,7 @@ namespace CosmicShore.Gameplay
         /// for any other work (the way home, a job with a stop) or once the Ark has fallen.</summary>
         float RaidAnchorSeconds()
         {
-            if (!_active || !Raiding || _fallen || !_def) return 0f;
+            if (!_active || !Raiding || _fallen || !_def || GoalMet) return 0f;
             int cell = LegCell(out _);
             bool hostile = cell > 0 && LegHostile(cell - 1);
             return hostile ? _def.RaidAnchorHostileSeconds : _def.RaidAnchorCalmSeconds;
@@ -138,6 +198,8 @@ namespace CosmicShore.Gameplay
         void TickRaidWindow()
         {
             if (!Raiding || _fallen || !_sea) return;
+            // The goal is met: the Ark stops anchoring ("it shouldnt keep anchoring") and sails on at once.
+            if (_sea.IsAnchored && GoalMet) _sea.WeighAnchor();
             if (_sea.IsAnchored && !_anchorWarned && _def && _sea.AnchorRemaining <= _def.RaidAnchorWarnSeconds)
             {
                 _anchorWarned = true;
@@ -331,17 +393,27 @@ namespace CosmicShore.Gameplay
                 }
                 var you = LocalVessel();
                 objective.Carried = you != null ? _raid.CarriedBy(you.PlayerName) : 0;
+                objective.Leaking = Leaking(ark);
+                objective.LeakLine = _def ? _def.RaidHullLeakBelow : 0f;
+                objective.CanComplete = CanComplete;
                 return true;
             }
             if (job is { IsReturn: true } && _state.AtSea)
             {
                 objective.Goal = VoyageObjective.Kind.SailingHome;
                 objective.To = PlaceName(job.To);
+                objective.Leaking = Leaking(ark);
+                objective.LeakLine = _def ? _def.RaidHullLeakBelow : 0f;
+                objective.Breach = job.BreachHull;
                 objective.Hostile = objective.Cell > 0 && LegHostile(objective.Cell - 1);
                 return true;
             }
             return false;
         }
+
+        /// <summary>The Ark's hull is below the leak line: the hold is losing crystals.</summary>
+        bool Leaking(Ark ark) => ark && _def && _def.RaidHullLeakBelow > 0f && ark.TotalCount > 0
+                                 && ark.HealthFraction < _def.RaidHullLeakBelow;
 
         int OwedTotal()
         {
@@ -404,13 +476,24 @@ namespace CosmicShore.Gameplay
         /// <summary>One row per seat, the pilot's first, with what each stole and felled on the leg: this machine's AI
         /// wingmates, then the party's other humans, then any seat the host's count names that is not here (on a friend's
         /// machine, the host's AI wingmates).</summary>
-        void AddRows(VoyageScoreboard board)
+        void AddRows(VoyageScoreboard board) => AddRows(board, _raid);
+
+        /// <summary>The whole voyage's rows: every leg sailed, and the one under way.</summary>
+        void AddVoyageRows(VoyageScoreboard board)
+        {
+            var all = new VoyageRaidTally();
+            all.Absorb(_voyageRaid);
+            all.Absorb(_raid);
+            AddRows(board, all);
+        }
+
+        void AddRows(VoyageScoreboard board, VoyageRaidTally tally)
         {
             var named = new HashSet<string>();
             void Row(IVesselStatus status, bool you)
             {
                 if (status == null || string.IsNullOrEmpty(status.PlayerName) || !named.Add(status.PlayerName)) return;
-                var seat = _raid.SeatOf(status.PlayerName);
+                var seat = tally.SeatOf(status.PlayerName);
                 board.Rows.Add(new VoyageScoreboard.Row
                 {
                     Name = status.PlayerName,
@@ -424,7 +507,7 @@ namespace CosmicShore.Gameplay
             Row(LocalVessel(), true);
             foreach (var w in _wingmates) Row(Alive(w), false);
             foreach (var (status, _) in OtherHumans()) Row(status, false);
-            foreach (var seat in _raid.Seats)
+            foreach (var seat in tally.Seats.ToArray())
             {
                 if (seat == null || string.IsNullOrEmpty(seat.PlayerName) || !named.Add(seat.PlayerName)) continue;
                 board.Rows.Add(new VoyageScoreboard.Row
@@ -475,7 +558,7 @@ namespace CosmicShore.Gameplay
             };
             if (x != null)
                 for (int e = 0; e < x.Crystals.Length && e < board.Crystals.Length; e++) board.Crystals[e] = x.Crystals[e];
-            AddRows(board);
+            AddVoyageRows(board);
             VoyageScoreboard.Show(board);
         }
 
@@ -504,7 +587,7 @@ namespace CosmicShore.Gameplay
                 Following = _following,
             };
             for (int e = 0; e < board.Crystals.Length && stake != null && e < stake.Length; e++) board.Crystals[e] = stake[e];
-            AddRows(board);
+            AddVoyageRows(board);
             // Try again: the same work from wherever the fall left the crew, once the sea has ended.
             string template = lost?.TemplateId;
             if (!_following && lost is { CountsUnderway: true } && !string.IsNullOrEmpty(template))
@@ -516,11 +599,13 @@ namespace CosmicShore.Gameplay
         {
             HookRaid(false);
             _raid.Clear();
+            _voyageRaid.Clear();
             _legIndex.Clear();
             _alarms?.Unhook();
             if (_attackerMarks) Destroy(_attackerMarks.gameObject);
             _attackerMarks = null;
             if (ReferenceEquals(VoyageObjective.Source, this)) VoyageObjective.Source = null;
+            PauseMenuAction.Release(this);
         }
     }
 }

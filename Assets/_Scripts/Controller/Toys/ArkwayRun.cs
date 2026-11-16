@@ -57,6 +57,9 @@ namespace CosmicShore.Gameplay
         /// crystal on <c>Resources/ModePreviewLibrary</c>.</summary>
         public Crystal CrystalPrefab;
         public float CellSpacing = 3200f;
+        /// <summary>Each traversal cell's membrane and nucleus at this many times their authored size, with the spacing
+        /// scaled to match (<see cref="Cell.SatelliteSizeScale"/>). 1 for the toy and the escort; the voyages set it.</summary>
+        public float CellScale = 1f;
         public float MaxTurnDegrees = 25f;
         public int PrismStride = 4;
         public float PopulationScale = 0.5f;
@@ -245,6 +248,23 @@ namespace CosmicShore.Gameplay
             if (!_running || !_holdingAtRouteEnd || !_conveyor || worlds is not { Count: > 0 }) return false;
             _conveyor.SetRoute(worlds);
             _holdingAtRouteEnd = false;
+            if (_ark) _ark.SetUnderway(true);   // a leg ended early (EndRouteHere) stopped the Ark
+            return true;
+        }
+
+        /// <summary>End this leg where the Ark is: any anchor lifts and the Ark holds at the cell it is at or bound for, as
+        /// at a route's end (<see cref="RouteEnded"/> is raised now). <see cref="ContinueRoute"/> sails the next leg from
+        /// there. False when the run is not under way or already holding.</summary>
+        public bool EndRouteHere()
+        {
+            if (!_running || _holdingAtRouteEnd || !_ark) return false;
+            ClearAnchor();
+            // It stops where it is (the stop stands here) and its target is spent: the next leg sails on from it without
+            // anchoring there again. ContinueRoute gets it under way.
+            _anchoredAtTarget = true;
+            _ark.SetUnderway(false);
+            _holdingAtRouteEnd = true;
+            RouteEnded?.Invoke();
             return true;
         }
 
@@ -275,6 +295,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The length of the window the Ark is anchored for (0 when it is not anchored).</summary>
         public float AnchorTotal => IsAnchored ? _anchorTotal : 0f;
+
+        /// <summary>Weigh anchor now: the window ends early (the voyage's goal is met). No effect while not anchored.</summary>
+        public void WeighAnchor()
+        {
+            if (IsAnchored) _anchorUntil = Time.time;
+        }
 
         /// <summary>A party friend's anchored Ark keeps the host's window (Docs/Voyages/PARTY.md §4): it sails when the
         /// host's does. No effect while not anchored; 0 weighs anchor on the next tick.</summary>

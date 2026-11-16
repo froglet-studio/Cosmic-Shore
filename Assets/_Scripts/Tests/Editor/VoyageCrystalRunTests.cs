@@ -29,10 +29,11 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(t, "voyage_slice.json has no " + RaidId);
             Assert.IsTrue(t.Always);
             Assert.IsTrue(t.CountsUnderway);
-            Assert.AreEqual(20f, t.Goal);
+            Assert.AreEqual(50f, t.Goal);
             Assert.AreEqual(4, t.Cells);
             CollectionAssert.AreEqual(new[] { false, true, true, true }, t.HostileCells);
-            Assert.AreEqual(0.4f, t.BreachHull, 1e-4f);
+            // Below the leak line (30%) the hold leaks before the Ark falls, so the breach sits under it.
+            Assert.AreEqual(0.1f, t.BreachHull, 1e-4f);
             Assert.AreEqual(10f, t.VentureGoal);
             Assert.AreEqual(1, t.VentureCells);
         }
@@ -44,7 +45,7 @@ namespace CosmicShore.Tests
             var state = VoyageRules.NewGalaxy(content, Domains.Jade);
             var job = Raid(state, content);
             Assert.IsNotNull(job, "the board offers no Crystal Run");
-            Assert.AreEqual(20f, job.Goal);
+            Assert.AreEqual(50f, job.Goal);
             Assert.AreEqual(4, job.Cells);
             Assert.AreEqual(0, job.Venture);
             Assert.IsTrue(job.CountsUnderway);
@@ -138,7 +139,7 @@ namespace CosmicShore.Tests
             var next = VoyageRaid.Venture(state, content, job);
             Assert.IsNotNull(next, "nowhere further to venture");
             Assert.AreEqual(1, next.Venture);
-            Assert.AreEqual(30f, next.Goal);
+            Assert.AreEqual(60f, next.Goal);
             Assert.AreEqual(5, next.Cells);
             Assert.AreEqual(state.At, next.From);
         }
@@ -327,6 +328,30 @@ namespace CosmicShore.Tests
         // ── P1 and P6 (Shombith, 2026-11-16): the raid window and carried crystals ──
 
         [Test]
+        public void VoyageRecord_KeepsEveryLegsSeats()
+        {
+            // The docked board reads the whole voyage: the raid leg's count must survive the way home's fresh leg.
+            var voyage = new VoyageRaidTally();
+            var leg = new VoyageRaidTally();
+            leg.Add("you", Element.Mass);
+            leg.Add("you", Element.Space);
+            leg.Kill("you", nearArk: true);
+            leg.Carry("you", Element.Time);
+            voyage.Absorb(leg);
+            leg.Clear();
+            leg.Add("you", Element.Mass);
+            voyage.Absorb(leg);
+            var you = voyage.SeatOf("you");
+            Assert.AreEqual(3, you.Total);
+            Assert.AreEqual(2, you.Crystals[(int)Element.Mass]);
+            Assert.AreEqual(1, you.Kills);
+            Assert.AreEqual(1, you.Guarded);
+            Assert.AreEqual(0, voyage.CarriedTotal, "unbanked crystals never reach the voyage record");
+            voyage.Absorb(voyage);
+            Assert.AreEqual(3, voyage.Total, "absorbing itself changes nothing");
+        }
+
+        [Test]
         public void CarriedCrystals_CountOnlyOnceBanked()
         {
             var tally = new VoyageRaidTally();
@@ -373,6 +398,53 @@ namespace CosmicShore.Tests
             lines.ObjectiveStripCarried = string.Empty;
             o.Assault = ArkAssaultPhase.None;
             Assert.AreEqual((string.Empty, false), VoyageObjectiveText.StripAction(lines, o), "an empty line shows nothing");
+        }
+
+        [Test]
+        public void Leak_TakesOneBankedCrystal_FromTheRichestSeat_NeverCarried()
+        {
+            var tally = new VoyageRaidTally();
+            tally.Add("Ana", Element.Mass);
+            tally.Add("Ana", Element.Mass);
+            tally.Add("Ana", Element.Time);
+            tally.Add("Bo", Element.Space);
+            tally.Carry("Bo", Element.Charge);
+            Assert.AreEqual(Element.Mass, tally.Leak());
+            Assert.AreEqual(3, tally.Total);
+            Assert.AreEqual(1, tally.SeatOf("Ana").Crystals[(int)Element.Mass]);
+            tally.Leak();
+            tally.Leak();
+            tally.Leak();
+            Assert.AreEqual(0, tally.Total, "every banked crystal leaked");
+            Assert.AreEqual(Element.None, tally.Leak(), "nothing banked: nothing to lose");
+            Assert.AreEqual(1, tally.CarriedBy("Bo"), "a carried crystal is not in the hold");
+        }
+
+        [Test]
+        public void LeakOwed_TakesTheElementOwedMost()
+        {
+            var state = new VoyageState();
+            VoyageRaid.Owe(state, Element.Time, 2);
+            VoyageRaid.Owe(state, Element.Space, 5);
+            Assert.AreEqual(Element.Space, state.LeakOwed());
+            Assert.AreEqual(4, state.OwedOf(Element.Space));
+            Assert.AreEqual(Element.None, new VoyageState().LeakOwed());
+        }
+
+        [Test]
+        public void StripAction_LeakComesBeforeTheWindow_AndCompleteAfterTheGoal()
+        {
+            var lines = new VoyageLines();
+            var o = new VoyageObjective { Goal = VoyageObjective.Kind.CrystalRun, Target = 50, Done = 50, Hull = 0.72f, CanComplete = true };
+            Assert.AreEqual(("Goal met. Pause to complete and set sail.", false), VoyageObjectiveText.StripAction(lines, o));
+            Assert.AreEqual("Ark hull 72%", VoyageObjectiveText.HullLine(lines, o));
+            o.Leaking = true;
+            o.LeakLine = 0.3f;
+            o.Anchored = true;
+            Assert.AreEqual(("Hull below 30%: the hold is losing crystals.", true), VoyageObjectiveText.StripAction(lines, o));
+            var home = new VoyageObjective { Goal = VoyageObjective.Kind.SailingHome, Leaking = true, LeakLine = 0.3f, Hull = 0.2f };
+            Assert.IsTrue(VoyageObjectiveText.StripAction(lines, home).threat, "the way home says the hold is leaking");
+            Assert.AreEqual(string.Empty, VoyageObjectiveText.HullLine(lines, home), "the way home's figure is the hull already");
         }
     }
 }

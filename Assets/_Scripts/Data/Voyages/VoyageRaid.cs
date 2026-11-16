@@ -285,6 +285,30 @@ namespace CosmicShore.Data
             return lost;
         }
 
+        /// <summary>
+        /// One banked crystal lost from the hold (the Ark's hull is below its leak line, Shombith 2026-11-16): taken from
+        /// the seat with the most banked, of that seat's most plentiful element, so no seat is emptied first by order.
+        /// Returns the element lost, or <see cref="Element.None"/> when nothing is banked.
+        /// </summary>
+        public Element Leak()
+        {
+            Seat most = null;
+            int mostTotal = 0;
+            foreach (var s in Seats)
+            {
+                int t = s?.Total ?? 0;
+                if (t > mostTotal) { most = s; mostTotal = t; }
+            }
+            if (most == null) return Element.None;
+            var best = Element.None;
+            int bestCount = 0;
+            foreach (var e in VoyageRaid.Elements)
+                if (most.Crystals[(int)e] > bestCount) { best = e; bestCount = most.Crystals[(int)e]; }
+            if (best == Element.None) return Element.None;
+            most.Crystals[(int)best]--;
+            return best;
+        }
+
         /// <summary>What <paramref name="playerName"/> carries unbanked (0 for a seat never seen).</summary>
         public int CarriedBy(string playerName) => Find(playerName)?.CarriedTotal ?? 0;
 
@@ -336,6 +360,23 @@ namespace CosmicShore.Data
         }
 
         public void Clear() => Seats.Clear();
+
+        /// <summary>Adds what <paramref name="other"/> holds (banked crystals, kills, guarded) to this tally, seat by seat:
+        /// a voyage's record across its legs. Carried crystals are never added (they are lost unbanked at a stop).</summary>
+        public void Absorb(VoyageRaidTally other)
+        {
+            if (other == null || ReferenceEquals(other, this)) return;
+            foreach (var s in other.Seats)
+            {
+                if (s == null || string.IsNullOrEmpty(s.PlayerName)) continue;
+                var seat = SeatOf(s.PlayerName);
+                if (s.Vessel != 0) seat.Vessel = s.Vessel;
+                for (int e = 0; e < seat.Crystals.Length && s.Crystals != null && e < s.Crystals.Length; e++)
+                    seat.Crystals[e] += s.Crystals[e];
+                seat.Kills += s.Kills;
+                seat.Guarded += s.Guarded;
+            }
+        }
 
         /// <summary>A deep copy of every seat (the host's count, sent to the party).</summary>
         public List<Seat> Snapshot()

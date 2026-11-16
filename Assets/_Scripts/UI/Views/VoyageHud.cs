@@ -120,7 +120,7 @@ namespace CosmicShore.UI
         VoyageLines _lines;
 
         CanvasGroup _boxGroup;
-        TMP_Text _title, _figure, _place, _placeRight, _action;
+        TMP_Text _title, _figure, _place, _placeRight, _action, _hull;
         RectTransform _hullBar, _breach, _route, _flowers;
         readonly Dictionary<Element, TMP_Text> _split = new();
         int _routeCells = -1;
@@ -169,6 +169,9 @@ namespace CosmicShore.UI
 
             // The hull bar and its breach line.
             (_hullBar, _breach) = VoyageHudColors.Bar(_kit, box, 8f, breach: true);
+            // The Ark's hull in words, under its bar (Shombith, 2026-11-16: "the health of the ark should be shown on the
+            // left too"): a Crystal Run's figure is its count, so its hull gets a line of its own.
+            _hull = _kit.Text(box, 13, VoyageHudColors.Second, TextAlignmentOptions.Left);
 
             // Line 3: where the Ark is, then the route's dots (or a Crystal Run's flowers, then where it is).
             var mid = VoyageKit.Node("Where", box);
@@ -243,6 +246,10 @@ namespace CosmicShore.UI
 
             VoyageHudColors.SetFill(_hullBar, o.Hull);
             VoyageHudColors.SetBreach(_breach, o.Breach);
+            string hull = VoyageObjectiveText.HullLine(_lines, o);
+            _hull.gameObject.SetActive(!string.IsNullOrEmpty(hull));
+            VoyageKit.Set(_hull, hull);
+            _hull.color = o.Leaking ? VoyageHudColors.Threat : VoyageHudColors.Second;
 
             string where = VoyageObjectiveText.Place(_lines, o);
             _flowers.gameObject.SetActive(raid);
@@ -326,6 +333,17 @@ namespace CosmicShore.UI
             _ => TemplateText.Fill(lines.ObjectiveStripHull, "hull", Percent(o.Hull)),
         };
 
+        /// <summary>The hull line under the bar: a Crystal Run's (its figure is the count; every other strip's figure is
+        /// the hull already).</summary>
+        public static string HullLine(VoyageLines lines, in VoyageObjective o) =>
+            o.Goal == VoyageObjective.Kind.CrystalRun
+                ? TemplateText.Fill(lines.ObjectiveStripArkHull, "hull", Percent(o.Hull))
+                : string.Empty;
+
+        /// <summary>The hold is leaking: the line that says so, or empty.</summary>
+        static string LeakLine(VoyageLines lines, in VoyageObjective o) =>
+            o.Leaking ? TemplateText.Fill(lines.ObjectiveStripLeaking, "line", Percent(o.LeakLine)) : string.Empty;
+
         /// <summary>Where the Ark is and whether it is hostile ("Scarab Reef · hostile", "Cell 2 · hostile").</summary>
         public static string Place(VoyageLines lines, in VoyageObjective o)
         {
@@ -349,13 +367,22 @@ namespace CosmicShore.UI
                 // carries unbanked. The place line already says hostile or calm; otherwise only the Ark's danger or a met
                 // goal earns a line.
                 if (o.Assault != ArkAssaultPhase.None) return action;
+                string leak = LeakLine(lines, o);
+                if (!string.IsNullOrEmpty(leak)) return (leak, true);
                 if (o.Anchored && !string.IsNullOrEmpty(lines.ObjectiveStripAnchor))
                     return (TemplateText.Fill(lines.ObjectiveStripAnchor, "time", VoyageHudColors.Clock(o.AnchorSeconds)),
                         o.AnchorClosing);
                 if (o.Carried > 0 && !string.IsNullOrEmpty(lines.ObjectiveStripCarried))
                     return (TemplateText.Fill(lines.ObjectiveStripCarried, "count", o.Carried.ToString()), false);
+                if (o.CanComplete && !string.IsNullOrEmpty(lines.ObjectiveStripComplete))
+                    return (lines.ObjectiveStripComplete, false);
                 return action.line == lines.ObjectiveHostile || action.line == lines.ObjectiveCalm
                     ? (string.Empty, false) : action;
+            }
+            if (o.Goal == VoyageObjective.Kind.SailingHome && o.Assault != ArkAssaultPhase.Active)
+            {
+                string leak = LeakLine(lines, o);
+                if (!string.IsNullOrEmpty(leak)) return (leak, true);
             }
             if (o.Goal == VoyageObjective.Kind.SailingHome && !action.threat)
             {
