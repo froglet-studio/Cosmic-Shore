@@ -86,7 +86,28 @@ count were recorded around each run: no change, no import, in any of the three.
   unchanged. Held by `OfflineSessionTests.EnsurePartySession_WhileThePresenceJoinIsStillRunning_StartsNoHost`.
   Checked live: a boot that again logged "Relay session not ready (attempt 1/3)" refused no transition and was
   `role=host state=InParty` 38 s after Play. No B number assigned (B48 is taken twice; Yash's call).
-- Not fixed: why the presence join is slow on a repeated Play (`Still listed in <lobby> from an earlier join or Play
+- **The boot's party start, timed (2026-11-17, two solo Plays 70 s apart, Party and Boot log channels on, after the
+  fix).** Neither had a stale membership, and both were still slow:
+
+  | Step | Boot A | Boot B |
+  |---|---|---|
+  | Presence query (no lobby found) | 0.9 s | 0.8 s |
+  | Presence lobby create | 5.8 s | 5.2 s |
+  | Settle 1.5 s + converge query, inside the join | 2.6 s | 1.9 s |
+  | **Presence join, total** | **9.4 s** | **7.9 s** |
+  | Party session create (Relay) | 17.0 s: `request_rate_limited` three times, then 8 s | 8.9 s: rate-limited once |
+  | **Sign-in to `InParty`** | **26.4 s** | **17.3 s** |
+
+  The boot waits 15 s per attempt for the Relay host, counted from before the presence join ends, so "Relay session
+  not ready (attempt 1/3)" is the ordinary case on this machine, not an exception (boot A and the live check both
+  logged it). `party:create` is rate-limited on every boot measured: it follows the presence create, a property
+  save (`ugs: attempt 1 failed (RateLimited)` 0.3 s after the join) and the converge queries at +2 s and +7 s.
+  Which UGS limit it hits (lobby create, a per-player total, or Relay) was not established.
+- Not changed, for whoever owns the request discipline (Shombith's UGS layer; a design choice, not a bug fix):
+  (a) the settle and converge inside `JoinOrCreateAsync` repeat what the converges at +2 s and +7 s do, and cost
+  about 2 s and one query on the critical path; (b) the party create could start before or beside the presence
+  join; (c) the first property save could wait until the party session exists.
+- Not reproduced: why the presence join is slow on a repeated Play (`Still listed in <lobby> from an earlier join or Play
   - leaving it and joining again`, then the converge join failing as "already a member"). The boot now waits for it
   instead of racing it; a join slower than the boot's three 15 s waits ends in the offline host.
 
