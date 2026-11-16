@@ -5,6 +5,20 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
+    /// A game mode's coach for the AI's sword hand (<see cref="SwordfishSwordAutopilot.Coach"/>). Asked every frame
+    /// before the hand's own decisions; while it answers true it owns the trigger mirrors that frame, and the hand's own
+    /// stroke / combo / energize choice waits. It writes nothing itself: the hand writes what it returns, through the
+    /// same mirrors a pilot's fingers do, so the AI still acts through input only and the vessel's sword code is
+    /// unchanged. Spearline's (<c>SpearlineController.SwordCoach</c>) holds the stroke that cuts the seal open.
+    /// </summary>
+    public interface ISwordfishSwordCoach
+    {
+        /// <summary>True while the coach holds the triggers this frame (<paramref name="left"/>,
+        /// <paramref name="right"/> in 0..1).</summary>
+        bool TryHold(Transform ship, out float left, out float right);
+    }
+
+    /// <summary>
     /// The AI's sword hand. An autopiloted Rhino used to fly with its blade parked: the sword is
     /// posed by the triggers and nothing in <see cref="AIPilot"/> writes triggers, so an AI Rhino
     /// never swung, never energized, and therefore never popped a super-shield or laid an
@@ -99,6 +113,10 @@ namespace CosmicShore.Gameplay
         /// them through an autopilot instead of dropping them.</summary>
         public bool DrivesTriggers => _driving;
 
+        /// <summary>A mode's coach, asked first every frame (<see cref="ISwordfishSwordCoach"/>). Set by the mode
+        /// when it arms the AI; null (the default) leaves the hand to its own decisions.</summary>
+        public ISwordfishSwordCoach Coach { get; set; }
+
         void Awake()
         {
             if (!vesselStatus) TryGetComponent(out vesselStatus);
@@ -120,6 +138,16 @@ namespace CosmicShore.Gameplay
 
             _driving = true;
             float now = Time.time;
+            if (Coach != null && Coach.TryHold(Status.ShipTransform, out float coachLeft, out float coachRight))
+            {
+                // The coach's frame: the hand's own intent is dropped, so it picks afresh once the coach lets go.
+                _intent = Intent.Rest;
+                _comboPressed = false;
+                _nextThink = now + thinkSeconds;
+                input.LeftTriggerAnalog = Mathf.Clamp01(coachLeft);
+                input.RightTriggerAnalog = Mathf.Clamp01(coachRight);
+                return;
+            }
             if (now >= _nextThink)
             {
                 _nextThink = now + thinkSeconds;

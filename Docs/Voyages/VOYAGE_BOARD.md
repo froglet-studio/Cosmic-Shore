@@ -233,6 +233,40 @@ hypersea ecology regions that are represented in the sea" and "the cellular leve
   - Still on the hexagons: courses are routed and timed on `HyperSea.CellCentre`, a cell card's name and berth use
     the hexagon under its nucleus, and the ecology regions' names, rings and the board's slice buttons are not ported.
 
+## 4d. The cells as a wet foam (Shombith, 2026-11-13)
+
+Shombith took over Voyages (lane `voyages`, owner Shombith) and asked for the zoomed-in cells to pack "in a Kelvin foam
+BCC structure" with "unevenness and inconsistency amongst cells" so it reads as genuine; his reference is a photo of
+dry soap foam. Three mockup rounds (https://claude.ai/artifact/LW2rKkQ4UThHhBUSjhiuMY) and a full-map mockup
+(https://claude.ai/artifact/NmugMCe8ZHoH6mYXXfGYpZ) settled the look built into `deepzoom/cells.js`:
+
+- **The packing**: still the BCC lattice anchored on the Heart, now loosened. Every lattice point's cell is hashed from
+  its indices (`sitesOf(i, j, k, o)`): its nucleus drifts off the point (0.12 of a cell, sigma), it is fuller or emptier
+  than its neighbours (a weight: 0.2 spread plus a smooth field), and where a second smooth field runs high the point
+  splits into a knot of 2, 4 or 6 small cells (`FOAM`). The Heart's point never drifts or splits. A cell is the power
+  cell of its nucleus (the space whose weighted distance to it is least), so it stays a convex polyhedron and
+  `cellAt` stays a lookup over the 54 nearest lattice points. No settling pass runs on the map (it would need the
+  whole galaxy); the mockup's two passes are why it looks a little more even.
+- **The look at cell zoom** (above 40 px a cell): the liquid between cells pulls each outline in and rounds its
+  corners (`wetOutline`, wetness 0.5), so cells read rounder than flat-faced octagons and squares, and slivers the
+  slice only grazes disappear into the liquid. Each cell is a blurred glow in its sea's colour with a lit rim; the
+  cells 5 and 10 ly above and below the slice show through out of focus; cosmic snow drifts in the cytoplasm; each
+  cell's own membrane is a thin line, so neighbours show as a pair with the liquid between.
+- **The nucleus** now sits at its cell's centroid, sized by its cell (never more than 0.32 of its radius), and is
+  drawn as the game's `Nucleus.prefab` with `CageMaterial`: a white translucent sphere in a cage with deep-blue edges
+  (it was pale warm before). Above or below the slice it shows as a soft haze.
+- **In the game (the port, 2026-11-13).** `HyperSeaCells.cs` builds the same foam (hashed sites, knots, power cells,
+  wet outline) and matches `cells_golden.js` to 1e-9 on every line `HyperSeaCellsTests` checks (cell lookups, sections
+  with each nucleus's middle and radius, the slice's 290 crossings, the wet outline, a knot sharing its lattice point;
+  checked under .NET against the page, not yet in Unity). `VoyageMapSky` and `VoyageEdgeGraphic` draw each cell's
+  rounded outline over the liquid, dark with its sea (read at its lattice point) and brighter toward its nucleus, each
+  cell's own thin membrane, and the nucleus at the cell's middle at its own size; `VoyageCellDraw`'s sprite is the
+  game-look caged nucleus, its five blues traced into every colour set (`colour_trace.py`). The board's blur layers,
+  ghost slices and cytoplasm snow are not in the game mesh. Below 40 px a cell the board's pixel pass draws the new
+  shapes without the wet look.
+- The committed board is no longer byte for byte the Voyage Board artifact's version 11; that artifact was not
+  republished.
+
 ## 5. Open decisions (Garrett)
 
 1. Tumult 2,300 ly from the galactic centre toward Sol (23,900 ly from Sol).

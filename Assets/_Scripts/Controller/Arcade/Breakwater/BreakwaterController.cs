@@ -34,8 +34,9 @@ namespace CosmicShore.Gameplay
     {
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
-                 "the lead off. Sparrow 2: the Sparrow lead.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Sparrow, 2.0f) };
+                 "the lead off. Sparrow 1 (was 2, 2026-11-16): at 2 the lead spun the hull at its 35 u/s base speed and it " +
+                 "circled stations for minutes (BREAKWATER.md, AI: the nose lead).")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Sparrow, 1.0f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 

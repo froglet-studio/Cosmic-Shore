@@ -23263,7 +23263,7 @@ MonoBehaviour:
   weeklyDock: {fileID: 6840435652906663}
   questDock: {fileID: 514050394889709973}
   noBestText: None yet
-  readyToClaimText: Ready to claim in Voyage
+  readyToClaimText: Ready to claim in Quests
   nextGoalTemplate: 'Next: {goal}'
   allUnlockedText: Every intensity unlocked
   meterTemplate: Intensity {level} of {max}
@@ -30276,18 +30276,18 @@ MonoBehaviour:
   TargetAlpha: 0
   targetReachedEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 247230621
+      Data2: 1075866072
+      Data3: -1989636704
+      Data4: 427111795
+    Path: event:/SFX/Oneshots/Menu/SmallReward
   onTriggerEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -2063081162
+      Data2: 1129384062
+      Data3: -2054690132
+      Data4: -1127245577
+    Path: event:/SFX/Oneshots/Menu/RedeemTicket
   AudioVolume: 0.1
   TargetPulseMultiplier: {x: 1.25, y: 1.25}
   PulseDuration: 0.25
@@ -37021,11 +37021,11 @@ MonoBehaviour:
   displayNameDefaultText: 
   typingAudioEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 724249746
+      Data2: 1213064519
+      Data3: 1634220168
+      Data4: -897979471
+    Path: event:/SFX/Oneshots/Menu/Option Click
   FocusDisplayNameInputFieldEnabled: 0
   ShowEmailLogin: 0
   emailLoginResultMessage: {fileID: 0}
@@ -61805,18 +61805,18 @@ MonoBehaviour:
   TargetAlpha: 0
   targetReachedEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 247230621
+      Data2: 1075866072
+      Data3: -1989636704
+      Data4: 427111795
+    Path: event:/SFX/Oneshots/Menu/SmallReward
   onTriggerEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -2063081162
+      Data2: 1129384062
+      Data3: -2054690132
+      Data4: -1127245577
+    Path: event:/SFX/Oneshots/Menu/RedeemTicket
   AudioVolume: 0.1
   TargetPulseMultiplier: {x: 1.25, y: 1.25}
   PulseDuration: 0.25
@@ -86354,18 +86354,18 @@ MonoBehaviour:
   TargetAlpha: 0
   targetReachedEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 247230621
+      Data2: 1075866072
+      Data3: -1989636704
+      Data4: 427111795
+    Path: event:/SFX/Oneshots/Menu/SmallReward
   onTriggerEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -2063081162
+      Data2: 1129384062
+      Data3: -2054690132
+      Data4: -1127245577
+    Path: event:/SFX/Oneshots/Menu/RedeemTicket
   AudioVolume: 0.1
   TargetPulseMultiplier: {x: 1.25, y: 1.25}
   PulseDuration: 0.25

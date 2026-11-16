@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Hedgerow
+  m_EditorClassIdentifier:
+  Mode: 94
+  Notes: 'The bare nucleus cell at each intensity. OPEN-ENDED - the field is laid by HedgerowController at match start,
+    so a preview has none - it teaches the stop. Vessel pinned to Serpent(7).'
+  PreviewCell: {fileID: 11400000, guid: ada116d09fd5759e03fe7b0cafcee6dc, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: ada116d09fd5759e03fe7b0cafcee6dc, type: 2}
+  - {fileID: 11400000, guid: 7821b0aa1fc98018e3a3424bfe8e6a54, type: 2}
+  - {fileID: 11400000, guid: 5089bdcd2c25055fd2ecfaf212f8e2c1, type: 2}
+  - {fileID: 11400000, guid: f8308e153595b5de05a9e3860a1a6dc9, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 7
+  ObjectiveText: Stop dead short of a hedge and your wall eats along it - everything standing in your colour at the whistle is score
+  ObjectiveMetric: 12
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 450
+  SpawnRingRadiusFloorByIntensity:
+  - 450
+  - 450
+  - 450
+  - 450
+  SpawnFormation: 0
+  SpawnPoints: []

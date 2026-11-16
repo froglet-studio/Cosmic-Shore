@@ -106,6 +106,40 @@ namespace CosmicShore.Core
         /// </summary>
         volatile bool _steamAttemptInFlight;
 
+        /// <summary>The facade every container of this Play hands out. See <see cref="Shared"/>.</summary>
+        static AuthenticationServiceFacade s_shared;
+
+        /// <summary>
+        /// The ONE facade of this Play, however many DI containers ask for it. Bindings resolve through here,
+        /// never through the constructor.
+        ///
+        /// <para>
+        /// AppManager's bindings are installed twice: into Reflex's root container (AppManager.prefab is a root
+        /// scope, installed from the prefab asset) and into the Bootstrap scene's container (the prefab's instance
+        /// in Bootstrap.unity carries a ContainerScope). A "singleton" factory is single per container, so
+        /// AppManager got one facade and every later scene got another. AppManager's facade started the boot
+        /// sign-in; the Authentication scene's facade had no <see cref="_signInTask"/> to join, so when it asked
+        /// while that sign-in was still in flight it issued a second <c>SignInAnonymouslyAsync</c>. The SDK
+        /// refused it ("The player is already signing in") and the facade stamped Failed over a sign-in that
+        /// then succeeded. When the first sign-in had already landed, the second facade raised OnSignedIn a
+        /// second time instead (its own success latch was clear). Docs/Multiplayer/BUGS.md, "already signing in".
+        /// </para>
+        /// </summary>
+        public static AuthenticationServiceFacade Shared(AuthenticationDataVariable authenticationDataVariable, bool allowLog)
+        {
+            if (s_shared == null || s_shared._authenticationDataVariable != authenticationDataVariable)
+                s_shared = new AuthenticationServiceFacade(authenticationDataVariable, allowLog);
+
+            return s_shared;
+        }
+
+        /// <summary>A new Play builds its own facade (the project enters Play without a domain reload).</summary>
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        internal static void ResetShared() => s_shared = null;
+
+        /// <summary>True while the one shared sign-in is running. A caller that sees this joins it.</summary>
+        internal bool SignInInFlight => _signInTask is { IsCompleted: false };
+
         public AuthenticationServiceFacade(AuthenticationDataVariable authenticationDataVariable, bool allowLog)
         {
             _authenticationDataVariable = authenticationDataVariable;
@@ -252,7 +286,7 @@ namespace CosmicShore.Core
         /// </summary>
         Task SharedSignInAsync()
         {
-            if (_signInTask is { IsCompleted: false })
+            if (SignInInFlight)
                 return _signInTask;
 
             _signInTask = SignInAnonymouslyCore();
@@ -343,7 +377,7 @@ namespace CosmicShore.Core
                 return true;
             }
 
-            bool signInInFlight = _signInTask is { IsCompleted: false };
+            bool signInInFlight = SignInInFlight;
             if (!signInInFlight && !svc.SessionTokenExists)
                 return false;
 
@@ -386,8 +420,12 @@ namespace CosmicShore.Core
         public void ResetStartupState()
         {
             _startupAttempted = false;
-            _initTask = null;
-            _signInTask = null;
+
+            // Only FINISHED attempts are forgotten. An attempt still in flight stays joinable: forgetting it
+            // would let the next caller start a second SDK sign-in beside it, which the SDK refuses
+            // ("already signing in") and which was then reported as a failed sign-in.
+            if (_initTask is { IsCompleted: true }) _initTask = null;
+            if (!SignInInFlight) _signInTask = null;
         }
 
         /// <summary>

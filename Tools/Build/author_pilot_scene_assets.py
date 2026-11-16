@@ -11,10 +11,12 @@ the ark"). This script OWNS:
   Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset   the PilotSceneCatalogSO the Ark's Pilots tab and the page read
   Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset.meta
 
-WHICH SCENES. One per CALLSIGN (author_callsign_assets.CALLSIGNS), because a crew holds one pilot per callsign and a
-callsign's art is its first painted pilot (Docs/Pilots/PORTRAITS.md §6, decision 1). The other painted pilots are in
-nobody's crew, so their scenes stay in Docs/Pilots/art/scenes/ (their close-ups are avatar choices). A callsign whose
-scene is not painted is left out, and its page shows the words alone.
+WHICH SCENES. Every painted pilot's: one per person of Docs/Pilots/art/scenes/people.json, keyed by the scene's word
+(Garrett, 2026-11-16: "lets get all 50 into the game. it is ok if we duplicate callsign everything else will be the
+different"). Each person names the callsign they carry; eighteen carry their own word (ENSIGN is Veliane Crestward),
+the other thirty-two share a callsign with one of those. The same people are written into PaintedCrew.asset
+(PaintedCrewSO), which the account inventory reads to grant and repaint the crew. A person without a scene, or a scene
+without a person, is a fault, not a state.
 
 WHY UNDER Resources, AND NAMED BY PATH. A scene is 1536x864. Referenced from a prefab, all of them would load with
 the menu; named by path (the catalog's `resource`), the page loads the one it shows and lets it go again
@@ -134,15 +136,27 @@ def face_rect(close, size):
     return left / w, 1 - bottom / h, (right - left) / w, (bottom - top) / h
 
 
-def rows(manifest=None):
-    """[(value, word, scene)] for every callsign whose scene is painted, in callsign order."""
-    scenes = (manifest if manifest is not None else json.loads(read(MANIFEST)))["scenes"]
-    return [(value, word, scenes[word]) for value, word, _ in CALLSIGNS if word in scenes]
+CALLSIGN_VALUE = {word: value for value, word, _ in CALLSIGNS}
 
 
-def unpainted(manifest=None):
+def display_name(person):
+    """PilotRecord.DisplayName: "Given Family", or the given name alone."""
+    return f"{person['given']} {person['family']}" if person.get("family") else person["given"]
+
+
+def rows(manifest=None, people=None):
+    """[(callsign value, key, scene)] for every painted person, in people.json's order (the order a crew joins in)."""
     scenes = (manifest if manifest is not None else json.loads(read(MANIFEST)))["scenes"]
-    return [word for _, word, _ in CALLSIGNS if word not in scenes]
+    people = (people if people is not None else json.loads(read(PEOPLE)))["people"]
+    out = []
+    for key, person in people.items():
+        assert key in scenes, f"{PEOPLE} has {key}, whom no scene in {MANIFEST} paints"
+        word = person.get("callsign")
+        assert word in CALLSIGN_VALUE, f"{key} carries '{word}', which is not a callsign"
+        out.append((CALLSIGN_VALUE[word], key, scenes[key]))
+    strangers = [key for key in scenes if key not in people]
+    assert not strangers, f"{', '.join(strangers)}: painted, but {PEOPLE} has no person for them"
+    return out
 
 
 def scene_path(word):
@@ -268,7 +282,7 @@ def asset_meta(guid):
 
 
 def catalog_text(entries, script_guid):
-    """entries: [(value, painted name, resource, close-up guid, (x, y, width, height), side)]."""
+    """entries: [(key, callsign value, painted name, resource, close-up guid, (x, y, width, height), side)]."""
     lines = [
         "%YAML 1.1",
         "%TAG !u! tag:unity3d.com,2011:",
@@ -286,9 +300,10 @@ def catalog_text(entries, script_guid):
         "  m_EditorClassIdentifier: ",
         "  scenes:" if entries else "  scenes: []",
     ]
-    for value, painted, resource, close_up, (x, y, w, h), side in entries:
+    for key, value, painted, resource, close_up, (x, y, w, h), side in entries:
         lines += [
-            f"  - callsign: {value}",
+            f"  - key: {key}",
+            f"    callsign: {value}",
             f"    painted: {painted}",
             f"    resource: {resource}",
             f"    closeUp: {{fileID: 21300000, guid: {close_up}, type: 3}}",
@@ -321,7 +336,7 @@ def entry_of(value, word, scene, source):
     avatar_meta = AVATAR.format(word=word) + ".meta"
     assert os.path.exists(os.path.join(ROOT, avatar_meta)), \
         f"{avatar_meta} is missing (run Tools/Build/author_pilot_avatar_assets.py)"
-    return (value, name, f"{RESOURCE_DIR}/{word}", guid_of(avatar_meta), face_rect(scene["close"], size),
+    return (word, value, name, f"{RESOURCE_DIR}/{word}", guid_of(avatar_meta), face_rect(scene["close"], size),
             SIDES[scene["side"]])
 
 
@@ -346,28 +361,32 @@ PRINTABLE = re.compile(r"^[ -~]*$")
 
 
 def crew_rows(people=None, manifest=None):
-    """[(callsign value, person)] for every painted pilot whose scene is in the game, with each fault named."""
-    people = (people if people is not None else json.loads(read(PEOPLE)))["people"]
+    """[(callsign value, key, person)] for every painted pilot, in people.json's order, with each fault named."""
+    people = people if people is not None else json.loads(read(PEOPLE))
     species, types, factions = enum_values(SPECIES_CS, "AnimalSpecies"), enum_values(FACTION_TYPES_CS, "FactionType"), founding_names()
     out = []
-    for value, word, scene in rows(manifest):
-        p = people.get(word)
-        assert p, f"{word}'s scene is in the game but {PEOPLE} has no person for it: its page would show a stranger"
-        name = f"{p['given']} {p['family']}"
-        assert name == scene.get("name"), f"{word}: {PEOPLE} names {name}, the scene shows {scene.get('name')}"
+    for value, key, scene in rows(manifest, people):
+        p = people["people"][key]
+        name = display_name(p)
+        assert name == scene.get("name"), f"{key}: {PEOPLE} names {name}, the scene shows {scene.get('name')}"
+        assert isinstance(p.get("starter"), bool), f"{key}: 'starter' must be true or false"
         one, two = p["species"]
         for animal in (one, two):
-            assert animal in species and species[animal] > 0, f"{word}: '{animal}' is not an AnimalSpecies"
-        assert one != two, f"{word}: the two animals are the same"
+            assert animal in species and species[animal] > 0, f"{key}: '{animal}' is not an AnimalSpecies"
+        assert one != two, f"{key}: the two animals are the same"
         kind, faction = p["faction"]
-        assert kind in types and types[kind] > 0, f"{word}: '{kind}' is not a FactionType"
-        assert faction in factions.get(kind, []), f"{word}: '{faction}' is not one of FactionCatalog's {kind} factions"
+        assert kind in types and types[kind] > 0, f"{key}: '{kind}' is not a FactionType"
+        assert faction in factions.get(kind, []), f"{key}: '{faction}' is not one of FactionCatalog's {kind} factions"
         story = p["story"]
-        assert story and all(par.strip() == par and par for par in story), f"{word}: an empty or padded paragraph"
+        assert story and all(par.strip() == par and par for par in story), f"{key}: an empty or padded paragraph"
         for text in (p["given"], p["family"], p["home"], faction, *story):
-            assert PRINTABLE.match(text), f"{word}: '{text}' has a character the UI font cannot draw"
-        out.append((value, dict(given=p["given"], family=p["family"], one=species[one], two=species[two],
-                                type=types[kind], faction=faction, home=p["home"], story="\n\n".join(story))))
+            assert PRINTABLE.match(text), f"{key}: '{text}' has a character the UI font cannot draw"
+        out.append((value, key, dict(given=p["given"], family=p["family"], one=species[one], two=species[two],
+                                     type=types[kind], faction=faction, home=p["home"], starter=p["starter"],
+                                     story="\n\n".join(story))))
+    names = [display_name(people["people"][key]) for _, key, _ in out]
+    twice = sorted({n for n in names if names.count(n) > 1})
+    assert not twice, f"two painted pilots share a name: {', '.join(twice)}"
     return out
 
 
@@ -389,9 +408,11 @@ def crew_text(people, script_guid):
         "  m_EditorClassIdentifier: ",
         "  people:" if people else "  people: []",
     ]
-    for value, p in people:
+    for value, key, p in people:
         lines += [
-            f"  - callsign: {value}",
+            f"  - key: {key}",
+            f"    callsign: {value}",
+            f"    starter: {1 if p['starter'] else 0}",
             f"    given: {yaml_text(p['given'])}",
             f"    family: {yaml_text(p['family'])}",
             f"    speciesOne: {p['one']}",
@@ -467,7 +488,9 @@ def self_test():
 
     expected = outputs()
     words = [word for _, word, _ in rows()]
-    expect("today every callsign has a painted scene", len(words) == len(CALLSIGNS) and not unpainted())
+    expect("all fifty painted pilots are in the game", len(words) == 50)
+    carried = {value for value, _, _ in rows()}
+    expect("every callsign is carried by at least one painted pilot", carried == set(CALLSIGN_VALUE.values()))
     expect("one scene, one importer a callsign, plus the folder, the catalog, the crew and their metas",
            len(expected) == 2 * len(words) + 5)
 
@@ -516,6 +539,10 @@ def self_test():
             pass
 
     person_fault("a painted pilot with no person", lambda ps: ps.pop(first))
+    person_fault("a person who carries no callsign", lambda ps: ps[first].__setitem__("callsign", "KESTREL"))
+    person_fault("a starter flag that is not true or false", lambda ps: ps[first].__setitem__("starter", "yes"))
+    second = words[1]
+    person_fault("two pilots with one name", lambda ps: ps[second].update(given=ps[first]["given"], family=ps[first]["family"]))
     person_fault("a person not named as the scene names them", lambda ps: ps[first].__setitem__("given", "Someone"))
     person_fault("an animal that is not an AnimalSpecies", lambda ps: ps[first].__setitem__("species", ["Dragon", "Koi"]))
     person_fault("the same animal twice", lambda ps: ps[first].__setitem__("species", ["Koi", "Koi"]))
@@ -525,20 +552,31 @@ def self_test():
     person_fault("an empty paragraph", lambda ps: ps[first]["story"].append(""))
     person_fault("a character the UI font cannot draw", lambda ps: ps[first]["story"].__setitem__(0, "Caf\u00e9 life."))
     crew = expected[CREW].decode("utf-8")
-    expect("the crew holds one person a scene", crew.count("  - callsign: ") == len(words))
+    expect("the crew holds one person a scene", crew.count("  - key: ") == len(words))
+    expect("a callsign carried twice is written twice", crew.count(f"    callsign: {CALLSIGN_VALUE['ZODIAC']}\n")
+           == sum(1 for p in people["people"].values() if p["callsign"] == "ZODIAC") > 1)
     expect("a story keeps its paragraph breaks", "\\n\\n" in crew)
 
-    # A callsign with no painted scene is left out, not invented.
+    # A person with no scene, and a scene with no person, are faults: never a pilot without a face, never a face
+    # without a pilot.
     manifest = json.loads(read(MANIFEST))
     del manifest["scenes"][words[-1]]
-    fewer = outputs(manifest)
-    expect("an unpainted callsign has no scene, no importer and no catalog row",
-           scene_path(words[-1]) not in fewer and scene_path(words[-1]) + ".meta" not in fewer
-           and fewer[CATALOG].count(b"  - callsign: ") == len(words) - 1 and unpainted(manifest) == [words[-1]])
+    try:
+        outputs(manifest)
+        failures.append("a person with no scene was written")
+    except AssertionError:
+        pass
+    manifest = json.loads(read(MANIFEST))
+    manifest["scenes"]["Stranger"] = manifest["scenes"][words[0]]
+    try:
+        outputs(manifest)
+        failures.append("a scene with no person was written")
+    except AssertionError:
+        pass
 
     # The catalog names every scene by the path Resources.Load takes and holds the avatar's own guid.
     catalog = expected[CATALOG].decode("utf-8")
-    expect("the catalog holds one row a scene", catalog.count("  - callsign: ") == len(words))
+    expect("the catalog holds one row a scene", catalog.count("  - key: ") == len(words))
     for _, word, _ in rows():
         expect(f"{word}'s row names its scene", f"    resource: {RESOURCE_DIR}/{word}\n" in catalog)
         expect(f"{word}'s row holds its avatar", guid_of(AVATAR.format(word=word) + ".meta") in catalog)
@@ -606,8 +644,6 @@ def main(argv):
         found = problems(outputs())
         for line in found:
             print(f"DRIFT {line}")
-        for word in unpainted():
-            print(f"note: {word} has no painted scene; its page shows the words alone")
         print("check: ok" if not found
               else f"check: {len(found)} problem(s); run Tools/Build/author_pilot_scene_assets.py")
         return 1 if found else 0

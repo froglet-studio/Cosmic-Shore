@@ -76,6 +76,7 @@ namespace CosmicShore.Player
             var evalGenomes = new System.Collections.Generic.List<string>();
             int flights = 12;
             string trainOut = null, trainScenario = null;
+            string raceSpec = null, raceOut = null;
             ApplyProjectQuality();
             CosmicShore.Render.RenderQuality.FromEnvironment();
             for (int i = 0; i < args.Length; i++)
@@ -103,6 +104,8 @@ namespace CosmicShore.Player
                                 _ => TrainingHost.Mode.Train,
                             };
                         break;
+                    case "--race-judge" when i + 1 < args.Length: raceSpec = args[++i]; break;
+                    case "--race-out" when i + 1 < args.Length: raceOut = args[++i]; break;
                     case "--episodes" when i + 1 < args.Length: int.TryParse(args[++i], out trainEpisodes); break;
                     case "--train-out" when i + 1 < args.Length: trainOut = args[++i]; break;
                     case "--scenario" when i + 1 < args.Length: trainScenario = args[++i]; break;
@@ -208,6 +211,14 @@ namespace CosmicShore.Player
             try
             {
                 if (screenshot != null) shots[frames < 0 ? 180 : frames] = screenshot;
+                if (raceSpec != null)
+                {
+                    var judge = new RaceJudge(raceSpec, raceOut);
+                    // A control port alongside lets a person or agent inspect a judged race live (game_get, hierarchy).
+                    using var judgeControl = ControlServer.StartIfRequested(controlPort, script);
+                    RunHeadless(scene, frames < 0 ? int.MaxValue : frames, quiet, width, height, script, reportRender, dumps, control: judgeControl, judge: judge);
+                    return judge.Done ? judge.ExitCode : 4;
+                }
                 if (wantTrain)
                 {
                     train = new TrainingHost(trainMode, trainEpisodes, trainOut, trainScenario, trainRepeats);
@@ -285,7 +296,7 @@ namespace CosmicShore.Player
             return r.Passed ? 0 : 1;
         }
 
-        static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script, bool reportRender, System.Collections.Generic.List<string> dumps, TrainingHost train = null, ControlServer control = null)
+        static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script, bool reportRender, System.Collections.Generic.List<string> dumps, TrainingHost train = null, ControlServer control = null, RaceJudge judge = null)
         {
             Screen.width = width;
             Screen.height = height;
@@ -293,16 +304,17 @@ namespace CosmicShore.Player
             SessionReport.Log = boot.Log;
             boot.Log.Quiet = quiet;
             boot.Headless = true;
-            if (train == null) NetTestLog.Begin(boot.Log);
+            if (train == null && judge == null) NetTestLog.Begin(boot.Log);
             if (!script.IsEmpty || control != null) script.EnsureDevices();
             bool quit = false;
             if (control != null) control.Quit = () => quit = true;
             boot.Start(scene);
             train?.Install(boot.Runtime);
+            judge?.Install(boot.Runtime);
             string lastScene = SceneManager.GetActiveScene().name;
             int frameNow = 0;
             SessionReport.Frame = () => frameNow;
-            var pacer = s_realtime && train == null ? new RealtimePacer(1.0 / 60.0) : null;
+            var pacer = s_realtime && train == null && judge == null ? new RealtimePacer(1.0 / 60.0) : null;
             for (int f = 0; f < frames && !quit; f++)
             {
                 frameNow = f;
@@ -318,8 +330,15 @@ namespace CosmicShore.Player
                 SessionReport.FrameTime(tickMs); // headless: a frame is one simulation tick
                 SessionReport.SimTime(tickMs);
                 pacer?.AfterTick();
+                if (judge != null)
+                {
+                    judge.Tick(f);
+                    if (judge.Done) { frames = f + 1; break; }
+                }
                 if (train != null)
                 {
+                    // Nobody answers the first-run prompts in a training run (UnattendedBoot).
+                    if (!SceneManager.GetActiveScene().name.Contains("Menu", StringComparison.OrdinalIgnoreCase)) UnattendedBoot.Tick();
                     train.Poll(f);
                     if (train.Done) { frames = f + 1; break; }
                 }
@@ -331,7 +350,7 @@ namespace CosmicShore.Player
                 }
             }
             Console.WriteLine($"[player] {frames} frames, active scene '{lastScene}', {CosmicShore.Engine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).Length} live behaviours");
-            if (train == null) { NetTestLog.Write(quit ? "quit" : "frames done"); SessionReport.Write(quit ? "quit" : "frames done"); }
+            if (train == null && judge == null) { NetTestLog.Write(quit ? "quit" : "frames done"); SessionReport.Write(quit ? "quit" : "frames done"); }
             boot.Log.PrintSummary();
             if (reportRender) { RenderInventory.PrintNetwork(); RenderInventory.Print(); }
             foreach (var d in dumps) { if (d.StartsWith("@")) UiDump.PrintAt(d[1..]); else UiDump.Print(d); }

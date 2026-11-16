@@ -93,8 +93,10 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Element levels each HULL starts this card's match at - the platform's " +
                  "handicap dial for a card that seats several vessels. One row per hull " +
                  "(Intensity 0 = every intensity; 1-4 = that intensity only, winning over the 0 " +
-                 "row). A hull with no row starts at rest (every element level 0), which is " +
-                 "also what every single-hull card gets by leaving this empty. Published to " +
+                 "row). A card that authors ANY row owns the whole table: a hull or rung it does not " +
+                 "name starts at rest. A non-arena card that leaves this EMPTY gets the standard " +
+                 "element ladder (ElementLadder: I1 at rest, I2-I4 every hull at level 5 in the " +
+                 "game's element). Published to " +
                  "every peer by the config sync and applied in VesselController.Initialize, so " +
                  "a guest's own vessel is seeded exactly as the host's replica of it. Authored " +
                  "by the card's generator from its balance model, never by hand.")]

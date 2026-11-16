@@ -630,8 +630,9 @@ def squads_page(root, veiled=VEILED):
 # The PILOTS tab, built from Rev 99 C (Shombith picked it 2026-11-13; section 191): the crew PDA lying on the hangar's
 # workbench (the backdrop, ArkRoom.Bench). Lying down, its glass shows the last pilot read (PdaGlassImage over the
 # render's own glass corners) and PICK UP stands beside it; picked up, the backdrop holds the PDA square to the view and
-# the crew (one cell a callsign, a crew holds at most one pilot a callsign, Docs/Pilots/INVENTORY.md 3.1) or a pilot's
-# file is laid on its glass. The corners are the renders' (Docs/MenuRedesignB/rounds/r99_ark_pilots_render.py, pda_c
+# a page of the crew or a pilot's file is laid on its glass. The crew is every painted pilot for now (fifty, callsigns
+# shared, Garrett 2026-11-16) and later grows one pilot at a time, so the glass shows PILOT_CELLS at a time and steps
+# through the pages with < and > on its foot row. The corners are the renders' (Docs/MenuRedesignB/rounds/r99_ark_pilots_render.py, pda_c
 # and pda_c PDA_HELD=1), measured at 2400 x 1350 and written here at the backdrop's 1920 x 1080.
 CALLSIGNS = len(re.findall(r"^\s+\w+ = [1-9]\d*,", open(os.path.join(
     REPO, "Assets/_Scripts/Data/Enums/PilotVision.cs"), encoding="utf-8").read(), re.M))
@@ -645,6 +646,7 @@ SCREEN_GROUND_ALPHA = 0.9                           # the lit screen's ground ov
 # The ground is near-black, not the theme's navy (Shombith, 2026-11-13: "I don't like the blue background, it looks so
 # dull"): the crew's paintings carry the colour, as the pilot scenes inside the Ark do.
 SCREEN_GROUND = "SurfaceBlack"
+PILOT_CELLS = 18                                    # one page of the crew: six across, three down
 PILOT_COLS, PILOT_W, PILOT_H, PILOT_GAP = 6, 164, 212, 14
 PILOT_X = (GLASS_W - (PILOT_COLS * PILOT_W + (PILOT_COLS - 1) * PILOT_GAP)) // 2
 PILOT_Y = SCREEN_HEAD + 20                          # the grid's top left on the glass
@@ -667,7 +669,7 @@ FILE_COL_X = SCREEN_PAD + FILE_FACE + SCREEN_PAD    # the file's words column
 FILE_COL_W = GLASS_W - FILE_COL_X - SCREEN_PAD
 SCENE_CATALOG = K.meta_guid("Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset")     # author_pilot_scene_assets.py
 PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("sightTemplate", "Sees {brief}"),
-               ("countTemplate", "Pilots: {count}"),
+               ("countTemplate", "Pilots: {count}"), ("pageTemplate", "{page} / {pages}"),
                ("lastCallsignTemplate", "{callsign}"), ("lastNameTemplate", "{name}"),
                ("fileKickerTemplate", "{callsign}"), ("fileNameTemplate", "{name}"), ("fileSpeciesTemplate", "{species}"),
                ("fileFactionTemplate", "{faction} - {homeworld}"), ("fileSightCaptionTemplate", "Sight"),
@@ -683,12 +685,14 @@ def pilot_tokens():
     source = open(os.path.join(REPO, "Assets/_Scripts/UI/Elements/Ark/ArkPilotsPage.cs"), encoding="utf-8").read()
     cell = re.search(r"TemplateText\.Fill\(template,(.*?)\);", source, re.S)
     count = re.search(r"TemplateText\.Fill\(countTemplate,(.*?)\);", source, re.S)
+    page = re.search(r"TemplateText\.Fill\(pageTemplate,(.*?)\);", source, re.S)
     filed = re.search(r"FileTokens\s*=\s*\{(.*?)\};", source, re.S)
-    assert cell and count and filed, "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
-    cell, count, filed = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count, filed))
-    assert cell and count and filed, "ArkPilotsPage's filled tokens read as empty"
-    return dict({"nameTemplate": cell, "lineTemplate": cell, "sightTemplate": cell, "countTemplate": count},
-                **{f: filed for f in FILE_TEMPLATES})
+    assert cell and count and page and filed, \
+        "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
+    cell, count, page, filed = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count, page, filed))
+    assert cell and count and page and filed, "ArkPilotsPage's filled tokens read as empty"
+    return dict({"nameTemplate": cell, "lineTemplate": cell, "sightTemplate": cell, "countTemplate": count,
+                 "pageTemplate": page}, **{f: filed for f in FILE_TEMPLATES})
 
 
 PILOT_TOKENS = pilot_tokens()
@@ -793,10 +797,17 @@ def pilots_crew(screen):
           align="center")
     label(e.child(N("Pilots/Empty/Line", "Line", stretch_x(200, 200, 90, 60))),
           "Your crew appears here once your account has loaded.", "Body", "NeutralLightest", align="center", wrap=True)
-    for i in range(CALLSIGNS):
+    for i in range(PILOT_CELLS):
         pilot_card(crew, i)
-    label(crew.child(N("Pilots/Held/Screen/Crew/Hint", "Hint", TL(SCREEN_PAD, FOOT_Y + 13, 500, 18))),
+    label(crew.child(N("Pilots/Held/Screen/Crew/Hint", "Hint", TL(SCREEN_PAD, FOOT_Y + 13, 360, 18))),
           "Tap a pilot to read their file.", "BodySmall", "NeutralLightest")
+    # The crew's pages, centred on the foot row (shown only while the crew fills more than one page).
+    mid = GLASS_W // 2
+    small_button(crew, "Pilots/Held/Screen/Crew/PagePrevious", "PagePrevious", "<",
+                 TL(mid - 60 - 8 - FOOT_H, FOOT_Y, FOOT_H, FOOT_H))
+    label(crew.child(N("Pilots/Held/Screen/Crew/Page", "Page", TL(mid - 60, FOOT_Y + 10, 120, 24))), "", "Body",
+          "TextLight", align="center")
+    small_button(crew, "Pilots/Held/Screen/Crew/PageNext", "PageNext", ">", TL(mid + 60 + 8, FOOT_Y, FOOT_H, FOOT_H))
     small_button(crew, "Pilots/Held/Screen/Crew/PutDown", "PutDown", "Lay down", TR(SCREEN_PAD, FOOT_Y, 170, FOOT_H))
 
 
@@ -859,10 +870,14 @@ def pilots_page(root, veiled=VEILED):
             return ref(ctx.c(key, comp))
         return mono(go, S["pilots"],
                     f"  scenes: {K.ref(11400000, SCENE_CATALOG, 2)}\n"
-                    "  cells:\n" + refs_of(ctx, [f"Pilots/Cell{i}" for i in range(CALLSIGNS)], "chip")
-                    + "  sightLines:\n" + refs_of(ctx, [f"Pilots/Cell{i}/Sight" for i in range(CALLSIGNS)], "tmp")
+                    "  cells:\n" + refs_of(ctx, [f"Pilots/Cell{i}" for i in range(PILOT_CELLS)], "chip")
+                    + "  sightLines:\n" + refs_of(ctx, [f"Pilots/Cell{i}/Sight" for i in range(PILOT_CELLS)], "tmp")
                     + f"  emptyGroup: {r('Pilots/Empty', 'cg')}\n"
-                    f"  countText: {r('Pilots/Count', 'tmp')}\n  screenSwitcher: {{fileID: 0}}\n"
+                    f"  countText: {r('Pilots/Count', 'tmp')}\n"
+                    f"  crewPreviousButton: {r('Pilots/Held/Screen/Crew/PagePrevious', 'button')}\n"
+                    f"  crewNextButton: {r('Pilots/Held/Screen/Crew/PageNext', 'button')}\n"
+                    f"  crewPageText: {r('Pilots/Held/Screen/Crew/Page', 'tmp')}\n"
+                    "  screenSwitcher: {fileID: 0}\n"
                     f"  restGroup: {r('Pilots/Rest', 'cg')}\n  pickUpButton: {r('Pilots/Rest/Last/PickUp', 'button')}\n"
                     f"  glass: {r('Pilots/Rest/Glass', 'glass')}\n"
                     f"  lastCallsignText: {r('Pilots/Rest/Last/Callsign', 'tmp')}\n"
@@ -1530,7 +1545,8 @@ PILOTS_FIELDS = dict(emptyGroup=225, countText=TMP, restGroup=225, pickUpButton=
                      fileGroup=225, filePicture=IMG, fileKickerText=TMP, fileNameText=TMP, fileSpeciesText=TMP,
                      fileFactionText=TMP, fileSightCaptionText=TMP, fileSightText=TMP, fileStoryCaptionText=TMP,
                      fileStoryText=TMP, fileCountText=TMP, backButton=S["button"], previousButton=S["button"],
-                     nextButton=S["button"], profileButton=S["button"])
+                     nextButton=S["button"], profileButton=S["button"], crewPreviousButton=S["button"],
+                     crewNextButton=S["button"], crewPageText=TMP)
 
 
 def rect_xy(view, fid, field):
@@ -1546,11 +1562,11 @@ def validate_pilots(view, V):
         C.wired(view, page, field, want, "ArkPilotsPage")
     assert f"guid: {SCENE_CATALOG}" in page, "ArkPilotsPage reads no pilot scene catalog"
     cells = listed(page, "cells")
-    assert len(cells) == CALLSIGNS and all(i != "0" and A.kind_of(view, i)[1] == S["chip"] for i in cells), \
-        f"ArkPilotsPage.cells is not {CALLSIGNS} wired SquadPickChips (one a callsign)"
+    assert len(cells) == PILOT_CELLS and all(i != "0" and A.kind_of(view, i)[1] == S["chip"] for i in cells), \
+        f"ArkPilotsPage.cells is not {PILOT_CELLS} wired SquadPickChips (one page of the crew)"
     assert len(set(cells)) == len(cells), "ArkPilotsPage.cells names a cell twice"
     sights = listed(page, "sightLines")
-    assert sights == [str(V(f"Pilots/Cell{i}/Sight#tmp")) for i in range(CALLSIGNS)], \
+    assert sights == [str(V(f"Pilots/Cell{i}/Sight#tmp")) for i in range(PILOT_CELLS)], \
         "ArkPilotsPage.sightLines is not each crew cell's own Sight line, in cell order"
     for i in cells:
         for field, want in PILOT_CELL_FIELDS.items():
@@ -1566,7 +1582,7 @@ def validate_pilots(view, V):
                 f"ArkPilotsPage.{field} names {{{token}}}, which the page does not fill there"
     for field, words in PILOT_LINES:
         assert yfield(field, words) in page, f"ArkPilotsPage.{field} is not the authored line"
-    for i in range(CALLSIGNS):
+    for i in range(PILOT_CELLS):
         rt = V(f"Pilots/Cell{i}#rt")
         assert rect_xy(view, rt, "m_AnchorMin") == (0, 1) and rect_xy(view, rt, "m_Pivot") == (0, 1), \
             f"crew cell {i} is not laid out from the glass's top left"
@@ -1906,7 +1922,7 @@ def self_test(files):
         ("the Pilots tab with no page logic", lambda f: f.__setitem__(view, unlogic_tab(f[view], TABS.index("Pilots")))),
         ("the Pilots tab reading no scene catalog", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(f"guid: {SCENE_CATALOG}", f"guid: {PILOT_CATALOG}")))),
-        ("a callsign with no crew cell", lambda f: f.__setitem__(view, in_doc(
+        ("a page of the crew one cell short", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(f"  - {{fileID: {V('Pilots/Cell17#chip')}}}\n", "")))),
         ("a crew cell with no sight line", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(f"  - {{fileID: {V('Pilots/Cell5/Sight#tmp')}}}\n", "")))),

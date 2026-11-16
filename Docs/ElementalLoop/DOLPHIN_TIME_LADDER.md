@@ -93,3 +93,18 @@ When Play stops after each race the Fun Card asks three taps (fun, and whether t
 
 The card's "fun: yes" and "right" on all four rungs signs step 2 off (`fun_cards.py apply`) and sends the Dolphin's Time
 AI to training (step 3). A rung that reads too easy or too hard: say which and how it felt, and that rung is next.
+
+## Re-measured after the sight lines (#1981, 2026-11-14)
+
+#1981 hung every door behind its ring and moved the keys nearer. The same run (shipped code, 48 courses a cell, model
+seconds) after it:
+
+| Rung | Easy | Medium | Hard | Legendary |
+|---|---|---|---|---|
+| I1 | 85 | 77 | 70 | 60 |
+| I2 | 130 | 118 | 111 | 98 |
+| I3 | 129 | 121 | 109 | 102 |
+| I4 | 184 | 166 | 156 | 141 |
+
+Every race finishes, the four AI levels keep their order on every rung, and I4's dead stops stay at 3-6 a race. The
+ladder's shape is unchanged (I3 still flat in time against I2), so the playtest above stands as written.

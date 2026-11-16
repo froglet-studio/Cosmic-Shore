@@ -74,6 +74,13 @@ INNER = PANEL_W - 2 * PAD
 # and shows the same plate near black). NeutralLightest on SurfaceBlack has about 5:1 with nothing behind it, so there
 # is no light to give away. validate() holds every plate to PLATE_CONTRAST for every colour words are drawn in.
 PLATE_ALPHA = 1.0
+# The words panel itself lets a little of the art through (Garrett, 2026-11-16: "the text story background doesn't need
+# to be black. a tiny bit of transparency would mean not throwing away the nice art behind it"). At 0.9 a tenth of the
+# picture's light comes through, which is most of its look in linear light; only TextLight holds PLATE_CONTRAST there
+# (5.8:1 over white; NeutralLightest falls to 1.7:1), so every word on the panel is drawn in TextLight and the rows keep
+# their order by size and weight. The step plate and Close stay solid: their words are NeutralLightest too.
+PANEL_ALPHA = 0.9
+PANEL_READABLE = ("TextLight",)
 PLATE_CONTRAST = 4.5                                      # WCAG AA for small text, over a WHITE picture
 PLATES = ("Panel/Frame/Fill", "Stepper/Frame/Fill", "Window/Close/Plate")
 ORB_TOP = 124
@@ -103,16 +110,16 @@ WAYS = {
 
 # Rows of the panel, top-left corner down from the panel's top: (key, name, y, height, role, token, wrap).
 ROWS = (
-    ("Kicker", "Kicker", 24, 20, "Label", "NeutralLightest", False),
+    ("Kicker", "Kicker", 24, 20, "Label", "TextLight", False),
     ("Name", "Name", 48, 48, "H1", "TextLight", False),
-    ("Species", "Species", 104, 20, "BodySmall", "NeutralLightest", False),
-    ("Faction", "Faction", 128, 20, "BodySmall", "NeutralLightest", False),
-    ("Home", "Home", 152, 20, "BodySmall", "NeutralLightest", False),
-    ("SightCaption", "SightCaption", 205, 18, "Label", "NeutralLightest", False),
+    ("Species", "Species", 104, 20, "BodySmall", "TextLight", False),
+    ("Faction", "Faction", 128, 20, "BodySmall", "TextLight", False),
+    ("Home", "Home", 152, 20, "BodySmall", "TextLight", False),
+    ("SightCaption", "SightCaption", 205, 18, "Label", "TextLight", False),
     ("Sight", "Sight", 231, 48, "Body", "TextLight", True),
-    ("StoryCaption", "StoryCaption", 295, 18, "Label", "NeutralLightest", False),
+    ("StoryCaption", "StoryCaption", 295, 18, "Label", "TextLight", False),
     ("Story", "Story", 321, 363, "Body", "TextLight", True),
-    ("Pictured", "Pictured", 700, 20, "Label", "NeutralLightest", False),
+    ("Pictured", "Pictured", 700, 20, "Label", "TextLight", False),
 )
 RULE_Y = 188
 # What the wrapped rows hold, at Body in INNER (measured 2026-11-12 with the game's own PilotGenerator and the UI
@@ -203,9 +210,9 @@ def hidden_group():
                             "  m_Interactable: 0\n  m_BlocksRaycasts: 0\n  m_IgnoreParentGroups: 0\n")
 
 
-def plate(parent, key, sliver):
-    """The ground under words that sit on a picture: the window's black, solid (PLATE_ALPHA), a light hairline."""
-    C.frame(parent, key, sliver, "SurfaceBlack", "TextLight", fill_alpha=PLATE_ALPHA)
+def plate(parent, key, sliver, alpha=PLATE_ALPHA):
+    """The ground under words that sit on a picture: the window's black (solid unless `alpha` says), a light hairline."""
+    C.frame(parent, key, sliver, "SurfaceBlack", "TextLight", fill_alpha=alpha)
 
 
 AUTOMATIC = K.SELECTABLE_FIELDS[:K.SELECTABLE_FIELDS.index("  m_Transition:")]   # the kit's navigation block
@@ -254,7 +261,7 @@ def stepper(content):
 def words_panel(content):
     """The pilot's words. Each row is filled from its template on open; none holds a word of its own."""
     pn = content.child(N("Panel", "Panel", R((0, 0), None, (PANEL_INSET, PANEL_BOTTOM), (PANEL_W, PANEL_H), (0, 0))))
-    plate(pn, "Panel/Frame", 14)
+    plate(pn, "Panel/Frame", 14, PANEL_ALPHA)
     M.bracket_nodes(pn, "Panel/Bracket", inset=14)
     for key, name, y, h, role, token, wrap in ROWS:
         n = pn.child(N(f"Panel/{key}", name, TL(PAD, y, INNER, h)))
@@ -533,7 +540,7 @@ def validate(files):
         assert len(wrapped(meaning, "Body", INNER)) <= SIGHT_LINES, \
             f"a callsign's meaning needs more than {SIGHT_LINES} lines of the Sight row: {meaning}"
     for key, _, _, _, _, token, _ in ROWS:
-        assert token in READABLE, f"Panel/{key} is drawn in {token}, which does not read on the plate"
+        assert token in PANEL_READABLE, f"Panel/{key} is drawn in {token}, which does not read on the see-through plate"
     # Words over a painted scene: each plate, as written (the Image's own alpha and the one KitThemedGraphic paints
     # it with), must hold every colour words are drawn in at PLATE_CONTRAST over a white picture.
     for key in PLATES:
@@ -544,7 +551,7 @@ def validate(files):
         authored = re.search(r"^  m_Color: \{r: [\d.e-]+, g: [\d.e-]+, b: [\d.e-]+, a: ([\d.e-]+)\}$", image, re.M)
         assert painted and authored, f"{key} carries no alpha to read"
         for alpha in (float(painted.group(1)), float(authored.group(1))):
-            for token in READABLE:
+            for token in (PANEL_READABLE if key == "Panel/Frame/Fill" else READABLE):
                 got = contrast_over_white(token, "SurfaceBlack", alpha)
                 assert got >= PLATE_CONTRAST, \
                     (f"{key} at alpha {alpha:g} leaves {token} words at {got:.1f}:1 over a white picture "
@@ -646,7 +653,7 @@ def self_test(files):
                   f"  m_AnchoredPosition: {{x: {PANEL_INSET}, y: 96}}\n")),
         ("a page that starts shown", doc_swap(F("root#cg"), "  m_Alpha: 0\n", "  m_Alpha: 1\n")),
         ("a plate the theme paints thin enough for a bright picture to wash out the words",
-         doc_swap(F("Panel/Frame/Fill#th"), "  alpha: 1\n", "  alpha: 0.88\n"), "over a white picture"),
+         doc_swap(F("Panel/Frame/Fill#th"), f"  alpha: {PANEL_ALPHA}\n", "  alpha: 0.8\n"), "over a white picture"),
         ("a plate authored thin under the step through the crew",
          doc_swap(F("Stepper/Frame/Fill#img"), ", a: 1}\n", ", a: 0.88}\n"), "over a white picture"),
         ("a plate under Close that is not the window's black",

@@ -20,7 +20,7 @@ namespace CosmicShore.Tests
     ///
     /// <para>The generators check their own text; these check what only the editor can: that a scene loads by its
     /// resource name as a picture of the scene's shape, that a close-up is a sprite, that the page is found where
-    /// <see cref="ScreenSwitcher"/> looks for it, and that the Ark has a cell for every callsign in the enum.</para>
+    /// <see cref="ScreenSwitcher"/> looks for it, and that the Ark's tab pages through the crew.</para>
     /// </summary>
     [TestFixture]
     public class PilotSceneAssetTests
@@ -173,17 +173,21 @@ namespace CosmicShore.Tests
         // ---------------------------------------------------------------------------------------------------------
 
         [Test]
-        public void EveryScene_NamesItsCallsignOnce_WithAPictureACloseUpAndAFace()
+        public void EveryScene_NamesItsPilotOnce_WithACallsignAPictureACloseUpAndAFace()
         {
-            var seen = new HashSet<PilotVision>();
+            // Several painted pilots may share a callsign (Garrett, 2026-11-16); each painted pilot has one scene.
+            var seen = new HashSet<string>();
+            var callsigns = new HashSet<PilotVision>();
             var scenes = LoadCatalog().Scenes;
             Assert.Greater(scenes.Count, 0, "the catalog holds no scene; run Tools/Build/author_pilot_scene_assets.py");
             foreach (var scene in scenes)
             {
-                string who = scene.callsign.ToString();
+                string who = scene.key;
+                Assert.IsFalse(string.IsNullOrEmpty(who), "a scene names its painted pilot");
                 Assert.AreNotEqual(PilotVision.None, scene.callsign, "a scene belongs to a callsign");
                 Assert.IsTrue(Enum.IsDefined(typeof(PilotVision), scene.callsign), $"{who} is not a callsign");
-                Assert.IsTrue(seen.Add(scene.callsign), $"{who} has two scenes");
+                Assert.IsTrue(seen.Add(who), $"{who} has two scenes");
+                callsigns.Add(scene.callsign);
                 Assert.IsFalse(string.IsNullOrWhiteSpace(scene.painted), $"{who}: the painted pilot has no name");
                 Assert.IsNotNull(scene.closeUp, $"{who}: the close-up is not a sprite");
                 Assert.IsTrue(File.Exists(ResourcesRoot + scene.resource + ".jpg"),
@@ -200,6 +204,14 @@ namespace CosmicShore.Tests
                 if (scene.side == PilotSceneSide.Right)
                     Assert.Greater(f.center.x, 0.5f, $"{who} stands right of the middle");
             }
+            // A person on any callsign is drawn: every callsign has its own painted pilot, under the callsign's word.
+            foreach (PilotVision vision in Enum.GetValues(typeof(PilotVision)))
+            {
+                if (vision == PilotVision.None) continue;
+                Assert.IsTrue(callsigns.Contains(vision), $"no scene carries {vision}");
+                Assert.IsTrue(LoadCatalog().TryGet(vision, out var own) && own.callsign == vision,
+                    $"{vision} has no painted pilot of its own word");
+            }
         }
 
         [Test]
@@ -208,11 +220,11 @@ namespace CosmicShore.Tests
             foreach (var scene in LoadCatalog().Scenes)
             {
                 var picture = Resources.Load<Texture2D>(scene.resource);
-                Assert.IsNotNull(picture, $"{scene.callsign}: Resources.Load finds no Texture2D at {scene.resource}");
+                Assert.IsNotNull(picture, $"{scene.key}: Resources.Load finds no Texture2D at {scene.resource}");
                 float aspect = (float)picture.width / picture.height;
                 Resources.UnloadAsset(picture);
                 // 2%: the browser stand-in is 32 x 18.
-                Assert.AreEqual(SceneAspect, aspect, SceneAspect * 0.02f, $"{scene.callsign}: the picture is not 16:9");
+                Assert.AreEqual(SceneAspect, aspect, SceneAspect * 0.02f, $"{scene.key}: the picture is not 16:9");
             }
         }
 
@@ -225,6 +237,8 @@ namespace CosmicShore.Tests
                 Assert.IsFalse(empty.TryGet(PilotVision.Ensign, out var none), "an empty catalog has no scene");
                 Assert.IsNull(none);
                 Assert.IsFalse(LoadCatalog().TryGet(PilotVision.None, out _), "no callsign, no scene");
+                Assert.IsFalse(LoadCatalog().TryGet("NoSuchPilot", out _), "no painted pilot, no scene");
+                Assert.IsFalse(LoadCatalog().TryGetFor(null, out _), "no person, no scene");
             }
             finally
             {
@@ -277,23 +291,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheArk_HasACrewCellForEveryCallsign()
+        public void TheArk_PagesThroughTheCrew()
         {
             var view = AssetDatabase.LoadAssetAtPath<GameObject>(ArkViewPath);
             Assert.IsNotNull(view, $"{ArkViewPath} is missing; run Tools/Build/author_menu_ark.py");
             var page = view.GetComponentInChildren<ArkPilotsPage>(true);
             Assert.IsNotNull(page, "the Ark has no Pilots page; run Tools/Build/author_menu_ark.py");
 
-            int callsigns = 0;
-            foreach (PilotVision vision in Enum.GetValues(typeof(PilotVision)))
-                if (vision != PilotVision.None) callsigns++;
-
             var so = new SerializedObject(page);
             var cells = so.FindProperty("cells");
-            // A crew holds at most one pilot a callsign (Docs/Pilots/INVENTORY.md §3.1), so the tab needs that many.
-            Assert.AreEqual(callsigns, cells.arraySize, "one crew cell a callsign");
+            // The crew outgrows one page (all fifty painted pilots, Garrett 2026-11-16): a page of cells and a pager.
+            Assert.Greater(cells.arraySize, 0, "the tab has no crew cell");
             for (int i = 0; i < cells.arraySize; i++)
                 Assert.IsNotNull(cells.GetArrayElementAtIndex(i).objectReferenceValue, $"crew cell {i} is not wired");
+            foreach (var field in new[] { "crewPreviousButton", "crewNextButton", "crewPageText" })
+                Assert.IsNotNull(so.FindProperty(field).objectReferenceValue, $"the tab's {field} is not wired");
             Assert.AreSame(LoadCatalog(), so.FindProperty("scenes").objectReferenceValue,
                 "the tab reads the scene catalog");
         }
@@ -318,7 +330,7 @@ namespace CosmicShore.Tests
                 var importer = AssetImporter.GetAtPath(path) as TextureImporter;
                 Assert.IsNotNull(importer, $"{path} is not imported as a texture");
                 var web = importer.GetPlatformTextureSettings("WebGL");
-                if (web.overridden && web.maxTextureSize <= standIn) standIns.Add(scene.callsign.ToString());
+                if (web.overridden && web.maxTextureSize <= standIn) standIns.Add(scene.key);
             }
 
             if (ScreenSwitcher.IsModalInWebToybox(ScreenSwitcher.ModalWindows.PILOT_PROFILE))

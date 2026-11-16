@@ -366,7 +366,7 @@ binding and no pad or keyboard control changed.
 | Hull | Before | Prototype |
 |---|---|---|
 | Stoat | TotemButtons: Space card held = left sling, the "Dipole Right" disc = right sling, the Hold disc, the Mode card | **ThumbLifts, "keep a thumb down to orbit"**: lifting the right thumb raises `LeftStickAction` (the left catch pair), the left thumb `RightStickAction`; the held orbit tightens by hold time (`Hold01`); putting the thumb back slings (`StopStickEffects` releases). Swap thumbs to chain turns. Lift defer 0.12 s; Hold is the only disc; the Mass (Mode) card is display-only, because the kit is orbit-only. The Space card still presses LT. This reverses the D1 TotemButtons call for this hull. |
-| Squirrel | ThumbLifts, pitch/yaw only on one thumb | + `tiltRollOnOneThumb`: while one thumb flies (the drift, also the tube lift) the phone rolls the hull 1:1 (the Dolphin's `TouchAttitudeRoll`). The base `VesselTransformer.ApplyHeldRoll` already applies it, so there is no code change. |
+| Squirrel | ThumbLifts, pitch/yaw only on one thumb | + `gyroRollOnOneThumb`: while one thumb flies (the drift, also the tube lift) the phone rolls the hull 1:1 (the Dolphin's `TouchAttitudeRoll`). The base `VesselTransformer.ApplyHeldRoll` already applies it, so there is no code change. |
 
 Open: no haptic for the Stoat's 90 degree window. None of the four allowed feels fits (`HapticController` two-feel policy), so it is a TODO for the "adding a feel" clause. Not yet flown on a phone.
 

@@ -22,6 +22,11 @@ namespace CosmicShore.Core
         CancellationTokenSource _cts;
         readonly Func<bool> _isReachable;
 
+        /// <summary>How many Online -> Offline transitions <see cref="Poll"/> has seen, one per
+        /// <c>OnNetworkLost</c> raise. A SOAP channel does nothing outside Play mode, so an EditMode
+        /// test counts here instead of subscribing to the channel.</summary>
+        internal int LossesSeen { get; private set; }
+
         /// <param name="isReachable">The reachability probe. Defaults to
         /// <c>Application.internetReachability</c>; a test passes its own to drive
         /// <see cref="Poll"/> through a network loss.</param>
@@ -88,6 +93,7 @@ namespace CosmicShore.Core
             if (!reachable && _connected)
             {
                 _connected = false;
+                LossesSeen++;
                 _networkMonitorData.IsOnline = false;
                 _networkMonitorData.LastTransitionUnscaledTime = Time.unscaledTime;
                 _networkMonitorData.OnNetworkLost?.Raise();

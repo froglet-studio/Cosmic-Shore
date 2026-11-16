@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Palisade
+  m_EditorClassIdentifier:
+  Mode: 98
+  Notes: 'The bare Barren cell the mode runs in (Tapestry''s), and nothing else - the arena IS the walls you swing
+    into it. What the preview teaches is the afterimage: light the sword, swing, and it leaves walls as it cools.
+    Vessel pinned to Swordfish(30).'
+  PreviewCell: {fileID: 11400000, guid: 8f83a19d70465a747861017897c08403, type: 2}
+  PreviewCellsByIntensity: []
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 30
+  ObjectiveText: Light your sword and swing walls into place
+  ObjectiveMetric: 12
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 150
+  SpawnRingRadiusFloor: 0
+  SpawnFormation: 0
+  SpawnPoints: []

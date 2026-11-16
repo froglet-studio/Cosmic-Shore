@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameWarren
+  m_EditorClassIdentifier:
+  Mode: 106
+  IsMultiplayer: 1
+  DisplayName: Warren
+  Description: 'Meerkats only, in an empty cell. Everything you lay is yours - your trail, and the exit
+    portal every soliton rings its way out with, bigger with Mass. Form a soliton beside a
+    rival''s mass and it swallows it and fires it back into the rest of it, breaking both.
+    When the clock runs out, the team with the most standing wins. Higher intensities thin
+    the crystals, start everyone at Mass 5 (danger portals) and then Space 5 (a soliton
+    steals what it swallows).'
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: 2b8fed793a1b41389db8b9d596998e89, type: 3}
+  GolfScoring: 0
+  SceneName: MinigameWarren
+  Vessels:
+  - {fileID: 11400000, guid: 8d3f1a2b4c5e4d6f9a7b8c9d0e1f2a3b, type: 2}
+  MinPlayersAllowed: 2
+  MaxPlayersAllowed: 4
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  ViewUserAction: 0
+  PlayUserAction: 0
+  StartingElements:
+  - Class: 28
+    Intensity: 3
+    Levels:
+      Mass: 0.5
+      Charge: 0
+      Space: 0
+      Time: 0
+  - Class: 28
+    Intensity: 4
+    Levels:
+      Mass: 0.5
+      Charge: 0
+      Space: 0.5
+      Time: 0
+  ComebackRatePerScoreDeficit: 0.000189
