@@ -71,6 +71,7 @@ that day) - no wire change of its own: the build that carries both 27 (the Vesse
 possession decision: mode, nest pose, recharges, stand-back; `R_VesselActions/JEWEL_WASP.md` §6.1). **31** (2026-11-15,
 `claude/jewel-wasp-flora-camera`; free on bleeding-edge and the in-flight branches that day) - `JewelWaspNetworkRelay`
 gains `n_ownerAutoPilot`, the owner's autopilot flag, so the server runs the wasp's AI for a client hull on autopilot. **32** (2026-11-16, the merge of `bleeding-edge` into `Ys-bleeding-edge` by the Spearline fun pass; free on every origin branch that day) - both lines' protocol changes in one build: `Ys-bleeding-edge`'s 30 (`RoundStats.n_VesselStats`) and `bleeding-edge`'s 30-31 (the Jewel Wasp).
+**33** (2026-11-17, `Ys-bleeding-edge`, the merge of `fix/android-startup-logs`; 33 was free on every origin branch pushed since 2026-11-08, checked that day) - `QuadFish.prefab` and `MassBrittlestarFauna.prefab` left the network prefab list: neither species is opted in to replication. The branch had claimed 25 for this on 2026-11-02; 25 was since used on bleeding-edge.
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.
