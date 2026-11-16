@@ -3552,7 +3552,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the Ark read as a level-sized kaiju with escorts, a hangar, super-shielded prisms and a payload, and does its hull regrow only inside a nucleus its domain controls?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-24",
@@ -3600,7 +3600,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Can things enter the tunnel through its wall and entrance but leave only by its exit, with mass conserved and nothing drawn but bent space?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-39",
