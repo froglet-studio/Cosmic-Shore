@@ -3504,7 +3504,7 @@
    "area": "vessel",
    "retired": "a response curve on stick position and a 4-6 stage smoothing chain (flown and rejected on the pad)",
    "test": "Does any hull author its own nose lag or stick curve? It fails; only the device's dial applies.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-20",
@@ -3536,7 +3536,7 @@
    "area": "vessel",
    "retired": "the pilot as a kit side-grade (PILOTS_AND_ARTIFACTS.md sections 0, 2, 4 and 6)",
    "test": "Does the pilot design change an ability, a number or a control on the vessel? If yes it is a kit change, not a pilot.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-22",
@@ -3552,7 +3552,7 @@
    "area": "vessel",
    "retired": "the artifact as a fifth knob (PILOTS_AND_ARTIFACTS.md section 3)",
    "test": "Does the artifact design tune the vessel rather than transform the payload? If yes it is a kit change.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-23",
