@@ -96,6 +96,21 @@ GAMES = {
         # there and 2.5 in Regatta (RaceLines/Scarab_Regatta). The search gives it a row.
         "lead": 0.0, "rows": [{"Hull": "Dolphin", "Gain": 2.5, "MaxExtraDegrees": 40}],
     },
+    "Manta": {
+        "mode": "Redline",
+        # The Soar autopilot's bands (MantaSoarAITuning_Redline, written at the executor's own 0.35 / 0.75 so the shipped
+        # AI is unchanged) and RedlineController's AI knobs: the Legendary nose follow rate (every intensity's row) and
+        # its own crystal gene, aiTimeCrystalSlack. The card starts Time 10, so Soar (Time's level-5 upgrade) is lit.
+        "assets": {i: POL + "MantaSoarAITuning_Redline.asset" for i in (1, 2, 3, 4)},
+        "fields": {"BoostStickBand": (0.0, 1.0), "YawsteryStickBand": (0.0, 1.0)},
+        "ctrl_fields": {"noseLegendary": (2.0, 24.0)},
+        "ctrl_defaults": {"noseLegendary": 9.0},
+        "ctrl": lambda p: {"aiNoseFollowByIntensity": [
+            {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"])}
+            for e, m, h in ((2, 3, 6), (2, 3, 6), (2.5, 3, 6), (4, 5, 6))]},
+        "crystal_field": "aiTimeCrystalSlack",
+        "lead": 0.0, "rows": [],                       # RedlineController.aiNoseLead: Manta 0
+    },
 }
 LEAD_RANGE = (0.0, 3.0)
 LEAD = "noseLead"
@@ -115,6 +130,7 @@ def conditions_for(a):
     the --rest rungs; and --wide courses (W2's curriculum, I2) so the drive does not overfit the game's own track."""
     out = [(f"I{i}", i, None, None) for i in a.intensities]
     out += [(f"I{i}@T10", i, {a.hull: {"Time": 10}}, None) for i in a.fast]
+    out += [(f"I{i}@T5", i, {a.hull: {"Time": 5}}, None) for i in a.l5]
     out += [(f"I{i}@T0", i, "rest", None) for i in a.rest]
     out += [(f"W{k}@I2", 2, None, wide_genome(a.hull, a.wide_w, 900 + k)) for k in range(a.wide)]
     return out
@@ -128,6 +144,7 @@ def read_fields(rel, names):
 def dims_for(g):
     ints = g.get("ints", ())
     dims = [{"name": k, "lo": lo, "hi": hi, **({"type": "int"} if k in ints else {})} for k, (lo, hi) in g["fields"].items()]
+    dims += [{"name": k, "lo": lo, "hi": hi} for k, (lo, hi) in g.get("ctrl_fields", {}).items()]
     dims.append({"name": LEAD, "lo": LEAD_RANGE[0], "hi": LEAD_RANGE[1]})
     return dims
 
@@ -138,6 +155,7 @@ def shipped_genomes(g):
     for rel in sorted(set(g["assets"].values())):
         p = read_fields(rel, g["fields"])
         p.update({k: int(v) for k, v in p.items() if k in g.get("ints", ())})
+        p.update(g.get("ctrl_defaults", {}))
         p[LEAD] = g["lead"]
         p[CRYSTAL] = 0.0
         p["_from"] = os.path.basename(rel)
@@ -153,9 +171,15 @@ def spec_for(hull, g, params):
     fields = {k: params[k] for k in g["fields"] if k in params}
     ov = [{"asset": rel, "fields": fields} for rel in sorted(set(g["assets"].values()))]
     rows = list(g["rows"]) + [{"Hull": hull, "Gain": float(params.get(LEAD, g["lead"])), "MaxExtraDegrees": 40}]
-    out = {"overrides": ov, "controller_overrides": {"aiNoseLead": rows}}
+    ctrl = {"aiNoseLead": rows}
+    if "ctrl" in g:
+        ctrl.update(g["ctrl"](dict(g.get("ctrl_defaults", {}), **params)))
+    out = {"overrides": ov, "controller_overrides": ctrl}
     if params.get(CRYSTAL, 0) > 0:
-        out["crystal_genes"] = {hull: float(params[CRYSTAL])}
+        if "crystal_field" in g:                       # the mode's own crystal knob (Redline's aiTimeCrystalSlack)
+            ctrl[g["crystal_field"]] = float(params[CRYSTAL])
+        else:
+            out["crystal_genes"] = {hull: float(params[CRYSTAL])}
     return out
 
 
@@ -264,6 +288,7 @@ def main():
     ap.add_argument("--seeds", default="11,12")
     ap.add_argument("--intensities", default="1,2,3,4")
     ap.add_argument("--fast", default="1,4", help="rungs also raced at Time 10 (empty: none)")
+    ap.add_argument("--l5", default="", help="rungs also raced from Time 5, the level-5 upgrade's threshold (empty: none)")
     ap.add_argument("--rest", default="", help="rungs also raced from Time 0 (empty: none)")
     ap.add_argument("--wide", type=int, default=0, help="how many W2 curriculum courses (raced at I2)")
     ap.add_argument("--wide-w", type=float, default=0.5, help="curriculum weight of the wide courses (0-1)")
@@ -274,6 +299,7 @@ def main():
     a.intensities = [int(s) for s in a.intensities.split(",") if s]
     a.fast = [int(s) for s in a.fast.split(",") if s]
     a.rest = [int(s) for s in a.rest.split(",") if s]
+    a.l5 = [int(s) for s in a.l5.split(",") if s]
     g = GAMES[a.hull]
     seeds = [int(s) for s in a.seeds.split(",") if s]
     conds = conditions_for(a)
