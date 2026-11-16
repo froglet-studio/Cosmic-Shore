@@ -36,6 +36,17 @@ RHINO = dict(path=os.path.join(HUD_DIR, "RhinoHUDVariant.prefab"), name="RhinoHU
              icon_ids={1: "7720000000000003015", 2: "7720000000000003025", 3: "7720000000000003035", 4: "7720000000000003045"},
              parts=("SpoolPrism", "SpoolGlance", "SpoolWard", "SpoolHull"),   # the afterimage parts left with the sword (2026-11-13)
              keep_gauges=True)
+# The Tiger Moth's HUD, which the Jewel Wasp flew as a stand-in: every dust, drop and key part goes, and its Mass card's
+# wing-energy gauge with them (the wasp's Mass card is a sting's recharge, not a wing's energy).
+BUTTERFLY = dict(path=os.path.join(HUD_DIR, "ButterflyHUDVariant.prefab"), name="ButterflyHUDVariant",
+                 guid="dd198b52721e3c346970524ad4972959", view_guid="9c236a35964142cdafbea4f68f8c5406",
+                 view_id="5875684227236902712",
+                 icon_ids={1: "7700000000000001105", 2: "7700000000000001115", 3: "7700000000000001125", 4: "7700000000000001135"},
+                 parts=("WingEnergyGauge", "DropMouth", "DropStreaks", "DropMoth", "ScaleDustRing", "ScaleDustMotes",
+                        "ScaleDustRival", "ScaleDustMoth", "MassKeyEnds", "MassKeys", "MassMoth", "ScaleDustMotesDanger",
+                        "ScaleDustMotesDomain", "MassKeyEndsGilded", "DustReachMotesDanger", "DustReachMotesDomain",
+                        "DustReachMotes", "DustReachDiamond", "DustReachMoth"),
+                 keep_gauges=True, drop_gauges=(2,))
 
 
 def guid_for(hull, name):
@@ -54,8 +65,9 @@ def _docs(text):
     return parts[0], list(zip(parts[1::2], parts[2::2]))
 
 
-def build_variant(hull, view_guid, icons_dir, cards, src=SPARROW_SRC):
-    """cards: element (1..4) -> (base sprite name, level-5 sprite name)."""
+def build_variant(hull, view_guid, icons_dir, cards, src=SPARROW_SRC, view_fields=None):
+    """cards: element (1..4) -> (base sprite name, level-5 sprite name); view_fields: the hull view's own Sprite fields
+    (field name -> icon name), written after the base view's."""
     with open(src["path"]) as f:
         head, docs = _docs(f.read())
     parts, icon_ids = src["parts"], src["icon_ids"]
@@ -72,17 +84,24 @@ def build_variant(hull, view_guid, icons_dir, cards, src=SPARROW_SRC):
             if src["keep_gauges"]:
                 gauges = dict(re.findall(r"- element: (\d)\n    icon: \{fileID: \d+\}\n    upgradedSprite: [^\n]*\n"
                                          r"    gauge: (\{fileID: \d+\})", b))
-                m = re.search(r"(?s)^(.*?  m_EditorClassIdentifier: *\n)(  highlights: \[\]\n)", b)
+                for el in src.get("drop_gauges", ()):
+                    gauges.pop(str(el), None)
+                m = re.search(r"(?s)^(.*?  m_EditorClassIdentifier:[^\n]*\n)(  highlights: \[\]\n)", b)
             else:
                 gauges = {}
-                m = re.search(r"(?s)^(.*?  m_EditorClassIdentifier: *\n)(  highlights:\n.*?)(  abilityIcons:)", b)
+                m = re.search(r"(?s)^(.*?  m_EditorClassIdentifier:[^\n]*\n)(  highlights:\n.*?)(  abilityIcons:)", b)
             assert m, "view block shape changed"
-            b = m.group(1).replace(f"guid: {src['view_guid']}", f"guid: {view_guid}") + m.group(2) + "  abilityIcons:\n"
+            head_b = m.group(1).replace(f"guid: {src['view_guid']}", f"guid: {view_guid}")
+            # a source saved with its class named keeps the name in sync with the swapped script
+            head_b = re.sub(r"(?m)^(  m_EditorClassIdentifier: \S+::CosmicShore\.UI\.)\w+$", rf"\g<1>{hull}HUDView", head_b)
+            b = head_b + m.group(2) + "  abilityIcons:\n"
             for el in sorted(cards):
                 b += (f"  - element: {el}\n    icon: {{fileID: {icon_ids[el]}}}\n"
                       f"    upgradedSprite: {sprite_ref(icons_dir, cards[el][1])}\n"
                       f"    gauge: {gauges.get(str(el), '{fileID: 0}')}\n")
             b += "  upgradeHighlightScale: 1.15\n  upgradePunchScale: 1.35\n  upgradePunchDuration: 0.35\n"
+            for field, icon in (view_fields or {}).items():
+                b += f"  {field}: {sprite_ref(icons_dir, icon)}\n"
         elif fid in icon_sprite:
             # the source's card may be a sprite-less container (the Sparrow's) or carry its own hull's sprite (the Rhino's
             # plough cards since 2026-11-13): either way the fork's card is the hull's own picture at full alpha
@@ -93,6 +112,9 @@ def build_variant(hull, view_guid, icons_dir, cards, src=SPARROW_SRC):
             b = re.sub(r"(?m)^  m_IsActive: 1$", "  m_IsActive: 0", b)
         elif h.startswith("--- !u!1 &"):
             b = re.sub(r"(?m)^  m_Name: %s$" % src["name"], f"  m_Name: {hull}HUDVariant", b)
+        elif h.startswith("--- !u!1001 &"):
+            # a source that is itself a prefab variant names its root through an m_Name modification
+            b = re.sub(r"(?m)^(      value: )%s$" % src["name"], rf"\g<1>{hull}HUDVariant", b)
         out.append(h + b)
     return "".join(out)
 
@@ -143,19 +165,21 @@ def swap_vessel(vessel_prefab, hull, hud_guid, src=SPARROW_SRC, view_guid=None):
         # a stripped stub of the nested view still names the SOURCE's view script; the fork's view is the hull's own
         text = text.replace(f"m_Script: {{fileID: 11500000, guid: {src['view_guid']}, type: 3}}",
                             f"m_Script: {{fileID: 11500000, guid: {view_guid}, type: 3}}")
+        text = re.sub(r"(m_Script: \{fileID: 11500000, guid: %s, type: 3\}\n  m_Name: [^\n]*\n"
+                      r"  m_EditorClassIdentifier: \S+::CosmicShore\.UI\.)\w+" % view_guid, rf"\g<1>{hull}HUDView", text)
     text = re.sub(r"(?m)^(      value: )%s$" % src["name"], rf"\g<1>{hull}HUDVariant", text)
     assert src["guid"] not in text
     return text
 
 
-def fork(hull, view_cs, icons_dir, cards, vessel_prefab, argv=None, src=SPARROW_SRC):
+def fork(hull, view_cs, icons_dir, cards, vessel_prefab, argv=None, src=SPARROW_SRC, view_fields=None):
     """Write (or with --check, compare) the hull's HUD variant, its metas and the vessel prefab swap. Returns an exit code."""
     argv = sys.argv if argv is None else argv
     check = "--check" in argv
     hud = os.path.join(HUD_DIR, f"{hull}HUDVariant.prefab")
     hud_guid, view_guid = guid_for(hull, f"{hull}HUDVariant.prefab"), guid_for(hull, os.path.basename(view_cs))
     want = {
-        hud: build_variant(hull, view_guid, icons_dir, cards, src),
+        hud: build_variant(hull, view_guid, icons_dir, cards, src, view_fields),
         hud + ".meta": prefab_meta(hud_guid),
         os.path.join(ROOT, view_cs) + ".meta": script_meta(view_guid),
         os.path.join(ROOT, vessel_prefab): swap_vessel(vessel_prefab, hull, hud_guid, src, view_guid),

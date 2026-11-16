@@ -1595,5 +1595,19 @@ namespace CosmicShore.Data
                 return h;
             }
         }
+
+        /// <summary>
+        /// Which friend in the player's lobby flies <paramref name="seat"/> (0 the first friend), or -1 when an AI wingmate
+        /// flies it (Shombith, 2026-11-16: "there is actually no open seat, any friend can take the place of the AI"). The
+        /// voyage seats the lobby as Arena does: the player in <paramref name="mySeat"/>, the <paramref name="friends"/>
+        /// in the other seats in order, and an AI flying the squad's hull in every seat left. The Ark page draws the seats
+        /// by it and the voyage releases AI wingmates only where it says -1.
+        /// </summary>
+        public static int FriendAt(int seat, int mySeat, int friends)
+        {
+            if (seat == mySeat || friends <= 0 || seat < 0) return -1;
+            int k = seat < mySeat ? seat : seat - 1;
+            return k < friends ? k : -1;
+        }
     }
 }

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Landslide
+  m_EditorClassIdentifier:
+  Mode: 123
+  Notes: 'Cleave''s four arenas (Panes, Swell, Cage, Twistbands), one cell config each, flown
+    by a Rhino. The spawn block mirrors the scene''s (author_preview_spawns.py) and is
+    load-bearing: the cell has no nucleus. Vessel pinned to Rhino(3).'
+  PreviewCell: {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
+  - {fileID: 11400000, guid: f43c4cc32c5bae18a25a9047d2cdff06, type: 2}
+  - {fileID: 11400000, guid: 6c76217c610119d0f2c76ea4c0858bf0, type: 2}
+  - {fileID: 11400000, guid: 02bfa044b1857c9bba123e6dba4804fe, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  Vessel: 3
+  ObjectiveText: Plough the ribs into each other
+  ObjectiveMetric: 5
+  ObjectiveTarget: 200
+  DurationSeconds: 90
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 3150
+  SpawnRingRadiusFloorByIntensity:
+  - 3150
+  - 3150
+  - 1050
+  - 1050
+  SpawnFormation: 1
+  SpawnPoints: []

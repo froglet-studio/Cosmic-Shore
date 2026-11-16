@@ -220,7 +220,10 @@ model number (standing rule).
 1. ~~No recorded fun sign-off exists for any vessel and element.~~ **Built 2026-11-12, not yet answered in the
    editor:** the one-minute fun card (`Assets/_Scripts/Editor/Diagnostics/FunCard.cs`, after every arcade match;
    FrogletTools > Diagnostics > Fun Card) and `Tools/Build/fun_cards.py` (reads the answers from every bugledger
-   branch, `apply` records the step 1 and 2 sign-offs). No sign-off exists until someone answers one.
+   branch, `apply` records the step 1 and 2 sign-offs). **First answer 2026-11-13** (Garrett, Honeyguide Slip Line I1:
+   fun almost, rung right, weakest Rivals); no "yes" yet, so no sign-off. **Read the card with the flight it names**:
+   the card says which dimension is weakest, the flight record (rings, rivals, rivals' state, inputs) says why
+   (`SLIP_LINE.md` section 10 is the worked example).
 2. ~~No per-rung bars per game.~~ **Built 2026-11-12:** `rung_bars.json` (default bars, per-game overrides) and
    `Tools/Build/rung_bars.py` (checks every arcade game's I1-I4 from the human flights on the bugledger branches,
    learns a rung's bar from three "right" fun cards). First run: of the games with three or more finished-to-the-end
@@ -259,6 +262,8 @@ model number (standing rule).
 
 | Date | What moved |
 |---|---|
+| 2026-11-16 | **Honeyguide Time step 1**, driven by the first fun card (Garrett, Slip Line I1, "almost", weakest Rivals): the recorded race showed the rival's ring uncounted after a ride and a 65 s far-side circle; the mode's AI now flies a rail-safe race line with the Regatta steering and a throttle floor, and `VesselTransformer.SetPose` no longer counts a zero-length pose as a teleport (`SLIP_LINE.md` section 10, `slip_line_ai_sim.py`). I1 unchanged; waits on Garrett's next flight and card |
+| 2026-11-15 | **Garrett**: "make all the missing games you can" (one per element is ideal). Step 0 rostered for the whole fleet in `GAME_KIT_ROSTER.md`: 35 games with reserved `GameModes` ids 91-125 (126-127 for the Jewel Wasp) and hint toasts 166-202; Grizzly, Jacks and Stoat Mass and Urchin Space excused in `no_game_ok` (kits make nothing to score); Starling waits for its kit |
 | 2026-11-12 | **Garrett**: the loop dominates `/swimlanes` and `/approve`. The swim lanes board now opens with every unoccupied vessel as its own loop lane (progress and next step, `elemental_loop.vessel_lanes`); the approval queues rank entries by loop impact, the rework a late "against the vessel's spirit" catch would cause (`elemental_loop.rework`) |
 | 2026-11-12 | **Garrett** decided the fun card: it opens in Unity right after Play, after every arcade match (the newest answer per vessel, game and rung wins), and the per-rung bars are defaults, then learned from the card. Built: `FunCard.cs`, the Bug Hunt kind `fun`, `fun_cards.py`, `rung_bars.py`, `rung_bars.json` (scaffolding 1 and 2) |
 | 2026-11-12 | **Garrett** decided 1 and 2: one human's fun sign-off gates step 1 to step 2 and step 2 to step 3 (`elemental_loop.py` refuses a step 1 or 2 `done` that is not `--kind human`, and a step `done` before the one below it); vessel tunings go through and queue for his `/approve` without waiting |

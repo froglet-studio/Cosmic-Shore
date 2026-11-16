@@ -47,8 +47,17 @@ MonoBehaviour:
   - 90
   - 90
   jackstrawStrikeTarget: 3
+  riposteStrikeTarget: 6
+  bullrushGoreTarget: 5
+  windrowRoundSeconds: 90
+  landslidePrismTarget: 500
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
+  shockfrontRippleTarget: 10
+  fulmenPrismTarget: 1200
+  trawlPrismTarget: 300
+  railrushHitTarget: 20
+  standoffBlastTarget: 10
   shatterplanePrismTarget: 1600
   shatterplanePrismTargetByIntensity:
   - 1600
@@ -56,9 +65,36 @@ MonoBehaviour:
   - 2000
   - 1000
   harvestPrismTarget: 750
+  stingherdStingTarget: 12
   tapestryRoundSeconds: 90
+  palisadeRoundSeconds: 90
   glasshouseRoundSeconds: 90
+  riptidePrismTarget: 600
+  denBuilderRoundSeconds: 150
+  snapHitTarget: 5
+  cleanerRamStrikeTarget: 8
+  reefbuildRoundSeconds: 90
+  blastlinePrismTarget: 600
+  chumRoundSeconds: 90
+  starweaveRoundSeconds: 90
+  haulRoundSeconds: 90
+  hedgerowRoundSeconds: 90
+  longshotRoundSeconds: 90
+  marionetteStrikeTarget: 12
+  gorgeRoundSeconds: 90
+  podHuntBlastTarget: 15
+  iceShelfRoundSeconds: 90
+  depthChargePrismTarget: 1500
+  larderMissileTarget: 16
+  thornbushRoundSeconds: 90
+  lancefallPrismTarget: 600
+  sentryZapTarget: 40
+  warrenRoundSeconds: 90
+  caveInPrismTarget: 1000
   siroccoPrismTarget: 400
+  flitstrikeStrikeTarget: 5
+  honeycombRoundSeconds: 90
+  woodpeckerPrismTarget: 150
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
   tandavaHaloRingsToBreak: 9
@@ -81,6 +117,7 @@ MonoBehaviour:
   brittleStarTimeGateTarget: 16
   lanternRunGateTarget: 16
   thornlineGateTarget: 16
+  spearlineGateTarget: 24
   decoyRunGateTarget: 12
   perchRunGateTarget: 16
   slipLineGateTarget: 16
@@ -122,8 +159,17 @@ MonoBehaviour:
   - 90
   - 90
   jackstrawStrikeTargetBuild: 3
+  riposteStrikeTargetBuild: 6
+  bullrushGoreTargetBuild: 5
+  windrowRoundSecondsBuild: 90
+  landslidePrismTargetBuild: 500
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
+  shockfrontRippleTargetBuild: 10
+  fulmenPrismTargetBuild: 1200
+  trawlPrismTargetBuild: 300
+  railrushHitTargetBuild: 20
+  standoffBlastTargetBuild: 10
   shatterplanePrismTargetBuild: 1600
   shatterplanePrismTargetByIntensityBuild:
   - 1600
@@ -131,9 +177,36 @@ MonoBehaviour:
   - 2000
   - 1000
   harvestPrismTargetBuild: 750
+  stingherdStingTargetBuild: 12
   tapestryRoundSecondsBuild: 90
+  palisadeRoundSecondsBuild: 90
   glasshouseRoundSecondsBuild: 90
+  riptidePrismTargetBuild: 600
+  denBuilderRoundSecondsBuild: 150
+  snapHitTargetBuild: 5
+  cleanerRamStrikeTargetBuild: 8
+  reefbuildRoundSecondsBuild: 90
+  blastlinePrismTargetBuild: 600
+  chumRoundSecondsBuild: 90
+  starweaveRoundSecondsBuild: 90
+  haulRoundSecondsBuild: 90
+  hedgerowRoundSecondsBuild: 90
+  longshotRoundSecondsBuild: 90
+  marionetteStrikeTargetBuild: 12
+  gorgeRoundSecondsBuild: 90
+  podHuntBlastTargetBuild: 15
+  iceShelfRoundSecondsBuild: 90
+  depthChargePrismTargetBuild: 1500
+  larderMissileTargetBuild: 16
+  thornbushRoundSecondsBuild: 90
+  lancefallPrismTargetBuild: 600
+  sentryZapTargetBuild: 40
+  warrenRoundSecondsBuild: 90
+  caveInPrismTargetBuild: 1000
   siroccoPrismTargetBuild: 400
+  flitstrikeStrikeTargetBuild: 5
+  honeycombRoundSecondsBuild: 90
+  woodpeckerPrismTargetBuild: 150
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35
   tandavaHaloRingsToBreakBuild: 9
@@ -156,6 +229,7 @@ MonoBehaviour:
   brittleStarTimeGateTargetBuild: 16
   lanternRunGateTargetBuild: 16
   thornlineGateTargetBuild: 16
+  spearlineGateTargetBuild: 24
   decoyRunGateTargetBuild: 12
   perchRunGateTargetBuild: 16
   slipLineGateTargetBuild: 16

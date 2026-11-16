@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-maelstrom-intensities-are-now-four-exclu-567280",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-16T19:11:20+00:00",
+  "area": "Maelstrom (intensity tiers, pool)",
+  "summary": "Maelstrom intensities are now four EXCLUSIVE buckets (1 Beginner, 2 Great, 3 Good, 4 Floor; Garrett 2026-11-16) instead of the cumulative pick-up ladder, and the pool is every arcade card (83, was 16). MaelstromDataSO.GamesForIntensity deals only tier N (empty bucket falls back to the whole queue); MaelstromData.asset GameQueue + IntensityTiers are written by Tools/Build/maelstrom_tiers.py from measured flights, launches, git history and verdicts (Docs/MaelstromSystem/INTENSITY_TIERS.md). Cleave is held in the Floor by your run's host-freeze finding. Your multiplayer runs at ceiling 2 now draw only Skim Race (Great has one game).",
+  "branch": "cece/stoic-bell-yk2nmv",
+  "commit": "8c1e3b2fc"
+}

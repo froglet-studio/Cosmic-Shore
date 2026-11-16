@@ -24,6 +24,8 @@ public static class Runner
         if (args.Length > 0 && args[0] == "--sweep") { Sweep(); return 0; }
         if (args.Length > 1 && args[0] == "--why") { Why(int.Parse(args[1])); return 0; }
         if (args.Length > 2 && args[0] == "--trace") { Trace(int.Parse(args[1]), int.Parse(args[2])); return 0; }
+        if (args.Length > 2 && args[0] == "--export") { Export(int.Parse(args[1]), int.Parse(args[2]), args.Length > 3 ? int.Parse(args[3]) : 1); return 0; }
+        if (args.Length > 2 && args[0] == "--rails") { RailsOn(int.Parse(args[1]), args[2]); return 0; }
 
         int pass = 0, fail = 0;
         var asm = Assembly.GetExecutingAssembly();
@@ -196,6 +198,42 @@ public static class Runner
         }
         rides = count;
         return t;
+    }
+
+    // --export I seed [count]: the course's rings and rails as JSON, one course a line (count seeds from seed on), for
+    // Tools/Build/slip_line_ai_sim.py, which flies the AI's gate steering on them with the rails as walls.
+    static void Export(int intensity, int seed, int count = 1)
+    {
+        var s = SlipLineCourse.ForIntensity(intensity);
+        string V(Vector3 v) => $"[{v.x:R},{v.y:R},{v.z:R}]";
+        for (int k = 0; k < count; k++)
+        {
+            var rings = SlipLineCourse.Generate(seed + k, s);
+            if (rings == null) continue;
+            var rails = new List<Rail>();
+            SlipLineCourse.RailsFor(rings, s, rails);
+            Console.WriteLine($"{{\"seed\":{seed + k},\"intensity\":{intensity},\"rings\":[" +
+                string.Join(",", rings.Select(g => $"[{V(g.Position)},{V(g.Axis)},{g.Radius:R}]")) + "],\"rails\":[" +
+                string.Join(",", rails.Select(r => $"[{V(r.Start)},{V(r.End)},{r.Colour},{r.Ring},{(r.Chained ? 1 : 0)}]")) + "]}");
+        }
+    }
+
+    // --rails I x,y,z,ax,ay,az,r;... : the rails RailsFor lays on the given rings (a recorded flight's "ringList", whose
+    // seed it does not carry). At I1 only the rail lengths hash the axes' exact bits, so a rounded record moves them a little.
+    static void RailsOn(int intensity, string ringsArg)
+    {
+        var s = SlipLineCourse.ForIntensity(intensity);
+        var rings = new List<RaceGate>();
+        foreach (var r in ringsArg.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var f = r.Split(',').Select(x => float.Parse(x, CultureInfo.InvariantCulture)).ToArray();
+            rings.Add(new RaceGate(new Vector3(f[0], f[1], f[2]), new Vector3(f[3], f[4], f[5]).normalized, f[6]));
+        }
+        s.RingCount = rings.Count;
+        var rails = new List<Rail>();
+        SlipLineCourse.RailsFor(rings, s, rails);
+        string V(Vector3 v) => $"[{v.x:R},{v.y:R},{v.z:R}]";
+        Console.WriteLine("{\"rails\":[" + string.Join(",", rails.Select(x => $"[{V(x.Start)},{V(x.End)},{x.Colour},{x.Ring},{(x.Chained ? 1 : 0)}]")) + "]}");
     }
 
     static void Trace(int intensity, int seed)
