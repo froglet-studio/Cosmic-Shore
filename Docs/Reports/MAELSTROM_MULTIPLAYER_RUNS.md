@@ -6,6 +6,31 @@ the keyboard. Asked for by Yash ("multiplayer Maelstrom testing 3 times, log all
 **Result: 1 of 3 finished.** Run 1 lost the host to a 72 s freeze, run 2 never finished its first round, run 3
 played three rounds to the summary with the same standings on both machines.
 
+## Correction (2026-11-17): the driver itself froze both editors every few seconds
+
+Yash watched a later run and saw the game freeze about 2 s every 3-5 s in every map. Measured in a Skim Race round
+with both players in the party: with nothing polling, 35 s had **no** frame over 0.25 s on the host and one of 0.37 s
+on the guest; with the driver's state probe running as in every run below, the same 35 s had **four freezes of
+1.9-3.0 s on each editor**, one per probe. Each probe is a Pipeline `eval`, which compiles its C# on the editor's main
+thread. So in all the runs in this report:
+
+- every match was played at a few seconds of freeze in every ten, on both machines;
+- every frame time and freeze length below may include one probe (2-3 s). The two 10.0 s load frames profiled on
+  2026-11-17 each carry 2.4-2.7 s of `EditorLoop`, which is most likely the probe;
+- run 2's Scurry round that never ended, and the weak AI scores, were measured under that stutter;
+- a probe cannot by itself make a 72 s frame, but run 1's freeze was not measured free of it either.
+
+What still stands: the same-display-name finding and its fix (a logic fault, checked in code and live), the guest's
+missing intensity ceiling, the console counts, and that a load frame near 10 s drops the host. What needs a re-run
+with a driver that does not `eval` during play (or with a person playing): every freeze length, finding 1's 72 s,
+and finding 3.
+
+**Profile, 2026-11-17** (host, a Maelstrom forced to draw Cleave first): Cleave loaded and played to the end with no
+long freeze, so the 72 s frame is 2 of 3 Cleave draws and was not captured. Two 10.0 s frames were: Cleave to the
+hub, and the hub to Wildlife Liberation. Both are the Single-load frame B45 already describes: activating the scene
+3.4-3.9 s (a 1.2-1.4 s `GC.Collect`, about 14,000 prisms destroyed), the `sceneLoaded` handlers 2.2-2.8 s (one lump,
+not split per handler), `EditorLoop` 2.4-2.7 s, first-frame setup 0.9-1.3 s.
+
 ## How the runs were made
 
 - Host: the main Unity editor (6000.3.17f1). Guest: MPPM Player 2 (its own UGS account, tag `Player2`). Live UGS
