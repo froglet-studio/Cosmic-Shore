@@ -98,27 +98,33 @@ namespace CosmicShore.UI
     }
 
     /// <summary>
-    /// The in-voyage HUD (Frogma Rev 113, Run and Compare; picked by Shombith, 2026-11-16): the objective box top left,
-    /// holding what stays true (the goal, the crystal counter with its split by element, the leg's cells calm or
-    /// hostile, the Ark's hull against its breach line, one action line), and the toasts top centre, one at a time, for
-    /// what just changed (those go through the run's banner, <see cref="VoyageToasts"/>). It reads
+    /// The in-voyage HUD's objective strip (Frogma Rev 114 O1, picked by Shombith 2026-11-16: "the objective on the left
+    /// was too big"; it was Rev 113's 600 x 330 box): a 420 x 120 strip 40 in from the top left, one thin left line, no
+    /// glow. Line 1 is the goal's name and its figure (the hull for an escort and the way home, the count for a Crystal
+    /// Run); then the hull bar with its breach line; then where the Ark is and whether it is hostile, with the route as
+    /// dots (a Crystal Run shows its four element flowers with their counts there instead); then one job line, in the
+    /// threat colour when it is one. The goal sentence, the time to the next world and the route's names are gone: the
+    /// intro and the first toast say them. Toasts are the run's banner (<see cref="VoyageToasts"/>). It reads
     /// <see cref="VoyageObjective.Source"/> a few times a second; every word is <see cref="VoyageLines"/>', chosen by
     /// <see cref="VoyageObjectiveText"/>. It never takes a tap.
     /// </summary>
     public sealed class VoyageObjectiveBox : MonoBehaviour
     {
         const float RefreshSeconds = 0.25f;
+        // Rev 114 O1, on the 1920 x 1080 frame.
+        const float StripX = 40f, StripY = 40f, StripWidth = 420f;
+        const float RouteWidth = 110f, RouteDot = 12f;
 
         VoyageHarbour _harbour;
         VoyageKit _kit;
         VoyageLines _lines;
 
         CanvasGroup _boxGroup;
-        TMP_Text _kicker, _goal, _counterLabel, _counter, _hull, _action, _stake;
-        RectTransform _counterRow, _crystalBar, _splitRow, _route, _hullBar, _breach;
+        TMP_Text _title, _figure, _place, _placeRight, _action;
+        RectTransform _hullBar, _breach, _route, _flowers;
         readonly Dictionary<Element, TMP_Text> _split = new();
         int _routeCells = -1;
-        readonly List<(Image dot, TMP_Text name, TMP_Text tag)> _stops = new();
+        readonly List<Image> _dots = new();
         float _nextRefresh;
 
         public void Configure(VoyageHarbour harbour)
@@ -138,10 +144,9 @@ namespace CosmicShore.UI
             go.transform.SetParent(transform, false);
             var root = VoyageHudColors.Overlay(go, 20001, hits: false);
 
-            // The objective box (Run: 600 wide, 40 in from the top left).
-            var box = VoyageKit.Node("ObjectiveBox", root);
-            VoyageKit.At(box, 40f, 40f, 600f, 0f);
-            VoyageKit.Block(box, VoyageKit.Fade(_kit.Popup, 0.84f));
+            var box = VoyageKit.Node("ObjectiveStrip", root);
+            VoyageKit.At(box, StripX, StripY, StripWidth, 0f);
+            VoyageKit.Block(box, VoyageKit.Fade(_kit.Popup, 0.82f));
             var edge = VoyageKit.Node("Edge", box);
             VoyageKit.Le(edge).ignoreLayout = true;
             edge.anchorMin = Vector2.zero;
@@ -149,81 +154,71 @@ namespace CosmicShore.UI
             edge.pivot = new Vector2(0f, 0.5f);
             edge.sizeDelta = new Vector2(2f, 0f);
             VoyageKit.Block(edge, _kit.Light);
-            var col = VoyageKit.Column(box, 10f);
-            col.padding = new RectOffset(26, 26, 22, 22);
+            var col = VoyageKit.Column(box, 8f);
+            col.padding = new RectOffset(18, 18, 14, 14);
             box.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             _boxGroup = box.gameObject.AddComponent<CanvasGroup>();
             _boxGroup.alpha = 0f;
             _boxGroup.blocksRaycasts = _boxGroup.interactable = false;
 
-            _kicker = _kit.Label(box, 15, _kit.Light);
-            _goal = _kit.Text(box, 23, _kit.Light, TextAlignmentOptions.TopLeft);
-            _goal.textWrappingMode = TextWrappingModes.Normal;
-            _goal.overflowMode = TextOverflowModes.Overflow;
+            // Line 1: the goal's name, and its figure on the right.
+            var top = VoyageKit.Node("Top", box);
+            VoyageKit.Row(top, 8f, TextAnchor.LowerLeft, expandWidth: true);
+            _title = _kit.Label(top, 13, _kit.Light);
+            _figure = _kit.Text(top, 18, _kit.Light, TextAlignmentOptions.BottomRight);
 
-            _counterRow = VoyageKit.Node("Counter", box);
-            VoyageKit.Row(_counterRow, 12f, TextAnchor.LowerLeft, expandWidth: true);
-            _counterLabel = _kit.Label(_counterRow, 15, VoyageHudColors.Second);
-            _counter = _kit.Text(_counterRow, 38, _kit.Light, TextAlignmentOptions.BottomRight);
-            (_crystalBar, _) = VoyageHudColors.Bar(_kit, box, 14f, breach: false);
+            // The hull bar and its breach line.
+            (_hullBar, _breach) = VoyageHudColors.Bar(_kit, box, 8f, breach: true);
 
-            _splitRow = VoyageKit.Node("Split", box);
-            VoyageKit.Row(_splitRow, 22f);
+            // Line 3: where the Ark is, then the route's dots (or a Crystal Run's flowers, then where it is).
+            var mid = VoyageKit.Node("Where", box);
+            VoyageKit.Row(mid, 14f, TextAnchor.MiddleLeft, expandWidth: true);
+            _flowers = VoyageKit.Node("Flowers", mid);
+            VoyageKit.Row(_flowers, 14f);
             foreach (var e in VoyageRaid.Elements)
             {
-                var cell = VoyageKit.Node(e.ToString(), _splitRow);
-                VoyageKit.Row(cell, 8f);
+                var cell = VoyageKit.Node(e.ToString(), _flowers);
+                VoyageKit.Row(cell, 4f);
                 var flower = VoyageKit.Flower(cell, e, VoyageHudColors.Second);
                 var fle = VoyageKit.Le(flower);
-                fle.minWidth = fle.preferredWidth = fle.minHeight = fle.preferredHeight = 20f;
-                _split[e] = _kit.Text(cell, 15, VoyageHudColors.Second, TextAlignmentOptions.Left);
+                fle.minWidth = fle.preferredWidth = fle.minHeight = fle.preferredHeight = 16f;
+                _split[e] = _kit.Text(cell, 13, VoyageHudColors.Second, TextAlignmentOptions.Left);
             }
-
-            _route = VoyageKit.Node("Route", box);
+            _place = _kit.Text(mid, 14, VoyageHudColors.Second, TextAlignmentOptions.Left);
+            _placeRight = _kit.Text(mid, 13, VoyageHudColors.Second, TextAlignmentOptions.Right);
+            _route = VoyageKit.Node("Route", mid);
             var rle = VoyageKit.Le(_route);
-            rle.minHeight = rle.preferredHeight = 70f;
+            rle.minWidth = rle.preferredWidth = RouteWidth;
+            rle.minHeight = rle.preferredHeight = RouteDot;
 
-            _hull = _kit.Label(box, 15, VoyageHudColors.Second);
-            (_hullBar, _breach) = VoyageHudColors.Bar(_kit, box, 12f, breach: true);
-
-            _stake = _kit.Text(box, 16, VoyageHudColors.Second, TextAlignmentOptions.Left);
-            _action = _kit.Text(box, 19, VoyageHudColors.Second, TextAlignmentOptions.TopLeft);
+            // Line 4: the one job line.
+            _action = _kit.Text(box, 15, VoyageHudColors.Second, TextAlignmentOptions.TopLeft);
             _action.textWrappingMode = TextWrappingModes.Normal;
             _action.overflowMode = TextOverflowModes.Overflow;
         }
 
+        /// <summary>The route as dots on a line (Rev 114 O1): done and current lit, the destination ringed in the call
+        /// colour, the rest ringed.</summary>
         void BuildRoute(int cells)
         {
             _routeCells = cells;
-            _stops.Clear();
+            _dots.Clear();
             for (int i = _route.childCount - 1; i >= 0; i--) Destroy(_route.GetChild(i).gameObject);
             if (cells <= 0) return;
             var line = VoyageKit.Node("Line", _route);
-            line.anchorMin = new Vector2(0f, 1f);
-            line.anchorMax = new Vector2(1f, 1f);
-            line.pivot = new Vector2(0.5f, 0.5f);
-            line.offsetMin = new Vector2(10f, -11f);
-            line.offsetMax = new Vector2(-10f, -9f);
+            line.anchorMin = new Vector2(0f, 0.5f);
+            line.anchorMax = new Vector2(1f, 0.5f);
+            line.offsetMin = new Vector2(RouteDot * 0.5f, -1f);
+            line.offsetMax = new Vector2(-RouteDot * 0.5f, 1f);
             VoyageKit.Block(line, VoyageKit.Fade(_kit.Outline, 0.8f));
             for (int i = 0; i < cells; i++)
             {
                 float x = cells == 1 ? 0.5f : (float)i / (cells - 1);
-                var stop = VoyageKit.Node("Stop" + i, _route);
-                stop.anchorMin = stop.anchorMax = new Vector2(x, 1f);
-                stop.pivot = new Vector2(i == 0 ? 0f : i == cells - 1 ? 1f : 0.5f, 1f);
-                stop.sizeDelta = new Vector2(120f, 70f);
-                stop.anchoredPosition = Vector2.zero;
-                var align = i == 0 ? TextAnchor.UpperLeft : i == cells - 1 ? TextAnchor.UpperRight : TextAnchor.UpperCenter;
-                var tAlign = i == 0 ? TextAlignmentOptions.Left : i == cells - 1 ? TextAlignmentOptions.Right : TextAlignmentOptions.Center;
-                VoyageKit.Column(stop, 4f, align).childForceExpandWidth = false;
-                var dotRt = VoyageKit.Node("Dot", stop);
-                var dle = VoyageKit.Le(dotRt);
-                dle.minWidth = dle.preferredWidth = dle.minHeight = dle.preferredHeight = 20f;
-                var dot = VoyageKit.Block(dotRt, _kit.Light);
-                var name = _kit.Text(stop, 13, VoyageHudColors.Second, tAlign);
-                var tag = _kit.Label(stop, 11, _kit.Sub, tAlign);
-                tag.characterSpacing = 10f;
-                _stops.Add((dot, name, tag));
+                var dot = VoyageKit.Node("Stop" + i, _route);
+                dot.anchorMin = dot.anchorMax = new Vector2(x, 0.5f);
+                dot.pivot = new Vector2(0.5f, 0.5f);
+                dot.sizeDelta = new Vector2(RouteDot, RouteDot);
+                _dots.Add(VoyageKit.Block(dot, _kit.Light));
             }
         }
 
@@ -234,7 +229,8 @@ namespace CosmicShore.UI
             if (Time.unscaledTime < _nextRefresh) return;
             _nextRefresh = Time.unscaledTime + RefreshSeconds;
             var source = VoyageObjective.Source;
-            bool shown = source != null && !VoyageScoreboard.IsOpen && source.TryGetObjective(out var o) && Show(o);
+            bool shown = source != null && !VoyageScoreboard.IsOpen && !VoyageIntro.IsPlaying &&
+                         source.TryGetObjective(out var o) && Show(o);
             _boxGroup.alpha = Mathf.MoveTowards(_boxGroup.alpha, shown ? 1f : 0f, 1f);
         }
 
@@ -242,38 +238,32 @@ namespace CosmicShore.UI
         {
             if (o.Goal == VoyageObjective.Kind.None) return false;
             bool raid = o.Goal == VoyageObjective.Kind.CrystalRun;
-            VoyageKit.Set(_kicker, VoyageObjectiveText.Kicker(_lines, o));
-            VoyageKit.Set(_goal, VoyageObjectiveText.GoalLine(_lines, o));
+            VoyageKit.Set(_title, VoyageObjectiveText.Title(_lines, o));
+            VoyageKit.Set(_figure, VoyageObjectiveText.Figure(_lines, o));
 
-            _counterRow.gameObject.SetActive(raid);
-            _crystalBar.parent.gameObject.SetActive(raid);
-            _splitRow.gameObject.SetActive(raid);
-            if (raid)
-            {
-                VoyageKit.Set(_counterLabel, _lines.ObjectiveCrystals);
-                VoyageKit.Set(_counter, TemplateText.Fill(_lines.ObjectiveCount, "done", o.Done.ToString(), "goal", o.Target.ToString()));
-                VoyageHudColors.SetFill(_crystalBar, o.Target > 0 ? (float)o.Done / o.Target : 0f);
-                foreach (var e in VoyageRaid.Elements)
-                {
-                    int n = o.Crystals != null ? o.Crystals[(int)e] : 0;
-                    VoyageKit.Set(_split[e], TemplateText.Fill(_lines.ObjectiveElement, "element",
-                        VoyageHudColors.ElementName(_lines, e), "count", n.ToString()));
-                }
-            }
-
-            ShowRoute(o);
-
-            int hull = Mathf.RoundToInt(o.Hull * 100f);
-            VoyageKit.Set(_hull, TemplateText.Fill(_lines.ObjectiveHull, "hull", hull.ToString()));
             VoyageHudColors.SetFill(_hullBar, o.Hull);
             VoyageHudColors.SetBreach(_breach, o.Breach);
 
-            // Under the hull: where the Ark is (an escort) or what is aboard and at stake (the way home).
-            string under = VoyageObjectiveText.UnderHull(_lines, o);
-            _stake.gameObject.SetActive(!string.IsNullOrEmpty(under));
-            VoyageKit.Set(_stake, under);
+            string where = VoyageObjectiveText.Place(_lines, o);
+            _flowers.gameObject.SetActive(raid);
+            _placeRight.gameObject.SetActive(raid);
+            _place.gameObject.SetActive(!raid);
+            _route.gameObject.SetActive(!raid && o.Cells > 0);
+            if (raid)
+            {
+                foreach (var e in VoyageRaid.Elements)
+                    VoyageKit.Set(_split[e], TemplateText.Fill(_lines.ObjectiveStripElement, "count",
+                        (o.Crystals != null ? o.Crystals[(int)e] : 0).ToString()));
+                VoyageKit.Set(_placeRight, where);
+            }
+            else
+            {
+                VoyageKit.Set(_place, where);
+                ShowRoute(o);
+            }
 
-            var (action, threat) = VoyageObjectiveText.Action(_lines, o);
+            var (action, threat) = VoyageObjectiveText.StripAction(_lines, o);
+            _action.gameObject.SetActive(!string.IsNullOrEmpty(action));
             VoyageKit.Set(_action, action);
             _action.color = threat ? VoyageHudColors.Threat : VoyageHudColors.Second;
             return true;
@@ -281,21 +271,13 @@ namespace CosmicShore.UI
 
         void ShowRoute(in VoyageObjective o)
         {
-            _route.gameObject.SetActive(o.Cells > 0);
             if (o.Cells <= 0) return;
             if (o.Cells != _routeCells) BuildRoute(o.Cells);
-            for (int i = 0; i < _stops.Count; i++)
+            for (int i = 0; i < _dots.Count; i++)
             {
-                var (dot, name, tag) = _stops[i];
-                bool last = i == _stops.Count - 1;
-                bool now = i == o.Cell - 1;
-                bool done = i < o.Cell - 1;
-                bool hostile = o.HostileCells != null && i < o.HostileCells.Length && o.HostileCells[i];
-                dot.color = done || now ? _kit.Light : last ? _kit.CtaFill : VoyageKit.Fade(_kit.Sub, 0.6f);
-                VoyageKit.Set(name, VoyageObjectiveText.StopName(_lines, o, i));
-                name.color = now ? _kit.Light : last ? _kit.CtaFill : done ? VoyageHudColors.Second : _kit.Sub;
-                VoyageKit.Set(tag, hostile ? _lines.ObjectiveHostileTag : _lines.ObjectiveCalmTag);
-                tag.color = hostile ? VoyageHudColors.Threat : _kit.Sub;
+                bool last = i == _dots.Count - 1;
+                bool reached = i <= o.Cell - 1;
+                _dots[i].color = reached ? _kit.Light : last ? _kit.CtaFill : VoyageKit.Fade(_kit.Sub, 0.6f);
             }
         }
     }
@@ -325,6 +307,53 @@ namespace CosmicShore.UI
                 : TemplateText.Fill(lines.ObjectiveEscortGoalNoBreach, "to", o.To),
             _ => string.Empty,
         };
+
+        /// <summary>The strip's first line (Rev 114 O1): the goal's name.</summary>
+        public static string Title(VoyageLines lines, in VoyageObjective o) => o.Goal switch
+        {
+            VoyageObjective.Kind.CrystalRun => lines.ObjectiveRaidKicker,
+            VoyageObjective.Kind.SailingHome => lines.ObjectiveHomeKicker,
+            VoyageObjective.Kind.Escort => lines.ObjectiveStripEscort,
+            _ => string.Empty,
+        };
+
+        /// <summary>The figure on the strip's first line: a Crystal Run's count, else the Ark's hull.</summary>
+        public static string Figure(VoyageLines lines, in VoyageObjective o) => o.Goal switch
+        {
+            VoyageObjective.Kind.None => string.Empty,
+            VoyageObjective.Kind.CrystalRun => TemplateText.Fill(lines.ObjectiveCount, "done", o.Done.ToString(),
+                "goal", o.Target.ToString()),
+            _ => TemplateText.Fill(lines.ObjectiveStripHull, "hull", Percent(o.Hull)),
+        };
+
+        /// <summary>Where the Ark is and whether it is hostile ("Scarab Reef · hostile", "Cell 2 · hostile").</summary>
+        public static string Place(VoyageLines lines, in VoyageObjective o)
+        {
+            if (o.Goal == VoyageObjective.Kind.None) return string.Empty;
+            string place = !string.IsNullOrEmpty(o.World) ? o.World
+                : o.Cell > 0 ? StopName(lines, o, o.Cell - 1) : string.Empty;
+            if (string.IsNullOrEmpty(place)) return string.Empty;
+            return TemplateText.Fill(lines.ObjectiveStripPlace, "place", place,
+                "state", o.Hostile ? lines.ObjectiveStripHostile : lines.ObjectiveStripCalm);
+        }
+
+        /// <summary>The strip's one job line: an escort's action line; on the way home what is at stake (else the action);
+        /// a Crystal Run only when the Ark is threatened or the goal is met (its flowers, count and place say the rest).</summary>
+        public static (string line, bool threat) StripAction(VoyageLines lines, in VoyageObjective o)
+        {
+            if (o.Goal == VoyageObjective.Kind.None) return (string.Empty, false);
+            var action = Action(lines, o);
+            if (o.Goal == VoyageObjective.Kind.CrystalRun)
+                // The place line already says hostile or calm; only the Ark's danger or a met goal earns a line.
+                return action.line == lines.ObjectiveHostile || action.line == lines.ObjectiveCalm
+                    ? (string.Empty, false) : action;
+            if (o.Goal == VoyageObjective.Kind.SailingHome && !action.threat)
+            {
+                string stake = UnderHull(lines, o);
+                if (!string.IsNullOrEmpty(stake)) return (stake, false);
+            }
+            return action;
+        }
 
         /// <summary>A stop's name on the route: its own name (an escort's worlds), the destination's for the last stop of
         /// a run, else "Cell n".</summary>

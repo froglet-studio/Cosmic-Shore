@@ -1011,6 +1011,18 @@ namespace CosmicShore.ScriptableObjects
         public string ObjectiveEscortHostile = "Hostile world: its fauna go for the Ark until you pacify it";
         [Tooltip("The escort's action line in a calm world.")]
         public string ObjectiveEscortCalm = "A world you hold: gather crystals and stay with the Ark";
+        [Tooltip("Objective strip (Rev 114 O1): the escort's title on its first line.")]
+        public string ObjectiveStripEscort = "ESCORT THE ARK";
+        [Tooltip("Objective strip: the hull figure on the first line's right. {hull} is the percent.")]
+        public string ObjectiveStripHull = "{hull}%";
+        [Tooltip("Objective strip: the world and its state. {place} is the world, {state} hostile or calm.")]
+        public string ObjectiveStripPlace = "{place} - {state}";
+        [Tooltip("Objective strip: the {state} word for a hostile world.")]
+        public string ObjectiveStripHostile = "hostile";
+        [Tooltip("Objective strip: the {state} word for a calm world.")]
+        public string ObjectiveStripCalm = "calm";
+        [Tooltip("Objective strip: the count beside each element flower. {count} is the crystals of that element.")]
+        public string ObjectiveStripElement = "{count}";
         [Tooltip("Scoreboard column: creatures felled near the Ark.")]
         public string ScoreColGuarded = "Off the Ark";
         [Tooltip("Scoreboard column: the seat's score.")]

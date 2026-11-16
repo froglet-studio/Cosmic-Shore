@@ -105,7 +105,7 @@ LINES_FIELDS += [
     "ScoreVentureEscort", "ScoreDone", "ScoreDoneLine", "ScoreFinishKey", "ScoreVentureKey",
     "ToastCellHostileSub", "ToastCellCalmSub", "ToastSetOff", "ToastSetOffSub", "ToastHome",
     "ToastHomeSub", "ObjectiveDestinationTag", "ObjectiveCalmTag", "ObjectiveHostileTag", "ObjectiveCellName",
-    "ToastArkUnderAttack", "ToastArkUnderAttackSub", "ToastBreachClose", "ToastBreachCloseSub", "ObjectiveEscortKicker", "ObjectiveEscortGoal", "ObjectiveEscortGoalNoBreach", "ObjectiveArkBound", "ObjectiveArkInside", "ObjectiveActionAssault", "ObjectiveActionIncoming", "ObjectiveActionUnderAttack", "ObjectiveActionHealing", "ObjectiveEscortHostile", "ObjectiveEscortCalm", "ScoreColGuarded", "ScoreColScore", "ScoreTryAgain", "ScoreTryAgainLine",
+    "ToastArkUnderAttack", "ToastArkUnderAttackSub", "ToastBreachClose", "ToastBreachCloseSub", "ObjectiveEscortKicker", "ObjectiveEscortGoal", "ObjectiveEscortGoalNoBreach", "ObjectiveArkBound", "ObjectiveArkInside", "ObjectiveActionAssault", "ObjectiveActionIncoming", "ObjectiveActionUnderAttack", "ObjectiveActionHealing", "ObjectiveEscortHostile", "ObjectiveEscortCalm", "ObjectiveStripEscort", "ObjectiveStripHull", "ObjectiveStripPlace", "ObjectiveStripHostile", "ObjectiveStripCalm", "ObjectiveStripElement", "ScoreColGuarded", "ScoreColScore", "ScoreTryAgain", "ScoreTryAgainLine",
 ]
 
 # Crystal Run's job keys (JobTemplate in VoyageContent.cs): an always-offered job counted from the moment the Ark sails.
