@@ -54,7 +54,7 @@ build "$COURSE" slipline
 case "${1:-}" in
   --sweep)  run slipline --sweep; exit 0 ;;
   --trace|--why)  run slipline "$@"; exit 0 ;;
-  --export) run slipline "$@"; exit 0 ;;
+  --export|--rails) run slipline "$@"; exit 0 ;;
 esac
 
 set +e; run slipline > "$OUT/result.txt"; rc=$?; set -e

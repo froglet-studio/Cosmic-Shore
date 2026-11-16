@@ -33,6 +33,16 @@ namespace CosmicShore.Gameplay
                  "running along it, inside the slip's aim cone.")]
         [SerializeField, Min(5f)] float aiRailLead = 40f;
 
+        [Tooltip("How far down the straight ring-to-ring line, past the hull's foot on it, the AI steers between rides " +
+                 "(SlipLineCourse.RaceLineAim). That line clears every rail by the course's own test, so the AI never " +
+                 "flies into a rail it does not mean to ride. SLIP_LINE.md section 5.")]
+        [SerializeField, Min(5f)] float aiRaceLineLead = 60f;
+
+        [Tooltip("The least throttle an AI flies, by its seat's difficulty: Easy, Medium, Hard, Legendary (Redline's " +
+                 "rule). On its skill throttle the Medium AI cruised at 35-37 u/s in Garrett's race, where a person flies " +
+                 "60 and the course's clock assumes 60. A floor only ever raises it.")]
+        [SerializeField] float[] aiThrottleFloorByDifficulty = { 0.7f, 0.85f, 1f, 1f };
+
         const string RailOwnerId = "SlipLine";
 
         readonly List<Rail> _rails = new();
@@ -46,6 +56,41 @@ namespace CosmicShore.Gameplay
         protected override string ModeName => "Slip Line";
 
         protected override RaceCourseSource CreateCourseSource() => new SlipLineCourseSource();
+
+        /// <summary>
+        /// The Regatta steering (GateRaceController.AICommitFromApproachPoint): commit no earlier than the approach point,
+        /// aim THROUGH THE CENTRE from where the pilot is, and after crossing a ring's plane outside the mouth re-latch and
+        /// break off at once. Garrett's I1 race of 2026-11-13: the rival crossed the tenth ring's mouth in a ride the race
+        /// did not count, then circled the far-side point on the side it had latched for 65 s, breaking off four times
+        /// onto the same circle. Through the centre from where it is, it threads the ring back the other way
+        /// (Tools/Build/slip_line_ai_sim.py --miss).
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
+
+        /// <summary>The AI's throttle floor for its seat's difficulty (<see cref="aiThrottleFloorByDifficulty"/>): a mode
+        /// setting on the AI's input, the vessel untouched.</summary>
+        protected override float AIThrottleFloorFor(IPlayer pilot) =>
+            RedlineController.ThrottleFloorFor(aiThrottleFloorByDifficulty, gameData ? (int)gameData.AIDifficultyFor(pilot) : 0);
+
+        /// <summary>
+        /// Between rides the AI flies the straight ring-to-ring line (<see cref="SlipLineCourse.RaceLineAim"/>), the line
+        /// the course test holds clear of every rail, instead of lining up on the ring's axis. The platform asks this only
+        /// while the pilot is not flying a difficulty mistake and has not just missed this mouth, and the rail coach
+        /// (<see cref="TryOverrideAim"/>) is asked first, so a planned ride still wins. Input only: the vessel is untouched.
+        /// </summary>
+        protected override bool TryRaceLine(IPlayer pilot, Vector3 self, out Vector3 aim, out Vector3 after)
+        {
+            aim = after = default;
+            if (_course.Count == 0) return false;
+            int threaded = pilot?.RoundStats?.SwitchesThreaded ?? -1;
+            if (threaded < 0 || threaded >= RaceLength) return false;
+            int ring = RingIndexFor(threaded);
+            if (!SlipLineCourse.RaceLineAim(_course, ring, self, aiRaceLineLead, out aim)) return false;
+            after = ring + 1 < _course.Count
+                ? _course[ring + 1].Position
+                : _course[ring].Position + _course[ring].Axis * 200f;
+            return true;
+        }
 
         public override void OnNetworkDespawn()
         {
