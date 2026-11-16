@@ -90,3 +90,23 @@ on the screen"). `ArkAttackerMarks`; the colour is Rev 113's breach red, traced.
 
 An escort that comes through owes `escortCrystalsPerDifficulty` (30) × difficulty crystals of
 `escortRewardElement` (Omni), banked when the Ark docks home like everything else.
+
+## 6. The raid window and carried crystals (P1, P6; Shombith, 2026-11-16)
+
+From the playtest ("Shouldnt the ark park at each cell and give us time to steal the cells crystals"), picked from the
+Voyage HUD and fun pass doc (https://claude.ai/artifact/JTaRK8Rb8798GrD3FXMFZt).
+
+- **The Ark anchors (P1).** On reaching each cell of a Crystal Run's leg the Ark stops at the core for a raid window:
+  `raidAnchorHostileSeconds` (60) in a hostile cell, `raidAnchorCalmSeconds` (35) in a calm one, the final cell
+  included. `raidAnchorWarnSeconds` (10) before it sails the horn (`arkHornSound`, shipped empty) and a threat toast
+  warn; then it weighs anchor. The strip's job line shows the clock. The hook is `ArkwayRun.AnchorSeconds`; only
+  `VoyageRun` sets it, so the escort and the Arkway toy never stop.
+- **Carried crystals are at risk (P6).** A crystal a seat takes is carried, not counted. Flying within
+  `raidBankRadius` (180 u) of the Ark banks it, and only banked crystals count toward the goal, the owed list and the
+  scoreboard. A hit from a hostile danger prism (another domain's, a creature's stinger) spills everything the seat
+  carries as loose crystals anyone can take (`ElementalCrystalEjector`), at most once per `raidSpillCooldownSeconds`.
+  Whatever is still carried at the stop is lost. `raidCrystalsAtRisk` off counts a crystal the moment it is taken.
+- **Words** (voyage_slice.json): ToastAnchored(+Sub), ToastAnchorClosing(+Sub), ToastWeighed, ToastBanked(+Sub),
+  ToastSpilled(+Sub), ObjectiveStripAnchor, ObjectiveStripCarried.
+- **Not yet:** spilled crystals are per-peer like every loose crystal, and the hull-contact event is raised on the
+  peer that runs the contact, so a party friend's spill and bank are only as good as that path; not run in Unity.
