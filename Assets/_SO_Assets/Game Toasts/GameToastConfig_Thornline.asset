@@ -64,3 +64,73 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 60
     repeatWhileIdle: 1
+  - situation: 420
+    messageTemplate: 'Sling into the lit sight - aim through a crystal to reset'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 421
+    messageTemplate: 'Snipe! Two rings, one sling'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 422
+    messageTemplate: 'Reset - the sling is ready'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 423
+    messageTemplate: '{0} took the crystal'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 424
+    messageTemplate: 'Caught short on a trail - aim beside it'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 425
+    messageTemplate: 'Past {0}'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 426
+    messageTemplate: '{0} slung past you'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

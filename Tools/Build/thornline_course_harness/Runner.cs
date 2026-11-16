@@ -152,9 +152,16 @@ public static class Runner
                 if (finished[d] < seeds) fails.Add($"I{intensity} {names[d]}: {finished[d]}/{seeds} finished");
                 if (!(med <= RungBar[intensity])) fails.Add($"I{intensity} {names[d]}: median {med:F1} s over the rung bar {RungBar[intensity]} s");
             }
+            // Ordered by what the rows differ in: Easy, Medium and Hard by their aim, every rung; Legendary over Hard by
+            // the crystal shots, from I2 (the rung that has crystals). At I1 the two aim alike (both converge inside the
+            // reload) and Legendary must only not be slower.
             for (int d = 1; d < 4; d++)
-                if (!(medians[intensity, d + 1] < medians[intensity, d] * (1f - OrderGap)))
-                    fails.Add($"I{intensity}: {names[d]} ({medians[intensity, d + 1]:F1} s) not {OrderGap * 100:F0}% under {names[d - 1]} ({medians[intensity, d]:F1} s)");
+            {
+                bool strict = d < 3 || intensity >= 2;
+                float gap = strict ? OrderGap : -0.01f;
+                if (!(medians[intensity, d + 1] < medians[intensity, d] * (1f - gap)))
+                    fails.Add($"I{intensity}: {names[d]} ({medians[intensity, d + 1]:F1} s) not {gap * 100:F0}% under {names[d - 1]} ({medians[intensity, d]:F1} s)");
+            }
         }
         foreach (var f in fails) Console.WriteLine("CLAIM FAILS: " + f);
         Console.WriteLine(fails.Count == 0 ? "every AI claim holds" : $"{fails.Count} AI claim(s) fail");

@@ -7,6 +7,8 @@
 #   bash Tools/Build/thornline_course_harness/run.sh                 # every test; exit 0 = all passed
 #   bash Tools/Build/thornline_course_harness/run.sh --self-test     # ...plus negative controls that must FAIL
 #   bash Tools/Build/thornline_course_harness/run.sh --sweep         # the ladder and the race clock per intensity
+#   bash Tools/Build/thornline_course_harness/run.sh --ai [--pack] [--seeds N] [--check]
+#                                                                    # AI Shrikes race whole courses (RaceReplica.cs)
 #
 # Needs a .NET SDK (8+): DOTNET_ROOT, else ~/.dotnet, else the folder of `dotnet` on PATH.
 set -euo pipefail
@@ -79,6 +81,31 @@ mutate() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must
 mutate "accidental skips allowed (gentle bends, no margin)" 's/public const float AccidentMargin = 15f;/public const float AccidentMargin = -40f;/; s/MinBend = new\[\] { 35f, 30f, 30f, 35f }/MinBend = new[] { 3f, 3f, 3f, 3f }/' 'MinBend = new\[\] { 3f, 3f, 3f, 3f }'
 mutate "legs pass through strangers" 's/public const float ThornClearance = 20f;/public const float ThornClearance = -30f;/' 'ThornClearance = -30f'
 mutate "the sling range drifts from the asset" 's/public const float SlingRange = 1600f;/public const float SlingRange = 1700f;/' 'SlingRange = 1700f'
-mutate "crystals on the centre line" 's/CrystalFaceFraction = 0.75f;/CrystalFaceFraction = 0f;/' 'CrystalFaceFraction = 0f'
+mutate "crystals on the centre line" 's/CrystalRimOffset = 8f;/CrystalRimOffset = 0f;/' 'CrystalRimOffset = 0f'
 mutate "rings off the middle of the leg" 's/(thorns\[k - 1\] + thorns\[k\]) \* 0.5f,/Vector3.Lerp(thorns[k - 1], thorns[k], 0.4f),/' 'Lerp(thorns\[k - 1\], thorns\[k\], 0.4f)'
+# 2026-11-17 upgrade (Docs/Thornline/UPGRADE_SPEC.md): each claim's own control.
+mutate "the old rim mark, outside the 12 u the sling catches" 's/CrystalRimOffset = 8f;/CrystalRimOffset = 17f;/' 'CrystalRimOffset = 17f'
+mutate "the anchor reach drifts from dockQueryReach" 's/public const float AnchorReach = 12f;/public const float AnchorReach = 14f;/' 'AnchorReach = 14f'
+mutate "lanes on the lance line" 's/public const float LaneOffset = 6.5f;/public const float LaneOffset = 2f;/' 'LaneOffset = 2f'
+mutate "lanes off the anchor disc" 's/public const float LaneOffset = 6.5f;/public const float LaneOffset = 13f;/' 'LaneOffset = 13f'
+mutate "no seat-cone guard in the walk" '/DistanceToSeatCone(next) < \|DistanceToSeatCone(ring) < /d; s/ \&\& SeatsClear(s, t, out _);/;/' 'Valid(s, t, out _);$'
+mutate "the old regrow sphere (size + 30 u)" 's/float h = size \* 0.5f, r = HullRadius + 1f;/float h = size * 0.5f + 30f, r = HullRadius + 1f;/' 'h = size \* 0.5f + 30f'
+
+# The AI race replica (run.sh --ai): the shipped rows hold every claim, and each control breaks one.
+build "$COURSE" thornline
+ai_claims() {   # $1 = label, $2 = must pass (0) or fail (1), the rest = --ai arguments
+  local label="$1" want="$2"; shift 2
+  set +e; run thornline --ai --seeds 30 --check "$@" > "$OUT/ai.txt"; local arc=$?; set -e
+  if [ "$want" = 0 ] && [ $arc -ne 0 ]; then cat "$OUT/ai.txt"; echo "AI CLAIMS FAIL: $label"; exit 1; fi
+  if [ "$want" = 1 ] && [ $arc -eq 0 ]; then echo "AI NEGATIVE CONTROL DID NOT FIRE: $label"; exit 1; fi
+  if [ "$want" = 0 ]; then echo "ai claims hold: $label"; else echo "ai negative control fired: $label ($(grep -c '^CLAIM FAILS' "$OUT/ai.txt") claim(s))"; fi
+}
+ai_claims "the shipped rows, solo" 0
+ai_claims "the shipped rows, a pack of four" 0 --pack
+ai_claims "no nose lead (the shipped AIPilot law)" 1 --lead 0,0,0,0
+ai_claims "the fleet's gains (1 at every difficulty)" 1 --lead 1,1,1,1
+ai_claims "centre aim in a pack (no lanes)" 1 --pack --centre
+# The replica's kit numbers are the shipped ones (ThornlineCourseTests pins the rest).
+grep -q "  PitchScaler: 60$" "$ROOT/Assets/_Prefabs/Spacevessels/Shrike.prefab" && grep -q "  YawScaler: 40$" "$ROOT/Assets/_Prefabs/Spacevessels/Shrike.prefab"   && grep -q "  RollScaler: 15$" "$ROOT/Assets/_Prefabs/Spacevessels/Shrike.prefab" && grep -q "  restrictedTurnMultiplier: 3$" "$ROOT/Assets/_Prefabs/Spacevessels/Shrike.prefab"   && grep -q "  undockPush: 8$" "$ROOT/Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset"   && grep -q "float _maxDistance = 50f;" "$ROOT/Assets/_Scripts/Controller/AI/AIPilot.cs" && grep -q "aggressiveness = 100f;" "$ROOT/Assets/_Scripts/Controller/AI/AIPilot.cs"   && grep -q "gain \* VesselTransformer.RotationFollowRate / noseFollowRate" "$ROOT/Assets/_Scripts/Controller/AI/AIPilot.cs"   || { echo "the replica's kit numbers no longer match Shrike.prefab / ShrikeConfig.asset / AIPilot.cs"; exit 1; }
+echo "replica kit numbers match the prefab, the config and AIPilot"
 echo "thornline_course_harness self-test: ok"

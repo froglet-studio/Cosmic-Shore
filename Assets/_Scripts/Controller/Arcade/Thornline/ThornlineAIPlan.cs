@@ -46,6 +46,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Seconds without a ring before an AI is steered at the nearest live thorn in range.</summary>
         public const float StallSeconds = 15f;
 
+        /// <summary>How long a stalled AI is pointed at the nearest live thorn before its stall clock starts again.</summary>
+        public const float RescueSeconds = 6f;
+
         // ── The shipped rows, by difficulty (index 0 Easy .. 3 Legendary). The controller's serialized arrays default to
         // these, the generator writes them into the scene, and the harness flies them (run.sh --ai).
         //

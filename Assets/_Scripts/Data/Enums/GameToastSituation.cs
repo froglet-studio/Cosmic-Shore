@@ -260,6 +260,18 @@ namespace CosmicShore.Data
         RedlineSoarDark = 365,          // the pilot's Time fell below Soar's relock (4): Soar is dark until a crystal
         RedlineRedline = 366,           // once a race: the pilot reached the redline: {0} = the speed in u/s
 
+        // Thornline, the Shrike's Time race (_Scripts/Controller/Arcade/THORNLINE.md, Docs/Thornline/UPGRADE_SPEC.md). Its
+        // race beats are the shared 129-132 + 30 (DomainRaceToasts). Posted to the LOCAL pilot only, from
+        // ThornlineController.Feedback. 420-429 are Thornline's band (the 2026-11-11 round 5 sessions each hold their own);
+        // 427-429 are free.
+        ThornlineHint = 420,            // once, at the start: sling into the lit sight, aim through a crystal to reset
+        ThornlineSnipe = 421,           // one sling threaded two rings
+        ThornlineCrystalReset = 422,    // the local pilot took a Time crystal: the sling is ready
+        ThornlineCrystalTaken = 423,    // a rival took the crystal on the local pilot's leg first: {0} = the rival
+        ThornlineCaughtShort = 424,     // a dock caught short on a trail or a nest, off any thorn
+        ThornlinePassed = 425,          // the local pilot passed a rival: {0} = the rival
+        ThornlineOvertaken = 426,       // a rival passed the local pilot: {0} = the rival
+
         // Grizzly Time, the Grizzly's Time race (_Scripts/Controller/Arcade/GRIZZLYTIME.md, Docs/GrizzlyTime/
         // POWDER_KEGS_SPEC.md). Its race beats are the shared 129-132 + 30 (DomainRaceToasts). Posted to the LOCAL pilot
         // only. 300-309 are reserved for Grizzly Time (2026-11-11: parallel Time-game sessions hold 310-429).

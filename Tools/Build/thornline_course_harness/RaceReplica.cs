@@ -76,6 +76,7 @@ public sealed class RaceReplica
         public float TraceAt, LeftAt = -99f;
         public Vector3 Push;
         public int LeftThorn = -1;
+        public float RescueUntil = -1f;
     }
 
     public struct Result
@@ -194,7 +195,15 @@ public sealed class RaceReplica
         input.Threaded = r.Threaded;
         input.Seat = r.Id;
         input.Row = r.Row;
-        input.Stalled = !NoRescue && now - r.LastRingAt >= ThornlineAIPlan.StallSeconds;
+        // The controller's stall clock (ThornlineController.AI TryOverrideAim): StallSeconds without a ring opens a
+        // RescueSeconds window, then the clock starts again.
+        if (!NoRescue && r.RescueUntil < 0f && now - r.LastRingAt >= ThornlineAIPlan.StallSeconds)
+        {
+            r.RescueUntil = now + ThornlineAIPlan.RescueSeconds;
+            r.Rescues++;
+        }
+        if (r.RescueUntil >= 0f && now >= r.RescueUntil) { r.RescueUntil = -1f; r.LastRingAt = now; }
+        input.Stalled = r.RescueUntil >= 0f;
         var kind = ThornlineAIPlan.Choose(input, out Vector3 target);
         if (Trace && now >= r.TraceAt)
         {
@@ -204,7 +213,6 @@ public sealed class RaceReplica
         }
         if (CentreAim && kind is ThornlineAim.Dock or ThornlineAim.Back or ThornlineAim.Snipe or ThornlineAim.Rescue)
             target = NearestThornCentre(target);
-        if (kind == ThornlineAim.Rescue && input.Stalled) { r.Rescues++; r.LastRingAt = now; }
 
         // ── AIPilot: the stick ──
         Vector3 fwd = r.Nose * Vector3.forward, up = r.Nose * Vector3.up, right = r.Nose * Vector3.right;
@@ -327,6 +335,7 @@ public sealed class RaceReplica
         {
             r.Threaded++;
             r.LastRingAt = now;
+            r.RescueUntil = -1f;
         }
         if (r.Threaded >= _rings.Count) { r.Finish = now; return; }
         for (int i = 0; i < _crystals.Count; i++)
