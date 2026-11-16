@@ -53,6 +53,30 @@ What this adds:
   during Play makes the editor import mid-match and freezes it for tens of seconds; the long "hang at Stop" after
   run 2 was the same import. Yesterday's runs were not checked for this.
 
+## Third set (2026-11-17, `036c5f3054`): 2 of 3 finished, clean
+
+Same in-editor driver, accounts Lion and Tiger, intensity ceiling 2. The checkout's commit and the editor's import
+count were recorded around each run: no change, no import, in any of the three.
+
+| Run | Rounds | Outcome | Longest frame, host / guest |
+|---|---|---|---|
+| 1 | Skim Race I1 x4 | **PASS**: summary in 432 s, Ruby 7 (1/1/2/1), Gold 5, Jade 0; last round's stats identical on both machines | 2.2 s / 2.8 s (all at scene loads) |
+| 2 | Skim Race I1, I2, I2, I2 | **PASS**: summary in 523 s, Gold 7 (1/1/2/1), Ruby 5, Jade 0; stats identical on both | 2.3 s / 2.9 s |
+| 3 | none | **FAIL at boot**: after 5 min the host was still `InPresenceLobby`, never a solo host `InParty`, so no invite was sent | - |
+
+- **Every round was Skim Race, by the new design.** `ce38e023aa` (Garrett's four tiers, merged that night) makes
+  `GamesForIntensity` deal only tier N, and tier 2 holds one game. A Maelstrom at intensity 2 is now Skim Race
+  back to back until someone reaches 6; the bag's "never the same mode twice running" cannot hold with a pool of one.
+  Cleave is in tier 4, so these runs could not draw it.
+- No freeze, no Relay drop, 0 429s, no gameplay error in either passing run. With no probe and no import, the worst
+  frame of a Maelstrom of four rounds is under 3 s.
+- Jade (Lion's hull on AI, Tiger's idle) came last in all eight rounds: half the team is not flying.
+- **Run 3's boot (new, party layer):** the third Play within 20 minutes logged `[AuthScene] Relay session not ready
+  (attempt 1/3)`, `[PartyStateMachine] Illegal transition: Disconnected -> HostingParty` and `-> InParty`, then
+  `[PresenceLobbyService] Converge join ... failed (SessionException): player is already a member of the lobby`.
+  The party panel then read `state=InPresenceLobby` with a session and one connection for the rest of the 5 minutes.
+  Seen once; not investigated.
+
 ## How the runs were made
 
 - Host: the main Unity editor (6000.3.17f1). Guest: MPPM Player 2 (its own UGS account, tag `Player2`). Live UGS
