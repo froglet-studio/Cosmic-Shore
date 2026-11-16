@@ -24,6 +24,68 @@ give me a vessel, ark, and prism cluster to attack."
 - **Retire condition for a new creature:** a "cut it" in the feedback log, or a second round in which it still wins
   no column and nobody says it feels good.
 
+## Round 4 (2026-11-16): further, and spindles from scratch
+
+Garrett: "yes this is a far better direction. now go far in this direction with a few more that really stretch what
+you are capable of", and then: "create a whole new skill that can make the spindles from scratch. deconstruct the
+current spindles of the fauna bodies ... then remake these bodies with bespoke spindles as another hierarchy of the
+design."
+
+### What changed
+
+1. **The `/spindle` skill and `Tools/Build/fauna_kit/spindle.py`.** The shipped spindle meshes taken apart (the braid
+   is three strands of a three-sided tube, 225 vertices; the sculpted bodies are ribbons two vertices wide woven into
+   nets), a library of eleven designs built from those two parts, the mesh each makes, and a vertex budget.
+2. **A new level in the hierarchy:** a creature is limbs, a limb names a spindle design, a design is how its wire is
+   made. The Ray and the Nettle were remade with designs.
+3. **`organic.py` grew:** barbs (a feather's, a comb's, a tendril's side lines), a limb's sway now ADDS to its
+   parent's (a tendril rides its bell), and light that travels down a limb.
+4. **The lab:** the travelling light, prisms on grown bodies drawn as light, and a bloom pass (the Wasp tab's last
+   slider; 0 is off).
+5. **Three new creatures:**
+   - **The Plume** (a feather star): ten feathered arms curling back from a small cup, five rising as five fall.
+   - **The Lantern** (a comb jelly): a clear woven body lit by the Etherion, eight comb rows with light running down
+     them, two long lines.
+   - **The Ammon** (a coiled shell): two mirrored spiral shells, light winding into their centres, six feelers.
+
+### Measured
+
+`spindle.py --budget --check` (the mesh each grown body makes; the bar is the Brittlestar's 5,072 vertices):
+
+| creature | limbs | vertices | triangles |
+|---|---|---|---|
+| Ray | 10 | 2,408 | 4,202 |
+| Ammon | 9 | 3,600 | 3,360 |
+| Plume | 11 | 4,076 | 3,420 |
+| Nettle | 29 | 4,789 | 5,268 |
+| Lantern | 19 | 5,006 | 5,240 |
+
+The Nettle as first built in round 3 was 11,508 vertices: the budget refused it, and designs brought it under.
+
+`silhouette.py --check` (bar 0.41): Ray 0.45, Manta 0.45, Lantern 0.43, Ammon 0.43 pass. **The Plume (0.36, nearest
+the Urchin hull) and the Nettle (0.40, the Rhino hull) FAIL**, and the command exits 1.
+
+### Checked
+
+`celestial.py --all` (twelve specs) and `--self-test`; `spindle.py --self-test` and `--budget --check`;
+`recreate.py --check` (0.00002 u, unchanged); `lab_export.py --check`; `verify_lab.cjs` PASS with the bloom pass on
+(no WebGL fault). Read: the Plume, Lantern, Ammon and Nettle in the lab.
+
+### Not done, and what only a person can judge
+
+- **Nothing is in Unity.** `spindle.py --obj` writes limbs as meshes Unity could import; none has been. A grown
+  creature needs those assets, a Spindle per limb, and a per-vertex sway in the spindle shader (`/spindle` section 5).
+- The vertex budget is not frame time: additive wire, bloom and one mesh a limb are not measured.
+- **The prisms still read as boxes** on these bodies, and the red stings are the loudest thing on screen.
+- The scorecard was not re-run for the three new creatures.
+- Whether they are beautiful: that is the live page, and yours.
+
+### Decisions needed (Garrett)
+
+1. Which of the five grown creatures go to Unity first, if any.
+2. The Plume's and the Nettle's outlines: reshape, or accept.
+3. What a prism should look like on a grown body.
+
 ## Round 3 (2026-11-16): the rules relaxed, and bodies that are grown
 
 Garrett: "keep these. we will test them. but now Relax the fauna rules a bit, so you can get us some fauna that are

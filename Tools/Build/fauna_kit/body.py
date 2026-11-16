@@ -90,17 +90,6 @@ def spindle_chains(spec):
     return out
 
 
-def _prism_sway(s, at):
-    """A prism rides its grown limb's wave: the sway of the limb at the point nearest the prism (the game's PrismSway)."""
-    if not s or s.get("mesh") != "grown" or not s.get("sway"):
-        return None
-    import organic
-    pts = organic.smooth(s["path"], 41)
-    i = min(range(41), key=lambda k: C.norm(C.sub(pts[k], at)))
-    off, ph = organic._sway(s["sway"], pts[i], i / 40.0, C.unit(s.get("normal", [0.0, 1.0, 0.0])))
-    return [round(v, 4) for v in off] + [round(ph, 4)]
-
-
 def _beat(s):
     """A spindle's beat with its axis resolved in the body's space: 'travel' is the travel axis, 'tangent' the
     direction round it at the limb (square to the travel axis and to the limb's radial), or a vector as given.
@@ -125,12 +114,23 @@ def from_spec(spec):
     wires, prisms = [], []
     bverts, btris = mesh(BRAID_SOURCE)
     by_name = {s["name"]: s for s in spec["spindles"]}
+    inherit = {}      # what each grown limb's ROOT is already doing: its parent's whole sway where they join
+
+    def base_of(s):
+        if s["name"] not in inherit:
+            par = by_name.get(s.get("parent"))
+            inherit[s["name"]] = organic.sway_at(par, s["from"], base_of(par)) if par and par.get("mesh") == "grown" else None
+        return inherit[s["name"]]
+    import organic
+    import spindle as SP
+    spec = dict(spec, spindles=[SP.resolve(s) for s in spec["spindles"]])      # a limb names a spindle DESIGN; its own keys win
+    by_name = {s["name"]: s for s in spec["spindles"]}
     for s in spec["spindles"]:
         if s.get("mesh") == "grown":
-            import organic
-            verts, edges, sway, _centre = organic.tube(s)
+            verts, edges, sway, glow, lines = organic.tube(s, base_of(s))
             wires.append({"name": s["name"], "source": "grown", "limb": s["name"], "verts": [[round(c, 4) for c in v] for v in verts],
-                          "edges": edges, "sway": sway, "tris": [], "parent": s.get("parent"), "pivot": list(s["from"]), "beat": None})
+                          "edges": edges, "sway": sway, "glow": glow, "tris": [], "parent": s.get("parent"), "pivot": list(s["from"]), "beat": None,
+                          "lines": lines, "design": s.get("design"), "section": s.get("section", 3), "wire": s.get("wire", [0.09, 0.04])})
             continue
         pos, rot = B.spindle_world(s)
         across, along = B.braid_scale(s)
@@ -144,16 +144,17 @@ def from_spec(spec):
         wires.append({"name": s["name"], "source": BRAID_SOURCE, "limb": s["name"], "verts": verts, "tris": btris,
                       "parent": s.get("parent"), "pivot": [float(v) for v in s["from"]], "beat": _beat(s)})
     for m in spec.get("membranes", []):
-        import organic
-        verts, edges, sway, tris = organic.sheet(by_name[m["a"]], by_name[m["b"]], m.get("across", 9))
+        la, lb = by_name[m["a"]], by_name[m["b"]]
+        verts, edges, sway, glow, tris = organic.sheet(la, lb, m.get("across", 9), base_of(la), base_of(lb))
         wires.append({"name": m["name"], "source": "grown", "limb": m["a"], "verts": [[round(c, 4) for c in v] for v in verts],
-                      "edges": edges, "sway": sway, "tris": tris, "parent": None, "pivot": [0, 0, 0], "beat": None, "membrane": True})
+                      "edges": edges, "sway": sway, "glow": glow, "tris": tris, "parent": None, "pivot": [0, 0, 0], "beat": None, "membrane": True})
     for p in spec["prisms"]:
         at, rot = B.prism_world(p)
         prisms.append({"name": p["name"], "kind": p["kind"], "shielded": bool(p.get("shielded")),
                        "at": [round(v, 5) for v in at], "q": [round(v, 6) for v in rot],
                        "size": [float(v) for v in p["size"]], "limb": p["spindle"], "role": p.get("role"),
-                       "sway": _prism_sway(by_name.get(p["spindle"]), at)})
+                       "sway": ([round(v, 4) for v in organic.sway_at(by_name[p["spindle"]], at, base_of(by_name[p["spindle"]]))]
+                                if by_name.get(p["spindle"], {}).get("mesh") == "grown" else None)})
     return {"root_scale": 1.0, "wires": wires, "prisms": prisms,
             "heart": {"at": [0.0, 0.0, 0.0], "scale": C.HEART_WORLD}, "chains": spindle_chains(spec),
             "spindles": [s["name"] for s in spec["spindles"]]}

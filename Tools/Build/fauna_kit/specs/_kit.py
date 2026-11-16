@@ -66,15 +66,32 @@ def elements(prisms, margin=1.01):
 
 # ---- grown limbs (organic.py; the relaxed laws of 2026-11-16) ----
 
-def grown(name, parent, points, girth=(0.5, 0.2), strands=3, twist=1.5, sway=None, normal=None, step=0.9):
-    """A limb grown along a smooth curve through `points`, tapering from girth[0] to girth[1]."""
+def grown(name, parent, points, girth=(0.5, 0.2), design=None, sway=None, normal=None, **own):
+    """A limb grown along a smooth curve through `points`, its girth running from girth[0] to girth[1]. `design` names
+    a spindle design (spindle.DESIGNS: how the wire of this limb is made); any other keyword (strands, twist, step,
+    barbs, glow, ties ...) is this limb's own and wins over its design."""
     s = {"name": name, "parent": parent, "mesh": "grown", "path": [list(p) for p in points], "from": list(points[0]),
-         "to": list(points[-1]), "girth": list(girth), "strands": strands, "twist": twist, "step": step}
+         "to": list(points[-1]), "girth": list(girth)}
+    if design:
+        s["design"] = design
     if sway:
         s["sway"] = dict(sway)
     if normal:
         s["normal"] = list(normal)
+    s.update(own)
     return s
+
+
+def spiral(a, centre, r0, turns, shrink, start=math.pi, steps=9):
+    """Points of a logarithmic spiral lying in the plane through the travel axis at angle a: `centre` is (radius, z),
+    the coil starts r0 from it at angle `start` and winds `turns` times, its radius falling by `shrink` a radian."""
+    out = []
+    n = int(turns * steps) + 1
+    for i in range(n):
+        th = 2 * math.pi * turns * i / (n - 1)
+        rho = r0 * math.exp(-shrink * th)
+        out.append(polar(centre[0] + rho * math.cos(start + th), a, centre[1] + rho * math.sin(start + th)))
+    return out
 
 
 def along(s, t):

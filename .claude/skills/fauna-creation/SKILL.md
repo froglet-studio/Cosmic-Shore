@@ -260,6 +260,12 @@ form, against a vessel, an Ark and a prism cluster. The loop for a new creature:
 6. the next round starts with `ArtifactData list decisions` and applies it.
 Only then does a creature earn a Unity build (section 4, steps 4-8).
 
+## 11. Bodies are built from spindle DESIGNS (2026-11-16): load `/spindle`
+
+A grown limb names a design (`design="rachis"`): how its wire is made. The designs, what the shipped spindles
+measurably are, the mesh budget (`spindle.py --budget --check`: 5,072 vertices a creature) and how to make a new
+design are the `/spindle` skill. Use a design before giving a limb its own strands and barbs.
+
 ## 10. The relaxed laws and GROWN wire (2026-11-16)
 
 Garrett, on the braid-built Manta: "Relax the fauna rules a bit, so you can get us some fauna that are more lifelike.

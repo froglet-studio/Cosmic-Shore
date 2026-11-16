@@ -16,21 +16,21 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _kit as K  # noqa: E402
 
 N = 2
-core = K.grown("Core", None, [[0, 0, -1.5], [0, 0, -10.0], [0, 0, -22.0], [0, 0, -30.0]], girth=(1.7, 0.45), strands=5, twist=1.2, step=0.6)
-whip = K.grown("Whip", "Core", [[0, 0, -30.0], [0, 0, -45.0], [0, 0, -60.0]], girth=(0.4, 0.07), strands=2, twist=3.0,
-               sway={"dir": [0, 1, 0], "amp": 4.0, "waves": 1.3, "pow": 1.6}, step=0.6)
+core = K.grown("Core", None, [[0, 0, -1.5], [0, 0, -10.0], [0, 0, -22.0], [0, 0, -30.0]], girth=(1.7, 0.45), design="core")
+whip = K.grown("Whip", "Core", [[0, 0, -30.0], [0, 0, -45.0], [0, 0, -60.0]], girth=(0.4, 0.07), design="whip",
+               sway={"dir": [0, 1, 0], "amp": 4.0, "waves": 1.3, "pow": 1.6})
 limbs, membranes, prisms = [], [], []
 for k, a in enumerate(K.angles(N, phase=0.0)):
     P = lambda r, z, a=a: K.polar(r, a, z)
     beat = {"dir": [0, 1, 0], "amp": 7.5, "waves": 0.75, "pow": 1.5}
     lead = K.grown(f"Lead{k}", "Core", [P(1.2, -2.2), P(12.0, -1.0), P(24.0, -5.0), P(32.0, -13.0), P(34.0, -17.0)],
-                   girth=(0.8, 0.18), strands=3, sway=beat, step=0.6)
+                   girth=(0.8, 0.18), design="spar", sway=beat)
     trail = K.grown(f"Trail{k}", "Core", [P(1.0, -21.0), P(10.0, -22.5), P(22.0, -20.5), P(30.0, -18.0), P(34.0, -17.0)],
-                    girth=(0.45, 0.12), strands=2, sway=dict(beat, phase=0.9), step=0.6)
-    lobe = K.grown(f"Lobe{k}", "Core", [P(1.4, -1.7), P(3.8, 1.5), P(5.2, 5.0), P(4.2, 8.0)], girth=(0.6, 0.12), strands=3,
-                   sway={"dir": "radial", "amp": 1.3, "waves": 0.5}, step=0.5)
+                    girth=(0.45, 0.12), design="vein", sway=dict(beat, phase=0.9))
+    lobe = K.grown(f"Lobe{k}", "Core", [P(1.4, -1.7), P(3.8, 1.5), P(5.2, 5.0), P(4.2, 8.0)], girth=(0.6, 0.12), design="spar",
+                   sway={"dir": "radial", "amp": 1.3, "waves": 0.5})
     limbs += [lead, trail, lobe]
-    membranes.append({"name": f"Web{k}", "a": f"Lead{k}", "b": f"Trail{k}", "across": 12})
+    membranes.append({"name": f"Web{k}", "a": f"Lead{k}", "b": f"Trail{k}", "across": 9})
     for tag, limb, t in (("a", lead, 0.66), ("b", lead, 0.88), ("c", trail, 0.45), ("d", trail, 0.72)):
         at, axis = K.along(limb, t)
         prisms.append({"name": f"Plate{k}{tag}", "spindle": limb["name"], "kind": "health", "at": at, "size": [0.5, 1.8, 3.6], "axis": axis})

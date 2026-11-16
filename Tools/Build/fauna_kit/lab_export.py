@@ -26,7 +26,7 @@ import recreate as R  # noqa: E402
 
 PAGE = os.path.join(D.REPO, "Docs", "Studios", "FaunaLab.html")
 BEGIN, END = "/*FAUNA_DATA_BEGIN*/", "/*FAUNA_DATA_END*/"
-NEW_SPECIES = ("ray", "nettle", "manta")
+NEW_SPECIES = ("plume", "lantern", "ammon", "ray", "nettle", "manta")
 # Round 1's five (Garrett, 2026-11-16: "these seem like variations on what we have"): one body plan (a spine, radial
 # limbs, a tail sting), a bare spoke star from ahead. silhouette.py puts the Teredo 0.19 from the Angler hull and the
 # Nautilus 0.29 from the Manta; the Marlin and Medusa scrape past the bar and the Basker stands apart (0.43), so
@@ -39,7 +39,7 @@ Q = 0.002   # vertex quantum (u at root scale 1): int16 covers +-65 u, every bod
 
 def pack(body):
     """A body for the page: one vertex buffer (int16, base64), wire edges (uint16 pairs), prisms, heart, limbs."""
-    verts, edges, segs, sway, tris = [], [], [], [], []
+    verts, edges, segs, sway, tris, glow = [], [], [], [], [], []
     grown = any(w.get("source") == "grown" for w in body["wires"])
     names = [w["name"] for w in body["wires"]]
     beats = any(w.get("beat") for w in body["wires"])
@@ -50,6 +50,7 @@ def pack(body):
         if w.get("source") == "grown":      # organic.py: its own edges, a sway per vertex, a membrane's fill
             edges += [(base + a, base + b) for a, b in w["edges"]]
             sway += [list(v) for v in w["sway"]]
+            glow += [list(v) for v in w["glow"]]
             tris += [(base + a, base + b, base + c) for a, b, c in w.get("tris", [])]
         else:
             seen = set()
@@ -58,7 +59,8 @@ def pack(body):
                     a, b = poly[i], poly[(i + 1) % len(poly)]
                     seen.add((min(a, b), max(a, b)))
             edges += [(base + a, base + b) for a, b in sorted(seen)]
-            sway += [[0.0, 0.0, 0.0, 0.0]] * len(w["verts"])
+            sway += [[0.0] * 6] * len(w["verts"])
+            glow += [[1.0, 0.0]] * len(w["verts"])
         if beats:      # one segment a spindle, parents first (a spec lists a limb after the limb it grows from)
             par = names.index(w["parent"]) if w.get("parent") in names else -1
             if par >= len(segs):
@@ -71,7 +73,8 @@ def pack(body):
     eb = struct.pack("<%d%s" % (len(edges) * 2, fmt), *[i for e in edges for i in e])
     extra = {}
     if grown:
-        extra = {"sw": base64.b64encode(struct.pack("<%df" % (len(sway) * 4), *[c for v in sway for c in v])).decode(),
+        extra = {"sw": base64.b64encode(struct.pack("<%df" % (len(sway) * 6), *[c for v in sway for c in v])).decode(),
+                 "gw": base64.b64encode(struct.pack("<%df" % (len(glow) * 2), *[c for v in glow for c in v])).decode(),
                  "t": base64.b64encode(struct.pack("<%d%s" % (len(tris) * 3, fmt), *[i for t in tris for i in t])).decode()}
     return {"q": q, "nv": len(verts), "v": base64.b64encode(vb).decode(), "ne": len(edges), "e32": fmt == "I",
             "e": base64.b64encode(eb).decode(), **extra,
