@@ -318,8 +318,6 @@ namespace CosmicShore.Gameplay
 
         void OnUnderway()
         {
-            Banner(TemplateText.Fill(_escort.DepartLine, "legs", _escort.Legs.Count.ToString(),
-                "difficulty", _difficulty.ToString()) + CourseBannerSuffix() + VoyageBannerSuffix());
             BringWingmates(force: true);
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;
@@ -331,6 +329,15 @@ namespace CosmicShore.Gameplay
                 r.HullAtEntry = r.HullMin = Ark ? Ark.AliveCount : 0;
                 r.EnteredAt = Time.time;
             }
+            BeginIntro();
+        }
+
+        /// <summary>The departure banner: what the voyage is, once the pilot has the stick (after the intro).</summary>
+        void Depart()
+        {
+            if (!_active || !_sea) return;
+            Banner(TemplateText.Fill(_escort.DepartLine, "legs", _escort.Legs.Count.ToString(),
+                "difficulty", _difficulty.ToString()) + CourseBannerSuffix() + VoyageBannerSuffix());
         }
 
         void OnRouteEnded()
@@ -572,6 +579,7 @@ namespace CosmicShore.Gameplay
         void Finish(ArkEscortReport.Outcome outcome)
         {
             _active = false;
+            StopIntro();
             _report.Result = outcome;
             _report.EndedAt = Time.time;
             FinishMetrics();
@@ -647,6 +655,7 @@ namespace CosmicShore.Gameplay
                 _sea.RouteEnded -= OnRouteEnded;
                 _sea.ArkFallen -= OnArkFallen;
             }
+            StopIntro();
             if (_active) SquadDeployment.Recall();
             if (_reactor) Destroy(_reactor);
             UnhookMetrics();

@@ -23531,3 +23531,23 @@ the new `VoyageStarterSquadTests` (editor) were not compiled or run. No Unity ed
    TALON, ANVIL and CITADEL's people. The Ark's Squads tab now lists "Starter Squad": Sparrow in Charge (you), Squirrel
    in Mass and Dolphin in Space on AI. Restart the game: the squad is still there.
 4. Escort the Ark with the starter squad: the two wingmates spawn as the Squirrel and the Dolphin.
+## 🔴 Escort the Ark opens with an intro: the Ark, the squad, the objective (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-st7qvh` (PR into `voyages`), Milestone 1. When the Ark sets sail (the load veil comes
+down) `ArkEscortRun` plays `VoyageIntro` from `Assets/Resources/Voyages/ArkEscortIntro.asset` (`VoyageIntroSO`):
+letterbox bars, the Ark, one shot per squad vessel (yours last), then the course and the objective, and a blend into
+your chase camera. Meanwhile your vessel flies on the escort AI with the stick held. The changed runtime files compile
+clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files); the new
+`VoyageIntroTests` (editor) were not run. No Unity editor ran.
+
+1. Run `VoyageIntroTests` and `VoyageShellTests`: all pass. Select `ArkEscortIntro.asset`: the inspector shows three
+   shots and the vessel list `SO_Classlist_All`.
+2. Escort the Ark from the Voyage window. When the veil comes down: black bars slide in, the flight HUD hides, the
+   camera arcs around the Ark with "THE ARK" and its line, then visits each wingmate and then your own vessel (vessel
+   name, seat, "You" or "AI wingmate"), then looks down the course with "ESCORT THE ARK" and the five world names.
+3. The bars leave and the camera settles behind your vessel; the flight HUD is back, you have the stick, and the
+   "ESCORT THE ARK THROUGH 5 WORLDS" banner shows. Your vessel is beside the Ark, not left behind.
+4. Escort again and hold any key or pad button (or touch) once the intro starts: the fill under "Hold any button to
+   skip" grows and the camera goes straight to the hand-over. A key held from before the intro does not skip it.
+5. Leave the voyage (pause menu, Main Menu) during the intro: the menu loads with the normal camera; no stuck bars.
+6. Run the escort sim (`ArkEscortSimLauncher`): no intro plays.

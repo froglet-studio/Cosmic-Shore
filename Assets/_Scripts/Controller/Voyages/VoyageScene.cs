@@ -92,6 +92,7 @@ namespace CosmicShore.Gameplay
                     _gameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
             }
             VoyageHarbour.Changed += HandleHarbourChanged;
+            VoyageIntro.Playing += HandleIntroPlaying;
             _gameData?.InitializeGame();
             if (_gameData?.LocalPlayer?.Vessel != null) HandleClientReady();
         }
@@ -203,6 +204,12 @@ namespace CosmicShore.Gameplay
             ReturnToMenu(0f);
         }
 
+        /// <summary>The voyage's intro is a film, not flight: the flight HUD steps aside while it plays.</summary>
+        void HandleIntroPlaying(bool playing)
+        {
+            if (!_returning) ShowFlightHud(!playing);
+        }
+
         void HandleHarbourChanged()
         {
             if (!_harbour) return;
@@ -280,6 +287,7 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             VoyageHarbour.Changed -= HandleHarbourChanged;
+            VoyageIntro.Playing -= HandleIntroPlaying;
             if (_gameData)
             {
                 _gameData.OnClientReady.OnRaised -= HandleClientReady;
