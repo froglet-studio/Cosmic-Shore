@@ -49,3 +49,12 @@ since it is net-new (no burn/ignite/DoT existed in the codebase before).
 - **Perf:** ~4 Hz tick, concurrent-burning cap (192), burnouts budgeted per tick
   (8) because each Steal/Damage triggers material/animation work. `ResetAll()`
   clears everything (call on turn end / scene transitions).
+
+## Mass is the claw's weight (2026-11-16)
+
+The weakest-abilities pass moved Mass off the trail (the prefab's `trailVolume` Mass scaling is disabled) and onto
+the claw, the Mass weapon: `GrizzlyFlamethrowerActionSO.reach` (60 u at rest -> 120 u at Mass 10, 30 at -5) and
+`bite` (prisms lit per tick, 3 -> 8, 1.5 at -5), both read live every tick; the cone on the hull is redrawn at the
+reach of the moment (whole units). The Weapon Systems card is the claw's flame breaking a prism; its Mass 5 twin keeps
+the prism whole (Claimed Fire). The card flashes on every weapon cycle.
+
