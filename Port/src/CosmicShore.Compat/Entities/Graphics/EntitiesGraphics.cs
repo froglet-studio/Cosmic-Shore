@@ -37,8 +37,10 @@ namespace Unity.Rendering
     /// Which mesh/material an entity draws with. Positive values are registered
     /// <see cref="BatchMaterialID"/>/<see cref="BatchMeshID"/> values; negative values are
     /// indices into the entity's <see cref="RenderMeshArray"/> (the original's encoding).
+    /// Enableable, as in Entities Graphics 1.4: a disabled MaterialMeshInfo hides the entity
+    /// without a structural change (PrismRenderService's show/hide, E-76248f9266).
     /// </summary>
-    public struct MaterialMeshInfo : IComponentData, IEquatable<MaterialMeshInfo>
+    public struct MaterialMeshInfo : IComponentData, IEnableableComponent, IEquatable<MaterialMeshInfo>
     {
         public int Material;
         public int Mesh;

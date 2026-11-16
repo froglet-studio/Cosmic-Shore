@@ -23924,3 +23924,20 @@ environment's package fetch could not resolve). No Unity editor, Play mode or Ed
 - [ ] Riptide (Space): Shatterplane's plates; the undertow pulls loose tiles, the ring collapse smashes them and
       PrismsDestroyed rises; first domain to 600 wins; the end screen breakdown matches the server's.
 - [ ] An all-AI seat in each mode plays (the crew AI locks, snaps, routes islands); the console is clean.
+
+## 🔴 Prism visibility by MaterialMeshInfo's enable bit - the chunk-metadata out-of-memory (2026-11-16, `claude/magical-wozniak-qekgwz`, Bug Ledger E-76248f9266, NOT RUN IN EDITOR)
+
+`PrismRenderService` shows and hides prism entities with `SetComponentEnabled<MaterialMeshInfo>` instead of adding and
+removing `DisableRendering` (why: the class's VisibilityFragmentationNote). Ran: `unity_refcompile` player and editor
+configs, 0 errors in the changed files (30 elsewhere, all from packages the cloud proxy would not fetch); `/ship` gates
+pass except two that fail on the base (`doc_summaries` on SwitchbackBlastRunTests.cs, refcompile's missing multiplayer
+package). Not run: the Unity editor, EditMode tests, the Amoebius build and engine tests (no .NET 10 SDK reachable).
+
+1. EditMode: `PrismRenderVisibilityChunkTests` passes. Its churn test needs Entities Graphics (it goes inconclusive in
+   batchmode with no GPU), so run it in the open editor.
+2. Play a long session that lays many long-lived prisms (Menu_Main freestyle 30+ min, or a Broadside / Voyage match):
+   no "Out of memory in the Entities Graphics chunk metadata buffer" assert. Window > Entities > Systems: the
+   EntitiesGraphicsSystem chunk count stays near prism entities / ~30, not near the entity count.
+3. Prisms still appear when laid, vanish when pooled, swarms show and hide members, explosions / slices / implosions
+   draw from their first frame, and a colour set applied from the Profile repaints hidden pooled prisms too.
+4. Amoebius: `engine_build` and `engine_test` (EntitiesShimTests' new enable-bit assertions); prisms still draw in the port.

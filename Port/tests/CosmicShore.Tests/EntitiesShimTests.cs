@@ -326,6 +326,27 @@ public class EntitiesShimTests : IDisposable
                 Assert.Equal(0, Count(out _, out _));                // hidden
                 em.RemoveComponent<DisableRendering>(e);
                 Assert.Equal(1, Count(out _, out _));                // shown again
+
+                // PrismRenderService's show/hide (E-76248f9266): MaterialMeshInfo's enable bit,
+                // never a structural change. Disabled hides, enabled shows, the plan follows.
+                em.SetComponentEnabled<MaterialMeshInfo>(e, false);
+                Assert.False(em.IsComponentEnabled<MaterialMeshInfo>(e));
+                Assert.Equal(0, Count(out _, out _));
+                em.SetComponentEnabled<MaterialMeshInfo>(e, true);
+                Assert.Equal(1, Count(out _, out _));
+
+                // The prototype contract: a clone of a prefab whose MaterialMeshInfo is disabled is born hidden.
+                var proto = em.Instantiate(e);
+                em.SetComponentEnabled<MaterialMeshInfo>(proto, false);
+                em.AddComponentData(proto, new Prefab());
+                var clone = em.Instantiate(proto);
+                Assert.False(em.HasComponent<Prefab>(clone));
+                Assert.False(em.IsComponentEnabled<MaterialMeshInfo>(clone));
+                Assert.Equal(1, Count(out _, out _));                // only e draws
+                em.SetComponentEnabled<MaterialMeshInfo>(clone, true);
+                Assert.Equal(2, Count(out _, out _));
+                em.DestroyEntity(clone);
+                em.DestroyEntity(proto);
                 em.DestroyEntity(e);
                 Assert.Equal(0, Count(out _, out _));
             }

@@ -766,8 +766,11 @@ the prompter's direction.** `ClockAnimationEnabled` is constant `true`; the form
   explosion VFX no longer check out a pooled GameObject at all: `PrismFactory.
   SpawnExplosion` routes to **`PrismDebris`**, which queues each death and, once per
   frame at LateUpdate, spawns the whole burst via `PrismRenderService.
-  SpawnExplosionDebrisBatch` — ONE `em.Instantiate(prototype, N)`, ONE batched
-  `DisableRendering` strip, per-entity `SetComponentData` stamps (pose, colors,
+  SpawnExplosionDebrisBatch` — ONE `em.Instantiate(prototype, N)`, a per-entity
+  `MaterialMeshInfo` enable-bit flip (visibility is never a structural change since
+  2026-11-16: the `DisableRendering` tag fragmented Entities Graphics chunks until its
+  chunk-metadata buffer ran out, E-76248f9266, `PrismRenderService`
+  VisibilityFragmentationNote), per-entity `SetComponentData` stamps (pose, colors,
   explode clock, flight-envelope `RenderBounds`), all at **full `DefaultDuration`**
   (no pressure shortening — a live entity effect costs zero per-frame CPU).
   Retirement is a flat time-ordered sweep (`PrismDebris.Sweep`) ending in ONE
@@ -920,7 +923,7 @@ its debris drawing the *same* frame), issues:
 
 | family | batch spawn | per-frame CPU while live | retirement |
 |---|---|---|---|
-| explosion | `PrismRenderService.SpawnExplosionDebrisBatch` — ONE `em.Instantiate(prototype, N)` + ONE batched `RemoveComponent<DisableRendering>` | **zero** | time-ordered sweep → ONE `DestroyEntity` batch |
+| explosion | `PrismRenderService.SpawnExplosionDebrisBatch` — ONE `em.Instantiate(prototype, N)` + a `MaterialMeshInfo` enable-bit flip per entity (no structural visibility change) | **zero** | time-ordered sweep → ONE `DestroyEntity` batch |
 | suction / implosion | `SpawnImplosionDebrisBatch` — same shape, Implosion override set | ONE `float3` per live effect (the §1 exception) | same sweep |
 
 Why the implosion needs a record and the explosion does not: the suction converges on a

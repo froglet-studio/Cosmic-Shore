@@ -585,9 +585,16 @@ namespace CosmicShore.ECS
                 }
             }
 
-            // Clones are born hidden (existing contract); the Prefab tag keeps the
-            // prototype itself invisible to every query and is stripped on Instantiate.
-            em.AddComponent<DisableRendering>(prototype);
+            // Clones are born hidden (existing contract) through MaterialMeshInfo's ENABLE
+            // BIT, which Instantiate copies. Never the DisableRendering tag: a tag toggle is
+            // a structural move, and Entities Graphics strips its per-chunk
+            // EntitiesGraphicsChunkInfo from hidden chunks and re-adds it to WHOLE chunks on
+            // show, so every frame that showed anything minted a new chunk that no later
+            // entity ever joined. Long-lived prisms pinned those chunks at one or two
+            // entities each until the chunk-metadata buffer (1M elements = ~30k chunks of
+            // this archetype) ran out - E-76248f9266, see VisibilityFragmentationNote. The
+            // Prefab tag keeps the prototype out of every query and is stripped on Instantiate.
+            em.SetComponentEnabled<MaterialMeshInfo>(prototype, false);
             em.AddComponent<Prefab>(prototype);
 
             _prototypes[key] = prototype;
@@ -709,10 +716,37 @@ namespace CosmicShore.ECS
             }
         }
 
-        /// <summary>Shows/hides the entity immediately (DisableRendering tag add/remove —
-        /// a structural change per call). Use for pooled VFX bursts and hand-offs to the
-        /// GameObject renderer, where same-instant application matters. High-churn
-        /// callers (the prism lifecycle) should use <see cref="QueueVisible"/>.</summary>
+        // ------------------------------------------------------------------
+        // Visibility is MaterialMeshInfo's enable bit - never a structural change
+        // ------------------------------------------------------------------
+        //
+        // VisibilityFragmentationNote (E-76248f9266, 2026-11-16). Visibility used to be the
+        // DisableRendering TAG. Entities Graphics (1.4.15, UpdateHybridChunksStructure) strips
+        // the EntitiesGraphicsChunkInfo chunk component from every chunk holding
+        // DisableRendering entities, and adds it back only to WHOLE chunks matching "rendered,
+        // no chunk info". So a shown entity first lands in a chunk WITHOUT the chunk component,
+        // and the whole chunk is then promoted to the rendered archetype. Nothing ever moves a
+        // single entity INTO an existing rendered chunk, so every frame that showed anything
+        // minted a fresh rendered chunk, and that chunk only died when its last entity was
+        // hidden or destroyed. A long-lived prism (a trail, an environment, a flora limb) pinned
+        // its frame's chunk forever: over a long play session the rendered chunk count
+        // approached the entity count (one or two entities a chunk), and Entities Graphics'
+        // fixed chunk-metadata buffer (1,048,576 elements = numProperties x chunks; the prism
+        // archetype has 34 properties, so ~30.8k chunks) ran out with 12k-35k live entities.
+        // Its "Out of memory in the Entities Graphics chunk metadata buffer" assert then fired
+        // every frame, leaked a TempOverflow allocation each time, and took the editor down
+        // with a native out-of-memory (Garrett's 2026-11-13 crash log).
+        //
+        // MaterialMeshInfo is an IEnableableComponent ("allows high frequency state changes",
+        // Entities Graphics changelog), the rendered query includes it, and culling skips a
+        // disabled entity. Flipping its bit moves nothing: the entity stays in its packed chunk,
+        // so chunks stay full and the count tracks entities / capacity. It also costs no
+        // structural sync. Do not reintroduce a tag (or any add/remove) for show/hide.
+
+        /// <summary>Shows/hides the entity immediately (MaterialMeshInfo's enable bit - not a
+        /// structural change; see VisibilityFragmentationNote). Use for pooled VFX bursts and
+        /// hand-offs to the GameObject renderer, where same-instant application matters.
+        /// High-churn callers (the prism lifecycle) should use <see cref="QueueVisible"/>.</summary>
         public static void SetVisible(in PrismRenderHandle handle, bool visible)
         {
             if (!IsUsable(in handle)) return;
@@ -722,20 +756,22 @@ namespace CosmicShore.ECS
             // (a ghost box drawing through the shield morph).
             s_pendingVisibility.Remove(handle.Entity);
             var em = _world.EntityManager;
-            bool hidden = em.HasComponent<DisableRendering>(handle.Entity);
-            if (visible && hidden)
-                em.RemoveComponent<DisableRendering>(handle.Entity);
-            else if (!visible && !hidden)
-                em.AddComponent<DisableRendering>(handle.Entity);
+            if (em.IsComponentEnabled<MaterialMeshInfo>(handle.Entity) != visible)
+                em.SetComponentEnabled<MaterialMeshInfo>(handle.Entity, visible);
         }
 
+        /// <summary>True when the entity behind <paramref name="handle"/> is live and drawn (its
+        /// MaterialMeshInfo is enabled). False for a stale handle. Tests and diagnostics.</summary>
+        public static bool IsVisible(in PrismRenderHandle handle) =>
+            IsUsable(in handle) && _world.EntityManager.IsComponentEnabled<MaterialMeshInfo>(handle.Entity);
+
         // ------------------------------------------------------------------
-        // Batched visibility — one structural change per direction per frame
+        // Batched visibility — one flush per frame
         // ------------------------------------------------------------------
 
         // Desired-state map (last write this frame wins) flushed once in LateUpdate,
-        // before rendering, by a hidden host. Per-entity DisableRendering toggles were
-        // per-prism structural changes; the batch APIs move N entities in two ops.
+        // before rendering, by a hidden host. Toggles from the prism lifecycle arrive in
+        // bursts; the flush applies each entity's final wish once.
         static readonly Dictionary<Entity, bool> s_pendingVisibility = new(64);
         static VisibilityFlushHost s_flushHost;
         static readonly Unity.Profiling.ProfilerMarker s_flushMarker = new("PrismRender.VisibilityFlush");
@@ -762,7 +798,7 @@ namespace CosmicShore.ECS
         static void HandleQuitting() => s_quitting = true;
 
         /// <summary>
-        /// Deferred SetVisible: applied in one batched structural change per direction
+        /// Deferred SetVisible: applied as enable-bit flips in one flush
         /// at LateUpdate — same frame, before rendering, so nothing is ever visibly
         /// late. The prism lifecycle routes its show/hide churn through this.
         /// </summary>
@@ -813,26 +849,16 @@ namespace CosmicShore.ECS
 
             using (s_flushMarker.Auto())
             {
+                // Enable-bit flips only (VisibilityFragmentationNote): no entity changes
+                // chunk, so the rendered chunks stay packed however much churn a frame has.
                 var em = _world.EntityManager;
-                var show = new Unity.Collections.NativeList<Entity>(s_pendingVisibility.Count, Unity.Collections.Allocator.Temp);
-                var hide = new Unity.Collections.NativeList<Entity>(s_pendingVisibility.Count, Unity.Collections.Allocator.Temp);
-
                 foreach (var kv in s_pendingVisibility)
                 {
                     var entity = kv.Key;
                     if (!em.Exists(entity)) continue;
-                    bool hidden = em.HasComponent<DisableRendering>(entity);
-                    if (kv.Value && hidden) show.Add(entity);
-                    else if (!kv.Value && !hidden) hide.Add(entity);
+                    if (em.IsComponentEnabled<MaterialMeshInfo>(entity) != kv.Value)
+                        em.SetComponentEnabled<MaterialMeshInfo>(entity, kv.Value);
                 }
-
-                if (show.Length > 0)
-                    em.RemoveComponent(show.AsArray(), ComponentType.ReadWrite<DisableRendering>());
-                if (hide.Length > 0)
-                    em.AddComponent(hide.AsArray(), ComponentType.ReadWrite<DisableRendering>());
-
-                show.Dispose();
-                hide.Dispose();
                 s_pendingVisibility.Clear();
             }
         }
@@ -1228,7 +1254,9 @@ namespace CosmicShore.ECS
                     ComponentType.ReadOnly<MaterialMeshInfo>(), ComponentType.ReadWrite<PrismBrightColorOverride>(),
                     ComponentType.ReadWrite<PrismDarkColorOverride>(), ComponentType.ReadWrite<PrismSpreadOverride>(),
                 },
-                Options = EntityQueryOptions.IncludeDisabledEntities,
+                // Hidden entities (pooled prisms) carry a DISABLED MaterialMeshInfo and must be
+                // restamped too, so the query ignores enable bits.
+                Options = EntityQueryOptions.IncludeDisabledEntities | EntityQueryOptions.IgnoreComponentEnabledState,
             });
             using var entities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
             int restamped = 0;
@@ -1839,7 +1867,7 @@ namespace CosmicShore.ECS
 
         /// <summary>
         /// Spawns every entry of <paramref name="spawns"/> as debris entities in ONE
-        /// prototype-instantiate + ONE batched visibility change; per-entity state
+        /// prototype-instantiate (born hidden, enabled per entity by a bit flip); per-entity state
         /// lands via non-structural SetComponentData. Spawned entities are appended
         /// to <paramref name="appendEntitiesTo"/> in spawn order (index-aligned with
         /// <paramref name="spawns"/>). Returns false — spawning nothing — when the
@@ -1860,10 +1888,10 @@ namespace CosmicShore.ECS
             var entities = new Unity.Collections.NativeArray<Entity>(
                 spawns.Count, Unity.Collections.Allocator.Temp);
             em.Instantiate(prototype, entities);
-            // Clones are born hidden (prototype ships DisableRendering); strip the
-            // whole batch in one structural op. The stamp below IS the correct
-            // initial state (amount 0, opacity 1 at t = startTime) — nothing to hide.
-            em.RemoveComponent(entities, ComponentType.ReadWrite<DisableRendering>());
+            // Clones are born hidden (the prototype's MaterialMeshInfo is disabled); the
+            // loop below enables each one - a bit flip, never a structural move
+            // (VisibilityFragmentationNote). The stamp IS the correct initial state
+            // (amount 0, opacity 1 at t = startTime) — nothing to hide.
 
             var mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh));
             float3 spread = ReadVector3(material, SpreadId);
@@ -1875,6 +1903,7 @@ namespace CosmicShore.ECS
                 var s = spawns[i];
                 var entity = entities[i];
                 em.SetComponentData(entity, mmi);
+                em.SetComponentEnabled<MaterialMeshInfo>(entity, true);
                 em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in s.LocalToWorld) });
                 em.SetComponentData(entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in s.BrightColor) });
                 em.SetComponentData(entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in s.DarkColor) });
@@ -1930,7 +1959,7 @@ namespace CosmicShore.ECS
         // ------------------------------------------------------------------
         // Batched pure-entity SLICE halves — the Rhino sword's death visual
         // (Docs/PRISM_ANIMATION.md §4.10, PrismSlice.hlsl). The explosion's shape
-        // exactly: one prototype-instantiate + one visibility strip per frame, every
+        // exactly: one prototype-instantiate + an enable-bit flip per half per frame, every
         // stamp a non-structural SetComponentData, retired in whole batches by
         // PrismSlice through DestroyDebrisBatch. Two entities per sliced prism, one
         // per half, both drawing the SHARED HighPolyPrismMesh — so a frame's slices
@@ -1958,7 +1987,7 @@ namespace CosmicShore.ECS
 
         /// <summary>
         /// Spawns every entry of <paramref name="spawns"/> as a slice half in ONE
-        /// prototype-instantiate + ONE batched visibility strip. Entities are appended to
+        /// prototype-instantiate (each half enabled by a bit flip). Entities are appended to
         /// <paramref name="appendEntitiesTo"/> index-aligned with <paramref name="spawns"/>.
         /// Returns false — spawning nothing — when the service is off or no world exists;
         /// the caller then falls back to the ordinary explosion (PrismSlice).
@@ -1977,9 +2006,9 @@ namespace CosmicShore.ECS
             var entities = new Unity.Collections.NativeArray<Entity>(
                 spawns.Count, Unity.Collections.Allocator.Temp);
             em.Instantiate(prototype, entities);
-            // Born hidden (prototype ships DisableRendering). The stamps below ARE the correct
-            // first frame — the two halves exactly tile the prism at age 0 — so strip at once.
-            em.RemoveComponent(entities, ComponentType.ReadWrite<DisableRendering>());
+            // Born hidden (the prototype's MaterialMeshInfo is disabled). The stamps below ARE
+            // the correct first frame — the two halves exactly tile the prism at age 0 — so
+            // the loop enables each at once (a bit flip; VisibilityFragmentationNote).
 
             var mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh));
 
@@ -1990,6 +2019,7 @@ namespace CosmicShore.ECS
                 var timing = s.Timing;
                 timing.x = startTime;
                 em.SetComponentData(entity, mmi);
+                em.SetComponentEnabled<MaterialMeshInfo>(entity, true);
                 em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in s.LocalToWorld) });
                 em.SetComponentData(entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in s.BrightColor) });
                 em.SetComponentData(entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in s.DarkColor) });
@@ -2042,8 +2072,8 @@ namespace CosmicShore.ECS
         }
 
         /// <summary>
-        /// Spawns every entry as a suction entity in ONE prototype-instantiate + ONE
-        /// batched visibility strip, exactly like
+        /// Spawns every entry as a suction entity in ONE prototype-instantiate + an
+        /// enable-bit flip per entity, exactly like
         /// <see cref="SpawnExplosionDebrisBatch"/>. Entities are appended to
         /// <paramref name="appendEntitiesTo"/> index-aligned with
         /// <paramref name="spawns"/>. Returns false — spawning nothing — when the
@@ -2064,10 +2094,9 @@ namespace CosmicShore.ECS
             var entities = new Unity.Collections.NativeArray<Entity>(
                 spawns.Count, Unity.Collections.Allocator.Temp);
             em.Instantiate(prototype, entities);
-            // Clones are born hidden (prototype ships DisableRendering); strip the
-            // whole batch in one structural op. An implosion is visible from frame
-            // zero — progress 0 IS the whole, unconsumed block.
-            em.RemoveComponent(entities, ComponentType.ReadWrite<DisableRendering>());
+            // Clones are born hidden (the prototype's MaterialMeshInfo is disabled); the
+            // loop enables each - a bit flip (VisibilityFragmentationNote). An implosion
+            // is visible from frame zero — progress 0 IS the whole, unconsumed block.
 
             var mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh));
             float3 spread = ReadVector3(material, SpreadId);
@@ -2077,6 +2106,7 @@ namespace CosmicShore.ECS
                 var s = spawns[i];
                 var entity = entities[i];
                 em.SetComponentData(entity, mmi);
+                em.SetComponentEnabled<MaterialMeshInfo>(entity, true);
                 em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in s.LocalToWorld) });
                 em.SetComponentData(entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in s.BrightColor) });
                 em.SetComponentData(entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in s.DarkColor) });
