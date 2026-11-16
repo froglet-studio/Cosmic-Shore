@@ -612,7 +612,11 @@ namespace CosmicShore.Gameplay
             return ArkReactor.MayRegrowIn(Domain, cell.HasNucleusControlZone, cell.IsInsideNucleus(at), claimed, claimant);
         }
 
-        bool RegrowAllowedNow => RegrowOverride ?? InOwnNucleus();
+        /// <summary>
+        /// Whether the reactor may regrow a prism right now: the run's <see cref="RegrowOverride"/> when set, otherwise the
+        /// fleet rule (<see cref="InOwnNucleus"/>). The voyage HUD reads it for its "healing" mark.
+        /// </summary>
+        public bool RegrowAllowed => RegrowOverride ?? InOwnNucleus();
 
         /// <summary>
         /// The fixed rate: one beat every <see cref="CosmicShore.ScriptableObjects.ArkReactorSO.RegrowSeconds"/>, and a
@@ -623,7 +627,7 @@ namespace CosmicShore.Gameplay
             if (!_reactorDefinition || _retiring) return;
             float now = Time.time;
             float period = _reactorDefinition.RegrowSeconds;
-            if (_layComplete && !_hullLost && ArkReactor.Beat(ref _nextRegrowAt, now, period) && RegrowAllowedNow && RegrowOne())
+            if (_layComplete && !_hullLost && ArkReactor.Beat(ref _nextRegrowAt, now, period) && RegrowAllowed && RegrowOne())
                 _lastRegrowAt = now;
 
             if (_model) _model.SetReactor(now - _lastRegrowAt < 2f * period);
