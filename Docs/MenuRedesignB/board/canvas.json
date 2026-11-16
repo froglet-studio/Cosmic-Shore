@@ -4189,6 +4189,15 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 113 - notes: what each board fixes from Shombith's Milestone 1 list"
+    },
+    "R113Sea.dc.html": {
+      "x": 2100,
+      "y": 20060,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Sea - the HyperSea page with the popup closed: two open voyages and one Crew recommends button where the list was",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -7665,6 +7674,7 @@
     "R113Hud.dc.html",
     "R113Run.dc.html",
     "R113Score.dc.html",
+    "R113Sea.dc.html",
     "R113Notes.dc.html"
   ],
   "pages": [

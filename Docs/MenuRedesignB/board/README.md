@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-16 from canvas version `1794851904-750c` of **Frogma**: Rev 3 to Rev 113, 507 boards on 13 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-16 from canvas version `1794852387-6df2` of **Frogma**: Rev 3 to Rev 113, 508 boards on 13 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -758,6 +758,7 @@ Copied on 2026-11-16 from canvas version `1794851904-750c` of **Frogma**: Rev 3 
 - [`R113Hud.dc.html`](R113Hud.dc.html) - Rev 113 Hud - Escort the Ark HUD: the objective box (goal, five worlds, hull and breach line, your job) and a threat toast
 - [`R113Run.dc.html`](R113Run.dc.html) - Rev 113 Run - Crystal Run HUD: the crystal counter leads, calm and hostile cells on the route
 - [`R113Score.dc.html`](R113Score.dc.html) - Rev 113 Score - The end: the Ark's hull, a row per seat, rewards, Finish and Venture further
+- [`R113Sea.dc.html`](R113Sea.dc.html) - Rev 113 Sea - the HyperSea page with the popup closed: two open voyages and one Crew recommends button where the list was - interactive
 - [`R113Notes.dc.html`](R113Notes.dc.html) - Rev 113 - notes: what each board fixes from Shombith's Milestone 1 list
 
 #### Rev 111 Voyages: the table opens to full screen, down to one Cell

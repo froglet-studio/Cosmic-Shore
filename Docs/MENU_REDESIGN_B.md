@@ -8418,7 +8418,7 @@ Shombith asked for three more fixes:
 - **The Ark's seats.** Each seat card has a blue (the worn set's cyan) glow along its edges (`VoyageEdgeGlow`), brighter on your own. No seat is "open" any more: you, then the friends in your lobby in the seats after yours, then an AI wingmate in every seat left (`VoyageRules.FriendAt`), each AI seat tagged "AI". A squad member who is not in your lobby reads "AI flies for {name} until they join". The way between your squad and no squad is always there ("Fly a squad instead" / "Fly without a squad").
 - **Friends fly their seats.** The voyage (and the Ark escort) releases AI wingmates only in seats no connected friend flies, by the same rule, so three friends in a lobby sail as three players, as in Arena. Queued for Garrett's `/approve` (his voyage runs).
 
-## 209. Rev 113 mockups: Voyages Milestone 1, Escort the Ark and Crystal Run end to end (2026-11-16, awaiting a pick)
+## 209. Rev 113 mockups: Voyages Milestone 1, Escort the Ark and Crystal Run end to end (2026-11-16; Lobby, Crew, the toasts and the in-flight HUDs liked)
 
 **Asked** (Shombith, 2026-11-16): "When I go to app shell I am confused as select your squad or use the lobby approach. For
 this milestone I want lobby approach to be the main task. Now when I select a vessel it doesnt really get applied in the
@@ -8451,3 +8451,15 @@ cells, 2 of them hostile, breach line 40%.
 Lobby drops that toggle for a squad shortcut that fills AI seats. The crew list on the HyperSea page becomes a popup.
 The objective box, the toast set and the end scoreboard are new HUD and end screens (today's `ShowBanner` lines stay as
 the toast). A first draft of the same screens was a standalone review page (https://claude.ai/artifact/L21DdQk9Gd5gzfBmdaynrk).
+
+**Picked (Shombith, 2026-11-16)**: "I like the toasts. I like the Lobby screen. Change your seat has weird borders maybe we can
+fix that. I like your crew recommends (It is still in the first voyage screen right) can I see that page once as well
+because the slider is not there anymore. I like all the in game UIs for now." Liked: Compare (toasts), Lobby, Crew, Hud,
+Run. Score had no word yet.
+
+**Changed on his notes (same day)**: Picker redrawn in place (a changed board, so the record of what he saw first is this
+section's list above): the popup is a flat panel with one thin line instead of the glass rim, the vessel tiles carry one thin
+line (the picked one in `#00D4FF`), "For this voyage" is plain text, the saved line has no bar. Added **Sea**: the
+HyperSea page (step 01) with the popup closed, Rev 108's table as it was, the crew list replaced by the two open voyages,
+the "Crew recommends · 8" button (Y) and a locked line. Section refitted to hold it.
+

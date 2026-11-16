@@ -15,6 +15,7 @@ worlds ending at The Maw, breach line 25% at difficulty 2; Crystal Run is 20 cry
   Compare  the toasts across one voyage, each beside the moment that raises it
   Lobby    your Ark, lobby only; a saved squad only fills the open AI seats; "You sail as" beside Set sail (recommended)
   Picker   the seat popup on Vessel: one press saves the seat for this voyage and says so
+  Sea      the HyperSea page with the popup closed: two open voyages and the Crew recommends button where the list was
   Crew     crew recommends as a popup: Escort the Ark and Crystal Run open, the rest by faction, locked
   Hud      Escort the Ark in flight: the objective box and a threat toast
   Run      Crystal Run in flight: the crystal counter leads; calm and hostile cells on the route
@@ -141,24 +142,24 @@ def picker_board():
                ("Dolphin", "Skimmer: rides the trail, jumps it", False, False), ("Sparrow", "Gunship: cannons and a turret stance", False, False),
                ("Squirrel", "Racer: drifts and boosts", False, False), ("Serpent", "Hunter: coils, strikes from range", False, False)]
     grid = "".join(
-        f'<button class="tile pick" type="button" aria-pressed="{"true" if on else "false"}" style="position:relative;height:170px;background:rgba(0,4,31,.7);'
-        f'box-shadow:{"inset 0 0 0 2px #00D4FF" if on else "inset 0 0 0 1px rgba(67,76,137,.8)"};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">'
-        + (f'<span class="cap" style="position:absolute;left:8px;top:8px;font-size:14px;padding:2px 8px;background:rgba(0,1,10,.85);color:#E6E9FF;box-shadow:inset 0 -2px 0 #00D4FF">For this voyage</span>' if fit else "")
+        f'<button class="pick" type="button" aria-pressed="{"true" if on else "false"}" style="position:relative;height:170px;background:rgba(0,4,31,.7);'
+        f'box-shadow:{"inset 0 0 0 1px #00D4FF" if on else "inset 0 0 0 1px rgba(67,76,137,.6)"};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">'
+        + (f'<span class="cap" style="position:absolute;left:10px;top:10px;font-size:13px;color:#B8C0F0">For this voyage</span>' if fit else "")
         + f'<img class="hull" src="{HULL[n]}" alt="" style="width:70%;height:80px"><span style="font-size:18px">{n}</span></button>'
         for n, _, fit, on in vessels)
     prev = ('<aside aria-label="Your pick" style="width:400px;flex:none;position:relative;overflow:hidden;background:#00010A;box-shadow:inset 0 0 0 1px rgba(67,76,137,.6)">'
-            f'<img class="hull ship" src="{HULL["Manta"]}" alt="" style="position:absolute;left:6%;width:88%;top:70px;height:220px">'
+            f'<img class="hull" src="{HULL["Manta"]}" alt="" style="position:absolute;left:6%;width:88%;top:70px;height:220px">'
             '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,1,10,0) 40%,rgba(0,1,10,.95) 75%)"></div>'
             '<div style="position:absolute;left:28px;right:28px;bottom:28px;display:flex;flex-direction:column;gap:12px">'
             '<span class="lab" style="color:#E6E9FF">For this voyage</span><span style="font-size:28px;line-height:1.2">Manta</span>'
             '<span style="font-size:15px;line-height:1.5;color:#B8C0F0">Wide and steady. Holds space beside the Ark and turns fauna away from its hull.</span></div></aside>')
-    saved = ('<div style="display:flex;align-items:center;gap:14px;height:56px;padding:0 20px;background:rgba(0,4,31,.8);box-shadow:inset 2px 0 0 #E6E9FF">'
+    saved = ('<div style="display:flex;align-items:center;gap:14px;height:56px;padding:0 4px">'
              '<svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><path d="M1 7l5 5L17 1"></path></svg>'
              '<span style="font-size:17px">Manta is your vessel for Escort the Ark. Your seat card behind has changed.</span></div>')
     close = ('<button class="pick" type="button" aria-label="Close" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#E6E9FF;box-shadow:inset 0 0 0 1px #434C89">'
              '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"></path></svg></button>')
     pop = ('<div class="abs" style="left:0;top:84px;width:1920px;height:996px;z-index:8;background:rgba(0,1,10,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">'
-           '<div role="dialog" aria-label="Change your seat" class="glass modal" style="position:absolute;left:200px;top:70px;width:1520px;height:830px">'
+           '<div role="dialog" aria-label="Change your seat" style="position:absolute;left:200px;top:70px;width:1520px;height:830px;background:#00041F;box-shadow:inset 0 0 0 1px #434C89">'
            '<div style="position:absolute;left:40px;right:40px;top:30px;display:flex;align-items:flex-start;justify-content:space-between">'
            f'<div style="display:flex;flex-direction:column;gap:18px"><span style="font-size:28px">Change your seat</span><div style="display:flex;gap:40px">{tabrow}</div></div>{close}</div>'
            '<div style="position:absolute;left:40px;right:40px;top:180px;bottom:100px;display:flex;gap:32px">'
@@ -373,6 +374,34 @@ def score_board():
                 + dim + head + left + right + foot)
 
 
+# ── The HyperSea page, the popup closed: Rev 108's table, the crew list gone for one button ──────────────────────────
+def sea_board():
+    cards = (
+        (f'<img src="{ARK}" alt="The Ark" style="width:110px;height:60px;object-fit:contain">', "Ark escort", "Escort the Ark to The Maw", 2, "5 worlds",
+         "rgba(0,212,255,.06)", "inset 2px 0 0 #00D4FF"),
+        (CRYSTALS.replace('width="130" height="70"', 'width="104" height="56"'), "Crystal Run", "Steal 20 crystals before Tollmoor", 3, "4 cells",
+         "rgba(0,4,31,.6)", "inset 0 0 0 1px rgba(67,76,137,.5)"))
+    side = ('<div class="abs" style="left:1400px;top:176px;width:480px;display:flex;flex-direction:column;gap:14px;z-index:3">'
+            '<span class="lab">Open now</span>'
+            + "".join(f'<div style="position:relative;height:140px;display:flex;align-items:center;gap:20px;padding:0 18px;background:{bg};box-shadow:{edge}">'
+                      f'<span style="width:110px;height:80px;flex:none;display:flex;align-items:center;justify-content:center">{img}</span>'
+                      f'<span style="display:flex;flex-direction:column;gap:10px;min-width:0;flex:1"><span class="lab" style="color:#E6E9FF">{kind}</span>'
+                      f'<span style="font-size:18px;line-height:1.35">{title}</span>'
+                      f'<span style="display:flex;align-items:center;gap:14px;font-size:14px;color:#747BAD">{pips(d)}<span class="num">{d}</span><span>{meta}</span></span></span></div>'
+                      for img, kind, title, d, meta, bg, edge in cards)
+            + '<button class="btn soft chipq" type="button" style="width:480px;margin-top:10px"><span class="kc">Y</span>Crew recommends  ·  8</button>'
+            f'<span style="display:flex;align-items:center;gap:8px;font-size:14px;color:#747BAD">{LOCK}Six crew voyages, locked for Milestone 1</span></div>')
+    keep = r100.rec_list
+    r100.rec_list = lambda *a, **k: side
+    try:
+        html = r108.table_board()
+    finally:
+        r100.rec_list = keep
+    old = "Rev 108 Table - Rev 100 P1A's table (50 deg, square corners) on the moving sea; drag to pan, wheel to zoom; the side view under it - interactive"
+    assert old in html
+    return html.replace(old, f"Rev {REV} Sea - the HyperSea page with the popup closed: the table as it was, two open voyages and one Crew recommends button where the list was - interactive")
+
+
 # ── Notes ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 NOTES = [
     ("Lobby (recommended)", "The lobby is the only page: you, then friends who join, then AI wingmates. No Squad 1 / Squad 2 tabs. "
@@ -409,7 +438,7 @@ def notes_board():
 
 BOARDS = {f"R{REV}Compare.dc.html": compare_board, f"R{REV}Lobby.dc.html": lobby_board, f"R{REV}Picker.dc.html": picker_board,
           f"R{REV}Crew.dc.html": crew_board, f"R{REV}Hud.dc.html": hud_board, f"R{REV}Run.dc.html": run_board,
-          f"R{REV}Score.dc.html": score_board, f"R{REV}Notes.dc.html": notes_board}
+          f"R{REV}Score.dc.html": score_board, f"R{REV}Sea.dc.html": sea_board, f"R{REV}Notes.dc.html": notes_board}
 
 if __name__ == "__main__":
     for name, fn in BOARDS.items():
