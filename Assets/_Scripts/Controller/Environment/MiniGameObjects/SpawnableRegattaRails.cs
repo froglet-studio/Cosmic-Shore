@@ -89,32 +89,82 @@ namespace CosmicShore.Gameplay
                  "Tools/Build/author_regatta_assets.py - never by hand.")]
         [SerializeField] RegattaLifeformSiteSettings lifeforms = new();
 
+        [Header("Course genome (Tools/Compute/evaluators/regatta_genome.py)")]
+        [Tooltip("A whole course as one RegattaCourseGenome JSON document: its circuit, braid, features, lifeform ground " +
+                 "and PLACEMENTS of any segment spawner in the gene catalogue. Non-empty, it replaces this prefab's own " +
+                 "intensity, seed, braid, features and lifeforms. EMPTY = the prefab as authored. A course search writes " +
+                 "it (via Tools/Build/author_regatta_assets.py); never hand-edit it.")]
+        [SerializeField, TextArea(2, 8)] string courseGenome = "";
+
+        string _parsedGenomeSource;
+        RegattaCourseGenome _parsedGenome, _repairedFrom, _repaired;
+
         readonly List<RaceGate> _gates = new();
         readonly List<int> _laneLayStart = new();
         readonly List<int> _laneLayCount = new();
 
-        public int CourseIntensity => courseIntensity;
+        /// <summary>
+        /// The course genome this arena lays, repaired, or null for the prefab as authored:
+        /// <see cref="RegattaCourseGenome.Override"/> (a race judge, a benchmark, a test) when set, else this prefab's own
+        /// <c>courseGenome</c>. Every reader below (seed, intensity, rings, braid, features, lifeforms) asks it first, so
+        /// the rings the controller hangs and the rails and placements laid here come from one document.
+        /// </summary>
+        public RegattaCourseGenome Genome
+        {
+            get
+            {
+                var raw = RegattaCourseGenome.Override;
+                if (raw == null && !string.IsNullOrWhiteSpace(courseGenome))
+                {
+                    if (!ReferenceEquals(_parsedGenomeSource, courseGenome))
+                    {
+                        _parsedGenomeSource = courseGenome;
+                        try { _parsedGenome = RegattaCourseGenome.FromJson(courseGenome); }
+                        catch (System.FormatException e)
+                        {
+                            _parsedGenome = null;
+                            CSDebug.LogError($"[Regatta] {name}'s course genome is not valid JSON ({e.Message}); " +
+                                             "laying the prefab as authored. Re-run Tools/Build/author_regatta_assets.py.");
+                        }
+                    }
+                    raw = _parsedGenome;
+                }
+                if (raw == null) return null;
+                if (!ReferenceEquals(raw, _repairedFrom))
+                {
+                    _repairedFrom = raw;
+                    _repaired = raw.Repair(RegattaGeneCatalogue.Shipped, null);
+                }
+                return _repaired;
+            }
+        }
 
-        public RegattaLifeformSiteSettings Lifeforms => lifeforms;
+        public int CourseIntensity => Genome?.Intensity ?? courseIntensity;
+
+        public RegattaLifeformSiteSettings Lifeforms => Genome?.Flora ?? lifeforms;
 
         /// <summary>The seed the planting sites are sown from - the circuit's own, offset so the sites are
         /// not correlated with the ring draws.</summary>
-        public int SiteSeed => unchecked(CourseSeed * 31 + courseIntensity);
+        public int SiteSeed => unchecked(CourseSeed * 31 + CourseIntensity);
 
         /// <summary>Sites prepared on the last build (cell-local). Empty on every shipped course.</summary>
         public int SownSiteCount { get; private set; }
 
-        public override bool PreparesPlantingSites => lifeforms != null && lifeforms.HasSites;
+        /// <summary>What each of the genome's placements laid on the last build (empty without a genome).</summary>
+        public IReadOnlyList<RegattaPlacementReport> PlacementReports => _placementReports;
+        readonly List<RegattaPlacementReport> _placementReports = new();
 
-        /// <summary>The seed the circuit is generated from: the authored pin, else the base
+        public override bool PreparesPlantingSites => Lifeforms != null && Lifeforms.HasSites;
+
+        /// <summary>The seed the circuit is generated from: the genome's, else the authored pin, else the base
         /// spawnable's seed, else the course's default.</summary>
-        public int CourseSeed => courseSeed != 0 ? courseSeed : (seed != 0 ? seed : DefaultSeed);
+        public int CourseSeed => Genome?.EffectiveSeed ?? (courseSeed != 0 ? courseSeed : (seed != 0 ? seed : DefaultSeed));
 
         /// <summary>The rings this arena laid its rails through, cell-local. Empty before the
         /// build; use <see cref="BuildGatesNow"/> for an answer that needs no build.</summary>
         public IReadOnlyList<RaceGate> Gates => _gates;
 
-        public HeadlongCircuitSettings CourseSettings => RegattaCourse.ForIntensity(courseIntensity);
+        public HeadlongCircuitSettings CourseSettings => Genome?.CircuitSettings() ?? RegattaCourse.ForIntensity(courseIntensity);
 
         // One RUN per trail: a lane with no gap is one closed run (as before features existed); a gap splits a lane
         // into open runs, laid in lane order starting after a gap. _laneLayStart / _laneLayCount are per run.
@@ -123,9 +173,14 @@ namespace CosmicShore.Gameplay
         readonly List<Trail> _runTrails = new();
         int _laneCount;
 
+        // One Volume trail per genome placement, laid after the lanes: _cachedLays[start, start + count).
+        readonly List<int> _placementLayStart = new();
+        readonly List<int> _placementLayCount = new();
+
         /// <summary>This course's features: <see cref="RegattaCourseFeatures.Override"/> when a benchmark or test set
         /// one, else the prefab's own. Read by the controller (alternate rings, line crystals) off the same asset.</summary>
-        public RegattaCourseFeatures Features => RegattaCourseFeatures.Override ?? courseFeatures ?? RegattaCourseFeatures.None;
+        public RegattaCourseFeatures Features =>
+            RegattaCourseFeatures.Override ?? Genome?.Features ?? courseFeatures ?? RegattaCourseFeatures.None;
 
         /// <summary>Lanes laid this build (3), 0 before it.</summary>
         public int LaneCount => _laneCount;
@@ -163,17 +218,25 @@ namespace CosmicShore.Gameplay
             return -1;
         }
 
-        public RegattaRailSettings RailSettings => new()
+        public RegattaRailSettings RailSettings
         {
-            LaneOffset = laneOffset,
-            TwistTurnsPerLap = laneTwistTurnsPerLap,
-            PrismSpacing = prismSpacing,
-            SamplesPerLeg = RegattaCourse.DefaultRails.SamplesPerLeg,
-        };
+            get
+            {
+                var authored = new RegattaRailSettings
+                {
+                    LaneOffset = laneOffset,
+                    TwistTurnsPerLap = laneTwistTurnsPerLap,
+                    PrismSpacing = prismSpacing,
+                    SamplesPerLeg = RegattaCourse.DefaultRails.SamplesPerLeg,
+                };
+                var genome = Genome;
+                return genome != null ? genome.RailSettings(authored) : authored;
+            }
+        }
 
         /// <summary>The rings, generated from this prefab's own seed and intensity - a pure call
         /// the controller and the spawn line can make off the asset during the spawn chain.</summary>
-        public List<RaceGate> BuildGatesNow() => RegattaCourse.BuildGates(CourseSeed, courseIntensity);
+        public List<RaceGate> BuildGatesNow() => Genome?.BuildGates() ?? RegattaCourse.BuildGates(CourseSeed, courseIntensity);
 
         protected override int DefaultSeed => RegattaCourse.DefaultSeed;
 
@@ -190,6 +253,9 @@ namespace CosmicShore.Gameplay
             _laneLayCount.Clear();
             _runLane.Clear();
             _runClosed.Clear();
+            _placementLayStart.Clear();
+            _placementLayCount.Clear();
+            _placementReports.Clear();
 
             var gates = BuildGatesNow();
             _gates.AddRange(gates);
@@ -225,22 +291,53 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // The genome's placements: every segment spawner it names, generated by its own code, scaled, posed in the
+            // spine frame and carved clear of the line, the mouths, the rails, the shell and each other.
+            var genome = Genome;
+            RegattaPlacementCarve carve = null;
+            if (genome != null && genome.Placements.Count > 0)
+            {
+                var rings = new List<RaceGate>(gates);
+                for (int g = 0; g < gates.Count; g++)
+                    if (features.TryAlternate(gates, g, out var alt)) rings.Add(alt);
+                carve = new RegattaPlacementCarve(layout, rings, genome.LineClearance);
+                var placed = new List<PrismLay>();
+                _placementReports.AddRange(RegattaPlacementBuilder.LayAll(genome, RegattaGeneCatalogue.Shipped, gates,
+                                                                          carve, placed));
+                int at = 0;
+                foreach (var report in _placementReports)
+                {
+                    if (report.Laid <= 0) continue;
+                    int start = _cachedLays.Count;
+                    for (int q = 0; q < report.Laid; q++, at++)
+                    {
+                        var lay = placed[at];
+                        Emit(lay.Point.Position, lay.Point.Rotation, lay.Point.Scale, lay.Domain, lay.Kind);
+                    }
+                    _placementLayStart.Add(start);
+                    _placementLayCount.Add(_cachedLays.Count - start);
+                }
+            }
+
             // Prepared ground beside the spine, through the base's Sow so the spawn clearance applies to a
             // root exactly as it does to a prism. None on a shipped course (lifeforms authors no sites).
             SownSiteCount = 0;
-            if (lifeforms != null && lifeforms.HasSites)
+            var lifeformSites = Lifeforms;
+            if (lifeformSites != null && lifeformSites.HasSites)
             {
-                var sites = new List<FloraPlantingSite>(lifeforms.RequestedSites);
-                RegattaLifeformSites.Sow(_gates, lifeforms, laneOffset, SiteSeed, sites);
+                var sites = new List<FloraPlantingSite>(lifeformSites.RequestedSites);
+                RegattaLifeformSites.Sow(_gates, lifeformSites, RailSettings.LaneOffset, SiteSeed, sites);
                 int before = _plantingSites?.Count ?? 0;
-                foreach (var site in sites) Sow(site.Position, site.Up, site.Kind);
+                foreach (var site in sites)
+                    if (carve == null || !carve.TouchesClaimed(site.Position, PlantingSiteRadius))
+                        Sow(site.Position, site.Up, site.Kind);
                 SownSiteCount = (_plantingSites?.Count ?? 0) - before;
             }
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Regatta] Circuit seed {CourseSeed} intensity {courseIntensity}: {_gates.Count} rings, " +
                 $"{layout.LanePositions.Count} rails, {_cachedLays.Count} prisms, spine {layout.SpineLength:F0} u, " +
-                $"{SownSiteCount} planting sites.");
+                $"{SownSiteCount} planting sites, {_placementLayStart.Count} placements.");
         }
 
         /// <summary>The fauna corridor round the spine, when this course authors one (cell-local, closed).
@@ -248,8 +345,9 @@ namespace CosmicShore.Gameplay
         public bool TryGetFaunaCorridor(List<Vector3> pathLocal, out float radius, out bool closed, out float goalStandoff)
         {
             pathLocal?.Clear();
-            radius = lifeforms != null ? lifeforms.faunaCorridorRadius : 0f;
-            goalStandoff = lifeforms != null ? lifeforms.faunaCorridorStandoff : 0f;
+            var lifeformSites = Lifeforms;
+            radius = lifeformSites != null ? lifeformSites.faunaCorridorRadius : 0f;
+            goalStandoff = lifeformSites != null ? lifeformSites.faunaCorridorStandoff : 0f;
             closed = true;
             if (pathLocal == null || radius <= 0f) return false;
             pathLocal.AddRange(RegattaLifeformSites.SpineSamples(BuildGatesNow(), 16));
@@ -265,6 +363,7 @@ namespace CosmicShore.Gameplay
         protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
         {
             if (prism == null || _cachedLays == null || _laneLayStart.Count == 0) return;
+            _placementTrails.Clear();
 
             // One trail per run: closed for a lane with no gap (today's), open for each run a gap leaves, so a rider
             // runs off its end and flies the gap (a hole inside one trail is bridged at full pace).
@@ -279,9 +378,22 @@ namespace CosmicShore.Gameplay
                 _runTrails.Add(t);
             }
 
+            // One trail per genome placement, a VOLUME (its rider rides its faces, as on any authored world).
+            for (int j = 0; j < _placementLayStart.Count; j++)
+            {
+                var t = new Trail { Dimension = PrismscapeDimension.Volume };
+                trails.Add(t);
+                _placementTrails.Add(t);
+            }
+
             if (Application.isPlaying) LayAsync(container, laneTrails).Forget();
             else LaySync(container, laneTrails);
         }
+
+        readonly List<Trail> _placementTrails = new();
+
+        /// <summary>A planting site's keep-clear radius from a placement prism (u).</summary>
+        const float PlantingSiteRadius = 12f;
 
         async UniTaskVoid LayAsync(GameObject container, Trail[] laneTrails)
         {
@@ -298,6 +410,13 @@ namespace CosmicShore.Gameplay
                         prism, LaneLays(i), container.transform, laneTrails[i],
                         $"{container.name}::LANE{i}", LayBudgetMsPerFrame);
                 }
+                for (int j = 0; j < _placementTrails.Count; j++)
+                {
+                    if (!container) return;
+                    await PrismTrailBuilder.LayBudgetedAsync(
+                        prism, PlacementLays(j), container.transform, _placementTrails[j],
+                        $"{container.name}::PLACEMENT{j}", LayBudgetMsPerFrame, admitAuthoredScale: true);
+                }
             }
             finally
             {
@@ -310,6 +429,19 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < laneTrails.Length; i++)
                 PrismTrailBuilder.LaySync(prism, LaneLays(i), container.transform,
                                           laneTrails[i], $"{container.name}::LANE{i}");
+            for (int j = 0; j < _placementTrails.Count; j++)
+                PrismTrailBuilder.LaySync(prism, PlacementLays(j), container.transform,
+                                          _placementTrails[j], $"{container.name}::PLACEMENT{j}", true);
+        }
+
+        /// <summary>One placement's lays, decimated inside the placement (a preview stride).</summary>
+        List<PrismLay> PlacementLays(int j)
+        {
+            int start = _placementLayStart[j];
+            int count = _placementLayCount[j];
+            var slice = new List<PrismLay>(count);
+            for (int k = 0; k < count; k++) slice.Add(_cachedLays[start + k]);
+            return PrismLayDecimation.Apply(slice);
         }
 
         /// <summary>One lane's lays, decimated INSIDE the lane so a preview stride never hands a
@@ -327,6 +459,6 @@ namespace CosmicShore.Gameplay
             System.HashCode.Combine(System.HashCode.Combine(courseIntensity, courseSeed, prismScale, laneOffset,
                                                             laneTwistTurnsPerLap, prismSpacing,
                                                             lifeforms?.ParameterHash() ?? 0, /* layout revision */ 2),
-                                    Features.IsEmpty ? 0 : Features.ParameterHash());
+                                    Features.IsEmpty ? 0 : Features.ParameterHash(), Genome?.ParameterHash() ?? 0);
     }
 }

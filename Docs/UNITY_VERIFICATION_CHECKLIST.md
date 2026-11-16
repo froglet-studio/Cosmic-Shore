@@ -23973,3 +23973,17 @@ it reports are the existing UGS package gaps on bleeding-edge). Card art rendere
       whether the wasp's own AI feeds or chases rivals (it chases the nearest rival within 400 u).
 - [ ] Gorge in multiplayer: whether a client's local reef visibly shrinks when a creature feeds on the server.
 - [ ] End Game Conditions window shows and saves `marionetteStrikeTarget` and `gorgeRoundSeconds`.
+
+## 🔴 Regatta course genome: every spawner as a course gene (2026-11-16, Garrett's project thread, `claude/project-thread-cwavhz`, NOT RUN IN EDITOR)
+
+Regatta flywheel W2 (`Docs/AI_SYSTEM/REGATTA_COURSE_GENOME.md`). `unity_refcompile` ran: 0 errors in the changed files
+(the cloud fetch could not reach several packages, so the run reports pre-existing errors elsewhere). The genome was
+laid through the game's own code in Amoebius (`regatta_genome_harness/run.sh gate`: the empty genome lays today's
+course prism for prism, 40 random genomes lay 244,651 prisms with none in the line tube, a ring mouth, a rail, the
+nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed:
+
+1. Open MinigameRegatta at I1: the course is unchanged (no genome is set on any shipped prefab).
+2. Paste a laid genome (any `Tools/Compute/evaluators/regatta_genome.py --random 1` output) into a Regatta rails
+   prefab's `courseGenome` field, play, and fly the line: the placed spawners stand clear of the line and the rings,
+   and the lap still counts.
+3. Watch the frame time on that course: up to 12,000 extra prisms can be laid.
