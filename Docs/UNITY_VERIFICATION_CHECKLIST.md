@@ -23666,6 +23666,73 @@ is kept, so no prefab or asset reference changes. Compiled against the Unity ref
 2. Fly the Swordfish in the Toybox: swipe, energize, afterimages, combos and the Surge ring all work as before.
 3. The Rhino and the Jacks fly as before (they share only `RhinoAnimation` and `RhinoAIBoostPolicy`, which keep their names).
 
+## 🔴 Voyages: the HyperSea's cells as an uneven wet Kelvin foam on the galaxy map (2026-11-13, Shombith's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-ev7zfw`, into `voyages`. `HyperSeaCells` packs the cells as the Voyage Board does
+(`Docs/Voyages/VOYAGE_BOARD.md` §4d): a jittered BCC lattice with uneven power cells and knots of small cells, wet
+rounded outlines, the nucleus at each cell's middle at its own size and in the game's white caged look. The maths was
+run under .NET against `cells_golden.js` (0 differences); `unity_refcompile` (player and editor): 0 errors in changed
+files. `colour_trace.py --check` ok. No Unity editor ran and `HyperSeaCellsTests` did not run in Unity.
+
+1. Run `HyperSeaCellsTests` in the Test Runner: all pass.
+2. Open the Voyages tab's galaxy map and zoom in until cells show: rounded cells of uneven sizes with a pale liquid
+   between them, no square slivers, each cell darker at its wall and brighter round its nucleus.
+3. Zoom further: the nuclei are white caged spheres with a deep-blue edge, sitting in their cells (none on a wall), and
+   small cells have small nuclei. The cell tags (Nucleus, Cytoplasm, Membrane) sit on the cell nearest the centre.
+4. Tap open water: the cell under the tap is outlined along its rounded wall; a second tap closes it.
+5. The edge strip under the map shows the same foam cut upright.
+6. Wear another colour set (Nocturne, Nacre): the nuclei's blues follow it.
+
+## 🔴 Quests window: its own screen, Rev 107 D (2026-11-13, Shombith's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-ytvai5`, `Docs/MENU_REDESIGN_B.md` section 200. Compiled with `Tools/Build/unity_refcompile`
+only. No Unity editor ran.
+
+1. Menu_Main starts with no errors; the Quests window is not visible until opened.
+2. Home's quest card opens the Quests window (not the Voyage window). Back and gamepad B close it.
+3. The route shows five pictures over five stations, names and states under them, the course solid up to the open
+   quest and dotted after it. Pressing a station shows its goals and reward below.
+4. A quest ready to claim: Claim claims it, the next station lights and its stretch draws in.
+5. An open quest: Play quest opens the Arcade.
+6. The reward column names the colour set and shows four prisms in its colours; wearing another set from the Profile
+   recolours the window.
+7. The Voyage window has no Quests tab; Voyages, Saga and Episodes still switch.
+
+## 🔴 Saga and Episodes locked at the foot of the Voyages page (Rev 103 A) (2026-11-14, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-z6k09o` (PR into `voyages`). Board: Frogma, Voyages tab, Rev 103 A (narrowed). The changed
+files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files; the 30 it
+reports are in multiplayer and camera files this change does not touch). `author_voyage_assets.py --check` and the
+`/ship` gates pass. No Unity editor ran.
+
+1. Menu_Main, open the Voyage window. The tab row shows no Saga and no Episodes tab (Quests too once its own screen lands).
+2. At the foot of the Voyages page: two cards, 520 wide each, centred, 24 apart: the Saga card with Tandava's card art
+   dimmed, "SAGA", "Tandava and The Severing", a lock top right, "COMING SOON"; the Episodes card the same with the
+   galaxy picture and "Episode 2".
+3. Press the Saga card: its line reads "Not open yet. Voyages are open now."; nothing opens. Press again: "Coming soon".
+4. The voyage list, the map and the right panel stand above the strip, none of them covered by it.
+5. Configure / go to the squad screen: the strip is gone and the map fills the page; back to the voyage screen, it returns.
+6. Wear another colour set: the cards repaint with it.
+
+## 🔴 Voyages: galaxy at Sector and Region, Galaxy view on open, one-line Saga strip, sharp route map, Ark seats (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-hllqh5` (PR into `voyages`). Record: `Docs/MENU_REDESIGN_B.md` section 205.3. The changed
+files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files; the 30 it
+reports are in multiplayer and camera files this change does not touch). No Unity editor ran.
+
+1. Menu_Main, open the Voyage window: the table shows the whole galaxy (Galaxy underlined in the zoom row).
+2. Zoom to Arm, Sector and Region with the zoom row, the wheel and a drag: the galaxy's water, stars and pins show at every
+   step (before, the whole map vanished at Sector and Region). No "Mesh can not have more than 65000 vertices" in the Console.
+3. Pick a voyage, close the window and open it again: it opens at Galaxy view again.
+4. At the page's foot: two single-line strips, 600 x 44: lock, SAGA, "Tandava and The Severing", COMING SOON; the same for
+   Episodes. Press one: the name reads "Not open yet. Voyages are open now."; press again: the name is back.
+5. Open voyage: the map on the voyage page is sharp (the course's water, not a blur of a few texels).
+6. Set sail through to the Ark page: every seat card has a soft blue glow on its edges, yours brighter. Seats that are not
+   yours show an "AI" tag and "AI wingmate" (or "AI flies for <name> until they join" for a squad member not in your lobby);
+   no card says "Open seat". "Fly a squad instead" / "Fly without a squad" switches between the two.
+7. With two friends in your party: the Ark page shows you and both friends, no AI; set sail: three players and no AI
+   wingmates. With one friend: you, the friend and one AI; set sail: one AI wingmate.
+
 ## Scarab Rally I4: the next ring stays in sight (2026-11-14, `claude/project-thread-v8enx0`)
 
 Not run in a Unity editor. Headless: `switchback_sim_harness/run.sh tests` 78 passed (the new sight-line test failed
@@ -23871,3 +23938,16 @@ and the `unity` CLI did not. Owed (`Arcade/SLIP_LINE.md` §8 items 9-10, §10):
 3. A Honeyguide whose Eyelet Jet or Thruster Swarm (a Ratel card) ends just past a ring's plane: the ring counts.
 4. Any vessel whose ability teleports (the Butterfly's fold, `VesselController.Teleport`) still threads nothing on its
    jump: only a pose write that does not move the hull stopped counting as a teleport.
+
+## 🔴 Editor Churn W1: the open-and-diff harness against a real Unity (2026-11-13, Caleb, NOT RUN IN UNITY)
+
+Branch `claude/editor-churn-w1-harness`; `Docs/EditorChurn/TRACKER.md`. `Tools/Build/editor_churn.py` is Python only
+(no C#). Its `--self-test` passes, and `measure` was run end to end with stand-in editors; no real Unity ran.
+
+1. **Clone `bleeding-edge` fresh** (a full checkout, no `Library/`) and run
+   `UNITY=<path to 6000.3.17f1> python3 Tools/Build/editor_churn.py measure --project <clone> --machine <name>`
+   on Windows (Git Bash) and on macOS. It opens the project twice in batchmode (the first import is slow).
+2. **It writes** `open1/` and `open2/` (status, `churn.patch`, what each open changed, `classified.txt`) and
+   `summary.md`, whose measurement row goes into the tracker's Measurements table.
+3. **Compare with the tracker**: every dirty file is an existing row or a new `seen` row; a file in open 2's
+   "changed BY open 2" list is a writer that never settles.

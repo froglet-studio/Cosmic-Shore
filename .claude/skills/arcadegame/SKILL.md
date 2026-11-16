@@ -536,6 +536,8 @@ python3 Tools/Build/author_preview_spawns.py --check
 python3 Tools/Build/render_card_backgrounds.py --check    # the card's background is its CURRENT arena
 python3 Tools/Build/bake_prism_layouts.py --check       # a CellEnvironmentSpawnableBase arena loads from its bake (ECOSYSTEM §62.2b)
 python3 Tools/Build/author_card_backgrounds.py --strict   # every live card wears its own
+python3 Tools/Build/maelstrom_tiers.py --write && python3 Tools/Build/maelstrom_tiers.py --check
+                                                          # every arcade card is in one Maelstrom tier; a new one joins the Floor (Docs/MaelstromSystem/INTENSITY_TIERS.md)
 ```
 
 **After the generator runs, the open Editor has NOT seen the build-scene registration.**

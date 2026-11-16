@@ -99,11 +99,11 @@ namespace CosmicShore.UI
             _ => _lines?.CardSeatRogueTwo,
         };
 
-        /// <summary>Who flies the seat: you, a squad member by name, an open seat, or the AI.</summary>
+        /// <summary>Who flies the seat: you, a squad member by name, or the AI. A seat held open is the AI's until a friend
+        /// takes it, so it reads as the AI (Shombith, 2026-11-16: "there is actually no open seat").</summary>
         public string Who(SavedSquad squad, int seat, SquadSlot slot)
         {
             if (VoyageOpenCard.IsMySeat(squad, seat)) return _lines?.CardSeatYou;
-            if (slot.IsOpen()) return _lines?.CardSeatOpen;
             if (slot.IsPlayer()) return slot.MemberName;
             return _lines?.CardSeatAi;
         }
@@ -300,7 +300,7 @@ namespace CosmicShore.UI
             return view;
         }
 
-        /// <summary>Show <paramref name="sprite"/> cropped to its hull (the style's measured crop), as large as its box
+        /// <summary>Show <paramref name="sprite"/> whole, as large as its box
         /// allows.</summary>
         public void SetHull(HullView view, Sprite sprite)
         {
@@ -309,7 +309,8 @@ namespace CosmicShore.UI
                 view.Image.enabled = false;
                 return;
             }
-            var crop = _style ? _style.CropOf(sprite) : new Rect(0f, 0f, 1f, 1f);
+            // The whole render: a measured crop trimmed wing tips and antennae (Shombith, 2026-11-14).
+            var crop = new Rect(0f, 0f, 1f, 1f);
             var tex = sprite.texture;
             var tr = sprite.textureRect;
             view.Image.texture = tex;
