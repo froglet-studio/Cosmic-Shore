@@ -26,7 +26,21 @@ What it proves, per intensity, over the whole seed sweep:
   danger     the danger tiles take their share (within 0.03), none at share 0 and all at share 1
   radius     a tower ring's radius is never a cluster ring's at the same intensity
 
-`--report` prints the pacing a nominal pilot gets: drops per minute, the longest wait between drops, the race time.
+Lantern Towers (2026-11-11; WAYSTATION.md "Lantern Towers", Docs/Studios/TIGER_MOTH_TIME.md section 6), mirroring
+WaystationTower's shelf, lanterns and crown gems and WaystationHopPlan:
+
+  shelf      every hop's depth read back from the broadcast course is the depth Lay laid it for; a landing at the
+             SHELF is recharged and rolled exactly at the next press point; the hash draws the authored tight share
+  past       a landing 5 u past a hop's far edge cannot reach the next ring
+  lantern    every post segment clears every corporeal flight line (hull + 4 u + its reach), every ring's mouth and
+             every plate, and stays inside the cell
+  gem        crown gems only at I4, one a tower, reachable by a short plunge and skipped by the deepest, clear of tiles
+  aibudget   the autopilot's target, with a 30 fps frame and the live-speed carry, stays 2 u inside the plate and the
+             far edge on every hop and seat
+  (and the hull radius is asserted against TigerMoth.prefab's Hull collider beside the other hull numbers)
+
+`--sweep` races fixed-depth pilots (centre, deep, the best constant depth, role-aware) against the lantern reader and
+the autopilot's four seats through every tower, and prints what reading the lanterns saves against the BEST fixed plan.
 `--self-test` runs negative controls, each of which must make the check it targets FAIL.
 """
 
@@ -41,6 +55,7 @@ import waystation_course as wc  # noqa: E402  (Garrett's model, imported read-on
 
 ROOT = Path(__file__).resolve().parents[2]
 CS_TOWER = ROOT / "Assets/_Scripts/Controller/Arcade/Waystation/WaystationTower.cs"
+CS_PLAN = ROOT / "Assets/_Scripts/Controller/Arcade/Waystation/WaystationHopPlan.cs"
 TIGER_MOTH = ROOT / "Assets/_Prefabs/Spacevessels/TigerMoth.prefab"
 DROP_ASSET = ROOT / "Assets/_SO_Assets/VesselActions/TigerMoth/TigerMothDropAction.asset"
 
@@ -68,10 +83,15 @@ def project_on_plane(v, n):
 
 
 # ---------------------------------------------------------------- the tables, read from the C#
+TABLES = ("HopRingRadius", "WindowCentre", "WindowHalfWidth", "RollGateShare", "DangerShare",
+          # Lantern Towers (2026-11-11): the shelf, the deep band, the crown gem and the autopilot's seat error
+          "ShelfShare", "ShelfCutMin", "ShelfCutMax", "DeepBand", "CrownGem", "AiErrorU")
+
+
 def read_tower():
     src = CS_TOWER.read_text(encoding="utf-8")
     T = {}
-    for field in ("HopRingRadius", "WindowCentre", "WindowHalfWidth", "RollGateShare", "DangerShare"):
+    for field in TABLES:
         m = re.search(rf"{field}\s*=\s*new\[\]\s*\{{([^}}]*)\}}", src)
         assert m, f"{field} array not found in {CS_TOWER.name}"
         T[field] = [float(x.strip().rstrip("f")) for x in m.group(1).split(",")]
@@ -79,7 +99,7 @@ def read_tower():
     for name in ("Cruise", "DropSpeed", "DropEaseSeconds", "LandSeconds", "FullCooldownSeconds",
                  "FullCooldownDistance", "RollDegreesPerSecond", "HullRadius", "LandClear", "RingPastPlate",
                  "PipeClear", "ReactSeconds", "FinalMin", "PlungeCap", "ShellPad", "MembraneReach", "PlateMargin", "TileThickness",
-                 "LongGapMin"):
+                 "LongGapMin", "LanternBack", "LanternGap", "LanternDeepGap", "LanternSeg", "LanternSide", "GemSkip"):
         m = re.search(rf"public const float {name}\s*=\s*([0-9.]+)f;", src)
         assert m, f"const {name} not found in {CS_TOWER.name}"
         T[name] = float(m.group(1))
@@ -88,6 +108,14 @@ def read_tower():
         assert m, f"const {name} not found in {CS_TOWER.name}"
         T[name] = int(m.group(1))
     T["Lead"] = T["Cruise"] * (90.0 / T["RollDegreesPerSecond"] + T["ReactSeconds"])
+    plan = CS_PLAN.read_text(encoding="utf-8")
+    for name in ("AiGemShort", "AiSafety"):
+        m = re.search(rf"public const float {name} = ([0-9.]+)f;", plan)
+        assert m, f"{name} not found in {CS_PLAN.name}"
+        T[name] = float(m.group(1))
+    m = re.search(r"public const int TierOne = (\d+), TierTwo = (\d+), TierThree = (\d+);", plan)
+    assert m, f"the streak tiers are not found in {CS_PLAN.name}"
+    T["Tiers"] = tuple(int(x) for x in m.groups())
     return T
 
 
@@ -102,6 +130,10 @@ def assert_hull_matches(T):
 
     cruise = one(prefab, "DefaultMinimumSpeed") + one(prefab, "DefaultThrottleScaler")
     assert abs(cruise - T["Cruise"]) < 1e-3, f"TigerMoth cruise is {cruise}, the tower says {T['Cruise']}"
+    hull = re.search(r"m_Name: Hull\n.*?--- !u!135 &\d+\nSphereCollider:.*?m_Radius: ([0-9.]+)", prefab, re.S)
+    assert hull, "TigerMoth.prefab: the Hull SphereCollider is not found"
+    assert abs(float(hull.group(1)) - T["HullRadius"]) < 1e-3, \
+        f"TigerMoth's Hull radius is {hull.group(1)}, the tower says {T['HullRadius']}"
     roll = one(prefab, "RollScaler")
     assert abs(roll - T["RollDegreesPerSecond"]) < 1e-3, f"TigerMoth roll is {roll}, the tower says {T['RollDegreesPerSecond']}"
     drop = DROP_ASSET.read_text(encoding="utf-8")
@@ -114,7 +146,7 @@ def assert_hull_matches(T):
 
 def rung(T, intensity):
     i = intensity - 1
-    s = {k: T[k][i] for k in ("HopRingRadius", "WindowCentre", "WindowHalfWidth", "RollGateShare", "DangerShare")}
+    s = {k: T[k][i] for k in TABLES}
     s["low"] = s["WindowCentre"] - s["WindowHalfWidth"]
     s["high"] = s["WindowCentre"] + s["WindowHalfWidth"]
     s["plate"] = s["low"] - T["HullRadius"] - T["LandClear"]
@@ -137,17 +169,17 @@ def fall(T, hold):
     return V * E * 0.5 + V * (t - E)
 
 
-def travel(T, hold):
+def travel(T, hold, cruise=None):
     t = max(0.0, hold)
     release = T["DropSpeed"] * ease(t / T["DropEaseSeconds"])
-    return fall(T, t) + T["LandSeconds"] * (release + T["Cruise"]) * 0.5
+    return fall(T, t) + T["LandSeconds"] * (release + max(0.0, T["Cruise"] if cruise is None else cruise)) * 0.5
 
 
-def hold_for_travel(T, tr):
+def hold_for_travel(T, tr, cruise=None):
     lo, hi = 0.0, 4.0
     for _ in range(40):
         mid = 0.5 * (lo + hi)
-        if travel(T, mid) < tr:
+        if travel(T, mid, cruise) < tr:
             lo = mid
         else:
             hi = mid
@@ -163,7 +195,21 @@ def roll_s(T, deg):
 
 
 def runway(T, s, roll_deg):
-    return T["Cruise"] * (max(recharge(T, s["high"]), roll_s(T, roll_deg)) + T["ReactSeconds"])
+    return runway_after(T, s["high"], roll_deg)
+
+
+def runway_after(T, tr, roll_deg):
+    """WaystationTower.RunwayAfter: the recharge after a hop of travel `tr` or the roll, whichever is longer, plus the
+    reaction, as cruise distance."""
+    return T["Cruise"] * (max(recharge(T, tr), roll_s(T, roll_deg)) + T["ReactSeconds"])
+
+
+def is_tight_hop(gate, s):
+    return s["ShelfShare"] > 0 and hash01(gate, 7, 0) < s["ShelfShare"]
+
+
+def shelf_cut(gate, s):
+    return s["ShelfCutMin"] + (s["ShelfCutMax"] - s["ShelfCutMin"]) * hash01(gate, 7, 1)
 
 
 # ---------------------------------------------------------------- hashes (uint32, as the C#)
@@ -227,11 +273,134 @@ def ring_hits_plate(T, ring, pl):
     return False
 
 
-def elements_clear(T, plates, segs, obst, inner_limit, outer_limit, ignore=False):
+def seg_distance(a, b, c, d):
+    """WaystationTower.SegmentDistance: the closed-form shortest distance between segments ab and cd."""
+    u, v, w = sub(b, a), sub(d, c), sub(a, c)
+    A, B, C, D, E = dot(u, u), dot(u, v), dot(v, v), dot(u, w), dot(v, w)
+    # a point against a segment: the general case treats a zero-length segment as parallel and answers from a's end
+    if C < 1e-9:
+        return seg_point_distance(a, b, c)
+    if A < 1e-9:
+        return seg_point_distance(c, d, a)
+    den = A * C - B * B
+    sD = tD = den
+    if den < 1e-6:
+        sN, sD, tN, tD = 0.0, 1.0, E, C
+    else:
+        sN = B * E - C * D
+        tN = A * E - B * D
+        if sN < 0:
+            sN, tN, tD = 0.0, E, C
+        elif sN > sD:
+            sN, tN, tD = sD, E + B, C
+    if tN < 0:
+        tN = 0.0
+        if -D < 0:
+            sN = 0.0
+        elif -D > A:
+            sN = sD
+        else:
+            sN, sD = -D, A
+    elif tN > tD:
+        tN = tD
+        if -D + B < 0:
+            sN = 0.0
+        elif -D + B > A:
+            sN = sD
+        else:
+            sN, sD = -D + B, A
+    sc = 0.0 if abs(sN) < 1e-6 or sD < 1e-12 else sN / sD
+    tc = 0.0 if abs(tN) < 1e-6 or tD < 1e-12 else tN / tD
+    return mag(sub(add(w, mul(u, sc)), mul(v, tc)))
+
+
+def post_pad(T):
+    return T["LanternSeg"] * 0.5 + T["LanternSide"]
+
+
+def post_clear(T):
+    return T["HullRadius"] + 4.0 + post_pad(T)
+
+
+def post_hits_plate(T, a, b, pl, pad):
+    if seg_distance(a, b, pl["c"], pl["c"]) > pl["half"] * 1.415 + pad + T["TileThickness"]:
+        return False
+    return seg_hits_plate(T, a, b, pl, pad)
+
+
+def post_hits_ring_seg(a, b, ring, pad):
+    gp, gax, gr = ring
+    if seg_distance(a, b, gp, gp) > gr + pad:
+        return False
+    # through the mouth: where the post crosses (or runs within pad of) the ring's plane, inside its radius
+    da, db = dot(sub(a, gp), gax), dot(sub(b, gp), gax)
+    if da * db <= 0 and abs(da - db) > 1e-6:
+        x = add(a, mul(sub(b, a), da / (da - db)))
+        if mag(project_on_plane(sub(x, gp), gax)) < gr + pad:
+            return True
+    for e, de in ((a, da), (b, db)):
+        if abs(de) < pad and mag(project_on_plane(sub(e, gp), gax)) < gr + pad:
+            return True
+    u = perp(gax)
+    w = cross(gax, u)
+    for k in range(17):
+        p = gp if k == 16 else add(gp, add(mul(u, gr * math.cos(k * math.pi / 8)), mul(w, gr * math.sin(k * math.pi / 8))))
+        if seg_distance(a, b, p, p) < pad:
+            return True
+    return False
+
+
+def add_posts(T, s, press, axis, arrive, end, into):
+    """WaystationTower.AddPosts: Lay's copy of a hop's two lantern posts, near edge to foot."""
+    if end < s["low"]:
+        return
+    across = safe(cross(axis, arrive), perp(axis))
+    off = s["HopRingRadius"] + T["PlateMargin"]
+    for sign in (1.0, -1.0):
+        post = add(press, mul(across, sign * off))
+        into.append((add(post, mul(axis, s["low"])), add(post, mul(axis, end))))
+
+
+def deepest_landing_span(T, span, roll, spare, lo, hi):
+    if _fits(T, span, hi, roll, spare):
+        return hi
+    if not _fits(T, span, lo, roll, spare):
+        return lo
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if _fits(T, span, mid, roll, spare):
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
+def elements_clear(T, plates, segs, obst, inner_limit, outer_limit, ignore=False, posts=None):
     """WaystationTower.ElementsClear: new plates inside the cell and clear of every obstacle; new path clear of
-    every obstacle plate."""
+    every obstacle plate; new lantern posts inside the cell and clear of every line, ring and plate, and new lines and
+    plates clear of every post already standing."""
     if ignore:
         return True
+    pad, pclear = post_pad(T), post_clear(T)
+    for a, b in posts or ():
+        if min(mag(a), mag(b)) < inner_limit or max(mag(a), mag(b)) > outer_limit:
+            return False
+        for c, d in obst["segs"] + segs:
+            if seg_distance(a, b, c, d) < pclear:
+                return False
+        for ring in obst["rings"]:
+            if post_hits_ring_seg(a, b, ring, pad):
+                return False
+        for pl in obst["plates"] + plates:
+            if post_hits_plate(T, a, b, pl, pad):
+                return False
+    for a, b in obst["posts"]:
+        for c, d in segs:
+            if seg_distance(a, b, c, d) < pclear:
+                return False
+        for pl in plates:
+            if post_hits_plate(T, a, b, pl, pad):
+                return False
     clear = T["HullRadius"] + 1.0
     for pl in plates:
         if not plate_inside(T, pl, inner_limit, outer_limit):
@@ -253,7 +422,7 @@ def elements_clear(T, plates, segs, obst, inner_limit, outer_limit, ignore=False
 
 
 def lay(T, s, exit_gate, next_ring, tower, out, inner_limit, outer_limit, obst, plan=None, no_runway=False,
-        no_cancel=False, ignore_obstacles=False):
+        no_cancel=False, ignore_obstacles=False, loose=False, tight_from_high=False, no_posts=False, **_):
     heading = safe(exit_gate[1], (0, 0, 1))
     press = add(exit_gate[0], mul(heading, T["Lead"]))
     down = safe(project_on_plane(sub(next_ring, press), heading), perp(heading))
@@ -295,44 +464,62 @@ def lay(T, s, exit_gate, next_ring, tower, out, inner_limit, outer_limit, obst, 
         else:
             ordered = [(abeam, 90.0), (mul(abeam, -1), 90.0), (belly, 0.0)]
             options = ordered if gate else [ordered[2], ordered[0], ordered[1]]
+        d_gate = len(out) + len(rings)
+        arrive = heading if lateral == 1 else last_side
+        shelf = high - shelf_cut(d_gate, s) if (is_tight_hop(d_gate, s) and not loose) else high
         chosen = None
         for side, roll in options:
-            run = 0.0 if no_runway else runway(T, s, roll)
-            if used + high + run + high > avail:
+            run = 0.0 if no_runway else runway_after(T, shelf, roll)
+            if tight_from_high and shelf < high:
+                run = runway(T, s, roll)            # self-test: a tight hop's runway sized from the far edge
+            step = shelf + run
+            if used + step + high > avail:
                 continue
-            lpress = add(press, mul(down, high + run))
+            lpress = add(press, mul(down, step))
             nxt = add(lpress, mul(side, lateral_stride))
             new_plates = [make_plate(add(lpress, mul(down, pipe)), down, side, half),
                           make_plate(add(lpress, mul(side, s["plate"])), side, down, half),
                           make_plate(add(nxt, mul(side, pipe)), side, down, half),
                           make_plate(add(nxt, mul(down, s["plate"])), down, side, half)]
             new_segs = [(add(press, mul(down, low)), lpress), (add(lpress, mul(side, low)), nxt)] + finals(nxt)
-            if elements_clear(T, new_plates, new_segs, obst, inner_limit, outer_limit, ignore_obstacles):
-                chosen = (side, roll, run, lpress, nxt, new_plates, new_segs)
+            new_posts = []
+            if not no_posts:
+                reach = high + FAR_EDGE_REACH
+                add_posts(T, s, press, down, arrive,
+                          deepest_landing_span(T, step, roll, 0.0, low, reach) - T["LanternBack"], new_posts)
+                add_posts(T, s, lpress, side, down,
+                          deepest_landing_span(T, lateral_stride, 180.0, 0.0, low, reach) - T["LanternBack"], new_posts)
+            if elements_clear(T, new_plates, new_segs, obst, inner_limit, outer_limit, ignore_obstacles, new_posts):
+                chosen = (side, roll, step, lpress, nxt, new_plates, new_segs, new_posts)
                 break
         if chosen is None:
             break
-        side, roll, run, lpress, nxt, new_plates, new_segs = chosen
+        side, roll, step, lpress, nxt, new_plates, new_segs, new_posts = chosen
+        obst["posts"].extend(new_posts)
         rings.append((add(press, mul(down, s["ring"])), down, s["HopRingRadius"]))
-        steps.append(dict(press=press, x=down, roll=90.0 if d_hops == 1 else 180.0))
+        steps.append(dict(press=press, x=down, roll=90.0 if d_hops == 1 else 180.0, shelf=shelf, gate=d_gate,
+                          tight=shelf < high))
         rings.append((add(lpress, mul(side, s["ring"])), side, s["HopRingRadius"]))
-        steps.append(dict(press=lpress, x=side, roll=roll))
+        steps.append(dict(press=lpress, x=side, roll=roll, shelf=high, gate=d_gate + 1, tight=False))
         obst["plates"].extend(new_plates)
         obst["segs"].extend(new_segs[:2])
         obst["rings"].extend(rings[-2:])
         final_segs = new_segs[2:]
         press = nxt
-        used += high + run
+        used += step
         last_side = side
         belly = mul(side, -1)
         d_hops += 1
         lateral += 1
     plunge = max(0.0, min(T["PlungeCap"], avail - (used + high)))
     rings.append((add(press, mul(down, s["ring"] + plunge)), down, s["HopRingRadius"]))
-    steps.append(dict(press=press, x=down, roll=90.0 if d_hops == 1 else 180.0, plunge=plunge))
+    steps.append(dict(press=press, x=down, roll=90.0 if d_hops == 1 else 180.0, plunge=plunge,
+                      shelf=None, gate=len(out) + len(rings) - 1, tight=False))
     out.extend(rings)
     obst["segs"].extend(final_segs)
     obst["rings"].append(rings[-1])
+    # the plunge's landing stretch (and the crown gem on it): a later tower's plate there would be landed in
+    obst["segs"].append((add(press, mul(down, low + plunge)), add(press, mul(down, high + plunge))))
     if plan is not None:
         plan.append(dict(tower=tower, steps=steps, next_ring=next_ring, exit=exit_gate, d_hops=d_hops))
     return d_hops
@@ -348,7 +535,7 @@ def last_gap(clusters, per):
 def cluster_obstacles(clusters, per):
     """WaystationTower.ClusterObstacles: every cluster ring, and the flight through each cluster and across the long
     last gap."""
-    obst = dict(segs=[], plates=[], rings=list(clusters))
+    obst = dict(segs=[], plates=[], rings=list(clusters), posts=[])
     n = len(clusters) // per
     for c in range(n):
         for k in range(1, per):
@@ -471,6 +658,159 @@ def segment_clear(plates, a, b, clearance, thickness, skip=()):
     return worst
 
 
+
+# ---------------------------------------------------------------- the shelf, lanterns and crown gems (Lantern Towers)
+def angle(a, b):
+    return wc.angle(a, b)
+
+
+def has_shelf(course, i, s):
+    """WaystationTower.HasShelf: every tower ring but a tower's last (the plunge)."""
+    return 1 <= i and i + 1 < len(course) and is_tower_ring(course[i], s) and is_tower_ring(course[i + 1], s)
+
+
+def is_plunge(course, i, s):
+    return i >= 1 and is_tower_ring(course[i], s) and (i + 1 >= len(course) or not is_tower_ring(course[i + 1], s))
+
+
+def roll_before(course, i):
+    return angle(mul(course[i - 1][1], -1), course[i + 1][1])
+
+
+SHELF_TOL = 0.05
+
+
+FAR_EDGE_REACH = 400.0
+
+
+def _fits(T, span, landing, roll, spare):
+    return span - landing + SHELF_TOL >= T["Cruise"] * (max(recharge(T, landing), roll_s(T, roll)) + spare)
+
+
+def deepest_landing(T, course, i, s, spare, lo, hi):
+    """WaystationTower.DeepestLanding."""
+    span = dot(sub(press_of(T, course, i + 1, s), press_of(T, course, i, s)), course[i][1])
+    roll = roll_before(course, i)
+    if _fits(T, span, hi, roll, spare):
+        return hi
+    if not _fits(T, span, lo, roll, spare):
+        return lo
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if _fits(T, span, mid, roll, spare):
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
+def shelf_depth(T, course, i, s):
+    """WaystationTower.ShelfDepth, from the broadcast course alone: recharged and rolled exactly at the next press."""
+    if not has_shelf(course, i, s):
+        return s["high"]
+    return deepest_landing(T, course, i, s, 0.0, s["low"], s["high"] + FAR_EDGE_REACH)
+
+
+def laid_depth(T, course, i, s):
+    """WaystationTower.LaidDepth: the depth Lay sized the hop for (the shelf with the reaction kept)."""
+    if not has_shelf(course, i, s):
+        return s["high"]
+    return deepest_landing(T, course, i, s, T["ReactSeconds"], s["low"], s["high"])
+
+
+def far_edge_of(T, course, i, s):
+    """WaystationTower.FarEdge: no reaction left, the press late by the next mouth's radius less the hull's."""
+    if not has_shelf(course, i, s):
+        return float("inf")
+    late = (course[i + 1][2] - T["HullRadius"]) / T["Cruise"]
+    return deepest_landing(T, course, i, s, -late, s["low"], s["high"] + FAR_EDGE_REACH)
+
+
+def lantern_end(T, course, i, s):
+    return shelf_depth(T, course, i, s) - T["LanternBack"]
+
+
+def plunge_of(T, course, i, s):
+    return dot(sub(course[i][0], press_of(T, course, i, s)), course[i][1]) - s["ring"]
+
+
+def gem_depth(T, course, i, s):
+    return s["high"] + plunge_of(T, course, i, s) - T["GemSkip"]
+
+
+def lanterns(T, course, s):
+    """WaystationTower.Lanterns: (position, gate, deep) for every post segment, in the C#'s order."""
+    out = []
+    offset = s["HopRingRadius"] + T["PlateMargin"]
+    for i in range(1, len(course)):
+        if not has_shelf(course, i, s):
+            continue
+        end = lantern_end(T, course, i, s)
+        if end < s["low"]:
+            continue
+        axis = course[i][1]
+        press = press_of(T, course, i, s)
+        across = safe(cross(axis, course[i - 1][1]), perp(axis))
+        deep_from = max(s["low"], end - s["DeepBand"])
+        for side in (offset, -offset):
+            post = add(press, mul(across, side))
+            d = end
+            while d >= deep_from - 1e-3:
+                out.append((add(post, mul(axis, d)), i, True))
+                d -= T["LanternDeepGap"]
+            d -= T["LanternGap"] - T["LanternDeepGap"]
+            while d >= s["low"] - 1e-3:
+                out.append((add(post, mul(axis, d)), i, False))
+                d -= T["LanternGap"]
+    return out
+
+
+def crown_gems(T, course, s):
+    if s["CrownGem"] <= 0:
+        return []
+    return [(add(press_of(T, course, i, s), mul(course[i][1], gem_depth(T, course, i, s))), i)
+            for i in range(1, len(course)) if is_plunge(course, i, s)]
+
+
+# ---------------------------------------------------------------- the hop plan (WaystationHopPlan.cs)
+SHORT, CLEAN, DEEP, PAST = "Short", "Clean", "Deep", "Past"
+
+
+def grade(T, depth, shelf, far, s):
+    """WaystationHopPlan.Grade."""
+    if depth < s["low"]:
+        return SHORT
+    if depth > far:
+        return PAST
+    return DEEP if depth >= shelf - T["LanternBack"] - s["DeepBand"] else CLEAN
+
+
+def grade_on(T, course, i, depth, s):
+    """WaystationHopPlan.GradeOn."""
+    if is_plunge(course, i, s):
+        return grade(T, depth - plunge_of(T, course, i, s), s["high"], float("inf"), s)
+    return grade(T, depth, shelf_depth(T, course, i, s), far_edge_of(T, course, i, s), s)
+
+
+def ai_error(seat, gate, s):
+    return (hash01(seat + 1, gate, 4243) * 2 - 1) * s["AiErrorU"]
+
+
+def ai_target(T, course, i, s, seat):
+    if is_plunge(course, i, s):
+        if s["CrownGem"] > 0:
+            return gem_depth(T, course, i, s) - T["AiGemShort"]
+        return s["WindowCentre"] + plunge_of(T, course, i, s)
+    aim = lantern_end(T, course, i, s) - s["DeepBand"] * 0.5 + ai_error(seat, i, s)
+    return max(s["low"] + T["AiSafety"], min(far_edge_of(T, course, i, s) - T["AiSafety"], aim))
+
+
+def streak_step(T, streak, g, missed):
+    if missed or g in (SHORT, PAST):
+        return 0
+    return streak + (1 if g == DEEP else 0)
+
+
 # ---------------------------------------------------------------- the nominal pilot
 def fly_tower(T, s, plan, plates, hold_travel):
     """Fly one tower at a fixed hop travel. Returns (ok, min clearance, waits, ready_ok, times)."""
@@ -484,14 +824,15 @@ def fly_tower(T, s, plan, plates, hold_travel):
     a = plan["exit"][0]
     worst = min(worst, segment_clear(plates, a, steps[0]["press"], clearance, thick))
     for k, st in enumerate(steps):
-        land = add(st["press"], mul(st["x"], hold_travel))
+        tr = hold_travel if st.get("shelf") is None else min(hold_travel, st["shelf"])
+        land = add(st["press"], mul(st["x"], tr))
         nxt = steps[k + 1]["press"] if k + 1 < len(steps) else plan["next_ring"]
         worst = min(worst, segment_clear(plates, land, nxt, clearance, thick))
         if k + 1 < len(steps):
             cruise = dot(sub(nxt, land), st["x"])
             t_avail = cruise / T["Cruise"]
-            need = max(recharge(T, hold_travel), roll_s(T, steps[k + 1]["roll"]))
-            waits.append(hold_for_travel(T, hold_travel) + T["LandSeconds"] + t_avail)
+            need = max(recharge(T, tr), roll_s(T, steps[k + 1]["roll"]))
+            waits.append(hold_for_travel(T, tr) + T["LandSeconds"] + t_avail)
             if t_avail + 1e-6 < need:
                 ready_ok = False
     return worst >= clearance, worst, waits, ready_ok
@@ -534,13 +875,50 @@ def edges(T, s, plan, plates):
     return short_hits == len(steps), worst_far
 
 
+# ---------------------------------------------------------------- the Lantern Towers checks
+AI_FRAME_U = 15.0     # one 60 fps frame of a 900 u/s fall, or half a 30 fps frame once the release is on the nearest frame
+AI_CARRY_U = 8.0      # the landing carry at live speed against the 67 u/s the plan assumes (wall slowdowns, Afterburn)
+POST_CLEAR = 4.0      # a post's clearance (u) from the hull on every corporeal line, beyond the hull's radius
+
+
+def seg_point_distance(a, b, p):
+    ab = sub(b, a)
+    L2 = dot(ab, ab)
+    t = 0.0 if L2 < 1e-12 else max(0.0, min(1.0, dot(sub(p, a), ab) / L2))
+    return mag(sub(p, add(a, mul(ab, t))))
+
+
+def flight_lines(T, s, plan):
+    """Every corporeal line a pilot flies through one tower, landing at the window's near edge, its centre or its deepest
+    legal landing (the shelf), into the next press point and on into the next cluster."""
+    lines = []
+    steps = plan["steps"]
+    lines.append((plan["exit"][0], steps[0]["press"]))
+    for k, st in enumerate(steps):
+        nxt = steps[k + 1]["press"] if k + 1 < len(steps) else plan["next_ring"]
+        cap = st["shelf"] if st.get("shelf") is not None else s["high"]
+        for d in (s["low"], min(s["WindowCentre"], cap), cap):
+            lines.append((add(st["press"], mul(st["x"], d)), nxt))
+    return lines
+
+
+def post_hits_ring(p, ring, pad):
+    c, ax, r = ring
+    d = sub(p, c)
+    along = dot(d, ax)
+    radial = mag(sub(d, mul(ax, along)))
+    return abs(along) < pad and radial < r + pad
+
+
 # ---------------------------------------------------------------- measure
 def measure(intensity, T, CT, seeds, target, **kw):
     s = rung(T, intensity)
     i = intensity - 1
     m = dict(window=True, runway=True, path=True, edges=True, mouths=True, shell=True, towers=True, long=True,
              standdown=True, worst_clear=float("inf"), max_link=0.0, min_long=1e9, drops=[], waits=[], times=[],
-             tiles=0, d_hops=[], tower_rings=0, short_long=0)
+             tiles=0, d_hops=[], tower_rings=0, short_long=0,
+             shelf=True, past=True, lantern=True, gem=True, aibudget=True, tight=0, d_total=0, posts=0, gems=0,
+             worst_post=float("inf"), worst_budget=float("inf"), shelf_err=0.0)
     cluster_r = CT["RingRadius"][i]
     m["radius"] = abs(cluster_r - s["HopRingRadius"]) > 0.5
     m["window"] = s["plate"] >= T["HullRadius"] + T["LandClear"] and abs(s["high"] - s["low"] - 2 * s["WindowHalfWidth"]) < 1e-6
@@ -590,7 +968,85 @@ def measure(intensity, T, CT, seeds, target, **kw):
             m["far"] = max(m.get("far", 0.0), far)
             if not short_ok or far > s["HopRingRadius"] + T["ReactSeconds"] * T["Cruise"]:
                 m["edges"] = False
+            # Lantern Towers: the shelf the course says is the shelf Lay sized; a landing at it presses in time, one
+            # just past the hard far edge cannot reach the next ring; the autopilot's landing budget fits between.
+            steps = pl_plan["steps"]
+            for k, st in enumerate(steps):
+                g = st["gate"]
+                if st.get("shelf") is None:
+                    # the plunge: the autopilot lands past the ring and inside the window, with its frame and carry
+                    if not kw.get("ignore_ai"):
+                        tgt = ai_target(T, laid, g, s, 0)
+                        lo_m = tgt - AI_FRAME_U - AI_CARRY_U - (s["low"] + plunge_of(T, laid, g, s))
+                        m["worst_budget"] = min(m["worst_budget"], lo_m)
+                        if lo_m < 2.0 - 1e-6:
+                            m["aibudget"] = False
+                    continue
+                if k % 2 == 0:
+                    m["d_total"] += 1
+                    m["tight"] += 1 if st["tight"] else 0
+                ld = laid_depth(T, laid, g, s)
+                sd = shelf_depth(T, laid, g, s)
+                m["shelf_err"] = max(m["shelf_err"], abs(ld - st["shelf"]))
+                if abs(ld - st["shelf"]) > 0.5:
+                    m["shelf"] = False   # the course does not say what Lay laid
+                fe = far_edge_of(T, laid, g, s)
+                if overshoot(T, s, steps, k, ld) > -T["ReactSeconds"] * T["Cruise"] + 0.5:
+                    m["shelf"] = False   # a landing at the laid depth does not keep the reaction
+                if abs(overshoot(T, s, steps, k, sd)) > 0.5 or not (ld - 0.5 <= sd <= fe + 0.5):
+                    m["shelf"] = False   # the shelf is not "recharged exactly at the next press"
+                if overshoot(T, s, steps, k, fe + 5.0) <= steps[k + 1].get("r", s["HopRingRadius"]) - T["HullRadius"]:
+                    m["past"] = False
+                for seat in range(4):
+                    tgt = ai_target(T, laid, g, s, seat) if not kw.get("ignore_ai") else s["WindowCentre"]
+                    lo_m = tgt - AI_FRAME_U - AI_CARRY_U - s["low"]
+                    hi_m = fe - (tgt + AI_FRAME_U + AI_CARRY_U)
+                    m["worst_budget"] = min(m["worst_budget"], lo_m, hi_m)
+                    if lo_m < 2.0 - 1e-6 or hi_m < 2.0 - 1e-6:
+                        m["aibudget"] = False
+        # the lanterns: clear of every corporeal line, ring mouth and plate, and inside the cell
+        posts = lanterns(T, laid, s) if not kw.get("posts_on_axis") else [
+            (add(press_of(T, laid, g, s), mul(laid[g][1], d0)), g, dp)
+            for (p0, g, dp) in lanterns(T, laid, s) for d0 in [dot(sub(p0, press_of(T, laid, g, s)), laid[g][1])]]
+        m["posts"] = max(m["posts"], len(posts))
+        lines = [ln for pl_plan in plan for ln in flight_lines(T, s, pl_plan)]
+        pad = T["LanternSeg"] * 0.5 + T["LanternSide"]
+        for p0, g, _ in posts:
+            near = min(seg_point_distance(a, b, p0) for a, b in lines) if lines else float("inf")
+            m["worst_post"] = min(m["worst_post"], near)
+            if near < T["HullRadius"] + POST_CLEAR + pad:
+                m["lantern"] = False
+            if any(post_hits_ring(p0, ring, pad) for ring in laid):
+                m["lantern"] = False
+            if any(plate_distance(pl, p0, T["TileThickness"]) < pad for pl in plates):
+                m["lantern"] = False
+            if mag(p0) > wc.COURSE_OUTER + T["MembraneReach"] or mag(p0) < wc.INNER / 1.22 + T["ShellPad"]:
+                m["lantern"] = False
+        # the crown gems: I4 only, one a tower, on the plunge's line past its ring, clear of every tile and mouth
+        gems = crown_gems(T, laid, s) if not kw.get("gem_at_low") else [
+            (add(press_of(T, laid, g, s), mul(laid[g][1], s["low"] + plunge_of(T, laid, g, s))), g)
+            for (_, g) in crown_gems(T, laid, s)]
+        m["gems"] = max(m["gems"], len(gems))
+        if s["CrownGem"] <= 0 and gems:
+            m["gem"] = False
+        if s["CrownGem"] > 0 and len(gems) != sum(1 for t in towers if t >= 1):
+            m["gem"] = False
+        for gp, g in gems:
+            depth = dot(sub(gp, press_of(T, laid, g, s)), laid[g][1])
+            pl_depth = plunge_of(T, laid, g, s)
+            if depth < s["low"] + pl_depth + GEM_PICKUP or depth > s["high"] + pl_depth - GEM_PICKUP:
+                m["gem"] = False   # a short landing must reach it, a max-depth landing must skip it
+            if any(plate_distance(pl, gp, T["TileThickness"]) < T["HullRadius"] + 1.0 for pl in plates):
+                m["gem"] = False
+            if any(post_hits_ring(gp, ring, GEM_PICKUP) for ring in laid):
+                m["gem"] = False
     m["danger"] = danger_share_ok(s["DangerShare"])
+    # The hash draws the authored share (a tight hop is shorter, so it fits a gap more often: the LAID share runs
+    # higher, and is reported, not gated)
+    hashed = sum(1 for g in range(4000) if is_tight_hop(g, s)) / 4000.0
+    if abs(hashed - s["ShelfShare"]) > 0.03:
+        m["shelf"] = False
+    m["tight_share"] = m["tight"] / m["d_total"] if m["d_total"] else 0.0
     return m
 
 
@@ -607,7 +1063,9 @@ def _share_close(share, measured_as):
     return abs(got - measured_as) <= 0.03
 
 
-CHECKS = ("window", "runway", "path", "edges", "mouths", "shell", "towers", "long", "standdown", "danger", "radius")
+CHECKS = ("window", "runway", "path", "edges", "mouths", "shell", "towers", "long", "standdown", "danger", "radius",
+          "shelf", "past", "lantern", "gem", "aibudget")
+GEM_PICKUP = 12.0     # the crown gem's reach (u): a landing within it, or a line through it, collects it
 
 
 def run(seeds, target, quiet=False, report=False, T=None, **kw):
@@ -637,6 +1095,9 @@ def run(seeds, target, quiet=False, report=False, T=None, **kw):
         print(f"    hard far edge at most {m.get('far', 0):.0f} u past the authored one; plunge up to {T['PlungeCap']:.0f} u")
         print(f"    worst corporeal clearance {m['worst_clear']:.1f} u; farthest tower link {m['max_link']:.0f} u "
               f"(stand-down below {AI_FOLD_MIN_DISTANCE:.0f})")
+        print(f"    lanterns: tight D hops {m.get('tight_share', 0):.2f} (authored {s['ShelfShare']:.2f}), shelf drift "
+              f"{m['shelf_err']:.3f} u; up to {m['posts']} post segments a course, nearest {m['worst_post']:.1f} u to a "
+              f"flight line; up to {m['gems']} crown gems; autopilot budget margin {m['worst_budget']:.1f} u")
         print("    " + "  ".join(f"{k} {'OK' if v[k] else 'FAIL'}" for k in CHECKS))
     if not quiet:
         print("\n" + ("ALL CHECKS PASS" if ok else "FAILED"))
@@ -675,6 +1136,14 @@ def self_test(seeds, target):
         ("tower rings as wide as the cluster rings", dict(T=variant(HopRingRadius=[56.0, 50.0, 44.0, 40.0])),
          ("radius",)),
         ("the long-drop autopilot back at its pre-tower 420 u", dict(standdown=420.0), ("standdown",)),
+        # Lantern Towers (2026-11-11)
+        ("a tight hop's runway sized from the window's far edge", dict(kw=dict(tight_from_high=True)), ("shelf",)),
+        ("towers laid without keeping clear of the lantern posts", dict(kw=dict(no_posts=True)), ("lantern",)),
+        ("lantern posts on the drop line itself", dict(kw=dict(posts_on_axis=True)), ("lantern",)),
+        ("the crown gem at the plunge's near edge (a short plunge lands in it, so there is no choice)",
+         dict(kw=dict(gem_at_low=True)), ("gem",)),
+        ("an autopilot that ignores the lanterns (window centre on every hop)", dict(kw=dict(ignore_ai=True)),
+         ("aibudget",)),
     )
     for label, c, expect in controls:
         print(f"self-test: {label}")
@@ -689,6 +1158,14 @@ def self_test(seeds, target):
         missing = [e for e in expect if e not in fired]
         assert not missing, f"expected these to fire and they did not: {missing}"
         print("  pass\n")
+    print("self-test: a hull radius the prefab does not have (7)")
+    try:
+        assert_hull_matches(variant(HullRadius=7.0))
+        raise AssertionError("assert_hull_matches accepted a hull radius of 7")
+    except AssertionError as e:
+        if "accepted" in str(e):
+            raise
+    print("  pass\n")
     print("self-test: a danger share the hash does not honour")
     assert not danger_share_ok(0.35, n=6400) or danger_share_ok(0.35), "unreachable"
     assert danger_share_ok(0.0) and danger_share_ok(1.0), "share 0 / 1 must give none / all"
@@ -696,6 +1173,165 @@ def self_test(seeds, target):
     print("  pass\n")
     print("SELF-TEST PASS")
     return True
+
+
+# ---------------------------------------------------------------- the sweep: does reading the lanterns pay?
+MISS_SECONDS = 2 * math.pi * 85.3 / 67.0   # a missed tower ring costs one turning circle on the 45 deg/s hull (8.0 s)
+PLAIN_HIT_SECONDS = 0.3                    # a plain tile: x0.5..0.9 throttle easing back over 1 s
+DANGER_HIT_SECONDS = 1.5                   # a danger tile: x0 easing back over 3 s (and a permanent burn, not priced)
+
+
+def tower_clock(T, s, laid, plan, depth_of, rng, noise_u):
+    """One pilot through one tower: seconds from the first press to the next cluster's first ring, misses, short
+    landings, crown gems, and the grades it landed. `depth_of(k, step)` is the depth the pilot aims for on step k."""
+    steps = plan["steps"]
+    t = 0.0
+    misses = shorts = gems = 0
+    grades = []
+    gem_pts = {g: p for p, g in crown_gems(T, laid, s)}
+    for k, st in enumerate(steps):
+        aim = depth_of(k, st)
+        tr = aim + rng.uniform(-noise_u, noise_u) + rng.uniform(-AI_CARRY_U, AI_CARRY_U)
+        g = st["gate"]
+        last = k + 1 >= len(steps)
+        floor = s["low"] + (st.get("plunge", 0.0) if last else 0.0)
+        if tr < floor:
+            shorts += 1
+            t += (1 - s["DangerShare"]) * PLAIN_HIT_SECONDS + s["DangerShare"] * DANGER_HIT_SECONDS
+            tr = floor
+        grades.append(grade_on(T, laid, g, tr, s))
+        t += hold_for_travel(T, tr) + T["LandSeconds"]
+        land = add(st["press"], mul(st["x"], tr))
+        if last:
+            if g in gem_pts and dot(sub(gem_pts[g], land), st["x"]) >= -GEM_PICKUP:
+                gems += 1
+            t += mag(sub(plan["next_ring"], land)) / T["Cruise"]
+            break
+        cruise = dot(sub(steps[k + 1]["press"], land), st["x"]) / T["Cruise"]
+        need = max(recharge(T, tr), roll_s(T, steps[k + 1]["roll"]))
+        late = (need - cruise) * T["Cruise"]
+        if late > s["HopRingRadius"] - T["HullRadius"]:
+            misses += 1
+            t += max(cruise, 0.0) + MISS_SECONDS
+        else:
+            t += max(cruise, need)
+    return t, misses, shorts, gems, grades
+
+
+def cluster_clock(T, laid, s):
+    """The race outside the towers, the same for every pilot: cluster legs at cruise (plus a turn allowance at 45
+    deg/s), each exit gate to its tower's first press (the roll), and the long last gap as one long drop."""
+    t = 0.0
+    n = len(laid)
+    last_gap = None
+    for i in range(1, n):
+        a, b = laid[i - 1], laid[i]
+        if is_tower_ring(a, s) or is_tower_ring(b, s):
+            if is_tower_ring(b, s) and not is_tower_ring(a, s):
+                t += T["Lead"] / T["Cruise"]
+            continue
+        d = mag(sub(b[0], a[0]))
+        if d >= T["LongGapMin"] and (last_gap is None or i > last_gap):
+            last_gap = i
+    for i in range(1, n):
+        a, b = laid[i - 1], laid[i]
+        if is_tower_ring(a, s) or is_tower_ring(b, s):
+            continue
+        d = mag(sub(b[0], a[0]))
+        if i == last_gap:
+            t += d / T["DropSpeed"] + T["LandSeconds"] + 1.0
+        else:
+            t += d / T["Cruise"] + angle(a[1], b[1]) / 45.0 * 0.5
+    return t
+
+
+def sweep(seeds, target, fps=60):
+    """Race fixed-depth pilots against the lantern reader and the autopilot's four seats through every tower, and
+    report what reading the lanterns saves (strict: against the BEST fixed plan, not against today's centre pilot)."""
+    import random
+    import statistics
+    T = read_tower()
+    CT = wc.read_tables()
+    q = 0.5 * T["DropSpeed"] / fps      # a release on the nearest frame
+    print(f"sweep: {seeds} seeds x 4 intensities, {target} clusters, release noise +-{q:.1f} u ({fps} fps) and carry "
+          f"+-{AI_CARRY_U:.0f} u; a miss costs {MISS_SECONDS:.1f} s, a short landing "
+          f"{PLAIN_HIT_SECONDS}/{DANGER_HIT_SECONDS} s (plain/danger)")
+    rows = []
+    for i in (1, 2, 3, 4):
+        s = rung(T, i)
+        courses = []
+        for seed in range(1, seeds + 1):
+            plan = []
+            laid, best, per, towers, gap = build(T, CT, seed, i, target, plan)
+            courses.append((seed, laid, plan))
+
+        def run(policy, name, seat=None):
+            tower_t, race_t, miss, short, gem = [], [], 0, 0, 0
+            deep = total = 0
+            for seed, laid, plan in courses:
+                rng = random.Random(seed * 7919 + i * 104729 + (seat or 0) * 31 + len(name))
+                tt = 0.0
+                for pl in plan:
+                    t, mi, sh, ge, gr = tower_clock(T, s, laid, pl, lambda k, st: policy(laid, k, st), rng, q)
+                    tt += t
+                    miss += mi
+                    short += sh
+                    gem += ge
+                    deep += sum(1 for x in gr if x == DEEP)
+                    total += len(gr)
+                tower_t.append(tt)
+                race_t.append(tt + cluster_clock(T, laid, s))
+            return dict(name=name, tower=tower_t, race=race_t, miss=miss / len(courses), short=short / len(courses),
+                        gems=gem / len(courses), deep=deep / max(1, total))
+
+        def plunge_deep(laid, st):
+            return s["high"] + st.get("plunge", 0.0) - T["LanternBack"]
+
+        centre = run(lambda laid, k, st: s["WindowCentre"] + st.get("plunge", 0.0) if st.get("shelf") is None
+                     else s["WindowCentre"], "centre (today's AI)")
+        deep_p = run(lambda laid, k, st: plunge_deep(laid, st) if st.get("shelf") is None else s["high"] - T["LanternBack"],
+                     "deep (far edge - 15)")
+        best_c = None
+        for c in range(int(s["low"]) + 5, int(s["high"]) + 1, 5):
+            r = run(lambda laid, k, st, c=c: plunge_deep(laid, st) if st.get("shelf") is None else float(c), f"constant {c}")
+            if best_c is None or statistics.mean(r["race"]) < statistics.mean(best_c["race"]):
+                best_c = r
+        c_best = float(best_c["name"].split()[1])
+        role = run(lambda laid, k, st: plunge_deep(laid, st) if st.get("shelf") is None
+                   else (s["high"] - T["LanternBack"] if k % 2 == 1 else c_best), f"role-aware (deep sideways, {c_best:.0f} down)")
+        reader = run(lambda laid, k, st: plunge_deep(laid, st) if st.get("shelf") is None
+                     else lantern_end(T, laid, st["gate"], s), "reader (the lanterns' foot)")
+        expert = run(lambda laid, k, st: plunge_deep(laid, st) if st.get("shelf") is None
+                     else min(s["high"] + 50.0, far_edge_of(T, laid, st["gate"], s)) - q - AI_CARRY_U - 1.0,
+                     "expert (the hard edge less its noise)")
+        seats = [run(lambda laid, k, st, seat=seat: ai_target(T, laid, st["gate"], s, seat), f"autopilot seat {seat}", seat)
+                 for seat in range(4)]
+        fixed = min((best_c, role), key=lambda r: statistics.mean(r["tower"]))
+        mean = statistics.mean
+        strict_tower = (mean(fixed["tower"]) - mean(reader["tower"])) / mean(fixed["tower"]) if mean(fixed["tower"]) else 0
+        strict_race = (mean(fixed["race"]) - mean(reader["race"])) / mean(fixed["race"])
+        strict_expert = (mean(fixed["tower"]) - mean(expert["tower"])) / mean(fixed["tower"])
+        naive = (mean(centre["tower"]) - mean(reader["tower"])) / mean(centre["tower"]) if mean(centre["tower"]) else 0
+        print(f"\ni{i}: towers {mean(r_len(courses, s)):.1f} rings a race")
+        for r in (centre, deep_p, best_c, role, reader, expert, *seats):
+            print(f"    {r['name']:<36} towers {mean(r['tower']):6.1f} s  race {statistics.median(r['race']):6.1f} s "
+                  f"(median)  misses {r['miss']:.2f}  short {r['short']:.2f}  deep {100 * r['deep']:4.0f}%  gems {r['gems']:.2f}")
+        print(f"    reading the lanterns saves {100 * strict_tower:.1f}% of tower time and {100 * strict_race:.1f}% of the "
+              f"race against the best fixed plan ({fixed['name']}); {100 * naive:.1f}% of tower time against today's AI; "
+              f"an expert at the hard edge saves {100 * strict_expert:.1f}%")
+        ai_race = [statistics.median(r["race"]) for r in seats]
+        rows.append(dict(i=i, strict_tower=strict_tower, strict_race=strict_race, naive=naive,
+                         race=statistics.median(reader["race"]), ai_miss=max(r["miss"] for r in seats),
+                         ai_race=max(ai_race), centre_miss=centre["miss"]))
+    print("\nsummary   strict tower   strict race   vs today's AI   reader race   AI misses/race   today's AI misses/race")
+    for r in rows:
+        print(f"  i{r['i']}      {100 * r['strict_tower']:6.1f}%       {100 * r['strict_race']:6.1f}%       "
+              f"{100 * r['naive']:6.1f}%      {r['race']:6.1f} s      {r['ai_miss']:.2f}             {r['centre_miss']:.2f}")
+    return rows
+
+
+def r_len(courses, s):
+    return [sum(1 for g in laid if is_tower_ring(g, s)) for _, laid, _ in courses]
 
 
 HARNESS = ROOT / "Tools/Build/waystation_tower_harness"
@@ -711,6 +1347,7 @@ HARNESS_CSPROJ = """<Project Sdk="Microsoft.NET.Sdk">
     <Compile Include="Unity.cs" />
     <Compile Include="Stubs.cs" />
     <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Waystation/WaystationTower.cs" />
+    <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Waystation/WaystationHopPlan.cs" />
     <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Waystation/WaystationCourse.cs" />
     <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Racing/RaceCourseGeometry.cs" />
   </ItemGroup>
@@ -731,13 +1368,15 @@ def compile_and_compare(seeds, clusters):
     assert m and f"DefaultInnerRadiusNucleusFactor = {m.group(1)}f" in stubs, "Stubs.cs nucleus factor drifted"
     ease = (ROOT / "Assets/_Scripts/Controller/Vessel/R_VesselActions/TigerMothDropMath.cs").read_text(encoding="utf-8")
     assert "t * t * (3f - 2f * t)" in ease and "t * t * (3f - 2f * t)" in stubs, "Stubs.cs Ease01 drifted"
+    hold = "(distance - landing) / dropSpeed + easeSeconds * 0.5f"
+    assert hold in ease and hold in stubs, "Stubs.cs HoldSecondsFor drifted"
 
     dotnet = shutil.which("dotnet") or str(Path.home() / ".dotnet/dotnet")
     if not Path(dotnet).exists():
         print("--compile needs a dotnet SDK (see .claude/skills/asset-surgery). SKIPPED, not passed.")
         return False
     csproj = HARNESS / "waystation_tower_harness.csproj"
-    if not csproj.exists():
+    if not csproj.exists() or csproj.read_text(encoding="utf-8") != HARNESS_CSPROJ:
         csproj.write_text(HARNESS_CSPROJ, encoding="utf-8")
     made = subprocess.run([dotnet, "build", "-v", "q", "--nologo"], cwd=HARNESS, capture_output=True, text=True)
     if made.returncode != 0:
@@ -750,17 +1389,24 @@ def compile_and_compare(seeds, clusters):
         print(out.stderr[-4000:])
         return False
 
-    gates, tiles = {}, {}
+    gates, tiles, posts, shelves, gems = {}, {}, {}, {}, {}
     for line in out.stdout.splitlines():
         f = line.split()
+        key = (int(f[1]), int(f[2]))
         if f[0] == "G":
-            gates.setdefault((int(f[1]), int(f[2])), []).append(tuple(float(x) for x in f[4:]))
+            gates.setdefault(key, []).append(tuple(float(x) for x in f[4:]))
         elif f[0] == "T":
-            tiles[(int(f[1]), int(f[2]))] = (int(f[3]), int(f[4]), int(f[5]))
+            tiles[key] = (int(f[3]), int(f[4]), int(f[5]))
+        elif f[0] == "L":
+            posts.setdefault(key, []).append((int(f[3]), tuple(float(x) for x in f[4:7]), f[7] == "1"))
+        elif f[0] == "S":
+            shelves.setdefault(key, []).append((int(f[3]),) + tuple(float(x) for x in f[4:8]))
+        elif f[0] == "C":
+            gems.setdefault(key, []).append(tuple(float(x) for x in f[3:6]))
 
     T = read_tower()
     CT = wc.read_tables()
-    worst_pos = worst_axis = 0.0
+    worst_pos = worst_axis = worst_post = worst_shelf = worst_gem = 0.0
     mismatched = []
     compared = 0
     for i in (1, 2, 3, 4):
@@ -777,14 +1423,40 @@ def compile_and_compare(seeds, clusters):
                 if abs(r - c[6]) > 1e-3:
                     mismatched.append(f"i{i} seed {seed}: a ring radius disagrees")
                 compared += 1
+            # Lantern Towers: the posts, each hop's shelf / laid depth / far edge / autopilot target, the gems
+            mp = lanterns(T, laid, s)
+            cp = posts.get((i, seed), [])
+            if len(cp) != len(mp) or any(g != cg or dp != cd for (p, g, dp), (cg, cpos, cd) in zip(mp, cp)):
+                mismatched.append(f"i{i} seed {seed}: C# laid {len(cp)} lantern segments, the model {len(mp)}")
+            else:
+                for (p, g, dp), (cg, cpos, cd) in zip(mp, cp):
+                    worst_post = max(worst_post, mag(sub(p, cpos)))
+            for gi, c_shelf, c_laid, c_far, c_ai in shelves.get((i, seed), []):
+                worst_shelf = max(worst_shelf, abs(c_shelf - shelf_depth(T, laid, gi, s)),
+                                  abs(c_laid - laid_depth(T, laid, gi, s)),
+                                  abs(min(c_far, 1e6) - min(far_edge_of(T, laid, gi, s), 1e6)),
+                                  abs(c_ai - ai_target(T, laid, gi, s, gi % 4)))
+            if len(shelves.get((i, seed), [])) != sum(1 for gi in range(1, len(laid)) if has_shelf(laid, gi, s)):
+                mismatched.append(f"i{i} seed {seed}: the C# and the model disagree on which rings have a shelf")
+            mg = crown_gems(T, laid, s)
+            cg = gems.get((i, seed), [])
+            if len(mg) != len(cg):
+                mismatched.append(f"i{i} seed {seed}: C# stood {len(cg)} crown gems, the model {len(mg)}")
+            else:
+                for (p, _), c in zip(mg, cg):
+                    worst_gem = max(worst_gem, mag(sub(p, c)))
             mt = walls(T, laid, s)
             used, n_tiles, n_danger = tiles[(i, seed)]
             if n_tiles != len(mt) or n_danger != sum(1 for _, d in mt if d):
                 mismatched.append(f"i{i} seed {seed}: C# laid {n_tiles} tiles ({n_danger} danger), the model "
                                   f"{len(mt)} ({sum(1 for _, d in mt if d)})")
-    ok = not mismatched and worst_pos <= COMPILE_POS_TOLERANCE and worst_axis <= COMPILE_AXIS_TOLERANCE
+    ok = (not mismatched and worst_pos <= COMPILE_POS_TOLERANCE and worst_axis <= COMPILE_AXIS_TOLERANCE
+          and worst_post <= COMPILE_POS_TOLERANCE and worst_shelf <= COMPILE_POS_TOLERANCE * 4
+          and worst_gem <= COMPILE_POS_TOLERANCE)
     print(f"compiled and RAN the shipped C#: {compared} gates compared over {seeds} seeds x 4 intensities")
     print(f"  worst position disagreement {worst_pos:.6f} u, axis {worst_axis:.6f} deg")
+    print(f"  lantern posts {worst_post:.6f} u, shelves / laid depths / far edges / autopilot targets {worst_shelf:.6f} u, "
+          f"crown gems {worst_gem:.6f} u")
     for line in mismatched[:12]:
         print("  " + line)
     print("COMPILE MATCH" if ok else "COMPILE MISMATCH")
@@ -796,11 +1468,16 @@ def main():
     ap.add_argument("--check", action="store_true", help="exit 1 on any failing check")
     ap.add_argument("--self-test", action="store_true", help="prove the checks can fail")
     ap.add_argument("--compile", action="store_true", help="build and RUN the shipped C# and compare it to the model")
+    ap.add_argument("--sweep", action="store_true", help="race fixed-depth pilots against the lantern reader and the AI")
+    ap.add_argument("--fps", type=int, default=60, help="--sweep: the frame rate a release is quantised to")
     ap.add_argument("--seeds", type=int, default=200)
     ap.add_argument("--target", type=int, default=CLUSTERS, help="clusters per race (the authored target)")
     a = ap.parse_args()
     if a.self_test:
         return 0 if self_test(min(a.seeds, 40), a.target) else 1
+    if a.sweep:
+        sweep(a.seeds, a.target, a.fps)
+        return 0
     if a.compile:
         return 0 if compile_and_compare(min(a.seeds, 40), a.target) else 1
     return 0 if run(a.seeds, a.target) else (1 if a.check else 0)

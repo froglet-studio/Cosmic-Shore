@@ -13,7 +13,8 @@ in a vast space." A genome is one JSON document (the flywheel's shared contract)
      "placements": [{"kind": catalogue id, "leg": leg + Hermite t, "offset": [radius_u, bearing_deg, along_u],
                      "scale": bounding radius u, "yaw", "pitch", "roll", "domain": Native|Jade|Ruby|Gold|Blue,
                      "prism": Native|Plain|Danger|Shielded|SuperShielded, "seed", "density",
-                     "cross_line": bool (may stand in the line's tube), "params": {field: value}}],
+                     "cross_line": bool (may stand in the line's tube), "cross_rail": bool (may stand on a rail),
+                     "params": {field: value}}],
      "flora": {"preset", "sitesPerLeg", "offsetMin", ...}}                     RegattaLifeformSiteSettings + the preset
 
 What may be placed, and every parameter's range, is the GENE CATALOGUE (Assets/Resources/Regatta/
@@ -56,7 +57,7 @@ FIXTURE = os.path.join(REPO, "Tools", "Build", "regatta_genome_harness", "repair
 RINGS = 8
 MAX_PLACEMENTS = 24            # RegattaCourseGenome.MaxPlacements
 PER_PLACEMENT_CAP = 3000       # RegattaCourseGenome.PerPlacementCap
-TOTAL_PRISM_BUDGET = 12000     # RegattaCourseGenome.TotalPrismBudget
+TOTAL_PRISM_BUDGET = 6000      # RegattaCourseGenome.TotalPrismBudget
 NUCLEUS_CARVE = 391.9 * 1.1    # RegattaCourseGenome.NucleusCarve
 MEMBRANE_CARVE = 1150.0        # RegattaCourseGenome.MembraneCarve
 LINE_CLEARANCE = (12.0, 80.0, 32.0)
@@ -297,7 +298,7 @@ def repair(genome):
              "prism": s.get("prism") if s.get("prism") in PRISMS else "Native",
              "seed": int(s.get("seed", 0)),
              "density": _clamp(float(s.get("density", 1.0)), 0.1, 2.0) if kind["world"] else 1.0,
-             "cross_line": bool(s.get("cross_line", False))}
+             "cross_line": bool(s.get("cross_line", False)), "cross_rail": bool(s.get("cross_rail", False))}
         params = {}
         prms = {q["name"]: q for q in kind["params"]}
         for name in sorted((s.get("params") or {}).keys()):
@@ -355,6 +356,7 @@ def random_placement(rng, kind=None):
             "seed": rng.randint(1, 2 ** 31 - 1) if rng.random() < 0.7 else 0,
             "density": rng.uniform(0.1, 1.2) if kind["world"] else 1.0,
             "cross_line": rng.random() < 0.35,
+            "cross_rail": rng.random() < 0.25,
             "params": random_params(rng, kind)}
 
 
@@ -468,8 +470,10 @@ def mutate(genome, rng, strength=1.0, prior=None):
                 p["domain"] = rng.choice(DOMAINS)
             elif q < 0.8:
                 p["prism"] = rng.choice(PRISMS)
-            else:                                                  # onto the line, or off it
+            elif q < 0.9:                                          # onto the line, or off it
                 p["cross_line"] = not p.get("cross_line", False)
+            else:                                                  # onto the rails, or off them
+                p["cross_rail"] = not p.get("cross_rail", False)
         elif r < 0.73:                                             # swap what it is, keep where it is
             p = rng.choice(pl)
             fresh = random_placement(rng)
@@ -564,6 +568,7 @@ def descriptors(genome):
         "mean_line_clearance": round(sum(clearance) / len(clearance), 2) if clearance else 400.0,
         "on_line_share": round(sum(1 for c in clearance if c < 0) / len(pl), 3) if pl else 0.0,
         "cross_line_share": round(sum(1 for p in pl if p.get("cross_line")) / len(pl), 3) if pl else 0.0,
+        "cross_rail_share": round(sum(1 for p in pl if p.get("cross_rail")) / len(pl), 3) if pl else 0.0,
         "est_prisms": est,
         "total_scale": round(sum(float(p["scale"]) for p in pl), 1),
         "world_share": round(len(worlds) / len(pl), 3) if pl else 0.0,

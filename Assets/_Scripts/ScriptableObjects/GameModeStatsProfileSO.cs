@@ -39,8 +39,18 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Per-mode lists. The first entry whose Mode matches wins; an empty list means 'use the default'.")]
         [SerializeField] List<Entry> perMode = new();
 
+        [Header("Every vessel's telemetry")]
+        [Tooltip("The three stats every VesselTelemetry raises. A telemetry added at runtime (VesselTelemetryBootstrapper) " +
+                 "or a prefab that leaves a link empty takes these, so no hull's drift, boost or prisms damaged reads 0 for good.")]
+        [SerializeField] VesselStatEventSO vesselLongestDrift;
+        [SerializeField] VesselStatEventSO vesselMaxBoost;
+        [SerializeField] VesselStatEventSO vesselPrismsDamaged;
+
         public IReadOnlyList<VesselStatEventSO> DefaultStats => defaultStats;
         public IReadOnlyList<Entry> PerMode => perMode;
+        public VesselStatEventSO VesselLongestDrift => vesselLongestDrift;
+        public VesselStatEventSO VesselMaxBoost => vesselMaxBoost;
+        public VesselStatEventSO VesselPrismsDamaged => vesselPrismsDamaged;
 
         /// <summary>The list for <paramref name="mode"/>, or the default list when it has none.</summary>
         public IReadOnlyList<VesselStatEventSO> StatsFor(GameModes mode)

@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-joinorcreateasync-no-longer-waits-1-5-s-108e28",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-16T22:07:17+00:00",
+  "area": "UGS presence lobby (PresenceLobbyService)",
+  "summary": "JoinOrCreateAsync no longer waits 1.5 s and converges after creating a lobby: the refresh loop already converges about 2 s and 7 s after the join, and the in-join copy cost 1.9-2.6 s and one query of every boot. Two instances started together still met in one lobby in 4 driven runs.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "f1580476e"
+}

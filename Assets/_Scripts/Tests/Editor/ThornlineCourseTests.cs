@@ -195,12 +195,138 @@ namespace CosmicShore.Tests
                         float best = float.MaxValue;
                         for (int k = 1; k < thorns.Count; k++)
                             best = Mathf.Min(best, ThornlineCourse.DistanceToSegment(c, thorns[k - 1], thorns[k]));
-                        // Aimed at a thorn's centre you pass 13-17 u wide of it; aimed at its rim you fly through it.
-                        Assert.IsTrue(best >= 0.3f * 0.5f * s.ThornSize && best <= s.ThornSize,
+                        // Aimed at a thorn's centre you pass clear of it; aimed through it you anchor (the rim mark is
+                        // inside the 12 u the sling catches).
+                        Assert.IsTrue(best >= ThornlineCourse.CrystalPickupReach + 1f && best <= ThornlineCourse.AnchorReach,
                             $"I{i} seed {seed}: a crystal {best:F1} u off the nearest centre line");
                     }
                 }
             }
+        }
+
+        [Test]
+        public void The_shot_through_a_crystal_anchors_and_the_centre_shot_misses_it()
+        {
+            // 2026-11-17: the rim mark sat 0.375 x the thorn's side off its centre (17 / 15 u at I2 / I3), outside the 12 u
+            // the sling catches, so the shot the crystal asks for anchored on nothing. Now it is inside, and it still
+            // anchors from where a pilot really sits: on the last thorn's FACE, up to ~30 u off its centre.
+            var thorns = new List<Vector3>();
+            var crystals = new List<Vector3>();
+            for (int i = 2; i <= 4; i++)
+            {
+                var s = ThornlineCourse.ForIntensity(i);
+                for (int seed = 1; seed <= Seeds; seed++)
+                {
+                    Course(i, seed, thorns);
+                    ThornlineCourse.PlaceCrystals(thorns, s, crystals);
+                    foreach (var c in crystals)
+                    {
+                        int leg = NearestLeg(thorns, c);
+                        Vector3 a = thorns[leg - 1], b = thorns[leg];
+                        Vector3 rim = ThornlineCourse.RimMark(thorns, leg);
+                        Assert.GreaterOrEqual(ThornlineCourse.AnchorAlong(a, rim - a, b, s.ThornSize), 0f,
+                            $"I{i} seed {seed}: the shot through the crystal does not anchor on thorn {leg}");
+                        Assert.LessOrEqual(ThornlineCourse.DistanceToSegment(c, a, rim), ThornlineCourse.CrystalPickupReach,
+                            $"I{i} seed {seed}: the rim shot misses its crystal");
+                        Assert.Greater(ThornlineCourse.DistanceToSegment(c, a, b), ThornlineCourse.CrystalPickupReach,
+                            $"I{i} seed {seed}: the centre shot takes the crystal");
+                        // From the face: four seats round the departure thorn, half its side plus the hull off its centre.
+                        Vector3 along = (b - a).normalized;
+                        Vector3 u = RaceCourseGeometry.SafeNormalize(RaceCourseGeometry.Perpendicular(along), Vector3.right);
+                        Vector3 v = Vector3.Cross(along, u);
+                        float off = 0.5f * s.ThornSize + ThornlineCourse.HullRadius;
+                        foreach (var seat in new[] { u, -u, v, -v })
+                            Assert.IsTrue(ThornlineAIPlan.TryCrystalShot(a + seat * off, c, b, out _),
+                                $"I{i} seed {seed}: from a face {off:F0} u off thorn {leg - 1}, the shot through the crystal misses thorn {leg}");
+                    }
+                }
+            }
+        }
+
+        static int NearestLeg(List<Vector3> thorns, Vector3 p)
+        {
+            int best = 1; float bd = float.MaxValue;
+            for (int j = 1; j < thorns.Count; j++)
+            {
+                float d = ThornlineCourse.DistanceToSegment(p, thorns[j - 1], thorns[j]);
+                if (d < bd) { bd = d; best = j; }
+            }
+            return best;
+        }
+
+        [Test]
+        public void Every_lane_anchors_and_keeps_the_target_off_the_lance_line()
+        {
+            var thorns = new List<Vector3>();
+            float count = ThornlineCourse.LanceRadiusMin + ThornlineCourse.LanceCountPad;
+            Assert.Greater(ThornlineCourse.LaneOffset, count, "a lane must clear the lance count at Charge 0");
+            Assert.Less(ThornlineCourse.LaneOffset, ThornlineCourse.AnchorReach - 3f, "a lane must anchor with room");
+            Assert.Less(ThornlineCourse.LaneOffset, ThornlineCourse.AccidentMargin, "a lane must not open an accidental skip");
+            for (int i = 1; i <= 4; i++)
+            {
+                var s = ThornlineCourse.ForIntensity(i);
+                for (int seed = 1; seed <= Seeds; seed++)
+                {
+                    Course(i, seed, thorns);
+                    for (int k = 1; k < thorns.Count; k++)
+                    {
+                        int clear = 0;
+                        for (int lane = 0; lane < ThornlineCourse.LaneCount; lane++)
+                        {
+                            Vector3 p = ThornlineCourse.LanePoint(thorns[k - 1], thorns[k], lane);
+                            Assert.AreEqual(ThornlineCourse.LaneOffset, (p - thorns[k]).magnitude, 0.01f);
+                            Assert.GreaterOrEqual(ThornlineCourse.AnchorAlong(thorns[k - 1], p - thorns[k - 1], thorns[k], s.ThornSize), 0f,
+                                $"I{i} seed {seed}: lane {lane} of thorn {k} does not anchor");
+                            Assert.Greater(ThornlineCourse.DistanceToSegment(thorns[k], thorns[k - 1], thorns[k - 1] + (p - thorns[k - 1]).normalized * 2400f), count,
+                                $"I{i} seed {seed}: lane {lane} of thorn {k} counts its own target toward the lance");
+                            if (ThornlineCourse.LaneClear(thorns[k - 1], p, thorns, k, null)) clear++;
+                        }
+                        Assert.GreaterOrEqual(clear, ThornlineCourse.LaneCount / 2, $"I{i} seed {seed}: thorn {k} has {clear} clear lanes");
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void Every_seat_is_the_same_sling_from_the_start_thorn_and_its_line_is_clear()
+        {
+            for (int count = 1; count <= 8; count++)
+            {
+                var poses = ThornlineCourse.StartPoses(count);
+                Assert.AreEqual(count, poses.Length);
+                foreach (var pose in poses)
+                {
+                    Vector3 to = ThornlineCourse.StartThorn - pose.position;
+                    Assert.AreEqual(ThornlineCourse.StartSeatDistance, to.magnitude, 0.01f, "every seat is one distance from the start thorn");
+                    Assert.Less(Vector3.Angle(pose.rotation * Vector3.forward, to), 0.1f, "every seat faces the start thorn");
+                    Assert.Less(to.magnitude, ThornlineCourse.SlingRange, "the start thorn is in sling range");
+                    Assert.Greater(to.magnitude, ThornlineCourse.AiSlingMinDistance, "an AI can sling to it on the gun");
+                    Assert.Greater(ThornlineCourse.DistanceToSegment(Vector3.zero, pose.position, ThornlineCourse.StartThorn),
+                        ThornlineCourse.DefaultInnerRadius + ThornlineCourse.CoreMargin, "a seat's line grazes the nucleus");
+                }
+            }
+            var thorns = new List<Vector3>();
+            for (int i = 1; i <= 4; i++)
+            {
+                var s = ThornlineCourse.ForIntensity(i);
+                for (int seed = 1; seed <= Seeds; seed++)
+                {
+                    Course(i, seed, thorns);
+                    Assert.IsTrue(ThornlineCourse.SeatsClear(s, thorns, out string why), $"I{i} seed {seed}: {why}");
+                }
+            }
+        }
+
+        [Test]
+        public void A_broken_thorn_waits_only_for_a_hull_inside_it()
+        {
+            var c = new Vector3(100f, 200f, 300f);
+            const float size = 40f;
+            Vector3 face = c + Vector3.right * (size * 0.5f + ThornlineCourse.HullRadius + 2f);
+            Assert.IsFalse(ThornlineCourse.RegrowBlocked(c, size, face), "a hull hanging off the face holds the regrow");
+            Assert.IsTrue(ThornlineCourse.RegrowBlocked(c, size, c + Vector3.right * (size * 0.5f - 1f)), "a hull inside the box lets it grow through");
+            // The sphere it replaced (size + 30 u from the centre) held the regrow off for a hull at the face.
+            Assert.Less((face - c).magnitude, size + 30f);
         }
 
         [Test]
@@ -234,6 +360,15 @@ namespace CosmicShore.Tests
             Assert.AreEqual(ThornlineCourse.DockBonus, Field("dockBonus"), 1e-4f, "dockBonus moved");
             Assert.AreEqual(ThornlineCourse.DockBonusShielded, Field("dockBonusShielded"), 1e-4f, "dockBonusShielded moved");
             Assert.AreEqual(ThornlineCourse.HullRadius, Field("hullRadius"), 1e-4f, "hullRadius moved");
+            Assert.AreEqual(ThornlineCourse.AnchorReach, Field("dockQueryReach"), 1e-4f, "dockQueryReach moved: the anchor disc, the lanes and the rim mark are cut for it");
+            Assert.AreEqual(ThornlineCourse.SlingRangeOfLance, Field("lanceRange"), 1e-4f, "lanceRange moved: the lane check reads the autopilot's lance line");
+            Assert.AreEqual(ThornlineCourse.AiSlingMinDistance, Field("aiSlingMinDistance"), 1e-4f, "aiSlingMinDistance moved");
+            Assert.AreEqual(ThornlineCourse.AiSlingDegrees, Field("aiSlingDegrees"), 1e-4f, "aiSlingDegrees moved");
+            Assert.AreEqual(ThornlineCourse.AiDockSeconds, Field("aiDockSeconds"), 1e-4f, "aiDockSeconds moved");
+            var lance = Regex.Match(yaml, @"lanceRadius:\s*\n(?:\s+\w+: [^\n]*\n)*?\s+Min: ([0-9.]+)\s*\n\s+Max: ([0-9.]+)");
+            Assert.IsTrue(lance.Success, "lanceRadius's Min/Max not found");
+            Assert.AreEqual(ThornlineCourse.LanceRadiusMin, float.Parse(lance.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture), "lanceRadius Min moved");
+            Assert.AreEqual(ThornlineCourse.LanceRadiusMax, float.Parse(lance.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), "lanceRadius Max moved");
             var cd = Regex.Match(yaml, @"slingCooldown:\s*\n(?:\s+\w+: [^\n]*\n)*?\s+Min: ([0-9.]+)\s*\n\s+Max: ([0-9.]+)");
             Assert.IsTrue(cd.Success, "slingCooldown's Min/Max not found");
             Assert.AreEqual(ThornlineCourse.SlingCooldownTimeZero, float.Parse(cd.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture));

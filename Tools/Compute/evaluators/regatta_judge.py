@@ -37,6 +37,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -60,9 +61,31 @@ def _commit():
         return ""
 
 
+def _stale():
+    """True when any C# under Assets/_Scripts or Port/src is newer than the built player: the game is compiled INTO
+    the player (CosmicShore.Live), so a judge on an old build races yesterday's AI."""
+    built = os.path.getmtime(DLL)
+    for top in ("Assets/_Scripts", "Port/src"):
+        for d, dirs, files in os.walk(os.path.join(ROOT, top)):
+            dirs[:] = [x for x in dirs if x not in ("bin", "obj")]
+            for f in files:
+                if f.endswith(".cs") and os.path.getmtime(os.path.join(d, f)) > built:
+                    return True
+    return False
+
+
+_BUILD_LOCK = threading.Lock()
+
+
 def build(force=False):
-    """Build the player once (about 50 s). Returns the dll path."""
-    if os.path.exists(DLL) and not force:
+    """Build the player (about 50 s) when it is missing or older than the checkout's C#. Returns the dll path.
+    One build at a time: concurrent judge() calls wait for it rather than writing the same folder."""
+    with _BUILD_LOCK:
+        return _build(force)
+
+
+def _build(force):
+    if os.path.exists(DLL) and not force and not _stale():
         return DLL
     if not shutil.which("dotnet"):
         raise RuntimeError("dotnet not found: apt-get install -y dotnet-sdk-10.0")
@@ -80,8 +103,8 @@ def _run_one(spec, timeout_s, workdir, tag):
         json.dump(spec, f)
     env = dict(os.environ, COSMIC_SHORE_PROJECT=ROOT, COSMIC_SHORE_NET="off", COSMIC_SHORE_AUDIO="off",
                COSMIC_SHORE_COMMIT=_commit(),
-               # Each process its own profile, so parallel runs never share a save slot.
-               COSMIC_SHORE_PROFILE=f"judge-{os.getpid()}-{tag}")
+               # Each process its own profile (per workdir too, for concurrent judge() calls), so runs never share a save slot.
+               COSMIC_SHORE_PROFILE=f"judge-{os.getpid()}-{os.path.basename(workdir)}-{tag}")
     cmd = ["dotnet", DLL, "--headless", "--quiet", "--race-judge", spec_path, "--race-out", out_path]
     with open(os.path.join(workdir, f"{tag}.log"), "w") as log:
         try:
@@ -99,8 +122,17 @@ def _run_one(spec, timeout_s, workdir, tag):
     return res
 
 
-def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, workers=None, workdir=None):
-    """Score one course. seats: [{"hull": "Urchin", "ai": "shipped"}] or ["Urchin", ...]."""
+def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, workers=None, workdir=None,
+          mode="Regatta", intensity=None, overrides=None, controller_overrides=None, start=None):
+    """Score one course. seats: [{"hull": "Urchin", "ai": "shipped"}] or ["Urchin", ...].
+
+    mode       any gate-race Time game by its card name (Switchback, Redline, Breakwater, SerpentTime, ScarabRally ...);
+               only Regatta reads the genome, the others lay their own course at `intensity` (default the genome's, 1).
+    overrides  [{"asset": "Assets/...asset", "fields": {"field.sub": value}}]: in-memory edits to loaded assets for this
+               run only (nothing is written), so a parameter search can score candidates in parallel.
+    controller_overrides  {"aiNoseLead.0.Gain": 1.5}: fields of the scene's race controller, set before each Ready.
+    start      the element levels each hull starts at: "card" (default, the card's StartingElements), "rest" (all 0),
+               "L5" (every hull at Time 5: every Time level-5 upgrade on) or {"Manta": {"Time": 5}} in levels."""
     seats = [s if isinstance(s, dict) else {"hull": s, "ai": "shipped"} for s in seats]
     if backend == "model":
         import regatta_judge_model  # W3's module: the Python model priced in the same RESULT shape
@@ -110,7 +142,15 @@ def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, work
     build()
     t0 = time.time()
     workdir = workdir or tempfile.mkdtemp(prefix="regatta-judge-")
-    base = {"genome": genome, "seeds": list(seeds), "limit_s": limit_s}
+    base = {"genome": genome, "seeds": list(seeds), "limit_s": limit_s, "mode": mode}
+    if intensity is not None:
+        base["intensity"] = int(intensity)
+    if overrides:
+        base["overrides"] = overrides
+    if controller_overrides:
+        base["controller_overrides"] = controller_overrides
+    if start is not None:
+        base["start"] = start
     # Each process boots once (~20 s) and races its seeds through Play Again (~5-20 s a race).
     jobs = [("field", dict(base, seats=seats, field=True))] if field else \
         [(f"{i}_{s['hull']}", dict(base, seats=[s], field=False)) for i, s in enumerate(seats)]
@@ -139,9 +179,9 @@ def mean_finish(result):
     return {h: (sum(v[0]) / len(v[0]) if v[0] else None, len(v[0]), v[1]) for h, v in acc.items()}
 
 
-def calibrate(seeds, hulls=None):
+def calibrate(seeds, hulls=None, start=None):
     hulls = hulls or REGATTA_HULLS
-    res = judge(CALIBRATION_GENOME, hulls, seeds)
+    res = judge(CALIBRATION_GENOME, hulls, seeds, start=start)
     rows = []
     for h, (m, n, total) in sorted(mean_finish(res).items(), key=lambda kv: (kv[1][0] is None, kv[1][0] or 0)):
         times = [s["finish_s"] for r in res["races"] for s in r["seats"] if s["hull"] == h and s["finish_s"] is not None]
@@ -178,14 +218,19 @@ def main():
     ap.add_argument("--field", action="store_true")
     ap.add_argument("--backend", default="engine")
     ap.add_argument("--out", help="write the RESULT JSON here")
+    ap.add_argument("--mode", default="Regatta", help="the game's card name (Switchback, Redline, Breakwater, ...)")
+    ap.add_argument("--intensity", type=int)
+    ap.add_argument("--overrides", help="JSON file: [{asset, fields}] in-memory asset edits for this run")
+    ap.add_argument("--start", help='starting element levels: card (default), rest, L5, or a JSON table {"Manta": {"Time": 5}}')
     a = ap.parse_args()
     seeds = [int(s) for s in a.seeds.split(",") if s]
     hulls = [h.strip() for h in a.hulls.split(",") if h.strip()]
     if a.self_test:
         self_test()
         return
+    start = None if not a.start else json.loads(a.start) if a.start.startswith("{") else a.start
     if a.calibrate:
-        cal = calibrate(seeds, hulls)
+        cal = calibrate(seeds, hulls, start=start)
         print(f"{'hull':10} {'port s':>8} {'sd':>6} {'fin':>5} {'editor':>7} {'ratio':>6}")
         for r in cal["rows"]:
             print(f"{r['hull']:10} {r['port_s'] if r['port_s'] is not None else 'DNF':>8} {r['sd_s']:>6} "
@@ -194,7 +239,9 @@ def main():
         out = cal
     else:
         genome = json.load(open(a.genome)) if a.genome else CALIBRATION_GENOME
-        out = judge(genome, hulls, seeds, limit_s=a.limit, backend=a.backend, field=a.field)
+        overrides = json.load(open(a.overrides)) if a.overrides else None
+        out = judge(genome, hulls, seeds, limit_s=a.limit, backend=a.backend, field=a.field, mode=a.mode,
+                    intensity=a.intensity, overrides=overrides, start=start)
         print(json.dumps({h: v for h, v in mean_finish(out).items()}, indent=1))
     if a.out:
         with open(a.out, "w") as f:

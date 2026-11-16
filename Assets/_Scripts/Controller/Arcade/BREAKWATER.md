@@ -1201,6 +1201,22 @@ Two changes for the Sparrow's training (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.m
   so `learn_drives_from_flights.FLOORS` never lets a learned release go under 1.25 s here. Yash's own laps run about
   62 s: he steers the boost by hand.
 
+### The nose lead (2026-11-16: 1.0, was 2.0)
+
+`aiNoseLead` gives the Sparrow its nose lead (`AIPilot.NoseLeadGain`, #1843 set 2.0). Raced headless in Amoebius (the
+race judge, `Docs/Reports/REGATTA_JUDGE.md` "Time games"), the AI at 2.0 stalled: off the boost, at its 35 u/s base
+speed, the lead spun the hull (its nose in a new direction every half second, nothing within 30 u but its own trail),
+so it never lined up within the boost's 45 deg and circled one station for 30-290 s. Each AI alone, Legendary, 24
+races at I1-I4 (6 courses per rung, seeds 21-23 and 31-33):
+
+| Lead | Finished | I1 | I2 | I3 | I4 (mean of finishers) |
+|---|---|---|---|---|---|
+| 2.0 (before) | 18 / 24 | 132 s | 194 s | 189 s | 230 s |
+| 1.0 (now) | **24 / 24** | 108 s | 113 s | 107 s | 216 s |
+
+0.5 and 1.0 race identically (`AIPilot.EffectiveNoseLeadGain` floors the effective gain at 1). Regatta's Sparrow lead
+(`RaceLines/Sparrow_Regatta`, 2.0) is unchanged: there the card starts the Sparrow at Time 10 and it finishes 4/4.
+
 ### The crystal detour
 
 > **Retired 2026-10-26 (Yash):** *"while playing any racing game mode, AI should not go for crystals. It should only

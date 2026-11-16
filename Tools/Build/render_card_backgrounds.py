@@ -125,6 +125,7 @@ SOURCES = [
     f"{_AR}/Regatta/RegattaJson.cs",
     f"{_AR}/Regatta/RegattaPlacementBuilder.cs",
     f"{_AR}/Regatta/RegattaPlacementCarve.cs",
+    f"{_SP}/ICellPhaseBaseline.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
     f"{_AR}/Headlong/HeadlongCircuit.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",

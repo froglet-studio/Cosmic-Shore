@@ -117,7 +117,7 @@ MonoBehaviour:
   brittleStarTimeGateTarget: 16
   lanternRunGateTarget: 16
   thornlineGateTarget: 16
-  spearlineGateTarget: 24
+  spearlineGateTarget: 40
   decoyRunGateTarget: 12
   perchRunGateTarget: 16
   slipLineGateTarget: 16
@@ -229,7 +229,7 @@ MonoBehaviour:
   brittleStarTimeGateTargetBuild: 16
   lanternRunGateTargetBuild: 16
   thornlineGateTargetBuild: 16
-  spearlineGateTargetBuild: 24
+  spearlineGateTargetBuild: 40
   decoyRunGateTargetBuild: 12
   perchRunGateTargetBuild: 16
   slipLineGateTargetBuild: 16

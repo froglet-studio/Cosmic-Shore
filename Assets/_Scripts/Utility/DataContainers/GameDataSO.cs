@@ -89,6 +89,12 @@ namespace CosmicShore.Utility
         public string SceneName;
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
+
+        [Tooltip("How a pilot is named when an earlier pilot in the same match already has the same display name. " +
+                 "Tokens: {name} the display name, {number} the pilot's place among the namesakes (2, 3, ...). " +
+                 "Keep {number} in it: the roster keys pilots by name, so two pilots must never read the same.")]
+        [SerializeField] string duplicatePlayerNameTemplate = "{name} ({number})";
+        public string DuplicatePlayerNameTemplate => duplicatePlayerNameTemplate;
         public int LocalPlayerAvatarId;
         public bool IsWeeklyChallenge;
         public bool IsTraining;
@@ -870,6 +876,23 @@ namespace CosmicShore.Utility
             InvokeTurnStarted();
         }
 
+        /// <summary>
+        /// Joins a turn that is already running: a pilot who rejoined the match (<c>MatchRejoin</c>,
+        /// Docs/MENU_REDESIGN_B.md section 103) loaded the scene after the countdown's <see cref="StartTurn"/> had
+        /// gone out to everybody else. The turn clock is set back by the time the turn has run, so race timers read
+        /// the same here as on the other peers. Nothing is zeroed - the scores carried on through the drop - and
+        /// the flight clock starts now, because this pilot has flown only since they came back.
+        /// No-op when a turn is already running here.
+        /// </summary>
+        public void JoinRunningTurn(float elapsedSeconds)
+        {
+            if (IsTurnRunning) return;
+            IsTurnRunning = true;
+            TurnStartTime = Time.time - Mathf.Max(0f, elapsedSeconds);
+            FlightClock.OnTurnStarted();
+            InvokeTurnStarted();
+        }
+
         public void InvokeGameLaunch()
         {
             // Load Time Insights: a game launch is the recording trigger; every peer raises this
@@ -1067,7 +1090,11 @@ namespace CosmicShore.Utility
             if (RoundStatsList == null) return;
 
             for (int i = 0, count = RoundStatsList.Count; i < count; i++)
+            {
                 RoundStatsList[i]?.Cleanup();
+                // The scoreboard's per-pilot telemetry (Docs/ScoringSystem/BUGS.md B21) starts the game empty too.
+                if (RoundStatsList[i] is RoundStats rs && rs) rs.ClearVesselStats();
+            }
         }
         
         public void ResetAllData()

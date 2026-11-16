@@ -32,7 +32,6 @@ namespace CosmicShore.Editor
     /// <para>Editor-only diagnostics UI (not player-facing text). Never opens in batch mode. A reader of the flight
     /// record and a writer of its own answer file only.</para>
     /// </summary>
-    [InitializeOnLoad]
     public sealed class FunCard : EditorWindow
     {
         public const string Schema = "cosmic-shore.funcard/1";
@@ -66,7 +65,11 @@ namespace CosmicShore.Editor
         /// <summary>Folder the answers are written to, beside the flight records.</summary>
         public static string Folder => Path.Combine(DiagnosticsHUD.OutputDirectory, FolderName);
 
-        static FunCard()
+        // Not a static constructor: this type is an EditorWindow (a ScriptableObject), and Unity can run a type's
+        // static constructor from inside the window's own construction (a docked card restored after a domain
+        // reload), where Application.isBatchMode throws. This runs once per domain load, after construction.
+        [InitializeOnLoadMethod]
+        static void HookAfterPlay()
         {
             if (Application.isBatchMode) return;
             EditorApplication.playModeStateChanged += change =>

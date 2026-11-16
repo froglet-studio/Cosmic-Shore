@@ -835,6 +835,91 @@ MonoBehaviour:
   thornRegrowSeconds: 3
   crystalRegrowSeconds: 5
   aiTakesSnipes: 1
+  aiNoseLeadByDifficulty:
+  - 2.5
+  - 3
+  - 8
+  - 16
+  aiNoseFollowByDifficulty:
+  - -1
+  - -1
+  - -1
+  - -1
+  aiNoseLeadMaxExtraDegrees: 10
+  hintToast: 420
+  snipeToast: 421
+  crystalResetToast: 422
+  crystalTakenToast: 423
+  caughtShortToast: 424
+  passedToast: 425
+  overtakenToast: 426
+  caughtShortToastsPerRace: 2
+  passToastSeconds: 1.5
+  snipeEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  crystalResetEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  crystalTakenEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  cleanDockEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  caughtShortEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sightReadyEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  passedEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  overtakenEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  thornRegrowEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sightReloadingScale: 0.35
+  rivalThornGlow: 0.35
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

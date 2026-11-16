@@ -19,7 +19,7 @@ which delegates to `PresenceLobbyService.JoinOrCreateAsync`.
 | Max players | 100 |
 | Relay transport | None — coexists safely with a NetworkManager |
 | Session-property game mode tag | `PRESENCE_LOBBY` |
-| Discovery model | Query for existing lobby with the `PRESENCE_LOBBY` tag; if found, join; else create. Re-query after a 1500 ms settle to detect simultaneous-creation races. |
+| Discovery model | Query for existing lobby with the `PRESENCE_LOBBY` tag; if found, join; else create. A simultaneous-creation split is healed by the refresh loop's converge (about 2 s and 7 s after the join, then every safety poll); the 1500 ms settle and converge inside the join were removed on 2026-11-17 (they repeated that check and cost about 2 s of every boot). |
 
 ## Why it's separate from the party session
 
