@@ -12,11 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cdeee81af29d430c84a1ff518c94f971, type: 3}
   m_Name: DeployTeamCrystalAction
   m_EditorClassIdentifier:
-  cooldown: 30
+  cooldown: 15
   minCooldown: 4
   bandInnerFraction: 0.1
   bandOuterFraction: 0.9
   cellessSeedRadius: 600
+  seedAhead: 1
+  leadDistance: 220
+  leadJitter: 35
   maxLiveSeeded: 8
   cooldownMultiplierAtFullMass: 0.5
   minCooldownMultiplier: 0.35

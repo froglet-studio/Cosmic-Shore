@@ -7,8 +7,14 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Config for the Dolphin's crystal seeding. The ability is <b>PASSIVE</b>: it takes no input
     /// at all. A cooldown runs continuously, and every time it completes the Dolphin seeds a crystal
-    /// at a random point in the containing cell's <b>cytoplasm</b> — the shell between the nucleus
-    /// and the membrane — and the cooldown immediately restarts.
+    /// in the containing cell's <b>cytoplasm</b> — the shell between the nucleus and the membrane —
+    /// and the cooldown immediately restarts.
+    ///
+    /// <para><b>The seed lands AHEAD</b> (2026-11-16, the weakest-abilities pass): with
+    /// <see cref="SeedAhead"/> on, the crystal is planted <see cref="LeadDistance"/> u down the
+    /// Dolphin's nose (a little jitter, pushed into the cytoplasm band), so the seed is ammunition
+    /// you fly into: seed, line up, blast. It used to land at a random point of the cell, which
+    /// a pilot never saw happen and rarely found.</para>
     ///
     /// Element → parameter: <b>MASS</b> owns this ability (2026-08-17). Its multiplier divides the
     /// recharge, and its level-5 upgrade changes WHAT gets planted: an un-upgraded Dolphin seeds an
@@ -52,6 +58,15 @@ namespace CosmicShore.Gameplay
                  "transit, tool scenes). Seeds in a ball of this radius around the vessel instead.")]
         [SerializeField, Min(1f)] private float cellessSeedRadius = 600f;
 
+        [Header("Placement — ahead of the nose")]
+        [Tooltip("On: the seed is planted down the Dolphin's nose (LeadDistance), kept inside the cytoplasm band. " +
+                 "Off: a random point of the band (the old seeding).")]
+        [SerializeField] private bool seedAhead = true;
+        [Tooltip("How far ahead of the nose the seed is planted, u.")]
+        [SerializeField, Min(10f)] private float leadDistance = 220f;
+        [Tooltip("Random scatter round the lead point, u (so a seed is not always dead centre).")]
+        [SerializeField, Min(0f)] private float leadJitter = 35f;
+
         [Header("Population")]
         [Tooltip("How many of THIS Dolphin's seeded crystals may be alive at once. At the cap the " +
                  "seed clock PAUSES - it never culls a planted crystal. Not creating mass is " +
@@ -73,6 +88,9 @@ namespace CosmicShore.Gameplay
         public float BandInnerFraction => Mathf.Min(bandInnerFraction, bandOuterFraction);
         public float BandOuterFraction => Mathf.Max(bandInnerFraction, bandOuterFraction);
         public float CellessSeedRadius => cellessSeedRadius;
+        public bool SeedAhead => seedAhead;
+        public float LeadDistance => leadDistance;
+        public float LeadJitter => leadJitter;
         public int MaxLiveSeeded => maxLiveSeeded;
         public float CooldownMultiplierAtFullMass => cooldownMultiplierAtFullMass;
         public float MinCooldownMultiplier => Mathf.Max(0.01f, minCooldownMultiplier);

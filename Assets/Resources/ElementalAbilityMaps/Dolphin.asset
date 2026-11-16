@@ -35,14 +35,12 @@ MonoBehaviour:
       up in its own domain colour.
   - Element: 2
     AbilityLabel: Crystal Seeding
-    AbilityDescription: PASSIVE - no input. A cooldown runs continuously and each time it
-      completes the Dolphin seeds one crystal at a random point in the cell's CYTOPLASM
-      (the shell between nucleus and membrane), then restarts immediately. Mass shortens
-      that recharge (authored on DeployTeamCrystalActionSO.cooldownMultiplierAtFullMass,
-      x0.5 at level 10 - the one number that drives the recharge). Below level 5 the seed is an ordinary OMNI crystal wearing the
-      lime free-for-all CTA - your own ammunition, standing in open space, for any pilot
-      who reaches it first. At level 5 the seed lands TEAM-locked and only your domain can
-      collect it.
+    AbilityDescription: PASSIVE - no input. Every recharge the Dolphin seeds one
+      crystal AHEAD of its nose, about 220 u down its line, so the seed is ammunition
+      you fly straight into - seed, line up, blast. The recharge is 15 s at rest and
+      half that at level 10. Below level 5 the seed is an ordinary OMNI crystal that
+      any pilot who reaches it first may take; at level 5 it lands TEAM-locked and
+      only your domain can collect it.
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -52,12 +50,11 @@ MonoBehaviour:
       them.
   - Element: 3
     AbilityLabel: Echo Obliteration
-    AbilityDescription: The crystal-impact cone itself - released by flying into a crystal,
-      so it takes no input of its own. Space carries it further down-range (authored on
-      VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace, x2 at level 10). The
-      three elements own three orthogonal dimensions of one blast - skim energy sets its
-      GAPE, Charge sets its THICKNESS, Space sets its REACH - so none of them can steal
-      what another one bought. At level 5 the blast stops eating the pilot's own domain.
+    AbilityDescription: Fly into a crystal and the Dolphin's jaw throws a cone of
+      destruction down its nose. Space carries the cone further, x2 at level 10.
+      Three elements shape one blast - banked skim energy sets its GAPE (the jaw on
+      the card), Charge its THICKNESS, Space its REACH - and the seeds the Dolphin
+      plants ahead of itself keep it fed. At level 5 the blast spares your own domain.
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -65,13 +62,13 @@ MonoBehaviour:
     UpgradeLabel: Clean Blast
     UpgradeDescription: The cone spares your own domain - no more friendly fire.
   - Element: 4
-    AbilityLabel: Charge Fill Rate
-    AbilityDescription: 'Time raises the rate the boost meter charges while drifting
-      (authored on ChargeBoostActionSO.chargeRateMultiplierAtFullTime, x1.5 at level 10).
-      Time deliberately does NOT touch this hull''s boost SPEED:
-      VesselTransformer.BoostSpeedMultiplier is left disabled on Dolphin.prefab. At level 5 the drift itself becomes the ward - while drifting the Dolphin
-      holds the general elemental-debuff immunity state, so a danger prism''s all-element
-      drain does not land.'
+    AbilityLabel: Drift Charge
+    AbilityDescription: 'Drift to bank boost, let go to spend it - the drift IS the
+      charge, and the lower card fills with it. Time sets how fast the bank fills,
+      x1 at rest and x2.5 at level 10, so a high-Time Dolphin banks a full boost in
+      one short drift. Time does not touch the boost''s speed. At level 5 the drift
+      itself becomes the ward - while drifting a danger prism''s all-element drain
+      does not land.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4

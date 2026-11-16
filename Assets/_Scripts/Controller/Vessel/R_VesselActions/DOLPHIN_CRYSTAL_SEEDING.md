@@ -271,7 +271,7 @@ of that single act**, so the row reads left to right as the whole weapon.
 | **Charge** | Echo Sight (RT) | blast capsule **THICKNESS**, `0.75×` → `1.5×` | **Pilot Echo** — vessels in the volume light up |
 | **Mass** | Crystal Seeding (passive) | recharge `×0.5` at level 10 | **Claimed Seed** — omni seed → team seed |
 | **Space** | Echo Obliteration (crystal impact) | **REACH** `×2` at level 10 | **Clean Blast** — spares own domain |
-| **Time** | Charge Fill Rate (drift) | boost fill `×1.5` at level 10 | **Drift Ward** — no DANGER-PRISM elemental debuff while drifting (an opposing pilot's blast still lands) |
+| **Time** | Drift Charge (drift) | boost fill `×2.5` at level 10 | **Drift Ward** — no DANGER-PRISM elemental debuff while drifting (an opposing pilot's blast still lands) |
 
 ### Charge → thickness, and the first un-anchored elemental multiplier
 
@@ -1073,3 +1073,12 @@ Asserted from assets by `PrismLitTests.TheSuperShieldMarkReachesTheSightFromTheS
 prisms), swap to the Dolphin with the Vessel Changer and hold the Echo Sight across a super-shield: it glows red while
 the plain mass around it takes the pale cast. Fire through it and confirm the blast stops there.
 Let it drop (a Rhino sword break) and confirm it stops glowing red on the next sweep.
+
+## 2026-11-16: the seed lands ahead (the weakest-abilities pass)
+
+A seed at a random point of the cytoplasm was a crystal the pilot never saw arrive and rarely found, so the ability
+read as nothing. `DeployTeamCrystalActionSO.seedAhead` (on for the Dolphin) plants it `leadDistance` (220 u) down the
+nose with `leadJitter` (35 u) of scatter, then clamps it into the same cytoplasm band along its own radial (never in
+the nucleus, never past the membrane). The base recharge moved 30 s -> 15 s so the loop (seed, line up, blast) comes
+round in play. Off, the old random-band seeding is unchanged. The Time card's label moved "Charge Fill Rate" ->
+"Drift Charge", and its fill multiplier at Time 10 from x1.5 to x2.5 (authored on the Dolphin's ChargeBoostAction).
