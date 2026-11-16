@@ -1965,3 +1965,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: a stand-in that must come within a distance flies a path that provably does, and the write-up says it is a stand-in. Print the closest approach per run before trusting a contact column.
 - Evidence: `stepVessel` level 3 in the page; `Docs/Studios/FAUNA_LAB.md` round 1, Found 6.
 - Promoted: no
+
+### L-STU-184 — A shape measure that fits each view to the frame turns a dot into a disc: one scale per body, and plant the pair that must differ
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/silhouette.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-16
+- What happened: the silhouette comparison scaled every view so its longest side filled the 40 x 40 grid. A dart seen end-on (a dot) then filled the grid and matched a disc, so the tool's own negative control ("a dart and a disc must not read alike") failed at 0.31 the moment a second alignment search (the travel axis) gave the two shapes a view in common. Before the fix it had called the Marlin and the Bee the closest pair in the game (0.16); after it, 0.3. A table had already been read with the wrong scale.
+- Do instead: normalise a body once (its longest extent) and use that scale in every view. Keep a planted pair that must differ and a planted pair that must match (a rolled, flipped, scaled copy) in the self-test, and re-run it after every change to the alignment search: more freedom to align is more ways for two different shapes to agree.
+- Evidence: `silhouette.py --self-test`; `Docs/Studios/FAUNA_LAB.md` round 2, Found 1.
+- Promoted: no

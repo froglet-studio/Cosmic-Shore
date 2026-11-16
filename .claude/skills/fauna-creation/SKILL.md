@@ -60,6 +60,7 @@ that out of the HyperSea's own parts.
 | L8 | **The four element forms are written down.** Mass: every plain prism shielded, the body grown until the heart's 12.44 u swing clears every shield. Charge: every prism danger, spindles part hardest. Space: 1.6477× Mass's span, spindles eroded where thickest, every prism refit as a needle, the stinger too. Time: the base body (scale 1), 1.4× faster. | ECOSYSTEM.md §64.8-9, §65 (Garrett 2026-10-27/28); Garrett 2026-11-01 (Time, the stinger) |
 | L9 | **No Earth anatomy names** (leg, belly, back, eye, antenna, wing, thorax...). Name a part for what it is here: spine, vane, rib, plate, sting, tine. | this skill |
 | L10 | **A premise and a role.** What it is, the feeling it is for ("surrounded ... scary", Garrett on the substrate), and what it does in the food web. Every lifeform feeds and reproduces. | Garrett 2026-10-08; SUBSTRATE_FAUNA.md |
+| L12 | **A silhouette of its own.** Seen from far away with no detail, from the side and from ahead, at any roll, a new species stands further from every vessel hull, every shipped creature and every other new species than three in four shipped bodies stand from their nearest look-alike. `Tools/Build/fauna_kit/silhouette.py --check` (it takes about two minutes; the bar is measured from the fleet each run). Section 9. | Garrett 2026-11-16: "the fauna and vessels need to have unique silhouettes so they are all distinguished" |
 | L11 | **What a rider gets.** Any creature can be possessed (the Jewel Wasp), so a spec has a `possession` block: `top_speed` (`Fauna.PossessionTopSpeed`), `mouth_reach` (`PossessionMouthReach`) and an `attack` the BODY can play: the game whips a body whose hub carries three limb chains or more and lunges any other (`FaunaAttackDriver.Scan`), whatever the spec hopes; `charge` is an attack of its own (the worm's lunge). Section 8. | Garrett 2026-11-14 (`JEWEL_WASP.md`), 2026-11-15 |
 
 Laws the checker cannot see, and you still owe: nothing pops in or out (spawns bloom, deaths wither); no lifespan or
@@ -259,7 +260,53 @@ form, against a vessel, an Ark and a prism cluster. The loop for a new creature:
 6. the next round starts with `ArtifactData list decisions` and applies it.
 Only then does a creature earn a Unity build (section 4, steps 4-8).
 
+## 9. From a real clade to a HyperSea lifeform (2026-11-16)
+
+Garrett, on round 1's five new creatures: "these seem like variations on what we have. there are hundreds of millions
+of species. surely you can take inspirations from the shark, brittlestar, and worm by comparing them to their real
+counterparts ... consider the difference between the brittlestar fauna and the vessel and the real world clade. those
+are three very different things." He was right, and it was measurable: all five were ONE body plan (a spine, n radial
+limbs, a tail sting, which is the Bee), and from ahead every one was a bare spoke star.
+
+**Three things share a name, and each takes something different from it** (the fauna and vessels measured by
+`dossier.py` and `silhouette.py`; the real animals from general knowledge, so check a claim before leaning on it):
+
+| name | the real clade | the FAUNA takes | the VESSEL takes |
+|---|---|---|---|
+| Brittlestar | Ophiuroidea: a small disc, five thin jointed arms it rows and whips with, the mouth under the disc, arms that regrow | the ARMS: a flat five-armed star of braided segments on a 26-bone rig, the arms trailing and dangling behind the hub (`DampedTransform`), a health prism mid-arm and a sting at every tip; a grazer whose attack whips all five | the FIVE-FOLD RING: a pentagon hull with a star inside it, an object that spins and is thrown. From ahead it is a ring; the fauna is a line or a star (0.53 apart) |
+| Shark | Selachii: a fusiform body, a jaw of replaceable teeth, stiff paired fins, a long upper tail lobe, a hunter that circles | the JAW and the SWEEP: an open braided skull with five needle teeth round the heart at the FRONT (the only shipped body whose danger leads), two swept vanes, a long tapering tail of five bones, a jaw that works (`SharkJawDriver`); no back fin | no hull is a shark; the nearest outline is the Squirrel's (0.31) |
+| Worm | Annelida (a bobbit or sand worm): repeated segments, jaws, a body that moves as a travelling wave | SEGMENTATION ITSELF: every segment is its own lifeform with its own heart (a fanged, shield-plated head; core-prism bodies; a bladed tail), following the leader, shedding and growing segments, lunging | the Serpent hull: one continuous body. The colony is a string of beads (0.16 from the Meerkat hull seen end to end) |
+| Manta | Mobula: a diamond of two wings beating in a wave from shoulder to tip, two lobes funnelling food to a wide mouth, a whip with no sting, loops and rolls through its food | (new, `specs/manta.py`) the DIAMOND, the WAVE and the WHIP: four rib-fan wings a quarter turn apart so the diamond shows from any side, lobes curled round the Etherion, a whip that carries the sting, a wingbeat that never holds an up | the Manta hull: a thin flat plane (a bar from the side, a line from ahead; 0.53 from the fauna) |
+
+**The method** (the worksheet of section 3, done properly):
+1. **Name the clade's SIGNATURE: what a child would draw, and how it moves.** Two or three shapes and one motion (the
+   manta: a diamond, a whip, lobes; a slow wave). Not its anatomy list.
+2. **Say what the vessel of that name already took**, and take something else. The silhouette gate holds you to it.
+3. **Re-derive each signature under the laws instead of copying it.** No up, so the diamond is drawn four times. The
+   heart leads, so the lobes curl round it from behind. Every body carries a sting, so the whip does.
+4. **Choose a BODY PLAN, not a limb count.** Plans the game has: a spine with radial vanes (Bee), a jaw cage with
+   swept vanes (Shark), a flat rigged star (Brittlestar), a chain of member bodies (Worm), a loop frame with fin
+   plates (QuadFish), a hollow horn with flukes (Clawfish), a single braid (Tadpole). New in round 2: **rib-fan
+   wings** (a spar chain, ribs, a hem: the wire is the membrane). Changing n on an old plan is a variation.
+5. **Give it a motion of its own** as a `beat` on its spindles (a rotation about the limb's root: a CPU driver
+   writing `localRotation`, /fauna section 3): `{"axis": "travel" | "tangent" | [x, y, z], "deg", "hz", "phase"}`.
+   Phase lags down a chain make the wave. The lab plays it.
+6. **`silhouette.py --check`, then the sheet (`--sheet`), and LOOK** before the lab.
+7. Record the translation in the spec's `clade` block (`real`, `kept`, `changed`, `vessel`); the lab shows it.
+
+**Plans not yet used, from clades not yet touched** (proposals for the next rounds, one creature each, Garrett picks):
+a lattice sphere round the heart (radiolarians); eight comb rows running the body's length, beating in sequence
+(comb jellies); feathered arms that branch and branch again (feather stars, basket stars); a chain of linked bells
+that pulse in turn (salps, siphonophores); a coiled chain of growing chambers (nautiloids: a spiral, not an umbrella);
+a tube with an opening and closing crown (fan worms); paired swimming plates down a segmented body (eurypterids,
+anomalocarids); a rosette of soft horns (nudibranchs).
+
 ## Round status and what each gate still owes (2026-11-07, measured for Docs/SKILL_TRAINING_PLAN.md 3.7)
+
+**Round 4 (2026-11-16, `Docs/Studios/FAUNA_LAB.md` round 2):** section 9 (the clade method), law L12 and
+`silhouette.py` (`--self-test`: a rolled, flipped, scaled copy must read the same and a dart and a disc must not; it
+caught the first version scaling each view on its own), limb beats in specs, the Manta (a lab proposal), round 1's
+five archived as one body plan.
 
 **Round 3 (2026-11-15, `Docs/Studios/FAUNA_LAB.md`):** the dossier and the recreation gate (seven shipped creatures,
 largest difference 0.00002 u; the Bee rebuilt from rules), law L11, five new species as specs and lab proposals

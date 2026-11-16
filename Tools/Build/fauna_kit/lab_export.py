@@ -26,16 +26,25 @@ import recreate as R  # noqa: E402
 
 PAGE = os.path.join(D.REPO, "Docs", "Studios", "FaunaLab.html")
 BEGIN, END = "/*FAUNA_DATA_BEGIN*/", "/*FAUNA_DATA_END*/"
-NEW_SPECIES = ("marlin", "basker", "medusa", "nautilus", "teredo")
+NEW_SPECIES = ("manta",)
+# Round 1's five (Garrett, 2026-11-16: "these seem like variations on what we have"): one body plan (a spine, radial
+# limbs, a tail sting), a bare spoke star from ahead. silhouette.py puts the Teredo 0.19 from the Angler hull and the
+# Nautilus 0.29 from the Manta; the Marlin and Medusa scrape past the bar and the Basker stands apart (0.43), so
+# whether any body comes back is Garrett's call. Kept in the lab to compare their RIDES
+# (the charge, the funnel, the latch, the pulse); superseded as bodies, never deleted (/labmaker section 4).
+ARCHIVED = ("marlin", "basker", "medusa", "nautilus", "teredo")
 WASP_CONFIG = "Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspConfig.asset"
 Q = 0.002   # vertex quantum (u at root scale 1): int16 covers +-65 u, every body here is inside +-60
 
 
 def pack(body):
     """A body for the page: one vertex buffer (int16, base64), wire edges (uint16 pairs), prisms, heart, limbs."""
-    verts, edges = [], []
+    verts, edges, segs = [], [], []
+    names = [w["name"] for w in body["wires"]]
+    beats = any(w.get("beat") for w in body["wires"])
     for w in body["wires"]:
         base = len(verts)
+        e0 = len(edges)
         verts += w["verts"]
         seen = set()
         for poly in BODY.polys(w["source"]):
@@ -43,6 +52,11 @@ def pack(body):
                 a, b = poly[i], poly[(i + 1) % len(poly)]
                 seen.add((min(a, b), max(a, b)))
         edges += [(base + a, base + b) for a, b in sorted(seen)]
+        if beats:      # one segment a spindle, parents first (a spec lists a limb after the limb it grows from)
+            par = names.index(w["parent"]) if w.get("parent") in names else -1
+            if par >= len(segs):
+                raise SystemExit(f"spindle {w['name']} is listed before its parent {w['parent']}")
+            segs.append({"p": par, "at": w["pivot"], "e0": e0, "ne": len(edges) - e0, "beat": w.get("beat")})
     hi = max((abs(c) for v in verts for c in v), default=0.0)
     q = Q if hi / Q < 32000 else hi / 32000
     vb = struct.pack("<%dh" % (len(verts) * 3), *[int(round(c / q)) for v in verts for c in v])
@@ -51,7 +65,9 @@ def pack(body):
     return {"q": q, "nv": len(verts), "v": base64.b64encode(vb).decode(), "ne": len(edges), "e32": fmt == "I",
             "e": base64.b64encode(eb).decode(),
             "prisms": [{"n": p["name"], "k": p["kind"], "sh": bool(p.get("shielded")), "at": p["at"], "q": p["q"], "s": p["size"],
-                        "st": p.get("role") == "stinger"} for p in body["prisms"]],
+                        "st": p.get("role") == "stinger", "seg": names.index(p["limb"]) if beats and p.get("limb") in names else -1}
+                       for p in body["prisms"]],
+            "segs": segs,
             "heart": body["heart"]["at"] if body.get("heart") else [0, 0, 0],
             "limbs": [c["at"] for c in body["chains"]]}
 
@@ -89,20 +105,20 @@ def shipped_creature(key):
     return out
 
 
-def new_creature(key):
+def new_creature(key, origin="new"):
     spec = C.load(key)
     errs = C.check(spec)
     if errs:
         raise SystemExit(f"{key} breaks the celestial laws: {errs[0]}")
     made = BODY.from_spec(spec)
     pos = spec["possession"]
-    out = {"id": key, "name": spec["species"], "origin": "new", "klass": "(proposal)", "role": spec["role"], "premise": spec["premise"],
+    out = {"id": key, "name": spec["species"], "origin": origin, "clade": spec.get("clade"), "klass": "(proposal)", "role": spec["role"], "premise": spec["premise"],
            "spec": f"Tools/Build/fauna_kit/specs/{key}.py", "root_scale": 1.0, "symmetry": spec["symmetry"],
            "top_speed": pos["top_speed"], "mouth_reach": pos["mouth_reach"], "attack": pos["attack"],
            "body": dict(pack(made), ext=_extent(made)),
            "variants": {e: {"scale": v["body_scale"], "max_speed": pos["top_speed"] * v.get("speed_scale", 1.0) if "speed_scale" in v else None}
                         for e, v in spec["elements"].items()}}
-    for k in ("turn_rate", "suction", "motion", "charge", "latch", "body_radius", "aim_cone", "for", "feel"):
+    for k in ("turn_rate", "speed_ease", "suction", "motion", "charge", "latch", "body_radius", "aim_cone", "for", "feel"):
         if k in pos:
             out[k] = pos[k]
     return out
@@ -130,7 +146,8 @@ def wasp_numbers():
 
 
 def export():
-    creatures = [shipped_creature(k) for k in D.ROSTER] + [new_creature(k) for k in NEW_SPECIES]
+    creatures = [shipped_creature(k) for k in D.ROSTER] + [new_creature(k) for k in NEW_SPECIES] \
+        + [new_creature(k, "archive") for k in ARCHIVED]
     lines, worst = R.table()
     return {"creatures": creatures, "wasp": wasp_numbers(), "waspAsset": WASP_CONFIG,
             "recreate": {"worst": round(worst, 6), "tol": R.TOL,

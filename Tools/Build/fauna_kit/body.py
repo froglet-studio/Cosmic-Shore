@@ -86,6 +86,24 @@ def spindle_chains(spec):
     return out
 
 
+def _beat(s):
+    """A spindle's beat with its axis resolved in the body's space: 'travel' is the travel axis, 'tangent' the
+    direction round it at the limb (square to the travel axis and to the limb's radial), or a vector as given.
+    A beat is a ROTATION about the limb's root (a CPU driver writing localRotation in the game, /fauna section 3)."""
+    b = s.get("beat")
+    if not b:
+        return None
+    ax = b["axis"]
+    if ax == "travel":
+        axis = [0.0, 0.0, 1.0]
+    elif ax == "tangent":
+        ref = s["from"] if (s["from"][0] ** 2 + s["from"][1] ** 2) > 1e-6 else s["to"]
+        axis = C.unit(C.cross([0.0, 0.0, 1.0], [ref[0], ref[1], 0.0]))
+    else:
+        axis = C.unit([float(v) for v in ax])
+    return {"axis": [round(v, 6) for v in axis], "deg": float(b["deg"]), "hz": float(b["hz"]), "phase": float(b.get("phase", 0.0))}
+
+
 def from_spec(spec):
     if spec.get("shipped"):
         return _from_shipped(spec)
@@ -101,7 +119,8 @@ def from_spec(spec):
             loc = [v[0] * across + off[0], v[1] * across + off[1], v[2] * along + off[2]]
             w = fm.mdir(m, loc)
             verts.append([round(w[i] + pos[i], 5) for i in range(3)])
-        wires.append({"name": s["name"], "source": BRAID_SOURCE, "limb": s["name"], "verts": verts, "tris": btris})
+        wires.append({"name": s["name"], "source": BRAID_SOURCE, "limb": s["name"], "verts": verts, "tris": btris,
+                      "parent": s.get("parent"), "pivot": [float(v) for v in s["from"]], "beat": _beat(s)})
     for p in spec["prisms"]:
         at, rot = B.prism_world(p)
         prisms.append({"name": p["name"], "kind": p["kind"], "shielded": bool(p.get("shielded")),

@@ -24,6 +24,84 @@ give me a vessel, ark, and prism cluster to attack."
 - **Retire condition for a new creature:** a "cut it" in the feedback log, or a second round in which it still wins
   no column and nobody says it feels good.
 
+## Round 2 (2026-11-16): the Manta, and a silhouette of its own
+
+Garrett: "these seem like variations on what we have ... take inspirations from the shark, brittlestar, and worm by
+comparing them to their real counterparts ... give us a manta fauna but really try to build something that belongs in
+this world and would be called a manta for its hypnotic resemblance, but is of course not the real thing or the
+vessel. the fauna and vessels need to have unique silhouettes so they are all distinguished."
+
+### What changed
+
+1. **Round 1's five are archived.** They were one body plan (a spine, radial limbs, a tail sting: the Bee's) and a
+   bare spoke star from ahead. They stay in the lab under "Round 1 archive" so their rides can still be compared.
+2. **The study** (`/fauna-creation` section 9): what the real clade, the fauna and the vessel each take from the
+   names Brittlestar, Shark, Worm and Manta, and the method that follows from it (name the clade's signature shapes
+   and motion, take what the vessel did not, re-derive each under the laws, choose a body PLAN and not a limb count).
+3. **A silhouette gate** (`Tools/Build/fauna_kit/silhouette.py`, law L12). Every vessel hull (28) and every creature,
+   flattened to an outline from the side and from ahead, compared at every roll, nose to tail and along each axis.
+   The bar is measured from the fleet each run: a new species must stand further from everything than three in four
+   shipped bodies stand from their nearest look-alike.
+4. **Limbs that beat.** A spec's spindle can carry a `beat` (a rotation about its root, with a phase), and the lab
+   plays it. The Manta's wingbeat is a wave from shoulder to tip; opposite wings mirror, and the second pair runs a
+   quarter beat behind the first.
+5. **The Manta** (`specs/manta.py`, all twelve laws pass): four rib-fan wings a quarter turn apart (a swept spar of
+   three braids, four ribs, a hem closing the hind edge, three thin plates a wing), a lobe curled round the Etherion
+   between each pair, a three-braid whip carrying the sting. 57 u long, 64 u across. For a rider it glides (slow to
+   gain and lose speed) and feeds on the wing: holding RT eats what passes between its lobes with no wait.
+
+### Measured
+
+`python3 Tools/Build/fauna_kit/silhouette.py --check` (0 = the same outline, 1 = nothing shared):
+
+| | nearest look-alike | distance |
+|---|---|---|
+| shipped bodies (28 hulls, 7 creatures) | each other | 0.10 to 0.46, median 0.25; the bar (upper quartile) is **0.30** |
+| **Manta** (new) | the Honeyguide hull | **0.42** (passes); 0.53 from the Manta hull |
+| Brittlestar fauna against the Brittle Star hull | | 0.53 |
+| Marlin (archived) | the Thresher hull | 0.31 |
+| Basker (archived) | the Rhino hull | 0.43 |
+| Medusa (archived) | the Grizzly hull | 0.32 |
+| Nautilus (archived) | the Manta | 0.29 |
+| Teredo (archived) | the Angler hull | 0.19 |
+
+- The closest shipped pairs are hulls: several sit under 0.2 of each other. That is a finding about the fleet, not
+  about fauna, and it is left for whoever owns those hulls.
+- The measure agrees with "variations" for the Teredo and the Nautilus, is lukewarm on the Marlin and the Medusa,
+  and disagrees on the Basker (0.43). It sees outlines, not body plans: whether the Basker's body comes back is
+  Garrett's call.
+
+The Manta on the scorecard (same games as round 1): duel 11, brawl 4, siege 59.5 s, graze 80.4, sprint 30.5 s,
+slalom 34.7 s; a rookie: 3.6, 1.2, 116 s, 65.4, 43.3 s, 39.6 s. It wins no column. Feeding on the wing eats little
+in the lab's sparse field (80 prisms against the QuadFish's 456): its meal is a line, and the lab has no trail to
+fly down. It was built for its shape and its motion this round, not for a column.
+
+### Checked
+
+- `celestial.py --all` (seven specs celestial) and `--self-test`; `recreate.py --check` (0.00002 u, unchanged);
+  `lab_export.py --check`; `verify_lab.cjs` PASS; `silhouette.py --self-test`.
+- Read: the Manta's three-view sheet (a diamond with lobes and a whip from the side and from above, a cross with
+  four short lobes from ahead), the silhouette sheet of all 41 bodies, and the Manta in the lab mid-turn.
+
+### Found
+
+1. **My first silhouette measure was wrong, and its own control said so.** Scaling each view to fill the grid made a
+   dart seen end-on read as a disc. One scale per body fixed it, and several distances moved (the Marlin and the Bee
+   went from the closest pair in the game to unremarkable).
+2. A hull's travel axis is not always z in its model file, so every axis is tried.
+
+### What only a person can judge
+
+Whether it is hypnotic. The lab draws wires as lines in stand-in colours; the wingbeat is there, the game's look is
+not. Nothing is in Unity.
+
+### Decisions needed (Garrett)
+
+1. **Is the four-winged Manta the right reading of "no up"?** Two flat wings with identical faces would be closer to
+   the animal and closer to the Manta hull's outline; law L6 asks for three-fold or more, so this one is a cross.
+2. **Which clade next** (`/fauna-creation` section 9 lists eight body plans the game does not have).
+3. Whether any round 1 body comes back, and round 1's open decisions below.
+
 ## Round 1 (2026-11-15)
 
 ### What was built
