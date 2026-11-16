@@ -327,6 +327,30 @@ namespace CosmicShore.Tests
         // ── P1 and P6 (Shombith, 2026-11-16): the raid window and carried crystals ──
 
         [Test]
+        public void VoyageRecord_KeepsEveryLegsSeats()
+        {
+            // The docked board reads the whole voyage: the raid leg's count must survive the way home's fresh leg.
+            var voyage = new VoyageRaidTally();
+            var leg = new VoyageRaidTally();
+            leg.Add("you", Element.Mass);
+            leg.Add("you", Element.Space);
+            leg.Kill("you", nearArk: true);
+            leg.Carry("you", Element.Time);
+            voyage.Absorb(leg);
+            leg.Clear();
+            leg.Add("you", Element.Mass);
+            voyage.Absorb(leg);
+            var you = voyage.SeatOf("you");
+            Assert.AreEqual(3, you.Total);
+            Assert.AreEqual(2, you.Crystals[(int)Element.Mass]);
+            Assert.AreEqual(1, you.Kills);
+            Assert.AreEqual(1, you.Guarded);
+            Assert.AreEqual(0, voyage.CarriedTotal, "unbanked crystals never reach the voyage record");
+            voyage.Absorb(voyage);
+            Assert.AreEqual(3, voyage.Total, "absorbing itself changes nothing");
+        }
+
+        [Test]
         public void CarriedCrystals_CountOnlyOnceBanked()
         {
             var tally = new VoyageRaidTally();

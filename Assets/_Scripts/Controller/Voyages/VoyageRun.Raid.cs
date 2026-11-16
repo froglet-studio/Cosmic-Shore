@@ -16,6 +16,9 @@ namespace CosmicShore.Gameplay
     public sealed partial class VoyageRun : IVoyageObjectiveSource
     {
         readonly VoyageRaidTally _raid = new();
+        /// <summary>Every leg of this voyage already sailed, seat by seat: <see cref="_raid"/> starts over each leg, and
+        /// the way home's docked board shows the whole voyage (Shombith's 2026-11-16 playtest: a docked board of zeros).</summary>
+        readonly VoyageRaidTally _voyageRaid = new();
         readonly Dictionary<Cell, int> _legIndex = new();
         bool _raidHooked;
         bool _goalToastShown;
@@ -51,6 +54,7 @@ namespace CosmicShore.Gameplay
             _anchorWarned = false;
             _spillReadyAt.Clear();
             _legStartedAt = Time.time;
+            _voyageRaid.Absorb(_raid);
             _raid.Clear();
             HookRaid(job is { CountsUnderway: true });
         }
@@ -404,13 +408,24 @@ namespace CosmicShore.Gameplay
         /// <summary>One row per seat, the pilot's first, with what each stole and felled on the leg: this machine's AI
         /// wingmates, then the party's other humans, then any seat the host's count names that is not here (on a friend's
         /// machine, the host's AI wingmates).</summary>
-        void AddRows(VoyageScoreboard board)
+        void AddRows(VoyageScoreboard board) => AddRows(board, _raid);
+
+        /// <summary>The whole voyage's rows: every leg sailed, and the one under way.</summary>
+        void AddVoyageRows(VoyageScoreboard board)
+        {
+            var all = new VoyageRaidTally();
+            all.Absorb(_voyageRaid);
+            all.Absorb(_raid);
+            AddRows(board, all);
+        }
+
+        void AddRows(VoyageScoreboard board, VoyageRaidTally tally)
         {
             var named = new HashSet<string>();
             void Row(IVesselStatus status, bool you)
             {
                 if (status == null || string.IsNullOrEmpty(status.PlayerName) || !named.Add(status.PlayerName)) return;
-                var seat = _raid.SeatOf(status.PlayerName);
+                var seat = tally.SeatOf(status.PlayerName);
                 board.Rows.Add(new VoyageScoreboard.Row
                 {
                     Name = status.PlayerName,
@@ -424,7 +439,7 @@ namespace CosmicShore.Gameplay
             Row(LocalVessel(), true);
             foreach (var w in _wingmates) Row(Alive(w), false);
             foreach (var (status, _) in OtherHumans()) Row(status, false);
-            foreach (var seat in _raid.Seats)
+            foreach (var seat in tally.Seats.ToArray())
             {
                 if (seat == null || string.IsNullOrEmpty(seat.PlayerName) || !named.Add(seat.PlayerName)) continue;
                 board.Rows.Add(new VoyageScoreboard.Row
@@ -475,7 +490,7 @@ namespace CosmicShore.Gameplay
             };
             if (x != null)
                 for (int e = 0; e < x.Crystals.Length && e < board.Crystals.Length; e++) board.Crystals[e] = x.Crystals[e];
-            AddRows(board);
+            AddVoyageRows(board);
             VoyageScoreboard.Show(board);
         }
 
@@ -504,7 +519,7 @@ namespace CosmicShore.Gameplay
                 Following = _following,
             };
             for (int e = 0; e < board.Crystals.Length && stake != null && e < stake.Length; e++) board.Crystals[e] = stake[e];
-            AddRows(board);
+            AddVoyageRows(board);
             // Try again: the same work from wherever the fall left the crew, once the sea has ended.
             string template = lost?.TemplateId;
             if (!_following && lost is { CountsUnderway: true } && !string.IsNullOrEmpty(template))
@@ -516,6 +531,7 @@ namespace CosmicShore.Gameplay
         {
             HookRaid(false);
             _raid.Clear();
+            _voyageRaid.Clear();
             _legIndex.Clear();
             _alarms?.Unhook();
             if (_attackerMarks) Destroy(_attackerMarks.gameObject);

@@ -188,6 +188,7 @@ namespace CosmicShore.Gameplay
             _active = true;
             _underway = _fallen = _fallTaken = _docked = false;
             _seeded.Clear();
+            _voyageRaid.Clear();
             EnsureSea();
             // The escort's roles, at their defaults (an escort sim's overrides never leak into a voyage).
             EscortGeneRegistry.ResetAll();

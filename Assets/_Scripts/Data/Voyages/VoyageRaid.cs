@@ -337,6 +337,23 @@ namespace CosmicShore.Data
 
         public void Clear() => Seats.Clear();
 
+        /// <summary>Adds what <paramref name="other"/> holds (banked crystals, kills, guarded) to this tally, seat by seat:
+        /// a voyage's record across its legs. Carried crystals are never added (they are lost unbanked at a stop).</summary>
+        public void Absorb(VoyageRaidTally other)
+        {
+            if (other == null || ReferenceEquals(other, this)) return;
+            foreach (var s in other.Seats)
+            {
+                if (s == null || string.IsNullOrEmpty(s.PlayerName)) continue;
+                var seat = SeatOf(s.PlayerName);
+                if (s.Vessel != 0) seat.Vessel = s.Vessel;
+                for (int e = 0; e < seat.Crystals.Length && s.Crystals != null && e < s.Crystals.Length; e++)
+                    seat.Crystals[e] += s.Crystals[e];
+                seat.Kills += s.Kills;
+                seat.Guarded += s.Guarded;
+            }
+        }
+
         /// <summary>A deep copy of every seat (the host's count, sent to the party).</summary>
         public List<Seat> Snapshot()
         {
