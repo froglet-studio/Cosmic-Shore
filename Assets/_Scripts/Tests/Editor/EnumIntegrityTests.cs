@@ -65,6 +65,7 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Meerkat, 28)]
         [TestCase(VesselClassType.TigerMoth, 29)]
         [TestCase(VesselClassType.Swordfish, 30)]
+        [TestCase(VesselClassType.JewelWasp, 31)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -205,8 +206,29 @@ namespace CosmicShore.Tests
             // landed with first; 89 is Glasshouse's on claude/peaceful-cerf-vpl3x8 (in flight), so it moved to 90.
             // 82 -> 83 on 2026-11-11: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest
             // pushed first; 89 was free on every branch.
+            // 83 -> 86 on 2026-11-15: Larder (102), Thornbush (103) and Lancefall (104), the Shrike's Charge, Mass and
+            // Space games, on the ids GAME_KIT_ROSTER.md reserved for them (other roster games land beside them).
+            // 86 -> 88 on 2026-11-15: Shockfront (119) and Fulmen (120), the Stoat's Charge and Space games, on its reserved ids.
+            // 88 -> 91 on 2026-11-15: Spearline (96), Riposte (97) and Palisade (98), the Swordfish's Time, Charge and
+            // Mass games, on their reserved ids.
+            // 91 -> 94 on 2026-11-15: the Honeyguide's Flitstrike (108), Honeycomb (109) and Woodpecker (110), on its reserved ids.
+            // 94 -> 96 on 2026-11-15: Stingherd (117) and Trawl (118), the Jacks' Charge and Space games.
+            // 96 -> 99 on 2026-11-15: PodHunt (99), IceShelf (100), DepthCharge (101), the Orca's Charge, Mass and Space
+            // games, on the ids Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for them (parallel sessions build the
+            // other rows' games at the same time; each adds its own count).
+            // 99 -> 100 on 2026-11-15: Railrush (124), the Urchin's Charge game, on its reserved id.
+            // 100 -> 103 on 2026-11-15: Bullrush (121), Windrow (122) and Landslide (123), the Rhino's Charge, Mass and
+            // Space games, on their reserved ids.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(83, values.Length,
+
+            // 108 -> 111 on 2026-11-15: Sentry (105), Warren (106) and CaveIn (107), the Meerkat's Charge, Mass and Space
+            // games, on their reserved ids.
+            // 111 -> 112 on 2026-11-15: Standoff (125), the Grizzly's Charge game, on the id GAME_KIT_ROSTER.md reserved (row 35).
+            // 112 -> 115 on 2026-11-15: CleanerRam (111), Reefbuild (112) and Blastline (113), the Wrasse's Charge, Mass
+            // and Space games, on the ids GAME_KIT_ROSTER.md reserved for them (rows 21-23).
+            // 115 -> 118 on 2026-11-15: Snap (114), DenBuilder (115), Riptide (116), the Goby & Pistol's Charge, Mass and
+            // Space games, on the ids Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for them.
+            Assert.AreEqual(118, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -260,6 +282,20 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Flatline, 84)]
         [TestCase(GameModes.Corona, 87)]
         [TestCase(GameModes.Shatterplane, 90)]
+        [TestCase(GameModes.Chum, 91)]
+        [TestCase(GameModes.Starweave, 92)]
+        [TestCase(GameModes.Haul, 93)]
+        [TestCase(GameModes.Hedgerow, 94)]
+        [TestCase(GameModes.Longshot, 95)]
+        [TestCase(GameModes.Spearline, 96)]
+        [TestCase(GameModes.Riposte, 97)]
+        [TestCase(GameModes.Palisade, 98)]
+        [TestCase(GameModes.Shockfront, 119)]
+        [TestCase(GameModes.Fulmen, 120)]
+        [TestCase(GameModes.Sentry, 105)]
+        [TestCase(GameModes.Warren, 106)]
+        [TestCase(GameModes.CaveIn, 107)]
+        [TestCase(GameModes.Standoff, 125)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

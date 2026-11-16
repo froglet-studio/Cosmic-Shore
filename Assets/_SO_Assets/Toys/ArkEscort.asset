@@ -158,6 +158,11 @@ MonoBehaviour:
   cellSpacing: 2800
   platesAreFood: 1
   worldsPerVoyage: 4
+  faunaStrikeEffect: {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}
+  faunaStrikeReach: 24
+  faunaStrikeCooldown: 2.5
+  faunaStrikeSeconds: 0.6
+  faunaStrikeWeight: 1
   rampJitter: 0.15
   modifierCountWeights: {x: 0.3, y: 0.45, z: 0.25}
   modifiers:

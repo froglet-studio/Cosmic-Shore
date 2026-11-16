@@ -221,12 +221,19 @@ namespace CosmicShore.Data
         public int Pay;
         public int Intensity = 1;
         public int Hops = 1;
+        /// <summary>The difficulty (1-9) the crew picked on the voyage page (<see cref="VoyageDifficulty"/>); 0 is the one
+        /// its pilot recommends. <see cref="Intensity"/> and <see cref="Pay"/> already follow it.</summary>
+        public int Difficulty;
         /// <summary>The rival crew it is about (a bounty, a parley), or empty.</summary>
         public string RivalId;
         /// <summary>The saga chapter it is, or empty.</summary>
         public string Chapter;
         /// <summary>The warnings the board attached from the world as it was (authored lines).</summary>
         public List<string> Warnings = new();
+
+        /// <summary>A shallow copy (the warnings and news are shared): the voyage page sets a copy's difficulty, never the
+        /// board's own job.</summary>
+        internal VoyageJob MemberwiseCloneJob() => (VoyageJob)MemberwiseClone();
     }
 
     [Serializable]

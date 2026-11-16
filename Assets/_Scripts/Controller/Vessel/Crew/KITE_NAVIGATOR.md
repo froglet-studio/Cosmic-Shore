@@ -689,6 +689,14 @@ python3 Tools/Build/vessel_model/build.py grouper --check && python3 Tools/Build
 python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' spread with the depth-plane include
 ```
 
+## The reef games lean on this seat (2026-11-15)
+
+Cleaner Ram, Reefbuild and Blastline (`Assets/_Scripts/Controller/Arcade/WRASSEREEF.md`) are the Wrasse's Charge, Mass
+and Space games. They change nothing here: their one lever is an element-weighted crystal reef, which works because
+`PickElement` weights motes by the hull's element levels. They score on the ram's Strike, the clusters' owner name and
+the blast's credit. `wrasse_reef_common.shared_errors` fails their `--check` if any of those lines leaves this file, so a
+change to the seat that breaks a game is caught by the generator.
+
 ## Follow-ups
 
 - **A whole arc for the seat (proposal, 2026-10-29):** `Docs/Studios/ONE_THUMB_SEAT_ARCS.md` §2. Loops cinch into a

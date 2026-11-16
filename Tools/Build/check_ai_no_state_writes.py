@@ -47,6 +47,10 @@ SCOPES = [
     "Assets/_Scripts/Controller/AI/Boost",
     # The Thresher's Belfry AI (2026-11-07): where it aims and when it ducks - nothing it may write to a vessel.
     "Assets/_Scripts/Controller/Arcade/ThresherTime/AI",
+    # Brittle Star Time's race coach (2026-11-16): the Speed wish, the line and the nose follow - nothing it may write to
+    # a vessel. Two FILES (a scope may be one): the rest of that folder is the race and its heat, which move scenery.
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeCoach.cs",
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeController.Coach.cs",
 ]
 
 # Members whose assignment changes the world rather than the pilot's input.
@@ -170,6 +174,9 @@ def scan_text(rel, text):
 def files():
     for scope in SCOPES:
         base = os.path.join(ROOT, scope)
+        if os.path.isfile(base):
+            yield scope, base
+            continue
         for dp, _, fns in os.walk(base):
             if "/Tests" in dp.replace(os.sep, "/"):
                 continue
