@@ -8463,3 +8463,38 @@ line (the picked one in `#00D4FF`), "For this voyage" is plain text, the saved l
 HyperSea page (step 01) with the popup closed, Rev 108's table as it was, the crew list replaced by the two open voyages,
 the "Crew recommends · 8" button (Y) and a locked line. Section refitted to hold it.
 
+### 209.1 Built: the app shell - Sea, Crew, Lobby and Picker (2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
+
+Asked (Shombith, "go" on the Milestone 1 build prompt): build the picked Sea, Crew and Lobby boards and the redrawn Picker,
+make "You sail as" and the picker read the record the voyage launches from, and keep the lock PR #2021 added
+(`VoyageToyDefinitionSO.lockJobs` / `openJobs`) as the only lock.
+
+Built in code (no prefab or scene change), at the boards' own numbers:
+- **Sea** (`VoyageSeaPage`): the table as it was; the crew faces and their sliding drawer are gone for an "Open now" column at
+  board x 1400, 480 wide: a 140 tall card per voyage that sails now (the escort shows the Ark, `VoyageBoardStyleSO.ArkPicture`;
+  a job its pilot), the picked one on a faint cyan ground with one 2 unit cyan line at its left. Under them "Crew recommends -
+  N" (Y) and "N crew voyages, locked for Milestone 1". In full screen the column stands in the right margin.
+- **Crew** (`VoyageCrewPopup`, rules in `VoyageCrewRules`): the board's 1520 x 900 glass modal in its own canvas. The faction
+  rail ("All", then only the factions with locked work, each with its count; a pilot's faction is their record's
+  `FactionType`), "Open now" with an Open (A) per voyage that sails, then every locked crew voyage under its faction (pilot,
+  job, difficulty, the lock at .72). Pressing one says "<title> opens after Milestone 1." Locked means `Offer.Locked`: no Set
+  sail and not under way, which is #2021's lock.
+- **Lobby** (`VoyageArkPage`): lobby only. The squad presets and "Fly a squad instead" are gone. Seats fill you, then lobby
+  friends (`VoyageRules.FriendAt`), then AI wingmates. Your card says "Flies this voyage" and carries the four settings; a
+  friend's says they are in your lobby and pick their own (the party carries no Ready / Choosing state yet); an AI seat offers
+  Invite a friend (the Menu_Main friends list, as the Arcade lobby opens it) and Change wingmate (the popup on Pilot). "Fill
+  the AI seats from a saved squad" (Y) lists the saved squads (one fills at once) and copies its wingmates into the AI seats
+  only. "You sail as <vessel> - <element>" sits beside Set sail.
+- **Picker** (`VoyageSeatPicker`): the redrawn board: a flat #00041F panel in one #434C89 line, title 28, the four tabs, a
+  grid three across of 170 tall tiles each in one thin line (the picked one cyan), "For this voyage" in plain caps 13, the
+  400 wide preview, the note and Done. The quick kits are gone (the board has none); the Sees filter stays on the Pilot tab.
+  One press saves and the line under the grid says what ("Manta is your vessel for <voyage>. Your seat card behind has
+  changed.").
+- **The record** (`VoyageSeatRecord`, Data): the voyage's own seats, a copy of the active squad made when the Ark page opens
+  on a voyage (keyed by job or escort). The picker writes into it (`VoyageSeats.PickVoyage`), never into a saved squad;
+  Set sail passes it as the request's squad; "You sail as" reads `VoyageLaunch.HullThatSails`, the same call that writes the
+  spawn hull, so a hull with no prefab reads as the hull that really flies.
+
+New words in `voyage_slice.json` (Sea*, Crew*, Faction*, Ark*, Pick*). Tests: `VoyageLobbyTests`. Not opened in Unity or
+Amoebius; a render of the build beside the boards is still owed.
+

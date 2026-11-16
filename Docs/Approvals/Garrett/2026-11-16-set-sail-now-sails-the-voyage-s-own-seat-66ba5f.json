@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-16-set-sail-now-sails-the-voyage-s-own-seat-66ba5f",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T18:40:55+00:00",
+  "area": "the voyage launch",
+  "summary": "Set sail now sails the voyage's own seat record (VoyageSeatRecord) instead of the active squad when the lobby made one; VoyageLaunch gained HullThatSails, which SeatLocalHull now uses.",
+  "why": "Rev 113 Lobby/Picker: a seat pick applies to this voyage only, never a saved squad",
+  "branch": "claude/project-thread-ga37fg",
+  "commit": "06fe7cb05",
+  "paths": [
+    "Assets/_Scripts/Controller/Voyages/VoyageLaunch.cs",
+    "Assets/_Scripts/UI/Views/VoyageJobsView.cs"
+  ]
+}

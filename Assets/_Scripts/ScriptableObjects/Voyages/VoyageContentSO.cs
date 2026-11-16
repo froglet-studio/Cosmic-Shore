@@ -709,9 +709,99 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Over a pilot or vessel suggested for the open voyage.")]
         public string PickForVoyage = "FOR THIS VOYAGE";
         [Tooltip("Under the choices.")]
-        public string PickNote = "One press takes it. Your seat behind updates as you pick.";
+        public string PickNote = "One press saves it to your seat for this voyage, the same seat Set sail reads.";
         [Tooltip("The seat picker's close mark.")]
         public string PickClose = "X";
+        [Tooltip("Over the HyperSea page's open voyages (Rev 113 Sea).")]
+        public string SeaOpenNow = "OPEN NOW";
+        [Tooltip("The button that opens the crew's voyages. {count} is how many they recommend.")]
+        public string SeaCrewButton = "CREW RECOMMENDS - {count}";
+        [Tooltip("The crew button's keycap.")]
+        public string SeaCrewKey = "Y";
+        [Tooltip("Under the crew button. {count} is how many are locked; empty hides it.")]
+        public string SeaLockedLine = "{count} crew voyages, locked for Milestone 1";
+        [Tooltip("The crew popup's title (Rev 113 Crew).")]
+        public string CrewTitle = "Your crew recommends";
+        [Tooltip("Under the crew popup's title.")]
+        public string CrewLine = "Each pilot on your Ark has work they would like you to take.";
+        [Tooltip("The faction rail's first row: every voyage.")]
+        public string CrewAll = "All";
+        [Tooltip("Under the faction rail.")]
+        public string CrewLeftOut = "Factions with no work from your crew are left out.";
+        [Tooltip("Over the voyages that sail now.")]
+        public string CrewOpenNow = "OPEN NOW";
+        [Tooltip("Over the crew's other voyages, by faction.")]
+        public string CrewVoyages = "CREW VOYAGES";
+        [Tooltip("Beside Crew voyages: why they cannot sail.")]
+        public string CrewLocked = "Locked for Milestone 1";
+        [Tooltip("An open voyage's button: opens it on the voyage page.")]
+        public string CrewOpen = "OPEN";
+        [Tooltip("An open voyage's length. {stops} is its stops.")]
+        public string CrewStops = "{stops} stops";
+        [Tooltip("Said when a locked voyage is pressed. {title} is its name.")]
+        public string CrewLockedPress = "{title} opens after Milestone 1.";
+        [Tooltip("The group for a voyage whose pilot has no faction.")]
+        public string FactionNone = "Crew";
+        [Tooltip("The Merchant faction's group.")]
+        public string FactionMerchant = "Merchants";
+        [Tooltip("The Hunter faction's group.")]
+        public string FactionHunter = "Hunters";
+        [Tooltip("The Aristocrat faction's group.")]
+        public string FactionAristocrat = "Aristocrats";
+        [Tooltip("The Pirate faction's group.")]
+        public string FactionPirate = "Pirates";
+        [Tooltip("The Bounty Hunter faction's group.")]
+        public string FactionBountyHunter = "Bounty hunters";
+        [Tooltip("The Explorer faction's group.")]
+        public string FactionExplorer = "Explorers";
+        [Tooltip("The Activist faction's group.")]
+        public string FactionActivist = "Activists";
+        [Tooltip("The Thief faction's group.")]
+        public string FactionThief = "Thieves";
+        [Tooltip("The Gatherer faction's group.")]
+        public string FactionGatherer = "Gatherers";
+        [Tooltip("The Contractor faction's group.")]
+        public string FactionContractor = "Contractors";
+        [Tooltip("The Sport faction's group.")]
+        public string FactionSport = "Sport";
+        [Tooltip("The Researcher faction's group.")]
+        public string FactionResearcher = "Researchers";
+        [Tooltip("The Preservationist faction's group.")]
+        public string FactionPreservationist = "Preservationists";
+        [Tooltip("The First Responder faction's group.")]
+        public string FactionFirstResponder = "First responders";
+        [Tooltip("The Priest faction's group.")]
+        public string FactionPriest = "Priests";
+        [Tooltip("The Diplomat faction's group.")]
+        public string FactionDiplomat = "Diplomats";
+        [Tooltip("Under Your lobby (Rev 113 Lobby).")]
+        public string ArkLobbyLine = "Pick your seat. Friends who join pick their own. Empty seats fly with AI wingmates.";
+        [Tooltip("On your own seat card: this seat is what sails.")]
+        public string ArkFlies = "FLIES THIS VOYAGE";
+        [Tooltip("An AI seat's button: opens the friends list.")]
+        public string ArkInvite = "INVITE A FRIEND";
+        [Tooltip("An AI seat's button: changes the wingmate in it.")]
+        public string ArkChangeWingmate = "CHANGE WINGMATE";
+        [Tooltip("Copies a saved squad's wingmates into the AI seats only.")]
+        public string ArkFillSquad = "FILL THE AI SEATS FROM A SAVED SQUAD";
+        [Tooltip("The fill button's keycap.")]
+        public string ArkFillKey = "Y";
+        [Tooltip("Said when there is no saved squad to fill from.")]
+        public string ArkFillNone = "No saved squad yet. Make one in the Ark.";
+        [Tooltip("Beside Set sail: the vessel and element the voyage spawns you in.")]
+        public string ArkSailAs = "You sail as {vessel} - {element}";
+        [Tooltip("Under the choices after a press on your seat.")]
+        public string PickSaved = "{choice} is your {setting} for {voyage}. Your seat card behind has changed.";
+        [Tooltip("Under the choices after a press on a wingmate's seat.")]
+        public string PickSavedSeat = "{choice} is the {setting} for {seat} on {voyage}.";
+        [Tooltip("The word for a vessel in the saved line.")]
+        public string PickWordVessel = "vessel";
+        [Tooltip("The word for a pilot in the saved line.")]
+        public string PickWordPilot = "pilot";
+        [Tooltip("The word for an element in the saved line.")]
+        public string PickWordElement = "element";
+        [Tooltip("The word for an artifact in the saved line.")]
+        public string PickWordArtifact = "artifact";
         [Tooltip("A courier job's name.")]
         public string KindCourier = "Courier";
         [Tooltip("A vault hunt's name.")]

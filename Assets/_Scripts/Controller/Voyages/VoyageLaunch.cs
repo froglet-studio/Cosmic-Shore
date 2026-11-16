@@ -123,12 +123,12 @@ namespace CosmicShore.Gameplay
         static void SeatLocalHull(GameDataSO gameData, SavedSquad squad)
         {
             if (gameData.LocalPlayer is not Player player || !player.IsSpawned || !player.IsOwner) return;
-            var hull = SeatHull(squad);
-            if (!CanSpawn(hull))
+            var seat = SeatHull(squad);
+            var hull = HullThatSails(gameData, squad);
+            if (hull != seat)
             {
-                if (VesselRequirement.IsConcrete(hull))
-                    CSDebug.LogWarning($"[Voyage] The seat names {hull}, which has no vessel prefab - the pilot sails the hull they flew.");
-                hull = FlownHull(gameData);
+                if (VesselRequirement.IsConcrete(seat))
+                    CSDebug.LogWarning($"[Voyage] The seat names {seat}, which has no vessel prefab - the pilot sails the hull they flew.");
                 if (!VesselRequirement.IsConcrete(hull)) return;
             }
             else
@@ -151,8 +151,20 @@ namespace CosmicShore.Gameplay
         public static VesselClassType SeatHull(SavedSquad squad) =>
             squad == null ? default : squad.GetSlot(LocalSeat(squad)).Vessel;
 
+        /// <summary>
+        /// The hull the local pilot spawns in when <paramref name="squad"/> sails: their seat's, or the hull they were
+        /// flying when the seat's has no vessel prefab. The Voyage window's "You sail as" reads this, so it names what
+        /// <see cref="Begin"/> spawns.
+        /// </summary>
+        public static VesselClassType HullThatSails(GameDataSO gameData, SavedSquad squad)
+        {
+            var hull = SeatHull(squad);
+            return CanSpawn(hull) ? hull : FlownHull(gameData);
+        }
+
         static VesselClassType FlownHull(GameDataSO gameData)
         {
+            if (!gameData) return default;
             var vessel = gameData.LocalPlayer?.Vessel;
             if (vessel == null || vessel is Object uo && !uo || vessel.VesselStatus == null) return default;
             return vessel.VesselStatus.VesselType;

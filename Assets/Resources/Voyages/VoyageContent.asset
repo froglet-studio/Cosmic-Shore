@@ -3160,8 +3160,53 @@ MonoBehaviour:
     PickSeesPaths: Paths
     PickCount: '{shown} of {total}'
     PickForVoyage: FOR THIS VOYAGE
-    PickNote: One press takes it. Your seat behind updates as you pick.
+    PickNote: One press saves it to your seat for this voyage, the same seat Set sail reads.
     PickClose: X
+    SeaOpenNow: OPEN NOW
+    SeaCrewButton: 'CREW RECOMMENDS - {count}'
+    SeaCrewKey: Y
+    SeaLockedLine: '{count} crew voyages, locked for Milestone 1'
+    CrewTitle: Your crew recommends
+    CrewLine: Each pilot on your Ark has work they would like you to take.
+    CrewAll: All
+    CrewLeftOut: Factions with no work from your crew are left out.
+    CrewOpenNow: OPEN NOW
+    CrewVoyages: CREW VOYAGES
+    CrewLocked: Locked for Milestone 1
+    CrewOpen: OPEN
+    CrewStops: '{stops} stops'
+    CrewLockedPress: '{title} opens after Milestone 1.'
+    FactionNone: Crew
+    FactionMerchant: Merchants
+    FactionHunter: Hunters
+    FactionAristocrat: Aristocrats
+    FactionPirate: Pirates
+    FactionBountyHunter: Bounty hunters
+    FactionExplorer: Explorers
+    FactionActivist: Activists
+    FactionThief: Thieves
+    FactionGatherer: Gatherers
+    FactionContractor: Contractors
+    FactionSport: Sport
+    FactionResearcher: Researchers
+    FactionPreservationist: Preservationists
+    FactionFirstResponder: First responders
+    FactionPriest: Priests
+    FactionDiplomat: Diplomats
+    ArkLobbyLine: Pick your seat. Friends who join pick their own. Empty seats fly with AI wingmates.
+    ArkFlies: FLIES THIS VOYAGE
+    ArkInvite: INVITE A FRIEND
+    ArkChangeWingmate: CHANGE WINGMATE
+    ArkFillSquad: FILL THE AI SEATS FROM A SAVED SQUAD
+    ArkFillKey: Y
+    ArkFillNone: No saved squad yet. Make one in the Ark.
+    ArkSailAs: 'You sail as {vessel} - {element}'
+    PickSaved: '{choice} is your {setting} for {voyage}. Your seat card behind has changed.'
+    PickSavedSeat: '{choice} is the {setting} for {seat} on {voyage}.'
+    PickWordVessel: vessel
+    PickWordPilot: pilot
+    PickWordElement: element
+    PickWordArtifact: artifact
     KindCourier: Courier
     KindHunt: Vault hunt
     KindSalvage: Salvage

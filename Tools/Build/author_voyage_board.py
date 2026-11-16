@@ -33,6 +33,9 @@ LABEL_FONT = "Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset"
 SPRITES = [  # field, kit file
     ("Sliver10Fill", "kit_sliver10_fill"), ("Sliver10Line", "kit_sliver10_line1"),
 ]
+PICTURES = [  # field, png (Frogma Rev 113 Sea and Crew draw the Ark on the escort's card)
+    ("ArkPicture", "Assets/_Graphics/UI/Loading/loading_tour_ark.png"),
+]
 # field, hex, alpha, the token it is (a hex the tokens file must hold)
 COLOURS = [
     ("Light", "#E6E9FF", 1.0), ("Sub", "#747BAD", 1.0), ("Jade", "#21C0BD", 1.0), ("Cyan", "#00D4FF", 1.0),
@@ -99,6 +102,8 @@ def asset(style_guid):
            "  m_EditorClassIdentifier: "]
     for field, kit in SPRITES:
         out.append(f"  {field}: {{fileID: 21300000, guid: {meta_guid(f'{KIT}/{kit}.png')}, type: 3}}")
+    for field, png in PICTURES:
+        out.append(f"  {field}: {{fileID: 21300000, guid: {meta_guid(png)}, type: 3}}")
     out.append(f"  LabelFont: {{fileID: 11400000, guid: {meta_guid(LABEL_FONT)}, type: 2}}")
     for field, hexv, alpha in COLOURS:
         out.append(f"  {field}: {colour(hexv, alpha)}")
