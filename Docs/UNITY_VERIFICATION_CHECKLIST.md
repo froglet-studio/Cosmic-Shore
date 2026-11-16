@@ -24510,4 +24510,49 @@ nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed
 2. Paste a laid genome (any `Tools/Compute/evaluators/regatta_genome.py --random 1` output) into a Regatta rails
    prefab's `courseGenome` field, play, and fly the line: the placed spawners stand clear of the line and the rings,
    and the lap still counts.
-3. Watch the frame time on that course: up to 12,000 extra prisms can be laid.
+3. Watch the frame time on that course: up to 6,000 extra prisms can be laid (the cap was 12,000 until round 3).
+4. Round 3 (`cross_rail`, the cell's phase ladder): on a genome with placements, the cell opens in the same phase as
+   the plain course (`Cell.ResolveThresholds` raises every boundary by what the placements laid), and a `cross_rail`
+   placement stands on a rail while the ring mouths stay open. Run the EditMode tests `CellPhaseRulesTests`
+   (`Raised_*`). A Linked Rings spawner with 20+ rings of 64 blocks no longer lays blocks at infinity (it hung the
+   course before). Refcompile: 0 errors in the changed files; the editor did not run.
+5. Round 4 (`TrainingCourseOverlay`): play any gate race (Switchback, Redline) normally. Nothing changes, because the
+   overlay is null outside the judge and the trainers. The judge proves the overlay in Amoebius. The editor did not run.
+
+## 🔴 The standard element ladder: I2 start, I3 team crystals, I4 fauna, the crystal-detour gene (2026-11-16, Garrett's project thread, #2055 #2059 #2060, NOT RUN IN EDITOR)
+
+Garrett's ladder (`Docs/ElementalLoop/PLAYBOOK.md` step 2): I1 nothing, I2 every hull at level 5 in the game's element,
+I3 each team's own crystals of it, I4 its fauna in the cell's colour. Applies to every non-arena card with no
+`StartingElements` table. Refcompile: 0 errors in the changed files; the editor and the `unity` CLI did not run; the
+new EditMode tests (`ElementLadderTests`, `ElementLadderCrystalsTests`, the gene test in `RaceAIWaypointsOnlyTests`)
+compiled and did not run. Owed:
+
+1. Run the EditMode tests above.
+2. Switchback at I1: the Dolphin starts at rest. At I2: it starts at Time 5 (the HUD's Time bar half full).
+3. Switchback at I3: 4 Time crystals in your colour sit beside the rings and regrow ~12 s after you take one. In a
+   two-team arcade mode, the other team cannot take yours. Skim Race (scored on crystals) and Harvest lay none of these.
+4. Switchback at I4: sharks, piranhas, brittle stars and tadpoles appear as Time variants in the controlling colour.
+   On two machines, the client sees the same creatures (the fauna sync indexes `Cell.FaunaRoster`). Watch frame time.
+5. Redline, Headlong and the other cards with their own `StartingElements` table are unchanged at every rung.
+
+## 🔴 All fifty painted pilots in every crew, the Ark's Pilots tab pages, a see-through story panel (2026-11-16, Garrett's project thread, `claude/all-fifty-pilots`, NOT RUN IN EDITOR)
+
+Garrett, 2026-11-16: "lets get all 50 into the game. it is ok if we duplicate callsign everything else will be the
+different" and "a tiny bit of transparency would mean not throwing away the nice art behind it". `unity_refcompile`
+ran (see the PR's verification line); the generators' `--check` and `--self-test` passed; the Unity editor and the
+`unity` CLI did not run. Owed:
+
+1. Run the EditMode tests `PaintedCrewTests`, `PilotSceneAssetTests` and `AccountInventoryTests`.
+2. Start on a fresh account: the Ark's PILOTS tab says "Pilots: 50", shows 18 cells, and "<" / ">" with "1 / 3" step
+   through the pages (wrapping). Each cell's close-up is that person's own (Flux and Shrapnel are both VOLT and look
+   different). A press on page 2 opens the pilot drawn in that cell.
+3. Start on an account saved before this change (18 starters): the same 18 keep their ids and seats, 32 join, and the
+   squads that seated someone still seat them.
+4. Open a profile page over a bright scene (Astrofoil, Comet): the art shows faintly through the words panel and every
+   line still reads.
+5. The Hangar's PILOTS list for a vessel shows every person whose callsign can fly it, each with their own close-up,
+   and seating one still lights IN THE SEAT.
+6. Phone build size: the 32 added 1536x864 scenes should add about 40 MB; measure it.
+6. Harvest at I4 (authored fauna, now pinned): every shark, piranha, brittle star and tadpole is the Space variant, not
+   a spread across elements; at I3 and below Harvest's fauna are unchanged. Spot-check Wildlife Liberation and Chum at
+   I4 still play (their creatures are one element now). Not run in editor; refcompile 0 errors in the changed files.

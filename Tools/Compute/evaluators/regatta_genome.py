@@ -13,7 +13,8 @@ in a vast space." A genome is one JSON document (the flywheel's shared contract)
      "placements": [{"kind": catalogue id, "leg": leg + Hermite t, "offset": [radius_u, bearing_deg, along_u],
                      "scale": bounding radius u, "yaw", "pitch", "roll", "domain": Native|Jade|Ruby|Gold|Blue,
                      "prism": Native|Plain|Danger|Shielded|SuperShielded, "seed", "density",
-                     "cross_line": bool (may stand in the line's tube), "params": {field: value}}],
+                     "cross_line": bool (may stand in the line's tube), "cross_rail": bool (may stand on a rail),
+                     "params": {field: value}}],
      "flora": {"preset", "sitesPerLeg", "offsetMin", ...}}                     RegattaLifeformSiteSettings + the preset
 
 What may be placed, and every parameter's range, is the GENE CATALOGUE (Assets/Resources/Regatta/
@@ -21,6 +22,9 @@ RegattaGeneCatalogue.json, Tools/Build/regatta_gene_catalogue.py: written from t
 segment spawner through the game's own code). The empty genome is today's course ("Wide", the I1 circuit).
 
     random_genome(rng, intensity=None)   a valid random course
+    training_genome(rng, w, for_mode=None)  a curriculum course for AI training: w=0 today's course, w=1 the full
+                                         genome; for_mode (a Time game's card name) keeps only what that game lays
+                                         (placements and line clearance, TrainingCourseOverlay.cs)
     mutate(genome, rng, strength=1.0)    heavy or light variation, repaired
     crossover(a, b, rng)                 a cut by leg: one parent's lap before it, the other's after
     repair(genome) -> (genome, notes)    RegattaCourseGenome.Repair, line for line (held to the C# by --self-test)
@@ -35,6 +39,7 @@ estimates here (prisms, clearance) are the catalogue's, the real numbers are the
 
     python3 Tools/Compute/evaluators/regatta_genome.py --self-test     # parity with the C# repair + negative controls
     python3 Tools/Compute/evaluators/regatta_genome.py --random 12 --seed 7 --out DIR   # write random genomes
+    python3 Tools/Compute/evaluators/regatta_genome.py --random 12 --curriculum 0.5 --for-mode Switchback --out DIR
 """
 import copy
 import json
@@ -56,7 +61,7 @@ FIXTURE = os.path.join(REPO, "Tools", "Build", "regatta_genome_harness", "repair
 RINGS = 8
 MAX_PLACEMENTS = 24            # RegattaCourseGenome.MaxPlacements
 PER_PLACEMENT_CAP = 3000       # RegattaCourseGenome.PerPlacementCap
-TOTAL_PRISM_BUDGET = 12000     # RegattaCourseGenome.TotalPrismBudget
+TOTAL_PRISM_BUDGET = 6000      # RegattaCourseGenome.TotalPrismBudget
 NUCLEUS_CARVE = 391.9 * 1.1    # RegattaCourseGenome.NucleusCarve
 MEMBRANE_CARVE = 1150.0        # RegattaCourseGenome.MembraneCarve
 LINE_CLEARANCE = (12.0, 80.0, 32.0)
@@ -297,7 +302,7 @@ def repair(genome):
              "prism": s.get("prism") if s.get("prism") in PRISMS else "Native",
              "seed": int(s.get("seed", 0)),
              "density": _clamp(float(s.get("density", 1.0)), 0.1, 2.0) if kind["world"] else 1.0,
-             "cross_line": bool(s.get("cross_line", False))}
+             "cross_line": bool(s.get("cross_line", False)), "cross_rail": bool(s.get("cross_rail", False))}
         params = {}
         prms = {q["name"]: q for q in kind["params"]}
         for name in sorted((s.get("params") or {}).keys()):
@@ -355,6 +360,7 @@ def random_placement(rng, kind=None):
             "seed": rng.randint(1, 2 ** 31 - 1) if rng.random() < 0.7 else 0,
             "density": rng.uniform(0.1, 1.2) if kind["world"] else 1.0,
             "cross_line": rng.random() < 0.35,
+            "cross_rail": rng.random() < 0.25,
             "params": random_params(rng, kind)}
 
 
@@ -468,8 +474,10 @@ def mutate(genome, rng, strength=1.0, prior=None):
                 p["domain"] = rng.choice(DOMAINS)
             elif q < 0.8:
                 p["prism"] = rng.choice(PRISMS)
-            else:                                                  # onto the line, or off it
+            elif q < 0.9:                                          # onto the line, or off it
                 p["cross_line"] = not p.get("cross_line", False)
+            else:                                                  # onto the rails, or off them
+                p["cross_rail"] = not p.get("cross_rail", False)
         elif r < 0.73:                                             # swap what it is, keep where it is
             p = rng.choice(pl)
             fresh = random_placement(rng)
@@ -564,6 +572,7 @@ def descriptors(genome):
         "mean_line_clearance": round(sum(clearance) / len(clearance), 2) if clearance else 400.0,
         "on_line_share": round(sum(1 for c in clearance if c < 0) / len(pl), 3) if pl else 0.0,
         "cross_line_share": round(sum(1 for p in pl if p.get("cross_line")) / len(pl), 3) if pl else 0.0,
+        "cross_rail_share": round(sum(1 for p in pl if p.get("cross_rail")) / len(pl), 3) if pl else 0.0,
         "est_prisms": est,
         "total_scale": round(sum(float(p["scale"]) for p in pl), 1),
         "world_share": round(len(worlds) / len(pl), 3) if pl else 0.0,
@@ -666,6 +675,22 @@ def self_test():
             assert all(cat["by_id"][p["kind"]]["usable"] for p in x["placements"])
     d = descriptors(random_genome(random.Random(9)))
     assert {"count_by_kind", "mean_scale_by_kind", "leg_share", "min_line_clearance"} <= set(d), d
+    # 1b. The curriculum: w=0 is today's course, the placements and their hardness grow with w, and a Time game's
+    # genome carries only what TrainingCourseOverlay lays.
+    trng = random.Random(11)
+    assert all(is_empty(training_genome(trng, 0.0, intensity=1)) for _ in range(5)), "w=0 must be today's course"
+    def _mean(w, key):
+        gs = [training_genome(trng, w, "Switchback") for _ in range(120)]
+        return sum(key(x) for x in gs) / len(gs), gs
+    counts = [_mean(w, lambda x: len(x["placements"]))[0] for w in (0.25, 0.5, 1.0)]
+    assert counts[0] < counts[1] < counts[2], f"placements do not grow with w: {counts}"
+    line = [_mean(w, lambda x: sum(p["cross_line"] for p in x["placements"]) / max(1, len(x["placements"])))[0]
+            for w in (0.25, 1.0)]
+    assert line[0] < line[1], f"cross_line share does not grow with w: {line}"
+    _, sw = _mean(1.0, lambda x: 0)
+    assert all(not x["features"]["Sections"] and not x.get("circuit") and not any(p["cross_rail"]
+               for p in x["placements"]) for x in sw), "a Time game's genome carries Regatta-only genes"
+    assert any(training_genome(trng, 1.0)["features"]["Sections"] for _ in range(20)), "Regatta's wide genome lost its rails"
     # 2. Parity with the C# repair (the harness's fixture: inputs and RegattaCourseGenome.Repair's outputs).
     if not os.path.exists(FIXTURE):
         print(f"regatta_genome self-test: NO FIXTURE at {os.path.relpath(FIXTURE, REPO)} "
@@ -689,8 +714,48 @@ def self_test():
     bad["line_clearance"] = float(bad["line_clearance"]) + 1.0
     assert _close(canonical(bad), canonical(rows[0]["out"])), "negative control: a moved number went unnoticed"
     print(f"regatta_genome self-test OK: {len(cat['usable'])} placeable kinds, {len(rows)} genomes repaired the same "
-          "as the C#, idempotent, mutation and crossover stay legal, 2 negative controls.")
+          "as the C#, idempotent, mutation and crossover stay legal, the curriculum grows with w, 2 negative controls.")
     return 0
+
+
+def training_genome(rng, w, for_mode=None, intensity=None):
+    """A course for training an AI, from narrow (w=0: today's course, no placements) to wide (w=1: the full genome).
+
+    Everything that makes a course harder scales with w: how many placements, how big, how often they stand on the
+    line (cross_line) or a rail, how often their prisms are a hard kind (Danger, Shielded, SuperShielded), how tight
+    the line tube is, and (Regatta only) how many rail sections, alternate rings and circuit changes. With for_mode
+    set to anything but Regatta, only the placements and the line clearance are kept: a Time game lays its own course
+    from its seed and TrainingCourseOverlay lays the placements round its gates (the AIs train in their own Time
+    games, never in Regatta: Docs/AI_SYSTEM/AI_PLAN.md)."""
+    w = _clamp(float(w), 0.0, 1.0)
+    regatta = for_mode in (None, "Regatta")
+    g = empty()
+    g["intensity"] = intensity or rng.randint(1, 4)
+    if w <= 0.0:
+        return repair(g)[0]
+    lo, hi = LINE_CLEARANCE[0], LINE_CLEARANCE[1]
+    g["line_clearance"] = hi - w * (hi - rng.uniform(lo, hi))
+    n = max(1, round(w * rng.randint(2, 16)))
+    places = []
+    for _ in range(n):
+        p = random_placement(rng)
+        kind = catalogue()["by_id"][p["kind"]]
+        top = kind["scale_lo"] + (min(kind["scale_hi"], 260.0) - kind["scale_lo"]) * w
+        p["scale"] = min(p["scale"], max(kind["scale_lo"], top))
+        p["cross_line"] = rng.random() < 0.7 * w
+        p["cross_rail"] = regatta and rng.random() < 0.5 * w
+        p["prism"] = rng.choice(PRISMS[2:]) if rng.random() < w else "Native"
+        places.append(p)
+    g["placements"] = places
+    if regatta:
+        g["seed"] = rng.randint(1, 2 ** 31 - 1) if rng.random() < w else 0
+        if rng.random() < 0.5 * w:
+            g["circuit"] = {k: rng.uniform(a, b) for k, (a, b) in CIRCUIT_RANGES.items() if rng.random() < 0.4 * w}
+        g["features"]["Sections"] = [_random_section(rng) for _ in range(rng.randint(0, round(6 * w)))]
+        g["features"]["AlternateGates"] = [{"Ring": rng.randint(0, RINGS - 1), "Offset": rng.uniform(150.0, 420.0),
+                                            "Bearing": rng.uniform(0.0, 360.0), "RadiusScale": rng.uniform(0.6, 1.4)}
+                                           for _ in range(rng.randint(0, round(3 * w)))]
+    return repair(g)[0]
 
 
 def main(argv):
@@ -706,9 +771,12 @@ def main(argv):
         out = argv[argv.index("--out") + 1] if "--out" in argv else "."
         os.makedirs(out, exist_ok=True)
         rng = random.Random(seed)
+        w = float(argv[argv.index("--curriculum") + 1]) if "--curriculum" in argv else None
+        mode = argv[argv.index("--for-mode") + 1] if "--for-mode" in argv else None
         for i in range(n):
             path = os.path.join(out, f"genome_{i + 1:02d}.json")
-            json.dump(random_genome(rng), open(path, "w"), indent=1)
+            g = random_genome(rng) if w is None and mode is None else training_genome(rng, 1.0 if w is None else w, mode)
+            json.dump(g, open(path, "w"), indent=1)
             print(path)
         return 0
     print(__doc__)

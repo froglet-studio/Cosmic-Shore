@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
     /// to answer). A given prefab is the same circuit every match; the VARIETY comes from the pool
     /// dealing a different prefab (cell config) per match.</para>
     /// </summary>
-    public class SpawnableRegattaRails : CellEnvironmentSpawnableBase, ICellFaunaCorridorSource
+    public class SpawnableRegattaRails : CellEnvironmentSpawnableBase, ICellFaunaCorridorSource, ICellPhaseBaseline
     {
         [Header("Regatta")]
         [Tooltip("Which of RegattaCourse's circuit rows (RegattaCourse.ForIntensity) this variant lays. The " +
@@ -154,7 +154,7 @@ namespace CosmicShore.Gameplay
         public IReadOnlyList<RegattaPlacementReport> PlacementReports => _placementReports;
 
         /// <summary>The genome's placement prisms' laid volume (Σ |x·y·z|): what this course adds to the measured phase
-        /// ladder (the cell reads it once the Ecology lane takes the phase-baseline change). 0 on every shipped course.</summary>
+        /// ladder (<see cref="ICellPhaseBaseline"/>). 0 on every shipped course.</summary>
         public float PhaseBaselineVolume { get; private set; }
 
         /// <summary>The genome's placement prism count, for the ladder's count backstop.</summary>

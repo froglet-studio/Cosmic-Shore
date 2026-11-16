@@ -136,13 +136,14 @@ namespace CosmicShore.Player
             var genome = _spec["genome"] as JsonObject;
             int intensity = Math.Clamp(_spec["intensity"]?.GetValue<int>() ?? genome?["intensity"]?.GetValue<int>() ?? 1, 1, 4);
             if (IsRegatta) ApplyCourse(genome, intensity);
-            else if (genome != null) _notes.Add($"genome ignored: {_mode} lays its own course");
+            else ApplyTrainingOverlay(genome);
 
             var all = new[] { "Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow" }
                 .Select(Enum.Parse<VesselClassType>);
             var hostHull = all.First(h => !_hulls.Contains(h));
             gameData.SyncFromArcadeGame(card);
             ApplyStart(gameData);
+            ApplyCrystalGenes();
             gameData.IsTraining = false;
             if (gameData.selectedVesselClass != null) gameData.selectedVesselClass.Value = hostHull;
             if (gameData.SelectedIntensity != null) gameData.SelectedIntensity.Value = intensity;
@@ -201,6 +202,8 @@ namespace CosmicShore.Player
                 CosmicShore.Engine.Random.InitState(unchecked(seed * 7919 + 17));
                 int total = controller.AuthoritativeGateCount;
                 race["gates_total"] = total;
+                if (!IsRegatta && TrainingCourseOverlay.Override != null)
+                    race["training_prisms"] = TrainingCourseOverlay.LastReports.Sum(r => r.Laid);
                 if (IsRegatta) race["laps_total"] = total / RegattaCourse.RingsPerLap;
                 race["course_seed"] = IsRegatta && RegattaCourseSource.TryResolveLiveRails(out var rails, out _) ? rails.CourseSeed : controller.CourseSeed;
                 race["host_hull"] = hostHull.ToString();
@@ -246,6 +249,10 @@ namespace CosmicShore.Player
                                       | (st != null && st.IsSlowed ? 16 : 0) | (st != null && st.IsTranslationRestricted ? 32 : 0);
                             traces[k].AddRange(new[] { (float)o.Phase, o.Ring, o.Objective.x, o.Objective.y, o.Objective.z, tgt.x, tgt.y, tgt.z,
                                                        fwd.x, fwd.y, fwd.z, flags });
+                            // Where the pilot COMMANDS the nose (the nose lead judges from here) and how fast the nose follows.
+                            var vt = st?.VesselTransformer;
+                            var cmd = vt ? vt.CommandedRotation * Vector3.forward : Vector3.zero;
+                            traces[k].AddRange(new[] { cmd.x, cmd.y, cmd.z, vt ? vt.NoseFollowRate : 0f });
                             // Slow (under 50 u/s): what is within 30 u, by the root object's name, for a stall's cause.
                             if ((v.VesselStatus?.Speed ?? 0f) < 50f)
                             {
@@ -303,7 +310,7 @@ namespace CosmicShore.Player
                     });
                     if (_trace)
                     {
-                        seats[seats.Count - 1]!["trace_columns"] = "t,x,y,z,speed,phase,ring,ox,oy,oz,tx,ty,tz,fx,fy,fz,flags";
+                        seats[seats.Count - 1]!["trace_columns"] = "t,x,y,z,speed,phase,ring,ox,oy,oz,tx,ty,tz,fx,fy,fz,flags,cx,cy,cz,follow";
                         seats[seats.Count - 1]!["trace"] = new JsonArray(traces[k].Select(t => (JsonNode)Math.Round(t, 2)).ToArray());
                         seats[seats.Count - 1]!["near_when_slow"] = new JsonArray(nears[k].Select(t => (JsonNode)t).ToArray());
                     }
@@ -377,6 +384,21 @@ namespace CosmicShore.Player
             _notes.Add("start: " + start.ToJsonString());
         }
 
+        /// <summary><c>"crystal_genes": {"Scarab": 150}</c>: each hull's learned crystal detour budget (world units) for this
+        /// run, as <c>RaceAICrystalGenesSO</c> would hold it, without an asset: the judge installs an in-memory one as the
+        /// project's genes. Absent = whatever the project ships (no asset = 0, the old rule).</summary>
+        void ApplyCrystalGenes()
+        {
+            if (_spec["crystal_genes"] is not JsonObject genes) return;
+            var so = ScriptableObject.CreateInstance<RaceAICrystalGenesSO>();
+            foreach (var (hull, slack) in genes)
+                so.Rows.Add(new RaceAICrystalGenesSO.Row { Hull = Enum.Parse<VesselClassType>(hull), DetourSlack = slack!.GetValue<float>() });
+            const BindingFlags S = BindingFlags.Static | BindingFlags.NonPublic;
+            typeof(RaceAICrystalGenesSO).GetField("_cached", S)!.SetValue(null, so);
+            typeof(RaceAICrystalGenesSO).GetField("_looked", S)!.SetValue(null, true);
+            _notes.Add("crystal_genes: " + genes.ToJsonString());
+        }
+
         /// <summary>Every game but Regatta draws a fresh course per match (GateRaceController.PickCourseSeed), so the judge
         /// forces it: race r flies course <c>course_seeds[r]</c>, or its race seed when the spec names none. The same
         /// seeds then mean the same courses in every process, which a parameter search needs. (Regatta's course comes
@@ -426,11 +448,30 @@ namespace CosmicShore.Player
         }
 
         static object ConvertJson(JsonNode value, Type type, string what) =>
-            type == typeof(float) ? value!.GetValue<float>()
+            type.IsArray && value is JsonArray items ? BuildArray(items, type.GetElementType()!, what)
+            : type == typeof(float) ? value!.GetValue<float>()
             : type == typeof(int) ? value!.GetValue<int>()
             : type == typeof(bool) ? value!.GetValue<bool>()
             : type.IsEnum ? Enum.Parse(type, value!.ToString())
             : throw new InvalidOperationException($"{what} is a {type.Name}, not a number, flag or enum");
+
+        /// <summary>A whole array from JSON: numbers for a number array, or objects whose fields fill each struct
+        /// (<c>"aiNoseLead": [{"Hull": "Scarab", "Gain": 1, "MaxExtraDegrees": 40}]</c>).</summary>
+        static Array BuildArray(JsonArray items, Type elem, string what)
+        {
+            var arr = Array.CreateInstance(elem, items.Count);
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] is JsonObject fields)
+                {
+                    object box = Activator.CreateInstance(elem)!;
+                    foreach (var (name, value) in fields) SetPath(box, new[] { name }, 0, value!, $"{what}[{i}]");
+                    arr.SetValue(box, i);
+                }
+                else arr.SetValue(ConvertJson(items[i]!, elem, $"{what}[{i}]"), i);
+            }
+            return arr;
+        }
 
         static FieldInfo FieldOf(object target, string name)
         {
@@ -444,6 +485,28 @@ namespace CosmicShore.Player
             ["hull"] = hull, ["finish_s"] = null, ["gates"] = 0, ["laps"] = 0, ["lap_s"] = new JsonArray(),
             ["prism_hits"] = null, ["dnf_reason"] = why,
         };
+
+        /// <summary>Any game but Regatta: the genome's placements laid round that game's own gates
+        /// (<see cref="TrainingCourseOverlay"/>); its course still comes from the mode and the seed. The prism is the
+        /// one Regatta's rails lay (its I1 cell config's environment).</summary>
+        void ApplyTrainingOverlay(JsonObject genome)
+        {
+            var g = genome != null ? RegattaCourseGenome.FromJson(genome.ToJsonString()) : null;
+            TrainingCourseOverlay.Override = g is { Placements.Count: > 0 } ? g : null;
+            if (TrainingCourseOverlay.Override == null)
+            {
+                if (genome != null) _notes.Add($"course: {_mode}'s own (the genome has no placements)");
+                return;
+            }
+            var config = TrainingHost.LoadAsset(_runtime, string.Format(CellConfigPath, 1)) as CellConfigDataSO;
+            var rails = config ? config.EnvironmentPrefab as SpawnableRegattaRails : null;
+            TrainingCourseOverlay.PrismPrefab = rails
+                ? typeof(CellEnvironmentSpawnableBase).GetField("prism", Any)?.GetValue(rails) as Prism
+                : null;
+            if (!TrainingCourseOverlay.PrismPrefab)
+                throw new InvalidOperationException("Regatta Cell Config 1's rails carry no prism for the training overlay");
+            _notes.Add($"course: {_mode}'s own, with {g.Placements.Count} genome placements");
+        }
 
         /// <summary>Lay the genome's course: the expressive genome's own Override when the game has it, otherwise the
         /// pool entry for the intensity, its seed and its features.</summary>

@@ -224,9 +224,12 @@ static class Program
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
             var genome = RegattaCourseGenome.FromJson(line).Repair(cat, null);
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             var laid = LayArena(genome);
+            long layMs = sw.ElapsedMilliseconds;
             var bad = BruteForceViolations(laid, genome);
             n++;
+            Console.Error.WriteLine($"  genome {n}: laid in {layMs} ms, checked in {sw.ElapsedMilliseconds - layMs} ms");
             int placed = laid.Lays.Count - laid.Layout.PrismCount;
             prisms += placed;
             foreach (var r in laid.Arena.PlacementReports)
@@ -237,7 +240,7 @@ static class Program
         }
         kinds = seenKinds.Count;
         Console.WriteLine($"{(failures == 0 ? "pass" : "FAIL")}  {n} genomes laid, {prisms} placement prisms, {kinds} kinds laid, " +
-                          "none in a mouth, a rail, the nucleus or the membrane, none in the line tube unless it crosses the line");
+                          "none in a mouth, the nucleus or the membrane, none in the line tube or on a rail unless it crosses them");
         return failures == 0 ? 0 : 1;
     }
 
@@ -251,17 +254,21 @@ static class Program
             if (laid.Arena.Features.TryAlternate(laid.Gates, g, out var alt)) rings.Add(alt);
         // Which placement laid each prism (the arena's own lay ranges), for its cross_line gene.
         var crossing = new HashSet<int>();
+        var crossingRail = new HashSet<int>();
         var placements = genome.Placements;   // already repaired, as the arena laid it
         for (int j = 0; j < laid.Arena.PlacementLayRangeCount; j++)
         {
             laid.Arena.GetPlacementLayRange(j, out int owner, out int start, out int count);
             if (placements[owner].CrossLine)
                 for (int q = start; q < start + count; q++) crossing.Add(q);
+            if (placements[owner].CrossRail)
+                for (int q = start; q < start + count; q++) crossingRail.Add(q);
         }
         for (int i = railCount; i < laid.Lays.Count; i++)
         {
             var l = laid.Lays[i];
             bool crossLine = crossing.Contains(i);
+            bool crossRail = crossingRail.Contains(i);
             var p = l.Point.Position;
             float r = RegattaPlacementCarve.RadiusOf(l.Point.Scale);
             float d = p.magnitude;
@@ -277,8 +284,9 @@ static class Program
                 best = Math.Min(best, (p - (a + ab * t)).magnitude);
             }
             if (!crossLine && best < genome.LineClearance + r - 0.01f) return $"prism {i} is {best:F1} u from the racing line (tube {genome.LineClearance})";
-            foreach (var q in rails)
-                if ((q - p).magnitude < RegattaPlacementCarve.RailRadius + r - 0.01f) return $"prism {i} touches a rail";
+            if (!crossRail)
+                foreach (var q in rails)
+                    if ((q - p).magnitude < RegattaPlacementCarve.RailRadius + r - 0.01f) return $"prism {i} touches a rail";
             foreach (var g in rings)
             {
                 var ax = g.Axis.normalized;

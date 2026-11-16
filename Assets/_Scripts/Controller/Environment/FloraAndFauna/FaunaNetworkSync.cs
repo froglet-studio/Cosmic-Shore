@@ -204,13 +204,13 @@ namespace CosmicShore.Gameplay
             };
 
             var cfg = fauna.SourceConfig;
-            var profile = fauna.HostCell && fauna.HostCell.Config
-                ? fauna.HostCell.Config.SpawnProfile
-                : null;
+            // The cell's ROSTER, not the profile's list: at I4 it carries the element ladder's pinned species
+            // (Cell.FaunaRoster), built identically on every peer, so the index means the same creature everywhere.
+            var roster = fauna.HostCell ? fauna.HostCell.FaunaRoster : null;
 
-            if (cfg && profile != null && profile.SupportedFaunas != null)
+            if (cfg && roster != null)
             {
-                int idx = profile.SupportedFaunas.IndexOf(cfg);
+                int idx = IndexOf(roster, cfg);
                 if (idx >= 0 && idx <= sbyte.MaxValue) identity.ConfigIndex = (sbyte)idx;
 
                 // Which palette sibling supplied this individual's tuning block. Element alone
@@ -490,15 +490,19 @@ namespace CosmicShore.Gameplay
             fauna.ApplyReplicatedDeath((LifeformDeathStyle)_netDeathStyle.Value);
         }
 
-        static SpawnProfileSO ResolveProfile(Cell host) =>
-            host && host.Config ? host.Config.SpawnProfile : null;
-
         static FaunaConfigurationSO ResolveConfig(Cell host, FaunaIdentity identity)
         {
-            var profile = ResolveProfile(host);
-            if (profile?.SupportedFaunas == null) return null;
+            var roster = host ? host.FaunaRoster : null;
+            if (roster == null) return null;
             int i = identity.ConfigIndex;
-            return i >= 0 && i < profile.SupportedFaunas.Count ? profile.SupportedFaunas[i] : null;
+            return i >= 0 && i < roster.Count ? roster[i] : null;
+        }
+
+        static int IndexOf(IReadOnlyList<FaunaConfigurationSO> list, FaunaConfigurationSO cfg)
+        {
+            for (int i = 0; i < list.Count; i++)
+                if (list[i] == cfg) return i;
+            return -1;
         }
 
         static FaunaConfigurationSO ResolvePaletteConfig(Cell host, FaunaIdentity identity)

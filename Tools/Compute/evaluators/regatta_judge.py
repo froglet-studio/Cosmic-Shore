@@ -123,7 +123,7 @@ def _run_one(spec, timeout_s, workdir, tag):
 
 
 def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, workers=None, workdir=None,
-          mode="Regatta", intensity=None, overrides=None, controller_overrides=None, start=None):
+          mode="Regatta", intensity=None, overrides=None, controller_overrides=None, start=None, crystal_genes=None):
     """Score one course. seats: [{"hull": "Urchin", "ai": "shipped"}] or ["Urchin", ...].
 
     mode       any gate-race Time game by its card name (Switchback, Redline, Breakwater, SerpentTime, ScarabRally ...);
@@ -132,7 +132,8 @@ def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, work
                run only (nothing is written), so a parameter search can score candidates in parallel.
     controller_overrides  {"aiNoseLead.0.Gain": 1.5}: fields of the scene's race controller, set before each Ready.
     start      the element levels each hull starts at: "card" (default, the card's StartingElements), "rest" (all 0),
-               "L5" (every hull at Time 5: every Time level-5 upgrade on) or {"Manta": {"Time": 5}} in levels."""
+               "L5" (every hull at Time 5: every Time level-5 upgrade on) or {"Manta": {"Time": 5}} in levels.
+    crystal_genes  {"Scarab": 150}: each hull's crystal detour budget (RaceAICrystalGenesSO) for this run, in memory."""
     seats = [s if isinstance(s, dict) else {"hull": s, "ai": "shipped"} for s in seats]
     if backend == "model":
         import regatta_judge_model  # W3's module: the Python model priced in the same RESULT shape
@@ -151,6 +152,8 @@ def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, work
         base["controller_overrides"] = controller_overrides
     if start is not None:
         base["start"] = start
+    if crystal_genes:
+        base["crystal_genes"] = crystal_genes
     # Each process boots once (~20 s) and races its seeds through Play Again (~5-20 s a race).
     jobs = [("field", dict(base, seats=seats, field=True))] if field else \
         [(f"{i}_{s['hull']}", dict(base, seats=[s], field=False)) for i, s in enumerate(seats)]

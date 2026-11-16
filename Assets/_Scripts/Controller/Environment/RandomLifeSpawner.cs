@@ -56,13 +56,14 @@ namespace CosmicShore.Gameplay
         {
             var spawnProfile = config.SpawnProfile;
             if (!spawnProfile) yield break;
-            if (spawnProfile.SupportedFaunas is not { Count: > 0 })
+            var roster = host.FaunaRoster;   // the profile's species, or the element ladder's at I4 (Cell.FaunaRoster)
+            if (roster is not { Count: > 0 })
                 yield break;
 
             // Fauna spawn in the cell's controlling color (see SpawnFaunaPopulation), so
             // there is no excluded-domain roll here - that exclusion is exactly what kept
             // the controller's own color (e.g. Jade) from ever appearing.
-            foreach (var faunaCfg in spawnProfile.SupportedFaunas)
+            foreach (var faunaCfg in roster)
             {
                 if (!faunaCfg || !faunaCfg.FaunaPrefab) continue;
 
