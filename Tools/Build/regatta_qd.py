@@ -271,8 +271,39 @@ def ops():
     if _w2 is None:
         return random_genome, mutate, crossover, repair
     rep = lambda g: (lambda out: out[0] if isinstance(out, tuple) else out)(_w2.repair(g))
-    return ((lambda rng: rep(_w2.random_genome(rng, 1))), (lambda g, rng, strength=1.0: rep(_w2.mutate(g, rng, strength))),
-            (lambda a, b, rng: rep(_w2.crossover(a, b, rng))), rep)
+    prior = player_prior()
+
+    def mutate_(g, rng, strength=1.0):
+        if prior is not None:
+            try:      # W2's genes from play: half the added or moved placements where people beat the AIs
+                return rep(_w2.mutate(g, rng, strength, prior=prior))
+            except TypeError:
+                pass
+        return rep(_w2.mutate(g, rng, strength))
+
+    def random_(rng):
+        if prior is not None and rng.random() < 0.5:      # half the fresh courses are made from play
+            try:
+                import regatta_player_prior as pp
+                return rep(pp.seed_genomes(prior, rng, rng.randint(1, 4), 1)[0])
+            except (ImportError, AttributeError):
+                pass
+        return rep(_w2.random_genome(rng))      # any intensity: its circuit row and seed are genes too
+    return random_, mutate_, (lambda a, b, rng: rep(_w2.crossover(a, b, rng))), rep
+
+
+_PRIOR = []
+
+
+def player_prior():
+    """W2's player prior (Tools/Compute/regatta/player_prior.json, built from human Regatta flights), or None."""
+    if not _PRIOR:
+        try:
+            import regatta_player_prior as pp
+            _PRIOR.append(json.load(open(pp.PRIOR, encoding="utf-8")))
+        except (ImportError, OSError, ValueError, AttributeError):
+            _PRIOR.append(None)
+    return _PRIOR[0]
 
 
 def game_genome(g, leg_arc):
