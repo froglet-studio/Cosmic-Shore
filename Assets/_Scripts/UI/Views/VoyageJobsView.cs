@@ -253,13 +253,15 @@ namespace CosmicShore.UI
                 shown[i].ShowStepper(null, null, null, null);
                 // With the slide-in voyage the cards stay small: the open one slides over them instead.
                 bool expand = open && !slide;
+                // A locked job is shown but cannot sail (VoyageToyDefinitionSO.IsJobOpen, Milestone 1).
+                System.Action sailJob = VoyageToyDefinitionSO.JobSails(taken) ? () => SetSail(taken) : null;
                 shown[i].Show(eyebrow, job.Title, course, expand ? Brief(content, lines, job, route) : null, expand,
-                    () => OpenCard(index), lines.CardOpen, lines.CardClose, () => SetSail(taken));
+                    () => OpenCard(index), lines.CardOpen, lines.CardClose, sailJob);
                 if (open)
                 {
                     Map(content, lines, style, here, route, course);
                     focused = true;
-                    if (slide) ShowCard(OpenModel(content, lines, job, route, i, jobs.Count, () => SetSail(taken)));
+                    if (slide) ShowCard(OpenModel(content, lines, job, route, i, jobs.Count, sailJob));
                 }
             }
             bool jobOpen = _open >= 0 && _open < jobs.Count;
@@ -491,7 +493,9 @@ namespace CosmicShore.UI
                     }
             }
             var taken = job;
-            offer.SetSail = difficulty => SetSail(VoyageDifficulty.At(taken, difficulty));
+            // A locked job (Milestone 1, VoyageToyDefinitionSO.IsJobOpen) shows, with its Set sail greyed.
+            if (VoyageToyDefinitionSO.JobSails(taken))
+                offer.SetSail = difficulty => SetSail(VoyageDifficulty.At(taken, difficulty));
             return offer;
         }
 

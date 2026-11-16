@@ -78,6 +78,19 @@ namespace CosmicShore.ScriptableObjects
             new(VesselClassType.Dolphin, Element.Space, "pilot.callsign.citadel"),
         };
 
+        [Header("Voyage - which voyages can sail (Milestone 1)")]
+        [SerializeField, Tooltip("Lock the crew's job voyages, except the ones listed below (Shombith, 2026-11-16: make one " +
+                                 "voyage good before the others open). The Ark escort is never locked. Off = every job sails.")]
+        bool lockJobs = true;
+
+        [SerializeField, Tooltip("The job templates that still sail while jobs are locked (VoyageJob.TemplateId). Milestone 1 " +
+                                 "keeps Sail home (job.return) and the crew's Crystal Run (job.raid.crystals, authored in " +
+                                 "voyage_slice.json). Add a template id here to open that job.")]
+        string[] openJobs = { VoyageRules.ReturnJobId, CrystalRunJobId };
+
+        /// <summary>The Milestone 1 crew voyage, Crystal Run (Shombith, 2026-11-16: steal elemental crystals on the way).</summary>
+        public const string CrystalRunJobId = "job.raid.crystals";
+
         [Header("Voyage - arrivals")]
         [SerializeField, Min(80f), Tooltip("How far from the Ark a vault shell or a wreck stands.")]
         float findDistance = 520f;
@@ -150,6 +163,28 @@ namespace CosmicShore.ScriptableObjects
         public float SeedElementLevel => seedElementLevel;
         public string StarterSquadName => starterSquadName;
         public IReadOnlyList<SquadSlot> StarterSeats => starterSeats;
+
+        /// <summary>
+        /// True when <paramref name="job"/> may set sail: jobs are not locked, or its template is one of
+        /// <see cref="openJobs"/>. False for no job.
+        /// </summary>
+        public bool IsJobOpen(VoyageJob job)
+        {
+            if (job == null) return false;
+            if (!lockJobs) return true;
+            if (openJobs == null) return false;
+            foreach (var id in openJobs)
+                if (!string.IsNullOrEmpty(id) && id == job.TemplateId) return true;
+            return false;
+        }
+
+        /// <summary><see cref="IsJobOpen"/> on the shipped settings; with no settings asset every job is open.</summary>
+        public static bool JobSails(VoyageJob job)
+        {
+            var settings = Load();
+            return job != null && (!settings || settings.IsJobOpen(job));
+        }
+
         public float WingmateLeash => wingmateLeash;
         public float FindDistance => findDistance;
         public float VaultRadius => vaultRadius;
