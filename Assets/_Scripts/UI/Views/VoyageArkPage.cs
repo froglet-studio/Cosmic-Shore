@@ -24,7 +24,13 @@ namespace CosmicShore.UI
     /// The seats are the voyage's own (<see cref="VoyageSeatRecord"/>, a copy of the active squad made when the page
     /// opens on a voyage): a pick here never changes a saved squad, and Set sail sails exactly these seats. There is no
     /// squad view any more (Rev 108's "Fly a squad instead" is gone). The party carries no ready or choosing state yet, so a
-    /// friend's card says they are in your lobby and pick their own vessel.
+    /// friend's card says they are in your lobby and pick their own seat; it shows the hull they picked.
+    /// <para>On a friend's machine (<see cref="VoyageLaunch.IsPartyGuest"/>) the same page is their own seat in the host's
+    /// lobby (Shombith, 2026-11-16: "friends should be able to change their configuration as well, not just use their
+    /// vessel selected in the menu"): they change Vessel, Pilot, Element and Artifact on their own card, kept in
+    /// <see cref="VoyageSeatRecord.PartyKey"/>; each change is written to their player's replicated hull at once
+    /// (<see cref="VoyageLaunch.SeatLocal"/>), so the host's page shows it and the voyage spawns them in it, and their
+    /// voyage seeds their element from it. The AI seats and Set sail stay the host's.</para>
     /// </summary>
     public sealed class VoyageArkPage
     {
@@ -46,6 +52,8 @@ namespace CosmicShore.UI
         TMP_Text _head, _headLine;
         readonly List<SeatView> _seatViews = new();
         Button _sail;
+        TMP_Text _sailWords;
+        RectTransform _fillButton;
         VoyageSeatPicker _picker;
 
         // The voyage, top right.
@@ -61,6 +69,10 @@ namespace CosmicShore.UI
         VoyageBoard.Offer _offer;
         int _difficulty;
         readonly List<string> _friends = new();
+        readonly List<string> _friendIds = new();
+        float _pollIn;
+        int _partySig;
+        const float PollSeconds = 0.5f;
 
         sealed class SeatView
         {
@@ -100,7 +112,20 @@ namespace CosmicShore.UI
             BuildFoot();
             _picker = new VoyageSeatPicker(_board, _kit, _rules, Root);
             _rules.Changed += Refresh;
-            _rules.VoyageChanged += Refresh;
+            _rules.VoyageChanged += SeatsChanged;
+        }
+
+        /// <summary>A friend's own machine: the host picks the voyage, the AI seats and sets sail.</summary>
+        static bool Guest => VoyageLaunch.IsPartyGuest;
+
+        /// <summary>The record the page changes: a friend's own seat in the host's lobby, else the open voyage's.</summary>
+        string SeatKey => Guest ? VoyageSeatRecord.PartyKey : _offer?.Key;
+
+        void SeatsChanged()
+        {
+            // A friend's pick is theirs at once: the hull they spawn in, replicated to the host's page.
+            if (Guest) VoyageLaunch.SeatLocal(VoyageLaunch.ResolveGameData(), VoyageSeatRecord.Get(VoyageSeatRecord.PartyKey));
+            Refresh();
         }
 
         RectTransform At(string name, float x, float y, float w, float h, RectTransform parent = null)
@@ -225,6 +250,7 @@ namespace CosmicShore.UI
         void BuildFoot()
         {
             var fill = At("FillFromSquad", 0f, FootY, FillWidth, 56f);
+            _fillButton = fill;
             _kit.Quiet(fill, _lines?.ArkFillKey, _lines?.ArkFillSquad, ToggleFill);
             // The saved squads to fill from, over the button while it is open.
             _fillList = At("FillFrom", 0f, FootY, FillWidth, 0f);
@@ -245,7 +271,7 @@ namespace CosmicShore.UI
             var back = At("Back", 1200f, FootY, 200f, 56f);
             _kit.Quiet(back, _lines?.PageBackKey, _lines?.PageBack, _board.StepBack);
             var sail = At("SetSail", 1420f, FootY, 420f, 56f);
-            (_sail, _) = _kit.Cta(sail, _lines?.BoardSailKey, _lines?.CardSetSail, _board.SetSail);
+            (_sail, _sailWords) = _kit.Cta(sail, _lines?.BoardSailKey, _lines?.CardSetSail, _board.SetSail);
         }
 
         // ── The seats this voyage sails with ─────────────────────────────────
@@ -255,7 +281,7 @@ namespace CosmicShore.UI
         SavedSquad Seats()
         {
             var from = VoyageSeats.Active ?? VoyageRun.ActiveSquad(VoyageLaunch.ResolveGameData());
-            return VoyageSeatRecord.For(_offer?.Key, from) ?? from;
+            return VoyageSeatRecord.For(SeatKey, from) ?? from;
         }
 
         // ── Showing ──────────────────────────────────────────────────────────
@@ -265,12 +291,16 @@ namespace CosmicShore.UI
             _offer = offer;
             _difficulty = difficulty;
             ReadParty();
+            _partySig = PartySignature();
+            // A friend sails the seat this page shows from the moment they open it, as Set sail fixes the host's.
+            if (Guest) VoyageLaunch.SeatLocal(VoyageLaunch.ResolveGameData(), Seats());
             Refresh();
         }
 
         void ReadParty()
         {
             _friends.Clear();
+            _friendIds.Clear();
             var members = _party ? _party.PartyMembers : null;
             if (members == null) return;
             for (int i = 0; i < members.Count && _friends.Count < SavedSquad.SlotCount - 1; i++)
@@ -278,17 +308,52 @@ namespace CosmicShore.UI
                 var m = members[i];
                 if (string.IsNullOrEmpty(m.PlayerId) || m.PlayerId == _party.LocalPlayerId) continue;
                 _friends.Add(m.DisplayName);
+                _friendIds.Add(m.PlayerId);
             }
+        }
+
+        /// <summary>The friend's player in this session (by their UGS id, else their name), or null.</summary>
+        static Player FriendPlayer(string id, string name)
+        {
+            var players = VoyageLaunch.ResolveGameData()?.Players;
+            if (players == null) return null;
+            Player byName = null;
+            foreach (var p in players)
+            {
+                if (p is not Player player || !player || !player.IsSpawned || player.IsOwner) continue;
+                if (!string.IsNullOrEmpty(id) && player.NetUgsPlayerId.Value.ToString() == id) return player;
+                if (!byName && !string.IsNullOrEmpty(name) && player.NetName.Value.ToString() == name) byName = player;
+            }
+            return byName;
+        }
+
+        /// <summary>The hull a friend picked (their replicated hull), or none while they have no player here.</summary>
+        static VesselClassType FriendHull(string id, string name)
+        {
+            var player = FriendPlayer(id, name);
+            if (!player) return default;
+            var hull = player.NetDefaultVesselType.Value;
+            return VesselRequirement.IsConcrete(hull) ? hull : default;
+        }
+
+        // Who is in the lobby and the hull each friend picked, so the page redraws when a friend changes seat.
+        int PartySignature()
+        {
+            int sig = _friends.Count;
+            for (int i = 0; i < _friends.Count; i++)
+                sig = sig * 31 + (int)FriendHull(_friendIds[i], _friends[i]) + 1;
+            return sig;
         }
 
         void Refresh()
         {
             if (!Root.gameObject.activeInHierarchy && _offer == null) return;
             var squad = Seats();
-            bool editable = squad != null && !string.IsNullOrEmpty(_offer?.Key);
+            bool editable = squad != null && !string.IsNullOrEmpty(SeatKey);
+            bool guest = Guest;
 
             VoyageKit.Set(_head, _lines?.ArkLobby);
-            VoyageKit.Set(_headLine, _lines?.ArkLobbyLine);
+            VoyageKit.Set(_headLine, guest ? _lines?.ArkLobbyLineGuest : _lines?.ArkLobbyLine);
             DrawVoyage();
 
             // You, then the friends in your lobby in the seats after yours (as the voyage seats them), then an AI wingmate
@@ -297,12 +362,16 @@ namespace CosmicShore.UI
             for (int seat = 0; seat < _seatViews.Count; seat++)
             {
                 int friend = VoyageRules.FriendAt(seat, mine, _friends.Count);
-                if (friend >= 0) DrawFriend(_seatViews[seat], seat, _friends[friend]);
+                if (friend >= 0) DrawFriend(_seatViews[seat], seat, _friendIds[friend], _friends[friend]);
                 else DrawSeat(_seatViews[seat], squad, seat, you: seat == mine, editable);
             }
             DrawSailAs(squad);
             if (_fillList.gameObject.activeSelf) DrawFill();
-            _sail.interactable = _offer?.SetSail != null;
+            // A friend picks their seat; the host fills the AI seats and sets sail.
+            _fillButton.gameObject.SetActive(!guest);
+            if (guest) _fillList.gameObject.SetActive(false);
+            _sail.interactable = !guest && _offer?.SetSail != null;
+            VoyageKit.Set(_sailWords, guest ? _lines?.ArkHostSails : _lines?.CardSetSail);
             if (_picker.IsOpen) _picker.Refresh();
         }
 
@@ -389,7 +458,7 @@ namespace CosmicShore.UI
 
             // Your seat: its four settings. An AI seat: Invite a friend and Change wingmate (when you may change it).
             view.Settings.gameObject.SetActive(you && canEdit);
-            view.AiButtons.gameObject.SetActive(!you);
+            view.AiButtons.gameObject.SetActive(!you && !Guest);
             view.Wingmate.interactable = canEdit;
             VoyageKit.Set(view.Line, you && !canEdit ? _lines?.CardNoSquad : null);
             int s = seat;
@@ -403,17 +472,19 @@ namespace CosmicShore.UI
             view.Wingmate.onClick.AddListener(() => OpenPicker(s, VoyageSeats.Pilot));
         }
 
-        void DrawFriend(SeatView view, int seat, string name)
+        void DrawFriend(SeatView view, int seat, string id, string name)
         {
+            // The hull the friend picked on their own page (their replicated hull); pilot and element stay on their machine.
+            var vessel = _rules.VesselOf(FriendHull(id, name));
             view.Root.gameObject.SetActive(true);
             view.Card.Pick(_kit, false);
             Glow(view, false);
             VoyageKit.Set(view.Role, _rules.Role(seat));
             VoyageKit.Set(view.Who, name);
             Badge(view, _lines?.ArkInLobby, _kit.Light);
-            view.Hull.Image.enabled = false;
+            _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
             VoyageKit.Show(view.Portrait, null);
-            VoyageKit.Set(view.Vessel, null);
+            VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : null);
             VoyageKit.Set(view.Pilot, null);
             view.Flower.parent.gameObject.SetActive(false);
             VoyageKit.Set(view.Element, null);
@@ -509,15 +580,18 @@ namespace CosmicShore.UI
         {
             _fillList.gameObject.SetActive(false);
             Seats();
-            _rules.FillFromPreset(_offer?.Key, preset, _friends.Count);
+            if (Guest) return;
+            _rules.FillFromPreset(SeatKey, preset, _friends.Count);
         }
 
         // ── The seat popup ───────────────────────────────────────────────────
 
         void OpenPicker(int seat, int kind)
         {
-            Seats();
-            _picker.Open(_offer, seat, kind);
+            var squad = Seats();
+            // A friend changes only their own seat.
+            if (Guest && seat != VoyageSeatRecord.MySeatOf(squad)) return;
+            _picker.Open(_offer, seat, kind, SeatKey);
         }
 
         public void ClosePicker() => _picker.Close();
@@ -525,6 +599,18 @@ namespace CosmicShore.UI
         public void Tick(float dt)
         {
             _picker.Tick(dt);
+            // A friend joining, leaving or changing their hull redraws the seats.
+            if ((_pollIn -= dt) <= 0f && _offer != null && Root.gameObject.activeInHierarchy)
+            {
+                _pollIn = PollSeconds;
+                ReadParty();
+                int sig = PartySignature();
+                if (sig != _partySig)
+                {
+                    _partySig = sig;
+                    Refresh();
+                }
+            }
             var room = Root.rect.size;
             if (room == _fitFor) return;
             _fitFor = room;
@@ -534,7 +620,7 @@ namespace CosmicShore.UI
         /// <summary>Remember the player's own seat as it sails, for the popup's Last flown kit.</summary>
         public void RememberSeat()
         {
-            var squad = VoyageSeatRecord.Get(_offer?.Key) ?? VoyageSeats.Active;
+            var squad = VoyageSeatRecord.Get(SeatKey) ?? VoyageSeats.Active;
             int seat = VoyageSeats.MySeat(squad);
             if (seat < 0) return;
             var slot = squad.GetSlot(seat);

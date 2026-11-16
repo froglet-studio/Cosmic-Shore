@@ -8498,3 +8498,25 @@ Built in code (no prefab or scene change), at the boards' own numbers:
 New words in `voyage_slice.json` (Sea*, Crew*, Faction*, Ark*, Pick*). Tests: `VoyageLobbyTests`. Not opened in Unity or
 Amoebius; a render of the build beside the boards is still owed.
 
+
+### 209.2 Built: friends pick their own seat in the voyage lobby (2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
+
+Asked (Shombith, on 209.1): "friends should be able to change their configuration as well, not just use their vessel
+selected in the menu".
+
+Built, with nothing new on the wire (no protocol bump):
+- On a friend's machine (`VoyageLaunch.IsPartyGuest`) the Ark page is their own seat in the host's lobby: their card keeps
+  Vessel, Pilot, Element and Artifact, the seat popup writes `VoyageSeatRecord.PartyKey` (a copy of their active squad, kept
+  for whatever voyage the host sails), the head line says the host picks the voyage, and Set sail reads "THE HOST SETS SAIL"
+  and is off. The AI seat buttons and "Fill the AI seats" are the host's and are hidden.
+- Every change, and opening the page, runs `VoyageLaunch.SeatLocal` (the call Set sail makes for the host): the hull goes to
+  the friend's owner-written, replicated `Player.NetDefaultVesselType`, the pilot and artifact to that hull's loadout. The
+  voyage scene already spawns every person from that variable, so the friend spawns in the hull they picked.
+- In the voyage, a friend's `VoyageRun` follows the host with the party record as its squad, so their element seeds from the
+  seat they picked.
+- On the host's page a friend's card shows the hull they picked (their player's replicated hull, matched by UGS id), and
+  redraws within half a second when it changes or a friend joins or leaves. Their pilot and element live on their own machine
+  and are not shown to the host yet: showing them needs a replicated seat, which is a protocol bump.
+
+Not seen in Unity or with two machines: the hand test is a host and a friend in one party, the friend changing vessel,
+pilot and element on their Ark page, the host's card showing the new hull, and the friend spawning in it at the berth.

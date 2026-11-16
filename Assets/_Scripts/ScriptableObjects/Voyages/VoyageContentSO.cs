@@ -657,7 +657,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("A friend's seat card: they pick their own seat on their own screen.")]
         public string ArkInLobby = "IN YOUR LOBBY";
         [Tooltip("Under a friend's seat card.")]
-        public string ArkFriendLine = "Picks their own vessel";
+        public string ArkFriendLine = "Picks their own vessel, pilot and element";
         [Tooltip("A seat card's artifact line.")]
         public string ArkArtifact = "Artifact - {artifact}";
         [Tooltip("Leaves your lobby's seats for a squad of your own.")]
@@ -790,6 +790,10 @@ namespace CosmicShore.ScriptableObjects
         public string ArkFillNone = "No saved squad yet. Make one in the Ark.";
         [Tooltip("Beside Set sail: the vessel and element the voyage spawns you in.")]
         public string ArkSailAs = "You sail as {vessel} - {element}";
+        [Tooltip("The Ark page's line under YOUR LOBBY on a friend's machine in someone else's lobby.")]
+        public string ArkLobbyLineGuest = "Pick your own seat. The host picks the voyage, fills the AI seats and sets sail.";
+        [Tooltip("The Set sail button's words on a friend's machine: only the host sets sail.")]
+        public string ArkHostSails = "THE HOST SETS SAIL";
         [Tooltip("Under the choices after a press on your seat.")]
         public string PickSaved = "{choice} is your {setting} for {voyage}. Your seat card behind has changed.";
         [Tooltip("Under the choices after a press on a wingmate's seat.")]

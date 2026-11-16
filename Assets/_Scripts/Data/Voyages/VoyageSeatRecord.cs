@@ -16,6 +16,12 @@ namespace CosmicShore.Data
         /// <summary>The Ark escort's key (it has no job).</summary>
         public const string EscortKey = "escort";
 
+        /// <summary>
+        /// A friend's own seat in the host's lobby, for whatever voyage the host sails: the friend picks their vessel,
+        /// pilot, element and artifact on their own Ark page, and their voyage deploys exactly this seat.
+        /// </summary>
+        public const string PartyKey = "party";
+
         static string s_key;
         static SavedSquad s_squad;
 
