@@ -58,11 +58,11 @@ namespace CosmicShore.Gameplay
 
         [Header("Hand-over to the round")]
         [Tooltip("Longest the host holds the round's scene load, after the countdown reaches zero, " +
-                 "while the hub's arena is handed to the prism pool for the round to reuse. The " +
-                 "launch sheet covers the screen meanwhile. The load starts as soon as the hand-over " +
-                 "finishes; at this limit it starts anyway and the round clones what was not parked. " +
-                 "0 does not wait.")]
-        [SerializeField, Min(0f)] float parkArenaMaxSeconds = 4f;
+                 "while the hub's arena is handed to the prism pool for the round to reuse (that " +
+                 "includes waiting for a preview still being laid). The arena eases away meanwhile. " +
+                 "The load starts as soon as the hand-over finishes; at this limit it starts anyway " +
+                 "and the round clones what was not parked. 0 does not wait.")]
+        [SerializeField, Min(0f)] float parkArenaMaxSeconds = 5f;
 
         // The host's authoritative copy. Mirrored onto every Player so peers can read it; held
         // here as well so a player object spawning late can be caught up (see PublishTicket).
@@ -242,9 +242,14 @@ namespace CosmicShore.Gameplay
             if (_launchHeld)
             {
                 var preview = ResolvePreviewHost();
-                if (ShouldLaunchNow(preview && preview.IsParkingArena, Time.unscaledTime, _launchHoldDeadline))
+                bool handOverRunning = preview && preview.IsParkingArena;
+                if (ShouldLaunchNow(handOverRunning, Time.unscaledTime, _launchHoldDeadline))
                 {
                     _launchHeld = false;
+                    // Still running at the limit: the round clones what was not parked. Say so in the
+                    // test log, or a run with "Prisms reused 0" has nothing that explains it.
+                    if (handOverRunning)
+                        NetSessionRecorder.Mark("arenaParkCutShort", $"{parkArenaMaxSeconds:0.0}s");
                     tc.BeginNextRound();
                 }
             }

@@ -15,7 +15,7 @@ namespace CosmicShore.Tests
     /// lay is a long frame on a host whose Relay link dies after about 10 s of silence. One of those lays froze a
     /// host for 72 s and ended the tournament for everyone (Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md finding 1;
     /// Docs/PartySystem/BUGS.md B45). The hand-over itself is a coroutine on a live Cell and cannot run in edit
-    /// mode, so these tests hold the launch-hold rule and the three wires the hand-over depends on; the drain is
+    /// mode, so these tests hold the launch-hold rule and the wires the hand-over depends on; the drain is
     /// in the verification checklist.
     /// </summary>
     [TestFixture]
@@ -107,7 +107,7 @@ namespace CosmicShore.Tests
         {
             string lobby = Read(LobbyPath);
             int park = lobby.IndexOf("ParkArenaForRound()", StringComparison.Ordinal);
-            int hold = lobby.IndexOf("ShouldLaunchNow(preview", StringComparison.Ordinal);
+            int hold = lobby.IndexOf("ShouldLaunchNow(handOverRunning", StringComparison.Ordinal);
             int launch = lobby.IndexOf("tc.BeginNextRound();", StringComparison.Ordinal);
             Assert.GreaterOrEqual(park, 0);
             Assert.Greater(hold, park, "the hold must follow the hand-over's start");
@@ -117,14 +117,35 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Preview_HidesBeforeItParks_SoTheWorldLeavesUnseen()
+        public void Preview_WaitsForABuildInFlight_ThenEasesTheWorldAway()
         {
-            string park = Body(Read(PreviewPath), "public bool ParkArenaForRound()");
-            int hide = park.IndexOf("Hide();", StringComparison.Ordinal);
-            int retire = park.IndexOf("RetireWorldIntoPoolForSceneExit(", StringComparison.Ordinal);
-            Assert.GreaterOrEqual(hide, 0);
-            Assert.Greater(retire, hide,
-                "continuity of existence: the retire has no suction, so the window must be gone first");
+            string park = Body(Read(PreviewPath), "async UniTaskVoid ParkArenaAsync(");
+            int wait = park.IndexOf("parking.IsSwappingConfig", StringComparison.Ordinal);
+            int retire = park.IndexOf("RetireWorldIntoPoolForSceneExit(parkSliceMs, parkSuctionSeconds)", StringComparison.Ordinal);
+            Assert.GreaterOrEqual(wait, 0,
+                "everyone readying at once snaps the countdown to 3 s, usually before the preview is laid: " +
+                "without the wait the common launch hands nothing over");
+            Assert.Greater(retire, wait, "the retire must follow the wait and pass the suction: nothing opaque covers the hub");
+            Assert.IsTrue(park.Contains("finally"), "IsParkingArena must clear on every exit, or the host waits the full limit");
+        }
+
+        [Test]
+        public void Cell_SceneExitRetire_RetiresLifeWithTheWorld_AndCannotLatchItsFlag()
+        {
+            string routine = Body(Read(CellPath), "IEnumerator RetireForSceneExitRoutine(");
+            Assert.IsTrue(routine.Contains("RetireWithWorld()"),
+                "the root is destroyed with the scene still loaded: without this every plant runs its death path");
+            Assert.IsTrue(routine.Contains("leaveSpawnedNetworkLifeForms: true"),
+                "Netcode refuses to parent a spawned NetworkObject under a plain root, one exception per creature");
+            Assert.IsTrue(routine.Contains("finally"), "a step that throws must not leave the cell refusing every later swap");
+        }
+
+        [Test]
+        public void Cell_Drain_ReleasesNewestFirst()
+        {
+            string drain = Body(Read(CellPath), "IEnumerator ReleaseRetiredWorld(");
+            Assert.IsTrue(drain.Contains("for (int i = prisms.Length - 1; i >= 0; i--)"),
+                "detaching from the front of one container shifts every later sibling: the square of the count (B36)");
         }
     }
 }

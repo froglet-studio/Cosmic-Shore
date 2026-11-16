@@ -2718,15 +2718,18 @@ the cause is inferred from timing), and a 72 s host freeze on two Cleave draws i
 (`Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md`).
 
 **Change** (`claude/maelstrom-preview-reuse`): lever 2 above, applied to the hub. At the countdown's zero every
-machine hands the hub's arena to `EnvironmentPrismPool` in 24 ms slices
-(`Cell.RetireWorldIntoPoolForSceneExit`, called through `MaelstromPreviewHost.ParkArenaForRound`), the host holds the
-load until its own hand-over finishes (4 s at most, `MaelstromLobby.ShouldLaunchNow`), and the round re-issues those
-prisms. One lay a round instead of two, and the hub's 13-15 thousand prisms are no longer destroyed inside the
+machine hands the hub's arena to `EnvironmentPrismPool` in 24 ms slices, after a 0.5 s suction and after waiting for a
+preview still being laid (`Cell.RetireWorldIntoPoolForSceneExit`, called through
+`MaelstromPreviewHost.ParkArenaForRound`), the host holds the load until its own hand-over finishes (5 s at most,
+`MaelstromLobby.ShouldLaunchNow`), and the round re-issues those prisms. One lay a round instead of two, and the hub's 13-15 thousand prisms are no longer destroyed inside the
 load's activation frame. Details: `Docs/MaelstromSystem/ARCHITECTURE.md` §1.5.1.
 
 **What it does not do.** It does not find the 72 s frame's cause: no Profiler capture of that frame exists. The hub's
 own preview lay is unchanged and is still a full lay with Relay live. The round's world is still destroyed on the way
-back to the hub. Held by `MaelstromArenaHandOverTests` (9: the launch-hold rule and the wires). **Not compiled or run
+back to the hub. Reviewed by three independent readers before any run (Cell, launch flow, pool); their findings are
+in the code: the world eases away because nothing opaque covers the hub at launch, a preview still building is waited
+for, life retires with the world, the drain runs newest first. Held by `MaelstromArenaHandOverTests` (11: the
+launch-hold rule and the wires). **Not compiled or run
 in Unity**; the checklist entry has the two-player steps and the marks to read.
 
 ## B48 - a reaped party session rebuilt in place leaves the pilot unpaired, and the next match seats them on the wrong domain (2026-11-07)
