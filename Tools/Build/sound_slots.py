@@ -53,8 +53,8 @@ category) takes what every method accepting that enum does, one-shot when they d
   C4   a non-looping event in a loop slot (the bed plays once and the parameter drives nothing)
   emitter-loop   a looping event on a StudioEventEmitter with no stop trigger (FMOD's OnDestroy only DETACHES a
        looping instance: it plays at its last position forever)
-  unbanked   a filled slot whose event is not in Build/GUIDs.txt: authored in the project but not built into the
-       banks yet (rebuild them)
+  unbanked   a filled slot whose event's GUID is not in the built .bank files (Build/GUIDs.txt is read too, but it
+       is an export that lags the banks): authored in the project but not built into the banks yet (rebuild them)
   unknown-event   a filled slot whose GUID and Path match no authored event (renamed or deleted in Studio: a stale
        reference)
   no banks for <platform>   ProjectSettings / the build profiles target Android or iOS and the FMOD project
@@ -70,6 +70,7 @@ import datetime as _dt
 import json
 import os
 import re
+import uuid
 import sys
 import tempfile
 from dataclasses import dataclass, field as dc_field
@@ -769,6 +770,19 @@ class Fmod:
                 full = os.path.join(build, d)
                 if os.path.isdir(full) and any(f.endswith(".bank") for f in os.listdir(full)):
                     self.bank_dirs.append(d)
+        # The bank bytes are the truth; GUIDs.txt is an export that lags them (it was ten days behind on 2026-11-07,
+        # so seven events Charles had built read as "unbanked"). An event is banked when its GUID's 16 bytes
+        # (little-endian, as FMOD writes them) are in a built .bank file of the first bank folder.
+        if self.bank_dirs:
+            full = os.path.join(build, self.bank_dirs[0])
+            blob = b"".join(open(os.path.join(full, f), "rb").read() for f in sorted(os.listdir(full)) if f.endswith(".bank"))
+            for e in self.events.values():
+                try:
+                    if uuid.UUID(e.guid).bytes_le in blob:
+                        self.banked.setdefault(e.guid, e.path)
+                        self.banked_paths.add(e.path)
+                except ValueError:
+                    pass
 
     @staticmethod
     def _xmls(meta: str, sub: str) -> list[str]:
@@ -1165,7 +1179,7 @@ def failures(scan: Scan) -> list[tuple[Slot | None, str, str]]:
             out.append((s, "unknown-event", f"'{s.path or s.data}' is not an event in the FMOD project (renamed or deleted in Studio; a stale reference){where}"))
             continue
         if not s.banked:
-            out.append((s, "unbanked", f"'{ev.path}' is authored (bank: {', '.join(ev.banks) or 'none assigned'}) but not in the built banks (Build/GUIDs.txt): rebuild the banks{where}"))
+            out.append((s, "unbanked", f"'{ev.path}' is authored (bank: {', '.join(ev.banks) or 'none assigned'}) but not in the built banks (the .bank files under Build/): rebuild the banks{where}"))
         if s.expectation in ONE_SHOT_EXPECTATIONS and ev.loops:
             out.append((s, "C2", f"looping event '{ev.path}' ({ev.loop_how}) in a one-shot slot ({s.how}): refused at runtime, the slot is silent{where}"))
         if s.expectation == "loop" and not ev.loops:

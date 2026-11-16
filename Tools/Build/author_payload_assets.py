@@ -241,6 +241,10 @@ def main():
     if errors:
         for e in errors: print('ERROR:', e)
         return 1
+    # The script authors every sound slot empty (validated above); the placeholder ledger then lays its listed,
+    # recycled events on top, so a re-run keeps them (Docs/AudioSystem/sound_placeholders.json, Garrett 2026-11-16).
+    import sound_placeholders
+    files = {rel: sound_placeholders.fill_file(rel, body) for rel, body in files.items()}
     changed = drift(files)
     if '--check' in sys.argv:
         if changed:
