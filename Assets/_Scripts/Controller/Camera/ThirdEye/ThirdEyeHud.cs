@@ -109,7 +109,8 @@ namespace CosmicShore.Gameplay
                 if (GUILayout.Button(label, GUILayout.MinWidth(150f))) Eye.Watch(p);
                 bool otherHuman = !p.IsLocalHuman && !p.IsAI;
                 bool aiFlies = p.AIFlying;
-                GUI.enabled = host && !otherHuman && p.Player != null && you != null;
+                // A guest may hand its OWN hull to the AI (PilotControl.CanSetAIFlies); every other change is the host's.
+                GUI.enabled = (host || (p.IsLocalHuman && PilotControl.CanSetAIFlies(you))) && !otherHuman && p.Player != null && you != null;
                 bool pickYou = GUILayout.Toggle(!aiFlies && !otherHuman, "You", "Button", GUILayout.Width(44f));
                 bool pickAI = GUILayout.Toggle(aiFlies, "AI", "Button", GUILayout.Width(36f));
                 GUI.enabled = true;
@@ -117,7 +118,7 @@ namespace CosmicShore.Gameplay
                 else if (pickAI && !aiFlies) Eye.SetFlier(p, youFly: false);
                 GUILayout.EndHorizontal();
             }
-            string note = !host ? "Only the host (or a solo game) can change who flies a hull."
+            string note = !host ? "A guest can hand its own hull to the AI; only the host can take another hull."
                 : you == null ? "No local pilot in this match." : Eye.Note;
             if (!string.IsNullOrEmpty(note)) GUILayout.Label(note, _small);
 

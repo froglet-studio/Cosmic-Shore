@@ -24570,3 +24570,17 @@ another test when this was written, so nothing was compiled or run.
 - [ ] MPPM, Player 2 a guest in a match: stop Play, press Play again. Player 2 sits on the menu 30 s: no "The host left".
 - [ ] A guest whose host quits while the guest keeps running still gets "The host left" on its menu after about 20 s.
 - [ ] A guest that restarts while the match is still running is still offered the rejoin.
+
+## 🔴 A guest hands its own hull to the AI, and an idle guest in the editor is handed over by itself (2026-11-17, Yash, COMPILED in the open editor, NOT PLAYED)
+
+`PilotControl.CanSetAIFlies`, `GateRaceController.ArmAIPilot` (the hull's own machine may arm it), the Third Eye's AI toggle on a
+guest's own row, and the editor-only `IdleGuestAutopilot` (FrogletTools > Multiplayer > Idle Guest Flies On AI, on by default).
+`unity recompile`: 0 errors. No match was played with it.
+
+- [ ] Two players, any gate race (Switchback, Skim Race, Redline): leave Player 2 alone. About 4 s after the turn starts its
+      hull flies the rings and finishes; the host sees it move.
+- [ ] Touch Player 2's pad or keyboard: control comes back at once; leave it again and the AI takes over after 4 s.
+- [ ] A mode that is not a gate race (Joust, Cleave, Bloomrush): the idle guest hull flies the platform autopilot.
+- [ ] Maelstrom, several rounds: the guest hull is handed over again in each round.
+- [ ] The host's own hull is never handed over by idling; the menu toggle off stops it on the guest too.
+- [ ] Third Eye on the guest: the AI / You toggle works on its own row and stays disabled on every other row.

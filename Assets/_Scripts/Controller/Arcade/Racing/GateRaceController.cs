@@ -1238,11 +1238,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Arm ONE pilot mid-race: a human's hull handed to the AI after the start (<see cref="PilotControl"/>).
-        /// The same steering <see cref="ArmRacers"/> gives every seat at the start. Server only.
+        /// The same steering <see cref="ArmRacers"/> gives every seat at the start. On the server, or on the machine
+        /// that flies the hull (a guest handing its OWN hull over): the steering reads the course and the ring count,
+        /// and a guest has both (<c>SyncCourse_ClientRpc</c>, the replicated <c>SwitchesThreaded</c>).
         /// </summary>
         public bool ArmAIPilot(IPlayer player)
         {
-            if (!IsServer || player == null) return false;
+            if (player == null || _course.Count == 0) return false;
+            if (!IsServer && player is not Player { IsLocalUser: true }) return false;
             ArmRacer(player, ResolveCellCentre(), RaceHandicapLevel(player));
             return true;
         }
