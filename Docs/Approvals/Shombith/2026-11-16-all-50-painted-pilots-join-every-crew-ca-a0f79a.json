@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-all-50-painted-pilots-join-every-crew-ca-a0f79a",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T22:58:55+00:00",
+  "area": "Menu UI: the Ark's Pilots tab, the Hangar's Pilots list, the pilot profile page, the account inventory",
+  "summary": "All 50 painted pilots join every crew (callsigns may repeat; each painted pilot once, PilotRecord.PaintedKey, AccountInventory.PaintedGranted). The Ark's Pilots tab pages 18 cells at a time with < > and a page label; the Hangar has a card per painted pilot showing the person's close-up; the profile page's words panel is alpha 0.9 with every row in TextLight (Garrett: a tiny bit of transparency). Note for ark-rework: author_menu_ark.py's pilots_page gained the pager.",
+  "branch": "claude/all-fifty-pilots",
+  "commit": "7da24f784"
+}
