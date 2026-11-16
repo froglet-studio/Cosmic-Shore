@@ -12,7 +12,8 @@ in a vast space." A genome is one JSON document (the flywheel's shared contract)
      "line_clearance": u,                                                      the tube round the line kept open
      "placements": [{"kind": catalogue id, "leg": leg + Hermite t, "offset": [radius_u, bearing_deg, along_u],
                      "scale": bounding radius u, "yaw", "pitch", "roll", "domain": Native|Jade|Ruby|Gold|Blue,
-                     "prism": Native|Plain|Danger|Shielded|SuperShielded, "seed", "density", "params": {field: value}}],
+                     "prism": Native|Plain|Danger|Shielded|SuperShielded, "seed", "density",
+                     "cross_line": bool (may stand in the line's tube), "params": {field: value}}],
      "flora": {"preset", "sitesPerLeg", "offsetMin", ...}}                     RegattaLifeformSiteSettings + the preset
 
 What may be placed, and every parameter's range, is the GENE CATALOGUE (Assets/Resources/Regatta/
@@ -295,7 +296,8 @@ def repair(genome):
              "domain": s.get("domain") if s.get("domain") in DOMAINS else "Native",
              "prism": s.get("prism") if s.get("prism") in PRISMS else "Native",
              "seed": int(s.get("seed", 0)),
-             "density": _clamp(float(s.get("density", 1.0)), 0.1, 2.0) if kind["world"] else 1.0}
+             "density": _clamp(float(s.get("density", 1.0)), 0.1, 2.0) if kind["world"] else 1.0,
+             "cross_line": bool(s.get("cross_line", False))}
         params = {}
         prms = {q["name"]: q for q in kind["params"]}
         for name in sorted((s.get("params") or {}).keys()):
@@ -352,6 +354,7 @@ def random_placement(rng, kind=None):
             "prism": "Native" if rng.random() < 0.5 else rng.choice(PRISMS[1:]),
             "seed": rng.randint(1, 2 ** 31 - 1) if rng.random() < 0.7 else 0,
             "density": rng.uniform(0.1, 1.2) if kind["world"] else 1.0,
+            "cross_line": rng.random() < 0.35,
             "params": random_params(rng, kind)}
 
 
@@ -393,8 +396,19 @@ def _jitter(rng, v, sigma, lo, hi):
     return _clamp(v + rng.gauss(0.0, sigma), lo, hi)
 
 
-def mutate(genome, rng, strength=1.0):
-    """Apply 1 + Poisson(2 x strength) random operators, then repair. Strength 0.3 is a nudge, 3 a storm."""
+def _where_from_play(prior, g, rng):
+    """Half the time, where people flew (regatta_player_prior.draw_where); else None. Only with a prior, so a search
+    without one draws exactly the stream it always did."""
+    if not prior or rng.random() >= 0.5:
+        return None
+    import regatta_player_prior  # noqa: E402 (beside this file)
+    return regatta_player_prior.draw_where(prior, int(g.get("intensity", 1)), rng)
+
+
+def mutate(genome, rng, strength=1.0, prior=None):
+    """Apply 1 + Poisson(2 x strength) random operators, then repair. Strength 0.3 is a nudge, 3 a storm. With a
+    player `prior` (regatta_player_prior.py), half the placements added or moved land on the legs and beside the
+    lines people flew."""
     cat = catalogue()
     g = copy.deepcopy(genome)
     g.setdefault("placements", [])
@@ -410,15 +424,23 @@ def mutate(genome, rng, strength=1.0):
         r = rng.random()
         pl = g["placements"]
         if r < 0.14 or not pl:                                     # add a placement
-            pl.append(random_placement(rng))
+            p = random_placement(rng)
+            where = _where_from_play(prior, g, rng)
+            if where:
+                p["leg"], p["offset"] = where
+            pl.append(p)
         elif r < 0.22:                                             # remove one
             pl.pop(rng.randrange(len(pl)))
         elif r < 0.40:                                             # move one
             p = rng.choice(pl)
-            p["leg"] = p["leg"] + rng.gauss(0.0, 0.3 * s)
-            off = p["offset"]
-            p["offset"] = [max(0.0, off[0] + rng.gauss(0.0, 40.0 * s)), off[1] + rng.gauss(0.0, 40.0 * s),
-                           off[2] + rng.gauss(0.0, 20.0 * s)]
+            where = _where_from_play(prior, g, rng)
+            if where:
+                p["leg"], p["offset"] = where
+            else:
+                p["leg"] = p["leg"] + rng.gauss(0.0, 0.3 * s)
+                off = p["offset"]
+                p["offset"] = [max(0.0, off[0] + rng.gauss(0.0, 40.0 * s)), off[1] + rng.gauss(0.0, 40.0 * s),
+                               off[2] + rng.gauss(0.0, 20.0 * s)]
         elif r < 0.50:                                             # rescale / turn one
             p = rng.choice(pl)
             p["scale"] = p["scale"] * math.exp(rng.gauss(0.0, 0.35 * s))
@@ -441,10 +463,13 @@ def mutate(genome, rng, strength=1.0):
                 p["seed"] = rng.randint(1, 2 ** 31 - 1)
         elif r < 0.68:                                             # recolour / re-kind its prisms
             p = rng.choice(pl)
-            if rng.random() < 0.5:
+            q = rng.random()
+            if q < 0.4:
                 p["domain"] = rng.choice(DOMAINS)
-            else:
+            elif q < 0.8:
                 p["prism"] = rng.choice(PRISMS)
+            else:                                                  # onto the line, or off it
+                p["cross_line"] = not p.get("cross_line", False)
         elif r < 0.73:                                             # swap what it is, keep where it is
             p = rng.choice(pl)
             fresh = random_placement(rng)
@@ -538,6 +563,7 @@ def descriptors(genome):
         "min_line_clearance": round(min(clearance), 2) if clearance else 400.0,
         "mean_line_clearance": round(sum(clearance) / len(clearance), 2) if clearance else 400.0,
         "on_line_share": round(sum(1 for c in clearance if c < 0) / len(pl), 3) if pl else 0.0,
+        "cross_line_share": round(sum(1 for p in pl if p.get("cross_line")) / len(pl), 3) if pl else 0.0,
         "est_prisms": est,
         "total_scale": round(sum(float(p["scale"]) for p in pl), 1),
         "world_share": round(len(worlds) / len(pl), 3) if pl else 0.0,

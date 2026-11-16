@@ -41,12 +41,18 @@ namespace CosmicShore.Gameplay
         readonly List<float> _claimedRadius = new();
         readonly Dictionary<long, List<int>> _claimGrid = new();
         float _maxClaimRadius;
+        float _spineReach;   // half the longest spine segment: how far a segment's nearest point can be from both ends
 
         public RegattaPlacementCarve(RegattaRailLayout layout, IEnumerable<RaceGate> rings, float lineClearance)
         {
             _line = lineClearance;
             _spine = layout?.SpinePositions ?? new Vector3[0];
-            for (int i = 0; i < _spine.Length; i++) Add(_spineGrid, _spine[i], i);
+            for (int i = 0; i < _spine.Length; i++)
+            {
+                Add(_spineGrid, _spine[i], i);
+                if (_spine.Length > 1)
+                    _spineReach = Mathf.Max(_spineReach, 0.5f * (_spine[(i + 1) % _spine.Length] - _spine[i]).magnitude);
+            }
             if (layout != null)
                 foreach (var lane in layout.LanePositions)
                     foreach (var p in lane)
@@ -85,8 +91,9 @@ namespace CosmicShore.Gameplay
             int n = _spine.Length;
             float best = float.MaxValue;
             if (n < 2) return best;
-            // A spine sample's neighbours can sit a sample-spacing away, so widen the search by one cell.
-            foreach (int i in Near(_spineGrid, p, within + Cell))
+            // A segment's nearest point can lie half its length from both of its ends: widen the search by that (and
+            // never less than a cell, as before).
+            foreach (int i in Near(_spineGrid, p, within + Mathf.Max(Cell, _spineReach) + 0.01f))
             {
                 best = Mathf.Min(best, SegmentDistance(p, _spine[i], _spine[(i + 1) % n]));
                 best = Mathf.Min(best, SegmentDistance(p, _spine[(i - 1 + n) % n], _spine[i]));
@@ -102,12 +109,14 @@ namespace CosmicShore.Gameplay
             return (p - (a + ab * t)).magnitude;
         }
 
-        /// <summary>Whether a prism (bounding radius <paramref name="r"/>) at <paramref name="p"/> may be laid.</summary>
-        public Verdict Test(Vector3 p, float r)
+        /// <summary>Whether a prism (bounding radius <paramref name="r"/>) at <paramref name="p"/> may be laid. With
+        /// <paramref name="crossLine"/> (<see cref="RegattaPlacement.CrossLine"/>) the line's tube is not carved; the
+        /// ring mouths, the rails and the shell still are.</summary>
+        public Verdict Test(Vector3 p, float r, bool crossLine = false)
         {
             float d = p.magnitude;
             if (d - r < RegattaCourseGenome.NucleusCarve || d + r > RegattaCourseGenome.MembraneCarve) return Verdict.Shell;
-            if (SpineDistance(p, _line + r) < _line + r) return Verdict.Line;
+            if (!crossLine && SpineDistance(p, _line + r) < _line + r) return Verdict.Line;
             for (int i = 0; i < _rings.Count; i++)
             {
                 var g = _rings[i];
