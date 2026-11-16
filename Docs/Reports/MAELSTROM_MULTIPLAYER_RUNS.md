@@ -31,6 +31,28 @@ hub, and the hub to Wildlife Liberation. Both are the Single-load frame B45 alre
 3.4-3.9 s (a 1.2-1.4 s `GC.Collect`, about 14,000 prisms destroyed), the `sceneLoaded` handlers 2.2-2.8 s (one lump,
 not split per handler), `EditorLoop` 2.4-2.7 s, first-frame setup 0.9-1.3 s.
 
+## Re-run (2026-11-17): a driver that lives inside the editors, 0 of 3 finished
+
+The driver is now one hook installed in each editor in the menu (`EditorApplication.update`); nothing is compiled
+during play, and it logs every frame over 0.5 s. With it, a round has hitches only at scene loads (0.5-2.7 s).
+Runs 1 and 2 were still `ys1` / `ys1`; from run 3 the accounts are named Lion and Tiger (Yash: never the same name on
+both instances).
+
+| Run | Round 1 | Outcome |
+|---|---|---|
+| 1 | Joust I1 | **Stalled**: still running 20 min after the turn started. No joust was scored (all four rows show the same number, which is the clock). Frames over 0.5 s: 9 in the first 9 minutes, then rising to one every second from minute 17 (0.6-1.4 s each). Not looked into. |
+| 2 | Cleave I2 | **Host froze, guest bounced** 45 s after launch. The hub's preview of the arena froze the host 9.2 s; the round's lay then froze it for about 91 s (the agent's last line 19:41:33 UTC, the pool's "clone batch (2048 prisms) not integrated after 4s" warning at 19:43:04). **No probe was running, so the Cleave freeze is real**: 3 of 4 Cleave draws in two days. |
+| 3 | Scurry I2 | **Not a valid test.** The host froze 13.2 s and then 65.0 s mid-match and the guest bounced. At 01:13 local another session had merged `origin/bleeding-edge` into this checkout (1,312 files under `Assets` changed), and the editor imported them during the match: the console shows model-import warnings (`JewelWasp`) at the start of the first freeze. |
+
+What this adds:
+- The Cleave lay freeze stands without the driver. In all three captures the pool's 4 s watchdog warning is logged
+  AFTER the freeze, so the frozen frame is one in which an `InstantiateAsync` batch is pending; what the engine does
+  in it is still not known (the Profiler run of the same day drew Cleave and did not freeze).
+- Joust, like Scurry, has no clock: with nobody jousting the round does not end, and a Maelstrom stalls there.
+- A test in the shared checkout is only valid if nothing else writes to it. A pull or merge by another session
+  during Play makes the editor import mid-match and freezes it for tens of seconds; the long "hang at Stop" after
+  run 2 was the same import. Yesterday's runs were not checked for this.
+
 ## How the runs were made
 
 - Host: the main Unity editor (6000.3.17f1). Guest: MPPM Player 2 (its own UGS account, tag `Player2`). Live UGS
