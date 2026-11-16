@@ -55,13 +55,13 @@ namespace CosmicShore.Gameplay
         // Difficulty is AIM and READING, never a delay: the autopilot detaches the moment it is reloaded after 3 s docked
         // (aiDockSeconds), and a plain thorn's reload is 3.1 s, so an AI told to wait after its reload leaves every plain
         // thorn and aims at the undocked third of the turn rate (measured, run.sh --ai, 2026-11-17). With no nose lead
-        // (the shipped law) the cubic stick closes the last degree onto a 12 u disc at 1,000 u in ~15 s: 2 of 10 I1
-        // races finish. ──
+        // (the shipped law) the cubic stick closes the last degree onto a 12 u disc at 1,000 u so slowly that 14 of 20
+        // I1 races finish (median 216 s) and 4 of 20 at I4. ──
         public static readonly float[] NoseLeadByDifficulty = { 2.5f, 3f, 8f, 16f };
         public static readonly float[] NoseFollowByDifficulty = { -1f, -1f, -1f, -1f };
-        /// <summary>How far past the aim the nose lead may put the command (AINoseLeadRow.MaxExtraDegrees). Tight, so the
-        /// lead sharpens the last few degrees onto a 12 u disc at 1,000 u and never swings a far-off nose into a circle
-        /// (the fleet's 40 degrees at gain 8 parked an AI at ~96 degrees off its target, run.sh --ai).</summary>
+        /// <summary>How far past the aim the nose lead may put the command (AIPilot.NoseLeadMaxExtraDegrees). Tight, so the
+        /// lead sharpens the last few degrees onto a 12 u disc at 1,000 u (at the fleet's 40 the replica's Hard lost its
+        /// lead over Medium at I2, run.sh --ai).</summary>
         public static float NoseLeadMaxExtraDegrees = 10f;
         public const int SnipesFromDifficulty = 3;     // Hard
         public const int CrystalsFromDifficulty = 4;   // Legendary

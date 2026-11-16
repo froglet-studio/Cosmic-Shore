@@ -58,6 +58,7 @@ build "$COURSE" thornline
 case "${1:-}" in
   --sweep)  run thornline --sweep; exit 0 ;;
   --ai)     shift; set +e; run thornline --ai "$@"; exit $? ;;
+  --read)   shift; run thornline --read "$@"; exit 0 ;;
   --export) run thornline "$@"; exit 0 ;;
 esac
 

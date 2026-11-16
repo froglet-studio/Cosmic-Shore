@@ -18,6 +18,7 @@ public static class Runner
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         if (args.Length > 0 && args[0] == "--sweep") { Sweep(); return 0; }
         if (args.Length > 0 && args[0] == "--ai") return AiSweep(args);
+        if (args.Length > 0 && args[0] == "--read") { Read(args.Length > 1 ? int.Parse(args[1]) : 100); return 0; }
 
         int pass = 0, fail = 0;
         var asm = Assembly.GetExecutingAssembly();
@@ -180,6 +181,36 @@ public static class Runner
 
     /// <summary>Each harder difficulty's median is at least this much faster than the one below it.</summary>
     const float OrderGap = 0.05f;
+
+    /// <summary>run.sh --read [seeds]: what reading the course is worth with the aim modelled. Legendary's aim flies four
+    /// fixed habits (dock every thorn; take every snipe; every crystal; both) on the same seeds, solo. The reader the
+    /// plan ships takes a snipe or a crystal whenever its line is there, so it IS the "both" habit: the strict metric
+    /// (best fixed habit - reader) / best is 0 by construction, and the saving over docking every thorn is reported.</summary>
+    static void Read(int seeds)
+    {
+        string[] habit = { "dock every thorn", "snipes", "crystals", "snipes + crystals" };
+        for (int intensity = 2; intensity <= 4; intensity++)
+        {
+            var med = new float[4];
+            for (int h = 0; h < 4; h++)
+            {
+                var t = new List<float>();
+                for (int seed = 1; seed <= seeds; seed++)
+                {
+                    var rep = new RaceReplica();
+                    rep.Lay(seed, intensity);
+                    var row = ThornlineAIPlan.RowFor(4);
+                    row.Snipes = (h & 1) != 0; row.Crystals = (h & 2) != 0;
+                    rep.Seat(new[] { row });
+                    var r = rep.Run()[0];
+                    if (r.Finish >= 0f) t.Add(r.Finish);
+                }
+                med[h] = RaceReplica.Median(t);
+            }
+            Console.WriteLine($"I{intensity}: " + string.Join("  ", Enumerable.Range(0, 4).Select(h => $"{habit[h]} {med[h]:F1} s")) +
+                              $"  | reading saves {(med[0] - med[3]) / med[0] * 100f:F0}% over docking every thorn");
+        }
+    }
 
     static void Sweep()
     {

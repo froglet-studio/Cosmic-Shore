@@ -61,7 +61,7 @@ AI_NOSE_LEAD = (2.5, 3, 8, 16)            # ThornlineAIPlan.NoseLeadByDifficulty
 AI_NOSE_FOLLOW = (-1, -1, -1, -1)         # ThornlineAIPlan.NoseFollowByDifficulty (the fleet lag)
 AI_NOSE_LEAD_MAX_EXTRA = 10               # ThornlineAIPlan.NoseLeadMaxExtraDegrees
 TOASTS = (                                # (field, GameToastSituation member, value, template)
-    ("hintToast", "ThornlineHint", 420, "Sling into the lit sight - aim through a crystal to reset"),
+    ("hintToast", "ThornlineHint", 420, "Sling into the lit sight on the next thorn"),
     ("snipeToast", "ThornlineSnipe", 421, "Snipe! Two rings, one sling"),
     ("crystalResetToast", "ThornlineCrystalReset", 422, "Reset - the sling is ready"),
     ("crystalTakenToast", "ThornlineCrystalTaken", 423, "{0} took the crystal"),

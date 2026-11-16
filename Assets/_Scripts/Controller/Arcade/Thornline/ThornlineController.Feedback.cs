@@ -27,10 +27,12 @@ namespace CosmicShore.Gameplay
         // Local state.
         Transform _localHull;
         ShrikeExecutor _localShrike;
-        bool _hintPosted, _wasDocked, _wasReady;
-        int _caughtShortToasts;
-        float _nextPassToast;
-        readonly HashSet<IPlayer> _ahead = new();
+        bool _hintPosted, _wasDocked, _wasReady, _wasSlinging;
+        int _caughtShortToasts, _threadedAtSling = -1;
+        float _nextPassToast, _snipeCheckUntil = -1f;
+        // Per rival, the sign of (their rings - ours): a pass is called only when it goes from -1 to +1 or +1 to -1, so
+        // drawing level (and the gun's tie) is never called.
+        readonly Dictionary<IPlayer, int> _order = new();
         GameObject _sightRoot;
         Renderer _sightRenderer;
         Material _sightReady, _sightRest;
@@ -59,6 +61,8 @@ namespace CosmicShore.Gameplay
             int threaded = local.RoundStats.SwitchesThreaded;
             TickSight(local, threaded);
             TickDock(local);
+            TickSnipe(local, threaded);
+            TickCrystals(local);
             TickPasses(local, threaded);
             TickRivalLights(local);
         }
@@ -67,7 +71,14 @@ namespace CosmicShore.Gameplay
 
         void TickSight(IPlayer local, int threaded)
         {
-            int target = RingIndexFor(Mathf.Min(threaded, Mathf.Max(0, RaceLength - 1))) + 1;
+            int ring = RingIndexFor(Mathf.Min(threaded, Mathf.Max(0, RaceLength - 1)));
+            int target = ring + 1;
+            // As the AI plan's Back: when the next thorn is not on the next ring's line from here (at the gun, where the
+            // seats face the start thorn, or after a short dock), the sight sits on the leg's start thorn instead.
+            if (target < _thorns.Count && ring < _course.Count && Holds(_thorns[ring].Prism)
+                && !ThornlineAIPlan.Threads(_localHull.position, _thorns[target].Thorn.Position, _course[ring])
+                && (_localHull.position - _thorns[ring].Thorn.Position).magnitude > _thorns[ring].Thorn.Size)
+                target = ring;
             if (!_localShrike || threaded >= RaceLength || target >= _thorns.Count || !Holds(_thorns[target].Prism))
             {
                 HideSight();
@@ -89,8 +100,11 @@ namespace CosmicShore.Gameplay
             _sightRoot.SetActive(true);
             _sightRoot.transform.position = thorn.Position + dir * toFace;
             _sightRoot.transform.localScale = Vector3.one * (radius * Mathf.Lerp(sightReloadingScale, 1f, sling));
-            if (_sightRenderer) _sightRenderer.sharedMaterial = ready ? _sightReady : _sightRest;
-            if (ready && !_wasReady) Play(sightReadyEvent);
+            if (ready != _wasReady || !_sightRenderer || _sightRenderer.sharedMaterial != (ready ? _sightReady : _sightRest))
+            {
+                if (_sightRenderer) _sightRenderer.sharedMaterial = ready ? _sightReady : _sightRest;
+                if (ready && !_wasReady && _localShrike.Docked) Play(sightReadyEvent);
+            }
             _wasReady = ready;
         }
 
@@ -116,7 +130,6 @@ namespace CosmicShore.Gameplay
         void HideSight()
         {
             if (_sightRoot && _sightRoot.activeSelf) _sightRoot.SetActive(false);
-            _wasReady = false;
         }
 
         // ── Docks, snipes, crystals, passes ──────────────────────────────
@@ -146,24 +159,44 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        /// <summary>One sling that threaded two rings is a snipe (driven from the local pilot's own progress).</summary>
-        protected override void OnLocalNextGateChanged(int previousRing, int nextRing)
+        /// <summary>One sling that threaded two rings is a snipe. The base credits at most one ring a frame, so it is read
+        /// from the sling itself: the rings threaded from its start, counted until a second after it ends (a client's
+        /// credit arrives a round trip late).</summary>
+        void TickSnipe(IPlayer local, int threaded)
         {
-            if (nextRing - previousRing < 2 || !gameData || !gameData.IsTurnRunning) return;
-            var local = gameData.LocalPlayer;
-            if (local == null) return;
-            Play(snipeEvent);
-            GameToastAPI.Post(snipeToast, local.Domain);
+            bool slinging = _localShrike && (_localShrike.Slinging || _localShrike.Tethering);
+            if (slinging && !_wasSlinging) { _threadedAtSling = threaded; _snipeCheckUntil = -1f; }
+            if (!slinging && _wasSlinging && _threadedAtSling >= 0) _snipeCheckUntil = Time.time + 1f;
+            _wasSlinging = slinging;
+            if (_snipeCheckUntil < 0f) return;
+            if (threaded - _threadedAtSling >= 2 && gameData.IsTurnRunning)
+            {
+                Play(snipeEvent);
+                GameToastAPI.Post(snipeToast, local.Domain);
+                _snipeCheckUntil = -1f;
+            }
+            else if (Time.time > _snipeCheckUntil) _snipeCheckUntil = -1f;
         }
 
-        /// <summary>A crystal went (every peer, from the regrow tick): whoever's hull is nearest it took it.</summary>
-        void OnCrystalTaken(CrystalSlot slot)
+        /// <summary>Every frame (so the taker's hull is still within a few units of it): a crystal that went from live to
+        /// taken is called for whoever's hull is nearest.</summary>
+        void TickCrystals(IPlayer local)
         {
-            var local = gameData ? gameData.LocalPlayer : null;
-            var players = gameData ? gameData.Players : null;
-            if (local == null || players == null) return;
+            for (int i = 0; i < _crystals.Count; i++)
+            {
+                var slot = _crystals[i];
+                bool live = IsLive(slot);
+                if (slot.SeenLive && !live) OnCrystalTaken(local, slot);
+                slot.SeenLive = live;
+            }
+        }
+
+        void OnCrystalTaken(IPlayer local, CrystalSlot slot)
+        {
+            var players = gameData.Players;
+            if (players == null) return;
             IPlayer taker = null;
-            float best = 60f * 60f;
+            float best = 30f * 30f;
             for (int i = 0; i < players.Count; i++)
             {
                 var tf = players[i]?.Vessel?.Transform;
@@ -177,7 +210,7 @@ namespace CosmicShore.Gameplay
                 Play(crystalResetEvent);
                 GameToastAPI.Post(crystalResetToast, local.Domain);
             }
-            else if (local.RoundStats != null && local.RoundStats.SwitchesThreaded < slot.Leg)
+            else if (local.RoundStats != null && local.RoundStats.SwitchesThreaded == slot.Leg - 1)   // on that leg
             {
                 Play(crystalTakenEvent);
                 GameToastAPI.Post(crystalTakenToast, taker.Domain, taker.Name);
@@ -192,16 +225,15 @@ namespace CosmicShore.Gameplay
             {
                 var rival = players[i];
                 if (rival == null || rival == local || rival.RoundStats == null) continue;
-                int theirs = rival.RoundStats.SwitchesThreaded;
-                bool ahead = theirs > threaded;
-                bool was = _ahead.Contains(rival);
-                if (ahead == was) continue;
-                if (ahead) _ahead.Add(rival); else _ahead.Remove(rival);
-                // Only a change of order between two racers on the course is called; the gun's ties are not.
-                if (Mathf.Abs(theirs - threaded) > 1 || Time.time < _nextPassToast) continue;
+                int sign = System.Math.Sign(rival.RoundStats.SwitchesThreaded - threaded);
+                if (sign == 0) continue;                              // level: keep the last order
+                bool known = _order.TryGetValue(rival, out int was);
+                _order[rival] = sign;
+                if (!known || was == sign || Time.time < _nextPassToast) continue;
                 _nextPassToast = Time.time + passToastSeconds;
-                if (ahead) { Play(overtakenEvent); GameToastAPI.Post(overtakenToast, rival.Domain, rival.Name); }
-                else { Play(passedEvent); GameToastAPI.Post(passedToast, local.Domain, rival.Name); }
+                // {0} is the rival either way, so it wears the rival's colour.
+                if (sign > 0) { Play(overtakenEvent); GameToastAPI.Post(overtakenToast, rival.Domain, rival.Name); }
+                else { Play(passedEvent); GameToastAPI.Post(passedToast, rival.Domain, rival.Name); }
             }
         }
 
@@ -249,7 +281,9 @@ namespace CosmicShore.Gameplay
             _sightRoot = null;
             _sightRenderer = null;
             for (int i = 0; i < MaxRivalLights; i++) PrismLit.ClearLight(RivalLightIdBase + i);
-            _ahead.Clear();
+            _order.Clear();
+            _wasSlinging = false;
+            _snipeCheckUntil = -1f;
             _hintPosted = false;
             _caughtShortToasts = 0;
             _localHull = null;

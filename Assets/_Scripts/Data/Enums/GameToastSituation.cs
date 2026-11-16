@@ -264,7 +264,7 @@ namespace CosmicShore.Data
         // race beats are the shared 129-132 + 30 (DomainRaceToasts). Posted to the LOCAL pilot only, from
         // ThornlineController.Feedback. 420-429 are Thornline's band (the 2026-11-11 round 5 sessions each hold their own);
         // 427-429 are free.
-        ThornlineHint = 420,            // once, at the start: sling into the lit sight, aim through a crystal to reset
+        ThornlineHint = 420,            // once, at the start: sling into the lit sight on the next thorn
         ThornlineSnipe = 421,           // one sling threaded two rings
         ThornlineCrystalReset = 422,    // the local pilot took a Time crystal: the sling is ready
         ThornlineCrystalTaken = 423,    // a rival took the crystal on the local pilot's leg first: {0} = the rival

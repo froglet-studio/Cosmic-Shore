@@ -45,8 +45,8 @@ namespace CosmicShore.Gameplay
 
         [Header("Thornline - AI (by difficulty: Easy, Medium, Hard, Legendary)")]
         [Tooltip("The AI's nose lead (AIPilot.NoseLeadGain) by its seat's difficulty. With none, the stick's cubic law closes " +
-                 "the last degree onto the 12 u the sling catches at 1,000 u in ~15 s, and 2 of 10 I1 races finish " +
-                 "(run.sh --ai). 2.5 / 3 / 8 / 16 race 86 / 63 / 50 / 49 s at I1.")]
+                 "the last degree onto the 12 u the sling catches at 1,000 u so slowly that 14 of 20 I1 races finish " +
+                 "(run.sh --ai). 2.5 / 3 / 8 / 16 race 64 / 56 / 49 / 49 s at I1, every seat finishing every rung.")]
         [SerializeField] float[] aiNoseLeadByDifficulty = { 2.5f, 3f, 8f, 16f };
 
         [Tooltip("The AI's nose follow rate (VesselTransformer.AINoseFollowPerSecond) by difficulty; below 0 = the fleet lag " +
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] float[] aiNoseFollowByDifficulty = { -1f, -1f, -1f, -1f };
 
         [Tooltip("How far past the aim the nose lead may put the command, degrees. Tight, so the lead sharpens the last few " +
-                 "degrees and never swings a far-off nose into a circle (40 parked an AI ~96 degrees off, run.sh --ai).")]
+                 "degrees (at 40 the replica's Hard lost its lead over Medium at I2, run.sh --ai).")]
         [SerializeField, Range(1f, 40f)] float aiNoseLeadMaxExtraDegrees = 10f;
 
         [Header("Thornline - toasts (local pilot; text on GameToastConfig_Thornline)")]
@@ -116,6 +116,7 @@ namespace CosmicShore.Gameplay
             public Crystal Crystal;
             public ElementalCrystalImpactor Impactor;
             public float RegrowAt = -1f;
+            public bool SeenLive;           // the local feedback's last read (ThornlineController.Feedback.TickCrystals)
         }
 
         readonly List<ThornSlot> _thorns = new();
@@ -144,6 +145,9 @@ namespace CosmicShore.Gameplay
         /// the walk keeps every later thorn and ring off those lines. Seed-free, so it is ready before the course is.</summary>
         public bool TryBuildSpawnPoses(int count, out Pose[] poses)
         {
+            // The cell must answer first, or the poses would latch on the origin (the SerpentTime rule).
+            poses = null;
+            if (!gameData || (cellData && !Cell.FindByRuntimeData(cellData))) return false;
             poses = ThornlineCourse.StartPoses(count);
             Vector3 centre = ResolveCellCentre();
             for (int i = 0; i < poses.Length; i++) poses[i].position += centre;
@@ -255,7 +259,6 @@ namespace CosmicShore.Gameplay
                 if (slot.RegrowAt < 0f)
                 {
                     slot.RegrowAt = now + crystalRegrowSeconds;
-                    OnCrystalTaken(slot);
                     continue;
                 }
                 if (now < slot.RegrowAt || slot.Crystal) continue;   // one still flying to its collector is left to finish
