@@ -28,6 +28,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sound_placeholders  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK = "--check" in sys.argv
 
@@ -435,6 +438,7 @@ def main() -> int:
         if meta is not None:
             targets.append((path + ".meta", meta))
         for p, want in targets:
+            want = sound_placeholders.fill_file(p, want)  # listed placeholder sounds survive a re-run
             have = open(p).read() if os.path.exists(p) else None
             if have != want:
                 drift.append(p)

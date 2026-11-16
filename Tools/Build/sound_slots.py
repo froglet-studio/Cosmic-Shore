@@ -70,6 +70,7 @@ import datetime as _dt
 import json
 import os
 import re
+import uuid
 import sys
 import tempfile
 from dataclasses import dataclass, field as dc_field
@@ -769,6 +770,19 @@ class Fmod:
                 full = os.path.join(build, d)
                 if os.path.isdir(full) and any(f.endswith(".bank") for f in os.listdir(full)):
                     self.bank_dirs.append(d)
+        # The bank bytes are the truth; GUIDs.txt is an export that lags them (it was ten days behind on 2026-11-07,
+        # so seven events Charles had built read as "unbanked"). An event is banked when its GUID's 16 bytes
+        # (little-endian, as FMOD writes them) are in a built .bank file of the first bank folder.
+        if self.bank_dirs:
+            full = os.path.join(build, self.bank_dirs[0])
+            blob = b"".join(open(os.path.join(full, f), "rb").read() for f in sorted(os.listdir(full)) if f.endswith(".bank"))
+            for e in self.events.values():
+                try:
+                    if uuid.UUID(e.guid).bytes_le in blob:
+                        self.banked.setdefault(e.guid, e.path)
+                        self.banked_paths.add(e.path)
+                except ValueError:
+                    pass
 
     @staticmethod
     def _xmls(meta: str, sub: str) -> list[str]:
@@ -1165,7 +1179,7 @@ def failures(scan: Scan) -> list[tuple[Slot | None, str, str]]:
             out.append((s, "unknown-event", f"'{s.path or s.data}' is not an event in the FMOD project (renamed or deleted in Studio; a stale reference){where}"))
             continue
         if not s.banked:
-            out.append((s, "unbanked", f"'{ev.path}' is authored (bank: {', '.join(ev.banks) or 'none assigned'}) but not in the built banks (Build/GUIDs.txt): rebuild the banks{where}"))
+            out.append((s, "unbanked", f"'{ev.path}' is authored (bank: {', '.join(ev.banks) or 'none assigned'}) but not in the built banks (the .bank files under Build/): rebuild the banks{where}"))
         if s.expectation in ONE_SHOT_EXPECTATIONS and ev.loops:
             out.append((s, "C2", f"looping event '{ev.path}' ({ev.loop_how}) in a one-shot slot ({s.how}): refused at runtime, the slot is silent{where}"))
         if s.expectation == "loop" and not ev.loops:

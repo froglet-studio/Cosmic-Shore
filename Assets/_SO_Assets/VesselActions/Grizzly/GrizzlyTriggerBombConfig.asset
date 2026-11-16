@@ -38,15 +38,15 @@ MonoBehaviour:
   aiFireIntervalSeconds: 0.6
   fireEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1870893843
+      Data2: 1090302803
+      Data3: -531107708
+      Data4: -1787684942
+    Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
   detonateEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -159591309
+      Data2: 1318821736
+      Data3: -1568531009
+      Data4: 870809827
+    Path: event:/SFX/Oneshots/Gameplay sfx/Mine Explode
