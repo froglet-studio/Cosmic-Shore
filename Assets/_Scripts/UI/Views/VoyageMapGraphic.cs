@@ -313,6 +313,20 @@ namespace CosmicShore.UI
             ApplyFix();
         }
 
+        /// <summary>
+        /// Frame the whole galaxy (the Galaxy tier's width about the galaxy's centre), at once. The Voyages window opens
+        /// here (Shombith, 2026-11-16). The frame holds across a resize as <see cref="FrameOn"/>'s does; an uncharted map
+        /// keeps its own frame.
+        /// </summary>
+        public void FrameGalaxy()
+        {
+            if (_chart == null) return;
+            _fixCentre = Vector2.zero;
+            _fixWidth = (float)HyperSeaSky.Tiers[0].width;
+            _flying = false;
+            ApplyFix();
+        }
+
         void ApplyFix()
         {
             if (_fixWidth <= 0f || float.IsInfinity(_minX)) return;

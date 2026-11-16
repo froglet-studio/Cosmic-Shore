@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-the-host-now-releases-ai-wingmates-only-767e99",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T16:07:44+00:00",
+  "area": "Voyage runs (VoyageRun / ArkEscortRun Deploy)",
+  "summary": "The host now releases AI wingmates only in the seats no connected friend flies (VoyageRules.FriendAt): friends who came with the host take the first seats after the host's, as in Arena. Before, every non-host seat got an AI even with friends in the party.",
+  "branch": "claude/project-thread-hllqh5",
+  "commit": "b102c3063"
+}

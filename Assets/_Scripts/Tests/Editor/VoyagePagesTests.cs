@@ -123,6 +123,43 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TableTilt_Subdivide_KeepsASolidShapeWhole()
+        {
+            // A line or a star samples one white texel at every corner: nothing to bend, so it is not cut.
+            using var vh = new UnityEngine.UI.VertexHelper();
+            var white = new Vector2(0.99f, 0.99f);
+            vh.AddVert(new Vector3(0f, 0f), Color.white, white);
+            vh.AddVert(new Vector3(0f, 2f), Color.white, white);
+            vh.AddVert(new Vector3(1200f, 2f), Color.white, white);
+            vh.AddTriangle(0, 1, 2);
+            VoyageTableTilt.Subdivide(vh, 48f);
+            Assert.AreEqual(3, vh.currentVertCount);
+        }
+
+        [Test]
+        public void TableTilt_Subdivide_StaysUnderUnitysMeshLimit()
+        {
+            // Unity draws none of a UI mesh of 65,000 vertices or more (the galaxy vanished at Sector and Region).
+            using var vh = new UnityEngine.UI.VertexHelper();
+            var white = new Vector2(0.99f, 0.99f);
+            for (int i = 0; i < 30000; i++)
+            {
+                int v = vh.currentVertCount;
+                var at = new Vector3(i % 1000, i / 1000);
+                vh.AddVert(at, Color.white, white);
+                vh.AddVert(at + new Vector3(0f, 1f), Color.white, white);
+                vh.AddVert(at + new Vector3(1f, 1f), Color.white, white);
+                vh.AddVert(at + new Vector3(1f, 0f), Color.white, white);
+                vh.AddTriangle(v, v + 1, v + 2);
+                vh.AddTriangle(v, v + 2, v + 3);
+            }
+            VoyageTableTilt.Subdivide(vh, 48f);
+            Assert.LessOrEqual(vh.currentVertCount, VoyageTableTilt.MaxListVertices);
+            Assert.Less(vh.currentVertCount, 65000);
+            Assert.AreEqual(0, vh.currentVertCount % 3, "whole triangles");
+        }
+
+        [Test]
         public void Route_MeasuresItsLength_AndWhereAStopLiesAlongIt()
         {
             var course = new List<Vector2> { new(0f, 0f), new(10f, 0f), new(10f, 10f) };
@@ -210,6 +247,7 @@ namespace CosmicShore.Tests
                          lines.ArkLobbyWith, lines.ArkSquadHead, lines.ArkSquadLine, lines.ArkSquadLineLobby, lines.ArkYou,
                          lines.ArkWingmate, lines.ArkInLobby, lines.ArkFriendLine, lines.ArkArtifact, lines.ArkFlySquad,
                          lines.ArkFlySquadKey, lines.ArkBackToLobby, lines.ArkVoyageLine, lines.ArkSeatAiShort, lines.ArkSquadSeparator,
+                         lines.ArkNoSquad, lines.ArkAiFor, lines.ArkAiLine,
                          lines.PickTitle, lines.PickTitleSeat,
                          lines.PickKits, lines.PickKitVoyage, lines.PickKitLast, lines.PickKitWho, lines.PickSees, lines.PickSeesAll,
                          lines.PickSeesCrystals, lines.PickSeesPrisms, lines.PickSeesLife, lines.PickSeesVessels, lines.PickSeesPaths,

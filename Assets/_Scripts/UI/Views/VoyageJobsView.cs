@@ -96,14 +96,26 @@ namespace CosmicShore.UI
             // The window is shown and hidden by its canvas group, so it is re-read on every open: the squad (and so the
             // pilots bringing jobs) may have changed since.
             _window = GetComponentInParent<ModalWindowManager>(true);
-            if (_window) _window.OnModalOpened += Refresh;
-            Refresh();
+            if (_window) _window.OnModalOpened += Opened;
+            Opened();
+        }
+
+        // The window opens with the map at Galaxy view, the whole HyperSea, whatever voyage is picked (Shombith,
+        // 2026-11-16: "whenever we open the voyage the map should open at Galaxy View"). Later redraws (a pick, the squad)
+        // frame the picked voyage's course as before.
+        bool _openAtGalaxy;
+
+        void Opened()
+        {
+            _openAtGalaxy = true;
+            try { Refresh(); }
+            finally { _openAtGalaxy = false; }
         }
 
         void OnDisable()
         {
             VoyageHarbour.Changed -= Refresh;
-            if (_window) _window.OnModalOpened -= Refresh;
+            if (_window) _window.OnModalOpened -= Opened;
             _window = null;
         }
 
@@ -285,7 +297,7 @@ namespace CosmicShore.UI
                 _offers.Add(EscortOffer(content, lines, escort, harbour.EscortDifficulty, course, sail: false));
                 if (course != null) Map(content, lines, style, course[0], course, CourseLine(content, lines, course));
                 else Map(content, lines, style, null, null, null);
-                if (map) map.FrameOn(_offers[0].Course);
+                Frame(map, _offers[0].Course);
                 _board.Show(_offers, 0, _ => { }, map, null);
                 return true;
             }
@@ -304,7 +316,7 @@ namespace CosmicShore.UI
                 offer.SailLabel = lines.BoardUnderway;
                 _offers.Add(offer);
                 Map(content, lines, style, job.From, underway, CourseLine(content, lines, underway));
-                if (map) map.FrameOn(offer.Course);
+                Frame(map, offer.Course);
                 _board.Show(_offers, 0, _ => { }, map, null);
                 return true;
             }
@@ -330,7 +342,7 @@ namespace CosmicShore.UI
                 _offers.Add(JobOffer(content, lines, job, route));
                 if (i != _open) continue;
                 Map(content, lines, style, here, route, CourseLine(content, lines, route));
-                if (map) map.FrameOn(_offers[i].Course);
+                Frame(map, _offers[i].Course);
             }
             if (escort)
             {
@@ -340,11 +352,19 @@ namespace CosmicShore.UI
                 {
                     if (course is { Count: >= 2 }) Map(content, lines, style, course[0], course, CourseLine(content, lines, course));
                     else Map(content, lines, style, here, null, null);
-                    if (map) map.FrameOn(_offers[^1].Course);
+                    Frame(map, _offers[^1].Course);
                 }
             }
             _board.Show(_offers, _open, PickBoardRow, map, null);
             return true;
+        }
+
+        /// <summary>Frame the table on <paramref name="course"/>, or on the whole galaxy right after the window opened.</summary>
+        void Frame(VoyageMapGraphic map, IReadOnlyList<Vector2> course)
+        {
+            if (!map) return;
+            if (_openAtGalaxy) map.FrameGalaxy();
+            else map.FrameOn(course);
         }
 
         void PickBoardRow(int index)
@@ -366,16 +386,13 @@ namespace CosmicShore.UI
             // scale (Rev 88: "the top texts are too big").
             var style = VoyageBoardStyleSO.Load();
             var tabs = GetComponentInParent<VoyageWindowTabs>(true);
-            Sprite sagaArt = null, lockSprite = null;
+            Sprite lockSprite = null;
             if (tabs)
             {
                 // Quests left the Voyage window for its own (QuestsModal; Shombith, 2026-11-13).
                 tabs.Drop<QuestTrackView>();
                 // Saga and Episodes are locked and leave the tab row: both are shown together at the page's foot
-                // (Frogma Rev 103 A). Their art and the tabs' lock are read before the tabs go.
-                var part = tabs.PageOf(VoyageWindowTabs.SagaTab) is { } sagaPage
-                    ? sagaPage.GetComponentInChildren<VoyageView>(true) : null;
-                sagaArt = part && part.Card ? part.Card.CardBackground : null;
+                // (Frogma Rev 103, one line each). The tabs' lock is read before the tabs go.
                 var lockT = tabs.ButtonOf(VoyageWindowTabs.EpisodesTab) is { } epButton ? epButton.transform.Find("Lock") : null;
                 if (lockT && lockT.TryGetComponent<Image>(out var lockImage)) lockSprite = lockImage.sprite;
                 tabs.Drop(VoyageWindowTabs.SagaTab);
@@ -389,7 +406,7 @@ namespace CosmicShore.UI
                     sagaLocked);
             }
             _lockedStrip = VoyageLockedStrip.Create(page, new VoyageKit(style, lines, template ? template.LabelTemplate : null),
-                sagaArt, lockSprite);
+                lockSprite);
             return true;
         }
 

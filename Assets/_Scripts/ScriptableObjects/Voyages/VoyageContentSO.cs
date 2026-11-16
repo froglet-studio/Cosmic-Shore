@@ -672,6 +672,12 @@ namespace CosmicShore.ScriptableObjects
         public string ArkSeatAiShort = "AI";
         [Tooltip("On a squad card: between the seats' names.")]
         public string ArkSquadSeparator = " - ";
+        [Tooltip("Leaves a squad for your lobby's seats, AI wingmates in the seats no friend flies.")]
+        public string ArkNoSquad = "FLY WITHOUT A SQUAD";
+        [Tooltip("An AI seat whose squad member is not in your lobby.")]
+        public string ArkAiFor = "AI flies for {name} until they join";
+        [Tooltip("Under an AI seat card: no seat is open, a friend takes an AI's place.")]
+        public string ArkAiLine = "A friend who joins your lobby takes this seat";
         [Tooltip("The seat picker's title.")]
         public string PickTitle = "Change your seat";
         [Tooltip("The seat picker's title for an AI seat; {seat} is its place in the squad.")]

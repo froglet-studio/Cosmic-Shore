@@ -119,7 +119,8 @@ namespace CosmicShore.UI
         /// <summary>
         /// Cut every triangle of <paramref name="vh"/> with an edge longer than <paramref name="maxEdge"/> into four, until
         /// none is (at most five times), so a projection that keeps straight lines straight but bends textures across a
-        /// large triangle stays true. Colours and the first uv are carried along.
+        /// large triangle stays true. A triangle with one uv at every corner (a solid shape) is kept whole. Colours and the
+        /// first uv are carried along.
         /// </summary>
         public static void Subdivide(VertexHelper vh, float maxEdge)
         {
@@ -129,12 +130,27 @@ namespace CosmicShore.UI
             float max2 = maxEdge * maxEdge;
             for (int i = 0; i + 2 < s_Stream.Count; i += 3)
                 Cut(s_Stream[i], s_Stream[i + 1], s_Stream[i + 2], max2, 5);
+            // One UI mesh holds fewer than 65,000 vertices; past that Unity draws none of it. The map budgets its sky to
+            // stay well under (VoyageMapSky), and this keeps the rest from ever crossing it: the last triangles go.
+            if (s_Out.Count > MaxListVertices) s_Out.RemoveRange(MaxListVertices, s_Out.Count - MaxListVertices);
             vh.Clear();
             vh.AddUIVertexTriangleStream(s_Out);
         }
 
+        /// <summary>The most vertices the laid-back mesh carries (a whole number of triangles under Unity's 65,000).</summary>
+        public const int MaxListVertices = 64995;
+
         static void Cut(UIVertex a, UIVertex b, UIVertex c, float max2, int depth)
         {
+            // A solid shape (a star, a line, a marker: every corner on the one white texel) has no texture to bend, and a
+            // perspective keeps its straight edges straight: it is laid back whole. Only the painted sea is cut finer.
+            if (a.uv0 == b.uv0 && b.uv0 == c.uv0)
+            {
+                s_Out.Add(a);
+                s_Out.Add(b);
+                s_Out.Add(c);
+                return;
+            }
             float ab = ((Vector2)(a.position - b.position)).sqrMagnitude;
             float bc = ((Vector2)(b.position - c.position)).sqrMagnitude;
             float ca = ((Vector2)(c.position - a.position)).sqrMagnitude;
