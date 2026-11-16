@@ -880,7 +880,7 @@ def pick_pool(cands, out, backend, min_k=4, max_k=8):
                    "metrics": {"seconds": {h: v for h, v in r["seconds"].items() if v}, "chaos": lo.get("chaos", 0.0),
                                "rail_fails": lo.get("guard_fails", 0), "race_length": lo.get("race_length", 1.0),
                                "dnf": lo.get("dnf", []), "scored": SCORED, "generator_seed": r["game_genome"]["seed"],
-                               "settings": r["game_genome"]["circuit"]}})
+                               "settings": r["game_genome"].get("circuit") or {}}})
     a = argparse.Namespace(pass_spread=L.PASS_SPREAD, pass_chaos=L.PASS_CHAOS, cancel=CANCEL_BAR, min=min_k, max=max_k,
                            restarts=12, seed=1, scored=SCORED)
     rep = pp.pick(pc, a) if len(pc) >= min_k else {"pool": [], "verdict": f"NO pool: only {len(pc)} candidates"}
