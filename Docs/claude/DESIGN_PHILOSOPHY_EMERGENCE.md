@@ -355,6 +355,7 @@ ones.
   `MeerkatSwallow`, `SolitonTunnelShapeMath`); the rest is design, `Docs/Studios/MEERKAT.md` § Garrett's direction, whose
   element definition is LOCKED (Garrett, 2026-10-28). The curation checks:
   **It is one way** (Garrett, 2026-11-16: "solitons should be enterable from outside, but in a one-way fashion. so the exit is the only source and the entrance is the only sink, but the tube wall can be entered and not exited"): its exit mouth is its only source, its entrance mouth its only sink, and its wall lets anything in from outside but nothing out.
+  **Riding one is a waterslide** (Garrett, 2026-11-16: "also solitons should feel like a waterslide where there is a sense of "down" and sliding up and down the walls like a skater in a halfpipe. down should be defined by their entering orientation and controlling the vessel should feel like a fun sense of control over riding up and down the walls of the water slide. some mix of going with the flow and deciding how to roll with it.").
   1. **Name.** *Soliton*: a solitary wave that holds its shape as it travels. No other system uses the word.
   2. **Reach.**
      - The Meerkat's Space ability makes one.

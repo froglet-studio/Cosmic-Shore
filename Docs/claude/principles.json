@@ -3603,6 +3603,22 @@
    "status": "drafted"
   },
   {
+   "id": "P-vessel-39",
+   "owner": "Garrett",
+   "date": "2026-11-16",
+   "words": "also solitons should feel like a waterslide where there is a sense of \"down\" and sliding up and down the walls like a skater in a halfpipe. down should be defined by their entering orientation and controlling the vessel should feel like a fun sense of control over riding up and down the walls of the water slide. some mix of going with the flow and deciding how to roll with it.",
+   "rule": "Riding a soliton feels like a waterslide: the rider's orientation as it enters sets the tunnel's \"down\", the flow carries it along, and steering rolls it up and down the walls like a skater in a halfpipe; the fun is a mix of going with the flow and choosing how to ride it.",
+   "source": {
+    "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
+    "line": 358
+   },
+   "kind": "quote",
+   "area": "vessel",
+   "retired": "",
+   "test": "Does a rider feel a down set by how it entered, get carried by the flow, and choose how high up the walls to carve?",
+   "status": "confirmed"
+  },
+  {
    "id": "P-vessel-27",
    "owner": "Garrett",
    "date": "2026-10-28",
