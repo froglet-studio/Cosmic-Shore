@@ -34,6 +34,8 @@ Every number on the model backend is a MODEL's (the measured roster), and the fi
     python3 Tools/Build/regatta_qd.py equations DIR [DIR ...]               # refit and rewrite EQUATIONS.md
     python3 Tools/Build/regatta_qd.py engine-pass --n 40 --out DIR          # designed courses in the game's code + model
     python3 Tools/Build/regatta_qd.py engine-report DIR --out DIR           # rewrite its ENGINE_VS_MODEL / EQUATIONS
+    python3 Tools/Build/regatta_qd.py shard --shard K --of N --backend engine --budget 1000 --out ROOT/shard_K/
+    python3 Tools/Build/regatta_qd.py merge ROOT --out ROOT/merged          # every shard -> archive, equations, pool
     python3 Tools/Build/regatta_qd.py --self-test
 
 A READER tool: it writes only into --out.
@@ -269,8 +271,39 @@ def ops():
     if _w2 is None:
         return random_genome, mutate, crossover, repair
     rep = lambda g: (lambda out: out[0] if isinstance(out, tuple) else out)(_w2.repair(g))
-    return ((lambda rng: rep(_w2.random_genome(rng, 1))), (lambda g, rng, strength=1.0: rep(_w2.mutate(g, rng, strength))),
-            (lambda a, b, rng: rep(_w2.crossover(a, b, rng))), rep)
+    prior = player_prior()
+
+    def mutate_(g, rng, strength=1.0):
+        if prior is not None:
+            try:      # W2's genes from play: half the added or moved placements where people beat the AIs
+                return rep(_w2.mutate(g, rng, strength, prior=prior))
+            except TypeError:
+                pass
+        return rep(_w2.mutate(g, rng, strength))
+
+    def random_(rng):
+        if prior is not None and rng.random() < 0.5:      # half the fresh courses are made from play
+            try:
+                import regatta_player_prior as pp
+                return rep(pp.seed_genomes(prior, rng, rng.randint(1, 4), 1)[0])
+            except (ImportError, AttributeError):
+                pass
+        return rep(_w2.random_genome(rng))      # any intensity: its circuit row and seed are genes too
+    return random_, mutate_, (lambda a, b, rng: rep(_w2.crossover(a, b, rng))), rep
+
+
+_PRIOR = []
+
+
+def player_prior():
+    """W2's player prior (Tools/Compute/regatta/player_prior.json, built from human Regatta flights), or None."""
+    if not _PRIOR:
+        try:
+            import regatta_player_prior as pp
+            _PRIOR.append(json.load(open(pp.PRIOR, encoding="utf-8")))
+        except (ImportError, OSError, ValueError, AttributeError):
+            _PRIOR.append(None)
+    return _PRIOR[0]
 
 
 def game_genome(g, leg_arc):
@@ -399,6 +432,9 @@ ENGINE_TRUSTED = tuple(h for h in os.environ.get(
     "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Stoat,Urchin").split(",") if h)
 # The judge seeds each race at turn start, so (seed, race) is deterministic; the search races one seed per course (8
 # hulls x 2 seeds is ~4.5 min a course on 4 cores) and the pool's candidates are re-raced on more seeds for the noise.
+# Stage 1 of a gated engine course: the hulls most often fastest (Rhino, Stoat) and slowest (Serpent, Dolphin) on the
+# first engine courses; four is one round on four cores, so a course stopped here costs half.
+STAGE1 = tuple(h for h in os.environ.get("REGATTA_STAGE1", "Rhino,Stoat,Serpent,Dolphin").split(",") if h)
 ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1").split(","))
 
 
@@ -411,10 +447,10 @@ def _rj():
     return rj
 
 
-def _judge(g, course, backend, seeds=(0,)):
-    """RESULT for every hull, alone. backend: "model" | "engine" (every hull in the game's code) | "mixed" (ENGINE_TRUSTED
-    in the engine, the rest the model). Each seat row is tagged with the backend that timed it."""
-    seats = [{"hull": h, "ai": "shipped"} for h in HULLS]
+def _judge(g, course, backend, seeds=(0,), hulls=None):
+    """RESULT for every hull (or `hulls`), alone. backend: "model" | "engine" (every hull in the game's code) | "mixed"
+    (ENGINE_TRUSTED in the engine, the rest the model). Each seat row is tagged with the backend that timed it."""
+    seats = [{"hull": h, "ai": "shipped"} for h in (hulls or HULLS)]
     if backend == "model":
         r = jm.judge_course(course, seats, list(seeds))
         for race in r["races"]:
@@ -453,8 +489,12 @@ def featurize(g):
 
 
 def evaluate(job):
-    """One judge call: (search genome, backend, seeds) -> the record the archive and the surrogate learn from."""
-    g, backend, seeds = job
+    """One judge call: (search genome, backend, seeds[, gate]) -> the record the archive and the surrogate learn from.
+    With a `gate` (a spread) on the engine, the course is raced in two stages: first STAGE1 (the hulls that are most
+    often the fastest and the slowest: one round of the 4 cores), and the rest only when those four are already inside
+    the gate. A course stopped at stage 1 is kept as a PARTIAL record: its four times still train the surrogate."""
+    g, backend, seeds = job[:3]
+    gate = job[3] if len(job) > 3 else None
     import regatta_features as rf
     try:
         gg, course = lay_genome(g)
@@ -467,7 +507,22 @@ def evaluate(job):
         # first engine pass raced made the Serpent DNF): it is never worth an engine race. Recorded, not raced.
         return {"genome": g, "game_genome": gg, "valid": False, "x": x, "guard_fails": guard,
                 "error": f"{guard} guard fails: not raced"}
-    r = _judge(gg, course, backend, seeds)
+    stage1 = [h for h in STAGE1 if h in HULLS]
+    if gate is not None and backend != "model" and len(stage1) >= 2 and len(HULLS) > len(stage1):
+        r1 = _judge(gg, course, backend, seeds, hulls=stage1)
+        t1 = {h: v for h, v in L.alone_times(r1).items()}
+        done = {h: sum(v) / len(v) for h, v in t1.items() if v and all(t is not None for t in v)}
+        lb = max(done.values()) / min(done.values()) if len(done) >= 2 else float("inf")
+        if lb > gate or len(done) < len(stage1):
+            tb = {st["hull"]: st.get("backend", backend) for race in r1["races"] for st in race["seats"]}
+            return {"genome": g, "game_genome": gg, "valid": False, "partial": True, "x": x,
+                    "seconds": {h: done.get(h) for h in t1}, "timed_by": tb, "stage1_spread": round(lb, 4),
+                    "kinds": kinds_used(gg, x), "error": f"stage 1 spread {lb:.2f}x > gate {gate:.2f}x: stopped",
+                    "backend": backend, "engine_commit": r1.get("engine_commit")}
+        r2 = _judge(gg, course, backend, seeds, hulls=[h for h in HULLS if h not in stage1])
+        r = dict(r2, races=r1["races"] + r2["races"])
+    else:
+        r = _judge(gg, course, backend, seeds)
     loss = L.course_loss(r, SCORED, _ref_mean(backend), guard_fails=guard)
     times = L.alone_times(r)
     secs = {h: (None if any(t is None for t in v) else sum(v) / len(v)) for h, v in times.items()}
@@ -504,7 +559,7 @@ class Surrogate:
 
     @staticmethod
     def _xy(records, names, hull):
-        rows = [(r["x"], r["seconds"].get(hull)) for r in records if r.get("valid") and r["seconds"].get(hull)]
+        rows = [(r["x"], r["seconds"].get(hull)) for r in records if usable(r) and r["seconds"].get(hull)]
         X = [[float(x.get(n, 0.0)) for n in names] for x, _ in rows]
         y = [math.log(t) for _, t in rows]
         return X, y
@@ -518,7 +573,7 @@ class Surrogate:
 
     def fit(self, records, hulls=HULLS, alpha=None):
         np = _np()
-        allx = np.array([[float(r["x"].get(n, 0.0)) for n in self.names] for r in records if r.get("valid")])
+        allx = np.array([[float(r["x"].get(n, 0.0)) for n in self.names] for r in records if usable(r)])
         self.mu = allx.mean(axis=0)
         self.sd = allx.std(axis=0)
         self.sd[self.sd < 1e-9] = 1.0
@@ -558,7 +613,7 @@ class Surrogate:
         np = _np()
         out = {}
         for h in hulls:
-            rows = [(r["x"], r["seconds"][h]) for r in records if r.get("valid") and r["seconds"].get(h) and h in self.coef]
+            rows = [(r["x"], r["seconds"][h]) for r in records if usable(r) and r["seconds"].get(h) and h in self.coef]
             if len(rows) < 3:
                 continue
             p = np.array([math.log(self.predict(x)[h]) for x, _ in rows])
@@ -595,6 +650,11 @@ class Surrogate:
                 "form": "ln(seconds_h) = intercept_h + sum_j coef_hj * (x_j - mean_j) / sd_j"}
 
 
+def usable(r):
+    """A record the surrogate may learn from: fully raced, or stopped after stage 1 (its raced hulls' times)."""
+    return bool(r.get("valid") or (r.get("partial") and r.get("x")))
+
+
 def engine_only(records):
     """The records with only their ENGINE-timed seconds (a mixed run's model seats dropped): what the surrogate learns
     the game from."""
@@ -610,14 +670,14 @@ def engine_only(records):
 
 
 def feature_names(records):
-    extra = sorted({k for r in records if r.get("valid") for k in r["x"] if k not in FEATURES})
+    extra = sorted({k for r in records if usable(r) for k in r["x"] if k not in FEATURES})
     return list(FEATURES) + extra
 
 
 def fit_trusted(records, seed=0, min_n=30):
     """Fit on 80% of the judged records, score on the 20% it never saw, then refit on all (the held-out score stays the
     one reported). None with too few records."""
-    valid = [r for r in records if r.get("valid")]
+    valid = [r for r in records if usable(r)]
     if len(valid) < min_n:
         return None
     rng = random.Random(seed)
@@ -902,6 +962,125 @@ def pick_pool(cands, out, backend, min_k=4, max_k=8):
     return rep
 
 
+# ── shards: many cloud threads search at once, one writer per file, one merge ──────────────────────────────────
+
+def read_jsonl(path):
+    """Every complete line of an append-only JSONL file (a half-written last line on a network mount is skipped)."""
+    out = []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    out.append(json.loads(line))
+                except ValueError:
+                    pass
+    except FileNotFoundError:
+        pass
+    return out
+
+
+def shard_files(root):
+    """Every shard's records file under `root` (root/shard_K/records.jsonl)."""
+    if not os.path.isdir(root):
+        return []
+    return sorted(os.path.join(root, d, "records.jsonl") for d in os.listdir(root)
+                  if d.startswith("shard_") and os.path.isfile(os.path.join(root, d, "records.jsonl")))
+
+
+def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=10, log=print):
+    """One search runner. Writes ONLY out/records.jsonl (append-only, one line per judged course; it resumes from that
+    file). Reads every sibling shard_* (read-only) so the elites, the surrogate and the gate are the whole team's.
+    Its own seed stream (shard K of N). Steady state, one course at a time (the engine already fills the cores):
+    parent = a random elite of the merged archive, mutated or crossed (W2's operators); with a trusted surrogate,
+    SCREEN candidates are laid and the best predicted one is raced (a quarter of the time a random one, so the surrogate
+    keeps being tested). The gate is the median full-course spread so far: a course whose stage-1 four are already
+    wider is stopped there (half the cost) and kept as a partial record."""
+    os.makedirs(out, exist_ok=True)
+    root = os.path.dirname(os.path.abspath(out.rstrip("/")))
+    mine = os.path.join(out, "records.jsonl")
+    rng = random.Random(1_000_003 * (k + 1) + n)
+    rand_g, mut, cross, _ = ops()
+    seeds = (0,) if backend == "model" else ENGINE_SEEDS
+    own = read_jsonl(mine)
+    peers, s, t0 = [], None, time.time()
+    log(f"[shard {k}/{n}] {len(own)} courses already in {mine}")
+    while len(own) < budget:
+        if len(own) % peers_every == 0:
+            peers = [r for f in shard_files(root) if os.path.abspath(f) != os.path.abspath(mine) for r in read_jsonl(f)]
+        every = own + peers
+        archive = {}
+        for r in every:
+            insert(archive, r)
+        if len([r for r in every if usable(r)]) >= 60 and (s is None or len(own) % refit_every == 0):
+            s = fit_trusted(every, seed=len(every))
+        full = sorted(r["loss"]["spread_x"] for r in every if r.get("valid") and r["loss"].get("spread_x"))
+        gate = full[len(full) // 2] if len(full) >= 10 and backend != "model" else None
+        if k == 0 and not every:
+            g = today()
+        elif len(archive) < 12 or rng.random() < 0.15:
+            g = rand_g(rng)
+        else:
+            elites = list(archive.values())
+            def child():
+                a = rng.choice(elites)["genome"]
+                return mut(cross(a, rng.choice(elites)["genome"], rng) if rng.random() < 0.3 else a, rng)
+            if s is not None and s.trusted() and rng.random() > EXPLORE:
+                best = None
+                for c in (child() for _ in range(SCREEN)):
+                    gg, x, guard = featurize(c)
+                    if gg is None or guard:
+                        continue
+                    ploss, lead = predicted(s, x, guard)
+                    cell = cell_of(SCORED.index(lead) if lead in SCORED else -1, x, len(kinds_used(gg, x)))
+                    cur = archive.get(cell)
+                    gain = (1.0 + max(0.0, 1.0 - ploss)) if cur is None else cur["loss"]["loss"] - ploss
+                    if best is None or gain > best[0]:
+                        best = (gain, c)
+                g = best[1] if best else child()
+            else:
+                g = child()
+        r = evaluate((g, backend, seeds, gate))
+        r.update(shard=k, at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+        with open(mine, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(r) + "\n")
+        own.append(r)
+        msg = (f"spread {r['loss']['spread_x']}x" if r.get("valid") else r.get("error", "invalid"))
+        log(f"[shard {k}/{n}] {len(own)}/{budget} (+{len(peers)} from peers, {len(archive)} cells, gate "
+            f"{gate and round(gate, 2)}, surrogate {s and s.held_out.get('mean_r2')}): {msg}  {time.time() - t0:.0f} s")
+    return own
+
+
+def merge(root, out=None, log=print):
+    """Fold every shard under `root` into one archive, surrogate, report and pool (written to root/merged, or `out`).
+    Reads only; the one writer of the merged files is whoever runs this."""
+    out = out or os.path.join(root, "merged")
+    os.makedirs(out, exist_ok=True)
+    recs = [r for f in shard_files(root) for r in read_jsonl(f)]
+    if not recs:
+        raise SystemExit(f"no shard records under {root}")
+    set_hulls(sorted({h for r in recs if r.get("valid") for h in r["seconds"]}) or HULLS)
+    backend = next((r.get("backend") for r in recs if r.get("valid")), "engine")
+    archive = {}
+    for r in recs:
+        insert(archive, r)
+    s = fit_trusted(recs, min_n=20)
+    json.dump({"backend": backend, "cells": archive, "shards": shard_files(root)},
+              open(os.path.join(out, "archive.json"), "w"), indent=1)
+    open(os.path.join(out, "SEARCH.md"), "w").write(search_report(recs, backend, s))
+    if s:
+        json.dump(s.to_json(), open(os.path.join(out, "surrogate.json"), "w"), indent=1)
+        ref = next(r for r in recs if r.get("valid"))["seconds"]
+        open(os.path.join(out, "EQUATIONS.md"), "w").write(equations_md(s, ref, recs, backend))
+    rep = pick_pool(list(archive.values()) + top_passing(recs, 60), out, backend)
+    summary = {"courses": len(recs), "raced_full": sum(1 for r in recs if r.get("valid")),
+               "stopped_stage1": sum(1 for r in recs if r.get("partial")), "cells": len(archive),
+               "shards": len(shard_files(root)), "surrogate": s.held_out if s else None,
+               "pool_verdict": rep.get("verdict")}
+    json.dump(summary, open(os.path.join(out, "summary.json"), "w"), indent=1)
+    log(json.dumps(summary, indent=1))
+    return summary
+
+
 # ── the search report: how far the course alone closes the field, and who stays an outlier ──────────────────────
 
 def _pct(xs, q):
@@ -1141,10 +1320,13 @@ def self_test():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("cmd", nargs="?", choices=("run", "compare", "equations", "engine-pass", "engine-report", "report"))
+    ap.add_argument("cmd", nargs="?", choices=("run", "compare", "equations", "engine-pass", "engine-report", "report",
+                                              "shard", "merge"))
+    ap.add_argument("--shard", type=int, default=0, help="shard: this runner's index K (0-based)")
+    ap.add_argument("--of", type=int, default=1, help="shard: how many runners N")
     ap.add_argument("dirs", nargs="*")
     ap.add_argument("--budget", type=int, default=1500)
-    ap.add_argument("--out", default="regatta_qd_out")
+    ap.add_argument("--out", default=None, help="output folder (merge: default ROOT/merged; else regatta_qd_out)")
     ap.add_argument("--backend", default="model", choices=("model", "engine", "mixed"))
     ap.add_argument("--n", type=int, default=40, help="engine-pass: how many designed courses")
     ap.add_argument("--no-surrogate", action="store_true")
@@ -1162,6 +1344,8 @@ def main():
         set_hulls(list(ENGINE_TRUSTED))
     if a.workers is None and a.backend != "model":
         a.workers = 1            # the engine judge already runs one process per hull in parallel
+    if a.cmd != "merge" and a.out is None:
+        a.out = "regatta_qd_out"
     if a.self_test or not a.cmd:
         problems = self_test()
         print("\n".join(problems) or "regatta_qd --self-test: ok")
@@ -1171,6 +1355,10 @@ def main():
         print(json.dumps({k: v for k, v in s.items() if k != "trace"}, indent=1))
     elif a.cmd == "engine-pass":
         engine_pass(a.n, a.out, a.backend if a.backend != "model" else "mixed", a.seed)
+    elif a.cmd == "shard":
+        shard(a.shard, a.of, a.out, a.backend, a.budget)
+    elif a.cmd == "merge":
+        merge(a.dirs[0], a.out)
     elif a.cmd == "report":
         recs = []
         for d in a.dirs:
