@@ -240,8 +240,14 @@ namespace CosmicShore.Gameplay
                 case VoyageCourseKind.Leg:
                     if (!_active) Embark(LocalVessel(), following: true, course: course);
                     if (!_active) return;
-                    // Still sailing the last leg: take this one on arriving, so the stop is seen first.
-                    if (_sea.IsRunning && !_sea.IsHoldingAtRouteEnd) _pendingLeg = course;
+                    // Still sailing the last leg: the host has moved on (it reached its stop, or took "Complete and set
+                    // sail"), so this leg ends where the friend's Ark is too. RouteEnded shows the stop and sails the
+                    // pending leg, as on the host; otherwise the friend would trail by every remaining anchor window.
+                    if (_sea.IsRunning && !_sea.IsHoldingAtRouteEnd)
+                    {
+                        _pendingLeg = course;
+                        if (course.LegSerial > _legSerial) _sea.EndRouteHere();
+                    }
                     else SailLeg(course);
                     break;
                 case VoyageCourseKind.Tally:
