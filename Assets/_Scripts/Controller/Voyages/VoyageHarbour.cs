@@ -127,11 +127,12 @@ namespace CosmicShore.Gameplay
             return VoyageRules.Board(state, content.Content, VoyageRun.SeatedPilots(squad));
         }
 
-        /// <summary>Set sail on <paramref name="job"/>: the squad deploys and the Ark sails for the job's destination.</summary>
-        public void SetSail(VoyageJob job)
+        /// <summary>Set sail on <paramref name="job"/> with <paramref name="squad"/> (null: the active squad): the squad deploys
+        /// and the Ark sails for the job's destination.</summary>
+        public void SetSail(VoyageJob job, SavedSquad squad = null)
         {
             if (job == null || IsUnderway) return;
-            Sail(job);
+            Sail(job, squad);
         }
 
         /// <summary>
@@ -171,7 +172,7 @@ namespace CosmicShore.Gameplay
             RaiseChanged();
         }
 
-        void Sail(VoyageJob job)
+        void Sail(VoyageJob job, SavedSquad squad)
         {
             var vessel = Alive(_context?.GameData?.LocalPlayer?.Vessel);
             if (vessel?.Transform == null)
@@ -180,7 +181,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             EnsureRun();
-            _run.SetSail(vessel, job);
+            _run.SetSail(vessel, job, squad);
             RaiseChanged();
         }
 

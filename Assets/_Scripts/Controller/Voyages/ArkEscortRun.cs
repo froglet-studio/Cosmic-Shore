@@ -648,6 +648,10 @@ namespace CosmicShore.Gameplay
                 _sea.ArkFallen -= OnArkFallen;
             }
             if (_active) SquadDeployment.Recall();
+            // Destroyed while out (a scene unload that ended nothing first): the escort's static hooks leave with it, or
+            // the next scene's crystals would still be placed by this escort's resolver.
+            _context_?.Uninstall();
+            _context_ = null;
             if (_reactor) Destroy(_reactor);
             UnhookMetrics();
             if (_escortCopy) Destroy(_escortCopy);
