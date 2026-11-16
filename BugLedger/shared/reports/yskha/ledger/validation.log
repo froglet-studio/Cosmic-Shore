@@ -546,3 +546,16 @@
 2026-11-16T15:24:58.894Z PlayMode session ended (851s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-c8e2f49696
 2026-11-16T15:27:36.481Z PlayMode session ended (90s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-c8e2f49696
 2026-11-16T15:41:29.813Z PlayMode session ended (792s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-16T17:26:33.139Z EditMode session ended (169min editor span, script reload): 1 fix(es) waiting; counted: E-63d4402229 1/2; fired: E-15034bdc73 E-c8e2f49696 E-e5bc8c31c5 E-afa8c57ab8 E-fda866d511 E-e5ff2abb8c E-e6054bc064
+2026-11-16T17:26:45.914Z editor load: play=False capture=True minPlay=15s issues=69
+2026-11-16T17:51:32.698Z PlayMode session ended (1171s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-c8e2f49696 E-e5bc8c31c5 E-4d0d17e44b E-0a098d80df E-fda866d511 E-e5ff2abb8c E-e6054bc064
+2026-11-16T19:11:03.298Z PlayMode session ended (1894s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-c8e2f49696 E-e5bc8c31c5
+2026-11-16T19:39:14.544Z PlayMode session ended (1319s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-e5bc8c31c5 E-c8e2f49696
+2026-11-16T19:43:04.431Z PlayMode session ended (194s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-16T20:04:27.997Z PlayMode session ended (212s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-16T20:07:19.200Z EditMode session ended (160min editor span, script reload): 1 fix(es) waiting; counted: E-63d4402229 2/2; fired: E-15034bdc73 E-8909c619e5 E-c8e2f49696 E-e5bc8c31c5 E-4d0d17e44b E-0a098d80df E-fda866d511 E-e5ff2abb8c E-e6054bc064 E-3e9077e16b E-ad793f31fe
+2026-11-16T20:07:33.712Z editor load: play=False capture=True minPlay=15s issues=69
+2026-11-16T20:11:45.494Z editor load: play=False capture=True minPlay=15s issues=69
+2026-11-16T20:22:50.739Z PlayMode session ended (530s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-e5bc8c31c5 E-c8e2f49696
+2026-11-16T20:33:35.481Z PlayMode session ended (610s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-11-16T20:39:14.093Z PlayMode session ended (304s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696 E-e5bc8c31c5
