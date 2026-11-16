@@ -24418,3 +24418,30 @@ Docs: `Assets/_Scripts/Controller/Arcade/SPEARLINE.md`, `Docs/Spearline/FUN_PASS
 - [ ] A human Swordfish in Cleave / Astro League / Brood Rush: the sword hand's own AI and the human's triggers behave as
       before (the coach seam is only set by Spearline).
 - [ ] Toasts 401 ("3 seals cut clean") fire on a run of first-pass seals; the console is clean.
+
+## 🔴 Slip Line fun pass 1: the AI rival and the ride's landing (2026-11-16, Garrett's project thread, `claude/project-thread-ewu2bo`, NOT RUN IN EDITOR)
+
+From Garrett's fun card (I1, "almost", weakest Rivals). `unity_refcompile` ran: 0 errors in the changed files (30
+pre-existing errors in the UGS party and multiplayer code, from the package versions the cloud fetch could get); the
+offline course tests (`slip_line_harness/run.sh`, 11 pass) and `slip_line_ai_sim.py --self-test` ran. The Unity editor
+and the `unity` CLI did not. Owed (`Arcade/SLIP_LINE.md` §8 items 9-10, §10):
+
+1. EditMode: `SlipLineCourseTests` (the new race-line test among them).
+2. I1 against one Medium AI: the rival cruises at about 52 u/s, flies ring to ring without bumping rails, never circles a
+   ring for more than a few seconds, and finishes near your time. Then answer the fun card.
+3. A Honeyguide whose Eyelet Jet or Thruster Swarm (a Ratel card) ends just past a ring's plane: the ring counts.
+4. Any vessel whose ability teleports (the Butterfly's fold, `VesselController.Teleport`) still threads nothing on its
+   jump: only a pose write that does not move the hull stopped counting as a teleport.
+
+## 🔴 Editor Churn W1: the open-and-diff harness against a real Unity (2026-11-13, Caleb, NOT RUN IN UNITY)
+
+Branch `claude/editor-churn-w1-harness`; `Docs/EditorChurn/TRACKER.md`. `Tools/Build/editor_churn.py` is Python only
+(no C#). Its `--self-test` passes, and `measure` was run end to end with stand-in editors; no real Unity ran.
+
+1. **Clone `bleeding-edge` fresh** (a full checkout, no `Library/`) and run
+   `UNITY=<path to 6000.3.17f1> python3 Tools/Build/editor_churn.py measure --project <clone> --machine <name>`
+   on Windows (Git Bash) and on macOS. It opens the project twice in batchmode (the first import is slow).
+2. **It writes** `open1/` and `open2/` (status, `churn.patch`, what each open changed, `classified.txt`) and
+   `summary.md`, whose measurement row goes into the tracker's Measurements table.
+3. **Compare with the tracker**: every dirty file is an existing row or a new `seen` row; a file in open 2's
+   "changed BY open 2" list is a writer that never settles.

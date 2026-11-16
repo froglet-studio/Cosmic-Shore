@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-one-gate-line-added-to-arcadegame-sectio-31b6b8",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T19:11:20+00:00",
+  "area": "/arcadegame skill and the /ship gate list",
+  "summary": "Two gates for the Maelstrom tiers (Garrett 2026-11-16, Docs/MaelstromSystem/INTENSITY_TIERS.md): /arcadegame section 4 gains `maelstrom_tiers.py --write && --check` so a new arcade card joins the Maelstrom Floor tier, and Tools/Build/ship_gates.py STATIC gains maelstrom_tiers --check and --self-test (offline, under a second), so an arcade card in no tier fails /ship.",
+  "branch": "cece/stoic-bell-yk2nmv",
+  "commit": "8c1e3b2fc"
+}
