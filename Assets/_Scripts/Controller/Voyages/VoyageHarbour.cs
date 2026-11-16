@@ -123,8 +123,8 @@ namespace CosmicShore.Gameplay
             var content = settings ? settings.Content : VoyageContentSO.Load();
             if (!content || content.Content == null) return new List<VoyageJob>();
             state = VoyageRun.LoadOrBegin(content.Content, home);
-            // The seated pilots lead the board; the rest of the Ark's crew fills it (DEPTH.md §4).
-            return VoyageRules.Board(state, content.Content, VoyageRun.SeatedPilots(squad), VoyageRun.CrewPilots());
+            // The board is the active squad's three pilots, one job each, and nobody else's (Shombith, 2026-11-16).
+            return VoyageRules.Board(state, content.Content, VoyageRun.SeatedPilots(squad));
         }
 
         /// <summary>Set sail on <paramref name="job"/>: the squad deploys and the Ark sails for the job's destination.</summary>

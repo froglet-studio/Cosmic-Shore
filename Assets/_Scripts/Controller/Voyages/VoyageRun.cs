@@ -274,18 +274,54 @@ namespace CosmicShore.Gameplay
             VoyageStore.Save(_state);
         }
 
-        /// <summary>The squad that sails: the one a party launch named, else the player's active squad, else the hull
-        /// they are flying in every seat (a player who has never built a squad can still voyage).</summary>
+        /// <summary>The squad that sails: the one a party launch named, else the player's active squad, else the starter
+        /// squad (Shombith, 2026-11-16): a player with no squad is given one, saved into their squad book so the Ark's
+        /// Squads tab shows the same three pilots the board's jobs come from.</summary>
         public static SavedSquad ActiveSquad(ToyContext context) => ActiveSquad(context?.GameData);
 
         /// <inheritdoc cref="ActiveSquad(ToyContext)"/>
         public static SavedSquad ActiveSquad(GameDataSO gameData)
         {
-            var squad = SquadLaunchIntent.Squad ?? UGSDataService.Instance?.SquadRepo?.Data?.Book?.GetActive();
-            if (squad != null) return squad;
-            var hull = Alive(gameData ? gameData.LocalPlayer?.Vessel : null)?.VesselType ?? default;
-            return new SavedSquad(string.Empty, new SquadSlot(hull, Element.None), new SquadSlot(hull, Element.None),
-                new SquadSlot(hull, Element.None));
+            if (SquadLaunchIntent.Squad != null) return SquadLaunchIntent.Squad;
+            var repo = UGSDataService.Instance?.SquadRepo;
+            var book = repo?.Data?.Book;
+            var active = book?.GetActive();
+            if (active != null) return active;
+
+            var starter = StarterSquad(VoyageToyDefinitionSO.Load(), SquadDirectory.LocalPlayerId);
+            if (starter == null)
+            {
+                // No starter authored: the hull the player is flying, in every seat.
+                var hull = Alive(gameData ? gameData.LocalPlayer?.Vessel : null)?.VesselType ?? default;
+                return new SavedSquad(string.Empty, new SquadSlot(hull, Element.None), new SquadSlot(hull, Element.None),
+                    new SquadSlot(hull, Element.None));
+            }
+            // Before the squad record has loaded the starter sails unsaved; once it has, it is the book's first squad.
+            if (book == null) return starter;
+            var added = AddStarter(book, starter);
+            if (added != null) repo.MarkDirty();
+            return added ?? starter;
+        }
+
+        /// <summary>The starter squad from <paramref name="settings"/>' three seats, its leader held by
+        /// <paramref name="memberId"/> (the local player) and the two rogues on AI; null when none is authored.</summary>
+        public static SavedSquad StarterSquad(VoyageToyDefinitionSO settings, string memberId)
+        {
+            var seats = settings ? settings.StarterSeats : null;
+            if (seats == null || seats.Count < SavedSquad.SlotCount) return null;
+            var leader = string.IsNullOrEmpty(memberId) ? seats[0] : seats[0].WithMember(memberId, null);
+            return new SavedSquad(settings.StarterSquadName, leader, seats[1].WithSeat(SquadSeat.Ai),
+                seats[2].WithSeat(SquadSeat.Ai));
+        }
+
+        /// <summary>Puts <paramref name="starter"/> into an EMPTY <paramref name="book"/> as its active squad and returns it;
+        /// null (and the book untouched) when the book already holds a squad.</summary>
+        public static SavedSquad AddStarter(SquadBook book, SavedSquad starter)
+        {
+            if (book == null || starter == null || book.Squads is { Count: > 0 }) return null;
+            var added = book.Add(starter);
+            book.TrySetActive(0);
+            return added;
         }
 
         /// <summary>The pilots seated in <paramref name="squad"/>, in seat order: they lead the board. Each is
@@ -306,18 +342,6 @@ namespace CosmicShore.Gameplay
                     : PilotLoadoutStore.TryGetPilot(pilot.Id, out person) ? person.Id : pilot.Id);
             }
             return pilots;
-        }
-
-        /// <summary>Every pilot of the player's crew (the Ark's people, Docs/Pilots/INVENTORY.md §3): the rest of the board
-        /// is their work (DEPTH.md §4). Empty before the account has loaded.</summary>
-        public static List<string> CrewPilots()
-        {
-            var crew = new List<string>();
-            var inventory = AccountInventoryStore.Current;
-            if (inventory?.Pilots == null) return crew;
-            foreach (var p in inventory.Pilots)
-                if (p != null && !string.IsNullOrEmpty(p.Id)) crew.Add(p.Id);
-            return crew;
         }
 
         /// <summary>The saved galaxy, ready to set out from where the last voyage left the Ark, the days away ticked
