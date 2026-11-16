@@ -76,6 +76,12 @@ field that flows into another settings object); the scan, the FMOD readers and t
 - The VCAs route no bus; volume is applied per instance until Charles assigns them (C1).
 - `GUIDs.txt` is an export, not the banks: an event can be authored and still unbanked.
 - Banks are per platform: a mobile launch with Desktop banks has no sound.
+- Banked is not audible: `Gun Fire` and `Explosion` were authored and banked with no instrument in them, so every
+  gun and blast was silent for months with every check green. `sound_placeholders.py` reads the event XML for an
+  `audioFile` before it calls a target ready (2026-11-16).
+- A generator that spells a slot as a literal empty block (`EMPTY_EVENT`) re-emits it over a filled slot, or
+  appends a second copy when it looks the block up by its exact text. Spell slots with `lib.event_yaml(scene, field)`
+  and pass any other output through `sound_placeholders.fill_text`; eleven generators needed it on 2026-11-16.
 
 ## 5. Wiring and hand-off
 

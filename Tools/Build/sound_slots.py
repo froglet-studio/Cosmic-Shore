@@ -53,8 +53,8 @@ category) takes what every method accepting that enum does, one-shot when they d
   C4   a non-looping event in a loop slot (the bed plays once and the parameter drives nothing)
   emitter-loop   a looping event on a StudioEventEmitter with no stop trigger (FMOD's OnDestroy only DETACHES a
        looping instance: it plays at its last position forever)
-  unbanked   a filled slot whose event is not in Build/GUIDs.txt: authored in the project but not built into the
-       banks yet (rebuild them)
+  unbanked   a filled slot whose event's GUID is not in the built .bank files (Build/GUIDs.txt is read too, but it
+       is an export that lags the banks): authored in the project but not built into the banks yet (rebuild them)
   unknown-event   a filled slot whose GUID and Path match no authored event (renamed or deleted in Studio: a stale
        reference)
   no banks for <platform>   ProjectSettings / the build profiles target Android or iOS and the FMOD project
