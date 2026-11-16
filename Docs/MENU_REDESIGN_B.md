@@ -8589,7 +8589,7 @@ Built in code (`VoyageCrewPopup`, no prefab or scene change), at the board's own
 Every word is a `VoyageLines` field (nine new, `CrewTitle` and `CrewLine` reworded); colours from the kit and the worn set.
 Not seen in Unity: a render of the screen still needs to sit beside the board.
 
-## 211. Rev 115 mockups: your Ark and the seat picker, five ways (2026-11-16, awaiting a pick)
+## 211. Rev 115 mockups: your Ark and the seat picker, five ways (2026-11-16, picked A)
 
 **Asked** (Shombith): "rework on the crew screen as well 5 mockups for the crew selection screen". After a first Rev 115
 of five crew-recommends screens, he clarified: "My bad delete all these by crew I meant the ark screen where I select
@@ -8618,4 +8618,7 @@ wingmate, "Fill the AI seats from a saved squad" (Y), and "You sail as" beside S
 (copies kept).
 
 **Differs from the build**: the build is Rev 113 Lobby and Picker (three glass seat cards, a centred popup with a 3 x 2 vessel grid).
+
+**Picked (Shombith, 2026-11-16): "Lets go A."** A, Hangar line-up, is the Ark page and seat picker to build. Build prompt:
+`/mnt/project-files/milestone1-mockups/rev115-build-prompt.md` (project files).
 
