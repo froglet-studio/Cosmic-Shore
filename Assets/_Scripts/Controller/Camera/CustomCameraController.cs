@@ -315,6 +315,45 @@ namespace CosmicShore.Gameplay
         private float _vesselDistanceScale = 1f;
 
         /// <summary>
+        /// A GAME MODE's framing of the follow camera, applied at the point of use like <see cref="VesselDistanceScale"/>
+        /// and on top of it: the distance (and look point) multiplied by <see cref="ModeFraming.Distance"/>, the height by
+        /// <see cref="ModeFraming.Height"/>, and the camera moved sideways by <see cref="ModeFraming.Side"/> of the follow
+        /// distance. Driven only by voyages' chase camera (<c>VoyageChaseCamera</c>, Rev 114 F1: close behind and low,
+        /// the Ark ahead and to one side), from a settings asset keyed by vessel. It frames the vessel; it never changes
+        /// what the vessel does (CLAUDE.md "A game mode never changes the vessel"). <see cref="ModeFraming.None"/> (the
+        /// default, and every other mode) changes no line of the follow path. Not reset with the follow target, because
+        /// the mode outlives a vessel swap; the mode clears it when it ends. Not applied during a placement.
+        /// </summary>
+        public ModeFraming Mode { get; set; } = ModeFraming.None;
+
+        /// <summary>A game mode's framing of the follow camera (<see cref="Mode"/>).</summary>
+        [System.Serializable]
+        public struct ModeFraming : System.IEquatable<ModeFraming>
+        {
+            [Tooltip("Multiplies the follow distance and the look point (1 = the vessel's own framing).")]
+            public float Distance;
+            [Tooltip("Multiplies the follow height (1 = the vessel's own; 0 = level with the hull).")]
+            public float Height;
+            [Tooltip("Moves the camera sideways by this share of the follow distance (+ right, so the hull sits left of centre).")]
+            public float Side;
+
+            public static ModeFraming None => new() { Distance = 1f, Height = 1f, Side = 0f };
+
+            public bool Equals(ModeFraming other) => Distance == other.Distance && Height == other.Height && Side == other.Side;
+            public override bool Equals(object obj) => obj is ModeFraming other && Equals(other);
+            public override int GetHashCode() => System.HashCode.Combine(Distance, Height, Side);
+
+            public bool IsNone => Mathf.Approximately(Distance, 1f) && Mathf.Approximately(Height, 1f) && Mathf.Approximately(Side, 0f);
+
+            /// <summary>The framing applied to an offset (pure, so it is tested directly).</summary>
+            public Vector3 Apply(Vector3 offset)
+            {
+                float d = Mathf.Max(0.01f, Distance);
+                return new Vector3(offset.x + Side * Mathf.Abs(offset.z), offset.y * Mathf.Max(0f, Height), offset.z) * d;
+            }
+        }
+
+        /// <summary>
         /// The surround framing applied to an offset: blend toward straight behind (or straight ahead, under the
         /// rear view's mirror) at the offset's own length, then scale the distance. Pure, so it is tested directly.
         /// </summary>
@@ -511,11 +550,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private Vector3 EffectiveOffset => SurroundedOffset * FramingScale;
 
-        /// <summary>The authored offset with the vessel's distance scale (<see cref="VesselDistanceScale"/>) and
-        /// the surround framing (<see cref="SurroundFraming01"/>); neither during a placement.</summary>
+        /// <summary>The authored offset with the vessel's distance scale (<see cref="VesselDistanceScale"/>), the
+        /// surround framing (<see cref="SurroundFraming01"/>) and the mode's framing (<see cref="Mode"/>); none during a placement.</summary>
         private Vector3 SurroundedOffset => PlacementAnchor.HasValue
             ? AuthoredOffset
-            : SurroundOffset(AuthoredOffset, _surroundFraming01, _surroundDistanceScale) * _vesselDistanceScale;
+            : Mode.Apply(SurroundOffset(AuthoredOffset, _surroundFraming01, _surroundDistanceScale)) * _vesselDistanceScale;
 
         /// <summary>The authored offset with the height scale and rear-view mirror, before <see cref="FramingScale"/>.</summary>
         private Vector3 AuthoredOffset =>
@@ -554,8 +593,8 @@ namespace CosmicShore.Gameplay
                 return followPoint + PanAt(warp, frame);
             float ahead = RearView ? -_lookAhead : _lookAhead;
             // The surround framing looks at the hull itself, so it sits in the middle of the frame.
-            Vector3 lookLocal = new Vector3(0f, _lookLift * _followHeightScale, ahead)
-                                * ((1f - _surroundFraming01) * _vesselDistanceScale);
+            Vector3 lookLocal = new Vector3(0f, _lookLift * _followHeightScale * Mathf.Max(0f, Mode.Height), ahead)
+                                * ((1f - _surroundFraming01) * _vesselDistanceScale * Mathf.Max(0.01f, Mode.Distance));
             float s = FramingScale;
             if (!Mathf.Approximately(s, 1f)) lookLocal = FramedLook(SurroundedOffset, lookLocal, s);
             return followPoint + frame * (lookLocal * warp) + PanAt(warp, frame);

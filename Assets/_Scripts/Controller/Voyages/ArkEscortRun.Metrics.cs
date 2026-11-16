@@ -113,6 +113,7 @@ namespace CosmicShore.Gameplay
                 Fauna.Killed += OnFaunaDied;
                 _killHooked = true;
             }
+            BeginAssaults();
         }
 
         /// <summary>Each escort world: armoured mass is food for species that gnaw it (the Ark's plates), and the leg's
@@ -181,6 +182,7 @@ namespace CosmicShore.Gameplay
                 default: r.PlatesLostPlain++; break;
             }
             bool creature = prism && prism.DestroyedByCreature;
+            NoteAssaultPlateLost();
             CountFriendlyFire(prism);   // the escort roles' count: a loss to anything but a creature
             if (creature) { r.PlatesByCreature++; _report.PlatesByCreature++; }
             string killer = prism && !string.IsNullOrEmpty(prism.DestroyerName) ? prism.DestroyerName : "unknown";
@@ -213,8 +215,10 @@ namespace CosmicShore.Gameplay
             _threatSeen.Remove(fauna);
 
             var r = _report.LegReports[leg];
-            if (onArk) { r.KillsOnArk++; _report.KillsOnArk++; }
+            if (onArk) { r.KillsOnArk++; _report.KillsOnArk++; NoteAssaultKill(leg); }
             else { r.KillsElsewhere++; _report.KillsElsewhere++; }
+            // A friend's own kill in their own world reaches the host's board.
+            ReportKill(killer, onArk);
 
             if (string.IsNullOrEmpty(killer) || !_seatNames.TryGetValue(killer, out var seat)) return;
             var legSeat = SeatStatsFor(r.SeatStats, seat.seat, seat.vessel, killer);
@@ -356,6 +360,7 @@ namespace CosmicShore.Gameplay
                     cell.RuntimeFaunaCapScale = 1f;
                 }
             _cellOfLeg = System.Array.Empty<Cell>();
+            EndAssaults();
             UnhookMetrics();
             EscortGeneRegistry.ResetAll();   // and play after a sim run is back on the defaults
             _threatSeen.Clear();
@@ -384,15 +389,15 @@ namespace CosmicShore.Gameplay
         /// pinned to the squad (<see cref="Cell.SetModeControlOverride"/>: the live swarm is re-coloured, never killed, and
         /// every later creature spawns in the squad's domain), its fauna stop grazing the squad's mass
         /// (<see cref="Cell.SparedDomain"/>) and stop gnawing armour. Checked on the run's 1 Hz sample, for worlds ahead of
-        /// the Ark too: a cultivator that races ahead to the next nucleus pacifies it before the Ark arrives. Server only
-        /// (the pin replicates through the cell's own sync).
+        /// the Ark too: a cultivator that races ahead to the next nucleus pacifies it before the Ark arrives. On every peer:
+        /// each machine's escort worlds are its own.
         /// </summary>
         void TryPacify()
         {
             float line = _escort ? _escort.PacifyShare : 0f;
             if (line <= 0f || _report == null) return;
-            var nm = Unity.Netcode.NetworkManager.Singleton;
-            if (nm != null && nm.IsListening && !nm.IsServer) return;
+            // Every peer pacifies its own worlds: the escort's worlds are each machine's own (satellite cells with no
+            // network identity), so a friend's worlds pacify by what the squad did there (Docs/Voyages/PARTY.md §2).
             var squad = SquadDomain;
             float minVolume = _escort.PacifyMinVolume;
             float dwellNeed = _escort.PacifyNucleusSeconds;
@@ -430,6 +435,7 @@ namespace CosmicShore.Gameplay
                 r.PacifiedAhead = r.EnteredAt <= 0f || leg > _leg;
                 r.FaunaTurned = turned;
                 _report.PacifiedLegs++;
+                SignalPacified();
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
                     $"[ArkEscort] {r.Name} pacified at {share:P0} of its control volume ({turned} creatures turned).");
             }

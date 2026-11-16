@@ -2402,6 +2402,15 @@ namespace CosmicShore.Gameplay
             countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue, cellCenter, worldDiameter);
         }
 
+        /// <summary>The membrane at <paramref name="factor"/> times its authored size: a capsule membrane through its own
+        /// runtime scale (its baked wobble kept), any other membrane by its transform (its radius is its scale).</summary>
+        void GrowMembrane(float factor)
+        {
+            if (!membrane) return;
+            if (membrane.TryGetComponent<CapsuleMembrane>(out var cm)) cm.SetRuntimeScale(factor);
+            else membrane.transform.localScale *= factor;
+        }
+
         /// <summary>
         /// Spawn the config's membrane, environment, and nucleus.
         /// </summary>
@@ -2423,7 +2432,10 @@ namespace CosmicShore.Gameplay
             // rendering on top of the real one that nothing can ever collect. Same reason a
             // duplicated 70k-prism environment would double the cell's mass.
             if (cellConfigData.MembranePrefab != null && membrane == null)
+            {
                 membrane = Instantiate(cellConfigData.MembranePrefab, transform.position, Quaternion.identity);
+                if (IsSatellite && SatelliteSizeScale > 1f) GrowMembrane(SatelliteSizeScale);
+            }
 
             if (spawnEnvironment && cellConfigData.EnvironmentPrefab != null && environment == null)
                 SpawnEnvironment();
@@ -2436,6 +2448,7 @@ namespace CosmicShore.Gameplay
             if (cellConfigData.NucleusPrefab == null || nucleus != null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
+            if (IsSatellite && SatelliteSizeScale > 1f) nucleus.transform.localScale *= SatelliteSizeScale;
             ApplyNucleusWorldRadius(); // honor any radius a mode requested before the nucleus existed
             ApplyNucleusMesh();        // ...or a replacement boundary mesh (non-spherical court)
             RefreshNucleusControlRadius();
@@ -2813,6 +2826,15 @@ namespace CosmicShore.Gameplay
         /// would escape any caller-side scope.
         /// </summary>
         public int SatellitePrismStride { get; set; } = 1;
+
+        /// <summary>
+        /// A SATELLITE's membrane and nucleus at this many times their authored size (the voyages' cells, Shombith
+        /// 2026-11-16: "make the cell big by 50%"). The membrane's radius grows with it, so everything that reads
+        /// <see cref="MembraneRadius"/> or <see cref="SenseRadius"/> (the density grids, spawn points, the Ark's
+        /// approach, the leash) sees the bigger world; the config's environment mass keeps its authored size. Set
+        /// BEFORE <see cref="InitializeSatellite"/>. Honoured only while <see cref="IsSatellite"/>; 1 = as authored.
+        /// </summary>
+        public float SatelliteSizeScale { get; set; } = 1f;
 
         /// <summary>
         /// Opt a SATELLITE into running its life spawner. Default false - the mode preview's
