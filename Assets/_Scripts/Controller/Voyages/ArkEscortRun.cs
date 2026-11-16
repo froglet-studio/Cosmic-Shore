@@ -275,9 +275,12 @@ namespace CosmicShore.Gameplay
             if (!swapper || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
             var t = local.Transform;
             var prefabs = swapper.VesselPrefabContainer;
+            // The friends who came with the host fly the first seats after the host's, as in Arena; an AI wingmate flies
+            // every seat left (VoyageRules.FriendAt; Shombith, 2026-11-16).
+            int friends = Mathf.Max(0, NetworkManager.Singleton.ConnectedClientsIds.Count - 1);
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
             {
-                if (seat == mySeat) continue;
+                if (seat == mySeat || VoyageRules.FriendAt(seat, mySeat, friends) >= 0) continue;
                 var slot = _squad.GetSlot(seat);
                 if (!VesselRequirement.IsConcrete(slot.Vessel)) continue;
                 // A hull with no registered prefab (Falcon, Termite, Shrike) cannot be released: the seat sails empty,

@@ -60,6 +60,7 @@ namespace CosmicShore.UI
         int _difficulty;
         bool _squadView, _editable;
         readonly List<string> _friends = new();
+        int _friendsShown = -1;
 
         sealed class PresetView
         {
@@ -77,7 +78,8 @@ namespace CosmicShore.UI
             public TMP_Text Role, Who, Vessel, Pilot, Element, Artifact, Line;
             public VoyageSeats.HullView Hull;
             public Image Portrait;
-            public RectTransform Flower, Settings;
+            public RectTransform Flower, Settings, AiTag;
+            public VoyageEdgeGlow Glow;
             public readonly Button[] Buttons = new Button[4];
         }
 
@@ -146,6 +148,12 @@ namespace CosmicShore.UI
         {
             var view = new SeatView { Root = At("Seat" + seat, seat * SeatStep, SeatY, SeatWidth, SeatHeight) };
             view.Card = _kit.Glass(view.Root, hit: false);
+            // A blue glow along the card's edges (Shombith, 2026-11-16), under its content.
+            var edgeGlow = VoyageKit.Node("EdgeGlow", view.Root);
+            VoyageKit.Le(edgeGlow).ignoreLayout = true;
+            VoyageKit.Stretch(edgeGlow);
+            edgeGlow.SetSiblingIndex(view.Card.Edge.transform.GetSiblingIndex());
+            view.Glow = edgeGlow.gameObject.AddComponent<VoyageEdgeGlow>();
             var c = view.Card.Content;
             float w = SeatWidth;
 
@@ -154,6 +162,14 @@ namespace CosmicShore.UI
             VoyageKit.Stretch(view.Who.rectTransform);
             view.Role = _kit.Text(At("Role", w - 28f - 220f, 28f, 220f, 22f, c), 14, _kit.Sub, TextAlignmentOptions.Right);
             VoyageKit.Stretch(view.Role.rectTransform);
+
+            // An AI's seat says so: "AI" in a small box under its name.
+            view.AiTag = At("AiTag", 28f, 62f, 44f, 24f, c);
+            _kit.Box(view.AiTag, VoyageKit.Fade(_kit.Popup, 0.8f), _kit.Cyan);
+            var aiWords = _kit.Label(view.AiTag, 12, _kit.Cyan, TextAlignmentOptions.Center);
+            VoyageKit.Stretch(aiWords.rectTransform);
+            aiWords.characterSpacing = 4f;
+            VoyageKit.Set(aiWords, _lines?.ArkSeatAiShort);
 
             // The hull, large in the middle over a soft light.
             var glow = At("Glow", 60f, 120f, w - 120f, 200f, c);
@@ -219,6 +235,13 @@ namespace CosmicShore.UI
             _offer = offer;
             _difficulty = difficulty;
             ReadParty();
+            // The page opens on your lobby when friends are in it, else on your squad; a choice made since holds until
+            // the lobby changes.
+            if (_friends.Count != _friendsShown)
+            {
+                _friendsShown = _friends.Count;
+                _squadView = _friends.Count == 0;
+            }
             Refresh();
         }
 
@@ -235,7 +258,8 @@ namespace CosmicShore.UI
             }
         }
 
-        bool Lobby => _friends.Count > 0 && !_squadView;
+        // Your lobby's seats (no squad of presets): you, the friends in your lobby, and AI wingmates in the seats left.
+        bool Lobby => !_squadView;
 
         void Refresh()
         {
@@ -248,33 +272,26 @@ namespace CosmicShore.UI
 
             VoyageKit.Set(_head, Lobby ? _lines?.ArkLobby : _lines?.ArkSquadHead);
             VoyageKit.Set(_headLine, Lobby
-                ? TemplateText.Fill(_lines?.ArkLobbyWith, "names", string.Join(", ", _friends))
+                ? _friends.Count > 0 ? TemplateText.Fill(_lines?.ArkLobbyWith, "names", string.Join(", ", _friends)) : _lines?.ArkSquadLine
                 : _friends.Count > 0 ? _lines?.ArkSquadLineLobby : _lines?.ArkSquadLine);
-            _flySquadBox.gameObject.SetActive(_friends.Count > 0);
-            VoyageKit.Set(_flySquadText, _squadView ? _lines?.ArkBackToLobby : _lines?.ArkFlySquad);
+            // Always a way between your squad and none: a squad whose members are away flies with AI in their seats, or
+            // leaves the squad for your lobby's seats (Shombith, 2026-11-16).
+            _flySquadBox.gameObject.SetActive(true);
+            VoyageKit.Set(_flySquadText, _squadView
+                ? _friends.Count > 0 ? _lines?.ArkBackToLobby : _lines?.ArkNoSquad
+                : _lines?.ArkFlySquad);
 
             DrawPresets(!Lobby);
             DrawVoyage();
 
-            int mine = VoyageSeats.MySeat(squad);
-            if (Lobby)
+            // Every seat is flown: yours, then the friends in your lobby in the seats after it (as the voyage seats them,
+            // VoyageRules.FriendAt), and an AI wingmate in each seat left. No seat stands open (Shombith, 2026-11-16).
+            int mine = Mathf.Max(0, VoyageSeats.MySeat(squad));
+            for (int seat = 0; seat < _seatViews.Count; seat++)
             {
-                // Your seat, then a card per person in your lobby.
-                DrawSeat(_seatViews[0], squad, mine >= 0 ? mine : 0, you: true);
-                for (int i = 1; i < _seatViews.Count; i++)
-                {
-                    bool friend = i - 1 < _friends.Count;
-                    _seatViews[i].Root.gameObject.SetActive(friend);
-                    if (friend) DrawFriend(_seatViews[i], _friends[i - 1]);
-                }
-            }
-            else
-            {
-                for (int seat = 0; seat < _seatViews.Count; seat++)
-                {
-                    _seatViews[seat].Root.gameObject.SetActive(squad != null);
-                    if (squad != null) DrawSeat(_seatViews[seat], squad, seat, you: seat == mine);
-                }
+                int friend = VoyageRules.FriendAt(seat, mine, _friends.Count);
+                if (friend >= 0) DrawFriend(_seatViews[seat], _friends[friend]);
+                else DrawSeat(_seatViews[seat], squad, seat, you: seat == mine);
             }
             _sail.interactable = _offer?.SetSail != null;
             if (_picker.IsOpen) _picker.Refresh();
@@ -328,8 +345,7 @@ namespace CosmicShore.UI
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
             {
                 var slot = squad.GetSlot(seat);
-                parts.Add(seat == mine ? _lines?.ArkYou : slot.IsPlayer() ? slot.MemberName
-                    : slot.IsOpen() ? _lines?.CardSeatOpen : _lines?.ArkSeatAiShort);
+                parts.Add(seat == mine ? _lines?.ArkYou : slot.IsPlayer() ? slot.MemberName : _lines?.ArkSeatAiShort);
             }
             return string.Join(_lines?.ArkSquadSeparator ?? string.Empty, parts);
         }
@@ -349,6 +365,8 @@ namespace CosmicShore.UI
         {
             view.Root.gameObject.SetActive(true);
             view.Card.Pick(_kit, you);
+            Glow(view, you);
+            view.AiTag.gameObject.SetActive(!you && squad != null);
             if (squad == null)
             {
                 VoyageKit.Set(view.Who, _lines?.CardNoSquad);
@@ -360,8 +378,11 @@ namespace CosmicShore.UI
             var pilot = _rules.PilotOf(slot, vessel);
             bool editable = VoyageSeats.CanEdit(squad, seat);
             VoyageKit.Set(view.Role, _rules.Role(seat));
-            VoyageKit.Set(view.Who, you ? _lines?.ArkYou : slot.IsPlayer() ? slot.MemberName
-                : slot.IsOpen() ? _lines?.CardSeatOpen : _lines?.ArkWingmate);
+            // Every seat but yours is an AI's here (a friend in your lobby is drawn by DrawFriend): a squad member who is
+            // not in your lobby has the AI fly for them.
+            VoyageKit.Set(view.Who, you ? _lines?.ArkYou : slot.IsPlayer()
+                ? TemplateText.Fill(_lines?.ArkAiFor, "name", slot.MemberName)
+                : _lines?.ArkWingmate);
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
             VoyageKit.Show(view.Portrait, pilot ? pilot.Portrait : null);
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : null);
@@ -373,8 +394,9 @@ namespace CosmicShore.UI
                 ? TemplateText.Fill(_lines?.ArkArtifact, "artifact", _rules.ArtifactName(slot, vessel, editable))
                 : null);
             // No squad yet (a new player, or before the cloud loads): the player's card says where to make one.
-            VoyageKit.Set(view.Line, !_editable && you ? _lines?.CardNoSquad : null);
             view.Settings.gameObject.SetActive(editable && _editable);
+            VoyageKit.Set(view.Line, !_editable && you ? _lines?.CardNoSquad
+                : !you && !view.Settings.gameObject.activeSelf ? _lines?.ArkAiLine : null);
             // Your own seat shows its four settings where another seat shows its artifact.
             view.Artifact.transform.parent.gameObject.SetActive(!view.Settings.gameObject.activeSelf || !string.IsNullOrEmpty(view.Line.text));
             int s = seat;
@@ -388,7 +410,10 @@ namespace CosmicShore.UI
 
         void DrawFriend(SeatView view, string name)
         {
+            view.Root.gameObject.SetActive(true);
             view.Card.Pick(_kit, false);
+            Glow(view, false);
+            view.AiTag.gameObject.SetActive(false);
             VoyageKit.Set(view.Role, _lines?.ArkInLobby);
             VoyageKit.Set(view.Who, name);
             view.Hull.Image.enabled = false;
@@ -401,6 +426,14 @@ namespace CosmicShore.UI
             VoyageKit.Set(view.Line, _lines?.ArkFriendLine);
             view.Settings.gameObject.SetActive(false);
             view.Artifact.transform.parent.gameObject.SetActive(true);
+        }
+
+        // The seat's blue edge glow (the worn colour set's cyan, as the picked edge): brighter on your own seat.
+        void Glow(SeatView view, bool you)
+        {
+            view.Glow.color = VoyageKit.Fade(_kit.Cyan, you ? 0.55f : 0.32f);
+            view.Glow.Outside = you ? 16f : 12f;
+            view.Glow.SetVerticesDirty();
         }
 
         // ── The seat popup ───────────────────────────────────────────────────

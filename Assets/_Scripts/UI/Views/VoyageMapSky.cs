@@ -45,6 +45,12 @@ namespace CosmicShore.UI
         const int LinesPerFrame = 6000;
         const int MaxLabels = 48;
         const int MaxVerts = 60000;
+        // A map lying back (the Voyages table, VoyageTableTilt) is laid out again as a triangle list, three vertices to a
+        // triangle, and one mesh holds at most 65,000: past it Unity draws none of the map, which is how the galaxy went
+        // missing at Sector and Region round Tumult, whose sky ran to 94,000-165,000 (Shombith, 2026-11-16). Its sky is
+        // counted in indices (the list's vertices) and stops here, leaving room for the painted sea the tilt cuts finer
+        // (about 6,200), the corner, the course and the places drawn after the sky.
+        const int TiltedMaxIndices = 48000;
         const float LadderRow = VoyageMapText.Ladder * 1.45f, LadderGap = 8f, LadderLeft = 8f, LadderTop = 8f;
         // The cells in 3D (Garrett, 2026-11-07: "when we zoom into cells the semantic zoom should see nuclei and membranes
         // and represent the actual cell"; Docs/Voyages/VOYAGE_BOARD.md §4c): truncated octahedra round a BCC lattice of
@@ -398,6 +404,14 @@ namespace CosmicShore.UI
 
         // ── The mesh ─────────────────────────────────────────────────────────
 
+        bool Tilted => _map.Tilt && _map.Tilt.Active;
+
+        /// <summary>How much of the mesh's room the sky has used: vertices on a flat map, the list's vertices (indices) on
+        /// a tilted one.</summary>
+        int Used(VertexHelper vh) => Tilted ? vh.currentIndexCount : vh.currentVertCount;
+
+        int Cap => Tilted ? TiltedMaxIndices : MaxVerts;
+
         /// <summary>Draw the sky into the map's mesh (under the inset, the lanes and the places).</summary>
         public void Populate(VertexHelper vh, Vector2 white, VoyageToyDefinitionSO style)
         {
@@ -409,7 +423,7 @@ namespace CosmicShore.UI
             if (_cellAlpha > 0f) PopulateCells(vh, white);
             foreach (var m in _stars)
             {
-                if (vh.currentVertCount > MaxVerts) return;
+                if (Used(vh) > Cap) return;
                 var o = m.Object;
                 var at = At(o.X, o.Y);
                 if (!lim.Contains(at)) continue;
@@ -435,7 +449,7 @@ namespace CosmicShore.UI
                 globEdge = (Color32)ColorTrace.Retrace(ColorTrace.Ui, GlobEdge);
             foreach (var m in _clusters)
             {
-                if (vh.currentVertCount > MaxVerts) return;
+                if (Used(vh) > Cap) return;
                 var c = m.Object;
                 var at = At(c.X, c.Y);
                 if (!clim.Contains(at)) continue;
@@ -499,14 +513,14 @@ namespace CosmicShore.UI
             float px = CellPx, fill = Mathf.Clamp01((px - CellFillFrom) / (CellFillTo - CellFillFrom));
             bool inner = px > CellInnerFrom;
             var lim = new Rect(r.xMin - px, r.yMin - px, r.width + 2f * px, r.height + 2f * px);
-            int budget = vh.currentVertCount + CellVertBudget;
+            int budget = Mathf.Min(Used(vh) + CellVertBudget, Cap - 4000);
             // the liquid between the cells, under them
             float memA = (float)HyperSeaCells.MembraneAlpha(px);
             VoyageCellDraw.Liquid(vh, r, Mathf.Max(.4f, memA) * _cellAlpha, white);
             for (int pass = 0; pass < 2; pass++)
                 for (int i = 0; i < _cellNuclei.Count; i++)
                 {
-                    if (vh.currentVertCount > budget) break;
+                    if (Used(vh) > budget) break;
                     var at = At(_cellMid[i].x, _cellMid[i].y);
                     if (!lim.Contains(at)) continue;
                     _screenPoly.Clear();
@@ -524,7 +538,7 @@ namespace CosmicShore.UI
             double s = _map.PixelsPerUnit;
             for (int i = 0; i < _cellNuclei.Count; i++)
             {
-                if (vh.currentVertCount > budget + 4000) break;
+                if (Used(vh) > budget + 4000) break;
                 var at = At(_cellMid[i].x, _cellMid[i].y);
                 if (!lim.Contains(at)) continue;
                 double R = _cellR[i], h = Math.Abs(_cellH[i]);

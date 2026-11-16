@@ -2946,6 +2946,9 @@ MonoBehaviour:
     ArkVoyageLine: '{kind}'
     ArkSeatAiShort: AI
     ArkSquadSeparator: ' - '
+    ArkNoSquad: FLY WITHOUT A SQUAD
+    ArkAiFor: 'AI flies for {name} until they join'
+    ArkAiLine: A friend who joins your lobby takes this seat
     PickTitle: Change your seat
     PickTitleSeat: 'Change {seat}'
     PickKits: QUICK KITS - ALL FOUR IN ONE PRESS
