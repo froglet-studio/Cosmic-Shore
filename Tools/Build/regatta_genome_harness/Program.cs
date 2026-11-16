@@ -155,19 +155,22 @@ static class Program
         sb.Append("], \"rail_prisms\": ").Append(railCount);
         sb.Append(", \"prisms\": [");
         // Each laid prism: x, y, z, size (longest axis), domain, kind, group (-1 = rails, else placement index).
-        int group = -1, groupLeft = railCount;
-        var counts = laid.Arena.PlacementReports.Where(r => r.Failure == null && r.Laid > 0).Select(r => r.Laid).ToList();
-        int gi = 0;
+        var owner = new int[laid.Lays.Count];
+        Array.Fill(owner, -1);
+        for (int j = 0; j < laid.Arena.PlacementLayRangeCount; j++)
+        {
+            laid.Arena.GetPlacementLayRange(j, out int placement, out int start, out int count);
+            for (int q = start; q < start + count; q++) owner[q] = placement;
+        }
         for (int i = 0; i < laid.Lays.Count; i++)
         {
-            while (groupLeft <= 0 && gi < counts.Count) { group = gi; groupLeft = counts[gi++]; }
+            int group = owner[i];
             var l = laid.Lays[i];
             float size = Math.Max(l.Point.Scale.x, Math.Max(l.Point.Scale.y, l.Point.Scale.z));
             if (i > 0) sb.Append(", ");
             sb.Append('[').Append(F3(l.Point.Position.x)).Append(", ").Append(F3(l.Point.Position.y)).Append(", ")
               .Append(F3(l.Point.Position.z)).Append(", ").Append(F3(size)).Append(", ").Append((int)l.Domain).Append(", ")
               .Append((int)l.Kind).Append(", ").Append(group).Append(']');
-            groupLeft--;
         }
         sb.Append("], \"sites\": ").Append(laid.Arena.SownSiteCount).Append("}\n");
         File.WriteAllText(outPath, sb.ToString());
@@ -234,7 +237,7 @@ static class Program
         }
         kinds = seenKinds.Count;
         Console.WriteLine($"{(failures == 0 ? "pass" : "FAIL")}  {n} genomes laid, {prisms} placement prisms, {kinds} kinds laid, " +
-                          "none in the line tube, a mouth, a rail, the nucleus or the membrane");
+                          "none in a mouth, a rail, the nucleus or the membrane, none in the line tube unless it crosses the line");
         return failures == 0 ? 0 : 1;
     }
 
@@ -246,9 +249,19 @@ static class Program
         var rings = new List<RaceGate>(laid.Gates);
         for (int g = 0; g < laid.Gates.Count; g++)
             if (laid.Arena.Features.TryAlternate(laid.Gates, g, out var alt)) rings.Add(alt);
+        // Which placement laid each prism (the arena's own lay ranges), for its cross_line gene.
+        var crossing = new HashSet<int>();
+        var placements = genome.Placements;   // already repaired, as the arena laid it
+        for (int j = 0; j < laid.Arena.PlacementLayRangeCount; j++)
+        {
+            laid.Arena.GetPlacementLayRange(j, out int owner, out int start, out int count);
+            if (placements[owner].CrossLine)
+                for (int q = start; q < start + count; q++) crossing.Add(q);
+        }
         for (int i = railCount; i < laid.Lays.Count; i++)
         {
             var l = laid.Lays[i];
+            bool crossLine = crossing.Contains(i);
             var p = l.Point.Position;
             float r = RegattaPlacementCarve.RadiusOf(l.Point.Scale);
             float d = p.magnitude;
@@ -263,7 +276,7 @@ static class Program
                 float t = Math.Clamp(Vector3.Dot(p - a, ab) / Math.Max(1e-8f, Vector3.Dot(ab, ab)), 0f, 1f);
                 best = Math.Min(best, (p - (a + ab * t)).magnitude);
             }
-            if (best < genome.LineClearance + r - 0.01f) return $"prism {i} is {best:F1} u from the racing line (tube {genome.LineClearance})";
+            if (!crossLine && best < genome.LineClearance + r - 0.01f) return $"prism {i} is {best:F1} u from the racing line (tube {genome.LineClearance})";
             foreach (var q in rails)
                 if ((q - p).magnitude < RegattaPlacementCarve.RailRadius + r - 0.01f) return $"prism {i} touches a rail";
             foreach (var g in rings)

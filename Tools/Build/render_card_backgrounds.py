@@ -118,6 +118,13 @@ SOURCES = [
     f"{_AR}/Regatta/RegattaCourseFeatures.cs",
     f"{_AR}/Regatta/RegattaLifeformSites.cs",
     f"{_SP}/ICellFaunaCorridorSource.cs",
+    # ... and the course genome since the Regatta flywheel's W2 (#2036): the genome, its catalogue, its JSON, the
+    # placement builder and carve.
+    f"{_AR}/Regatta/RegattaCourseGenome.cs",
+    f"{_AR}/Regatta/RegattaGeneCatalogue.cs",
+    f"{_AR}/Regatta/RegattaJson.cs",
+    f"{_AR}/Regatta/RegattaPlacementBuilder.cs",
+    f"{_AR}/Regatta/RegattaPlacementCarve.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
     f"{_AR}/Headlong/HeadlongCircuit.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",

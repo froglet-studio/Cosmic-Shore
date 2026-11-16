@@ -152,6 +152,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>What each of the genome's placements laid on the last build (empty without a genome).</summary>
         public IReadOnlyList<RegattaPlacementReport> PlacementReports => _placementReports;
+
+        /// <summary>The genome's placement prisms' laid volume (Σ |x·y·z|): what this course adds to the measured phase
+        /// ladder (the cell reads it once the Ecology lane takes the phase-baseline change). 0 on every shipped course.</summary>
+        public float PhaseBaselineVolume { get; private set; }
+
+        /// <summary>The genome's placement prism count, for the ladder's count backstop.</summary>
+        public int PhaseBaselinePrisms { get; private set; }
         readonly List<RegattaPlacementReport> _placementReports = new();
 
         public override bool PreparesPlantingSites => Lifeforms != null && Lifeforms.HasSites;
@@ -176,6 +183,7 @@ namespace CosmicShore.Gameplay
         // One Volume trail per genome placement, laid after the lanes: _cachedLays[start, start + count).
         readonly List<int> _placementLayStart = new();
         readonly List<int> _placementLayCount = new();
+        readonly List<int> _placementLayOwner = new();   // the genome placement each lay range came from
 
         /// <summary>This course's features: <see cref="RegattaCourseFeatures.Override"/> when a benchmark or test set
         /// one, else the prefab's own. Read by the controller (alternate rings, line crystals) off the same asset.</summary>
@@ -255,7 +263,10 @@ namespace CosmicShore.Gameplay
             _runClosed.Clear();
             _placementLayStart.Clear();
             _placementLayCount.Clear();
+            _placementLayOwner.Clear();
             _placementReports.Clear();
+            PhaseBaselineVolume = 0f;
+            PhaseBaselinePrisms = 0;
 
             var gates = BuildGatesNow();
             _gates.AddRange(gates);
@@ -305,8 +316,9 @@ namespace CosmicShore.Gameplay
                 _placementReports.AddRange(RegattaPlacementBuilder.LayAll(genome, RegattaGeneCatalogue.Shipped, gates,
                                                                           carve, placed));
                 int at = 0;
-                foreach (var report in _placementReports)
+                for (int owner = 0; owner < _placementReports.Count; owner++)
                 {
+                    var report = _placementReports[owner];
                     if (report.Laid <= 0) continue;
                     int start = _cachedLays.Count;
                     for (int q = 0; q < report.Laid; q++, at++)
@@ -314,8 +326,16 @@ namespace CosmicShore.Gameplay
                         var lay = placed[at];
                         Emit(lay.Point.Position, lay.Point.Rotation, lay.Point.Scale, lay.Domain, lay.Kind);
                     }
+                    // Emit may skip a prism in the spawn clearance: count what was laid, not what was offered.
+                    for (int q = start; q < _cachedLays.Count; q++)
+                    {
+                        var sc = _cachedLays[q].Point.Scale;
+                        PhaseBaselineVolume += Mathf.Abs(sc.x * sc.y * sc.z);
+                    }
+                    PhaseBaselinePrisms += _cachedLays.Count - start;
                     _placementLayStart.Add(start);
                     _placementLayCount.Add(_cachedLays.Count - start);
+                    _placementLayOwner.Add(owner);
                 }
             }
 
@@ -432,6 +452,18 @@ namespace CosmicShore.Gameplay
             for (int j = 0; j < _placementTrails.Count; j++)
                 PrismTrailBuilder.LaySync(prism, PlacementLays(j), container.transform,
                                           _placementTrails[j], $"{container.name}::PLACEMENT{j}", true);
+        }
+
+        /// <summary>How many placements laid prisms (one lay range each, in genome order).</summary>
+        public int PlacementLayRangeCount => _placementLayStart.Count;
+
+        /// <summary>Lay range <paramref name="j"/>: the genome placement it came from (an index into the repaired
+        /// genome's <c>Placements</c> and <see cref="PlacementReports"/>) and where its prisms sit in the cached lays.</summary>
+        public void GetPlacementLayRange(int j, out int placement, out int start, out int count)
+        {
+            placement = _placementLayOwner[j];
+            start = _placementLayStart[j];
+            count = _placementLayCount[j];
         }
 
         /// <summary>One placement's lays, decimated inside the placement (a preview stride).</summary>

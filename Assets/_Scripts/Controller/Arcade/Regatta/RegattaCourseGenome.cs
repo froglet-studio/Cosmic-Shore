@@ -37,6 +37,11 @@ namespace CosmicShore.Gameplay
         public int Seed;
         /// <summary>A world spawner's density dial (how many of everything); ignored by the others.</summary>
         public float Density = 1f;
+        /// <summary>May this placement's prisms stand in the race line's tube? Off (the default), the carve keeps the
+        /// <see cref="RegattaCourseGenome.LineClearance"/> tube open and a pilot flying the line never meets it. On, the
+        /// placement is an obstacle ON the line: only the ring mouths, the rails and the shell stay carved, so it is
+        /// what makes a pilot (and an AI) steer, break through or bounce.</summary>
+        public bool CrossLine;
         /// <summary>The spawner's own fields, by serialized name (catalogue <c>params</c>).</summary>
         public SortedDictionary<string, double> Params = new(StringComparer.Ordinal);
 
@@ -68,7 +73,7 @@ namespace CosmicShore.Gameplay
     /// <para>JSON (the flywheel's shared contract): <c>{"version", "intensity", "seed", "circuit": {HeadlongCircuitSettings
     /// field: value, "CornerProfile": [8]}, "rails": {"LaneOffset", "TwistTurnsPerLap", "PrismSpacing"}, "features":
     /// {RegattaCourseFeatures, PascalCase}, "line_clearance", "placements": [{"kind", "leg", "offset": [radius,
-    /// bearing_deg, along_u], "scale", "yaw", "pitch", "roll", "domain", "prism", "seed", "density", "params": {}}],
+    /// bearing_deg, along_u], "scale", "yaw", "pitch", "roll", "domain", "prism", "seed", "density", "cross_line", "params": {}}],
     /// "flora": {"preset", RegattaLifeformSiteSettings fields}}</c>. "crystals": {"PerLap", "Phase"} at the top level
     /// is read into <c>features.Crystals</c>.</para>
     /// </summary>
@@ -446,6 +451,7 @@ namespace CosmicShore.Gameplay
                     Prism = RegattaJson.Str(pd, "prism", "Native"),
                     Seed = (int)RegattaJson.Num(pd, "seed", 0),
                     Density = (float)RegattaJson.Num(pd, "density", 1),
+                    CrossLine = RegattaJson.Bool(pd, "cross_line", false),
                 };
                 var prm = RegattaJson.Obj(RegattaJson.Get(pd, "params"));
                 if (prm != null)
@@ -570,7 +576,7 @@ namespace CosmicShore.Gameplay
                         ["offset"] = new List<object> { (double)p.Radius, (double)p.Bearing, (double)p.Along },
                         ["scale"] = (double)p.Scale, ["yaw"] = (double)p.Yaw, ["pitch"] = (double)p.Pitch,
                         ["roll"] = (double)p.Roll, ["domain"] = p.Domain, ["prism"] = p.Prism, ["seed"] = p.Seed,
-                        ["density"] = (double)p.Density, ["params"] = prm,
+                        ["density"] = (double)p.Density, ["cross_line"] = p.CrossLine, ["params"] = prm,
                     });
                 }
             root["placements"] = placements;

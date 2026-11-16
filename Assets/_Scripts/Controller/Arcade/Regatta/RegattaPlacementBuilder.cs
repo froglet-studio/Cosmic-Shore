@@ -168,23 +168,31 @@ namespace CosmicShore.Gameplay
 
         // ── The pure half: scale, pose, recolour, thin, carve ──────────────────────────────────────────────────
 
-        /// <summary>The native layout's centre (the middle of its bounding box) and bounding radius (the farthest prism
-        /// centre plus that prism's own half-length).</summary>
+        /// <summary>The share of a layout's prisms its bounding radius holds. A spawner that projects (the Hopf
+        /// fibration's stereographic projection, a pole near one of its points) can throw a few prisms hundreds of times
+        /// farther out than the rest; sizing by the farthest one shrank the whole shape below the finest prism (it laid
+        /// nothing). The outliers are scaled with the rest and the carve removes whatever lands out of bounds.</summary>
+        public const float BoundsShare = 0.9f;
+
+        /// <summary>The native layout's centre (the per-axis median of its prism centres) and bounding radius (the
+        /// <see cref="BoundsShare"/> quantile of each prism's distance from it plus that prism's own half-length).</summary>
         public static void Bounds(List<PrismLay> native, out Vector3 centre, out float radius)
         {
             centre = Vector3.zero;
             radius = 0f;
             if (native == null || native.Count == 0) return;
-            Vector3 lo = native[0].Point.Position, hi = lo;
-            for (int i = 1; i < native.Count; i++)
+            int n = native.Count;
+            var axis = new float[n];
+            for (int a = 0; a < 3; a++)
             {
-                lo = Vector3.Min(lo, native[i].Point.Position);
-                hi = Vector3.Max(hi, native[i].Point.Position);
+                for (int i = 0; i < n; i++) axis[i] = native[i].Point.Position[a];
+                Array.Sort(axis);
+                centre[a] = (n & 1) == 1 ? axis[n / 2] : 0.5f * (axis[n / 2 - 1] + axis[n / 2]);
             }
-            centre = (lo + hi) * 0.5f;
-            for (int i = 0; i < native.Count; i++)
-                radius = Mathf.Max(radius, (native[i].Point.Position - centre).magnitude
-                                           + RegattaPlacementCarve.RadiusOf(native[i].Point.Scale));
+            for (int i = 0; i < n; i++)
+                axis[i] = (native[i].Point.Position - centre).magnitude + RegattaPlacementCarve.RadiusOf(native[i].Point.Scale);
+            Array.Sort(axis);
+            radius = axis[Mathf.Clamp(Mathf.CeilToInt(BoundsShare * n) - 1, 0, n - 1)];
         }
 
         /// <summary>
@@ -225,7 +233,7 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
                 float r = RegattaPlacementCarve.RadiusOf(scale);
-                var verdict = carve?.Test(pos, r) ?? RegattaPlacementCarve.Verdict.Laid;
+                var verdict = carve?.Test(pos, r, p.CrossLine) ?? RegattaPlacementCarve.Verdict.Laid;
                 if (verdict != RegattaPlacementCarve.Verdict.Laid) { report.Carved[(int)verdict]++; continue; }
                 output.Add(new PrismLay(new SpawnPoint(pos, rotation * lay.Point.Rotation, scale),
                                         domain ?? lay.Domain, kind ?? lay.Kind));
