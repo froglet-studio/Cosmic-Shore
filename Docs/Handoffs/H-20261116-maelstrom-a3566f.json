@@ -1,0 +1,57 @@
+{
+  "id": "H-20261116-maelstrom-a3566f",
+  "kind": "to",
+  "lane": "maelstrom",
+  "laneName": "Maelstrom",
+  "laneKind": "game",
+  "by": "Garrett",
+  "to": "Yash",
+  "on": "2026-11-16T20:38:45+00:00",
+  "branch": "cece/stoic-bell-yk2nmv",
+  "pr": 2030,
+  "note": "Maelstrom intensity tiers merged (#2030): four exclusive buckets, all 83 arcade games in one; Great has only Skim Race; untested in the editor.",
+  "signals": {
+    "laneKind": "game",
+    "handTests": false,
+    "merged": true
+  },
+  "source": "cli",
+  "brief": {
+    "summary": "The Maelstrom intensities are now four exclusive buckets (Garrett, 2026-11-16): 1 Beginner (6 games), 2 Great (Skim Race only), 3 Good (7), 4 Floor (69). Every arcade card (83) is in exactly one. Merged in #2030.",
+    "decisions": [
+      "A run at intensity N deals ONLY tier N's games (was cumulative 1..N); an empty bucket falls back to the whole queue.",
+      "Tiers are placed by Tools/Build/maelstrom_tiers.py from measured human flights/launches (bugledger), git history and sign-offs; Garrett's examples are verdicts: Scarab Rally 1, Skim Race 2, Joust 3.",
+      "Cleave is held in the Floor by your run's host-freeze finding (B45)."
+    ],
+    "open": [
+      [
+        "Docs/MaelstromSystem/INTENSITY_TIERS.md",
+        "Great holds one game, so a ceiling-2 Maelstrom deals only Skim Race; Garrett decides whether a second belongs there"
+      ],
+      [
+        "MaelstromController / MaelstromRoundTicket",
+        "your finding 4: the guest never learns the intensity ceiling - with tiers it now also shows the guest the wrong bucket's pool line"
+      ],
+      [
+        "Maelstrom, any intensity",
+        "EditMode tests in MaelstromDataSOTests compiled but not run; no Maelstrom has been played on the new pool yet"
+      ]
+    ],
+    "steps": [
+      "Arcade -> Maelstrom at intensity 1: rounds deal only Scarab Rally, Slingshot, Scarab Scramble, Scurry, Waystation, Bloomrush; hub line '6 of 83 modes, intensity 1'",
+      "Intensity 4: a Floor round on a newer hull (Tiger Moth, Angler, Orca) loads, AI seats fly or sit, Continue returns to the hub",
+      "Move a game: python3 Tools/Build/maelstrom_tiers.py set <game> <1-4> --by <you>, then --write; re-place everything after playtests: maelstrom_tiers.py measure"
+    ],
+    "reading": [
+      [
+        "Docs/MaelstromSystem/INTENSITY_TIERS.md",
+        "the generated board: every game, its numbers and why it sits where it does"
+      ],
+      [
+        "Docs/MaelstromSystem/ARCHITECTURE.md",
+        "section 1.1: the tiers, the model, the tool"
+      ]
+    ],
+    "doc": "Docs/MaelstromSystem/INTENSITY_TIERS.md"
+  }
+}
