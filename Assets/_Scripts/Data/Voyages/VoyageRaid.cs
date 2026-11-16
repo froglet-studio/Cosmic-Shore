@@ -285,6 +285,30 @@ namespace CosmicShore.Data
             return lost;
         }
 
+        /// <summary>
+        /// One banked crystal lost from the hold (the Ark's hull is below its leak line, Shombith 2026-11-16): taken from
+        /// the seat with the most banked, of that seat's most plentiful element, so no seat is emptied first by order.
+        /// Returns the element lost, or <see cref="Element.None"/> when nothing is banked.
+        /// </summary>
+        public Element Leak()
+        {
+            Seat most = null;
+            int mostTotal = 0;
+            foreach (var s in Seats)
+            {
+                int t = s?.Total ?? 0;
+                if (t > mostTotal) { most = s; mostTotal = t; }
+            }
+            if (most == null) return Element.None;
+            var best = Element.None;
+            int bestCount = 0;
+            foreach (var e in VoyageRaid.Elements)
+                if (most.Crystals[(int)e] > bestCount) { best = e; bestCount = most.Crystals[(int)e]; }
+            if (best == Element.None) return Element.None;
+            most.Crystals[(int)best]--;
+            return best;
+        }
+
         /// <summary>What <paramref name="playerName"/> carries unbanked (0 for a seat never seen).</summary>
         public int CarriedBy(string playerName) => Find(playerName)?.CarriedTotal ?? 0;
 

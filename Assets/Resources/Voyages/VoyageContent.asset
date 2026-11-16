@@ -1528,7 +1528,7 @@ MonoBehaviour:
       OnSuccess: 
       OnFail: 
       Verb: 3
-      Goal: 20
+      Goal: 50
       HullFloor: 0
       NoKill: 0
       Role: 3
@@ -1544,7 +1544,7 @@ MonoBehaviour:
       - 1
       - 1
       - 1
-      BreachHull: 0.4
+      BreachHull: 0.1
       Always: 1
       CountsUnderway: 1
       Cells: 4
@@ -3351,3 +3351,12 @@ MonoBehaviour:
     ToastSpilledSub: '{count} lost. Grab them back before the Ark sails.'
     ObjectiveStripAnchor: 'Raid: the Ark sails in {time}'
     ObjectiveStripCarried: 'Carrying {count}. Bank them at the Ark.'
+    ToastGoalReachedSub: Pause and choose Complete and set sail, or keep raiding for more.
+    PauseCompleteAndSail: Complete and set sail
+    ObjectiveStripComplete: Goal met. Pause to complete and set sail.
+    ObjectiveStripArkHull: 'Ark hull {hull}%'
+    ObjectiveStripLeaking: 'Hull below {line}%: the hold is losing crystals.'
+    ToastHullLeaking: THE HOLD IS LEAKING
+    ToastHullLeakingSub: 'The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.'
+    ToastRaiders: RAIDERS IN OPEN WATER
+    ToastRaidersSub: Big creatures are coming for the Ark between the cells.

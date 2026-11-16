@@ -142,6 +142,19 @@ namespace CosmicShore.Data
             Owed[(int)element] += amount;
         }
 
+        /// <summary>One owed crystal lost from the hold (the Ark's hull is below its leak line): of the element owed most.
+        /// Returns the element, or <see cref="Element.None"/> when nothing is owed.</summary>
+        public Element LeakOwed()
+        {
+            if (Owed == null) return Element.None;
+            int best = -1, bestCount = 0;
+            for (int i = 0; i < Owed.Count; i++)
+                if (Owed[i] > bestCount) { best = i; bestCount = Owed[i]; }
+            if (best < 0) return Element.None;
+            Owed[best]--;
+            return (Element)best;
+        }
+
         /// <summary>Repairs a record a partial save (or a save from before the depth pass) can carry. Idempotent.</summary>
         public void Normalize()
         {

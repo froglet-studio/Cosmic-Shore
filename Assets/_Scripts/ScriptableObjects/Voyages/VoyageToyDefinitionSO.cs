@@ -156,11 +156,11 @@ namespace CosmicShore.ScriptableObjects
         [Header("Voyage - Crystal Run raid windows (P1, Shombith 2026-11-16)")]
         [SerializeField, Min(0f), Tooltip("Seconds the Ark anchors in a HOSTILE cell of a Crystal Run before it sails on. " +
                                           "0 = it does not stop.")]
-        float raidAnchorHostileSeconds = 60f;
+        float raidAnchorHostileSeconds = 30f;
 
         [SerializeField, Min(0f), Tooltip("Seconds the Ark anchors in a CALM cell of a Crystal Run before it sails on. " +
                                           "0 = it does not stop.")]
-        float raidAnchorCalmSeconds = 35f;
+        float raidAnchorCalmSeconds = 30f;
 
         [SerializeField, Min(0f), Tooltip("Seconds before the Ark sails that its horn sounds and the window-closing toast shows.")]
         float raidAnchorWarnSeconds = 10f;
@@ -176,6 +176,45 @@ namespace CosmicShore.ScriptableObjects
 
         [SerializeField, Min(0f), Tooltip("After a spill, seconds before the same seat can spill again.")]
         float raidSpillCooldownSeconds = 1.5f;
+
+        [Header("Voyage - Crystal Run hull raids and the way home (Shombith 2026-11-16, round 3)")]
+        [SerializeField, Range(0f, 1f), Tooltip("Share of a CALM cell's fauna goal picks that go for the Ark in a Crystal " +
+                                                "Run (hostile cells use the Ark escort tier's share). 0 = calm cells leave " +
+                                                "the Ark alone.")]
+        float raidCalmLureShare = 0.2f;
+
+        [SerializeField, Range(0f, 1f), Tooltip("Below this share of its hull, the Ark loses banked crystals one by one. " +
+                                                "0 = it never does.")]
+        float raidHullLeakBelow = 0.3f;
+
+        [SerializeField, Min(0.1f), Tooltip("Seconds between two lost crystals while the hull is below the leak line.")]
+        float raidHullLeakSeconds = 1.5f;
+
+        [SerializeField, Min(1f), Tooltip("On the way home, every cell's lure share is multiplied by this (calm cells " +
+                                          "start from the calm share), and the fauna's assaults may come in any cell.")]
+        float homewardLureFactor = 2f;
+
+        [SerializeField, Min(0f), Tooltip("On the way home, seconds between two waves of raiders in the open water " +
+                                          "between cells. 0 = no raiders.")]
+        float homewardRaiderSeconds = 12f;
+
+        [SerializeField, Min(0), Tooltip("Raiders in one wave.")]
+        int homewardRaiderCount = 2;
+
+        [SerializeField, Min(0), Tooltip("No new wave while this many raiders are alive.")]
+        int homewardRaiderMax = 6;
+
+        [SerializeField, Min(1f), Tooltip("A raider's body is this many times its species' size.")]
+        float homewardRaiderScale = 1.8f;
+
+        [SerializeField, Min(50f), Tooltip("How far from the Ark, u, a raider comes in (ahead and to the side).")]
+        float homewardRaiderDistance = 260f;
+
+        [Header("Voyage - the cells")]
+        [SerializeField, Range(1f, 3f), Tooltip("A voyage cell's membrane and nucleus are this many times their authored " +
+                                                "size, and the corridor spaces cells to match (Shombith 2026-11-16: 50% " +
+                                                "bigger). The cell's own environment mass keeps its authored size.")]
+        float cellScale = 1.5f;
 
         [Header("Voyage - the galaxy map (the Voyage window's cards)")]
         [SerializeField, Tooltip("The course a card's job sails, drawn over the map.")]
@@ -269,6 +308,16 @@ namespace CosmicShore.ScriptableObjects
         public bool RaidCrystalsAtRisk => raidCrystalsAtRisk;
         public float RaidBankRadius => raidBankRadius;
         public float RaidSpillCooldownSeconds => raidSpillCooldownSeconds;
+        public float RaidCalmLureShare => raidCalmLureShare;
+        public float RaidHullLeakBelow => raidHullLeakBelow;
+        public float RaidHullLeakSeconds => raidHullLeakSeconds;
+        public float HomewardLureFactor => homewardLureFactor;
+        public float HomewardRaiderSeconds => homewardRaiderSeconds;
+        public int HomewardRaiderCount => homewardRaiderCount;
+        public int HomewardRaiderMax => homewardRaiderMax;
+        public float HomewardRaiderScale => homewardRaiderScale;
+        public float HomewardRaiderDistance => homewardRaiderDistance;
+        public float CellScale => cellScale;
         public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);
         public Color VaultColor => ColorTrace.Retrace(ColorTrace.Ui, vaultColor);
         public Color CoreColor => ColorTrace.Retrace(ColorTrace.Ui, coreColor);
@@ -285,6 +334,7 @@ namespace CosmicShore.ScriptableObjects
             string label = voyage ? voyage.Lines.VoyageName : DisplayName;
             var cfg = withArk ? withArk.BuildConfig(label) : new ArkwayConfig { DisplayName = label };
             if (voyage && voyage.CellPool is { Count: > 0 }) cfg.Cells = voyage.CellPool;
+            cfg.CellScale = Mathf.Max(1f, cellScale);
             return cfg;
         }
     }

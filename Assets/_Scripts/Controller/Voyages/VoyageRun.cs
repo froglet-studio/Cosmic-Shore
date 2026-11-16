@@ -202,6 +202,7 @@ namespace CosmicShore.Gameplay
 
             Deploy(local, domain);
             VoyageObjective.Source = this;
+            PauseMenuAction.Current = this;
             (_alarms ??= new ArkAlarmToasts(this, () => _sea)).Hook();
             if (!_attackerMarks) _attackerMarks = ArkAttackerMarks.Create(transform, this, () => Ark);
 
@@ -745,6 +746,7 @@ namespace CosmicShore.Gameplay
             if (!_active) return;
             TickLegToasts();
             TickRaidWindow();
+            TickHullLeak();
             WatchHold();
             TickHold();
             TickObserve();

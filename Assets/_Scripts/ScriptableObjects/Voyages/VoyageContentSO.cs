@@ -1093,5 +1093,14 @@ namespace CosmicShore.ScriptableObjects
         public string ObjectiveStripAnchor = "Raid: the Ark sails in {time}";
         [Tooltip("Objective strip: crystals the pilot carries unbanked. {count}.")]
         public string ObjectiveStripCarried = "Carrying {count}. Bank them at the Ark.";
+        public string ToastGoalReachedSub = "Pause and choose Complete and set sail, or keep raiding for more.";
+        public string PauseCompleteAndSail = "Complete and set sail";
+        public string ObjectiveStripComplete = "Goal met. Pause to complete and set sail.";
+        public string ObjectiveStripArkHull = "Ark hull {hull}%";
+        public string ObjectiveStripLeaking = "Hull below {line}%: the hold is losing crystals.";
+        public string ToastHullLeaking = "THE HOLD IS LEAKING";
+        public string ToastHullLeakingSub = "The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.";
+        public string ToastRaiders = "RAIDERS IN OPEN WATER";
+        public string ToastRaidersSub = "Big creatures are coming for the Ark between the cells.";
     }
 }
