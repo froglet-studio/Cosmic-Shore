@@ -26,12 +26,7 @@ namespace CosmicShore.Gameplay
             {
                 var cell = _cellOfLeg[leg];
                 if (!cell) continue;
-                // "Under the team's control": a hostile world the squad PACIFIED (earned: escort.pacifyShare, min volume and
-                // nucleus time), or a world that started friendly and is still the squad's. Leading an empty hostile
-                // nucleus with the Ark's own hull is not control.
-                var legReport = leg < _report.LegReports.Count ? _report.LegReports[leg] : null;
-                bool pacified = legReport is { Pacified: true };
-                bool held = pacified || legReport is { Hostile: false } && cell.DominantDomain == squad;
+                bool held = LegHeld(leg, cell, squad);
 
                 // The lure: hostile, unpacified worlds only (a pacified world's fauna are the squad's own colour).
                 if (held || lure <= 0f) cell.SetFeedingLure(null, squad, 0f);
@@ -41,6 +36,16 @@ namespace CosmicShore.Gameplay
             }
             ark.RegrowAllowed = regrow;
             if (regrow) { r.RegrowSeconds += SampleSeconds; _report.RegrowSeconds += SampleSeconds; }
+        }
+
+        /// <summary>"Under the team's control": a hostile world the squad PACIFIED (earned: escort.pacifyShare, min volume and
+        /// nucleus time), or a world that started friendly and is still the squad's. Leading an empty hostile nucleus with
+        /// the Ark's own hull is not control.</summary>
+        bool LegHeld(int leg, Cell cell, Domains squad)
+        {
+            var legReport = _report != null && leg < _report.LegReports.Count ? _report.LegReports[leg] : null;
+            bool pacified = legReport is { Pacified: true };
+            return pacified || legReport is { Hostile: false } && cell.DominantDomain == squad;
         }
 
         static bool InCore(Cell cell, Vector3 at)

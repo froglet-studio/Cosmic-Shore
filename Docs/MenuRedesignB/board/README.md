@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-13 from the canvas of **Frogma**: Rev 3 to Rev 111, 493 boards on 13 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-14 from canvas version `1794681676-3efd` of **Frogma**: Rev 3 to Rev 112, 499 boards on 13 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -547,6 +547,15 @@ Copied on 2026-11-13 from the canvas of **Frogma**: Rev 3 to Rev 111, 493 boards
 - [`R42Notes.dc.html`](R42Notes.dc.html) - Rev 42 - notes: what each look changes against the built page, and what stays
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
+
+#### Rev 112 - Colour sets for a growing catalog: a world preview, one scrolling list, Free and Premium apart, no empty middle
+
+- [`R112Compare.dc.html`](R112Compare.dc.html) - Rev 112 - the four layouts side by side, and how a Free and a Premium row read in each
+- [`R112A.dc.html`](R112A.dc.html) - Rev 112 A - Stage and list: a scrolling list on the left, Free then Premium; the set's world and what it repaints fill the right (recommended) - interactive
+- [`R112B.dc.html`](R112B.dc.html) - Rev 112 B - Wall: the world and what it repaints across the top; every set as a tile below, a wall that scrolls, Free and Premium as two shelves - interactive
+- [`R112C.dc.html`](R112C.dc.html) - Rev 112 C - Two shelves: Free down the left, Premium down the right, the world and what it repaints between them - interactive
+- [`R112D.dc.html`](R112D.dc.html) - Rev 112 D - The real cell: the world is the whole screen; a docked list on the right with Free / Premium filters, what it repaints along the foot - interactive
+- [`R112Notes.dc.html`](R112Notes.dc.html) - Rev 112 - notes: what was asked, the four, Free vs Premium, how it maps to the built Showroom, decisions
 
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 

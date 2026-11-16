@@ -22,13 +22,13 @@ MonoBehaviour:
     Charge: 0
     Space: 0
     Time: 0
-  IconActive: {fileID: 21300000, guid: 8da001fa155b50849bdb405534e9284e, type: 3}
-  IconInactive: {fileID: 21300000, guid: 9e2685470a877514c8cebdc154473e8a, type: 3}
-  PreviewImage: {fileID: 21300000, guid: 1d50cd3184d75fe43acf5ace04e20554, type: 3}
-  SquadImage: {fileID: 21300000, guid: 2286f04c9031ee84d8d935de1926f92a, type: 3}
+  IconActive: {fileID: 21300000, guid: c2eb6254ad99050e64f069f607c46bbd, type: 3}
+  IconInactive: {fileID: 21300000, guid: 00875ab280fb32330f242be2904eebf6, type: 3}
+  PreviewImage: {fileID: 21300000, guid: 1dad6f4ed3edf23e63aa03fb0b425d3b, type: 3}
+  SquadImage: {fileID: 21300000, guid: 7f0d214c964ba465c340aa3bc15aa3bc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 449a10c84f724994eb0401e2f1c3d7d4, type: 3}
-  CardSilohoutteActive: {fileID: 21300000, guid: 8da001fa155b50849bdb405534e9284e, type: 3}
-  CardSilohoutteInactive: {fileID: 21300000, guid: 5c78cbe8d6ee46745a30138ff74c9659, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: c2eb6254ad99050e64f069f607c46bbd, type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: d325d3525edf4b349bd196947d4905b5, type: 3}
   Abilities:
   - {fileID: 11400000, guid: f9f41e3b69e020741878e22c46c8190c, type: 2}
   - {fileID: 11400000, guid: 049001867ddf0504c93f7a903f691ca4, type: 2}

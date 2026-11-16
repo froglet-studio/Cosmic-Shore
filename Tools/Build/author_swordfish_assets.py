@@ -43,6 +43,7 @@ BOTH PREFAB PASSES ARE SPENT ONE-SHOTS ONCE COMMITTED (CLAUDE.md): the clone run
 and the Rhino still carries its sword; the strip only while the Rhino still carries the swing executor. `--check`
 validates the SHIPPED prefabs' invariants, never a diff against a donor that has moved on.
 """
+import hashlib
 import os
 import re
 import sys
@@ -398,13 +399,39 @@ def rhino_plough_map(rhino_map: str) -> str:
     return re.sub(r"(?m)^  omniAbilityLabel: .*$", "  omniAbilityLabel: Stampede", t)
 
 
+# The class card, rendered from Swordfish.fbx by Tools/Build/vessel_model/render_cards.py (2026-11-15; it wore the Rhino's
+# card until then), which names each new PNG md5("cosmic-shore-card:" + its repo path); this generator writes the class
+# asset too, so it names the same guids.
+def _model_card(rel):
+    return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+
+
+CARD_ACTIVE = _model_card("Assets/_Graphics/CardImages/Swordfish.png")
+CARD_FIELDS = {
+    "IconActive": CARD_ACTIVE,
+    "IconInactive": _model_card("Assets/_Graphics/CardImages/Swordfish_Inactive.png"),
+    "CardSilohoutteActive": CARD_ACTIVE,
+    "CardSilohoutteInactive": _model_card("Assets/_Graphics/CardImages/Swordfish_silhouette.png"),
+    "SquadImage": _model_card("Assets/_Graphics/CardImages/Swordfish_large.png"),
+    "PreviewImage": _model_card("Assets/_Graphics/Design Assests/Hangar/Swordfish_Hangar_Preview.png"),
+}
+
+
+def cards_retrofit(text: str) -> str:
+    """Point the class asset's six card fields at the Swordfish's own renders. Idempotent."""
+    for field, guid in CARD_FIELDS.items():
+        text = re.sub(r"(?m)^(  %s: )\{[^}]*\}" % field, lambda m: m.group(1) + "{fileID: 21300000, guid: %s, type: 3}" % guid,
+                      text, count=1)
+    return text
+
+
 def class_asset(rhino_class: str) -> str:
     t = replace_once(rhino_class, "  m_Name: SO_Class_Rhino\n", "  m_Name: SO_Class_Swordfish\n", "class name")
     t = replace_once(t, f"  Class: {RHINO_CLASS_ID}\n", f"  Class: {CLASS_ID}\n", "class id")
-    return re.sub(r"  Name: Rhino\n  Description: .*?(?=\n  PrimaryElement:)",
+    return cards_retrofit(re.sub(r"  Name: Rhino\n  Description: .*?(?=\n  PrimaryElement:)",
                   "  Name: Swordfish\n  Description: \"All sword. Your triggers swing a blade that cuts every prism "
                   "it touches; hold both to light it, and a lit blade lays afterimages of itself. Run flat out and "
-                  "the ramp winds you up to the fastest top speed in the fleet.\"", t, count=1, flags=re.S)
+                  "the ramp winds you up to the fastest top speed in the fleet.\"", t, count=1, flags=re.S))
 
 
 def add_list_entry(text: str, list_key: str, entry: str) -> str:
@@ -545,6 +572,10 @@ def errors() -> list:
         need(label in rm, f"the Rhino's map has no {label}")
     need("'Energize'" not in rm and "'Afterimage'" not in rm and "'Blade Reach'" not in rm, "a sword card is on the Rhino's map")
     need(f"  Class: {CLASS_ID}\n" in read(CLASS_ASSET), "SO_Class_Swordfish is not class 30")
+    cls = read(CLASS_ASSET)
+    for field, guid in CARD_FIELDS.items():
+        need(re.search(r"  %s: \{fileID: 21300000, guid: %s," % (field, guid), cls) is not None,
+             f"SO_Class_Swordfish: {field} is not the Swordfish's rendered card (render_cards.py Swordfish)")
     for path in CLASS_LISTS:
         need(f"guid: {CLASS_GUID}" in read(path), f"{os.path.basename(path)} does not list SO_Class_Swordfish")
     need(f"{{fileID: {ROOT_TRANSFORM_ID}, guid: {PREFAB_GUID}, type: 3}}" in read(CONTAINER),
