@@ -18,6 +18,10 @@ Fast means *less review depth*, not *less verification*. The two things that mak
 branch unsafe to merge — a half-landed editor tool and an unresolved base merge — are
 exactly the things a rushed ship drops, so they are the things this mode keeps whole.
 
+**Start with the triage** (`python3 Tools/Build/ship_triage.py`, `/ship` §0.0): its `depth` line measures the refusal
+rules below for you, and its trap and LAB / CODEX lines say what this branch still needs. Start the gates in the
+background straight away. **End with `/ship` §6.5** (offer the hand-off) on a GO.
+
 ## Refuse the fast lane when
 
 Any one of these means stop and run `/ship` (or `/ship-deep`) instead. Say which

@@ -54,8 +54,8 @@ KATANA_LEN = 92              # habaki to point (px)
 KATANA_W = 12                # the blade's depth
 KATANA_SORI = 14             # how far the point sits off the hilt's straight line (px): the curve
 CARD_SWIPE = 0.5             # the card turns half the sword's real swipe (90 deg real -> 45), so it stays in the card
-REAL_SWIPE = 90.0            # RhinoShieldSwipeConfig.swipeYawDegrees: a full single-trigger pull
-REAL_CHOP = 65.0             # RhinoShieldSwipeConfig.chopPitchDegrees: both triggers fully pulled
+REAL_SWIPE = 90.0            # SwordfishShieldSwipeConfig.swipeYawDegrees: a full single-trigger pull
+REAL_CHOP = 65.0             # SwordfishShieldSwipeConfig.chopPitchDegrees: both triggers fully pulled
 
 
 def katana(angle=0.0, chop=0.0, tsuba=True, tsuka=True, length=KATANA_LEN, w=KATANA_W, sori=KATANA_SORI, hilt=KATANA_HILT, mirror=False):
@@ -113,7 +113,7 @@ def katana_chop():
 
 
 CHOP_STRAIGHT01 = 0.75       # the view's katanaChopStraight01: the chop at which the blade shows from behind (sum 1.5 of
-                             # 2, RhinoShieldSwipeConfig.stanceSumThreshold - the both-triggers energize stance)
+                             # 2, SwordfishShieldSwipeConfig.stanceSumThreshold - the both-triggers energize stance)
 CHOP_LENGTH01 = 0.8          # the view's katanaChopLength01: the blade's length on the card at a full chop (it tips away)
 
 
@@ -182,13 +182,10 @@ CARDS = [
 VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/RhinoHUDVariant.prefab"
 VIEW = "5161366343835098938"   # RhinoVesselHUDView on the variant
 
-REBIND = [
-    # The Charge card: the icon Image becomes a transparent container; the view GENERATES the katana under it (a pivot
-    # at the hilt holding the curved blade and the straight one) from the two parts. The plate keeps its energize gauge.
-    dict(file=VARIANT, pair=dict(container="7720000000000003015", view=VIEW, after="highlights", children=[],
-                                 fields={"katanaCurvedSprite": ("icon", "Rhino_KatanaCurved"),
-                                         "katanaChopSprite": ("icon", "Rhino_KatanaChop")})),
-]
+# The Charge, Mass and Space pairs that made those cards the sword's containers on RhinoHUDVariant (the katana, the
+# afterimage trail, Blade Reach) were retired on 2026-11-13 with the sword code: the sword is the Swordfish's
+# (SwordfishHUDVariant), and the Rhino's cards are single plough sprites that Tools/Build/author_rhino_hud.py binds.
+REBIND = []
 
 
 # ---- Mass: Afterimage options (2026-10-28) ------------------------------------------------------------------------
@@ -257,14 +254,7 @@ CARDS += [dict(name="afterimage", element="Mass", before=ICON_DIR + "Rhino_After
                states=[("idle: no afterimages", [("blade", "white")]),
                        ("laying (lit)", AFTER_LIT)])]
 
-REBIND += [
-    # The Mass card: the icon Image becomes a transparent container over three parts - the two prism copies (domain
-    # colour, shown only while the afterimages are being laid) and the sword (white).
-    dict(file=VARIANT, pair=dict(container="7720000000000003025", view=VIEW, after="highlights",
-                                 children=[("AfterimageFar", "Rhino_AfterimageFar", "afterimageFarIcon"),
-                                           ("AfterimageNear", "Rhino_AfterimageNear", "afterimageNearIcon"),
-                                           ("AfterimageBlade", "Rhino_AfterimageBlade", "afterimageBladeIcon")])),
-]
+# (The Mass card's afterimage pair on RhinoHUDVariant was retired 2026-11-13; see REBIND above.)
 
 
 # ---- Space: Blade Reach (2026-10-28) -------------------------------------------------------------------------------
@@ -537,16 +527,7 @@ LOCKUP["Space"] = dict(parts=dict(p=lambda: shielded_prism(reach_len(0.4)), b=la
                        state=[("p", "shielded"), ("b", "white"), ("t", "white", 0.6)])
 
 CARDS += [reach_card()]
-REBIND += [
-    # The Space card: the icon Image becomes a transparent container; the view generates the layout under it from
-    # the five parts (no prefab children: the layout is the view's serialized numbers).
-    dict(file=VARIANT, pair=dict(container="7720000000000003035", view=VIEW, after="highlights", children=[],
-                                 fields={"reachHiltSprite": ("icon", "Rhino_ReachHilt"),
-                                         "reachBladeSprite": ("icon", "Rhino_ReachBlade"),
-                                         "reachPrismSprite": ("icon", "Rhino_ReachPrism"),
-                                         "reachPrismBrokenSprite": ("icon", "Rhino_ReachPrismBroken"),
-                                         "reachPostsSprite": ("icon", "Rhino_ReachPosts")})),
-]
+# (The Space card's Blade Reach pair on RhinoHUDVariant was retired 2026-11-13; see REBIND above.)
 
 
 # ---- Time: Ramp Spool options (2026-10-28) -------------------------------------------------------------------------
@@ -817,4 +798,49 @@ ICONS += [
          exempt=PLOUGH_EXEMPT),
     dict(name="Rhino_Blade", element="Space", act="Blade: the plough's blade, far wider than the Rhino it rides on", draw=blade,
          exempt=PLOUGH_EXEMPT),
+]
+
+
+# ---- level 5 (the roster audit, 2026-11-13): each the binding's upgradedSprite, swapped in when the upgrade unlocks ----
+#   Charge  Gore Steal   the gore's petals land on the Rhino: the rival at its nose, the petals flying IN to its flanks.
+#   Mass    Berm         a ploughed prism lands shielded: the furrow banks into a wall of shielded prisms at its side.
+#   Space   Unstoppable  the blade moves super-shielded mass: the super-shield (stella) shoved ahead of the blade.
+def gore_steal():
+    from motifs import arrowhead
+    rhino = rhino_top(cx=64.0, nose_y=40.0, height=84.0)
+    rival = _clear_of(gore_rival(), rhino, px=3.0)
+    flying = (petal(19, 70, l=20, w=13, angle=0) | petal(109, 70, l=20, w=13, angle=180)
+              | petal(19, 102, l=20, w=13, angle=0) | petal(109, 102, l=20, w=13, angle=180))
+    heads = empty()
+    for y in (70.0, 102.0):
+        heads |= arrowhead((40.0, y), (1.0, 0.0), 11.0) | arrowhead((88.0, y), (-1.0, 0.0), 11.0)
+    return rhino | rival | _clear_of(flying | heads, rhino, px=3.0)
+
+
+def berm():
+    from canvas import ngon
+    from motifs import prism as prism_m
+    rhino = rhino_top(cx=42.0, nose_y=24.0, height=88.0)
+    wall = empty()
+    for y in (30.0, 64.0, 98.0):
+        shell = fill(ngon(6, 16.5, 100.0, y, rot=30.0)) & ~fill(ngon(6, 11.0, 100.0, y, rot=30.0))
+        wall |= prism_m(100.0, y, 11.0) | shell
+    return rhino | _clear_of(wall, rhino, px=3.0)
+
+
+def unstoppable():
+    rhino = rhino_top(cx=64.0, nose_y=64.0, height=56.0)
+    t, y = 11.0, 52.0
+    bar = fill([(6, y + 13), (16, y), (112, y), (122, y + 13), (122, y + 13 + t), (110, y + t), (18, y + t), (6, y + 13 + t)])
+    star = _clear_of(stella(64.0, 27.0, 19.0), bar, px=3.0)
+    return _clear_of(rhino, bar, px=3.0) | bar | star
+
+
+ICONS += [
+    dict(name="Rhino_GoreSteal", element="Charge", act="Charge 5 Gore Steal: the gore's petals land on the Rhino", draw=gore_steal,
+         exempt=PLOUGH_EXEMPT),
+    dict(name="Rhino_Berm", element="Mass", act="Mass 5 Berm: ploughed prisms land shielded, banked into a wall", draw=berm,
+         exempt=dict(PLOUGH_EXEMPT, components="the hull and the wall's three shielded prisms")),
+    dict(name="Rhino_Unstoppable", element="Space", act="Space 5 Unstoppable: the blade shoves super-shielded mass", draw=unstoppable,
+         exempt=dict(PLOUGH_EXEMPT, components="the hull, the blade and the super-shield's facets", gap="the stella's facets")),
 ]

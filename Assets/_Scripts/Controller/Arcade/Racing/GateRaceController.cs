@@ -323,6 +323,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The least throttle the mode's AI flies (0 = the AI's own skill throttle). Regatta races at full.</summary>
         protected virtual float AIThrottleFloor => 0f;
 
+        /// <summary>The least throttle THIS AI flies, set as it is armed: <see cref="AIThrottleFloor"/> for every pilot unless
+        /// a mode answers per pilot (Redline: by the seat's difficulty, 2026-11-11). Asked once per arming, after
+        /// <see cref="OnRacerArmed"/>.</summary>
+        protected virtual float AIThrottleFloorFor(IPlayer pilot) => AIThrottleFloor;
+
         /// <summary>
         /// Whether this mode's AIs commit at the approach point and re-attack after a missed mouth
         /// (<see cref="CommitDistanceFor"/>, <see cref="RaceGateRing.PlaneCrossing"/>). The inspector switch by
@@ -1498,7 +1503,7 @@ namespace CosmicShore.Gameplay
             // A race flies flat out, and a drifting hull (the Dolphin's charge) points its nose where it is
             // going rather than at the cell centre, so a discharge fires down the line to the ring
             // (2026-10-14 Regatta audit: it fired wide of the ring).
-            pilot.SetThrottleFloor(AIThrottleFloor);
+            pilot.SetThrottleFloor(AIThrottleFloorFor(captured));
             var aiPilot = pilot;
             pilot.SetDriftLookTargetProvider(() =>
                 TryOverrideDriftLook(captured, out Vector3 look) ? look

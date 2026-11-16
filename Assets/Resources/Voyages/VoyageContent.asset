@@ -2836,6 +2836,17 @@ MonoBehaviour:
     BoardStats: '{distance}   -   {sail}   -   Intensity {intensity}'
     BoardStepBack: '<'
     BoardStepOn: '>'
+    BoardZoomIn: '+'
+    BoardZoomOut: '-'
+    BoardConfigure: CONFIGURE SQUAD
+    BoardConfigureKey: X
+    BoardBack: VOYAGES
+    BoardBackKey: B
+    BoardSavePreset: SAVE AS PRESET
+    BoardSavePresetKey: Y
+    BoardHangarNote: A vessel brings the pilot you keep for it in the Hangar.
+    BoardPresetWho: '{leader}, {one}, {two}'
+    BoardSwapsWith: 'Swaps with {vessel}'
     SlabChip: '{n}  {name}'
     SlabSagaPart: 'Part {n} of {count}'
     SlabSagaKicker: 'Saga - part {n} of {count}'
@@ -2860,3 +2871,119 @@ MonoBehaviour:
     SlabSagaLockedKicker: Saga
     SlabSagaLockedLine: Voyages are open now.
     SlabSagaLockedFace: The saga opens here
+    QuestsTitle: Quests
+    QuestsBack: BACK
+    QuestsBackKey: B
+    QuestsReady: Ready to claim
+    QuestsOpen: '{done} of {total} goals'
+    QuestsTier3: Opens Intensity 3
+    QuestsTier4: Opens Intensity 4
+    QuestsTierFeature: 'Opens the {name}'
+    QuestsGoalDone: Done
+    QuestsGoalNext: Next
+    QuestsClaimStep: Claim
+    QuestsClaimUnlocks: 'Unlocks {reward}'
+    QuestsClaimReady: Ready
+    QuestsRewardKicker: Reward
+    QuestsRewardKickerYours: Your colour set
+    QuestsRewardKind: Colour set
+    QuestsRewardYours: Yours. Wear it from the Profile.
+    QuestsRewardReady: Claim to unlock it
+    QuestsRewardLater: Unlocked by this quest
+    QuestsDomainJade: Jade
+    QuestsDomainRuby: Ruby
+    QuestsDomainGold: Gold
+    QuestsDomainBlue: Blue
+    QuestsAlsoOpens: Claim also opens
+    QuestsOpened: Opened
+    QuestsPlayNote: 'Play {name} in the Arcade'
+    StripSagaKicker: Saga
+    StripSagaName: Tandava and The Severing
+    StripEpisodesKicker: Episodes
+    StripEpisodesName: Episode 2
+    StripSoon: Coming soon
+    StripNotOpen: Not open yet. Voyages are open now.
+    StepSea: 01  THE HYPERSEA
+    StepVoyage: 02  THE VOYAGE
+    StepArk: 03  YOUR ARK
+    PageBack: BACK
+    PageBackKey: B
+    SeaFullScreen: FULL SCREEN
+    SeaFullScreenBack: BACK FROM FULL SCREEN
+    SeaCrew: CREW
+    SeaCrewHide: HIDE
+    SeaTierWidth: '{ly} ly'
+    SeaOpenVoyage: OPEN VOYAGE
+    SeaOfferKicker: '{kind} - {pilot}'
+    SeaOfferPay: '{pay} {element}'
+    SeaCrewRecommends: '{pilot} recommends'
+    SeaCrewDrawer: YOUR CREW RECOMMENDS
+    BriefKicker: '{kind} - offered by {pilot}'
+    BriefStats: '{ly} ly - {minutes} min - {stops} stops'
+    BriefDifficulty: DIFFICULTY
+    BriefRecommended: 'Recommended by {pilot}: {difficulty}'
+    BriefRewards: REWARDS
+    BriefCrystals: '{pay} {element} crystals'
+    BriefCrystalsBy: More at a higher difficulty
+    BriefStanding: 'Standing with {faction}'
+    BriefStandingBy: They trust you more
+    BriefRole: 'Your squad sails as {role}'
+    BriefStop: 'STOP {n} OF {count}'
+    BriefReady: READY YOUR ARK
+    ArkLobby: YOUR LOBBY
+    ArkLobbyWith: '{names} sail with you'
+    ArkSquadHead: FLY A SQUAD
+    ArkSquadLine: AI wingmates fly the other seats
+    ArkSquadLineLobby: 'Your lobby waits; AI wingmates fly the other seats'
+    ArkYou: You
+    ArkWingmate: AI wingmate
+    ArkInLobby: IN YOUR LOBBY
+    ArkFriendLine: Picks their own vessel
+    ArkArtifact: 'Artifact - {artifact}'
+    ArkFlySquad: FLY A SQUAD INSTEAD
+    ArkFlySquadKey: X
+    ArkBackToLobby: BACK TO YOUR LOBBY
+    ArkVoyageLine: '{kind}'
+    ArkSeatAiShort: AI
+    ArkSquadSeparator: ' - '
+    ArkNoSquad: FLY WITHOUT A SQUAD
+    ArkAiFor: 'AI flies for {name} until they join'
+    ArkAiLine: A friend who joins your lobby takes this seat
+    PickTitle: Change your seat
+    PickTitleSeat: 'Change {seat}'
+    PickKits: QUICK KITS - ALL FOUR IN ONE PRESS
+    PickKitVoyage: For this voyage
+    PickKitLast: Last flown
+    PickKitWho: '{vessel} - {pilot} - {element}'
+    PickSees: SEES
+    PickSeesAll: All
+    PickSeesCrystals: Crystals
+    PickSeesPrisms: Prisms
+    PickSeesLife: Life
+    PickSeesVessels: Vessels
+    PickSeesPaths: Paths
+    PickCount: '{shown} of {total}'
+    PickForVoyage: FOR THIS VOYAGE
+    PickNote: One press takes it. Your seat behind updates as you pick.
+    PickClose: X
+    KindCourier: Courier
+    KindHunt: Vault hunt
+    KindSalvage: Salvage
+    KindDefence: Defence
+    KindSurvey: Survey
+    KindHarvest: Harvest
+    KindStudy: Study
+    KindRescue: Rescue
+    KindLiberate: Liberation
+    KindBuild: Build
+    KindLift: Lift
+    KindBounty: Bounty hunt
+    KindRite: Rite
+    KindParley: Parley
+    KindRaid: Piracy
+    KindTend: Tending
+    KindExhibition: Exhibition
+    KindConvoy: Convoy
+    KindCull: Hunt
+    KindHome: Home
+    KindEscort: Ark escort

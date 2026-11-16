@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using NUnit.Framework;
@@ -9,9 +10,9 @@ using UnityEngine.UI;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Voyage window as the Sea table (Rev 89 A and Rev 90, Docs/MENU_REDESIGN_B.md sections 170-172): the tilt's
-    /// arithmetic, the style asset, the authored words, and the Voyages board building and showing voyages with no squad
-    /// book loaded.
+    /// The Voyage window (Docs/MENU_REDESIGN_B.md sections 170-184 and 201-203): the Voyages tab as three pages (Frogma
+    /// Rev 100, 108 and 111) building and showing voyages with no squad book loaded, the soft fills and the shelf's cut; and the Saga, Quests
+    /// and Episodes tables' tilt (Rev 90), the style asset and the authored words.
     /// </summary>
     public class VoyageBoardTests
     {
@@ -25,7 +26,7 @@ namespace CosmicShore.Tests
             Assert.Less(style.ListRight, style.CourseLeft);
             Assert.Less(style.CourseLeft, style.CourseRight);
             Assert.Less(style.CourseRight, style.PanelLeft);
-            // The Sea table: the table is the widest of the three columns.
+            // The map's column is the widest of the three.
             Assert.Greater(style.CourseRight - style.CourseLeft, 0.5f);
         }
 
@@ -38,7 +39,9 @@ namespace CosmicShore.Tests
                      {
                          lines.BoardRowTitle, lines.BoardRowMeta, lines.BoardSquadLabel, lines.BoardSeatWho, lines.BoardSeatKit,
                          lines.BoardSeatNotYours, lines.BoardKicker, lines.BoardKickerAlone, lines.BoardStats, lines.BoardStepBack,
-                         lines.BoardStepOn, lines.SlabChip, lines.SlabSagaPart, lines.SlabSagaKicker, lines.SlabSagaForm,
+                         lines.BoardStepOn, lines.BoardZoomIn, lines.BoardZoomOut, lines.BoardConfigure, lines.BoardConfigureKey,
+                         lines.BoardBack, lines.BoardBackKey, lines.BoardSavePreset, lines.BoardSavePresetKey, lines.BoardHangarNote,
+                         lines.BoardPresetWho, lines.BoardSwapsWith, lines.SlabChip, lines.SlabSagaPart, lines.SlabSagaKicker, lines.SlabSagaForm,
                          lines.SlabQuestsKicker, lines.SlabQuestsName, lines.SlabQuestsProgress, lines.SlabQuestKicker,
                          lines.SlabQuestClaimed, lines.SlabQuestReady, lines.SlabQuestNext, lines.SlabQuestLocked,
                          lines.SlabQuestClaim, lines.SlabQuestPlay, lines.SlabEpisodesKicker, lines.SlabEpisodesName,
@@ -129,7 +132,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Board_ShowsTheVoyagesAndTheOpenVoyagesName_WithNoSquadBook()
+        public void Board_ShowsTheThreePages_WithNoSquadBook()
         {
             var host = new GameObject("Page", typeof(RectTransform));
             try
@@ -137,29 +140,105 @@ namespace CosmicShore.Tests
                 ((RectTransform)host.transform).sizeDelta = new Vector2(1840f, 796f);
                 var lines = new VoyageLines();
                 var board = VoyageBoard.Create((RectTransform)host.transform, null, null, lines);
-                var rows = new List<VoyageBoard.Row>
+                int sailedAt = -1;
+                var bounty = new VoyageBoard.Offer
                 {
-                    new() { Title = "01  Tollmoor", Meta = "540 ly - 27 min - Intensity 1" },
-                    new() { Title = "02  Lantern Reach", Meta = "580 ly - 29 min - Intensity 2" },
+                    Kind = lines.KindBounty, Title = "Meet the Gallows crew at Lantern Reach", Place = "Lantern Reach",
+                    Pilot = "Oriel Vance", Faction = "The Tollmoor Guild", Story = "They took my cousin's ship.",
+                    Ly = "580", Minutes = "29", Role = "Escorts", Pay = 40, Pays = true, Element = CosmicShore.Data.Element.Mass,
+                    Recommended = 4, SetSail = d => sailedAt = d,
                 };
-                var voyage = new VoyageBoard.Voyage
+                bounty.Stops.Add(new VoyageBoard.Stop { Name = "Lantern Reach", Line = "A lighthouse on the reef." });
+                var offers = new List<VoyageBoard.Offer>
                 {
-                    Kicker = "Voyage 02 of 02 - brought by Oriel Vance", Place = "Lantern Reach",
-                    Title = "Open the vaults at Lantern Reach", Distance = "580 ly", Sail = "29 min", Intensity = "2",
+                    new() { Kind = lines.KindCourier, Title = "Carry the dispatch to Tollmoor", Pilot = "Ada Rook", Recommended = 2 },
+                    bounty,
                 };
-                board.Show(rows, 1, _ => { }, voyage, null, null);
+                int picked = -1;
+                board.Show(offers, 1, i => picked = i, null, null);
 
-                var texts = new List<string>();
-                foreach (var t in host.GetComponentsInChildren<TMP_Text>(true)) texts.Add(t.text);
-                CollectionAssert.Contains(texts, "02  Lantern Reach");
-                CollectionAssert.Contains(texts, "Lantern Reach");
-                CollectionAssert.Contains(texts, "Open the vaults at Lantern Reach");
-                CollectionAssert.Contains(texts, TemplateText.Fill(lines.BoardStats, "distance", "580 ly", "sail", "29 min", "intensity", "2"));
+                // The HyperSea: the crew's voyages and the picked one's card.
+                Assert.AreEqual(VoyageBoard.Page.Sea, board.Shown);
+                Assert.IsTrue(board.ShowsStrip);
+                Assert.AreEqual(4, board.Difficulty, "a voyage opens on its pilot's recommendation");
+                var texts = Texts(host);
+                CollectionAssert.Contains(texts, "Meet the Gallows crew at Lantern Reach");
+                CollectionAssert.Contains(texts, TemplateText.Fill(lines.SeaOfferKicker, "kind", lines.KindBounty, "pilot", "Oriel Vance"));
+                CollectionAssert.Contains(texts, lines.SeaOpenVoyage);
+                board.Pick(0);
+                Assert.AreEqual(0, picked);
+
+                // The voyage: the pilot, the route's numbers, the difficulty and the crystals at it.
+                int changes = 0;
+                board.ScreenChanged += () => changes++;
+                board.ShowPage(VoyageBoard.Page.Voyage);
+                Assert.AreEqual(1, changes);
+                Assert.IsFalse(board.ShowsStrip);
+                texts = Texts(host);
+                CollectionAssert.Contains(texts, TemplateText.Fill(lines.BriefKicker, "kind", lines.KindBounty, "pilot", "Oriel Vance"));
+                CollectionAssert.Contains(texts, TemplateText.Fill(lines.BriefStats, "ly", "580", "minutes", "29", "stops", "1"));
+                CollectionAssert.Contains(texts, TemplateText.Fill(lines.BriefRecommended, "pilot", "Oriel Vance", "difficulty", "4"));
+                CollectionAssert.Contains(texts, TemplateText.Fill(lines.BriefCrystals, "pay", "40", "element", lines.ElementMass));
+                CollectionAssert.Contains(texts, lines.BriefReady);
+                board.SetDifficulty(8);
+                Assert.AreEqual(8, board.Difficulty);
+                string at8 = VoyageDifficulty.PayAt(40, 4, 8).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                CollectionAssert.Contains(Texts(host), TemplateText.Fill(lines.BriefCrystals, "pay", at8, "element", lines.ElementMass));
+                board.SetDifficulty(42);
+                Assert.AreEqual(VoyageDifficulty.Max, board.Difficulty, "the difficulty stays inside 1-9");
+
+                // Your Ark: no squad book and no lobby, so the squad view; Set sail sails at the picked difficulty.
+                board.ShowPage(VoyageBoard.Page.Ark);
+                Assert.IsTrue(board.OnSquadScreen);
+                texts = Texts(host);
+                CollectionAssert.Contains(texts, lines.ArkSquadHead);
                 CollectionAssert.Contains(texts, lines.CardSetSail);
+                Assert.IsFalse(board.Ark.PickerOpen);
+                board.SetSail();
+                Assert.AreEqual(VoyageDifficulty.Max, sailedAt);
 
-                Assert.IsNull(host.transform.Find("VoyageBoard/SeatEditor"), "a seat changes where it stands: there is no editor screen");
-                Assert.IsNotNull(board.CourseColumn);
-                Assert.AreEqual(-1, board.Squad.OpenSeat, "no squad, no open seat");
+                // Back steps one page at a time.
+                board.StepBack();
+                Assert.AreEqual(VoyageBoard.Page.Voyage, board.Shown);
+                board.StepBack();
+                Assert.AreEqual(VoyageBoard.Page.Sea, board.Shown);
+
+                // With nothing open the later pages cannot be shown.
+                board.Show(offers, -1, null, null, null);
+                board.ShowPage(VoyageBoard.Page.Ark);
+                Assert.AreEqual(VoyageBoard.Page.Sea, board.Shown);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        static List<string> Texts(GameObject host)
+        {
+            var texts = new List<string>();
+            foreach (var t in host.GetComponentsInChildren<TMP_Text>(false)) texts.Add(t.text);
+            return texts;
+        }
+
+        [Test]
+        public void Board_TakesTheMapColumnIntoTheTable()
+        {
+            var host = new GameObject("Page", typeof(RectTransform));
+            try
+            {
+                ((RectTransform)host.transform).sizeDelta = new Vector2(1840f, 796f);
+                var board = VoyageBoard.Create((RectTransform)host.transform, null, null, new VoyageLines());
+                var column = new GameObject("MapColumn", typeof(RectTransform)).GetComponent<RectTransform>();
+                column.SetParent(host.transform, false);
+                var map = new GameObject("Map", typeof(RectTransform)).GetComponent<RectTransform>();
+                var edge = new GameObject("Edge", typeof(RectTransform)).GetComponent<RectTransform>();
+                map.SetParent(column, false);
+                edge.SetParent(column, false);
+                board.AdoptMap(column, map, edge);
+                Assert.AreEqual(host.transform.Find("VoyageBoard/Pages/HyperSea/Table"), column.parent,
+                    "the map column stands in the HyperSea page's table");
+                Assert.IsFalse(board.Sea.IsFull);
             }
             finally
             {
@@ -168,29 +247,42 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Board_ShapesTheTable_TheFaceUnderTheMap()
+        public void SoftBand_IsSolidAcrossTheMiddle_AndClearAtBothEnds()
         {
-            var host = new GameObject("Page", typeof(RectTransform));
-            try
-            {
-                ((RectTransform)host.transform).sizeDelta = new Vector2(1840f, 796f);
-                var board = VoyageBoard.Create((RectTransform)host.transform, null, null, new VoyageLines());
-                var map = new GameObject("Map", typeof(RectTransform)).GetComponent<RectTransform>();
-                var edge = new GameObject("Edge", typeof(RectTransform)).GetComponent<RectTransform>();
-                map.SetParent(board.CourseColumn, false);
-                edge.SetParent(board.CourseColumn, false);
-                board.FitSlab(map, edge);
-                float w = board.CourseColumn.rect.width;
-                Assert.Greater(w, 900f);
-                Assert.AreEqual(w / VoyageSlab.FaceAspect, edge.rect.height, 0.5f);
-                Assert.AreEqual(w / VoyageSlab.TopAspect, map.rect.height, 0.5f);
-                // The map's near edge stands on the face's top edge.
-                Assert.AreEqual(edge.anchoredPosition.y + edge.rect.height, map.anchoredPosition.y, 0.5f);
-            }
-            finally
-            {
-                Object.DestroyImmediate(host);
-            }
+            Assert.AreEqual(0f, VoyageSoftFill.BandAlpha(0f, 0.2f), 1e-5f);
+            Assert.AreEqual(0f, VoyageSoftFill.BandAlpha(1f, 0.2f), 1e-5f);
+            Assert.AreEqual(0.5f, VoyageSoftFill.BandAlpha(0.1f, 0.2f), 1e-5f);
+            Assert.AreEqual(0.5f, VoyageSoftFill.BandAlpha(0.9f, 0.2f), 1e-5f);
+            Assert.AreEqual(1f, VoyageSoftFill.BandAlpha(0.2f, 0.2f), 1e-5f);
+            Assert.AreEqual(1f, VoyageSoftFill.BandAlpha(0.5f, 0.2f), 1e-5f);
+            Assert.AreEqual(1f, VoyageSoftFill.BandAlpha(0f, 0f), 1e-5f, "no soft ends: a plain fill");
+        }
+
+        [Test]
+        public void Shelf_CutsItsTiles_AsTheBoardDrewThem_AndNarrowsForMore()
+        {
+            // Six vessels in a group 520 wide: three across, two rows, each as wide as the room allows up to 170.
+            VoyageSquadDeck.Cells(VoyageSeats.Vessel, 6, 520f, out int columns, out Vector2 cell);
+            Assert.AreEqual(3, columns);
+            Assert.AreEqual((520f - 2f * 16f) / 3f, cell.x, 1e-3f);
+            // Ten vessels: still two rows, so five across, narrower.
+            VoyageSquadDeck.Cells(VoyageSeats.Vessel, 10, 520f, out columns, out cell);
+            Assert.AreEqual(5, columns);
+            Assert.Less(cell.x, 100f);
+            // Four pilots in one row, each 128 wide in 560; nine pilots still in one row.
+            VoyageSquadDeck.Cells(VoyageSeats.Pilot, 4, 560f, out columns, out cell);
+            Assert.AreEqual(4, columns);
+            Assert.AreEqual(128f, cell.x, 1e-3f);
+            VoyageSquadDeck.Cells(VoyageSeats.Pilot, 9, 560f, out columns, out _);
+            Assert.AreEqual(9, columns);
+            // The four elements stand two by two; artifacts five to a column.
+            VoyageSquadDeck.Cells(VoyageSeats.ElementKind, 4, 230f, out columns, out _);
+            Assert.AreEqual(2, columns);
+            VoyageSquadDeck.Cells(VoyageSeats.Artifact, 5, 226f, out columns, out cell);
+            Assert.AreEqual(1, columns);
+            Assert.AreEqual(226f, cell.x, 1e-3f);
+            VoyageSquadDeck.Cells(VoyageSeats.Artifact, 7, 226f, out columns, out _);
+            Assert.AreEqual(2, columns);
         }
     }
 }

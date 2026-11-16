@@ -174,6 +174,9 @@ def check(root, files, me, branch, days, offline, landed_days):
         occ = sw.occupancy(root, lanes, team, catalog, days or catalog.get('window_days', 7), BASE, prs, merged)
         last = sw.landed(root, lanes, team, catalog.get('landed_days', 14), BASE,
                          re.compile(catalog.get('ignore_subjects') or r'^$'))
+        handoffs, holder = sw.read_handoffs(root) if hasattr(sw, 'read_handoffs') else ({}, None)
+        if handoffs:
+            occ = sw.apply_handoffs(occ, handoffs, holder)   # a lane handed to someone is theirs; handed off open is free
         for k in list(occ):
             occ[k] = [o for o in occ[k] if not sw.superseded(o, last.get(k)) and o['branch'] != branch
                       and not (me and o['people'] and all(p == me for p in o['people']))]

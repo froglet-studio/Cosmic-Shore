@@ -20,8 +20,6 @@ MonoBehaviour:
       Space grows the explosion radius. At level 5 your blasts spare allies, so you
       can bombard freely near teammates (you still ride your own shockwaves).
     Input: 8
-    MultiplierAtFullLevel: 2.5
-    MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -34,8 +32,6 @@ MonoBehaviour:
       plasma-claw flamethrower. Mass grows your trail prisms. At level 5 the
       claw stops destroying what it burns and STEALS it for your team instead.
     Input: 14
-    MultiplierAtFullLevel: 2.5
-    MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -49,21 +45,17 @@ MonoBehaviour:
       parked. Charge raises the parked regeneration rate. Level 5 grants battlefield
       sight while dug in.
     Input: 6
-    MultiplierAtFullLevel: 3
-    MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Battle Sight
-    UpgradeDescription: While dug in, key targets are highlighted (design in
-      progress - vision/highlight ability per the class doc).
+    UpgradeDescription: While dug in, every rival vessel within range is marked
+      in its own domain colour, through mass.
   - Element: 4
     AbilityLabel: Rush
     AbilityDescription: Spend energy to charge forward with a burst of momentum.
       Time reduces the energy cost of each rush. At level 5 you can steer mid-rush.
     Input: 7
-    MultiplierAtFullLevel: 0.4
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

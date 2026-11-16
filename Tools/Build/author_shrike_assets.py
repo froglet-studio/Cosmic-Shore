@@ -634,13 +634,15 @@ MAP_ENTRIES = (
      "while you paint. A missile blows on contact in an 18 u blast (a shield takes the hit first); a rival hull inside "
      "it is a petal hit (petals only - nothing is moved). The card counts the missiles left across every flora. A "
      "collected crystal becomes a nest flora that grows large missiles (one per 6 s, up to 4). Space widens the lock "
-     "cone 5 -> 14 degrees at level 10 (ShrikeConfigSO.lockCone).", "", ""),
+     "cone 5 -> 14 degrees at level 10 (ShrikeConfigSO.lockCone).",
+     "Salvo", "Every nest flora launches twice as often while you paint."),
     (2, "Nest", 6,
      "A. Any block you touch docks you (the camera eases back); docked, every cooldown runs x1.6 (x2.5 on "
      "super-shielded mass or in a nest). Docked, A detaches you and leaves a nest behind: a cup of super-shielded "
      "blocks round where you were, no two touching, the nose's way out open, crowned with a flora carrying ONE "
      "missile (8 s cooldown; at most three nests). Mass is volume - one dial: 12 -> 32 blocks per nest at level 10 "
-     "(ShrikeConfigSO.nestBlocks), and the cruising trail's wavelength 8 -> 4 u (trailWavelength).", "", ""),
+     "(ShrikeConfigSO.nestBlocks), and the cruising trail's wavelength 8 -> 4 u (trailWavelength).",
+     "Armed Nests", "A nest you leave behind carries two missiles."),
     (3, "Void Lance", 8,
      "X: Space mode. RT (held) fires a hitscan beam 2400 u long that breaks every block it passes, any domain, except "
      "super-shielded mass and the nest you are docked in; a rival hull on the line is a scored petal hit. 1.2 s "
@@ -649,7 +651,8 @@ MAP_ENTRIES = (
     (4, "Void Sling", 7,
      "B: Time mode. RT shoots a tether (1600 u); it anchors on the first block it meets and the hull flies straight "
      "there in exactly 1 s, laying thick trail, docking on the first block it touches. A crystal resets it. Time is "
-     "rate - one dial: the cooldown 6 -> 2.5 s at level 10 (ShrikeConfigSO.slingCooldown).", "", ""),
+     "rate - one dial: the cooldown 6 -> 2.5 s at level 10 (ShrikeConfigSO.slingCooldown).",
+     "Whipcrack", "The sling reaches its anchor in 0.6 s."),
 )
 
 
@@ -676,8 +679,8 @@ def map_asset() -> str:
                 "    UnlockLevel: 5\n"
                 "    RelockBelowLevel: 4\n"
                 "    LatchPolicy: 0\n"
-                # Only the Space upgrade is designed (Garrett, 2026-10-15: the lance breaks super-shielded mass "when
-                # upgraded"); the other level-5 slots stay OPEN - the vessel skill's design gate forbids inventing one.
+                # Space's upgrade is Garrett's (2026-10-15: the lance breaks super-shielded mass "when upgraded"); the
+                # other three were filled in the vessel pass (Garrett, 2026-11-12/13: fill every vessel's empty L5 slots).
                 f"    UpgradeLabel: {upgrade}\n"
                 f"    UpgradeDescription: {quote(upgrade_text) if upgrade_text else ''}\n")
     return out

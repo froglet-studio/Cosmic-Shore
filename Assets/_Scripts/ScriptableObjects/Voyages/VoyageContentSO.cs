@@ -440,7 +440,7 @@ namespace CosmicShore.ScriptableObjects
         public string BoardSailKey = "A";
         [Tooltip("The keycap before the seat editor's Done (empty: none).")]
         public string BoardDoneKey = "B";
-        [Tooltip("Over the open voyage's name on the Sea table (Rev 89 A): which voyage it is and who brought it.")]
+        [Tooltip("Over the open voyage's name on the Voyages tab: which voyage it is and who brought it.")]
         public string BoardKicker = "Voyage {n} of {count} - brought by {pilot}";
         [Tooltip("Over the open voyage's name when nobody brought it.")]
         public string BoardKickerAlone = "Voyage {n} of {count}";
@@ -450,6 +450,28 @@ namespace CosmicShore.ScriptableObjects
         public string BoardStepBack = "<";
         [Tooltip("A stepper's step on.")]
         public string BoardStepOn = ">";
+        [Tooltip("The voyage screen's zoom-in step over the map.")]
+        public string BoardZoomIn = "+";
+        [Tooltip("The voyage screen's zoom-out step over the map.")]
+        public string BoardZoomOut = "-";
+        [Tooltip("The voyage screen's button that opens the squad screen.")]
+        public string BoardConfigure = "CONFIGURE SQUAD";
+        [Tooltip("The pad key drawn before Configure squad.")]
+        public string BoardConfigureKey = "X";
+        [Tooltip("The squad screen's way back to the voyage screen.")]
+        public string BoardBack = "VOYAGES";
+        [Tooltip("The pad key drawn before the squad screen's way back.")]
+        public string BoardBackKey = "B";
+        [Tooltip("The squad screen's button that keeps the squad as a new squad.")]
+        public string BoardSavePreset = "SAVE AS PRESET";
+        [Tooltip("The pad key drawn before Save as preset.")]
+        public string BoardSavePresetKey = "Y";
+        [Tooltip("The squad screen's note at its foot: what changing your own vessel also changes.")]
+        public string BoardHangarNote = "A vessel brings the pilot you keep for it in the Hangar.";
+        [Tooltip("Who flies a squad, under its name on the voyage screen: {leader}, {one} and {two} are the three seats.")]
+        public string BoardPresetWho = "{leader}, {one}, {two}";
+        [Tooltip("Under a pilot who flies another seat of the squad: taking them swaps the two; {vessel} is the vessel they leave.")]
+        public string BoardSwapsWith = "Swaps with {vessel}";
         [Tooltip("A chip on a table's left (a saga part, a quest): its number and name.")]
         public string SlabChip = "{n}  {name}";
         [Tooltip("Under a saga part's chip.")]
@@ -498,5 +520,239 @@ namespace CosmicShore.ScriptableObjects
         public string SlabSagaLockedLine = "Voyages are open now.";
         [Tooltip("On the locked Saga table's front face.")]
         public string SlabSagaLockedFace = "The saga opens here";
+
+        // The Quests window (Docs/MENU_REDESIGN_B.md sections 208 and 200, Rev 107 D).
+        [Tooltip("The Quests window's title, top left.")]
+        public string QuestsTitle = "Quests";
+        [Tooltip("The Quests window's way back to Home.")]
+        public string QuestsBack = "BACK";
+        [Tooltip("The keycap before the way back (empty: none).")]
+        public string QuestsBackKey = "B";
+        [Tooltip("A quest whose goals are done and whose reward waits.")]
+        public string QuestsReady = "Ready to claim";
+        [Tooltip("A quest being played: {done} goals of {total}.")]
+        public string QuestsOpen = "{done} of {total} goals";
+        [Tooltip("Under a quest's first goal: what reaching it opens.")]
+        public string QuestsTier3 = "Opens Intensity 3";
+        [Tooltip("Under a quest's second goal: what reaching it opens.")]
+        public string QuestsTier4 = "Opens Intensity 4";
+        [Tooltip("Under the goal of a quest that opens a feature, not a game ({name} is the quest's).")]
+        public string QuestsTierFeature = "Opens the {name}";
+        [Tooltip("Beside a goal that is done.")]
+        public string QuestsGoalDone = "Done";
+        [Tooltip("Beside the goal being played for.")]
+        public string QuestsGoalNext = "Next";
+        [Tooltip("The last step of every quest.")]
+        public string QuestsClaimStep = "Claim";
+        [Tooltip("Under the claim step: the colour set it gives.")]
+        public string QuestsClaimUnlocks = "Unlocks {reward}";
+        [Tooltip("Beside the claim step when it can be pressed.")]
+        public string QuestsClaimReady = "Ready";
+        [Tooltip("Over the reward while it is not the player's.")]
+        public string QuestsRewardKicker = "Reward";
+        [Tooltip("Over the reward once the quest is claimed.")]
+        public string QuestsRewardKickerYours = "Your colour set";
+        [Tooltip("Under the reward's name.")]
+        public string QuestsRewardKind = "Colour set";
+        [Tooltip("Under the reward once the quest is claimed.")]
+        public string QuestsRewardYours = "Yours. Wear it from the Profile.";
+        [Tooltip("Under the reward when the quest is ready to claim.")]
+        public string QuestsRewardReady = "Claim to unlock it";
+        [Tooltip("Under the reward while the quest is still being played or locked.")]
+        public string QuestsRewardLater = "Unlocked by this quest";
+        [Tooltip("Under the reward's Jade prism.")]
+        public string QuestsDomainJade = "Jade";
+        [Tooltip("Under the reward's Ruby prism.")]
+        public string QuestsDomainRuby = "Ruby";
+        [Tooltip("Under the reward's Gold prism.")]
+        public string QuestsDomainGold = "Gold";
+        [Tooltip("Under the reward's Blue prism.")]
+        public string QuestsDomainBlue = "Blue";
+        [Tooltip("Over what else claiming the quest opens.")]
+        public string QuestsAlsoOpens = "Claim also opens";
+        [Tooltip("Over what claiming the quest opened, once claimed.")]
+        public string QuestsOpened = "Opened";
+        [Tooltip("Over Play quest: where the button takes the player.")]
+        public string QuestsPlayNote = "Play {name} in the Arcade";
+        [Tooltip("Over the saga's name on its locked card at the foot of the Voyages page (Frogma Rev 103 A).")]
+        public string StripSagaKicker = "Saga";
+        [Tooltip("The saga's name on its locked card at the foot of the Voyages page.")]
+        public string StripSagaName = "Tandava and The Severing";
+        [Tooltip("Over the episode's name on its locked card at the foot of the Voyages page.")]
+        public string StripEpisodesKicker = "Episodes";
+        [Tooltip("The next episode's name on its locked card at the foot of the Voyages page.")]
+        public string StripEpisodesName = "Episode 2";
+        [Tooltip("Under a locked card's name at the foot of the Voyages page.")]
+        public string StripSoon = "Coming soon";
+        [Tooltip("Under a locked card's name once it is pressed: it opens nothing.")]
+        public string StripNotOpen = "Not open yet. Voyages are open now.";
+        [Tooltip("The Voyages page's first step in the header: the HyperSea table and your crew's voyages.")]
+        public string StepSea = "01  THE HYPERSEA";
+        [Tooltip("The second step in the header: the voyage opened.")]
+        public string StepVoyage = "02  THE VOYAGE";
+        [Tooltip("The third step in the header: your lobby or a squad, then Set sail.")]
+        public string StepArk = "03  YOUR ARK";
+        [Tooltip("The header's way back a step (the voyage and Ark pages).")]
+        public string PageBack = "BACK";
+        [Tooltip("The pad key drawn before Back.")]
+        public string PageBackKey = "B";
+        [Tooltip("Opens the HyperSea table as a full-screen map.")]
+        public string SeaFullScreen = "FULL SCREEN";
+        [Tooltip("Takes the full-screen map back to the table.")]
+        public string SeaFullScreenBack = "BACK FROM FULL SCREEN";
+        [Tooltip("Slides your crew's voyages out beside their portraits.")]
+        public string SeaCrew = "CREW";
+        [Tooltip("Slides your crew's voyages away again.")]
+        public string SeaCrewHide = "HIDE";
+        [Tooltip("Beside a zoom tier: how wide the view is there; {ly} is the width.")]
+        public string SeaTierWidth = "{ly} ly";
+        [Tooltip("The picked voyage's call to action: opens the voyage page.")]
+        public string SeaOpenVoyage = "OPEN VOYAGE";
+        [Tooltip("Over a voyage's name on the HyperSea page: {kind} is the job, {pilot} who recommends it.")]
+        public string SeaOfferKicker = "{kind} - {pilot}";
+        [Tooltip("Beside a voyage's difficulty: the crystals it pays; {pay} and {element}.")]
+        public string SeaOfferPay = "{pay} {element}";
+        [Tooltip("Over a voyage on the crew's sliding cards: who recommends it.")]
+        public string SeaCrewRecommends = "{pilot} recommends";
+        [Tooltip("The label over the crew's drawer on the HyperSea page (Frogma Rev 111 Full).")]
+        public string SeaCrewDrawer = "YOUR CREW RECOMMENDS";
+        [Tooltip("Over the voyage's name on the voyage page.")]
+        public string BriefKicker = "{kind} - offered by {pilot}";
+        [Tooltip("Under the voyage's name: how far, how long, how many stops.")]
+        public string BriefStats = "{ly} ly - {minutes} min - {stops} stops";
+        [Tooltip("The difficulty picker's label (1 to 9).")]
+        public string BriefDifficulty = "DIFFICULTY";
+        [Tooltip("Beside the difficulty label: the pilot's own pick.")]
+        public string BriefRecommended = "Recommended by {pilot}: {difficulty}";
+        [Tooltip("The rewards' label.")]
+        public string BriefRewards = "REWARDS";
+        [Tooltip("The crystals the voyage pays at the picked difficulty.")]
+        public string BriefCrystals = "{pay} {element} crystals";
+        [Tooltip("Under the crystals: that the pay grows with the difficulty; {difficulty} is the one picked.")]
+        public string BriefCrystalsBy = "More at a higher difficulty";
+        [Tooltip("A reward: standing with the house of the pilot who offers it.")]
+        public string BriefStanding = "Standing with {faction}";
+        [Tooltip("Under the standing reward.")]
+        public string BriefStandingBy = "They trust you more";
+        [Tooltip("Under the rewards: the squad's role on this voyage.")]
+        public string BriefRole = "Your squad sails as {role}";
+        [Tooltip("Over the stop the drawing route has reached.")]
+        public string BriefStop = "STOP {n} OF {count}";
+        [Tooltip("The voyage page's call to action: opens your Ark.")]
+        public string BriefReady = "READY YOUR ARK";
+        [Tooltip("The Ark page's label when you have a lobby.")]
+        public string ArkLobby = "YOUR LOBBY";
+        [Tooltip("Under Your lobby: who is in it; {names} are their names.")]
+        public string ArkLobbyWith = "{names} sail with you";
+        [Tooltip("The Ark page's label when a squad sails.")]
+        public string ArkSquadHead = "FLY A SQUAD";
+        [Tooltip("Under Fly a squad.")]
+        public string ArkSquadLine = "AI wingmates fly the other seats";
+        [Tooltip("Under Fly a squad, when you have a lobby.")]
+        public string ArkSquadLineLobby = "Your lobby waits; AI wingmates fly the other seats";
+        [Tooltip("Your own seat card's name.")]
+        public string ArkYou = "You";
+        [Tooltip("An AI seat card's name.")]
+        public string ArkWingmate = "AI wingmate";
+        [Tooltip("A friend's seat card: they pick their own seat on their own screen.")]
+        public string ArkInLobby = "IN YOUR LOBBY";
+        [Tooltip("Under a friend's seat card.")]
+        public string ArkFriendLine = "Picks their own vessel";
+        [Tooltip("A seat card's artifact line.")]
+        public string ArkArtifact = "Artifact - {artifact}";
+        [Tooltip("Leaves your lobby's seats for a squad of your own.")]
+        public string ArkFlySquad = "FLY A SQUAD INSTEAD";
+        [Tooltip("The pad key drawn before Fly a squad instead.")]
+        public string ArkFlySquadKey = "X";
+        [Tooltip("From a squad back to your lobby's seats.")]
+        public string ArkBackToLobby = "BACK TO YOUR LOBBY";
+        [Tooltip("Under the voyage's name on the Ark page, before its difficulty.")]
+        public string ArkVoyageLine = "{kind}";
+        [Tooltip("On a squad card: an AI wingmate's seat, short (\"You - AI - AI\").")]
+        public string ArkSeatAiShort = "AI";
+        [Tooltip("On a squad card: between the seats' names.")]
+        public string ArkSquadSeparator = " - ";
+        [Tooltip("Leaves a squad for your lobby's seats, AI wingmates in the seats no friend flies.")]
+        public string ArkNoSquad = "FLY WITHOUT A SQUAD";
+        [Tooltip("An AI seat whose squad member is not in your lobby.")]
+        public string ArkAiFor = "AI flies for {name} until they join";
+        [Tooltip("Under an AI seat card: no seat is open, a friend takes an AI's place.")]
+        public string ArkAiLine = "A friend who joins your lobby takes this seat";
+        [Tooltip("The seat picker's title.")]
+        public string PickTitle = "Change your seat";
+        [Tooltip("The seat picker's title for an AI seat; {seat} is its place in the squad.")]
+        public string PickTitleSeat = "Change {seat}";
+        [Tooltip("Over the quick kits: a vessel, pilot, element and artifact in one press.")]
+        public string PickKits = "QUICK KITS - ALL FOUR IN ONE PRESS";
+        [Tooltip("The kit built for the open voyage (its pilot and its crystals' element).")]
+        public string PickKitVoyage = "For this voyage";
+        [Tooltip("The kit you last set sail with.")]
+        public string PickKitLast = "Last flown";
+        [Tooltip("Under a kit's name: what it sets.")]
+        public string PickKitWho = "{vessel} - {pilot} - {element}";
+        [Tooltip("The pilots' filter label: what each pilot sees.")]
+        public string PickSees = "SEES";
+        [Tooltip("The filter that shows every pilot.")]
+        public string PickSeesAll = "All";
+        [Tooltip("Pilots who see crystals.")]
+        public string PickSeesCrystals = "Crystals";
+        [Tooltip("Pilots who see prisms and mass.")]
+        public string PickSeesPrisms = "Prisms";
+        [Tooltip("Pilots who see plants and fauna.")]
+        public string PickSeesLife = "Life";
+        [Tooltip("Pilots who see vessels and Arks.")]
+        public string PickSeesVessels = "Vessels";
+        [Tooltip("Pilots who see gates, switches and solitons.")]
+        public string PickSeesPaths = "Paths";
+        [Tooltip("Over the choices: how many the filter shows.")]
+        public string PickCount = "{shown} of {total}";
+        [Tooltip("Over a pilot or vessel suggested for the open voyage.")]
+        public string PickForVoyage = "FOR THIS VOYAGE";
+        [Tooltip("Under the choices.")]
+        public string PickNote = "One press takes it. Your seat behind updates as you pick.";
+        [Tooltip("The seat picker's close mark.")]
+        public string PickClose = "X";
+        [Tooltip("A courier job's name.")]
+        public string KindCourier = "Courier";
+        [Tooltip("A vault hunt's name.")]
+        public string KindHunt = "Vault hunt";
+        [Tooltip("A salvage job's name.")]
+        public string KindSalvage = "Salvage";
+        [Tooltip("A defence job's name.")]
+        public string KindDefence = "Defence";
+        [Tooltip("A survey job's name.")]
+        public string KindSurvey = "Survey";
+        [Tooltip("A harvest job's name.")]
+        public string KindHarvest = "Harvest";
+        [Tooltip("A study job's name.")]
+        public string KindStudy = "Study";
+        [Tooltip("A rescue job's name.")]
+        public string KindRescue = "Rescue";
+        [Tooltip("A liberation job's name.")]
+        public string KindLiberate = "Liberation";
+        [Tooltip("A build job's name.")]
+        public string KindBuild = "Build";
+        [Tooltip("A thieves' lift's name.")]
+        public string KindLift = "Lift";
+        [Tooltip("A bounty hunt's name.")]
+        public string KindBounty = "Bounty hunt";
+        [Tooltip("A rite's name.")]
+        public string KindRite = "Rite";
+        [Tooltip("A parley's name.")]
+        public string KindParley = "Parley";
+        [Tooltip("A raid's name.")]
+        public string KindRaid = "Piracy";
+        [Tooltip("A tending job's name.")]
+        public string KindTend = "Tending";
+        [Tooltip("An exhibition's name.")]
+        public string KindExhibition = "Exhibition";
+        [Tooltip("A convoy's name.")]
+        public string KindConvoy = "Convoy";
+        [Tooltip("A cull's name (predators, or the Kaiju).")]
+        public string KindCull = "Hunt";
+        [Tooltip("The way home's name.")]
+        public string KindHome = "Home";
+        [Tooltip("The Ark escort's name.")]
+        public string KindEscort = "Ark escort";
     }
 }

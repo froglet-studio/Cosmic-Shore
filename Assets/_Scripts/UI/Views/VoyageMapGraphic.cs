@@ -213,7 +213,7 @@ namespace CosmicShore.UI
             _voyage = _chart?.Along(_route);
             if (_chart != null) SkyOf.ContentChanged();
             else _sky?.Hide();
-            raycastTarget = !_tilt;
+            raycastTarget = true;
             // A new frame (another course, or none) starts the explorer over; a redraw of the same one keeps where the
             // player has looked.
             string key = (focus ? "f:" : "a:") + string.Join(">", _route);
@@ -233,6 +233,9 @@ namespace CosmicShore.UI
         }
 
         // On a charted map the board's y runs toward Sol and the screen's up, so it flips.
+        /// <summary>A place's point on a charted map (the units <see cref="MapPoint"/> gives a course's points in).</summary>
+        public static Vector2 PlacePoint(VoyageLocation l) => l == null ? Vector2.zero : Pos(l, true);
+
         static Vector2 Pos(VoyageLocation l, bool charted) =>
             charted ? new Vector2(l.GalaxyX, -l.GalaxyY) : new Vector2(l.ChartX, l.ChartZ);
 
@@ -246,25 +249,42 @@ namespace CosmicShore.UI
         /// </summary>
         public bool Plain;
 
+        bool _unnamed;
+
         /// <summary>
-        /// The Sea table (Rev 89 A, Docs/MENU_REDESIGN_B.md section 172): the map lies back in perspective
-        /// (<see cref="VoyageSlab"/>), its far edge fading out. A lying map is looked at, not explored: it takes no
-        /// pointer, draws no corner galaxy and no caption, and its place names shrink with the distance.
+        /// The Voyages table's map (Frogma Rev 111 Full, Docs/MENU_REDESIGN_B.md section 205): no place names and no caption
+        /// of its own; the page stands its pins and their names over it (<see cref="VoyageSeaPage"/>), so two places on one
+        /// spot never print over each other and no line of text crosses the table.
         /// </summary>
-        public bool Tilt
+        public bool Unnamed
         {
-            get => _tilt;
+            get => _unnamed;
             set
             {
-                if (_tilt == value) return;
-                _tilt = value;
-                raycastTarget = !value;
-                if (_captionText) _captionText.gameObject.SetActive(!value && !string.IsNullOrEmpty(_caption));
-                PlaceLabels();
-                SetVerticesDirty();
+                if (_unnamed == value) return;
+                _unnamed = value;
+                if (_content == null) return;
+                Label();
+                Caption();
+                _viewDirty = true;
             }
         }
-        bool _tilt;
+
+        /// <summary>A map point (<see cref="MapPoint"/>, <see cref="PlacePoint"/>) in the rect, flat (before any tilt).</summary>
+        public Vector2 RectPointOf(Vector2 mapPoint) => ToRect(mapPoint);
+
+        /// <summary>Where place <paramref name="id"/> stands in the rect, flat; false when it is not drawn.</summary>
+        public bool PlaceRectPoint(string id, out Vector2 point)
+        {
+            point = default;
+            var l = _content?.Location(id);
+            if (!Drawn(l) || float.IsInfinity(_minX)) return false;
+            point = At(l);
+            return true;
+        }
+
+        /// <summary>True when <paramref name="rectPoint"/> (flat) is inside the map.</summary>
+        public bool InView(Vector2 rectPoint) => InFrame(rectPoint);
 
         // A view the board asked for (FrameOn): kept across a resize until the player explores.
         Vector2 _fixCentre;
@@ -289,6 +309,20 @@ namespace CosmicShore.UI
             float width = Mathf.Max(minWidth, (hi.x - lo.x) * margin, (hi.y - lo.y) * margin * aspect);
             _fixCentre = (lo + hi) * 0.5f;
             _fixWidth = width;
+            _flying = false;
+            ApplyFix();
+        }
+
+        /// <summary>
+        /// Frame the whole galaxy (the Galaxy tier's width about the galaxy's centre), at once. The Voyages window opens
+        /// here (Shombith, 2026-11-16). The frame holds across a resize as <see cref="FrameOn"/>'s does; an uncharted map
+        /// keeps its own frame.
+        /// </summary>
+        public void FrameGalaxy()
+        {
+            if (_chart == null) return;
+            _fixCentre = Vector2.zero;
+            _fixWidth = (float)HyperSeaSky.Tiers[0].width;
             _flying = false;
             ApplyFix();
         }
@@ -420,7 +454,54 @@ namespace CosmicShore.UI
         Vector2 Local(PointerEventData e, Vector2 screen)
         {
             RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screen, e.pressEventCamera, out var p);
-            return p;
+            // A table lying back (the Voyages page, VoyageTableTilt): the press is taken back to the flat map it is seen on.
+            return Tilt && Tilt.Active ? VoyageTableTilt.Flat(rectTransform.rect, p, Tilt.Angle) : p;
+        }
+
+        /// <summary>The Voyages page's table tilt on this map, or null for a flat map (Frogma Rev 111, Docs/MENU_REDESIGN_B.md
+        /// sections 201-203). Set by the board; the names and the presses follow it.</summary>
+        public VoyageTableTilt Tilt;
+
+        /// <summary>Where a point of the flat map (rect space) is seen: through <see cref="Tilt"/> when the map lies back,
+        /// else where it is. <paramref name="scale"/> is how much smaller a name stands there.</summary>
+        public Vector2 SeenAt(Vector2 flat, out float scale)
+        {
+            if (Tilt && Tilt.Active) return VoyageTableTilt.Seen(rectTransform.rect, flat, Tilt.Angle, out scale);
+            scale = 1f;
+            return flat;
+        }
+
+        /// <summary>Draw the view again on the next frame (the names follow a tilt that is easing).</summary>
+        public void Redraw() => _viewDirty = true;
+
+        /// <summary>The tier the view shows now (an index into <see cref="HyperSeaSky.Tiers"/>: 0 Galaxy, 1 Arm, 2 Sector,
+        /// 3 Region, 4 Neighbourhood, 5 Cell, 6 System).</summary>
+        public int Tier => float.IsInfinity(_minX) ? -1 : HyperSeaSky.TierOf(ViewWidth);
+
+        float _floorLy = MinViewLy;
+
+        /// <summary>The narrowest view (light years across) the map zooms in to; the Voyages page stops it at Region,
+        /// since the closer tiers paint far more of the sea every frame (Shombith measured 2 fps past Region, 2026-11-14).
+        /// Narrowing it pulls a closer view back out.</summary>
+        public float NarrowestLy
+        {
+            get => _floorLy;
+            set
+            {
+                _floorLy = Mathf.Clamp(value, MinViewLy, MaxViewLy);
+                if (!float.IsInfinity(_minX) && _chart != null && ViewWidth < _floorLy) SetView(Centre, _floorLy);
+            }
+        }
+
+        /// <summary>Fly to tier <paramref name="tier"/>'s width about the view's centre (the Voyages page's zoom row), as the
+        /// ladder does.</summary>
+        public void ZoomToTier(int tier)
+        {
+            if (float.IsInfinity(_minX) || tier < 0 || tier >= HyperSeaSky.Tiers.Length) return;
+            _fixWidth = 0f;
+            float width = (float)HyperSeaSky.Tiers[tier].width;
+            // A charted map's width is light years; an uncharted one keeps its framed scale.
+            if (_chart != null) FlyTo(Centre, width);
         }
 
         public void OnPointerDown(PointerEventData e) => _pointers[e.pointerId] = Local(e, e.position);
@@ -465,6 +546,16 @@ namespace CosmicShore.UI
             _fixWidth = 0f;
             _flying = false;
             ZoomAbout(Local(e, e.position), Mathf.Pow(WheelZoom, e.scrollDelta.y));
+        }
+
+        /// <summary>Zoom by <paramref name="factor"/> about the middle of the view (the Voyages screen's + and -), as the
+        /// wheel does about the pointer.</summary>
+        public void ZoomStep(float factor)
+        {
+            if (float.IsInfinity(_minX) || factor <= 0f) return;
+            _fixWidth = 0f;
+            _flying = false;
+            ZoomAbout(rectTransform.rect.center, factor);
         }
 
         public void OnPointerClick(PointerEventData e)
@@ -533,7 +624,7 @@ namespace CosmicShore.UI
         /// the board's dive does: longer the further it goes, at most 5.2 s.</summary>
         void FlyTo(Vector2 centre, float width)
         {
-            width = Mathf.Clamp(width, MinViewLy, MaxViewLy);
+            width = Mathf.Clamp(width, _floorLy, MaxViewLy);
             float w0 = ViewWidth;
             float ratio = Mathf.Abs(Mathf.Log(w0 / width)) + Vector2.Distance(Centre, centre) / w0 * .3f;
             _flyFromC = Centre;
@@ -548,10 +639,12 @@ namespace CosmicShore.UI
         void StepFlight()
         {
             float t = _flyMs > 0f ? Mathf.Min(1f, (Time.unscaledTime - _flyT0) * 1000f / _flyMs) : 1f;
-            float e = t < .5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f;
             float w0 = _flyFromW, w1 = _flyToW;
-            float wt = Mathf.Exp(Mathf.Log(w0) + (Mathf.Log(w1) - Mathf.Log(w0)) * e);
             bool far = Mathf.Max(w0 / w1, w1 / w0) > 6f;
+            // A step of one tier or a pan moves as Rev 111 Full's map does (.8s-ish, cubic-bezier(.2,.7,.2,1): quick off
+            // the mark, a long soft settle); the long dive keeps its even in-out.
+            float e = !far ? VoyageKit.Rise(t) : t < .5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f;
+            float wt = Mathf.Exp(Mathf.Log(w0) + (Mathf.Log(w1) - Mathf.Log(w0)) * e);
             float ce = !far ? e : w1 < w0 ? (1f / wt - 1f / w0) / (1f / w1 - 1f / w0) : (wt - w0) / (w1 - w0);
             SetView(_flyFromC + (_flyToC - _flyFromC) * ce, wt);
             if (t >= 1f)
@@ -566,7 +659,7 @@ namespace CosmicShore.UI
         void SetView(Vector2 centre, float width)
         {
             float frame = FrameScale();
-            _zoom = Mathf.Max(1f, rectTransform.rect.width) / Mathf.Clamp(width, MinViewLy, MaxViewLy) / frame;
+            _zoom = Mathf.Max(1f, rectTransform.rect.width) / Mathf.Clamp(width, _floorLy, MaxViewLy) / frame;
             _pan = centre - FrameCentre;
             ClampView();
             _viewDirty = true;
@@ -587,7 +680,7 @@ namespace CosmicShore.UI
             float frame = FrameScale();
             float width = Mathf.Max(1f, rectTransform.rect.width);
             float lo = _chart != null ? width / MaxViewLy / frame : MinZoom;
-            float hi = _chart != null ? width / MinViewLy / frame : MaxZoom;
+            float hi = _chart != null ? width / _floorLy / frame : MaxZoom;
             _zoom = Mathf.Clamp(_zoom * factor, Mathf.Min(lo, 1f), Mathf.Max(hi, 1f));
             // The centre that puts world back under the pointer.
             _pan = world - (at - rectTransform.rect.center) / Scale() - FrameCentre;
@@ -739,14 +832,12 @@ namespace CosmicShore.UI
                 var r = rectTransform.rect;
                 var lo = SeaUv(FromRect(r.min));
                 var hi = SeaUv(FromRect(r.max));
-                // Lying back, the water is a grid: one quad's texture would stretch along its diagonal (VoyageSlab).
-                if (_tilt) VoyageSlab.Grid(vh, r, SeaTint, lo, hi);
-                else Quad(vh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax),
+                Quad(vh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax),
                     new Vector2(r.xMax, r.yMin), SeaTint, lo, new Vector2(lo.x, hi.y), hi, new Vector2(hi.x, lo.y));
                 // The stars, clusters and landmarks over the water, under the corner, the lanes and the places.
                 SkyOf.Populate(vh, white, _style);
                 // Under the lanes and places, so a place in the corner still shows over it.
-                if (!_tilt) Inset(vh, white);
+                Inset(vh, white);
             }
 
             foreach (var lane in _content.Lanes ?? new List<VoyageLane>())
@@ -782,7 +873,6 @@ namespace CosmicShore.UI
                     white);
             }
 
-            if (_tilt) VoyageSlab.Apply(vh, rectTransform.rect);
         }
 
         static Vector2 Galaxy((double x, double y) p) => new((float)p.x, (float)-p.y);
@@ -885,7 +975,7 @@ namespace CosmicShore.UI
             {
                 var l = i < n ? _content.Locations[i] : null;
                 // The board's plain map names only the course's two ends.
-                bool named = !Plain || (l != null && _route.Count > 0 && (l.Id == _route[0] || l.Id == _route[^1]));
+                bool named = !_unnamed && (!Plain || (l != null && _route.Count > 0 && (l.Id == _route[0] || l.Id == _route[^1])));
                 _labelShown.Add(Drawn(l) && named);
             }
             string end = _route.Count > 0 ? _route[^1] : null;
@@ -920,8 +1010,8 @@ namespace CosmicShore.UI
                 var existing = transform.Find(CaptionName);
                 if (existing) existing.TryGetComponent(out _captionText);
             }
-            bool show = !string.IsNullOrEmpty(_caption);
-            if (!_captionText && (!show || _tilt)) return;
+            bool show = !_unnamed && !string.IsNullOrEmpty(_caption);
+            if (!_captionText && !show) return;
             if (!_captionText)
             {
                 _captionText = NewText(CaptionName, VoyageMapText.Caption);
@@ -933,7 +1023,7 @@ namespace CosmicShore.UI
                 rt.sizeDelta = new Vector2(-2f * InsetMargin, VoyageMapText.Caption * 1.4f);
                 rt.anchoredPosition = new Vector2(InsetMargin, InsetMargin);
             }
-            _captionText.gameObject.SetActive(show && !_tilt);
+            _captionText.gameObject.SetActive(show);
             if (show) _captionText.text = _caption;
         }
 
@@ -948,18 +1038,11 @@ namespace CosmicShore.UI
                 var label = (RectTransform)_labels[i].transform;
                 bool shown = i < _labelShown.Count && _labelShown[i] && InFrame(at);
                 var below = new Vector2(0f, -MarkerSize * .5f - 2f - label.sizeDelta.y * .5f);
-                float scale = 1f;
-                if (_tilt)
-                {
-                    // The name stands where its place is seen, as much smaller as the place is far; none in the fade.
-                    var r = rectTransform.rect;
-                    shown &= VoyageSlab.Fade(r, at) > 0.5f;
-                    at = VoyageSlab.Warp(r, at, out scale);
-                    below *= scale;
-                }
                 _labels[i].gameObject.SetActive(shown);
+                // On a table lying back the name stands upright where its place is seen, smaller further away.
+                var seen = SeenAt(at, out float scale);
+                label.anchoredPosition = seen - rectTransform.rect.center + below * scale;
                 label.localScale = new Vector3(scale, scale, 1f);
-                label.anchoredPosition = at - rectTransform.rect.center + below;
             }
         }
     }

@@ -392,7 +392,7 @@ a volley, and everything about feel.
   FASTER than its victim. The blade lands a Strike and drains nothing. Arming it is a Rhino kit
   decision (a skimmer drain SO the sword's container carries), not a number — see
   *The drain follows the price*.
-  **Stale (noted 2026-10-16):** the sword DOES steal. `RhinoSwordStealBySkimmerEffect` (a
+  **Stale (noted 2026-10-16):** the sword DOES steal. `SwordfishSwordStealBySkimmerEffect` (a
   `VesselOvertakeBySkimmerEffectSO`, landed with #928) sits in the sword's container at the Strike
   price — debuff −0.08 / buff +0.08 per element for 3 s, cooldown 1 s, `stealScale` authored disabled
   (base magnitude) — and runs only for a hit `VesselCombatHitBySword` admits, so it inherits the
@@ -401,7 +401,7 @@ a volley, and everything about feel.
 - **2026-10-16 Rhino kit — needs a playtest.** The AI Rhino now ramps (`RampBoostAIPolicySO`;
   before this only a human strategy raised the gesture, so a bot Rhino never reached the
   faster-than-victim speed the sword now requires) and swings/energizes its blade
-  (`RhinoSwordAutopilot`), so the fleet table's "AI can fight? yes — same" is newly true in a way it
+  (`SwordfishSwordAutopilot`), so the fleet table's "AI can fight? yes — same" is newly true in a way it
   was not measured against. Afterimages (5 s of blade-shaped prisms after an energize; danger at
   Mass L5) add mass to cut and, at L5, danger traps. A Danger Afterimage used to trigger
   `SparrowDebuffByRhinoDangerPrismEffect` (Sparrow and Grizzly containers — muted Button2 for 5 s);

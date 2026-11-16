@@ -1,0 +1,10 @@
+2026-09-29T15:48:49.6567689Z ##[group]Run set -euo pipefail
+2026-09-29T15:48:49.6567972Z [36;1mset -euo pipefail[0m
+2026-09-29T15:48:49.6568388Z [36;1mpython3 Tools/Build/check_console_logging.py --self-test[0m
+2026-09-29T15:48:49.6568704Z [36;1mpython3 Tools/Build/check_console_logging.py[0m
+2026-09-29T15:48:49.6623439Z shell: /usr/bin/bash -e {0}
+2026-09-29T15:48:49.6866652Z   ok   different class: expected 0, got 0
+2026-09-29T15:48:49.6866995Z self-test passed
+2026-09-29T15:48:52.1787683Z Assets/_Scripts/Utility/AITraining/Runner/TrainingSessionRunner.cs:710: raw Debug.Log - route through CSDebug (LogVerbose on a channel for telemetry)
+2026-09-29T15:48:52.1788572Z console-logging check: 1 PROBLEM(S) (1771 files)
+2026-09-29T15:48:52.1832901Z ##[error]Process completed with exit code 1.

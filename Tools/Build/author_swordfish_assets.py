@@ -26,7 +26,7 @@ WHAT IT MAKES
           overrides, InputEvents 2 / 1) bind RhinoPloughSteerLeft / Right instead of the shield swipes
         - removed: ScaleSkimmerObject (the blade driver + the afterimages), the inactive ZoomCameraObject that read the
           driver, the five blade tracers, the sword FX added to
-          the blade, RhinoSwordNetworkRelay and RhinoSwordAutopilot; the HUD controller's sword references are nulled
+          the blade, SwordfishSwordNetworkRelay and SwordfishSwordAutopilot; the HUD controller's sword references are nulled
         - the blade skimmer stays as the Rhino's only near-field skimmer (vessel rule 11: an elemental crystal is
           collected only by an initialised skimmer), re-posed as a static 15 u crystal catcher round the hull with a
           haptics-only container (RhinoSkimmerImpactorDataContainer) - it cuts nothing and takes no petals
@@ -43,6 +43,7 @@ BOTH PREFAB PASSES ARE SPENT ONE-SHOTS ONCE COMMITTED (CLAUDE.md): the clone run
 and the Rhino still carries its sword; the strip only while the Rhino still carries the swing executor. `--check`
 validates the SHIPPED prefabs' invariants, never a diff against a donor that has moved on.
 """
+import hashlib
 import os
 import re
 import sys
@@ -100,10 +101,10 @@ VESSEL_IMPACTOR_ID = "3485795873575935315"
 HUD_CONTROLLER_ID = "2171807218592972036"
 SWING_EXECUTOR_ID = "5837219046513728403"   # ShieldSwipeActionExecutor -> RhinoPloughSteerExecutor (in place)
 SWING_GO = "5837219046513728401"
-SCALE_SKIMMER_GO = "2798795461378093357"    # ShieldSkimmerScaleDriver + RhinoSwordAfterimage
+SCALE_SKIMMER_GO = "2798795461378093357"    # ShieldSkimmerScaleDriver + SwordfishSwordAfterimage
 ZOOM_CAMERA_GO = "6085091417435899968"      # inactive CameraZoomFollowScaleProvider reading the blade driver
 TRACER_GOS = ["5300000000001101", "5300000000001111", "5300000000001121", "5300000000001131", "5300000000001141"]
-SWORD_FX_ID = "5300000000001301"            # RhinoSwordFXController, ADDED to the blade instance
+SWORD_FX_ID = "5300000000001301"            # SwordfishSwordFXController, ADDED to the blade instance
 RELAY_ID = "7740000000000001601"
 SWORD_AUTOPILOT_ID = "7740000000000001603"
 BLADE_INSTANCE = "1660592348679971898"      # the ForceFieldSkimmer Variant instance (the blade / crystal catcher)
@@ -117,20 +118,20 @@ PLOUGH_BLADE_COMPONENT = "7741000000000002005"
 
 # --- script and asset guids ------------------------------------------------------------------------------------------
 SWING_EXECUTOR_SCRIPT = "fc766772d5459db71a1c792a127f2e48"   # ShieldSwipeActionExecutor
-SWIPE_RIGHT_GUID = "b92a3e13c6d6cae4c13166674711fddb"        # RhinoShieldSwipeRightAction
-SWIPE_LEFT_GUID = "4ff8e060662050b3e6c52df601ba9ca2"         # RhinoShieldSwipeLeftAction
+SWIPE_RIGHT_GUID = "b92a3e13c6d6cae4c13166674711fddb"        # SwordfishShieldSwipeRightAction
+SWIPE_LEFT_GUID = "4ff8e060662050b3e6c52df601ba9ca2"         # SwordfishShieldSwipeLeftAction
 IMPACT_COLLIDER_SCRIPT = "fafcc767febd41ccbad67c5457dc432d"
 SWORD_SCRIPTS = {   # nothing of the sword may stay on the Rhino
     "ShieldSkimmerScaleDriver": "ShieldSkimmerScaleDriver.cs.meta",
-    "RhinoSwordAfterimage": "RhinoSwordAfterimage.cs.meta",
-    "RhinoSwordFXController": "RhinoSwordFXController.cs.meta",
-    "RhinoSwordNetworkRelay": "RhinoSwordNetworkRelay.cs.meta",
-    "RhinoSwordAutopilot": "RhinoSwordAutopilot.cs.meta",
+    "SwordfishSwordAfterimage": "SwordfishSwordAfterimage.cs.meta",
+    "SwordfishSwordFXController": "SwordfishSwordFXController.cs.meta",
+    "SwordfishSwordNetworkRelay": "SwordfishSwordNetworkRelay.cs.meta",
+    "SwordfishSwordAutopilot": "SwordfishSwordAutopilot.cs.meta",
 }
 PLOUGH_EFFECT_GUID = "dd3c981395e34324b68b9ce34145854c"      # RhinoPloughPrismEffect.asset
 RAM_EFFECT_GUID = "4da62d4eefe03594ba35027dd537aff0"         # VesselDamagePrismEffect.asset (the fleet ram)
-SURGE_EFFECT_GUID = "2c9905659013874571988cf2fda5904c"       # RhinoVesselSurgeByCrystalEffect.asset
-SWORD_SKIMMER_CONTAINER_GUID = "05483649aa8bbea458ee49ed300542bd"   # RhinoForceFieldSkimmerImpactorDataContainer
+SURGE_EFFECT_GUID = "2c9905659013874571988cf2fda5904c"       # SwordfishVesselSurgeByCrystalEffect.asset
+SWORD_SKIMMER_CONTAINER_GUID = "05483649aa8bbea458ee49ed300542bd"   # SwordfishForceFieldSkimmerImpactorDataContainer
 SKIMMER_CONTAINER_SCRIPT = "68b3e74284f14e32a6e21b5fb8c3e8ad"
 VESSEL_HAPTICS_BY_SKIMMER = "02cd4a20ea91bbc4591c9ccbf9db91af"
 SKIMMER_HAPTICS_BY_PRISM = "dcce08b9351b97c4eb275508001a5b8e"
@@ -398,13 +399,39 @@ def rhino_plough_map(rhino_map: str) -> str:
     return re.sub(r"(?m)^  omniAbilityLabel: .*$", "  omniAbilityLabel: Stampede", t)
 
 
+# The class card, rendered from Swordfish.fbx by Tools/Build/vessel_model/render_cards.py (2026-11-15; it wore the Rhino's
+# card until then), which names each new PNG md5("cosmic-shore-card:" + its repo path); this generator writes the class
+# asset too, so it names the same guids.
+def _model_card(rel):
+    return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+
+
+CARD_ACTIVE = _model_card("Assets/_Graphics/CardImages/Swordfish.png")
+CARD_FIELDS = {
+    "IconActive": CARD_ACTIVE,
+    "IconInactive": _model_card("Assets/_Graphics/CardImages/Swordfish_Inactive.png"),
+    "CardSilohoutteActive": CARD_ACTIVE,
+    "CardSilohoutteInactive": _model_card("Assets/_Graphics/CardImages/Swordfish_silhouette.png"),
+    "SquadImage": _model_card("Assets/_Graphics/CardImages/Swordfish_large.png"),
+    "PreviewImage": _model_card("Assets/_Graphics/Design Assests/Hangar/Swordfish_Hangar_Preview.png"),
+}
+
+
+def cards_retrofit(text: str) -> str:
+    """Point the class asset's six card fields at the Swordfish's own renders. Idempotent."""
+    for field, guid in CARD_FIELDS.items():
+        text = re.sub(r"(?m)^(  %s: )\{[^}]*\}" % field, lambda m: m.group(1) + "{fileID: 21300000, guid: %s, type: 3}" % guid,
+                      text, count=1)
+    return text
+
+
 def class_asset(rhino_class: str) -> str:
     t = replace_once(rhino_class, "  m_Name: SO_Class_Rhino\n", "  m_Name: SO_Class_Swordfish\n", "class name")
     t = replace_once(t, f"  Class: {RHINO_CLASS_ID}\n", f"  Class: {CLASS_ID}\n", "class id")
-    return re.sub(r"  Name: Rhino\n  Description: .*?(?=\n  PrimaryElement:)",
+    return cards_retrofit(re.sub(r"  Name: Rhino\n  Description: .*?(?=\n  PrimaryElement:)",
                   "  Name: Swordfish\n  Description: \"All sword. Your triggers swing a blade that cuts every prism "
                   "it touches; hold both to light it, and a lit blade lays afterimages of itself. Run flat out and "
-                  "the ramp winds you up to the fastest top speed in the fleet.\"", t, count=1, flags=re.S)
+                  "the ramp winds you up to the fastest top speed in the fleet.\"", t, count=1, flags=re.S))
 
 
 def add_list_entry(text: str, list_key: str, entry: str) -> str:
@@ -545,6 +572,10 @@ def errors() -> list:
         need(label in rm, f"the Rhino's map has no {label}")
     need("'Energize'" not in rm and "'Afterimage'" not in rm and "'Blade Reach'" not in rm, "a sword card is on the Rhino's map")
     need(f"  Class: {CLASS_ID}\n" in read(CLASS_ASSET), "SO_Class_Swordfish is not class 30")
+    cls = read(CLASS_ASSET)
+    for field, guid in CARD_FIELDS.items():
+        need(re.search(r"  %s: \{fileID: 21300000, guid: %s," % (field, guid), cls) is not None,
+             f"SO_Class_Swordfish: {field} is not the Swordfish's rendered card (render_cards.py Swordfish)")
     for path in CLASS_LISTS:
         need(f"guid: {CLASS_GUID}" in read(path), f"{os.path.basename(path)} does not list SO_Class_Swordfish")
     need(f"{{fileID: {ROOT_TRANSFORM_ID}, guid: {PREFAB_GUID}, type: 3}}" in read(CONTAINER),

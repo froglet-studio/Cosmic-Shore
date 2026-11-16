@@ -37,6 +37,12 @@ inherits the rest:
 
 THE CIRCUIT GENERATOR IS SHARED, NOT CLONED. RedlineCourse supplies the Manta's settings to
 HeadlongCircuit.Generate; the only change to the solver is an absolute corner floor field.
+
+THE 2026-11-11 UPGRADE (REDLINE.md section 0). Since 2026-11-07 Soar is the Manta's Time LEVEL-5 upgrade, and the card
+seeded nothing, so every Manta raced at 180 u/s with Soar dark. This script now writes the card's StartingElements (Time
+6 at every intensity, READ from RedlineCourse.StartingTimeLevelByIntensity), the race at 8 laps (64 gates: measured on
+the flown hull, manta_redline_sim.py --reading), and owns the mode's toast config (GameToastConfig_Redline, its guid
+kept): the shared race beats word for word, plus Redline's heat toasts 360-366 (RedlineController.Heat).
 """
 import hashlib
 import os
@@ -61,6 +67,9 @@ G_SCRIPT = {
     "RedlineCourseTests": guid("script/RedlineCourseTests"),
     "RedlineTimeCrystals":      guid("script/RedlineTimeCrystals"),
     "RedlineTimeCrystalsTests": guid("script/RedlineTimeCrystalsTests"),
+    "RedlineHeat":              guid("script/RedlineHeat"),
+    "RedlineHeatTests":         guid("script/RedlineHeatTests"),
+    "RedlineControllerHeat":    guid("script/RedlineController.Heat"),
 }
 
 # ── New asset GUIDs ──────────────────────────────────────────────────────────
@@ -92,7 +101,9 @@ EXISTING = {
 # to size the circuit and the turn monitor asks the controller for the target, so the finish
 # line and the course cannot be different lengths. Kept in sync with
 # EndConditionOverridesSO.DefaultRedlineGateTarget.
-LAPS = 5
+# 8 laps since 2026-11-11: with Soar lit from the gun a lap takes a person ~5 s at I1 and ~9-11 s at I4 (it was ~28 s
+# at 180 u/s), so 5 laps ran 24-53 s; 8 run ~38-85 s for the model's ideal pilot and ~50-110 s for a person.
+LAPS = 8
 RINGS_PER_LAP = 8                 # RedlineCourse.ForIntensity's GateCount
 GATE_TARGET = LAPS * RINGS_PER_LAP
 
@@ -110,16 +121,17 @@ AI_APPROACH_LEAD = 480
 AI_THROUGH_DISTANCE = 320
 
 # Detection clamp: a single frame's motion longer than this x dt x 2 + 5 is treated as a
-# respawn. A Time-10 Manta at 936 u/s steps 31.2u per 30 fps frame; the inherited 400 rejects
-# that within a unit. 1400 leaves a knockback from a crystal blast inside the clamp too.
+# respawn. The flown hull (2026-11-11): a Time-10 Manta at full Soar is 1404 u/s (270 cruise x 4 x 1.3) and an
+# overcharged one (Time 15) ~1827, both inside 1400 x 2. The inherited 400 rejected even the old 936 u/s step.
 MAX_PLAUSIBLE_SPEED = 1400
+FLOWN_TOP_SPEED = 1827            # RedlineCourse.SoarSpeed at the overcharge cap (Time 15)
 
 # The comeback strength, and it is a FUNCTION OF THE TARGET - `bonusLevels = deficit x rate` -
 # so a rate only means anything next to the scale of deficits the mode produces (the trap
 # DOGFIGHT.md, BENDS.md, WILDLIFE_LIBERATION.md, SWITCHBACK.md and HEADLONG.md each record).
-# At 0.21: ten gates behind (a quarter of the five-lap race) buys 2.1 element levels (0.35 on the
+# At 0.21: ten gates behind (a lap and a quarter of the 8-lap race) buys 2.1 element levels (0.35 on the
 # old three-lap, 24-gate race; raced to ~90 s, 2026-10-26) - and on THIS hull
-# a Time level is speed outright (Soar's map multiplier), so the buff lands on the mode's axis.
+# a Time level is speed outright (+5% cruise, +3% Soar), so the buff lands on the mode's axis.
 COMEBACK_RATE = 0.21
 
 
@@ -179,6 +191,9 @@ SCRIPT_PATHS = {
     "RedlineCourseTests": "Assets/_Scripts/Tests/Editor/RedlineCourseTests.cs",
     "RedlineTimeCrystals":      "Assets/_Scripts/Controller/Arcade/Redline/RedlineTimeCrystals.cs",
     "RedlineTimeCrystalsTests": "Assets/_Scripts/Tests/Editor/RedlineTimeCrystalsTests.cs",
+    "RedlineHeat":              "Assets/_Scripts/Controller/Arcade/Redline/RedlineHeat.cs",
+    "RedlineHeatTests":         "Assets/_Scripts/Tests/Editor/RedlineHeatTests.cs",
+    "RedlineControllerHeat":    "Assets/_Scripts/Controller/Arcade/Redline/RedlineController.Heat.cs",
 }
 for k, p in SCRIPT_PATHS.items():
     emit(p + ".meta", meta(G_SCRIPT[k]))
@@ -213,6 +228,22 @@ assert _m, "GameModes.Redline not found - has the member been renamed?"
 MODE_ID = int(_m.group(1))
 
 
+# ── The race's starting Time level: READ from RedlineCourse, never typed twice ──
+# StartingTimeLevelByIntensity { 6, 6, 6, 6 }: Soar (the Time level-5 upgrade) is lit from the gun with two petals of
+# headroom over its relock (below 4). A card row's levels are normalised (level / 10), one row per intensity, for the
+# Manta (VesselClassType.Manta = 1) - Headlong's StartingElements shape.
+_COURSE_SRC = read("Assets/_Scripts/Controller/Arcade/Redline/RedlineCourse.cs")
+_m = re.search(r"StartingTimeLevelByIntensity = \{ ([0-9, ]+) \}", _COURSE_SRC)
+assert _m, "RedlineCourse.StartingTimeLevelByIntensity not found"
+START_LEVELS = [int(x) for x in _m.group(1).split(",")]
+_m = re.search(r"MantaSoarUnlockLevel = (\d+);", _COURSE_SRC)
+assert _m, "RedlineCourse.MantaSoarUnlockLevel not found"
+SOAR_UNLOCK = int(_m.group(1))
+MANTA_CLASS = 1
+STARTING_ELEMENTS = "  StartingElements:\n" + "".join(
+    f"  - Class: {MANTA_CLASS}\n    Intensity: {i + 1}\n    Levels:\n      Mass: 0\n      Charge: 0\n      Space: 0\n"
+    f"      Time: {lv / 10:g}\n" for i, lv in enumerate(START_LEVELS) if lv > 0)
+
 # ── 3. Arcade game config ────────────────────────────────────────────────────
 # MANTA ONLY: a single entry in Vessels drives all three enforcement layers (the launcher clamp,
 # the server-side spawn clamp, and the AI clamp).
@@ -223,11 +254,11 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRedline.asset",
      HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameRedline") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Redline
-  Description: Mantas only, flat out. Both triggers buried is Soar - four times cruise
-    and a turning circle you can hold through most of the lap. The corners that will not
-    take it are cut to the metre, and easing both triggers to make one costs you two
-    seconds of winding the Soar back up. Time crystals make it faster still. Laps, until
-    somebody stops lifting.
+  Description: Mantas only, flat out. Soar is lit from the gun - bury both triggers for
+    over a thousand units a second and a turning circle you can hold through most of the
+    lap. Thread every ring through its heart to keep the streak alive, and ease both
+    triggers only where a ring would get away from you. Time crystals make it faster
+    still, all the way to the redline. Eight laps.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {aml.card_background('Redline')}, type: 3}}
@@ -243,7 +274,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRedline.asset",
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: {COMEBACK_RATE}
+{STARTING_ELEMENTS}  ComebackRatePerScoreDeficit: {COMEBACK_RATE}
 """)
 emit("Assets/_SO_Assets/Games/ArcadeGameRedline.asset.meta",
      asset_meta(G_ASSET["ArcadeGameRedline"]))
@@ -316,7 +347,15 @@ def clone_scene() -> str:
 # asserts STAND DOWN when Headlong moves on (CLAUDE.md "spent one-shot"). See aml.committed_scene.
 scene, _scene_errors = aml.committed_scene(
     "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity", clone_scene,
-    authored_blocks=(CONTROLLER_SCRIPT_LINE, NEW_FIELDS))
+    authored_blocks=(CONTROLLER_SCRIPT_LINE,))
+# The lap count is RE-TUNED in place (5 -> 8, 2026-11-11), found by the shell fields around it, then the whole authored
+# field block must read exactly NEW_FIELDS once.
+scene, _n_laps = re.subn(r"(  innerRadiusNucleusFactor: 1\.22\n)  laps: \d+\n(  gateBloomSeconds: )",
+                         rf"\g<1>  laps: {LAPS}\n\g<2>", scene)
+if _n_laps != 1:
+    _scene_errors.append(f"the controller's laps field was found {_n_laps} times, not once")
+if scene.count(NEW_FIELDS) != 1:
+    _scene_errors.append("MinigameRedline.unity: the controller field block is not the authored one:\n" + NEW_FIELDS)
 # What the mode INHERITED from the donor is still what it needs - checked on the scene it ships.
 _scene_errors += [f"MinigameRedline.unity no longer provides: {why}"
                   for probe, why in INHERITED_PROBES if not re.search(probe, scene, re.M)]
@@ -401,6 +440,33 @@ emit(END_PATH, endcond)
 # author_switchback_assets.py already authored. Nothing to do here, and deliberately so.
 
 
+# ── 9. The toast config (owned since 2026-11-11; its guid is kept) ──────────
+# The shared race beats (DomainRaceToasts 129-132) and the comeback line (30) word for word as a human authored them,
+# then Redline's heat (GameToastSituation 360-366, RedlineController.Heat), each posted to the LOCAL pilot only. Every
+# line is a human-owned template: an empty one shows nothing (CLAUDE.md, player-facing text).
+TOAST_PATH = "Assets/_SO_Assets/Game Toasts/GameToastConfig_Redline.asset"
+TOAST_SCRIPT = "86d1715b8f104fcc87cb60e015d4b563"          # GameToastConfigSO
+REDLINE_TOASTS = [
+    (360, "Soar is lit from the gun. Bury both triggers, thread every ring through its heart, and ease both "
+          "together only where a ring would get away from you"),
+    (361, "{0} clean in a row"),
+    (362, "Lap {0} - {1}s"),
+    (363, "Best lap yet - lap {0} in {1}s"),
+    (364, "Clean lap {0} - every ring through its heart"),
+    (365, "Soar is dark - a Time crystal lights it again"),
+    (366, "REDLINE - {0} u/s"),
+]
+toast_text = (HEADER_FOR(TOAST_SCRIPT, "GameToastConfig_Redline") + f"  gameMode: {MODE_ID}\n  toasts:\n"
+              + aml.toast(129, "{0} is halfway home - gate {1}/{2}", tint_domain=1, domain_names=0)
+              + aml.toast(130, "{0} takes the lead - gate {1}/{2}", tint_domain=1, domain_names=0)
+              + aml.toast(131, "{0} is on the home stretch - gate {1}/{2}", tint_domain=1, domain_names=0)
+              + aml.toast(132, "{0} is on the final lap", tint_domain=1, domain_names=0)
+              + aml.toast(30, "Comeback system is on", tint_domain=0, domain_names=0, alpha=0.9)
+              + "".join(aml.toast(sid, text, tint_domain=0, domain_names=0) for sid, text in REDLINE_TOASTS))
+emit(TOAST_PATH, toast_text)
+emit(TOAST_PATH + ".meta", aml.asset_meta_text(aml.existing_guid(TOAST_PATH)))
+
+
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
 errors = list(_scene_errors)
 
@@ -443,8 +509,24 @@ for const, want in (("Inner", "480"), ("Outer", "1080")):
 
 # The speed clamp must clear a Time-10 Manta at 30 fps with the clamp's own margin removed:
 # maxStep = speed x dt x 2 + 5 must exceed 936 x dt.
-if MAX_PLAUSIBLE_SPEED * 2 <= 936:
-    errors.append("maxPlausibleSpeed does not clear a Time-10 Manta")
+if MAX_PLAUSIBLE_SPEED * 2 <= FLOWN_TOP_SPEED:
+    errors.append("maxPlausibleSpeed does not clear an overcharged Manta at full Soar")
+
+# Soar must be lit from the gun at every intensity, with headroom over its relock.
+if len(START_LEVELS) != 4 or any(lv < SOAR_UNLOCK for lv in START_LEVELS):
+    errors.append(f"RedlineCourse.StartingTimeLevelByIntensity {START_LEVELS} leaves Soar dark at some intensity "
+                  f"(it unlocks at Time {SOAR_UNLOCK})")
+_ability_map = read("Assets/Resources/ElementalAbilityMaps/Manta.asset")
+if not re.search(r"UpgradeLabel: Soar", _ability_map):
+    errors.append("Manta.asset no longer labels a Soar upgrade - re-read where Soar unlocks")
+
+# The toast ids Redline posts are its own band, and every one has a line.
+_toast_enum = read("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
+for sid, _text in REDLINE_TOASTS:
+    if not 360 <= sid <= 369:
+        errors.append(f"toast {sid} is outside Redline's band 360-369")
+    if not re.search(rf"\bRedline\w+ = {sid},", _toast_enum):
+        errors.append(f"GameToastSituation has no Redline member = {sid}")
 
 # GUID hygiene: nothing this script mints may collide with an asset it does not own.
 all_new = set(G_SCRIPT.values()) | set(G_ASSET.values()) | {guid("doc/REDLINE.md"), guid("folder/Redline")}

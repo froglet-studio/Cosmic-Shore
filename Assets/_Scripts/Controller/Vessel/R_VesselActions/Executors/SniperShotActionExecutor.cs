@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
     /// is invulnerable to <c>Prism.Damage</c> outright — it early-returns through
     /// <c>AbsorbSuperShieldHit</c> — so the shields are dropped FIRST and the prism is then
     /// devastated, which is precisely what the Rhino's energised blade does
-    /// (<c>RhinoSkimmerDamagePrismEffectSO.PopSuperShield</c>). Both calls are handed the same
+    /// (<c>SwordfishSkimmerDamagePrismEffectSO.PopSuperShield</c>). Both calls are handed the same
     /// impact vector and the same true-velocity ceiling, so the stellation sheds as ordinary
     /// explosion debris on the same terms as the prism's own pieces — one effect, two meshes
     /// (Docs/PRISM_ANIMATION.md §4.8.1). Nothing pops out of existence and mass is conserved.</para>

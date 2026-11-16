@@ -13,7 +13,8 @@ generator STANDS DOWN on a donor that has drifted (`clone_or_stand_down`) instea
 check below it (the author_dogfight_assets.py trap).
 
 Not a generator itself - imported by author_dustup_assets.py, author_tapestry_assets.py and
-author_sirocco_assets.py.
+author_sirocco_assets.py, and (with `vessel_id=15`) by the Stoat's author_shockfront_assets.py and
+author_fulmen_assets.py, which clone the same donor onto the same two arenas.
 """
 import os
 import re
@@ -52,11 +53,12 @@ def spawn_block(distance, floor, formation) -> str:
 
 
 def clone_scene(controller_guid, monitor_guid, settings_guid, rule_guid,
-                cells, cell_choice, spawn, no_nucleus_radius, monitor_extra="") -> str:
+                cells, cell_choice, spawn, no_nucleus_radius, monitor_extra="", vessel_id=None) -> str:
     """The donor with the identity, cells, AI hulls, spawn ring and crystal volume swapped.
     `cells` is the new CellConfigs list; `cell_choice` its CellTypeChoiceOptions (1 =
     IntensityWise over four configs, 0 = a single config). `monitor_extra` is inserted after the
-    monitor's `_updateInterval` (a timed monitor's `duration`)."""
+    monitor's `_updateInterval` (a timed monitor's `duration`). `vessel_id` is the AI templates' hull class
+    (the Butterfly's by default; the Stoat's games pass 15, author_shockfront_assets.py / author_fulmen_assets.py)."""
     with open(os.path.join(lib.ROOT, DONOR_SCENE), encoding="utf-8") as fh:
         scene = fh.read()
     scene = lib.swap_guid(scene, DONOR["UndertowPointTurnMonitor"], monitor_guid, "turn monitor")
@@ -68,7 +70,8 @@ def clone_scene(controller_guid, monitor_guid, settings_guid, rule_guid,
                               "  CellConfigs:\n" + cell_list(cells) + f"  cellTypeChoiceOptions: {cell_choice}\n",
                               "cell config list")
     scene = lib.swap_guid(scene, "  - vesselClass: 12\n    PlayerName: AI",
-                          f"  - vesselClass: {BUTTERFLY_ID}\n    PlayerName: AI", "AI templates", expected=4)
+                          f"  - vesselClass: {BUTTERFLY_ID if vessel_id is None else vessel_id}\n    PlayerName: AI",
+                          "AI templates", expected=4)
     scene = lib.replace_block(scene, DONOR_SPAWN, spawn, "spawn ring")
     scene = lib.replace_block(scene, DONOR_NO_NUCLEUS, f"  noNucleusSpawnRadius: {no_nucleus_radius}\n",
                               "crystal volume")
@@ -112,7 +115,7 @@ def card_background(card_rel: str) -> str:
     return lib.CARD_ART["CardBackground"]
 
 
-def assert_scene(errors, scene, must_have: dict, must_not_have: dict):
+def assert_scene(errors, scene, must_have: dict, must_not_have: dict, vessel_id=None):
     if scene is None:
         return
     for name, gd in must_have.items():
@@ -121,5 +124,6 @@ def assert_scene(errors, scene, must_have: dict, must_not_have: dict):
     for name, gd in must_not_have.items():
         if gd in scene:
             errors.append(f"cloned scene still references {name}")
-    if scene.count(f"  - vesselClass: {BUTTERFLY_ID}\n") != 4 or "  - vesselClass: 12\n" in scene:
-        errors.append("cloned scene does not carry exactly 4 Butterfly AI templates")
+    hull = BUTTERFLY_ID if vessel_id is None else vessel_id
+    if scene.count(f"  - vesselClass: {hull}\n") != 4 or "  - vesselClass: 12\n" in scene:
+        errors.append(f"cloned scene does not carry exactly 4 AI templates of hull class {hull}")

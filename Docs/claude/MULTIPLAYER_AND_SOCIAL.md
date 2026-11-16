@@ -31,7 +31,7 @@ arena (`CrewStations`, `Docs/CREW_STATIONS.md`). **13** (2026-10-23/24, `cece/op
 (`R_VesselActions/JACKS.md` §1.1, §5). **14** (2026-10-25) - `ArcadeConfigSyncManager.RequestAIVessel_ServerRpc`,
 a pilot asking the host to put an AI seat in a given hull from the Arena configure window's shared vessel panel
 (`Docs/HomeHub/ARCHITECTURE.md` §3.2.1). Both are on bleeding-edge since the 2026-10-25 merge, which ships 14.
-**15** (2026-10-26, `cece/wonderful-knuth-rzv8qp`) - `RhinoSwordNetworkRelay` drops its `n_energy` variable: the
+**15** (2026-10-26, `cece/wonderful-knuth-rzv8qp`) - `SwordfishSwordNetworkRelay` drops its `n_energy` variable: the
 Rhino has no energy any more (`R_VesselActions/RHINO_ENERGY_SWORD.md`). **16** (2026-10-26, `claude/pensive-dijkstra-qxoxo0`) -
 `R_VesselActionHandler.NetPilot` and `NetArtifacts`: the pilot in each vessel's seat and its slotted artifacts
 (`VesselPilotLoadout`, `Docs/Pilots/PILOTS_AND_ARTIFACTS.md`).
@@ -66,6 +66,10 @@ the arena cards' Vessels row (Pick, Random, Draft, Squad), `Docs/HomeHub/ARCHITE
 **29** (2026-11-07, `claude/regatta-integration`; 29 was free on bleeding-edge and every in-flight branch, checked
 that day) - no wire change of its own: the build that carries both 27 (the Vessels row) and 28 (the course pool), so a
 28 build without the Vessels row, or a 27 build without the drawn course, cannot join one that has both (as with 20 above).
+**30** (2026-11-14, `claude/jewel-wasp`) - the Jewel Wasp's network prefab and `JewelWaspNetworkRelay` (the server's
+possession decision: mode, nest pose, recharges, stand-back; `R_VesselActions/JEWEL_WASP.md` §6.1). **31** (2026-11-15,
+`claude/jewel-wasp-flora-camera`; free on bleeding-edge and the in-flight branches that day) - `JewelWaspNetworkRelay`
+gains `n_ownerAutoPilot`, the owner's autopilot flag, so the server runs the wasp's AI for a client hull on autopilot.
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

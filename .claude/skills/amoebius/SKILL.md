@@ -152,5 +152,24 @@ the engine.
      | sort -u` before and after: identical sets mean the change adds nothing. Then remove the new map rows and build
      again to prove the comparison can fail (here it named `RelayRegionProbe.cs` twice).
 
+17. **Traps from the weeks-red compile (2026-11-13, `claude/great-pascal-gelycr`).**
+   - **CI's error count is a floor, not the size.** The parity build listed 6 errors (four missing types); adding
+     them surfaced 103 more in 29 game files, all hidden behind the declaration errors (item 14). Budget for the
+     full set and build locally until 0.
+   - **A look-alike named like a renderer type collides in the renderer.** `UnityEngine.GL` (debug lines) became
+     `CosmicShore.Engine.GL`, and every Render, Client and Player file that imports both namespaces hit CS0104 against
+     Silk's `GL`. The fix is one project-level alias, `<Using Include="Silk.NET.OpenGL.GL" Alias="GL" />` in those
+     csprojs (Mobile too), not a rename of either type.
+   - **Two Unity namespaces mapped onto one port namespace leak names Unity keeps apart.** Unity.Netcode and
+     Unity.Services.Multiplayer both map to `CosmicShore.Engine.Networking`, so a file importing only Netcode also
+     saw Multiplayer's `IPlayer` and clashed with the game's (`AnalyticsServiceFacade`). The sync adds a
+     `using IPlayer = global::CosmicShore.Gameplay.IPlayer;` alias for exactly that shape (`SyncUnitySources.targets`).
+   - **An engine type that returns a JobHandle or NativeArray lives in Compat** (those are Compat types), in
+     `namespace CosmicShore.Engine`, beside `Jobs/TransformJobs.cs`: `Jobs/PhysicsCommands.cs`
+     (SpherecastCommand, OverlapCapsuleCommand), `Collections/TexturePixelData.cs` (`Texture2D.GetPixelData`).
+   - **Once the build is green, the content tests report game-data drift, not engine bugs.** Read each failure's
+     asset history before touching the test: `UnreliableDeltasPrefabTests.NoVessel_OptsIn` failed because 17 vessel
+     prefabs opted in on 2026-11-01 and 6 did not. That is a question for the multiplayer owner, not a test to flip.
+
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.

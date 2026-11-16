@@ -1196,8 +1196,6 @@ MonoBehaviour:
   baseView: {fileID: 7033107979473629901}
   _iconSetSwitcher: {fileID: 0}
   view: {fileID: 7033107979473629901}
-  swordDriver: {fileID: 0}
-  afterimage: {fileID: 0}
   speedWard: {fileID: 7740000000000001602}
   goreSpeed: {fileID: 11400000, guid: 747ac55656974b2492cc54ce6218b894, type: 2}
 --- !u!114 &7965853245772039612
@@ -11543,101 +11541,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: RhinoHUDVariant
-      objectReference: {fileID: 0}
-    - target: {fileID: 7720000000000003015, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: m_Sprite
-      value: 
-      objectReference: {fileID: 21300000, guid: b5182dbc1db9ec372305e6003aa1b472, type: 3}
-    - target: {fileID: 7720000000000003015, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: m_Color.a
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7720000000000003025, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: m_Sprite
-      value: 
-      objectReference: {fileID: 21300000, guid: e574978b9ccd49f7e2db43d96bad4790, type: 3}
-    - target: {fileID: 7720000000000003025, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: m_Color.a
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7720000000000003035, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: m_Sprite
-      value: 
-      objectReference: {fileID: 21300000, guid: 8ff150baf7bc7b1142bae2bc1c30d234, type: 3}
-    - target: {fileID: 7720000000000003035, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: m_Color.a
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: katanaCurvedSprite
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: katanaChopSprite
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: reachBladeSprite
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: reachHiltSprite
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: reachPrismSprite
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: reachPrismBrokenSprite
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: reachPostsSprite
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: afterimageBladeIcon
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: afterimageNearIcon
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: afterimageFarIcon
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 768668362042791179, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1060054458769145963, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1131767926734058465, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

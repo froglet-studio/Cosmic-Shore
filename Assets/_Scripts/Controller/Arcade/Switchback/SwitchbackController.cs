@@ -93,9 +93,9 @@ namespace CosmicShore.Gameplay
             new(1.8f, 2.2f, 3.5f, 6f),   // I4 without the gauntlet
         };
         [Tooltip("The AI nose's follow rates at I4 WITH the gauntlet (SWITCHBACK.md \"The I4 gauntlet\"), Easy/Medium/Hard/" +
-                 "Legendary, set to Yash's gauntlet bands (2026-11-03): offline Easy ~185 s, Medium ~173, Hard ~165, Legendary ~155, " +
-                 "each inside its 20 s band (175-195 / 165-185 / 155-175 / 145-165).")]
-        [SerializeField] SwitchbackNoseFollow aiNoseFollowGauntlet = new(1.9f, 2.8f, 3.5f, 5f);
+                 "Legendary. Retuned 2026-11-13 when the seals' Danger hearts became plain (elemental loop step 2): offline " +
+                 "Easy ~176 s, Medium ~167, Hard ~155, Legendary ~141, about 10 s apart as in Yash's gauntlet bands of 2026-11-03.")]
+        [SerializeField] SwitchbackNoseFollow aiNoseFollowGauntlet = new(1.5f, 2.2f, 3.5f, 6f);
         [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
         [SerializeField] bool aiPlanGizmos = true;
         [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +
@@ -116,6 +116,14 @@ namespace CosmicShore.Gameplay
         /// that blast overrides it false and keeps I4 as it was before 2026-11-03 (Scarab Rally). No effect at I1-I3.
         /// </summary>
         protected virtual bool BlastRunGauntlet => true;
+
+        /// <summary>
+        /// Whether this intensity lays Blast Run at all (doors, block fields, movers, key crystals, path rays). Switchback is
+        /// Blast Run at every intensity (Yash, 2026-10-29). A mode that reuses Switchback's course for a hull without the
+        /// Dolphin's key blast overrides it to fly the bare ring course where Blast Run is not its question (Scarab Rally,
+        /// I1-I3): the layout is then empty, so no key replaces the passive crystals and the blast planner has no station.
+        /// </summary>
+        protected virtual bool LaysBlastRun(int intensity) => true;
 
         /// <summary>
         /// Switchback flies Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>): commit no
@@ -335,7 +343,9 @@ namespace CosmicShore.Gameplay
             // The nucleus sits inside the course's inner shell (inner = nucleus x innerRadiusNucleusFactor).
             float clearRadius = inner / innerRadiusNucleusFactor + NucleusMargin;
 
-            var layout = SwitchbackBlastRun.Layout(_course, intensity, centre, clearRadius, BlastRunGauntlet);
+            var layout = LaysBlastRun(intensity)
+                ? SwitchbackBlastRun.Layout(_course, intensity, centre, clearRadius, BlastRunGauntlet)
+                : new SwitchbackFeatureLayout();
             RaiseBlastRun(layout);
             ApplyFaunaCorridor(intensity);
             // The I4 gauntlet's rays light the way through every blocked gate (empty below I4).

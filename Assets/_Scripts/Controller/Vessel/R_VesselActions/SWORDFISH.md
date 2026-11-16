@@ -38,11 +38,11 @@ Charge has PvP, each vessel morphs the omni crystal into its own effect, and not
 
 - **Quickdraw** divides the energize hold (1 -> 0.4 s), the energize cooldown (5 -> 2 s) and the swipe recovery
   (0.35 -> 0.14 s) by Time's rate, x1 at rest to x2.5 at level 10, floored x0.5
-  (`ShieldSkimmerScaleConfigSO.timeSwordRateMultiplier`, `RhinoShieldSwipeConfigSO.timeSwipeRateMultiplier`, read
+  (`ShieldSkimmerScaleConfigSO.timeSwordRateMultiplier`, `SwordfishShieldSwipeConfigSO.timeSwipeRateMultiplier`, read
   live; the energize is decided on the owner and replicated, so only the owner's read matters for it). The let-go tail
   is a duration and stays 5 s. The cooldown's length is taken when it starts, so the HUD veil sweeps what the pilot got.
 - **Flurry** (Time L5) takes the swipe recovery away for good: the sword swings as freely as an energized blade, lit or
-  not (`RhinoShieldSwipeConfigSO.flurryUpgradeElement`, `IsUpgradeActive(Time)` in
+  not (`SwordfishShieldSwipeConfigSO.flurryUpgradeElement`, `IsUpgradeActive(Time)` in
   `ShieldSwipeActionExecutor.ApplySwipeRecovery`).
 - **The ramp stays** (it is how the Swordfish flies, 840 u/s top speed), on its own asset
   `SwordfishRampBoostAction.asset` with the Time scaling switched off; `RhinoRampBoostAction.asset` is the Rhino's
@@ -78,7 +78,7 @@ sword."*
 | Camera | looks 18 units above the hull (`lookAheadLift`) | no offset at rest (`SwordfishCameraSettingsSO`, lift 0); pans by the sword's midpoint, x for the side and y for up (`SwordfishSwordCamera` -> `CustomCameraController.FramingPan`) |
 | Phone, both thumbs off | the sword energizes | it also stands up, and tilt steers as on the Manta (`tiltSteersWhileIdle`, `flipTiltSteerPitch`) |
 
-The mapping is `RhinoShieldSwipeConfigSO.poseMapping = Bill` (`SwordPoseMapping`, with `billSideYawDegrees`,
+The mapping is `SwordfishShieldSwipeConfigSO.poseMapping = Bill` (`SwordPoseMapping`, with `billSideYawDegrees`,
 `billSideRollDegrees`, `billRaiseDegrees`, `billCameraCentring`, `billCameraPanSeconds`); `Chop` is the old swordsman,
 kept for any hull that wants it. `ShieldSwipeActionExecutor.BillChannels` is the pure mapping, tested by
 `SwordfishBillPoseTests` with the camera pan.

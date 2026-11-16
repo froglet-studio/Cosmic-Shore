@@ -94,6 +94,10 @@ namespace CosmicShore.UI
         [SerializeField] Image plantChainIcon;
         [Tooltip("Time card: the ball stopped as a pivot (white).")]
         [SerializeField] Image plantBallIcon;
+        [Tooltip("Time card, Anchor Ward (Time 5): the ward round the planted orbit (white).")]
+        [SerializeField] Image plantWardIcon;
+        [Tooltip("Time card, Anchor Ward (Time 5): the danger prism the ward turns away (danger).")]
+        [SerializeField] Image plantDangerIcon;
         [Tooltip("Rival colour on the parts (the fleet danger orange).")]
         [SerializeField] Color dangerColor = new(1f, 0.3294f, 0.1020f, 1f);
         [Tooltip("Alpha of a part that is there but not in play (the Mass row off Mass Mode, the slack chain, the free orbit).")]
@@ -169,6 +173,9 @@ namespace CosmicShore.UI
             Paint(plantOrbitIcon, Color.white, _planted ? 1f : idlePartAlpha);
             Paint(plantChainIcon, Color.white, _planted ? 1f : 0f);
             Paint(plantBallIcon, Color.white, 1f);
+            bool ward = _planted && IsAbilityUpgraded(Element.Time);
+            Paint(plantWardIcon, Color.white, ward ? 1f : 0f);
+            Paint(plantDangerIcon, danger, ward ? 1f : 0f);
         }
 
         static void Paint(Image part, Color color, float alpha)

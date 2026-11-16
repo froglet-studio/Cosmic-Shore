@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Standoff Cell Config 3
+  m_EditorClassIdentifier:
+  CellName: Standoff
+  Description: 'Redoubts - intensity 3 of Standoff: fourteen posts with shielded rims and an inner ring
+    of four round the crystals. 568 prisms in 18 posts, all neutral (328 shielded, 0
+    danger), outer posts at 300 u inside the standard 1200 u cell, spawn ring 400. 2 omni
+    crystals float at the open centre (the scene''s CrystalManager). NO NUCLEUS, no flora,
+    no fauna. Authored by Tools/Build/author_standoff_assets.py from standoff_budget.py -
+    re-run it rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 3
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 0
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: 720a03c734d8fbae9b8c5fc32d77651e, type: 2}
+  EnvironmentPrefab: {fileID: 12500000000000203, guid: 284129e1e230c977b36b407f347fdb55, type: 3}
+  EnvironmentIntensity: 3
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 1268
+    RestlessExit: 1068
+    FrenzyEnter: 4168
+    FrenzyExit: 3568
+    RestlessEnterVolume: 120256
+    RestlessExitVolume: 117056
+    FrenzyEnterVolume: 166656
+    FrenzyExitVolume: 157056

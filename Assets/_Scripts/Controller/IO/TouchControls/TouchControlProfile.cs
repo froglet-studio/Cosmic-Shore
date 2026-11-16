@@ -110,8 +110,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("While one thumb flies (the aim), the phone is an augmented-reality window on the roll axis: " +
                  "turn it like a steering wheel and the hull rolls exactly as far, one to one, up to the " +
                  "library's tilt roll limit either side. Read from the phone's fused pose (gyro and compass). " +
-                 "The Dolphin.")]
-        public bool tiltRollOnOneThumb;
+                 "Any hull may use it; the Dolphin and the Squirrel do.")]
+        [UnityEngine.Serialization.FormerlySerializedAs("tiltRollOnOneThumb")]
+        public bool gyroRollOnOneThumb;
 
         [Tooltip("With no thumb on the glass, tilting the phone steers: wheel-turn yaws, tipping forward and " +
                  "back pitches. The Manta's soar, the Thresher's launch aim.")]
@@ -137,8 +138,10 @@ namespace CosmicShore.Gameplay
         [Range(0f, 1f)] public float oneThumbResponseCurve;
 
         [Header("Both thumbs off")]
-        [Tooltip("With no thumb on the glass, both analog triggers read fully pulled - the Rhino energizes " +
-                 "its sword the way two held triggers do on a pad.")]
+        [Tooltip("With no thumb on the glass, both triggers read fully pulled, exactly as a pad's two held " +
+                 "triggers: the analog values and the presses (Garrett, 2026-11-14: \"both thumbs off should read " +
+                 "as both triggers pulled and switch to gyro controls\"). On for every thumb-lift hull whose " +
+                 "both-thumbs-off has no other job; the Swordfish raises and energizes its sword this way.")]
         public bool idlePullsBothTriggers;
 
         [Tooltip("With no thumb on the glass, the throttle reads FULL instead of a released pad's neutral - " +

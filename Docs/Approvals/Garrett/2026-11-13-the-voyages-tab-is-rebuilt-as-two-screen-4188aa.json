@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-13-the-voyages-tab-is-rebuilt-as-two-screen-4188aa",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-13T00:20:38+00:00",
+  "area": "the Voyage window and its galaxy map",
+  "summary": "The Voyages tab is rebuilt as two screens (Rev 98 1A and 2D, Docs/MENU_REDESIGN_B.md section 184): the map is flat again with its explorer and gains ZoomStep for a + and -; the squad's seats moved to a squad screen; the seat rules moved from VoyageSquadColumn into VoyageSeats; Set sail and the quiet buttons are soft-ended on every tab; chips are 96 high. Voyage data, launch and the Ark escort are unchanged.",
+  "why": "Shombith saw the Sea table in Unity and rejected the tilt (the map could not be explored) and the boxed tabs",
+  "branch": "claude/sweet-mccarthy-ow25e2",
+  "commit": "ab98b3653",
+  "paths": [
+    "Assets/_Scripts/UI/Views/VoyageBoard.cs",
+    "Assets/_Scripts/UI/Views/VoyageJobsView.cs",
+    "Assets/_Scripts/UI/Views/VoyageMapGraphic.cs"
+  ]
+}

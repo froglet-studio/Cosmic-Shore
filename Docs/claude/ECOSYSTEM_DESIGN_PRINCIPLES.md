@@ -60,6 +60,12 @@ trio, and the traps).
   `Cell.NotifyBlockShieldStateChanged`, and every shielded prism re-filed when the cell enters or
   leaves a Frenzy), because "fauna must never be led to mass they cannot
   eat" is one rule, not two. (`Docs/ECOSYSTEM.md §16`, `§22`.)
+  **The third sign-off (Garrett, 2026-11-14): a POSSESSED creature eats every shield.** The Jewel Wasp
+  (`R_VesselActions/JEWEL_WASP.md`) rides any creature, any diet, and its rider's suction takes shielded
+  and super-shielded rival mass ("shielded prisms and supershielded prisms always edible"). The fence: one
+  interface (`IFaunaPossession`, one implementer, `JewelWaspExecutor`), read in `Fauna.IsInedibleShield`
+  and `Fauna.BiteMass` only, on the simulating peer, and only for the mouthful the rider asked for;
+  steering and the cell's grids are untouched. `Docs/ECOSYSTEM.md` §0.w.
   A mode may redefine what "controls" a cell — Brood Rush makes it the nucleus claim (Cleave
   pinned it to the race leader until its fauna were removed; `Cell.SetModeControlOverride`
   survives as the platform capability) — but the spawn colour is still

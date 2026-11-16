@@ -83,5 +83,38 @@ namespace CosmicShore.UI
             float y0 = Mathf.Clamp(centre.y - h * 0.5f, lo.y, hi.y - h);
             return (new Vector2(x0, y0), new Vector2(x0 + w, y0 + h));
         }
+
+        /// <summary>The length of a course (map units).</summary>
+        public static float Length(IReadOnlyList<Vector2> course)
+        {
+            float total = 0f;
+            if (course == null) return total;
+            for (int i = 1; i < course.Count; i++) total += Vector2.Distance(course[i - 1], course[i]);
+            return total;
+        }
+
+        /// <summary>How far along <paramref name="course"/> (0-1 of its length) the point of it nearest
+        /// <paramref name="point"/> lies: where a stop sits on the course the voyage page draws in.</summary>
+        public static float ShareAlong(IReadOnlyList<Vector2> course, Vector2 point)
+        {
+            if (course == null || course.Count < 2) return 0f;
+            float total = Length(course), run = 0f, best = float.PositiveInfinity, at = 0f;
+            for (int i = 1; i < course.Count; i++)
+            {
+                var a = course[i - 1];
+                var b = course[i];
+                var ab = b - a;
+                float len = ab.magnitude;
+                float t = len > 1e-5f ? Mathf.Clamp01(Vector2.Dot(point - a, ab) / (len * len)) : 0f;
+                float d = (a + ab * t - point).sqrMagnitude;
+                if (d < best)
+                {
+                    best = d;
+                    at = run + len * t;
+                }
+                run += len;
+            }
+            return total > 1e-5f ? at / total : 0f;
+        }
     }
 }

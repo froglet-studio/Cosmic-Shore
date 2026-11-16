@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,101 +10,125 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Voyages tab as the Sea table, as Shombith picked it on Frogma (Rev 89 A, Docs/MENU_REDESIGN_B.md sections
-    /// 170-172; it replaces Rev 81 B5 and the Rev 83 S2 seat editor of section 165).
-    /// <list type="bullet">
-    /// <item><b>The voyages</b> (left): a small chip per voyage on offer, with its number and place, its numbers, and a
-    /// sliver of its own water (<see cref="VoyageRoutePoster"/>). A press opens it: the chip lights and the table shows
-    /// its course.</item>
-    /// <item><b>The table</b> (middle): the window's own galaxy map lying back in perspective
-    /// (<see cref="VoyageMapGraphic.Tilt"/>, <see cref="VoyageSlab"/>) with its edge-on view standing under its near
-    /// edge as the front face: one slab cut out of the HyperSea. <see cref="VoyageJobsView"/> stands them in
-    /// <see cref="CourseColumn"/> and <see cref="FitSlab"/> shapes them.</item>
-    /// <item><b>The name</b>, over the table's far edge: who brought the voyage, where it goes, what it is, its numbers,
-    /// and the Ark escort's difficulty stepper.</item>
-    /// <item><b>The squad</b> (right): <see cref="VoyageSquadColumn"/>, with Set sail at its foot. A seat changes where
-    /// it stands; there is no editor screen.</item>
+    /// The Voyages tab as Shombith picked it on Frogma (Docs/MENU_REDESIGN_B.md sections 201-203): three pages under one
+    /// header of steps, replacing the voyage screen and squad deck of section 184.
+    /// <list type="number">
+    /// <item><b>The HyperSea</b> (<see cref="VoyageSeaPage"/>, Rev 111 Full on Rev 108's table): the live map lying back as a
+    /// 50 degree table on the moving sea lines, its side view joined to its front edge and sliding with it, the zoom row
+    /// and + / - above it, Full screen (the table animates flat to a borderless full-screen map whose zoom goes down to
+    /// Neighbourhood and Cell), the crew's portraits down the right with a sliding Crew / Hide toggle, and the picked
+    /// voyage with Open voyage.</item>
+    /// <item><b>The voyage</b> (<see cref="VoyageBriefPage"/>, Rev 100 P2A Briefing): the offering pilot's portrait and
+    /// story, the route drawing itself stop by stop, the difficulty 1-9 with the pilot's recommendation marked, the
+    /// rewards arriving, Back and Ready your Ark.</item>
+    /// <item><b>Your Ark</b> (<see cref="VoyageArkPage"/>, Rev 100 P3A as Rev 108 drew it): your lobby first as glass seat
+    /// cards on sea lines, Fly a squad instead, and the seat popup (<see cref="VoyageSeatPicker"/>: tabs, quick kits, the
+    /// Sees filter, one press), Back and Set sail.</item>
     /// </list>
-    /// Every word is the voyage content's (<see cref="VoyageLines"/>) or the game's data; every colour, sprite and
-    /// proportion is <see cref="VoyageBoardStyleSO"/>'s.
+    /// <see cref="VoyageJobsView"/> feeds it the voyages on offer (<see cref="Offer"/>) and lends it the window's map.
+    /// Every word is the voyage content's (<see cref="VoyageLines"/>) or the game's data; every colour and sprite is
+    /// <see cref="VoyageBoardStyleSO"/>'s, read through the worn colour set.
     /// </summary>
     public class VoyageBoard : MonoBehaviour
     {
-        /// <summary>One voyage on the list.</summary>
-        public sealed class Row
+        public enum Page
         {
-            public string Title, By, Meta;
-            public readonly List<Vector2> Course = new();
+            Sea = 0,
+            Voyage = 1,
+            Ark = 2,
         }
 
-        /// <summary>The open voyage: its name over the table, and Set sail.</summary>
-        public sealed class Voyage
+        /// <summary>A stop on a voyage's route: its name, its line and its point on the map.</summary>
+        public sealed class Stop
         {
-            /// <summary>The small line over the name (which voyage it is and who brought it).</summary>
-            public string Kicker;
-            /// <summary>Where it goes: the name over the table. Empty: <see cref="Title"/> is the name and
-            /// <see cref="Line"/> stands under it.</summary>
-            public string Place;
-            public string Title, Line, Distance, Sail, Intensity;
-            /// <summary>Set sail's label; empty: the content's own.</summary>
+            public string Name, Line;
+            public Vector2 At;
+        }
+
+        /// <summary>A voyage on offer: a job a pilot of the crew recommends (or the Ark escort, or a voyage under way).</summary>
+        public sealed class Offer
+        {
+            /// <summary>The job's kind in words (Bounty hunt, Piracy...).</summary>
+            public string Kind;
+            public string Title, Place;
+            /// <summary>Who recommends it, their house and their portrait; empty for the escort.</summary>
+            public string Pilot, Faction, Story;
+            public Sprite Portrait;
+            /// <summary>Its numbers: light years and minutes (empty when the course is not charted).</summary>
+            public string Ly, Minutes;
+            /// <summary>The squad's role on it, already in words.</summary>
+            public string Role;
+            /// <summary>The crystals it pays at <see cref="Recommended"/> and their element.</summary>
+            public int Pay;
+            public bool Pays;
+            public Element Element;
+            /// <summary>The difficulty its pilot recommends (1-9).</summary>
+            public int Recommended = 5;
+            /// <summary>The course on the map (map points) and its stops.</summary>
+            public readonly List<Vector2> Course = new();
+            public readonly List<Stop> Stops = new();
+            /// <summary>Sails it at a difficulty; null when it cannot sail (it is under way).</summary>
+            public Action<int> SetSail;
+            /// <summary>Set sail's words when not the content's own (Under way).</summary>
             public string SailLabel;
-            public Action SetSail;
-            /// <summary>A stepper under the numbers (the Ark escort's difficulty); null hides it.</summary>
-            public string LowerLabel, RaiseLabel;
-            public Action Lower, Raise;
+            /// <summary>Pilots (callsign ids) and vessels the seat popup suggests for it.</summary>
+            public readonly List<string> SuggestedPilots = new();
+            public readonly List<VesselClassType> SuggestedVessels = new();
         }
 
         /// <summary>The squad changed (another squad picked, a seat changed): the pilots bring the voyages, so the window
         /// redraws.</summary>
         public event Action SquadChanged;
 
-        /// <summary>Where the window's galaxy map and edge view stand.</summary>
-        public RectTransform CourseColumn => _courseColumn;
+        /// <summary>The page on show changed, or the table went full screen and back.</summary>
+        public event Action ScreenChanged;
 
-        /// <summary>The squad on the right (its seats and steppers).</summary>
-        public VoyageSquadColumn Squad => _squad;
+        /// <summary>The page on show.</summary>
+        public Page Shown => _page;
 
-        // The table's foot stands this far above the page's foot, and the name this far below its top, for a table as wide
-        // as the board drew it (1020); both scale with the table's width.
-        internal const float BoardWidth = 1020f, FootGap = 26f;
+        /// <summary>True on the Ark page (the map behind is the course alone).</summary>
+        public bool OnSquadScreen => _page == Page.Ark;
 
-        static readonly Color RouteAuthored = new(0.784f, 1f, 0.353f, 1f);
-        static readonly Color ArkAuthored = new(1f, 0.78f, 0.25f, 1f);
-        static readonly Color SeaAuthored = new(0.75f, 0.75f, 0.8f, 1f);
+        /// <summary>True while the locked Saga and Episodes strip belongs at the page's foot: the HyperSea page, not full
+        /// screen.</summary>
+        public bool ShowsStrip => _page == Page.Sea && !_sea.IsFull;
 
-        // Every colour is painted as the worn colour set has it (ColorTrace, Docs/VesselModels/COLOR_TRACE.md).
-        static Color Route => ColorTrace.Retrace(ColorTrace.Ui, RouteAuthored);
-        static Color Ark => ColorTrace.Retrace(ColorTrace.Ui, ArkAuthored);
-        static Color Sea => ColorTrace.Retrace(ColorTrace.Ui, SeaAuthored);
+        /// <summary>The difficulty picked for the open voyage (its pilot's recommendation until another is picked).</summary>
+        public int Difficulty => _difficulty;
+
+        /// <summary>The voyage open now, or null.</summary>
+        public Offer Open => _open >= 0 && _open < _offers.Count ? _offers[_open] : null;
+
+        public VoyageSeaPage Sea => _sea;
+        public VoyageBriefPage Brief => _brief;
+        public VoyageArkPage Ark => _ark;
+
+        public const float HeaderHeight = 64f;
 
         VoyageKit _kit;
-        VoyageBoardStyleSO _style;
         VoyageLines _lines;
-        VoyageSquadColumn _squad;
-
-        RectTransform _root, _listContent, _courseColumn, _mapHost, _edgeHost;
-        TMP_Text _message, _kicker, _name, _sub, _stats, _setSailText, _lowerText, _raiseText;
-        Button _setSail, _lower, _raise;
-        RectTransform _stepper;
-        readonly List<RowView> _rows = new();
-        Voyage _voyage;
+        VoyageSeats _rules;
+        RectTransform _root, _pages;
+        VoyageSeaPage _sea;
+        VoyageBriefPage _brief;
+        VoyageArkPage _ark;
+        Page _page;
+        readonly List<Offer> _offers = new();
+        int _open = -1;
+        int _difficulty = 5;
+        string _difficultyFor;
         Action<int> _pick;
-        float _fitWidth = -1f;
 
-        sealed class RowView
-        {
-            public Button Button;
-            public Image Plate, Bar, Edge;
-            public VoyageRoutePoster Poster;
-            public CanvasGroup Water;
-            public TMP_Text Title, Meta;
-        }
+        // The header: the three steps (each page has its own Back at its foot, as the board draws it).
+        readonly TMP_Text[] _steps = new TMP_Text[3];
+        readonly Image[] _stepBars = new Image[3];
 
         // ── Building ─────────────────────────────────────────────────────────
 
         /// <summary>The board, built once over <paramref name="host"/> (the Voyages page), its text in
-        /// <paramref name="font"/>'s face.</summary>
-        public static VoyageBoard Create(RectTransform host, TMP_Text font, SO_VesselList vessels, VoyageLines lines)
+        /// <paramref name="font"/>'s face. <paramref name="party"/> is who is in the player's lobby (may be null).</summary>
+        public static VoyageBoard Create(RectTransform host, TMP_Text font, SO_VesselList vessels, VoyageLines lines,
+            HostConnectionDataSO party = null)
         {
             var rt = VoyageKit.Node("VoyageBoard", host);
             rt.SetAsLastSibling();
@@ -110,211 +136,221 @@ namespace CosmicShore.UI
             var board = rt.gameObject.AddComponent<VoyageBoard>();
             board._root = rt;
             board._lines = lines;
-            board._style = VoyageBoardStyleSO.Load();
-            board._kit = new VoyageKit(board._style, lines, font);
-            board.Build(vessels);
+            var style = VoyageBoardStyleSO.Load();
+            board._kit = new VoyageKit(style, lines, font);
+            board._rules = new VoyageSeats(style, lines, vessels);
+            board._rules.Changed += () => board.SquadChanged?.Invoke();
+            board.BuildHeader();
+            board._pages = VoyageKit.Node("Pages", rt);
+            VoyageKit.Stretch(board._pages);
+            board._pages.offsetMax = new Vector2(0f, -HeaderHeight);
+            board._sea = new VoyageSeaPage(board, board._kit, board._pages);
+            board._brief = new VoyageBriefPage(board, board._kit, board._pages);
+            board._ark = new VoyageArkPage(board, board._kit, board._rules, board._pages, party);
+            board.ShowPage(Page.Sea);
             return board;
         }
 
-        void Build(SO_VesselList vessels)
+        void BuildHeader()
         {
-            var s = _style;
-            // The voyages: chips in a scroll, so more voyages than fit can be reached.
-            var list = VoyageKit.Node("Voyages", _root);
-            VoyageKit.Anchor(list, 0f, 0f, s.ListRight, 1f);
-            list.gameObject.AddComponent<RectMask2D>();
-            _listContent = VoyageKit.Node("Chips", list);
-            _listContent.anchorMin = new Vector2(0f, 1f);
-            _listContent.anchorMax = Vector2.one;
-            _listContent.pivot = new Vector2(0.5f, 1f);
-            _listContent.sizeDelta = Vector2.zero;
-            VoyageKit.Column(_listContent, 10f);
-            _listContent.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            var scroll = list.gameObject.AddComponent<ScrollRect>();
-            scroll.content = _listContent;
-            scroll.viewport = list;
-            scroll.horizontal = false;
-            scroll.movementType = ScrollRect.MovementType.Clamped;
-            _message = _kit.Text(list, 18, _kit.Sub, TextAlignmentOptions.TopLeft);
-            VoyageKit.Anchor(_message.rectTransform, 0f, 0f, 1f, 1f);
-            _message.textWrappingMode = TextWrappingModes.Normal;
-
-            // The table's column: VoyageJobsView stands the map and the edge view in it, FitSlab shapes them.
-            _courseColumn = VoyageKit.Node("Table", _root);
-            VoyageKit.Anchor(_courseColumn, s.CourseLeft, 0f, s.CourseRight, 1f);
-
-            BuildName();
-
-            var panel = VoyageKit.Node("Squad", _root);
-            VoyageKit.Anchor(panel, s.PanelLeft, 0f, 1f, 1f);
-            _squad = new VoyageSquadColumn(_kit, panel, vessels);
-            _squad.Changed += () => SquadChanged?.Invoke();
-            (_setSail, _setSailText) = _kit.Cta(_squad.Foot, _lines?.BoardSailKey, _lines?.CardSetSail, () => _voyage?.SetSail?.Invoke());
-        }
-
-        /// <summary>The open voyage's name, over the table's far edge (where the lying map has faded out).</summary>
-        void BuildName()
-        {
-            var head = VoyageKit.Node("Name", _root);
-            head.anchorMin = new Vector2(_style.CourseLeft, 1f);
-            head.anchorMax = new Vector2(_style.CourseRight, 1f);
-            head.pivot = new Vector2(0.5f, 1f);
-            head.sizeDelta = new Vector2(0f, 220f);
-            head.anchoredPosition = new Vector2(0f, 6f);
-            VoyageKit.Column(head, 8f, TextAnchor.UpperCenter);
-            _kicker = _kit.Label(head, 13, _kit.Sub, TextAlignmentOptions.Center);
-            _name = _kit.Text(head, 48, _kit.Light, TextAlignmentOptions.Center);
-            _sub = _kit.Text(head, 18, _kit.Light, TextAlignmentOptions.Center);
-            _stats = _kit.Text(head, 22, _kit.Light, TextAlignmentOptions.Center);
-
-            // The Ark escort's difficulty, under the numbers.
-            _stepper = VoyageKit.Node("Stepper", head);
-            VoyageKit.Row(_stepper, 10f, TextAnchor.MiddleCenter);
-            (_lower, _lowerText) = SmallButton(_stepper, () => _voyage?.Lower?.Invoke());
-            (_raise, _raiseText) = SmallButton(_stepper, () => _voyage?.Raise?.Invoke());
-        }
-
-        (Button b, TMP_Text t) SmallButton(Transform parent, Action onClick)
-        {
-            var rt = VoyageKit.Node("Step", parent);
-            var b = _kit.Plated(rt, _kit.Popup, true, out _, out _);
-            var h = VoyageKit.Row(rt, 0f, TextAnchor.MiddleCenter);
-            h.padding = new RectOffset(16, 16, 8, 8);
-            var t = _kit.Text(rt, 15, _kit.Light, TextAlignmentOptions.Center);
-            b.onClick.AddListener(() => onClick());
-            return (b, t);
-        }
-
-        RowView RowFor(int index)
-        {
-            while (_rows.Count <= index)
+            var head = VoyageKit.Node("Steps", _root);
+            VoyageKit.Top(head, 0f, HeaderHeight);
+            var row = VoyageKit.Node("Row", head);
+            row.anchorMin = row.anchorMax = row.pivot = new Vector2(0.5f, 0.5f);
+            row.sizeDelta = new Vector2(760f, 44f);
+            VoyageKit.Row(row, 28f, TextAnchor.MiddleCenter);
+            string[] words = { _lines?.StepSea, _lines?.StepVoyage, _lines?.StepArk };
+            for (int i = 0; i < 3; i++)
             {
-                var s = _style;
-                var view = new RowView();
-                int i = _rows.Count;
-                var rt = VoyageKit.Node("Voyage" + i, _listContent);
-                VoyageKit.Le(rt).preferredHeight = s.RowHeight;
-                view.Button = _kit.Plated(rt, _kit.RowPicked, true, out view.Plate, out view.Edge);
-                view.Button.onClick.AddListener(() => _pick?.Invoke(i));
-
-                // A sliver of the voyage's own water at the chip's right, fading in from the words.
-                var water = VoyageKit.Node("Water", rt);
-                VoyageKit.Anchor(water, 0.56f, 0f, 1f, 1f);
-                water.gameObject.AddComponent<RectMask2D>().softness = new Vector2Int(48, 0);
-                view.Water = water.gameObject.AddComponent<CanvasGroup>();
-                var poster = VoyageKit.Node("Course", water);
-                VoyageKit.Stretch(poster);
-                view.Poster = poster.gameObject.AddComponent<VoyageRoutePoster>();
-                view.Poster.LineScale = 0.45f;
-
-                var bar = VoyageKit.Node("Bar", rt);
-                bar.anchorMin = Vector2.zero;
-                bar.anchorMax = new Vector2(0f, 1f);
-                bar.pivot = new Vector2(0f, 0.5f);
-                bar.sizeDelta = new Vector2(3f, 0f);
-                view.Bar = VoyageKit.Block(bar, _kit.Cyan);
-
-                var words = VoyageKit.Node("Words", rt);
-                VoyageKit.Stretch(words);
-                words.offsetMin = new Vector2(20f, 0f);
-                words.offsetMax = new Vector2(-12f, 0f);
-                VoyageKit.Column(words, 6f, TextAnchor.MiddleLeft);
-                view.Title = _kit.Text(words, 18, _kit.Light, TextAlignmentOptions.Left);
-                view.Meta = _kit.Text(words, 14, _kit.Sub, TextAlignmentOptions.Left);
-                _rows.Add(view);
+                if (i > 0)
+                {
+                    // A hairline between the steps.
+                    var line = VoyageKit.Node("Between", row);
+                    var le = VoyageKit.Le(line);
+                    le.preferredWidth = 56f;
+                    le.preferredHeight = 1f;
+                    VoyageKit.Block(line, VoyageKit.Fade(_kit.Outline, 0.9f));
+                }
+                int page = i;
+                var step = VoyageKit.Node("Step" + i, row);
+                VoyageKit.Column(step, 8f, TextAnchor.MiddleCenter);
+                var hit = VoyageKit.Block(step, VoyageKit.Clear, hit: true);
+                var t = _kit.Label(step, 15, _kit.Sub, TextAlignmentOptions.Center);
+                VoyageKit.Set(t, words[i]);
+                var bar = VoyageKit.Node("Bar", step);
+                VoyageKit.Le(bar).preferredHeight = 2f;
+                _stepBars[i] = VoyageKit.Block(bar, _kit.Cyan);
+                _steps[i] = t;
+                // A step already reached can be pressed to go back to it; a later one needs its call to action.
+                var b = step.gameObject.AddComponent<Button>();
+                b.targetGraphic = hit;
+                b.transition = Selectable.Transition.None;
+                b.onClick.AddListener(() => { if (page < (int)_page) ShowPage((Page)page); });
             }
-            return _rows[index];
+
         }
 
-        // ── The table ────────────────────────────────────────────────────────
+        // ── Pages ────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Shape the table from the hosts <see cref="VoyageJobsView"/> stood in <see cref="CourseColumn"/>: the edge view
-        /// is the front face at the column's foot, the map lies over it, both as wide as the column and in the board's
-        /// shapes (<see cref="VoyageSlab.FaceAspect"/>, <see cref="VoyageSlab.TopAspect"/>). Refitted when the column's
-        /// width changes.
-        /// </summary>
-        public void FitSlab(RectTransform mapHost, RectTransform edgeHost)
+        /// <summary>Show <paramref name="page"/>. The voyage and Ark pages need an open voyage.</summary>
+        public void ShowPage(Page page)
         {
-            _mapHost = mapHost;
-            _edgeHost = edgeHost;
-            _fitWidth = -1f;
-            Fit();
+            if (page != Page.Sea && Open == null) page = Page.Sea;
+            bool changed = _page != page;
+            _page = page;
+            if (page != Page.Sea) _sea.ExitFull(instant: true);
+            _sea.Root.gameObject.SetActive(page == Page.Sea);
+            _brief.Root.gameObject.SetActive(page == Page.Voyage);
+            _ark.Root.gameObject.SetActive(page == Page.Ark);
+            for (int i = 0; i < 3; i++)
+            {
+                bool on = i == (int)page;
+                _steps[i].color = on ? _kit.Light : i < (int)page ? VoyageKit.Fade(_kit.Light, 0.75f) : _kit.Sub;
+                _stepBars[i].enabled = on;
+            }
+            if (changed) Rise(PageRoot(page));
+            if (page == Page.Voyage) _brief.Show(Open, _difficulty, replay: changed);
+            if (page == Page.Ark) _ark.Show(Open, _difficulty);
+            if (changed) ScreenChanged?.Invoke();
         }
 
-        void Fit()
+        /// <summary>One step back: a picker open on the Ark page closes first.</summary>
+        public void StepBack()
         {
-            if (!_courseColumn) return;
-            float w = _courseColumn.rect.width;
-            if (w < 1f || Mathf.Approximately(w, _fitWidth)) return;
-            _fitWidth = w;
-            float foot = FootGap * w / BoardWidth, face = w / VoyageSlab.FaceAspect, top = w / VoyageSlab.TopAspect;
-            if (_edgeHost) VoyageKit.Foot(_edgeHost, foot, face);
-            if (_mapHost) VoyageKit.Foot(_mapHost, foot + face, top);
+            if (_ark.PickerOpen)
+            {
+                _ark.ClosePicker();
+                return;
+            }
+            if (_page > Page.Sea) ShowPage(_page - 1);
         }
 
-        void LateUpdate() => Fit();
+        /// <summary>Take the window's map column (the map over its edge view, built by <see cref="VoyageJobsView"/>) into
+        /// the HyperSea page's table.</summary>
+        public void AdoptMap(RectTransform column, RectTransform mapHost, RectTransform edgeHost) =>
+            _sea.Adopt(column, mapHost, edgeHost);
 
         // ── Showing ──────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Show <paramref name="rows"/> with row <paramref name="open"/> open (-1: none), the open voyage's name over the
-        /// table and the squad. <paramref name="message"/> stands in the list when there are no rows (no work offered).
+        /// Show <paramref name="offers"/> with offer <paramref name="open"/> open (-1: none) on <paramref name="map"/>.
+        /// <paramref name="message"/> stands where the voyages would when none is offered.
         /// </summary>
-        public void Show(IReadOnlyList<Row> rows, int open, Action<int> pick, Voyage voyage, VoyageMapGraphic map, string message)
+        public void Show(IReadOnlyList<Offer> offers, int open, Action<int> pick, VoyageMapGraphic map, string message)
         {
+            _offers.Clear();
+            if (offers != null) _offers.AddRange(offers);
+            _open = open >= 0 && open < _offers.Count ? open : -1;
             _pick = pick;
-            _voyage = voyage;
-            int count = rows?.Count ?? 0;
-            for (int i = 0; i < count; i++)
+            var shown = Open;
+            // The difficulty is the pilot's until the crew picks another; a new voyage starts on its own.
+            string key = shown == null ? null : shown.Title + "|" + shown.Pilot;
+            if (key != _difficultyFor)
             {
-                var row = rows[i];
-                var view = RowFor(i);
-                view.Button.gameObject.SetActive(true);
-                bool on = i == open;
-                var plate = _kit.RowPicked;
-                view.Plate.color = on ? plate : new Color(plate.r, plate.g, plate.b, plate.a * 0.7f);
-                view.Bar.enabled = on;
-                view.Edge.enabled = !on;
-                view.Water.alpha = on ? 1f : 0.5f;
-                VoyageKit.Set(view.Title, row.Title);
-                view.Title.color = on ? _kit.Light : _kit.Sub;
-                VoyageKit.Set(view.Meta, row.Meta);
-                view.Poster.Show(map, row.Course, Route, Ark, Sea);
+                _difficultyFor = key;
+                _difficulty = shown?.Recommended ?? 5;
             }
-            for (int i = count; i < _rows.Count; i++) _rows[i].Button.gameObject.SetActive(false);
-            VoyageKit.Set(_message, count == 0 ? message : null);
-
-            bool placed = !string.IsNullOrEmpty(voyage?.Place);
-            VoyageKit.Set(_kicker, voyage?.Kicker);
-            VoyageKit.Set(_name, placed ? voyage.Place : voyage?.Title);
-            VoyageKit.Set(_sub, placed ? voyage.Title : voyage?.Line);
-            VoyageKit.Set(_stats, Stats(voyage));
-            Blank(_kicker);
-            Blank(_sub);
-            Blank(_stats);
-            bool step = voyage?.Lower != null && voyage.Raise != null;
-            _stepper.gameObject.SetActive(step);
-            if (step)
-            {
-                VoyageKit.Set(_lowerText, voyage.LowerLabel);
-                VoyageKit.Set(_raiseText, voyage.RaiseLabel);
-            }
-            if (_setSail)
-            {
-                _setSail.interactable = voyage?.SetSail != null;
-                VoyageKit.Set(_setSailText, !string.IsNullOrEmpty(voyage?.SailLabel) ? voyage.SailLabel : _lines?.CardSetSail);
-            }
-            _squad.Draw();
+            _sea.Show(_offers, _open, map, message);
+            if (_page != Page.Sea && shown == null) ShowPage(Page.Sea);
+            else if (_page == Page.Voyage) _brief.Show(shown, _difficulty, replay: false);
+            else if (_page == Page.Ark) _ark.Show(shown, _difficulty);
         }
 
-        /// <summary>The open voyage's numbers on one line (the content's <see cref="VoyageLines.BoardStats"/>); nothing
-        /// for a voyage with none (the Ark escort).</summary>
-        string Stats(Voyage voyage) =>
-            voyage == null || string.IsNullOrEmpty(voyage.Distance) ? null
-                : TemplateText.Fill(_lines?.BoardStats, "distance", voyage.Distance, "sail", voyage.Sail, "intensity", voyage.Intensity);
+        /// <summary>Pick offer <paramref name="index"/> (a portrait, a crew card, a place on the map).</summary>
+        public void Pick(int index) => _pick?.Invoke(index);
 
-        // An empty line takes no room in the name's column.
-        static void Blank(TMP_Text t) => t.gameObject.SetActive(!string.IsNullOrEmpty(t.text));
+        /// <summary>The crew picked another difficulty for the open voyage (1-9).</summary>
+        public void SetDifficulty(int difficulty)
+        {
+            _difficulty = VoyageDifficulty.Clamp(difficulty);
+            if (_page == Page.Voyage) _brief.Show(Open, _difficulty, replay: false);
+            _sea.Redraw();
+        }
+
+        /// <summary>Set sail with the open voyage at the picked difficulty.</summary>
+        public void SetSail()
+        {
+            var open = Open;
+            if (open?.SetSail == null) return;
+            _ark.RememberSeat();
+            open.SetSail(_difficulty);
+        }
+
+        /// <summary>The map the HyperSea page shows (the voyage page draws its route on the same water).</summary>
+        public VoyageMapGraphic Map => _sea.Map;
+
+        /// <summary>The crystals the open voyage pays at <paramref name="difficulty"/>.</summary>
+        public static int PayAt(Offer offer, int difficulty) =>
+            offer == null || !offer.Pays ? 0 : VoyageDifficulty.PayAt(offer.Pay, offer.Recommended, difficulty);
+
+        internal string KindLine(Offer offer) => offer?.Kind ?? string.Empty;
+
+        internal string ElementName(Element e) => _rules.ElementName(e);
+
+        void Update()
+        {
+            float dt = Time.unscaledDeltaTime;
+            if (_page == Page.Sea) _sea.Tick(dt);
+            else if (_page == Page.Voyage) _brief.Tick(dt);
+            else _ark.Tick(dt);
+            StepRise(dt);
+        }
+
+        // ── Page motion (Frogma's "rise": opacity 0 to 1 and 16 up, .7s cubic-bezier(.2,.7,.2,1)) ─────────────
+
+        const float RiseSeconds = 0.7f, RiseLift = 16f;
+        RectTransform _rising;
+        CanvasGroup _risingGroup;
+        float _riseT = 1f;
+
+        RectTransform PageRoot(Page page) => page == Page.Sea ? _sea.Root : page == Page.Voyage ? _brief.Root : _ark.Root;
+
+        void Rise(RectTransform root)
+        {
+            if (_rising && _rising != root) Settle();
+            _rising = root;
+            if (!root.TryGetComponent(out _risingGroup)) _risingGroup = root.gameObject.AddComponent<CanvasGroup>();
+            _riseT = 0f;
+            StepRise(0f);
+        }
+
+        void StepRise(float dt)
+        {
+            if (!_rising || _riseT >= 1f) return;
+            _riseT = Mathf.Min(1f, _riseT + dt / RiseSeconds);
+            float e = VoyageKit.Rise(_riseT);
+            _risingGroup.alpha = e;
+            // Only a page standing in the window's slot lifts; the map in full screen is placed by its own sweep.
+            if (_rising.parent == _pages && !(_rising == _sea.Root && _sea.IsFull))
+            {
+                var lift = new Vector2(0f, -RiseLift * (1f - e));
+                _rising.offsetMin = lift;
+                _rising.offsetMax = lift;
+            }
+            if (_riseT >= 1f) Settle();
+        }
+
+        void Settle()
+        {
+            if (_risingGroup) _risingGroup.alpha = 1f;
+            if (_rising && _rising.parent == _pages && !(_rising == _sea.Root && _sea.IsFull))
+                _rising.offsetMin = _rising.offsetMax = Vector2.zero;
+            _riseT = 1f;
+        }
+
+        void OnDisable()
+        {
+            // The window closed: a full-screen map comes home at once, and a picker closes.
+            if (_sea != null) _sea.ExitFull(instant: true);
+            if (_ark != null && _ark.PickerOpen) _ark.ClosePicker();
+        }
+
+        void OnDestroy()
+        {
+            _sea?.Dispose();
+            _ark?.Dispose();
+        }
+
+        internal void RaiseScreenChanged() => ScreenChanged?.Invoke();
     }
 }

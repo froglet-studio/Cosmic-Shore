@@ -1,8 +1,8 @@
 {
  "counts": {
-  "exempt": 8,
-  "grey": 468,
-  "ui": 601,
+  "exempt": 7,
+  "grey": 556,
+  "ui": 656,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -226,6 +226,13 @@
    "sha": "998687d0e055a854",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Blastline.png": {
+   "coloured": 0.9982,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "0c1c1c3a0f81db20",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Bloomrush.png": {
    "coloured": 0.9985,
    "graded": "ui",
@@ -234,10 +241,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Breach.png": {
-   "coloured": 0.9982,
+   "coloured": 0.9987,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "bc3a8e9932eb0500",
+   "sha": "0654714968c60b9a",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Breakwater.png": {
@@ -268,6 +275,34 @@
    "sha": "f7255588735adc64",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Bullrush.png": {
+   "coloured": 0.9998,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d2ca4e35ce85ad52",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/CaveIn.png": {
+   "coloured": 1.0,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "035f1628d787fb6c",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Chum.png": {
+   "coloured": 1.0,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "9811117d23d70771",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/CleanerRam.png": {
+   "coloured": 0.9985,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "48a687d8b352e27c",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Cleave.png": {
    "coloured": 0.9958,
    "graded": "ui",
@@ -289,6 +324,20 @@
    "sha": "3adc8575a155e5f7",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/DenBuilder.png": {
+   "coloured": 0.9998,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "670b1c703e8dde70",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/DepthCharge.png": {
+   "coloured": 0.9987,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "96b2b7e7cc582bf2",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/DogFight.png": {
    "coloured": 0.992,
    "graded": "ui",
@@ -308,6 +357,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "d504af88671cecd3",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Fulmen.png": {
+   "coloured": 0.998,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "f6b1b65016a6770a",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Glasshouse.png": {
@@ -338,6 +394,13 @@
    "sha": "f690ed0a48b54726",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Haul.png": {
+   "coloured": 1.0,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "1d336846d18fe65e",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Headlong.png": {
    "coloured": 0.9984,
    "graded": "ui",
@@ -345,11 +408,25 @@
    "sha": "1fd5d98af69c45fb",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Hedgerow.png": {
+   "coloured": 0.9997,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "50d485efca75c5a2",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Hijack.png": {
    "coloured": 0.9992,
    "graded": "ui",
    "kind": "sprite",
    "sha": "93b4d1068667dfb5",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/IceShelf.png": {
+   "coloured": 0.9995,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "c23e14dc2d6a5b69",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Jackstraw.png": {
@@ -373,11 +450,39 @@
    "sha": "5f3652989428d28b",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Lancefall.png": {
+   "coloured": 1.0,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d86d695fc297b2dd",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Landslide.png": {
+   "coloured": 0.9933,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "1a3f9f5609cea74a",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/LanternRun.png": {
    "coloured": 0.9997,
    "graded": "ui",
    "kind": "sprite",
    "sha": "fe5b001b698c310f",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Larder.png": {
+   "coloured": 0.9972,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "88d4a2af5d137210",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Longshot.png": {
+   "coloured": 0.9997,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "43939e19c98e02c8",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Maelstrom.png": {
@@ -394,6 +499,20 @@
    "sha": "928aada8464b0efe",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/PodHunt.png": {
+   "coloured": 0.9928,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "a02b32d2e13235d4",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Railrush.png": {
+   "coloured": 0.9992,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "f15c2c7727d4b217",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Rampage.png": {
    "coloured": 0.9987,
    "graded": "ui",
@@ -408,11 +527,25 @@
    "sha": "4e042b95cb11b86b",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Reefbuild.png": {
+   "coloured": 0.9958,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "e7b33080e2fb6439",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Regatta.png": {
    "coloured": 0.995,
    "graded": "ui",
    "kind": "sprite",
    "sha": "4f8838a24ea889be",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Riptide.png": {
+   "coloured": 0.9971,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "cb4dd134ac7ff1eb",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Salvo.png": {
@@ -443,6 +576,13 @@
    "sha": "37ad434aa8afde0b",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Sentry.png": {
+   "coloured": 0.999,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "02406d97dead77a6",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/SerpentHood.png": {
    "coloured": 0.9953,
    "graded": "ui",
@@ -462,6 +602,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "d2c3e64b1eb44f57",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Shockfront.png": {
+   "coloured": 0.9928,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "695e38f5f8d1d7d2",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Sirocco.png": {
@@ -499,6 +646,27 @@
    "sha": "57fe6b4405f435ed",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Snap.png": {
+   "coloured": 0.9998,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "638414c5316c1f82",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Standoff.png": {
+   "coloured": 0.9992,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "7a5beff2eeaf1d1c",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Starweave.png": {
+   "coloured": 0.9992,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "6645f988309a6047",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Switchback.png": {
    "coloured": 1.0,
    "graded": "ui",
@@ -518,6 +686,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "cc09c802088c0b94",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Thornbush.png": {
+   "coloured": 0.9998,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d99d903271ccc671",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Thornline.png": {
@@ -555,6 +730,13 @@
    "sha": "6f8e54a17d3d6cba",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Warren.png": {
+   "coloured": 0.999,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "f9a6de223998ec97",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/ARCADE/CardBackgrounds/Waystation.png": {
    "coloured": 0.9967,
    "graded": "ui",
@@ -567,6 +749,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "c58e04d3ca909fa7",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Windrow.png": {
+   "coloured": 0.9989,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "011e4bf7670b08c1",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/WrasseRun.png": {
@@ -934,6 +1123,32 @@
    "kind": "sprite",
    "sha": "380a2f11615013b9"
   },
+  "Assets/_Graphics/CardImages/JewelWasp.png": {
+   "coloured": 0.9387,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d1c9225ec5822266",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/JewelWasp_Inactive.png": {
+   "coloured": 0.0198,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "21e9c4109ad2a01e",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/JewelWasp_large.png": {
+   "coloured": 0.9307,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "3edaca4680b7da4c",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/JewelWasp_silhouette.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "f887d13b5fe653c2"
+  },
   "Assets/_Graphics/CardImages/Manta.png": {
    "coloured": 0.9941,
    "graded": "ui",
@@ -990,6 +1205,32 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "564cd2f52546ab11"
+  },
+  "Assets/_Graphics/CardImages/Orca.png": {
+   "coloured": 0.9156,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "afd742c1bb8837d4",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/Orca_Inactive.png": {
+   "coloured": 0.0177,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "8e301733862394f8",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/Orca_large.png": {
+   "coloured": 0.9189,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "cebe78e2628501e8",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/Orca_silhouette.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c37bd8f8ae12b763"
   },
   "Assets/_Graphics/CardImages/Rhino.png": {
    "coloured": 0.9511,
@@ -1206,6 +1447,32 @@
    "kind": "sprite",
    "sha": "4a39df46c91b7ef9"
   },
+  "Assets/_Graphics/CardImages/Swordfish.png": {
+   "coloured": 0.9245,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "2673745cfeca4165",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/Swordfish_Inactive.png": {
+   "coloured": 0.0132,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "b0d022d84c3fd352",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/Swordfish_large.png": {
+   "coloured": 0.9294,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "81e1e4a45f296afb",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/Swordfish_silhouette.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "a77f5d1a77f75324"
+  },
   "Assets/_Graphics/CardImages/Thresher.png": {
    "coloured": 0.9338,
    "graded": "ui",
@@ -1250,6 +1517,39 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "5926e1df81587abf"
+  },
+  "Assets/_Graphics/CardImages/Urchin_large.png": {
+   "coloured": 0.9736,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "7addfc1e41a412d5",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/Wrasse.png": {
+   "coloured": 0.9455,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "b62707f0511130ca",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/Wrasse_Inactive.png": {
+   "coloured": 0.0196,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "cd292f388c7762e6",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/Wrasse_large.png": {
+   "coloured": 0.9462,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "c1978027527e7c81",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/CardImages/Wrasse_silhouette.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "600b8fa711d7cfe8"
   },
   "Assets/_Graphics/Codex/Flipbooks/ethirion_charge_flip.png": {
    "coloured": 0.9959,
@@ -1335,6 +1635,13 @@
    "sha": "4474d154f3583934",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/Codex/fauna_piranha.png": {
+   "coloured": 0.9997,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "c7c16e0eec4dc695",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/Codex/fauna_quadfish.png": {
    "coloured": 0.9957,
    "graded": "ui",
@@ -1347,6 +1654,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "dd9868068f45f9a7",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/Codex/fauna_shoal.png": {
+   "coloured": 0.9924,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "2e42290a1cc18000",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Codex/fauna_tadpole.png": {
@@ -2573,6 +2887,13 @@
    "sha": "b13c51bd723d1d9a",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/Design Assests/Hangar/JewelWasp_Hangar_Preview.png": {
+   "coloured": 0.999,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "e47d4d060e4b2a81",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/Design Assests/Hangar/Manta_Hangar_Preview.png": {
    "coloured": 0.9998,
    "graded": "ui",
@@ -2585,6 +2906,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "a4b26835aa188a23",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/Design Assests/Hangar/Orca_Hangar_Preview.png": {
+   "coloured": 0.999,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "f92a0c43d313e999",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Design Assests/Hangar/Rampage Trail.png": {
@@ -2653,6 +2981,13 @@
    "sha": "707698fc6ba135f8",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/Design Assests/Hangar/Swordfish_Hangar_Preview.png": {
+   "coloured": 0.9988,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "10ed4f2ccfab896e",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/Design Assests/Hangar/Thresher_Hangar_Preview.png": {
    "coloured": 0.9994,
    "graded": "ui",
@@ -2676,6 +3011,13 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "099a3eb2ad9396d9"
+  },
+  "Assets/_Graphics/Design Assests/Hangar/Wrasse_Hangar_Preview.png": {
+   "coloured": 0.9984,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "4ee8fbe9ff781261",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Design Assests/Menu_Main/Gradient Background 3.png": {
    "coloured": 1.0,
@@ -3500,6 +3842,11 @@
    "kind": "sprite",
    "sha": "e7b513ab0e814eab"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Angler/Parts/Angler_LockPetal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "dc73587824bc4256"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Angler/Parts/Angler_LockRing.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3710,6 +4057,11 @@
    "kind": "sprite",
    "sha": "8cfebbf048837072"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Goby/Goby_DeepUndertow.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "bfa62b6db1f6d74a"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Goby/Goby_Lock.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3719,6 +4071,11 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "8ac0b7cf6d8e4f46"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Goby/Goby_PhaseDart.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "625d2134c2034367"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Goby/Goby_Undertow.png": {
    "coloured": 0.0,
@@ -3735,6 +4092,11 @@
    "kind": "sprite",
    "sha": "49862684db038b32"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Goby/Pistol_Fortress.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "4962e6f5efbf990b"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Goby/Pistol_Ghost.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3745,10 +4107,25 @@
    "kind": "sprite",
    "sha": "5ee54f83f4f55cca"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Goby/Pistol_VortexSteal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "a45980d0a37245fc"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_BattleSight.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "340dc7a1237cd87d"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_ChargedCannon.png": {
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "2e501402b1fa9118"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_ClaimedFire.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "9afc14281b4200a8"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_DigIn.png": {
    "coloured": 0.0,
@@ -3760,10 +4137,130 @@
    "kind": "sprite",
    "sha": "0505082b0dbe1476"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_SafeDetonation.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "8b650c9bc087e5a2"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_VectorControl.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "ba514cecda16480f"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_WeaponSystems.png": {
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "95a0462c060db8c0"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Flit.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "a05ea46deec77aef"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Hive.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "91bfa715a930694f"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_HiveChain.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "a2027d3a60f4e119"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Peck.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "1c17401e88a1cc12"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_PiercingPecks.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "dc9df494b10b2b4e"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Relentless.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "f7b1c8f234f077fd"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Slip.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "bb2f139e2e4dbc03"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Slipstream.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "ab8b71d68803bcab"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_AllTerrainPortals.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "0da2c1cd5773505a"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_BlinkDrive.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "482060f35ea41639"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_FTLChromatool.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "d8ef3f3d941193fd"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_FugacityDischarger.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "06a720053cd3ca07"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_GenesisLance.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "55d166085ac73245"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_HardLightLasso.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "f2a11daec221f9da"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_HexapodEyeletJet.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "804ec1adb19f5d9c"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_LittleBangGrenade.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c6c69d7b6fa6271f"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_MonteCannon.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "2c4ede8247cc27c3"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_ParticleHarmonizer.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "64082f77de805e00"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_RosenBridge.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "b237b8cbd67c5b90"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_SepiaDrone.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "dd9ba13cc7368b4a"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Upgrades/Honeyguide_ThrusterSwarm.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c532bb662aed5df3"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_Attack.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c3ec86019fa382ea"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_DangerShare.png": {
    "coloured": 0.0,
@@ -3775,6 +4272,21 @@
    "kind": "sprite",
    "sha": "3966f49e38789f5a"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_EatShields.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "44c674fc55173959"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_MassClusters.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "10e50bd60ebf65b8"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_SecondDecoy.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "91d82be789e7decd"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_TheCall.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3784,6 +4296,56 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "fccb32eac5234af8"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/JewelWasp/JewelWasp_Attack.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "2ffa65accf3c9aec"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/JewelWasp/JewelWasp_Burst.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "22980b705b0b08dd"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/JewelWasp/JewelWasp_Dash.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "2152f33cf70fb4e9"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/JewelWasp/JewelWasp_Maw.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "5fb3086b2cd3b60e"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/JewelWasp/JewelWasp_Overgrowth.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "ba346c462f040441"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/JewelWasp/JewelWasp_Restless.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "6c6e96227fe23f32"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/JewelWasp/JewelWasp_Root.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "265a9550ca3664cd"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/JewelWasp/JewelWasp_Sting.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "48ae141da89895f6"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/JewelWasp/JewelWasp_Suction.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "b480bf7081c10323"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/JewelWasp/JewelWasp_Swim.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "57b4fee97008a780"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Manta/Core/Manta_OmniCashOut.png": {
    "coloured": 0.0,
@@ -3875,6 +4437,16 @@
    "kind": "sprite",
    "sha": "ff34b3a1fa4d5500"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_BoostOut.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "f28b3ceeafa23e8c"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_DangerPortal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "1081c69d6b7b7b8c"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_ExitPortal.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3890,6 +4462,11 @@
    "kind": "sprite",
    "sha": "0fb7770416c1c095"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_SixSentinels.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "8308fb6481c8c7bb"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_Soliton.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3900,55 +4477,50 @@
    "kind": "sprite",
    "sha": "de87c41eee5ea0a4"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_AfterimageBlade.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_Steal.png": {
    "coloured": 0.0,
    "kind": "sprite",
-   "sha": "7e4a73a97f27ccee"
+   "sha": "a52bde82063ae669"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_AfterimageFar.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_Afterburner.png": {
    "coloured": 0.0,
    "kind": "sprite",
-   "sha": "fbc8ee697a1f7f6d"
+   "sha": "e4507baed96a6c2e"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_AfterimageNear.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_BoostTank.png": {
    "coloured": 0.0,
    "kind": "sprite",
-   "sha": "6ed7dd7cc0b88037"
+   "sha": "e7e3baff4d79735f"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_KatanaChop.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_Bulwark.png": {
    "coloured": 0.0,
    "kind": "sprite",
-   "sha": "419e6517bb8f97b3"
+   "sha": "3ba49f6492f21c61"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_KatanaCurved.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_Burst.png": {
    "coloured": 0.0,
    "kind": "sprite",
-   "sha": "cc6621c5a9ad238d"
+   "sha": "1ed8cade38fd5f5f"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_ReachBlade.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_ChainBurst.png": {
    "coloured": 0.0,
    "kind": "sprite",
-   "sha": "1fa0306d833f5e74"
+   "sha": "24d919fe325cc1ae"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_ReachHilt.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_DangerShield.png": {
    "coloured": 0.0,
    "kind": "sprite",
-   "sha": "733763b0628ab261"
+   "sha": "2a2ef025b27e673f"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_ReachPosts.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_FlownMissiles.png": {
    "coloured": 0.0,
    "kind": "sprite",
-   "sha": "e8f3de0f0f449ab0"
+   "sha": "d6c63cd98b783c6b"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_ReachPrism.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_Rearm.png": {
    "coloured": 0.0,
    "kind": "sprite",
-   "sha": "eb6533916e95905a"
-  },
-  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_ReachPrismBroken.png": {
-   "coloured": 0.0,
-   "kind": "sprite",
-   "sha": "292dbc590e2f379f"
+   "sha": "8c4ac747515581c5"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_SpoolGlance.png": {
    "coloured": 0.0,
@@ -3969,6 +4541,36 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "f478c28010a20610"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Berm.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "e66379b1883fbd15"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Blade.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "9568de9c4b5a41ae"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Gore.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "fd1eb42b35785d65"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_GoreSteal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3baf9d5f47794825"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Heft.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "1d412c723108d0ea"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Unstoppable.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "60522f5c280a68fe"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Scarab/Core/Scarab_BallForge.png": {
    "coloured": 0.0,
@@ -4165,6 +4767,11 @@
    "kind": "sprite",
    "sha": "6ee9274f664b2ad2"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Shrike/Parts/Shrike_ArraySalvo.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "bbbde72ed7198e03"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Shrike/Parts/Shrike_ArrayShrike.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -4205,6 +4812,11 @@
    "kind": "sprite",
    "sha": "c848aa9081b278d3"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Shrike/Parts/Shrike_NestArmed.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "95ad47837c119851"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Shrike/Parts/Shrike_NestCup.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -4239,6 +4851,11 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "eac9cd8ca3bea920"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Shrike/Parts/Shrike_SlingWhip.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "89e4a2ddf72f2104"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Sparrow/Ladder/Sparrow_Rockets_0.png": {
    "coloured": 0.0,
@@ -4545,6 +5162,81 @@
    "kind": "sprite",
    "sha": "c44c2c2262d255ac"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Core/Swordfish_Surge.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "7b527867d76e30ea"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_AfterimageBlade.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "8b126329f0c731b0"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_AfterimageFar.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c5a8373fee9245c3"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_AfterimageNear.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "cccc4224b15e1273"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_Bill.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "a8e15e7be738ad05"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_BillSocket.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "108a06ed6688375c"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_QuickdrawArc.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "fb91c709ec7612c8"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_QuickdrawBill.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "f7ee5e2da5ed0447"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_QuickdrawFlurry.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "0084ea516a2784ab"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_QuickdrawSocket.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3dec767d7636b039"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_ReachBlade.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "1aa9fa4e4c071ff7"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_ReachHilt.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "ef103c14e83e99db"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_ReachPosts.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "e8f3de0f0f449ab0"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_ReachPrism.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "eb6533916e95905a"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_ReachPrismBroken.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "292dbc590e2f379f"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Thresher/Core/Thresher_Windmill.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -4585,6 +5277,11 @@
    "kind": "sprite",
    "sha": "65547681e026760b"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Thresher/Parts/Thresher_PlantDanger.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "40040052f594eead"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Thresher/Parts/Thresher_PlantOrbit.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -4594,6 +5291,11 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "25167a46d3c2fbac"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Thresher/Parts/Thresher_PlantWard.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "4514a5b8fd3a1bf2"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Thresher/Parts/Thresher_WinchBall.png": {
    "coloured": 0.0,
@@ -4860,6 +5562,46 @@
    "kind": "sprite",
    "sha": "41befcc65e79e7f2"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_CrystalSteal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "b1baccc665164ba4"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_KiteRam.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3cf31e0bf864d8c1"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_MassCluster.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3269948db0811ebc"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_SavedBoosts.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "13636dc15cf85f42"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_ShieldBreaker.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3f10e2cf378f5b85"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_ShieldedClusters.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "5484c00556010f4a"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_SpaceBlast.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c9779aab51786652"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_Tailwind.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "dfdc815837181929"
+  },
   "Assets/_Graphics/Icons/App Icons/Android Adaptive Icon/432 fore.png": {
    "coloured": 1.0,
    "graded": "exempt",
@@ -4872,13 +5614,6 @@
    "graded": "exempt",
    "kind": "texture",
    "sha": "8efd498d5500ce97",
-   "why": "the app icon and splash: the platform draws them before any script runs"
-  },
-  "Assets/_Graphics/Icons/App Icons/Feature_Graphic_width_matched.png": {
-   "coloured": 1.0,
-   "graded": "exempt",
-   "kind": "sprite",
-   "sha": "613d73eadbe5076d",
    "why": "the app icon and splash: the platform draws them before any script runs"
   },
   "Assets/_Graphics/Icons/App Icons/FrogSplash.png": {
@@ -6025,6 +6760,11 @@
    "kind": "sprite",
    "sha": "422ddde64b2b6ae6"
   },
+  "Assets/_Graphics/UI/Chrome/chrome_eye.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "b117b25157d7f97d"
+  },
   "Assets/_Graphics/UI/Chrome/chrome_gauge.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -6204,6 +6944,21 @@
    "kind": "sprite",
    "sha": "82d4539eae8f95e3"
   },
+  "Assets/_Graphics/UI/Kit/kit_prism_face.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "8e2aca330bc9eb19"
+  },
+  "Assets/_Graphics/UI/Kit/kit_prism_lit.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c89cf9f68a8ab057"
+  },
+  "Assets/_Graphics/UI/Kit/kit_prism_rim.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "b65ac938fcc3f58f"
+  },
   "Assets/_Graphics/UI/Kit/kit_ring_fill.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -6258,6 +7013,13 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "12e16545ced968cb"
+  },
+  "Assets/_Graphics/UI/Loading/loading_tour_ark.png": {
+   "coloured": 0.5372,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "e6d505c7c0c36094",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/UI/NavGlyphs/nav_ark.png": {
    "coloured": 0.0,
@@ -6343,6 +7105,62 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "41b4a39c58fdb397"
+  },
+  "Assets/_Graphics/UI/Splash/captain_anvil.jpg": {
+   "coloured": 0.6299,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "9b81432c96876485",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_galleon.jpg": {
+   "coloured": 0.8091,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d77cbe3f0b5ea612",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_hornet.jpg": {
+   "coloured": 0.6107,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "52688fc5614b93c0",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_needle.jpg": {
+   "coloured": 0.6964,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "fb5d89180fe3bce1",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_sundial.jpg": {
+   "coloured": 0.6906,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d6d687213c265738",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/poster_cell.jpg": {
+   "coloured": 0.9996,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "b1147f37a5e8d258",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/poster_logo_cosmic_shore.png": {
+   "coloured": 0.7676,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "4d215ac04f4b2554",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/poster_logo_froglet.png": {
+   "coloured": 0.1229,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "3ecc6da27f2d6052",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/UI/TopBar/topbar_domain_glow.png": {
    "coloured": 0.0,

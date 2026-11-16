@@ -159,7 +159,8 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>The I4 gauntlet flies its own row (SWITCHBACK.md "Lag by difficulty", the gauntlet bands of 2026-11-03:
-        /// Easy 175-195 s, Medium 165-185, Hard 155-175, Legendary 145-165); I1-I3, and I4 in a mode without the gauntlet
+        /// about 10 s apart; retuned 2026-11-13 for the plain seals to Easy ~176 s, Medium ~167, Hard ~155, Legendary ~141 offline,
+        /// Easy on the fleet lag); I1-I3, and I4 in a mode without the gauntlet
         /// (Scarab Rally), keep the per-intensity table.</summary>
         [Test]
         public void Switchback_AINoseLag_TheGauntletHasItsOwnRow()
@@ -170,14 +171,14 @@ namespace CosmicShore.Tests
                 var c = go.AddComponent<SwitchbackController>();
                 var table = Field<SwitchbackNoseFollow[]>(c, "aiNoseFollowByIntensity");
                 var g = Field<SwitchbackNoseFollow>(c, "aiNoseFollowGauntlet");
-                CollectionAssert.AreEqual(new[] { 1.9f, 2.8f, 3.5f, 5f }, new[] { g.easy, g.medium, g.hard, g.legendary });
+                CollectionAssert.AreEqual(new[] { 1.5f, 2.2f, 3.5f, 6f }, new[] { g.easy, g.medium, g.hard, g.legendary });
                 for (int level = 1; level <= 4; level++)
                 {
                     Assert.AreEqual(g.For(level), SwitchbackController.NoseFollowFor(table, g, true, 4, level), "I4 gauntlet");
                     Assert.AreEqual(table[3].For(level), SwitchbackController.NoseFollowFor(table, g, false, 4, level), "I4 without it");
                     for (int intensity = 1; intensity <= 3; intensity++)
                         Assert.AreEqual(table[intensity - 1].For(level), SwitchbackController.NoseFollowFor(table, g, true, intensity, level));
-                    Assert.Greater(g.For(level), VesselTransformer.RotationFollowRate, "faster than the fleet lag");
+                    Assert.GreaterOrEqual(g.For(level), VesselTransformer.RotationFollowRate, "never slower than the fleet lag");
                     if (level > 1) Assert.GreaterOrEqual(g.For(level), g.For(level - 1), "a harder level follows at least as fast");
                 }
             }

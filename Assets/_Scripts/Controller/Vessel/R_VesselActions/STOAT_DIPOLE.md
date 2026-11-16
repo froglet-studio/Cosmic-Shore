@@ -348,7 +348,7 @@ so a pair held wide is a wide ripple — the dipole moment becomes the threat. A
 | a **creature** | killed (`Fauna.Predated`, the platform's death: heart released, mass conserved) on the fauna's simulating machine |
 | a **prism**, the owner, a teammate | nothing |
 
-Each victim is struck once per ripple. **Where it runs:** every peer, from its own copy of the pair (each peer's copy
+**A strip is a scored hit** (2026-11-15, for Shockfront): before stripping, the deciding machine admits it through `CombatHitDrain.TryAdmitPetals` (Debuff class, four petals, `ElementalDebuffSources.Explosion`, a per-victim cooldown of `StoatRippleConfigSO.hitCooldownSeconds`, 0.5 s) and raises `Event_CombatHitStats`, so the ripple scores CombatPoints like every other Debuff and silences its victim (`Docs/ElementalAbilitySystem/SILENCE.md`). A silenced Stoat's ripple strips nothing. Each victim is struck once per ripple. **Where it runs:** every peer, from its own copy of the pair (each peer's copy
 collapses / meets); the strip runs on each peer's copy of the rival's petals, the per-peer stance the wormhole toll and
 the sink's own crystal strip take, with Charge and Siphon read off replicated state so every peer sweeps the same sphere.
 

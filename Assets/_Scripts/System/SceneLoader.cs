@@ -37,6 +37,10 @@ namespace CosmicShore.Core
                  "(Docs/MENU_REDESIGN_B.md section 99.1).")]
         [SerializeField, Min(0f)] float waitBeforeLoading = 0.1f;
 
+        [Tooltip("Frames rendered under the opaque splash between the covered garbage collection and the reveal, so " +
+                 "a long frame ends out of sight instead of being spent inside the fade.")]
+        [SerializeField, Min(0)] int revealSettleFrames = 2;
+
         [SerializeField, Tooltip("How long the opaque splash keeps covering the screen after the menu " +
             "vessel is ready when RETURNING from a game scene, so end-of-session cleanup (despawn " +
             "stragglers, pooled-prism churn, the covered GC) finishes behind the veil instead of " +
@@ -315,18 +319,36 @@ namespace CosmicShore.Core
             if (menuReturn || !_collectedBeforeLoad) GC.Collect();
             _collectedBeforeLoad = false;
 
-            _sceneTransitionManager?.FadeFromBlack().Forget();
+            // Let the frames that carried the collect (and the veil's release work) END while the splash is still
+            // opaque. The fade reads each frame's time, so starting it on the frame after a long one let that frame
+            // eat the fade, and the menu banged open instead of dissolving in.
+            for (int i = 0; i < revealSettleFrames; i++)
+                await UniTask.NextFrame(PlayerLoopTiming.Update);
+
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            bool intoMenu = SceneManager.GetActiveScene().name == menuScene;
+
+            // The menu becomes visible now: stamp it, so the load report keeps the true "shown" moment while its
+            // file is written after the reveal instead of on the reveal's first frame.
+            bool recordingMenu = LoadInsights.IsRecordingMenuLoad;
+            if (recordingMenu) LoadInsights.MarkVisualReady();
 
             // The lava lamp is up: from now on this player is listed online on every other machine
             // (LavaLampPresence; before this they were still booting and could not be invited).
-            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
-            if (SceneManager.GetActiveScene().name == menuScene)
+            if (intoMenu)
                 LavaLampPresence.MarkShown();
 
+            if (_sceneTransitionManager != null)
+            {
+                if (intoMenu) await _sceneTransitionManager.RevealAsync();
+                else await _sceneTransitionManager.FadeFromBlack();
+            }
+
             // The menu is on screen: a return-to-menu or boot load recording (B36) ends here. A launch recording
-            // ends elsewhere (MiniGameHUD), so only the kinds that end at the menu are closed.
-            if (LoadInsights.IsRecordingMenuLoad)
-                LoadInsights.CompleteLoad("Menu shown - the splash fades");
+            // ends elsewhere (MiniGameHUD), so only the kinds that end at the menu are closed. Written after the
+            // reveal: it serialises and writes the report to disk on the main thread.
+            if (recordingMenu && LoadInsights.IsRecordingMenuLoad)
+                LoadInsights.CompleteLoad("Menu shown - the splash faded");
         }
 
         /// <summary>

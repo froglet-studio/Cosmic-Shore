@@ -765,6 +765,14 @@ MonoBehaviour:
   maxBlockScale: 1
   waitTillOutsideSkimmer: 1
   shielded: 1
+  trailVolume:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 2
+    UseFloor: 1
+    Floor: 0.4
   offset: 20
   Gap: 17
   MinimumGap: 1
@@ -1955,16 +1963,16 @@ MonoBehaviour:
   abilityIcons:
   - element: 1
     icon: {fileID: 777000000000000077}
-    upgradedSprite: {fileID: 0}
+    upgradedSprite: {fileID: 21300000, guid: 167f4b1ffec3a65081f7cf002e6e564f, type: 3}
   - element: 2
     icon: {fileID: 777000000000000083}
-    upgradedSprite: {fileID: 0}
+    upgradedSprite: {fileID: 21300000, guid: d36eef78dfc952cc2b9dd9733b41d9eb, type: 3}
   - element: 3
     icon: {fileID: 777000000000000089}
-    upgradedSprite: {fileID: 0}
+    upgradedSprite: {fileID: 21300000, guid: f1d8b2ce362e2afe98db90f1f75376ce, type: 3}
   - element: 4
     icon: {fileID: 777000000000000095}
-    upgradedSprite: {fileID: 0}
+    upgradedSprite: {fileID: 21300000, guid: 0d26e04ebb5faf676249536c8b6561e2, type: 3}
 --- !u!1 &777000000000000050
 GameObject:
   m_ObjectHideFlags: 0

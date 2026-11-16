@@ -43,8 +43,9 @@ WHAT IT MAKES
     NOT here (code, held by tests): the enum member, ToyVesselRoster.Default, EnumIntegrityTests.
     THE ELEMENT MAP (Assets/Resources/ElementalAbilityMaps/Angler.asset) is owned outright since the designer approved it on
     2026-10-16 (ANGLER.md §7): Charge = Erase / Lock-on, Mass = Lure, Tame & Grow (L5 Steal Fauna), Space = Paint (L5 Paint
-    Shields), Time = Dash to the School. Charge and Time have no level-5 upgrade yet; their labels stay empty (vessel skill
-    §3: never invent one to fill a slot). No element SCALES anything yet: every ability is at its authored number.
+    Shields), Time = Dash to the School. The fundamentals pass (Garrett, 2026-11-12, ANGLER.md §1n) gave Charge L5 Swallow
+    and Time L5 Riptide, and made every element scale a number: Charge the bite rate, Mass the lure's size, Space the
+    brush's width, Time the tamed fauna's speed.
 
 THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md: "a spent one-shot must stand down, not abort").
 The prefab and the HUD variant are built ONLY while absent; --check validates the SHIPPED files' invariants. To
@@ -457,6 +458,11 @@ def config_asset() -> str:
             "  lureGrowth: 3\n"
             "  faunaSpeed:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 2\n    element: 4\n    UseFloor: 1\n    Floor: 1\n"
             "  lockBiteCooldown: 1\n"
+            "  biteRate:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 2.5\n    element: 1\n    UseFloor: 1\n    Floor: 1\n"
+            "  swallowUpgradeElement: 1\n"
+            "  lureScale:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 2\n    element: 2\n    UseFloor: 1\n    Floor: 1\n"
+            "  brushScale:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 2\n    element: 3\n    UseFloor: 1\n    Floor: 1\n"
+            "  riptideUpgradeElement: 4\n"
             "  lockBiteReach: 6\n"
             "  omniFauna:\n" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in OMNI_FAUNA) +
             f"  companionFauna: {{fileID: 11400000, guid: {KEEPER_SPECIES}, type: 2}}\n"
@@ -477,8 +483,8 @@ def impact_container_asset() -> str:
 
 
 def map_asset() -> str:
-    """The element map the designer approved on 2026-10-16 (ANGLER.md §7). Charge and Time have no level-5 upgrade yet:
-    their UpgradeLabel stays empty, the honest state of an open design slot (vessel skill §3)."""
+    """The element map the designer approved on 2026-10-16 (ANGLER.md §7), with the fundamentals pass of 2026-11-12
+    (ANGLER.md §1n): every element scales a number, Charge 5 is Swallow and Time 5 is Riptide."""
     def entry(element, label, desc, inp, up_label, up_desc):
         q = lambda t: "'" + t.replace("'", "''") + "'"
         return (f"  - Element: {element}\n    AbilityLabel: {label}\n    AbilityDescription: {q(desc)}\n    Input: {inp}\n"
@@ -490,11 +496,16 @@ def map_asset() -> str:
                   "LT, held: a narrow beam from the nose unpaints prisms (an already-ordered one leaves every order). Each "
                   "time the beam comes onto a rival vessel - another one, or the same one again - it LOCKS, and the lock "
                   "SPENDS one creature: it leaves your school (your count drops by one) and chases that vessel until it "
-                  "dies, each bite a scored contact Strike that takes petals. R_VesselActions/ANGLER.md.", 2, "", "") +
+                  "dies, each bite a scored contact Strike that takes petals. Charge sets how often a hunter bites: once a "
+                  "second at Charge 0, every 0.4 s at Charge 10 (AnglerConfigSO.biteRate). R_VesselActions/ANGLER.md.", 2,
+                  "Swallow",
+                  "A hunter's bite no longer knocks the petals loose: they land on you. Gated on "
+                  "IsUpgradeActive(Charge).") +
             entry(2, "Lure, Tame & Grow",
                   "A (Space on a keyboard), held: the esca lights and the hull stops. Wild herbivores in its reach turn to it, and one held in the "
                   "light for the taming time joins your school (the count on this card). Plants in the light grow three "
-                  "times as fast. Let go, and any seed an omni crystal left is planted at the esca, in your domain.", 6,
+                  "times as fast. Let go, and any seed an omni crystal left is planted at the esca, in your domain. Mass "
+                  "sets the light's size: its reach and hold grow x1 at Mass 0 to x2 at Mass 10 (AnglerConfigSO.lureScale).", 6,
                   "Steal Fauna",
                   "The lure takes creatures from other holders too: another Angler's tamed fauna can be lured, tamed and "
                   "kept. Gated on IsUpgradeActive(Mass).") +
@@ -502,14 +513,18 @@ def map_asset() -> str:
                   "RT, held: a beam reaching 3200 u (and close up, at the nose) paints prisms, which light up, and every "
                   "creature prefers them; half your school balls up ahead, any of that half still in flight included. Let "
                   "go: each creature of that half flies at the most recently painted prisms first, at any distance, and "
-                  "eats them, and the next paint sends the other half. Lit prisms stay lit until eaten or erased.", 1,
+                  "eats them, and the next paint sends the other half. Lit prisms stay lit until eaten or erased. Space "
+                  "sets the brush's width: x1 at Space 0 to x2 at Space 10 (AnglerConfigSO.brushScale).", 1,
                   "Paint Shields",
                   "The brush paints shielded prisms too, and the squad cracks a painted prism's shield off when it arrives, "
                   "so it can be eaten. Gated on IsUpgradeActive(Space).") +
             entry(4, "Dash to the School",
                   "B (T on a keyboard): the hull dashes 75% of the way to the centre of one half of your school, measured "
                   "when pressed, in 0.35 s; the next dash goes to the other half, so you fly between your two groups. "
-                  "Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 (AnglerConfigSO.faunaSpeed).", 7, "", ""))
+                  "Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 (AnglerConfigSO.faunaSpeed).", 7,
+                  "Riptide",
+                  "A dash pressed while one is in flight is kept and fires the moment it lands, at your other group, so "
+                  "you chain between your two groups. Gated on IsUpgradeActive(Time)."))
 
 
 def control_asset(name: str, value: int) -> str:
@@ -766,7 +781,7 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(f"  followOffset: {{x: 0, y: {CHASE_UP}, z: -{CHASE_BACK}}}\n" in files.get(CAMERA, ""),
          f"AnglerCameraSettingsSO.followOffset is not the lab's chase (0, {CHASE_UP}, -{CHASE_BACK})")
     cfg = files.get(CONFIG_PATH, "")
-    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach",
+    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "biteRate", "swallowUpgradeElement", "lureScale", "brushScale", "riptideUpgradeElement", "lockBiteReach",
                 "tameHueLean"):
         need(re.search(r"^  %s:" % key, cfg, re.M), f"AnglerConfig has no {key} (rounds 3-4, the school's mark; re-seed it or add the line)")
     need(len(re.findall(r"^  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}$", cfg.split("  omniFauna:")[-1].split("  companionFauna:")[0], re.M)) > 0,

@@ -21,8 +21,8 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: ''
-    UpgradeDescription: ''
+    UpgradeLabel: 'Vortex Steal'
+    UpgradeDescription: 'A ring''s hit steals the petals it takes: they land on the pair instead of being knocked loose (GobyPistolDuo.ScoreRingHit, IsUpgradeActive(Charge)).'
   - Element: 2
     AbilityLabel: 'Dens'
     AbilityDescription: 'At each perch the Pistol rests and builds a den of prisms and shielded prisms, as many as the distance it travelled since its last den and Mass make (denMassScale, x1 at rest -> x2.5 at level 10). It can ride back to an old den to add to it.'

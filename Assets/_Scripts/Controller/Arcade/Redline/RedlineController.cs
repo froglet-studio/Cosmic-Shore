@@ -26,10 +26,17 @@ namespace CosmicShore.Gameplay
     /// prefab, Serpent Gulag's recipe, now Hood's) and grow back in place; the cell's omni crystal is off
     /// (the scene's CrystalManager spawns none), so no other element is ever fed.</para>
     ///
-    /// <para><b>Why the Manta and not another hull.</b> Cruise 180, x4 on Soar to 720 (x1.3
-    /// again at Time 10), and a turning circle that CONVERGES (RotationThrottleScaler 0.2 -
-    /// 237 u at full boost, 286 u asymptotically). It is the fleet's fast hull, and a course cut
-    /// around its bounded radius is a course it flies at the speed the mode is named for.</para>
+    /// <para><b>Soar from the gun (2026-11-11).</b> Since 2026-11-07 Soar is the Manta's Time LEVEL-5 upgrade, and until
+    /// this card seeded a Time level every Manta - human and AI - raced at 180 u/s with Soar dark. The card now starts
+    /// every Manta at Time 6 (<see cref="RedlineCourse.StartingTimeLevelByIntensity"/>): 1104 u/s flat out, 1404 at
+    /// Time 10. The race is 8 laps, the AIs fly a race line through the mouths' centres (<see cref="TryRaceLine"/>) at a
+    /// throttle floor by difficulty, and the local pilot's threads are graded and called in the world
+    /// (<c>RedlineController.Heat</c>). REDLINE.md section 0.</para>
+    ///
+    /// <para><b>Why the Manta and not another hull.</b> The fleet's fastest cruise (180 u/s at Time 0, +5% a Time
+    /// level, Soar x4 on top and +3% a level) and a turning circle that CONVERGES (RotationThrottleScaler 0.2 - 252 u
+    /// at full Soar at Time 6, 286 u asymptotically). A course cut around its bounded radius is a course it flies at
+    /// the speed the mode is named for.</para>
     ///
     /// <para><b>What the mode does NOT add:</b> no new weapon, no new ability, no change to the
     /// vessel (CLAUDE.md, "A game mode never changes the vessel"), no cell of its own, no new
@@ -37,7 +44,7 @@ namespace CosmicShore.Gameplay
     /// <see cref="HeadlongCircuit"/>, shared, with <see cref="RedlineCourse"/> supplying the
     /// Manta's cut.</para>
     /// </summary>
-    public class RedlineController : GateRaceController
+    public partial class RedlineController : GateRaceController
     {
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
@@ -78,9 +85,24 @@ namespace CosmicShore.Gameplay
         {
             new(2f, 3f, 6f, 9f),   // I1
             new(2f, 3f, 6f, 9f),   // I2
-            new(2f, 3f, 6f, 9f),   // I3
-            new(2f, 3f, 6f, 9f),   // I4
+            // I3-I4: Easy (and at I4 Medium) a step quicker (2026-11-11). With Soar lit (1104 u/s) a 2/s nose could not
+            // hold the 72 / 44 u mouths: offline it finished 5 of 6 I3 races (6 of 6 at 2.5/s) and 2-4 of 6 I4 races in
+            // 500 s (6 of 6 at 4/s) (manta_redline_sim.py).
+            new(2.5f, 3f, 6f, 9f), // I3
+            new(4f, 5f, 6f, 9f),   // I4
         };
+
+        [Header("AI race line (2026-11-11)")]
+        [Tooltip("The AI Mantas aim straight at the next mouth's centre (TryRaceLine), the line a person flies, instead " +
+                 "of the gate way's approach point; after a missed mouth the gate way re-attacks it. Offline, with Soar " +
+                 "lit, the gate way's Legendary took 90-104 s for five laps and failed I3-I4 at Easy; the race line takes " +
+                 "38-59 s, near a person's 24-53 (manta_redline_sim.py). Off = the gate way for every ring.")]
+        [SerializeField] bool aiRaceLine = true;
+
+        [Tooltip("The least throttle an AI flies, by its seat's difficulty: Easy, Medium, Hard, Legendary. The AI's own " +
+                 "skill throttle is 0.375 at I1 (0.2-0.9 by intensity), which flew a Soaring Manta at a third of its speed. " +
+                 "A floor only ever raises it.")]
+        [SerializeField] float[] aiThrottleFloorByDifficulty = { 0.7f, 0.85f, 1f, 1f };
 
         protected override string ModeName => "Redline";
 
@@ -106,6 +128,48 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override bool AICommitFromApproachPoint => true;
 
+        /// <summary>The AI's throttle floor for its seat's difficulty (<see cref="aiThrottleFloorByDifficulty"/>): a mode
+        /// setting on the AI's input, the vessel untouched.</summary>
+        protected override float AIThrottleFloorFor(IPlayer pilot) =>
+            ThrottleFloorFor(aiThrottleFloorByDifficulty, gameData ? (int)gameData.AIDifficultyFor(pilot) : 0);
+
+        /// <summary>The floor for difficulty <paramref name="level"/> (1 Easy .. 4 Legendary), or 0 (the skill throttle)
+        /// for any other level or a missing row.</summary>
+        public static float ThrottleFloorFor(float[] byDifficulty, int level) =>
+            byDifficulty != null && level >= 1 && level <= byDifficulty.Length
+                ? Mathf.Clamp01(byDifficulty[level - 1])
+                : 0f;
+
+        /// <summary>
+        /// The AI Manta's race line: straight at the next mouth's centre, with the ring after it as the next leg. The line
+        /// a person flies; with Soar lit it threads where the gate way's approach point (a lead on the mouth's axis, then
+        /// a through point) loses seconds lining up at 1100 u/s. The platform asks this only while the pilot is not
+        /// flying a difficulty mistake and has not just missed this mouth, so a miss is still re-attacked the gate way
+        /// (<see cref="GateRaceController.TryRaceLine"/>). An aim, so input only: the stick and the Soar drive are the
+        /// vessel's own.
+        /// </summary>
+        protected override bool TryRaceLine(IPlayer pilot, Vector3 self, out Vector3 aim, out Vector3 after)
+        {
+            aim = after = default;
+            if (!aiRaceLine || _course.Count == 0) return false;
+            int index = pilot?.RoundStats?.SwitchesThreaded ?? -1;
+            if (!RaceLinePoints(index, RaceLength, out int ring, out int next)) return false;
+            aim = _course[RingIndexFor(ring)].Position;
+            after = _course[RingIndexFor(next)].Position;
+            return true;
+        }
+
+        /// <summary>The race-line pair for a pilot at <paramref name="threaded"/> of <paramref name="raceLength"/>: the
+        /// threading it flies at now and the one after (the last gate is its own "after"). False once it has finished.</summary>
+        public static bool RaceLinePoints(int threaded, int raceLength, out int ring, out int next)
+        {
+            ring = next = -1;
+            if (threaded < 0 || threaded >= raceLength) return false;
+            ring = threaded;
+            next = Mathf.Min(threaded + 1, raceLength - 1);
+            return true;
+        }
+
         protected override RaceCourseSource CreateCourseSource() =>
             new RedlineCourseSource { Laps = laps };
 
@@ -125,6 +189,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             ClearTimeCrystals();
+            ClearHeat();
             base.OnNetworkDespawn();
         }
 
@@ -132,6 +197,7 @@ namespace CosmicShore.Gameplay
 
         protected override void OnCourseRaised()
         {
+            ResetHeat();
             ClearTimeCrystals();
             RedlineTimeCrystals.Place(_course, Intensity, _placeScratch);
             if (_placeScratch.Count == 0) return;
@@ -213,6 +279,12 @@ namespace CosmicShore.Gameplay
 
         // A subclass must not declare Update (GateRaceController.Update runs the race); LateUpdate is free.
         void LateUpdate()
+        {
+            TickHeat();
+            TickTimeCrystals();
+        }
+
+        void TickTimeCrystals()
         {
             if (_timeCrystals.Count == 0 || Time.time < _nextCrystalCheck) return;
             _nextCrystalCheck = Time.time + timeCrystalCheckSeconds;

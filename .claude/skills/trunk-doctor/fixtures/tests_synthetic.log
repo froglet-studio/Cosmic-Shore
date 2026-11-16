@@ -1,0 +1,9 @@
+2026-11-20T10:00:00.0000000Z ##[group]Run # `set +e` is REQUIRED and must be explicit. GitHub invokes `shell: bash`
+2026-11-20T10:00:00.0000001Z [36;1m  echo "::error::Edit-mode tests failed. The project compiled, so this is not a build break."[0m
+2026-11-20T10:00:00.0000002Z ##[endgroup]
+2026-11-20T10:09:12.0000000Z Test run completed. Exiting with code 2 (Failed). One or more tests failed.
+2026-11-20T10:09:12.0000001Z Failed : CosmicShore.Tests.SoapCoreTests.RaiseInvokesEveryListener
+2026-11-20T10:09:12.0000002Z   Expected: 3  But was: 2
+2026-11-20T10:09:12.0000003Z Failed : CosmicShore.Tests.GameModesTests.EveryValueIsUnique
+2026-11-20T10:09:12.0000004Z ##[error]Edit-mode tests failed. The project compiled, so this is not a build break. Set UNITY_TESTS_BLOCKING=false to downgrade this to a warning while the suite is greened up.
+2026-11-20T10:09:12.0000005Z ##[error]Process completed with exit code 1.

@@ -40,6 +40,14 @@ namespace CosmicShore.Engine.Audio.Fmod
         public override string ToString() => IsNull ? "(null EventReference)" : Path;
     }
 
+    /// <summary>FMOD's 3-vector (original: FMOD.VECTOR). Converts to and from Vector3, the port's attribute fields.</summary>
+    public struct VECTOR
+    {
+        public float x, y, z;
+        public static implicit operator Vector3(VECTOR v) => new(v.x, v.y, v.z);
+        public static implicit operator VECTOR(Vector3 v) => new() { x = v.x, y = v.y, z = v.z };
+    }
+
     /// <summary>3D playback attributes (original contract: FMOD.ATTRIBUTES_3D, position only).</summary>
     public struct ATTRIBUTES_3D
     {
@@ -52,6 +60,7 @@ namespace CosmicShore.Engine.Audio.Fmod
     /// <summary>Conversion helpers (original contract: FMODUnity.RuntimeUtils).</summary>
     public static class RuntimeUtils
     {
+        public static VECTOR ToFMODVector(Vector3 vec) => new() { x = vec.x, y = vec.y, z = vec.z };
         public static ATTRIBUTES_3D To3DAttributes(Vector3 position) => new() { position = position, forward = Vector3.forward, up = Vector3.up };
 
         public static ATTRIBUTES_3D To3DAttributes(Transform transform, Rigidbody rigidbody = null)

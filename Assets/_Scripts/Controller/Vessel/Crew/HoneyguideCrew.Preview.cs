@@ -113,7 +113,7 @@ namespace CosmicShore.Gameplay
                 {
                     var at = pos + fwd * _cfg.FlitDistance;
                     Segment(pos, at);
-                    Ring(at, up, fwd, _cfg.FlitStrikeRadius);
+                    Ring(at, up, fwd, _cfg.FlitStrikeRadiusFor(_status));
                     break;
                 }
             }

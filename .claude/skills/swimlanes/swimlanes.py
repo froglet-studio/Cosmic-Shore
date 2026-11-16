@@ -36,7 +36,7 @@ Read from origin/* (run `git fetch --prune origin` first), the tickets and open 
 with --no-github or when gh is not signed in), and the repo's own files. A READER: it writes nothing except, with
 `set`, the verdict in lanes.json.
 """
-import argparse, collections, datetime, fnmatch, json, os, re, shutil, subprocess, sys, tempfile
+import argparse, collections, datetime, fnmatch, importlib.util, json, os, re, shutil, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOG = os.path.join(HERE, 'lanes.json')
@@ -270,6 +270,42 @@ def occupancy(root, lanes, team, cfg, days, base, prs, merged_heads):
     for k in occ:
         occ[k].sort(key=lambda r: r['last'], reverse=True)
     return occ
+
+
+def read_handoffs(root, notes=None):
+    """lane key -> its latest handoff (Tools/Build/handoff.py: to a person, open, for test, a claim), with its status."""
+    try:
+        spec = importlib.util.spec_from_file_location('handoff', os.path.join(root, 'Tools', 'Build', 'handoff.py'))
+        ho = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ho)
+        return ho.current(ho.read_all(root)), ho.holder
+    except Exception as exc:                          # a reader, never a gate: say so and carry on
+        if notes is not None:
+            notes.append(f'handoffs could not be read ({type(exc).__name__}: {exc}); run `python3 Tools/Build/handoff.py list`.')
+        return {}, lambda h: None
+
+
+def apply_handoffs(occ, handoffs, holder):
+    """A handoff moves a lane: to a person, the tester or a claimer, it is theirs (an occupant); open or sent back, the
+    work pushed before the handoff no longer holds it. Work anybody ELSE pushes after the handoff still occupies."""
+    out = collections.defaultdict(list, {k: list(v) for k, v in occ.items()})
+    for k, h in handoffs.items():
+        day = h['on'][:10]
+        later = [o for o in out.get(k, []) if o['last'] > day]
+        who = holder(h)
+        if who:
+            later = [o for o in later if who not in o['people']]
+            verb = {'new': 'handed to them by', 'taken': 'handed to them by', 'testing': 'sent for test by',
+                    'claimed': 'claimed by'}.get(h['status'], 'held by')
+            row = {'branch': h.get('branch') or '(no branch yet)', 'people': [who], 'last': day, 'commits': 0,
+                   'subjects': [f'{verb} {h["by"]}' + (f': {h["note"]}' if h.get('note') else '')], 'pr': h.get('pr'),
+                   'handoff': h['id'], 'handoffStatus': h['status']}
+            out[k] = later + [row]
+        else:
+            out[k] = later
+        if not out[k]:
+            del out[k]
+    return out
 
 
 def landed(root, lanes, team, days, base, skip_rx):
@@ -532,10 +568,40 @@ def build(root, args):
         occ[k] = [o for o in occ[k] if not superseded(o, last.get(k))]
         if not occ[k]:
             del occ[k]
+    handoffs, holder = ({}, None) if getattr(args, 'no_handoffs', False) else read_handoffs(root, notes)
+    if handoffs:
+        occ = apply_handoffs(occ, handoffs, holder)
+    # Quiet work: pushed in the last quiet_days but not the last window_days. It holds nothing on the board; the People
+    # page keeps it under the lane's OWNER, and asks anyone else whether they are still on it (Shombith, 2026-11-13).
+    long_days = max(days, catalog.get('quiet_days', 30))
+    occ_long = occupancy(root, lanes, team, catalog, long_days, BASE, prs, merged) if long_days > days else {}
+    cutoff = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+    quiet = {}
+    for k, rows in occ_long.items():
+        active = {p for o in occ.get(k, []) for p in o['people']}
+        h = handoffs.get(k)
+        rows = [o for o in rows if o['last'] < cutoff and not superseded(o, last.get(k))
+                and not (h and h['on'][:10] >= o['last']) and not (o['people'] and set(o['people']) <= active)]
+        if rows and not occ.get(k):                       # someone else is on it now: nothing to ask about
+            quiet[k] = [dict(o, asked=o['people'][0] if o['people'] else None)    # the branch's own person, not its mergers
+                        for o in sorted(rows, key=lambda o: o['last'], reverse=True)[:1]]  # only the LAST work in it is asked
     found = assess(root, lanes, files, ticket_rows, bug_rows, l5, catalog.get('verdicts', {}))
-    owners = {}
+    for k, h in handoffs.items():                      # an open or sent-back lane carries the handoff's note on top
+        if k in found and h['status'] in ('open', 'back'):
+            fb = [e for e in h.get('events', []) if e['event'] == 'feedback']
+            text = (f'sent back from test by {fb[-1]["by"]} {fb[-1]["on"][:10]}: {fb[-1].get("note", "")}' if h['status'] == 'back'
+                    else f'handed off open by {h["by"]} {h["on"][:10]}' + (f': {h["note"]}' if h.get('note') else '')
+                    + (f' (start from {h["branch"]})' if h.get('branch') else ''))
+            found[k]['work'].append((9 if h['status'] == 'back' else 6, text))
+        elif k in found and h['status'] == 'passed':
+            found[k]['polish'].append((0, f'tested good to go by {h.get("to")} {h["events"][-1]["on"][:10]}'))
+    owners, lane_owner = {}, {}
+    declared = catalog.get('owners', {})
     for ln in lanes:
         decl = [o['owner'] for o in team.declared_owners(ln.paths)] if ln.paths else []
+        who_owns = (declared.get(ln.key) or {}).get('owner') or (re.match(r'\s*(\w+)', decl[0]).group(1) if decl else None)
+        if who_owns:
+            lane_owner[ln.key] = who_owns
         if decl or ln.note:
             owners[ln.key] = (ln.note or ('Owner: ' + ', '.join(decl) + ' (Docs/TEAM.json): tell them, and queue changes for their /approve.'))
     loop = loop_lanes(root, notes)
@@ -545,7 +611,13 @@ def build(root, args):
         work = sum(wt for wt, _ in f['work'])
         gap = sum(wt for wt, _ in f['polish'])
         lp = loop.get(ln.key) if ln.kind == 'vessel' else None
-        if occ.get(ln.key):
+        h = handoffs.get(ln.key)
+        held = occ.get(ln.key) and occ[ln.key][-1].get('handoff') and occ[ln.key][0].get('handoff')
+        if held and h['status'] in ('new', 'taken'):
+            tier = 'handed'
+        elif held and h['status'] == 'testing':
+            tier = 'testing'
+        elif occ.get(ln.key):
             tier = 'occupied'
         elif lp and lp['actions']:
             tier = 'loop'
@@ -558,18 +630,21 @@ def build(root, args):
         board.append({'key': ln.key, 'name': ln.name, 'kind': ln.kind, 'tier': tier, 'workScore': work, 'polishGap': gap,
                       'occupants': occ.get(ln.key, []), 'work': [t for _, t in sorted(f['work'], key=lambda x: -x[0])],
                       'polish': [t for _, t in sorted(f['polish'], key=lambda x: -x[0])], 'landed': last.get(ln.key),
-                      'note': owners.get(ln.key, ''),
+                      'note': owners.get(ln.key, ''), 'owner': lane_owner.get(ln.key),
+                      'quiet': quiet.get(ln.key, []),
+                      'handoff': {x: h.get(x) for x in ('id', 'kind', 'status', 'by', 'to', 'on', 'note', 'what', 'branch', 'events', 'brief', 'source')} if h else None,
                       'loop': {'progress': lp['progress'], 'seated': lp['seated'], 'rank': list(lp['rank'] or []),
                                'actions': [loop_line(a) for a in lp['actions']]} if lp else None})
-    order = {'loop': 0, 'work': 1, 'occupied': 2, 'polish': 3, 'polished': 4}
+    order = {'loop': 0, 'handed': 1, 'testing': 2, 'work': 3, 'occupied': 4, 'polish': 5, 'polished': 6}
 
     board.sort(key=lambda b: b['name'])
     board.sort(key=lambda b: b['occupants'][0]['last'] if b['occupants'] else '', reverse=True)   # occupied: newest push first
     board.sort(key=lambda b: (order[b['tier']], b['loop']['rank'] if b['tier'] == 'loop' else
                               [-b['workScore']] if b['tier'] == 'work' else
                               [-b['polishGap']] if b['tier'] == 'polish' else []))
+    me = getattr(args, 'me', None)
     return {'generated': datetime.date.today().isoformat(), 'windowDays': days, 'base': BASE, 'notes': notes,
-            'lanes': board, 'order': list(order)}
+            'lanes': board, 'order': list(order), 'me': me}
 
 
 def who(o):
@@ -588,6 +663,8 @@ def opened(b):
 
 HEADS = {'loop': 'THE ELEMENTAL LOOP - every vessel is its own parallel lane (Garrett 2026-11-12, TOP PRIORITY): take one '
                  'and advance it one step (/elemental-loop)',
+         'handed': 'HANDED OFF - passed to a person (NEW until they read it: handoff.py seen <lane>)',
+         'testing': 'FOR TEST - with the tester until they answer (/handoff-feedback good|back)',
          'work': 'OPEN - WORK WAITING (pick one of these when every loop lane is held)',
          'occupied': 'OCCUPIED - someone has their head in it right now (do not collide: build elsewhere or talk to them)',
          'polish': 'OPEN - NEEDS POLISH (no obvious work, but it does not feel finished)',
@@ -605,6 +682,25 @@ def print_board(data, full=False, md=False, limit=3, kind=None):
                f'{data["windowDays"]} days (read from origin/*: run `git fetch --prune origin` first)')
     for n in data['notes']:
         out.append(('> ' if md else '  note: ') + n)
+    me = data.get('me')
+    if me:
+        mine = [b for b in data['lanes'] if (b.get('handoff') or {}).get('to') == me and b['tier'] in ('handed', 'testing')]
+        h(f'FOR YOU, {me}  [{len(mine) + sum(1 for b in data["lanes"] if b.get("owner") != me and any(q.get("asked") == me for q in b.get("quiet", [])))}]')
+        if not mine:
+            out.append('  nothing handed to you')
+        for b in mine:
+            ho = b['handoff']
+            new = 'NEW  ' if ho['status'] == 'new' else 'TEST ' if ho['status'] == 'testing' else ''
+            out.append(f'  {new}{b["name"]} [{b["kind"]}] from {ho["by"]} {ho["on"][:10]}' + (f': {ho["note"]}' if ho.get('note') else ''))
+            if ho.get('what'):
+                out.append(f'        test: {ho["what"]}')
+        gone = [b for b in data['lanes'] if b.get('owner') != me and any(q.get('asked') == me for q in b.get('quiet', []))]
+        for b in gone[:5]:
+            q = next(q for q in b['quiet'] if q.get('asked') == me)
+            out.append(f'  WENT QUIET  {b["name"]}: your last push was {q["last"]} ({q["branch"]}), so it is open for anyone again.'
+                       f' Still on it: `handoff.py claim {b["key"]}`. Done with it: `handoff.py open --lane {b["key"]} --note "..."`.')
+        if len(gone) > 5:
+            out.append(f'  ... {len(gone) - 5} more went quiet (the Swim Lanes page lists them all)')
     for tier in data['order']:
         rows = [b for b in data['lanes'] if b['tier'] == tier and (not kind or b['kind'] == kind)]
         h(HEADS[tier] + f'  [{len(rows)}]')
@@ -629,6 +725,15 @@ def print_board(data, full=False, md=False, limit=3, kind=None):
                     out.append(f'        ... {rest} more loop step(s) in other elements (elemental_loop.py vessel {b["name"]})')
                 if b['work'] and full:
                     out.append(f'        other work: {b["work"][0]}')
+            elif tier in ('handed', 'testing'):
+                ho = b['handoff']
+                flag = 'NEW ' if ho['status'] == 'new' else ''
+                out.append(f'{bullet}{flag}{name} {tag}: {ho["by"]} -> {ho.get("to")} {ho["on"][:10]}'
+                           + (f': {ho["note"]}' if ho.get('note') else ''))
+                if ho.get('what'):
+                    out.append(f'        test: {ho["what"]}')
+                for o in b['occupants'][:-1]:
+                    out.append(f'        also {who(o)}')
             elif tier == 'occupied':
                 out.append(f'{bullet}{name} {tag}: ' + who(b['occupants'][0]))
                 for o in b['occupants'][1:]:
@@ -666,6 +771,10 @@ def print_lane(data, key):
     print(f'{b["name"]} [{b["kind"]}]: {HEADS[b["tier"]].split(" (")[0]}{opened(b)}')
     if b['note']:
         print(f'  ! {b["note"]}')
+    if b.get('handoff'):
+        ho = b['handoff']
+        print(f'  handoff: {ho["kind"]} by {ho["by"]} {ho["on"][:10]}' + (f' to {ho["to"]}' if ho.get('to') else '')
+              + f' [{ho["status"]}]' + (f': {ho["note"]}' if ho.get('note') else ''))
     print('\nIn it now:' if b['occupants'] else '\nIn it now: nobody')
     for o in b['occupants']:
         print(f'  {who(o)}')
@@ -695,6 +804,19 @@ def set_verdict(key, polish, by, note):
         json.dump(catalog, fh, indent=2, ensure_ascii=False)
         fh.write('\n')
     print(f'{key}: {polish}' + (f' ({note})' if note else '') + f' - written to {os.path.relpath(CATALOG)}; commit it so everyone sees it.')
+
+
+def set_owner(key, person, by):
+    catalog = json.load(open(CATALOG, encoding='utf-8'))
+    o = catalog.setdefault('owners', {})
+    if person == 'clear':
+        o.pop(key, None)
+    else:
+        o[key] = {'owner': person, 'said': f'{by}, {datetime.date.today().isoformat()}'}
+    with open(CATALOG, 'w', encoding='utf-8', newline='\n') as fh:
+        json.dump(catalog, fh, indent=2, ensure_ascii=False)
+        fh.write('\n')
+    print(f'{key}: owner {person} - written to {os.path.relpath(CATALOG)}; commit it so everyone sees it.')
 
 
 def parse_iso(s):
@@ -756,6 +878,18 @@ def self_test():
     shown = buf.getvalue()
     if 'THE ELEMENTAL LOOP' not in shown or shown.index('Manta') > shown.index('Goby') or 'next: Time step 1' not in shown:
         bad.append('the loop tier is not the first tier, or its lane does not show its next step')
+    occ0 = {'voyages': [{'branch': 'claude/v', 'people': ['Shombith'], 'last': '2026-11-12', 'commits': 3, 'subjects': ['x']}]}
+    hold = lambda h: h.get('to') if h['status'] in ('new', 'taken', 'testing') else None
+    ho = {'voyages': {'id': 'H-1', 'kind': 'to', 'status': 'new', 'by': 'Shombith', 'to': 'Garrett', 'on': '2026-11-13T10:00:00+00:00'}}
+    got = apply_handoffs(occ0, ho, hold)['voyages']
+    if [o['people'] for o in got] != [['Garrett']]:
+        bad.append(f'a lane handed to Garrett is not his, or the sender still holds it: {got}')
+    ho['voyages'].update(kind='open', status='open', to=None)
+    if apply_handoffs(occ0, ho, hold):
+        bad.append('a lane handed off open is still occupied by the work pushed before it')
+    later = {'voyages': [dict(occ0['voyages'][0], people=['Yash'], last='2026-11-14')]}
+    if [o['people'] for o in apply_handoffs(later, ho, hold).get('voyages', [])] != [['Yash']]:
+        bad.append('work pushed after an open handoff did not occupy the lane')            # negative control
     tmp = tempfile.mkdtemp(prefix='lanes-')
     try:
         for rel, body in [('Assets/Resources/ElementalAbilityMaps/Manta.asset', ''),
@@ -832,8 +966,8 @@ def self_test():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('cmd', nargs='?', choices=['board', 'set'], default='board')
-    ap.add_argument('rest', nargs='*', help='set: <lane> polished|rough|clear')
+    ap.add_argument('cmd', nargs='?', choices=['board', 'set', 'owner'], default='board')
+    ap.add_argument('rest', nargs='*', help='set: <lane> polished|rough|clear; owner: <lane> <person>|clear')
     ap.add_argument('--lane', help='one lane in full')
     ap.add_argument('--days', type=int, help='how recent a push must be to occupy a lane (default lanes.json window_days)')
     ap.add_argument('--full', action='store_true', help='every work item, every polish gap')
@@ -845,6 +979,8 @@ def main():
     ap.add_argument('--tickets-offline', help='read the tickets from a team_tasks.py dump instead of GitHub')
     ap.add_argument('--by', help='set: who says so')
     ap.add_argument('--note', default='', help='set: why')
+    ap.add_argument('--me', help='show what was handed to this person first (default: your git identity)')
+    ap.add_argument('--no-handoffs', action='store_true', help='ignore Docs/Handoffs')
     ap.add_argument('--self-test', action='store_true')
     a = ap.parse_args()
     if a.self_test:
@@ -854,7 +990,22 @@ def main():
             ap.error('set <lane> polished|rough|clear --by <name> [--note "..."]')
         set_verdict(a.rest[0].lower(), a.rest[1], a.by, a.note)
         return 0
-    data = build(repo_root(), a)
+    if a.cmd == 'owner':
+        if len(a.rest) != 2 or not a.by:
+            ap.error('owner <lane> <person>|clear --by <name>')
+        set_owner(a.rest[0].lower(), a.rest[1], a.by)
+        return 0
+    root = repo_root()
+    if not a.me:
+        try:
+            team = load_team(root)
+            ap_mod = importlib.util.spec_from_file_location('approvals', os.path.join(root, 'Tools', 'Build', 'approvals.py'))
+            apm = importlib.util.module_from_spec(ap_mod)
+            ap_mod.loader.exec_module(apm)
+            a.me = apm.me_of(team, root, None)
+        except Exception:
+            a.me = None
+    data = build(root, a)
     if a.json:
         print(json.dumps(data, indent=1, ensure_ascii=False))
     elif a.lane:

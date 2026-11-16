@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-13-you-are-the-default-tester-for-the-new-h-58a7b2",
+  "to": "Andrew",
+  "by": "Shombith",
+  "date": "2026-11-13T16:05:08+00:00",
+  "area": "QA and testing",
+  "summary": "You are the default tester for the new /handoff-for-test (Docs/Handoffs/config.json testers). Lanes sent for test show on the Swim Lanes page's For test view and in 'handoff.py list --person Andrew'; answer each with /handoff-feedback good (good to go) or back (to the open list, with a note on what failed).",
+  "why": "Shombith, 2026-11-13: the hand-off flow sends finished lanes to Andrew for test.",
+  "branch": "claude/epic-pascal-coonfe",
+  "commit": "1ba6face9",
+  "paths": [
+    "Docs/Handoffs/config.json"
+  ]
+}
