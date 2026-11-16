@@ -94,6 +94,7 @@ namespace CosmicShore.Gameplay
             }
             VoyageHarbour.Changed += HandleHarbourChanged;
             VoyageIntro.Playing += HandleIntroPlaying;
+            VoyageScoreboard.Changed += HandleScoreboardChanged;
             _gameData?.InitializeGame();
             if (_gameData?.LocalPlayer?.Vessel != null) HandleClientReady();
         }
@@ -219,9 +220,27 @@ namespace CosmicShore.Gameplay
                 _sailed = true;
                 return;
             }
+            // The scoreboard waits for the pilot's choice (Venture further, Finish, or its last button): the menu waits too.
+            if (VoyageScoreboard.IsOpen && !_leaving) return;
             // The voyage is over (docked, fallen, the escort's last world reached, or given up): the stop is shown, then
             // the menu.
             if (_sailed) ReturnToMenu(_leaving ? 0.5f : returnDelaySeconds);
+        }
+
+        /// <summary>The pilot answered the scoreboard: a choice that sails on keeps the voyage out; anything else is the end,
+        /// and the scene returns to the menu now (the board was the end screen).</summary>
+        void HandleScoreboardChanged(VoyageScoreboard board)
+        {
+            if (board != null || !_harbour || _returning) return;
+            // The choice runs right after the board closes (VoyageScoreboard.Choose): judge it a frame later.
+            AfterChoiceAsync(_cts.Token).Forget();
+        }
+
+        async UniTaskVoid AfterChoiceAsync(CancellationToken ct)
+        {
+            await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            if (!_harbour || _returning || VoyageScoreboard.IsOpen || _harbour.IsUnderway) return;
+            if (_sailed) ReturnToMenu(0.5f);
         }
 
         // ── Leaving ──────────────────────────────────────────────────────────
@@ -239,6 +258,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             _leaving = true;
+            VoyageScoreboard.Hide();
             if (_harbour && _harbour.IsUnderway)
             {
                 _harbour.GiveUp("the pilot left the voyage");
@@ -313,6 +333,7 @@ namespace CosmicShore.Gameplay
         {
             VoyageHarbour.Changed -= HandleHarbourChanged;
             VoyageIntro.Playing -= HandleIntroPlaying;
+            VoyageScoreboard.Changed -= HandleScoreboardChanged;
             if (_gameData)
             {
                 _gameData.OnClientReady.OnRaised -= HandleClientReady;

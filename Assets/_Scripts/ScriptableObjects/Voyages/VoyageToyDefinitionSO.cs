@@ -119,6 +119,37 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(100f), Tooltip("How far abeam of the Ark a rival crew's hulls stand at a stop.")]
         float rivalAbeam = 420f;
 
+        [Header("Voyage - the escort's pay (Docs/Voyages/CRYSTAL_RUN.md section 5)")]
+        [SerializeField, Min(0), Tooltip("Crystals an Ark escort that came through pays per difficulty step: owed at the last " +
+                                         "world, banked when the Ark docks home.")]
+        int escortCrystalsPerDifficulty = 30;
+
+        [SerializeField, Tooltip("The element the escort's pay is in.")]
+        Element escortRewardElement = Element.Omni;
+
+        [Header("Voyage - the scoreboard's score (a seat's score is the sum of these)")]
+        [SerializeField, Min(0), Tooltip("Score per crystal a seat stole.")]
+        int scorePerCrystal = 10;
+
+        [SerializeField, Min(0), Tooltip("Score per creature a seat felled.")]
+        int scorePerKill = 5;
+
+        [SerializeField, Min(0), Tooltip("Extra score per creature felled near the Ark (hull the seat saved).")]
+        int scorePerGuard = 15;
+
+        [Header("Voyage - HUD sounds (shipped empty: an unwired slot is a visible TODO)")]
+        [SerializeField, Tooltip("A toast that marks an event (setting off, a calm cell, the final cell).")]
+        FMODUnity.EventReference toastEventSound;
+
+        [SerializeField, Tooltip("A toast that marks a threat (a hostile cell, an assault, the breach line close).")]
+        FMODUnity.EventReference toastThreatSound;
+
+        [SerializeField, Tooltip("A toast that marks something good (the goal reached, an assault repelled).")]
+        FMODUnity.EventReference toastGoodSound;
+
+        [SerializeField, Tooltip("The end-of-voyage scoreboard coming up.")]
+        FMODUnity.EventReference scoreboardSound;
+
         [Header("Voyage - the galaxy map (the Voyage window's cards)")]
         [SerializeField, Tooltip("The course a card's job sails, drawn over the map.")]
         Color routeColor = new(0.70f, 1f, 0.35f, 1f);
@@ -195,6 +226,15 @@ namespace CosmicShore.ScriptableObjects
         public float CullRadius => cullRadius;
         public float ObserveRadius => observeRadius;
         public float RivalAbeam => rivalAbeam;
+        public int EscortCrystalsPerDifficulty => escortCrystalsPerDifficulty;
+        public Element EscortRewardElement => escortRewardElement;
+        public int ScorePerCrystal => scorePerCrystal;
+        public int ScorePerKill => scorePerKill;
+        public int ScorePerGuard => scorePerGuard;
+        public FMODUnity.EventReference ToastEventSound => toastEventSound;
+        public FMODUnity.EventReference ToastThreatSound => toastThreatSound;
+        public FMODUnity.EventReference ToastGoodSound => toastGoodSound;
+        public FMODUnity.EventReference ScoreboardSound => scoreboardSound;
         public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);
         public Color VaultColor => ColorTrace.Retrace(ColorTrace.Ui, vaultColor);
         public Color CoreColor => ColorTrace.Retrace(ColorTrace.Ui, coreColor);

@@ -754,5 +754,176 @@ namespace CosmicShore.ScriptableObjects
         public string KindHome = "Home";
         [Tooltip("The Ark escort's name.")]
         public string KindEscort = "Ark escort";
+
+        // ── Crystal Run: the objective box, the toasts and the scoreboard (Docs/Voyages/CRYSTAL_RUN.md) ──
+
+        [Tooltip("Objective box: the kicker over a Crystal Run's goal.")]
+        public string ObjectiveRaidKicker = "CRYSTAL RUN";
+        [Tooltip("Objective box: a Crystal Run's goal ({goal}, {to}).")]
+        public string ObjectiveRaidGoal = "Steal {goal} crystals before the Ark reaches {to}";
+        [Tooltip("Objective box: the counter's label.")]
+        public string ObjectiveCrystals = "CRYSTALS";
+        [Tooltip("Objective box: the counter ({done}, {goal}).")]
+        public string ObjectiveCount = "{done} / {goal}";
+        [Tooltip("Objective box: one element's share of the stolen crystals ({element}, {count}).")]
+        public string ObjectiveElement = "{element} {count}";
+        [Tooltip("Objective box: between the elements' shares.")]
+        public string ObjectiveElementSeparator = "   ";
+        [Tooltip("Objective box: the Ark's hull ({hull}).")]
+        public string ObjectiveHull = "ARK HULL {hull}%";
+        [Tooltip("Objective box: the breach line ({breach}); empty when the job has none.")]
+        public string ObjectiveBreach = "FAILS BELOW {breach}%";
+        [Tooltip("Objective box: where on the leg the Ark is ({cell}, {cells}).")]
+        public string ObjectiveCell = "CELL {cell} / {cells}";
+        [Tooltip("Objective box: the action line in a calm cell.")]
+        public string ObjectiveCalm = "Calm cell: few crystals, nothing hunts the Ark";
+        [Tooltip("Objective box: the action line in a hostile cell.")]
+        public string ObjectiveHostile = "Hostile cell: rich in crystals, but its fauna go for the Ark";
+        [Tooltip("Objective box: the action line once the goal is met.")]
+        public string ObjectiveGoalMet = "Goal met. Every crystal more is yours too.";
+        [Tooltip("Objective box: the kicker on the way home.")]
+        public string ObjectiveHomeKicker = "SAILING HOME";
+        [Tooltip("Objective box: the goal on the way home ({to}).")]
+        public string ObjectiveHomeGoal = "Escort the Ark home to {to}. Docking banks everything.";
+        [Tooltip("Objective box: what the Ark carries home ({count}).")]
+        public string ObjectiveAtStake = "{count} crystals aboard and at stake";
+        [Tooltip("Toast: a calm cell of the leg begins ({cell}).")]
+        public string ToastCellCalm = "ENTERING CELL {cell}. CALM.";
+        [Tooltip("Toast: a hostile cell of the leg begins ({cell}).")]
+        public string ToastCellHostile = "ENTERING CELL {cell}. HOSTILE.";
+        [Tooltip("Toast: the leg's last cell begins.")]
+        public string ToastFinalCell = "FINAL CELL: THE DESTINATION";
+        [Tooltip("Toast: the Crystal Run's goal is met ({goal}).")]
+        public string ToastGoalReached = "{goal} CRYSTALS. BRING THEM HOME.";
+        [Tooltip("Scoreboard: the kicker when the goal was met.")]
+        public string ScoreKickerDone = "VOYAGE COMPLETE";
+        [Tooltip("Scoreboard: the kicker when the goal was missed.")]
+        public string ScoreKickerFailed = "GOAL MISSED";
+        [Tooltip("Scoreboard: the kicker when the Ark fell.")]
+        public string ScoreKickerLost = "THE ARK IS LOST";
+        [Tooltip("Scoreboard: the kicker when the Ark docked home.")]
+        public string ScoreKickerDocked = "HOME";
+        [Tooltip("Scoreboard: a Crystal Run's title ({done}, {goal}).")]
+        public string ScoreRaidTitle = "{done} of {goal} crystals stolen";
+        [Tooltip("Scoreboard: a Crystal Run's line ({to}, {cells}, {time}).")]
+        public string ScoreRaidStats = "Crystal Run to {to} - {cells} cells - {time}";
+        [Tooltip("Scoreboard: an escort's title ({to}).")]
+        public string ScoreEscortTitle = "The Ark reached {to}";
+        [Tooltip("Scoreboard: an escort's line ({difficulty}, {worlds}, {legs}, {time}).")]
+        public string ScoreEscortStats = "Escort the Ark - difficulty {difficulty} - {worlds} of {legs} worlds - {time}";
+        [Tooltip("Scoreboard: the title when the Ark fell.")]
+        public string ScoreLostTitle = "Everything aboard went down with it";
+        [Tooltip("Scoreboard: the title when the Ark docked home ({to}).")]
+        public string ScoreDockedTitle = "Docked at {to}";
+        [Tooltip("Scoreboard: the line when the Ark docked home.")]
+        public string ScoreDockedStats = "Everything aboard is yours now";
+        [Tooltip("Scoreboard: the hull's label.")]
+        public string ScoreHull = "ARK HULL";
+        [Tooltip("Scoreboard: the hull ({hull}).")]
+        public string ScoreHullValue = "{hull}%";
+        [Tooltip("Scoreboard: the seat column's head.")]
+        public string ScoreColSeat = "Seat";
+        [Tooltip("Scoreboard: the crystals column's head.")]
+        public string ScoreColCrystals = "Crystals";
+        [Tooltip("Scoreboard: the kills column's head.")]
+        public string ScoreColKills = "Kills";
+        [Tooltip("Scoreboard: a seat's row ({name}, {vessel}).")]
+        public string ScoreRowSeat = "{name} - {vessel}";
+        [Tooltip("Scoreboard: the local pilot's name in their row.")]
+        public string ScoreRowYou = "You";
+        [Tooltip("Scoreboard: the rewards' head.")]
+        public string ScoreRewards = "REWARDS";
+        [Tooltip("Scoreboard: the stolen crystals' label.")]
+        public string ScoreStolen = "Crystals stolen";
+        [Tooltip("Scoreboard: one element's share ({element}, {count}).")]
+        public string ScoreStolenBy = "{element} {count}";
+        [Tooltip("Scoreboard: between the elements' shares.")]
+        public string ScoreStolenSeparator = "   ";
+        [Tooltip("Scoreboard: the job's pay label.")]
+        public string ScorePay = "Job pay";
+        [Tooltip("Scoreboard: the escort's pay label ({difficulty}).")]
+        public string ScoreEscortPay = "Crystals for difficulty {difficulty}";
+        [Tooltip("Scoreboard: a reward's value ({count}).")]
+        public string ScoreRewardValue = "+ {count}";
+        [Tooltip("Scoreboard: under the rewards while they are not banked yet.")]
+        public string ScoreAtStake = "At stake until the Ark docks home";
+        [Tooltip("Scoreboard: under the rewards once docked home.")]
+        public string ScoreBanked = "Banked: every crystal is yours";
+        [Tooltip("Scoreboard: the quiet way out.")]
+        public string ScoreFinish = "FINISH";
+        [Tooltip("Scoreboard: what Finish does.")]
+        public string ScoreFinishLine = "Sail the Ark home and bank it all";
+        [Tooltip("Scoreboard: the call to action.")]
+        public string ScoreVenture = "VENTURE FURTHER";
+        [Tooltip("Scoreboard: what Venture further does on a Crystal Run ({goal}, {cells}).")]
+        public string ScoreVentureRaid = "Next run: {goal} crystals, {cells} cells";
+        [Tooltip("Scoreboard: what Venture further does on an escort ({difficulty}).")]
+        public string ScoreVentureEscort = "Same escort, difficulty {difficulty}";
+        [Tooltip("Scoreboard: the one button once the voyage is over.")]
+        public string ScoreDone = "BACK TO VOYAGES";
+        [Tooltip("Scoreboard: what the last button does.")]
+        public string ScoreDoneLine = "Return to the Voyages page";
+        [Tooltip("Scoreboard: the pad key on Finish.")]
+        public string ScoreFinishKey = "B";
+        [Tooltip("Scoreboard: the pad key on Venture further and on the last button.")]
+        public string ScoreVentureKey = "A";
+        [Tooltip("Toast: the line under a hostile cell's toast.")]
+        public string ToastCellHostileSub = "More crystals here. Its fauna are hunting the Ark.";
+        [Tooltip("Toast: the line under a calm cell's toast.")]
+        public string ToastCellCalmSub = "Fewer crystals. Nothing here hunts the Ark.";
+        [Tooltip("Toast: a Crystal Run sets off ({goal}, {to}).")]
+        public string ToastSetOff = "STEAL {goal} CRYSTALS";
+        [Tooltip("Toast: the line under the set-off toast ({to}, {breach}).")]
+        public string ToastSetOffSub = "Before the Ark reaches {to}. Keep its hull above {breach}%.";
+        [Tooltip("Toast: the Ark sets off home.")]
+        public string ToastHome = "SAIL THE ARK HOME";
+        [Tooltip("Toast: the line under the way-home toast ({to}).")]
+        public string ToastHomeSub = "Docking at {to} banks everything aboard.";
+        [Tooltip("Objective box: under the leg's last stop when it has no calm or hostile word.")]
+        public string ObjectiveDestinationTag = "Destination";
+        [Tooltip("Objective box: under a calm cell on the route.")]
+        public string ObjectiveCalmTag = "Calm";
+        [Tooltip("Objective box: under a hostile cell on the route.")]
+        public string ObjectiveHostileTag = "Hostile";
+        [Tooltip("Objective box: a cell's name on the route ({cell}).")]
+        public string ObjectiveCellName = "Cell {cell}";
+        [Tooltip("Toast: the Ark started losing plates.")]
+        public string ToastArkUnderAttack = "ARK UNDER ATTACK";
+        [Tooltip("Under the attack toast ({threats}).")]
+        public string ToastArkUnderAttackSub = "{threats} near the hull. Hunt what is biting it.";
+        [Tooltip("Toast: the hull is close to the breach line.")]
+        public string ToastBreachClose = "BREACH CLOSE";
+        [Tooltip("Under the breach toast ({hull}, {breach}).")]
+        public string ToastBreachCloseSub = "Hull {hull}%. Below {breach}% the Ark is lost.";
+        [Tooltip("The objective box's kicker in an escort ({difficulty}).")]
+        public string ObjectiveEscortKicker = "ESCORT THE ARK - DIFFICULTY {difficulty}";
+        [Tooltip("The escort's goal with a breach line ({breach}, {to}).")]
+        public string ObjectiveEscortGoal = "Keep the Ark's hull above {breach}% to {to}'s core";
+        [Tooltip("The escort's goal without a breach line ({to}).")]
+        public string ObjectiveEscortGoalNoBreach = "Bring the Ark to {to}'s core";
+        [Tooltip("Where the Ark is: between worlds ({world}).")]
+        public string ObjectiveArkBound = "Ark bound for {world}";
+        [Tooltip("Where the Ark is: inside a world ({world}).")]
+        public string ObjectiveArkInside = "Ark inside {world}";
+        [Tooltip("The action line during an assault ({kills}, {needed}).")]
+        public string ObjectiveActionAssault = "Drive the assault off: {kills} / {needed} attackers near the Ark";
+        [Tooltip("The action line when an assault is announced ({seconds}).")]
+        public string ObjectiveActionIncoming = "Fauna turn on the Ark in {seconds}s. Get close to it.";
+        [Tooltip("The action line while the hull loses plates.")]
+        public string ObjectiveActionUnderAttack = "The Ark is losing plates. Hunt what is biting it.";
+        [Tooltip("The action line while the Ark regrows plates.")]
+        public string ObjectiveActionHealing = "The Ark is healing in the nucleus.";
+        [Tooltip("The escort's action line in a hostile world.")]
+        public string ObjectiveEscortHostile = "Hostile world: its fauna go for the Ark until you pacify it";
+        [Tooltip("The escort's action line in a calm world.")]
+        public string ObjectiveEscortCalm = "A world you hold: gather crystals and stay with the Ark";
+        [Tooltip("Scoreboard column: creatures felled near the Ark.")]
+        public string ScoreColGuarded = "Off the Ark";
+        [Tooltip("Scoreboard column: the seat's score.")]
+        public string ScoreColScore = "Score";
+        [Tooltip("A lost Ark's button: the same voyage again.")]
+        public string ScoreTryAgain = "TRY AGAIN";
+        [Tooltip("Under the Try again button.")]
+        public string ScoreTryAgainLine = "Same voyage, a fresh Ark";
     }
 }

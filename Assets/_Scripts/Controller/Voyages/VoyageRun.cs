@@ -194,6 +194,8 @@ namespace CosmicShore.Gameplay
             _worlds = CountWorlds(local.Transform.position);
 
             Deploy(local, domain);
+            VoyageObjective.Source = this;
+            (_alarms ??= new ArkAlarmToasts(this, () => _sea)).Hook();
 
             ArkFall.Settled -= OnFallSettled;
             ArkFall.Settled += OnFallSettled;
@@ -422,7 +424,7 @@ namespace CosmicShore.Gameplay
                 Resolve(VoyageRules.WorkDone(_state.Current, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
 
             if (!VoyageRules.Take(_state, Content, job)) return;
-            var route = VoyageRules.Corridor(Content, job.From, job.To, _state.Day, _worlds, _state);
+            var route = FitLeg(job, VoyageRules.Corridor(Content, job.From, job.To, _state.Day, _worlds, _state));
             if (route.Count == 0)
             {
                 CSDebug.LogWarning($"[Voyage] No course from {job.From} to {job.To} ({_worlds} worlds to sail) - the job stays on the board.");
@@ -446,7 +448,9 @@ namespace CosmicShore.Gameplay
                 _sea.SetRoute(route);
                 _sea.Begin(local);
             }
-            Banner(Line(Lines.Depart, job.To));
+            // A Crystal Run and the way home open with their toast (Rev 113); other work keeps its banner.
+            if (job.CountsUnderway || job.IsReturn) ToastSetOff(job);
+            else Banner(Line(Lines.Depart, job.To));
             if (job.HullFloor > 0f && !string.IsNullOrEmpty(Lines.Convoy))
                 Banner(TemplateText.Fill(Lines.Convoy, "percent", Mathf.RoundToInt(job.HullFloor * 100f).ToString()));
             VoyageHarbour.RaiseChanged();
@@ -459,6 +463,7 @@ namespace CosmicShore.Gameplay
             _profile = VoyageRules.CorridorProfile(_state, Content, job.From, job.To);
             _hostileWorld = VoyageRules.HostileWorld(_state, Content, job.To);
             BeginLegAssaults();
+            BeginLegCount(job);
         }
 
         /// <summary>The corridor stands a cell of the route: it takes the lane's pacing, and the destination its hostility
@@ -466,6 +471,7 @@ namespace CosmicShore.Gameplay
         void OnPrepareCell(Cell cell, int routeIndex)
         {
             if (!cell || !_active || routeIndex < 0 || _profile == null || routeIndex >= _profile.Count) return;
+            NoteLegCell(cell, routeIndex);
             cell.RuntimePopulationScale = Mathf.Max(0.1f, _profile[routeIndex]);
             // The job's hostile cells (VoyageRun.Assault.cs); without a pattern, the destination when its place is hostile.
             if (PrepareAssaultCell(cell, routeIndex))
@@ -504,6 +510,8 @@ namespace CosmicShore.Gameplay
 
             if (_arrival.Extracts)
             {
+                // A Crystal Run that ends at home: what it stole is owed, and docking banks it with everything else.
+                if (job.CountsUnderway) VoyageRaid.Owe(_state, _raid);
                 if (!job.IsReturn) Resolve(VoyageRules.WorkDone(job, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
                 else VoyageRules.Resolve(_state, Content, JobOutcome.Succeeded);
                 Dock();
@@ -512,8 +520,10 @@ namespace CosmicShore.Gameplay
 
             StandStop(ark ? ark.Position : transform.position);
             MarkSeats();
+            // A Crystal Run counted its work on the way: it resolves now, and the scoreboard asks what next.
+            if (job.CountsUnderway) ArriveRaid(job);
             // Work decided by arriving (a courier, a convoy's hull floor) is decided now.
-            if (job.Verb == WorkVerb.Arrive) Resolve(VoyageRules.WorkDone(job, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
+            else if (job.Verb == WorkVerb.Arrive) Resolve(VoyageRules.WorkDone(job, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
             else if (job.Verb == WorkVerb.Meet) CheckWork();
             SaveState();
             VoyageHarbour.RaiseChanged();
@@ -530,9 +540,12 @@ namespace CosmicShore.Gameplay
             if (!_active) return;
             _fallen = true;
             string where = _state.AtSea && _state.Current != null ? _state.Current.To : _state.At;
+            var stake = StakeByElement();
+            var lost = _state.Current;
             var r = VoyageRules.ArkLost(_state, Content, where, _fallTaken || HostileRivalStands(), _holdMirror);
             SaveState();
             Banner(Join(Lines.ArkLost, r.StoryLine, Join(r.StoryLines)));
+            ShowLost(stake, lost);
         }
 
         /// <summary>A hostile crew standing at the stop is credited with a fall there (DEPTH.md §3): their hulls are
@@ -703,6 +716,7 @@ namespace CosmicShore.Gameplay
             TickEscort();
             TickAssaults();
             if (!_active) return;
+            TickLegToasts();
             WatchHold();
             TickHold();
             TickObserve();
@@ -873,6 +887,8 @@ namespace CosmicShore.Gameplay
                     tally.Laid += Mathf.Max(0, stats.BlocksCreated - kv.Value.Blocks);
                     tally.Razed += Mathf.Max(0f, stats.HostileVolumeDestroyed - kv.Value.Hostile);
                 }
+            // A Crystal Run counts what was stolen since the Ark set sail, not since it arrived.
+            if (Raiding) tally.Gathered = _raid.Total;
             return tally;
         }
 
@@ -1013,6 +1029,7 @@ namespace CosmicShore.Gameplay
                 Banner(TemplateText.Fill(Line(Lines.Extracted, _state.At), "count", x.Artifacts.Count.ToString()));
             }
             SaveState();
+            ShowDocked(x);
             _docked = true;
             _sea.End(returnToCell: true, "the voyage docked at home");
         }
@@ -1054,6 +1071,9 @@ namespace CosmicShore.Gameplay
             _seeded.Clear();
             _holdMirror.Clear();
             EndAssaults();
+            EndRaid();
+            // A stop's choice cannot be made once the voyage is over; the last board (docked, lost) stays up.
+            if (VoyageScoreboard.Current is { Board: VoyageScoreboard.Kind.CrystalRun }) VoyageScoreboard.Hide();
             _onEnded?.Invoke();
         }
 
@@ -1166,6 +1186,7 @@ namespace CosmicShore.Gameplay
             if (_active) SquadDeployment.Recall();
             // Destroyed while out: the escort context's static hooks (the crystal placement resolver) leave with it.
             _escort?.Uninstall();
+            EndRaid();
             _onEnded = null;
         }
     }

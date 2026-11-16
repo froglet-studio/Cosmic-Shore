@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
         ArkAssaultDriver _assaultDriver;
         int _threatsNear;   // from the run's 1 Hz sample (the HUD polls Status every frame; it never walks the fauna)
 
-        ArkAssaultDriver Assaults => _assaultDriver ??= new ArkAssaultDriver(this, Banner);
+        ArkAssaultDriver Assaults => _assaultDriver ??= new ArkAssaultDriver(this, (line, mood) => VoyageToasts.Show(_sea, mood, line));
 
         /// <summary>The escort as it stands now, for the HUD's objective box.</summary>
         public ArkEscortStatus Status

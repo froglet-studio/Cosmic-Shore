@@ -234,6 +234,12 @@ namespace CosmicShore.Data
         public string Chapter;
         /// <summary>The warnings the board attached from the world as it was (authored lines).</summary>
         public List<string> Warnings = new();
+        /// <summary>Counted from the moment the Ark sets sail (<see cref="JobTemplate.CountsUnderway"/>).</summary>
+        public bool CountsUnderway;
+        /// <summary>The leg's length in cells (0: the lanes decide; <see cref="JobTemplate.Cells"/>).</summary>
+        public int Cells;
+        /// <summary>How many times the squad ventured further to reach this run (0 for the first).</summary>
+        public int Venture;
 
         /// <summary>A shallow copy (the warnings and news are shared): the voyage page sets a copy's difficulty, never the
         /// board's own job.</summary>

@@ -23570,3 +23570,26 @@ clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in ch
    skip" grows and the camera goes straight to the hand-over. A key held from before the intro does not skip it.
 5. Leave the voyage (pause menu, Main Menu) during the intro: the menu loads with the normal camera; no stuck bars.
 6. Run the escort sim (`ArkEscortSimLauncher`): no intro plays.
+
+## 🔴 Crystal Run, the voyage HUD and the end-of-voyage scoreboard (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-i45oov` (PR into `voyages`). Compiled with `unity_refcompile` only (0 errors in changed
+files); `VoyageCrystalRunTests` never ran. Spec: `Docs/Voyages/CRYSTAL_RUN.md`.
+
+1. Voyages page: the board offers "Crystal Run to {place}" whoever is seated. Sail it: a toast "STEAL 20 CRYSTALS" with
+   a line under it; the objective box top left shows CRYSTAL RUN, 0 / 20, the four elements, four cells (first Calm,
+   then three Hostile), the hull bar with a red mark at 40%.
+2. Each new cell raises one toast (white when calm, red when hostile); the last says FINAL CELL. Toasts show one at a
+   time, top centre, and never one per crystal.
+3. Pick up elemental crystals (any of the four): the counter and the element split count up; omni crystals do not.
+   At 20 a green toast. In a hostile cell an assault's lines are red; a repelled assault is green.
+4. Let the hull drop near 40%: "BREACH CLOSE" (red). Losing plates: "ARK UNDER ATTACK", no more than every 20 s.
+5. At the stop: the scoreboard (seats with Crystals, Kills, Off the Ark, Score; rewards; Finish B, Venture further A).
+   Venture: goal 30, five cells. Finish: the Ark sails home ("SAIL THE ARK HOME"), docking shows HOME and the crystals
+   land in the pilot's loadout. The scene does not return to the menu while a board is open.
+6. Lose the Ark: the board says THE ARK IS LOST with what went down; Try again (A) sails a fresh Crystal Run, Back to
+   Voyages (B) returns to the menu.
+7. Escort the Ark: the objective box shows ESCORT THE ARK - DIFFICULTY n, the five worlds, the hull with its breach
+   line, "Ark bound for / inside {world}", and the assault line. At the last world the scoreboard offers Venture
+   further (difficulty + 1) and Finish (sail home, then bank). A fallen escort offers Try again.
+8. The toasts' and scoreboard's sound slots on `Voyage.asset` are empty: nothing plays until they are wired.

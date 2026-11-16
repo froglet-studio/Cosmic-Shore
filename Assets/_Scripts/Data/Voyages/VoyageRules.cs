@@ -151,6 +151,9 @@ namespace CosmicShore.Data
                 }
             }
 
+            // Work every squad is offered, whoever is seated (Crystal Run), before the way home.
+            board.AddRange(VoyageRaid.AlwaysOffered(state, content, here, seatedPilotIds, usedTo));
+
             if (state.At != state.Home && content.Location(state.Home) != null)
                 board.Add(ReturnJob(state, content));
             return board;
@@ -194,7 +197,7 @@ namespace CosmicShore.Data
             var grown = new List<VoyageJob>();
             foreach (var t in content.Jobs)
             {
-                if (t == null || t.Faction != person.Faction || t.Needs == NewsTag.None) continue;
+                if (t == null || t.Faction != person.Faction || t.Needs == NewsTag.None || t.Always) continue;
                 if (forRival && !t.RivalsMayTake) continue;
                 if (!forRival && t.Tier > tier) continue;
                 var news = FreshestNews(ledger, t.Needs, here.Id, usedNews, state, forRival);
@@ -211,7 +214,7 @@ namespace CosmicShore.Data
             options.AddRange(grown);
             foreach (var t in content.Jobs)
             {
-                if (t == null || t.Faction != person.Faction || t.Needs != NewsTag.None || t.Id == ReturnJobId) continue;
+                if (t == null || t.Faction != person.Faction || t.Needs != NewsTag.None || t.Id == ReturnJobId || t.Always) continue;
                 if (forRival && !t.RivalsMayTake) continue;
                 if (!forRival && t.Tier > tier) continue;
                 var to = StandingDestination(state, content, t, here, person, usedTo, forRival);
@@ -241,7 +244,7 @@ namespace CosmicShore.Data
 
         /// <summary>Where standing work goes: the nearest location of the template's kind, not here, not already on
         /// the board; ties broken by a draw seeded from the day and the pilot, so a board is the same when re-read.</summary>
-        static VoyageLocation StandingDestination(VoyageState state, VoyageContent content, JobTemplate t,
+        internal static VoyageLocation StandingDestination(VoyageState state, VoyageContent content, JobTemplate t,
             VoyageLocation here, CrewPerson person, List<string> usedTo, bool forRival)
         {
             var distances = Distances(content, here.Id, forRival ? null : state, null);
@@ -297,7 +300,7 @@ namespace CosmicShore.Data
             return best;
         }
 
-        static VoyageJob Make(VoyageState state, VoyageContent content, JobTemplate t, CrewPerson person,
+        internal static VoyageJob Make(VoyageState state, VoyageContent content, JobTemplate t, CrewPerson person,
             VoyageLocation here, string to, NewsItem from, NewsItem carried)
         {
             var dest = content.Location(to);
@@ -328,6 +331,8 @@ namespace CosmicShore.Data
                 Intensity = intensity,
                 Hops = hops,
                 RivalId = crew?.Id ?? string.Empty,
+                CountsUnderway = t.CountsUnderway,
+                Cells = Math.Max(0, t.Cells),
             };
             // The Kaiju is never easier than the hardest felled (DEPTH.md §3).
             if (from != null && from.Tag == NewsTag.Kaiju && content.Kaiju != null)
@@ -361,7 +366,7 @@ namespace CosmicShore.Data
             };
         }
 
-        static VoyageJob ReturnJob(VoyageState state, VoyageContent content)
+        public static VoyageJob ReturnJob(VoyageState state, VoyageContent content)
         {
             var home = content.Location(state.Home);
             var here = content.Location(state.At);

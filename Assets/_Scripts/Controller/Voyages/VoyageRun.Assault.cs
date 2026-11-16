@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
         float _nextAssaultTick;
         bool _assaultKillHooked;
 
-        ArkAssaultDriver Assaults => _assaultDriver ??= new ArkAssaultDriver(this, Banner);
+        ArkAssaultDriver Assaults => _assaultDriver ??= new ArkAssaultDriver(this, (line, mood) => VoyageToasts.Show(_sea, mood, line));
 
         ArkEscortSO AttackRules => _def ? _def.ArkEscort : null;
 
