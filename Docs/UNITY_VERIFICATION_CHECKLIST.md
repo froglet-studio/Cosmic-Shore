@@ -23469,6 +23469,18 @@ against Unity reference assemblies (`unity_refcompile`), not opened in the edito
 3. **The story** reads as three short paragraphs with a blank line between, inside the panel, on every pilot.
 4. **A voyage's jobs** for a starter come from the painted faction (VOLT: a Merchant's courier and convoy work).
 
+## 🔴 An Ark heals only inside a nucleus its domain holds (2026-11-16, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/project-thread-wlkcla`; `Docs/VesselModels/ArkReverse.md` (the reactor), `Ark.InOwnNucleus`,
+`ArkReactor.MayRegrowIn`, `Ark.RegrowOverride` (the escort's stricter test). Compiled against Unity reference assemblies
+(editor, changed files clean), not opened in the editor; `ArkModelTests` not run.
+
+1. **Run the EditMode tests** `ArkModelTests` (new: `Reactor_RegrowsOnlyInsideANucleusTheArksDomainHolds`).
+2. **Arkway (Wander, With Ark)**: graze the Ark's hull out in a cell and watch it NOT regrow; fly it into a nucleus its
+   domain holds and watch the reactor glow and the hull grow back, one prism every 2 s. A cell with no nucleus never heals it.
+3. **Ark escort voyage**: unchanged. It heals only in a held nucleus, by the escort's own test, and after the run ends
+   the Ark is back on the fleet rule.
+
 ## 🔴 Both thumbs off pulls both triggers and steers by gyro (2026-11-14, Garrett, NOT OPENED IN EDITOR)
 
 Branch `claude/project-thread-wlkcla`; `Docs/claude/ARCHITECTURE_CORE.md` § Input Strategy (the touch profile line),
