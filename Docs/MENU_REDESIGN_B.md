@@ -34,7 +34,7 @@ section here. The build that follows a pick is verified against the picked board
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
 | Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept) and on 2026-11-16 (Rev 100, 103, 108 and 111 taken off for room, copies kept; section 210); the board now holds Rev 113 (section 209); before that it held now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203; Rev 111 Full, P2A and P3A built in section 204), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
-| Voyages playtest | `voyages-playtest` | What the first Milestone 1 playtest asked for: four options each for the crew screen, the intro, the objective box, the toasts and the feel in flight (Rev 114) | Shombith, 2026-11-16 (section 210) |
+| Voyages playtest | `voyages-playtest` | What the first Milestone 1 playtest asked for: four options each for the crew screen, the intro, the objective box, the toasts and the feel in flight (Rev 114), and the crew selection screen five more ways (Rev 115) | Shombith, 2026-11-16 (sections 210, 211) |
 | Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
 | Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 187) |
 
@@ -8588,3 +8588,30 @@ Built in code (`VoyageCrewPopup`, no prefab or scene change), at the board's own
 
 Every word is a `VoyageLines` field (nine new, `CrewTitle` and `CrewLine` reworded); colours from the kit and the worn set.
 Not seen in Unity: a render of the screen still needs to sit beside the board.
+
+## 211. Rev 115 mockups: the crew selection screen, five more ways (2026-11-16, awaiting a pick)
+
+**Asked** (Shombith, after Rev 114 C2 was built in 210.1): "I want you to rework on the crew screen as well 5 mockups for
+the crew selection screen". In the same message, on the voyage itself: "Shouldnt the ark park at each cell and give us time
+to steal the cells crystals. Its also like a single directional motion for the ark, its nothing interesting." So every
+option shows the voyage as the cells the Ark stops at, each marked calm or hostile with the crystals it holds. That stop
+model is a proposal until the gameplay changes.
+
+**On the canvas**: the Voyages playtest tab, Rev 114's tab, in section `sec-rev115`. Copies: `Docs/MenuRedesignB/board/R115*.dc.html`;
+generator `Docs/MenuRedesignB/rounds/r115_voyages.py`. Rewards show crystals only, with no XP or trust (Shombith, 210.1).
+- **A Briefing room** (`R115AB`, top, recommended): your crew seated around a route table. The pilot you pick speaks
+  their job in the middle, with the voyage's stops under it; Take the job (A), the other open voyage (Y). It is C2's pilot-first idea,
+  but your crew stays in view and the route is the centre.
+- **B Dossier** (`R115AB`, bottom): one pilot at a time at full height, their job beside them, arrows and a film strip of the rest.
+- **C Route first** (`R115CD`, top): the two open voyages as tabs. The route is drawn over the sea as its stops, the pilot
+  who asked sits in the corner, and the locked jobs run along the foot.
+- **D Contracts** (`R115CD`, bottom): a fanned hand of job cards. The picked one is raised; its quote and stops sit below.
+- **E Comms** (`R115E`): your crew's calls as an inbox with voice bars. The picked call opens with the scene, the quote,
+  the stops, and the buttons "Answer: take the job" and "Not now".
+
+**Room on the canvas**: the five options share three boards, and the unpicked Rev 114 crew options (C1, C3, C4) came off
+the canvas (copies kept).
+
+**Differs from the build**: the build is C2 (210.1). A keeps its pilot-first pick and adds the route table, B is C2 at full
+height, and C to E are new structures.
+

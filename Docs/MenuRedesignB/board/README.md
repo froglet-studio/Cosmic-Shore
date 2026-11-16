@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-16 from the canvas of **Frogma**: Rev 3 to Rev 114, 510 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-16 from canvas version `1794864652-5fe8` of **Frogma**: Rev 3 to Rev 115, 510 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -806,12 +806,15 @@ Copied on 2026-11-16 from the canvas of **Frogma**: Rev 3 to Rev 114, 510 boards
 
 ### Tab: Voyages playtest  (`voyages-playtest`)
 
+#### Rev 115 - The crew selection screen, five more ways: briefing room, dossier, route first, contracts, comms
+
+- [`R115AB.dc.html`](R115AB.dc.html) - Rev 115 AB - Crew A: Briefing room (recommended), and B: Dossier
+- [`R115CD.dc.html`](R115CD.dc.html) - Rev 115 CD - Crew C: Route first, and D: Contracts
+- [`R115E.dc.html`](R115E.dc.html) - Rev 115 E - Crew E: Comms
+
 #### Rev 114 - Voyages playtest: four of each - crew screen, intro, a smaller objective, toasts, the feel in flight
 
-- [`R114C1.dc.html`](R114C1.dc.html) - Rev 114 C1 - Crew A: a drawer over the HyperSea; each job pinned on the map (recommended)
 - [`R114C2.dc.html`](R114C2.dc.html) - Rev 114 C2 - Crew B: pilot first; your crew's faces, each with the job they bring
-- [`R114C3.dc.html`](R114C3.dc.html) - Rev 114 C3 - Crew C: the job board; one poster per voyage in faction columns
-- [`R114C4.dc.html`](R114C4.dc.html) - Rev 114 C4 - Crew D: faction tabs across the top, two open voyages as a hero row
 - [`R114O1.dc.html`](R114O1.dc.html) - Rev 114 O1 - Objective A: a strip, 420 px; goal, hull and breach, next world
 - [`R114O2.dc.html`](R114O2.dc.html) - Rev 114 O2 - Objective B: a ribbon at top centre; the route is the hull bar
 - [`R114O3.dc.html`](R114O3.dc.html) - Rev 114 O3 - Objective C: a corner gauge, 260 px; hull first, everything else on demand
