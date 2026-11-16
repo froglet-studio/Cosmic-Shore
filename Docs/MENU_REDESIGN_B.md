@@ -8522,7 +8522,7 @@ Built, with nothing new on the wire (no protocol bump):
 Not seen in Unity or with two machines: the hand test is a host and a friend in one party, the friend changing vessel,
 pilot and element on their Ark page, the host's card showing the new hull, and the friend spawning in it at the berth.
 
-## 210. Rev 114 mockups: the Voyages playtest, four of each (2026-11-16, awaiting a pick per row)
+## 210. Rev 114 mockups: the Voyages playtest, four of each (2026-11-16; C2, O1, Intro A and Feel A picked)
 
 **Asked** (Shombith, after playing the Milestone 1 build): "The crew screen needs some rework, suggest me some mockups
 in frogma for that. The in game still has no intro, I could not see there should be a kick ass intro. The objective on
@@ -8562,3 +8562,7 @@ replaced by Rev 113, copies kept in `Docs/MenuRedesignB/board/`).
 screen space. Everything else is new (no intro, no camera rig, no hit feedback in the build yet). A separate thread is
 finding why the intro and toasts did not show.
 
+**Picked (Shombith, 2026-11-16)**: "For sea screen what we have is fine. I like c2, o1, IAB and camera chase is fine build
+them in the game". So: the crew screen B (C2, pilot first); the objective strip A (O1, 420 px); the intro Departure (the
+IAB board, read as its option A); the chase camera (F1). No toast option was picked: the Rev 113 band stays, in screen
+space. The HyperSea page stays as built. Build prompts: `/mnt/project-files/milestone1-mockups/rev114-build-prompts.md`.
