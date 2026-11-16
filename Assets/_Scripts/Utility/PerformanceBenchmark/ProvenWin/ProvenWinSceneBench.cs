@@ -53,7 +53,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [SerializeField] bool offscreenAOn;
         [Tooltip("When > 0, skip the A/B and instead record, for this many frames, which UI objects re-dirty the canvases: RectTransforms whose transform changed, elements in uGUI's layout and graphic rebuild queues, and enabled Animators under a canvas. The candidate list for the next A/B.")]
         [SerializeField] int diagnoseFrames;
-        [SerializeField] string[] counters = { "PostLateUpdate.PlayerUpdateCanvases", "Canvas.BuildBatch", "UGUI.Rendering.UpdateBatches", "Main Thread", "PreLateUpdate.UpdateAllSkinnedMeshes", "MeshSkinning.Update", "Mesh.CreateMesh", "SkinnedMeshRenderer.UpdateBounds" };
+        [Tooltip("Optional: a public static bool field, \"Namespace.Type.Field\", that IS the change: A sets it false, B true (a change in code that has no component to switch off, such as a per-camera cull).")]
+        [SerializeField] string staticToggle;
+        [Tooltip("Optional, with staticToggle: \"Namespace.Type.Field=value\" for a public static float set once before the run (a negative control's knob).")]
+        [SerializeField] string staticSet;
+        [Tooltip("Optional: more profiler markers to record, ';'-separated (the change's own markers, so its CPU cost is seen).")]
+        [SerializeField] string extraCounters;
+        [SerializeField] string[] counters = { "GPU (FrameTimingManager)", "CPU main (FrameTimingManager)", "CPU render (FrameTimingManager)", "PostLateUpdate.PlayerUpdateCanvases", "Canvas.BuildBatch", "UGUI.Rendering.UpdateBatches", "Main Thread", "PreLateUpdate.UpdateAllSkinnedMeshes", "MeshSkinning.Update", "Mesh.CreateMesh", "SkinnedMeshRenderer.UpdateBounds" };
 
         [Serializable] class Series { public string counter; public List<double> a = new List<double>(); public List<double> b = new List<double>(); public double medianA, medianB, ratioBA, shareBLower; }
         [Serializable] class Report { public string prefab, toggled, device, gpu; public int pairs, framesPerHalf; public long screenshotPixels, screenshotPixelsDifferent; public List<Series> series = new List<Series>(); public string verdict; }
@@ -89,6 +95,25 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 toggled = (Behaviour)owner.GetComponents<Component>().First(c => c && c.GetType().FullName == toggledType);
             }
             catch (Exception e) { report.verdict = "ERROR setup: " + e.Message; }
+            System.Reflection.FieldInfo staticField = null;
+            if (!string.IsNullOrEmpty(staticToggle))
+            {
+                int dot = staticToggle.LastIndexOf('.');
+                var type = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(staticToggle.Substring(0, dot))).FirstOrDefault(t => t != null);
+                staticField = type?.GetField(staticToggle.Substring(dot + 1), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (staticField == null || staticField.FieldType != typeof(bool)) report.verdict = "ERROR staticToggle not found: " + staticToggle;
+                else { report.toggled = "static " + staticToggle; report.verdict = null; toggled = null; }
+            }
+            s_static = staticField;
+            if (!string.IsNullOrEmpty(staticSet))
+            {
+                var kv = staticSet.Split('=');
+                int d2 = kv[0].LastIndexOf('.');
+                var t2 = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(kv[0].Substring(0, d2))).FirstOrDefault(t => t != null);
+                var f2 = t2?.GetField(kv[0].Substring(d2 + 1), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (f2 == null) report.verdict = "ERROR staticSet not found: " + staticSet;
+                else { f2.SetValue(null, float.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture)); report.toggled += "; " + staticSet; }
+            }
             var skinned = new List<SkinnedMeshRenderer>();
             if (spawnBehind > 0 && prefab)
             {
@@ -163,11 +188,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 yield break;
             }
 
-            if (toggled != null || group.Count > 0 || skinned.Count > 0)
+            if (toggled != null || group.Count > 0 || skinned.Count > 0 || staticField != null)
             {
                 var authored = skinned.Select(r => (offscreenAOn || r.updateWhenOffscreen, r.localBounds)).ToList();
                 s_skinned = skinned; s_authored = authored; s_bounds = offscreenBoundsSize;
                 for (int i = 0; i < settleFrames; i++) yield return null;
+                // The diagnostics HUD prints live frame times on screen: the two screenshots would differ by its numbers
+                // whatever B does (measured on the membrane cull, 2026-11-12). Hide it for the whole run.
+                foreach (var hud in FindObjectsByType<DiagnosticsHUD>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    typeof(DiagnosticsHUD).GetMethod("SetVisible", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.Invoke(hud, new object[] { false });
                 // Find each counter by name among everything the profiler can record (markers keep their own category).
                 var handles = new List<ProfilerRecorderHandle>();
                 ProfilerRecorderHandle.GetAvailable(handles);
@@ -177,11 +206,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     var d = ProfilerRecorderHandle.GetDescription(h);
                     if (!byName.ContainsKey(d.Name)) byName[d.Name] = h;
                 }
-                var recorders = counters.Select(n => byName.TryGetValue(n, out var h)
+                if (!string.IsNullOrEmpty(extraCounters))
+                    counters = counters.Concat(extraCounters.Split(';').Select(x => x.Trim()).Where(x => x.Length > 0)).ToArray();
+                // FrameTimingManager rows (GPU, CPU main, CPU render) are read per frame below; the rest are profiler counters.
+                var recorders = counters.Select(n => n.EndsWith("(FrameTimingManager)") ? default : byName.TryGetValue(n, out var h)
                     ? new ProfilerRecorder(h, 1, ProfilerRecorderOptions.Default | ProfilerRecorderOptions.StartImmediately)
                     : ProfilerRecorder.StartNew(ProfilerCategory.Internal, n, 1)).ToArray();
+                var timings = new FrameTiming[1];
                 for (int c = 0; c < recorders.Length; c++)
-                    if (!recorders[c].Valid) Debug.LogWarning($"ProvenWin scene: counter '{counters[c]}' is not available in this player");
+                    if (!recorders[c].Valid && !counters[c].EndsWith("(FrameTimingManager)")) Debug.LogWarning($"ProvenWin scene: counter '{counters[c]}' is not available in this player");
                 var all = counters.Select(n => new Series { counter = n }).ToArray();
                 int bbIndex = Math.Max(0, Array.IndexOf(counters, "Canvas.BuildBatch"));
                 var countA = new List<double>(); var countB = new List<double>();
@@ -194,15 +227,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                         for (int f = 0; f < framesPerHalf; f++)
                         {
                             yield return null;
+                            FrameTimingManager.CaptureFrameTimings();
                             if (f < discardFramesPerHalf) continue;
+                            bool haveTiming = FrameTimingManager.GetLatestTimings(1, timings) > 0;
                             for (int c = 0; c < recorders.Length; c++)
-                                (b ? all[c].b : all[c].a).Add(recorders[c].LastValue / 1e6);
+                            {
+                                double v = counters[c] switch
+                                {
+                                    "GPU (FrameTimingManager)" => haveTiming ? timings[0].gpuFrameTime : double.NaN,
+                                    "CPU main (FrameTimingManager)" => haveTiming ? timings[0].cpuMainThreadFrameTime : double.NaN,
+                                    "CPU render (FrameTimingManager)" => haveTiming ? timings[0].cpuRenderThreadFrameTime : double.NaN,
+                                    _ => recorders[c].Valid ? recorders[c].LastValue / 1e6 : double.NaN,
+                                };
+                                if (!double.IsNaN(v) && v > 0) (b ? all[c].b : all[c].a).Add(v);
+                            }
                             int n = recorders[bbIndex].Valid && recorders[bbIndex].Count > 0 ? (int)recorders[bbIndex].GetSample(0).Count : 0;
                             (b ? countB : countA).Add(n);
                         }
                     }
                 }
-                foreach (var r in recorders) r.Dispose();
+                foreach (var r in recorders) if (r.Valid) r.Dispose();
                 report.series.Add(new Series { counter = "Canvas.BuildBatch calls per frame", a = countA, b = countB, medianA = countA.DefaultIfEmpty(0).Average(), medianB = countB.DefaultIfEmpty(0).Average() });
                 foreach (var s in all)
                 {
@@ -246,9 +290,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static List<SkinnedMeshRenderer> s_skinned = new List<SkinnedMeshRenderer>();
         static List<(bool, Bounds)> s_authored = new List<(bool, Bounds)>();
         static float s_bounds = -1f;
+        static System.Reflection.FieldInfo s_static;
 
         static void SetB(Behaviour one, List<Behaviour> group, bool b)
         {
+            if (s_static != null) { s_static.SetValue(null, b); return; }
             for (int k = 0; k < s_skinned.Count; k++)
             {
                 var r = s_skinned[k];

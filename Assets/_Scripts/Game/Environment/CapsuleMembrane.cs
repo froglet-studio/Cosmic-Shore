@@ -235,11 +235,97 @@ namespace CosmicShore.Game
                 _nextMatrixUpdateAt = matrixUpdateHz > 0 ? Time.time + 1f / matrixUpdateHz : 0f;
                 _lastCenter = center;
                 using (s_updateMatrices.Auto())
+                {
                     UpdateMatrices();
+                    UpdateCullCentres();
+                }
                 renderParams.worldBounds = new Bounds(center, Vector3.one * (radius * 2.5f));
             }
+            if (FrustumCull) return;   // submitted per camera, culled, in OnBeginCamera
             using (s_submit.Auto())
                 Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices, _drawCount);
+        }
+
+        /// <summary>
+        /// Draw each camera only the capsules its frustum can touch (Docs/ProvenWin, candidate membrane-frustum-cull).
+        /// From inside the sphere most of the 2,562 capsules are behind the eye; the whole-sphere instanced draw shaded
+        /// and clipped every one. The kept capsules stay in their original order, and a culled one's conservative sphere
+        /// (its mesh bounds, the material's sway bend and a margin) lies wholly outside a plane, so nothing visible
+        /// changes. Static so the Proven Win scene bench can compare it with the single whole-sphere draw.
+        /// </summary>
+        public static bool FrustumCull = true;
+
+        /// <summary>Scales the cull sphere. 1 in the game; the bench's negative control sets 0 (a centre-point test, so
+        /// capsules straddling the frustum edge vanish) to prove the comparison can see a wrong cull.</summary>
+        public static float CullRadiusScale = 1f;
+
+        static readonly ProfilerMarker s_cull = new("CapsuleMembrane.FrustumCull");
+        static readonly Plane[] s_planes = new Plane[6];
+        Matrix4x4[] _visible;
+        float _cullRadius;
+
+        void OnEnable() => RenderPipelineManager.beginCameraRendering += OnBeginCamera;
+        void OnDisable() => RenderPipelineManager.beginCameraRendering -= OnBeginCamera;
+
+        void OnBeginCamera(ScriptableRenderContext context, Camera cam)
+        {
+            if (!FrustumCull || meshToRender == null || membraneMaterial == null || matrices == null) return;
+            using (s_cull.Auto())
+            {
+                if (_visible == null || _visible.Length < _drawCount)
+                {
+                    _visible = new Matrix4x4[_drawCount];
+                    // The SpindleGraph sway bends a vertex sideways by at most |z| x amplitude x (1 + secondary weight
+                    // <= 1); doubling the amplitude covers it, and the 1.25 margin covers rounding.
+                    float sway = membraneMaterial.HasProperty(SwayAmplitudeId) ? Mathf.Abs(membraneMaterial.GetFloat(SwayAmplitudeId)) : 0f;
+                    float maxScale = Mathf.Max(Mathf.Abs(capsuleScale.x), Mathf.Max(Mathf.Abs(capsuleScale.y), Mathf.Abs(capsuleScale.z)));
+                    _cullRadius = meshToRender.bounds.extents.magnitude * maxScale * (1f + 2f * sway) * 1.25f;
+                }
+                if (_cx == null || _cx.Length < _drawCount) UpdateCullCentres();
+                GeometryUtility.CalculateFrustumPlanes(cam, s_planes);
+                // Near plane first: from inside the sphere most capsules are behind the eye and fail it at once.
+                for (int k = 0; k < 6; k++)
+                {
+                    var pl = s_planes[k == 0 ? 4 : k == 4 ? 0 : k];
+                    s_pn[k * 4] = pl.normal.x; s_pn[k * 4 + 1] = pl.normal.y; s_pn[k * 4 + 2] = pl.normal.z; s_pn[k * 4 + 3] = pl.distance;
+                }
+                float r = -_cullRadius * CullRadiusScale;
+                var pn = s_pn;
+                int n = 0;
+                for (int i = 0; i < _drawCount; i++)
+                {
+                    float x = _cx[i], y = _cy[i], z = _cz[i];
+                    if (pn[0] * x + pn[1] * y + pn[2] * z + pn[3] < r) continue;
+                    if (pn[4] * x + pn[5] * y + pn[6] * z + pn[7] < r) continue;
+                    if (pn[8] * x + pn[9] * y + pn[10] * z + pn[11] < r) continue;
+                    if (pn[12] * x + pn[13] * y + pn[14] * z + pn[15] < r) continue;
+                    if (pn[16] * x + pn[17] * y + pn[18] * z + pn[19] < r) continue;
+                    if (pn[20] * x + pn[21] * y + pn[22] * z + pn[23] < r) continue;
+                    _visible[n++] = matrices[i];
+                }
+                if (n == 0) return;
+                var rp = renderParams;
+                rp.camera = cam;
+                Graphics.RenderMeshInstanced(rp, meshToRender, 0, _visible, n);
+            }
+        }
+
+        static readonly int SwayAmplitudeId = Shader.PropertyToID("_SwayAmplitude");
+        static readonly float[] s_pn = new float[24];
+        float[] _cx, _cy, _cz;
+
+        /// <summary>Each capsule's mesh-bounds centre in world space, refreshed with the matrices (20 Hz), so a camera's
+        /// cull is six dot products per capsule.</summary>
+        void UpdateCullCentres()
+        {
+            if (matrices == null || meshToRender == null) return;
+            if (_cx == null || _cx.Length < matrices.Length) { _cx = new float[matrices.Length]; _cy = new float[matrices.Length]; _cz = new float[matrices.Length]; }
+            Vector3 c = meshToRender.bounds.center;
+            for (int i = 0; i < _drawCount; i++)
+            {
+                Vector3 p = matrices[i].MultiplyPoint3x4(c);
+                _cx[i] = p.x; _cy[i] = p.y; _cz[i] = p.z;
+            }
         }
 
         /// <summary>Vertices of an icosphere at <paramref name="level"/> subdivisions: 12, 42, 162, 642, 2562.</summary>

@@ -107,6 +107,10 @@ namespace CosmicShore.Editor.ProvenWin
                     var cam = new GameObject("Camera").AddComponent<Camera>();
                     cam.clearFlags = CameraClearFlags.SolidColor;
                     cam.backgroundColor = Color.black;
+                    // The game's cameras see far (CameraSettingsSO 12000, Menu_Main 8000); a default 1000 would clip what
+                    // the change is about (a 1200-unit membrane).
+                    if (Arg("-cameraFar") is { } far) cam.farClipPlane = float.Parse(far, System.Globalization.CultureInfo.InvariantCulture);
+                    cam.tag = "MainCamera";
                 }
                 var bench = new GameObject("ProvenWinSceneBench").AddComponent<ProvenWinSceneBench>();
                 var so = new SerializedObject(bench);
@@ -126,6 +130,9 @@ namespace CosmicShore.Editor.ProvenWin
                 if (Arg("-ownerPathContains") is { } ownerPath) so.FindProperty("ownerPathContains").stringValue = ownerPath;
                 if (Arg("-setupMethod") == "none") so.FindProperty("setupMethod").stringValue = "";
                 if (Arg("-diagnoseFrames") is { } diag) so.FindProperty("diagnoseFrames").intValue = int.Parse(diag);
+                if (Arg("-staticToggle") is { } st) so.FindProperty("staticToggle").stringValue = st;
+                if (Arg("-staticSet") is { } ss) so.FindProperty("staticSet").stringValue = ss;
+                if (Arg("-extraCounters") is { } ec) so.FindProperty("extraCounters").stringValue = ec;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 if (prefab) EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), $"{Temp}/ProvenWinSceneBench.unity");
                 // The project's SceneBootstrapper turns every Play into a Bootstrap boot. Its switch is an EditorPrefs

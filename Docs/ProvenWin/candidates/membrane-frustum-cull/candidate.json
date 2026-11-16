@@ -1,0 +1,36 @@
+{
+ "id": "membrane-frustum-cull",
+ "title": "CapsuleMembrane draws each camera only the capsules its frustum can touch (order kept, conservative spheres)",
+ "owner": "Yash",
+ "lane": "ecology",
+ "kind": "scene",
+ "metricCounter": "GPU (FrameTimingManager)",
+ "runtimeWriters": "CapsuleMembrane.Update (CapsuleMembrane.cs:223-243) submits all _drawCount capsules every frame in one Graphics.RenderMeshInstanced with renderParams.camera unset (every camera) and whole-sphere worldBounds (radius x 2.5); matrices rebuilt at 20 Hz. _drawCount = 2,562 at subdivisions 4 unless GraphicsCuts.MembraneMaxSubdivisions caps it (-1 on Desktop/MobileHigh). SetColourOverride only swaps renderParams.matProps, kept by the per-camera copy. The material (SpindleMaterial) bends vertices by at most |z| x _SwayAmplitude (0.08) x (1 + secondary weight): covered by the cull sphere.",
+ "exposure": "CapsuleMembrane.prefab (radius 1200, subdivisions 4, capsule scale 8 x 60 x 5) in 104 cell configs including Garland (the menu world) and Skim Race; the camera is inside the sphere, so 63-87 % of capsules are outside the frustum.",
+ "scene": {
+  "common": {
+   "prefab": "Assets/_Prefabs/Environment/CapsuleMembrane.prefab",
+   "ownerType": "none",
+   "setupMethod": "none",
+   "staticToggle": "CosmicShore.Game.CapsuleMembrane.FrustumCull",
+   "cameraFar": 12000,
+   "extraCounters": "CapsuleMembrane.FrustumCull;CapsuleMembrane.RenderMeshInstanced;CapsuleMembrane.UpdateMatrices"
+  },
+  "change": {},
+  "neg": {
+   "staticSet": "CosmicShore.Game.CapsuleMembrane.CullRadiusScale=0"
+  }
+ },
+ "machine": "an RTX 3080 (Gbox), editor Play mode",
+ "signoff": {
+  "heading": "Membrane cull sign-off",
+  "subject": "the cell membrane, the ring of capsules round the world you fly in",
+  "whatChanged": "The membrane is about 2,500 capsules round you. Every frame the game asked the graphics card to draw all of them, even the ones behind you. Now each camera is only asked for the capsules it could possibly see, with a generous safety margin, in the same order. Everything on screen should be exactly the same.",
+  "changeName": "membrane cull",
+  "frameNote": "The membrane prefab alone, seen from its centre with the game's far plane.",
+  "notMeasured": [
+   "A phone GPU.",
+   "Other cameras that draw the cell (mode preview, hangar): they get their own cull, not measured here."
+  ]
+ }
+}

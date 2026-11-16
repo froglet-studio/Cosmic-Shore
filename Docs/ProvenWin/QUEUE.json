@@ -250,12 +250,13 @@
    "gain": "1.5-1.85 M fewer triangles per frame at the menu; 0.1-0.3 ms on an RTX 3080, more on a phone",
    "confidence": "medium",
    "lens": "unseen-work",
-   "status": "queued",
+   "status": "measuring",
    "added": "2026-11-12",
    "baseCommit": "3479a8e3ba",
    "fileHashes": {
     "Assets/_Scripts/Game/Environment/CapsuleMembrane.cs": "db7d4d2b19629d6f75f1892573bb76a997890b22"
-   }
+   },
+   "taken": "2026-11-12"
   },
   {
    "id": "jet-root-emission-off",
@@ -313,6 +314,35 @@
    "taken": "2026-11-12",
    "outcomeReason": "the Authentication scene loads Menu_Main by itself within seconds of Play, so the scene bench cannot measure it standalone (HOLD)",
    "finished": "2026-11-12"
+  },
+  {
+   "id": "vessel-hull-offscreen-skinning",
+   "title": "Vessel hulls stop skinning while off screen: conservative local bounds instead of updateWhenOffscreen = true",
+   "where": [
+    "Assets/_Scripts/Controller/Animation/AnglerAnimation.cs:73-82",
+    "Assets/_Scripts/Controller/Animation/StoatAnimation.cs:129-143"
+   ],
+   "runtimeWriters": "15 vessel animation scripts set SkinnedMeshRenderer.updateWhenOffscreen = true in Initialize (grep 'updateWhenOffscreen = true' under Assets/_Scripts: Angler:82, BrittleStar:94, Bufo:70, Butterfly:137, Rhino:71, Scarab:258, Shrike:84, Stoat:143, Thresher:151, Urchin:93 and five more) because the element morphs and the procedural swim/lope reach past the bind-pose bounds. Nothing sets localBounds.",
+   "inUse": "Every rigged vessel hull in every match and the menu's AI flyers; 8-seat arcade and arena matches keep about half the fleet off screen at any moment. All platform tiers.",
+   "waste": "MeshSkinning (bones + blend shapes) for every off-screen hull every frame. W5 measured ~0.5 us per small off-screen heart; a hull mesh is larger, so an estimated 5-30 us each, x4 off-screen hulls.",
+   "change": "per vessel: replace `updateWhenOffscreen = true` with a localBounds proven to hold every pose (bind bounds + the largest blend-shape delta + the script's largest bone travel, e.g. the Stoat's 1.6 u lope lift), one inserted assignment; behind a static toggle the scene bench flips. Start with ONE vessel whose motion is bounded in closed form.",
+   "exactness": "bit-identical",
+   "bench": "scene",
+   "probes": "scene bench screenshots with copies straddling the frustum edges (spawnInView) in every element morph at its extreme; B must equal A there",
+   "negativeControl": "bounds 1e-5 (the hull vanishes at the edges: must differ)",
+   "otherStates": "each element morph at full weight, boost/lope extremes, the hangar and Vessel Changer cameras",
+   "owner": "Garrett",
+   "lane": "vessels",
+   "gain": "tens to low hundreds of microseconds of CPU per match frame; unmeasured. The bound proof per vessel is the work.",
+   "confidence": "medium",
+   "lens": "unseen-work",
+   "status": "queued",
+   "added": "2026-11-12",
+   "baseCommit": "1811b470d4",
+   "fileHashes": {
+    "Assets/_Scripts/Controller/Animation/AnglerAnimation.cs": "722d48d37a09b21f5ac02fbb503dc17414ed1dcd",
+    "Assets/_Scripts/Controller/Animation/StoatAnimation.cs": "e147fa98f7f7682fa4436cd1993782f1f31f5199"
+   }
   }
  ]
 }
