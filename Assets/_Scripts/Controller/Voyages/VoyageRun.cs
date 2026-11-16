@@ -174,7 +174,8 @@ namespace CosmicShore.Gameplay
             }
 
             var domain = LiveDomain(_context);
-            _squad = squad ?? ActiveSquad(_context);
+            // A friend sails the seat they picked in the host's lobby (VoyageSeatRecord.PartyKey), else their active squad.
+            _squad = squad ?? (following ? VoyageSeatRecord.Get(VoyageSeatRecord.PartyKey) : null) ?? ActiveSquad(_context);
             _state = LoadOrBegin(Content, domain);
             _following = following;
             _pendingLeg = null;

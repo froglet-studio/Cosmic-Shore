@@ -61,6 +61,25 @@ namespace CosmicShore.Tests
                 "The voyage page sails a difficulty copy; its seats must still be found.");
         }
 
+        [Test]
+        public void PartySeat_IsAFriendsOwnRecord_KeptAcrossVoyages()
+        {
+            // A friend in the host's lobby picks one seat for whatever voyage the host sails.
+            var active = Squad(VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Sparrow);
+            var mine = VoyageSeatRecord.For(VoyageSeatRecord.PartyKey, active);
+            Assert.IsNotNull(mine);
+            Assert.AreNotSame(active, mine, "A friend's seat must be a copy, not their saved squad.");
+            mine.SetSlot(0, mine.GetSlot(0).WithVessel(VesselClassType.Serpent));
+            Assert.AreSame(mine, VoyageSeatRecord.For(VoyageSeatRecord.PartyKey, active), "Reopening the page started the seat over.");
+            Assert.AreEqual(VesselClassType.Serpent, VoyageLaunch.SeatHull(VoyageSeatRecord.Get(VoyageSeatRecord.PartyKey)),
+                "The hull a friend's voyage reads is not the one they picked.");
+            Assert.AreNotEqual(VoyageSeatRecord.PartyKey, VoyageSeatRecord.EscortKey);
+        }
+
+        [Test]
+        public void NoSession_IsNotAPartyGuest() =>
+            Assert.IsFalse(VoyageLaunch.IsPartyGuest, "With no session the player is their own host.");
+
         // ── Fill the AI seats from a saved squad ─────────────────────────────
 
         [Test]

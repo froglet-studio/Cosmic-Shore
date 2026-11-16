@@ -88,6 +88,7 @@ namespace CosmicShore.UI
         RectTransform _previewBox;
 
         VoyageBoard.Offer _offer;
+        string _key;
         int _seat, _kind, _sees;
         string _savedLine;
         readonly List<VoyageSeats.Option> _options = new();
@@ -353,10 +354,13 @@ namespace CosmicShore.UI
         // ── Opening ──────────────────────────────────────────────────────────
 
         /// <summary>Open on <paramref name="seat"/>'s <paramref name="kind"/> tab (<see cref="VoyageSeats.Vessel"/>...)
-        /// for <paramref name="offer"/>, whose own seats (<see cref="VoyageSeatRecord"/>) it changes.</summary>
-        public void Open(VoyageBoard.Offer offer, int seat, int kind)
+        /// for <paramref name="offer"/>, whose own seats (<see cref="VoyageSeatRecord"/>) it changes: the record under
+        /// <paramref name="key"/> (a friend in the host's lobby changes <see cref="VoyageSeatRecord.PartyKey"/>), else the
+        /// offer's.</summary>
+        public void Open(VoyageBoard.Offer offer, int seat, int kind, string key = null)
         {
             _offer = offer;
+            _key = string.IsNullOrEmpty(key) ? offer?.Key : key;
             _seat = seat;
             _kind = kind;
             _sees = 0;
@@ -414,7 +418,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>The seats the popup changes: the open voyage's own.</summary>
-        SavedSquad Seats() => VoyageSeatRecord.Get(_offer?.Key);
+        SavedSquad Seats() => VoyageSeatRecord.Get(_key);
 
         public void Refresh()
         {
@@ -501,7 +505,7 @@ namespace CosmicShore.UI
         {
             var squad = Seats();
             bool you = squad != null && VoyageOpenCard.IsMySeat(squad, _seat);
-            if (!_rules.PickVoyage(_offer?.Key, _seat, _kind, option)) return;
+            if (!_rules.PickVoyage(_key, _seat, _kind, option)) return;
             string setting = _kind switch
             {
                 VoyageSeats.Vessel => _lines?.PickWordVessel,

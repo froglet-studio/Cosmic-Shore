@@ -97,7 +97,7 @@ namespace CosmicShore.Gameplay
             // The squad that sails is fixed here, as the Voyage window shows it, and the scene sails exactly this one.
             request.Squad ??= VoyageRun.ActiveSquad(gameData);
             s_pending = request;
-            SeatLocalHull(gameData, request.Squad);
+            SeatLocal(gameData, request.Squad);
             CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[Voyage] Set sail: {request} - loading {SceneName}.");
             gameData.SceneName = SceneName;
             gameData.InvokeGameLaunch();
@@ -119,9 +119,13 @@ namespace CosmicShore.Gameplay
         /// swapped in mid-hand-off once left the player in a Manta they could not fly, 2026-10-31). The seat's pilot and
         /// artifact go to that hull's loadout, as the Ark's Take into does. A seat with no hull, or a hull with no vessel
         /// prefab, keeps the hull the pilot was flying.
+        /// <para>A friend in the host's lobby calls this from their own Ark page each time they change their seat
+        /// (<see cref="VoyageSeatRecord.PartyKey"/>): <c>NetDefaultVesselType</c> is owner-written and replicated, so the
+        /// host's page shows the friend's hull and the voyage scene spawns the friend in it, as it does the host.</para>
         /// </summary>
-        static void SeatLocalHull(GameDataSO gameData, SavedSquad squad)
+        public static void SeatLocal(GameDataSO gameData, SavedSquad squad)
         {
+            if (!gameData || squad == null) return;
             if (gameData.LocalPlayer is not Player player || !player.IsSpawned || !player.IsOwner) return;
             var seat = SeatHull(squad);
             var hull = HullThatSails(gameData, squad);
@@ -140,6 +144,17 @@ namespace CosmicShore.Gameplay
             }
             if (player.NetDefaultVesselType.Value != hull) player.NetDefaultVesselType.Value = hull;
             if (gameData.selectedVesselClass) gameData.selectedVesselClass.Value = hull;
+        }
+
+        /// <summary>True on a friend's machine in someone else's party: the host picks the voyage and sets sail, and this
+        /// machine only picks its own seat.</summary>
+        public static bool IsPartyGuest
+        {
+            get
+            {
+                var nm = NetworkManager.Singleton;
+                return nm != null && nm.IsListening && !nm.IsServer;
+            }
         }
 
         /// <summary>The seat the local pilot flies in <paramref name="squad"/>, as the voyage deploys it
