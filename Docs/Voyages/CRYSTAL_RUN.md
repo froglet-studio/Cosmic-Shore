@@ -76,8 +76,15 @@ or banked), and the ways out. The voyage scene waits while a board is open.
 - Docked home: one way out, Back to Voyages.
 - Lost Ark (either voyage): marked lost, with what went down; Try again (A) and Back to Voyages (B).
 
-Not built yet: XP with a rank bar and the pilot's trust on the rewards (the game has no voyage XP or rank yet), and
-the red in-world markers on fauna attacking the Ark with an edge arrow.
+No XP, rank bar or pilot trust on the rewards (Shombith, 2026-11-16: not needed).
+
+## 4.1 The fauna attacking the Ark
+
+Every hostile creature inside the Ark's guard radius (the escort's `CountThreats`, both voyages) wears a lit, faceted
+red diamond hovering over it, sized to the creature. When any is off screen, a lit red arrow stands at the screen's
+edge, in the world just in front of the camera, pointing at the nearest, with one pip per attacker off screen (up to
+six). Both are 3D volumes, never a flat ring or a label (`Docs/claude/SHADERS_AND_PERFORMANCE.md`, "In the world, not
+on the screen"). `ArkAttackerMarks`; the colour is Rev 113's breach red, traced.
 
 ## 5. The escort's pay
 

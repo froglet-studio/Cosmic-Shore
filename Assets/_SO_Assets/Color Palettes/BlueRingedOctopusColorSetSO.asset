@@ -1556,6 +1556,9 @@ MonoBehaviour:
   - Id: world:FF480Fx6.00
     Color: {r: 6, g: 2.19015408, b: 1.12296247, a: 1}
     Note: '2 uses: Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnMid.mat Material(CosmicShore/PrismPaperBurn); Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnNear.mat Material(CosmicShore/PrismPaperBurn)'
+  - Id: world:FF4B3A
+    Color: {r: 1, g: 0.414336145, b: 0.284385413, a: 1}
+    Note: '1 use: Assets/_Scripts/Controller/Voyages/ArkAttackerMarks.cs code'
   - Id: world:FF4C33
     Color: {r: 1, g: 0.403094143, b: 0.264609963, a: 1}
     Note: '1 use: Assets/_Scripts/Controller/Arcade/CountdownTimer.cs code'

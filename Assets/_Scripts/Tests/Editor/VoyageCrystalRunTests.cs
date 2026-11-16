@@ -236,5 +236,39 @@ namespace CosmicShore.Tests
                      })
                 Assert.IsFalse(string.IsNullOrEmpty(line));
         }
+
+        [Test]
+        public void AttackerMarks_EdgeArrow_PointsTheWayToTurn()
+        {
+            Assert.IsTrue(ArkAttackerMarks.OnScreen(new UnityEngine.Vector3(0.5f, 0.5f, 10f)));
+            Assert.IsFalse(ArkAttackerMarks.OnScreen(new UnityEngine.Vector3(0.5f, 0.5f, -10f)), "behind the camera");
+            Assert.IsFalse(ArkAttackerMarks.OnScreen(new UnityEngine.Vector3(1.4f, 0.5f, 10f)));
+            var right = ArkAttackerMarks.EdgePoint(new UnityEngine.Vector3(3f, 0.5f, 10f), 0.4f);
+            Assert.AreEqual(0.9f, right.x, 1e-4f);
+            Assert.AreEqual(0.5f, right.y, 1e-4f);
+            // Behind and to the right shows on the left: turn that way.
+            var behind = ArkAttackerMarks.EdgePoint(new UnityEngine.Vector3(0.8f, 0.5f, -10f), 0.4f);
+            Assert.Less(behind.x, 0.5f);
+        }
+
+        [Test]
+        public void AttackerMarks_AreVolumes_NotFlatSheets()
+        {
+            foreach (var mesh in new[] { ArkAttackerMarks.Diamond(), ArkAttackerMarks.Arrow() })
+            {
+                var size = mesh.bounds.size;
+                Assert.Greater(UnityEngine.Mathf.Min(size.x, UnityEngine.Mathf.Min(size.y, size.z)), 0.5f, mesh.name + " is flat");
+                // Flat-shaded: many facing directions, and every facet faces out from the centre.
+                var v = mesh.vertices;
+                var n = mesh.normals;
+                var t = mesh.triangles;
+                for (int i = 0; i < t.Length; i += 3)
+                {
+                    var centre = (v[t[i]] + v[t[i + 1]] + v[t[i + 2]]) / 3f;
+                    Assert.Greater(UnityEngine.Vector3.Dot(n[t[i]], centre - mesh.bounds.center), 0f, mesh.name + " facet faces in");
+                }
+                UnityEngine.Object.DestroyImmediate(mesh);
+            }
+        }
     }
 }

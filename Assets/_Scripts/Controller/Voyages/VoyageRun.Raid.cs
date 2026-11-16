@@ -20,6 +20,7 @@ namespace CosmicShore.Gameplay
         bool _raidHooked;
         bool _goalToastShown;
         ArkAlarmToasts _alarms;
+        ArkAttackerMarks _attackerMarks;
         int _toastedCell = -1;
         float _legStartedAt;
 
@@ -340,6 +341,8 @@ namespace CosmicShore.Gameplay
             _raid.Clear();
             _legIndex.Clear();
             _alarms?.Unhook();
+            if (_attackerMarks) Destroy(_attackerMarks.gameObject);
+            _attackerMarks = null;
             if (ReferenceEquals(VoyageObjective.Source, this)) VoyageObjective.Source = null;
         }
     }

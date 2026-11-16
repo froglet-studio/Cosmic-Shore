@@ -196,6 +196,7 @@ namespace CosmicShore.Gameplay
             Deploy(local, domain);
             VoyageObjective.Source = this;
             (_alarms ??= new ArkAlarmToasts(this, () => _sea)).Hook();
+            if (!_attackerMarks) _attackerMarks = ArkAttackerMarks.Create(transform, this, () => Ark);
 
             ArkFall.Settled -= OnFallSettled;
             ArkFall.Settled += OnFallSettled;
