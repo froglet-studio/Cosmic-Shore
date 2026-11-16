@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
 
                 if (held && InCore(cell, ark.Position)) regrow = true;
             }
-            ark.RegrowAllowed = regrow;
+            ark.RegrowOverride = regrow;
             if (regrow) { r.RegrowSeconds += SampleSeconds; _report.RegrowSeconds += SampleSeconds; }
         }
 
@@ -84,7 +84,7 @@ namespace CosmicShore.Gameplay
                     cell.SetFeedingLure(null, Domains.Blue, 0f);
                     cell.RuntimeFaunaSpawnPeriodScale = 1f;
                 }
-            if (Ark) Ark.RegrowAllowed = true;
+            if (Ark) Ark.RegrowOverride = null;   // back to the fleet rule
         }
     }
 }
