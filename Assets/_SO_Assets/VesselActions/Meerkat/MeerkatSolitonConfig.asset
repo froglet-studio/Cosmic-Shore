@@ -65,10 +65,10 @@ MonoBehaviour:
     Enabled: 1
     Value: 1
     Min: 1
-    Max: 1.4
+    Max: 2
     element: 4
     UseFloor: 1
-    Floor: 0.05
+    Floor: 0.5
   boostOut: 1.5
   sentinelPool: 3
   sentinelPoolL5: 6
