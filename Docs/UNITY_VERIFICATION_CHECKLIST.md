@@ -24516,3 +24516,5 @@ nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed
    placement stands on a rail while the ring mouths stay open. Run the EditMode tests `CellPhaseRulesTests`
    (`Raised_*`). A Linked Rings spawner with 20+ rings of 64 blocks no longer lays blocks at infinity (it hung the
    course before). Refcompile: 0 errors in the changed files; the editor did not run.
+5. Round 4 (`TrainingCourseOverlay`): play any gate race (Switchback, Redline) normally. Nothing changes, because the
+   overlay is null outside the judge and the trainers. The judge proves the overlay in Amoebius. The editor did not run.

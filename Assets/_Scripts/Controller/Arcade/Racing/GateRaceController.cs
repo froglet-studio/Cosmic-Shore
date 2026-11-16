@@ -873,6 +873,20 @@ namespace CosmicShore.Gameplay
                                  $"mode's own geometry is missing. {e}");
             }
 
+            // Training only: a course genome's placements round this mode's own gates (null in shipped play).
+            if (TrainingCourseOverlay.Override != null)
+            {
+                try
+                {
+                    ResolveShell(out float nucleus, out float membrane);
+                    TrainingCourseOverlay.Lay(course, root, ResolveCellCentre(), nucleus, membrane, ModeName);
+                }
+                catch (System.Exception e)
+                {
+                    CSDebug.LogError($"[{ModeName}] The training course overlay threw; the course is up without it. {e}");
+                }
+            }
+
             // The geometry exists: release the connecting panel.
             ReleaseArenaBuildAnnouncement();
         }
