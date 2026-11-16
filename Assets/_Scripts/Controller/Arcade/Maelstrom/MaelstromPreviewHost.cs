@@ -204,9 +204,9 @@ namespace CosmicShore.Gameplay
 
                 if (!config)
                 {
-                    // Six of the sixteen pool modes author no preview definition (their arenas are
-                    // built by their own controllers, not by a cell config). That is an honest
-                    // "no preview", not a fault - the name and description are still on screen.
+                    // A mode whose preview resolves no cell config (an arena built by its own
+                    // controller rather than a cell config) gets an honest "no preview", not a
+                    // fault - the name and description are still on screen.
                     window?.ShowUnavailable();
                     return;
                 }

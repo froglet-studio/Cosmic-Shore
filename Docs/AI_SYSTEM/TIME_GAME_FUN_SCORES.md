@@ -168,3 +168,16 @@ vessel's Time game is upgraded in place by its own session; each adds its own ro
 | Vessel | Game | The change | Reading the course saves (I1-I4) | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) | Floor |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Manta | Redline (53) | **Soar lit from the gun**: since 2026-11-07 Soar is the Time level-5 upgrade and the card seeded no Time, so every Manta raced at 180 u/s; the card now starts at Time 6 (1104 u/s). 8 laps; the AI on a race line through the mouths' centres with a throttle floor by difficulty (every difficulty finishes every level offline, Legendary 60-91 s against an ideal person's 38-89); the heat: shock rings off clean and redhot threads, called streaks, lap splits, clean-lap chases, the redline (toasts 360-366, 9 empty FMOD slots). REDLINE.md §0 | 0 / 0 / -11 / +0.3 % (a miss loops back in ~1.4 s at Soar speed; the re-cut for the flown hull is next) | 9 | **8** | 7 | **6** | **5** | **4** | **6.5** est. (was 5.5) | 4 Fairness |
+
+## 2026-11-16: Slip Line, the first fun pass from a person's card (elemental loop step 1)
+
+Garrett flew Slip Line I1 on 2026-11-13 and answered the fun card: fun almost, rung right, weakest Rivals. His flight
+showed the Medium rival cruising at 35-37 u/s, losing a ring to a ride whose last frame the race did not count, and
+circling that ring for 65 s. Fixed in the mode's AI (race line clear of every rail, the Regatta steering, a throttle
+floor by difficulty) and in `VesselTransformer.SetPose` (a zero-length pose write is no longer a teleport). Offline
+(`Tools/Build/slip_line_ai_sim.py`, 60 courses per intensity): the Medium rival's median I1 race 139.5 -> 106.5 s, and
+with an uncounted ring 0/60 -> 60/60 finished at every intensity. Details: `Controller/Arcade/SLIP_LINE.md` section 10.
+
+| Vessel | Game | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) | Floor |
+|---|---|---|---|---|---|---|---|---|---|
+| Honeyguide | Slip Line (82) | 8 | 6 | 6 (I1 "right", Garrett) | 6 | **5** (was 2) | **4** (was 3) | **5.8** est. (was 5.2) | 4 Fairness |

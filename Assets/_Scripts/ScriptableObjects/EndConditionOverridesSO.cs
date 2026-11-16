@@ -296,6 +296,15 @@ namespace CosmicShore.ScriptableObjects
         /// (author_riptide_assets.py asserts it).</summary>
         public const int DefaultRiptidePrismTarget = 600;
 
+        /// <summary>Marionette strike target used when <see cref="marionetteStrikeTarget"/> is 0. One STRIKE - a possessed
+        /// creature's attack landing on a rival hull - is one point, and so is each hull a Charge 5 burst catches
+        /// (MarionetteScoringRuleSO), summed across the domain's pilots. A first cut, unplayed.</summary>
+        public const int DefaultMarionetteStrikeTarget = 12;
+
+        /// <summary>Gorge round length in seconds, used when <see cref="gorgeRoundSeconds"/> is 0. Gorge is TIMED, Chum's
+        /// reason: the reef is finite and the wild herds eat it too, so a prism target could fall out of reach.</summary>
+        public const int DefaultGorgeRoundSeconds = 90;
+
         /// <summary>Sirocco hostile-prism target used when <see cref="siroccoPrismTarget"/> is 0.
         /// Far under Rampage's 2000: the dust takes one prism in three it touches, where a Dolphin
         /// cone takes hundreds at once.</summary>
@@ -879,6 +888,16 @@ namespace CosmicShore.ScriptableObjects
                  "0 = default (600).")]
         [Min(0)] public int riptidePrismTarget = 600;
 
+        [Tooltip("Marionette: STRIKES a DOMAIN needs to win (race to N), the Jewel Wasp's charge game. A possessed " +
+                 "creature's attack landing on a rival hull is one, and so is each hull a Charge 5 burst catches. " +
+                 "0 = default (12).")]
+        [Min(0)] public int marionetteStrikeTarget = 12;
+
+        [Tooltip("Gorge: round length in SECONDS, the Jewel Wasp's space game. The mode is timed - the domain that took " +
+                 "the most prisms off the board (sucked in by the creatures they rode, or broken by their hulls) when " +
+                 "the clock runs out wins. 0 = default (90).")]
+        [Min(0)] public int gorgeRoundSeconds = 90;
+
         [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
                  "mass never counts. 0 = default (400).")]
@@ -978,6 +997,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int haulRoundSecondsBuild = 90;
         [Min(0)] public int hedgerowRoundSecondsBuild = 90;
         [Min(0)] public int longshotRoundSecondsBuild = 90;
+        [Min(0)] public int marionetteStrikeTargetBuild = 12;
+        [Min(0)] public int gorgeRoundSecondsBuild = 90;
         [Min(0)] public int podHuntBlastTargetBuild = 15;
         [Min(0)] public int iceShelfRoundSecondsBuild = 90;
         [Min(0)] public int depthChargePrismTargetBuild = 1500;
@@ -1693,6 +1714,20 @@ namespace CosmicShore.ScriptableObjects
             riptidePrismTarget > 0 ? riptidePrismTarget : DefaultRiptidePrismTarget;
 
         /// <summary>
+        /// Marionette strike target ("first domain to N strikes"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultMarionetteStrikeTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetMarionetteStrikeTarget() =>
+            marionetteStrikeTarget > 0 ? marionetteStrikeTarget : DefaultMarionetteStrikeTarget;
+
+        /// <summary>
+        /// Gorge round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultGorgeRoundSeconds"/>. Read by GorgeTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetGorgeRoundSeconds() =>
+            gorgeRoundSeconds > 0 ? gorgeRoundSeconds : DefaultGorgeRoundSeconds;
+
+        /// <summary>
         /// Sirocco prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSiroccoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
@@ -1817,6 +1852,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Trawl                     => GetTrawlPrismTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 GameModes.Larder                    => GetLarderMissileTarget(),
+                GameModes.Marionette                => GetMarionetteStrikeTarget(),
                 GameModes.Lancefall                 => GetLancefallPrismTarget(),
                 // Thornbush (thornbushRoundSeconds) is timed, Glasshouse's reason, and is absent.
                 GameModes.Flitstrike                => GetFlitstrikeStrikeTarget(),
@@ -1830,12 +1866,9 @@ namespace CosmicShore.ScriptableObjects
                 // Den Builder (denBuilderRoundSeconds) is timed, Glasshouse's reason, and absent here too.
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush. Glasshouse
-                // (glasshouseRoundSeconds), Chum (chumRoundSeconds), Starweave (starweaveRoundSeconds), Haul (haulRoundSeconds), Hedgerow (hedgerowRoundSeconds) and Longshot (longshotRoundSeconds) are timed for the same reason and are absent too.
-                // (glasshouseRoundSeconds), Chum (chumRoundSeconds), Starweave (starweaveRoundSeconds), Haul (haulRoundSeconds) and Hedgerow (hedgerowRoundSeconds) are timed for the same reason and are absent too.
-                // (glasshouseRoundSeconds), Chum (chumRoundSeconds), Starweave (starweaveRoundSeconds) and Haul (haulRoundSeconds) are timed for the same reason and are absent too.
-                // (glasshouseRoundSeconds), Chum (chumRoundSeconds) and Starweave (starweaveRoundSeconds) are timed for the same reason and are absent too.
-                // (glasshouseRoundSeconds) and Chum (chumRoundSeconds) are timed for the same reason and are absent too.
-                // (glasshouseRoundSeconds) is timed for the same reason and is absent too, and so is Palisade
+                // (glasshouseRoundSeconds), Chum (chumRoundSeconds), Starweave (starweaveRoundSeconds), Haul
+                // (haulRoundSeconds), Hedgerow (hedgerowRoundSeconds), Longshot (longshotRoundSeconds) and Gorge
+                // (gorgeRoundSeconds) are timed for the same reason and are absent too, and so is Palisade
                 // (palisadeRoundSeconds).
                 GameModes.Sentry                    => GetSentryZapTarget(),
                 GameModes.CaveIn                    => GetCaveInPrismTarget(),
@@ -1943,6 +1976,8 @@ namespace CosmicShore.ScriptableObjects
             haulRoundSeconds == haulRoundSecondsBuild &&
             hedgerowRoundSeconds == hedgerowRoundSecondsBuild &&
             longshotRoundSeconds == longshotRoundSecondsBuild &&
+            marionetteStrikeTarget == marionetteStrikeTargetBuild &&
+            gorgeRoundSeconds == gorgeRoundSecondsBuild &&
             podHuntBlastTarget == podHuntBlastTargetBuild &&
             iceShelfRoundSeconds == iceShelfRoundSecondsBuild &&
             depthChargePrismTarget == depthChargePrismTargetBuild &&
@@ -2041,6 +2076,8 @@ namespace CosmicShore.ScriptableObjects
             haulRoundSeconds = haulRoundSecondsBuild;
             hedgerowRoundSeconds = hedgerowRoundSecondsBuild;
             longshotRoundSeconds = longshotRoundSecondsBuild;
+            marionetteStrikeTarget = marionetteStrikeTargetBuild;
+            gorgeRoundSeconds = gorgeRoundSecondsBuild;
             podHuntBlastTarget = podHuntBlastTargetBuild;
             iceShelfRoundSeconds = iceShelfRoundSecondsBuild;
             depthChargePrismTarget = depthChargePrismTargetBuild;
@@ -2140,6 +2177,8 @@ namespace CosmicShore.ScriptableObjects
             haulRoundSecondsBuild = haulRoundSeconds;
             hedgerowRoundSecondsBuild = hedgerowRoundSeconds;
             longshotRoundSecondsBuild = longshotRoundSeconds;
+            marionetteStrikeTargetBuild = marionetteStrikeTarget;
+            gorgeRoundSecondsBuild = gorgeRoundSeconds;
             podHuntBlastTargetBuild = podHuntBlastTarget;
             iceShelfRoundSecondsBuild = iceShelfRoundSeconds;
             depthChargePrismTargetBuild = depthChargePrismTarget;

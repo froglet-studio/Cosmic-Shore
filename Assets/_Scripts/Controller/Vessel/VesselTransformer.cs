@@ -716,6 +716,10 @@ public class VesselTransformer : MonoBehaviour
         /// </summary>
         public int TeleportCount { get; private set; }
 
+        /// <summary>A <see cref="SetPose"/> that moves the hull less than this (squared, 1 cm) is a re-seed of its
+        /// rotation and momentum, not a jump, and leaves <see cref="TeleportCount"/> alone.</summary>
+        const float ZeroLengthPoseSqr = 1e-4f;
+
         /// <summary>
         /// Say that this vessel jumped. For a discontinuity that does NOT go through
         /// <see cref="SetPose"/> — <c>VesselController.Teleport</c> writes the transform directly
@@ -726,7 +730,11 @@ public class VesselTransformer : MonoBehaviour
         public void SetPose(Pose pose)
         {
             Vector3 from = transform.position;
-            TeleportCount++;
+            // A pose write that does not MOVE the hull jumps nowhere, so it is not a teleport: the Honeyguide lands every
+            // ride (slip, jet, reel) with a zero-length SetPose to seed its heading and momentum, and counting it made every
+            // race watcher drop that frame's flown step - a ride that crossed a ring's plane in its last frame threaded
+            // nothing (Garrett's Slip Line race, 2026-11-13: the rival's ring 10 went uncounted and it circled for 65 s).
+            if ((pose.position - from).sqrMagnitude > ZeroLengthPoseSqr) TeleportCount++;
             transform.SetPositionAndRotation(pose.position, pose.rotation);
 
             // Everything that FOLLOWS the vessel - its ribbons and the camera on it - is carried

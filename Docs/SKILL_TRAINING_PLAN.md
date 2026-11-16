@@ -455,7 +455,8 @@ and "again" every month so a repeat is seen.
 | 3.6 Multiplayer | R0 the skill; R1 the scenario scaffold | **built 2026-11-07 night**: `/multiplayer` + `references/HAND_TESTS.md`, `net_scenarios.py` (rows 2-5 as data, a judge over `net_logs.py`, `--run` unverified: no port build here); B48 is claimed twice, next free B50 (D6) |
 | 3.7 Near-A skills | the measurement and the owed negative controls | **measured 2026-11-07 night** for fauna-creation, cardart and prism-morph (a 'Round status and what each gate still owes' section each); flora and ecology not reached |
 | ledger | `Tools/Build/rework_ledger.py` | built 2026-11-07, the numbers in section 2 |
-| elemental loop | scaffolding 1-2: the one-minute fun card and the per-rung bars | **built 2026-11-12** (Garrett picked each design choice on a card): `FunCard.cs` after every arcade match, `fun_cards.py` (sign-offs), `rung_bars.py` + `rung_bars.json` (defaults, then learned); the card has not been answered in the editor yet |
+| elemental loop | scaffolding 1-2: the one-minute fun card and the per-rung bars | **built 2026-11-12** (Garrett picked each design choice on a card): `FunCard.cs` after every arcade match, `fun_cards.py` (sign-offs), `rung_bars.py` + `rung_bars.json` (defaults, then learned); **first card answered 2026-11-13** (Garrett, Honeyguide Slip Line I1: fun almost, rung right, weakest Rivals), no sign-off yet |
+| elemental loop | step 1 fun pass driven by a card: Honeyguide Time (Slip Line) | **built 2026-11-16, PR open**: the Rivals floor raised from Garrett's recorded race (race line clear of the rails, Regatta steering, throttle floor; a ride's landing no longer un-counts a ring), measured in `slip_line_ai_sim.py`; waits on Garrett flying I1 again and answering the card |
 
 ## 7. What each step taught (append; newest last)
 
@@ -483,6 +484,17 @@ and "again" every month so a repeat is seen.
   (3) **Count only races run to the end**: 175 of the 521 were left early (Play stopped), which made Switchback I1 look
   like a 39% finish instead of 47%. (4) **One question per card worked**: three decision cards answered in about ten
   minutes settled the design.
+
+- 2026-11-16, the first fun pass from a card: (1) **the card names the dimension, the flight record names the cause**:
+  "weakest: Rivals" alone would have sent the work to AI tuning; the recorded race showed a ring the race never counted
+  (a ride's zero-length landing pose read as a teleport), a far-side circle the Regatta steering already fixes in ten
+  other races, and an AI on its skill throttle at 60% of a person's speed. (2) **Rebuild the world from the record**: the
+  flight carries the rings, and the shipped course code rebuilt the rails from them (`slip_line_harness/run.sh
+  --rails`), so the rival's 0.3 u rail touches and its backward slides could be read without the editor. (3) **Model the
+  failure you saw before the fix you want**: the offline model's `--miss` reproduces the uncounted ring, and the shipped
+  steering fails it 0/60 where the new one finishes 60/60; without it the steering change measured as 2-3 s and would
+  have looked unnecessary. (4) **A person going idle on a ring is data too**: Garrett's hull sat 70 s on the same ring
+  with the autopilot holding it, so his "won" was not a contest; the card cannot say that, the record can.
 
 ## 8. Appendix A: the skills, hand-audited (2026-11-07)
 
