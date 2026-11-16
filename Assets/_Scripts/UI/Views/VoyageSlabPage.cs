@@ -97,7 +97,7 @@ namespace CosmicShore.UI
             Action<T> setUp) where T : VoyageSlabPage
         {
             var page = tabs.PageOf(index);
-            if (!page || page.TryGetComponent<T>(out _)) return;
+            if (!page || tabs.IsDropped(index) || page.TryGetComponent<T>(out _)) return;
             var slab = page.AddComponent<T>();
             slab.Kit = kit;
             slab.Vessels = vessels;

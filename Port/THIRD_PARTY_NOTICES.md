@@ -24,7 +24,8 @@ The engine re-creates, from public documentation, the *API surface* the game's s
 those scripts compile unchanged against our code: UnityEngine (as `CosmicShore.Engine`),
 TextMesh Pro, Netcode for GameObjects, Unity Gaming Services, Unity.Mathematics/Entities/Jobs/
 Burst/Collections, Cinemachine, Animation Rigging, Timeline, VFX Graph, UniTask, DOTween,
-Reflex and Obvious SOAP. Matching names and signatures is what makes the game run; the code
+Reflex and SOAP (the Obvious SOAP API, which the game's own `CosmicShore.Soap` has kept since replacing that
+plugin on 2026-11-06). Matching names and signatures is what makes the game run; the code
 behind them is ours. Two places were found to follow published Unity source too closely and are
 tracked in `docs/LEGAL_REVIEW.md`.
 

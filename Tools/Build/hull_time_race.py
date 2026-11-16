@@ -186,7 +186,13 @@ def author(spec: dict):
 
     extra = spec.get("extra_assets", [])
     # Their folders are the mode's own (new) folders, so they get minted metas like the mode's script folder.
-    extra_dirs = sorted({os.path.dirname(rel) for rel, _, _ in extra})
+    # A folder that already exists with its own (not minted) meta is the project's, not the mode's (Brittle Star Time's
+    # AI policy variant lives in Resources/AIBoostPolicies): it keeps its meta and is not re-minted.
+    def foreign_folder(d: str) -> bool:
+        meta = os.path.join(ROOT, d + ".meta")
+        return os.path.exists(meta) and guid(f"folder/{d}") not in read_or_empty(d + ".meta")
+    extra_dirs = sorted({os.path.dirname(rel) for rel, _, _ in extra} - {d for d in
+                        {os.path.dirname(rel) for rel, _, _ in extra} if foreign_folder(d)})
     for d in extra_dirs:
         g.folder_meta(d)
     for rel, g_extra, content in extra:

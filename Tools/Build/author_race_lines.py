@@ -32,7 +32,8 @@ COMMON = {"RiskSpread": 0.15, "CarefulLookaheadSeconds": 0.35, "BoldLookaheadSec
           "MaxLookahead": 520}
 # Written only when a hull sets them (absent, the SO's defaults apply: the nose lead off), so turning one on rewrites one
 # asset. NoseLeadGain is AIPilot's nose lead (2026-11-06, scarab_nose_lead_sim.py): 0 = off. Switched on 2026-11-08
-# (Garrett, for testing): Rhino / Dolphin / Stoat / Scarab 2.5, Sparrow 2.0, Serpent 1.0 (single stick, #1832); the Manta
+# (Garrett, for testing): Rhino / Stoat / Scarab 2.5, Dolphin 2.5 then 1.0 (2026-11-16: at 2.5 it circled and never
+# finished in the real-game judge, Docs/Reports/REGATTA_JUDGE.md), Sparrow 2.0, Serpent 1.0 (single stick, #1832); the Manta
 # stays off (its fix is a faster nose, #1780/#1829). Lead-on round: Docs/Reports/NOSE_LEAD_ROLL.md.
 OPTIONAL = ["NoseLeadGain", "NoseLeadMaxExtraDegrees"]
 RANGES = {"NoseLeadGain": (0, 6), "NoseLeadMaxExtraDegrees": (0, 120), "LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
@@ -51,7 +52,7 @@ HULLS = {
     # no miss, fewer rail rams). REGATTA.md section 6.4.1.
     "Manta":   {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.50,
                 "CarefulLookaheadSeconds": 0.6, "BoldLookaheadSeconds": 1.0},
-    "Dolphin": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 2.5},   # a drift locks its course: room to slide
+    "Dolphin": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 1.0},   # a drift locks its course: room to slide; 2.5 circled (judge, 2026-11-16)
     "Stoat":   {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.60, "NoseLeadGain": 2.5},   # a 72 u turning circle at any warp
     "Serpent": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 1.0},   # single stick: 2.5 corkscrews it (#1832)
     "Sparrow": {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseLeadGain": 2.0},

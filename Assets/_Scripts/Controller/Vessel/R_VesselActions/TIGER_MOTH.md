@@ -20,7 +20,7 @@ and took the Butterfly's place the next (§3).
 | **Let go** | The landing: over 0.25 s the hull pitches 90 degrees nose-down INTO the frame the camera is already in, while its speed along the drop line eases back to its cruise. It then flies straight on along the line it fell. The camera never levels back: the hull turned to meet it. |
 | **No limit** | It falls for as long as the trigger is held. |
 | **The recharge is paid by distance** | 20 s × (distance ÷ 900 u), capped at 20 s: a 90 u hop waits 2 s, a 450 u drop 10 s, a medium 900 u drop the full 20 s, and anything further is free (Garrett: "a little hop has a small cooldown. a medium distance should be the full 20. anything after medium distance is free"). Time's dial multiplies it (×0.5 at Time 10, never worse than ×2). The card's veil sweeps the wait this drop paid. |
-| **The wormhole** | Only a drop that pays the FULL recharge leaves a pair of wormhole mouths: one where the drop started, one where it landed. By default it is NEUTRAL: the material's own rim, everyone rides free (§1.1). The pair stands until the next full drop replaces it or the hull is destroyed. A shorter drop leaves the standing pair alone. |
+| **The wormhole** | Only a drop that pays the FULL recharge leaves a pair of wormhole mouths: one where the drop started, one where it landed. By default it is NEUTRAL: the material's own rim, everyone rides free (§1.1). The pair stands until the next full drop replaces it or the hull is destroyed. A shorter drop leaves the standing pair alone. Measured from the code (2026-11-11): "full" is the press-to-LANDED distance (`TigerMothDropMath.PaysFullCooldown`, at least `fullCooldownDistance` 900), which includes the ~121 u landing carry, so a pair is laid from a fall of about 779 u (a 0.93 s hold, 17.3 s of recharge), not only at the full 20 s. Which one is meant is the vessel owner's call. |
 | **Dust mode cleanses you** | A drop pressed while the dust is raining falls through it: your silence lifts and your temporary debuffs end (§1.2). |
 | **Charge 5, Toll Gate** | The wormhole strips the elements of opposing pilots who thread it (15 petals of each element, left on the mouth as crystals) and wears your domain's hue. A standing pair switches live when the upgrade unlocks or relocks (§1.1). |
 | **Time 5, Afterburn** | For 3 s after the landing the hull stays incorporeal (its dust still rains) and flies a throttle boost that eases from ×2 back to cruise. |
@@ -127,7 +127,8 @@ in every gap but the last (built as Waystation Prototype, 76, and folded in). It
 ### 3.1 Waystation's AI aims its belly (2026-10-29)
 
 Garrett: "make the waystation AI aim its belly at the rings". `WaystationController.TryOverrideAim`, two phases, only
-while the drop is ready and the next ring is at least `aiFoldMinDistance` (420 u) away and within 75 degrees of the nose:
+while the drop is ready and the next ring is at least `aiFoldMinDistance` (420 u then; 700 u since the Drop Towers,
+2026-11-01, so the long-drop autopilot stands down on every tower link) away and within 75 degrees of the nose:
 
 1. **Nose on the ring** (the ring is the steering point) until the nose is within `aiBellyNoseDegrees` (3).
 2. **Pitch straight up** to a point captured at that moment, the hull's up made square to the ring

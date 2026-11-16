@@ -33,8 +33,9 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79-83 on the canvas now: Rev 81 B5 with the Rev 83 S2 seat editor picked and built, section 165; Rev 70-77 were reverted and taken off, section 159) | Shombith, 2026-11-08 (sections 147-151, 159-165) |
+| Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept); now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203; Rev 111 Full, P2A and P3A built in section 204), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
 | Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
+| Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 207) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -4096,8 +4097,10 @@ menu"; (2026-11-12): "Lets get them into the game. update the avatars, and use t
 profile page in the ark."
 - **A fourth open tab, PILOTS**, between SQUADS and ARTIFACTS (`ArkPilotsPage`): the crew in the order they joined, one
   cell a pilot (a `SquadPickChip`, the Squads tab's own) with the close-up of their callsign's scene, their name and
-  their callsign. A crew holds at most one pilot a callsign (`Docs/Pilots/INVENTORY.md` 3.1), so the tab has one cell a
-  callsign (18, six by three), needs no scrolling and starts right of the friends orb. "Your crew" and "Pilots: {count}"
+  their callsign. The tab shows eighteen cells a page (six by three), starts right of the friends orb and needs no
+  scrolling; since 2026-11-16 the crew is all fifty painted pilots, callsigns shared ("lets get all 50 into the game"),
+  so "<" and ">" with "1 / 3" (`pageTemplate`) step through the pages on the caption row, shown only while the crew
+  fills more than one. The Hangar's PILOTS list has a card for every painted pilot and shows each person's close-up. "Your crew" and "Pilots: {count}"
   are the caption; an empty crew says so. Every word is on the component or the prefab.
 - **A press opens the pilot's PROFILE PAGE** (`PilotProfileModal`, `ModalWindows.PILOT_PROFILE = 21`,
   `ScreenSwitcher.OpenPilotProfile(pilotId)`): the pilot's 1536x864 scene across the whole screen (`PilotSceneImage`:
@@ -4114,8 +4117,8 @@ profile page in the ark."
   for a recruit, until each person has art, does the panel's last line say who is pictured (`picturedTemplate`,
   "Pictured: {painted}, the first {callsign}"; blank it to drop the line).
 - **One scene in memory.** A scene is loaded by name when its pilot is drawn and unloaded when the next is shown or the
-  closed page has faded. The eighteen scenes are in `Assets/Resources/Pilots/Scenes/` (`author_pilot_scene_assets.py`,
-  9.0 MB of JPG), 32 px stand-ins on WebGL.
+  closed page has faded. All fifty scenes are in `Assets/Resources/Pilots/Scenes/` (`author_pilot_scene_assets.py`), 32 px
+  stand-ins on WebGL.
 - **Measured, outside Unity.** The longest story `PilotGenerator` can compose is 14 lines of the story's 15.6, and the
   widest name fits the page's name row and a crew cell (360,000 rolls and the generator's tables, in the UI font). The
   page's cut (`PilotSceneImage.Frame`) was run under plain .NET on all eighteen scenes at 21:9, 19.5:9, 16:9, 16:10,
@@ -4127,7 +4130,10 @@ profile page in the ark."
   alpha 0.88, the Credits window's dim, and **the game blends in linear light** (`m_ActiveColorSpace: 1`): a plate at
   alpha a lets through (1 - a) of the picture's light, so a white sky under 0.88 is still sRGB 97 and the quiet lines
   (NeutralLightest) stood at 1.5:1. A web drawing blends in sRGB and had shown the same plate near black. The plates
-  are solid now, and the layout tool computes each plate's contrast over a white picture in linear light for both
+  were made solid; on 2026-11-16 the words panel's plate went to alpha 0.9 (Garrett: "the text story background doesn't
+  need to be black. a tiny bit of transparency would mean not throwing away the nice art behind it") with every row in
+  TextLight, which keeps 5.8:1 over a white picture in linear light (NeutralLightest would fall to 1.7:1); the stepper and
+  Close plates stay solid. Otherwise the plates are solid, and the layout tool computes each plate's contrast over a white picture in linear light for both
   colours words are drawn in (4.5:1 or it fails). The engine is not Unity: it does not draw the menu's sea material
   and sets a paragraph's lines closer (17.6 against the kit's 23.2 at Body).
 - **The pad stays on the page.** NEXT, PREVIOUS and CLOSE steer it themselves (explicit navigation, `WAYS` in the
@@ -8921,9 +8927,12 @@ Affects: Garrett's Pilots tab and pilot profile page.
   8 x 8 grid). "Last read", the callsign, the name and PICK UP (Lime, the call to action) stand in a glass panel right of
   the PDA.
 - **Picked up** (`Pilots/Held/Screen`, anchored to the held render's glass corners as fractions of the picture, so it
-  follows the stretched picture on any aspect): the header (Your crew, Pilots: N), the crew 6 x 3 (one cell a callsign,
-  the Squads tab's `SquadPickChip`, the close-up, the name and the callsign; the last read is the picked cell), "Tap a
-  pilot to read their file." and LAY DOWN. The words fade in 0.4 s after the press, once the move has played.
+  follows the stretched picture on any aspect): the header (Your crew, Pilots: N), a page of the crew 6 x 3 (the Squads
+  tab's `SquadPickChip`, the close-up, the name and the callsign; the last read is the picked cell), "Tap a pilot to read
+  their file.", "<", "1 / 3" and ">" (shown only while the crew fills more than one page) and LAY DOWN. Since
+  2026-11-16 the crew is all fifty painted pilots, callsigns shared, so the glass pages (`crewPreviousButton`,
+  `crewNextButton`, `pageTemplate`), each cell shows the person's own close-up, and CREW from a file returns to the page
+  holding the pilot last read. The words fade in 0.4 s after the press, once the move has played.
 - **A pilot's file** on the glass, as the board drew it: the close-up and the callsign's sight on the left; the callsign,
   the name, the human and two animals, "faction - home", the story on the right; CREW, PREV / n of N / NEXT, and FULL
   PROFILE, which opens Garrett's full-screen profile page (`ScreenSwitcher.OpenPilotProfile`, section 92.1), kept as it is.
@@ -9026,3 +9035,455 @@ page closes itself on B) and on a guided path (`MenuGuide`) the Ark ignores it. 
 **Ran:** `unity_refcompile` player and editor (0 errors in the changed files), `author_menu_ark.py --check`;
 `ArkTabBackTests` compiled, not run. Hand test: "B / Escape steps back on the Ark's Pilots and Artifacts tabs" in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 187. Rev 112 mockups: colour sets for a growing catalog - a world preview, one scrolling list, Free and Premium apart (2026-11-14; Shombith picked D)
+
+**Asked (Shombith, 2026-11-14):** "Color sets we do need to change how they look, we will be making multiples of them so
+scrolling or clicking through each one is not an option. [...] We need a preview to show what the color set changes to
+depict the world of our game, We need a scrollable list with differentiation between free and the other type, lets use
+the whole place not leave a big empty space in the middle." Then, on the first draft's vessels tile: "Should look like
+actual vessel icons with actual prism trails with the supported color."
+
+**On the canvas:** tab Menu Redesign A, section "Rev 112 - Colour sets for a growing catalog" (version
+`1794681676-3efd`). Copies in `Docs/MenuRedesignB/board/R112*.dc.html`, drawn by
+`Docs/MenuRedesignB/rounds/r112_colour_sets_catalog.py <root> 112`. All fourteen sets of `ColorSetCatalog.asset` (name,
+line, pigments, vision), every colour from its shipped `SO_ColorSet`. Every option shows the picked set's world (prisms
+in depth, three vessels with their prism trails, a crystal) and four tiles of what the set repaints: **Prisms** (four
+domains x three shields), **Vessels and trails** (the in-game vessel icons, each `SO_Class_<Hull>.IconActive` -
+Squirrel, Sparrow, Dolphin, Manta, one per domain - multiplied by the set's vessel colour, each leaving a line of
+rim-over-face prisms), **Crystals**, **Menus** (an approximation of `ColorSetUITheme`).
+- **R112Compare:** the four layouts as diagrams, a Free and a Premium row side by side, what each mark says, the four tiles.
+- **R112A Stage and list (recommended, interactive):** a scrolling list on the left (Free, Colour vision, Premium);
+  the world and the four tiles fill the right. Eight sets in view, every one a press away, nothing empty.
+- **R112B Wall (interactive):** the world and the tiles across the top; every set a tile in a scrolling wall below,
+  with All / Free / Premium. Scales furthest once the catalog passes thirty.
+- **R112C Two shelves (interactive):** Free down the left, Premium down the right, the world between.
+- **R112D The real cell (interactive):** the world is the whole screen (as the built Showroom); a docked list right
+  with All / Free / Premium; the tiles along the foot.
+- **R112Notes:** what was asked, the four, Free vs Premium, Unity, decisions.
+
+**Free and Premium:** Free is Nocturne, Photic and the six colour-vision sets (under their own heading, never a reward,
+section 126.3): a plain "Free" and a quiet edge. Premium is the other six: a gold edge, "Owned" or the crystal and its
+price, and the action turns into the gold purchase button (Unlock). Lime stays the one call to action (Apply). Prices
+and Dart Frog owned are sample values.
+
+**Differs from the build (section 126):** the Showroom's two three-tile rails with < > become one scrolling list (or a
+wall); the type is marked on every row; a set's preview adds the four "what it repaints" tiles beside the cell.
+
+**Gates:** `frogma.py check --only R112` OK. `check_mockup.py`: the CTA gate passes (one Lime action per board); colour,
+type and noise fail as the inherited Rev 51/54 kit and a fourteen-set list do (the set pigments are data, not tokens).
+
+**Decisions waiting:** which option; the word for the other type (Premium as drawn, Earned, or Store) and how it is
+unlocked (crystals, a quest as in Rev 107); whether the tiles animate (a prism shielding, a trail laid) or stay still.
+
+**Picked (Shombith, 2026-11-14):** "I like D, bring the sea lines in the card backgrounds and don't name it Free but Color
+Blind supported (Free) that's all." Then: "Make this into unity". R112D was changed in place on that word (canvas
+version `1794681928-7fe0`; A, B and C are as first published): the menu's sea lines behind every list card and every
+tile; the colour-vision group, its filter and the stage's type line read "Color Blind supported (Free)" (its filter
+shows only those six); Nocturne and Photic sit under "Yours from the start", shown under All; no row says a bare "Free".
+
+## 188. Built: Rev 112 D, the Colour sets list over the real cell (2026-11-14, NOT RUN IN EDITOR)
+
+Shombith: "Make this into unity" (section 187). It replaces section 126's Showroom rails; the tabs, the cell preview,
+APPLY's veil and the Settings breadcrumb stay.
+- **One list that grows with the catalog.** `ProfileColorSetsPanel` clones the inactive template row
+  (`ColorSetRowView`) once per catalog entry under its group's heading: Yours from the start, Color Blind supported
+  (Free), Premium (`ColorSetCatalogSO.KindOf`). Filters All / Color Blind supported (Free) / Premium with counts. A new
+  set in the catalog needs no prefab change. The pad moving onto a row previews it and scrolls it into view
+  (`KitScrollIntoView`).
+- **Premium is real.** The catalog entry has a crystal `price` (the board's sample prices, seeded by
+  `author_colour_set_catalog.py`, edited in the inspector after). UNLOCK spends them through
+  `PlayerDataService.TryUnlockColorSet` and keeps the set as the reward `colorset:<id>`; `ColorSetCatalogSO.IsPickable`
+  asks it. Every set is still `unlocked` (2026-11-05), so today every Premium set reads Owned.
+- **What it repaints**, four tiles painted from the set shown: prisms in three shields; the Squirrel, Sparrow, Dolphin and
+  Manta icons (`SO_Class_*.IconActive`) tinted with the domain's vessel colour, each at the head of five prisms; crystals
+  in the set's call to action; a menu mock in the set's UI theme (`ColorSetUITheme.Build`).
+- **Sea lines in every card** (Sea_Panel.mat on each row and tile), and no bare "Free" anywhere (the generator's gate).
+- New prism and eye glyphs: `Tools/Build/author_colour_set_glyphs.py` (white, tinted at run time).
+- Gates: `author_menu_profile.py` validates the page whole, with five new negative controls. Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not seen in Unity: no editor in this session.
+- Open: a set bought before the profile loads could be dropped as the saved pick at boot (`ThemeManager` reads the pick in
+  `Awake`); harmless while every set is unlocked.
+
+## 189. Fix: Rev 112 D in the editor - the world behind the page, real vessel icons, the Codex's crystals (2026-11-14, NOT RUN IN EDITOR)
+
+Shombith, on section 188 in Unity: "Vessel Icons dont show up", "Where is the whole background preview image?", "Show
+the actual 2D omnicrystal and elemental crystals from the ecology tab".
+- **Vessel icons.** The generator passed a whole sprite reference where `sprite_ref` takes a bare guid, so the four
+  `IconActive` sprites never resolved and drew as tinted squares. Fixed; `validate_colour_sets` now asserts every icon
+  and crystal sprite resolves, with a negative control.
+- **The world behind the page.** The real cell under a 55 % veil and a solid band read as an empty dark screen. The
+  board's world is now drawn in the UI behind the page (`ColourSets/World`, `world_layout()`, the board's seed): the
+  sea at 80 %, each domain's glow (`kit_ring_glow`), 46 prisms in depth, and the Squirrel, Sparrow and Dolphin flying
+  their prism trails, every colour painted from the browsed set (`ProfileColorSetsPanel.PaintWorld`). The real cell,
+  which wears the set too, still moves faintly behind it. About 400 UI images, drawn only while the page shows.
+- **Crystals.** The tile shows the Codex's own renders (`Assets/_Graphics/Codex/ethirion_*.png`, its Elements page): the
+  Omni crystal among Charge, Mass, Space and Time, as they are drawn (not tinted).
+
+## 190. Fix: Rev 112 D's tiles - hulls and prisms that read, on their trails (2026-11-14, NOT RUN IN EDITOR)
+
+Shombith, on section 189 in Unity: "Because of the card backgrounds the vessels and prisms do not show up and also pretty
+sure the vessel and prisms are not aligned".
+- **The turn was about the wrong point.** Every rotated prism and hull was laid out top-left-pivoted (`TL`), and a
+  RectTransform turns about its pivot, so each swung off its place around its corner: the trails missed their hulls,
+  the world's prisms and the row thumbnails drifted too. Rotated nodes now pivot at their centre (`centred`), and
+  `validate_colour_sets` fails on any turned node that does not (a new negative control).
+- **Each hull on its own line.** The icons are not all drawn at one angle: each one's nose and centre are measured from
+  its alpha (`ICON_POSE`: Squirrel 28, Sparrow 15, Dolphin 25 degrees; the Manta by eye, its blobs give no axis), so a
+  hull is turned onto its trail's heading and placed by its centre just past the newest prism.
+- **They read now.** The hulls draw with `Hull_Lit.mat` (the arcade cards' lift and white rim for the near-black renders),
+  times the domain's vessel colour, in the tile and the world; the tiles' sea lines sit at 35 % so the content leads.
+  The tile's trail is four prisms, larger (11 x 25), the hulls 60.
+
+## 200. Built: the Quests window - Rev 107 D (2026-11-13, claude/project-thread-ytvai5, not seen in Unity)
+
+**Asked (Shombith, 2026-11-13):** "Lets go D we can build this in unity now", on section 208. Quests leaves the Voyage
+window for a window of its own (section 207: "Quest should be a seperate screen with its own interactive UI").
+
+**Built:**
+- **The window:** `QuestsModal` (`Assets/_Scripts/UI/Modals/`), a `ModalWindowManager` built in code with the Voyage
+  window's kit (`VoyageKit`: its style, faces and soft buttons, every colour through the worn colour set).
+  `ScreenSwitcher.EnsureQuestsModal` adds it beside the Voyage window at start (`ModalWindows.QUESTS = 20`, free since
+  section 159), and stands down when a scene already registers one. Home's quest card opens it (`HomeUpNext` calls
+  `OnClickQuests`, which falls back to the Voyage window); its ready line reads "Ready to claim in Quests".
+- **The layout, at the board's numbers (1920 x 1080):** the header ("Quests", "N of 5 claimed", a five-segment meter,
+  Back); the route across the top, each quest's picture (soft-edged) over its station, its name and state under it,
+  the course dotted and drawn solid up to every open quest (`QuestRouteGraphic`; a claim draws the next stretch in over
+  1.1 s); below, the picked quest and its goals as a ladder ending in Claim ("Unlocks <set>"), the reward (the colour
+  set's name, "Colour set", the catalog's line, a prism per domain with the face colour as the body and the rim colour as
+  the edge, and its state), and what the claim also opens over the one button, Claim or Play quest (to the Arcade).
+  Pressing a station picks it; every visit opens on the quest to play or claim next. No episode is named.
+- **The rewards:** `SO_UnlockData.RewardColorSet`, set on the five quests as proposed in section 208 (Scurry Ukiyo-e,
+  Skim Race Dusk, Joust Neon Noir, Maelstrom Blue-ringed Octopus, Vessel Hangar Nacre).
+- **The Voyage window:** its Quests tab is gone (`VoyageWindowTabs.Drop<QuestTrackView>()`, generic so Saga and
+  Episodes can leave the same way); the other tabs keep their indexes.
+- **Words:** every line is a `VoyageLines` field (`Docs/Voyages/voyage_slice.json`, `author_voyage_assets.py`).
+- **Rules:** `QuestsRules` (stations, bends, goals done, swatches), tested by `QuestsRulesTests`.
+
+**Differs from the board:** the board draws six colour families; the game's colour sets carry four domains (Jade, Ruby,
+Gold, Blue), so the reward shows four prisms. Claiming does not yet grant anything new: every colour set is unlocked for
+everyone (2026-11-05), so the reward is shown and named but locking the five sets behind their quests is a decision
+still open.
+
+**Not seen:** no Unity editor ran. `Docs/UNITY_VERIFICATION_CHECKLIST.md` lists what to look at.
+
+## 201. Rev 100 mockups: the Voyages tab drawn new, in three pages - the HyperSea and your crew's voyages, the voyage opened, your Ark (2026-11-13; P2A picked, P3A's direction taken on in section 202)
+
+**Asked (Shombith, 2026-11-13):** "Delete everything from the voyages tab, I dont like any of these designs. We will start on
+a new design set. So the voyages need new modern UI with the hyper sea theme ofcourse. Main Preview (Show me some
+interesting option along with the table top version but we should be able to zoom like how we used for the whole hypersea
+map). For Voyages, they dont use intensity rather they use the difficulty level 1-9. Each of these voyages are recommended
+by a certain pilot. Look at the pilots the user has and they can offer bounty hunts or piracy task etc and reccoment to the
+user in the voyages tab, each possesses different routes, storylines and rewards. The configure your ark shoud not include
+the squads but your lobby first if the lobby is not there then they can select the squads and also the squad selection
+screen can be in a different page. So we can divide in 3 pages." Quests (their own screen) and Saga / Episodes (locked,
+Rev 103) are separate rounds.
+
+**The tab cleared:** Rev 87-98 (36 boards and their sections) were taken off the Voyages tab on his word; their copies stay
+in `Docs/MenuRedesignB/board/`.
+
+**On the canvas:** tab **Voyages**, round "Rev 100 - Voyages, new: the HyperSea and your crew's voyages, the voyage
+opened, your Ark" (canvas version `1794608714-a28f`), under Rev 103. Copies: `Docs/MenuRedesignB/board/R100*.dc.html`.
+Generator: `Docs/MenuRedesignB/rounds/r100_voyages.py` (new, on Rev 70's kit only). Laid out a page per row (page 1 on
+two rows, the notes beside P1D).
+
+- **Page 1, the HyperSea** (every map zooms one way: the ladder Galaxy / Arm / Sector / Course, + and -, the wheel; a press
+  on a place or a pilot's card picks the voyage; Open voyage goes on):
+  - **P1A Table top (recommended):** the chart lies on a table, the edge-on view is its front face, the places stand up as
+    beacons whose height is the difficulty; the crew's voyages on the right.
+  - **P1B Orrery:** the galaxy as a disc in the sea with a slow ring of bearings (its one idle motion, 240 s a turn).
+  - **P1C Bridge:** the map flat and full-bleed, the four voyages along its foot.
+  - **P1D Dive:** Galaxy, Sector and Course as three glass sheets; a zoom is a dive between them.
+  - The foot (y 940-1060) carries Rev 103 A as picked: Saga and Episodes, two locked cards.
+- **Page 2, the voyage** (who offers it, the job, the story in the pilot's words, the stops, the pay; difficulty 1-9 with the
+  pilot's recommendation marked; the crystals follow the difficulty):
+  - **P2A Briefing (recommended):** the pilot's portrait and story, the route drawing itself, the rewards arriving.
+  - **P2B Journey:** one lane across the window, the Ark sailing it; each stop tells its part.
+  - **P2C Dossier:** the map stays; Story, Route and Rewards slide open.
+- **Page 3, your Ark:**
+  - **P3A Lobby (recommended):** the lobby's three seats as they stand (Ready / Choosing); your seat changes in place.
+  - **P3B No lobby:** a squad picked from the list, Invite friends beside it.
+  - **P3C Formation:** the lobby's three vessels in formation over the course; a press opens the seat's tray.
+- **Notes.**
+
+**The voyages drawn** are the slice's jobs (`Docs/Voyages/voyage_slice.json`) offered by four of the eighteen pilots as the
+Ark's Pilots tab names them (Rev 99): Rosh Rusthook (Black Tide), a bounty hunt at Lantern Reach, difficulty 6; Haradek
+Anchorkeel (The Unmoored), piracy at Gallowglass, 4; Wyvendo Waveline (Hollowfen Trackers), the Leviathan at The Maw, 8;
+Karenth Amberweaver (Brass Lantern Company), a courier run to Tollmoor, 2. Element marks are the HUD's flowers, uploaded
+to the canvas.
+
+**New rules these draw, to confirm with the pick:** a voyage is a job one of your crew's pilots offers; difficulty 1-9
+replaces intensity on voyages and scales the crystal pay (drawn as base x (0.55 + 0.1 x difficulty)); with a lobby, the
+lobby is the squad, and squads show only without one.
+
+**Gate:** `frogma.py check --only R100` passes all 11. `check_mockup.py` against R89A (budget 98): nine pass; P3A is at 99.
+The soft buttons' faded ends draw contrast warnings where there are no words (as in Rev 96). Rendered locally with stand-in
+art (the Voyage Board's own renders, the pilot scenes, the Hangar cards) and looked at before publishing.
+
+**Differs from the build (section 184):** all of it. The Voyages tab becomes three pages (map with recommendations, the
+voyage, the Ark) instead of the voyage screen and the squad deck; the voyage chips become pilots' offers; intensity becomes
+difficulty 1-9; the lobby replaces the squad presets when there is one.
+
+## 202. Rev 108 mockups: the Voyages table and the Ark redrawn from Shombith's notes on Rev 100 (2026-11-13, awaiting a pick)
+
+Asked (Shombith, on Rev 100): "P1A : I dont like how the edge on view looks we can barely see it, tilt the table top
+more flat I guess, make the edges softer and have some animation I would say. P2A is good. I like p3A's direction. Can
+you go more towards it? Make the cards look cooler and have hover animation or glowing borders and show me also what
+happens when I select fly a squad instead and when I want to swap my vessel or pilot, there would be a lot so clicking
+22 times shouldnt be an option as I am saying, make it interesting and easy for the user maybe a popup".
+
+Picked from Rev 100: P2A (the voyage briefing) as drawn; P3A's direction (the lobby first).
+
+Drawn on the Voyages tab, section sec-rev108 (generator `Docs/MenuRedesignB/rounds/r108_voyages.py`, copies
+`Docs/MenuRedesignB/board/R108*.dc.html`), all four interactive:
+- **R108Table**: P1A again. The table lies flatter (34 degrees, was 50), its corners are round and its edges fade into
+  the sea, it floats slowly with a light sheen passing over it, and the picked voyage's beacon breathes. The edge-on
+  view is no longer the table's thin front face: it stands upright and readable under the table as a "Side view" strip.
+- **R108Lobby**: P3A again. Glass cards with a glowing rim; a card lifts and its rim lights on hover, and the vessel
+  rises. Your card has four buttons (Vessel, Pilot, Element, Artifact) that open the seat popup on that tab; friends
+  show Ready or Choosing and their artifact. The foot holds "Fly a squad instead", Back and Set sail.
+- **R108Squad**: what "Fly a squad instead" shows. Your squads sit along the top as formations; the picked one fills
+  the seats below with AI wingmates. Your lobby is kept, and the foot offers "Back to your lobby".
+- **R108Picker**: the seat popup, so a swap is one press, not 22. Tabs for vessel, pilot, element and artifact show
+  the current pick under each; quick kits change all four at once (a kit for this hunt, two by role, the last flown);
+  on Pilot, the voyage's suggested pilots come first ("For this hunt") and a "Sees" filter narrows the 18 pilots by
+  what each sees (crystals, prisms, life, vessels, paths); a preview beside the grid shows the pick. The seat behind
+  updates as you pick; Done closes it.
+
+Gates: `frogma.py check --only R108` OK; `check_mockup.py` 4 of 4 pass (contrast warns only at a gradient stop of the
+soft buttons, as on Rev 100). Not built in Unity.
+
+Revised the same night on Shombith's second note: "I don't like the table its too flat now and the edgy corner should
+be sticking together and also see the top left is clipping over the hypersea map. The blue background is too dull man.
+make it interesting with sea lines maybe". The table tilts 46 degrees (steeper than both 34 and Rev 100's look), its
+corners stay whole (a solid rounded slab with a lit rim and a soft inner shade, no feathered mask); the map inside is
+cropped so the baked layer tabs no longer show in its top-left, and the table sits clear of the zoom ladder. Every
+Rev 108 board stands on a new sea ground: a deeper blue with two lit swells and two layers of wave lines drifting
+slowly in opposite directions (canvas assets `sea_waves_a.svg` and `sea_waves_b.svg`, written by `WAVE_SVGS` in the
+generator). The side view under the table is cropped to the course and its height labels.
+
+Third pass on the table, the same night ("Nahhh too soft corners I liked the old 100p1A more as well and also in this
+map I cannot move around just zoom"): R108Table is Rev 100 P1A's table again (50 degrees, square corners, its rim and
+shadow), standing on the new sea, with the side view upright and square under it. The map now pans: drag it (up to 22%
+each way of a 160% sheet, so no edge shows); the pins and Tumult move with it, and the wheel and ladder still zoom.
+Fourth pass ("Adjojn these parts and is the bottom edge on view working and moving?"): the side view is the table's
+front face again, joined to its bottom edge, but turned to face the player (rotateX -50 against the table's 50), so the
+table reads as one block. It was a still picture that did not move; it now sits in the same 160% sheet as the map and
+slides with every drag, and it changes with the picked voyage.
+Fifth pass ("For background I was talking about this card background."): the seat cards themselves carry the sea: a
+lit swell behind the vessel, a cyan glow at the foot, and the two wave layers drifting through the card (faster on
+hover). The page-wide sea from the second pass stays until Shombith says otherwise.
+Sixth pass ("Good but the clipping is still happening and also the edge on view should not be this big the main map
+should be bigger I guess and bring the map a little bit down and center it"; then "I like the background but not the
+glow remove that and give the same treatment picker tab"): the zoom ladder and + / - lie in one row above the table,
+off the map; the table sits lower and centred in the space left of the crew list; the front edge is 70 px. The seat
+cards lose their glows and keep the drifting wave lines, and the seat popup gets the same waves.
+Seventh pass ("We cannot zoom further than the course there should be maybe a fullscreen mode where we select and the
+whole map widens and the crew goes to the sides like in preview full screen and we can do the full zoom till the cell
+view as we created the foam view take the pull from the voyages branch and integrate that part too"): **R108Full**, the
+full-screen map, opened by "Full screen" beside the zoom row on R108Table and closed by "Exit full screen". The map
+spans the window (flat, 1490 x 780, dragged and zoomed like the table), the crew goes to a column of portraits on the
+right with the picked voyage's card and Open voyage over the foot of the map, and the ladder runs six tiers: Galaxy,
+Arm, Sector, Course, then Neighbourhood (20 ly, the packed cells) and Cell (5 ly: membrane, cytoplasm, nucleus). The two
+deep tiers are frames of the Voyage Board's foam (`deepzoom/cells.js` as merged into `voyages` with PR #1972, identical
+to round 3), captured headless around Tumult; copies in `Docs/MenuRedesignB/rounds/r108_assets/`. They are pictures,
+not the live foam: the build would draw the cells with `HyperSeaCells`.
+
+## 203. Rev 111 mockup: the Voyages table opens to full screen, down to one Cell (2026-11-14, awaiting a pick)
+
+Asked (Shombith, on Rev 108 Full): "Remove the other variations on the board and craete the 109 full and on clicking
+full screen the animation too on full screen I do not like the border there should be any border and the view of zoom
+should be inside th map and there hsould be a back from full screen button". Rev 109 was already taken on the canvas
+by another round, so this is Rev 111, the next free number.
+
+Drawn on the Voyages tab, section sec-rev111 (generator `Docs/MenuRedesignB/rounds/r111_voyages.py`, built on
+`r108_voyages.py`; copy `Docs/MenuRedesignB/board/R111Full.dc.html`), one interactive board, **R111Full**: it opens as
+the Rev 108 table (Rev 100 P1A's 50 degree table on the moving sea, the side view as its front edge, the zoom row
+above it, the crew list on the right). "Full screen" animates the table up and out in 0.9 s: it lies flat and grows to
+the whole screen, its front edge fades, and no border is left. The zoom row rides into the map's top-left corner, the
+crew becomes a column of portraits on the right, the picked voyage and Open voyage sit at the foot, and the ladder
+gains Neighbourhood (20 ly) and Cell (5 ly), the foam frames of section 202's seventh pass. "Back from full screen" (top
+right) animates it home and steps back to Sector when it was deeper than Course. Drag pans in both views.
+
+Taken off the Voyages tab (copies kept in `Docs/MenuRedesignB/board/`): Rev 100 P1B, P1C, P1D, P2B, P2C, P3B and P3C
+(the variations Shombith did not pick), and R108Full (replaced by R111Full). Rev 100 keeps P1A, P2A, P3A and its notes.
+
+Gates: `frogma.py check --only R111` OK; `check_mockup.py` passes (noise 96 of 98). Not built in Unity.
+Second pass ("What happened with the Ui we should go with 108 right? Also the crew reccomemends should be a toggle with
+a sliding and the details only show when we want to"): the first R111Full broke on Frogma (the map collapsed into the
+top-left corner) because each of its animated boxes was one hole holding several style declarations, which Frogma does
+not set; every animated property now has its own hole. The crew is a column of portraits at the right edge in both
+views, with a "Crew" toggle above it: the voyage cards slide out beside the portraits only when it is pressed, and
+"Hide" closes them. The picked voyage and Open voyage are one card that moves from under the table to the foot of the
+full screen.
+
+## 204. Built: the three Voyages pages - Rev 111 Full, P2A Briefing and P3A Lobby (2026-11-14, claude/project-thread-sbm2ns, not seen in Unity)
+
+Asked (Shombith): build the picked Voyages screens in the game. Page 1 is Rev 111 Full (section 203), page 2 is Rev 100
+P2A, page 3 is Rev 100 P3A (section 201), with Rev 108's glass cards on sea lines (section 202). Voyages use difficulty
+1-9.
+
+Built in `Assets/_Scripts/UI/Views/` (all code-built, no prefab or scene change), on the Voyages tab's `VoyageBoard`:
+- **Page 1, The HyperSea** (`VoyageSeaPage`): the map laid back as a table by vertex projection (`VoyageTableTilt`, a
+  mesh effect: UGUI's overlay canvas has no perspective, so each vertex is projected, labels sit at their projected
+  points and a press is unprojected back onto the flat map), the square-cornered rim (`VoyageTableRim`), the edge view
+  as the table's front edge, drag pan, the zoom row, Full screen (the page moves into an overlay canvas, lies flat and
+  grows; the ladder gains Neighbourhood and Cell; Back from full screen) and the crew portrait column whose Crew / Hide
+  toggle slides the crew's voyages over the picked card (rows fit the column, compact under 110 px).
+- **Difficulty 1-9** (`VoyageDifficulty`): a pilot recommends twice the job's intensity; a pick sails a copy of the job
+  at intensity (d+1)/2 (at most 4), and pay scales by (0.55 + 0.1 d) against the recommendation, never below one.
+- **Page 2, The Voyage** (`VoyageBriefPage`): the offering pilot on glass, the route drawn over 2.4 s with each stop
+  named as the line reaches it (`VoyageRoutePoster`), the nine difficulty squares with the recommendation marked, and
+  the rewards (crystals, standing, role). Ready your Ark steps on.
+- **Page 3, Your Ark** (`VoyageArkPage`): the lobby (you and your party) or Fly a squad (the squad presets and three
+  seat cards: hull, pilot, element, artifact, four buttons), the voyage summary, Set sail. A player with no squad yet
+  sees the squad that would sail and "Make a squad in the Ark to sail with it."
+- **The seat popup** (`VoyageSeatPicker`): the four tabs, the quick kits (For this voyage, Last flown), the pilots'
+  Sees groups, a grid that tags what the voyage wants, a preview, Done. It opens in its own overlay canvas.
+
+Every word is a `VoyageLines` field (`Docs/Voyages/voyage_slice.json`, `author_voyage_assets.py`); colours come from
+`VoyageBoardStyleSO` through `ColorTrace`. Seen in Amoebius at 1920x1080 (all three pages, full screen, the crew
+column, the popup). Not opened in Unity: the PR's Verification status lists the hand tests.
+
+## 205. Rebuilt: the three Voyages pages at the boards' own numbers (2026-11-14, claude/project-thread-sbm2ns, not seen in Unity)
+
+Asked (Shombith, on section 204's build): "This looks nothing like our frogma designs... Rev 111 was the final cut. Fix
+this. Don't test in Amoebius, make it and push it and I will check it opening this branch."
+
+What was wrong, measured against the boards: every page was laid out by fractions of the window, so nothing stood
+where the board put it; sea lines ran through the page ground and inside every card (the boards have one faint ground
+and plain glass); the cards had cut corners (the boards' are square); the map printed its own place names (two names on
+one spot overlapped at Galaxy scale) and two caption lines across the table; the route was lime (the board's is light);
+the rewards stayed empty because every window refresh rebuilt the offers and restarted the voyage page's animation; and
+the lone Voyages tab row took height above the steps.
+
+Rebuilt in `Assets/_Scripts/UI/Views/` (code only, no prefab or scene change):
+- **Each page is drawn in the board's units** and scaled evenly to its room: page 1 in Rev 111 Full's 1840 x 748 (and
+  its 1920 x 1080 full screen, eased between), page 2 in P2A's 1840 x 748, page 3 in R108 Lobby/Squad's 1840 x 758, the
+  seat popup as R108 Picker's 1520 x 830 panel on its 1920 x 1080 screen (`VoyageKit.Fit`, `VoyageKit.At`). Every place
+  and size in the code is the board's number.
+- **Page 1 (Rev 111 Full)**: the table 1216 wide at its front, 444 deep, its 96 tall side view as the front face; the
+  map prints no names or caption (`VoyageMapGraphic.Unnamed`, `VoyageEdgeGraphic.Uncaptioned`); each voyage is a pin
+  (stalk 40 + 14 x difficulty, a 20 ring, the place's name in caps 14 from Sector in; picked cyan with its halo), home an
+  amber diamond; the zoom row on its dark band, + and -, Full screen; the crew's 100 x 150 faces (picked: cyan foot,
+  others at .72) and the drawer "Your crew recommends" (rows 112: face, kind, name, pips, pay); the picked voyage's
+  panel and Open voyage.
+- **Page 2 (P2A)**: the pilot's picture filling 520 x 748 and darkening from a quarter down, house, name 28 and story
+  18; kicker, title 36, numbers; the route in light over the dimmed water with 24 rings and their names; the stop
+  reached; the nine levels (picked filled light, the recommendation underlined cyan); the rewards over 1 unit lines
+  (crystals with their flower, "More at a higher difficulty"); Back and Ready your Ark side by side. The animation is
+  keyed by the voyage's name and pilot, so a refresh no longer restarts it.
+- **Page 3 (R108)**: the head and the squad presets (250 x 104 glass, "You - AI - AI", the leader's hull), the voyage
+  with its pilot's face, the three 592 x 540 seat cards (name 24, role or state, the hull over a soft light, the pilot
+  72 x 84, vessel 24, pilot 16, the element's flower, the four settings on your own seat, the artifact on the others),
+  Fly a squad instead, Back and Set sail at the foot.
+- **The seat popup (R108 Picker)**: title 32, the four tabs, the quick kits (242 x 84 with a face), Sees as chips (the
+  picked one filled), six across of 158 x 116, the 400 x 548 preview (house, name 32, what they see), Done as the call
+  to action.
+- **The look**: glass is square, shading from the outline's blue to the deep ground by half way, its edge light at the
+  top left to cyan at the bottom right (`VoyageGradient`, `VoyageOutline`); one near-opaque ground with four faint long
+  waves under the whole Voyages page (`VoyageBoard.BuildGround`); soft buttons as Rev 98's `.soft`; the lone tab row is
+  hidden and the page rises into its room (`VoyageJobsView.HideLoneTab`).
+- **New words** (`voyage_slice.json`): `SeaCrewDrawer`, `ArkSeatAiShort`, `ArkSquadSeparator`; `BriefCrystalsBy` now
+  reads "More at a higher difficulty".
+
+Kept from the earlier build: the Rev 103 Saga and Episodes art strip at page 1's foot (Rev 111 draws two plain locked
+strips there). Not opened in Unity or Amoebius (Shombith asked to check the branch himself).
+
+### 205.1 The boards' motion
+
+Shombith (2026-11-14): "it was pretty smooth here, it should be that smooth experience in the game as well". The
+pages now move on Frogma's own timings, through one easing helper (`VoyageKit.Bezier`, with `Rise`, `Sweep`, `Pop`
+and `Draw` named for the board's curves):
+
+| Motion | Board | Game |
+|---|---|---|
+| Page change | `.rise` .7s cubic-bezier(.2,.7,.2,1), 16 up | `VoyageBoard.Rise`: the page fades in and lifts 16 |
+| Full screen | .9s cubic-bezier(.65,0,.25,1) | `VoyageSeaPage` sweep, same curve and time |
+| Crew drawer | .5s cubic-bezier(.2,.7,.2,1) | the slide on the rise curve |
+| Map tier step / pan | .8s cubic-bezier(.2,.7,.2,1) | `VoyageMapGraphic.StepFlight` on the rise curve (the long dive keeps its in-out) |
+| Picked pin | glow breathes 4 to 12, 2.8s | the halo breathes |
+| Route | `.draw` 2.4s after .3s, cubic-bezier(.4,0,.2,1) | `VoyageBriefPage`, same |
+| Stop names | `.pop` .45s cubic-bezier(.3,1.4,.5,1) | each name pops in as the route reaches it |
+| Rewards | `.rise`, staggered | each row rises in turn |
+| Seat picker | modal .45s (24 up, .97 to 1), dim .35s | `VoyageSeatPicker.Tick`, same |
+
+Not opened in Unity: the feel is for Shombith to judge on the branch.
+
+### 205.2 After Shombith's first look (2026-11-14)
+
+Shombith ran PR #1985 and asked for these fixes:
+- **The map stops at Region.** Zooming in past Region (1,200 ly) dropped the game to about 2 fps. `VoyageMapGraphic.NarrowestLy` is a new floor on the zoom. The table sets it to Region, so the zoom buttons, the wheel and a pinch all stop there.
+- **No black ground.** The page's own deep ground, from section 205, is gone. The Voyage window's sea now shows behind the pages, as it does behind Arcade and Arena.
+- **Buttons.** The quiet buttons were the board's faded `.soft` band, which read as a smudge on the window's sea. They are now the style guide's default button (`.def`): a cut-corner plate inside a #747BAD line, like the window's own Back button.
+- **Pictures whole.** Pilot faces and vessel renders show whole and are never cropped. `ShowCover` now fits the picture inside its box, and `SetHull` drops the measured crop.
+
+### 205.3 The galaxy at Sector and Region, Galaxy view on open, one-line Saga and Episodes (2026-11-16)
+
+Shombith asked for three more fixes:
+- **The galaxy shows at Sector and Region.** The tilted table lays its mesh out again as a triangle list (`VoyageTableTilt.Subdivide`), and the sky round Tumult, where the voyages are, ran to about 94,000 list vertices at Region and 165,000 at Sector (the board's own sky model, counted with node). Unity draws none of a UI mesh past 65,000, so the whole map vanished there. Now solid shapes (stars, lines, markers) are laid back whole and only the painted sea is cut finer, the sky on a tilted map stops at 48,000 list vertices (the faintest stars go first), and the tilt never hands Unity more than 64,995. The same cut also takes most of the work out of each repaint, which may help the frame rate measured in 205.2.
+- **Galaxy view on open.** Opening the Voyage window now frames the whole galaxy (`VoyageMapGraphic.FrameGalaxy`, 110,000 ly about the galaxy's centre), whichever voyage is picked. Picking a voyage afterwards still frames its course.
+- **Saga and Episodes are one line each.** The two locked cards (520 x 120, with pictures) are now two 600 x 44 strips: a lock, the kicker, the name and "Coming soon". A press swaps the name for the "not open yet" line. The board above them gets back 84 of the page's height.
+- **The voyage page's map is sharp.** The route poster used to crop the table's own painted water (about 190 texels across the whole table's view), so a short course was a few texels blown up. It now paints its own water for the course's frame (`VoyageRoutePoster.PaintOwn`, up to 320 texels across, at least 360 ly), once per course and size.
+- **The Ark's seats.** Each seat card has a blue (the worn set's cyan) glow along its edges (`VoyageEdgeGlow`), brighter on your own. No seat is "open" any more: you, then the friends in your lobby in the seats after yours, then an AI wingmate in every seat left (`VoyageRules.FriendAt`), each AI seat tagged "AI". A squad member who is not in your lobby reads "AI flies for {name} until they join". The way between your squad and no squad is always there ("Fly a squad instead" / "Fly without a squad").
+- **Friends fly their seats.** The voyage (and the Ark escort) releases AI wingmates only in seats no connected friend flies, by the same rule, so three friends in a lobby sail as three players, as in Arena. Queued for Garrett's `/approve` (his voyage runs).
+
+## 207. Rev 101 mockups: Quests as a screen of its own - star chart, quest log, route (2026-11-13; Shombith: mix B and C with a reward, section 208)
+
+**Asked (Shombith, 2026-11-13):** "Remove the quest from inside the voyages. Quest should be a seperate screen with its
+own interactive UI not inside this itself."
+
+**On the canvas:** a new tab **Quests** (`quests`), round "Rev 101 - Quests as a screen of its own" (canvas version
+`1794608105-c3b6`). Copies: `Docs/MenuRedesignB/board/R101*.dc.html`. Generator:
+`Docs/MenuRedesignB/rounds/r101_quests.py` (the kit is lifted from Rev 90's Quests board). All boards pass
+`frogma.py check --only R101`; they were rendered locally (the canvas art stood in by the repo's card backgrounds) at rest
+and after Claim and Play quest, and looked at before publishing.
+
+Every option is the whole window over Home (hub band, "Quests", Back), on the same content: Episode 1 The Hypersea, its
+five quests in order (Scurry, Skim Race, Joust, Maelstrom, Vessel Hangar), each one's two goals and the step each opens,
+and what its claim opens. Claim works, and on the board Play quest counts a goal done, so the whole chain can be clicked
+through. Ready to claim is Lime; the picked quest is the one Jade line. The one motion: on Claim the line to the next
+quest draws in (A and C). Episode 2 is one "Coming soon" line.
+
+- **A Star chart (recommended):** the quests are stars on the HyperSea, joined by the current that opens them; the
+  picked star's art, goals as a ladder, what its claim opens and the button stand on the right. The most its own, and
+  the HyperSea theme without a second live map.
+- **B Quest log:** a calm list with the episode's meter on the left, the open quest's art and goals large in the middle,
+  what the claim opens in its own column.
+- **C Route:** the episode as one course across the screen, each quest's art over its station; the goals run as
+  checkpoints under it.
+- **Compare:** one quest's goals and claim in each option (Joust ready to claim; Maelstrom one goal of two).
+- **Notes.**
+
+**Open question:** whether Quests also gets a place on the top band; not drawn, the band is shared by every screen.
+
+**Differs from the build:** the quest track is the Voyage window's Quests tab (the Rev 90 tilted table, section 172).
+Any pick takes the Quests tab out of `VoyageWindowTabs` and opens a Quests window from Home's quest card (the shape
+section 151 built and section 159 reverted), drawing `QuestFrontier`'s states and `QuestTrackView`'s claim. The goals
+are the quest assets' `Intensity3GoalDescription` / `Intensity4GoalDescription`; "HEX RACE" is shown as Skim Race.
+
+
+## 208. Rev 107 mockups: Quests - B and C mixed, a colour set as each quest's reward, no episode (2026-11-13; Shombith picked D, built in section 200)
+
+**Asked (Shombith, 2026-11-14, on Rev 101):** "Maybe mix up B and C but also there should be a section showing the
+reward. We are thinking of color sets to be rewards for each quests. And dont name it Episode 1, its just quest."
+
+**On the canvas:** tab **Quests**, round "Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no
+episode" (canvas version `1794608786-849b`). Copies `Docs/MenuRedesignB/board/R107*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r107_quests.py` (runs on Rev 101's kit and data). All pass `frogma.py check --only R107` and
+were rendered locally and looked at.
+
+- **D Route on top (recommended):** C's course across the top with each quest's art; below it, side by side, the
+  quest and its goals (B's ladder), the reward (the colour set's six domains as prisms in a row) and Claim.
+- **E Route as the list:** B's list made C's course, down the left, each station naming its reward; the quest large in
+  the middle with its goals as checkpoints; the reward as a tall column of prisms (three by two) beside Claim.
+- **Compare:** the reward drawn three ways (a row of prisms, three by two, six bands).
+- **Notes.**
+
+**Rewards (a proposal):** Scurry Ukiyo-e, Skim Race Dusk, Joust Neon Noir, Maelstrom Blue-ringed Octopus, Vessel Hangar
+Nacre; swatches from `Docs/VesselModels/colour_sets.json`. Nocturne (the default) and the accessibility sets are kept free.
+A prism is drawn with the face colour as its body and the rim colour as its edge. No "Episode": the header is Quests
+with "2 of 5 claimed" and its meter. Claim's step reads "Unlocks <set>"; the next quest it opens is a line by the button.
+
+**Differs from the build:** as section 207, plus a reward per quest: `SO_UnlockData` has no reward field, so a pick needs
+one (a colour set reference) and the claim to grant the set (Garrett's colour sets, `/colour-set`).

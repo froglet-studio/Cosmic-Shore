@@ -1048,7 +1048,7 @@ def world_name_in(text):
 
 
 def self_test():
-    species = [a for a in brief.enum_members(brief.ANIMAL_SPECIES_CS, "AnimalSpecies") if a != "None"]
+    species = brief.rollable_animals()
     errors = []
     for s in species:
         for table, n in ((FACE, "FACE"), (CROWN, "CROWN"), (MARK, "MARK")):

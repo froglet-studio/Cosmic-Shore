@@ -3151,11 +3151,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.Audio.ShipAudioController
   engineEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1809053689
+      Data2: 1230251534
+      Data3: 566434957
+      Data4: -1286293035
+    Path: event:/Engine stuff/space ship engine main
   additionalEngineLayers: []
   speedParameterName: Speed
   tiltParameterName: Tilt Acel
@@ -5332,11 +5332,11 @@ MonoBehaviour:
   scope: {fileID: 8184117573701896897}
   fireEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1870893843
+      Data2: 1090302803
+      Data3: -531107708
+      Data4: -1787684942
+    Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
 --- !u!114 &6703333440390559263 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7710000000000002015, guid: af7b78e6bb3a8394f88f24bb0e31667a,

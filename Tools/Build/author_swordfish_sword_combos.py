@@ -160,7 +160,7 @@ ENERGIZED = {
         (0.00, 0, 0, 0, 0),
         (0.16, 105, 95, 15, 0),
         (0.30, 30, 20, -35, 0),
-        (0.46, 125, 100, 55, 0.25),   # deep second fang...
+        (0.46, 105, 100, 55, 0.25),   # deep second fang (yaw 105, not 125: 125 swept 10.9 u past the camera)
         (0.60, 100, 30, -40, 0),      # ...rolls flat and rises...
         (0.80, 95, 0, -200, 0),       # ...into a full wheel down the right side
         (1.00, 60, 25, -350, 0.1)]),  # wraps to +10: ends right

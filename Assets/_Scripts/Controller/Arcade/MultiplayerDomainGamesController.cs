@@ -118,6 +118,14 @@ namespace CosmicShore.Gameplay
         [ServerRpc(RequireOwnership = false)]
         void OnReadyClicked_ServerRpc(string playerName, ServerRpcParams rpcParams = default)
         {
+            // Ready only means something before a turn. A press during one (a stale button, a client that
+            // missed the start) must not toast, nor count toward a second countdown for pilots already racing.
+            if (gameData.IsTurnRunning)
+            {
+                CSDebug.LogWarning($"[DomainGamesCtrl] Ready from {playerName} ignored - the turn is already running.");
+                return;
+            }
+
             MarkClientReady(rpcParams.Receive.SenderClientId);
 
             // Broadcast which player is ready to all clients

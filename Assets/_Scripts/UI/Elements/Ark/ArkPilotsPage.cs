@@ -30,24 +30,31 @@ namespace CosmicShore.UI
     /// </list>
     /// <see cref="ElementalConverterView"/> plays the bench's clips from <see cref="HeldChanged"/>.
     ///
-    /// <para>The crew is the account's (<see cref="PilotLoadoutStore.GetCrew"/>, in the order they joined). It holds
-    /// at most one pilot a callsign (Docs/Pilots/INVENTORY.md §3), so the glass has as many cells as there are
-    /// callsigns and needs no scrolling. A cell is a <see cref="SquadPickChip"/>, the Squads tab's own.</para>
+    /// <para>The crew is the account's (<see cref="PilotLoadoutStore.GetCrew"/>, in the order they joined): all fifty
+    /// painted pilots for now, callsigns shared (Garrett, 2026-11-16: "lets get all 50 into the game. it is ok if we
+    /// duplicate callsign everything else will be the different"), and later a crew grown one pilot at a time. So the
+    /// glass shows a page of <c>cells</c> at a time and steps through the pages with <c>crewPreviousButton</c> and
+    /// <c>crewNextButton</c>, shown only while the crew fills more than one. A cell is a <see cref="SquadPickChip"/>, the
+    /// Squads tab's own.</para>
     ///
-    /// <para>The picture is the callsign's, not the person's (<see cref="PilotSceneCatalogSO"/>): the same face the
-    /// profile page shows full screen. A callsign with no scene shows the words alone.</para>
+    /// <para>The picture is the person's own close-up (<see cref="PilotSceneCatalogSO.TryGetFor"/>), else their
+    /// callsign's painted pilot's: the same face the profile page shows full screen. With no scene the words show alone.</para>
     /// </summary>
     public class ArkPilotsPage : MonoBehaviour, IArkTabPage, IArkTabBack
     {
         [Tooltip("Each callsign's scene and close-up (Tools/Build/author_pilot_scene_assets.py).")]
         [SerializeField] private PilotSceneCatalogSO scenes;
-        [Tooltip("One cell a pilot, in crew order. A crew holds one pilot a callsign, so one cell a callsign.")]
+        [Tooltip("One page of the crew, in crew order: one cell a pilot.")]
         [SerializeField] private SquadPickChip[] cells;
         [Tooltip("One a cell, in the same order: what that pilot's sight shows, under their callsign.")]
         [SerializeField] private TMP_Text[] sightLines;
         [Tooltip("Shown on the glass while the crew is empty.")]
         [SerializeField] private CanvasGroup emptyGroup;
         [SerializeField] private TMP_Text countText;
+        [Tooltip("Step to the previous and next page of the crew. Shown only while the crew fills more than one page.")]
+        [SerializeField] private KitButton crewPreviousButton;
+        [SerializeField] private KitButton crewNextButton;
+        [SerializeField] private TMP_Text crewPageText;
         [Tooltip("Leave empty to find the one in the scene.")]
         [SerializeField] private ScreenSwitcher screenSwitcher;
 
@@ -99,6 +106,8 @@ namespace CosmicShore.UI
         [SerializeField] private string sightTemplate;
         [Tooltip("Beside the caption: {count} is the crew's size.")]
         [SerializeField] private string countTemplate;
+        [Tooltip("Between the crew's page steps: {page} of {pages}. Shown only while the crew fills more than one page.")]
+        [SerializeField] private string pageTemplate;
 
         // Every file template takes every token: {name} {given} {family} (the person), {callsign} {sight} (their
         // callsign's word and what it lights), {species} {blend} (the human and two animals), {faction} {homeworld}
@@ -148,7 +157,7 @@ namespace CosmicShore.UI
         readonly string[] _pairs = new string[FileTokens.Length * 2];
         bool _shown, _held, _filing;
         int _file;
-        bool _warnedOverflow;
+        int _page;
         CanvasGroup _fading;
         float _fadeAt;
 
@@ -166,6 +175,19 @@ namespace CosmicShore.UI
             Listen(previousButton, () => Step(-1));
             Listen(nextButton, () => Step(1));
             Listen(profileButton, OpenProfile);
+            Listen(crewPreviousButton, () => StepPage(-1));
+            Listen(crewNextButton, () => StepPage(1));
+        }
+
+        int Pages => cells.Length == 0 ? 1 : Mathf.Max(1, (_crew.Count + cells.Length - 1) / cells.Length);
+
+        void StepPage(int by)
+        {
+            if (!_held || _filing) return;
+            PilotLoadoutStore.GetCrew(_crew);
+            int pages = Pages;
+            _page = ((_page + by) % pages + pages) % pages;
+            Refresh();
         }
 
         static void Listen(KitButton button, UnityEngine.Events.UnityAction action)
@@ -231,13 +253,7 @@ namespace CosmicShore.UI
         {
             if (!_shown) return;
             PilotLoadoutStore.GetCrew(_crew);
-            if (_crew.Count > cells.Length && !_warnedOverflow)
-            {
-                // A pilot the glass cannot show is a fault, not a state: the crew outgrew one pilot a callsign.
-                _warnedOverflow = true;
-                CSDebug.LogWarning($"[ArkPilotsPage] The crew has {_crew.Count} pilots and the PDA {cells.Length} cells; " +
-                                   "the last are not shown (Tools/Build/author_menu_ark.py lays out one cell a callsign).", this);
-            }
+            _page = Mathf.Clamp(_page, 0, Pages - 1);
 
             DrawCells();
             KitVisibility.SetShown(emptyGroup, _crew.Count == 0);
@@ -259,25 +275,36 @@ namespace CosmicShore.UI
 
         void DrawCells()
         {
+            int first = _page * cells.Length;
             for (int i = 0; i < cells.Length; i++)
             {
                 var cell = cells[i];
                 if (!cell) continue;
                 var sightLine = sightLines != null && i < sightLines.Length ? sightLines[i] : null;
-                if (i >= _crew.Count)
+                if (first + i >= _crew.Count)
                 {
                     cell.Draw(false, string.Empty, string.Empty, null, false);
                     if (sightLine) sightLine.text = string.Empty;
                     continue;
                 }
 
-                var person = _crew[i];
+                var person = _crew[first + i];
                 PilotVision callsign = person.Vision();
                 var row = PilotSight.Set ? PilotSight.Set.For(callsign) : null;
-                cell.Draw(true, Fill(nameTemplate, person, row), Fill(lineTemplate, person, row), CloseUp(callsign),
+                cell.Draw(true, Fill(nameTemplate, person, row), Fill(lineTemplate, person, row), CloseUp(person),
                           person.Id == s_lastRead);
                 if (sightLine) sightLine.text = string.IsNullOrEmpty(row?.brief) ? string.Empty : Fill(sightTemplate, person, row);
             }
+
+            int pages = Pages;
+            bool several = pages > 1;
+            if (crewPreviousButton) crewPreviousButton.gameObject.SetActive(several);
+            if (crewNextButton) crewNextButton.gameObject.SetActive(several);
+            if (crewPageText)
+                crewPageText.text = several
+                    ? TemplateText.Fill(pageTemplate, "page", (_page + 1).ToString(CultureInfo.InvariantCulture),
+                        "pages", pages.ToString(CultureInfo.InvariantCulture))
+                    : string.Empty;
         }
 
         static string Fill(string template, PilotRecord person, CallsignSetSO.Callsign row) =>
@@ -285,7 +312,7 @@ namespace CosmicShore.UI
                 "callsign", row?.word, "brief", row?.brief, "sight", row?.meaning, "species", person.SpeciesCombo(),
                 "faction", person.FactionName);
 
-        Sprite CloseUp(PilotVision callsign) => scenes && scenes.TryGet(callsign, out var scene) ? scene.closeUp : null;
+        Sprite CloseUp(PilotRecord person) => scenes && scenes.TryGetFor(person, out var scene) ? scene.closeUp : null;
 
         int LastReadIndex()
         {
@@ -306,7 +333,7 @@ namespace CosmicShore.UI
                 return;
             }
             Facts(_crew[i], i, out string word, out _);
-            if (glass) glass.Sprite = CloseUp(_crew[i].Vision());
+            if (glass) glass.Sprite = CloseUp(_crew[i]);
             Write(lastCallsignText, lastCallsignTemplate, word);
             Write(lastNameText, lastNameTemplate, _crew[i].DisplayName());
         }
@@ -316,6 +343,7 @@ namespace CosmicShore.UI
             // The account's inventory can arrive from the cloud while the tab is up, and that raises no Changed: the
             // press opens who the crew holds now, not who was drawn before it arrived.
             PilotLoadoutStore.GetCrew(_crew);
+            index += _page * cells.Length;
             if (!_held || index < 0 || index >= _crew.Count) return;
             _filing = true;
             _file = index;
@@ -337,6 +365,8 @@ namespace CosmicShore.UI
         {
             if (!_filing) return;
             _filing = false;
+            // Back to the page that holds the pilot last read (PREV / NEXT in the file may have crossed pages).
+            if (cells.Length > 0) _page = _file / cells.Length;
             Refresh();
         }
 
@@ -381,7 +411,7 @@ namespace CosmicShore.UI
             Facts(person, _file, out string word, out string sight);
             if (filePicture)
             {
-                var face = CloseUp(person.Vision());
+                var face = CloseUp(person);
                 filePicture.sprite = face;
                 filePicture.enabled = face;
             }

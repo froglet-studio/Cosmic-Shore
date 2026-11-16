@@ -46,16 +46,9 @@ namespace CosmicShore.UI
             return false;
         }
 
-        static ModePreviewLibrarySO s_previews;
-
         /// <summary>A mode's genre elements - the one answer the card's flower and the grid's element filter share.</summary>
-        public static bool TryGenres(GameModes mode, out Element primary, out Element secondary)
-        {
-            if (!s_previews) s_previews = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
-            var definition = s_previews ? s_previews.Resolve(mode) : null;
-            ScoringMetric? metric = definition ? definition.ObjectiveMetric : (ScoringMetric?)null;
-            return ModeGenre.TryElementsFor(mode, metric, out primary, out secondary);
-        }
+        public static bool TryGenres(GameModes mode, out Element primary, out Element secondary) =>
+            ModePreviewLibrarySO.TryGenres(mode, out primary, out secondary);
 
         public static bool HasGenre(SO_ArcadeGame game, Element element) =>
             game && TryGenres(game.Mode, out var a, out var b) && (a == element || b == element);

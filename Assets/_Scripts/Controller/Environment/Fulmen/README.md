@@ -26,8 +26,9 @@ code are kept, so it can be added back). The container now holds the haptics and
 
 The Meerkat had shared `StoatImpactorDataContainer` since it was first built (b8d6ef57a), so it would have fired Fulmen
 and Overclock too. It now has its own `MeerkatImpactorDataContainer`: the same prism effects, haptics only for crystals.
-Its omni-crystal ability is the Soliton Network, which `MeerkatSolitonExecutor` grows from
-`OmniCrystalImpactor.CollectedByVessel` (MEERKAT.md section 9), not a container entry.
+Since 2026-11-11 (Yash: "replace meerkat's networked tunnel with this fulmen") its omni-crystal ability is FULMEN:
+`FulmenByCrystalEffect` is in `MeerkatImpactorDataContainer`. The soliton's own omni abilities (the Rift and the Soliton
+Network) are parked behind `MeerkatSolitonConfig.omniOn` = 0, code and assets kept for reuse (`author_meerkat_assets.py`).
 * **Different tuning per vessel:** duplicate `FulmenConfig` + `FulmenByCrystalEffect`, point the copy's *Config* at the new
   config, and reference the copy from that vessel's container.
 

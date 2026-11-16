@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-11-lantern-towers-from-i2-a-share-of-down-h-faa7ea",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-11T02:42:10+00:00",
+  "area": "Waystation (GameModes 58): the Drop Tower course, WaystationTower.Lay, the hop autopilot; TIGER_MOTH.md doc numbers",
+  "summary": "Lantern Towers: from I2 a share of down-hops is laid TIGHT (a shorter runway, so a shallower shelf), lantern posts mark each hop's shelf, a plunge's landing stretch is now an obstacle for later towers, an I4 crown Time crystal on every plunge; the hop AI aims at the lanterns' deep band per seat at live speed and turns round after an overshoot; a dust-stolen wall tile is no longer overlaid. Clusters and exit gates untouched. TIGER_MOTH.md: aiFoldMinDistance 420 -> 700 noted, and the wormhole rule measured (press-to-landed >= 900, i.e. from a ~779 u fall) - the code is unchanged, which rule is meant is your call. Measured: reading the lanterns saves 3.4/3.8/3.2% of tower time at I2-I4 vs the best fixed depth (WAYSTATION.md 'Lantern Towers').",
+  "branch": "claude/tigermoth-time-upgrade-4dda34",
+  "commit": "e4465c7a3"
+}

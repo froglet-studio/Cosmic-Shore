@@ -46,6 +46,11 @@
         "Tiger_Moth",
         "TIGER_MOTH"
       ],
+      "JewelWasp": [
+        "Jewel Wasp",
+        "Jewel_Wasp",
+        "JEWEL_WASP"
+      ],
       "BrittleStar": [
         "Brittle Star",
         "Brittle_Star",
@@ -537,6 +542,10 @@
     "elemental-loop": {
       "owner": "Garrett",
       "said": "Garrett's top priority and process, 2026-11-12"
+    },
+    "voyages": {
+      "owner": "Shombith",
+      "said": "Shombith, 2026-11-13"
     }
   },
   "verdicts": {}

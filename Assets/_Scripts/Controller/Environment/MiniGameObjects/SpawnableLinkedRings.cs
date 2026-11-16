@@ -235,6 +235,9 @@ namespace CosmicShore.Gameplay
             int wayB = Vector3.Dot(b.Center - a.Center, b.Z) >= 0f ? 1 : -1;
             float ta = slidA == -wayA ? float.PositiveInfinity : Box.SlideDistance(a, b);
             float tb = slidB == -wayB ? float.PositiveInfinity : Box.SlideDistance(b, a);
+            // Both already slid the other way (three rails meeting in one crossing on a dense ring): neither may move
+            // back, so leave the pair as it is rather than move a block by infinity.
+            if (float.IsPositiveInfinity(ta) && float.IsPositiveInfinity(tb)) return;
             if (ta <= tb) { pa.Position += a.Z * (wayA * ta); slidA = wayA; }
             else { pb.Position += b.Z * (wayB * tb); slidB = wayB; }
         }

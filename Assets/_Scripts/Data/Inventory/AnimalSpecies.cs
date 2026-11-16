@@ -61,6 +61,49 @@ namespace CosmicShore.Data
         Firefly = 46,
         Orangutan = 47,
         Eel = 48,
+
+        // The animals of the 32 pilots painted before pilots were rolled (Docs/Pilots/PORTRAITS.md §2, the painted crew:
+        // Docs/Pilots/art/scenes/people.json). Painted only: past LastRollable, so no new pilot rolls one until the
+        // pilot-art kit (Tools/Build/pilot_art/brief.py) has its lines and LastRollable moves. Orca and Butterfly are
+        // hulls, so the art's orca is a KillerWhale and its butterfly a Swallowtail.
+        Snail = 49,
+        HornedLizard = 50,
+        Clownfish = 51,
+        TreeFrog = 52,
+        Scorpion = 53,
+        Mouse = 54,
+        Cheetah = 55,
+        Oryx = 56,
+        KillerWhale = 57,
+        Eagle = 58,
+        Coyote = 59,
+        Turkey = 60,
+        Hare = 61,
+        Skunk = 62,
+        Swallowtail = 63,
+        Ostrich = 64,
+        Porcupine = 65,
+        Zebra = 66,
+        Lionfish = 67,
+        Egret = 68,
+        Caracal = 69,
+        RedPanda = 70,
+        Flamingo = 71,
+        MantisShrimp = 72,
+        Shoebill = 73,
+        Crocodile = 74,
+        Tiger = 75,
+        Parrot = 76,
+        Basilisk = 77,
+        Hawk = 78,
+        Booby = 79,
+        Mandrill = 80,
+        Peacock = 81,
+        Opossum = 82,
+        Fox = 83,
+        Ram = 84,
+        Deer = 85,
+        Kangaroo = 86,
     }
 
     /// <summary>Names and combos for <see cref="AnimalSpecies"/>.</summary>
@@ -68,7 +111,11 @@ namespace CosmicShore.Data
     {
         static AnimalSpecies[] _rollable;
 
-        /// <summary>Every species a new pilot can roll (None excluded).</summary>
+        /// <summary>The last species a new pilot can roll: the ones after it are painted pilots' alone.</summary>
+        public const AnimalSpecies LastRollable = AnimalSpecies.Eel;
+
+        /// <summary>Every species a new pilot can roll (None and the painted-only ones after <see cref="LastRollable"/>
+        /// excluded).</summary>
         public static AnimalSpecies[] Rollable
         {
             get
@@ -76,13 +123,25 @@ namespace CosmicShore.Data
                 if (_rollable != null) return _rollable;
                 var values = (AnimalSpecies[])Enum.GetValues(typeof(AnimalSpecies));
                 Array.Sort(values, (a, b) => ((int)a).CompareTo((int)b));
-                _rollable = Array.FindAll(values, v => v != AnimalSpecies.None);
+                _rollable = Array.FindAll(values, v => v != AnimalSpecies.None && v <= LastRollable);
                 return _rollable;
             }
         }
 
-        /// <summary>The species as a word, e.g. "Axolotl".</summary>
-        public static string Name(AnimalSpecies s) => s == AnimalSpecies.None ? string.Empty : s.ToString();
+        /// <summary>The species as players read it, e.g. "Axolotl", "Red panda", "Killer whale".</summary>
+        public static string Name(AnimalSpecies s)
+        {
+            if (s == AnimalSpecies.None) return string.Empty;
+            string word = s.ToString();
+            var sb = new System.Text.StringBuilder(word.Length + 2);
+            for (int i = 0; i < word.Length; i++)
+            {
+                char c = word[i];
+                if (i > 0 && char.IsUpper(c)) sb.Append(' ').Append(char.ToLowerInvariant(c));
+                else sb.Append(c);
+            }
+            return sb.ToString();
+        }
 
         /// <summary>The combo as players read it: "Human / Axolotl / Heron".</summary>
         public static string Combo(AnimalSpecies first, AnimalSpecies second) =>
@@ -94,7 +153,7 @@ namespace CosmicShore.Data
         /// </summary>
         public static string Blend(AnimalSpecies first, AnimalSpecies second)
         {
-            string a = Name(first), b = Name(second);
+            string a = Name(first).Replace(" ", string.Empty), b = Name(second).Replace(" ", string.Empty);
             if (a.Length == 0) return b;
             if (b.Length == 0) return a;
             string front = a.Substring(0, Math.Max(2, (a.Length + 1) / 2));

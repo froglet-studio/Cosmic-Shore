@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Chum
+  m_EditorClassIdentifier:
+  Mode: 91
+  Notes: 'The reef cell at each intensity. OPEN-ENDED - the reef is laid by ChumController at match start,
+    so a preview has none - it teaches the brush, the throw and the lure. Vessel pinned to Angler(17).'
+  PreviewCell: {fileID: 11400000, guid: deaf5cab2c6806bca2e10022bbbcc6d3, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: deaf5cab2c6806bca2e10022bbbcc6d3, type: 2}
+  - {fileID: 11400000, guid: d4d51bbbd515c9ce8e8dc14eb423b09d, type: 2}
+  - {fileID: 11400000, guid: 8309317d3ad79ea711428d7fa608c885, type: 2}
+  - {fileID: 11400000, guid: 179f3d88740d97d3f17459b621a3c271, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 17
+  ObjectiveText: Paint a shoal and let go to throw your school at it - tame more with omni crystals and the lure
+  ObjectiveMetric: 5
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 450
+  SpawnRingRadiusFloorByIntensity:
+  - 450
+  - 450
+  - 450
+  - 450
+  SpawnFormation: 0
+  SpawnPoints: []
