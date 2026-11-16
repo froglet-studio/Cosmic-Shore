@@ -4092,14 +4092,6 @@
       "page": "voyages-playtest",
       "title": "Rev 114 IAB - Intro A: Departure (recommended), and B: From the map"
     },
-    "R114ICD.dc.html": {
-      "x": 2100,
-      "y": 3780,
-      "w": 1920,
-      "h": 2200,
-      "page": "voyages-playtest",
-      "title": "Rev 114 ICD - Intro C: Threat first, and D: One take"
-    },
     "R114O1.dc.html": {
       "x": 0,
       "y": 1260,
@@ -4107,30 +4099,6 @@
       "h": 1080,
       "page": "voyages-playtest",
       "title": "Rev 114 O1 - Objective A: a strip, 420 px; goal, hull and breach, next world"
-    },
-    "R114O2.dc.html": {
-      "x": 2100,
-      "y": 1260,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 114 O2 - Objective B: a ribbon at top centre; the route is the hull bar"
-    },
-    "R114O3.dc.html": {
-      "x": 4200,
-      "y": 1260,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 114 O3 - Objective C: a corner gauge, 260 px; hull first, everything else on demand"
-    },
-    "R114O4.dc.html": {
-      "x": 6300,
-      "y": 1260,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 114 O4 - Objective D: opens on news, folds to one line (recommended)"
     },
     "R114TAB.dc.html": {
       "x": 4200,
@@ -4156,53 +4124,45 @@
       "page": "voyages-playtest",
       "title": "Rev 114 F1 - Feel A: Chase; close behind you, the Ark the landmark ahead"
     },
-    "R114F2.dc.html": {
-      "x": 2100,
-      "y": 2520,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 114 F2 - Feel B: Guardian; pulled back, the Ark at the centre, threats read at a glance (recommended)"
-    },
-    "R114F3.dc.html": {
-      "x": 4200,
-      "y": 2520,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 114 F3 - Feel C: Cinematic beats; the camera takes over for two seconds at the big moments"
-    },
-    "R114F4.dc.html": {
-      "x": 6300,
-      "y": 2520,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 114 F4 - Feel D: Punch; every hit, kill and crystal answers in the world and the sound"
-    },
-    "R115AB.dc.html": {
+    "R115A.dc.html": {
       "x": 0,
       "y": 7480,
       "w": 1920,
       "h": 2200,
       "page": "voyages-playtest",
-      "title": "Rev 115 AB - Crew A: Briefing room (recommended), and B: Dossier"
+      "title": "Rev 115 A - Ark A: Hangar line-up; the picker slides in from the right (recommended)"
     },
-    "R115CD.dc.html": {
+    "R115B.dc.html": {
       "x": 2100,
       "y": 7480,
       "w": 1920,
       "h": 2200,
       "page": "voyages-playtest",
-      "title": "Rev 115 CD - Crew C: Route first, and D: Contracts"
+      "title": "Rev 115 B - Ark B: Your seat first; a bottom-sheet picker"
     },
-    "R115E.dc.html": {
+    "R115C.dc.html": {
       "x": 4200,
       "y": 7480,
       "w": 1920,
-      "h": 1080,
+      "h": 2200,
       "page": "voyages-playtest",
-      "title": "Rev 115 E - Crew E: Comms"
+      "title": "Rev 115 C - Ark C: Pilot cards; a loadout in four columns"
+    },
+    "R115D.dc.html": {
+      "x": 6300,
+      "y": 7480,
+      "w": 1920,
+      "h": 2200,
+      "page": "voyages-playtest",
+      "title": "Rev 115 D - Ark D: Formation around the Ark; a step-by-step picker"
+    },
+    "R115E.dc.html": {
+      "x": 8400,
+      "y": 7480,
+      "w": 1920,
+      "h": 2200,
+      "page": "voyages-playtest",
+      "title": "Rev 115 E - Ark E: Garage list; a vessel-by-element grid"
     }
   },
   "createdOnFiles": {
@@ -4338,13 +4298,11 @@
     "sec-rev112",
     "sec-rev113",
     "sec-rev115",
-    "grp-objective-box-a-d",
-    "grp-objective-box-a-d-2",
-    "grp-feel-in-flight-a-d",
-    "grp-feel-in-flight-a-d-2",
-    "grp-intro-a-d",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
+    "grp-objective-box-a-d",
+    "grp-feel-in-flight-a-d",
+    "grp-intro-a-d",
     "grp-crew-recommends-a-d-t",
     "grp-objective-box-a-d-t",
     "grp-feel-in-flight-a-d-t",
@@ -7110,38 +7068,8 @@
       "x": -40,
       "y": 1124,
       "w": 240,
-      "maxW": 8300,
+      "maxW": 2000,
       "size": "l",
-      "page": "voyages-playtest"
-    },
-    "grp-objective-box-a-d": {
-      "kind": "rect",
-      "x": -40,
-      "y": 1220,
-      "w": 4150,
-      "h": 1160,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.02)",
-        "border-style": "dashed",
-        "border-color": "rgba(64, 120, 255, 0.7)",
-        "border-width": "2px 0px 2px 2px",
-        "border-radius": "20px 0px 0px 20px"
-      },
-      "page": "voyages-playtest"
-    },
-    "grp-objective-box-a-d-2": {
-      "kind": "rect",
-      "x": 4110,
-      "y": 1220,
-      "w": 4150,
-      "h": 1160,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.02)",
-        "border-style": "dashed",
-        "border-color": "rgba(64, 120, 255, 0.7)",
-        "border-width": "2px 2px 2px 0px",
-        "border-radius": "0px 20px 20px 0px"
-      },
       "page": "voyages-playtest"
     },
     "grp-feel-in-flight-a-d-t": {
@@ -7150,38 +7078,8 @@
       "x": -40,
       "y": 2384,
       "w": 240,
-      "maxW": 8300,
+      "maxW": 2000,
       "size": "l",
-      "page": "voyages-playtest"
-    },
-    "grp-feel-in-flight-a-d": {
-      "kind": "rect",
-      "x": -40,
-      "y": 2480,
-      "w": 4150,
-      "h": 1160,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.02)",
-        "border-style": "dashed",
-        "border-color": "rgba(0, 212, 255, 0.7)",
-        "border-width": "2px 0px 2px 2px",
-        "border-radius": "20px 0px 0px 20px"
-      },
-      "page": "voyages-playtest"
-    },
-    "grp-feel-in-flight-a-d-2": {
-      "kind": "rect",
-      "x": 4110,
-      "y": 2480,
-      "w": 4150,
-      "h": 1160,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.02)",
-        "border-style": "dashed",
-        "border-color": "rgba(0, 212, 255, 0.7)",
-        "border-width": "2px 2px 2px 0px",
-        "border-radius": "0px 20px 20px 0px"
-      },
       "page": "voyages-playtest"
     },
     "grp-intro-a-d-t": {
@@ -7190,23 +7088,8 @@
       "x": -40,
       "y": 3644,
       "w": 240,
-      "maxW": 4100,
+      "maxW": 2000,
       "size": "l",
-      "page": "voyages-playtest"
-    },
-    "grp-intro-a-d": {
-      "kind": "rect",
-      "x": -40,
-      "y": 3740,
-      "w": 4100,
-      "h": 2280,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.02)",
-        "border-style": "dashed",
-        "border-color": "rgba(255, 92, 168, 0.7)",
-        "border-width": "2px 2px 2px 2px",
-        "border-radius": "20px 20px 20px 20px"
-      },
       "page": "voyages-playtest"
     },
     "grp-toasts-a-d-t": {
@@ -7273,9 +7156,69 @@
       "fill": "teal",
       "page": "voyages-playtest"
     },
+    "grp-crew-recommends-a-d": {
+      "kind": "rect",
+      "x": 2060,
+      "y": -40,
+      "w": 2000,
+      "h": 1160,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.02)",
+        "border-style": "dashed",
+        "border-color": "rgba(0, 212, 255, 0.7)",
+        "border-width": "2px 2px 2px 2px",
+        "border-radius": "20px 20px 20px 20px"
+      },
+      "page": "voyages-playtest"
+    },
+    "grp-objective-box-a-d": {
+      "kind": "rect",
+      "x": -40,
+      "y": 1220,
+      "w": 2000,
+      "h": 1160,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.02)",
+        "border-style": "dashed",
+        "border-color": "rgba(64, 120, 255, 0.7)",
+        "border-width": "2px 2px 2px 2px",
+        "border-radius": "20px 20px 20px 20px"
+      },
+      "page": "voyages-playtest"
+    },
+    "grp-feel-in-flight-a-d": {
+      "kind": "rect",
+      "x": -40,
+      "y": 2480,
+      "w": 2000,
+      "h": 1160,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.02)",
+        "border-style": "dashed",
+        "border-color": "rgba(0, 212, 255, 0.7)",
+        "border-width": "2px 2px 2px 2px",
+        "border-radius": "20px 20px 20px 20px"
+      },
+      "page": "voyages-playtest"
+    },
+    "grp-intro-a-d": {
+      "kind": "rect",
+      "x": -40,
+      "y": 3740,
+      "w": 2000,
+      "h": 2280,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.02)",
+        "border-style": "dashed",
+        "border-color": "rgba(255, 92, 168, 0.7)",
+        "border-width": "2px 2px 2px 2px",
+        "border-radius": "20px 20px 20px 20px"
+      },
+      "page": "voyages-playtest"
+    },
     "rev115": {
       "kind": "title1",
-      "text": "Rev 115 - The crew selection screen, five more ways: briefing room, dossier, route first, contracts, comms",
+      "text": "Rev 115 - Your Ark and the seat picker, five ways: hangar line-up, your seat first, pilot cards, formation, garage list",
       "x": 0,
       "y": 7080,
       "w": 240,
@@ -7294,21 +7237,6 @@
         "border-color": "rgba(166, 0, 255, 0.55)",
         "border-width": "3px 3px 3px 3px",
         "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages-playtest"
-    },
-    "grp-crew-recommends-a-d": {
-      "kind": "rect",
-      "x": 2060,
-      "y": -40,
-      "w": 2000,
-      "h": 1160,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.02)",
-        "border-style": "dashed",
-        "border-color": "rgba(0, 212, 255, 0.7)",
-        "border-width": "2px 2px 2px 2px",
-        "border-radius": "20px 20px 20px 20px"
       },
       "page": "voyages-playtest"
     }
@@ -7810,19 +7738,14 @@
     "R113Notes.dc.html",
     "R114C2.dc.html",
     "R114O1.dc.html",
-    "R114O2.dc.html",
-    "R114O3.dc.html",
-    "R114O4.dc.html",
     "R114F1.dc.html",
-    "R114F2.dc.html",
-    "R114F3.dc.html",
-    "R114F4.dc.html",
     "R114IAB.dc.html",
-    "R114ICD.dc.html",
     "R114TAB.dc.html",
     "R114TCD.dc.html",
-    "R115AB.dc.html",
-    "R115CD.dc.html",
+    "R115A.dc.html",
+    "R115B.dc.html",
+    "R115C.dc.html",
+    "R115D.dc.html",
     "R115E.dc.html"
   ],
   "pages": [
