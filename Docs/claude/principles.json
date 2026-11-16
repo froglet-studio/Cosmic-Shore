@@ -3639,7 +3639,7 @@
    "owner": "Garrett",
    "date": "2026-10-28",
    "words": "lock in the elemental definition so yash builds upon them.",
-   "rule": "The Meerkat's element definition is locked: Space the Soliton (surface area by level, L5 Steal), Time faster through every soliton (L5 Boost Out), Charge Sentinel mode (L5 Six Sentinels), Mass the Exit Portal (L5 Danger Portal); how each is built stays Yash's.",
+   "rule": "The Meerkat's element definition is locked: Space the Soliton (surface area by level, L5 Steal), Time faster through every soliton (L5 Boost Out), Charge Sentinel mode (L5 Six Sentinels), Mass the Exit Portal (L5 Danger Portal). A design may extend these but never redefine them; how each is built stays Yash's.",
    "source": {
     "file": "Docs/ElementalAbilitySystem/FLEET_MAPS.md",
     "line": 658
@@ -3648,22 +3648,6 @@
    "area": "vessel",
    "retired": "Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) and the round-18 Mix's L5 swaps",
    "test": "Does a Meerkat change move an ability to another element or alter a row's meaning? If yes it reopens a locked definition.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-vessel-29",
-   "owner": "Garrett",
-   "date": "2026-10-28",
-   "words": "the rest is design, Docs/Studios/MEERKAT.md § Garrett's direction, whose element definition is LOCKED (Garrett, 2026-10-28)",
-   "rule": "The Meerkat soliton's element definition (what each of its elements does, per Garrett's direction in MEERKAT.md) is fixed; a design may extend the soliton but not redefine its elements.",
-   "source": {
-    "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
-    "line": 356
-   },
-   "kind": "LOCKED",
-   "area": "vessel",
-   "retired": "",
-   "test": "Check each element's role in the brief against MEERKAT.md § Garrett's direction; any change needs Garrett.",
    "status": "drafted"
   },
   {
