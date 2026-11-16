@@ -23896,3 +23896,40 @@ Not compiled: the editor was in use by the multiplayer testing session. Files: `
   steer it"; the host's own hull handed over as before.
 - Step 5: the host's hull took 2:46 this time, not 6 minutes, so the slow run went with Player 2's wandering hull.
 - `1167a0a2f9` (FunCard): compiled, and no `get_isBatchMode` error in a full Play and stop afterwards (82 before).
+
+## 🔴 Brittle Star Time: the Shift Line - let-go gates, race coach, heat, laps per rung (2026-11-16, Ys-bleeding-edge, NOT COMPILED BY UNITY, NOT EDITOR-VERIFIED)
+
+What ran instead:
+- the pure code and its EditMode tests, compiled and run by `bash Tools/Build/brittle_star_time_course_harness/run.sh
+  --self-test`: 25 tests, the measured claims (`--check-race`), and 10 negative controls;
+- `author_brittle_star_time_assets.py --check`;
+- the static gates, `colour_trace.py --check` and `check_ai_no_state_writes.py`.
+
+The four controller partials were reviewed by an independent session, not compiled. Unity was not imported or run in
+this worktree (`unity_refcompile` does not run on this Windows box). Owner: Shombith (BRITTLESTARTIME.md section 0).
+
+1. **Compile.** Open the project, or run `bash Tools/Build/verify_unity.sh`. Then run the EditMode tests
+   `BrittleStarTimeLineTests` and `BrittleStarTimeCourseTests`. Open and save `MinigameBrittleStarTime.unity` once, then
+   re-run `author_brittle_star_time_assets.py --check`.
+2. **I1 with 3 AI (Easy, Medium, Legendary).**
+   - The I1 start toast (410) shows.
+   - Fly without lighting Speed Mode for 6 s: the reminder (419) shows once.
+   - The AIs light Speed Mode on the straights, without chattering (watch the mode cue), and all three finish.
+   - Note the finish times against the model's 98 / 74 / 52 s.
+3. **I3 Coast-in hairpins.**
+   - Two columns of Blue posts stand before each hairpin apex, either side of the line.
+   - Let go of Speed Mode at them and thread the apex: the shock ring flares, the gate lights in your colour, and 416
+     shows once.
+   - No AI shoots the posts (no Space or Charge mode switch near them).
+   - Laps: three.
+4. **I4 Corkscrew.**
+   - The roll hint (418) shows.
+   - Four laps.
+   - Posts stand only on the three return rings.
+   - The coached AIs finish.
+5. **Heat.**
+   - Lap splits (412), a best lap (413), and a streak at 3 (411) appear.
+   - A clean lap runs the chase of flares.
+   - All 8 FMOD slots are empty and silent; that is expected.
+6. **Despawn.** Leave mid-race. No posts and no flares linger, and an AI's Speed wish is released.
+

@@ -266,6 +266,21 @@ namespace CosmicShore.Data
         GrizzlyTimeHint = 300,          // once, at the start: freeze a bomb in the keg, get on its far side, blow it
         GrizzlyTimeBankShot = 301,      // a keg blown from its exit side threw you down the lane; {0} = how many so far
 
+        // Brittle Star Time, the Brittle Star's Time race (_Scripts/Controller/Arcade/BRITTLESTARTIME.md section 0, the
+        // Shift Line; Docs/BrittleStarTime/SHIFT_LINE_SPEC.md). Its race beats are the shared 129-132 + 30
+        // (DomainRaceToasts). Posted to the LOCAL pilot only (BrittleStarTimeController.Heat). 410-419 are its band
+        // (2026-11-16, reserved for this session among the round-5 Time-game sessions).
+        BrittleStarTimeSpeedHint = 410,     // once, at the start of I1 and I2: light Speed Mode and keep it lit
+        BrittleStarTimeStreak = 411,        // a streak of carried threads is called (3, 8, 16, then every 16): {0} = the streak
+        BrittleStarTimeLapSplit = 412,      // a lap completed: {0} = the lap, {1} = its time in seconds
+        BrittleStarTimeBestLap = 413,       // a lap beat this race's best: {0} = the lap, {1} = its time in seconds
+        BrittleStarTimeCleanLap = 414,      // every ring of a lap carried (flat out or a clean shift): {0} = the lap
+        BrittleStarTimeFlatOut = 415,       // once, the first flat-out thread: through the heart at full Speed
+        BrittleStarTimeCleanShift = 416,    // once, the first clean shift: let go at the posts and coasted in
+        BrittleStarTimeLetGoHint = 417,     // once, at the start of I3: let go of Speed Mode at the posts
+        BrittleStarTimeRollHint = 418,      // once, at the start of I4: roll and pull to hold Speed through the coil
+        BrittleStarTimeSpeedDark = 419,     // once, a dark start (no Speed Mode, no ring, 6 s in): light Speed Mode
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.
