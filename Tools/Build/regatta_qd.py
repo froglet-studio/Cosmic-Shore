@@ -58,8 +58,15 @@ import regatta_judge_model as jm   # noqa: E402
 import regatta_loss as L           # noqa: E402
 
 HULLS = list(jm.HULLS)
-REPORT_ONLY = ("Sparrow",)          # races and is reported, not scored (its rail rams; the pool job's report_only)
+REPORT_ONLY = ("Scarab",)           # races and is reported, not scored (it stalls in half its engine races, W1 2026-11-16)
 SCORED = [h for h in HULLS if h not in REPORT_ONLY]
+
+
+def set_hulls(hulls):
+    """Race and score only these hulls (an engine run races the trusted roster only)."""
+    global HULLS, SCORED
+    HULLS = [h for h in jm.HULLS if h in hulls] + [h for h in hulls if h not in jm.HULLS]
+    SCORED = [h for h in HULLS if h not in REPORT_ONLY]
 SCREEN = 8                          # offspring the surrogate screens per judged one
 EXPLORE = 0.25                      # share of each judged batch taken at random from the screened offspring
 TRUST_R2 = 0.7                      # mean held-out R^2 over the scored hulls before the surrogate may screen
@@ -302,6 +309,14 @@ FEATURES = ("lap_u", "lane_over_spine", "max_turn", "mean_turn", "rms_turn", "ha
             "detour_u", "alternates", "alt_offset", "crystals")
 
 
+def _corner_floor(g):
+    c = g.get("circuit") or {}
+    if "CornerFloorRadius" in c:
+        return float(c["CornerFloorRadius"])
+    import course_port as cp
+    return float(cp.regatta_settings(int(g.get("intensity", 1)))["CornerFloorRadius"])
+
+
 def course_features(g, course):
     """The inspectable numbers a course is described by (FEATURES); W2's placements add `kind:<id>` counts."""
     import regatta_features as rf
@@ -314,7 +329,7 @@ def course_features(g, course):
          "lane_over_spine": sum(course["laneLengths"]) / len(course["laneLengths"]) / float(course["spineLength"]),
          "max_turn": max(turns), "mean_turn": sum(turns) / len(turns),
          "rms_turn": math.sqrt(sum(t * t for t in turns) / len(turns)), "hard_corners": sum(1 for t in turns if t > 60.0),
-         "min_mouth": min(float(gt["r"]) for gt in course["gates"]), "corner_floor": float(g["circuit"]["CornerFloorRadius"]),
+         "min_mouth": min(float(gt["r"]) for gt in course["gates"]), "corner_floor": _corner_floor(g),
          "ridable": float(fd["ridable_share"]), "neutral": sum(v for k, v in share.items() if k.isupper()),
          "gap_share": float(share.get("_", 0.0)), "plain": float(share.get("p", 0.0) + share.get("P", 0.0)),
          "shielded": float(share.get("h", 0.0) + share.get("H", 0.0)), "gap_count": float(fd["gap_count"]),
@@ -346,10 +361,14 @@ def kinds_used(g, x):
 
 
 def cell_of(leader, x, nkinds):
-    """The archive cell: who wins it, how ridable, how sharp, how varied (7 x 3 x 3 x 3 = 189 cells)."""
+    """The archive cell: who wins it, how ridable, how sharp, how varied (0-1, 2-4, 5+ kinds of feature or placement)."""
     rid = 0 if x["ridable"] < 0.6 else 1 if x["ridable"] < 0.9 else 2
     sharp = 0 if x["max_turn"] < 70 else 1 if x["max_turn"] < 110 else 2
-    var = 0 if nkinds == 0 else 1 if nkinds <= 2 else 2
+    if "w2:placements" in x:     # W2's genome: how crowded the course is (placements), not how many kinds
+        n = x["w2:placements"]
+        var = 0 if n <= 3 else 1 if n <= 10 else 2
+    else:
+        var = 0 if nkinds <= 1 else 1 if nkinds <= 4 else 2
     return f"{leader}|r{rid}|s{sharp}|k{var}"
 
 
@@ -358,21 +377,29 @@ def cell_of(leader, x, nkinds):
 _REF = {}
 
 
+def today():
+    """Today's course as a genome: W2's empty genome when its module exists, else the measured-on circuit."""
+    return _w2.empty() if _w2 is not None else jm.today_genome()
+
+
 def _ref_mean(backend):
     if backend not in _REF:
-        g = jm.today_genome()
+        g = today()
         r = _judge(g, jm.lay(g), backend)
         times = L.alone_times(r, SCORED)
         _REF[backend] = sum(sum(v) / len(v) for v in times.values()) / len(times)
     return _REF[backend]
 
 
-# The hulls whose port flight is trusted (W1's calibration, 2026-11-16: Urchin 1.00, Squirrel 1.07, Serpent 1.09 of the
-# editor; the Rhino's 35 s is a real-game fact since 11-07, the hub's call). Stoat, Dolphin and Manta join when W1 posts
-# their new baseline. The "mixed" backend races these in the engine and prices the rest with the model; every seat
-# carries the backend that timed it, and only engine seats train the surrogate on an engine run.
-ENGINE_TRUSTED = tuple(h for h in os.environ.get("REGATTA_ENGINE_HULLS", "Urchin,Squirrel,Serpent,Rhino").split(",") if h)
-ENGINE_SEEDS = (1, 2)       # the engine is deterministic per seed; two seeds measure the race-to-race noise
+# The hulls the engine judge flies reliably (W1's baseline 2026-11-16, after the Stoat and Dolphin AI fixes #2037 / #2038,
+# #2042; alone, I1, 4 seeds): Rhino 35.4, Stoat 46.1, Urchin 51.0, Squirrel 80.1, Manta 82.3, Sparrow 90.5, Serpent 107.0,
+# Dolphin 131.0 - a 3.7x field. The Scarab stalls in half its races and waits. "mixed" races these in the engine and
+# prices any other hull with the model; every seat carries the backend that timed it.
+ENGINE_TRUSTED = tuple(h for h in os.environ.get(
+    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Stoat,Urchin").split(",") if h)
+# The judge seeds each race at turn start, so (seed, race) is deterministic; the search races one seed per course (8
+# hulls x 2 seeds is ~4.5 min a course on 4 cores) and the pool's candidates are re-raced on more seeds for the noise.
+ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1").split(","))
 
 
 def _rj():
@@ -738,12 +765,20 @@ def run(budget, out, backend="model", surrogate=True, seed=1, batch=16, init=64,
     archive, records, trace = {}, [], []
     s = None
     screened_calls = 0
+    live = None
     try:
         seeds = (0,) if backend == "model" else ENGINE_SEEDS
-        jobs = [(jm.today_genome(), backend, seeds)] + [(rand_g(rng), backend, seeds) for _ in range(min(init, budget) - 1)]
-        for r in _map(pool, evaluate, jobs):
+        jobs = [(today(), backend, seeds)] + [(rand_g(rng), backend, seeds) for _ in range(min(init, budget) - 1)]
+        live = open(os.path.join(out, "records.live.jsonl"), "w", encoding="utf-8")
+        for r in (pool.imap(evaluate, jobs) if pool else map(evaluate, jobs)):
             records.append(r)
             insert(archive, r)
+            live.write(json.dumps(r) + "\n")
+            live.flush()
+            if backend != "model":
+                log(f"[{backend}] {len(records)}/{budget}: " + (", ".join(f"{h} {t:.0f}" for h, t in sorted(
+                    r["seconds"].items(), key=lambda kv: kv[1] or 1e9) if t) + f"  spread {r['loss']['spread_x']}x"
+                    if r.get("valid") else r.get("error", "invalid")))
         while len(records) < budget:
             elites = list(archive.values())
             n = min(batch, budget - len(records))
@@ -781,17 +816,21 @@ def run(budget, out, backend="model", surrogate=True, seed=1, batch=16, init=64,
             for r in _map(pool, evaluate, [(g, backend, seeds) for g in chosen]):
                 records.append(r)
                 insert(archive, r)
+                live.write(json.dumps(r) + "\n")
+                live.flush()
             passing = sum(1 for r in archive.values() if r["loss"]["passes"])
             trace.append({"judged": len(records), "cells": len(archive), "passing_cells": passing,
                           "qd": qd_score(archive), "screen": bool(use),
                           "surrogate_r2": s.held_out.get("mean_r2") if s else None, "t": round(time.time() - t0, 1)})
-            if len(trace) % 5 == 0 or len(records) >= budget:
+            if len(trace) % 5 == 0 or len(records) >= budget or backend != "model":
                 log(f"[{backend}{' +screen' if surrogate else ''}] judged {len(records)}/{budget}: {len(archive)} cells, "
                     f"{passing} passing, QD {trace[-1]['qd']}, surrogate R2 {trace[-1]['surrogate_r2']}, "
                     f"{trace[-1]['t']} s")
     finally:
         if pool:
             pool.close()
+        if live:
+            live.close()
     s = fit_trusted(records, seed=seed) or s
     ref = next(r for r in records if r.get("valid"))["seconds"]
     with open(os.path.join(out, "records.jsonl"), "w", encoding="utf-8") as fh:
@@ -1056,14 +1095,23 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--workers", type=int, default=None)
+    ap.add_argument("--hulls", default=None, help="comma list raced and scored (default: every hull on the model, the "
+                    "trusted engine roster ENGINE_TRUSTED on engine / mixed)")
+    ap.add_argument("--init", type=int, default=64)
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
+    if a.hulls:
+        set_hulls([h for h in a.hulls.split(",") if h])
+    elif a.backend == "engine":
+        set_hulls(list(ENGINE_TRUSTED))
+    if a.workers is None and a.backend != "model":
+        a.workers = 1            # the engine judge already runs one process per hull in parallel
     if a.self_test or not a.cmd:
         problems = self_test()
         print("\n".join(problems) or "regatta_qd --self-test: ok")
         sys.exit(1 if problems else 0)
     if a.cmd == "run":
-        s = run(a.budget, a.out, a.backend, not a.no_surrogate, a.seed, a.batch, workers=a.workers)
+        s = run(a.budget, a.out, a.backend, not a.no_surrogate, a.seed, a.batch, init=a.init, workers=a.workers)
         print(json.dumps({k: v for k, v in s.items() if k != "trace"}, indent=1))
     elif a.cmd == "engine-pass":
         engine_pass(a.n, a.out, a.backend if a.backend != "model" else "mixed", a.seed)
