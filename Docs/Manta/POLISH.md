@@ -256,3 +256,19 @@ at -18". `followOffset` (0, 0, -18), dynamic pair -16.2 / -18. The wingspan is a
 
 **Next question.** Should the camera look slightly ahead (`lookAheadDistance`, `lookAheadLift`) so the hull sits lower
 in the frame and shows where it is going?
+
+## Paused (Caleb, 2026-11-13)
+
+**The Manta Polish project is paused here.** Caleb is satisfied with what it shipped: no skim haptic, the plant knock
+and the fleet's hull-hit ladder (PR #1905), the Yastri turn renamed Yawstery (#1906), speed-shaped trail prisms
+with the environment scaler removed (#1907), and the chase camera at 18 (#1936). All four are merged into `bleeding-edge`, and no branch
+of this project is still open, so the Manta lane (and Redline, Corona and Bloomrush) reads open with nobody in it.
+Caleb steps out of the Manta lane for now; anyone may pick it up (`/swimlanes --lane manta`).
+
+**Open questions, for whoever picks it up.**
+- ~~**Haptics:** do the Shrike, the Urchin and the Grizzly count as rammers?~~ **Answered (Caleb, 2026-11-13): no.**
+  They keep the hull-hit ladder; the Rhino stays the only rammer (`Docs/HAPTICS.md` § The universal rule, item 3).
+- From the earlier rounds: should the chase camera look slightly ahead (`lookAheadDistance`, `lookAheadLift`)?
+  Does the omni cash-out want the alert shake? Should Max Length Of Spacing drop below 0.9 if Soar reads as a wall?
+- The fleet's other hulls still lay their trail on a timed delay whose mass per second depends on frame rate (the
+  Manta lays by distance since #1907): a fleet balance question for the hull owners.
