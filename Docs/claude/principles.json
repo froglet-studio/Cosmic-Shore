@@ -775,7 +775,7 @@
    "owner": "the designer (unnamed in the source)",
    "date": "2026-10-28",
    "words": "\"the omnicrystal on board the ark powers the prism creation. arks are the only vessel that can contain and harvest the power of an omnicrystal instead of morphing it into something else\", \"regeneration should just be fixed rate\", and \"the omnicrystal is always just one size\"",
-   "rule": "Mass may be made in one place only: an Ark's reactor regrows the Ark's own empty hull slots, one prism a beat at a fixed rate, never past its full hull; every other vessel morphs an omni crystal into its own effect; the omni crystal is always one size; a fallen Ark never regrows.",
+   "rule": "Mass may be made in one place only: an Ark's reactor regrowing its own hull (the Ark rule, P-vessel-23); every other vessel morphs an omni crystal into its own effect.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
     "line": 142
@@ -3557,17 +3557,17 @@
   {
    "id": "P-vessel-23",
    "owner": "Garrett",
-   "date": "2026-10-27",
-   "words": "it should feel big ... like its own level ... a kaiju protected by three vessels and its own regeneration",
-   "rule": "The Ark feels big, like its own level: a kaiju protected by three escorts and its own regeneration, with engines that animate, octahedral shielded prisms placed to protect the rest, danger prisms where it wants to be dangerous, and a hangar the escorts launch from.",
+   "date": "2026-11-16",
+   "words": "the ark should only regenerate inside a cell nucleus under control of the ark's domain",
+   "rule": "The Ark is its own level: a kaiju guarded by three escorts that launch from its hangar, with engines that animate, octahedral shielded prisms placed to protect the rest, super-shielded prisms, danger prisms where it wants to be dangerous, and a payload (a parcel of its hull any vessel grabs and fires to crack super-shielded mass). Its omni-crystal reactor regrows its own empty hull slots at a fixed rate, one prism a beat, never past full, and only while it sits inside a cell nucleus its domain controls; a fallen Ark never regrows.",
    "source": {
     "file": "Docs/VesselModels/ArkReverse.md",
-    "line": 7
+    "line": 139
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
-   "test": "Does the Ark design read as a level-sized kaiju with escorts, regeneration and a hangar, not merely a big vessel?",
+   "test": "Does the Ark read as a level-sized kaiju with escorts, a hangar, super-shielded prisms and a payload, and does its hull regrow only inside a nucleus its domain controls?",
    "status": "drafted"
   },
   {
@@ -3632,22 +3632,6 @@
    "area": "vessel",
    "retired": "Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) and the round-18 Mix's L5 swaps",
    "test": "Does a Meerkat change move an ability to another element or alter a row's meaning? If yes it reopens a locked definition.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-vessel-28",
-   "owner": "Garrett",
-   "date": "2026-10-28",
-   "words": "The omni crystal is always one size (Garrett, 2026-10-28). Nothing resizes it: not the reactor, and not the Charge shape",
-   "rule": "The omni crystal is always one size; no reactor, element shape or effect resizes it.",
-   "source": {
-    "file": "Docs/VesselModels/ArkReverse.md",
-    "line": 139
-   },
-   "kind": "decision",
-   "area": "vessel",
-   "retired": "",
-   "test": "Does anything scale the omni crystal? If yes it is wrong.",
    "status": "drafted"
   },
   {

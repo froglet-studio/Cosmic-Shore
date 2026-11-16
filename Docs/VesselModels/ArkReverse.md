@@ -136,6 +136,7 @@ Every Ark is this model. `Wander_WithArk.asset` (the Arkway voyage's settings) n
   - Every empty socket, whether grazed, cracked or taken for a payload, grows a prism back: one every 2 s, the empty socket nearest the reactor well first. The prism is the socket's kind and size, in the Ark's domain, grown in through the canonical lay.
   - A beat with nothing to regrow is not saved up (`ArkReactor.Beat`), so the rate never bursts.
   - A fallen Ark never regrows. The fence is the fourth sign-off in `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`.
+  - **Only inside a nucleus its domain controls** (Garrett, 2026-11-16: "the ark should only regenerate inside a cell nucleus under control of the ark's domain"). Not built yet: the reactor regrows wherever the Ark is, gated only by the escort's `RegrowAllowed`.
 - **The omni crystal is always one size** (Garrett, 2026-10-28). Nothing resizes it: not the reactor, and not the Charge shape, which now lengthens only the lance. Its collar (`omni.ring`) turns at 12°/s, and at 90°/s while the hull regrows, carrying the crystal with it. The regrowth spreads out from the crystal (`ArkModel.ReactorPivot`).
 - **The actions play on events.** The rig table carries the two action takes as well: `release` (the lance's 20 slide, `releaseMove`) and `hangarOpen` (the doors, 70° and 75°).
   - The hangar opens while a vessel of the Ark's domain is within the hold's grab reach (`PayloadConfig`'s 160). The open hangar says a payload can be taken here: a world fact shown in the world.
