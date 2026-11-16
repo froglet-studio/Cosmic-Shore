@@ -61,6 +61,7 @@ namespace CosmicShore.Gameplay
         readonly ArkAssaultClock _clock = new();
         readonly IArkStatusSource _source;
         readonly System.Action<string> _banner;
+        readonly System.Action<string, ArkwayVoyageHud.Mood> _toast;
 
         ArkEscortSO _words;
         ArkAssaultClock.Settings _settings;
@@ -74,6 +75,14 @@ namespace CosmicShore.Gameplay
         {
             _source = source;
             _banner = banner;
+        }
+
+        /// <summary>A driver whose lines are toasts with a mood: a warning and an assault are threats, a repelled
+        /// assault is good, one that passed is an event.</summary>
+        public ArkAssaultDriver(IArkStatusSource source, System.Action<string, ArkwayVoyageHud.Mood> toast)
+        {
+            _source = source;
+            _toast = toast;
         }
 
         public bool UnderAttack => _underAttack;
@@ -203,21 +212,24 @@ namespace CosmicShore.Gameplay
             {
                 case ArkAssaultClock.Change.Incoming:
                     Say(TemplateText.Fill(_words.AssaultIncomingLine, "name", _world,
-                        "seconds", Mathf.CeilToInt(_words.AssaultWarningSeconds).ToString()));
+                        "seconds", Mathf.CeilToInt(_words.AssaultWarningSeconds).ToString()), ArkwayVoyageHud.Mood.Threat);
                     ArkVoyageSignals.Emit(ArkEscortSignalKind.AssaultIncoming, _source);
                     break;
                 case ArkAssaultClock.Change.Started:
-                    Say(TemplateText.Fill(_words.AssaultLine, "name", _world, "kills", _clock.KillsNeeded.ToString()));
+                    Say(TemplateText.Fill(_words.AssaultLine, "name", _world, "kills", _clock.KillsNeeded.ToString()),
+                        ArkwayVoyageHud.Mood.Threat);
                     ArkVoyageSignals.Emit(ArkEscortSignalKind.AssaultStarted, _source);
                     break;
                 case ArkAssaultClock.Change.Repelled:
-                    Say(TemplateText.Fill(_words.AssaultRepelledLine, "name", _world, "lost", _clock.PlatesLost.ToString()));
+                    Say(TemplateText.Fill(_words.AssaultRepelledLine, "name", _world, "lost", _clock.PlatesLost.ToString()),
+                        ArkwayVoyageHud.Mood.Good);
                     ArkVoyageSignals.Emit(ArkEscortSignalKind.AssaultRepelled, _source);
                     break;
                 case ArkAssaultClock.Change.Passed:
                     // A warning dropped before it started (the Ark left the world, it was pacified) passes quietly.
                     if (_clock.PlatesLost > 0 || _clock.Kills > 0)
-                        Say(TemplateText.Fill(_words.AssaultPassedLine, "name", _world, "lost", _clock.PlatesLost.ToString()));
+                        Say(TemplateText.Fill(_words.AssaultPassedLine, "name", _world, "lost", _clock.PlatesLost.ToString()),
+                            ArkwayVoyageHud.Mood.Event);
                     ArkVoyageSignals.Emit(ArkEscortSignalKind.AssaultPassed, _source);
                     break;
             }
@@ -225,9 +237,11 @@ namespace CosmicShore.Gameplay
                 $"(kills {_clock.Kills}/{_clock.KillsNeeded}, plates lost {_clock.PlatesLost}).");
         }
 
-        void Say(string line)
+        void Say(string line, ArkwayVoyageHud.Mood mood)
         {
-            if (!string.IsNullOrEmpty(line)) _banner?.Invoke(line);
+            if (string.IsNullOrEmpty(line)) return;
+            if (_toast != null) _toast(line, mood);
+            else _banner?.Invoke(line);
         }
     }
 }

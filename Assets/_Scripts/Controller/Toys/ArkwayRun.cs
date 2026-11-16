@@ -256,6 +256,14 @@ namespace CosmicShore.Gameplay
             _hud.ShowBanner(line, seconds);
         }
 
+        /// <summary>Show a toast on the run's banner: its <paramref name="mood"/> and a line under it (may be empty).</summary>
+        public void ShowBanner(string line, float seconds, ArkwayVoyageHud.Mood mood, string under)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, seconds, mood, under);
+        }
+
         /// <summary>True while the corridor and hull are still building behind the veil —
         /// the window in which the player can see nothing and a toy pass must not toggle.</summary>
         public bool IsBuilding => _beginning;

@@ -380,6 +380,20 @@ namespace CosmicShore.Data
         public bool RivalsMayTake = true;
         /// <summary>The line written into the pilot's chronicle on success ({to}, {about}).</summary>
         public string ChronicleLine;
+
+        // ── Crystal Run (Docs/Voyages/CRYSTAL_RUN.md, Shombith 2026-11-16) ──────────────────────────────────────
+
+        /// <summary>Offered on every board, whoever is seated, credited to the first seated pilot (any pilot can bring
+        /// it). Such a job may name no faction.</summary>
+        public bool Always;
+        /// <summary>The work counts from the moment the Ark sets sail, through every cell of the leg, not only at the
+        /// stop; the job resolves on arrival.</summary>
+        public bool CountsUnderway;
+        /// <summary>The leg is exactly this many cells, the destination's own world last (0: the lanes decide).</summary>
+        public int Cells;
+        /// <summary>Venture further: what each further run adds to the goal and to the leg's cells.</summary>
+        public float VentureGoal;
+        public int VentureCells;
     }
 
     /// <summary>What an outcome writes into the galaxy's news and state (VOYAGES.md §6.3, DEPTH.md §2): the chain.</summary>

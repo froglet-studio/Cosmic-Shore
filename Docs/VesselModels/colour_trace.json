@@ -4,17 +4,17 @@
  "tool": "Tools/Build/colour_trace.py",
  "rule": "Every colour that reaches a pixel comes from the worn colour set. Photic holds the baked values; every other set computes its own from its pigments (colour_trace.py repaint). A colour is inert, a UI theme token, fixed (pure white, pure black), traced (an id below), or untraced (listed below: the work left).",
  "counts": {
-  "fixed": 2741,
-  "inert": 30389,
-  "token": 4073,
-  "traced": 2049
+  "fixed": 2756,
+  "inert": 30384,
+  "token": 4076,
+  "traced": 2064
  },
  "inert": {
   "ambient-mode": 180,
   "camera-no-clear": 8,
-  "code-fallback": 155,
-  "code-inert": 223,
-  "debug": 107,
+  "code-fallback": 153,
+  "code-inert": 222,
+  "debug": 105,
   "field-reviewed": 9,
   "fog-off": 60,
   "gradient-key-unused": 78,
@@ -80,19 +80,19 @@
  "tokens": {
   "ControlActive": 421,
   "Cta": 295,
-  "Danger": 16,
+  "Danger": 17,
   "ElementCharge": 4,
   "ElementMass": 4,
   "ElementSpace": 4,
   "ElementTime": 4,
   "InactiveLight": 11,
   "NeutralLightest": 789,
-  "Purchase": 32,
+  "Purchase": 33,
   "Sea": 7,
   "Selection": 136,
   "SurfaceBlack": 221,
   "SurfaceDark": 442,
-  "SurfaceLight": 228,
+  "SurfaceLight": 229,
   "SurfaceVeryDark": 295,
   "TextInactive": 1,
   "TextLight": 1161,
@@ -1160,7 +1160,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 229,
+   "uses": 230,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
@@ -1223,6 +1223,20 @@
    "uses": 1,
    "where": [
     "Assets/_Scripts/UI/ObjectiveArrowGraphic.cs code"
+   ]
+  },
+  "ui:500A14": {
+   "role": "ui",
+   "photic": [
+    0.314,
+    0.039,
+    0.078,
+    0.88
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageHud.cs code"
    ]
   },
   "ui:508900": {
@@ -2130,6 +2144,20 @@
     "Assets/_Prefabs/Spacevessels/Squirrel.prefab TextMeshProUGUI"
    ]
   },
+  "ui:B8C0F0": {
+   "role": "ui",
+   "photic": [
+    0.722,
+    0.753,
+    0.941,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageHud.cs code"
+   ]
+  },
   "ui:BB06FF": {
    "role": "ui",
    "photic": [
@@ -2185,7 +2213,7 @@
    "family": "blue",
    "uses": 3,
    "where": [
-    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageKit.cs code",
     "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
     "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
    ]
@@ -2246,7 +2274,7 @@
    "family": "lime",
    "uses": 3,
    "where": [
-    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageKit.cs code",
     "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
     "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
    ]
@@ -2607,7 +2635,7 @@
     1.0
    ],
    "family": "fire",
-   "uses": 17,
+   "uses": 18,
    "where": [
     "Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/ArkView.prefab Image",
     "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab TextMeshProUGUI",
@@ -2707,6 +2735,20 @@
     "Assets/_Prefabs/UI Elements/VesselHUD/SparrowHUDVariant.prefab Image"
    ]
   },
+  "ui:FF8A7C": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.541,
+    0.486,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageHud.cs code"
+   ]
+  },
   "ui:FF8C26": {
    "role": "ui",
    "photic": [
@@ -2758,7 +2800,7 @@
     1.0
    ],
    "family": "gold",
-   "uses": 33,
+   "uses": 34,
    "where": [
     "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image",
     "Assets/_Prefabs/UI Elements/In Game/ScoreboardRow.prefab Image",
@@ -2792,7 +2834,7 @@
    "family": "gold",
    "uses": 3,
    "where": [
-    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageKit.cs code",
     "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
     "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
    ]
@@ -3109,12 +3151,12 @@
     0.86
    ],
    "family": "blue",
-   "uses": 7,
+   "uses": 8,
    "where": [
     "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
     "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
     "Assets/_Prefabs/CORE/GameCanvas.prefab LoadCrystalGraphic",
-    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code"
    ]
   },
   "world:000440": {
@@ -3632,10 +3674,11 @@
     0.95
    ],
    "family": "blue",
-   "uses": 2,
+   "uses": 3,
    "where": [
     "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/SniperScopeOverlay.cs code",
-    "Assets/_Scripts/Controller/Vessel/ShrikeScopeOverlay.cs code"
+    "Assets/_Scripts/Controller/Vessel/ShrikeScopeOverlay.cs code",
+    "Assets/_Scripts/Controller/Voyages/VoyageIntro.cs code"
    ]
   },
   "world:058FCA": {
@@ -5036,6 +5079,20 @@
     "Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonTunnelConfigSO.cs code"
    ]
   },
+  "world:500A14": {
+   "role": "world",
+   "photic": [
+    0.314,
+    0.039,
+    0.078,
+    0.88
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code"
+   ]
+  },
   "world:501016": {
    "role": "world",
    "photic": [
@@ -5556,10 +5613,11 @@
     0.5
    ],
    "family": "blue",
-   "uses": 3,
+   "uses": 6,
    "where": [
     "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
     "Assets/_Graphics/Skyboxes/BlackSkybox.mat Material(?)",
+    "Assets/_Scripts/Controller/Toys/ToyFactory.cs code",
     "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
    ]
   },
@@ -5855,10 +5913,11 @@
     1.0
    ],
    "family": "lime",
-   "uses": 3,
+   "uses": 4,
    "where": [
     "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
     "Assets/_Prefabs/CORE/GameCanvas.prefab LoadCrystalGraphic",
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code",
     "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
    ]
   },
@@ -6230,6 +6289,20 @@
    "uses": 1,
    "where": [
     "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
+   ]
+  },
+  "world:B8C0F0": {
+   "role": "world",
+   "photic": [
+    0.722,
+    0.753,
+    0.941,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code"
    ]
   },
   "world:B900FF": {
@@ -6646,10 +6719,11 @@
     1.0
    ],
    "family": "blue",
-   "uses": 8,
+   "uses": 9,
    "where": [
     "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
     "Assets/_Prefabs/CORE/GameCanvas.prefab GoalRow",
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code",
     "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
    ]
   },
@@ -7305,6 +7379,20 @@
     "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
    ]
   },
+  "world:FF8A7C": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.541,
+    0.486,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code"
+   ]
+  },
   "world:FF991A": {
    "role": "world",
    "photic": [
@@ -7704,9 +7792,10 @@
     1.0
    ],
    "family": "gold",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code"
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs code",
+    "Assets/_Scripts/Controller/Voyages/VoyageIntro.cs code"
    ]
   },
   "world:FFEBB2": {
@@ -7789,9 +7878,10 @@
     1.0
    ],
    "family": "band~blue",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code"
+    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code",
+    "Assets/_Scripts/Controller/Voyages/VoyageIntro.cs code"
    ]
   },
   "world:FFF9F1": {

@@ -91,6 +91,40 @@ LINES_FIELDS = [
     "StepSea", "StepVoyage", "StepArk", "PageBack", "PageBackKey", "SeaFullScreen", "SeaFullScreenBack", "SeaCrew", "SeaCrewHide", "SeaTierWidth", "SeaOpenVoyage", "SeaOfferKicker", "SeaOfferPay", "SeaCrewRecommends", "SeaCrewDrawer", "BriefKicker", "BriefStats", "BriefDifficulty", "BriefRecommended", "BriefRewards", "BriefCrystals", "BriefCrystalsBy", "BriefStanding", "BriefStandingBy", "BriefRole", "BriefStop", "BriefReady", "ArkLobby", "ArkLobbyWith", "ArkSquadHead", "ArkSquadLine", "ArkSquadLineLobby", "ArkYou", "ArkWingmate", "ArkInLobby", "ArkFriendLine", "ArkArtifact", "ArkFlySquad", "ArkFlySquadKey", "ArkBackToLobby", "ArkVoyageLine", "ArkSeatAiShort", "ArkSquadSeparator", "ArkNoSquad", "ArkAiFor", "ArkAiLine", "PickTitle", "PickTitleSeat", "PickKits", "PickKitVoyage", "PickKitLast", "PickKitWho", "PickSees", "PickSeesAll", "PickSeesCrystals", "PickSeesPrisms", "PickSeesLife", "PickSeesVessels", "PickSeesPaths", "PickCount", "PickForVoyage", "PickNote", "PickClose", "KindCourier", "KindHunt", "KindSalvage", "KindDefence", "KindSurvey", "KindHarvest", "KindStudy", "KindRescue", "KindLiberate", "KindBuild", "KindLift", "KindBounty", "KindRite", "KindParley", "KindRaid", "KindTend", "KindExhibition", "KindConvoy", "KindCull", "KindHome", "KindEscort",
 ]
 
+# Crystal Run (Docs/Voyages/CRYSTAL_RUN.md): the objective box, the toasts and the end-of-voyage scoreboard.
+LINES_FIELDS += [
+    "ObjectiveRaidKicker", "ObjectiveRaidGoal", "ObjectiveCrystals", "ObjectiveCount", "ObjectiveElement",
+    "ObjectiveElementSeparator", "ObjectiveHull", "ObjectiveBreach", "ObjectiveCell", "ObjectiveCalm", "ObjectiveHostile",
+    "ObjectiveGoalMet", "ObjectiveHomeKicker", "ObjectiveHomeGoal", "ObjectiveAtStake",
+    "ToastCellCalm", "ToastCellHostile", "ToastFinalCell", "ToastGoalReached",
+    "ScoreKickerDone", "ScoreKickerFailed", "ScoreKickerLost", "ScoreKickerDocked", "ScoreRaidTitle", "ScoreRaidStats",
+    "ScoreEscortTitle", "ScoreEscortStats", "ScoreLostTitle", "ScoreDockedTitle", "ScoreDockedStats", "ScoreHull",
+    "ScoreHullValue", "ScoreColSeat", "ScoreColCrystals", "ScoreColKills", "ScoreRowSeat", "ScoreRowYou", "ScoreRewards",
+    "ScoreStolen", "ScoreStolenBy", "ScoreStolenSeparator", "ScorePay", "ScoreEscortPay", "ScoreRewardValue",
+    "ScoreAtStake", "ScoreBanked", "ScoreFinish", "ScoreFinishLine", "ScoreVenture", "ScoreVentureRaid",
+    "ScoreVentureEscort", "ScoreDone", "ScoreDoneLine", "ScoreFinishKey", "ScoreVentureKey",
+    "ToastCellHostileSub", "ToastCellCalmSub", "ToastSetOff", "ToastSetOffSub", "ToastHome",
+    "ToastHomeSub", "ObjectiveDestinationTag", "ObjectiveCalmTag", "ObjectiveHostileTag", "ObjectiveCellName",
+    "ToastArkUnderAttack", "ToastArkUnderAttackSub", "ToastBreachClose", "ToastBreachCloseSub", "ObjectiveEscortKicker", "ObjectiveEscortGoal", "ObjectiveEscortGoalNoBreach", "ObjectiveArkBound", "ObjectiveArkInside", "ObjectiveActionAssault", "ObjectiveActionIncoming", "ObjectiveActionUnderAttack", "ObjectiveActionHealing", "ObjectiveEscortHostile", "ObjectiveEscortCalm", "ScoreColGuarded", "ScoreColScore", "ScoreTryAgain", "ScoreTryAgainLine",
+]
+
+# Crystal Run's job keys (JobTemplate in VoyageContent.cs): an always-offered job counted from the moment the Ark sails.
+def crystal_run_fields(j):
+    return {"Always": bool(j.get("always", False)), "CountsUnderway": bool(j.get("countsUnderway", False)),
+            "Cells": int(j.get("cells", 0)), "VentureGoal": j.get("ventureGoal", 0), "VentureCells": int(j.get("ventureCells", 0))}
+
+
+def crystal_run_errors(j):
+    errors = []
+    if int(j.get("cells", 0)) < 0 or int(j.get("ventureCells", 0)) < 0 or float(j.get("ventureGoal", 0)) < 0:
+        errors.append(f"{j['id']}: cells, ventureCells and ventureGoal are 0 or more")
+    if j.get("countsUnderway") and j.get("verb", "Arrive") != "Gather":
+        errors.append(f"{j['id']}: countsUnderway counts crystals, so its verb is Gather")
+    if j.get("always") and j["id"] == "job.return":
+        errors.append("job.return is the way home, never an always-offered job")
+    return errors
+
+
 # The world's rates (VoyageWorldRules in VoyageContent.cs): spec key -> (C# field, kind). Every one is written.
 WORLD_FIELDS = [
     ("boardSize", "BoardSize", int), ("newsLifeDays", "NewsLifeDays", int), ("restockDays", "RestockDays", int),
@@ -305,7 +339,7 @@ def validate(spec):
         jobs[j["id"]] = j
         if j["kind"] not in e["kinds"]:
             errors.append(f"{j['id']}: unknown kind {j['kind']}")
-        if j["faction"] not in e["fac"] or (j["faction"] == "None" and j["id"] != "job.return"):
+        if j["faction"] not in e["fac"] or (j["faction"] == "None" and j["id"] != "job.return" and not j.get("always")):
             errors.append(f"{j['id']}: unknown faction type {j['faction']}")
         if j["needs"] not in e["tags"]:
             errors.append(f"{j['id']}: unknown news tag {j['needs']}")
@@ -329,6 +363,7 @@ def validate(spec):
             errors.append(f"{j['id']}: hostileCells must be a list of true/false, one per cell of the leg")
         if not 0 <= int(j.get("tier", 0)) <= 2:
             errors.append(f"{j['id']}: tier must be 0 to 2")
+        errors.extend(crystal_run_errors(j))
         for k in ("onSuccess", "onFail"):
             if j[k] and j[k] not in events:
                 errors.append(f"{j['id']}: {k} names unknown event {j[k]}")
@@ -541,6 +576,7 @@ def to_model(spec):
             m["Jobs"][-1]["HostileCells"] = [1 if c else 0 for c in j["hostileCells"]]
         if float(j.get("breachHull", 0)) > 0:
             m["Jobs"][-1]["BreachHull"] = j["breachHull"]
+        m["Jobs"][-1].update(crystal_run_fields(j))
     for ev in spec["events"]:
         writes = []
         for w in ev["writes"]:
@@ -672,6 +708,8 @@ def emit_toy(spec):
     out += f"  vaultPrisms: {int(t['vaultPrisms'])}\n  vaultPrismScale: {vec3(t['vaultPrismScale'])}\n"
     out += f"  vaultOpenShare: {fnum(t['vaultOpenShare'])}\n  holdRadius: {fnum(t['holdRadius'])}\n"
     out += f"  cullRadius: {fnum(t['cullRadius'])}\n  observeRadius: {fnum(t['observeRadius'])}\n  rivalAbeam: {fnum(t['rivalAbeam'])}\n"
+    out += (f"  escortCrystalsPerDifficulty: {int(t.get('escortCrystalsPerDifficulty', 30))}\n"
+            f"  escortRewardElement: {enums()['elements'][t.get('escortRewardElement', 'Omni')]}\n")
     for k in TOY_COLORS:
         out += f"  {k}: {color(t[k])}\n"
     return out
@@ -723,6 +761,10 @@ def drift(files):
             if not os.path.exists(os.path.join(ROOT, rel)) or read(rel) != text]
 
 
+def crystal_run(spec):
+    return next(j for j in spec["jobs"] if j.get("countsUnderway"))
+
+
 def self_test():
     failures = []
     spec = load(SPEC)
@@ -761,6 +803,9 @@ def self_test():
         "a verb with no goal": lambda s: next(j for j in s["jobs"] if j.get("verb") == "Gather").update(goal=0),
         "a hull floor past 1": lambda s: s["jobs"][2].update(hullFloor=2),
         "a tier past 2": lambda s: s["jobs"][2].update(tier=5),
+        "a crystal run that counts a verb other than Gather": lambda s: crystal_run(s).update(verb="Hold"),
+        "a crystal run of negative cells": lambda s: crystal_run(s).update(cells=-1),
+        "a factionless job that is not always offered": lambda s: crystal_run(s).update(always=False),
         "a crew type with no work": lambda s: [s["jobs"].remove(j) for j in list(s["jobs"]) if j["faction"] == "Sport"],
         "a news write with no line": lambda s: s["events"][0]["writes"][0].update(line=""),
         "a rival at an unknown home": lambda s: s["rivals"][0].update(home="loc.nowhere"),

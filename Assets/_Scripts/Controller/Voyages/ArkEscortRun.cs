@@ -323,6 +323,7 @@ namespace CosmicShore.Gameplay
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;
             HookArk();
+            ShowOnHud();
             // The first world was entered behind the veil, before the hull was laid: its entry is the moment it opens.
             if (_leg >= 0)
             {
@@ -347,7 +348,7 @@ namespace CosmicShore.Gameplay
             // The Ark holds at the last world's core: it made it through.
             _survived = true;
             CloseLeg(_leg);
-            Banner(TemplateText.Fill(_escort.SurvivedLine, "difficulty", _difficulty.ToString(),
+            Banner(ArkwayVoyageHud.Mood.Good, TemplateText.Fill(_escort.SurvivedLine, "difficulty", _difficulty.ToString(),
                 "hull", Ark ? Mathf.RoundToInt(Ark.HealthFraction * 100f).ToString() : "0") + BerthedBannerSuffix());
             _endAt = Time.time + EndAfterSurvivedSeconds;
         }
@@ -359,7 +360,7 @@ namespace CosmicShore.Gameplay
             CloseLeg(_leg);
             int leg = Mathf.Max(0, _leg);
             _report.FallenLeg = leg;
-            Banner(TemplateText.Fill(_escort.FallenLine, "name", _escort.Legs[leg].Name,
+            Banner(ArkwayVoyageHud.Mood.Threat, TemplateText.Fill(_escort.FallenLine, "name", _escort.Legs[leg].Name,
                 "leg", (leg + 1).ToString(), "legs", _escort.Legs.Count.ToString()));
         }
 
@@ -415,7 +416,7 @@ namespace CosmicShore.Gameplay
             r.HullMin = r.HullAtEntry;
             OpenLegMetrics(leg);
             var authored = _escort.Legs[leg];
-            Banner(TemplateText.Fill(authored.Arrival, "name", authored.Name, "leg", (leg + 1).ToString(),
+            Banner(r.Hostile ? ArkwayVoyageHud.Mood.Threat : ArkwayVoyageHud.Mood.Event, TemplateText.Fill(authored.Arrival, "name", authored.Name, "leg", (leg + 1).ToString(),
                 "legs", _escort.Legs.Count.ToString()));
             OnAssaultLegChanged();
         }
@@ -433,7 +434,7 @@ namespace CosmicShore.Gameplay
             CloseLeg(_leg);
             _report.FallenLeg = _leg;
             var authored = _escort.Legs[_leg];
-            Banner(TemplateText.Fill(_escort.OverrunLine, "name", authored.Name, "leg", (_leg + 1).ToString(),
+            Banner(ArkwayVoyageHud.Mood.Threat, TemplateText.Fill(_escort.OverrunLine, "name", authored.Name, "leg", (_leg + 1).ToString(),
                 "legs", _escort.Legs.Count.ToString(), "hull", Mathf.RoundToInt(ark.HealthFraction * 100f).ToString()));
             _sea.End(returnToCell: true, "the Ark was overrun");
         }
@@ -582,6 +583,7 @@ namespace CosmicShore.Gameplay
         {
             _active = false;
             StopIntro();
+            LeaveHud();
             _report.Result = outcome;
             _report.EndedAt = Time.time;
             FinishMetrics();
@@ -647,7 +649,10 @@ namespace CosmicShore.Gameplay
             return vessel.VesselStatus;
         }
 
-        void Banner(string line) => _sea?.ShowBanner(line, BannerSeconds);
+        void Banner(string line) => Banner(ArkwayVoyageHud.Mood.Event, line);
+
+        /// <summary>A toast of <paramref name="mood"/> on the run's one banner path (<see cref="VoyageToasts"/>).</summary>
+        void Banner(ArkwayVoyageHud.Mood mood, string line) => VoyageToasts.Show(_sea, mood, line, null, BannerSeconds);
 
         void OnDestroy()
         {
@@ -658,6 +663,7 @@ namespace CosmicShore.Gameplay
                 _sea.ArkFallen -= OnArkFallen;
             }
             StopIntro();
+            LeaveHud();
             if (_active) SquadDeployment.Recall();
             // Destroyed while out (a scene unload that ended nothing first): the escort's static hooks leave with it, or
             // the next scene's crystals would still be placed by this escort's resolver.
