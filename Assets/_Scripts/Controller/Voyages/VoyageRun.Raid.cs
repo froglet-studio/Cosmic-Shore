@@ -23,6 +23,14 @@ namespace CosmicShore.Gameplay
         ArkAttackerMarks _attackerMarks;
         int _toastedCell = -1;
         float _legStartedAt;
+        bool _anchorWarned;
+        float _nextBankCheck;
+        readonly Dictionary<string, float> _spillReadyAt = new();
+        const float BankCheckSeconds = 0.2f;
+
+        /// <summary>A Crystal Run carries its crystals until they are banked at the Ark (P6), unless the settings turn it
+        /// off.</summary>
+        bool CrystalsAtRisk => !_def || _def.RaidCrystalsAtRisk;
 
         /// <summary>True while the job under way counts its work from the moment the Ark set sail.</summary>
         bool Raiding => _state?.Current is { CountsUnderway: true };
@@ -40,6 +48,8 @@ namespace CosmicShore.Gameplay
             _legIndex.Clear();
             _toastedCell = -1;
             _goalToastShown = false;
+            _anchorWarned = false;
+            _spillReadyAt.Clear();
             _legStartedAt = Time.time;
             _raid.Clear();
             HookRaid(job is { CountsUnderway: true });
@@ -59,11 +69,13 @@ namespace CosmicShore.Gameplay
             {
                 ElementalCrystalImpactor.OnCrystalCollectedAs += OnRaidCrystal;
                 Fauna.Killed += OnRaidKill;
+                VesselImpactor.PrismHullContact += OnRaidHullContact;
             }
             else
             {
                 ElementalCrystalImpactor.OnCrystalCollectedAs -= OnRaidCrystal;
                 Fauna.Killed -= OnRaidKill;
+                VesselImpactor.PrismHullContact -= OnRaidHullContact;
             }
         }
 
@@ -71,11 +83,122 @@ namespace CosmicShore.Gameplay
         void OnRaidCrystal(string playerName, Element element)
         {
             if (!_active || !Raiding || _fallen || !IsSquadSeat(playerName)) return;
+            // Carried until banked at the Ark (P6), or counted at once when the settings turn that off.
+            if (CrystalsAtRisk)
+            {
+                _raid.Carry(playerName, element);
+                return;
+            }
             if (!_raid.Add(playerName, element)) return;
-            var job = _state.Current;
-            if (_goalToastShown || _raid.Total < job.Goal) return;
+            ToastGoalIfMet();
+        }
+
+        void ToastGoalIfMet()
+        {
+            var job = _state?.Current;
+            if (job == null || _goalToastShown || _raid.Total < job.Goal) return;
             _goalToastShown = true;
             VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Good, TemplateText.Fill(Lines.ToastGoalReached, "goal", Mathf.CeilToInt(job.Goal).ToString()));
+        }
+
+        // ── P1: the raid window (Shombith, 2026-11-16: "the ark park at each cell and give us time to steal") ──
+
+        /// <summary>How long the Ark anchors at the cell it just reached: a Crystal Run's hostile or calm window, nothing
+        /// for any other work (the way home, a job with a stop) or once the Ark has fallen.</summary>
+        float RaidAnchorSeconds()
+        {
+            if (!_active || !Raiding || _fallen || !_def) return 0f;
+            int cell = LegCell(out _);
+            bool hostile = cell > 0 && LegHostile(cell - 1);
+            return hostile ? _def.RaidAnchorHostileSeconds : _def.RaidAnchorCalmSeconds;
+        }
+
+        void OnRaidAnchored(float seconds)
+        {
+            _anchorWarned = false;
+            if (!_active || _following) return;
+            VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Event, Lines.ToastAnchored,
+                TemplateText.Fill(Lines.ToastAnchoredSub, "seconds", Mathf.CeilToInt(seconds).ToString()));
+        }
+
+        void OnRaidWeighed()
+        {
+            _anchorWarned = false;
+            if (!_active || _following || !Raiding) return;
+            VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Event, Lines.ToastWeighed);
+        }
+
+        /// <summary>Each frame of a Crystal Run: the horn before the anchored Ark sails, and every seat near the Ark banks
+        /// what it carries.</summary>
+        void TickRaidWindow()
+        {
+            if (!Raiding || _fallen || !_sea) return;
+            if (_sea.IsAnchored && !_anchorWarned && _def && _sea.AnchorRemaining <= _def.RaidAnchorWarnSeconds)
+            {
+                _anchorWarned = true;
+                if (!_following)
+                {
+                    VoyageToasts.PlayUi(_def.ArkHornSound);
+                    VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Threat,
+                        TemplateText.Fill(Lines.ToastAnchorClosing, "seconds", Mathf.CeilToInt(_sea.AnchorRemaining).ToString()),
+                        Lines.ToastAnchorClosingSub);
+                }
+            }
+            if (!CrystalsAtRisk || Time.unscaledTime < _nextBankCheck) return;
+            _nextBankCheck = Time.unscaledTime + BankCheckSeconds;
+            var ark = Ark;
+            if (!ark) return;
+            float r = _def ? _def.RaidBankRadius : 180f;
+            BankIfNear(LocalVessel(), ark.Position, r, you: true);
+            foreach (var w in _wingmates) BankIfNear(Alive(w), ark.Position, r, you: false);
+        }
+
+        void BankIfNear(IVesselStatus status, Vector3 arkAt, float radius, bool you)
+        {
+            if (status == null || _raid.CarriedBy(status.PlayerName) <= 0) return;
+            var hull = status.Vessel?.Transform;
+            if (!hull || (hull.position - arkAt).sqrMagnitude > radius * radius) return;
+            int n = _raid.Bank(status.PlayerName);
+            if (n <= 0) return;
+            if (you && !_following)
+            {
+                var job = _state.Current;
+                string goal = Mathf.CeilToInt(job?.Goal ?? 0f).ToString(), done = _raid.Total.ToString();
+                VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Good,
+                    TemplateText.Fill(Lines.ToastBanked, "count", n.ToString(), "done", done, "goal", goal),
+                    TemplateText.Fill(Lines.ToastBankedSub, "count", n.ToString(), "done", done, "goal", goal));
+            }
+            ToastGoalIfMet();
+        }
+
+        // ── P6: a hit spills what a seat carries (Shombith, 2026-11-16) ─────
+
+        /// <summary>A hull met a prism. A squad seat struck by a hostile danger prism (a creature's stinger, another
+        /// domain's trap) spills everything it carries back into the sea as loose crystals anyone can take.</summary>
+        void OnRaidHullContact(IVesselStatus status, Prism prism)
+        {
+            if (!_active || !Raiding || _fallen || !CrystalsAtRisk || status == null || !prism) return;
+            if (!prism.prismProperties.IsDangerous || prism.Domain == status.Domain) return;
+            string who = status.PlayerName;
+            if (!IsSquadSeat(who) || _raid.CarriedBy(who) <= 0) return;
+            float now = Time.time;
+            if (_spillReadyAt.TryGetValue(who, out float ready) && now < ready) return;
+            _spillReadyAt[who] = now + (_def ? _def.RaidSpillCooldownSeconds : 1.5f);
+
+            var lost = _raid.Spill(who);
+            int total = 0;
+            foreach (var e in VoyageRaid.Elements)
+            {
+                int n = lost[(int)e];
+                if (n <= 0) continue;
+                total += n;
+                ElementalCrystalEjector.Eject(status, e, n, Vector3.zero);
+            }
+            if (total <= 0) return;
+            var local = LocalVessel();
+            if (_following || local == null || local.PlayerName != who) return;
+            VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Threat, Lines.ToastSpilled,
+                TemplateText.Fill(Lines.ToastSpilledSub, "count", total.ToString()));
         }
 
         void OnRaidKill(Fauna fauna, string killer)
@@ -172,6 +295,14 @@ namespace CosmicShore.Gameplay
                 foreach (var e in VoyageRaid.Elements) objective.Crystals[(int)e] = _raid.Of(e);
                 objective.Breach = job.BreachHull;
                 objective.Hostile = objective.Cell > 0 && LegHostile(objective.Cell - 1);
+                if (_sea && _sea.IsAnchored)
+                {
+                    objective.Anchored = true;
+                    objective.AnchorSeconds = _sea.AnchorRemaining;
+                    objective.AnchorClosing = _def && _sea.AnchorRemaining <= _def.RaidAnchorWarnSeconds;
+                }
+                var you = LocalVessel();
+                objective.Carried = you != null ? _raid.CarriedBy(you.PlayerName) : 0;
                 return true;
             }
             if (job is { IsReturn: true } && _state.AtSea)

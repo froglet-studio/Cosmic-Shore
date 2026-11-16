@@ -1049,5 +1049,27 @@ namespace CosmicShore.ScriptableObjects
         public string ScoreTryAgain = "TRY AGAIN";
         [Tooltip("Under the Try again button.")]
         public string ScoreTryAgainLine = "Same voyage, a fresh Ark";
+        [Tooltip("Toast: the Ark anchors in a cell of a Crystal Run.")]
+        public string ToastAnchored = "THE ARK DROPS ANCHOR";
+        [Tooltip("Toast: the line under the anchor toast ({seconds}).")]
+        public string ToastAnchoredSub = "{seconds}s to raid this cell. Bank crystals at the Ark.";
+        [Tooltip("Toast: the raid window is closing ({seconds}).")]
+        public string ToastAnchorClosing = "THE ARK SAILS IN {seconds}";
+        [Tooltip("Toast: the line under the window-closing toast.")]
+        public string ToastAnchorClosingSub = "Bank what you carry or lose it.";
+        [Tooltip("Toast: the Ark weighs anchor.")]
+        public string ToastWeighed = "THE ARK SAILS ON";
+        [Tooltip("Toast: the pilot banked what they carried at the Ark ({count}, {done}, {goal}).")]
+        public string ToastBanked = "BANKED {count}";
+        [Tooltip("Toast: the line under the banked toast ({count}, {done}, {goal}).")]
+        public string ToastBankedSub = "{done} of {goal} aboard.";
+        [Tooltip("Toast: a hit spilled what the pilot carried ({count}).")]
+        public string ToastSpilled = "CRYSTALS SPILLED";
+        [Tooltip("Toast: the line under the spilled toast ({count}).")]
+        public string ToastSpilledSub = "{count} lost. Grab them back before the Ark sails.";
+        [Tooltip("Objective strip: the raid window while the Ark is anchored. {time} is m:ss.")]
+        public string ObjectiveStripAnchor = "Raid: the Ark sails in {time}";
+        [Tooltip("Objective strip: crystals the pilot carries unbanked. {count}.")]
+        public string ObjectiveStripCarried = "Carrying {count}. Bank them at the Ark.";
     }
 }
