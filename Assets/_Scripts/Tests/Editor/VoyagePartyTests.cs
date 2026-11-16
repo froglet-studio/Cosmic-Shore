@@ -91,6 +91,26 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Replace_KeepsWhatThisMachineCarries()
+        {
+            var host = new VoyageRaidTally();
+            host.Add("Host", Element.Space);
+            host.Add("Friend", Element.Charge);
+
+            var friend = new VoyageRaidTally();
+            friend.Carry("Friend", Element.Time);
+            friend.Carry("Friend", Element.Time);
+            friend.Replace(JsonUtility.FromJson<VoyageCourse>(JsonUtility.ToJson(
+                new VoyageCourse { Kind = VoyageCourseKind.Tally, Tally = host.Snapshot() })).Tally);
+            Assert.AreEqual(2, friend.Total, "The host's banked count arrives.");
+            Assert.AreEqual(2, friend.CarriedBy("Friend"), "What the friend carries is theirs until they bank it.");
+
+            Assert.AreEqual(2, friend.Bank("Friend"));
+            Assert.AreEqual(0, friend.CarriedBy("Friend"));
+            Assert.AreEqual(2, friend.Of(Element.Time), "Banked here at once, then reported to the host.");
+        }
+
+        [Test]
         public void Course_RoundTripsThroughJson_WithSeatsHomeAndOutcome()
         {
             var course = new VoyageCourse { Kind = VoyageCourseKind.EscortSail, Difficulty = 4, Seed = 12345, LegSerial = 1 };

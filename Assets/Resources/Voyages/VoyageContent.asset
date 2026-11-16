@@ -3335,3 +3335,14 @@ MonoBehaviour:
     ScoreColScore: Score
     ScoreTryAgain: TRY AGAIN
     ScoreTryAgainLine: Same voyage, a fresh Ark
+    ToastAnchored: THE ARK DROPS ANCHOR
+    ToastAnchoredSub: '{seconds}s to raid this cell. Bank crystals at the Ark.'
+    ToastAnchorClosing: 'THE ARK SAILS IN {seconds}'
+    ToastAnchorClosingSub: Bank what you carry or lose it.
+    ToastWeighed: THE ARK SAILS ON
+    ToastBanked: 'BANKED {count}'
+    ToastBankedSub: '{done} of {goal} aboard.'
+    ToastSpilled: CRYSTALS SPILLED
+    ToastSpilledSub: '{count} lost. Grab them back before the Ark sails.'
+    ObjectiveStripAnchor: 'Raid: the Ark sails in {time}'
+    ObjectiveStripCarried: 'Carrying {count}. Bank them at the Ark.'

@@ -226,7 +226,7 @@ namespace CosmicShore.Gameplay
     /// <summary>The host's Ark at one moment, on the network's clock: where it is, which way it faces, how it moves.</summary>
     public readonly struct VoyageArkPose
     {
-        public const int Bytes = sizeof(int) + sizeof(double) + sizeof(float) * 10 + 8;
+        public const int Bytes = sizeof(int) + sizeof(double) + sizeof(float) * 11 + 8;
 
         /// <summary>The host's leg (a job voyage's legs count from 1; an escort is one leg).</summary>
         public readonly int LegSerial;
@@ -235,14 +235,18 @@ namespace CosmicShore.Gameplay
         public readonly Vector3 Position;
         public readonly Quaternion Rotation;
         public readonly Vector3 Velocity;
+        /// <summary>Seconds left in the host Ark's anchor window at a Crystal Run cell (0: under way).</summary>
+        public readonly float AnchorLeft;
 
-        public VoyageArkPose(int legSerial, double serverTime, Vector3 position, Quaternion rotation, Vector3 velocity)
+        public VoyageArkPose(int legSerial, double serverTime, Vector3 position, Quaternion rotation, Vector3 velocity,
+            float anchorLeft = 0f)
         {
             LegSerial = legSerial;
             ServerTime = serverTime;
             Position = position;
             Rotation = rotation;
             Velocity = velocity;
+            AnchorLeft = anchorLeft;
         }
 
         public void Write(FastBufferWriter writer)
@@ -252,6 +256,7 @@ namespace CosmicShore.Gameplay
             writer.WriteValueSafe(Position);
             writer.WriteValueSafe(Rotation);
             writer.WriteValueSafe(Velocity);
+            writer.WriteValueSafe(AnchorLeft);
         }
 
         public static bool TryRead(FastBufferReader reader, out VoyageArkPose pose)
@@ -264,7 +269,8 @@ namespace CosmicShore.Gameplay
                 reader.ReadValueSafe(out Vector3 position);
                 reader.ReadValueSafe(out Quaternion rotation);
                 reader.ReadValueSafe(out Vector3 velocity);
-                pose = new VoyageArkPose(leg, time, position, rotation, velocity);
+                reader.ReadValueSafe(out float anchorLeft);
+                pose = new VoyageArkPose(leg, time, position, rotation, velocity, anchorLeft);
                 return true;
             }
             catch (OverflowException)

@@ -248,6 +248,71 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        // ── Anchoring: a raid window at each cell (Shombith, 2026-11-16, P1) ──
+        //
+        // With AnchorSeconds set, the Ark DROPS ANCHOR on reaching each cell of its route: it stops dead for the window
+        // the voyage asks for, then weighs anchor and sails on. The squad raids the cell while it waits. Unset (the toy,
+        // the escort) the Ark never stops, exactly as before.
+
+        float _anchorUntil = -1f, _anchorTotal;
+        bool _anchoredAtTarget;
+
+        /// <summary>Asked once each time the Ark reaches a cell of its route: seconds to hold there (0 or less, or no
+        /// answer: sail straight on). The final cell of a leg is asked too, before the Ark holds at the route's end.</summary>
+        public System.Func<float> AnchorSeconds { get; set; }
+
+        /// <summary>The Ark dropped anchor for this many seconds.</summary>
+        public event System.Action<float> Anchored;
+
+        /// <summary>The Ark weighed anchor and sails on.</summary>
+        public event System.Action Weighed;
+
+        /// <summary>True while the Ark is anchored at a cell.</summary>
+        public bool IsAnchored => _anchorUntil >= 0f;
+
+        /// <summary>Seconds left before the anchored Ark sails (0 when it is not anchored).</summary>
+        public float AnchorRemaining => IsAnchored ? Mathf.Max(0f, _anchorUntil - Time.time) : 0f;
+
+        /// <summary>The length of the window the Ark is anchored for (0 when it is not anchored).</summary>
+        public float AnchorTotal => IsAnchored ? _anchorTotal : 0f;
+
+        /// <summary>A party friend's anchored Ark keeps the host's window (Docs/Voyages/PARTY.md §4): it sails when the
+        /// host's does. No effect while not anchored; 0 weighs anchor on the next tick.</summary>
+        public void SetAnchorRemaining(float seconds)
+        {
+            if (!IsAnchored) return;
+            _anchorUntil = Time.time + Mathf.Max(0f, seconds);
+        }
+
+        /// <summary>True while the Ark holds at a cell it reached: anchoring when it first arrives, and still anchored
+        /// until its window ends. False once the window is spent, so the corridor advances.</summary>
+        bool TickAnchor()
+        {
+            if (_anchorUntil < 0f)
+            {
+                if (_anchoredAtTarget) return false;   // this cell's window is spent
+                _anchoredAtTarget = true;
+                float seconds = AnchorSeconds?.Invoke() ?? 0f;
+                if (seconds <= 0f) return false;
+                _anchorTotal = seconds;
+                _anchorUntil = Time.time + seconds;
+                _ark.SetUnderway(false);
+                Anchored?.Invoke(seconds);
+                return true;
+            }
+            if (Time.time < _anchorUntil) return true;
+            ClearAnchor();
+            _ark.SetUnderway(true);
+            Weighed?.Invoke();
+            return false;
+        }
+
+        void ClearAnchor()
+        {
+            _anchorUntil = -1f;
+            _anchorTotal = 0f;
+        }
+
         /// <summary>Show a line on the run's banner (an empty line shows nothing).</summary>
         public void ShowBanner(string line, float seconds)
         {
@@ -314,6 +379,8 @@ namespace CosmicShore.Gameplay
             if (localVessel?.Transform == null) return;
 
             _beginning = true;
+            _anchoredAtTarget = false;
+            ClearAnchor();
             _warnedCreationBacklog = false;
             HoldCreationTier(true);
             _home = HomeOverride ?? new Pose(localVessel.Transform.position, localVessel.Transform.rotation);
@@ -631,9 +698,11 @@ namespace CosmicShore.Gameplay
 
             if (_holdingAtRouteEnd) return;
             if (!_ark.HasArrived(CellConveyor.ArriveDistance)) return;
+            if (TickAnchor()) return;
 
             if (_conveyor.AdvancePastTarget())
             {
+                _anchoredAtTarget = false;   // a new cell ahead: its own window when the Ark reaches it
                 MarkTrail();
                 AimArk();
                 LogCensus();
@@ -1130,6 +1199,8 @@ namespace CosmicShore.Gameplay
             _generation++; // a Begin still in flight must not resurrect this voyage
             _running = false;
             _holdingAtRouteEnd = false;
+            _anchoredAtTarget = false;
+            ClearAnchor();
             _beginning = false;
             HoldCreationTier(false);
             _leashBreachedAt = -1f;

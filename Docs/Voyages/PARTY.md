@@ -56,6 +56,15 @@ machine at once (so it feels immediate) and reported to the host. The host adds 
 friend's, so every objective box and scoreboard shows the same number, and the goal is met by the party, not by each
 pilot alone.
 
+**Carried crystals and the raid window** (CRYSTAL_RUN.md §6). A crystal a seat takes is carried until it flies near
+its Ark, and a hit spills it. What a seat carries belongs to the machine flying it: it banks there, and only then is
+each banked crystal reported to the host, so the party's count is banked crystals only. The host's count never
+overwrites what a friend carries. A spill scatters crystals into the friend's own world. Each machine's Ark anchors at
+a cell when it arrives; the host sends the window it has left with its Ark pose (still sent while anchored), and a
+friend's anchored Ark keeps that window, so everyone's Ark sails together. A friend's Ark that anchors while the host's
+sails on waits 3 s for the host's to arrive, then sails too. The anchor, horn, banked and spilled toasts show on every
+machine.
+
 An escort has no crystal goal. Friends report kills there too, so the host's scoreboard has a row per seat, and the host
 sends those rows with the end.
 
@@ -84,6 +93,7 @@ The host leaving the voyage scene takes the party back to the menu, as before. A
 ## Not done
 
 - A job-voyage friend who rejoins on a later leg sails an unsynced corridor (section 5).
+- Other seats' carried crystals are not shown anywhere: each machine knows only its own.
 - The Ark pose sync has no tuning pass. The catch-up time and deadband were picked, not measured.
 - Nothing here has run on two machines.
 
@@ -94,9 +104,11 @@ The host leaving the voyage scene takes the party back to the menu, as before. A
 2. Start a Crystal Run. Both see the intro with both pilots named. The first world stands in the same place on both
    screens, and the two Arks stay together after the load veils drop.
 3. Each takes crystals. Both objective boxes show the same total, and it reaches the goal together.
-4. At the stop, the friend's board has only the keep-flying button. The host picks Venture further. The friend's board
+4. At a cell both Arks anchor, both see the same seconds left, and both sail on together. The friend carries crystals
+   to their Ark: the host's count rises only when they bank. A hit spills what the friend carries.
+5. At the stop, the friend's board has only the keep-flying button. The host picks Venture further. The friend's board
    closes and both sail the next leg.
-5. Let the host's Ark fall. The friend sees the lost board.
-6. Start Escort the Ark. Both sail the same difficulty and worlds. Let the friend's Ark fall first: the friend holds.
+6. Let the host's Ark fall. The friend sees the lost board.
+7. Start Escort the Ark. Both sail the same difficulty and worlds. Let the friend's Ark fall first: the friend holds.
    Then the host's end reaches the friend, with every seat's row on the board.
-7. Drop the friend's connection mid-escort. The friend's own outcome stands within a frame.
+8. Drop the friend's connection mid-escort. The friend's own outcome stands within a frame.

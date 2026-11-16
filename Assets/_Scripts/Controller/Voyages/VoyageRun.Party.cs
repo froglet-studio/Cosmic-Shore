@@ -27,6 +27,9 @@ namespace CosmicShore.Gameplay
     public sealed partial class VoyageRun
     {
         const float TallySendSeconds = 0.25f;
+        /// <summary>A friend's Ark that anchored while the host's sails on is held this long for the host's to arrive (the
+        /// two Arks reach a cell a moment apart), then weighs anchor with it.</summary>
+        const float AnchorGraceSeconds = 3f;
 
         readonly VoyageArkSync _arkSync = new();
         readonly List<long> _seatClients = new();
@@ -114,13 +117,30 @@ namespace CosmicShore.Gameplay
         /// <summary>Once a frame: the Ark's pose to or from the party, and the count to it.</summary>
         void TickParty()
         {
-            if (!_following || _shareCorridor) _arkSync.Tick(Ark, leader: !_following, _legSerial);
+            if (!_following || _shareCorridor)
+            {
+                _arkSync.Tick(Ark, leader: !_following, _legSerial, _sea ? _sea.AnchorRemaining : 0f);
+                if (_following) FollowHostAnchor();
+            }
             if (_following || !_tallyDirty || Time.unscaledTime < _nextTallySend) return;
             _tallyDirty = false;
             _nextTallySend = Time.unscaledTime + TallySendSeconds;
             var course = Course(VoyageCourseKind.Tally);
             course.Tally = _raid.Snapshot();
             VoyageCourseLink.Send(course);
+        }
+
+        /// <summary>A friend's anchor window is the host's (Docs/Voyages/PARTY.md §4): it ends when the host's ends.</summary>
+        void FollowHostAnchor()
+        {
+            if (!_sea || !_sea.IsAnchored || !_arkSync.TryHostAnchor(_legSerial, out float hostLeft)) return;
+            if (hostLeft > 0f)
+            {
+                if (Mathf.Abs(hostLeft - _sea.AnchorRemaining) > 0.25f) _sea.SetAnchorRemaining(hostLeft);
+                return;
+            }
+            // The host sails: this Ark weighs anchor too, unless it only just anchored (the host's is still on its way).
+            if (_sea.AnchorTotal - _sea.AnchorRemaining > AnchorGraceSeconds) _sea.SetAnchorRemaining(0f);
         }
 
         void EndParty()

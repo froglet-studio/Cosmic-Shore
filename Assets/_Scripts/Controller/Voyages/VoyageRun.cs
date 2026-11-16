@@ -743,6 +743,7 @@ namespace CosmicShore.Gameplay
             TickAssaults();
             if (!_active) return;
             TickLegToasts();
+            TickRaidWindow();
             WatchHold();
             TickHold();
             TickObserve();
@@ -1160,6 +1161,10 @@ namespace CosmicShore.Gameplay
             _sea.Underway += OnUnderway;
             _sea.RouteEnded += OnRouteEnded;
             _sea.ArkFallen += OnArkFallen;
+            // A Crystal Run's Ark anchors at each cell for the squad to raid it (VoyageRun.Raid.cs).
+            _sea.AnchorSeconds = RaidAnchorSeconds;
+            _sea.Anchored += OnRaidAnchored;
+            _sea.Weighed += OnRaidWeighed;
         }
 
         /// <summary>How many worlds a route's indices count into: the corridor's own list, read from the cell it will
@@ -1225,6 +1230,9 @@ namespace CosmicShore.Gameplay
                 _sea.Underway -= OnUnderway;
                 _sea.RouteEnded -= OnRouteEnded;
                 _sea.ArkFallen -= OnArkFallen;
+                _sea.Anchored -= OnRaidAnchored;
+                _sea.Weighed -= OnRaidWeighed;
+                _sea.AnchorSeconds = null;
             }
             if (_active) SquadDeployment.Recall();
             // Destroyed while out: the escort context's static hooks (the crystal placement resolver) leave with it.

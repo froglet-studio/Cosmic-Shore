@@ -63,28 +63,49 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Once a frame. The host (<paramref name="leader"/>) sends its Ark's pose; a friend pulls its Ark toward the host's.
-        /// <paramref name="legSerial"/> is this machine's leg (an escort is always leg 1).
+        /// <paramref name="legSerial"/> is this machine's leg (an escort is always leg 1). <paramref name="anchorLeft"/> is
+        /// the host's anchor window left at a Crystal Run cell (0 under way): an anchored Ark is not under way, but the
+        /// host keeps sending so every friend's window ends with its own.
         /// </summary>
-        public void Tick(Ark ark, bool leader, int legSerial)
+        public void Tick(Ark ark, bool leader, int legSerial, float anchorLeft = 0f)
         {
-            if (!ark || !ark.IsUnderway) return;
-            if (leader) Send(ark, legSerial);
-            else Follow(ark, legSerial);
+            if (!ark) return;
+            if (leader)
+            {
+                if (ark.IsUnderway || anchorLeft > 0f) Send(ark, legSerial, anchorLeft);
+                return;
+            }
+            if (ark.IsUnderway) Follow(ark, legSerial);
         }
 
-        void Send(Ark ark, int legSerial)
+        /// <summary>
+        /// A friend: what the host's last fresh pose of <paramref name="legSerial"/> says of its anchor. False when there
+        /// is no fresh pose of that leg; otherwise <paramref name="left"/> is the host's window left now (0: sailing).
+        /// </summary>
+        public bool TryHostAnchor(int legSerial, out float left)
+        {
+            left = 0f;
+            if (!_hasPose || _pose.LegSerial != legSerial) return false;
+            double age = VoyageCourseLink.ServerTimeNow - _pose.ServerTime;
+            if (age < 0) age = 0;
+            if (age > StaleSeconds) return false;
+            left = _pose.AnchorLeft > 0f ? Mathf.Max(0.01f, _pose.AnchorLeft - (float)age) : 0f;
+            return true;
+        }
+
+        void Send(Ark ark, int legSerial, float anchorLeft)
         {
             if (!VoyageCourseLink.HostWithParty) return;
             float now = Time.unscaledTime;
             if (now < _nextSend) return;
             _nextSend = now + SendSeconds;
             var p = ark.Position;
-            var v = _lastPositionAt >= 0f && now > _lastPositionAt
+            var v = anchorLeft > 0f ? Vector3.zero : _lastPositionAt >= 0f && now > _lastPositionAt
                 ? (p - _lastPosition) / (now - _lastPositionAt)
                 : ark.Forward * ark.Speed;
             _lastPosition = p;
             _lastPositionAt = now;
-            VoyageCourseLink.SendArkPose(new VoyageArkPose(legSerial, VoyageCourseLink.ServerTimeNow, p, ark.transform.rotation, v));
+            VoyageCourseLink.SendArkPose(new VoyageArkPose(legSerial, VoyageCourseLink.ServerTimeNow, p, ark.transform.rotation, v, anchorLeft));
         }
 
         void Follow(Ark ark, int legSerial)

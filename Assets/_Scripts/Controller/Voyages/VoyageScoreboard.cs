@@ -190,6 +190,15 @@ namespace CosmicShore.Gameplay
         public int AssaultKills;
         public int AssaultKillsNeeded;
 
+        /// <summary>A Crystal Run's Ark is anchored at a cell (P1): the squad raids it until the window ends.</summary>
+        public bool Anchored;
+        /// <summary>Seconds before the anchored Ark sails.</summary>
+        public float AnchorSeconds;
+        /// <summary>The window is about to close (the horn has sounded).</summary>
+        public bool AnchorClosing;
+        /// <summary>Crystals the local pilot carries and has not banked at the Ark (P6).</summary>
+        public int Carried;
+
         /// <summary>Copy the Ark's live state from an escort or a job voyage's <see cref="ArkEscortStatus"/>.</summary>
         public void TakeArk(in ArkEscortStatus s)
         {
