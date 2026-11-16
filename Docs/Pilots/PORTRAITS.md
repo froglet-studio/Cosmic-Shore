@@ -412,8 +412,10 @@ duplicate callsign everything else will be the different"; until then only the e
 (`PilotSceneCatalogSO`): for each painted pilot its key, its callsign, its name, the scene's resource name, the close-up sprite
 (the avatar, `Assets/_Graphics/Profile/Pilots/Avatar_<WORD>.png`), the close-up's box in the scene and the side the
 pilot stands on, all read from `scenes.json` and `people.json`. Eighteen pilots carry their own word as callsign; the other thirty-two
-share one (`people.json` names it). The fifty avatars were already the scenes' close-ups. The 32 more scenes add
-about 40 MB to a phone build (1536x864 ASTC each); a smaller mobile import is a follow-up.
+share one (`people.json` names it). The fifty avatars were already the scenes' close-ups. A scene costs a
+phone build about 0.56 MB (1536x864 at the platform default, ASTC 6x6; no mip maps), so the 32 more add about 18 MB
+and all fifty about 28 MB. ASTC 8x8 would halve that at some loss in smooth gradients; not changed until someone has
+looked at it.
 
 **Where a player sees them.** The Ark's PILOTS tab (`ArkPilotsPage`, `author_menu_ark.py`) lists the crew, eighteen cells
 a page with PREVIOUS and NEXT, one cell a pilot with their own close-up; pressing one opens the pilot's PROFILE PAGE (`PilotProfileModal`,
