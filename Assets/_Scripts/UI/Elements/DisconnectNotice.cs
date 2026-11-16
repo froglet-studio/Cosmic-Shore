@@ -211,8 +211,23 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>
+        /// A rejoin offer or "The host left" is about a match this player is no longer in, and both are raised on
+        /// the menu only. Once the player is in a game scene they have moved on, so the window must not ride along
+        /// into the new match: nobody had dismissed "The host left" on a guest, it stayed up through a whole
+        /// tournament the guest was playing with a live host (2026-11-17).
+        /// </summary>
+        internal static bool MatchNoticeIsStale(bool aboutAMatch, bool showing, string activeScene) =>
+            aboutAMatch && showing && activeScene != MenuScene;
+
         void Update()
         {
+            if (_targetAlpha > 0f && _mode != Mode.Connection &&
+                MatchNoticeIsStale(true, true, UnityEngine.SceneManagement.SceneManager.GetActiveScene().name))
+            {
+                SetMode(Mode.Connection);
+                Hide();
+            }
             CheckRejoin();
             if (_group == null) return;
             var step = _config.FadeSeconds <= 0f

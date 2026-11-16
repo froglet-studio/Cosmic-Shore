@@ -53,6 +53,33 @@ What this adds:
   during Play makes the editor import mid-match and freezes it for tens of seconds; the long "hang at Stop" after
   run 2 was the same import. Yesterday's runs were not checked for this.
 
+## Fourth set (2026-11-17, `e85c925bbf` + the lobby-join change): 3 of 3 finished, both hulls on AI
+
+Asked by Yash: Player 2 must not sit idle at its spawn. A hull is flown on the machine that owns it and
+`PilotControl` is host-only, so the driver on the guest's editor now does the same hand-over there (AIPilot on,
+`ConfigureAIPilotForMode`, input paused, the Skim Race pilot installed). Driver only; no game code changed for it.
+
+| Run | Rounds | Outcome | Longest frame, host / guest |
+|---|---|---|---|
+| 1 | Skim Race x4 | **PASS**: Ruby 7, Jade 3, Gold 2 | 2.4 s / 3.0 s |
+| 2 | Skim Race x4 | **PASS**: Gold 7, Ruby 3, Jade 2 | 2.3 s / 3.2 s |
+| 3 | Skim Race x6 | **PASS**: Gold 7, Jade 6, Ruby 5 | 2.2 s / 2.7 s |
+
+- Tiger (the guest) collected 5-24 crystals a round and won three rounds outright; Jade is no longer last by default.
+- Last-round stats identical on both machines in all three; no freeze, no drop, no checkout change, no import.
+- **The lobby-join change held with two instances**: the settle and converge were removed from
+  `PresenceLobbyService.JoinOrCreateAsync` (they repeated the refresh loop's converge at about +2 s and +7 s and
+  cost 1.9-2.6 s of every boot). Both editors, started together, met in one lobby and formed a party in every run.
+  A solo boot after the change: join complete the moment the lobby was created; sign-in to `InParty` 20.3 s
+  (that boot's lobby create alone took 8.0 s, so UGS variation still dominates).
+- **"The host left" over a live match (Yash saw it on Player 2).** The window is raised on the menu when a
+  remembered match this player was dropped from is no longer advertised; the guest had been dropped when an earlier
+  run was stopped mid-match. Nothing closed it but its own button, so it rode into the next match. Fixed in
+  `DisconnectNotice`: a rejoin offer or "The host left" closes once the player is in a game scene; a lost-connection
+  notice stays. Held by `DisconnectNoticeTests.AMatchNotice_DoesNotFollowThePlayerIntoANewMatch`. Checked live: with the
+  window planted on Player 2's menu (`mode=HostLeft`), it read `none` from the hub load on and through two rounds
+  (the run was stopped there at Yash's request).
+
 ## Third set (2026-11-17, `036c5f3054`): 2 of 3 finished, clean
 
 Same in-editor driver, accounts Lion and Tiger, intensity ceiling 2. The checkout's commit and the editor's import
