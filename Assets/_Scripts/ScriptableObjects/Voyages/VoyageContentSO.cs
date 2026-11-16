@@ -656,8 +656,8 @@ namespace CosmicShore.ScriptableObjects
         public string ArkWingmate = "AI wingmate";
         [Tooltip("A friend's seat card: they pick their own seat on their own screen.")]
         public string ArkInLobby = "IN YOUR LOBBY";
-        [Tooltip("Under a friend's seat card.")]
-        public string ArkFriendLine = "Picks their own vessel, pilot and element";
+        [Tooltip("Under a friend's seat on the Ark page. {name} is the friend.")]
+        public string ArkFriendLine = "{name} picks their own seat.";
         [Tooltip("A seat card's artifact line.")]
         public string ArkArtifact = "Artifact - {artifact}";
         [Tooltip("Leaves your lobby's seats for a squad of your own.")]
@@ -812,6 +812,16 @@ namespace CosmicShore.ScriptableObjects
         public string ArkLobbyLineGuest = "Pick your own seat. The host picks the voyage, fills the AI seats and sets sail.";
         [Tooltip("The Set sail button's words on a friend's machine: only the host sets sail.")]
         public string ArkHostSails = "THE HOST SETS SAIL";
+        [Tooltip("Under your seat on the Ark page (Rev 115 A): opens the seat picker.")]
+        public string ArkChangeSeat = "CHANGE YOUR SEAT";
+        [Tooltip("Change your seat's keycap.")]
+        public string ArkChangeSeatKey = "X";
+        [Tooltip("The picker's foot before a press: a press saves to this voyage's seat, never a saved squad.")]
+        public string PickSavedHere = "Saved to your seat for this voyage.";
+        [Tooltip("Over the seat as it stands, in the picker (Rev 115 A).")]
+        public string PickSeatNow = "YOUR SEAT NOW";
+        [Tooltip("The seat as it stands, in the picker. Tokens: {vessel}, {pilot}, {element}, {artifact}.")]
+        public string PickSeatLine = "{vessel} - {pilot} - {element} - {artifact}";
         [Tooltip("Under the choices after a press on your seat.")]
         public string PickSaved = "{choice} is your {setting} for {voyage}. Your seat card behind has changed.";
         [Tooltip("Under the choices after a press on a wingmate's seat.")]

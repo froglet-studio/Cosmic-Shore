@@ -3134,7 +3134,7 @@ MonoBehaviour:
     ArkYou: You
     ArkWingmate: AI wingmate
     ArkInLobby: IN YOUR LOBBY
-    ArkFriendLine: Picks their own vessel, pilot and element
+    ArkFriendLine: '{name} picks their own seat.'
     ArkArtifact: 'Artifact - {artifact}'
     ArkFlySquad: FLY A SQUAD INSTEAD
     ArkFlySquadKey: X
@@ -3212,6 +3212,11 @@ MonoBehaviour:
     ArkSailAs: 'You sail as {vessel} - {element}'
     ArkLobbyLineGuest: Pick your own seat. The host picks the voyage, fills the AI seats and sets sail.
     ArkHostSails: THE HOST SETS SAIL
+    ArkChangeSeat: CHANGE YOUR SEAT
+    ArkChangeSeatKey: X
+    PickSavedHere: Saved to your seat for this voyage.
+    PickSeatNow: YOUR SEAT NOW
+    PickSeatLine: '{vessel} - {pilot} - {element} - {artifact}'
     PickSaved: '{choice} is your {setting} for {voyage}. Your seat card behind has changed.'
     PickSavedSeat: '{choice} is the {setting} for {seat} on {voyage}.'
     PickWordVessel: vessel
