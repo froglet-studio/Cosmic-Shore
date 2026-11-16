@@ -344,9 +344,19 @@ namespace CosmicShore.UI
             if (o.Goal == VoyageObjective.Kind.None) return (string.Empty, false);
             var action = Action(lines, o);
             if (o.Goal == VoyageObjective.Kind.CrystalRun)
-                // The place line already says hostile or calm; only the Ark's danger or a met goal earns a line.
+            {
+                // An assault on the Ark comes first; then the raid window while the Ark is anchored; then what the pilot
+                // carries unbanked. The place line already says hostile or calm; otherwise only the Ark's danger or a met
+                // goal earns a line.
+                if (o.Assault != ArkAssaultPhase.None) return action;
+                if (o.Anchored && !string.IsNullOrEmpty(lines.ObjectiveStripAnchor))
+                    return (TemplateText.Fill(lines.ObjectiveStripAnchor, "time", VoyageHudColors.Clock(o.AnchorSeconds)),
+                        o.AnchorClosing);
+                if (o.Carried > 0 && !string.IsNullOrEmpty(lines.ObjectiveStripCarried))
+                    return (TemplateText.Fill(lines.ObjectiveStripCarried, "count", o.Carried.ToString()), false);
                 return action.line == lines.ObjectiveHostile || action.line == lines.ObjectiveCalm
                     ? (string.Empty, false) : action;
+            }
             if (o.Goal == VoyageObjective.Kind.SailingHome && !action.threat)
             {
                 string stake = UnderHull(lines, o);

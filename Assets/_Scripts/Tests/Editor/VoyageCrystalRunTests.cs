@@ -323,5 +323,56 @@ namespace CosmicShore.Tests
                 UnityEngine.Object.DestroyImmediate(mesh);
             }
         }
+
+        // ── P1 and P6 (Shombith, 2026-11-16): the raid window and carried crystals ──
+
+        [Test]
+        public void CarriedCrystals_CountOnlyOnceBanked()
+        {
+            var tally = new VoyageRaidTally();
+            Assert.IsTrue(tally.Carry("you", Element.Time));
+            Assert.IsTrue(tally.Carry("you", Element.Mass));
+            Assert.IsFalse(tally.Carry("you", Element.Omni), "an omni crystal never counts");
+            Assert.AreEqual(0, tally.Total, "carried is not stolen yet");
+            Assert.AreEqual(2, tally.CarriedBy("you"));
+            Assert.AreEqual(2, tally.Bank("you"));
+            Assert.AreEqual(2, tally.Total);
+            Assert.AreEqual(1, tally.Of(Element.Time));
+            Assert.AreEqual(0, tally.CarriedBy("you"));
+            Assert.AreEqual(0, tally.Bank("you"), "nothing left to bank");
+        }
+
+        [Test]
+        public void Spill_LosesOnlyWhatIsCarried()
+        {
+            var tally = new VoyageRaidTally();
+            tally.Carry("you", Element.Space);
+            tally.Bank("you");
+            tally.Carry("you", Element.Charge);
+            tally.Carry("you", Element.Charge);
+            var lost = tally.Spill("you");
+            Assert.AreEqual(2, lost[(int)Element.Charge]);
+            Assert.AreEqual(0, lost[(int)Element.Space]);
+            Assert.AreEqual(1, tally.Total, "banked crystals are safe");
+            Assert.AreEqual(0, tally.CarriedTotal);
+            Assert.AreEqual(0, tally.Spill("nobody").Sum(), "a seat never seen spills nothing");
+        }
+
+        [Test]
+        public void StripAction_ShowsTheRaidWindowThenWhatYouCarry()
+        {
+            var lines = new VoyageLines();
+            var o = new VoyageObjective { Goal = VoyageObjective.Kind.CrystalRun, Target = 20, Anchored = true, AnchorSeconds = 42f, Carried = 3 };
+            Assert.AreEqual(("Raid: the Ark sails in 0:42", false), VoyageObjectiveText.StripAction(lines, o));
+            o.AnchorClosing = true;
+            Assert.IsTrue(VoyageObjectiveText.StripAction(lines, o).threat, "a closing window is a threat");
+            o.Anchored = false;
+            Assert.AreEqual(("Carrying 3. Bank them at the Ark.", false), VoyageObjectiveText.StripAction(lines, o));
+            o.Assault = ArkAssaultPhase.Active;
+            Assert.IsTrue(VoyageObjectiveText.StripAction(lines, o).threat, "an assault on the Ark comes first");
+            lines.ObjectiveStripCarried = string.Empty;
+            o.Assault = ArkAssaultPhase.None;
+            Assert.AreEqual((string.Empty, false), VoyageObjectiveText.StripAction(lines, o), "an empty line shows nothing");
+        }
     }
 }

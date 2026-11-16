@@ -150,6 +150,33 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("The end-of-voyage scoreboard coming up.")]
         FMODUnity.EventReference scoreboardSound;
 
+        [SerializeField, Tooltip("The Ark's horn: it weighs anchor soon (the raid window is closing).")]
+        FMODUnity.EventReference arkHornSound;
+
+        [Header("Voyage - Crystal Run raid windows (P1, Shombith 2026-11-16)")]
+        [SerializeField, Min(0f), Tooltip("Seconds the Ark anchors in a HOSTILE cell of a Crystal Run before it sails on. " +
+                                          "0 = it does not stop.")]
+        float raidAnchorHostileSeconds = 60f;
+
+        [SerializeField, Min(0f), Tooltip("Seconds the Ark anchors in a CALM cell of a Crystal Run before it sails on. " +
+                                          "0 = it does not stop.")]
+        float raidAnchorCalmSeconds = 35f;
+
+        [SerializeField, Min(0f), Tooltip("Seconds before the Ark sails that its horn sounds and the window-closing toast shows.")]
+        float raidAnchorWarnSeconds = 10f;
+
+        [Header("Voyage - Crystal Run carried crystals (P6, Shombith 2026-11-16)")]
+        [SerializeField, Tooltip("On: a crystal a seat takes is CARRIED until that seat flies within the bank radius of the " +
+                                 "Ark, and a hit from a hostile danger prism spills everything it carries back into the " +
+                                 "sea. Off: a crystal counts the moment it is taken.")]
+        bool raidCrystalsAtRisk = true;
+
+        [SerializeField, Min(10f), Tooltip("How close to the Ark's centre, u, a seat banks what it carries.")]
+        float raidBankRadius = 180f;
+
+        [SerializeField, Min(0f), Tooltip("After a spill, seconds before the same seat can spill again.")]
+        float raidSpillCooldownSeconds = 1.5f;
+
         [Header("Voyage - the galaxy map (the Voyage window's cards)")]
         [SerializeField, Tooltip("The course a card's job sails, drawn over the map.")]
         Color routeColor = new(0.70f, 1f, 0.35f, 1f);
@@ -235,6 +262,13 @@ namespace CosmicShore.ScriptableObjects
         public FMODUnity.EventReference ToastThreatSound => toastThreatSound;
         public FMODUnity.EventReference ToastGoodSound => toastGoodSound;
         public FMODUnity.EventReference ScoreboardSound => scoreboardSound;
+        public FMODUnity.EventReference ArkHornSound => arkHornSound;
+        public float RaidAnchorHostileSeconds => raidAnchorHostileSeconds;
+        public float RaidAnchorCalmSeconds => raidAnchorCalmSeconds;
+        public float RaidAnchorWarnSeconds => raidAnchorWarnSeconds;
+        public bool RaidCrystalsAtRisk => raidCrystalsAtRisk;
+        public float RaidBankRadius => raidBankRadius;
+        public float RaidSpillCooldownSeconds => raidSpillCooldownSeconds;
         public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);
         public Color VaultColor => ColorTrace.Retrace(ColorTrace.Ui, vaultColor);
         public Color CoreColor => ColorTrace.Retrace(ColorTrace.Ui, coreColor);

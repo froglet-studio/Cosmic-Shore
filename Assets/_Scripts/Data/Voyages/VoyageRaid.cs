@@ -186,9 +186,23 @@ namespace CosmicShore.Data
             public string PlayerName;
             /// <summary>Crystals by element (index = (int)Element).</summary>
             public int[] Crystals = new int[(int)Element.Omni + 1];
+            /// <summary>Crystals taken but not banked yet, by element (index = (int)Element): at risk until the seat flies
+            /// them to the Ark (<see cref="VoyageRaidTally.Carry"/>, <see cref="VoyageRaidTally.Bank"/>).</summary>
+            public int[] Carried = new int[(int)Element.Omni + 1];
             public int Kills;
             /// <summary>Creatures felled within the guard radius of the Ark: hull the seat saved.</summary>
             public int Guarded;
+
+            /// <summary>Every crystal this seat carries and has not banked.</summary>
+            public int CarriedTotal
+            {
+                get
+                {
+                    int n = 0;
+                    foreach (var e in VoyageRaid.Elements) n += Carried[(int)e];
+                    return n;
+                }
+            }
 
             public int Total
             {
@@ -225,6 +239,72 @@ namespace CosmicShore.Data
             return true;
         }
 
+        /// <summary>A crystal of <paramref name="element"/> came to <paramref name="playerName"/>, who now CARRIES it: it
+        /// counts only once banked at the Ark, and a hit can spill it (P6, Shombith 2026-11-16). False as for
+        /// <see cref="Add"/>.</summary>
+        public bool Carry(string playerName, Element element)
+        {
+            if (!VoyageRaid.Counts(element)) return false;
+            var seat = SeatOf(playerName);
+            if (seat == null) return false;
+            seat.Carried[(int)element]++;
+            return true;
+        }
+
+        /// <summary>The seat flew to the Ark: what it carries is banked (it counts). Returns how many were banked.</summary>
+        public int Bank(string playerName)
+        {
+            var seat = Find(playerName);
+            if (seat == null) return 0;
+            int n = 0;
+            foreach (var e in VoyageRaid.Elements)
+            {
+                int i = (int)e;
+                n += seat.Carried[i];
+                seat.Crystals[i] += seat.Carried[i];
+                seat.Carried[i] = 0;
+            }
+            return n;
+        }
+
+        /// <summary>The seat was hit: everything it carries is lost from the tally, returned by element (index =
+        /// (int)Element) so the run can scatter it back into the sea. All zeros when it carried nothing.</summary>
+        public int[] Spill(string playerName)
+        {
+            var lost = new int[(int)Element.Omni + 1];
+            var seat = Find(playerName);
+            if (seat == null) return lost;
+            foreach (var e in VoyageRaid.Elements)
+            {
+                int i = (int)e;
+                lost[i] = seat.Carried[i];
+                seat.Carried[i] = 0;
+            }
+            return lost;
+        }
+
+        /// <summary>What <paramref name="playerName"/> carries unbanked (0 for a seat never seen).</summary>
+        public int CarriedBy(string playerName) => Find(playerName)?.CarriedTotal ?? 0;
+
+        /// <summary>Every crystal the squad carries and has not banked.</summary>
+        public int CarriedTotal
+        {
+            get
+            {
+                int n = 0;
+                foreach (var s in Seats) n += s.CarriedTotal;
+                return n;
+            }
+        }
+
+        Seat Find(string playerName)
+        {
+            if (string.IsNullOrEmpty(playerName)) return null;
+            foreach (var s in Seats)
+                if (s.PlayerName == playerName) return s;
+            return null;
+        }
+
         /// <summary>A creature fell to <paramref name="playerName"/>.</summary>
         public void Kill(string playerName, bool nearArk = false)
         {
@@ -234,7 +314,7 @@ namespace CosmicShore.Data
             if (nearArk) seat.Guarded++;
         }
 
-        /// <summary>Every crystal the squad stole.</summary>
+        /// <summary>Every crystal the squad stole and banked (carried crystals count once banked).</summary>
         public int Total
         {
             get
