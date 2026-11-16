@@ -88,6 +88,55 @@ object on all 9; no `already signing in`, no Friends warning; the online boots r
 2. Menu online/offline toggle (ReconnectService): go offline, go online, confirm sign-in and the party come back.
 3. A player build (the shared instance is reset by `RuntimeInitializeOnLoadMethod`; a build starts with none).
 4. `unity_refcompile` and `gates.sh` did not run (Windows).
+### 🔴 Maelstrom: the round reuses the hub preview's prisms (`claude/maelstrom-preview-reuse`, 2026-11-17) — NOT EDITOR-VERIFIED
+
+**What landed:** at the Maelstrom hub's countdown zero, every machine hides the preview, waits for a preview still
+being laid, eases the arena away (0.5 s) and hands it to `EnvironmentPrismPool`
+(`Cell.RetireWorldIntoPoolForSceneExit`, 24 ms a frame, through `MaelstromPreviewHost.ParkArenaForRound`); the host
+holds the round's scene load until its own hand-over finishes, 5 s at most (`MaelstromLobby.parkArenaMaxSeconds`,
+`ShouldLaunchNow`). `Cell`, shared with the cell swap: the bookkeeping reset moved into `ResetBooksAfterRetire` and
+the suction loop into `SuctionRetiringWorld` (no behaviour change intended), and `ReleaseRetiredWorld` now drains
+newest first and takes its slice (the swap's drain order changes with it). Design:
+`Docs/MaelstromSystem/ARCHITECTURE.md` §1.5.1.
+
+**Proven without the editor:** `unity_refcompile` player config 0 errors in project code; editor config compiles
+these files (its 3 errors are `ThresherBelfryAITests.cs`, on `Ys-bleeding-edge` already). `check_console_logging`
+and `check_conditional_compilation` pass. The source-reading tests in `MaelstromArenaHandOverTests` were checked
+against the tree with a script.
+
+**Not run:** the EditMode tests, any Play, any two-player run. Ship gates: three fail, all identically on a clean
+`Ys-bleeding-edge` (`doc_summaries`, `colour_grade`, `refcompile editor`).
+
+**Needs the editor:**
+1. EditMode: `MaelstromArenaHandOverTests` (11), `EnvironmentPrismPoolTests`, `PrismCellSwapSuctionTests`,
+   `MaelstromStateMachineTests`, `MaelstromDataSOTests` pass.
+2. Solo Maelstrom with Load Time Insights recording, on a round whose arena is a cell environment (Cleave, Wildlife
+   Liberation, Dog Fight; Skim Race, Joust and Scurry have none and launch exactly as before). Let the hub's preview
+   finish, ready up. Expect: the 3-2-1, the panel fades and the arena eases away to a point (it must not vanish in
+   chunks), a launch at most about 5 s later than before, the round loads and plays normally.
+   In the test log: one `arenaParked <n> prisms in <s>s` mark, `n` near the preview's prism count. In the ROUND's load
+   report: "Prisms reused from the environment pool" near the arena's size and "Prisms cloned by InstantiateAsync" far
+   below it (it was the whole arena before), and a shorter worst frame than the same mode's earlier report.
+3. Play three rounds. Expect: every hub shows its preview (never an empty arena), every launch writes `arenaParked`,
+   the arena looks right in every round (colours, shields, dangerous prisms: a re-issued prism must not carry the
+   hub's state), no red errors about prisms, trails or the spatial index.
+4. In the hub, tap into the preview and fly, lay some trail, then let the countdown end while flying. Expect: the
+   stick is released, the launch goes as in 2, no error from the trail or the camera.
+5. Two players (MPPM or two machines), three rounds. Expect: `arenaParked` on BOTH players at each launch, the same
+   arena on both, the guest follows the load, no bounce. Compare the host's longest freeze with the runs in
+   `Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md`.
+6. Ready up at once so the countdown snaps to 3 s while the preview is still building. Expect: the launch waits for
+   the preview (the mark reads `... after waiting <s>s for the preview`), then hands it over. If the build outlasts
+   the 5 s limit: an `arenaParkCutShort` mark, the round still loads and lays its full arena, no error.
+6b. A hub previewing a mode with life in it (Wildlife Liberation). Expect at launch: no burst of creature-death
+   sounds, no crystals dropped, and no red Netcode parenting exception for the sharks.
+7. A round whose mode has no preview (Salvo, Switchback, Headlong, Breakwater, Hijack, Skein). Expect: launch exactly
+   as before, with no delay.
+8. Regression: the Cell Selector toy in freestyle still swaps worlds (suction, veil, new world), twice in a row, and
+   the swap's release is no slower than before (it now drains newest first).
+9. Measure once: the hand-over's time on the host for a 15,000-prism arena (the `arenaParked` seconds). If it reaches
+   the 5 s limit, say so: the slice or the limit needs tuning.
+
 ### 🔴 The Stoat's Charge and Space games: Shockfront (119) and Fulmen (120), and the Ripple as a scored hit (`claude/stoat-arcade-games`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Arcade/SHOCKFRONT.md`, `Arcade/FULMEN.md`. Shockfront is a Stoat-only Charge duel in Dog Fight's

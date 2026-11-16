@@ -138,6 +138,20 @@ count were recorded around each run: no change, no import, in any of the three.
   - leaving it and joining again`, then the converge join failing as "already a member"). The boot now waits for it
   instead of racing it; a join slower than the boot's three 15 s waits ends in the offline host.
 
+## Change (2026-11-17): the round reuses the hub preview's prisms
+
+Finding 1's two lays per round are now one, on paper: at the countdown's zero every machine hands the hub's arena to
+`EnvironmentPrismPool` (`Cell.RetireWorldIntoPoolForSceneExit`: the world eases away over 0.5 s, then 24 ms a frame),
+waiting first for a preview that is still being laid; the host holds the scene load until its own hand-over finishes
+(5 s at most), and the round's lay re-issues those prisms. Design and limits:
+`Docs/MaelstromSystem/ARCHITECTURE.md` §1.5.1. Branch `claude/maelstrom-preview-reuse`.
+
+**Not compiled or run in Unity.** It does not explain the 72 s frame; it removes one of the two lays that can hit it
+and stops the hub's prisms being destroyed inside the load's activation frame. What a run must show: an `arenaParked`
+mark on each player at each launch of a mode whose arena is a cell environment (32 of the 83; Cleave and Wildlife
+Liberation are two), the round's load report with "Prisms reused from the environment pool" near the
+arena's size and "Prisms cloned by InstantiateAsync" near zero, and the hub-to-round frame shorter than before.
+
 ## How the runs were made
 
 - Host: the main Unity editor (6000.3.17f1). Guest: MPPM Player 2 (its own UGS account, tag `Player2`). Live UGS
