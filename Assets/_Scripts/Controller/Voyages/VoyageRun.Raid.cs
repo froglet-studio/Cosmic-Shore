@@ -72,8 +72,18 @@ namespace CosmicShore.Gameplay
         {
             if (!_active || !Raiding || _fallen || !IsSquadSeat(playerName)) return;
             if (!_raid.Add(playerName, element)) return;
-            var job = _state.Current;
-            if (_goalToastShown || _raid.Total < job.Goal) return;
+            NoteSeatVessel(playerName);
+            // A party (Docs/Voyages/PARTY.md §4): a friend tells the host, the host tells everyone.
+            ReportToHost(VoyagePartyReport.ReportKind.Crystal, playerName, element, false);
+            if (!_following) _tallyDirty = true;
+            CheckGoalToast();
+        }
+
+        /// <summary>The goal toast, once a leg, when the squad's count (the party's, in a party) reaches it.</summary>
+        void CheckGoalToast()
+        {
+            var job = _state?.Current;
+            if (job == null || _goalToastShown || _raid.Total < job.Goal) return;
             _goalToastShown = true;
             VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Good, TemplateText.Fill(Lines.ToastGoalReached, "goal", Mathf.CeilToInt(job.Goal).ToString()));
         }
@@ -83,7 +93,25 @@ namespace CosmicShore.Gameplay
             if (!_active || !Raiding || !IsSquadSeat(killer)) return;
             var ark = Ark;
             float g = ArkEscortPilot.GuardRadius;
-            _raid.Kill(killer, fauna && ark && (fauna.transform.position - ark.Position).sqrMagnitude <= g * g);
+            bool near = fauna && ark && (fauna.transform.position - ark.Position).sqrMagnitude <= g * g;
+            _raid.Kill(killer, near);
+            NoteSeatVessel(killer);
+            ReportToHost(VoyagePartyReport.ReportKind.Kill, killer, Element.None, near);
+            if (!_following) _tallyDirty = true;
+        }
+
+        /// <summary>The seat's vessel class on its count (a friend's scoreboard shows the host's seats by it).</summary>
+        void NoteSeatVessel(string playerName)
+        {
+            var seat = _raid.SeatOf(playerName);
+            if (seat == null) return;
+            var local = LocalVessel();
+            if (local != null && local.PlayerName == playerName) { seat.Vessel = (int)local.VesselType; return; }
+            foreach (var w in _wingmates)
+            {
+                var s = Alive(w);
+                if (s != null && s.PlayerName == playerName) { seat.Vessel = (int)s.VesselType; return; }
+            }
         }
 
         bool IsSquadSeat(string playerName)
@@ -120,7 +148,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The Ark sets off: the run's goal, or the way home, as the voyage's first toast.</summary>
         void ToastSetOff(VoyageJob job)
         {
-            if (job == null || _following) return;
+            if (job == null) return;
             var to = PlaceName(job.To);
             if (job.IsReturn)
             {
@@ -222,6 +250,8 @@ namespace CosmicShore.Gameplay
                 Hull = _sea && _sea.Ark ? _sea.Ark.HealthFraction : 1f,
                 Breach = job.BreachHull,
                 Pay = r.Outcome == JobOutcome.Succeeded ? job.Pay : 0,
+                // A friend's board: the host chooses what next (the next leg, or the way home, reaches them on its own).
+                Following = _following,
             };
             foreach (var e in VoyageRaid.Elements) board.Crystals[(int)e] = _raid.Of(e);
             AddRows(board);
@@ -240,12 +270,15 @@ namespace CosmicShore.Gameplay
             VoyageScoreboard.Show(board);
         }
 
-        /// <summary>One row per seat, the pilot's first, with what each stole and felled on the leg.</summary>
+        /// <summary>One row per seat, the pilot's first, with what each stole and felled on the leg: this machine's AI
+        /// wingmates, then the party's other humans, then any seat the host's count names that is not here (on a friend's
+        /// machine, the host's AI wingmates).</summary>
         void AddRows(VoyageScoreboard board)
         {
+            var named = new HashSet<string>();
             void Row(IVesselStatus status, bool you)
             {
-                if (status == null) return;
+                if (status == null || string.IsNullOrEmpty(status.PlayerName) || !named.Add(status.PlayerName)) return;
                 var seat = _raid.SeatOf(status.PlayerName);
                 board.Rows.Add(new VoyageScoreboard.Row
                 {
@@ -259,6 +292,19 @@ namespace CosmicShore.Gameplay
             }
             Row(LocalVessel(), true);
             foreach (var w in _wingmates) Row(Alive(w), false);
+            foreach (var (status, _) in OtherHumans()) Row(status, false);
+            foreach (var seat in _raid.Seats)
+            {
+                if (seat == null || string.IsNullOrEmpty(seat.PlayerName) || !named.Add(seat.PlayerName)) continue;
+                board.Rows.Add(new VoyageScoreboard.Row
+                {
+                    Name = seat.PlayerName,
+                    Vessel = (VesselClassType)seat.Vessel,
+                    Crystals = seat.Total,
+                    Kills = seat.Kills,
+                    Guarded = seat.Guarded,
+                });
+            }
         }
 
         /// <summary>Venture further: the next run sails from here.</summary>
@@ -287,7 +333,6 @@ namespace CosmicShore.Gameplay
         /// <summary>Docked home: the board says what was banked.</summary>
         void ShowDocked(VoyageRules.Extraction x)
         {
-            if (_following) return;
             var board = new VoyageScoreboard
             {
                 Board = VoyageScoreboard.Kind.Docked,
@@ -295,6 +340,7 @@ namespace CosmicShore.Gameplay
                 To = PlaceName(_state.At),
                 Hull = _sea && _sea.Ark ? _sea.Ark.HealthFraction : 1f,
                 Banked = true,
+                Following = _following,
             };
             if (x != null)
                 for (int e = 0; e < x.Crystals.Length && e < board.Crystals.Length; e++) board.Crystals[e] = x.Crystals[e];
@@ -315,7 +361,6 @@ namespace CosmicShore.Gameplay
         /// <summary>The Ark fell: everything aboard went with it (<paramref name="stake"/>, by element).</summary>
         void ShowLost(int[] stake, VoyageJob lost)
         {
-            if (_following) return;
             var board = new VoyageScoreboard
             {
                 Board = VoyageScoreboard.Kind.Lost,
@@ -325,12 +370,13 @@ namespace CosmicShore.Gameplay
                 Goal = Mathf.CeilToInt(lost?.Goal ?? 0f),
                 Seconds = Time.time - _legStartedAt,
                 Hull = 0f,
+                Following = _following,
             };
             for (int e = 0; e < board.Crystals.Length && stake != null && e < stake.Length; e++) board.Crystals[e] = stake[e];
             AddRows(board);
             // Try again: the same work from wherever the fall left the crew, once the sea has ended.
             string template = lost?.TemplateId;
-            if (lost is { CountsUnderway: true } && !string.IsNullOrEmpty(template))
+            if (!_following && lost is { CountsUnderway: true } && !string.IsNullOrEmpty(template))
                 board.TryAgain = () => VoyageHarbour.Current?.TryAgain(template);
             VoyageScoreboard.Show(board);
         }

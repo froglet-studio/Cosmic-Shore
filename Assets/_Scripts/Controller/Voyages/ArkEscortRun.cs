@@ -153,9 +153,16 @@ namespace CosmicShore.Gameplay
         /// Deploy <paramref name="squad"/> and sail the escort at <paramref name="difficulty"/> (1-9).
         /// <paramref name="aiLocal"/> hands the local pilot's own seat to the AI too (the sim).
         /// </summary>
-        public bool SetSail(IVesselStatus local, SavedSquad squad, int difficulty, bool aiLocal)
+        public bool SetSail(IVesselStatus local, SavedSquad squad, int difficulty, bool aiLocal, VoyageCourse course = null)
         {
             if (_active || local?.Transform == null || !_def || !_escort || squad == null) return false;
+            // A friend sails the host's escort (Docs/Voyages/PARTY.md): its difficulty, and its seed for the same roll.
+            if (course is { Kind: VoyageCourseKind.EscortSail })
+            {
+                difficulty = course.Difficulty;
+                if (course.Seed != 0) NextVoyageSeed = course.Seed;
+                aiLocal = false;
+            }
             UseRuntimeEscort(difficulty);
             var tier = _escort.TierFor(difficulty);
             if (tier == null || _escort.Legs.Count == 0)
@@ -164,9 +171,10 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
+            _aiLocal = aiLocal;
+            BeginParty(local, ref squad, course);
             _squad = squad;
             _difficulty = Mathf.Clamp(difficulty, ArkEscortSO.MinDifficulty, ArkEscortSO.MaxDifficulty);
-            _aiLocal = aiLocal;
             _rng = new System.Random(_difficulty * 7919 + _voyageSeed);   // the voyage's seed: one roll per voyage
             _survived = _fallen = false;
             _endAt = -1f;
@@ -192,6 +200,9 @@ namespace CosmicShore.Gameplay
             _sea.Configure(_cfg, _context, _context?.Container, _corridor, OnSeaEnded);
             _corridor.PrepareCell = PrepareCell;
             _sea.SetRoute(route);
+            // Every peer stands the worlds from the host's pose; a friend's own Ark's fall waits for the host's outcome.
+            if (!_aiLocal) _sea.HomeOverride = _home;
+            _sea.EndsOnArkFall = !_following;
 
             _report = new ArkEscortReport
             {
@@ -217,6 +228,7 @@ namespace CosmicShore.Gameplay
             _context_.Install();
             Deploy(local, VoyageRun.LiveDomain(_context));
             _sea.Begin(local);
+            AnnounceSail();
             return true;
         }
 
@@ -347,6 +359,7 @@ namespace CosmicShore.Gameplay
         void OnRouteEnded()
         {
             if (!_active || _fallen) return;
+            if (FollowerHolds(ArkEscortReport.Outcome.Survived)) return;
             // The Ark holds at the last world's core: it made it through.
             _survived = true;
             CloseLeg(_leg);
@@ -358,6 +371,7 @@ namespace CosmicShore.Gameplay
         void OnArkFallen()
         {
             if (!_active) return;
+            if (FollowerHolds(ArkEscortReport.Outcome.Fallen)) return;
             _fallen = true;
             CloseLeg(_leg);
             int leg = Mathf.Max(0, _leg);
@@ -377,7 +391,8 @@ namespace CosmicShore.Gameplay
         {
             if (!_active || !_sea) return;
             SeedSeats();
-            if (!_sea.IsRunning) return;
+            TickParty();
+            if (!_active || !_sea.IsRunning) return;
 
             if (_endAt > 0f && Time.time >= _endAt)
             {
@@ -428,8 +443,10 @@ namespace CosmicShore.Gameplay
         {
             var ark = Ark;
             if (!ark || _fallen || _survived || _leg < 0 || ark.TotalCount == 0) return;
+            if (_localOutcome != ArkEscortReport.Outcome.None) return;
             float line = _escort.TierFor(_difficulty)?.BreachHull ?? 0f;
             if (line <= 0f || ark.HealthFraction >= line) return;
+            if (FollowerHolds(ArkEscortReport.Outcome.Fallen)) return;
             _fallen = true;
             _report.Overrun = true;
             _report.HullMinFraction = Mathf.Min(_report.HullMinFraction, ark.HealthFraction);
@@ -589,6 +606,8 @@ namespace CosmicShore.Gameplay
             _report.Result = outcome;
             _report.EndedAt = Time.time;
             FinishMetrics();
+            AnnounceEnd();
+            EndParty();
             _report.ReachedLegs = 0;
             foreach (var r in _report.LegReports)
                 if (r.Reached) _report.ReachedLegs++;
@@ -675,6 +694,7 @@ namespace CosmicShore.Gameplay
             _context_ = null;
             if (_reactor) Destroy(_reactor);
             UnhookMetrics();
+            EndParty();
             if (_escortCopy) Destroy(_escortCopy);
             _onEnded = null;
         }

@@ -57,7 +57,7 @@ ELEMENT_CS = "Assets/_Scripts/Data/Enums/Element.cs"
 # Every line the voyage HUD and the Voyage window show (VoyageLines in VoyageContentSO.cs). A missing key is a typo.
 LINES_FIELDS = [
     "VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "HoldProgress", "Done", "Failed", "Stowed", "Extracted",
-    "ArkLost", "NoWork", "Following", "ChooseNext",
+    "ArkLost", "NoWork", "Following", "FollowerArkLost", "EscortHoldFallen", "EscortHoldThrough", "GuestStays", "ChooseNext",
     "Lair", "Hoard", "Nursery", "Derelict", "Pen", "Shrine", "KaijuHere", "HostileWater", "RivalHere", "RivalOpened",
     "Charted", "Relic", "Delivered", "Convoy", "ProgressStow", "ProgressHold", "ProgressGather", "ProgressCull",
     "ProgressLay", "ProgressRaze", "ProgressObserve", "ProgressMeet",
@@ -102,7 +102,7 @@ LINES_FIELDS += [
     "ScoreHullValue", "ScoreColSeat", "ScoreColCrystals", "ScoreColKills", "ScoreRowSeat", "ScoreRowYou", "ScoreRewards",
     "ScoreStolen", "ScoreStolenBy", "ScoreStolenSeparator", "ScorePay", "ScoreEscortPay", "ScoreRewardValue",
     "ScoreAtStake", "ScoreBanked", "ScoreFinish", "ScoreFinishLine", "ScoreVenture", "ScoreVentureRaid",
-    "ScoreVentureEscort", "ScoreDone", "ScoreDoneLine", "ScoreFinishKey", "ScoreVentureKey",
+    "ScoreVentureEscort", "ScoreDone", "ScoreDoneLine", "ScoreHostChooses", "ScoreKeepFlying", "ScoreFinishKey", "ScoreVentureKey",
     "ToastCellHostileSub", "ToastCellCalmSub", "ToastSetOff", "ToastSetOffSub", "ToastHome",
     "ToastHomeSub", "ObjectiveDestinationTag", "ObjectiveCalmTag", "ObjectiveHostileTag", "ObjectiveCellName",
     "ToastArkUnderAttack", "ToastArkUnderAttackSub", "ToastBreachClose", "ToastBreachCloseSub", "ObjectiveEscortKicker", "ObjectiveEscortGoal", "ObjectiveEscortGoalNoBreach", "ObjectiveArkBound", "ObjectiveArkInside", "ObjectiveActionAssault", "ObjectiveActionIncoming", "ObjectiveActionUnderAttack", "ObjectiveActionHealing", "ObjectiveEscortHostile", "ObjectiveEscortCalm", "ObjectiveStripEscort", "ObjectiveStripHull", "ObjectiveStripPlace", "ObjectiveStripHostile", "ObjectiveStripCalm", "ObjectiveStripElement", "ScoreColGuarded", "ScoreColScore", "ScoreTryAgain", "ScoreTryAgainLine",

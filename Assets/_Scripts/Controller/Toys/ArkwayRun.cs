@@ -288,6 +288,22 @@ namespace CosmicShore.Gameplay
 
         // ── Begin ────────────────────────────────────────────────────────────
 
+        /// <summary>The corridor's origin and heading for the next <see cref="Begin"/> instead of the local vessel's pose: a
+        /// party friend sails from the host's (Docs/Voyages/PARTY.md §2), so every peer stands its worlds in the same places.
+        /// Consumed by Begin.</summary>
+        public Pose? HomeOverride { get; set; }
+
+        /// <summary>The pose the running voyage set out from (the corridor's origin and heading); false before one began.</summary>
+        public bool TryGetHome(out Pose home)
+        {
+            home = _home;
+            return _hasHome;
+        }
+
+        /// <summary>False on a party friend's machine: its own Ark's fall does not end its voyage, the host's outcome does
+        /// (the escort's shared fate). The fall is still raised (<see cref="ArkFallen"/>).</summary>
+        public bool EndsOnArkFall { get; set; } = true;
+
         /// <summary>
         /// Start a voyage from the local vessel's current pose. Idempotent: a second call while
         /// one is live is a no-op, so re-entering the toy cannot double-start.
@@ -300,7 +316,8 @@ namespace CosmicShore.Gameplay
             _beginning = true;
             _warnedCreationBacklog = false;
             HoldCreationTier(true);
-            _home = new Pose(localVessel.Transform.position, localVessel.Transform.rotation);
+            _home = HomeOverride ?? new Pose(localVessel.Transform.position, localVessel.Transform.rotation);
+            HomeOverride = null;
             _hasHome = true;
 
             BeginVoyageAsync(localVessel, this.GetCancellationTokenOnDestroy()).Forget();
@@ -834,6 +851,8 @@ namespace CosmicShore.Gameplay
         void OnArkHullDestroyed()
         {
             ArkFallen?.Invoke();
+            // A party friend's Ark: the run that owns it says what the fall means (it holds for the host).
+            if (!EndsOnArkFall) return;
             EnsureHud();
             _hud.ShowBanner("THE ARK HAS FALLEN", BannerSeconds);
             End(returnToCell: true, "the Ark's last hull prism was destroyed");

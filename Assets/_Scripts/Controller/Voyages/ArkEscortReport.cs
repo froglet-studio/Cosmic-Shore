@@ -226,6 +226,11 @@ namespace CosmicShore.Gameplay
         public int Assaults;
         public int AssaultsRepelled;
         public List<SeatStats> RunSeats = new();
+        /// <summary>A party (Docs/Voyages/PARTY.md): this machine followed the host's escort; the humans in the party's
+        /// seats; what this machine's own Ark did before the host's outcome ended it (None when it ended with the host's).</summary>
+        public bool Following;
+        public int HumanSeats;
+        public Outcome LocalOutcome;
         public List<Param> Params = new();
         /// <summary>Every override key pattern this build accepts (<see cref="ArkEscortParams"/>).</summary>
         public List<string> ParamKeys = new();

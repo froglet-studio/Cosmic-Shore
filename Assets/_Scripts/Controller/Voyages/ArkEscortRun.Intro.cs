@@ -52,6 +52,16 @@ namespace CosmicShore.Gameplay
                     Slot = seat >= 0 ? _squad.GetSlot(seat) : new SquadSlot(status.VesselType, default),
                 });
             }
+            // The party's other pilots, in the seats the host gave them (Docs/Voyages/PARTY.md).
+            foreach (var (status, client) in OtherHumans())
+            {
+                int seat = SeatOfClient(client);
+                wingmates.Add(new VoyageIntro.Member
+                {
+                    Hull = status.Transform, Vessel = status.VesselType, Seat = seat, Friend = status.PlayerName,
+                    Slot = VoyagePartySeats.Of((ulong)Mathf.Max(0, client))?.Slot ?? new SquadSlot(status.VesselType, default),
+                });
+            }
             wingmates.Sort((a, b) => a.Seat.CompareTo(b.Seat));
             cast.Squad.AddRange(wingmates);
 

@@ -125,7 +125,25 @@ namespace CosmicShore.UI
         {
             // A friend's pick is theirs at once: the hull they spawn in, replicated to the host's page.
             if (Guest) VoyageLaunch.SeatLocal(VoyageLaunch.ResolveGameData(), VoyageSeatRecord.Get(VoyageSeatRecord.PartyKey));
+            PublishSeat(force: true);
             Refresh();
+        }
+
+        /// <summary>
+        /// A friend's machine tells the host the seat it picked (Docs/Voyages/PARTY.md §3): the hull reaches the host through
+        /// their replicated player, the pilot, element and artifact only this way. Again every few seconds, so a host
+        /// that opens the page later still sees it.
+        /// </summary>
+        void PublishSeat(bool force)
+        {
+            if (!Guest) return;
+            var squad = Seats();
+            if (squad == null) return;
+            var slot = squad.GetSlot(VoyageLaunch.LocalSeat(squad));
+            var vessel = _rules.VesselOf(slot.Vessel);
+            var pilot = _rules.PilotOf(slot, vessel);
+            var me = VoyageLaunch.ResolveGameData()?.LocalPlayer;
+            VoyagePartySeats.Publish(slot, me?.Name, VoyageSeats.PilotName(slot, pilot, true), force);
         }
 
         RectTransform At(string name, float x, float y, float w, float h, RectTransform parent = null)
@@ -294,6 +312,7 @@ namespace CosmicShore.UI
             _partySig = PartySignature();
             // A friend sails the seat this page shows from the moment they open it, as Set sail fixes the host's.
             if (Guest) VoyageLaunch.SeatLocal(VoyageLaunch.ResolveGameData(), Seats());
+            PublishSeat(force: true);
             Refresh();
         }
 
@@ -339,7 +358,8 @@ namespace CosmicShore.UI
         // Who is in the lobby and the hull each friend picked, so the page redraws when a friend changes seat.
         int PartySignature()
         {
-            int sig = _friends.Count;
+            // A friend's reported pilot, element and artifact redraw it too.
+            int sig = _friends.Count * 7919 + VoyagePartySeats.Version;
             for (int i = 0; i < _friends.Count; i++)
                 sig = sig * 31 + (int)FriendHull(_friendIds[i], _friends[i]) + 1;
             return sig;
@@ -474,7 +494,10 @@ namespace CosmicShore.UI
 
         void DrawFriend(SeatView view, int seat, string id, string name)
         {
-            // The hull the friend picked on their own page (their replicated hull); pilot and element stay on their machine.
+            // The hull the friend picked on their own page (their replicated hull); their pilot, element and artifact as
+            // their machine reported them (VoyagePartySeats), once it has.
+            var player = FriendPlayer(id, name);
+            var reported = player ? VoyagePartySeats.Of(player.OwnerClientId) : null;
             var vessel = _rules.VesselOf(FriendHull(id, name));
             view.Root.gameObject.SetActive(true);
             view.Card.Pick(_kit, false);
@@ -483,11 +506,24 @@ namespace CosmicShore.UI
             VoyageKit.Set(view.Who, name);
             Badge(view, _lines?.ArkInLobby, _kit.Light);
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
-            VoyageKit.Show(view.Portrait, null);
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : null);
-            VoyageKit.Set(view.Pilot, null);
-            view.Flower.parent.gameObject.SetActive(false);
-            VoyageKit.Set(view.Element, null);
+            if (reported != null)
+            {
+                var slot = reported.Slot;
+                var pilot = _rules.PilotOf(slot, vessel);
+                VoyageKit.Show(view.Portrait, pilot ? pilot.Portrait : null);
+                VoyageKit.Set(view.Pilot, !string.IsNullOrEmpty(reported.PilotName) ? reported.PilotName : VoyageSeats.PilotName(slot, pilot, false));
+                view.Flower.parent.gameObject.SetActive(slot.Element != Element.None);
+                VoyageSeatPicker.Petals(view.Flower, slot.Element);
+                VoyageKit.Set(view.Element, _rules.ElementName(slot.Element));
+            }
+            else
+            {
+                VoyageKit.Show(view.Portrait, null);
+                VoyageKit.Set(view.Pilot, null);
+                view.Flower.parent.gameObject.SetActive(false);
+                VoyageKit.Set(view.Element, null);
+            }
             VoyageKit.Set(view.Line, _lines?.ArkFriendLine);
             view.Settings.gameObject.SetActive(false);
             view.AiButtons.gameObject.SetActive(false);
@@ -603,6 +639,10 @@ namespace CosmicShore.UI
             if ((_pollIn -= dt) <= 0f && _offer != null && Root.gameObject.activeInHierarchy)
             {
                 _pollIn = PollSeconds;
+                // The party's seat reports travel on the voyage's named messages: listen while the lobby is open, and a
+                // friend's machine repeats its own seat now and then.
+                VoyageCourseLink.EnsureListening();
+                PublishSeat(force: false);
                 ReadParty();
                 int sig = PartySignature();
                 if (sig != _partySig)

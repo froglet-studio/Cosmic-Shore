@@ -73,6 +73,9 @@ namespace CosmicShore.Gameplay
         public System.Action Close;
         /// <summary>A lost Ark's way back in: the same voyage with a fresh Ark (null hides it).</summary>
         public System.Action TryAgain;
+        /// <summary>A party friend's board (Docs/Voyages/PARTY.md §5): the host chooses what next, so it offers no choice of
+        /// its own, only a way to close it and keep flying; the host's next leg (or the end) reaches the voyage anyway.</summary>
+        public bool Following;
 
         /// <summary>The crystals of every element on the board.</summary>
         public int CrystalTotal

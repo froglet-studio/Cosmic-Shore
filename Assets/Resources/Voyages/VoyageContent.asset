@@ -2826,6 +2826,10 @@ MonoBehaviour:
     ArkLost: THE ARK IS LOST
     NoWork: No pilot has work here. Seat other pilots, or sail on.
     Following: 'SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB'
+    FollowerArkLost: 'YOUR ARK FELL. FLY WITH YOUR HOST: YOU REJOIN THEIR NEXT LEG'
+    EscortHoldFallen: 'YOUR ARK IS DOWN: YOUR HOST''S ARK DECIDES THE ESCORT'
+    EscortHoldThrough: 'THROUGH: WAITING FOR YOUR HOST''S ARK'
+    GuestStays: 'YOUR HOST LEADS THE VOYAGE: YOU RETURN WITH THEM'
     ChooseNext: LEAVE THE VOYAGE TO CHOOSE YOUR NEXT ONE
     Lair: 'A LAIR: THE PREDATORS HERE WEAR ANOTHER COLOUR'
     Hoard: 'THE THIEVES'' HOARD: CRACK A SHELL, GRAB WHAT THEY STOLE, STOW IT'
@@ -3292,6 +3296,8 @@ MonoBehaviour:
     ScoreVentureEscort: 'Same escort, difficulty {difficulty}'
     ScoreDone: BACK TO VOYAGES
     ScoreDoneLine: Return to the Voyages page
+    ScoreHostChooses: Your host chooses what comes next
+    ScoreKeepFlying: KEEP FLYING
     ScoreFinishKey: B
     ScoreVentureKey: A
     ToastCellHostileSub: More crystals here. Its fauna are hunting the Ark.
