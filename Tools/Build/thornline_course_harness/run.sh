@@ -35,9 +35,11 @@ build() {   # $1 = course source, $2 = output name
   : > "$OUT/refs.rsp"
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
-  for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
+  for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/ShimExtra.cs" "$HERE/NUnitShim.cs" \
+    "$HERE/Runner.cs" "$HERE/RaceReplica.cs" \
     "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
-    "$1" "$A/Tests/Editor/ThornlineCourseTests.cs"; do
+    "$A/Controller/AI/NoseLeadSteering.cs" "${PLAN:-$A/Controller/Arcade/Thornline/ThornlineAIPlan.cs}" \
+    "$1" "$A/Tests/Editor/ThornlineCourseTests.cs" "$A/Tests/Editor/ThornlineAIPlanTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -53,6 +55,7 @@ run() { "$DOTNET" "$(native "$OUT/$1.dll")" "${@:2}"; }
 build "$COURSE" thornline
 case "${1:-}" in
   --sweep)  run thornline --sweep; exit 0 ;;
+  --ai)     shift; set +e; run thornline --ai "$@"; exit $? ;;
   --export) run thornline "$@"; exit 0 ;;
 esac
 
