@@ -142,7 +142,7 @@ and each pass's write-up is in [`night/`](night/) (`*_DONE.md`). In short:
   (an `ECOSYSTEM.md` §0.x carve-out), so every tier's `BreachHull` is now **0**. The breach line in §2 is kept as an
   optional field; an escort is lost when the last plate goes.
 - **The chaos ladder** (`night/chaos_DONE.md`) replaced the pass-9 tiers: regrowth only in a held nucleus
-  (`Ark.RegrowAllowed`), the feeding lure (`Cell.SetFeedingLure`, an `ECOSYSTEM.md` §0.z carve-out), faster waves,
+  (`Ark.RegrowOverride`; outside the escort every Ark follows the fleet rule, `Ark.InOwnNucleus`), the feeding lure (`Cell.SetFeedingLure`, an `ECOSYSTEM.md` §0.z carve-out), faster waves,
   armour bites for every escort creature, and every world hostile from d1. Its final table is the shipped
   `ArkEscort.asset`; in sims d4 won 8/8, d7 1/8 and d9 0/4.
 - **Variety, roles, pacification, fauna threats, the Ark's feel**: `night/variety_DONE.md`,
