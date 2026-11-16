@@ -1,0 +1,28 @@
+{
+  "id": "2026-11-16-brittle-star-time-upgraded-in-place-the-276e1c",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-16T18:48:29+00:00",
+  "area": "Brittle Star Time (and two small additions to hull_time_race.py and check_ai_no_state_writes.py)",
+  "summary": "Brittle Star Time upgraded in place (the Shift Line, round 5): let-go gates (two columns of shielded Blue posts) only before the I3 hairpin apexes and the I4 return, lit on a clean shift; a server race coach for AI Brittle Stars through the hull's own SetAutopilotSpeedWish (a mode variant of BrittleStarAIBoostPolicy stands its straight law down in this mode only), a per-difficulty nose follow and corner share, the line via TryRaceLine; the heat (flares, streaks, lap splits, toasts 410-419, 8 empty FMOD slots); laps 2/3/3/4 per rung (the authored 16 stays I1's). hull_time_race.py no longer re-mints the meta of an existing project folder an extra asset lands in; check_ai_no_state_writes.py accepts single-file scopes. No vessel file changed; the four rung shapes are yours, unchanged.",
+  "why": "Yash's round-5 request. Offline: today's AI took 244/95/124/368 s (it drops to Creation off Speed and lets go 0.5 s before every ring), the coached AI finishes every rung at every difficulty; the let-go gates save 4.4% (I3) and 8.3% (I4), funnel rails measured fake and cut. Proposals for you in BRITTLESTARTIME.md section 0: release to Cruise not Creation off Speed; move the corner rule into BrittleStarSpeedModeAIPolicySO; the SetAutopilotSpeedWish doc line.",
+  "branch": "Ys-bleeding-edge",
+  "lane": "brittlestartime",
+  "commit": "dea9a32b8",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/BrittleStarAIBoostPolicy_BrittleStarTime.asset",
+    "Assets/_Scripts/Controller/Arcade/BRITTLESTARTIME.md",
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime",
+    "Tools/Build/author_brittle_star_time_assets.py",
+    "Tools/Build/check_ai_no_state_writes.py",
+    "Tools/Build/hull_time_race.py"
+  ],
+  "loop": {
+    "vessels": [
+      "BrittleStar"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

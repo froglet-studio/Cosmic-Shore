@@ -10,8 +10,8 @@ namespace CosmicShore.Data
     /// part of a faction, have a fun animal combo (human, species 1, species 2)."
     ///
     /// <para>The CALLSIGN (<see cref="CallsignId"/>, one of the fixed eighteen) is the vision power and is shared with
-    /// other crews; everything else here is this person's alone. A crew holds at most one pilot per callsign
-    /// (<see cref="AccountInventory.TryAddPilot"/>).</para>
+    /// other crews; everything else here is this person's alone. A crew may hold more than one person on a callsign
+    /// (Garrett, 2026-11-16: "it is ok if we duplicate callsign everything else will be the different").</para>
     ///
     /// <para>A snapshot like <see cref="ArtifactRecord"/>: the generator's rolls are stored, and the backstory grows by
     /// appending to <see cref="Chronicle"/> (VOYAGES.md §2: "a backstory that grows with key events").</para>
@@ -47,6 +47,9 @@ namespace CosmicShore.Data
 
         /// <summary>Where they came from: starter, recruit, emissary, legacy, dev.</summary>
         public string Origin;
+        /// <summary>The painted pilot this person IS (the scene's word: <c>VOLT</c>, <c>Astrofoil</c>), whose name, animals,
+        /// faction, home, story and picture they carry (<c>PaintedCrewSO</c>). Empty for a rolled person.</summary>
+        public string PaintedKey;
         public long MintedAtMs;
 
         /// <summary>"Given Family".</summary>

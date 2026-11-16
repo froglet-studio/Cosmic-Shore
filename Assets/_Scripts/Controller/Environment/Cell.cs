@@ -5,6 +5,7 @@ using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Game;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
@@ -78,6 +79,91 @@ namespace CosmicShore.Gameplay
 
         CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
         public CellConfigDataSO Config => cellConfigData;
+
+        // ── The fauna roster (authored species + the element ladder's I4 rung) ──
+
+        readonly List<FaunaConfigurationSO> _ladderFauna = new();
+        readonly List<FaunaConfigurationSO> _faunaRoster = new();
+        CellConfigDataSO _rosterBuiltFor;
+
+        /// <summary>
+        /// The fauna species this cell spawns and the fauna sync indexes: its spawn profile's
+        /// <c>SupportedFaunas</c>, except at I4+ of an arcade match (the standard element ladder, Garrett 2026-11-16),
+        /// where every species is a clone pinned to the game's element - the profile's own species when it authors
+        /// any, else <see cref="ElementLadderFaunaSO"/>'s. Every reader that used to walk <c>SpawnProfile.SupportedFaunas</c> for SPAWNING or SYNC
+        /// walks this, so both spawners, reproduction and the sync agree. Built once per config and identical on every
+        /// peer: the inputs (mode, intensity, arena flag) are the synced game config, and the clones follow the
+        /// ladder asset's list order. Fauna wear the cell's controlling colour as always.
+        /// </summary>
+        public IReadOnlyList<FaunaConfigurationSO> FaunaRoster
+        {
+            get
+            {
+                var config = cellConfigData;
+                if (config != _rosterBuiltFor) RebuildFaunaRoster(config);
+                return _faunaRoster;
+            }
+        }
+
+        void RebuildFaunaRoster(CellConfigDataSO config)
+        {
+            _rosterBuiltFor = config;
+            _faunaRoster.Clear();
+            DestroyLadderFauna();
+
+            var authored = config && config.SpawnProfile ? config.SpawnProfile.SupportedFaunas : null;
+            Element element = default;
+            bool ladder = config && LadderFaunaApplies(out element);
+            if (!ladder)
+            {
+                if (authored != null) _faunaRoster.AddRange(authored);
+                return;
+            }
+
+            // The ladder's I4: a profile that authors fauna keeps its species, every one born in the game's element
+            // (Garrett's card, 2026-11-16: "arenas with fauna keep theirs, recoloured to the element"); a profile with
+            // none gets the ladder's species. Either way the roster is pinned clones in list order on every peer.
+            IReadOnlyList<FaunaConfigurationSO> source = authored;
+            if (source is not { Count: > 0 })
+            {
+                var asset = ElementLadderFaunaSO.Load();
+                source = asset ? asset.Species : null;
+            }
+            if (source == null) return;
+            for (int i = 0; i < source.Count; i++)
+            {
+                var species = source[i];
+                if (!species || !species.FaunaPrefab)
+                {
+                    // Keep the slot so the sync's config index still lines up with the authored list.
+                    _faunaRoster.Add(species);
+                    continue;
+                }
+                var pinned = ElementLadderFaunaSO.PinnedTo(species, element);
+                _ladderFauna.Add(pinned);
+                _faunaRoster.Add(pinned);
+            }
+        }
+
+        /// <summary>The I4 rung's gate: an arcade match (a mode controller in the scene), not an arena card, at I4 or
+        /// above, whose game names exactly one element.</summary>
+        bool LadderFaunaApplies(out Element element)
+        {
+            element = Element.None;
+            if (gameData == null || gameData.IsArenaMatch || gameData.SelectedIntensity == null) return false;
+            if (!ElementLadder.HasFauna(gameData.SelectedIntensity.Value)) return false;
+            if (!FindAnyObjectByType<MultiplayerMiniGameControllerBase>()) return false;
+            if (!ModePreviewLibrarySO.TryGenres(gameData.GameMode, out element, out var secondary)) return false;
+            return secondary == Element.None &&
+                   element is Element.Mass or Element.Charge or Element.Space or Element.Time;
+        }
+
+        void DestroyLadderFauna()
+        {
+            for (int i = 0; i < _ladderFauna.Count; i++)
+                if (_ladderFauna[i]) Destroy(_ladderFauna[i]);
+            _ladderFauna.Clear();
+        }
         GameObject membrane;
         GameObject nucleus;
 
@@ -1514,7 +1600,13 @@ namespace CosmicShore.Gameplay
             // moment the first prism is added. Assets authored before volume became
             // the spine derive their volume ladder from the count fields (×16).
             var t = cfg.PhaseThresholds;
-            return t.IsAllZero ? CellPhaseThresholds.Default : t.WithDerivedVolumeScale();
+            t = t.IsAllZero ? CellPhaseThresholds.Default : t.WithDerivedVolumeScale();
+            // An environment that laid more than its config was measured on (a Regatta course genome's placements)
+            // raises the ladder by what it added, so the course opens in the phase the measured one does.
+            if (cfg.EnvironmentPrefab is ICellPhaseBaseline baseline
+                && (baseline.PhaseBaselineVolume > 0f || baseline.PhaseBaselinePrisms > 0))
+                t = t.Raised(baseline.PhaseBaselineVolume, baseline.PhaseBaselinePrisms);
+            return t;
         }
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
@@ -1631,6 +1723,7 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            DestroyLadderFauna();
             if (_volumeSumPending)
             {
                 _volumeSumHandle.Complete();

@@ -1,0 +1,2823 @@
+{
+ "version": 1,
+ "generated_by": "Tools/Build/regatta_gene_catalogue.py",
+ "scale_min": 20.0,
+ "scale_max": 1100.0,
+ "min_prism_axis": 0.5,
+ "measured_engine_commit": "",
+ "kinds": [
+  {
+   "id": "Atlantis",
+   "type": "CosmicShore.Gameplay.SpawnableAtlantis",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableAtlantis.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "outerRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 215.0,
+     "hi": 860.0,
+     "default": 430.0
+    },
+    {
+     "name": "floorDepth",
+     "type": "float",
+     "cs_type": "float",
+     "lo": -390.0,
+     "hi": -97.5,
+     "default": -195.0
+    },
+    {
+     "name": "crownHeight",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 117.5,
+     "hi": 470.0,
+     "default": 235.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 67769,
+   "native_radius": 385.334,
+   "native_min_axis": 0.585,
+   "scale_lo": 329.35,
+   "scale_hi": 1100.0,
+   "heavy": "100409 prisms in 340 ms with every count at its high end: count genes held to x1.25 their defaults"
+  },
+  {
+   "id": "Batman",
+   "type": "CosmicShore.Gameplay.SpawnableBatman",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableBatman.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 212,
+   "native_radius": 36.84,
+   "native_min_axis": 0.806,
+   "scale_lo": 22.85,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Boneyard",
+   "type": "CosmicShore.Gameplay.SpawnableBoneyard",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableBoneyard.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "arenaRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 260.0,
+     "hi": 1040.0,
+     "default": 520.0
+    },
+    {
+     "name": "crustDepth",
+     "type": "float",
+     "cs_type": "float",
+     "lo": -400.0,
+     "hi": -100.0,
+     "default": -200.0
+    },
+    {
+     "name": "hulkCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 4.0,
+     "hi": 16.0,
+     "default": 8.0
+    },
+    {
+     "name": "spireCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 6.0,
+     "hi": 24.0,
+     "default": 12.0
+    },
+    {
+     "name": "frameCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 10.0,
+     "default": 5.0
+    },
+    {
+     "name": "overpassCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 8.0,
+     "default": 4.0
+    },
+    {
+     "name": "debrisFields",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 3.0,
+     "hi": 14.0,
+     "default": 7.0
+    },
+    {
+     "name": "fieldRadiusFraction",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.05,
+     "hi": 0.45,
+     "default": 0.2
+    },
+    {
+     "name": "coreClearRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 60.0,
+     "hi": 240.0,
+     "default": 120.0
+    },
+    {
+     "name": "driftFraction",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.0,
+     "hi": 1.0,
+     "default": 0.4
+    },
+    {
+     "name": "driftHeight",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 150.0,
+     "hi": 600.0,
+     "default": 300.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 16810,
+   "native_radius": 561.036,
+   "native_min_axis": 1.1,
+   "scale_lo": 255.02,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Breakwater",
+   "type": "CosmicShore.Gameplay.SpawnableBreakwater",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableBreakwater.cs",
+   "world": true,
+   "usable": false,
+   "why": "lays no prisms from its code defaults: it needs authored inputs (a prefab's waypoints, stations or lists) a gene cannot hold",
+   "params": [
+    {
+     "name": "shoalOffsetMin",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 20.0,
+     "hi": 80.0,
+     "default": 40.0
+    },
+    {
+     "name": "shoalOffsetMax",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 55.0,
+     "hi": 220.0,
+     "default": 110.0
+    },
+    {
+     "name": "shoalStationClearance",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 20.0,
+     "hi": 80.0,
+     "default": 40.0
+    },
+    {
+     "name": "shoalSplineClearance",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 15.0,
+     "hi": 60.0,
+     "default": 30.0
+    },
+    {
+     "name": "shoalSpawnPadClearance",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 30.0,
+     "hi": 120.0,
+     "default": 60.0
+    },
+    {
+     "name": "shoalClumpRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 4.0,
+     "hi": 16.0,
+     "default": 8.0
+    },
+    {
+     "name": "shoalPlacementAttempts",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 32.0,
+     "default": 12.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 0,
+   "native_radius": 0.0,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Caldera",
+   "type": "CosmicShore.Gameplay.SpawnableCaldera",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableCaldera.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 41392,
+   "native_radius": 915.079,
+   "native_min_axis": 0.8,
+   "scale_lo": 571.92,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "CliffordTorus",
+   "type": "CosmicShore.Gameplay.SpawnableCliffordTorus",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableCliffordTorus.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "uSamples",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 18.0,
+     "hi": 72.0,
+     "default": 36.0
+    },
+    {
+     "name": "vSamples",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 18.0,
+     "hi": 72.0,
+     "default": 36.0
+    },
+    {
+     "name": "projectionScale",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 40.0,
+     "hi": 160.0,
+     "default": 80.0
+    },
+    {
+     "name": "projectionPole",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.01,
+     "hi": 0.99,
+     "default": 0.8
+    },
+    {
+     "name": "colorByV",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "blockScale",
+     "why": "Vector3 (not a scalar gene)"
+    },
+    {
+     "name": "vDomains",
+     "why": "Domains[] (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 1296,
+   "native_radius": 442.102,
+   "native_min_axis": 2.0,
+   "scale_lo": 110.53,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Comet",
+   "type": "CosmicShore.Gameplay.SpawnableComet",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableComet.cs",
+   "world": false,
+   "usable": false,
+   "why": "its prisms take their size from a field the code leaves at zero (the prefab authors it), so at its code defaults they have no size",
+   "params": [
+    {
+     "name": "blockCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 4.0,
+     "hi": 16.0,
+     "default": 8.0
+    },
+    {
+     "name": "ringCountHead",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 8.0,
+     "default": 4.0
+    },
+    {
+     "name": "ringCountTail",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 4.0,
+     "hi": 18.0,
+     "default": 9.0
+    },
+    {
+     "name": "headRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 15.0,
+     "hi": 60.0,
+     "default": 30.0
+    },
+    {
+     "name": "tailLength",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 30.0,
+     "hi": 120.0,
+     "default": 60.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "blockScale",
+     "why": "Vector3 (not a scalar gene)"
+    },
+    {
+     "name": "Orgin",
+     "why": "Vector3 (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 104,
+   "native_radius": 68.17,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Corona",
+   "type": "CosmicShore.Gameplay.SpawnableCorona",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableCorona.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "shellCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 4.0,
+     "default": 2.0
+    },
+    {
+     "name": "innerShellRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 95.0,
+     "hi": 380.0,
+     "default": 190.0
+    },
+    {
+     "name": "shellSpacing",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 60.0,
+     "hi": 240.0,
+     "default": 120.0
+    },
+    {
+     "name": "gatesPerShell",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 3.0,
+     "hi": 12.0,
+     "default": 6.0
+    },
+    {
+     "name": "gateHalfAngle",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 4.0,
+     "hi": 40.0,
+     "default": 20.0
+    },
+    {
+     "name": "rimDegrees",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.0,
+     "hi": 15.0,
+     "default": 0.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 1331,
+   "native_radius": 321.284,
+   "native_min_axis": 3.0,
+   "scale_lo": 53.55,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Crystal",
+   "type": "CosmicShore.Gameplay.SpawnableCrystal",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableCrystal.cs",
+   "world": false,
+   "usable": false,
+   "why": "lays crystals, not prisms: crystals are the genome's `features.Crystals` (racing AIs never take one)",
+   "params": [],
+   "fixed": [
+    {
+     "name": "Crystal",
+     "why": "Crystal (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 0,
+   "native_radius": 0.0,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Daedala",
+   "type": "CosmicShore.Gameplay.SpawnableDaedala",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableDaedala.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 33858,
+   "native_radius": 393.319,
+   "native_min_axis": 0.825,
+   "scale_lo": 238.38,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "DartBoard",
+   "type": "CosmicShore.Gameplay.SpawnableDartBoard",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableDartBoard.cs",
+   "world": false,
+   "usable": false,
+   "why": "its prisms take their size from a field the code leaves at zero (the prefab authors it), so at its code defaults they have no size",
+   "params": [
+    {
+     "name": "blockCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 3.0,
+     "hi": 12.0,
+     "default": 6.0
+    },
+    {
+     "name": "ringCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 15.0,
+     "hi": 60.0,
+     "default": 30.0
+    },
+    {
+     "name": "ringThickness",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 2.5,
+     "hi": 10.0,
+     "default": 5.0
+    },
+    {
+     "name": "gap",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 3.0,
+     "hi": 12.0,
+     "default": 6.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "greenPrism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "redPrism",
+     "why": "Prism (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 2790,
+   "native_radius": 147.566,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Ellipsoid",
+   "type": "CosmicShore.Gameplay.SpawnableEllipsoid",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableEllipsoid.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "maxlength",
+     "why": "no default and no range to scale from"
+    }
+   ],
+   "native_prisms": 90,
+   "native_radius": 1.505,
+   "native_min_axis": 1.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "FiveRings",
+   "type": "CosmicShore.Gameplay.SpawnableFiveRings",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableFiveRings.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "blocksPerRing",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 6.0,
+     "hi": 24.0,
+     "default": 12.0
+    },
+    {
+     "name": "ringRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 5.0,
+     "hi": 20.0,
+     "default": 10.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "scale",
+     "why": "Vector3 (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 45,
+   "native_radius": 26.319,
+   "native_min_axis": 4.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Flatline",
+   "type": "CosmicShore.Gameplay.SpawnableFlatline",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableFlatline.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "innerRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 40.0,
+     "hi": 160.0,
+     "default": 80.0
+    },
+    {
+     "name": "outerRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 215.0,
+     "hi": 860.0,
+     "default": 430.0
+    },
+    {
+     "name": "paneCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 8.0,
+     "hi": 32.0,
+     "default": 16.0
+    },
+    {
+     "name": "paneHalfMin",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 6.0,
+     "default": 3.0
+    },
+    {
+     "name": "paneHalfMax",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 6.0,
+     "default": 3.0
+    },
+    {
+     "name": "tunnelCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    },
+    {
+     "name": "cageCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    },
+    {
+     "name": "roomHalf",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 8.0,
+     "default": 4.0
+    },
+    {
+     "name": "ribEvery",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 6.0,
+     "default": 3.0
+    },
+    {
+     "name": "dangerPaneEvery",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    },
+    {
+     "name": "dangerRoomEvery",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    },
+    {
+     "name": "holeShare",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.0,
+     "hi": 1.0,
+     "default": 0.0
+    },
+    {
+     "name": "holeCellTiles",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 4.0,
+     "default": 2.0
+    },
+    {
+     "name": "crystalCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 3.0,
+     "hi": 12.0,
+     "default": 6.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 784,
+   "native_radius": 423.058,
+   "native_min_axis": 2.0,
+   "scale_lo": 105.76,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Flora",
+   "type": "CosmicShore.Gameplay.SpawnableFlora",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableFlora.cs",
+   "world": false,
+   "usable": false,
+   "why": "lays one living plant prefab: living flora is the genome's `flora` (the cell plants on prepared sites)",
+   "params": [],
+   "fixed": [
+    {
+     "name": "flora",
+     "why": "Flora (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 0,
+   "native_radius": 0.0,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Garland",
+   "type": "CosmicShore.Gameplay.SpawnableGarland",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableGarland.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 4259,
+   "native_radius": 910.507,
+   "native_min_axis": 1.942,
+   "scale_lo": 234.43,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Geode",
+   "type": "CosmicShore.Gameplay.SpawnableGeode",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableGeode.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 34301,
+   "native_radius": 333.344,
+   "native_min_axis": 0.9,
+   "scale_lo": 185.19,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Gyroid",
+   "type": "CosmicShore.Gameplay.SpawnableGyroid",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableGyroid.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "seedBlockType",
+     "type": "enum",
+     "cs_type": "GyroidBlockType",
+     "lo": 0,
+     "hi": 11,
+     "default": 0.0,
+     "values": [
+      "AB",
+      "BC",
+      "CD",
+      "DE",
+      "EF",
+      "EG",
+      "BA",
+      "AF",
+      "FG",
+      "GEs",
+      "EsC",
+      "EsD"
+     ]
+    },
+    {
+     "name": "maxDepth",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 17.0,
+     "hi": 44.0,
+     "default": 35.0
+    },
+    {
+     "name": "separationDistance",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 1.75,
+     "hi": 7.0,
+     "default": 3.5
+    },
+    {
+     "name": "overlapCellSize",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.75,
+     "hi": 3.0,
+     "default": 1.5
+    },
+    {
+     "name": "expandTopLeft",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 0.0
+    },
+    {
+     "name": "expandTopRight",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "expandBottomLeft",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "expandBottomRight",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 0.0
+    },
+    {
+     "name": "colorDangerousBlocks",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "dangerousDomain",
+     "type": "domain",
+     "cs_type": "Domains",
+     "lo": 0,
+     "hi": 3,
+     "default": 1.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "blockScale",
+     "why": "Vector3 (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 9135,
+   "native_radius": 174.305,
+   "native_min_axis": 1.0,
+   "scale_lo": 87.15,
+   "scale_hi": 1100.0,
+   "heavy": "718275 prisms in 662 ms with every count at its high end: count genes held to x1.25 their defaults"
+  },
+  {
+   "id": "Harvest",
+   "type": "CosmicShore.Gameplay.SpawnableHarvest",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableHarvest.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "fieldRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 440.0,
+     "hi": 1760.0,
+     "default": 880.0
+    },
+    {
+     "name": "centreClearingRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 100.0,
+     "hi": 400.0,
+     "default": 200.0
+    },
+    {
+     "name": "sheafCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 6.0,
+     "hi": 24.0,
+     "default": 12.0
+    },
+    {
+     "name": "coreGap",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 90.0,
+     "hi": 360.0,
+     "default": 180.0
+    },
+    {
+     "name": "coreRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 29.0,
+     "hi": 116.0,
+     "default": 58.0
+    },
+    {
+     "name": "coreBlocks",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 70.0,
+     "hi": 280.0,
+     "default": 140.0
+    },
+    {
+     "name": "shieldedCores",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "stalkCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 12.0,
+     "hi": 48.0,
+     "default": 24.0
+    },
+    {
+     "name": "stalkPrisms",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 3.0,
+     "hi": 12.0,
+     "default": 6.0
+    },
+    {
+     "name": "wheelStalks",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "dangerStalkEveryNth",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    },
+    {
+     "name": "chaffClouds",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 4.0,
+     "hi": 16.0,
+     "default": 8.0
+    },
+    {
+     "name": "chaffCloudRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 55.0,
+     "hi": 220.0,
+     "default": 110.0
+    },
+    {
+     "name": "strawsPerCloud",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 12.0,
+     "hi": 48.0,
+     "default": 24.0
+    },
+    {
+     "name": "baleCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 8.0,
+     "default": 4.0
+    },
+    {
+     "name": "baleSize",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 5.0,
+     "default": 3.0
+    },
+    {
+     "name": "colourPattern",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 2.0,
+     "default": 1.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 3811,
+   "native_radius": 694.892,
+   "native_min_axis": 3.0,
+   "scale_lo": 115.82,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Helicoid",
+   "type": "CosmicShore.Gameplay.SpawnableHelicoid",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableHelicoid.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "turns",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 2.0,
+     "hi": 8.0,
+     "default": 4.0
+    },
+    {
+     "name": "height",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 100.0,
+     "hi": 400.0,
+     "default": 200.0
+    },
+    {
+     "name": "innerRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 4.0,
+     "hi": 16.0,
+     "default": 8.0
+    },
+    {
+     "name": "outerRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 27.5,
+     "hi": 110.0,
+     "default": 55.0
+    },
+    {
+     "name": "samplesPerTurn",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 20.0,
+     "hi": 80.0,
+     "default": 40.0
+    },
+    {
+     "name": "radialSamples",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 4.0,
+     "hi": 16.0,
+     "default": 8.0
+    },
+    {
+     "name": "sheets",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 4.0,
+     "default": 2.0
+    },
+    {
+     "name": "colorBySheet",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "blockScale",
+     "why": "Vector3 (not a scalar gene)"
+    },
+    {
+     "name": "sheetDomains",
+     "why": "Domains[] (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 2576,
+   "native_radius": 101.445,
+   "native_min_axis": 1.627,
+   "scale_lo": 31.18,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Helix",
+   "type": "CosmicShore.Gameplay.SpawnableHelix",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableHelix.cs",
+   "world": false,
+   "usable": false,
+   "why": "its prisms take their size from a field the code leaves at zero (the prefab authors it), so at its code defaults they have no size",
+   "params": [
+    {
+     "name": "firstOrderRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.5,
+     "hi": 2.0,
+     "default": 1.0
+    },
+    {
+     "name": "secondOrderRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.5,
+     "hi": 2.0,
+     "default": 1.0
+    },
+    {
+     "name": "blockCount",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 75.0,
+     "hi": 300.0,
+     "default": 150.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "scale",
+     "why": "Vector3 (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 150,
+   "native_radius": 508.95,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Hesperides",
+   "type": "CosmicShore.Gameplay.SpawnableHesperides",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableHesperides.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 12060,
+   "native_radius": 425.013,
+   "native_min_axis": 0.932,
+   "scale_lo": 228.01,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "HopfFibration",
+   "type": "CosmicShore.Gameplay.SpawnableHopfFibration",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableHopfFibration.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "latitudeBands",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 3.0,
+     "hi": 12.0,
+     "default": 6.0
+    },
+    {
+     "name": "fibersPerBand",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 10.0,
+     "hi": 40.0,
+     "default": 20.0
+    },
+    {
+     "name": "blocksPerFiber",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 14.0,
+     "hi": 56.0,
+     "default": 28.0
+    },
+    {
+     "name": "projectionScale",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 40.0,
+     "hi": 160.0,
+     "default": 80.0
+    },
+    {
+     "name": "projectionPole",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.01,
+     "hi": 0.99,
+     "default": 0.85
+    },
+    {
+     "name": "colorByLatitude",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "includePolarFibers",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "includeVillarceauCircles",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "villarceauFibers",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 8.0,
+     "default": 4.0
+    },
+    {
+     "name": "villarceauBlocks",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 14.0,
+     "hi": 56.0,
+     "default": 28.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "blockScale",
+     "why": "Vector3 (not a scalar gene)"
+    },
+    {
+     "name": "bandDomains",
+     "why": "Domains[] (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 3584,
+   "native_radius": 297.62,
+   "native_min_axis": 2.0,
+   "scale_lo": 74.41,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Jackstraw",
+   "type": "CosmicShore.Gameplay.SpawnableJackstraw",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableJackstraw.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "heapRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 235.0,
+     "hi": 940.0,
+     "default": 470.0
+    },
+    {
+     "name": "stickCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 39.0,
+     "hi": 156.0,
+     "default": 78.0
+    },
+    {
+     "name": "jackCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 3.0,
+     "hi": 12.0,
+     "default": 6.0
+    },
+    {
+     "name": "centreClearingRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 50.0,
+     "hi": 200.0,
+     "default": 100.0
+    },
+    {
+     "name": "ringClearingCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 8.0,
+     "default": 4.0
+    },
+    {
+     "name": "ringClearingDistance",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 140.0,
+     "hi": 560.0,
+     "default": 280.0
+    },
+    {
+     "name": "ringClearingRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 35.0,
+     "hi": 140.0,
+     "default": 70.0
+    },
+    {
+     "name": "dangerTipEveryNth",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 4.0,
+     "hi": 16.0,
+     "default": 8.0
+    },
+    {
+     "name": "ironwoodEveryNth",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 5.0,
+     "hi": 20.0,
+     "default": 10.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 1122,
+   "native_radius": 416.996,
+   "native_min_axis": 3.0,
+   "scale_lo": 69.5,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Kelpwood",
+   "type": "CosmicShore.Gameplay.SpawnableKelpwood",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableKelpwood.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "kelpRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 160.0,
+     "hi": 640.0,
+     "default": 320.0
+    },
+    {
+     "name": "strandCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 22.0,
+     "hi": 88.0,
+     "default": 44.0
+    },
+    {
+     "name": "dangerTipEveryNth",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    },
+    {
+     "name": "collarEveryNth",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 880,
+   "native_radius": 296.01,
+   "native_min_axis": 3.0,
+   "scale_lo": 49.34,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "LSystem",
+   "type": "CosmicShore.Gameplay.SpawnableLSystem",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableLSystem.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "preset",
+     "type": "enum",
+     "cs_type": "LSystemPreset",
+     "lo": 0,
+     "hi": 7,
+     "default": 1.0,
+     "values": [
+      "Custom",
+      "BasicTree",
+      "Tree3D",
+      "HilbertCurve3D",
+      "KochSnowflake3D",
+      "SphericalSpiral",
+      "FractalCoral",
+      "CrystalStructure"
+     ]
+    },
+    {
+     "name": "baseLength",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 2.5,
+     "hi": 10.0,
+     "default": 5.0
+    },
+    {
+     "name": "baseWidth",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.5,
+     "hi": 2.0,
+     "default": 1.0
+    },
+    {
+     "name": "widthScaleReduction",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.4,
+     "hi": 1.6,
+     "default": 0.8
+    },
+    {
+     "name": "lengthScaleReduction",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.45,
+     "hi": 1.8,
+     "default": 0.9
+    },
+    {
+     "name": "customIterations",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 8.0,
+     "default": 4.0
+    },
+    {
+     "name": "customAngle",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 12.5,
+     "hi": 50.0,
+     "default": 25.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "customAxiom",
+     "why": "string (not a scalar gene)"
+    },
+    {
+     "name": "customRules",
+     "why": "List<Rule> (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 625,
+   "native_radius": 165.031,
+   "native_min_axis": 1.0,
+   "scale_lo": 82.52,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "LinkedRings",
+   "type": "CosmicShore.Gameplay.SpawnableLinkedRings",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableLinkedRings.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "numberOfRings",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 7.0,
+     "hi": 28.0,
+     "default": 14.0
+    },
+    {
+     "name": "blocksPerRing",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 18.0,
+     "hi": 72.0,
+     "default": 36.0
+    },
+    {
+     "name": "ringRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 35.0,
+     "hi": 140.0,
+     "default": 70.0
+    },
+    {
+     "name": "colorByRing",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "blockScale",
+     "why": "Vector3 (not a scalar gene)"
+    },
+    {
+     "name": "ringDomains",
+     "why": "Domains[] (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 504,
+   "native_radius": 72.798,
+   "native_min_axis": 2.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Orrery",
+   "type": "CosmicShore.Gameplay.SpawnableOrrery",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableOrrery.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 34709,
+   "native_radius": 441.176,
+   "native_min_axis": 0.6,
+   "scale_lo": 367.65,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Ourobor",
+   "type": "CosmicShore.Gameplay.SpawnableOurobor",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableOurobor.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 37865,
+   "native_radius": 828.952,
+   "native_min_axis": 0.747,
+   "scale_lo": 554.85,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Panes",
+   "type": "CosmicShore.Gameplay.SpawnablePanes",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnablePanes.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 14944,
+   "native_radius": 2239.03,
+   "native_min_axis": 5.629,
+   "scale_lo": 198.88,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Pumpkin",
+   "type": "CosmicShore.Gameplay.SpawnablePumpkin",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnablePumpkin.cs",
+   "world": false,
+   "usable": false,
+   "why": "lays no prisms from its code defaults: it needs authored inputs (a prefab's waypoints, stations or lists) a gene cannot hold",
+   "params": [],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "maxlength",
+     "why": "no default and no range to scale from"
+    }
+   ],
+   "native_prisms": 720,
+   "native_radius": 0.0,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "RaceTrack",
+   "type": "CosmicShore.Gameplay.SpawnableRaceTrack",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRaceTrack.cs",
+   "world": false,
+   "usable": false,
+   "why": "lays no prisms from its code defaults: it needs authored inputs (a prefab's waypoints, stations or lists) a gene cannot hold",
+   "params": [
+    {
+     "name": "targetLapTime",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 22.5,
+     "hi": 90.0,
+     "default": 45.0
+    },
+    {
+     "name": "expectedShipSpeed",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 75.0,
+     "hi": 300.0,
+     "default": 150.0
+    },
+    {
+     "name": "blockCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 300.0,
+     "hi": 1200.0,
+     "default": 600.0
+    },
+    {
+     "name": "trackWidth",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 250.0,
+     "hi": 1000.0,
+     "default": 500.0
+    },
+    {
+     "name": "trackDepth",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 150.0,
+     "hi": 600.0,
+     "default": 300.0
+    },
+    {
+     "name": "maxElevation",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 40.0,
+     "hi": 160.0,
+     "default": 80.0
+    },
+    {
+     "name": "complexity",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.0,
+     "hi": 1.0,
+     "default": 0.5
+    },
+    {
+     "name": "includeCorkscrew",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "includeBanking",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "featureCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 3.0,
+     "hi": 12.0,
+     "default": 6.0
+    },
+    {
+     "name": "checkpointCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 4.0,
+     "hi": 16.0,
+     "default": 8.0
+    },
+    {
+     "name": "checkpointScaleMultiplier",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 1.0,
+     "hi": 4.0,
+     "default": 2.0
+    },
+    {
+     "name": "startFinishDomain",
+     "type": "domain",
+     "cs_type": "Domains",
+     "lo": 0,
+     "hi": 3,
+     "default": 1.0
+    },
+    {
+     "name": "checkpointDomain",
+     "type": "domain",
+     "cs_type": "Domains",
+     "lo": 0,
+     "hi": 3,
+     "default": 0.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "scale",
+     "why": "Vector3 (not a scalar gene)"
+    },
+    {
+     "name": "checkpointPrism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "actualSeed",
+     "why": "no default and no range to scale from"
+    }
+   ],
+   "native_prisms": 0,
+   "native_radius": 0.0,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "RegattaRails",
+   "type": "CosmicShore.Gameplay.SpawnableRegattaRails",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRegattaRails.cs",
+   "world": true,
+   "usable": false,
+   "why": "the Regatta course itself",
+   "params": [
+    {
+     "name": "courseIntensity",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 4.0,
+     "default": 1.0
+    },
+    {
+     "name": "laneOffset",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 11.0,
+     "hi": 44.0,
+     "default": 22.0
+    },
+    {
+     "name": "laneTwistTurnsPerLap",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.5,
+     "hi": 2.0,
+     "default": 1.0
+    },
+    {
+     "name": "prismSpacing",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 4.0,
+     "hi": 16.0,
+     "default": 8.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "courseSeed",
+     "why": "no default and no range to scale from"
+    },
+    {
+     "name": "courseFeatures",
+     "why": "RegattaCourseFeatures (not a scalar gene)"
+    },
+    {
+     "name": "prismScale",
+     "why": "Vector3 (not a scalar gene)"
+    },
+    {
+     "name": "lifeforms",
+     "why": "RegattaLifeformSiteSettings (not a scalar gene)"
+    },
+    {
+     "name": "courseGenome",
+     "why": "string (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 0,
+   "native_radius": 0.0,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Ribcage",
+   "type": "CosmicShore.Gameplay.SpawnableRibcage",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRibcage.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "shellCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 2.0,
+     "default": 1.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 5575,
+   "native_radius": 743.88,
+   "native_min_axis": 3.853,
+   "scale_lo": 96.53,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "SchwarzPSurface",
+   "type": "CosmicShore.Gameplay.SpawnableSchwarzPSurface",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSchwarzPSurface.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "periods",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 4.0,
+     "default": 3.0
+    },
+    {
+     "name": "samplesPerPeriod",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 5.0,
+     "hi": 13.0,
+     "default": 10.0
+    },
+    {
+     "name": "surfaceThreshold",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.2,
+     "hi": 0.8,
+     "default": 0.4
+    },
+    {
+     "name": "periodScale",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 15.0,
+     "hi": 60.0,
+     "default": 30.0
+    },
+    {
+     "name": "colorBySide",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "positiveDomain",
+     "type": "domain",
+     "cs_type": "Domains",
+     "lo": 0,
+     "hi": 3,
+     "default": 3.0
+    },
+    {
+     "name": "negativeDomain",
+     "type": "domain",
+     "cs_type": "Domains",
+     "lo": 0,
+     "hi": 3,
+     "default": 0.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "blockScale",
+     "why": "Vector3 (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 7776,
+   "native_radius": 58.765,
+   "native_min_axis": 1.692,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0,
+   "heavy": "756000 prisms in 944 ms with every count at its high end: count genes held to x1.25 their defaults"
+  },
+  {
+   "id": "ShapeBase",
+   "type": "CosmicShore.Gameplay.SpawnableShapeBase",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableShapeBase.cs",
+   "world": false,
+   "usable": false,
+   "why": "abstract base of the shape-drawing spawnables",
+   "params": [
+    {
+     "name": "baseBlockCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 15.0,
+     "hi": 60.0,
+     "default": 30.0
+    },
+    {
+     "name": "spawnInterval",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.015,
+     "hi": 0.06,
+     "default": 0.03
+    }
+   ],
+   "fixed": [
+    {
+     "name": "shapeDefinition",
+     "why": "ShapeDefinition (not a scalar gene)"
+    },
+    {
+     "name": "triggerRadius",
+     "why": "no default and no range to scale from"
+    }
+   ],
+   "native_prisms": 0,
+   "native_radius": 0.0,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "ShapeSign",
+   "type": "CosmicShore.Gameplay.SpawnableShapeSign",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableShapeSign.cs",
+   "world": false,
+   "usable": false,
+   "why": "a MonoBehaviour that shows a sign, not a SpawnableBase",
+   "params": [],
+   "fixed": [
+    {
+     "name": "signPrefab",
+     "why": "GameObject (not a scalar gene)"
+    },
+    {
+     "name": "shapeDefinition",
+     "why": "ShapeDefinition (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 0,
+   "native_radius": 0.0,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Shatterplane",
+   "type": "CosmicShore.Gameplay.SpawnableShatterplane",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableShatterplane.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "innerRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 100.0,
+     "hi": 400.0,
+     "default": 200.0
+    },
+    {
+     "name": "outerRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 190.0,
+     "hi": 760.0,
+     "default": 380.0
+    },
+    {
+     "name": "structureCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 5.0,
+     "hi": 20.0,
+     "default": 10.0
+    },
+    {
+     "name": "plateRadius",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 6.0,
+     "hi": 26.0,
+     "default": 13.0
+    },
+    {
+     "name": "platesPerStack",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 2.0,
+     "default": 1.0
+    },
+    {
+     "name": "faceOut",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 1.0,
+     "default": 1.0
+    },
+    {
+     "name": "ribEvery",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    },
+    {
+     "name": "dangerRim",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 1.0,
+     "default": 0.0
+    },
+    {
+     "name": "screenEvery",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    },
+    {
+     "name": "screenRadius",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    },
+    {
+     "name": "screenRibEvery",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 2.0,
+     "default": 1.0
+    },
+    {
+     "name": "crystalCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 5.0,
+     "hi": 20.0,
+     "default": 10.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "shelfGap",
+     "why": "defaults to 0 with no range (no scale to search round)"
+    },
+    {
+     "name": "screenOffset",
+     "why": "defaults to 0 with no range (no scale to search round)"
+    }
+   ],
+   "native_prisms": 5290,
+   "native_radius": 420.761,
+   "native_min_axis": 2.0,
+   "scale_lo": 105.19,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "SingleTrailBlock",
+   "type": "CosmicShore.Gameplay.SpawnableSingleTrailBlock",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSingleTrailBlock.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "blockScale",
+     "why": "Vector3 (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 1,
+   "native_radius": 0.5,
+   "native_min_axis": 1.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Skein",
+   "type": "CosmicShore.Gameplay.SpawnableSkein",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSkein.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "strandCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 5.0,
+     "hi": 9.0,
+     "default": 5.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prismScale",
+     "why": "Vector3 (not a scalar gene)"
+    },
+    {
+     "name": "cableSeed",
+     "why": "no default and no range to scale from"
+    }
+   ],
+   "native_prisms": 3913,
+   "native_radius": 830.26,
+   "native_min_axis": 6.0,
+   "scale_lo": 69.19,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Spherene",
+   "type": "CosmicShore.Gameplay.SpawnableSpherene",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSpherene.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "subdivisions",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 3.0,
+     "default": 2.0
+    },
+    {
+     "name": "radius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 35.0,
+     "hi": 140.0,
+     "default": 70.0
+    },
+    {
+     "name": "blocksPerEdge",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 4.0,
+     "hi": 16.0,
+     "default": 8.0
+    },
+    {
+     "name": "edgeDomain",
+     "type": "domain",
+     "cs_type": "Domains",
+     "lo": 0,
+     "hi": 3,
+     "default": 3.0
+    },
+    {
+     "name": "vertexDomain",
+     "type": "domain",
+     "cs_type": "Domains",
+     "lo": 0,
+     "hi": 3,
+     "default": 2.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "blockScale",
+     "why": "Vector3 (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 4002,
+   "native_radius": 72.0,
+   "native_min_axis": 0.5,
+   "scale_lo": 72.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Standoff",
+   "type": "CosmicShore.Gameplay.SpawnableStandoff",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableStandoff.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "postCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 6.0,
+     "hi": 24.0,
+     "default": 12.0
+    },
+    {
+     "name": "postRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 140.0,
+     "hi": 560.0,
+     "default": 280.0
+    },
+    {
+     "name": "postGrid",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 3.0,
+     "hi": 12.0,
+     "default": 6.0
+    },
+    {
+     "name": "innerPostCount",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    },
+    {
+     "name": "innerPostRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 65.0,
+     "hi": 260.0,
+     "default": 130.0
+    },
+    {
+     "name": "innerPostGrid",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 8.0,
+     "default": 4.0
+    },
+    {
+     "name": "shieldedRim",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 0.0
+    },
+    {
+     "name": "dangerCorners",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 0.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 432,
+   "native_radius": 322.496,
+   "native_min_axis": 3.0,
+   "scale_lo": 53.75,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Swell",
+   "type": "CosmicShore.Gameplay.SpawnableSwell",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSwell.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 14289,
+   "native_radius": 1807.597,
+   "native_min_axis": 4.125,
+   "scale_lo": 219.1,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "SwitchbackFeatures",
+   "type": "CosmicShore.Gameplay.SpawnableSwitchbackFeatures",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSwitchbackFeatures.cs",
+   "world": true,
+   "usable": false,
+   "why": "lays no prisms from its code defaults: it needs authored inputs (a prefab's waypoints, stations or lists) a gene cannot hold",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 0,
+   "native_radius": 0.0,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Switchyard",
+   "type": "CosmicShore.Gameplay.SpawnableSwitchyard",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSwitchyard.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "ringRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 450.0,
+     "hi": 1800.0,
+     "default": 900.0
+    },
+    {
+     "name": "stationsPerRing",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 4.0,
+     "hi": 10.0,
+     "default": 8.0
+    },
+    {
+     "name": "railHalfGapDegrees",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 2.0,
+     "hi": 20.0,
+     "default": 12.5
+    },
+    {
+     "name": "railPrisms",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 20.0,
+     "hi": 50.0,
+     "default": 40.0
+    },
+    {
+     "name": "bigBurrShells",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 4.0,
+     "default": 3.0
+    },
+    {
+     "name": "smallBurrShells",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 3.0,
+     "default": 2.0
+    },
+    {
+     "name": "shellPitch",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 5.0,
+     "hi": 20.0,
+     "default": 10.0
+    },
+    {
+     "name": "yawDegrees",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 11.25,
+     "hi": 45.0,
+     "default": 22.5
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prismScale",
+     "why": "Vector3 (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 2772,
+   "native_radius": 939.929,
+   "native_min_axis": 3.0,
+   "scale_lo": 156.65,
+   "scale_hi": 1100.0,
+   "heavy": "80730 prisms in 31 ms with every count at its high end: count genes held to x1.25 their defaults"
+  },
+  {
+   "id": "TorusKnot",
+   "type": "CosmicShore.Gameplay.SpawnableTorusKnot",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableTorusKnot.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "p",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 6.0,
+     "default": 3.0
+    },
+    {
+     "name": "q",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 2.0,
+     "hi": 10.0,
+     "default": 5.0
+    },
+    {
+     "name": "majorRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 30.0,
+     "hi": 120.0,
+     "default": 60.0
+    },
+    {
+     "name": "minorRadius",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 12.5,
+     "hi": 50.0,
+     "default": 25.0
+    },
+    {
+     "name": "blocksAlongKnot",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 250.0,
+     "hi": 1000.0,
+     "default": 500.0
+    },
+    {
+     "name": "strands",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 6.0,
+     "default": 3.0
+    },
+    {
+     "name": "colorByStrand",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "blockScale",
+     "why": "Vector3 (not a scalar gene)"
+    },
+    {
+     "name": "strandDomains",
+     "why": "Domains[] (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 1500,
+   "native_radius": 85.849,
+   "native_min_axis": 2.0,
+   "scale_lo": 21.46,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Twistbands",
+   "type": "CosmicShore.Gameplay.SpawnableTwistbands",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableTwistbands.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 16625,
+   "native_radius": 640.956,
+   "native_min_axis": 4.967,
+   "scale_lo": 64.52,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Wall",
+   "type": "CosmicShore.Gameplay.SpawnableWall",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWall.cs",
+   "world": false,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "blockSize",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.5,
+     "hi": 2.0,
+     "default": 1.0
+    },
+    {
+     "name": "padding",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 0.05,
+     "hi": 0.2,
+     "default": 0.1
+    }
+   ],
+   "fixed": [
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "crystal",
+     "why": "Crystal (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 36,
+   "native_radius": 4.389,
+   "native_min_axis": 0.1,
+   "scale_lo": 21.95,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "WaypointTrack",
+   "type": "CosmicShore.Gameplay.SpawnableWaypointTrack",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWaypointTrack.cs",
+   "world": false,
+   "usable": false,
+   "why": "lays no prisms from its code defaults: it needs authored inputs (a prefab's waypoints, stations or lists) a gene cannot hold",
+   "params": [
+    {
+     "name": "prismSpacing",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 6.0,
+     "hi": 24.0,
+     "default": 12.0
+    },
+    {
+     "name": "blocksPerSegment",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 25.0,
+     "hi": 100.0,
+     "default": 50.0
+    },
+    {
+     "name": "markWaypoints",
+     "type": "bool",
+     "cs_type": "bool",
+     "lo": 0,
+     "hi": 1,
+     "default": 1.0
+    },
+    {
+     "name": "waypointScaleMultiplier",
+     "type": "float",
+     "cs_type": "float",
+     "lo": 1.0,
+     "hi": 4.0,
+     "default": 2.0
+    },
+    {
+     "name": "waypointDomain",
+     "type": "domain",
+     "cs_type": "Domains",
+     "lo": 0,
+     "hi": 3,
+     "default": 0.0
+    },
+    {
+     "name": "trackDomain",
+     "type": "domain",
+     "cs_type": "Domains",
+     "lo": 0,
+     "hi": 3,
+     "default": 2.0
+    },
+    {
+     "name": "previewIntensityLevel",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 0.0,
+     "hi": 8.0,
+     "default": 0.0
+    }
+   ],
+   "fixed": [
+    {
+     "name": "waypoints",
+     "why": "List<CrystalPositionSet> (not a scalar gene)"
+    },
+    {
+     "name": "useSplinePerIntensity",
+     "why": "List<int> (not a scalar gene)"
+    },
+    {
+     "name": "waypointUps",
+     "why": "List<CrystalPositionSet> (not a scalar gene)"
+    },
+    {
+     "name": "crystalsPerLap",
+     "why": "List<int> (not a scalar gene)"
+    },
+    {
+     "name": "prism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "scale",
+     "why": "Vector3 (not a scalar gene)"
+    },
+    {
+     "name": "waypointPrism",
+     "why": "Prism (not a scalar gene)"
+    },
+    {
+     "name": "markedWaypoints",
+     "why": "List<WaypointIndexSet> (not a scalar gene)"
+    }
+   ],
+   "native_prisms": 0,
+   "native_radius": 0.0,
+   "native_min_axis": 0.0,
+   "scale_lo": 20.0,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "WildlifeCage",
+   "type": "CosmicShore.Gameplay.SpawnableWildlifeCage",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWildlifeCage.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [
+    {
+     "name": "intensityTier",
+     "type": "int",
+     "cs_type": "int",
+     "lo": 1.0,
+     "hi": 4.0,
+     "default": 1.0
+    }
+   ],
+   "fixed": [],
+   "native_prisms": 9206,
+   "native_radius": 1064.437,
+   "native_min_axis": 3.453,
+   "scale_lo": 154.13,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Yggdra",
+   "type": "CosmicShore.Gameplay.SpawnableYggdra",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableYggdra.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 34130,
+   "native_radius": 349.459,
+   "native_min_axis": 0.578,
+   "scale_lo": 302.3,
+   "scale_hi": 1100.0
+  },
+  {
+   "id": "Zephyr",
+   "type": "CosmicShore.Gameplay.SpawnableZephyr",
+   "source": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableZephyr.cs",
+   "world": true,
+   "usable": true,
+   "why": "",
+   "params": [],
+   "fixed": [],
+   "native_prisms": 42895,
+   "native_radius": 433.039,
+   "native_min_axis": 0.7,
+   "scale_lo": 309.31,
+   "scale_hi": 1100.0,
+   "heavy": "72564 prisms in 66 ms with every count at its high end: count genes held to x1.25 their defaults"
+  }
+ ]
+}

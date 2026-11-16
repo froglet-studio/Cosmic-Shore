@@ -489,8 +489,9 @@ namespace CosmicShore.Gameplay
             int ceiling = Mathf.Clamp(_tournament.IntensityCeiling <= 0 ? 1 : _tournament.IntensityCeiling, 1, 4);
 
             // The lobby's intensity does TWO things: it caps each game's own intensity, and it
-            // decides how wide the pool is (MaelstromDataSO.IntensityTiers). An un-authored
-            // ladder returns the whole queue, so this is the legacy draw until tiers are written.
+            // picks WHICH bucket of games is dealt (MaelstromDataSO.IntensityTiers: 1 Beginner,
+            // 2 Great, 3 Good, 4 Floor - exclusive, not a ladder). An un-authored or empty bucket
+            // returns the whole queue, so the mode can always draw.
             var drawable = _tournament.GamesForIntensity(ceiling);
             if (drawable.Count == 0) return false;
 

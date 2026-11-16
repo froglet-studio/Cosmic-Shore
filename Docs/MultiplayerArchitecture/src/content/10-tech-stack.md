@@ -15,7 +15,7 @@ Reflex for dependency injection.
 | Sessions / Lobby / Relay / Friends / Auth | **Unity Gaming Services** (Multiplayer SDK) |
 | Async | **UniTask** (`com.cysharp.unitask`) — with the project's `.AsMainThread()` boundary helper |
 | Dependency injection | **Reflex 14.1.0** — `AppManager` is the root installer |
-| Cross-system state | **SOAP** (Obvious.Soap) — `ScriptableVariable` / `ScriptableEvent` |
+| Cross-system state | **SOAP** (our own `CosmicShore.Soap`; Obvious.Soap until 2026-11-06) — `ScriptableVariable` / `ScriptableEvent` |
 | Backend | UGS (Analytics, CloudSave, Leaderboards) |
 
 ## The UGS services, in depth

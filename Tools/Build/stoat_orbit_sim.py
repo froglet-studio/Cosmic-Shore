@@ -51,8 +51,15 @@ CATCH_WARP_SHARE = 1.15
 # The trampoline (Yash, 2026-11-04: "remove the whole orbit ... just keep white hole, make it so that vessels can bounce off
 # with extra boost, it will be a 3D trampoline"): a soft shell round a lone white hole, laid AHEAD and line x R to the side
 # away from the bounce; inside it a spring pushes the hull out along the shell's normal (StoatSlingMath.TrampolineStep).
-TRAMP_AHEAD, TRAMP_R, TRAMP_LINE, TRAMP_SOFT, TRAMP_LIFE, TRAMP_PREDICT_MAX = 140.0, 60.0, 0.75, 0.35, 4.0, 90.0
-# the turn a graze gives at 150 u/s: 0.5 -> 83, 0.7 -> 53, 0.9 -> 19 deg, head-on 180 (about (1 - line) x 160)
+# the shell halved 60 -> 30 u (Yash, 2026-11-07: "it moves the vessel too much"); its hard core at 0.2 x R
+TRAMP_AHEAD, TRAMP_R, TRAMP_LINE, TRAMP_SOFT, TRAMP_LIFE, TRAMP_PREDICT_MAX = 140.0, 30.0, 0.75, 0.35, 4.0, 90.0
+TRAMP_CORE = 0.2
+# The swing (Yash, 2026-11-11: "change it to a black hole only as before, then make the slingshot angle dynamic based on our
+# controller's axis"): a lone black hole laid ahead on the pressed side; pass beside it and it bends you round it at
+# min(v / d, SWING_RATE), toward itself, until you have turned the angle the stick asks (SWING_MIN..SWING_MAX), then the kick.
+SWING_AHEAD, SWING_SIDE, SWING_REACH, SWING_CATCH, SWING_MIN, SWING_MAX, SWING_RATE, SWING_LIFE = \
+    150.0, 35.0, 70.0, 40.0, 15.0, 90.0, 200.0, 4.0
+# the turn a graze of the 30 u shell gives at 150 u/s: 0.5 -> 49, 0.75 -> 23, 0.9 -> 8 deg, head-on 180 (about (1 - line) x 100)
 TRAMP_TURN_SCALE, TRAMP_LINE_MIN, TRAMP_LINE_MAX = 140.0, 0.3, 0.92
 
 
@@ -196,7 +203,11 @@ def tramp_step(vel, radial, radius, soft, dt):
     depth = radius - d
     if depth <= 0 or d < 1e-6: return list(vel)
     k = (math.pi / soft) ** 2
-    return add(vel, mul(radial, k * depth * dt / d))
+    n = mul(radial, 1.0 / d)
+    vel = add(vel, mul(n, k * depth * dt))
+    inward = dot(vel, n)
+    if d <= TRAMP_CORE * radius and inward < 0: vel = sub(vel, mul(n, 2 * inward))   # the hard core
+    return vel
 
 
 def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None, nose_lead=None):
@@ -217,6 +228,7 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None, nose
     laid = caught = False; attractor = None; orbit_side_left = False; radius = 0.0; swept = 0.0; last_radial = None; laid_at = 0.0
     steered_out = False
     orbit_s = 0.0; entry = None; aimed = bool(row.get("aimed"))
+    swing = bool(row.get("swing")); hole = None; swing_axis = None; turned = 0.0
     tramp = bool(row.get("tramp")); tramp_c = None; tramp_aim = None; bounces = 0; tramp_misses = 0; prev_fwd = list(fwd); omega = [0.0, 0.0, 0.0]
     t_line, t_r, t_ahead = row.get("line", TRAMP_LINE), row.get("radius", TRAMP_R), row.get("ahead", TRAMP_AHEAD)
     # The Orrery (orrery_port.layout): its static prisms in a 24 u hash for contacts, its moons the AI's anchors.
@@ -252,7 +264,7 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None, nose
             extending = True; ext_t = 0.0; breaks += 1; orbit.reset()
         # StoatSlingExecutor.AutopilotSling
         if warp:
-            if laid and tramp:
+            if laid and (tramp or swing):
                 pass   # the AI lets go of the trigger at once: the shell stays up until it is bounced off or passed
             elif laid:
                 if not caught:
@@ -325,6 +337,9 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None, nose
                     attractor = add(mid, mul(right, -CATCH_SIDE if left else CATCH_SIDE))
                     laid = True; caught = False; orbit_side_left = left
                     radius = orbit_radius(row["hold"]); swept = 0.0; laid_at = t
+                    if swing:
+                        # StoatSlingMath.SwingHole: ahead, swingSide toward the pressed side
+                        hole = add(add(pos, mul(f, row.get("ahead", SWING_AHEAD))), mul(right, -row.get("side", SWING_SIDE) if left else row.get("side", SWING_SIDE)))
                     if tramp:
                         tramp_c = tramp_centre(pos, f, right, left, omega if row.get("predict") else None, CRUISE * clock,
                                                t_line, t_r, t_ahead)
@@ -371,7 +386,34 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None, nose
                     laid = caught = False
             elif outward or t - laid_at >= TRAMP_LIFE:
                 laid = False; tramp_misses += 1
-        if laid and not tramp:
+        # StoatSlingExecutor.StepSwing: passing beside the hole (inside the reach, the hole far enough off the nose) starts
+        # the swing; the heading turns toward the hole at min(v / d, rate) until the angle is turned - the AI's stick asks
+        # for the turn to its target (it lets go once facing it), at least SWING_MIN, at most SWING_MAX - then the kick
+        if laid and swing:
+            rad = sub(pos, hole); d = norm(rad); to_h = mul(rad, -1.0)
+            reach = row.get("reach", SWING_REACH)
+            if not caught:
+                if d <= reach and ang(fwd, to_h) >= SWING_CATCH:
+                    caught = True; catches_n += 1; turned = 0.0
+                    ax = cross(fwd, to_h); swing_axis = unit(ax) if norm(ax) > 1e-6 else [0.0, 1.0, 0.0]
+                elif (dot(fwd, rad) > 0 and d > reach) or t - laid_at >= SWING_LIFE:
+                    laid = False
+            if caught:
+                caught_t += dt
+                rate = min(v / max(d, 1.0), math.radians(row.get("rate", SWING_RATE)))
+                done = math.radians(row.get("max", SWING_MAX))
+                facing = ang(fwd, to) <= row.get("face", 8.0)
+                on_side = dot(cross(fwd, to), swing_axis) > 0   # StoatSlingMath.OnSwingSide: turning on brings the target nearer
+                if not (turned >= math.radians(row.get("min", SWING_MIN)) and (facing or not on_side)) and turned < done and d <= 2 * reach:
+                    step = min(rate * dt, done - turned)
+                    before = list(fwd); fwd = unit(rotate_about(fwd, swing_axis, step)); turned += step
+                    cmd = rotate_about(cmd, swing_axis, step)
+                else:
+                    amount = min(CRUISE * (BOOST_MIN + (BOOST_MAX - BOOST_MIN) * row["hold"]) * kick_rate, (row["cap"] - 1) * CRUISE * clock)
+                    momentum_clock, momentum_at = clock, t
+                    kick = (list(fwd), amount, t); timed += 1
+                    laid = caught = False
+        if laid and not tramp and not swing:
             squeeze_r = orbit_radius(row["hold"])
             want = squeeze_r * row.get("inner", 1.0) if caught else squeeze_r
             follow = (row.get("pull", 0.0) or EASE_RATE) if caught else FOLLOW_RATE
@@ -588,6 +630,7 @@ if __name__ == "__main__":
     ap.add_argument("--grid", action="store_true"); ap.add_argument("--self-test", action="store_true"); ap.add_argument("--seeds", type=int, default=12)
     ap.add_argument("--earned", action="store_true"); ap.add_argument("--grid-earned", action="store_true")
     ap.add_argument("--orrery", action="store_true"); ap.add_argument("--trampoline", action="store_true")
+    ap.add_argument("--swing", action="store_true"); ap.add_argument("--swing-grid", action="store_true")
     ap.add_argument("--nose-lead", metavar="G[,EXTRA]", default=None,
                     help="the AI nose lead (AIPilot.NoseLeadGain, stated at the fleet lag; EXTRA = NoseLeadMaxExtraDegrees, 40): "
                          "every table row is printed again with the lead on; --grid / --grid-earned search with it on")
@@ -602,6 +645,23 @@ if __name__ == "__main__":
         s = scored(None); print(fmt(name, s))
         if lead is not None: print(fmt(f"  + nose lead {lead.gain:g}", scored(lead)))
         return s
+    if a.swing:
+        print(line("floor: no press, cruise only", score(HULL_ROW, seeds=a.seeds, warp=False)))
+        print(line("the aimed exit (shipped 11-03)", score(SHIPPED_ROW, seeds=a.seeds, dt=1 / 60)))
+        # the Slingshot copy's rows as Garrett's promotion wrote them for the trampoline (c39317a6b6)
+        trained = dict(SHIPPED_ROW, aimed=False, swing=True, rate=150.0, reach=55.0, hold=0.012, min_turn=147.951, interval=2.896,
+                       min_dist=13.329, warp_dist=310.106)
+        print(line("SWING x the Slingshot copy's trained rows", score(trained, seeds=a.seeds, dt=1 / 60)), flush=True)
+        print(line("SWING rate 150 reach 55, turn>=20, hold 1", score(dict(SHIPPED_ROW, aimed=False, swing=True, rate=150.0, reach=55.0,
+                                                                           min_turn=20.0), seeds=a.seeds, dt=1 / 60)), flush=True)
+        if not a.swing_grid:
+            sys.exit(0)
+        for mt in (20.0, 35.0):
+            for rate in (150.0, 200.0, 300.0):
+                for reach in (55.0, 70.0):
+                    row = dict(SHIPPED_ROW, aimed=False, swing=True, min_turn=mt, rate=rate, reach=reach)
+                    print(line(f"SWING turn>={mt:.0f} rate {rate:.0f} reach {reach:.0f}", score(row, seeds=a.seeds, dt=1 / 60)), flush=True)
+        sys.exit(0)
     if a.trampoline:
         put("floor: no press, cruise only", lambda nl: score(HULL_ROW, seeds=a.seeds, warp=False, nose_lead=nl))
         put("the aimed exit (shipped 11-03)", lambda nl: score(SHIPPED_ROW, seeds=a.seeds, dt=1 / 60, nose_lead=nl))
@@ -610,7 +670,9 @@ if __name__ == "__main__":
                             ("TRAMP, turning line, AI aims at the flank", {"predict": True, "aim": True})):
             row = dict(SHIPPED_ROW, aimed=False, tramp=True, **extra)
             put(name, lambda nl, row=row: score(row, seeds=a.seeds, dt=1 / 60, nose_lead=nl))
-        for sc_ in (100.0, 160.0, 220.0):
+        shipped = dict(SHIPPED_ROW, aimed=False, tramp=True, aim=True, aim_turn=True, turn_scale=55.0, min_turn=50.0)
+        put("SHIPPED 11-07: the 30 u shell, x55, turn >= 50", lambda nl, row=shipped: score(row, seeds=a.seeds, dt=1 / 60, nose_lead=nl))
+        for sc_ in (40.0, 55.0, 100.0, 160.0, 220.0):
             for mt in (20.0, 35.0, 50.0):
                 row = dict(SHIPPED_ROW, aimed=False, tramp=True, aim=True, aim_turn=True, turn_scale=sc_, min_turn=mt)
                 put(f"  aims for its turn, x{sc_:.0f}, turn >= {mt:.0f}", lambda nl, row=row: score(row, seeds=a.seeds, dt=1 / 60, nose_lead=nl))

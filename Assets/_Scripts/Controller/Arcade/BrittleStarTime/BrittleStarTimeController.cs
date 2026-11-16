@@ -13,16 +13,28 @@ namespace CosmicShore.Gameplay
     /// early and coast in. I4 Corkscrew: start at Time 5 and roll (Speed Roll) to hold Speed through a coil. See
     /// <see cref="BrittleStarTimeCourse"/> and BRITTLESTARTIME.md.</para>
     ///
-    /// <para><b>What the mode does NOT add:</b> no ability, no cell, no metric and no vessel change - the course
-    /// source (<see cref="BrittleStarTimeCourseSource"/>) supplies the shapes, Headlong's solver the Gearbox, and the
-    /// card's starting elements the Time 5 start.</para>
+    /// <para><b>The Shift Line (2026-11-16, BRITTLESTARTIME.md section 0).</b> Three partials on top of the race:
+    /// <list type="bullet">
+    /// <item><c>.Line</c> - a let-go gate (two columns of shielded Blue posts) before every ring whose corner is tighter
+    /// than Speed Mode carries (<see cref="BrittleStarTimeLine"/>), laid on every peer from the broadcast course; it lights
+    /// in the local pilot's colour on a clean shift.</item>
+    /// <item><c>.Coach</c> - the server's race coach for every AI Brittle Star (<see cref="BrittleStarTimeCoach"/>): its
+    /// Speed wish through the hull's own autopilot control, its line, its nose follow by difficulty.</item>
+    /// <item><c>.Heat</c> - the local pilot's threads graded and called (<see cref="BrittleStarTimeHeat"/>): shock rings
+    /// off the gates, streaks, lap splits, a best lap, a clean lap, and a start hint per rung.</item>
+    /// </list></para>
+    ///
+    /// <para><b>What the mode does NOT add:</b> no ability and no vessel change - every Brittle Star file, prefab, action
+    /// SO and config is untouched. The course source (<see cref="BrittleStarTimeCourseSource"/>) supplies the shapes and
+    /// the laps per rung, and the card's starting elements the Time 5 start.</para>
     /// </summary>
-    public class BrittleStarTimeController : GateRaceController
+    public partial class BrittleStarTimeController : GateRaceController
     {
         [Header("Brittle Star Time circuit")]
-        [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
+        [Tooltip("Laps of the ring set that make one I1 race. The authored gate target is the I1 RACE " +
                  "length, so the circuit is laid with target/laps rings - one number authored " +
-                 "once, in the end-condition overrides, and the two can never disagree.")]
+                 "once, in the end-condition overrides, and the two can never disagree. Higher rungs fly more laps " +
+                 "of their shorter shapes (BrittleStarTimeCourse.LapsByIntensity).")]
         [SerializeField, Min(1)] int laps = BrittleStarTimeCourseSource.DefaultLaps;
 
         protected override string ModeName => "Brittle Star Time";
@@ -33,5 +45,32 @@ namespace CosmicShore.Gameplay
 
         protected override RaceCourseSource CreateCourseSource() =>
             new BrittleStarTimeCourseSource { Laps = laps };
+
+        /// <summary>The Brittle Star's full Speed on this rung: x6 cruise, x7 at I4's Time 5 start.</summary>
+        float TopSpeed => Intensity >= 4 ? BrittleStarTimeCourse.SpeedModeSpeedAtTime5 : BrittleStarTimeCourse.SpeedModeSpeed;
+
+        protected override void OnCourseRaised() => RaiseLetGoGates();
+
+        protected override void OnServerTick() => TickCoach();
+
+        protected override void OnRacerArmed(IPlayer pilot) => ArmCoach(pilot);
+
+        // GateRaceController.Update runs the race and a subclass must not declare Update; LateUpdate is free. Declared
+        // once, here, for every partial.
+        void LateUpdate()
+        {
+            TickLetGoGates();
+            TickHeat();
+        }
+
+        void OnDisable() => ReleaseEveryCoachedWish();
+
+        public override void OnNetworkDespawn()
+        {
+            ReleaseEveryCoachedWish();
+            ClearLetGoGates();
+            ClearHeat();
+            base.OnNetworkDespawn();
+        }
     }
 }

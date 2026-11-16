@@ -119,7 +119,7 @@ namespace CosmicShore.UI
             // from Resources/Pilots/PilotProfileView (EnsurePilotProfileModal).
             PILOT_PROFILE = 21,
 
-            // The Quests window (Docs/MENU_REDESIGN_B.md sections 187, 188 and 200, Frogma Rev 107 D; Shombith, 2026-11-13:
+            // The Quests window (Docs/MENU_REDESIGN_B.md sections 207, 208 and 200, Frogma Rev 107 D; Shombith, 2026-11-13:
             // "Quest should be a seperate screen"): the route of quests, the picked quest's goals and its colour set
             // reward, opened from Home's quest card (OnClickQuests). Not a hub window, so the triggers do not slide
             // it. Built in code beside the Voyage window (EnsureQuestsModal). 20 was this window's once before

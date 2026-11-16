@@ -833,6 +833,20 @@ MonoBehaviour:
   maxPlausibleSpeed: 600
   reportResyncSeconds: 3
   featuresPrefab: {fileID: 5330000000000103, guid: 29ec5eb8fa7cb3fd1d816c63b5b39687, type: 3}
+  gateThreadedEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  courseFinishedEvent:
+    Guid:
+      Data1: 2069810760
+      Data2: 1198659685
+      Data3: -604450419
+      Data4: -805011495
+    Path: event:/SFX/Oneshots/Menu/BigReward
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -134,7 +134,8 @@ namespace CosmicShore.Gameplay
         {
             var spawnProfile = config.SpawnProfile;
             if (!spawnProfile) yield break;
-            if (spawnProfile.SupportedFaunas is not { Count: > 0 })
+            var roster = host.FaunaRoster;   // the profile's species, or the element ladder's at I4 (Cell.FaunaRoster)
+            if (roster is not { Count: > 0 })
             {
                 // Fail loud: empty SupportedFaunas is almost always a data-wiring mistake.
                 // Without this warning fauna silently never spawn (as happened in Menu_Main
@@ -143,7 +144,7 @@ namespace CosmicShore.Gameplay
                 yield break;
             }
 
-            foreach (var faunaCfg in spawnProfile.SupportedFaunas)
+            foreach (var faunaCfg in roster)
             {
                 if (!faunaCfg)
                 {

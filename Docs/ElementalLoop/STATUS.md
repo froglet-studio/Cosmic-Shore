@@ -8,29 +8,30 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 
 | Vessel | Time 1 2 3 | Charge 1 2 3 | Mass 1 2 3 | Space 1 2 3 | Kit missing | Arenas |
 |---|---|---|---|---|---|---|
-| Angler | `b b .` | `b b .` | `b b .` | `x x x` | - | - |
-| BrittleStar | `b b .` | `b b .` | `x x x` | `b b .` | - | - |
+| Angler | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| BrittleStar | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Goby | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
-| Grizzly | `b b .` | `x x x` | `x x x` | `b b .` | Charge | - |
-| Honeyguide | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
-| Jacks | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| Goby | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
+| Honeyguide | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| Jacks | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
+| JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
 | Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Meerkat | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
-| Orca | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
-| Rhino | `b b b` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | Regatta, BroodRush |
+| Meerkat | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| Orca | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
-| Serpent | `b b b` | `b b .` | `x x x` | `x x x` | Mass or Space | Regatta, BroodRush |
-| Shrike | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| Serpent | `b b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
+| Shrike | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Sparrow | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Squirrel | `b b b` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
-| Stoat | `b b b` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | Regatta |
-| Swordfish | `x x x` | `x x x` | `x x x` | `b b .` | Time, Charge | Broadside, BroodRush |
-| Thresher | `b b b` | `b b .` | `x x x` | `b b .` | - | - |
+| Stoat | `b b b` | `b b .` | `- - -` | `b b .` | - | Regatta |
+| Swordfish | `b b .` | `b b .` | `b b .` | `b b .` | - | Broadside, BroodRush |
+| Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | - |
 | TigerMoth | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
-| Urchin | `b b ~` | `x x x` | `b b .` | `x x x` | Charge | Regatta, Broadside |
-| Wrasse | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
+| Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside |
+| Wrasse | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 
 ## 2. Arena games
 
@@ -46,29 +47,30 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 
 | Vessel | Time | Charge | Mass | Space |
 |---|---|---|---|---|
-| Angler | Lantern Run | Kelpwood | Glasshouse | - |
-| BrittleStar | Brittle Star Time | Flatline | - | Shatterplane |
+| Angler | Lantern Run | Kelpwood | Glasshouse | Chum |
+| BrittleStar | Brittle Star Time | Flatline | Starweave | Shatterplane |
 | Dolphin | Switchback | The Bends | excused | Rampage |
-| Goby | Perch Run | - | - | - |
-| Grizzly | Grizzly Time | - | - | Grizzly Charge |
-| Honeyguide | Slip Line | - | - | - |
-| Jacks | Decoy Run | - | - | - |
+| Goby | Perch Run | Snap | Den Builder | Riptide |
+| Grizzly | Grizzly Time | Standoff | excused | Grizzly Charge |
+| Honeyguide | Slip Line | Flitstrike | Honeycomb | Woodpecker |
+| Jacks | Decoy Run | Stingherd | excused | Trawl |
+| JewelWasp | - | Marionette | - | Gorge |
 | Manta | Redline | Corona | Scurry (shared) | Bloomrush |
-| Meerkat | Burrow Run, Warpline | - | - | - |
-| Orca | Breach | - | - | - |
-| Rhino | Headlong | - | - | - |
+| Meerkat | Burrow Run, Warpline | Sentry | Warren | Cave-in |
+| Orca | Breach | Pod Hunt | Ice Shelf | Depth Charge |
+| Rhino | Headlong | Bullrush | Windrow | Landslide |
 | Scarab | Scarab Rally | Undertow | Scarab Scramble, Tollway | Wrecking Ball |
-| Serpent | Serpentine | Hood | - | - |
-| Shrike | Thornline | - | - | - |
+| Serpent | Serpentine | Hood | Hedgerow, Longshot | - |
+| Shrike | Thornline | Larder | Thornbush | Lancefall |
 | Sparrow | Breakwater | Dog Fight | Scurry (shared) | Salvo, Wildlife Liberation |
 | Squirrel | Skim Race | Joust | Scurry (shared) | excused |
 | Starling | - | - | - | - |
-| Stoat | Slingshot | - | - | - |
-| Swordfish | - | - | - | Cleave |
-| Thresher | Thresher Time | Jackstraw | - | Harvest |
+| Stoat | Slingshot | Shockfront | excused | Fulmen |
+| Swordfish | Spearline | Riposte | Palisade | Cleave |
+| Thresher | Thresher Time | Jackstraw | Haul | Harvest |
 | TigerMoth | Waystation | Dustup | Tapestry | Sirocco |
-| Urchin | Skein | - | Hijack | - |
-| Wrasse | Wrasse Run | - | - | - |
+| Urchin | Skein | Railrush | Hijack | excused |
+| Wrasse | Wrasse Run | Cleaner Ram | Reefbuild | Blastline |
 
 ## 4. Recorded steps
 

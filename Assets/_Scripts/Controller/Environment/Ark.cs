@@ -116,7 +116,9 @@ namespace CosmicShore.Gameplay
     ///     into something else, so a destroyed or taken hull prism grows back into its own slot at a FIXED RATE, one
     ///     prism a beat, nearest the reactor first (<see cref="ArkReactor"/>). The mass law's fourth sign-off fences it
     ///     (Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): only an Ark, only into its own empty slots, at the fixed rate,
-    ///     each prism growing in. A fallen Ark (no hull left) never regrows.
+    ///     each prism growing in. A fallen Ark (no hull left) never regrows. It heals only inside a cell nucleus its own
+    ///     domain holds (<see cref="InOwnNucleus"/>; Garrett, 2026-11-16), unless a run applies a stricter reading
+    ///     (<see cref="RegrowOverride"/>).
     ///
     /// The Ark itself never removes mass and never runs a timer over anyone else's - the one
     /// clock it owns is its own unhurried course.
@@ -589,11 +591,28 @@ namespace CosmicShore.Gameplay
         Transform ReactorTransform => _model ? _model.ReactorPivot : transform;
 
         /// <summary>
-        /// Whether the reactor may regrow right now (default true). The Ark escort gates it (Garrett, 2026-10-31): the Ark
-        /// heals only inside the nucleus of a world the squad controls. A closed gate is not saved up: beats that fall
-        /// while closed are lost, exactly as a beat with nothing to regrow is.
+        /// A run's own, stricter reading of where the Ark heals, replacing the fleet rule while it is set (null: the
+        /// fleet rule, <see cref="InOwnNucleus"/>). The Ark escort sets it (Garrett, 2026-10-31): the Ark heals only
+        /// inside the nucleus of a world the squad has pacified or kept, which its own hull alone never earns; the run
+        /// clears it when it ends. A closed gate is not saved up: beats that fall while closed are lost, exactly as a
+        /// beat with nothing to regrow is.
         /// </summary>
-        public bool RegrowAllowed { get; set; } = true;
+        public bool? RegrowOverride { get; set; }
+
+        /// <summary>
+        /// The fleet rule (<see cref="ArkReactor.MayRegrowIn"/>): the Ark is inside the nucleus of the cell it is in,
+        /// and its own domain holds that nucleus.
+        /// </summary>
+        public bool InOwnNucleus()
+        {
+            var at = Position;
+            var cell = Cell.FindCellContaining(at);
+            if (!cell) return false;
+            bool claimed = cell.TryGetNucleusClaim(out var claimant);
+            return ArkReactor.MayRegrowIn(Domain, cell.HasNucleusControlZone, cell.IsInsideNucleus(at), claimed, claimant);
+        }
+
+        bool RegrowAllowedNow => RegrowOverride ?? InOwnNucleus();
 
         /// <summary>
         /// The fixed rate: one beat every <see cref="CosmicShore.ScriptableObjects.ArkReactorSO.RegrowSeconds"/>, and a
@@ -604,7 +623,7 @@ namespace CosmicShore.Gameplay
             if (!_reactorDefinition || _retiring) return;
             float now = Time.time;
             float period = _reactorDefinition.RegrowSeconds;
-            if (_layComplete && !_hullLost && ArkReactor.Beat(ref _nextRegrowAt, now, period) && RegrowAllowed && RegrowOne())
+            if (_layComplete && !_hullLost && ArkReactor.Beat(ref _nextRegrowAt, now, period) && RegrowAllowedNow && RegrowOne())
                 _lastRegrowAt = now;
 
             if (_model) _model.SetReactor(now - _lastRegrowAt < 2f * period);

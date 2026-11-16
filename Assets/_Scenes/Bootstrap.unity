@@ -13285,7 +13285,7 @@ PrefabInstance:
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: gunFireEvent.Path
-      value: event:/SFX/Oneshots/Gameplay sfx/Gun Fire
+      value: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
@@ -13320,7 +13320,7 @@ PrefabInstance:
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: explosionEvent.Path
-      value: event:/SFX/Oneshots/Gameplay sfx/Explosion
+      value: event:/SFX/Oneshots/Gameplay sfx/Mine Explode
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
@@ -13535,22 +13535,22 @@ PrefabInstance:
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: gunFireEvent.Guid.Data1
-      value: 893911588
+      value: 1870893843
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: gunFireEvent.Guid.Data2
-      value: 1083292417
+      value: 1090302803
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: gunFireEvent.Guid.Data3
-      value: 922714543
+      value: -531107708
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: gunFireEvent.Guid.Data4
-      value: -1324604388
+      value: -1787684942
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
@@ -13700,22 +13700,22 @@ PrefabInstance:
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: explosionEvent.Guid.Data1
-      value: -845750974
+      value: -159591309
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: explosionEvent.Guid.Data2
-      value: 1139242102
+      value: 1318821736
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: explosionEvent.Guid.Data3
-      value: 613008260
+      value: -1568531009
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: explosionEvent.Guid.Data4
-      value: 816552414
+      value: 870809827
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}

@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-14-added-the-jewelwasp-alias-row-jewel-wasp-76aa46",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-14T20:25:17+00:00",
+  "area": "Swim lanes catalog",
+  "summary": "Added the JewelWasp alias row (Jewel Wasp, Jewel_Wasp, JEWEL_WASP) to .claude/skills/swimlanes/lanes.json so the new vessel's lane matches its docs and assets.",
+  "branch": "claude/jewel-wasp",
+  "commit": "e5d81e5a4"
+}

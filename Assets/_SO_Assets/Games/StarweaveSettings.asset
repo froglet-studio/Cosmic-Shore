@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 524e2438ae7c8dcdae4816b841f70703, type: 3}
+  m_Name: StarweaveSettings
+  m_EditorClassIdentifier:
+  elementalCrystalCountByIntensity:
+  - 24
+  - 16
+  - 10
+  - 6
+  crystalScatterRadius: 900
+  crystalScatterSeed: 92
+  leadAnnounceAfterSeconds: 20
+  leadAnnounceMinGapSeconds: 10
+  progressSampleSeconds: 1
+  aiDecisionSeconds: 6
+  aiRaidDeficitFraction:
+  - 1
+  - 0.25
+  - 0.1
+  - 0.05
+  aiLateRaidSeconds:
+  - 0
+  - 15
+  - 25
+  - 35
+  aiCrystalReach:
+  - 250
+  - 400
+  - 550
+  - 750
+  aiWeaveOrbitFraction: 0.55
+  aiWeaveOrbitDegreesPerSecond: 4

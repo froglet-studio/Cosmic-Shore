@@ -66,12 +66,20 @@ the arena cards' Vessels row (Pick, Random, Draft, Squad), `Docs/HomeHub/ARCHITE
 **29** (2026-11-07, `claude/regatta-integration`; 29 was free on bleeding-edge and every in-flight branch, checked
 that day) - no wire change of its own: the build that carries both 27 (the Vessels row) and 28 (the course pool), so a
 28 build without the Vessels row, or a 27 build without the drawn course, cannot join one that has both (as with 20 above).
+**30** (2026-11-10, `Ys-bleeding-edge`; 30 was free on every origin branch, checked that day) - `RoundStats.n_VesselStats` (a `NetworkList` of each pilot's telemetry: drift, boost, prisms damaged and the hull extras) and `RoundStats.ReportVesselStat_ServerRpc`, so every scoreboard shows every pilot's numbers (`Docs/ScoringSystem/BUGS.md` B21). It also covers 2fae4bedb9 (`Docs/PartySystem/BUGS.md` B50), which added the turn state to `ClientPlayerVesselInitializer.SeatReclaimed_ClientRpc` on 29 without a bump.
+**30** (2026-11-14, `claude/jewel-wasp`) - the Jewel Wasp's network prefab and `JewelWaspNetworkRelay` (the server's
+possession decision: mode, nest pose, recharges, stand-back; `R_VesselActions/JEWEL_WASP.md` §6.1). **31** (2026-11-15,
+`claude/jewel-wasp-flora-camera`; free on bleeding-edge and the in-flight branches that day) - `JewelWaspNetworkRelay`
+gains `n_ownerAutoPilot`, the owner's autopilot flag, so the server runs the wasp's AI for a client hull on autopilot. **32** (2026-11-16, the merge of `bleeding-edge` into `Ys-bleeding-edge` by the Spearline fun pass; free on every origin branch that day) - both lines' protocol changes in one build: `Ys-bleeding-edge`'s 30 (`RoundStats.n_VesselStats`) and `bleeding-edge`'s 30-31 (the Jewel Wasp).
 **32** (2026-11-16, `voyages` via `claude/project-thread-6jgeji`; bleeding-edge is at 31, 30 and 31 are its Jewel Wasp and
 the build after it, so 32 is above both) - the voyage party's named messages (`VoyageCourseLink`, Docs/Voyages/PARTY.md):
 `cosmicshore.voyage.course` gains the escort's sail and end, the party's Crystal Run tally, the seed, home pose, seat list
 and leg serial, and the end's outcome; new `cosmicshore.voyage.arkpose` (the host's Ark pose, unreliable) and
 `cosmicshore.voyage.report` (a friend's lobby seat, crystals and kills, to the host). When `voyages` merges into
 bleeding-edge, keep the higher number.
+**34** (2026-11-16, the merge of `bleeding-edge` into `voyages` for its ship; every origin branch checked that day,
+33 is taken on `Ys-bleeding-edge`) - both sides had claimed 32 for different wire changes (`Ys-bleeding-edge`'s merge
+above and the voyage party's messages), so the build that carries both is 34: a 32 build from either line cannot join it.
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

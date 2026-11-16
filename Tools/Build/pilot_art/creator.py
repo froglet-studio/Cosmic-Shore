@@ -461,7 +461,7 @@ def roll(callsign, seed):
         names.pick(cs_array(text, "GivenEnds"))
     given = given[:1].upper() + given[1:].lower()
     family = names.pick(cs_array(text, "FamilyFronts")) + names.pick(cs_array(text, "FamilyBacks"))
-    pool = [a for a in brief.enum_members(brief.ANIMAL_SPECIES_CS, "AnimalSpecies") if a != "None"]
+    pool = brief.rollable_animals()
     her = SeededRandom.for_(seed, "pilot.species")
     first = her.next(len(pool))
     second = her.next(len(pool) - 1)
