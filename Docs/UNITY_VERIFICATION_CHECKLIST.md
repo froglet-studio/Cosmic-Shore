@@ -24180,6 +24180,24 @@ Not compiled: the editor was in use by the multiplayer testing session. Files: `
 - Step 5: the host's hull took 2:46 this time, not 6 minutes, so the slow run went with Player 2's wandering hull.
 - `1167a0a2f9` (FunCard): compiled, and no `get_isBatchMode` error in a full Play and stop afterwards (82 before).
 
+## 🔴 Thornline upgrade: the honest line (2026-11-17, `claude/shrike-time-upgrade-5c12f0`, NOT COMPILED BY UNITY, NOT RUN IN EDITOR)
+
+Docs/Thornline/UPGRADE_SPEC.md; Assets/_Scripts/Controller/Arcade/THORNLINE.md §7 is the full list. Affects: Garrett's
+Shrike / Thornline. **What ran:** the course and AI plan C# compiled and tested with Roslyn outside Unity
+(`bash Tools/Build/thornline_course_harness/run.sh --self-test`: 20 EditMode tests, 11 course controls, the AI race
+replica and 3 AI controls), `author_thornline_assets.py --check`, and the static gates. **What did not:** a Unity
+compile of `ThornlineController.cs`, `.AI.cs` and `.Feedback.cs` (`unity_refcompile` does not run on this Windows box;
+an independent review read them against the declarations instead: no compile error found; six logic bugs in the local feedback fixed - the snipe call, the sight at the gun, crystal-taker attribution, pass calls on ties, a toast tint, the 423 scope - and spawn poses now wait for the cell), and anything in the editor.
+
+- [ ] Unity compiles the three controller files; open `MinigameThornline` once and save; `author_thornline_assets.py --check`.
+- [ ] Pilots spawn on the seat cone facing the start thorn and the first sling reaches it (I1-I4).
+- [ ] The sight sits on the next thorn's face, grows while reloading, turns Lime when ready; a press inside it anchors at I4 from 1,000 u, a press on the drawn edge outside it does not.
+- [ ] I2: a sling through a rim crystal takes it (25 Hz tunnelling risk) and the next sling is ready on docking.
+- [ ] Four AI Shrikes (one per difficulty) finish I1 and I4, Legendary first, Easy last; note seconds in Space mode (lancing trails), Charge mode, and any stranded detach.
+- [ ] A lanced plain thorn regrows 3 s after the hull leaves its box, even with the hull hanging where its face was.
+- [ ] Toasts 420-426 read right; the nine sound slots are empty; a rival's thorn glows in their colour.
+- [ ] MPPM: thorns, crystals and seats agree on both peers; the sight and glow are local only.
+
 ## 🔴 Brittle Star Time: the Shift Line - let-go gates, race coach, heat, laps per rung (2026-11-16, Ys-bleeding-edge, NOT COMPILED BY UNITY, NOT EDITOR-VERIFIED)
 
 What ran instead:
