@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-16 from canvas version `1794852387-6df2` of **Frogma**: Rev 3 to Rev 113, 508 boards on 13 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-16 from the canvas of **Frogma**: Rev 3 to Rev 114, 510 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -761,32 +761,6 @@ Copied on 2026-11-16 from canvas version `1794852387-6df2` of **Frogma**: Rev 3 
 - [`R113Sea.dc.html`](R113Sea.dc.html) - Rev 113 Sea - the HyperSea page with the popup closed: two open voyages and one Crew recommends button where the list was - interactive
 - [`R113Notes.dc.html`](R113Notes.dc.html) - Rev 113 - notes: what each board fixes from Shombith's Milestone 1 list
 
-#### Rev 111 Voyages: the table opens to full screen, down to one Cell
-
-- [`R111Full.dc.html`](R111Full.dc.html) - Rev 111 Full - The table animates to full screen: no border, zoom inside the map, back from full screen, Galaxy to Cell - interactive
-
-#### Rev 108 Voyages: flatter table, cooler Ark cards, squad mode, seat popup
-
-- [`R108Table.dc.html`](R108Table.dc.html) - Rev 108 Table - P1A again: table flatter at 34 deg, feathered round edges, slow float and sheen, side view upright beneath - interactive
-- [`R108Lobby.dc.html`](R108Lobby.dc.html) - Rev 108 Lobby - P3A again: glass cards with glowing rims and hover lift; your card opens the seat popup - interactive
-- [`R108Squad.dc.html`](R108Squad.dc.html) - Rev 108 Squad - Fly a squad instead: squad choices on top, AI wingmates fill the seats, lobby kept - interactive
-- [`R108Picker.dc.html`](R108Picker.dc.html) - Rev 108 Picker - Seat popup: vessel, pilot, element, artifact tabs, quick kits, Sees filter, one press per pick - interactive
-
-#### Rev 103 - Saga and Episodes locked together: one coming-soon strip at the foot of the Voyages screen
-
-- `R103Compare.dc.html` (not copied yet) - Rev 103 - the three strips side by side at full width, at rest and pressed
-- `R103A.dc.html` (not copied yet) - Rev 103 A - One shelf: two locked cards side by side, each with its dimmed picture (recommended) - interactive
-- `R103B.dc.html` (not copied yet) - Rev 103 B - One line: a single quiet line, lock mark, Saga and Episodes, Coming soon - interactive
-- `R103C.dc.html` (not copied yet) - Rev 103 C - Teaser band: one dimmed picture strip with both names over it - interactive
-- `R103Notes.dc.html` (not copied yet) - Rev 103 - notes: what changes against the build and why A
-
-#### Rev 100 - Voyages, new: the HyperSea and your crew's voyages, the voyage opened, your Ark
-
-- [`R100P1A.dc.html`](R100P1A.dc.html) - Rev 100 P1A - Page 1 Table top: the HyperSea on a chart table, its edge view the front; the crew's voyages on the right (recommended) - interactive
-- [`R100P2A.dc.html`](R100P2A.dc.html) - Rev 100 P2A - Page 2 Briefing: the pilot's story, the route drawing itself, the rewards arriving; difficulty 1-9 (recommended) - interactive
-- [`R100P3A.dc.html`](R100P3A.dc.html) - Rev 100 P3A - Page 3 Lobby: your lobby's three seats; your seat changes in place; Set sail (recommended) - interactive
-- [`R100Notes.dc.html`](R100Notes.dc.html) - Rev 100 - notes: what was asked, each page, the new rules to confirm
-
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 
 #### Rev 75 - Game Mode Codex, A and C as one: enter an element, open a game, its level in 3D; and the same level inside the builder
@@ -829,5 +803,26 @@ Copied on 2026-11-16 from canvas version `1794852387-6df2` of **Frogma**: Rev 3 
 - [`R101B.dc.html`](R101B.dc.html) - Rev 101 B - Quest log: a calm list on the left, the open quest's goals as a ladder in the middle - interactive
 - [`R101C.dc.html`](R101C.dc.html) - Rev 101 C - The route: the quests as stations along one course across the screen - interactive
 - [`R101Notes.dc.html`](R101Notes.dc.html) - Rev 101 - notes: where the screen opens from, what each option changes, what is real data
+
+### Tab: Voyages playtest  (`voyages-playtest`)
+
+#### Rev 114 - Voyages playtest: four of each - crew screen, intro, a smaller objective, toasts, the feel in flight
+
+- [`R114C1.dc.html`](R114C1.dc.html) - Rev 114 C1 - Crew A: a drawer over the HyperSea; each job pinned on the map (recommended)
+- [`R114C2.dc.html`](R114C2.dc.html) - Rev 114 C2 - Crew B: pilot first; your crew's faces, each with the job they bring
+- [`R114C3.dc.html`](R114C3.dc.html) - Rev 114 C3 - Crew C: the job board; one poster per voyage in faction columns
+- [`R114C4.dc.html`](R114C4.dc.html) - Rev 114 C4 - Crew D: faction tabs across the top, two open voyages as a hero row
+- [`R114O1.dc.html`](R114O1.dc.html) - Rev 114 O1 - Objective A: a strip, 420 px; goal, hull and breach, next world
+- [`R114O2.dc.html`](R114O2.dc.html) - Rev 114 O2 - Objective B: a ribbon at top centre; the route is the hull bar
+- [`R114O3.dc.html`](R114O3.dc.html) - Rev 114 O3 - Objective C: a corner gauge, 260 px; hull first, everything else on demand
+- [`R114O4.dc.html`](R114O4.dc.html) - Rev 114 O4 - Objective D: opens on news, folds to one line (recommended)
+- [`R114F1.dc.html`](R114F1.dc.html) - Rev 114 F1 - Feel A: Chase; close behind you, the Ark the landmark ahead
+- [`R114F2.dc.html`](R114F2.dc.html) - Rev 114 F2 - Feel B: Guardian; pulled back, the Ark at the centre, threats read at a glance (recommended)
+- [`R114F3.dc.html`](R114F3.dc.html) - Rev 114 F3 - Feel C: Cinematic beats; the camera takes over for two seconds at the big moments
+- [`R114F4.dc.html`](R114F4.dc.html) - Rev 114 F4 - Feel D: Punch; every hit, kill and crystal answers in the world and the sound
+- [`R114IAB.dc.html`](R114IAB.dc.html) - Rev 114 IAB - Intro A: Departure (recommended), and B: From the map
+- [`R114ICD.dc.html`](R114ICD.dc.html) - Rev 114 ICD - Intro C: Threat first, and D: One take
+- [`R114TAB.dc.html`](R114TAB.dc.html) - Rev 114 TAB - Toasts A: the Rev 113 band, smaller, and B: the crew speaks
+- [`R114TCD.dc.html`](R114TCD.dc.html) - Rev 114 TCD - Toasts C: a feed under the objective, and D: two sizes (recommended)
 
 <!-- frogma.py readme: end -->
