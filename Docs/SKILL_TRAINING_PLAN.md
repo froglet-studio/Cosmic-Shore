@@ -448,7 +448,7 @@ and "again" every month so a repeat is seen.
 |---|---|---|
 | 3.1 See the real game | R0 the real editor compiles every PR | `claude/ci-hosted-unity-compile` exists (2026-11-01); waits on the licence secrets and a merge (D1) |
 | 3.1 See the real game | R1-R2 the look-sheet kit | **built 2026-11-07 night**, not yet run in Unity: `Docs/LOOK_SHEET.md`, `/unity-look`, the CI job `look-sheet.yml`; the first run is a checklist entry |
-| 3.2 The world's look | R0 the audit, the baseline gate, the language, the vocabulary, the lessons, the skill | **built 2026-11-07 night**: `/world-look`, `Tools/Build/look_kit/audit.py` (67 effects, 72 signals on 25 as the baseline), `Docs/Shaders/WORLD_LOOK_SKILL_PLAN.md`; the language is a draft for Garrett (D2) |
+| 3.2 The world's look | R0 the audit, the baseline gate, the language, the vocabulary, the lessons, the skill | **built 2026-11-07 night**: `/world-look`, `Tools/Build/look_kit/audit.py` (67 effects, 72 signals on 25 as the baseline), `Docs/Shaders/WORLD_LOOK_SKILL_PLAN.md`; the language is a draft for Garrett (D2). **2026-11-16**: the gate is rename-safe (a moved offender passes as `moved`, fingerprinted in the baseline, three negative controls in `--self-test`) and the baseline rewritten after the Swordfish rename turned it red; 68 effects, 72 signals |
 | 3.3 Decide before building | R0 the ledger, the check, the brief, the brief step in four skills | **built 2026-11-07 night**: `Docs/claude/PRINCIPLES.md` (271 entries, every one verified at its source line by `principles.py --check`), `DESIGN_BRIEF.md`; every entry drafted, waiting on its owner (D3) |
 | 3.4 UI | R0 `UI_LESSONS.md`; R1 the mockup gate | **built 2026-11-07 night**: `.claude/skills/frogma/references/UI_LESSONS.md` + `ui_lessons.py`, `check_mockup.py` (measured on five boards: the noise gate tells a rejected round from a picked one in four cases of five); the parity sheet (R2) waits on 3.1 (D4) |
 | 3.5 Sound | R0 the audit and the language; R1 the Meerkat briefs | **R0 built 2026-11-07 night**: `sound_slots.py` (13 real failures on the tree: three one-shots in loop slots, seven unbanked events, one renamed, no mobile banks), `SOUND_LANGUAGE.md` (draft), `/sound-brief`; the tool's self-test has one open assertion; the Meerkat briefs are owed (D5) |
@@ -544,3 +544,11 @@ Of the C skills, the ones that MAKE content and would gain from the shape are `b
 - The hand-offs: the `team-task` issues with their `kind:` and `area:` labels (`python3 Tools/Build/team_tasks.py list`,
   or the GitHub API), the last 80 PRs' titles and bodies for revert / again / fix-after / follow-up.
 - The skills' line counts and reference files: `wc -l .claude/skills/*/SKILL.md`; `ls .claude/skills/*/references`.
+
+- 2026-11-16, the look gate after the Swordfish rename: (1) **a gate keyed on a file path goes red on every rename**:
+  the five sword trails moved from `Rhino.prefab` to `Swordfish.prefab` (#1968) and `--check` reported 10 new and
+  10 fixed, the same ten, so bleeding-edge carried a red look gate that said nothing about the look. (2) **Key an
+  offender on what it is, keep the path to name it**: a fingerprint of the renderer with every path left out pairs a
+  moved signal with the one that left. (3) **A forgiving gate needs its negative controls more than a strict one**: the
+  pairing is one to one, so a copy still fails, and a move that changed the material still fails; both are in the
+  self-test beside the move that passes.

@@ -80,6 +80,8 @@ MonoBehaviour:
   haulRoundSeconds: 90
   hedgerowRoundSeconds: 90
   longshotRoundSeconds: 90
+  marionetteStrikeTarget: 12
+  gorgeRoundSeconds: 90
   podHuntBlastTarget: 15
   iceShelfRoundSeconds: 90
   depthChargePrismTarget: 1500
@@ -190,6 +192,8 @@ MonoBehaviour:
   haulRoundSecondsBuild: 90
   hedgerowRoundSecondsBuild: 90
   longshotRoundSecondsBuild: 90
+  marionetteStrikeTargetBuild: 12
+  gorgeRoundSecondsBuild: 90
   podHuntBlastTargetBuild: 15
   iceShelfRoundSecondsBuild: 90
   depthChargePrismTargetBuild: 1500

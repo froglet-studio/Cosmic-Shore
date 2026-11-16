@@ -23865,6 +23865,18 @@ against Unity reference assemblies (`unity_refcompile`), not opened in the edito
 3. **The story** reads as three short paragraphs with a blank line between, inside the panel, on every pilot.
 4. **A voyage's jobs** for a starter come from the painted faction (VOLT: a Merchant's courier and convoy work).
 
+## 🔴 An Ark heals only inside a nucleus its domain holds (2026-11-16, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/project-thread-wlkcla`; `Docs/VesselModels/ArkReverse.md` (the reactor), `Ark.InOwnNucleus`,
+`ArkReactor.MayRegrowIn`, `Ark.RegrowOverride` (the escort's stricter test). Compiled against Unity reference assemblies
+(editor, changed files clean), not opened in the editor; `ArkModelTests` not run.
+
+1. **Run the EditMode tests** `ArkModelTests` (new: `Reactor_RegrowsOnlyInsideANucleusTheArksDomainHolds`).
+2. **Arkway (Wander, With Ark)**: graze the Ark's hull out in a cell and watch it NOT regrow; fly it into a nucleus its
+   domain holds and watch the reactor glow and the hull grow back, one prism every 2 s. A cell with no nucleus never heals it.
+3. **Ark escort voyage**: unchanged. It heals only in a held nucleus, by the escort's own test, and after the run ends
+   the Ark is back on the fleet rule.
+
 ## 🔴 Both thumbs off pulls both triggers and steers by gyro (2026-11-14, Garrett, NOT OPENED IN EDITOR)
 
 Branch `claude/project-thread-wlkcla`; `Docs/claude/ARCHITECTURE_CORE.md` § Input Strategy (the touch profile line),
@@ -24463,3 +24475,39 @@ Branch `claude/editor-churn-w1-harness`; `Docs/EditorChurn/TRACKER.md`. `Tools/B
    `summary.md`, whose measurement row goes into the tracker's Measurements table.
 3. **Compare with the tracker**: every dirty file is an existing row or a new `seen` row; a file in open 2's
    "changed BY open 2" list is a writer that never settles.
+
+## 🔴 Jewel Wasp games: Marionette (Charge, 126) and Gorge (Space, 127) (2026-11-15, Garrett's project thread, `claude/jewel-wasp-games`, NOT RUN IN EDITOR)
+
+Authored headless by `Tools/Build/author_marionette_assets.py` and `author_gorge_assets.py` (both `--check` green,
+shared checks in `wasp_games_common.py`). `unity_refcompile` ran in both configs: 0 errors in this branch's files (the 30
+it reports are the existing UGS package gaps on bleeding-edge). Card art rendered by `/cardart`. Docs:
+`Assets/_Scripts/Controller/Arcade/MARIONETTE.md`, `GORGE.md`.
+
+- [ ] The project compiles in the real editor (the two controllers, settings, scoring rules, AI helpers, turn monitors,
+      `WaspGames/WaspSeats.cs`; `EndConditionOverridesSO` and its window; `MiniGameHUD`'s two provider rows;
+      `EnumIntegrityTests` counts 120 modes after the merges with the Meerkat, Standoff, Wrasse and Goby games).
+- [ ] Arcade grid: both Jewel Wasp cards show their renders and open their own scenes with the wasp.
+- [ ] Marionette (126): sting a tadpole in Kelpwood's kelp, fly it at a rival, RT lands a Strike: the score goes up by
+      one; with Charge 5 a burst on leaving scores each rival within 60 u; first domain to 12 wins; the hint toast shows.
+- [ ] Marionette AI: a free AI wasp turns toward a creature near its chosen rival (Legendary picks well, Easy picks any)
+      and never steers while in a host.
+- [ ] Gorge (127): Chum's reef is laid at the countdown; ride a creature to a shoal and hold RT: prisms are sucked in and
+      the score counts them (and only once, for host and client); 90 s round, most prisms wins.
+- [ ] Gorge AI: free AI wasps head for creatures near the fuller shoals on the higher difficulties; in a host, check
+      whether the wasp's own AI feeds or chases rivals (it chases the nearest rival within 400 u).
+- [ ] Gorge in multiplayer: whether a client's local reef visibly shrinks when a creature feeds on the server.
+- [ ] End Game Conditions window shows and saves `marionetteStrikeTarget` and `gorgeRoundSeconds`.
+
+## 🔴 Regatta course genome: every spawner as a course gene (2026-11-16, Garrett's project thread, `claude/project-thread-cwavhz`, NOT RUN IN EDITOR)
+
+Regatta flywheel W2 (`Docs/AI_SYSTEM/REGATTA_COURSE_GENOME.md`). `unity_refcompile` ran: 0 errors in the changed files
+(the cloud fetch could not reach several packages, so the run reports pre-existing errors elsewhere). The genome was
+laid through the game's own code in Amoebius (`regatta_genome_harness/run.sh gate`: the empty genome lays today's
+course prism for prism, 40 random genomes lay 244,651 prisms with none in the line tube, a ring mouth, a rail, the
+nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed:
+
+1. Open MinigameRegatta at I1: the course is unchanged (no genome is set on any shipped prefab).
+2. Paste a laid genome (any `Tools/Compute/evaluators/regatta_genome.py --random 1` output) into a Regatta rails
+   prefab's `courseGenome` field, play, and fly the line: the placed spawners stand clear of the line and the rings,
+   and the lap still counts.
+3. Watch the frame time on that course: up to 12,000 extra prisms can be laid.

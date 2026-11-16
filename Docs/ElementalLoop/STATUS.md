@@ -15,7 +15,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Jacks | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
-| JewelWasp | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
+| JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
 | Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Meerkat | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Orca | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
@@ -54,7 +54,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Grizzly | Grizzly Time | Standoff | excused | Grizzly Charge |
 | Honeyguide | Slip Line | Flitstrike | Honeycomb | Woodpecker |
 | Jacks | Decoy Run | Stingherd | excused | Trawl |
-| JewelWasp | - | - | - | - |
+| JewelWasp | - | Marionette | - | Gorge |
 | Manta | Redline | Corona | Scurry (shared) | Bloomrush |
 | Meerkat | Burrow Run, Warpline | Sentry | Warren | Cave-in |
 | Orca | Breach | Pod Hunt | Ice Shelf | Depth Charge |

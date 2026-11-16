@@ -165,6 +165,10 @@ namespace CosmicShore.Editor
                 "and rival mass included, wins), default " + EndConditionOverridesSO.DefaultHedgerowRoundSeconds + ".\n" +
                 "  • Longshot: round length in SECONDS (timed - most hostile prisms BROKEN by a domain, lance prisms " +
                 "and rival mass included, wins), default " + EndConditionOverridesSO.DefaultLongshotRoundSeconds + ".\n" +
+                "  • Marionette: strikes a DOMAIN needs - a ridden creature's attack on a rival hull is 1, and so is " +
+                "each hull a Charge 5 burst catches, default " + EndConditionOverridesSO.DefaultMarionetteStrikeTarget + ".\n" +
+                "  • Gorge: round length in SECONDS (timed - most prisms taken off the board, sucked in by ridden " +
+                "creatures or broken by hulls, wins), default " + EndConditionOverridesSO.DefaultGorgeRoundSeconds + ".\n" +
                 "  • Pod Hunt: blasts a DOMAIN needs - a crew's flown missile or bomb bursting on a rival " +
                 "hull is 1, default " + EndConditionOverridesSO.DefaultPodHuntBlastTarget + ".\n" +
                 "  • Ice Shelf: round length in SECONDS (timed - most mass STANDING in a domain's colour at " +
@@ -433,6 +437,8 @@ namespace CosmicShore.Editor
             int hau = Mathf.Max(0, EditorGUILayout.IntField("Haul - Round Seconds", _config.haulRoundSeconds));
             int hdg = Mathf.Max(0, EditorGUILayout.IntField("Hedgerow - Round Seconds", _config.hedgerowRoundSeconds));
             int lsh = Mathf.Max(0, EditorGUILayout.IntField("Longshot - Round Seconds", _config.longshotRoundSeconds));
+            int mar = Mathf.Max(0, EditorGUILayout.IntField("Marionette - Strike Target", _config.marionetteStrikeTarget));
+            int grg = Mathf.Max(0, EditorGUILayout.IntField("Gorge - Round Seconds", _config.gorgeRoundSeconds));
             int ph  = Mathf.Max(0, EditorGUILayout.IntField("Pod Hunt - Blast Target", _config.podHuntBlastTarget));
             int ish = Mathf.Max(0, EditorGUILayout.IntField("Ice Shelf - Round Seconds", _config.iceShelfRoundSeconds));
             int dc  = Mathf.Max(0, EditorGUILayout.IntField("Depth Charge - Prism Target", _config.depthChargePrismTarget));
@@ -530,6 +536,8 @@ namespace CosmicShore.Editor
                     _config.haulRoundSeconds = hau;
                     _config.hedgerowRoundSeconds = hdg;
                     _config.longshotRoundSeconds = lsh;
+                    _config.marionetteStrikeTarget = mar;
+                    _config.gorgeRoundSeconds = grg;
                     _config.podHuntBlastTarget = ph;
                     _config.iceShelfRoundSeconds = ish;
                     _config.depthChargePrismTarget = dc;
@@ -638,6 +646,8 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Haul (seconds)", hau > 0 ? hau.ToString() : EndConditionOverridesSO.DefaultHaulRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Hedgerow (seconds)", hdg > 0 ? hdg.ToString() : EndConditionOverridesSO.DefaultHedgerowRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Longshot (seconds)", lsh > 0 ? lsh.ToString() : EndConditionOverridesSO.DefaultLongshotRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Marionette", mar > 0 ? mar.ToString() : EndConditionOverridesSO.DefaultMarionetteStrikeTarget + " (default)");
+            EditorGUILayout.LabelField("Gorge (seconds)", grg > 0 ? grg.ToString() : EndConditionOverridesSO.DefaultGorgeRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Pod Hunt", ph > 0 ? ph.ToString() : EndConditionOverridesSO.DefaultPodHuntBlastTarget + " (default)");
             EditorGUILayout.LabelField("Ice Shelf (seconds)", ish > 0 ? ish.ToString() : EndConditionOverridesSO.DefaultIceShelfRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Depth Charge", dc > 0 ? dc.ToString() : EndConditionOverridesSO.DefaultDepthChargePrismTarget + " (default)");
@@ -760,6 +770,8 @@ namespace CosmicShore.Editor
                    "Haul (seconds): " + Fmt(_config.haulRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultHaulRoundSeconds) + "\n" +
                    "Hedgerow (seconds): " + Fmt(_config.hedgerowRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultHedgerowRoundSeconds) + "\n" +
                    "Longshot (seconds): " + Fmt(_config.longshotRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultLongshotRoundSeconds) + "\n" +
+                   "Marionette: " + Fmt(_config.marionetteStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultMarionetteStrikeTarget) + "\n" +
+                   "Gorge (seconds): " + Fmt(_config.gorgeRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultGorgeRoundSeconds) + "\n" +
                    "Pod Hunt: " + Fmt(_config.podHuntBlastTargetBuild, "default " + EndConditionOverridesSO.DefaultPodHuntBlastTarget) + "\n" +
                    "Ice Shelf (seconds): " + Fmt(_config.iceShelfRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultIceShelfRoundSeconds) + "\n" +
                    "Depth Charge: " + Fmt(_config.depthChargePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultDepthChargePrismTarget) + "\n" +

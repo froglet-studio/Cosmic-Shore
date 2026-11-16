@@ -702,6 +702,14 @@ namespace CosmicShore.UI
                 case GameModes.Lancefall:
                     // Shatterplane's provider: the densest standing hostile mass - the nearest big plate still standing.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Lancefall");
+                case GameModes.Marionette:
+                    // The Bends' provider: the nearest pilot this player may strike. The creature is the weapon, so the
+                    // question is which rival hull to ride it into.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Marionette");
+                case GameModes.Gorge:
+                    // Rampage's provider: the nearest managed omni crystal, which hatches a predator the wasp rides at
+                    // once. The reef's shoals hang in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Gorge");
                 case GameModes.Stingherd:
                     // The Bends' provider: the nearest pilot this player may sting. The herd is driven, not flown, so
                     // the question is which rival hull to drive it at.
@@ -1044,7 +1052,7 @@ namespace CosmicShore.UI
         protected Color ResolveDomainColor(Domains domain) =>
             gameData != null && gameData.ThemeManagerData != null
                 ? gameData.ThemeManagerData.GetDomainUIColor(domain)
-                : Color.gray;
+                : ColorTrace.Retrace(ColorTrace.Ui, Color.gray);
 
         private void CleanupLocalPlayerCard()
         {
