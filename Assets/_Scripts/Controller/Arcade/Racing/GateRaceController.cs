@@ -358,7 +358,19 @@ namespace CosmicShore.Gameplay
         /// Serpent Time answers per pilot, because there a crystal is a sniper round and only a pilot short of rounds
         /// should go out of its way for one.
         /// </summary>
-        protected virtual float AICrystalDetourSlackFor(IPlayer pilot) => AICrystalDetourSlack;
+        protected virtual float AICrystalDetourSlackFor(IPlayer pilot) =>
+            Mathf.Max(AICrystalDetourSlack, LearnedCrystalDetourSlack(pilot));
+
+        /// <summary>
+        /// The pilot's hull's LEARNED crystal detour budget (<see cref="RaceAICrystalGenesSO"/>, Garrett 2026-11-16): a
+        /// gene of the hull's Time genome, 0 until a search finds that taking crystals on the way wins. Relaxes Yash's
+        /// waypoints-only rule only as far as the training proves it pays.
+        /// </summary>
+        protected static float LearnedCrystalDetourSlack(IPlayer pilot)
+        {
+            var status = pilot?.Vessel?.VesselStatus;
+            return status != null ? RaceAICrystalGenesSO.LearnedDetourSlack(status.VesselType) : 0f;
+        }
 
         /// <summary>
         /// Did <paramref name="prev"/> to <paramref name="cur"/> thread course ring <paramref name="ringIndex"/>? The ring's
@@ -1444,8 +1456,9 @@ namespace CosmicShore.Gameplay
                     return seekAim;
                 }
 
-                // A crystal ON THE WAY, only in a mode whose race needs crystals (AIDetoursForCrystals; none
-                // today): a racing AI flies the waypoints, never a crystal (Yash, 2026-10-26).
+                // A crystal ON THE WAY: in a mode whose race needs crystals (AIDetoursForCrystals), or as far as the
+                // hull's learned gene allows (RaceAICrystalGenesSO, 0 until training finds it pays; Garrett 2026-11-16
+                // relaxed Yash's 2026-10-26 waypoints-only rule into this gene).
                 float detourSlack = AICrystalDetourSlackFor(captured);
                 if (detourSlack > 0f)
                 {

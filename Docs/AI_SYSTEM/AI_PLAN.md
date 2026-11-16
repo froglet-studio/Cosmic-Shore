@@ -192,7 +192,14 @@ trainer (studyholic, Garrett, Shombith). Decision 2 below proposes the same gate
    where it matters to this plan: each vessel still trains on its arcade game's I1-I4 (rule 2's composite), and the
    arena is balanced against those fixed genomes. What changes is the arena's own structure: a pool of courses whose
    spreads cancel (`REGATTA_BALANCE_PLAN.md`), not four courses. Crystals may sit on Regatta's racing line, sparingly,
-   and the rule that a racing AI never detours for a crystal holds (it flies through them).
+   and a racing AI's detour for one is its genome's learned gene (rule 9).
+9. **Crystal detours are learned** (Garrett, 2026-11-16). Yash's 2026-10-26 rule (a racing AI flies the waypoints,
+   never a crystal) seeded effective racers; it is now relaxed into a gene of each hull's Time genome, the detour
+   budget `RaceAICrystalGenesSO` holds (read by every gate race; 0, the old rule, until a search writes a row).
+   Every racing search adds the gene starting at 0 and keeps it only when it wins on I1-I4: "going for them some
+   amount will result in faster times. let the genome do this and let the process find if it is good." The process
+   rule behind it: constrain the space to find a good seed quickly, then switch to a Pareto scheme that expands and
+   contracts complexity to search for better solutions.
 
 ## 8. Status log
 

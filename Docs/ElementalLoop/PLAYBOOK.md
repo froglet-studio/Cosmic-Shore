@@ -121,6 +121,25 @@ model number (standing rule).
   finish rate and median time band start from `rung_bars.json`'s defaults (I1 90%, I2 75%, I3 50%, I4 25% of human
   races that run to the end), a game may override them there, and once three runs of a rung were rated "right" on the
   card its bar is what those runs showed. A higher rung finished more often than the one below fails the ladder.
+- **The standard element ladder** (Garrett, 2026-11-16). Every arcade card's four rungs are coupled to the game's
+  element (`ModeGenre`) the same way, each rung adding one thing to the rung below:
+
+  | Rung | Adds | Where it lives |
+  |---|---|---|
+  | I1 | nothing: every hull starts at rest | no row (`ElementLadder`) |
+  | I2 | every hull starts at level 5 in the game's element | `GameDataSO.SyncFromArcadeGame` publishes `ElementLadder`'s rows for a card that authors no `StartingElements` |
+  | I3 | team crystals of the game's element on the map, each taken only by its team | Harvest and Shatterplane's pattern (`ElementalCrystalImpactor.RestrictTo`); the platform default is the next PR |
+  | I4 | fauna of the game's element, in the cell's colour | a per-rung spawn profile (Harvest's I4); the platform default is the next PR |
+
+  Garrett's three rulings: (1) the harder I1 is right: "it is less intense at level I1. winning is relative to other
+  players, and they will be slower too. faster is not easier. it is harder to control which is harder." (2) Racing AIs
+  may now take crystals: the detour is a learned gene (below, step 3). (3) I4 fauna wear the cell's colour, not all
+  three domains: "it is more consistent. it might affect urchin's in ways that they don't have a lot of agency over,
+  but we'll see". A card that authors ANY starting-element row owns its whole table (Redline, Headlong, Decoy Run,
+  Brittle Star Time, Stingherd, Chum, Warren, Starweave today) and is reconciled to the ladder by its owner; arena cards
+  are never defaulted (they play at one intensity and solve their own handicaps). Ladders shaped before 2026-11-16
+  without the I2-I4 level-5 start (Switchback, Scarab Rally and every other untabled card) need their rungs and bars
+  re-checked, and their AI seeds re-run in step 3.
 - **Tools:** `/arcadegame` (the per-mode intensity ladder: four `CellConfigDataSO`s), the End Game Conditions window
   (`/EndGameConditions`), `/ecology` for spawn profiles, `rung_bars.py`, the fun card's rung answer.
 
@@ -130,7 +149,12 @@ model number (standing rule).
   ladder is signed off.)
 - **Work.** [`AI_PLAN.md`](../AI_SYSTEM/AI_PLAN.md) rules 1-7, unchanged: one universal genome per vessel per
   element, scored on I1-I4 at once (mean plus half the worst), grown from every genome that exists, never trained
-  inside an arena game. Racing AIs never detour for crystals (Yash's rule). Every commit says `Plan step: <id>`.
+  inside an arena game. A racing AI's crystal detour is a GENE of its Time genome (`RaceAICrystalGenesSO`, 0 until a
+  search finds that taking crystals on the way wins; Garrett, 2026-11-16, relaxing Yash's 2026-10-26 never-a-crystal
+  rule): "the rule was handy when we were trying to seed the genome with effective racers. now we can relax some of
+  those earlier to get more interesting behaviors." The general process: constrain the space to find a good seed
+  quickly, then switch to a Pareto scheme that expands and contracts complexity to search for better solutions.
+  Every commit says `Plan step: <id>`.
   While Froglet Compute is paused, searches run in cloud sessions, never on someone's own PC.
 - **Exit (done).** The genome passes the four-part "well trained" test (`REGATTA_BALANCE_PLAN.md`), is written by the
   area's writer, and an editor check confirms it within ~10% of the model (a line in
@@ -243,7 +267,8 @@ model number (standing rule).
 - A game mode never changes the vessel; ability tuning is done on the vessel (CLAUDE.md, LOCKED).
 - PvP is petals only (LOCKED). Every colour comes from the colour set (LOCKED).
 - No AI is trained inside an arena game; nothing is balanced against an AI that has not converged (`AI_PLAN.md`).
-- Racing AIs never go for crystals (Yash). Garrett's playtests win over the model.
+- A racing AI's crystal detour is learned, not forbidden (Garrett 2026-11-16, relaxing Yash's rule). Garrett's
+  playtests win over the model.
 - Compute in the cloud, never on Garrett's PC.
 
 ## 9. Decisions for Garrett
