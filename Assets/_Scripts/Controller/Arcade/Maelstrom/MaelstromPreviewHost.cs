@@ -161,6 +161,7 @@ namespace CosmicShore.Gameplay
             _game = game;
             _intensity = intensity;
             _allowFlight = allowFlight;
+            _parkRequested = false;   // a round is being shown again: a later launch hands it over afresh
 
             RenderBriefing(game);
             if (launchPanel) launchPanel.SetPreviewFocusEnabled(allowFlight);
@@ -185,6 +186,73 @@ namespace CosmicShore.Gameplay
             TearDownOrbitCamera();
             CameraManager.Instance?.EndWindowedPlayerCamera();
             if (window) window.Hide();
+        }
+
+        // ── Handing the arena to the round ───────────────────────────────────────
+
+        [Header("Hand-over to the round")]
+        [SerializeField, Tooltip("Milliseconds of work per frame while the hub's arena is parked " +
+                                 "in the prism pool for the round. The launch sheet covers the " +
+                                 "screen, so this can be longer than a visible swap's 12 ms.")]
+        [Min(1f)] float parkSliceMs = 24f;
+
+        bool _parkRequested;
+        float _parkStartedAt;
+
+        /// <summary>True while the hub's arena is still being handed to the prism pool.</summary>
+        public bool IsParkingArena => cell && cell.IsRetiringForSceneExit;
+
+        /// <summary>
+        /// The round is launching: hide the preview and hand the arena it showed to
+        /// <see cref="EnvironmentPrismPool"/>, so the round's scene re-issues those prisms instead of
+        /// cloning the same arena a second time.
+        ///
+        /// <para>The hub previews exactly the world the round lays. Until this existed the hub's
+        /// prisms died with the scene and the round cloned 13-15 thousand again ("Prisms reused from
+        /// the environment pool 0" on both lays), and one of those lays is where a host froze long
+        /// enough for Relay to drop the party (Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md finding 1;
+        /// Docs/PartySystem/BUGS.md B45).</para>
+        ///
+        /// <para>Runs on EVERY peer at the countdown's zero (each machine lays its own arena), and is
+        /// idempotent: the host's lobby and the scene view both call it. The window is hidden first,
+        /// so the world leaves unseen. A preview still building (a swap in flight) is left alone and
+        /// dies with the scene as before.</para>
+        /// </summary>
+        /// <returns>True when a hand-over started on this call.</returns>
+        public bool ParkArenaForRound()
+        {
+            if (_parkRequested) return false;
+            _parkRequested = true;
+
+            Hide();
+
+            // The scene's own cell, if there is one. A hub with no Cell has no arena to hand over,
+            // and ShowRoundAsync already said so once.
+            if (!cell) cell = FindFirstObjectByType<Cell>(FindObjectsInactive.Exclude);
+            if (!cell || !cell.RetireWorldIntoPoolForSceneExit(parkSliceMs)) return false;
+
+            _parkStartedAt = Time.unscaledTime;
+            ReportParkWhenDone(cell, this.GetCancellationTokenOnDestroy()).Forget();
+            return true;
+        }
+
+        async UniTaskVoid ReportParkWhenDone(Cell parking, CancellationToken ct)
+        {
+            try
+            {
+                while (parking && parking.IsRetiringForSceneExit)
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return;   // the scene went first: what was not parked died with it, as before
+            }
+
+            if (!parking) return;
+            // One mark per round in the test log, so a run shows whether the hand-over finished
+            // before the load (the round's own load report then reads "Prisms reused ... N").
+            NetSessionRecorder.Mark("arenaParked",
+                $"{parking.LastSceneExitParkedCount} prisms in {Time.unscaledTime - _parkStartedAt:0.0}s");
         }
 
         // ── Standing the arena ───────────────────────────────────────────────────
@@ -226,7 +294,9 @@ namespace CosmicShore.Gameplay
 
                 // Same world already standing? Nothing to build - go straight to the view. This is
                 // what makes a hub re-entry on an unchanged draw free.
-                if (host.Config != config)
+                // A world handed to the pool for a launch that then did not happen is gone although
+                // the cell still names its config: stand it again.
+                if (host.Config != config || host.WorldRetiredForSceneExit)
                 {
                     if (!host.RequestCellSwap(config))
                     {

@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-16-new-cell-retireworldintopoolforsceneexit-df7c88",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-16T20:30:26+00:00",
+  "area": "Ecology: the Cell (Cell.cs)",
+  "summary": "New Cell.RetireWorldIntoPoolForSceneExit: the first half of a cell swap (no suction, no rebuild) that parks a cell's world in EnvironmentPrismPool before its scene unloads. The swap's bookkeeping reset moved into ResetBooksAfterRetire (no behaviour change intended) and ReleaseRetiredWorld takes its slice as a parameter. Used only by the Maelstrom hub so a round re-issues the previewed arena instead of cloning it again.",
+  "why": "A Maelstrom round laid its arena twice (hub preview, then the round), each a long frame with Relay live; a host freeze there ends the tournament (B45, Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md).",
+  "branch": "claude/maelstrom-preview-reuse",
+  "commit": "036c5f305",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Maelstrom/MaelstromLobby.cs",
+    "Assets/_Scripts/Controller/Arcade/Maelstrom/MaelstromPreviewHost.cs",
+    "Assets/_Scripts/Controller/Environment/Cell.cs"
+  ]
+}

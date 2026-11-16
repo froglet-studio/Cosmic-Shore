@@ -2708,6 +2708,27 @@ after it; `rec_on.cs` / `rec_get.cs` (ProfilerRecorders, the worst frame's marke
 **Still to confirm:** the same loads in a development build (two machines or two builds on one), and the same on a
 second machine, to learn how much of each frame the editor adds.
 
+### B45 in a Maelstrom (2026-11-17): the round no longer lays the arena a second time
+
+A Maelstrom is where B45 costs most: every round is two full arena lays on the host with Relay live (the hub's
+preview, then the round, "Prisms reused from the environment pool 0" both times) plus two Single loads, and a host
+drop ends the tournament for everyone. Seen: the 82.6 s frame of 2026-10-30, Garrett bounced "Host disconnected"
+about 20 s after round one of a Maelstrom on 2026-11-13 (`gradi-20261113_200642`; the host's log was never sent, so
+the cause is inferred from timing), and a 72 s host freeze on two Cleave draws in the driven runs of 2026-11-16
+(`Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md`).
+
+**Change** (`claude/maelstrom-preview-reuse`): lever 2 above, applied to the hub. At the countdown's zero every
+machine hands the hub's arena to `EnvironmentPrismPool` in 24 ms slices
+(`Cell.RetireWorldIntoPoolForSceneExit`, called through `MaelstromPreviewHost.ParkArenaForRound`), the host holds the
+load until its own hand-over finishes (4 s at most, `MaelstromLobby.ShouldLaunchNow`), and the round re-issues those
+prisms. One lay a round instead of two, and the hub's 13-15 thousand prisms are no longer destroyed inside the
+load's activation frame. Details: `Docs/MaelstromSystem/ARCHITECTURE.md` §1.5.1.
+
+**What it does not do.** It does not find the 72 s frame's cause: no Profiler capture of that frame exists. The hub's
+own preview lay is unchanged and is still a full lay with Relay live. The round's world is still destroyed on the way
+back to the hub. Held by `MaelstromArenaHandOverTests` (9: the launch-hold rule and the wires). **Not compiled or run
+in Unity**; the checklist entry has the two-player steps and the marks to read.
+
 ## B48 - a reaped party session rebuilt in place leaves the pilot unpaired, and the next match seats them on the wrong domain (2026-11-07)
 
 **Seen.** Yash, solo in the editor, opened Thresher Time and placed himself on Jade with AIs on Ruby and Gold

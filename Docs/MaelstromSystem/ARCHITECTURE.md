@@ -185,6 +185,29 @@ controllers rather than by a cell config), and those rounds show the honest "pre
 with the mode's name and description still on screen. A scene with no vessel still gets the orbiting
 look at the arena; only the tap-in is lost, and it says so once with the fix attached.
 
+### 1.5.1 The hand-over — the round reuses the hub's prisms (2026-11-17)
+
+The hub previews exactly the arena the round then lays, and until 2026-11-17 a round paid for it twice: the hub's
+prisms died with the hub scene on the `Single` load, and the round cloned the same 13-15 thousand again ("Prisms
+reused from the environment pool 0" on both lays). Each lay is a long frame with Relay live; one froze a host for 72 s
+and ended the tournament (`Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md` finding 1, `Docs/PartySystem/BUGS.md` B45).
+
+At the countdown's zero, on **every peer** (each machine lays its own arena), `MaelstromSceneView.RefreshCountdown`
+calls `MaelstromPreviewHost.ParkArenaForRound()`: it hides the preview window, then
+`Cell.RetireWorldIntoPoolForSceneExit` hands the hub's world to `EnvironmentPrismPool` a time slice per frame
+(`parkSliceMs`, 24 ms) - the first half of a cell swap, with no suction (the window is already gone) and no rebuild.
+The pool outlives the scene load, so the round's lay re-issues those prisms instead of cloning them.
+
+Only the host can hold the load for it: `MaelstromLobby` makes the same call (it is idempotent) and holds
+`MaelstromController.BeginNextRound` until the hand-over finishes, or `parkArenaMaxSeconds` (4 s) at the latest
+(`MaelstromLobby.ShouldLaunchNow`). The launch sheet covers the screen meanwhile. A guest's hand-over is cut short by
+the scene load if it is slower; what was not parked dies with the scene and is cloned, as before. Nothing crosses the
+wire. A preview still building at zero (a swap in flight) is not handed over. Each hand-over writes one `arenaParked
+<n> prisms in <s>s` mark in the test log; the round's load report shows the reuse.
+
+**Not run in Unity yet** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Maelstrom: the round reuses the hub preview's
+prisms"). Not covered: the round's world going back to the pool on the way to the hub.
+
 ### 1.6 The AI roster is dealt ONCE — and the FIELD is fixed at four
 
 **A Maelstrom seats `MaelstromDataSO.SeatCount` pilots every round — four by default — and the AI
