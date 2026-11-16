@@ -274,13 +274,19 @@ namespace CosmicShore.Tests
         // ── The inventory ───────────────────────────────────────────────
 
         [Test]
-        public void Crew_HoldsOnePilotPerCallsign()
+        public void Crew_TakesTwoPeopleOnACallsign_ButEachPaintedPilotOnce()
         {
             var inv = new AccountInventory();
             var volt = inv.MintPilot(PilotVision.Volt, FactionType.None, "test", 0, Seeds());
             Assert.IsNotNull(volt);
-            Assert.IsNull(inv.MintPilot(PilotVision.Volt, FactionType.None, "test", 0, Seeds(50)), "a second VOLT is refused");
-            Assert.AreEqual(AccountInventory.AddResult.CallsignTaken, inv.TryAddPilot(PilotGenerator.Roll(PilotVision.Volt, 777)));
+            Assert.IsNull(inv.MintPilot(PilotVision.Volt, FactionType.None, "test", 0, Seeds(50)), "a rolled recruit is still one a callsign");
+            var second = PilotGenerator.Roll(PilotVision.Volt, 777);
+            second.PaintedKey = "Flux";
+            Assert.AreEqual(AccountInventory.AddResult.Added, inv.TryAddPilot(second), "a callsign may be carried twice (Garrett, 2026-11-16)");
+            var again = PilotGenerator.Roll(PilotVision.Volt, 778);
+            again.PaintedKey = "Flux";
+            Assert.AreEqual(AccountInventory.AddResult.CallsignTaken, inv.TryAddPilot(again), "a painted pilot is in a crew once");
+            Assert.AreSame(second, inv.PaintedPilot("Flux"));
             Assert.AreEqual(AccountInventory.AddResult.DuplicateId, inv.TryAddPilot(volt));
             Assert.AreEqual(AccountInventory.AddResult.Invalid, inv.TryAddPilot(new PilotRecord { Id = "pilot.callsign.volt" }), "no seed");
             Assert.AreEqual(AccountInventory.AddResult.Invalid, inv.TryAddPilot(new PilotRecord { Id = "artifact.javelin#0000000000000001" }));
@@ -364,7 +370,10 @@ namespace CosmicShore.Tests
             var a = inv.MintArtifact(Javelin(), "t", 0, Seeds(10));
             inv.Pilots.Add(null);
             inv.Pilots.Add(volt.Clone());                                   // a repeated id
-            inv.Pilots.Add(PilotGenerator.Roll(PilotVision.Volt, 555));      // a second VOLT
+            volt.PaintedKey = "VOLT";
+            var twice = PilotGenerator.Roll(PilotVision.Volt, 555);
+            twice.PaintedKey = "VOLT";
+            inv.Pilots.Add(twice);                                          // the same painted pilot twice
             inv.Pilots.Add(new PilotRecord { Id = "garbage" });
             inv.Artifacts.Add(a.Clone());
             inv.Artifacts.Add(new ArtifactRecord { Id = "artifact.javelin#0000000000000005", Element = Element.Omni });
