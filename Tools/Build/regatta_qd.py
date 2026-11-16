@@ -432,6 +432,11 @@ ENGINE_TRUSTED = tuple(h for h in os.environ.get(
     "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Stoat,Urchin").split(",") if h)
 # The judge seeds each race at turn start, so (seed, race) is deterministic; the search races one seed per course (8
 # hulls x 2 seeds is ~4.5 min a course on 4 cores) and the pool's candidates are re-raced on more seeds for the noise.
+# The start condition every hull races under: "card" (the arcade card's own starting elements, today) or "L5" (every
+# hull at Time level 5). Garrett, 2026-11-16: search and balance Regatta under both. One condition per shard, so each
+# condition is its own archive; merge reports each.
+START = os.environ.get("REGATTA_START", "card")
+
 # Stage 1 of a gated engine course: the hulls most often fastest (Rhino, Stoat) and slowest (Serpent, Dolphin) on the
 # first engine courses; four is one round on four cores, so a course stopped here costs half.
 STAGE1 = tuple(h for h in os.environ.get("REGATTA_STAGE1", "Rhino,Stoat,Serpent,Dolphin").split(",") if h)
@@ -458,7 +463,13 @@ def _judge(g, course, backend, seeds=(0,), hulls=None):
                 s["backend"] = "model"
         return r
     eng = seats if backend == "engine" else [s for s in seats if s["hull"] in ENGINE_TRUSTED]
-    r = _rj().judge(g, eng, list(seeds), backend="engine")
+    if START == "card":
+        r = _rj().judge(g, eng, list(seeds), backend="engine")
+    else:       # Garrett 2026-11-16: balance both with and without every hull starting at Time L5
+        try:
+            r = _rj().judge(g, eng, list(seeds), backend="engine", start=START)
+        except TypeError:
+            raise SystemExit(f"this regatta_judge.py has no start condition: --start {START} needs W1's start field")
     races = []
     for race in r["races"]:
         for s in race.get("seats", []):
@@ -1006,7 +1017,8 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
     log(f"[shard {k}/{n}] {len(own)} courses already in {mine}")
     while len(own) < budget:
         if len(own) % peers_every == 0:
-            peers = [r for f in shard_files(root) if os.path.abspath(f) != os.path.abspath(mine) for r in read_jsonl(f)]
+            peers = [r for f in shard_files(root) if os.path.abspath(f) != os.path.abspath(mine) for r in read_jsonl(f)
+                     if r.get("start", "card") == START]      # another condition's courses are another archive
         every = own + peers
         archive = {}
         for r in every:
@@ -1040,7 +1052,7 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
             else:
                 g = child()
         r = evaluate((g, backend, seeds, gate))
-        r.update(shard=k, at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+        r.update(start=START, shard=k, at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
         with open(mine, "a", encoding="utf-8") as fh:
             fh.write(json.dumps(r) + "\n")
         own.append(r)
@@ -1051,13 +1063,24 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
 
 
 def merge(root, out=None, log=print):
-    """Fold every shard under `root` into one archive, surrogate, report and pool (written to root/merged, or `out`).
-    Reads only; the one writer of the merged files is whoever runs this."""
+    """Every start condition in the shards gets its own merged folder (root/merged/<start>/) and summary."""
     out = out or os.path.join(root, "merged")
-    os.makedirs(out, exist_ok=True)
     recs = [r for f in shard_files(root) for r in read_jsonl(f)]
+    starts = sorted({r.get("start", "card") for r in recs}) or ["card"]
+    summaries = {}
+    for st in starts:
+        sub = [r for r in recs if r.get("start", "card") == st]
+        summaries[st] = merge_records(sub, os.path.join(out, st), root, log=log)
+    json.dump(summaries, open(os.path.join(out, "summary.json"), "w"), indent=1)
+    return summaries
+
+
+def merge_records(recs, out, root, log=print):
+    """Fold one start condition's shard records into one archive, surrogate, report and pool in `out`. Reads the shards
+    only; the one writer of the merged files is whoever runs this."""
+    os.makedirs(out, exist_ok=True)
     if not recs:
-        raise SystemExit(f"no shard records under {root}")
+        return {"courses": 0}
     set_hulls(sorted({h for r in recs if r.get("valid") for h in r["seconds"]}) or HULLS)
     backend = next((r.get("backend") for r in recs if r.get("valid")), "engine")
     archive = {}
@@ -1324,6 +1347,8 @@ def main():
                                               "shard", "merge"))
     ap.add_argument("--shard", type=int, default=0, help="shard: this runner's index K (0-based)")
     ap.add_argument("--of", type=int, default=1, help="shard: how many runners N")
+    ap.add_argument("--start", default=None, choices=("card", "L5"),
+                    help="the start condition every hull races under (default card, or REGATTA_START)")
     ap.add_argument("dirs", nargs="*")
     ap.add_argument("--budget", type=int, default=1500)
     ap.add_argument("--out", default=None, help="output folder (merge: default ROOT/merged; else regatta_qd_out)")
@@ -1344,6 +1369,9 @@ def main():
         set_hulls(list(ENGINE_TRUSTED))
     if a.workers is None and a.backend != "model":
         a.workers = 1            # the engine judge already runs one process per hull in parallel
+    if a.start:
+        global START
+        START = a.start
     if a.cmd != "merge" and a.out is None:
         a.out = "regatta_qd_out"
     if a.self_test or not a.cmd:
