@@ -2051,22 +2051,6 @@
    "status": "drafted"
   },
   {
-   "id": "P-other-07",
-   "owner": "Yash",
-   "date": "2026-10-29",
-   "words": "the Meerkat's wormhole is now a Soliton Tunnel, an environmental fundamental any vessel or scene can use",
-   "rule": "The soliton tunnel is an environmental fundamental any vessel or scene can use, not a Meerkat-only ability effect.",
-   "source": {
-    "file": "Docs/Shaders/WORMHOLE_SHADERS.md",
-    "line": 926
-   },
-   "kind": "decision",
-   "area": "other",
-   "retired": "",
-   "test": "Does a new tunnel, portal or ride reuse the Soliton Tunnel rather than a bespoke one?",
-   "status": "drafted"
-  },
-  {
    "id": "P-other-08",
    "owner": "Yash",
    "date": "2026-10-29",
@@ -3605,17 +3589,17 @@
   {
    "id": "P-vessel-26",
    "owner": "Garrett",
-   "date": "2026-10-27",
-   "words": "\"the meerkat should be producing a new fundamental (solitons)\"",
-   "rule": "A soliton is a standing tunnel through space that keeps its shape, carries whatever enters one mouth out of the other, and is seen only by the way it bends the world (no grid, no surface); anyone may ride one, what it fires is a moving prism scored to its maker, and it never deletes mass.",
+   "date": "2026-11-16",
+   "words": "solitons should be enterable from outside, but in a one-way fashion. so the exit is the only source and the entrance is the only sink, but the tube wall can be entered and not exited",
+   "rule": "A soliton is a standing, one-way tunnel through space that keeps its shape and is seen only by the way it bends the world (no grid, no surface): anything may enter through its entrance mouth or its wall, nothing leaves except through its exit mouth, so the entrance is its only sink and the exit its only source. Any vessel or scene may make use of one (it is a fundamental, not a Meerkat-only effect), anyone may ride one, what it fires is a moving prism scored to its maker, and it never deletes mass.",
    "source": {
     "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
-    "line": 353
+    "line": 357
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
-   "test": "Does the tunnel design keep its shape, carry riders and prisms through, conserve mass and show itself only as bent space?",
+   "test": "Can things enter the tunnel through its wall and entrance but leave only by its exit, with mass conserved and nothing drawn but bent space?",
    "status": "drafted"
   },
   {

@@ -354,6 +354,7 @@ ones.
   (`R_VesselActions/MEERKAT.md`) is the first maker, and its surface area and swallow are in Unity (Yash's round 23,
   `MeerkatSwallow`, `SolitonTunnelShapeMath`); the rest is design, `Docs/Studios/MEERKAT.md` § Garrett's direction, whose
   element definition is LOCKED (Garrett, 2026-10-28). The curation checks:
+  **It is one way** (Garrett, 2026-11-16: "solitons should be enterable from outside, but in a one-way fashion. so the exit is the only source and the entrance is the only sink, but the tube wall can be entered and not exited"): its exit mouth is its only source, its entrance mouth its only sink, and its wall lets anything in from outside but nothing out.
   1. **Name.** *Soliton*: a solitary wave that holds its shape as it travels. No other system uses the word.
   2. **Reach.**
      - The Meerkat's Space ability makes one.
