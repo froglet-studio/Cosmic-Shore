@@ -337,7 +337,7 @@ def lay_genome(g):
 
 # ── course features: the surrogate's inputs and the archive's descriptors ─────────────────────────────────────────
 
-FEATURES = ("lap_u", "lane_over_spine", "max_turn", "mean_turn", "rms_turn", "hard_corners", "min_mouth",
+FEATURES = ("rail_prisms", "lap_u", "lane_over_spine", "max_turn", "mean_turn", "rms_turn", "hard_corners", "min_mouth",
             "corner_floor", "ridable", "neutral", "gap_share", "plain", "shielded", "gap_count", "free_stretches",
             "detour_u", "alternates", "alt_offset", "crystals")
 
@@ -369,13 +369,16 @@ def course_features(g, course):
          "free_stretches": float(seg["free_stretches"]), "detour_u": float(fd["detour_u"]),
          "alternates": float(len(alts)),
          "alt_offset": sum(a["Offset"] for a in g["features"]["AlternateGates"]) / max(1, len(alts)) if alts else 0.0,
-         "crystals": float(fd["crystals"])}
+         "crystals": float(fd["crystals"]),
+         "rail_prisms": float(sum(len(lane) for lane in course["lanes"]))}
+    x["prisms"] = x["rail_prisms"]
     if _w2 is not None and hasattr(_w2, "descriptors"):
         for k, v in (_w2.descriptors(g) or {}).items():
             if isinstance(v, (int, float)) and not isinstance(v, bool):
                 x["w2:" + k] = float(v)
             elif isinstance(v, dict):
                 x.update({f"w2:{k}:{kk}": float(vv) for kk, vv in v.items() if isinstance(vv, (int, float))})
+        x["prisms"] = x["rail_prisms"] + x.get("w2:est_prisms", 0.0)    # the catalogue's estimate (the carve lays fewer)
     else:
         for p in g.get("placements") or ():
             k = "kind:" + str(p.get("kind"))
@@ -397,9 +400,9 @@ def cell_of(leader, x, nkinds):
     """The archive cell: who wins it, how ridable, how sharp, how varied (0-1, 2-4, 5+ kinds of feature or placement)."""
     rid = 0 if x["ridable"] < 0.6 else 1 if x["ridable"] < 0.9 else 2
     sharp = 0 if x["max_turn"] < 70 else 1 if x["max_turn"] < 110 else 2
-    if "w2:placements" in x:     # W2's genome: how crowded the course is (placements), not how many kinds
-        n = x["w2:placements"]
-        var = 0 if n <= 3 else 1 if n <= 10 else 2
+    if "w2:placements" in x:     # W2's genome: how heavy the course is (prisms laid against the budget), so lean courses
+        n = x.get("prisms", 0.0) / L.PRISM_BUDGET               # keep cells of their own (performance, Garrett 11-16)
+        var = 0 if n <= 0.5 else 1 if n <= 1.0 else 2
     else:
         var = 0 if nkinds <= 1 else 1 if nkinds <= 4 else 2
     return f"{leader}|r{rid}|s{sharp}|k{var}"
@@ -534,7 +537,7 @@ def evaluate(job):
         r = dict(r2, races=r1["races"] + r2["races"])
     else:
         r = _judge(gg, course, backend, seeds)
-    loss = L.course_loss(r, SCORED, _ref_mean(backend), guard_fails=guard)
+    loss = L.course_loss(r, SCORED, _ref_mean(backend), guard_fails=guard, prisms=x.get("prisms"))
     times = L.alone_times(r)
     secs = {h: (None if any(t is None for t in v) else sum(v) / len(v)) for h, v in times.items()}
     kinds = kinds_used(gg, x)

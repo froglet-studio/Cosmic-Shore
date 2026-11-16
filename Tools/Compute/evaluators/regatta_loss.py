@@ -19,6 +19,8 @@ COURSE LOSS (lower is better), from the ALONE races (each hull by itself, mean f
          + DNF_WEIGHT per scored hull that does not finish
          + GUARD_WEIGHT per guard failure (rail missing a mouth, a rail or ring through the nucleus or the membrane,
                                            a placement sealing the line: the genome's validity guards)
+         + PERF_WEIGHT x ln(prisms / PRISM_BUDGET) past the budget, + LEAN_WEIGHT x prisms / budget   performance:
+           every prism the course lays (rails + placements) costs frame time, and the cell must keep room for trails
          + FIELD_WEIGHT x ln(slowest / fastest) of the FIELD race (every hull together) when the judge ran one
            (the engine does; the model prices a field as each hull alone and this term is then left out)
 
@@ -42,6 +44,10 @@ LENGTH_WEIGHT = 2.0
 DNF_WEIGHT = 0.5
 GUARD_WEIGHT = 0.5
 FIELD_WEIGHT = 0.5
+PERF_WEIGHT = 0.5         # a course that lays more prisms than the budget pays ln(prisms / budget) x this
+PRISM_BUDGET = 6000.0     # rails (~1,800-2,000) + placements, with headroom under the cell's phase limits for player
+#                           trails (Regatta Cell Config 1: Restless 2,512 / Frenzy 5,412 prisms, being raised by W2)
+LEAN_WEIGHT = 0.02        # and a small cost per budget's worth laid, so the search prefers the leaner of two equals
 PASS_SPREAD = 1.25
 PASS_CHAOS = 0.06
 POOL_CANCEL = 1.10
@@ -95,7 +101,7 @@ def chaos_of(per_seed, hulls):
     return sum(out) / len(out)
 
 
-def course_loss(result, scored, ref_mean, guard_fails=0):
+def course_loss(result, scored, ref_mean, guard_fails=0, prisms=None, prism_budget=PRISM_BUDGET):
     """Score one course from its judge RESULT. `scored`: the hulls the balance rules hold for; `ref_mean`: the mean race
     (seconds) of the scored hulls on the reference course (today's), for the length band."""
     times = alone_times(result, scored)
@@ -117,7 +123,9 @@ def course_loss(result, scored, ref_mean, guard_fails=0):
     fs = field_spread(result, scored)
     terms = {"spread": math.log(spread), "chaos": CHAOS_WEIGHT * chaos, "length": LENGTH_WEIGHT * length_pen,
              "dnf": DNF_WEIGHT * len(dnf), "guards": GUARD_WEIGHT * guard_fails,
-             "field": 0.0 if fs is None else FIELD_WEIGHT * fs}
+             "field": 0.0 if fs is None else FIELD_WEIGHT * fs,
+             "perf": 0.0 if not prisms else (PERF_WEIGHT * max(0.0, math.log(prisms / prism_budget))
+                                             + LEAN_WEIGHT * prisms / prism_budget)}
     why = []
     if spread > PASS_SPREAD + 1e-9:
         why.append(f"spread {spread:.2f}x")
@@ -179,6 +187,10 @@ def self_test():
                       hulls, 62.0)
     if not fld["loss"] > even["loss"] + 0.1:
         bad.append("regatta_loss: a lopsided field race on the engine backend is not penalised")
+    heavy = course_loss(_result([{"A": 60, "B": 62, "C": 64}]), hulls, 62.0, prisms=4 * PRISM_BUDGET)
+    lean = course_loss(_result([{"A": 60, "B": 62, "C": 64}]), hulls, 62.0, prisms=0.3 * PRISM_BUDGET)
+    if not heavy["loss"] > lean["loss"] + 0.5 or not lean["loss"] > even["loss"]:
+        bad.append(f"regatta_loss: a course laying 4x the prism budget is not penalised ({heavy['loss']:.3f} vs {lean['loss']:.3f})")
     # Pools: two opposite 1.2x courses cancel; two courses with the same leader do not.
     c1 = course_loss(_result([{"A": 60, "B": 66, "C": 72}]), hulls, 66.0)
     c2 = course_loss(_result([{"A": 72, "B": 66, "C": 60}]), hulls, 66.0)
