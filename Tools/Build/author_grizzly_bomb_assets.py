@@ -8,12 +8,17 @@ Run from the repo root:  python3 Tools/Build/author_grizzly_bomb_assets.py [--ch
 WHAT IT AUTHORS
   1. Assets/_Prefabs/Projectile/GrizzlyBomb.prefab - GrizzlyShell.prefab (the charged cannon's
      round, read off disk every run) plus the bomb's look:
-       - a SPIKE CROWN child ("Spikes": the core's fresnel material on a MeshFilter whose mesh
-         GrizzlyBombVisual generates at Awake - twelve cones, retracted in flight, snapped out
-         when the bomb is armed) so the bomb reads as a sea mine rather than a ball,
-       - a camera-facing additive GLOW quad ("Halo", glow1_ADD) the visual breathes with,
-       - a camera-facing additive RING quad ("Ring", ring_ADD) that pings outward in flight and
-         collapses onto the bomb when it is armed,
+       - the core and a SPIKE CROWN child ("Spikes": a MeshFilter whose mesh GrizzlyBombVisual
+         generates at Awake - twelve cones, retracted in flight, snapped out when the bomb is
+         armed) in the blast look's faceted two-tone (GrizzlyBombFacet: CosmicShore/BlastFacet,
+         _Spread 1) so the bomb reads as a faceted sea mine rather than a ball; its breath is heat
+         on those facets (BLAST_LOOK.md),
+       - a faceted SHELL ("Ring": GrizzlyBombShell, CosmicShore/BlastShell, on the blast look's
+         icosphere set at Awake) that pings outward in flight and collapses onto the bomb when it
+         is armed. Until 2026-11-13 the breath was an additive glow billboard ("Halo",
+         glow1_ADD) and the ping an additive ring billboard (ring_ADD); on film they read as a
+         white star and a flat starburst (the footage critique), so the halo is gone and the
+         ring is a volume,
        - a plasma COMET (TrailRenderer on the Astro League ball's CosmicShore/BallTrail
          material, tinted per shot through a property block),
        - SWEPT VESSEL DETECTION on the Projectile, so a hull the bomb crosses between fixed
@@ -23,7 +28,7 @@ WHAT IT AUTHORS
          never stops on one, and goes off only on the trigger. GrizzlyShell's container is the
          Sparrow full-auto's (prism damage, a detonate end effect), which is what made the bombs
          carve and blow on contact,
-       - GrizzlyBombVisual on the root, wired to the core, the spikes, the halo, the ring and the comet,
+       - GrizzlyBombVisual on the root, wired to the core, the spikes, the shell ("Ring") and the comet,
        - the core casts no shadow (a glowing bomb does not).
      The cannon keeps GrizzlyShell untouched: the bombs used to share it, which is why they
      looked like cannon shells.
@@ -60,8 +65,8 @@ G_CONTAINER = lib.guid("asset/GrizzlyBombProjectileImpactContainer")
 
 EXISTING = {
     "GrizzlyShell":     lib.existing_guid(SHELL),
-    "Glow1Add":         "e653836c30661fe419b8992e230ca189",   # Epic Toon FX glow1_ADD (URP particles, additive)
-    "RingAdd":          "35b072e7a7dfe0f429bf5123cfc9a433",   # Epic Toon FX ring_ADD (same shader, a ring sprite)
+    "BombFacet":        lib.existing_guid("Assets/_Graphics/Materials/BlastLook/GrizzlyBombFacet.mat"),
+    "BombShell":        lib.existing_guid("Assets/_Graphics/Materials/BlastLook/GrizzlyBombShell.mat"),
     "BallTrail":        "68ceadd522d84c4aa57c8edef427c129",   # Resources/BallTrail.mat (CosmicShore/BallTrail comet)
     "CoreMaterial":     "4109669bc21cfa844bd19bbbb8697e6f",   # DangerProjectileMaterial (SpreadFresnelShader) - the shell's core
     "ShellContainer":   "c876b418c4188d546996eaabb11d0f26",   # SparrowFullAutoProjectileImpactContainer
@@ -84,10 +89,6 @@ SHELL_IMPACTOR = "4476692679679402743"
 # ── New objects in the bomb prefab ──
 B_TRAIL = "5130000000000000001"
 B_VISUAL = "5130000000000000002"
-B_HALO_GO = "5130000000000000010"
-B_HALO_TF = "5130000000000000011"
-B_HALO_MF = "5130000000000000012"
-B_HALO_MR = "5130000000000000013"
 B_SPIKES_GO = "5130000000000000020"
 B_SPIKES_TF = "5130000000000000021"
 B_SPIKES_MF = "5130000000000000022"
@@ -241,8 +242,6 @@ MonoBehaviour:
   spikes: {{fileID: {B_SPIKES_TF}}}
   spikesFilter: {{fileID: {B_SPIKES_MF}}}
   spikesRenderer: {{fileID: {B_SPIKES_MR}}}
-  halo: {{fileID: {B_HALO_TF}}}
-  haloRenderer: {{fileID: {B_HALO_MR}}}
   ring: {{fileID: {B_RING_TF}}}
   ringRenderer: {{fileID: {B_RING_MR}}}
   trail: {{fileID: {B_TRAIL}}}
@@ -250,8 +249,9 @@ MonoBehaviour:
   trailBraidSpread: 0.7
   trailIntensity: 1.2
   pulseHz: 4
-  haloScale: 3
-  pulseAmplitude: 0.22
+  flightHeatPeak: 0.22
+  armedHeatPeak: 0.75
+  heatIntensity: 5
   spikesFlightScale: 0.8
   spikesArmedScale: 1.05
   spikesDeploySeconds: 0.22
@@ -262,10 +262,9 @@ MonoBehaviour:
   ringMaxScale: 7
   armedRingHz: 3.5
   armedRingMaxScale: 6
-  ringIntensity: 0.9
-  armedHaloScale: 5
+  ringIntensity: 2.4
   armedPulseHz: 14
-  armFlash: 1.2
+  armFlash: 1
   rimIntensityPeak: 6
   rimIntensityTrough: 1.5
   sparkColor: {{r: 1, g: 0.92, b: 0.7, a: 1}}
@@ -314,13 +313,12 @@ MeshRenderer:
         + "  m_AdditionalVertexStreams: {fileID: 0}\n"
 
 
-QUAD = "{fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}"
-# The spike mesh is generated by GrizzlyBombVisual at Awake (shared by every bomb), so the
-# filter is authored empty - the prefab shows a bare core in the editor, the game a sea mine.
+# The spike and shell meshes are generated in code at Awake (shared by every bomb: the crown by
+# GrizzlyBombVisual, the shell's icosphere by BlastLookMeshes), so their filters are authored
+# empty - the prefab shows a bare core in the editor, the game a faceted sea mine.
 SPIKES = child(B_SPIKES_GO, B_SPIKES_TF, B_SPIKES_MF, B_SPIKES_MR, "Spikes", 0.8, "{fileID: 0}",
-               EXISTING["CoreMaterial"])
-HALO = child(B_HALO_GO, B_HALO_TF, B_HALO_MF, B_HALO_MR, "Halo", 3, QUAD, EXISTING["Glow1Add"])
-RING = child(B_RING_GO, B_RING_TF, B_RING_MF, B_RING_MR, "Ring", 1.4, QUAD, EXISTING["RingAdd"])
+               EXISTING["BombFacet"])
+RING = child(B_RING_GO, B_RING_TF, B_RING_MF, B_RING_MR, "Ring", 1.4, "{fileID: 0}", EXISTING["BombShell"])
 
 
 def build_bomb(shell: str) -> str:
@@ -332,19 +330,21 @@ def build_bomb(shell: str) -> str:
                        ("  m_Children: []\n  m_Father: {fileID: 0}\n", "childless root transform")):
         assert shell.count(probe) == 1, f"GrizzlyShell.prefab no longer has its {why}"
     bomb = shell.replace("  m_Name: GrizzlyShell\n", "  m_Name: GrizzlyBomb\n")
-    # Register the new components on the root and the halo as its child.
+    # Register the new components on the root and the spikes and shell as its children.
     last_component = re.search(r"(  m_Component:\n(?:  - component: \{fileID: \d+\}\n)+)", bomb).group(1)
     bomb = bomb.replace(last_component, last_component +
                         f"  - component: {{fileID: {B_TRAIL}}}\n  - component: {{fileID: {B_VISUAL}}}\n", 1)
     bomb = bomb.replace("  m_Children: []\n  m_Father: {fileID: 0}\n",
-                        f"  m_Children:\n  - {{fileID: {B_SPIKES_TF}}}\n  - {{fileID: {B_HALO_TF}}}\n"
+                        f"  m_Children:\n  - {{fileID: {B_SPIKES_TF}}}\n"
                         f"  - {{fileID: {B_RING_TF}}}\n  m_Father: {{fileID: 0}}\n", 1)
-    # The core: a glowing bomb casts no shadow.
+    # The core: a glowing bomb casts no shadow, and it wears the bomb's facet material (the shell's
+    # fresnel material stays on the cannon's round).
     core = re.search(rf"--- !u!23 &{SHELL_CORE_MR}\nMeshRenderer:\n(?:(?!--- ).*\n)*", bomb).group(0)
     assert core.count("  m_CastShadows: 1\n") == 1, "core renderer shadow flag not found"
-    assert f"guid: {EXISTING['CoreMaterial']}, type: 2}}" in core, \
-        "GrizzlyShell's core no longer wears DangerProjectileMaterial - the spikes would not match it"
-    bomb = bomb.replace(core, core.replace("  m_CastShadows: 1\n", "  m_CastShadows: 0\n"), 1)
+    core_mat = f"guid: {EXISTING['CoreMaterial']}, type: 2}}"
+    assert core.count(core_mat) == 1, "GrizzlyShell's core no longer wears DangerProjectileMaterial"
+    bomb = bomb.replace(core, core.replace("  m_CastShadows: 1\n", "  m_CastShadows: 0\n")
+                        .replace(core_mat, f"guid: {EXISTING['BombFacet']}, type: 2}}"), 1)
     # Its own impact container: a bomb touches nothing (see the module doc).
     impactor = re.search(rf"--- !u!114 &{SHELL_IMPACTOR}\nMonoBehaviour:\n(?:(?!--- ).*\n)*", bomb).group(0)
     shell_ref = re.search(r"  projectileImpactorDataContainer: \{fileID: 11400000, guid: (\w+),\s+type: 2\}\n",
@@ -362,7 +362,7 @@ def build_bomb(shell: str) -> str:
         "  sweptPrismDetection: 1\n", "  sweptPrismDetection: 1\n  sweptVesselDetection: 1\n"), 1)
     if not bomb.endswith("\n"):
         bomb += "\n"
-    return bomb + TRAIL + VISUAL + SPIKES + HALO + RING
+    return bomb + TRAIL + VISUAL + SPIKES + RING
 
 
 def block(text: str, file_id: str) -> str:
