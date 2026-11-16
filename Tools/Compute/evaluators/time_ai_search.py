@@ -29,6 +29,9 @@ reference(condition) is the shipped AI's mean on the same courses, so 1.0 = toda
     python3 Tools/Compute/evaluators/time_ai_search.py --hull Scarab --search --generations 4 --pareto 4
     python3 Tools/Compute/evaluators/time_ai_search.py --hull Scarab --confirm best.json --seeds 101,102,103
 
+Resume: every finished race set goes to <out>/races.jsonl. Run the SAME command again after a restart (put --out on
+/mnt/project-files so it survives the container) and it replays to where it stopped; --confirm resumes the same way.
+
 A player killed for memory is raced again, never scored as a DNF. One player process takes ~2.5 GB: --workers 4 at
 most on a 16 GB machine. Confirm a winner on fresh courses (24+ flights, Port/docs/AI_TRAINING.md) before promoting.
 """
@@ -40,6 +43,7 @@ import random
 import re
 import sys
 import tempfile
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -219,14 +223,66 @@ def loss(per_cond, ref):
     return sum(lis) / len(lis) + 0.5 * max(lis), lis
 
 
+class RaceCache:
+    """Resume after a restart (cloud containers restart without warning): every finished (candidate, condition) race
+    set is appended to <out>/races.jsonl, and an identical one asked again is answered from it. The search is
+    deterministic (seeded sep-CMA-ES and Pareto rng), so a restarted run asks the same candidates in the same order and
+    replays straight to the first race it never finished."""
+
+    def __init__(self, path):
+        self.path, self.mem, self.lock = path, {}, threading.Lock()
+        if path and os.path.exists(path):
+            for line in open(path, encoding="utf-8"):
+                try:
+                    rec = json.loads(line)
+                    self.mem[rec["key"]] = rec["result"]
+                except (ValueError, KeyError):
+                    pass                                # a line cut off by the restart
+        self.hits = 0
+
+    @staticmethod
+    def key(hull, g, params, cond, seeds, limit_s):
+        name, intensity, start, genome = cond
+        return json.dumps([hull, g["mode"], params, name, intensity, start, genome, list(seeds), limit_s], sort_keys=True)
+
+    def get(self, k):
+        r = self.mem.get(k)
+        if r is not None:
+            self.hits += 1
+        return r
+
+    def put(self, k, result):
+        with self.lock:
+            self.mem[k] = result
+            if self.path:
+                with open(self.path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"key": k, "result": result}) + "\n")
+
+
+CACHE = RaceCache(None)
+
+
 def evaluate_many(hull, g, cands, conds, seeds, limit_s, pool):
-    """cands: [params|None]; every (candidate, condition) is one process, all in one pool."""
-    jobs = [(c, k) for c in range(len(cands)) for k in range(len(conds))]
-    futs = {pool.submit(race_one, hull, g, cands[c], conds[k], seeds, limit_s): (c, k) for c, k in jobs}
+    """cands: [params|None]; every (candidate, condition) is one process, all in one pool; races already in the
+    cache are not raced again."""
     out = [[None] * len(conds) for _ in cands]
+    pending = {}                                       # key -> [(c, k)]: identical candidates (the shipped seeds) race once
+    for c in range(len(cands)):
+        for k in range(len(conds)):
+            key = RaceCache.key(hull, g, cands[c], conds[k], seeds, limit_s)
+            hit = CACHE.get(key)
+            if hit is not None:
+                out[c][k] = hit
+            else:
+                pending.setdefault(key, []).append((c, k))
+    futs = {pool.submit(race_one, hull, g, cands[ck[0][0]], conds[ck[0][1]], seeds, limit_s): key
+            for key, ck in pending.items()}
     for f in concurrent.futures.as_completed(futs):
-        c, k = futs[f]
-        out[c][k] = f.result()
+        key = futs[f]
+        res = f.result()
+        CACHE.put(key, res)
+        for c, k in pending[key]:
+            out[c][k] = res
     return out
 
 
@@ -306,6 +362,10 @@ def main():
     out = a.out or tempfile.mkdtemp(prefix=f"time-ai-{a.hull}-")
     os.makedirs(out, exist_ok=True)
     log = open(os.path.join(out, "log.jsonl"), "a")
+    global CACHE
+    CACHE = RaceCache(os.path.join(out, "races.jsonl"))
+    if CACHE.mem:
+        print(f"resume: {len(CACHE.mem)} finished race sets in {out}/races.jsonl", flush=True)
     RJ.build()
     pool = concurrent.futures.ThreadPoolExecutor(a.workers)
     t0 = time.time()
