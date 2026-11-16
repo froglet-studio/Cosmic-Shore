@@ -3526,8 +3526,8 @@
    "id": "P-vessel-22",
    "owner": "Garrett",
    "date": "2026-10-27",
-   "words": "an artifact transforms the payload, a parcel of the Ark's hull that any vessel grabs and fires to crack super-shielded mass. An artifact no longer turns a \"fifth knob\"",
-   "rule": "An artifact transforms the Ark payload any vessel grabs and fires to crack super-shielded mass; it never turns a fifth knob on the vessel itself.",
+   "words": "an artifact transforms the payload**, a parcel of the Ark's hull that any vessel of the Ark's own domain grabs and fires",
+   "rule": "An artifact transforms the Ark payload a vessel of the Ark's own domain grabs and fires to crack super-shielded mass; it never turns a fifth knob on the vessel itself.",
    "source": {
     "file": "Docs/PILOTS_AND_ARTIFACTS.md",
     "line": 32
@@ -3543,7 +3543,7 @@
    "owner": "Garrett",
    "date": "2026-11-16",
    "words": "the ark should only regenerate inside a cell nucleus under control of the ark's domain",
-   "rule": "The Ark is its own level: a kaiju guarded by three escorts that launch from its hangar, with engines that animate, octahedral shielded prisms placed to protect the rest, super-shielded prisms, danger prisms where it wants to be dangerous, and a payload (a parcel of its hull any vessel grabs and fires to crack super-shielded mass). Its omni-crystal reactor regrows its own empty hull slots at a fixed rate, one prism a beat, never past full, and only while it sits inside a cell nucleus its domain controls; a fallen Ark never regrows.",
+   "rule": "The Ark is its own level: a kaiju guarded by three escorts that launch from its hangar, with engines that animate, octahedral shielded prisms placed to protect the rest, super-shielded prisms, danger prisms where it wants to be dangerous, and a payload (a parcel of its hull that only a vessel of its own domain grabs and fires to crack super-shielded mass: an Ark never arms the ones who would kill it). Its omni-crystal reactor regrows its own empty hull slots at a fixed rate, one prism a beat, never past full, and only while it sits inside a cell nucleus its domain controls; a fallen Ark never regrows.",
    "source": {
     "file": "Docs/VesselModels/ArkReverse.md",
     "line": 139
