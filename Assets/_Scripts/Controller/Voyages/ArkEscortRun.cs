@@ -321,6 +321,7 @@ namespace CosmicShore.Gameplay
             Banner(TemplateText.Fill(_escort.DepartLine, "legs", _escort.Legs.Count.ToString(),
                 "difficulty", _difficulty.ToString()) + CourseBannerSuffix() + VoyageBannerSuffix());
             BringWingmates(force: true);
+            SignalUnderway();
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;
             HookArk();
@@ -409,6 +410,7 @@ namespace CosmicShore.Gameplay
             var authored = _escort.Legs[leg];
             Banner(TemplateText.Fill(authored.Arrival, "name", authored.Name, "leg", (leg + 1).ToString(),
                 "legs", _escort.Legs.Count.ToString()));
+            OnAssaultLegChanged();
         }
 
         /// <summary>Below the tier's breach line the Ark is overrun: the escort is lost, as if it had fallen.</summary>

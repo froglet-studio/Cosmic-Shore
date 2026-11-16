@@ -322,6 +322,11 @@ def validate(spec):
             errors.append(f"{j['id']}: {verb} needs a goal above 0")
         if not 0 <= float(j.get("hullFloor", 0)) <= 1:
             errors.append(f"{j['id']}: hullFloor must be 0 to 1")
+        if not 0 <= float(j.get("breachHull", 0)) <= 0.95:
+            errors.append(f"{j['id']}: breachHull must be 0 to 0.95")
+        cells = j.get("hostileCells", [])
+        if not isinstance(cells, list) or any(not isinstance(c, bool) for c in cells):
+            errors.append(f"{j['id']}: hostileCells must be a list of true/false, one per cell of the leg")
         if not 0 <= int(j.get("tier", 0)) <= 2:
             errors.append(f"{j['id']}: tier must be 0 to 2")
         for k in ("onSuccess", "onFail"):
@@ -530,6 +535,12 @@ def to_model(spec):
             "AvoidsOwnDomain": bool(j.get("avoidsOwnDomain", False)), "RivalsMayTake": bool(j.get("rivalsMayTake", True)),
             "ChronicleLine": j.get("chronicle", ""),
         })
+        # The leg's hostile cells and breach line (Milestone 1): written only when the job names them, so the jobs that
+        # do not keep their serialized shape (Unity reads an absent field as its default: no pattern, no breach line).
+        if j.get("hostileCells"):
+            m["Jobs"][-1]["HostileCells"] = [1 if c else 0 for c in j["hostileCells"]]
+        if float(j.get("breachHull", 0)) > 0:
+            m["Jobs"][-1]["BreachHull"] = j["breachHull"]
     for ev in spec["events"]:
         writes = []
         for w in ev["writes"]:

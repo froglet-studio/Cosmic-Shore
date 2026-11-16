@@ -187,6 +187,7 @@ namespace CosmicShore.Data
                 if (j.Verb != WorkVerb.Arrive && j.Verb != WorkVerb.Meet && j.Verb != WorkVerb.Hold && j.Goal <= 0f)
                     errors.Add($"job '{j.Id}' asks {j.Verb} with no goal");
                 if (j.HullFloor < 0f || j.HullFloor > 1f) errors.Add($"job '{j.Id}' has a hull floor of {j.HullFloor}; 0 to 1");
+                if (j.BreachHull < 0f || j.BreachHull > 0.95f) errors.Add($"job '{j.Id}' has a breach line of {j.BreachHull}; 0 to 0.95");
                 if (j.Tier < 0 || j.Tier > 2) errors.Add($"job '{j.Id}' asks tier {j.Tier}; 0 to 2");
             }
             foreach (var s in Seeds ?? new List<SeedNews>())
@@ -354,6 +355,13 @@ namespace CosmicShore.Data
         public float Goal = 1f;
         /// <summary>A convoy must arrive with the hull above this share (0 = any).</summary>
         public float HullFloor;
+        /// <summary>Which cells of the leg start hostile, in order (Milestone 1, Crystal Run): a hostile cell is held by a
+        /// domain opposing the squad's, so its fauna attack the Ark in assaults. Cells past the end take the last entry.
+        /// Empty keeps the old rule: only the destination, when its place is hostile (<see cref="VoyageRules.HostileWorld"/>).</summary>
+        public List<bool> HostileCells = new();
+        /// <summary>The breach line: the Ark falls when its hull drops below this share during the job (0 = only the last
+        /// plate).</summary>
+        public float BreachHull;
         /// <summary>A kill undoes the work (a preservationist's tend).</summary>
         public bool NoKill;
         /// <summary>The squad role the job suits.</summary>

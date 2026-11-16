@@ -113,6 +113,7 @@ namespace CosmicShore.Gameplay
                 Fauna.Killed += OnFaunaDied;
                 _killHooked = true;
             }
+            BeginAssaults();
         }
 
         /// <summary>Each escort world: armoured mass is food for species that gnaw it (the Ark's plates), and the leg's
@@ -181,6 +182,7 @@ namespace CosmicShore.Gameplay
                 default: r.PlatesLostPlain++; break;
             }
             bool creature = prism && prism.DestroyedByCreature;
+            NoteAssaultPlateLost();
             CountFriendlyFire(prism);   // the escort roles' count: a loss to anything but a creature
             if (creature) { r.PlatesByCreature++; _report.PlatesByCreature++; }
             string killer = prism && !string.IsNullOrEmpty(prism.DestroyerName) ? prism.DestroyerName : "unknown";
@@ -213,7 +215,7 @@ namespace CosmicShore.Gameplay
             _threatSeen.Remove(fauna);
 
             var r = _report.LegReports[leg];
-            if (onArk) { r.KillsOnArk++; _report.KillsOnArk++; }
+            if (onArk) { r.KillsOnArk++; _report.KillsOnArk++; NoteAssaultKill(leg); }
             else { r.KillsElsewhere++; _report.KillsElsewhere++; }
 
             if (string.IsNullOrEmpty(killer) || !_seatNames.TryGetValue(killer, out var seat)) return;
@@ -356,6 +358,7 @@ namespace CosmicShore.Gameplay
                     cell.RuntimeFaunaCapScale = 1f;
                 }
             _cellOfLeg = System.Array.Empty<Cell>();
+            EndAssaults();
             UnhookMetrics();
             EscortGeneRegistry.ResetAll();   // and play after a sim run is back on the defaults
             _threatSeen.Clear();
@@ -430,6 +433,7 @@ namespace CosmicShore.Gameplay
                 r.PacifiedAhead = r.EnteredAt <= 0f || leg > _leg;
                 r.FaunaTurned = turned;
                 _report.PacifiedLegs++;
+                SignalPacified();
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
                     $"[ArkEscort] {r.Name} pacified at {share:P0} of its control volume ({turned} creatures turned).");
             }

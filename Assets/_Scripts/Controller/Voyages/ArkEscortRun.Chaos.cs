@@ -22,6 +22,7 @@ namespace CosmicShore.Gameplay
             var tier = _escort.TierFor(_difficulty);
             float lure = tier?.LureShare ?? 0f;
             bool regrow = false;
+            TickAssault(ark);   // an assault turns the Ark's own world's lure up (ArkEscortRun.Assault.cs)
             for (int leg = 0; leg < _cellOfLeg.Length; leg++)
             {
                 var cell = _cellOfLeg[leg];
@@ -34,8 +35,9 @@ namespace CosmicShore.Gameplay
                 bool held = pacified || legReport is { Hostile: false } && cell.DominantDomain == squad;
 
                 // The lure: hostile, unpacified worlds only (a pacified world's fauna are the squad's own colour).
-                if (held || lure <= 0f) cell.SetFeedingLure(null, squad, 0f);
-                else cell.SetFeedingLure(ark.transform, squad, lure);
+                float share = AssaultLure(leg, lure);
+                if (held || share <= 0f) cell.SetFeedingLure(null, squad, 0f);
+                else cell.SetFeedingLure(ark.transform, squad, share);
 
                 if (held && InCore(cell, ark.Position)) regrow = true;
             }

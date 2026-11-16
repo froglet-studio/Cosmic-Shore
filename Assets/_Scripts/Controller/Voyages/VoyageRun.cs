@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
     /// <para>Friends: each machine runs its own voyage today; the host's course reaching the party is SLICE.md §4
     /// step 5.</para>
     /// </summary>
-    public sealed class VoyageRun : MonoBehaviour, IArkEscortHost
+    public sealed partial class VoyageRun : MonoBehaviour, IArkEscortHost, IArkStatusSource
     {
         const float BannerSeconds = 5f;
         const float LeashCheckSeconds = 2f;
@@ -455,6 +455,7 @@ namespace CosmicShore.Gameplay
         {
             _profile = VoyageRules.CorridorProfile(_state, Content, job.From, job.To);
             _hostileWorld = VoyageRules.HostileWorld(_state, Content, job.To);
+            BeginLegAssaults();
         }
 
         /// <summary>The corridor stands a cell of the route: it takes the lane's pacing, and the destination its hostility
@@ -463,7 +464,8 @@ namespace CosmicShore.Gameplay
         {
             if (!cell || !_active || routeIndex < 0 || _profile == null || routeIndex >= _profile.Count) return;
             cell.RuntimePopulationScale = Mathf.Max(0.1f, _profile[routeIndex]);
-            if (routeIndex == _profile.Count - 1 && _hostileWorld)
+            // The job's hostile cells (VoyageRun.Assault.cs); without a pattern, the destination when its place is hostile.
+            if (PrepareAssaultCell(cell, routeIndex))
                 cell.SetReplicatedStartingController(CellControlRules.Opposing(LiveDomain(_context)));
         }
 
@@ -485,6 +487,7 @@ namespace CosmicShore.Gameplay
             _holdKnown = hold ? hold.Artifacts.Count : 0;
             _underway = true;
             BringWingmates(force: true);
+            OnAssaultUnderway();
         }
 
         void OnRouteEnded()
@@ -695,6 +698,8 @@ namespace CosmicShore.Gameplay
             }
             SeedSeats();
             TickEscort();
+            TickAssaults();
+            if (!_active) return;
             WatchHold();
             TickHold();
             TickObserve();
@@ -1045,6 +1050,7 @@ namespace CosmicShore.Gameplay
             _wingmates.Clear();
             _seeded.Clear();
             _holdMirror.Clear();
+            EndAssaults();
             _onEnded?.Invoke();
         }
 

@@ -321,6 +321,8 @@ namespace CosmicShore.Data
                 Verb = EffectiveVerb(t),
                 Goal = t.Goal,
                 HullFloor = t.HullFloor,
+                HostileCells = t.HostileCells != null ? new List<bool>(t.HostileCells) : new List<bool>(),
+                BreachHull = t.BreachHull,
                 NoKill = t.NoKill,
                 Role = t.Role,
                 Intensity = intensity,
@@ -895,6 +897,19 @@ namespace CosmicShore.Data
             if (here.Experience is VoyageExperience.Lair or VoyageExperience.Pen) return true;
             var place = state.PlaceIfAny(here.Id);
             return here.Experience == VoyageExperience.Core && place is { HasHolder: true } && place.Holder != SquadDomain(state, content);
+        }
+
+        /// <summary>
+        /// True when cell <paramref name="cell"/> (0-based) of a leg <paramref name="cells"/> long starts hostile for
+        /// <paramref name="job"/>: its <see cref="VoyageJob.HostileCells"/> pattern when it names one (cells past the end
+        /// take the last entry), else the old rule, the destination only when <paramref name="destinationHostile"/>.
+        /// </summary>
+        public static bool HostileCell(VoyageJob job, int cell, int cells, bool destinationHostile)
+        {
+            if (cell < 0 || cell >= cells) return false;
+            var pattern = job?.HostileCells;
+            if (pattern is { Count: > 0 }) return pattern[Math.Min(cell, pattern.Count - 1)];
+            return destinationHostile && cell == cells - 1;
         }
 
         /// <summary>True when the job under way is done by arriving (a courier with no hull floor, the way home).</summary>
