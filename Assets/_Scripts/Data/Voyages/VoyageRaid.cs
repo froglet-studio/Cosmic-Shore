@@ -184,6 +184,8 @@ namespace CosmicShore.Data
         public sealed class Seat
         {
             public string PlayerName;
+            /// <summary>The seat's vessel class (an int: <c>VesselClassType</c>), for a party friend's scoreboard row.</summary>
+            public int Vessel;
             /// <summary>Crystals by element (index = (int)Element).</summary>
             public int[] Crystals = new int[(int)Element.Omni + 1];
             /// <summary>Crystals taken but not banked yet, by element (index = (int)Element): at risk until the seat flies
@@ -334,5 +336,51 @@ namespace CosmicShore.Data
         }
 
         public void Clear() => Seats.Clear();
+
+        /// <summary>A deep copy of every seat (the host's count, sent to the party).</summary>
+        public List<Seat> Snapshot()
+        {
+            var copy = new List<Seat>(Seats.Count);
+            foreach (var s in Seats)
+            {
+                if (s == null) continue;
+                var c = new Seat { PlayerName = s.PlayerName, Vessel = s.Vessel, Kills = s.Kills, Guarded = s.Guarded };
+                for (int e = 0; e < c.Crystals.Length && s.Crystals != null && e < s.Crystals.Length; e++) c.Crystals[e] = s.Crystals[e];
+                copy.Add(c);
+            }
+            return copy;
+        }
+
+        /// <summary>Take the host's count as this machine's (a party friend): every seat replaced by
+        /// <paramref name="seats"/>.</summary>
+        public void Replace(List<Seat> seats)
+        {
+            // What a seat CARRIES is this machine's own (it is banked here, then reported): the host's count never
+            // carries it, so it survives the replace.
+            var carried = new List<Seat>();
+            foreach (var s in Seats)
+                if (s != null && s.CarriedTotal > 0) carried.Add(s);
+            Seats.Clear();
+            if (seats != null)
+                foreach (var s in seats)
+                {
+                    if (s == null || string.IsNullOrEmpty(s.PlayerName)) continue;
+                    var c = new Seat { PlayerName = s.PlayerName, Vessel = s.Vessel, Kills = s.Kills, Guarded = s.Guarded };
+                    for (int e = 0; e < c.Crystals.Length && s.Crystals != null && e < s.Crystals.Length; e++) c.Crystals[e] = s.Crystals[e];
+                    Seats.Add(c);
+                }
+            foreach (var old in carried)
+            {
+                Seat into = null;
+                foreach (var c in Seats)
+                    if (c.PlayerName == old.PlayerName) { into = c; break; }
+                if (into == null)
+                {
+                    into = new Seat { PlayerName = old.PlayerName, Vessel = old.Vessel };
+                    Seats.Add(into);
+                }
+                for (int e = 0; e < into.Carried.Length && e < old.Carried.Length; e++) into.Carried[e] = old.Carried[e];
+            }
+        }
     }
 }

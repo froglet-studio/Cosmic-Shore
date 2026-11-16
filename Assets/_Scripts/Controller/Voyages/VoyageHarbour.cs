@@ -147,7 +147,34 @@ namespace CosmicShore.Gameplay
         public void SetSailEscort(int difficulty, SavedSquad squad = null, bool aiLocal = false)
         {
             if (IsUnderway || !_def || !_def.ArkEscort) return;
+            // In a host's session only the host sets sail; a friend sails the host's escort (FollowEscort).
+            if (VoyageCourseLink.IsFollower) return;
             SailEscort(difficulty, squad, aiLocal);
+        }
+
+        /// <summary>
+        /// The host set sail on an escort (Docs/Voyages/PARTY.md): this friend's machine sails the same one, in the seat
+        /// the host gave it, from its own lobby seat. A friend still holding at the end of the last escort ends it first.
+        /// </summary>
+        void FollowEscort(VoyageCourse course)
+        {
+            if (!_def || !_def.ArkEscort || course == null) return;
+            if (_run && _run.IsActive) _run.GiveUp("the host set sail on an escort");
+            if (_escort && _escort.IsActive) _escort.GiveUp("the host set sail again");
+            StartCoroutine(WhenIdle(() =>
+            {
+                var squad = VoyageSeatRecord.Get(VoyageSeatRecord.PartyKey) ?? VoyageRun.ActiveSquad(_context);
+                SailEscort(course.Difficulty, squad, false, course);
+                // The last escort's board (a friend's has no choice to make) gives way to the new escort.
+                if (IsEscorting && VoyageScoreboard.IsOpen) VoyageScoreboard.Hide();
+            }));
+        }
+
+        /// <summary>A toast on whichever voyage is out (nothing when none is).</summary>
+        public void Toast(ArkwayVoyageHud.Mood mood, string line)
+        {
+            if (IsEscorting) _escort.Toast(mood, line);
+            else if (_run && _run.IsActive) _run.Toast(mood, line);
         }
 
         /// <summary>
@@ -190,7 +217,7 @@ namespace CosmicShore.Gameplay
             if (_run && _run.IsActive) _run.GiveUp(reason);
         }
 
-        void SailEscort(int difficulty, SavedSquad squad, bool aiLocal)
+        void SailEscort(int difficulty, SavedSquad squad, bool aiLocal, VoyageCourse course = null)
         {
             var vessel = Alive(_context?.GameData?.LocalPlayer?.Vessel);
             if (vessel?.Transform == null)
@@ -207,7 +234,7 @@ namespace CosmicShore.Gameplay
             }
             _escortSquad = squad ?? VoyageRun.ActiveSquad(_context);
             _escortAiLocal = aiLocal;
-            _escort.SetSail(vessel, _escortSquad, difficulty, aiLocal);
+            _escort.SetSail(vessel, _escortSquad, difficulty, aiLocal, course);
             RaiseChanged();
         }
 
@@ -235,6 +262,15 @@ namespace CosmicShore.Gameplay
 
         void OnCourse(VoyageCourse course)
         {
+            switch (course.Kind)
+            {
+                case VoyageCourseKind.EscortSail:
+                    FollowEscort(course);
+                    return;
+                case VoyageCourseKind.EscortEnd:
+                    if (_escort) _escort.EndWithHost(course);
+                    return;
+            }
             EnsureRun();
             _run.Follow(course);
         }
@@ -266,6 +302,8 @@ namespace CosmicShore.Gameplay
             if (report == null || _escortAiLocal || !_def) return;
             if (report.Result is not (ArkEscortReport.Outcome.Survived or ArkEscortReport.Outcome.Fallen)) return;
             bool survived = report.Result == ArkEscortReport.Outcome.Survived;
+            // A party friend's board: the host's outcome and the host's rows (every seat), and no choice of its own.
+            bool following = report.Following;
             var content = Content ? Content.Content : null;
 
             int pay = 0;
@@ -296,18 +334,35 @@ namespace CosmicShore.Gameplay
                 Breach = report.BreachHull,
                 Pay = pay,
                 NextDifficulty = Mathf.Min(report.Difficulty + 1, ArkEscortSO.MaxDifficulty),
+                Following = following,
             };
             string me = _context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
-            foreach (var seat in report.RunSeats)
-            {
-                if (seat == null) continue;
-                System.Enum.TryParse(seat.Vessel, true, out VesselClassType hull);
-                board.Rows.Add(new VoyageScoreboard.Row
+            if (following && _escort && _escort.HostRows.Count > 0)
+                foreach (var seat in _escort.HostRows)
                 {
-                    Name = seat.PlayerName, You = !string.IsNullOrEmpty(me) && seat.PlayerName == me, Vessel = hull,
-                    Kills = seat.Kills,
-                    Guarded = seat.KillsOnArk,
-                });
+                    if (seat == null) continue;
+                    board.Rows.Add(new VoyageScoreboard.Row
+                    {
+                        Name = seat.PlayerName, You = !string.IsNullOrEmpty(me) && seat.PlayerName == me,
+                        Vessel = (VesselClassType)seat.Vessel, Kills = seat.Kills, Guarded = seat.Guarded,
+                    });
+                }
+            else
+                foreach (var seat in report.RunSeats)
+                {
+                    if (seat == null) continue;
+                    System.Enum.TryParse(seat.Vessel, true, out VesselClassType hull);
+                    board.Rows.Add(new VoyageScoreboard.Row
+                    {
+                        Name = seat.PlayerName, You = !string.IsNullOrEmpty(me) && seat.PlayerName == me, Vessel = hull,
+                        Kills = seat.Kills,
+                        Guarded = seat.KillsOnArk,
+                    });
+                }
+            if (following)
+            {
+                VoyageScoreboard.Show(board);
+                return;
             }
             if (survived)
             {

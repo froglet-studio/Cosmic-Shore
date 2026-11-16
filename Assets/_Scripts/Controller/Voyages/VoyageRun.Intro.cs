@@ -11,8 +11,8 @@ namespace CosmicShore.Gameplay
     /// (<see cref="VoyageIntro"/>) with Crystal Run's words (<see cref="VoyageIntroSO.LoadCrystalRun"/>), played when the Ark
     /// first sets sail on a run. As in the escort (<c>ArkEscortRun.Intro.cs</c>), the pilot's own vessel flies on the escort
     /// AI with the stick held while the camera is away, and the hand-over returns it exactly once however the intro ends.
-    /// The run's set-off toast waits for it (<see cref="ArkwayRun.HoldBanners"/>). A friend following the host's course,
-    /// and a run that sails on from a stop, have no intro.
+    /// The run's set-off toast waits for it (<see cref="ArkwayRun.HoldBanners"/>). A friend following the host's course
+    /// sees it too, with the party's other pilots in the cast (Docs/Voyages/PARTY.md); a run that sails on from a stop has none.
     /// </summary>
     public sealed partial class VoyageRun
     {
@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
         bool _introPending, _holdingForIntro;
 
         /// <summary>Called as a job is taken: the intro plays when this leg gets under way.</summary>
-        void ArmIntro(VoyageJob job, bool firstLeg) => _introPending = firstLeg && !_following && job is { CountsUnderway: true };
+        void ArmIntro(VoyageJob job, bool firstLeg) => _introPending = firstLeg && job is { CountsUnderway: true };
 
         void BeginIntro()
         {
@@ -58,6 +58,16 @@ namespace CosmicShore.Gameplay
                 {
                     Hull = status.Transform, Vessel = status.VesselType, Seat = seat,
                     Slot = seat >= 0 ? _squad.GetSlot(seat) : new SquadSlot(status.VesselType, default),
+                });
+            }
+            // The party's other pilots, in the seats the host gave them.
+            foreach (var (status, client) in OtherHumans())
+            {
+                int seat = SeatOfClient(client);
+                wingmates.Add(new VoyageIntro.Member
+                {
+                    Hull = status.Transform, Vessel = status.VesselType, Seat = seat, Friend = status.PlayerName,
+                    Slot = VoyagePartySeats.Of((ulong)Mathf.Max(0, client))?.Slot ?? new SquadSlot(status.VesselType, default),
                 });
             }
             wingmates.Sort((a, b) => a.Seat.CompareTo(b.Seat));

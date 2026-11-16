@@ -64,6 +64,8 @@ namespace CosmicShore.Gameplay
             public bool IsYou;
             /// <summary>The seat's loadout (its pilot and element), for the name card.</summary>
             public SquadSlot Slot;
+            /// <summary>A party friend flying this seat: their player name (empty for an AI or the player).</summary>
+            public string Friend;
         }
 
         /// <summary>Who and what the intro shows, and the voyage-wide tokens its words use.</summary>
@@ -438,7 +440,7 @@ namespace CosmicShore.Gameplay
             _ => _lines.CardSeatRogueTwo,
         };
 
-        string WhoName(Member m) => m.IsYou ? _lines.CardSeatYou : _lines.CardSeatAi;
+        string WhoName(Member m) => m.IsYou ? _lines.CardSeatYou : !string.IsNullOrEmpty(m.Friend) ? m.Friend : _lines.CardSeatAi;
 
         // ── Name cards ───────────────────────────────────────────────────────
 

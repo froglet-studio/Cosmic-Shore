@@ -661,8 +661,10 @@ namespace CosmicShore.UI
             {
                 var done = VoyageKit.Node("Done", frame);
                 VoyageKit.At(done, 770f, 820f, 380f, 64f);
-                primary = _kit.Cta(done, _lines.ScoreVentureKey, _lines.ScoreDone, () => VoyageScoreboard.Choose(b.Close)).button;
-                Caption(frame, 0f, 900f, 1920f, _lines.ScoreDoneLine, TextAlignmentOptions.Center);
+                primary = _kit.Cta(done, _lines.ScoreVentureKey, b.Following ? _lines.ScoreKeepFlying : _lines.ScoreDone,
+                    () => VoyageScoreboard.Choose(b.Close)).button;
+                // A party friend's board: the host chooses what next, and the choice reaches every friend's voyage.
+                Caption(frame, 0f, 900f, 1920f, b.Following ? _lines.ScoreHostChooses : _lines.ScoreDoneLine, TextAlignmentOptions.Center);
             }
             if (b.Finish != null)
             {

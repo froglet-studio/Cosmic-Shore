@@ -217,6 +217,8 @@ namespace CosmicShore.Gameplay
             var r = _report.LegReports[leg];
             if (onArk) { r.KillsOnArk++; _report.KillsOnArk++; NoteAssaultKill(leg); }
             else { r.KillsElsewhere++; _report.KillsElsewhere++; }
+            // A friend's own kill in their own world reaches the host's board.
+            ReportKill(killer, onArk);
 
             if (string.IsNullOrEmpty(killer) || !_seatNames.TryGetValue(killer, out var seat)) return;
             var legSeat = SeatStatsFor(r.SeatStats, seat.seat, seat.vessel, killer);
@@ -387,15 +389,15 @@ namespace CosmicShore.Gameplay
         /// pinned to the squad (<see cref="Cell.SetModeControlOverride"/>: the live swarm is re-coloured, never killed, and
         /// every later creature spawns in the squad's domain), its fauna stop grazing the squad's mass
         /// (<see cref="Cell.SparedDomain"/>) and stop gnawing armour. Checked on the run's 1 Hz sample, for worlds ahead of
-        /// the Ark too: a cultivator that races ahead to the next nucleus pacifies it before the Ark arrives. Server only
-        /// (the pin replicates through the cell's own sync).
+        /// the Ark too: a cultivator that races ahead to the next nucleus pacifies it before the Ark arrives. On every peer:
+        /// each machine's escort worlds are its own.
         /// </summary>
         void TryPacify()
         {
             float line = _escort ? _escort.PacifyShare : 0f;
             if (line <= 0f || _report == null) return;
-            var nm = Unity.Netcode.NetworkManager.Singleton;
-            if (nm != null && nm.IsListening && !nm.IsServer) return;
+            // Every peer pacifies its own worlds: the escort's worlds are each machine's own (satellite cells with no
+            // network identity), so a friend's worlds pacify by what the squad did there (Docs/Voyages/PARTY.md §2).
             var squad = SquadDomain;
             float minVolume = _escort.PacifyMinVolume;
             float dwellNeed = _escort.PacifyNucleusSeconds;

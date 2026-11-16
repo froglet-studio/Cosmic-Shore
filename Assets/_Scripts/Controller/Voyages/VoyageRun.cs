@@ -166,7 +166,7 @@ namespace CosmicShore.Gameplay
             if (_active) TakeJob(job);
         }
 
-        void Embark(IVesselStatus local, bool following, SavedSquad squad = null)
+        void Embark(IVesselStatus local, bool following, SavedSquad squad = null, VoyageCourse course = null)
         {
             if (_active || local?.Transform == null) return;
             if (!_def || Content == null)
@@ -176,8 +176,10 @@ namespace CosmicShore.Gameplay
             }
 
             var domain = LiveDomain(_context);
-            // A friend sails the seat they picked in the host's lobby (VoyageSeatRecord.PartyKey), else their active squad.
+            // A friend sails the seat they picked in the host's lobby (VoyageSeatRecord.PartyKey), else their active squad,
+            // moved into the seat the host gave them (Docs/Voyages/PARTY.md §1).
             _squad = squad ?? (following ? VoyageSeatRecord.Get(VoyageSeatRecord.PartyKey) : null) ?? ActiveSquad(_context);
+            if (following) _squad = VoyageRules.WithSeat(_squad, SeatIn(course));
             _state = LoadOrBegin(Content, domain);
             _following = following;
             _pendingLeg = null;
@@ -195,6 +197,7 @@ namespace CosmicShore.Gameplay
             _arkCfg = _def.BuildArkConfig(_content);
             _sea.Configure(_arkCfg, _context, _context?.Container, _corridor, OnSeaEnded);
             _worlds = CountWorlds(local.Transform.position);
+            BeginParty(course);
 
             Deploy(local, domain);
             VoyageObjective.Source = this;
@@ -214,7 +217,7 @@ namespace CosmicShore.Gameplay
                 Banner(Lines.Following);
                 return;
             }
-            VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.Embark });
+            VoyageCourseLink.Send(Course(VoyageCourseKind.Embark));
         }
 
         // ── Friends: following the host's course (SLICE.md §4 step 5) ────────
@@ -230,18 +233,20 @@ namespace CosmicShore.Gameplay
             switch (course.Kind)
             {
                 case VoyageCourseKind.Embark:
-                    if (!_active) Embark(LocalVessel(), following: true);
+                    if (!_active) Embark(LocalVessel(), following: true, course: course);
                     break;
                 case VoyageCourseKind.Leg:
-                    if (!_active) Embark(LocalVessel(), following: true);
+                    if (!_active) Embark(LocalVessel(), following: true, course: course);
                     if (!_active) return;
                     // Still sailing the last leg: take this one on arriving, so the stop is seen first.
                     if (_sea.IsRunning && !_sea.IsHoldingAtRouteEnd) _pendingLeg = course;
                     else SailLeg(course);
                     break;
+                case VoyageCourseKind.Tally:
+                    TakeHostTally(course);
+                    break;
                 case VoyageCourseKind.End:
-                    // A friend already sailing home docks on their own; anywhere else the voyage ends with the host's.
-                    if (_active && _state.Current is not { IsReturn: true }) GiveUp("the host's voyage ended");
+                    EndWithHost(course);
                     break;
             }
         }
@@ -262,14 +267,20 @@ namespace CosmicShore.Gameplay
             _state.Owed = owed ?? new List<int>();
 
             ClearStop();
+            CloseStopBoard();
+            _legSerial = course.LegSerial;
             PrepareLeg(course.Job);
+            ArmIntro(course.Job, firstLeg: !_sea.IsRunning);
             if (_sea.IsRunning) _sea.ContinueRoute(course.Route);
             else
             {
+                PlaceCorridor(local, course);
                 _sea.SetRoute(course.Route);
                 _sea.Begin(local);
             }
-            Banner(Line(Lines.Depart, course.Job.To));
+            // The same opening as the host's: a Crystal Run and the way home with their toast, other work its banner.
+            if (course.Job.CountsUnderway || course.Job.IsReturn) ToastSetOff(course.Job);
+            else Banner(Line(Lines.Depart, course.Job.To));
         }
 
         void SaveState()
@@ -438,9 +449,15 @@ namespace CosmicShore.Gameplay
             }
 
             ClearStop();
+            _legSerial++;
             PrepareLeg(job);
             SaveState();
-            VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.Leg, State = _state, Job = job, Route = route });
+            PlaceCorridor(local, null);
+            var course = Course(VoyageCourseKind.Leg);
+            course.State = _state;
+            course.Job = job;
+            course.Route = route;
+            VoyageCourseLink.Send(course);
 
             ArmIntro(job, firstLeg: !_sea.IsRunning);
             if (_sea.IsRunning)
@@ -551,8 +568,9 @@ namespace CosmicShore.Gameplay
             var lost = _state.Current;
             var r = VoyageRules.ArkLost(_state, Content, where, _fallTaken || HostileRivalStands(), _holdMirror);
             SaveState();
-            Banner(Join(Lines.ArkLost, r.StoryLine, Join(r.StoryLines)));
-            ShowLost(stake, lost);
+            // A friend's own Ark fell in their own world: the host's sails on, and they rejoin it on its next leg.
+            Banner(_following ? Join(Lines.ArkLost, Lines.FollowerArkLost) : Join(Lines.ArkLost, r.StoryLine, Join(r.StoryLines)));
+            if (!_following) ShowLost(stake, lost);
         }
 
         /// <summary>A hostile crew standing at the stop is credited with a fall there (DEPTH.md §3): their hulls are
@@ -720,6 +738,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             SeedSeats();
+            TickParty();
             TickEscort();
             TickAssaults();
             if (!_active) return;
@@ -1039,6 +1058,13 @@ namespace CosmicShore.Gameplay
             SaveState();
             ShowDocked(x);
             _docked = true;
+            // Home: every friend sailing home with this Ark docks with it (each banks what they carry).
+            if (!_following)
+            {
+                var end = Course(VoyageCourseKind.End);
+                end.Outcome = VoyageCourseEnd.Docked;
+                VoyageCourseLink.Send(end);
+            }
             _sea.End(returnToCell: true, "the voyage docked at home");
         }
 
@@ -1058,7 +1084,13 @@ namespace CosmicShore.Gameplay
 
         void Finish()
         {
-            if (!_following && !_docked) VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.End });
+            if (!_following && !_docked)
+            {
+                var end = Course(VoyageCourseKind.End);
+                end.Outcome = _fallen ? VoyageCourseEnd.Fallen : VoyageCourseEnd.Ended;
+                VoyageCourseLink.Send(end);
+            }
+            EndParty();
             _active = false;
             _following = false;
             _pendingLeg = null;
@@ -1206,6 +1238,7 @@ namespace CosmicShore.Gameplay
             // Destroyed while out: the escort context's static hooks (the crystal placement resolver) leave with it.
             _escort?.Uninstall();
             EndRaid();
+            EndParty();
             _onEnded = null;
         }
     }

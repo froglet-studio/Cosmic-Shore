@@ -75,6 +75,14 @@ namespace CosmicShore.ScriptableObjects
         public string NoWork = "No pilot has work here. Seat other pilots, or sail on.";
         [Tooltip("A friend's banner while the host's board decides the next job.")]
         public string Following = "SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB";
+        [Tooltip("A friend's banner when their own Ark falls while the host's sails on: they rejoin the host's next leg.")]
+        public string FollowerArkLost = "YOUR ARK FELL. FLY WITH YOUR HOST: YOU REJOIN THEIR NEXT LEG";
+        [Tooltip("A friend's banner when their own Ark falls in an escort: the host's outcome is everyone's.")]
+        public string EscortHoldFallen = "YOUR ARK IS DOWN: YOUR HOST'S ARK DECIDES THE ESCORT";
+        [Tooltip("A friend's banner when their own Ark clears the escort's last world before the host's.")]
+        public string EscortHoldThrough = "THROUGH: WAITING FOR YOUR HOST'S ARK";
+        [Tooltip("A friend pressed the HUD's exit: only the host ends the voyage, and the party returns with them.")]
+        public string GuestStays = "YOUR HOST LEADS THE VOYAGE: YOU RETURN WITH THEM";
         [Tooltip("Banner after a job's work is done or left undone: where the next voyage is chosen.")]
         public string ChooseNext = "LEAVE FREESTYLE TO CHOOSE YOUR NEXT VOYAGE";
 
@@ -985,6 +993,10 @@ namespace CosmicShore.ScriptableObjects
         public string ScoreDone = "BACK TO VOYAGES";
         [Tooltip("Scoreboard: what the last button does.")]
         public string ScoreDoneLine = "Return to the Voyages page";
+        [Tooltip("Scoreboard on a party friend's machine: the host chooses Venture further or Finish.")]
+        public string ScoreHostChooses = "Your host chooses what comes next";
+        [Tooltip("Scoreboard on a party friend's machine: the one button, which closes the board.")]
+        public string ScoreKeepFlying = "KEEP FLYING";
         [Tooltip("Scoreboard: the pad key on Finish.")]
         public string ScoreFinishKey = "B";
         [Tooltip("Scoreboard: the pad key on Venture further and on the last button.")]

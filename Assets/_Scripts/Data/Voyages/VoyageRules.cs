@@ -1629,5 +1629,56 @@ namespace CosmicShore.Data
             int k = seat < mySeat ? seat : seat - 1;
             return k < friends ? k : -1;
         }
+
+        /// <summary>
+        /// The party's seats as the host sends them (Docs/Voyages/PARTY.md §1): <paramref name="hostClient"/> in
+        /// <paramref name="mySeat"/>, each friend in <paramref name="friendClients"/> (lowest client id first) in the seat
+        /// <see cref="FriendAt"/> gives them, and -1 (an AI wingmate) in every seat left. Friends beyond the seats fly along
+        /// without one.
+        /// </summary>
+        public static List<long> SeatClients(int mySeat, long hostClient, IReadOnlyList<long> friendClients)
+        {
+            const int slots = SavedSquad.SlotCount;
+            mySeat = Math.Clamp(mySeat, 0, slots - 1);
+            var sorted = new List<long>(friendClients ?? Array.Empty<long>());
+            sorted.Remove(hostClient);
+            sorted.Sort();
+            var seats = new List<long>(slots);
+            for (int seat = 0; seat < slots; seat++)
+            {
+                if (seat == mySeat) { seats.Add(hostClient); continue; }
+                int k = FriendAt(seat, mySeat, sorted.Count);
+                seats.Add(k >= 0 ? sorted[k] : -1);
+            }
+            return seats;
+        }
+
+        /// <summary>
+        /// A friend's own seat moved into the seat the host gave them (<paramref name="seat"/>): their slot (the one their
+        /// <see cref="SavedSquad.MySeat"/> names) goes there and <see cref="SavedSquad.MySeat"/> follows; the other seats are
+        /// the host's to fill. The record is not changed.
+        /// </summary>
+        public static SavedSquad WithSeat(SavedSquad squad, int seat)
+        {
+            if (squad == null || seat < 0 || seat >= SavedSquad.SlotCount) return squad;
+            int mine = Math.Clamp(squad.MySeat, 0, SavedSquad.SlotCount - 1);
+            if (mine == seat) return squad;
+            var moved = new SavedSquad
+            {
+                Id = squad.Id,
+                Name = squad.Name,
+                OwnerId = squad.OwnerId,
+                OwnerName = squad.OwnerName,
+                Domain = squad.Domain,
+                Leader = squad.Leader,
+                RogueOne = squad.RogueOne,
+                RogueTwo = squad.RogueTwo,
+                MySeat = seat,
+            };
+            var own = squad.GetSlot(mine);
+            moved.SetSlot(seat, own);
+            moved.SetSlot(mine, squad.GetSlot(seat));
+            return moved;
+        }
     }
 }

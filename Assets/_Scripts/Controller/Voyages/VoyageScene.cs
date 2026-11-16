@@ -254,7 +254,9 @@ namespace CosmicShore.Gameplay
             if (_returning || _leaving) return;
             if (!IsHost())
             {
-                CSDebug.LogWarning("[VoyageScene] A friend follows the host's voyage; the host's return brings the party back.");
+                // A friend follows the host's voyage; the host's return brings the party back (Docs/Voyages/PARTY.md §6).
+                var lines = _harbour ? _harbour.Content?.Lines : null;
+                if (_harbour) _harbour.Toast(ArkwayVoyageHud.Mood.Event, lines?.GuestStays);
                 return;
             }
             _leaving = true;
@@ -293,6 +295,9 @@ namespace CosmicShore.Gameplay
 
         void ReturnToMenu(float delay)
         {
+            // A friend never leaves on their own: the host's scene load brings the party back, and until then the friend
+            // keeps flying (their voyage may end before the host's, and the host's next leg or escort reaches them again).
+            if (!IsHost()) return;
             if (_returning) return;
             _returning = true;
             ReturnAsync(delay, _cts.Token).Forget();
