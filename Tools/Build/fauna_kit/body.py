@@ -74,7 +74,11 @@ def spindle_chains(spec):
             nxt = kids.get(cur["name"], [])
             # the last joint is that spindle's Braid child, which build.py seats where the braid mesh's origin
             # lands: BRAID_FRONT x the stretch back from the root, along the limb
-            if not nxt:
+            if not nxt and cur.get("mesh") == "grown":      # a grown limb ends at its own tip
+                joints.append(cur["name"] + "/tip")
+                at.append([round(v, 5) for v in cur["to"]])
+                cur = None
+            elif not nxt:
                 _across, along = B.braid_scale(cur)
                 d = C.unit(C.sub(cur["to"], cur["from"]))
                 joints.append(cur["name"] + "/Braid")
@@ -84,6 +88,17 @@ def spindle_chains(spec):
                 cur = nxt[0]
         out.append({"joints": joints, "at": at})
     return out
+
+
+def _prism_sway(s, at):
+    """A prism rides its grown limb's wave: the sway of the limb at the point nearest the prism (the game's PrismSway)."""
+    if not s or s.get("mesh") != "grown" or not s.get("sway"):
+        return None
+    import organic
+    pts = organic.smooth(s["path"], 41)
+    i = min(range(41), key=lambda k: C.norm(C.sub(pts[k], at)))
+    off, ph = organic._sway(s["sway"], pts[i], i / 40.0, C.unit(s.get("normal", [0.0, 1.0, 0.0])))
+    return [round(v, 4) for v in off] + [round(ph, 4)]
 
 
 def _beat(s):
@@ -109,7 +124,14 @@ def from_spec(spec):
         return _from_shipped(spec)
     wires, prisms = [], []
     bverts, btris = mesh(BRAID_SOURCE)
+    by_name = {s["name"]: s for s in spec["spindles"]}
     for s in spec["spindles"]:
+        if s.get("mesh") == "grown":
+            import organic
+            verts, edges, sway, _centre = organic.tube(s)
+            wires.append({"name": s["name"], "source": "grown", "limb": s["name"], "verts": [[round(c, 4) for c in v] for v in verts],
+                          "edges": edges, "sway": sway, "tris": [], "parent": s.get("parent"), "pivot": list(s["from"]), "beat": None})
+            continue
         pos, rot = B.spindle_world(s)
         across, along = B.braid_scale(s)
         m = _quat_m(rot)
@@ -121,11 +143,17 @@ def from_spec(spec):
             verts.append([round(w[i] + pos[i], 5) for i in range(3)])
         wires.append({"name": s["name"], "source": BRAID_SOURCE, "limb": s["name"], "verts": verts, "tris": btris,
                       "parent": s.get("parent"), "pivot": [float(v) for v in s["from"]], "beat": _beat(s)})
+    for m in spec.get("membranes", []):
+        import organic
+        verts, edges, sway, tris = organic.sheet(by_name[m["a"]], by_name[m["b"]], m.get("across", 9))
+        wires.append({"name": m["name"], "source": "grown", "limb": m["a"], "verts": [[round(c, 4) for c in v] for v in verts],
+                      "edges": edges, "sway": sway, "tris": tris, "parent": None, "pivot": [0, 0, 0], "beat": None, "membrane": True})
     for p in spec["prisms"]:
         at, rot = B.prism_world(p)
         prisms.append({"name": p["name"], "kind": p["kind"], "shielded": bool(p.get("shielded")),
                        "at": [round(v, 5) for v in at], "q": [round(v, 6) for v in rot],
-                       "size": [float(v) for v in p["size"]], "limb": p["spindle"], "role": p.get("role")})
+                       "size": [float(v) for v in p["size"]], "limb": p["spindle"], "role": p.get("role"),
+                       "sway": _prism_sway(by_name.get(p["spindle"]), at)})
     return {"root_scale": 1.0, "wires": wires, "prisms": prisms,
             "heart": {"at": [0.0, 0.0, 0.0], "scale": C.HEART_WORLD}, "chains": spindle_chains(spec),
             "spindles": [s["name"] for s in spec["spindles"]]}

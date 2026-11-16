@@ -10,10 +10,9 @@ Garrett, 2026-11-16: "the fauna and vessels need to have unique silhouettes so t
 
 A silhouette here is the body seen from far away with no detail: its points (model vertices, braid vertices, prism
 corners) flattened onto a 40 x 40 grid, scaled so the body's longest extent fills it (one scale for both views), and thickened by one cell.
-Two views: from the SIDE (travel axis across the picture) and from AHEAD (down the travel axis). A HyperSea body has
-no up, so a body is tried at every roll about its travel axis (and nose to tail), and the difference between two
-bodies is the SMALLEST they can be made to show: 1 - (cells both fill / cells either fills), averaged over the two
-views. 0 = the same outline, 1 = nothing shared. Size is ignored on purpose: a small copy of a shape is not a new shape.
+Three views: from the SIDE, from ABOVE and from AHEAD. A HyperSea body has no up, so a body is tried in every order and
+mirroring of its axes and at four rolls, and the difference between two bodies is the SMALLEST they can be made to
+show in one pose: 1 - (cells both fill / cells either fills), counted over that pose's three views together. 0 = the same outline, 1 = nothing shared. Size is ignored on purpose: a small copy of a shape is not a new shape.
 
 A READER. The bodies are the kit's own (body.from_spec for every fauna spec; the vessel model files for the hulls).
 """
@@ -31,8 +30,6 @@ import fbx_model as fm  # noqa: E402
 import recreate as R  # noqa: E402
 
 N = 40
-ROLLS = 8                 # side views tried, over half a turn
-SPINS = 16                # ahead views tried, over a full turn
 VESSELS = "Assets/_Models/Vessel Models"
 # the hull each vessel class flies (Docs/VesselModels/README.md's table: the file its prefab draws)
 HULLS = {"Angler": "Angler.fbx", "Ark": "ArkReverse.fbx", "Brittle Star": "BrittleStar.fbx", "Butterfly": "Butterfly.fbx",
@@ -44,10 +41,10 @@ HULLS = {"Angler": "Angler.fbx", "Ark": "ArkReverse.fbx", "Brittle Star": "Britt
          "Stoat": "Stoat.fbx", "Swordfish": "Swordfish.fbx", "Thresher": "Thresher.fbx",
          "Urchin": "urchan_shapekey_with_animations.fbx", "Wrasse Kite": "WrasseKite.fbx"}
 # The yardstick is the shipped set itself, measured each run: every shipped body's distance to its nearest shipped
-# look-alike (2026-11-16, 28 hulls and 7 creatures: 0.10 to 0.46, median 0.25). A NEW species must stand further from
+# look-alike (2026-11-16, 28 hulls and 7 creatures: 0.20 to 0.52, median 0.36). A NEW species must stand further from
 # every vessel, every shipped creature and every other new species than three in four shipped bodies stand from
-# theirs (the upper quartile). Archived proposals are listed and count for nobody. No constant to tune: add a hull
-# and the bar moves with the fleet. ALIKE is only the self-test's line between its two planted shapes.
+# theirs (the upper quartile, 0.41). Archived proposals are listed and count for nobody. No constant to tune: add a
+# hull and the bar moves with the fleet. ALIKE is only the self-test's line between its two planted shapes.
 ALIKE = 0.30
 MIN_DISTANCE = ALIKE
 
@@ -121,40 +118,53 @@ def _mask(a, b, span):
     return g[1:-1, 1:-1]
 
 
+def _signed_perms():
+    import itertools
+    out = []
+    for perm in itertools.permutations(range(3)):
+        for sg in itertools.product((1.0, -1.0), repeat=3):
+            out.append((perm, sg))
+    return out
+
+
+_ALIGN = _signed_perms()
+_ROLL = [np.pi * k / 8 for k in range(4)]      # 0, 22.5, 45, 67.5 degrees about the travel axis, on top of each axis order
+
+
+def _three(q, span):
+    """The three outlines of one pose: from the side (z across, y up), from above (z across, x up), from ahead (x, y)."""
+    return [_mask(q[:, 2], q[:, 1], span), _mask(q[:, 2], q[:, 0], span), _mask(q[:, 0], q[:, 1], span)]
+
+
 def views(pts):
-    """{'side': [masks at each roll, nose either way], 'ahead': [masks at each spin]}"""
-    side, ahead = [], []
+    """{'canon': the body's own three outlines, 'all': the three outlines at every pose it is tried in}.
+    A pose is one of the 48 ways to order and mirror the axes (a model file's travel axis is not always z, and a body
+    with no up has no preferred roll or facing) times four rolls. The three views of a pose go TOGETHER: matching each
+    view at its own best pose calls any two flat bodies alike, because edge-on they are both a line (the Ray read
+    0.03 from the Brittlestar that way)."""
     span = float(max((pts.max(0) - pts.min(0)).max(), 1e-9)) * 1.05
-    for perm in ((0, 1, 2), (1, 2, 0), (2, 0, 1)):      # a model file's travel axis is not always z: try each
-        q = pts[:, perm]
-        _views_into(q, side, ahead, span)
-    return {"side": np.array(side), "ahead": np.array(ahead)}
+    allv = []
+    for perm, sg in _ALIGN:
+        q0 = pts[:, perm] * np.array(sg)
+        for t in _ROLL:
+            c, sn = np.cos(t), np.sin(t)
+            q = np.c_[q0[:, 0] * c - q0[:, 1] * sn, q0[:, 0] * sn + q0[:, 1] * c, q0[:, 2]]
+            allv.append(np.array(_three(q, span)).reshape(3, -1))
+    return {"canon": np.array(_three(pts, span)).reshape(3, -1).astype(np.float32), "all": np.array(allv, dtype=np.float32)}
 
 
-def _views_into(pts, side, ahead, span):
-    for k in range(ROLLS):
-        t = np.pi * k / ROLLS
-        y = pts[:, 0] * np.sin(t) + pts[:, 1] * np.cos(t)
-        m = _mask(pts[:, 2], y, span)
-        side += [m, m[:, ::-1], m[::-1, :], m[::-1, ::-1]]
-    for k in range(SPINS):
-        t = 2 * np.pi * k / SPINS
-        x = pts[:, 0] * np.cos(t) - pts[:, 1] * np.sin(t)
-        y = pts[:, 0] * np.sin(t) + pts[:, 1] * np.cos(t)
-        ahead.append(_mask(x, y, span))
-
-
-def _best(A, B):
-    """The smallest 1 - IoU over every pairing of A's masks with B's."""
-    a = A.reshape(len(A), -1).astype(np.float32)
-    b = B.reshape(len(B), -1).astype(np.float32)
-    inter = a @ b.T
-    union = a.sum(1)[:, None] + b.sum(1)[None, :] - inter
-    return float(1.0 - (inter / np.maximum(union, 1.0)).max())
+def _one_way(va, vb):
+    a, B = va["canon"], vb["all"]                       # (3, N*N) and (poses, 3, N*N)
+    inter = (B * a[None]).sum(2)
+    union = B.sum(2) + a.sum(1)[None] - inter
+    # one overlap over the pose's three views pooled, so a view counts by how much outline it holds: a flat body's two
+    # edge-on views are thin lines any flat body shares, and a plain mean let them outvote its outline from above
+    return float((1.0 - inter.sum(1) / np.maximum(union.sum(1), 1.0)).min())
 
 
 def distance(va, vb):
-    return 0.5 * (_best(va["side"], vb["side"]) + _best(va["ahead"][:1], vb["ahead"]))
+    """The smallest difference the two bodies can be made to show, the three views of a pose taken together."""
+    return min(_one_way(va, vb), _one_way(vb, va))
 
 
 def table():
@@ -170,19 +180,19 @@ def table():
 
 def sheet(items, vs, out):
     from PIL import Image, ImageDraw
-    cell, pad, cols = N * 3, 26, 6
+    cell, pad, cols = N * 2, 26, 6
     rows = (len(items) + cols - 1) // cols
-    img = Image.new("RGB", (cols * (cell * 2 + 14) + 10, rows * (cell + pad) + 30), (14, 18, 30))
+    img = Image.new("RGB", (cols * (cell * 3 + 18) + 10, rows * (cell + pad) + 30), (14, 18, 30))
     dr = ImageDraw.Draw(img)
-    dr.text((8, 6), "silhouettes: from the side (left) and from ahead (right); vessels grey, shipped fauna blue, new fauna green, archived proposals violet", fill=(210, 215, 225))
+    dr.text((8, 6), "silhouettes: from the side, from above, from ahead; vessels grey, shipped fauna blue, new fauna green, archived proposals violet", fill=(210, 215, 225))
     col = {"vessel": (170, 176, 188), "fauna": (110, 160, 255), "new": (120, 255, 190), "archive": (150, 120, 190)}
     for i, (name, kind, _p) in enumerate(items):
-        x0, y0 = 10 + (i % cols) * (cell * 2 + 14), 28 + (i // cols) * (cell + pad)
+        x0, y0 = 10 + (i % cols) * (cell * 3 + 18), 28 + (i // cols) * (cell + pad)
         dr.text((x0, y0), name, fill=col[kind])
-        for j, m in enumerate((vs[i]["side"][0], vs[i]["ahead"][0])):
+        for j in range(3):
+            m = vs[i]["canon"][j].reshape(N, N) > 0
             im = Image.fromarray((m[::-1] * 255).astype(np.uint8)).resize((cell, cell), Image.NEAREST)
-            tint = Image.new("RGB", (cell, cell), col[kind])
-            img.paste(tint, (x0 + j * (cell + 4), y0 + 12), im)
+            img.paste(Image.new("RGB", (cell, cell), col[kind]), (x0 + j * (cell + 3), y0 + 12), im)
     img.save(out)
     return out
 

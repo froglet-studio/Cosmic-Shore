@@ -24,6 +24,70 @@ give me a vessel, ark, and prism cluster to attack."
 - **Retire condition for a new creature:** a "cut it" in the feedback log, or a second round in which it still wins
   no column and nobody says it feels good.
 
+## Round 3 (2026-11-16): the rules relaxed, and bodies that are grown
+
+Garrett: "keep these. we will test them. but now Relax the fauna rules a bit, so you can get us some fauna that are
+more lifelike. these feel like you are using tinker toys, when I want you to be making hyper realistic ethereal
+lifeforms in a celestial environment."
+
+### What changed
+
+1. **Kept:** the Manta and round 1's five are in the lab unchanged.
+2. **Three laws relaxed** (`/fauna-creation` section 10): a limb may be GROWN (curved, tapered, woven wire, and
+   membranes between limbs) instead of a straight braid; a body may be two-fold (flat, two identical faces); wire may
+   lead the heart by a stated amount (a bell over the Etherion, lobes round a mouth). Prisms, the sting, mass and the
+   heart's rules are as they were.
+3. **`organic.py`:** grows limbs along smooth curves and weaves membranes between them. Every vertex carries its
+   limb's sway, so the motion is a wave the vertex stage plays, not keyed limbs.
+4. **The lab draws grown wire as light:** filaments add where they cross, membranes are a faint veil, prisms ride
+   their limb's wave.
+5. **Two grown creatures:**
+   - **The Ray**: one pair of woven wings rippling from shoulder to tip and from leading edge to hind edge, two lobes
+     curling forward round the Etherion, a whip. 77 u long, 68 u across. Rides as the Manta does (a glide, feeding on
+     the wing).
+   - **The Nettle**: a wide woven bell over the Etherion, which shows through it; eight tendrils from the rim, each
+     ending in a sting; four frilled arms beneath. It pulses, and it eats and strikes all round.
+
+### Measured
+
+**The silhouette measure was wrong twice more, and these numbers replace round 2's table.** The Ray first read 0.03
+from the Brittlestar: matching each view at its own best pose calls any two flat bodies alike, because edge-on both
+are a line. The three views of ONE pose are now compared together, and pooled so a view counts by how much outline it
+holds. `python3 Tools/Build/fauna_kit/silhouette.py --check`:
+
+| | nearest look-alike | distance |
+|---|---|---|
+| shipped bodies (28 hulls, 7 creatures) | each other | 0.20 to 0.52, median 0.36; the bar (upper quartile) is **0.41** |
+| **Ray** | the Manta | **0.44** (passes) |
+| **Manta** | the Ray | **0.44** (passes) |
+| **Nettle** | the Rhino hull | **0.39 (FAILS by 0.02)** |
+| archived: Marlin, Basker, Medusa, Nautilus, Teredo | | 0.36, 0.43, 0.43, 0.39, 0.26 |
+
+- The Nettle began 0.24 from the Clawfish (a bulb with a train). Widening the bell into a parasol took it to 0.39; a
+  longer train made it worse (0.37) and was undone. It is in the lab as it is, flagged here: the gate is red for it.
+- Scorecard (same games): Ray duel 14, brawl 3.8, siege 69.5 s, graze 88, sprint 28.7 s, slalom 33.5 s. The Nettle
+  was scored before its bell was widened (0, 6, 28.4 s, 170, 56.7 s, 54.9 s) and not again. Neither wins a column;
+  neither was built for one.
+
+### Checked
+
+`celestial.py --all` (nine specs pass the relaxed laws) and `--self-test`; `recreate.py --check` (0.00002 u,
+unchanged); `lab_export.py --check`; `verify_lab.cjs` PASS; `silhouette.py --self-test`. Read: the Ray mid-roll and
+the first Nettle in the lab. `silhouette.py --check` exits 1 (the Nettle).
+
+### What only a person can judge, and what is not done
+
+- Whether these are lifelike enough. The lab is lines and a veil in stand-in colours: no shading, no bloom, no depth.
+- **Nothing here can go into the game yet.** A grown body needs a mesh writer and a per-vertex sway in the spindle
+  shader (`/fauna-creation` section 10). The Space erosion of grown wire is not designed.
+- The prisms on a grown body are still boxes, and read as boxes.
+
+### Decisions needed (Garrett)
+
+1. **Is this the direction?** If yes, the next round is the route into Unity for one grown creature.
+2. **The Nettle's outline:** accept 0.39, or reshape it further.
+3. The relaxed laws as written (section 10): two-fold bodies, a lead of a quarter of the length, grown wire.
+
 ## Round 2 (2026-11-16): the Manta, and a silhouette of its own
 
 Garrett: "these seem like variations on what we have ... take inspirations from the shark, brittlestar, and worm by
@@ -50,7 +114,7 @@ vessel. the fauna and vessels need to have unique silhouettes so they are all di
    between each pair, a three-braid whip carrying the sting. 57 u long, 64 u across. For a rider it glides (slow to
    gain and lose speed) and feeds on the wing: holding RT eats what passes between its lobes with no wait.
 
-### Measured
+### Measured (SUPERSEDED by round 3: the measure was corrected twice after this table)
 
 `python3 Tools/Build/fauna_kit/silhouette.py --check` (0 = the same outline, 1 = nothing shared):
 

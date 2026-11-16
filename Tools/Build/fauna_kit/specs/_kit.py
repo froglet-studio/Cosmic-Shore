@@ -62,3 +62,25 @@ def elements(prisms, margin=1.01):
             "Space": {"body_scale": round(mass * C.SPACE_OVER_MASS, 4), "erode_spindle": True,
                       "span_over_mass": C.SPACE_OVER_MASS, "stinger_thins": True},
             "Time": {"body_scale": 1.0, "speed_scale": C.TIME_SPEED}}
+
+
+# ---- grown limbs (organic.py; the relaxed laws of 2026-11-16) ----
+
+def grown(name, parent, points, girth=(0.5, 0.2), strands=3, twist=1.5, sway=None, normal=None, step=0.9):
+    """A limb grown along a smooth curve through `points`, tapering from girth[0] to girth[1]."""
+    s = {"name": name, "parent": parent, "mesh": "grown", "path": [list(p) for p in points], "from": list(points[0]),
+         "to": list(points[-1]), "girth": list(girth), "strands": strands, "twist": twist, "step": step}
+    if sway:
+        s["sway"] = dict(sway)
+    if normal:
+        s["normal"] = list(normal)
+    return s
+
+
+def along(s, t):
+    """The point a share t of the way down a grown limb, and the direction it runs there."""
+    import organic
+    pts = organic.smooth(s["path"], 41)
+    i = min(39, max(0, int(round(t * 40))))
+    a, b = pts[i], pts[i + 1]
+    return [round(v, 6) for v in a], [round(b[c] - a[c], 6) for c in range(3)]

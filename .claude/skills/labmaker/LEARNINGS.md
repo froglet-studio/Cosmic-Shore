@@ -1972,3 +1972,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: normalise a body once (its longest extent) and use that scale in every view. Keep a planted pair that must differ and a planted pair that must match (a rolled, flipped, scaled copy) in the self-test, and re-run it after every change to the alignment search: more freedom to align is more ways for two different shapes to agree.
 - Evidence: `silhouette.py --self-test`; `Docs/Studios/FAUNA_LAB.md` round 2, Found 1.
 - Promoted: no
+
+### L-STU-185 — Compare shapes in ONE pose across all views, pooled by outline: per-view best matches call every flat body the same
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/silhouette.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-16
+- What happened: the silhouette distance took each view's smallest difference over all alignments separately. Two flat bodies are both a line edge-on, so a woven manta read 0.03 from the Brittlestar. Comparing the three views of one pose fixed that, but a plain mean still let the two edge-on line views outvote the outline from above (0.30); pooling the overlap over the three views, so a view counts by the outline it holds, gave 0.44. The table published the round before was wrong and had to be marked superseded.
+- Do instead: an alignment is one pose, and every view of it is scored together; weight views by the area they carry. Add the shape that breaks the measure (two different flat bodies) to its self-test before quoting a table, and mark an earlier table superseded rather than leaving it.
+- Evidence: `silhouette.py` (`views`, `_one_way`); `Docs/Studios/FAUNA_LAB.md` round 3, Measured.
+- Promoted: no

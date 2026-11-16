@@ -189,6 +189,25 @@ def rot_z(v, ang):
 
 # ------------------------------------------------------------------ the laws
 
+def polyline(s):
+    """A spindle's centreline as points: its `path` when it is grown, else its two ends."""
+    return s["path"] if s.get("path") else [s["from"], s["to"]]
+
+
+def line_dist(p, s):
+    pts = polyline(s)
+    return min(seg_dist(p, a, b) for a, b in zip(pts, pts[1:]))
+
+
+# Relaxed by Garrett, 2026-11-16 ("Relax the fauna rules a bit, so you can get us some fauna that are more lifelike"):
+# L1 wire may reach ahead of the heart by a `lead` the spec states (a quarter of the body's length at most: a bell
+#    over the Etherion, lobes round a mouth); prisms still trail it.
+# L2 a limb may be GROWN (organic.py: curved, tapered, woven wire and membranes), not only the straight braid.
+# L6 a body may be two-fold: flat, with two identical faces. It still has no up.
+LEAD_SHARE = 0.25
+MIN_SYMMETRY = 2
+
+
 def check(spec):
     """Every law the spec breaks, as plain sentences (empty = celestial)."""
     errs = []
@@ -198,9 +217,13 @@ def check(spec):
     heart_r = HEART_WORLD / 2
 
     # L1 the Etherion heart leads; the body trails behind it
+    body_len = -min([q[2] for s in spindles.values() for q in polyline(s)] + [0.0])
+    lead = float(spec.get("lead", 0.0))
+    want(lead <= LEAD_SHARE * body_len + 1e-6, f"L1 lead {lead} is more than a quarter of the body's length ({body_len:.1f})")
     for s in spindles.values():
-        want(max(s["from"][2], s["to"][2]) <= 0.0 + 1e-6,
-             f"L1 spindle '{s['name']}' reaches ahead of the heart (z > 0): the Etherion leads and the body trails")
+        want(max(q[2] for q in polyline(s)) <= lead + 1e-6,
+             f"L1 spindle '{s['name']}' reaches {max(q[2] for q in polyline(s)):.2f} ahead of the heart: the Etherion leads "
+             f"(a spec may state a `lead`, a quarter of the body's length at most)")
     for p in prisms:
         ahead = max(c[2] for c in box_corners(p))
         want(ahead <= -heart_r, f"L1 prism '{p['name']}' reaches ahead of the heart's back face: the body trails the heart")
@@ -210,7 +233,7 @@ def check(spec):
     # L2 the body is a wireframe of spindles, every one with a spindle path back to the heart
     want(len(spindles) >= 3, f"L2 the body has {len(spindles)} spindles: a celestial body is a wireframe of spindles (3 at least)")
     for s in spindles.values():
-        want(s.get("mesh", "braid") in ("braid",), f"L2 spindle '{s['name']}' is not the braid: every living limb is the braid spindle")
+        want(s.get("mesh", "braid") in ("braid", "grown"), f"L2 spindle '{s['name']}' is neither the braid nor grown wire")
         par = s.get("parent")
         if par is None:
             want(norm(s["from"]) <= heart_r + ROOT_REACH,
@@ -220,7 +243,7 @@ def check(spec):
             errs.append(f"L2 spindle '{s['name']}' names a parent '{par}' that does not exist")
             continue
         P = spindles[par]
-        want(seg_dist(s["from"], P["from"], P["to"]) <= ROOT_REACH,
+        want(line_dist(s["from"], P) <= ROOT_REACH,
              f"L2 spindle '{s['name']}' does not start on its parent '{par}': every limb has a spindle path to the heart")
     seen = set()
     for s in spindles.values():   # no cycles
@@ -241,7 +264,7 @@ def check(spec):
         if not s:
             errs.append(f"L3 prism '{p['name']}' names no spindle: a body prism is a direct child of the limb it rides")
             continue
-        near = min(seg_dist(c, s["from"], s["to"]) for c in box_corners(p) + [p["at"]])
+        near = min(line_dist(c, s) for c in box_corners(p) + [p["at"]])
         want(near <= PRISM_REACH, f"L3 prism '{p['name']}' is {near:.2f} u from its spindle '{s['name']}': it must sit on its limb")
 
     # L4 health prisms around the body
@@ -273,10 +296,10 @@ def check(spec):
 
     # L6 no sense of up: the body is n-fold symmetric about its travel axis, n >= 3
     n = spec.get("symmetry", 0)
-    want(n >= 3, f"L6 symmetry {n}: a celestial body has no up, so it repeats round its travel axis at least 3 times")
-    if n >= 3:
+    want(n >= MIN_SYMMETRY, f"L6 symmetry {n}: a celestial body has no up, so it repeats round its travel axis (twice at least: two identical faces)")
+    if n >= MIN_SYMMETRY:
         ang = 2 * math.pi / n
-        pts = [("s", s["from"]) for s in spindles.values()] + [("s", s["to"]) for s in spindles.values()] + \
+        pts = [("s", q) for s in spindles.values() for q in polyline(s)] + \
               [(p.get("kind"), p["at"]) for p in prisms]
         for kind, x in pts:
             y = rot_z(x, ang)

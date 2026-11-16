@@ -260,6 +260,38 @@ form, against a vessel, an Ark and a prism cluster. The loop for a new creature:
 6. the next round starts with `ArtifactData list decisions` and applies it.
 Only then does a creature earn a Unity build (section 4, steps 4-8).
 
+## 10. The relaxed laws and GROWN wire (2026-11-16)
+
+Garrett, on the braid-built Manta: "Relax the fauna rules a bit, so you can get us some fauna that are more lifelike.
+these feel like you are using tinker toys, when I want you to be making hyper realistic ethereal lifeforms in a
+celestial environment." Three laws moved (`celestial.py`, the block above `check`); the rest stand.
+
+| law | was | is |
+|---|---|---|
+| L2 | every limb is the straight braid, stretched between two points | a limb may be **grown** (`"mesh": "grown"`): wire wound round a smooth curve through a `path`, tapering, cross-tied; and a spec may weave **membranes** between two limbs. Still wire: nothing solid |
+| L6 | n-fold, n at least 3 | n at least **2**: a flat body with two identical faces has no up either |
+| L1 | no wire ahead of the heart | wire may lead the heart by a `lead` the spec states, a quarter of the body's length at most (a bell over the Etherion, lobes round a mouth). Prisms still trail and clear the heart |
+
+**How to grow a body** (`Tools/Build/fauna_kit/organic.py`; `specs/ray.py` and `specs/nettle.py` are the examples):
+- `K.grown(name, parent, points, girth=(root, tip), strands, twist, sway)`: a limb. Give it four to six points and
+  let the curve do the work; never two.
+- `"membranes": [{"name", "a": limb, "b": limb, "across": n}]`: a woven sheet between two limbs that run the same
+  way (a leading and a hind edge; two neighbouring ribs of a bell).
+- **Motion is SWAY, not keys.** A limb's `sway` (`dir`: a vector, `radial`, `tangent` or `normal`; `amp` at its tip;
+  `waves` along it; `phase`) is carried by every vertex and played in the vertex stage, as the game's `SpindleSway`
+  is. A phase offset between a membrane's two edges makes it ripple from front to back. The spec's `sway_hz` is the
+  body's one tempo. A prism rides its limb's sway (`PrismSway`).
+- `K.along(limb, t)` gives a point and direction on a grown limb, for placing a plate.
+- The lab draws grown wire as LIGHT: filaments add where they cross, membranes are a faint veil.
+
+**What this does not yet do.** It is the lab's geometry. Nothing writes a grown body as a mesh asset, and the game's
+`SpindleSway` is a shear along one axis, not a per-vertex wave: a Unity build needs a mesh writer (the model kit's
+route: `fbx_binary.py`) and a sway that reads a per-vertex offset and phase (vertex colours or a second UV). The
+Space erosion of a grown limb is not designed. Say so when a grown creature is proposed for the game.
+
+**Lifelike is easier to make alike.** Both first grown bodies were refused by the silhouette gate at first (the Nettle
+0.24 from the Clawfish: a bulb with a train). Run `silhouette.py --check` before falling for a body.
+
 ## 9. From a real clade to a HyperSea lifeform (2026-11-16)
 
 Garrett, on round 1's five new creatures: "these seem like variations on what we have. there are hundreds of millions
@@ -267,6 +299,9 @@ of species. surely you can take inspirations from the shark, brittlestar, and wo
 counterparts ... consider the difference between the brittlestar fauna and the vessel and the real world clade. those
 are three very different things." He was right, and it was measurable: all five were ONE body plan (a spine, n radial
 limbs, a tail sting, which is the Bee), and from ahead every one was a bare spoke star.
+
+(The distances quoted in this section's table are from the silhouette measure's FIRST version, which section 10's
+round corrected twice; run `silhouette.py` for today's.)
 
 **Three things share a name, and each takes something different from it** (the fauna and vessels measured by
 `dossier.py` and `silhouette.py`; the real animals from general knowledge, so check a claim before leaning on it):
@@ -302,6 +337,10 @@ a tube with an opening and closing crown (fan worms); paired swimming plates dow
 anomalocarids); a rosette of soft horns (nudibranchs).
 
 ## Round status and what each gate still owes (2026-11-07, measured for Docs/SKILL_TRAINING_PLAN.md 3.7)
+
+**Round 5 (2026-11-16, `FAUNA_LAB.md` round 3):** L1, L2 and L6 relaxed by Garrett; `organic.py` (grown limbs,
+membranes, per-vertex sway); the Ray and the Nettle (lab proposals); the silhouette measure corrected twice (three
+views of ONE pose, pooled by outline). The Nettle fails L12 by 0.02 and is in the lab flagged.
 
 **Round 4 (2026-11-16, `Docs/Studios/FAUNA_LAB.md` round 2):** section 9 (the clade method), law L12 and
 `silhouette.py` (`--self-test`: a rolled, flipped, scaled copy must read the same and a dart and a disc must not; it

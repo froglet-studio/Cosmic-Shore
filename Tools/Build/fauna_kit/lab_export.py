@@ -26,7 +26,7 @@ import recreate as R  # noqa: E402
 
 PAGE = os.path.join(D.REPO, "Docs", "Studios", "FaunaLab.html")
 BEGIN, END = "/*FAUNA_DATA_BEGIN*/", "/*FAUNA_DATA_END*/"
-NEW_SPECIES = ("manta",)
+NEW_SPECIES = ("ray", "nettle", "manta")
 # Round 1's five (Garrett, 2026-11-16: "these seem like variations on what we have"): one body plan (a spine, radial
 # limbs, a tail sting), a bare spoke star from ahead. silhouette.py puts the Teredo 0.19 from the Angler hull and the
 # Nautilus 0.29 from the Manta; the Marlin and Medusa scrape past the bar and the Basker stands apart (0.43), so
@@ -39,19 +39,26 @@ Q = 0.002   # vertex quantum (u at root scale 1): int16 covers +-65 u, every bod
 
 def pack(body):
     """A body for the page: one vertex buffer (int16, base64), wire edges (uint16 pairs), prisms, heart, limbs."""
-    verts, edges, segs = [], [], []
+    verts, edges, segs, sway, tris = [], [], [], [], []
+    grown = any(w.get("source") == "grown" for w in body["wires"])
     names = [w["name"] for w in body["wires"]]
     beats = any(w.get("beat") for w in body["wires"])
     for w in body["wires"]:
         base = len(verts)
         e0 = len(edges)
         verts += w["verts"]
-        seen = set()
-        for poly in BODY.polys(w["source"]):
-            for i in range(len(poly)):
-                a, b = poly[i], poly[(i + 1) % len(poly)]
-                seen.add((min(a, b), max(a, b)))
-        edges += [(base + a, base + b) for a, b in sorted(seen)]
+        if w.get("source") == "grown":      # organic.py: its own edges, a sway per vertex, a membrane's fill
+            edges += [(base + a, base + b) for a, b in w["edges"]]
+            sway += [list(v) for v in w["sway"]]
+            tris += [(base + a, base + b, base + c) for a, b, c in w.get("tris", [])]
+        else:
+            seen = set()
+            for poly in BODY.polys(w["source"]):
+                for i in range(len(poly)):
+                    a, b = poly[i], poly[(i + 1) % len(poly)]
+                    seen.add((min(a, b), max(a, b)))
+            edges += [(base + a, base + b) for a, b in sorted(seen)]
+            sway += [[0.0, 0.0, 0.0, 0.0]] * len(w["verts"])
         if beats:      # one segment a spindle, parents first (a spec lists a limb after the limb it grows from)
             par = names.index(w["parent"]) if w.get("parent") in names else -1
             if par >= len(segs):
@@ -62,10 +69,14 @@ def pack(body):
     vb = struct.pack("<%dh" % (len(verts) * 3), *[int(round(c / q)) for v in verts for c in v])
     fmt = "H" if len(verts) < 65536 else "I"
     eb = struct.pack("<%d%s" % (len(edges) * 2, fmt), *[i for e in edges for i in e])
+    extra = {}
+    if grown:
+        extra = {"sw": base64.b64encode(struct.pack("<%df" % (len(sway) * 4), *[c for v in sway for c in v])).decode(),
+                 "t": base64.b64encode(struct.pack("<%d%s" % (len(tris) * 3, fmt), *[i for t in tris for i in t])).decode()}
     return {"q": q, "nv": len(verts), "v": base64.b64encode(vb).decode(), "ne": len(edges), "e32": fmt == "I",
-            "e": base64.b64encode(eb).decode(),
+            "e": base64.b64encode(eb).decode(), **extra,
             "prisms": [{"n": p["name"], "k": p["kind"], "sh": bool(p.get("shielded")), "at": p["at"], "q": p["q"], "s": p["size"],
-                        "st": p.get("role") == "stinger", "seg": names.index(p["limb"]) if beats and p.get("limb") in names else -1}
+                        "st": p.get("role") == "stinger", "sw": p.get("sway"), "seg": names.index(p["limb"]) if beats and p.get("limb") in names else -1}
                        for p in body["prisms"]],
             "segs": segs,
             "heart": body["heart"]["at"] if body.get("heart") else [0, 0, 0],
@@ -118,6 +129,8 @@ def new_creature(key, origin="new"):
            "body": dict(pack(made), ext=_extent(made)),
            "variants": {e: {"scale": v["body_scale"], "max_speed": pos["top_speed"] * v.get("speed_scale", 1.0) if "speed_scale" in v else None}
                         for e, v in spec["elements"].items()}}
+    if "sway_hz" in spec:
+        out["sway_hz"] = spec["sway_hz"]
     for k in ("turn_rate", "speed_ease", "suction", "motion", "charge", "latch", "body_radius", "aim_cone", "for", "feel"):
         if k in pos:
             out[k] = pos[k]
