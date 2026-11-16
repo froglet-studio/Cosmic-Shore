@@ -147,11 +147,17 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameCleave.unity
     guid: 654b78c48ae68265c22ff31443204daf
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameLandslide.unity
+    guid: 353261fc3ca9bded2b2c4fc26baea3ea
+  - enabled: 1
     path: Assets/_Scenes/Singleplayer Scenes/MinigameGrizzlyCharge.unity
     guid: 9c6c183efabe4e30af0befd2d114d054
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity
     guid: b333e163445729830970f182e1e64fc0
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameRailrush.unity
+    guid: 53c15fdcd05a840d2ebb5ff106ade43d
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSkein.unity
     guid: 7a176232b6f8f7a3277106d997031bdd
@@ -174,6 +180,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameShatterplane.unity
     guid: 2a77c10f7818170d6e23f70515343042
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameRiptide.unity
+    guid: 0ed5001dc2eb1b98da90752a0ea6dba0
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameLancefall.unity
     guid: 7f639ef5d8a9baa92d88c7b2967bf07d
   - enabled: 1
@@ -183,17 +192,62 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRiposte.unity
     guid: ba5c63cd97570af42b349f82b5c65826
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameBullrush.unity
+    guid: 56311b135784dba528fad2185ae5d13c
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHarvest.unity
     guid: 2e26345893828d0fd7d69132808c3728
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameBlastline.unity
+    guid: 9dbe0a33d2df322bd0428005da67e705
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameDepthCharge.unity
+    guid: ed1f56b8a9cd98bcd77e5e6a7c0d8f6b
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameTrawl.unity
+    guid: e84a1b16550ff6d405359562bec5f41a
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameKelpwood.unity
     guid: 750b1dc75ea9084b39ab73f51caa180b
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameSnap.unity
+    guid: f97c43ab08a5c73ec87579c4e1ed568c
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameCleanerRam.unity
+    guid: fb8e9640cb8e4d6fcfbec4fc8cfe5e2d
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigamePodHunt.unity
+    guid: 94bae8a66a4b63c7c201e0cbb1c862ad
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameLarder.unity
     guid: 47971cec2a440abf34eebb61d916d358
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameStingherd.unity
+    guid: a3c80437e3b66101ee3cf31218255080
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameGlasshouse.unity
     guid: 1669f64150fcf334bc67aa5165c0e331
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameDenBuilder.unity
+    guid: 1634eb13953802b947c92d49938f75de
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameChum.unity
+    guid: 88e45b8e8325f38bf7fa3f20142387d1
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameStarweave.unity
+    guid: 6bf643e375a710f2479f932104e05fed
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameHaul.unity
+    guid: 1e77e52473568aa91af2d86b7e5cd3c7
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameHedgerow.unity
+    guid: c4f05de1af65c3e6bee3b9feffd7316d
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameLongshot.unity
+    guid: 28c339a863274a88bb4f89d15e1d4bdc
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameIceShelf.unity
+    guid: e1bb3e7f24377026ff7f16af98f85112
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameThornbush.unity
     guid: 469ee2883a5b56d3d63e37d47a6a4d5f
@@ -201,14 +255,41 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameCorona.unity
     guid: 7dae0b29437b3069d777364648ac3eaf
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameStandoff.unity
+    guid: 6ec42d4ffa4e7d08c91a9788a5411e20
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameSentry.unity
+    guid: d8ad73d6a916a61408ed95bca4bdc626
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWarren.unity
+    guid: 97b97c1217583b9b6e0525e57ba1c251
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameCaveIn.unity
+    guid: 4d190c8224a18dc747e5bf1d4aba5595
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTapestry.unity
     guid: 66ee08b9dff6ca4fd973337baf4857af
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameReefbuild.unity
+    guid: e6005374c108d6d0e89657be78fb1340
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigamePalisade.unity
     guid: f922aaca2eae16aba1ae0ed6c7bb9603
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWindrow.unity
+    guid: b925355b6fc64bb1095911ec4a73a5bc
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSirocco.unity
     guid: f3efa5204ad2461ebf22bc57e2170a5a
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameFlitstrike.unity
+    guid: 35fa57d34fbedf49c3f8bc3afd1971a8
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameHoneycomb.unity
+    guid: 9d584dcf5fabb9932c11257846b31b18
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWoodpecker.unity
+    guid: d7791f46a804528d618f8cbcf15e0beb
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameFulmen.unity
     guid: 318961b8adea15589d03545c16d5a1f9

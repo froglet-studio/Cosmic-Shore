@@ -332,6 +332,155 @@ new errors; without the shims it fails on `RelayRegionProbe.cs`). No Unity edito
 **Open:** the tab was not drawn on Frogma first (Docs/MENU_REDESIGN_B.md); the region names in the generator's
 `REGION_NAMES` name UGS's ids, and an id UGS does not list is simply never offered online.
 
+### 🔴 Longshot, the Serpent's Space game (GameModes 95) (`claude/serpent-space-longshot`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/LONGSHOT.md`. A timed shoot in a bare nucleus cell: lances of neutral (Blue) 6 u
+cubes, 12 u apart, laid on every peer from the intensity (`LongshotField`), bent into two or three runs at I3 and I4.
+The sniper round breaks every hostile prism in its cone (SERPENT_SNIPER_SCOPE.md), so a round fired down a run takes
+all of it. The generator measures that from the AI's line-up point on every run: 100% along a run, at most 2 prisms
+across one. A rival's straight trail scores the same way. The score is `PrismsDestroyed` (hostile only), credited by
+the platform. The AI (`LongshotRifleman`) presses only LT and RT: line up 260 u back on a run, follow a carrot onto
+the line, scope, and fire when the cone would take its rung's share. New platform rows: `GameModes.Longshot = 95`,
+`longshotRoundSeconds` (90), `GameToastSituation.LongshotHint = 170`, the HUD arrow (Rampage's provider). Nothing about
+the Serpent changed. Authored by `Tools/Build/author_longshot_assets.py`. Ran headless: the generator `--check`, the
+`/arcadegame` gates, the card render, `unity_refcompile` player and editor. No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Longshot card: the lance card art, Serpent only, 1-4 players, intensities 1-4, the **Space** petal.
+2. Run the edit-mode tests `LongshotTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. Solo, I2: twelve straight blue lances of 48 cubes hang between the nucleus and the membrane.
+4. Line up along a lance, hold LT, fire RT: the whole run breaks and your score climbs by 48. Fire across one and you
+   get a prism or two.
+5. I3: every lance is bent at the knee, so one shot takes one run of 24.
+6. With an AI rival: it lines up on a run, scopes and fires; at Hard most of the run goes. It never cloaks.
+7. Shoot along a rival's straight trail: those prisms score. Your own trail never does.
+8. At the whistle: the domain with the most prisms broken wins; the results show "{n} Prisms" and "{n} Volume".
+9. FrogletTools > Game Modes > End Game Conditions: Longshot - Round Seconds reads 90.
+10. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameLongshot.unity`.
+
+**First-pass tuning (not settled):** round 90 s; lances 8 / 12 / 12 / 16 of 48 in 1 / 1 / 2 / 3 runs; omni
+4 / 3 / 3 / 2; AI stand-off 260 u, fire fraction 0.25 / 0.45 / 0.65 / 0.8; comeback 0.041667 per prism. The open
+question: can the autopilot hold a run's line to within the cone's 6 u near end while scoped?
+
+### 🔴 Hedgerow, the Serpent's Mass game (GameModes 94) (`claude/serpent-mass-hedgerow`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/HEDGEROW.md`. A timed steal in a bare nucleus cell: hedges of neutral (Blue) bricks,
+the Serpent trail's own 3 x 6 x 0.5 prism, laid on every peer from the intensity (`HedgerowField`). Stop dead short of
+a hedge, flying across it, and the stance's seed wall eats along it into your colour (SERPENT_SEED_WALL.md); it eats a
+rival's trail the same way. The score is `VolumeRemaining`, credited by the platform's steal path. The AI
+(`HedgerowWarden`) presses only the stop toggle: line up, run in across a hedge, stop 22 u short, hold, fly on; raid the
+densest rival mass when it trails. New platform rows: `GameModes.Hedgerow = 94`, `hedgerowRoundSeconds` (90),
+`GameToastSituation.HedgerowHint = 169`, the HUD arrow (Rampage's provider). Nothing about the Serpent changed.
+Authored by `Tools/Build/author_hedgerow_assets.py`. Ran headless: the generator `--check`, the `/arcadegame` gates, the
+card render, `unity_refcompile` player and editor. No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Hedgerow card: the wall card art, Serpent only, 1-4 players, intensities 1-4, the **Mass** petal.
+2. Run the edit-mode tests `HedgerowTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. Solo, I2: twelve blue hedges (32 bricks long, 2 high) stand between the nucleus and the membrane.
+4. Fly across a hedge and stop (B) about 20 u short: the wall grows across your path and eats along the hedge, every
+   brick turning your colour, and your Hold volume climbs (9 a brick at rest).
+5. Fly on: the wall stands and stops eating. Stop at the next hedge.
+6. With an AI rival: it lines up, runs in, stops short of a hedge and its wall eats it; it never cloaks. At Medium and
+   up, when it trails, it stops beside your trail and eats that.
+7. Take an omni crystal while stopped: the wall re-shields.
+8. At the whistle: the domain with the most volume standing wins; the results show "{n} Volume" and "{n} stolen".
+9. FrogletTools > Game Modes > End Game Conditions: Hedgerow - Round Seconds reads 90.
+10. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameHedgerow.unity`.
+
+**First-pass tuning (not settled):** round 90 s; hedges 8 / 12 / 12 / 16 of 64 / 64 / 120 / 120 bricks; omni
+4 / 3 / 3 / 2; AI stop 22 u short, hold 8 / 12 / 15 / 18 s; comeback 0.003472 per volume. The open questions: does
+the seed land within the wall's 40 u reach of the hedge when the AI stops 22 u short, and does flying (laying trail)
+out-score stopping? If trail wins, the hedges need to be bigger or the round longer.
+
+### 🔴 Haul, the Thresher's Mass game (GameModes 93) (`claude/thresher-mass-haul`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/HAUL.md`. A timed steal in a bare nucleus cell: bales of neutral (Blue) prisms laid
+on every peer from the intensity (`HaulField`, on Chum's reef geometry). The Mass Mode ball steals them into your colour,
+shields your hoard and lays a trail; the score is `VolumeRemaining`, credited by the platform's steal path. I3-I4 bales
+carry a shielded crust (two passes). The AI only steers (circle a bale, or raid the densest rival mass); an autopiloted
+Thresher stays in Mass Mode. New platform rows: `GameModes.Haul = 93`, `haulRoundSeconds` (90),
+`GameToastSituation.HaulHint = 168`, the HUD arrow (Rampage's provider). Nothing about the Thresher changed. Authored by
+`Tools/Build/author_haul_assets.py`. Ran headless: the generator `--check` (with a negative control), the `/arcadegame`
+gates, the card render, `unity_refcompile` player and editor. No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Haul card: the bale card art, Thresher only, 1-4 players, intensities 1-4, the **Mass** petal.
+2. Run the edit-mode tests `HaulTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. Solo, I2: fourteen blue bales hang between the nucleus and the membrane; you spawn in Mass Mode.
+4. Swing the ball through a bale: every prism it touches turns your colour and your Hold volume jumps (343 a prism).
+5. Swing through your own hoard: its prisms shield.
+6. With an AI rival: it circles a bale and its ball steals it; at Medium and up, when it trails, it raids your hoard.
+7. I3: the bales' outer shell is shielded; the first pass sheds the shield, the second steals.
+8. Take an omni crystal: the Windmill spins the ball round you for 12 s and steals everything it sweeps.
+9. At the whistle: the domain with the most volume standing wins; the results show "{n} Volume" and "{n} stolen".
+10. FrogletTools > Game Modes > End Game Conditions: Haul - Round Seconds reads 90.
+11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameHaul.unity`.
+
+**First-pass tuning (not settled):** round 90 s; bales 10 / 14 / 14 / 18 of 64 / 64 / 177 / 177 prisms; omni
+4 / 3 / 3 / 2; AI orbit 160 u; comeback 0.000078 per volume. The open question: does circling at 160 u swing the ball
+through a bale?
+
+### 🔴 Starweave, the Brittle Star's Mass game (GameModes 92) (`claude/brittlestar-mass`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/STARWEAVE.md`. A timed weaving war in a bare nucleus cell (no flora, no fauna):
+Creation Mode lays five trails at half speed, and the score is `VolumeRemaining` (StatsManager, every mode). Elemental
+crystal scatter 24 / 16 / 10 / 6; on I3-I4 the card starts every hull at Space 3 / 5. The AI only steers (weave orbit or
+raid at the densest rival mass); the Brittle Star's own autopilot presses the modes. New platform rows:
+`GameModes.Starweave = 92`, `starweaveRoundSeconds` (90), `GameToastSituation.StarweaveHint = 167`, the HUD arrow
+(Tapestry's provider). Nothing about the Brittle Star changed. Authored by `Tools/Build/author_starweave_assets.py`.
+Ran headless: the generator `--check` (with a negative control), the `/arcadegame` gates, the card render,
+`unity_refcompile` player and editor. No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Starweave card: the weave card art, Brittle Star only, 2-4 players, intensities 1-4, the **Mass** petal.
+2. Run the edit-mode tests `StarweaveScoringTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. With one AI rival, I2: no grazers or plants in the cell; elemental crystals scattered round it.
+4. Press B (Creation): five trails, the hull at half speed; your Hold volume climbs faster than cruising.
+5. Pick up a Mass crystal: the blocks fatten and the volume climbs faster.
+6. Watch the AI: on its orbit it weaves (five trails); when its domain trails it flies at your weave and its guns take it.
+7. I3 / I4: every hull starts at Space 3 / 5 (longer gun range).
+8. At the whistle: the domain with the most volume standing wins; the results show "{n} Volume" and "{n} prisms standing".
+9. FrogletTools > Game Modes > End Game Conditions: Starweave - Round Seconds reads 90.
+10. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameStarweave.unity`.
+
+**First-pass tuning (not settled):** round 90 s; crystals 24 / 16 / 10 / 6; omni 4 / 3 / 3 / 2; starting Space 0 / 0 / 3
+/ 5; comeback 0.000593 per volume. The open question is the retire condition: is Creation Mode worth its half speed?
+
+### 🔴 Chum, the Angler's Space game (GameModes 91) (`claude/angler-space-chum`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/CHUM.md`. A timed feed: shoals of neutral (Blue) prisms laid by the controller on
+every peer from the intensity alone (`ChumReef`, pure). Paint a shoal and the school is thrown at it and eats it. The
+score is `PrismsDestroyed` (HostilePrismsDestroyed): the hull's breaks (StatsManager) plus the school's meals (the
+controller credits a prism that dies by a creature to the pilot whose Angler leashes the nearest creature). From I3 the
+outer shell is shielded and the card starts the Angler at Space 5 (Paint Shields). AI `ChumForager` steers and holds the
+lure only. New platform rows: `GameModes.Chum = 91`, `chumRoundSeconds` (90), `GameToastSituation.ChumHint = 166`, the
+HUD arrow (Rampage's provider). Nothing about the Angler changed. Authored by `Tools/Build/author_chum_assets.py`. Ran
+headless: the generator `--check` (with a negative control), the `/arcadegame` gates, the card render, `unity_refcompile`
+player and editor (0 errors in changed files). No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Chum card: the reef card art, Angler only, 1-4 players, intensities 1-4, the **Space** petal.
+2. Run the edit-mode tests `ChumReefTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. Solo, I2: twelve shoals of blue prisms hang between the nucleus and the membrane; the arrow points at an omni crystal.
+4. Take a crystal (one creature), fly to a shoal, paint it with the brush and let go: the school eats it, and the score
+   rises by one for every prism eaten. Ramming a shoal with the hull also scores.
+5. Hold the lure near a wild tadpole: it joins the school; a bigger school eats faster.
+6. Wild tadpoles eat the reef too: their meals credit nobody.
+7. I3: the outer shell of each shoal is shielded; tadpoles do not eat it; the Angler starts at Space 5 and its paint
+   cracks it.
+8. With a 2-domain lobby (AI): an AI Angler grows a school (crystals, then lured grazers), then circles a shoal, paints
+   and throws.
+9. At the whistle: the domain with the most prisms wins; the results show "{n} Prisms" and "{n} eaten".
+10. FrogletTools > Game Modes > End Game Conditions: Chum - Round Seconds reads 90.
+11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameChum.unity`.
+12. Profiler: the I4 reef (2,832 prisms) plus four trails stays inside the collider budget; the reef settle is one pass a
+    frame over the live list.
+
+**First-pass tuning (not settled):** round 90 s; shoals 8 / 12 / 12 / 16 of 64 / 64 / 177 / 177 prisms; omni
+4 / 3 / 3 / 2; grazers 6 / 9 / 12 / 15; comeback 0.025. The open question is the retire condition: does the school
+matter against ramming with the hull?
+
 ### 🔴 Glasshouse, the Angler's Mass game (GameModes 89) (`claude/peaceful-cerf-vpl3x8`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/GLASSHOUSE.md`. A timed garden: an omni crystal is a creature and a seed, letting go
@@ -525,6 +674,38 @@ expects 82 modes).
 - crystal regrow 8 s;
 - the plates in `shatterplane_budget.RUNGS`;
 - the AI ladders in `ShatterplaneSettings`.
+
+---
+
+### 🔴 Standoff, the Grizzly's Charge game (GameModes 125) (`claude/grizzly-standoff`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/STANDOFF.md`. Grizzly-only duel among square posts of prism tiles round an open
+centre (`SpawnableStandoff`, four baked prefabs), scored on blasts (a rival hull caught in a Grizzly blast,
+MissileBlast-class CombatPoints, target 10), omni crystals at the centre, AI gunners that only steer
+(`StandoffGunner`; the hull's own autopilot bomb-jump is their weapon). New platform rows: `GameModes.Standoff = 125`,
+`standoffBlastTarget`, toast situation 200. Checked offline: `author_standoff_assets.py --check` (watched it fail on a
+mutated prefab and a mutated C# constant), the reference compile, the `/ship` gates, the bake (200 / 432 / 568 / 978
+prisms, 0 clipping), the card render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 84 modes).
+
+**Verify in editor:**
+1. Arcade → Standoff card: the posts-and-blast card art, Grizzly only, 2-4 players, intensities 1-4, the Charge badge.
+2. Launch I1 with one AI, as the HOST: you spawn on a ring just outside eight posts; three omni crystals at the
+   centre; the arrow points at the rival; the hint toast (200) shows once.
+3. Stick: squeeze a trigger and let go aimed at the rival: the bomb flies through the posts and freezes on the
+   rival's hull when it touches it. Does a cruising bomb reliably catch a moving hull?
+4. Blow: pull and release that trigger again: the blast (25 u tap to 100 u full squeeze) scores 1 per rival inside
+   it (toast 81), takes petals and silences the victim. At most one per victim per 0.5 s.
+5. Cannon (X / Q): a charged shot landing beside a rival scores the same way.
+6. Dig In behind a post: the hull stops, the gun turns, Energy regenerates faster with Charge.
+7. AI: it flies passes beside you inside a blast's reach and bomb-jumps (fires, freezes 18 u ahead, blows it); at
+   Hard / Legendary it breaks off behind a post when silenced. Watch for it flying into posts or circling.
+8. First domain to 10 blasts wins: results "N blasts" / "N Blasts Left"; reveal STANDOFF TIME / BLASTS LEFT. Replay.
+9. I2-I4: 12 / 14 / 18 outer posts, an inner ring from I3, shielded rims from I3 (two hits), danger corners at I4.
+10. Blasts wear posts away: after a full match is there still cover?
+11. Time a 2v2 at I2 with Medium AI; 10 is a first cut (End Game Conditions → Standoff).
+12. Game Mode Prefab Kit ▸ Validate on `MinigameStandoff.unity`; Measure Cell Environment Baselines agrees with the census.
+
+**First-pass tuning:** target 10, comeback 0.4, the posts in `standoff_budget.RUNGS`, the AI ladders in `STANDOFF.md`.
 
 ---
 
@@ -23631,6 +23812,28 @@ Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor conf
 - [ ] After a ride of 3 s or more, `Documents/CosmicShore Diagnostics/Flights/possession_<scene>_<species>_<time>.json` exists
       and is sent with the flights after Play.
 
+## 🔴 The Orca's game kit: Pod Hunt (99), Ice Shelf (100), Depth Charge (101) (2026-11-15, Garrett's project thread, `claude/orca-games`, NOT RUN IN EDITOR)
+
+Authored headless from the game kit roster (rows 9-11). Run offline: the three generators' `--check` (each watched fail on
+a mutated card or a mutated C# needle), `arcade_mode_lib.py --self-test`, `check_switch_label_collisions.py`,
+`check_enum_member_references.py`, `check_console_logging.py`, `check_conditional_compilation.py`,
+`author_preview_spawns.py --check`, `author_preview_intensities.py --check`, `render_card_backgrounds.py PodHunt IceShelf
+DepthCharge --check`, and `unity_refcompile` (see the PR for its result). Nothing has been run in Unity. Docs:
+`Assets/_Scripts/Controller/Arcade/PODHUNT.md`, `ICESHELF.md`, `DEPTHCHARGE.md`.
+
+- [ ] Each of the three cards is in the Arcade grid with its rendered background, Orca only; each scene loads at all four
+      intensities with four Orca AI seats and a clean console.
+- [ ] Pod Hunt: a missile flown into a rival hull scores 1, so does the bomb's burst; a gun hit scores nothing; the first
+      domain to 15 wins; an omni crystal in the wreck reloads every gunner seat. The AI hulls stand off a rival, swung to one
+      side, and fetch a crystal when their magazines run dry.
+- [ ] Ice Shelf: the round lasts 90 s; the scoreboard's volume falls when a dropped shield expires (the census) and the shelf
+      column shows the shield's share; the lead toast fires; the final board matches what stood at the whistle on every peer.
+      The AI hulls loop round their own homes inside the nucleus.
+- [ ] Depth Charge: only rival-coloured forest counts; the first domain to 1,500 wins; the 250-prism toast fires; the AI
+      hulls fly to plants that are not their colour.
+- [ ] End Game Conditions window shows the three new rows; changing one moves the game.
+- [ ] Multiplayer (host + one client): a client's Orca crew fires its own seats and its blasts and breaks score.
+
 ## 🔴 Breach: see-through checkerboard walls (2026-11-15, `claude/project-thread-v8enx0`, NOT RUN IN EDITOR)
 
 Garrett picked it (Docs/Reports/SIGHT_LINES.md). Headless: `breach_harness/run.sh` 12 passed and `--self-test` ok; the
@@ -23640,3 +23843,75 @@ new sight test fails on the old solid wall (27% clear against a 40% bar). Helm s
 2. Fly straight into a wall, level and rolled: the Orca stops dead every time and never slips through a hole (the hit box
    is still the Sparrow's 10.3 x 0.46 u; a hole is 9.9 u corner to corner).
 3. Let the gunners breach a wall: a shot opens a gap a little sooner than before; it grows back 6 s later.
+
+## 🔴 Honeyguide games: Flitstrike, Honeycomb, Woodpecker (2026-11-15, Garrett's project thread, `claude/honeyguide-games`, NOT RUN IN EDITOR)
+
+Authored headless by `Tools/Build/author_{flitstrike,honeycomb,woodpecker}_assets.py` (all `--check` green). No Unity
+compile ran: `unity_refcompile` and the card render need a dotnet 8 SDK this session could not install. Docs:
+`Assets/_Scripts/Controller/Arcade/FLITSTRIKE.md`, `HONEYCOMB.md`, `WOODPECKER.md`.
+
+- [ ] The project compiles (the three controllers, settings, scoring rules and turn monitors; `EndConditionOverridesSO`
+      and its window; `MiniGameHUD`'s three provider rows; `EnumIntegrityTests` counts 86 modes).
+- [ ] Arcade grid: the three Honeyguide cards show (placeholder backgrounds until `/cardart` renders them) and each opens
+      its own scene with the Honeyguide.
+- [ ] Flitstrike (108): hold LT, let go through a rival hull: the score goes up by one per Strike; the first domain to 5
+      wins; the AI flies at intercepts on the nearest rival; the hint toast shows once.
+- [ ] Honeycomb (109): a 90 s round on the Barren cell; elemental crystals are scattered at the countdown; an omni crystal
+      grows a hive behind the hull; the HUD shows standing volume; the lead toast fires; the whistle ranks by volume.
+- [ ] Woodpecker (110): RT pecks chip cactus-forest prisms; the prism milestone toast every 50; first domain to 150 wins;
+      the AI flies toward the densest hostile prisms.
+- [ ] End Game Conditions window shows and saves the three new values.
+- [ ] Run `python3 Tools/Build/render_card_backgrounds.py Flitstrike Honeycomb Woodpecker` on a machine with dotnet 8,
+      then re-run the three generators.
+## 🔴 Jacks: Stingherd (Charge, 117) and Trawl (Space, 118) (2026-11-15, Garrett's project thread, `claude/jacks-games`, NOT RUN IN EDITOR, NOT COMPILED)
+
+Authored headless. `unity_refcompile` did not run: the container could not install a .NET SDK. Offline:
+`author_stingherd_assets.py --check` and `author_trawl_assets.py --check` pass (each watched fail on a mutated settings
+asset); Kelpwood's and Harvest's generators still pass; the switch-label, enum-reference, console-logging,
+conditional-compilation, self-referential-local and using-directive gates, `check_gamelist_scenes.py`,
+`author_preview_spawns.py --check`, `author_preview_intensities.py --check` pass.
+
+1. Compile. Open `MinigameStingherd` and `MinigameTrawl`: no missing scripts, four Jacks AI templates each.
+2. Stingherd I1 vs three AI: the herd (Charge 5) attacks a rival hull within 200 u; each sting adds one point to the
+   stinger's domain; first domain to 12 wins and the end screen shows stings. I2-I4: start Charge 3, 1, 0.
+3. Stingherd AI: an AI Jacks runs its jacks behind its herd from the nearest rival, takes off and lands behind the
+   herd; it never lays a decoy. Does the herd actually reach a rival? Note stings per minute.
+4. Trawl I1 solo: take off, fly the net through a sheaf; dragged prisms break what they hit and the count rises;
+   your own colour scores nothing; shielded cores (I2+) bounce. First domain to 300 wins.
+5. Trawl AI: an AI Jacks never lands to herd and sweeps through dense stands. Note prisms per minute at each rung.
+6. Both cards: listed in Arcade, Jacks only, preview opens on the right arena, hint toast shows once. Card art is the
+   placeholder until `/cardart` runs.
+
+## 🔴 Wrasse reef games: Cleaner Ram, Reefbuild, Blastline (2026-11-15, Garrett's project thread, `claude/wrasse-arcade-games`, NOT RUN IN EDITOR)
+
+Authored headless (`author_cleaner_ram_assets.py`, `author_reefbuild_assets.py`, `author_blastline_assets.py`, all
+`--check` green; `unity_refcompile` reports 0 errors in the changed files, its 30 others are packages this sandbox cannot
+build). Nothing below has been run. Design: `Assets/_Scripts/Controller/Arcade/WRASSEREEF.md`.
+
+- [ ] The three scenes open without missing scripts and compile; each appears on the Arcade grid with its card art.
+- [ ] A match of each starts with you plus AI Wrasses; the reef of crystals appears at countdown end, the same on host
+      and client, and a taken crystal regrows about 12 s later somewhere else.
+- [ ] Cleaner Ram: loop Charge motes, ram a rival: one point on the scoreboard; the race ends at 8 (End Game Conditions).
+- [ ] Reefbuild: a Mass loop's cluster counts toward your volume; the whistle goes at 90 s and the most volume wins; a lead
+      change after 20 s shows the lead toast.
+- [ ] Blastline: a Space blast and the kite's head count hostile prisms destroyed, never your own; the forest regrows fast
+      enough that 600 is reachable.
+- [ ] AI Groupers fly to crystals and rivals (Hunt / Build / Clean); the kite AI still loops and rams on its own.
+- [ ] Each mode's hint toast (186 / 187 / 188) shows when you idle.
+## 🔴 Goby & Pistol games: Snap, Den Builder, Riptide (2026-11-15, Garrett's project thread, `claude/goby-games`, NOT RUN IN EDITOR)
+
+Three new arcade modes (GameModes 114-116), authored headless by `Tools/Build/goby_games_lib.py`. The reference compile
+ran (0 errors in changed files; the 30 it reports sit in untouched Cinemachine / Multiplayer Sessions files this
+environment's package fetch could not resolve). No Unity editor, Play mode or EditMode test run. Docs:
+`Assets/_Scripts/Controller/Arcade/SNAP.md`, `DEN_BUILDER.md`, `RIPTIDE.md`.
+
+- [ ] The project compiles in the editor; `EnumIntegrityTests` passes (GameModes count 86).
+- [ ] The Arcade grid shows three Goby cards (Snap, Den Builder, Riptide) with their rendered backgrounds; each card's
+      preview opens and Test Flight works.
+- [ ] Snap (Charge): two domains in Kelpwood's kelp; a Pistol vortex ring landing on a rival pilot adds one point and the
+      hint toast posts; first domain to 5 wins; the end screen shows each player's ring hits (also on a client).
+- [ ] Den Builder (Mass): 150 s in Glasshouse's cell with no gardens; dens and island trails count as volume standing;
+      lead toasts fire; the higher domain at the whistle wins; the breakdown shows prisms standing.
+- [ ] Riptide (Space): Shatterplane's plates; the undertow pulls loose tiles, the ring collapse smashes them and
+      PrismsDestroyed rises; first domain to 600 wins; the end screen breakdown matches the server's.
+- [ ] An all-AI seat in each mode plays (the crew AI locks, snaps, routes islands); the console is clean.

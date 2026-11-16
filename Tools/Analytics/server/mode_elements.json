@@ -41,16 +41,36 @@
       "Mass",
       "Space"
     ],
+    "Bullrush": [
+      "Charge",
+      null
+    ],
     "BurrowRun": [
       "Time",
+      null
+    ],
+    "CaveIn": [
+      "Space",
+      null
+    ],
+    "Chum": [
+      "Space",
       null
     ],
     "Cleave": [
       "Space",
       null
     ],
+    "Corona": [
+      "Charge",
+      null
+    ],
     "DecoyRun": [
       "Time",
+      null
+    ],
+    "DepthCharge": [
+      "Space",
       null
     ],
     "DogFight": [
@@ -61,6 +81,22 @@
       "Charge",
       null
     ],
+    "Flatline": [
+      "Charge",
+      null
+    ],
+    "Flitstrike": [
+      "Charge",
+      null
+    ],
+    "Fulmen": [
+      "Space",
+      null
+    ],
+    "Glasshouse": [
+      "Mass",
+      null
+    ],
     "GrizzlyCharge": [
       "Space",
       null
@@ -69,28 +105,84 @@
       "Time",
       null
     ],
+    "Harvest": [
+      "Space",
+      null
+    ],
+    "Haul": [
+      "Mass",
+      null
+    ],
     "Headlong": [
       "Time",
+      null
+    ],
+    "Hedgerow": [
+      "Mass",
       null
     ],
     "Hijack": [
       "Mass",
       null
     ],
+    "Honeycomb": [
+      "Mass",
+      null
+    ],
+    "IceShelf": [
+      "Mass",
+      null
+    ],
+    "Jackstraw": [
+      "Charge",
+      null
+    ],
     "Joust": [
       "Charge",
+      null
+    ],
+    "Kelpwood": [
+      "Charge",
+      null
+    ],
+    "Lancefall": [
+      "Space",
+      null
+    ],
+    "Landslide": [
+      "Space",
       null
     ],
     "LanternRun": [
       "Time",
       null
     ],
+    "Larder": [
+      "Charge",
+      null
+    ],
+    "Longshot": [
+      "Mass",
+      null
+    ],
     "Multiplayer2v2CoOpVsAI": [
       "Time",
       null
     ],
+    "Palisade": [
+      "Mass",
+      null
+    ],
     "PerchRun": [
       "Time",
+      null
+    ],
+    "PodHunt": [
+      "Charge",
+      null
+    ],
+    "Railrush": [
+      "Charge",
       null
     ],
     "Rampage": [
@@ -103,6 +195,10 @@
     ],
     "Regatta": [
       "Time",
+      null
+    ],
+    "Riposte": [
+      "Charge",
       null
     ],
     "Salvo": [
@@ -121,12 +217,24 @@
       "Mass",
       null
     ],
+    "Sentry": [
+      "Charge",
+      null
+    ],
     "SerpentHood": [
       "Charge",
       null
     ],
     "SerpentTime": [
       "Time",
+      null
+    ],
+    "Shatterplane": [
+      "Space",
+      null
+    ],
+    "Shockfront": [
+      "Charge",
       null
     ],
     "Sirocco": [
@@ -149,6 +257,22 @@
       "Time",
       null
     ],
+    "Spearline": [
+      "Time",
+      null
+    ],
+    "Standoff": [
+      "Charge",
+      null
+    ],
+    "Starweave": [
+      "Mass",
+      null
+    ],
+    "Stingherd": [
+      "Charge",
+      null
+    ],
     "Switchback": [
       "Time",
       null
@@ -165,6 +289,10 @@
       "Mass",
       null
     ],
+    "Thornbush": [
+      "Mass",
+      null
+    ],
     "Thornline": [
       "Time",
       null
@@ -177,6 +305,10 @@
       "Mass",
       null
     ],
+    "Trawl": [
+      "Space",
+      null
+    ],
     "Undertow": [
       "Charge",
       null
@@ -185,11 +317,23 @@
       "Time",
       null
     ],
+    "Warren": [
+      "Mass",
+      null
+    ],
     "Waystation": [
       "Time",
       null
     ],
     "WildlifeLiberation": [
+      "Space",
+      null
+    ],
+    "Windrow": [
+      "Mass",
+      null
+    ],
+    "Woodpecker": [
       "Space",
       null
     ],
@@ -241,44 +385,80 @@
     "BrittleStarTime": "SwitchesThreaded",
     "Broadside": "CombatPoints",
     "BroodRush": "Goals",
+    "Bullrush": "CombatPoints",
     "BurrowRun": "SwitchesThreaded",
+    "CaveIn": "PrismsDestroyed",
+    "Chum": "PrismsDestroyed",
     "Cleave": "PrismsDestroyed",
+    "Corona": "CombatPoints",
     "DecoyRun": "SwitchesThreaded",
+    "DepthCharge": "PrismsDestroyed",
     "DogFight": "CombatPoints",
     "Dustup": "CombatPoints",
+    "Flatline": "CombatPoints",
+    "Flitstrike": "CombatPoints",
+    "Fulmen": "PrismsDestroyed",
+    "Glasshouse": "VolumeRemaining",
     "GrizzlyCharge": "PrismsDestroyed",
     "GrizzlyTime": "SwitchesThreaded",
+    "Harvest": "PrismsDestroyed",
+    "Haul": "VolumeRemaining",
     "Headlong": "SwitchesThreaded",
+    "Hedgerow": "VolumeRemaining",
     "Hijack": "PrismsStolen",
+    "Honeycomb": "VolumeRemaining",
+    "IceShelf": "VolumeRemaining",
+    "Jackstraw": "CombatPoints",
     "Joust": "Jousts",
+    "Kelpwood": "CombatPoints",
+    "Lancefall": "PrismsDestroyed",
+    "Landslide": "PrismsDestroyed",
     "LanternRun": "SwitchesThreaded",
+    "Larder": "CombatPoints",
+    "Longshot": "VolumeRemaining",
     "Multiplayer2v2CoOpVsAI": "Crystals",
+    "Palisade": "VolumeRemaining",
     "PerchRun": "SwitchesThreaded",
+    "PodHunt": "CombatPoints",
+    "Railrush": "CombatPoints",
     "Rampage": "PrismsDestroyed",
     "Redline": "SwitchesThreaded",
     "Regatta": "SwitchesThreaded",
+    "Riposte": "CombatPoints",
     "Salvo": "PrismsDestroyed",
     "ScarabRally": "SwitchesThreaded",
     "ScarabScramble": "Goals",
     "Scurry": "Crystals",
+    "Sentry": "CombatPoints",
     "SerpentHood": "CombatPoints",
     "SerpentTime": "SwitchesThreaded",
+    "Shatterplane": "PrismsDestroyed",
+    "Shockfront": "CombatPoints",
     "Sirocco": "PrismsDestroyed",
     "Skein": "SwitchesThreaded",
     "SkimRace": "Crystals",
     "Slingshot": "SwitchesThreaded",
     "SlipLine": "SwitchesThreaded",
+    "Spearline": "SwitchesThreaded",
+    "Standoff": "CombatPoints",
+    "Starweave": "VolumeRemaining",
+    "Stingherd": "CombatPoints",
     "Switchback": "SwitchesThreaded",
     "Tandava": "LifeformsKilled",
     "TandavaSevering": "LifeformsKilled",
     "Tapestry": "VolumeRemaining",
+    "Thornbush": "VolumeRemaining",
     "Thornline": "SwitchesThreaded",
     "ThresherTime": "SwitchesThreaded",
     "Tollway": "Goals",
+    "Trawl": "PrismsDestroyed",
     "Undertow": "CombatPoints",
     "Warpline": "SwitchesThreaded",
+    "Warren": "VolumeRemaining",
     "Waystation": "SwitchesThreaded",
     "WildlifeLiberation": "LifeformsKilled",
+    "Windrow": "VolumeRemaining",
+    "Woodpecker": "PrismsDestroyed",
     "WrasseRun": "SwitchesThreaded",
     "WreckingBall": "PrismsDestroyed"
   },
@@ -299,45 +479,72 @@
     "BrittleStarTime",
     "Broadside",
     "BroodRush",
+    "Bullrush",
     "BurrowRun",
     "CatNMouse",
+    "CaveIn",
     "CellularBrawl",
+    "Chum",
     "Cleave",
     "CoOpWildlifeBlitz",
+    "Corona",
     "Curvatious",
     "DashNGrab",
     "DecoyRun",
     "Denial",
+    "DepthCharge",
     "Distraction",
     "DogFight",
     "DolphinDarts",
     "Dustup",
     "Elimination",
+    "Flatline",
+    "Flitstrike",
+    "Fulmen",
+    "Glasshouse",
     "GrizzlyCharge",
     "GrizzlyTime",
+    "Harvest",
+    "Haul",
     "Headlong",
+    "Hedgerow",
     "Hijack",
+    "Honeycomb",
+    "IceShelf",
+    "Jackstraw",
     "Joust",
+    "Kelpwood",
     "KickinMass",
+    "Lancefall",
+    "Landslide",
     "LanternRun",
+    "Larder",
+    "Longshot",
     "Maelstrom",
     "MasterExploder",
     "MazeRun",
     "Multiplayer2v2CoOpVsAI",
     "ObstacleCourse",
+    "Palisade",
     "PerchRun",
+    "PodHunt",
     "ProtectMission",
     "PumpNDump",
+    "Railrush",
     "Rampage",
     "Redline",
     "Regatta",
+    "Riposte",
     "RiskyDriftness",
     "Salvo",
     "ScarabRally",
     "ScarabScramble",
     "Scurry",
+    "Sentry",
     "SerpentHood",
     "SerpentTime",
+    "Shatterplane",
+    "Shockfront",
     "ShootingGallery",
     "Sirocco",
     "Skein",
@@ -346,18 +553,27 @@
     "SlipLine",
     "SlipNStride",
     "Soar",
+    "Spearline",
+    "Standoff",
+    "Starweave",
+    "Stingherd",
     "Switchback",
     "Tandava",
     "TandavaSevering",
     "Tapestry",
+    "Thornbush",
     "Thornline",
     "ThresherTime",
     "Tollway",
+    "Trawl",
     "Undertow",
     "Warpline",
+    "Warren",
     "Waystation",
     "WildlifeBlitz",
     "WildlifeLiberation",
+    "Windrow",
+    "Woodpecker",
     "WrasseRun",
     "WreckingBall"
   ]

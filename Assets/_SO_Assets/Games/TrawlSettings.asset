@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10e35a260a532adb497f26d49ab90c88, type: 3}
+  m_Name: TrawlSettings
+  m_EditorClassIdentifier:
+  aiRetargetSeconds:
+  - 7
+  - 6
+  - 5
+  - 4
+  aiAimError:
+  - 70
+  - 40
+  - 18
+  - 6
+  aiOvershoot: 160
