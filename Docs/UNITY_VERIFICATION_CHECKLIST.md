@@ -23531,6 +23531,25 @@ the new `VoyageStarterSquadTests` (editor) were not compiled or run. No Unity ed
    TALON, ANVIL and CITADEL's people. The Ark's Squads tab now lists "Starter Squad": Sparrow in Charge (you), Squirrel
    in Mass and Dolphin in Space on AI. Restart the game: the squad is still there.
 4. Escort the Ark with the starter squad: the two wingmates spawn as the Squirrel and the Dolphin.
+## 🔴 Fauna attack the Ark in assaults, per-cell hostile legs, breach lines (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-dlzvop` (PR into `voyages`). `ArkAssaultClock`, `ArkAssaultDriver`,
+`ArkEscortRun.Assault.cs`, `VoyageRun.Assault.cs`, new tier and job fields (`Docs/Voyages/ARK_ESCORT.md` §4.2). The
+changed files compile clean against the Unity reference assemblies (`unity_refcompile` player and editor: 0 errors in
+changed files). No Unity editor ran, so no EditMode test ran and the numbers are not sim-tuned.
+
+1. Run `ArkAssaultTests`, `ArkPacingTests`, `VoyageRulesTests`, `VoyageShellTests`: all pass.
+2. Escort the Ark at difficulty 3. About 10 s after the Ark crosses into a hostile world, a banner reads "THE FAUNA OF
+   <world> ARE CIRCLING THE ARK"; 5 s later "THE ARK IS UNDER ATTACK - KILL 6 ATTACKERS NEAR IT", and the world's
+   creatures visibly converge on the Ark's hull and eat plates.
+3. Kill six creatures near the Ark: "ATTACK DRIVEN OFF", and the creatures drift back to grazing. Let one run out
+   instead: "THE ATTACKERS FALL BACK - THE ARK LOST <n> PLATES". The next warning comes about 35 s later.
+4. Ignore the Ark at d1-d3: the escort is overrun when the hull falls below 25%.
+5. Pacify a world: no more assaults there.
+6. Re-run the escort sim at d1, d4, d7, d9 (`ArkEscortSimLauncher`): d4 and up were fitted without assaults and may now
+   be too hard; tune `tier.{d}.assault*`.
+7. A job with `hostileCells` (Crystal Run, once its job lands): calm cell 1 has no assaults and its fauna ignore the
+   Ark; cells 2-4 start in the opposing colour and assault the Ark; below the job's `breachHull` the Ark falls.
 ## 🔴 Escort the Ark opens with an intro: the Ark, the squad, the objective (2026-11-16, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/project-thread-st7qvh` (PR into `voyages`), Milestone 1. When the Ark sets sail (the load veil comes

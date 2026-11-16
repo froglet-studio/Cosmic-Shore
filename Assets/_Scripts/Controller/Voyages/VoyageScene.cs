@@ -88,6 +88,7 @@ namespace CosmicShore.Gameplay
             if (_gameData)
             {
                 _gameData.OnClientReady.OnRaised += HandleClientReady;
+                if (_gameData.OnSceneTransition) _gameData.OnSceneTransition.OnRaised += HandleSceneTransition;
                 if (_gameData.OnPlayerPairInitialized)
                     _gameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
             }
@@ -187,7 +188,7 @@ namespace CosmicShore.Gameplay
             if (request.Kind == VoyageLaunchKind.Escort)
                 _harbour.SetSailEscort(request.Difficulty, request.Squad, request.AiLocal);
             else
-                _harbour.SetSail(request.Job);
+                _harbour.SetSail(request.Job, request.Squad);
         }
 
         /// <summary>A voyage that never got underway (no vessel, nothing authored) must not strand the pilot here.</summary>
@@ -246,6 +247,30 @@ namespace CosmicShore.Gameplay
             ReturnToMenu(0.5f);
         }
 
+        /// <summary>
+        /// The host is leaving the scene by any way (the HUD's exit, the pause menu's Main Menu, the voyage's end): the
+        /// scene loader raises this BEFORE it despawns every vessel. A voyage still out ends here, while its Ark, its AI
+        /// wingmates and the pilot's vessel are all still alive, so its teardown runs on live objects and its static hooks
+        /// (the crystal placement resolver, the squad deployment) are lifted before the menu loads. Ending it in
+        /// <see cref="OnDestroy"/> instead ran it after the despawn, during the unload, in an order Unity does not fix.
+        /// </summary>
+        void HandleSceneTransition(bool arrived)
+        {
+            // True is a scene that finished loading (an additive one included); false is the host starting to leave.
+            if (arrived) return;
+            // This scene is already on its way out: the voyage's end must not ask for a second return to the menu.
+            _returning = true;
+            _flying = false;
+            EndVoyage("the voyage scene is closing");
+        }
+
+        void EndVoyage(string reason)
+        {
+            if (!_harbour || !_harbour.IsUnderway) return;
+            try { _harbour.GiveUp(reason); }
+            catch (System.Exception e) { CSDebug.LogWarning($"[VoyageScene] Ending the voyage threw: {e.Message}"); }
+        }
+
         void ReturnToMenu(float delay)
         {
             if (_returning) return;
@@ -291,16 +316,13 @@ namespace CosmicShore.Gameplay
             if (_gameData)
             {
                 _gameData.OnClientReady.OnRaised -= HandleClientReady;
+                if (_gameData.OnSceneTransition) _gameData.OnSceneTransition.OnRaised -= HandleSceneTransition;
                 if (_gameData.OnPlayerPairInitialized)
                     _gameData.OnPlayerPairInitialized.OnRaised -= HandlePlayerPairInitialized;
             }
             // Left some other way (the pause menu's Main Menu, a dropped session): a voyage still out ends here, so a job
             // at its stop is anchored and saved rather than lost with the scene.
-            if (_harbour && _harbour.IsUnderway)
-            {
-                try { _harbour.GiveUp("the voyage scene unloaded"); }
-                catch (System.Exception e) { CSDebug.LogWarning($"[VoyageScene] Ending the voyage on unload threw: {e.Message}"); }
-            }
+            EndVoyage("the voyage scene unloaded");
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;

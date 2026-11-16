@@ -215,6 +215,10 @@ namespace CosmicShore.Data
         public WorkVerb Verb;
         public float Goal;
         public float HullFloor;
+        /// <summary>The leg's hostile cells and breach line, copied from the template (<see cref="JobTemplate.HostileCells"/>,
+        /// <see cref="JobTemplate.BreachHull"/>).</summary>
+        public List<bool> HostileCells = new();
+        public float BreachHull;
         public bool NoKill;
         public SquadRole Role;
         /// <summary>The crystals it pays, the course's intensity and its lanes, as the board priced it (DEPTH.md §7).</summary>

@@ -319,6 +319,7 @@ namespace CosmicShore.Gameplay
         void OnUnderway()
         {
             BringWingmates(force: true);
+            SignalUnderway();
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;
             HookArk();
@@ -416,6 +417,7 @@ namespace CosmicShore.Gameplay
             var authored = _escort.Legs[leg];
             Banner(TemplateText.Fill(authored.Arrival, "name", authored.Name, "leg", (leg + 1).ToString(),
                 "legs", _escort.Legs.Count.ToString()));
+            OnAssaultLegChanged();
         }
 
         /// <summary>Below the tier's breach line the Ark is overrun: the escort is lost, as if it had fallen.</summary>
@@ -657,6 +659,10 @@ namespace CosmicShore.Gameplay
             }
             StopIntro();
             if (_active) SquadDeployment.Recall();
+            // Destroyed while out (a scene unload that ended nothing first): the escort's static hooks leave with it, or
+            // the next scene's crystals would still be placed by this escort's resolver.
+            _context_?.Uninstall();
+            _context_ = null;
             if (_reactor) Destroy(_reactor);
             UnhookMetrics();
             if (_escortCopy) Destroy(_escortCopy);

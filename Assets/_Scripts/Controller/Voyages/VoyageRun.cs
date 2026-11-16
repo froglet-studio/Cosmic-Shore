@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
     /// <para>Friends: each machine runs its own voyage today; the host's course reaching the party is SLICE.md §4
     /// step 5.</para>
     /// </summary>
-    public sealed class VoyageRun : MonoBehaviour, IArkEscortHost
+    public sealed partial class VoyageRun : MonoBehaviour, IArkEscortHost, IArkStatusSource
     {
         const float BannerSeconds = 5f;
         const float LeashCheckSeconds = 2f;
@@ -157,14 +157,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Deploy the squad and sail for <paramref name="job"/> (picked in the Voyage window from
         /// <see cref="VoyageHarbour.Board"/>).</summary>
-        public void SetSail(IVesselStatus local, VoyageJob job)
+        public void SetSail(IVesselStatus local, VoyageJob job, SavedSquad squad = null)
         {
             if (job == null || _active && _following) return;
-            if (!_active) Embark(local, following: false);
+            if (!_active) Embark(local, following: false, squad);
             if (_active) TakeJob(job);
         }
 
-        void Embark(IVesselStatus local, bool following)
+        void Embark(IVesselStatus local, bool following, SavedSquad squad = null)
         {
             if (_active || local?.Transform == null) return;
             if (!_def || Content == null)
@@ -174,7 +174,7 @@ namespace CosmicShore.Gameplay
             }
 
             var domain = LiveDomain(_context);
-            _squad = ActiveSquad(_context);
+            _squad = squad ?? ActiveSquad(_context);
             _state = LoadOrBegin(Content, domain);
             _following = following;
             _pendingLeg = null;
@@ -274,7 +274,7 @@ namespace CosmicShore.Gameplay
             VoyageStore.Save(_state);
         }
 
-        /// <summary>The squad that sails: the one a party launch named, else the player's active squad, else the starter
+        /// <summary>The squad that sails: the player's active squad, else the one a party launch named, else the starter
         /// squad (Shombith, 2026-11-16): a player with no squad is given one, saved into their squad book so the Ark's
         /// Squads tab shows the same three pilots the board's jobs come from.</summary>
         public static SavedSquad ActiveSquad(ToyContext context) => ActiveSquad(context?.GameData);
@@ -282,11 +282,14 @@ namespace CosmicShore.Gameplay
         /// <inheritdoc cref="ActiveSquad(ToyContext)"/>
         public static SavedSquad ActiveSquad(GameDataSO gameData)
         {
-            if (SquadLaunchIntent.Squad != null) return SquadLaunchIntent.Squad;
             var repo = UGSDataService.Instance?.SquadRepo;
             var book = repo?.Data?.Book;
             var active = book?.GetActive();
+            // The squad the Voyage window shows and edits is the book's active one, so that is the one that sails (a seat's
+            // vessel picked there is the one flown). The Ark's Take into makes its squad active too, and holds only a COPY
+            // (SquadLaunchIntent) that a later seat change does not reach, so the intent is read only with no book.
             if (active != null) return active;
+            if (SquadLaunchIntent.Squad != null) return SquadLaunchIntent.Squad;
 
             var starter = StarterSquad(VoyageToyDefinitionSO.Load(), SquadDirectory.LocalPlayerId);
             if (starter == null)
@@ -455,6 +458,7 @@ namespace CosmicShore.Gameplay
         {
             _profile = VoyageRules.CorridorProfile(_state, Content, job.From, job.To);
             _hostileWorld = VoyageRules.HostileWorld(_state, Content, job.To);
+            BeginLegAssaults();
         }
 
         /// <summary>The corridor stands a cell of the route: it takes the lane's pacing, and the destination its hostility
@@ -463,7 +467,8 @@ namespace CosmicShore.Gameplay
         {
             if (!cell || !_active || routeIndex < 0 || _profile == null || routeIndex >= _profile.Count) return;
             cell.RuntimePopulationScale = Mathf.Max(0.1f, _profile[routeIndex]);
-            if (routeIndex == _profile.Count - 1 && _hostileWorld)
+            // The job's hostile cells (VoyageRun.Assault.cs); without a pattern, the destination when its place is hostile.
+            if (PrepareAssaultCell(cell, routeIndex))
                 cell.SetReplicatedStartingController(CellControlRules.Opposing(LiveDomain(_context)));
         }
 
@@ -485,6 +490,7 @@ namespace CosmicShore.Gameplay
             _holdKnown = hold ? hold.Artifacts.Count : 0;
             _underway = true;
             BringWingmates(force: true);
+            OnAssaultUnderway();
         }
 
         void OnRouteEnded()
@@ -695,6 +701,8 @@ namespace CosmicShore.Gameplay
             }
             SeedSeats();
             TickEscort();
+            TickAssaults();
+            if (!_active) return;
             WatchHold();
             TickHold();
             TickObserve();
@@ -1045,6 +1053,7 @@ namespace CosmicShore.Gameplay
             _wingmates.Clear();
             _seeded.Clear();
             _holdMirror.Clear();
+            EndAssaults();
             _onEnded?.Invoke();
         }
 
@@ -1155,6 +1164,8 @@ namespace CosmicShore.Gameplay
                 _sea.ArkFallen -= OnArkFallen;
             }
             if (_active) SquadDeployment.Recall();
+            // Destroyed while out: the escort context's static hooks (the crystal placement resolver) leave with it.
+            _escort?.Uninstall();
             _onEnded = null;
         }
     }
