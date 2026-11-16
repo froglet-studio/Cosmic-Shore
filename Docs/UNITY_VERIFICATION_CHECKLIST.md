@@ -23496,3 +23496,20 @@ reports are in multiplayer and camera files this change does not touch). `author
 4. The voyage list, the map and the right panel stand above the strip, none of them covered by it.
 5. Configure / go to the squad screen: the strip is gone and the map fills the page; back to the voyage screen, it returns.
 6. Wear another colour set: the cards repaint with it.
+
+## 🔴 Voyage jobs come from the active squad only, and a starter squad (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-j3ua9b` (PR into `voyages`). The board offers one job per pilot in the active squad (no
+crew fill to six), and a player with no squad is given a starter squad saved into their squad book
+(`VoyageRun.ActiveSquad`, `VoyageToyDefinitionSO` starter seats, `Docs/Voyages/DEPTH.md` §14 decision 8). The changed
+runtime files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files);
+the new `VoyageStarterSquadTests` (editor) were not compiled or run. No Unity editor ran.
+
+1. Run `VoyageStarterSquadTests`, `VoyageRulesTests`, `VoyageDepthTests`: all pass.
+2. With an account that has squads: open the Voyage window. The board shows at most three pilot jobs (plus Escort the
+   Ark, and Sail home when away), each brought by a pilot of the active squad. Switch the active squad on the Ark's
+   Squads tab: the jobs change with it.
+3. With an account that has no squad (or delete them all): open the Voyage window. The board shows three jobs, from
+   TALON, ANVIL and CITADEL's people. The Ark's Squads tab now lists "Starter Squad": Sparrow in Charge (you), Squirrel
+   in Mass and Dolphin in Space on AI. Restart the game: the squad is still there.
+4. Escort the Ark with the starter squad: the two wingmates spawn as the Squirrel and the Dolphin.

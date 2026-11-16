@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
@@ -58,6 +59,24 @@ namespace CosmicShore.ScriptableObjects
 
         [SerializeField, Min(200f), Tooltip("An AI wingmate further than this from the Ark is brought back to its flank.")]
         float wingmateLeash = 1600f;
+
+        [Header("Voyage - the starter squad")]
+        [SerializeField, Tooltip("The name of the squad a player with no squad is given (Shombith, 2026-11-16: the board's " +
+                                 "jobs come from the active squad's three pilots only, so every player needs one). Empty " +
+                                 "= the squad book's default name.")]
+        string starterSquadName = "Starter Squad";
+
+        [SerializeField, Tooltip("The starter squad's three seats, leader first: vessel, element and pilot id (one pilot " +
+                                 "per seat, each of a different callsign, so the board offers three different jobs). The " +
+                                 "defaults are Garrett's three archetypes (Docs/Voyages/HANDOFF.md section 8.4): a Guardian " +
+                                 "in Charge with TALON, a Cultivator Squirrel in Mass with ANVIL, a Destroyer Dolphin in " +
+                                 "Space with CITADEL.")]
+        SquadSlot[] starterSeats =
+        {
+            new(VesselClassType.Sparrow, Element.Charge, "pilot.callsign.talon"),
+            new(VesselClassType.Squirrel, Element.Mass, "pilot.callsign.anvil"),
+            new(VesselClassType.Dolphin, Element.Space, "pilot.callsign.citadel"),
+        };
 
         [Header("Voyage - arrivals")]
         [SerializeField, Min(80f), Tooltip("How far from the Ark a vault shell or a wreck stands.")]
@@ -129,6 +148,8 @@ namespace CosmicShore.ScriptableObjects
         public Color RouteColor => ColorTrace.Retrace(ColorTrace.Ui, routeColor);
         public Color HereColor => ColorTrace.Retrace(ColorTrace.Ui, hereColor);
         public float SeedElementLevel => seedElementLevel;
+        public string StarterSquadName => starterSquadName;
+        public IReadOnlyList<SquadSlot> StarterSeats => starterSeats;
         public float WingmateLeash => wingmateLeash;
         public float FindDistance => findDistance;
         public float VaultRadius => vaultRadius;
