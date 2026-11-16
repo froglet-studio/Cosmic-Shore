@@ -1350,7 +1350,7 @@ def main():
                                               "shard", "merge"))
     ap.add_argument("--shard", type=int, default=0, help="shard: this runner's index K (0-based)")
     ap.add_argument("--of", type=int, default=1, help="shard: how many runners N")
-    ap.add_argument("--start", default=None, choices=("card", "L5"),
+    ap.add_argument("--start", default=None, choices=("card", "rest", "L5"),
                     help="the start condition every hull races under (default card, or REGATTA_START)")
     ap.add_argument("dirs", nargs="*")
     ap.add_argument("--budget", type=int, default=1500)
