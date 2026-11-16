@@ -49,6 +49,13 @@ namespace CosmicShore.Gameplay
         float _bannerFrom = -1f, _bannerUntil = -1f;
         readonly Queue<(Mood mood, string line, string under, float seconds)> _queue = new();
 
+        /// <summary>
+        /// While this answers true the surface is held: nothing new comes up, a banner already up fades and keeps the
+        /// time it had left, and the queue waits. The run holds it while the load veil covers the screen and while a
+        /// voyage intro plays, so a toast raised then is read after, not spent unseen behind the veil or the intro.
+        /// </summary>
+        public System.Func<bool> Hold { get; set; }
+
         void Awake()
         {
             var canvas = gameObject.AddComponent<Canvas>();
@@ -127,13 +134,25 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             float now = Time.unscaledTime;
+            float step = Time.unscaledDeltaTime / FadeSeconds;
+            if (Hold != null && Hold())
+            {
+                // The banner up keeps its time: it comes back when the hold lifts, then goes on as it would have.
+                if (_bannerUntil >= 0f)
+                {
+                    _bannerFrom += Time.unscaledDeltaTime;
+                    _bannerUntil += Time.unscaledDeltaTime;
+                }
+                _bannerGroup.alpha = Mathf.MoveTowards(_bannerGroup.alpha, 0f, step);
+                _countdownGroup.alpha = Mathf.MoveTowards(_countdownGroup.alpha, 0f, step);
+                return;
+            }
             bool showing = _bannerUntil >= 0f && now < _bannerUntil;
             // Another banner waits: the one up gives way once it has been read.
             if (showing && _queue.Count > 0 && now - _bannerFrom >= QueuedMinSeconds) showing = false;
             if (!showing) _bannerUntil = -1f;
             if (!showing && _bannerGroup.alpha <= 0f && _queue.Count > 0) Next(now);
 
-            float step = Time.unscaledDeltaTime / FadeSeconds;
             _bannerGroup.alpha = Mathf.MoveTowards(_bannerGroup.alpha, _bannerUntil >= 0f ? 1f : 0f, step);
             _countdownGroup.alpha = Mathf.MoveTowards(_countdownGroup.alpha, _countdownShown ? 1f : 0f, step);
         }

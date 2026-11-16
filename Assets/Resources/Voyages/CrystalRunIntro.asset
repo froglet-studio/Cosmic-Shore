@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7a2538b9cd2416d93837046b0ae6caf, type: 3}
+  m_Name: CrystalRunIntro
+  m_EditorClassIdentifier:
+  shots:
+  - Subject: 0
+    Seconds: 5
+    FromAzimuth: 35
+    ToAzimuth: 115
+    Elevation: 10
+    FromDistance: 3.2
+    ToDistance: 2.4
+    LookAhead: 0
+    Title: THE ARK
+    Line: "Home to your crew, and the reason your vessels cannot die. While she sails, so do you."
+  - Subject: 1
+    Seconds: 2.4
+    FromAzimuth: 25
+    ToAzimuth: 60
+    Elevation: 8
+    FromDistance: 4
+    ToDistance: 3
+    LookAhead: 0
+    Title: '{vessel}'
+    Line: "{seat} \xB7 {who}"
+  - Subject: 2
+    Seconds: 5
+    FromAzimuth: 200
+    ToAzimuth: 180
+    Elevation: 22
+    FromDistance: 3.5
+    ToDistance: 4.5
+    LookAhead: 6
+    Title: CRYSTAL RUN
+    Line: "Steal {goal} crystals before the Ark reaches {to}.\nHostile cells will bite her hull. Keep it above {breach}%."
+  vessels: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
+  worldSeparator: " \xB7 "
+  skipHint: Hold any button to skip
+  holdToSkipSeconds: 0.6
+  skipGraceSeconds: 0.5
+  letterboxShare: 0.11
+  fadeSeconds: 0.45
+  cutSeconds: 0.6
+  handOverSeconds: 1.4
+  chaseDistance: 4
+  chaseHeight: 1.2

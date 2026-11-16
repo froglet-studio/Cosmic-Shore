@@ -628,6 +628,8 @@ namespace CosmicShore.Gameplay
             var sea = new GameObject("ArkEscortArkwayRun");
             sea.transform.SetParent(_root, false);
             _sea = sea.AddComponent<ArkwayRun>();
+            // A toast never plays under the intro: it waits, and is read when the pilot has the stick.
+            _sea.HoldBanners = () => VoyageIntro.IsPlaying;
             _sea.Underway += OnUnderway;
             _sea.RouteEnded += OnRouteEnded;
             _sea.ArkFallen += OnArkFallen;
