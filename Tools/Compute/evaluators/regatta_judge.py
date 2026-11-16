@@ -129,7 +129,9 @@ def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, work
     mode       any gate-race Time game by its card name (Switchback, Redline, Breakwater, SerpentTime, ScarabRally ...);
                only Regatta reads the genome, the others lay their own course at `intensity` (default the genome's, 1).
     overrides  [{"asset": "Assets/...asset", "fields": {"field.sub": value}}]: in-memory edits to loaded assets for this
-               run only (nothing is written), so a parameter search can score candidates in parallel.
+               run only (nothing is written), so a parameter search can score candidates in parallel. A prefab's
+               component is edited with {"asset": "Assets/...prefab", "component": <its fileID>, "fields": {...}}
+               (a vessel's VesselStatus throttle, a TrailFollower's ride speed): every spawn of that prefab reads it.
     controller_overrides  {"aiNoseLead.0.Gain": 1.5}: fields of the scene's race controller, set before each Ready.
     start      the element levels each hull starts at: "card" (default, the card's StartingElements), "rest" (all 0),
                "L5" (every hull at Time 5: every Time level-5 upgrade on) or {"Manta": {"Time": 5}} in levels.

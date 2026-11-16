@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-16-added-a-localkeyword-look-alike-and-mate-c48984",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T23:07:07+00:00",
+  "area": "the Amoebius engine (Port/)",
+  "summary": "Added a LocalKeyword look-alike and Material.SetKeyword(LocalKeyword) to the engine so the live compile builds again after #1877's SolitonTunnelLensPass, and let the race judge's overrides edit a prefab component (TrainingHost.LoadPrefabComponent).",
+  "why": "The live build failed on bleeding-edge (CS0246 LocalKeyword), which stopped the Regatta judge; the vessel-pace search needs prefab component overrides (throttle, rail ride speed).",
+  "branch": "claude/project-thread-cwavhz",
+  "lane": "amoebius",
+  "commit": "97e22bf7f",
+  "paths": [
+    "Port/src/CosmicShore.Engine/Rendering/Material.Extras.cs",
+    "Port/src/CosmicShore.Player/RaceJudge.cs",
+    "Port/src/CosmicShore.Player/TrainingHost.cs"
+  ]
+}
