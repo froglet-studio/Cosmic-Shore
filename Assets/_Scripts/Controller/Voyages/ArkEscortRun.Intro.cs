@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -24,6 +25,11 @@ namespace CosmicShore.Gameplay
             var local = LocalVessel();
             if (!script || local == null || !Ark)
             {
+                // The sim (every seat AI) has no intro by design; anything else is a fault, said once with its reason.
+                if (!_aiLocal)
+                    CSDebug.LogWarning("[ArkEscort] The escort opens without its intro: " +
+                                       (!script ? $"nothing at Resources/{VoyageIntroSO.EscortResourcePath}"
+                                           : local == null ? "no live local vessel" : "no Ark") + ".");
                 Depart();
                 return;
             }

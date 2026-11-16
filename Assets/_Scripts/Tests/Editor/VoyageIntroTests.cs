@@ -56,6 +56,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void CrystalRunIntro_LoadsFromResources_AndNamesTheGoal()
+        {
+            var intro = Resources.Load<VoyageIntroSO>(VoyageIntroSO.CrystalRunResourcePath);
+            Assert.IsNotNull(intro, "VoyageIntroSO.LoadCrystalRun() finds nothing: Crystal Run would open with no intro.");
+            var shots = intro.Shots;
+            Assert.AreEqual(3, shots.Count);
+            Assert.AreEqual(VoyageIntroSO.Subject.Ark, shots[0].Subject);
+            Assert.AreEqual(VoyageIntroSO.Subject.Squad, shots[1].Subject);
+            Assert.AreEqual(VoyageIntroSO.Subject.Course, shots[2].Subject);
+            StringAssert.Contains("{goal}", shots[2].Line, "Crystal Run's objective does not name its goal.");
+            Assert.IsNotNull(intro.Vessels, "The intro reads no vessel list: the squad shots would have no names.");
+            Assert.LessOrEqual(intro.Duration(3), 25f, "A three-seat intro runs longer than 25 s.");
+        }
+
+        [Test]
         public void Orbit_AzimuthZero_IsAhead_Ninety_IsStarboard_AndLooksAtTheAim()
         {
             var frame = Quaternion.Euler(0f, 30f, 0f);

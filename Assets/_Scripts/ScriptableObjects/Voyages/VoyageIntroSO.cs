@@ -19,6 +19,8 @@ namespace CosmicShore.ScriptableObjects
     {
         /// <summary>Under Resources: the escort's intro.</summary>
         public const string EscortResourcePath = "Voyages/ArkEscortIntro";
+        /// <summary>Crystal Run's intro (job.raid.crystals): the same reel, its own words.</summary>
+        public const string CrystalRunResourcePath = "Voyages/CrystalRunIntro";
 
         public enum Subject
         {
@@ -130,16 +132,23 @@ namespace CosmicShore.ScriptableObjects
             return t;
         }
 
-        static VoyageIntroSO s_escort;
+        static VoyageIntroSO s_escort, s_crystalRun;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => s_escort = null;
+        static void ResetStatics() => s_escort = s_crystalRun = null;
 
         /// <summary>The escort's intro, or null when none is shipped (the escort then opens as it always did).</summary>
         public static VoyageIntroSO LoadEscort()
         {
             if (!s_escort) s_escort = Resources.Load<VoyageIntroSO>(EscortResourcePath);
             return s_escort;
+        }
+
+        /// <summary>Crystal Run's intro, or null when none is shipped (the run then opens on its first toast).</summary>
+        public static VoyageIntroSO LoadCrystalRun()
+        {
+            if (!s_crystalRun) s_crystalRun = Resources.Load<VoyageIntroSO>(CrystalRunResourcePath);
+            return s_crystalRun;
         }
     }
 }

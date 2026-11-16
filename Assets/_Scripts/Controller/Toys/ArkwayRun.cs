@@ -264,6 +264,14 @@ namespace CosmicShore.Gameplay
             _hud.ShowBanner(line, seconds, mood, under);
         }
 
+        /// <summary>
+        /// Holds the run's banners while it answers true (a voyage's intro is playing). The banners are always held while
+        /// the voyage builds behind the load veil: a toast raised as a voyage sets sail is shown when the screen opens.
+        /// </summary>
+        public System.Func<bool> HoldBanners { get; set; }
+
+        bool BannersHeld() => _beginning || HoldBanners != null && HoldBanners();
+
         /// <summary>True while the corridor and hull are still building behind the veil —
         /// the window in which the player can see nothing and a toy pass must not toggle.</summary>
         public bool IsBuilding => _beginning;
@@ -1165,6 +1173,7 @@ namespace CosmicShore.Gameplay
             var go = new GameObject("ArkwayVoyageHud");
             go.transform.SetParent(transform, false);
             _hud = go.AddComponent<ArkwayVoyageHud>();
+            _hud.Hold = BannersHeld;
         }
 
         void OnDestroy()

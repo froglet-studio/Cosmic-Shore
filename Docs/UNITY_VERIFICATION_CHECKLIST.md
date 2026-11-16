@@ -23593,3 +23593,18 @@ files); `VoyageCrystalRunTests` never ran. Spec: `Docs/Voyages/CRYSTAL_RUN.md`.
    line, "Ark bound for / inside {world}", and the assault line. At the last world the scoreboard offers Venture
    further (difficulty + 1) and Finish (sail home, then bank). A fallen escort offers Try again.
 8. The toasts' and scoreboard's sound slots on `Voyage.asset` are empty: nothing plays until they are wired.
+
+## 🔴 Voyage toasts wait for the load screen and the intro; Crystal Run opens with an intro (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-a5f46g` (PR into `voyages`). Shombith's play test after #2022 and #2025 merged: no intro,
+and no toasts, only text at the top over the Ark. Compiled with `unity_refcompile` (player and editor, 0 errors in
+changed files); the new `VoyageIntroTests.CrystalRunIntro_LoadsFromResources_AndNamesTheGoal` never ran.
+
+1. Sail Crystal Run from the Voyages page. When the load screen lifts, the intro plays (bars, THE ARK, each vessel,
+   CRYSTAL RUN "Steal 20 crystals before the Ark reaches {place}..."), then the camera lands behind your vessel.
+2. Only after the intro: the toast "STEAL 20 CRYSTALS" with its line under it, then "STAY WITH THE ARK". Before this
+   change the set-off toast played behind the load screen and was never seen.
+3. Hold any button during the intro: it skips to the hand-over and the same toasts follow.
+4. Escort the Ark: the intro plays as before; no toast shows over it; "STAY WITH THE ARK" and the departure toast come
+   after it. If the intro does not play, the console says why (`[ArkEscort] The escort opens without its intro: ...`).
+5. Venture further at a Crystal Run stop: no second intro.
