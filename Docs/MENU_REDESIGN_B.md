@@ -33,7 +33,8 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept); now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203; Rev 111 Full, P2A and P3A built in section 204), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
+| Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept) and on 2026-11-16 (Rev 100, 103, 108 and 111 taken off for room, copies kept; section 210); the board now holds Rev 113 (section 209); before that it held now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203; Rev 111 Full, P2A and P3A built in section 204), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
+| Voyages playtest | `voyages-playtest` | What the first Milestone 1 playtest asked for: four options each for the crew screen, the intro, the objective box, the toasts and the feel in flight (Rev 114) | Shombith, 2026-11-16 (section 210) |
 | Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
 | Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 187) |
 
@@ -8520,3 +8521,44 @@ Built, with nothing new on the wire (no protocol bump):
 
 Not seen in Unity or with two machines: the hand test is a host and a friend in one party, the friend changing vessel,
 pilot and element on their Ark page, the host's card showing the new hull, and the friend spawning in it at the berth.
+
+## 210. Rev 114 mockups: the Voyages playtest, four of each (2026-11-16, awaiting a pick per row)
+
+**Asked** (Shombith, after playing the Milestone 1 build): "The crew screen needs some rework, suggest me some mockups
+in frogma for that. The in game still has no intro, I could not see there should be a kick ass intro. The objective on
+the left was too big show me 4 mockups of that on a new frogma page. There were no toasts in the game but text showed up
+at the top of the ark. Still in the game I did not get a good feel. Create 4 mockups of each thing".
+
+**On the canvas**: a new tab, **Voyages playtest** (`voyages-playtest`), Rev 114, one section with a group per row and
+the notes as a sticky beside it. Copies: `Docs/MenuRedesignB/board/R114*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r114_voyages.py`. The in-flight boards are drawn over real frames of the game
+(`Docs/Pilots/art/refs/sea_*.jpg`, `Docs/MenuRedesignB/build_refs/sea_cell_outside.jpg`, uploaded as canvas assets).
+- **Crew recommends** (`R114C1`-`C4`): A a drawer over the HyperSea, each job a numbered pin on the map
+  (recommended: the map stays in view and ties each job to its place); B pilot first, your crew's faces with the job each
+  brings, told in the pilot's words; C a job board, one poster per voyage in faction columns; D faction tabs across the
+  top with the two open voyages as a hero row above every tab.
+- **Intro** (`R114IAB`, `R114ICD`; two storyboards to a board, six shots each): A Departure, nine seconds: the Ark
+  undocks, your vessel and wingmates drop in with name cards, the title and five worlds, GO (recommended: it is his list,
+  the Ark, the vessels and the objective); B From the map, the HyperSea table dives down to the Ark; C Threat first,
+  The Maw and its fauna, then the Ark and a pilot's radio line; D One take, out of the Ark's bay into formation in five
+  seconds.
+- **Objective box** (`R114O1`-`O4`; Rev 113's box was about 600 x 330): A a 420 x 120 strip; B a 700 x 60 ribbon at top
+  centre where the route is the bar; C a 260 px hull gauge with the full objective held on View; D opens (440 x 170) for
+  four seconds on news and folds to one 380 x 44 line the rest of the time (recommended).
+- **Toasts** (`R114TAB`, `R114TCD`; event, threat and goal for each): A the Rev 113 band a third smaller and higher;
+  B the crew on the radio, a pilot's face with each line, lower left; C a quiet feed under the objective; D two sizes, big
+  moments (a new world, breach close, the goal) take the screen and the rest is a small line (recommended).
+- **Feel in flight** (`R114F1`-`F4`): A Chase, close behind you with the Ark ahead; B Guardian, pulled back with the Ark
+  central, its hull lights showing its hull and fauna lit red in the world (recommended); C Cinematic beats, two seconds
+  of letterbox and slow time at the big moments; D Punch, hit-stop, shard bursts, rumble and empty sound slots for kills,
+  crystals and bites. B and D combine.
+
+**Room on the canvas**: it holds at most 512 files of its own, and adding the round needed 18. The intro and toast
+options share boards two to one, the notes are a sticky, and the superseded Voyages rounds were taken off the canvas
+(Rev 100 P1A/P2A/P3A/Notes, Rev 103 A/B/C/Compare/Notes, Rev 108 Lobby/Picker/Squad/Table, Rev 111 Full; all built or
+replaced by Rev 113, copies kept in `Docs/MenuRedesignB/board/`).
+
+**Differs from the build**: the toasts in the build drew their words in the world over the Ark; every toast here is
+screen space. Everything else is new (no intro, no camera rig, no hit feedback in the build yet). A separate thread is
+finding why the intro and toasts did not show.
+
