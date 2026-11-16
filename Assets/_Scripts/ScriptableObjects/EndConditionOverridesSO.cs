@@ -455,9 +455,10 @@ namespace CosmicShore.ScriptableObjects
         /// Read by <c>ThornlineCourseSource</c> to size the course and, through it, by the turn monitor.</summary>
         public const int DefaultThornlineGateTarget = 16;
 
-        /// <summary>Spearline RACE length used when <see cref="spearlineGateTarget"/> is 0 - gate threadings: 3 laps of
-        /// Headlong's 8-ring circuit, the rings sealed (SPEARLINE.md). Read by <c>SpearlineCourseSource</c>.</summary>
-        public const int DefaultSpearlineGateTarget = 24;
+        /// <summary>Spearline RACE length used when <see cref="spearlineGateTarget"/> is 0 - gate threadings: 5 laps of
+        /// Headlong's 8-ring circuit, the gentlest rings sealed (SPEARLINE.md; 3 laps until the 2026-11-16 fun pass,
+        /// which the race model put at 50-70 s). Read by <c>SpearlineCourseSource</c>.</summary>
+        public const int DefaultSpearlineGateTarget = 40;
 
         /// <summary>Decoy Run RACE length used when <see cref="decoyRunGateTarget"/> is 0 - rings threaded in order,
         /// flown once. The course tests prove the course at 12 (DECOYRUN.md).</summary>
@@ -653,8 +654,8 @@ namespace CosmicShore.ScriptableObjects
                  "The course is proven at 16; another count re-spaces the snipes.")]
         [Min(0)] public int thornlineGateTarget = 16;
 
-        [Tooltip("Spearline race length in rings (3 laps x 8 rings of Headlong's circuit, sealed). 0 = use the default (24).")]
-        [Min(0)] public int spearlineGateTarget = 24;
+        [Tooltip("Spearline race length in rings (5 laps x 8 rings of Headlong's circuit, sealed). 0 = use the default (40).")]
+        [Min(0)] public int spearlineGateTarget = 40;
 
         [Tooltip("Decoy Run race length in rings (flown once). 0 = use the default (12). The course is proven at 12.")]
         [Min(0)] public int decoyRunGateTarget = 12;
@@ -939,7 +940,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int brittleStarTimeGateTargetBuild = 16;
         [Min(0)] public int lanternRunGateTargetBuild = 16;
         [Min(0)] public int thornlineGateTargetBuild = 16;
-        [Min(0)] public int spearlineGateTargetBuild = 24;
+        [Min(0)] public int spearlineGateTargetBuild = 40;
         [Min(0)] public int decoyRunGateTargetBuild = 12;
         [Min(0)] public int breachGateTargetBuild = 16;
         [Min(0)] public int slipLineGateTargetBuild = 16;

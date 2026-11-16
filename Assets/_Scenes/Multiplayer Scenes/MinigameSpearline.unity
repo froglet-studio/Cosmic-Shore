@@ -831,7 +831,7 @@ MonoBehaviour:
   aiCrystalScanSeconds: 0.5
   maxPlausibleSpeed: 2000
   reportResyncSeconds: 3
-  laps: 3
+  laps: 5
   sealPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   sealRegrowPerFrame: 40
   sealClearance: 60

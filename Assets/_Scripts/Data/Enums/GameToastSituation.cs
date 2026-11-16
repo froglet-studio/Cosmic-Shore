@@ -274,6 +274,11 @@ namespace CosmicShore.Data
         // The Swordfish's three games (SPEARLINE.md, RIPOSTE.md, PALISADE.md), ids reserved in
         // Docs/ElementalLoop/GAME_KIT_ROSTER.md. Posted to the LOCAL pilot only, once, at the start.
         SpearlineHint = 171,            // a sealed ring counts only through a hole: swing the bill on the way through
+        // Spearline's fun pass (SPEARLINE.md §4, 2026-11-16; ids 400-409 reserved for it, 403-409 spare). Posted to
+        // the LOCAL pilot only.
+        SpearlineSealHeld = 400,        // once a race, the first closed pass: cut a hole of your own, then come back through it
+        SpearlineCleanStreak = 401,     // a run of seals threaded on the first pass is called (3, 6, 12): {0} = the run
+        SpearlineArmourHint = 402,      // once, the first armoured seal: cross the bright face and swing into it
         RiposteHint = 172,              // a sword hit lands only while you are faster: cut a straight lane, ramp, strike
         PalisadeHint = 173,             // light the blade and let go to lay afterimages; cut the rivals' walls down
         // The Shrike's games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 12-14 reserved 177-179). Posted to the LOCAL

@@ -23924,3 +23924,32 @@ environment's package fetch could not resolve). No Unity editor, Play mode or Ed
 - [ ] Riptide (Space): Shatterplane's plates; the undertow pulls loose tiles, the ring collapse smashes them and
       PrismsDestroyed rises; first domain to 600 wins; the end screen breakdown matches the server's.
 - [ ] An all-AI seat in each mode plays (the crew AI locks, snaps, routes islands); the console is clean.
+
+## 🔴 Spearline fun pass: the connected hole, armour, the worn seal, the AI's read (2026-11-16, Yash's round 5, `claude/swordfish-time-upgrade-9e60cf`, NOT RUN IN EDITOR, NOT COMPILED)
+
+Spearline (GameModes 96, the Swordfish's Time card) upgraded in place: a sealed ring counts through a connected hole of
+8 prisms; armoured seals from I2; the worn seal; mouths 96 / 84 / 74 / 66; 5 laps (40 rings); the AI reads each seal
+and strokes through `SwordfishSwordAutopilot.Coach`; toasts 400-402; three empty FMOD slots. What ran headless:
+`Tools/Build/spearline_harness/run.sh --self-test` (11 SpearlineSealsTests compiled with Roslyn against a Unity stub,
+8 negative controls), `spearline_race_model.py --self-test`, `author_spearline_assets.py --check`, and the
+using-directive, console-logging, conditional-compilation, enum-member and switch-label gates. **Not run:** Unity, the
+reference compile (`unity_refcompile` does not run on this Windows box), the EditMode suite in the editor, card art.
+The three `SpearlineController` partials and the autopilot seam were read by an independent reviewer, not compiled.
+Docs: `Assets/_Scripts/Controller/Arcade/SPEARLINE.md`, `Docs/Spearline/FUN_PASS.md`.
+
+- [ ] The project compiles; `SpearlineSealsTests` pass in the editor (11).
+- [ ] I1 in the Toybox, alone: fly straight through a sealed ring with the bill at rest - it does NOT count (toast 400
+      once). Come round and hold one trigger through it, the bill out toward the pane's middle - it counts, and the
+      hole flashes. Note how wide the bill's cut really is (the model's `ModelStrokeReach` is 6.15 u).
+- [ ] At 840 u/s (a long straight into a gentle sealed ring) a held stroke still counts: the bill's cut lands before the
+      hull's crossing is judged.
+- [ ] I3: the armour (shielded sector) reads from ~900 u, and the plain face is lifted; a stroke into the armour does
+      not count; crossing the plain face and swinging into it does. Toast 402 at the first armoured seal.
+- [ ] The worn seal: ram the same armoured seal at its centre with no stroke; by the fifth pass it counts.
+- [ ] Seals regrow behind the field (2.5-4 s) and never in front of a pilot still flying for that ring; a cracked shield
+      regrows too; no seal prism is left behind as an invisible object after a regrow (Hierarchy count stays flat).
+- [ ] Four AI Swordfish at I1-I4 (Easy to Legendary): each strokes through seals (the bill swings out before the pane,
+      never stands up to energize in front of one) and finishes; note closed passes per lap.
+- [ ] A human Swordfish in Cleave / Astro League / Brood Rush: the sword hand's own AI and the human's triggers behave as
+      before (the coach seam is only set by Spearline).
+- [ ] Toasts 401 ("3 seals cut clean") fire on a run of first-pass seals; the console is clean.
