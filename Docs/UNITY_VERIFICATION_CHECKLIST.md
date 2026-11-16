@@ -24511,3 +24511,13 @@ nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed
    prefab's `courseGenome` field, play, and fly the line: the placed spawners stand clear of the line and the rings,
    and the lap still counts.
 3. Watch the frame time on that course: up to 12,000 extra prisms can be laid.
+
+## 🔴 "The host left" is not shown for a drop from an earlier run (2026-11-17, Yash, NOT COMPILED, NOT RUN IN EDITOR)
+
+`MatchRejoin.DroppedThisRun` / `GiveUpSaysHostLeft`; `DisconnectNotice.CheckRejoin` uses it. The Unity editor was in Play for
+another test when this was written, so nothing was compiled or run.
+
+- [ ] The project compiles; `MatchRejoinTests` pass (the new `GiveUp_SaysHostLeftOnlyForADropSeenInThisRun` among them).
+- [ ] MPPM, Player 2 a guest in a match: stop Play, press Play again. Player 2 sits on the menu 30 s: no "The host left".
+- [ ] A guest whose host quits while the guest keeps running still gets "The host left" on its menu after about 20 s.
+- [ ] A guest that restarts while the match is still running is still offered the rejoin.
