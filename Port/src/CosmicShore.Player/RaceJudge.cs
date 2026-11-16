@@ -36,7 +36,7 @@ namespace CosmicShore.Player
     /// </summary>
     internal sealed class RaceJudge
     {
-        const string CardPath = "Assets/_SO_Assets/Games/ArcadeGameRegatta.asset";
+        const string CardPathFormat = "Assets/_SO_Assets/Games/ArcadeGame{0}.asset";
         const string CellConfigPath = "Assets/_SO_Assets/Cell Configs/Regatta Cell/Regatta Cell Config {0}.asset";
         const BindingFlags Any = BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
         const double TickSeconds = 1.0 / 60.0;
@@ -47,6 +47,9 @@ namespace CosmicShore.Player
         readonly List<int> _seeds = new();
         readonly bool _field;
         readonly bool _trace;
+        readonly string _mode;
+        readonly Collider[] _near = new Collider[256];
+        bool IsRegatta => _mode == "Regatta";
         readonly float _limit;
         readonly AIDifficulty _difficulty = AIDifficulty.Legendary;
         readonly JsonArray _races = new();
@@ -78,6 +81,7 @@ namespace CosmicShore.Player
             if (!_field && _hulls.Count != 1)
                 throw new InvalidOperationException("an alone race seats one hull per process; set \"field\": true or run one process per hull");
             foreach (var n in _spec["seeds"]?.AsArray() ?? new JsonArray { 1 }) _seeds.Add(n!.GetValue<int>());
+            _mode = _spec["mode"]?.GetValue<string>() ?? "Regatta";
             _trace = _spec["trace"]?.GetValue<bool>() ?? false;
             _limit = _spec["limit_s"]?.GetValue<float>() ?? 400f;
             if (_spec["difficulty"]?.GetValue<string>() is { } d && Enum.TryParse(d, out AIDifficulty diff)) _difficulty = diff;
@@ -117,8 +121,10 @@ namespace CosmicShore.Player
         {
             var gameData = TrainingHost.FindFirstAsset(_runtime, "GameDataSO") as GameDataSO
                 ?? throw new InvalidOperationException("GameDataSO not found");
-            var card = TrainingHost.LoadAsset(_runtime, CardPath) as SO_ArcadeGame
-                ?? throw new InvalidOperationException(CardPath + " not found");
+            string cardPath = _spec["card"]?.GetValue<string>() ?? string.Format(CardPathFormat, _mode);
+            var card = TrainingHost.LoadAsset(_runtime, cardPath) as SO_ArcadeGame
+                ?? throw new InvalidOperationException(cardPath + " not found");
+            ApplyOverrides();
 
             double deadline = Now + 300;
             while (Now < deadline && !(IsMenu() && gameData.LocalPlayer?.Vessel != null)) yield return 0.25f;
@@ -128,13 +134,15 @@ namespace CosmicShore.Player
             yield return 1.5f;
 
             var genome = _spec["genome"] as JsonObject;
-            int intensity = Math.Clamp(genome?["intensity"]?.GetValue<int>() ?? 1, 1, 4);
-            ApplyCourse(genome, intensity);
+            int intensity = Math.Clamp(_spec["intensity"]?.GetValue<int>() ?? genome?["intensity"]?.GetValue<int>() ?? 1, 1, 4);
+            if (IsRegatta) ApplyCourse(genome, intensity);
+            else if (genome != null) _notes.Add($"genome ignored: {_mode} lays its own course");
 
             var all = new[] { "Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow" }
                 .Select(Enum.Parse<VesselClassType>);
             var hostHull = all.First(h => !_hulls.Contains(h));
             gameData.SyncFromArcadeGame(card);
+            ApplyStart(gameData);
             gameData.IsTraining = false;
             if (gameData.selectedVesselClass != null) gameData.selectedVesselClass.Value = hostHull;
             if (gameData.SelectedIntensity != null) gameData.SelectedIntensity.Value = intensity;
@@ -143,6 +151,7 @@ namespace CosmicShore.Player
             gameData.RequestedAIDifficulty = AIDifficultyRules.Resolve(_difficulty);
             gameData.SetRequestedAIVessels(_hulls);
             CosmicShore.Engine.Random.InitState(_seeds[0]);
+            ForceCourse(0);
             gameData.InvokeGameLaunch();
 
             for (int r = 0; r < _seeds.Count; r++)
@@ -162,7 +171,7 @@ namespace CosmicShore.Player
                     }
                     yield return 0.25f;
                 }
-                var race = new JsonObject { ["seed"] = seed, ["mode"] = _field ? "field" : "alone", ["intensity"] = intensity };
+                var race = new JsonObject { ["seed"] = seed, ["mode"] = _field ? "field" : "alone", ["game"] = _mode, ["intensity"] = intensity };
                 _races.Add(race);
                 if (controller == null || ais == null || ais.Count < _hulls.Count)
                 {
@@ -171,6 +180,7 @@ namespace CosmicShore.Player
                     yield break;
                 }
                 yield return 1f;
+                ApplyControllerOverrides(controller);
                 deadline = Now + 120;
                 while (!gameData.IsTurnRunning && Now < deadline)
                 {
@@ -191,12 +201,17 @@ namespace CosmicShore.Player
                 CosmicShore.Engine.Random.InitState(unchecked(seed * 7919 + 17));
                 int total = controller.AuthoritativeGateCount;
                 race["gates_total"] = total;
-                race["laps_total"] = total / RegattaCourse.RingsPerLap;
-                race["course_seed"] = RegattaCourseSource.TryResolveLiveRails(out var rails, out _) ? rails.CourseSeed : controller.CourseSeed;
+                if (IsRegatta) race["laps_total"] = total / RegattaCourse.RingsPerLap;
+                race["course_seed"] = IsRegatta && RegattaCourseSource.TryResolveLiveRails(out var rails, out _) ? rails.CourseSeed : controller.CourseSeed;
                 race["host_hull"] = hostHull.ToString();
+                // Each racer's element levels as the turn starts (what "start" and the card actually gave it).
+                var startLevels = ais.Select(p => p.Vessel?.VesselStatus?.ResourceSystem is { } rs
+                    ? $"M{rs.GetLevel(Element.Mass)} C{rs.GetLevel(Element.Charge)} S{rs.GetLevel(Element.Space)} T{rs.GetLevel(Element.Time)}"
+                    : "?").ToArray();
                 float start = Time.time;
                 var gateTimes = ais.Select(_ => new List<float>()).ToArray();
                 var traces = ais.Select(_ => new List<float>()).ToArray();
+                var nears = ais.Select(_ => new List<string>()).ToArray();
                 float nextSample = 0f;
                 string outcome;
                 while (true)
@@ -210,7 +225,8 @@ namespace CosmicShore.Player
                     }
                     if (_trace && Time.time - start >= nextSample)
                     {
-                        // One row per seat every 0.25 s: t, x, y, z, speed.
+                        // One row per seat every 0.25 s: t, x, y, z, speed, then the AI's objective phase, ring, objective point, steering target, nose,
+                        // and flags (1 emergency steer, 2 orbit break, 4 drifting, 8 boosting, 16 slowed, 32 translation restricted).
                         nextSample = Time.time - start + 0.25f;
                         for (int k = 0; k < ais.Count; k++)
                         {
@@ -218,6 +234,34 @@ namespace CosmicShore.Player
                             if (v?.Transform == null) continue;
                             var pos = v.Transform.position;
                             traces[k].AddRange(new[] { Time.time - start, pos.x, pos.y, pos.z, v.VesselStatus?.Speed ?? 0f });
+                            // What the mode's steering hook says the pilot is after, and where it steers.
+                            AIPilot pilot = null;
+                            if (v.VesselStatus is Component c && c) c.TryGetComponent(out pilot);
+                            var o = pilot ? pilot.Objective : default;
+                            var tgt = pilot ? pilot.TargetPosition : Vector3.zero;
+                            var fwd = v.Transform.forward;
+                            var st = v.VesselStatus;
+                            int flags = (pilot && pilot.EmergencyActive ? 1 : 0) | (pilot && pilot.IsBreakingOrbit ? 2 : 0)
+                                      | (st != null && st.IsDrifting ? 4 : 0) | (st != null && st.IsBoosting ? 8 : 0)
+                                      | (st != null && st.IsSlowed ? 16 : 0) | (st != null && st.IsTranslationRestricted ? 32 : 0);
+                            traces[k].AddRange(new[] { (float)o.Phase, o.Ring, o.Objective.x, o.Objective.y, o.Objective.z, tgt.x, tgt.y, tgt.z,
+                                                       fwd.x, fwd.y, fwd.z, flags });
+                            // Slow (under 50 u/s): what is within 30 u, by the root object's name, for a stall's cause.
+                            if ((v.VesselStatus?.Speed ?? 0f) < 50f)
+                            {
+                                int hits = Physics.OverlapSphereNonAlloc(pos, 30f, _near);
+                                var names = new SortedDictionary<string, int>();
+                                for (int h = 0; h < hits; h++)
+                                {
+                                    var col = _near[h];
+                                    if (!col) continue;
+                                    var tr = col.transform;
+                                    string n = tr.parent ? tr.parent.name + "/" + tr.name : tr.name;
+                                    n = System.Text.RegularExpressions.Regex.Replace(n, @"\(Clone\)|\s*\(\d+\)|_\d+$", "");
+                                    names[n] = names.TryGetValue(n, out int c0) ? c0 + 1 : 1;
+                                }
+                                nears[k].Add($"{Time.time - start:0.0}: " + string.Join(", ", names.Select(kv => $"{kv.Key} x{kv.Value}")));
+                            }
                         }
                     }
                     if (someoneFinished) { outcome = "finished"; break; }
@@ -237,7 +281,7 @@ namespace CosmicShore.Player
                     bool done = g.Count >= total;
                     var lapS = new JsonArray();
                     float prev = 0;
-                    for (int lap = 1; lap * RegattaCourse.RingsPerLap <= g.Count; lap++)
+                    for (int lap = 1; IsRegatta && lap * RegattaCourse.RingsPerLap <= g.Count; lap++)
                     {
                         float t = g[lap * RegattaCourse.RingsPerLap - 1];
                         lapS.Add(Math.Round(t - prev, 3));
@@ -250,16 +294,18 @@ namespace CosmicShore.Player
                         ["domain"] = p.Domain.ToString(),
                         ["finish_s"] = done ? Math.Round(g[total - 1], 3) : null,
                         ["gates"] = g.Count,
-                        ["laps"] = g.Count / RegattaCourse.RingsPerLap,
+                        ["laps"] = IsRegatta ? g.Count / RegattaCourse.RingsPerLap : null,
                         ["lap_s"] = lapS,
                         ["gate_s"] = new JsonArray(g.Select(t => (JsonNode)Math.Round(t, 3)).ToArray()),
                         ["prism_hits"] = stats == null ? null : stats.FriendlyPrismsDestroyed + stats.HostilePrismsDestroyed,
+                        ["start_levels"] = startLevels[k],
                         ["dnf_reason"] = done ? null : outcome == "finished" ? "race-ended" : outcome,
                     });
                     if (_trace)
                     {
-                        seats[seats.Count - 1]!["trace_columns"] = "t,x,y,z,speed";
+                        seats[seats.Count - 1]!["trace_columns"] = "t,x,y,z,speed,phase,ring,ox,oy,oz,tx,ty,tz,fx,fy,fz,flags";
                         seats[seats.Count - 1]!["trace"] = new JsonArray(traces[k].Select(t => (JsonNode)Math.Round(t, 2)).ToArray());
+                        seats[seats.Count - 1]!["near_when_slow"] = new JsonArray(nears[k].Select(t => (JsonNode)t).ToArray());
                     }
                 }
                 race["seats"] = seats;
@@ -273,10 +319,124 @@ namespace CosmicShore.Player
                 yield return 2.5f;
                 controller = CosmicShore.Engine.Object.FindAnyObjectByType<GateRaceController>();
                 CosmicShore.Engine.Random.InitState(_seeds[r + 1]);
+                ForceCourse(r + 1);
                 if (controller != null) controller.RequestReplay();
                 deadline = Now + 120;
                 while (controller != null && Now < deadline) yield return 0.25f;
             }
+        }
+
+        /// <summary>
+        /// <c>"overrides": [{"asset": "Assets/.../X.asset", "fields": {"name": 1.5, "nested.name": 2}}]</c>: set fields of a
+        /// loaded asset IN MEMORY before the launch (a ScriptableObject is one instance per guid, the one the game reads
+        /// through Resources.Load or a reference). How a search tries an AI's numbers without writing a file, so many
+        /// judges can run side by side on one checkout. Nothing is saved.
+        /// </summary>
+        void ApplyOverrides()
+        {
+            foreach (var o in _spec["overrides"]?.AsArray() ?? new JsonArray())
+            {
+                string path = o?["asset"]?.GetValue<string>() ?? throw new InvalidOperationException("an override without an asset");
+                object asset = TrainingHost.LoadAsset(_runtime, path) ?? throw new InvalidOperationException(path + " not found");
+                SetFields(asset, o["fields"]?.AsObject(), path);
+                _notes.Add("override: " + path);
+            }
+        }
+
+        /// <summary>
+        /// <c>"start"</c>: the element levels each hull starts at, published the way the card's
+        /// <c>SO_ArcadeGame.StartingElements</c> is (<c>GameDataSO.PublishStartingElements</c>, applied by every vessel's
+        /// <c>ApplyStartingElements</c>), with no card or vessel asset edited.
+        /// <list type="bullet">
+        /// <item><c>"card"</c> (default): the card's own table, as a player gets it.</item>
+        /// <item><c>"rest"</c>: no table, every hull at level 0 in every element.</item>
+        /// <item><c>"L5"</c>: every hull at Time level 5 (normalized 0.5), so every Time level-5 upgrade is on.</item>
+        /// <item><c>{"Manta": {"Time": 5}, ...}</c>: those hulls at those LEVELS (5 = level 5), every intensity; others at rest.</item>
+        /// </list>
+        /// </summary>
+        void ApplyStart(GameDataSO gameData)
+        {
+            var start = _spec["start"];
+            if (start == null || start is JsonValue v0 && v0.GetValue<string>() == "card") return;
+            var rows = new List<VesselStartingElements>();
+            var hulls = Enum.GetValues<VesselClassType>().Where(h => (int)h > 0);
+            if (start is JsonValue v)
+            {
+                string mode = v.GetValue<string>();
+                if (mode == "L5") rows.AddRange(hulls.Select(h => new VesselStartingElements(h, 0, new ResourceCollection(0f, 0f, 0f, 0.5f))));
+                else if (mode != "rest") throw new InvalidOperationException($"start '{mode}': card, rest, L5 or a table");
+            }
+            else
+                foreach (var (hull, levels) in start.AsObject())
+                {
+                    float L(string e) => (levels?[e]?.GetValue<float>() ?? 0f) / 10f;
+                    rows.Add(new VesselStartingElements(Enum.Parse<VesselClassType>(hull), 0,
+                        new ResourceCollection(L("Mass"), L("Charge"), L("Space"), L("Time"))));
+                }
+            gameData.PublishStartingElements(rows);
+            _notes.Add("start: " + start.ToJsonString());
+        }
+
+        /// <summary>Every game but Regatta draws a fresh course per match (GateRaceController.PickCourseSeed), so the judge
+        /// forces it: race r flies course <c>course_seeds[r]</c>, or its race seed when the spec names none. The same
+        /// seeds then mean the same courses in every process, which a parameter search needs. (Regatta's course comes
+        /// from the genome; Switchback's launch-panel fixed seed is 45_500 + intensity.)</summary>
+        void ForceCourse(int r)
+        {
+            if (IsRegatta) return;
+            var list = _spec["course_seeds"]?.AsArray();
+            CourseSeedOverride.Forced = list != null && r < list.Count ? list[r]!.GetValue<int>() : _seeds[r];
+        }
+
+        /// <summary><c>"controller_overrides": {"aiNoseLead.0.Gain": 1.5, "aiApproachLead": 40}</c>: set fields of the race's
+        /// controller (the scene's GateRaceController) before every Ready press, for numbers a mode keeps on its scene
+        /// rather than in an asset. A number in the path indexes an array; structs are written back.</summary>
+        void ApplyControllerOverrides(GateRaceController controller)
+        {
+            if (_spec["controller_overrides"] is not JsonObject fields) return;
+            SetFields(controller, fields, controller.GetType().Name);
+            string note = "controller override: " + controller.GetType().Name + " " + string.Join(", ", fields.Select(kv => kv.Key));
+            if (!_notes.Contains(note)) _notes.Add(note);
+        }
+
+        static void SetFields(object root, JsonObject fields, string what)
+        {
+            foreach (var (name, value) in fields ?? new JsonObject())
+                SetPath(root, name.Split('.'), 0, value, what + ": " + name);
+        }
+
+        static object SetPath(object target, string[] parts, int i, JsonNode value, string what)
+        {
+            bool last = i == parts.Length - 1;
+            if (target is Array arr)
+            {
+                int idx = int.Parse(parts[i]);
+                var elemType = arr.GetType().GetElementType()!;
+                arr.SetValue(last ? ConvertJson(value, elemType, what) : SetPath(arr.GetValue(idx)!, parts, i + 1, value, what), idx);
+                return arr;
+            }
+            var f = FieldOf(target, parts[i]);
+            if (last) f.SetValue(target, ConvertJson(value, f.FieldType, what));
+            else
+            {
+                var child = f.GetValue(target) ?? throw new InvalidOperationException(what + " is null");
+                f.SetValue(target, SetPath(child, parts, i + 1, value, what));   // write back: the child may be a boxed struct
+            }
+            return target;
+        }
+
+        static object ConvertJson(JsonNode value, Type type, string what) =>
+            type == typeof(float) ? value!.GetValue<float>()
+            : type == typeof(int) ? value!.GetValue<int>()
+            : type == typeof(bool) ? value!.GetValue<bool>()
+            : type.IsEnum ? Enum.Parse(type, value!.ToString())
+            : throw new InvalidOperationException($"{what} is a {type.Name}, not a number, flag or enum");
+
+        static FieldInfo FieldOf(object target, string name)
+        {
+            for (var t = target.GetType(); t != null; t = t.BaseType)
+                if (t.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly) is { } f) return f;
+            throw new InvalidOperationException($"{target.GetType().Name} has no field '{name}'");
         }
 
         static JsonObject Dnf(string hull, string why) => new()

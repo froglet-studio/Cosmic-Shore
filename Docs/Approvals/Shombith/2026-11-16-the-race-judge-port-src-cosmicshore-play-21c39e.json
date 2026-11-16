@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-16-the-race-judge-port-src-cosmicshore-play-21c39e",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T22:07:27+00:00",
+  "area": "Amoebius player",
+  "summary": "The race judge (Port/src/CosmicShore.Player/RaceJudge.cs) now races any gate-race Time game, forces course seeds, takes in-memory asset and race-controller overrides and a starting-elements override, and traces the AI's objective and state",
+  "why": "Regatta flywheel: train the slow AIs headless in their own Time games and measure Regatta with and without Time L5 (Garrett)",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "1f79fe4a4",
+  "paths": [
+    "Port/src/CosmicShore.Player/RaceJudge.cs"
+  ]
+}
