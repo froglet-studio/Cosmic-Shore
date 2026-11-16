@@ -8622,3 +8622,27 @@ wingmate, "Fill the AI seats from a saved squad" (Y), and "You sail as" beside S
 **Picked (Shombith, 2026-11-16): "Lets go A."** A, Hangar line-up, is the Ark page and seat picker to build. Build prompt:
 `/mnt/project-files/milestone1-mockups/rev115-build-prompt.md` (project files).
 
+
+### 211.1 Built: your Ark and the seat picker, Hangar line-up (Rev 115 A; 2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
+
+Asked (Shombith, "Lets go A."): build `R115A.dc.html` from `/mnt/project-files/milestone1-mockups/rev115-build-prompt.md`.
+
+Built in code (`VoyageArkPage`, `VoyageSeatPicker`; no prefab or scene change), at the board's own numbers:
+- **The Ark page** (now 1840 x 870, board y 176-1046): the voyage top left (its picture 90 x 48, its name, kind, worlds and
+  difficulty); three seats standing as vessels in a row, no boxes, 520 x 620 from board x 120, 580 apart, top 300: the role
+  and state (You in cyan, a friend IN YOUR LOBBY in Lime, AI wingmate in Sub) above, the hull render 480 x 260 on a soft
+  floor shadow, one thin line under it (cyan for yours), the pilot's face, the vessel (24), "pilot - artifact" and the
+  element's flower; at the foot "Change your seat" (X), "<friend> picks their own seat.", or Invite a friend and Change
+  wingmate. A faint hangar floor band runs under them. The bar at board y 990: Fill the AI seats (Y) left, "You sail as"
+  and Set sail (A) right. The Back button is gone (the header's steps go back), as the board draws it.
+- **The picker**: an 820 x 996 panel at board (1100, 84) that slides in from the right over a 45% scrim starting under
+  the menu bar, one thin line down its left edge. "Change your seat" and Close; the tabs underlined in cyan; the tab's
+  choices three across in 200 x 150 tiles (the Sees filter on the Pilot tab and "For this voyage" kept); the picked one's
+  name and line; "Your seat now" (face, "vessel - pilot - element - artifact", flower); the saved line and Done (A).
+  The Rev 113 preview column is gone.
+- Unchanged: a press saves to the voyage's seat (`VoyageSeatRecord`), never a saved squad; saved squads fill AI seats only;
+  a friend picks their own seat (209.2). The party still has no ready state, so a friend reads IN YOUR LOBBY rather than
+  Ready. A friend's pilot and element reach the host's card when PR #2050 (`VoyagePartySeats`) lands; this change leaves
+  that card's hull-only drawing as it was.
+
+Not seen in Unity: a render of both screens still needs to sit beside the board.
