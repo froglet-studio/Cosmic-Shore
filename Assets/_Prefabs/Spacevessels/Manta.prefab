@@ -2147,6 +2147,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 6891956288899835182}
   _inputEventShipActions:
+  - InputEvent: 6
+    ShipActions:
+    - {fileID: 11400000, guid: 60819c9015df50a1f37bc370c0f3a351, type: 2}
   - InputEvent: 11
     ShipActions:
     - {fileID: 11400000, guid: 84774ce2f6617b54c8fd2d4acdd26a43, type: 2}

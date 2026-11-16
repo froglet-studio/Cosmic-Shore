@@ -24,6 +24,9 @@ namespace CosmicShore.Gameplay
     /// <see cref="ChainReactionBudget"/>, whose volleys spawn colliders, this only spends damage calls, and a chain that
     /// silently stopped would read as the state not working). The pace is the spectacle and the frame budget at once.</para>
     ///
+    /// <para><b>Blasts set each other off</b> (Caleb, 2026-11-16): an explosive prism on ANY trail within a beat's reach
+    /// is hit too, and every beat registers with <see cref="MantaBlastField"/>, so a Manta bomb within reach goes off.</para>
+    ///
     /// Local, like the skim that primes it: every machine that saw the prime runs its own chain off its own deaths.
     /// </summary>
     public static class PrismExplosiveChain
@@ -84,15 +87,19 @@ namespace CosmicShore.Gameplay
         public static void Fire(Prism source, Vector3 position, Vector3 lossyScale, Domains domain, string attacker)
         {
             float extent = Mathf.Max(Mathf.Abs(lossyScale.x), Mathf.Max(Mathf.Abs(lossyScale.y), Mathf.Abs(lossyScale.z)));
+            float reach = Mathf.Max(1f, extent) * Mathf.Max(0.5f, ReachInExtents);
+            float due = Time.time + Mathf.Max(0f, BeatSeconds);
             s_pending.Add(new Beat
             {
                 Position = position,
-                Reach = Mathf.Max(1f, extent) * Mathf.Max(0.5f, ReachInExtents),
+                Reach = reach,
                 Trail = source ? source.Trail : null,
                 Domain = domain,
                 Attacker = attacker,
-                Due = Time.time + Mathf.Max(0f, BeatSeconds),
+                Due = due,
             });
+            // The beat is a blast: it sets off any Manta bomb within its reach (Caleb, 2026-11-16).
+            MantaBlastField.Register(position, reach, due, 0f);
             EnsureRunner();
         }
 
@@ -144,8 +151,10 @@ namespace CosmicShore.Gameplay
             {
                 var p = s_scratch[i];
                 if (!p || p.destroyed) continue;
-                // A ribbon's neighbours are its own members; a crossing ribbon is another prismscape.
-                if (beat.Trail != null && p.Trail != beat.Trail) continue;
+                // A ribbon's neighbours are its own members; a crossing ribbon is another prismscape - except an
+                // EXPLOSIVE prism on it, which the blast sets off (Caleb, 2026-11-16: "explosive prisms that are
+                // within the blast radius"), so a primed run jumps to a primed run it touches.
+                if (beat.Trail != null && p.Trail != beat.Trail && !p.IsExplosive) continue;
                 s_hits.Enqueue(new Hit
                 {
                     Prism = p,

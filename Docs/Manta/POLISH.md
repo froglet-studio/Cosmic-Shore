@@ -256,3 +256,153 @@ at -18". `followOffset` (0, 0, -18), dynamic pair -16.2 / -18. The wingspan is a
 
 **Next question.** Should the camera look slightly ahead (`lookAheadDistance`, `lookAheadLift`) so the hull sits lower
 in the frame and shows where it is going?
+
+## Paused (Caleb, 2026-11-13), resumed the same day
+
+**Resumed 2026-11-13** (Caleb, after flying the Manta in the Toybox for fun): the next round is "Drop or launch a
+bomb" below. The rest of this section is the pause note as it was written.
+
+**The Manta Polish project was paused here.** Caleb is satisfied with what it shipped: no skim haptic, the plant knock
+and the fleet's hull-hit ladder (PR #1905), the Yastri turn renamed Yawstery (#1906), speed-shaped trail prisms
+with the environment scaler removed (#1907), and the chase camera at 18 (#1936). All four are merged into `bleeding-edge`, and no branch
+of this project is still open, so the Manta lane (and Redline, Corona and Bloomrush) reads open with nobody in it.
+Caleb steps out of the Manta lane for now; anyone may pick it up (`/swimlanes --lane manta`).
+
+**Open questions, for whoever picks it up.**
+- ~~**Haptics:** do the Shrike, the Urchin and the Grizzly count as rammers?~~ **Answered (Caleb, 2026-11-13): no.**
+  They keep the hull-hit ladder; the Rhino stays the only rammer (`Docs/HAPTICS.md` § The universal rule, item 3).
+- From the earlier rounds: should the chase camera look slightly ahead (`lookAheadDistance`, `lookAheadLift`)?
+  Does the omni cash-out want the alert shake? Should Max Length Of Spacing drop below 0.9 if Soar reads as a wall?
+- The fleet's other hulls still lay their trail on a timed delay whose mass per second depends on frame rate (the
+  Manta lays by distance since #1907): a fleet balance question for the hull owners.
+
+## Round: setting off your own explosive prisms (2026-11-13)
+
+### Brief
+
+Caleb, flying the Manta in the Toybox: *"It has no good way of detonating the explosive prisms it creates by skimming
+without either colliding with one of them (which is exactly what we're signaling the Manta NOT to do in all other
+circumstances) ... or it needs to lay one of its bombs on a flora, fauna, or vessel that will be next to the explosive
+prisms when the crystal is collected and the bomb goes off. My first thought is to give it the ability to launch or drop
+its bombs as well as lay them by jousting ... from the same pool."*
+
+**The question.** Can a drop or a launch, spending a bomb from the same pool, let the Manta set off the prisms it primed
+without ramming them, and which one, with what fuse? **Good looks like**: a primed run goes off almost every time, with
+no crash and no lost energy, without making bombs free to spam. **How we'll know**: the lab's trial scorecard (one
+primed run, nothing else going on) and its free-board Space game (destruction per minute), each with a skilled and a
+rookie AI, against the shipped ram and joust and a control with no way to set it off. **This is a kit change** (Sting
+gets a button), so it waits for Caleb's yes before any Unity or generator file changes.
+
+### What the kit has today (bleeding-edge bbee6b66b)
+
+- **Energy**: `energyCapacity` 1, `energyPerSkim` 0.34, `perPrismEnergyCooldown` 1.5 s (`MantaStingConfig.asset`). One
+  energy is one bomb, so the pool is ONE armed bomb, and skimming three fresh prisms re-arms it (about 0.1 s along a
+  rival trail at cruise).
+- **Setting it off**: a hull hit sets off every bomb at `fuseBlastScale` 70 (35 m) and loses all energy (§0); the omni
+  crystal cashes out at `kabloomBlastScale` 140 (70 m) x the bomb multiplier; the shared 20 s fuse (x Charge) blooms at
+  70. `PrismExplosiveChain` carries a death along a trail through every primed prism within 1.6 x 8 m.
+- **Inputs on `Manta.prefab`**: only 11, 12 and 13 (the two Yawstery lifts and Soar). Button1-4 (pad A/B/X/Y) and
+  PayloadAction (RB) are free on pad and keyboard. On a phone all three thumb gestures are taken (one lift = Yawstery,
+  both lifts = Soar), so a phone drop needs an on-screen button or a tap.
+
+### Lab
+
+**Manta Bomb Drop Lab**, https://claude.ai/artifact/S52aJdo5x2oCkLJieuBZYX (source `Docs/Studios/MantaBombDropLab.html`,
+decisions in its db collection `decisions`). Top-down 2D; reads the shipped numbers above; manual clock, seeds, an
+input-only AI (stick, drop, launch, plus a lab-only "pitch over" to cross a trail), a skilled (stick noise 0.08) and a
+rookie (0.5) pilot. Space game only (destruction); its "what this does not model" list is on the About tab.
+`verify_lab.cjs` PASS (desktop and phone, deterministic batch across reloads).
+
+**Trials** (12 seeds x 45 s; one 240-prism rival trail, three flora within 200 m, no omni crystal; skilled / rookie):
+
+| Variant | Primed set off | Trials set off | Seconds ready to boom | Crashes | Energy lost | Bombs |
+|---|---|---|---|---|---|---|
+| Shipped: ram it | 100 / 99.5% | 12 / 12 | 0.2 | **7** | **13.6** | 0.2 |
+| Shipped: joust a flora | 8.3 / 12.3% | 1 / 3 of 12 | 34-38 | 0.08 | 0.2 | 0.2-0.3 |
+| Drop, shared fuse | 100 / 91.7% | 12 / 11 | **28** | 0 | 0 | 11.5 |
+| Drop, own 2 s fuse | 100 / 100% | 12 / 12 | 2.3 | 0 | 0 | 11.3 |
+| Launch, shared fuse | 100 / 91.7% | 12 / 11 | 28 | 0 | 0 | 11.5 |
+| Launch, own 2 s fuse | 100 / 100% | 12 / 12 | 2.4 | 0 | 0 | 11.3 |
+| Drop, masher (no cap) | 98 / 97% | 12 / 12 | 2.3 | 0 | 0 | **72** |
+| Drop, masher, cap 1 | 84 / 79% | 12 / 12 | 2.3 | 0 | 0 | 5 |
+| Control: no way to set it off | 8 / 0.6% | 1 / 1 | - | 0.08 | 0.3 | 0 |
+| Control: drop, chain off | 60 / 54% | 12 / 11 | 27 | 0.17 | 0.2 | 11.5 |
+
+**Free board** (5 seeds x 120 s; rival trails every 10 s living 40 s, 8 flora, one omni crystal; skilled / rookie):
+
+| Variant | Destroyed /min | Primed set off | Crashes /min | Energy lost /min | Blooms /min | Peak blooms |
+|---|---|---|---|---|---|---|
+| Shipped: ram it | 289 / 296 | 83% | **11.2** | **22.7** | 0.5 | 0.8 |
+| Shipped: joust a flora | 56 / 87 | 16-22% | 2.7-3.3 | 4.8-7.0 | 0.4-0.9 | 0.8 |
+| Drop, shared fuse | 256 / 281 | 73-75% | 2.8-3.6 | 4.4-5.6 | 8.6-10 | 4.8-6.8 |
+| Drop, own 2 s fuse | 268 / 254 | 85% | 3.5-3.6 | 5.5-6.8 | 9.2-10.3 | 3.4-4 |
+| Launch, shared fuse | 215 / 316 | 53-69% | 2.9-3.1 | 5.2-5.3 | 10-12 | 5.2-7 |
+| Launch, own 2 s fuse | 169 / 165 | 46-47% | 3.6-3.8 | 6.0-7.4 | 9.1-9.5 | 3-3.4 |
+| Drop, masher (no cap) | 362 / 359 | 96-98% | 2.5-3.2 | 3.5-3.7 | **64** | **22-24** |
+| Drop, masher, cap 1 | 311 / 299 | 90-94% | 3.0-3.7 | 4.5-5.7 | 18 | 3.4 |
+| Control: no way to set it off | 124 / 93 | 24-32% | 4.1-4.3 | 7.8-8.2 | 0 | 0 |
+| Control: drop, chain off | 187 / 241 | 59-63% | 3.3-3.7 | 6.2-7.4 | 8.7-9.9 | 4.4-5.8 |
+
+The control's 24-32% on the free board is accidental crashes (about 4 a minute: the 2D board forces the AI to weave
+between trails); every variant carries that floor. Re-run any row with the lab's **Score the trials** and
+**Score the free board** buttons (both use the page's `runTrials` / `runBatch`).
+
+### Found
+
+1. **Caleb's read is right, and measured.** Ramming sets a primed run off every time, but it is a crash: 7 per trial,
+   and every crash throws away the armed bomb (13.6 energy lost per trial, 22.7 a minute on the board). Jousting a flora
+   is no better than doing nothing (1-3 of 12 trials against the control's 1-2): a lifeform within the 35 m bloom of a
+   primed run is rare.
+2. **Drop and launch both fix it in a clean trial; on a busy board drop wins.** A dropped bomb lands among the prisms
+   you just primed (they are inside your skimmer, the bloom is 35 m). A launched one lands ahead, where nothing is
+   primed yet, or off the line: 46-69% against drop's 73-85%.
+3. **The shared fuse makes every drop a postponement.** Each plant resets the ONE fuse (§0), so a Manta that keeps
+   dropping keeps pushing every bomb it owns back: 28 s from ready to boom in the trials, against 2.3 s for a bomb with
+   its own 2 s fuse. The omni crystal still cashes them all out.
+4. **The pool does not limit a drop.** At capacity 1 and 0.34 per skim the bay re-arms after three prisms, so a masher
+   drops 72 bombs in 45 s and holds 22-24 blooms at once (`SHADERS_AND_PERFORMANCE.md`: many blooms must stay cheap).
+   One loose bomb at a time keeps 90-94% of the set-off at 18 blooms a minute and a peak of 3.4.
+5. **The chain does the work.** With the chain off, a drop sets off 54-63% (only what its bloom reaches); with it on,
+   one bloom anywhere on a run takes the run.
+
+### Recommendation
+
+**Drop, from the same pool, one loose bomb at a time, on pad A (keyboard: Space).** Launch is a bigger kit change for
+less: it aims, it lands where nothing is primed, and "plant a bomb on something at range" is jousting's job. The open
+choice is the fuse:
+- **Shared fuse (the kit's rule)**: a dropped bomb is a plant on empty space. It keeps §0's "every bomb goes off
+  together" and makes the omni cash-out the payoff, but your primed prisms wait 20-30 s and may expire first.
+- **Its own short fuse (about 2 s)**: an instant detonator for your own primed prisms that leaves the board's fuse
+  alone. Fastest and cleanest, but it is a second fuse in a kit built on one.
+- (Not tested yet) **joins the board without resetting the fuse**: goes off with the board, never postpones it.
+
+I'd A/B the shared fuse against the 2 s fuse (`/ab-test`), because which one feels right is a flying question.
+
+**Decision needed (Caleb):** drop or launch; the fuse (above); the cap (1); the input (pad A / Space, and on a phone an
+on-screen button or a tap); whether a dropped bomb waits visibly in the world (it should: lit and 3D, never a screen
+ring). Nothing in Unity or the generator changes until then. When it does: `MantaStingActionExecutor` (a bound action on
+Button1), `MantaStingConfig.asset` through `author_manta_kit_assets.py` (the cap and fuse fields), `Manta.prefab`'s input
+map, a loose-bomb carrier for `MantaBomb`, an empty named `EventReference` for the drop, `MANTA_STING_KABLOOM.md` §0,
+and the AI (drop when armed beside a primed run; inputs only).
+
+**Next question:** shared fuse or a 2 s fuse for the dropped bomb?
+
+### Decided (Caleb, 2026-11-16)
+
+> "We want it to drop rather than launch and we'll let it inherit its momentum and trajectory from the vessel at moment
+> of drop. [...] Rather than any fuse at all I think we want dropped bombs to detonate upon contact with any vessels or
+> prism. Let's go ahead with the simple 'one dropped loose bomb at a time' rule for now and consider a cooldown on
+> dropping if that still seems to frequent. Also, Manta bomb and prism explosions should set each other off [...]"
+
+So: **drop, not launch**. The bomb keeps the Manta's velocity and falls along the Manta's own down. **No fuse**: it goes
+off on contact with any vessel or prism. That replaces the shared fuse and 2 s fuse options the lab compared. **One loose
+bomb at a time**, with no cooldown for now. **Manta blooms and explosive prisms set off the Manta bombs and explosive
+prisms they reach.** Built on `claude/manta-bomb-drop`. The rules are in `MANTA_STING_KABLOOM.md` §0c.
+
+Defaults chosen for the build, to tune when flying: fall 30 u/s², contact radius 5 (prism) and 8 (vessel), the dropper
+ignored for 0.35 s, a 15 s safety fizzle, blast scale 70 (the fuse bloom's size).
+
+Still open: the phone input; whether rivals should see a dropped bomb; the AI dropping; the HUD and icons.
+
+**Next question:** does the drop feel right in the Toybox (fall, contact reach, how often)?
+

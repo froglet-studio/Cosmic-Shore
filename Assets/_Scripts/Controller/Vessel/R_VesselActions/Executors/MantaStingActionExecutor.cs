@@ -21,6 +21,9 @@ namespace CosmicShore.Gameplay
     /// It also keeps the Manta's decoys (MASS): one elemental decoy, and at Mass 5 one omni decoy beside it.
     ///
     /// PASSIVE ability ⇒ the config SO is wired DIRECTLY here (no input binding exists for <c>CollectBoundActions</c>).
+    /// The one input it has is the DROP (Caleb, 2026-11-16; <see cref="MantaDropBombActionSO"/> on pad A): one bomb let
+    /// go with the Manta's velocity, falling along its own down, that goes off on the first vessel or prism it touches.
+    /// A dropped bomb is on no fuse (<see cref="TryDropBomb"/>), and one at a time.
     ///
     /// SIMULATION AUTHORITY: bombs are local objects, like projectiles. Exactly one machine simulates a given Manta's
     /// bombs and energy - the machine that owns the vessel, or the only machine there is single-player. Every bomb and
@@ -62,6 +65,8 @@ namespace CosmicShore.Gameplay
         public event Action<MantaDetonation, int> OnBoardDetonated;
         /// <summary>A rival took one of this Manta's decoys.</summary>
         public event Action OnDecoySprung;
+        /// <summary>A bomb was let go (the drop).</summary>
+        public event Action OnBombDropped;
 
         static readonly Dictionary<IVesselStatus, MantaStingActionExecutor> Registry = new();
 
@@ -74,6 +79,8 @@ namespace CosmicShore.Gameplay
         float _fuseDeadline;
         float _fuseLength = 1f;
         readonly List<MantaBomb> _planted = new();
+        readonly List<MantaBomb> _dropped = new();   // loose bombs in the air: off the shared fuse
+        float _lastDropTime = float.NegativeInfinity;
         readonly Dictionary<int, float> _lastChargeTimeByPrism = new();
         readonly Dictionary<int, float> _lastPlantAttemptByTarget = new();
         MantaDecoyCrystal _elementalDecoy;
@@ -93,6 +100,8 @@ namespace CosmicShore.Gameplay
         /// <summary>True while an omni decoy this Manta left is standing (Mass 5, the HUD's Mass card).</summary>
         public bool HasOmniDecoy => _omniDecoy;
         public IReadOnlyList<MantaBomb> PlantedBombs => _planted;
+        /// <summary>Dropped bombs still falling.</summary>
+        public int DroppedBombCount => _dropped.Count;
 
         /// <summary>When the shared fuse runs out (Time.time). Meaningless with nothing planted.</summary>
         public float FuseDeadline => _fuseDeadline;
@@ -147,6 +156,8 @@ namespace CosmicShore.Gameplay
 
             _energy = 0f;
             _planted.Clear();
+            ShedDroppedBombs();
+            _lastDropTime = float.NegativeInfinity;
             _lastChargeTimeByPrism.Clear();
             _lastPlantAttemptByTarget.Clear();
             RetireDecoys();
@@ -157,6 +168,14 @@ namespace CosmicShore.Gameplay
         {
             if (_status != null) Registry.Remove(_status);
             RetireDecoys();
+        }
+
+        void ShedDroppedBombs()
+        {
+            var copy = _dropped.ToArray();
+            _dropped.Clear();
+            for (int i = 0; i < copy.Length; i++)
+                if (copy[i]) copy[i].Shed();
         }
 
         void Update()
@@ -301,6 +320,45 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        // ── The drop (Caleb, 2026-11-16) ────────────────────────────────────
+
+        /// <summary>
+        /// Lets one bomb go (pad A): it leaves with the Manta's velocity and falls along the Manta's down as it is now,
+        /// and goes off on the first vessel or prism it touches (<see cref="MantaDroppedBomb"/>). Spends a bomb of
+        /// energy like a plant, but is on no fuse: it neither resets the shared fuse nor joins the board. Refused while
+        /// <see cref="MantaStingConfigSO.MaxDroppedBombs"/> are already falling, or inside the drop cooldown.
+        /// Returns true when a bomb went.
+        /// </summary>
+        public bool TryDropBomb()
+        {
+            if (!CanPlant()) return false;
+            PruneDropped();
+            if (_dropped.Count >= config.MaxDroppedBombs) return false;
+            if (Time.time - _lastDropTime < config.DropCooldownSeconds) return false;
+
+            var t = _status.Vessel?.Transform;
+            if (!t) return false;
+
+            Vector3 velocity = _status.Course * _status.Speed;
+            var dropped = MantaDroppedBomb.Spawn(t.position, velocity, -t.up, t, BuildSnapshot());
+            if (!dropped) return false;
+
+            _lastDropTime = Time.time;
+            _energy = Mathf.Max(0f, _energy - 1f);
+            PushBayState();
+            OnBombDropped?.Invoke();
+            PlayCue(config.BombDroppedEvent);
+            // The same knock as a plant: a bomb left the Manta.
+            if (_status.IsLocalUser && !_status.AutoPilotEnabled) HapticController.PlayPlant();
+            return true;
+        }
+
+        void PruneDropped()
+        {
+            for (int i = _dropped.Count - 1; i >= 0; i--)
+                if (!_dropped[i]) _dropped.RemoveAt(i);
+        }
+
         bool CanPlant() =>
             config && _status != null && IsSimAuthority(_status) && ArmedBombs >= 1;
 
@@ -420,9 +478,16 @@ namespace CosmicShore.Gameplay
             OnPlantedChanged?.Invoke();
         }
 
+        /// <summary>A bomb was let go: it is tracked for the one-at-a-time rule, never for the board.</summary>
+        public void NotifyBombDropped(MantaBomb bomb)
+        {
+            if (bomb && !_dropped.Contains(bomb)) _dropped.Add(bomb);
+        }
+
         public void NotifyBombResolved(MantaBomb bomb, bool detonated)
         {
             _planted.Remove(bomb);
+            _dropped.Remove(bomb);
             OnPlantedChanged?.Invoke();
         }
 

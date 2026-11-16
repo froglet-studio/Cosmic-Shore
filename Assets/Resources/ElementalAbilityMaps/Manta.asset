@@ -17,9 +17,12 @@ MonoBehaviour:
   - Element: 1
     AbilityLabel: Sting
     AbilityDescription: Skimming a rival plants a bomb that costs one bomb of energy. Every
-      bomb shares ONE fuse, reset by each plant, so they all go off together. Charge sets how
-      long the fuse runs when a plant resets it (MantaStingConfig.asset fuseSeconds x fuseScale,
-      20 s at rest to 30 s at level 10).
+      planted bomb shares ONE fuse, reset by each plant, so they all go off together. Pad A
+      drops a bomb instead - it keeps the Manta's speed, falls along the Manta's own down, and
+      goes off on the first vessel or prism it touches, one loose bomb at a time. Any Manta
+      bloom or explosive prism blast sets off the bombs and explosive prisms it reaches. Charge
+      sets how long the fuse runs when a plant resets it (MantaStingConfig.asset fuseSeconds x
+      fuseScale, 20 s at rest to 30 s at level 10).
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

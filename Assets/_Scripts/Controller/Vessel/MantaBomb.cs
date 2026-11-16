@@ -35,6 +35,10 @@ namespace CosmicShore.Gameplay
         PrismImpact = 1,
         /// <summary>An omni crystal cashed the board - the big bloom, times the bomb multiplier.</summary>
         OmniCrystal = 2,
+        /// <summary>A dropped bomb touched a vessel or a prism (Caleb, 2026-11-16) - the drop's own bloom.</summary>
+        Dropped = 3,
+        /// <summary>Another blast reached it: a Manta bloom or an explosive prism's death (Caleb, 2026-11-16).</summary>
+        Blast = 4,
     }
 
     /// <summary>
@@ -64,13 +68,19 @@ namespace CosmicShore.Gameplay
         bool _cascading;                  // committed to an omni cascade, waiting its turn
         float _cascadeAt;
         float _cascadeScale;
+        float _bornAt;                    // when it was planted or dropped: only LATER blasts set it off
+        bool _loose;                      // a dropped bomb: off the shared fuse, carried by a MantaDroppedBomb
         MantaBombMarker _marker;
 
         public string PlanterName => _snap.PlanterName;
         public Domains PlanterDomain => _snap.PlanterDomain;
 
-        /// <summary>Seconds left on the shared fuse this bomb rides.</summary>
-        public float FuseRemaining => Mathf.Max(0f, (_snap.Owner ? _snap.Owner.FuseDeadline : _snap.FuseDeadline) - Time.time);
+        /// <summary>Seconds left on the shared fuse this bomb rides (infinite for a dropped bomb, which has no fuse).</summary>
+        public float FuseRemaining => _loose ? float.PositiveInfinity
+            : Mathf.Max(0f, (_snap.Owner ? _snap.Owner.FuseDeadline : _snap.FuseDeadline) - Time.time);
+
+        /// <summary>A dropped bomb: no fuse, goes off on contact (<see cref="MantaDroppedBomb"/>).</summary>
+        public bool IsLoose => _loose;
 
         /// <summary>Waiting its turn in an omni cascade - the marker reads it as fully critical.</summary>
         public bool IsCascading => _cascading;
@@ -99,6 +109,7 @@ namespace CosmicShore.Gameplay
             bomb._carrierCrystal = carrierCrystal;
             bomb._ridesCrystal = carrierCrystal;
             if (carrierLifeform != null) bomb._heart = HeartOf(carrierLifeform);
+            bomb._bornAt = Time.time;
 
             // The planter's own read on the bomb: where it is, and how long it has. Local to the planter's machine and
             // their human eyes only - the target sees nothing.
@@ -108,6 +119,24 @@ namespace CosmicShore.Gameplay
                 bomb.PlayCue(snapshot.Config != null ? snapshot.Config.BombPlantedEvent : default);
 
             if (snapshot.Owner) snapshot.Owner.NotifyBombPlanted(bomb, resetsFuse);
+            return bomb;
+        }
+
+        /// <summary>
+        /// A bomb the Manta let go of (Caleb, 2026-11-16), carried by <paramref name="carrier"/> (a
+        /// <see cref="MantaDroppedBomb"/>). It is on no fuse: it does not reset the shared fuse, the board does not
+        /// count it, and the omni crystal does not cash it. Contact, or another blast, sets it off.
+        /// </summary>
+        public static MantaBomb Drop(GameObject carrier, in MantaBombSnapshot snapshot)
+        {
+            if (!carrier || IsBombed(carrier)) return null;
+
+            var bomb = carrier.AddComponent<MantaBomb>();
+            bomb._snap = snapshot;
+            bomb._loose = true;
+            bomb._bornAt = Time.time;
+            bomb._marker = MantaBombMarker.Attach(carrier, bomb, snapshot.Config, snapshot.LocalHumanPlanter);
+            if (snapshot.Owner) snapshot.Owner.NotifyBombDropped(bomb);
             return bomb;
         }
 
@@ -160,9 +189,18 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Manta blooms and explosive prisms set bombs off (Caleb, 2026-11-16) - any blast that started after this
+            // bomb was there, so a bloom never sets off the Contagion bombs it planted itself.
+            var cfg = _snap.Config;
+            if (cfg && cfg.BlastsSetOffBombs && MantaBlastField.Reaches(transform.position, _bornAt, Time.time))
+            {
+                Detonate(_loose ? cfg.DropBlastScale : cfg.FuseBlastScale, cfg.BloomGrowSeconds, MantaDetonation.Blast);
+                return;
+            }
+
             // The shared fuse is the owner's to fire (so the whole board goes off together); a bomb only watches its
-            // own copy of the deadline once the Manta that planted it is gone.
-            if (!_snap.Owner && Time.time >= _snap.FuseDeadline && _snap.Config)
+            // own copy of the deadline once the Manta that planted it is gone. A dropped bomb has no fuse.
+            if (!_loose && !_snap.Owner && Time.time >= _snap.FuseDeadline && _snap.Config)
                 Detonate(_snap.Config.FuseBlastScale, _snap.Config.BloomGrowSeconds, MantaDetonation.Fuse);
         }
 
@@ -210,8 +248,11 @@ namespace CosmicShore.Gameplay
         {
             if (_resolved) return;
             var snap = _snap;
+            float bornAt = _bornAt;
             ResolveQuietly();
-            Plant(root, snap, carrierLifeform, carrierCrystal, resetsFuse: false);
+            var moved = Plant(root, snap, carrierLifeform, carrierCrystal, resetsFuse: false);
+            // A bomb that only moved is as old as it was: a blast already under way when it moved still spares it.
+            if (moved) moved._bornAt = bornAt;
         }
 
         /// <summary>Removes the bomb without a bloom (a carrier that is gone, a move that was refused).</summary>
@@ -250,7 +291,9 @@ namespace CosmicShore.Gameplay
 
                 if (_snap.Owner) _snap.Owner.RelayBloomToPeers(position, scale, growSeconds);
 
-                if (_snap.Contagion)
+                // A bomb another blast set off spreads no Contagion: otherwise blooms and the bombs they plant could
+                // keep setting each other off in a wave that never ends. Contagion stays a pilot's payout.
+                if (_snap.Contagion && reason != MantaDetonation.Blast)
                     SpreadContagion(position, scale * 0.5f * cfg.ContagionRadiusFraction);
             }
 
@@ -308,6 +351,10 @@ namespace CosmicShore.Gameplay
         {
             if (cfg == null || cfg.AoePrefabs == null) return;
 
+            // Every bloom is a blast that sets off the Manta bombs and explosive prisms it reaches - on every machine
+            // that draws it, the relayed copies included (Caleb, 2026-11-16).
+            MantaBlastField.Register(position, BloomRadius(cfg, maxScale), Time.time, growSeconds);
+
             var init = new AOEExplosion.InitializeStruct
             {
                 OwnDomain = domain,
@@ -323,6 +370,19 @@ namespace CosmicShore.Gameplay
             };
 
             ExplosionHelper.CreateExplosion(cfg.AoePrefabs, init, container);
+        }
+
+        /// <summary>
+        /// The full radius a bloom of <paramref name="maxScale"/> reaches: the AOE prefab's trigger sphere times its
+        /// scale (the shipped prefab's radius is 0.5, so a scale-70 bloom reaches 35 m).
+        /// </summary>
+        public static float BloomRadius(MantaStingConfigSO cfg, float maxScale)
+        {
+            float r = 0.5f;
+            var prefabs = cfg ? cfg.AoePrefabs : null;
+            if (prefabs is { Length: > 0 } && prefabs[0] && prefabs[0].TryGetComponent<SphereCollider>(out var sphere))
+                r = sphere.radius;
+            return r * Mathf.Max(0f, maxScale);
         }
 
         /// <summary>

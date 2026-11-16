@@ -50,6 +50,39 @@ disagrees with this section, this section wins.
   (the ability map's `AbilityLabel`, the HUD fields, the icon sprites, the AI's `YawsteryStickBand`, docs and tools).
   A name only: what the ability does is unchanged. Renamed serialized fields carry `[FormerlySerializedAs]`.
 
+## 0c. The drop, and blasts that set each other off (Caleb, 2026-11-16)
+
+The Manta had no way to set off the explosive prisms its skim primes except ramming one (a crash, which loses the
+energy) or jousting a bomb onto something that happened to be beside them. Caleb's decision, after the
+`MantaBombDropLab` round (`Docs/Manta/POLISH.md`):
+
+- **Two ways to deliver a bomb.** Jousting places the bomb on the vessel or creature, on the shared fuse (§0, unchanged).
+  **Dropping** lets one go. Launching was considered and dropped.
+- **The drop** (pad A, `InputEvents.Button1Action`, `MantaDropBombAction.asset` → `MantaStingActionExecutor.TryDropBomb`)
+  spends one bomb of energy, like a plant. The bomb leaves with the Manta's velocity (`Course × Speed`) and falls along
+  the Manta's own down at the moment of the drop (its −Y, not world −Y) at `dropFallAcceleration`, which bends the line
+  into an arc (`MantaDropMath.Step`).
+- **No fuse.** A dropped bomb goes off on the FIRST vessel or prism it touches: any vessel (the dropper too, after
+  `dropArmSeconds`), any prism of any domain. The contact test sweeps the segment the bomb flew that frame, so a bomb at
+  Soar speed cannot step through a prism (`MantaDroppedBomb`). It blooms at `dropBlastScale`. It is outside the shared
+  fuse: it neither resets it nor joins the board, and the omni crystal does not cash it. One that touches nothing for
+  `dropMaxSeconds` fizzles with no bloom (a safety limit, not a fuse).
+- **One loose bomb at a time** (`maxDroppedBombs` 1). A press with one still falling does nothing. `dropCooldownSeconds`
+  is there, at 0, if dropping still feels too frequent.
+- **Blasts set each other off** (`blastsSetOffBombs`). Every Manta bloom (on the planter's machine and every relayed
+  copy) and every explosive prism's chain beat registers with `MantaBlastField`. Any Manta bomb (planted, jousted or
+  dropped) that the blast's growing front reaches goes off (`MantaDetonation.Blast`). So a bomb you jousted onto a rival
+  goes off when a drop or a primed run catches them. An explosive prism's beat now also hits explosive prisms on OTHER
+  trails within its reach, so one primed run sets off a primed run it touches (`PrismExplosiveChain.Gather`). A bloom
+  already destroys the rival prisms it reaches, and a primed prism's death fires its own chain.
+- **What keeps the chain finite.** A blast sets off only the bombs that were already there when it started, so a bloom
+  never sets off the Contagion bombs it plants itself. A bomb that another blast set off spreads no Contagion.
+  Contagion is a pilot's payout (fuse, omni, prism impact, drop), never a reaction.
+
+Not done yet: the AI never drops; on a phone the drop has no gesture (pad A only); the dropped bomb shows only the
+planter's own marker, so a rival does not see it falling; the HUD and the ability icons are unchanged. The drop reuses
+the plant's haptic knock. Its two FMOD slots (`bombDroppedEvent`, `droppedBombContactEvent`) ship empty.
+
 ## 0b. The trail is shaped by speed, never by what is near it (Caleb, 2026-11-11)
 
 Caleb's pick in the Manta Trail Lab (https://claude.ai/artifact/UcrAbovUrX7NPCx1mLoB9k, "Free curves";
