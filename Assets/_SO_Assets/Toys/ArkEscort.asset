@@ -61,32 +61,44 @@ MonoBehaviour:
     RegrowSeconds: 0.5
     HostileShare: 1
     ArkSpeed: 1.3
-    BreachHull: 0
+    BreachHull: 0.25
     LureShare: 0.05
     SpawnPeriodScale: 1.0
     ShieldBiteMin: 0
     SuperShieldBiteMin: 0
     BiteScale: 1
+    AssaultLureShare: 0.45
+    AssaultSeconds: 30
+    AssaultGapSeconds: 40
+    AssaultRepelKills: 4
   - Population: 0.4
     RegrowSeconds: 0.6
     HostileShare: 1
     ArkSpeed: 1.2
-    BreachHull: 0
+    BreachHull: 0.25
     LureShare: 0.07
     SpawnPeriodScale: 1.0
     ShieldBiteMin: 0
     SuperShieldBiteMin: 0
     BiteScale: 1
+    AssaultLureShare: 0.5
+    AssaultSeconds: 30
+    AssaultGapSeconds: 38
+    AssaultRepelKills: 5
   - Population: 0.45
     RegrowSeconds: 0.8
     HostileShare: 1
     ArkSpeed: 1.1
-    BreachHull: 0
+    BreachHull: 0.25
     LureShare: 0.09
     SpawnPeriodScale: 0.95
     ShieldBiteMin: 0.02
     SuperShieldBiteMin: 0
     BiteScale: 1
+    AssaultLureShare: 0.55
+    AssaultSeconds: 32
+    AssaultGapSeconds: 35
+    AssaultRepelKills: 6
   - Population: 0.52
     RegrowSeconds: 1.0
     HostileShare: 1
@@ -97,6 +109,10 @@ MonoBehaviour:
     ShieldBiteMin: 0.04
     SuperShieldBiteMin: 0.02
     BiteScale: 1.0
+    AssaultLureShare: 0.6
+    AssaultSeconds: 35
+    AssaultGapSeconds: 32
+    AssaultRepelKills: 7
   - Population: 0.6
     RegrowSeconds: 1.4
     HostileShare: 1
@@ -107,6 +123,10 @@ MonoBehaviour:
     ShieldBiteMin: 0.07
     SuperShieldBiteMin: 0.03
     BiteScale: 1.1
+    AssaultLureShare: 0.65
+    AssaultSeconds: 35
+    AssaultGapSeconds: 30
+    AssaultRepelKills: 8
   - Population: 0.72
     RegrowSeconds: 2.0
     HostileShare: 1
@@ -117,6 +137,10 @@ MonoBehaviour:
     ShieldBiteMin: 0.1
     SuperShieldBiteMin: 0.05
     BiteScale: 1.25
+    AssaultLureShare: 0.7
+    AssaultSeconds: 38
+    AssaultGapSeconds: 28
+    AssaultRepelKills: 9
   - Population: 0.85
     RegrowSeconds: 3.0
     HostileShare: 1
@@ -127,6 +151,10 @@ MonoBehaviour:
     ShieldBiteMin: 0.13
     SuperShieldBiteMin: 0.06
     BiteScale: 1.4
+    AssaultLureShare: 0.75
+    AssaultSeconds: 40
+    AssaultGapSeconds: 25
+    AssaultRepelKills: 10
   - Population: 1.1
     RegrowSeconds: 4.5
     HostileShare: 1
@@ -137,6 +165,10 @@ MonoBehaviour:
     ShieldBiteMin: 0.2
     SuperShieldBiteMin: 0.1
     BiteScale: 1.8
+    AssaultLureShare: 0.85
+    AssaultSeconds: 42
+    AssaultGapSeconds: 22
+    AssaultRepelKills: 12
   - Population: 1.4
     RegrowSeconds: 7.0
     HostileShare: 1
@@ -147,6 +179,10 @@ MonoBehaviour:
     ShieldBiteMin: 0.3
     SuperShieldBiteMin: 0.15
     BiteScale: 2.4
+    AssaultLureShare: 0.95
+    AssaultSeconds: 45
+    AssaultGapSeconds: 18
+    AssaultRepelKills: 14
   maxPopulation: 2
   arkPacing:
     Cruise: 45
@@ -201,6 +237,8 @@ MonoBehaviour:
     Factor: 0.8
     Weight: 0.8
     MinDifficulty: 1
+  assaultFirstDelay: 10
+  assaultWarningSeconds: 5
   voyageName: ARK ESCORT
   cardTitle: Escort the Ark
   cardLine: Difficulty {difficulty}, {legs} worlds
@@ -210,5 +248,9 @@ MonoBehaviour:
   overrunLine: THE ARK IS OVERRUN IN {name}
   courseLine: '{from} TO {to}'
   berthedLine: BERTHED AT {to}
+  assaultIncomingLine: THE FAUNA OF {name} ARE CIRCLING THE ARK
+  assaultLine: THE ARK IS UNDER ATTACK - KILL {kills} ATTACKERS NEAR IT
+  assaultRepelledLine: ATTACK DRIVEN OFF
+  assaultPassedLine: THE ATTACKERS FALL BACK - THE ARK LOST {lost} PLATES
   lowerLabel: '<'
   raiseLabel: '>'

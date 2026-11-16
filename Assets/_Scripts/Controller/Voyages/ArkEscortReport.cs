@@ -222,6 +222,9 @@ namespace CosmicShore.Gameplay
         public int ArkSips;
         public int WavesReleased;
         public float SecondWaveAt;
+        /// <summary>Assaults (the fauna turning on the Ark in waves): how many started, and how many the squad drove off.</summary>
+        public int Assaults;
+        public int AssaultsRepelled;
         public List<SeatStats> RunSeats = new();
         public List<Param> Params = new();
         /// <summary>Every override key pattern this build accepts (<see cref="ArkEscortParams"/>).</summary>
