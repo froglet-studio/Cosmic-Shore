@@ -79,6 +79,57 @@ course the Rhino (35 s) and Scarab (44 s) beat the Urchin (51 s); the Stoat (239
 uses its sling; the Dolphin AI does not finish. The course search balances whatever the AIs do, so a broken AI (Stoat,
 Dolphin) is a link-3 problem to fix before the search can mean anything for those hulls.
 
+## Time level 5 for everyone (2026-11-16, Garrett: "do both with and without the L5")
+
+`--start card | rest | L5 | '{"Manta": {"Time": 5}}'` publishes the starting element levels the way the card's
+`StartingElements` is published (no card or vessel asset edited); each seat's levels at the start are in its
+`start_levels`. `card` is what a player gets: Manta Time -0.5 (the game reads level -4), Serpent, Sparrow, Scarab and
+Stoat Time 10 at I1. `rest` is every hull at 0. `L5` is every hull at Time 5, so every Time level-5 upgrade is on.
+Alone, I1, the shipped course, Legendary, 4 seeds each, bleeding-edge 628de300:
+
+| Hull | rest (all 0) | L5 (all Time 5) | card (today) | What Time 5 buys it (rest to L5) |
+|---|---|---|---|---|
+| Rhino | 35.4 s | 32.8 s | 35.4 s | 7% faster |
+| Urchin | 51.0 s | 51.0 s | 51.0 s | nothing: its AI's time does not move with Time |
+| Scarab | 68.3 s | 50.7 s (sd 0.2) | 47.2 s, **2/4 finish** | 26% faster; at Time 10 it is faster again but stalls in half its races |
+| Squirrel | 80.1 s | 77.2 s | 80.1 s | 4% faster |
+| Manta | 80.3 s | **103.9 s (sd 22.8)** | 82.3 s | 29% SLOWER: Soar unlocks and the AI flies it worse than without it |
+| Sparrow | 119.8 s | 103.4 s | 90.5 s | 14% faster (Time 10 another 12%) |
+| Dolphin | 131.0 s | 119.9 s | 131.0 s | 8% faster |
+| Serpent | 161.1 s | 132.2 s | 107.0 s | 18% faster (Time 10 another 19%) |
+| Stoat | **363 s, 1/4 finish** | 180.6 s | 46.1 s | 2x faster; its warp needs Time: at rest it cannot race, Time 10 makes it the second fastest |
+| **Spread** | 10x (4.5x without the Stoat) | 5.5x (4.0x without the Stoat) | 3.7x | |
+
+Reading it. Time is the lever the card already pulls, and it pulls hard on four hulls (Stoat, Serpent, Sparrow,
+Scarab) and barely on the rest. Two AIs fail at higher Time, which is an AI fault, not a vessel fact: the Manta flies
+worse with Soar, and the Scarab stalls at Time 10 where it finishes every race at Time 5. Raw: 
+`/mnt/project-files/regatta-flywheel/w1-time-ai/l5_{rest,L5,card}.json`.
+
+## Time games (`--mode`)
+
+The judge races any gate-race Time game: `--mode Switchback|SerpentTime|Breakwater|Redline|ScarabRally ... --intensity N`.
+Every game but Regatta draws a new course per match, so the judge forces course seed = race seed
+(`CourseSeedOverride.Forced`; `course_seeds` in the spec names others). `overrides` (asset fields) and
+`controller_overrides` (the scene's race controller, e.g. `{"aiNoseLead.0.Gain": 1.0}`) change the AI's numbers in
+memory for one run, which is how `Tools/Compute/evaluators/time_ai_search.py` searches an AI in its own game. `"trace": true`
+adds the AI's objective, steering target, nose and state flags per sample, and what is within 30 u whenever the hull is
+under 50 u/s. The player is rebuilt when any C# under `Assets/_Scripts` or `Port/src` is newer than it. A process takes
+about 2.5 GB: more than 4 at once on a 16 GB machine is killed for memory.
+
+Time-game baseline, each AI alone, Legendary, 3 random courses per rung (`w1-time-ai/baseline_time.json`):
+
+| Hull, game | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Dolphin, Switchback | 93-105 s | 143-164 s | 165-168 s | 227-259 s |
+| Serpent, Serpent Time | 128-135 s | 130-149 s | 147-171 s | 177-187 s |
+| Sparrow, Breakwater | 106-164 s, 1 DNF | 105-248 s | 106-332 s | 266 s, 2 DNF |
+| Manta, Redline | 64-66 s | 66-71 s | 73-124 s | 83-120 s |
+| Scarab, Scarab Rally | 62-65 s | 71-75 s | 70-71 s | 138-142 s |
+
+The Sparrow's DNFs are its Breakwater nose lead (2.0): at its 35 u/s base speed the lead spins the hull in open air
+(traced: nose in a new direction every half second, nothing within 30 u but its own trail), it never lines up to boost,
+and it can circle for minutes. At lead 1.0 it finished 12 of 12 (100-133 s, one 299 s) against 8 of 12 at 2.0.
+
 ## Field races
 
 `field: true` races every seat at once (two domains, the host idle). The race ends when the first pilot finishes (the
