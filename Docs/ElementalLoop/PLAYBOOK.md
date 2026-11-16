@@ -129,7 +129,7 @@ model number (standing rule).
   | I1 | nothing: every hull starts at rest | no row (`ElementLadder`) |
   | I2 | every hull starts at level 5 in the game's element | `GameDataSO.SyncFromArcadeGame` publishes `ElementLadder`'s rows for a card that authors no `StartingElements` |
   | I3 | team crystals of the game's element on the map, each taken only by its team | `ElementLadderCrystals` (4 a team, regrow 12 s, on the mode controller's inspector): beside the rings in a gate race, through the cell otherwise; Harvest and Shatterplane lay their own; a mode scored on crystals stands down |
-  | I4 | fauna of the game's element, in the cell's colour | a per-rung spawn profile (Harvest's I4); the platform default is the next PR |
+  | I4 | fauna of the game's element, in the cell's colour | `Cell.FaunaRoster`: a cell whose I4 profile has no fauna gets `Resources/ElementLadderFauna` (Harvest's I4 four: shark, piranha, brittle star, tadpole, 23 live at most), each cloned at runtime with its element pinned; a cell that authors fauna keeps its own |
 
   Garrett's three rulings: (1) the harder I1 is right: "it is less intense at level I1. winning is relative to other
   players, and they will be slower too. faster is not easier. it is harder to control which is harder." (2) Racing AIs
