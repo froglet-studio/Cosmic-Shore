@@ -213,7 +213,9 @@ namespace CosmicShore.Player
                 if (raceSpec != null)
                 {
                     var judge = new RaceJudge(raceSpec, raceOut);
-                    RunHeadless(scene, frames < 0 ? int.MaxValue : frames, quiet, width, height, script, reportRender, dumps, judge: judge);
+                    // A control port alongside lets a person or agent inspect a judged race live (game_get, hierarchy).
+                    using var judgeControl = ControlServer.StartIfRequested(controlPort, script);
+                    RunHeadless(scene, frames < 0 ? int.MaxValue : frames, quiet, width, height, script, reportRender, dumps, control: judgeControl, judge: judge);
                     return judge.Done ? judge.ExitCode : 4;
                 }
                 if (wantTrain)
