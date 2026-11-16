@@ -841,6 +841,7 @@ def run(budget, out, backend="model", surrogate=True, seed=1, batch=16, init=64,
     if s:
         json.dump(s.to_json(), open(os.path.join(out, "surrogate.json"), "w"), indent=1)
         open(os.path.join(out, "EQUATIONS.md"), "w").write(equations_md(s, ref, records, backend))
+    open(os.path.join(out, "SEARCH.md"), "w").write(search_report(records, backend, s))
     pool_report = pick_pool(list(archive.values()) + top_passing(records, 60), out, backend)
     summary = {"backend": backend, "surrogate": surrogate, "budget": budget, "seed": seed, "judged": len(records),
                "valid": sum(1 for r in records if r.get("valid")), "cells": len(archive),
@@ -899,6 +900,61 @@ def pick_pool(cands, out, backend, min_k=4, max_k=8):
                           "prefabs + cell configs + Regatta Course Pool entries (round 2).")
     json.dump(rep, open(os.path.join(out, "pool.json"), "w"), indent=1)
     return rep
+
+
+# ── the search report: how far the course alone closes the field, and who stays an outlier ──────────────────────
+
+def _pct(xs, q):
+    xs = sorted(xs)
+    return xs[min(len(xs) - 1, int(round(q * (len(xs) - 1))))] if xs else None
+
+
+def search_report(records, backend, surrogate=None):
+    """SEARCH.md: the spread distribution, each hull's standing across every raced course (its time over the field's
+    geometric mean), how often it wins and trails, the best courses, and (with a surrogate) which kinds move which hull.
+    A hull that is slowest, or fastest, on nearly every course is the loop's step-5 signal: the course cannot fix it."""
+    ok = [r for r in records if r.get("valid") and r["loss"].get("spread_x")]
+    if not ok:
+        return "# Regatta search\n\nNo course finished.\n"
+    hulls = [h for h in SCORED if all(r["seconds"].get(h) for r in ok[:1])]
+    full = [r for r in ok if all(r["seconds"].get(h) for h in hulls)]
+    spreads = [r["loss"]["spread_x"] for r in ok]
+    today = ok[0]
+    lines = [f"# Regatta course search ({time.strftime('%Y-%m-%d')}, backend `{backend}`)", "",
+             f"{len(records)} genomes judged, {len(ok)} raced to a result, {len(records) - len(ok)} not raced or not "
+             f"finished (guard fails, DNFs). Hulls scored: {', '.join(hulls)}.", "",
+             "## How far the course alone closes the field", "",
+             f"Today's course: **{today['loss']['spread_x']:.2f}x** (slowest / fastest). Over the searched courses: best "
+             f"**{min(spreads):.2f}x**, 10th percentile {_pct(spreads, 0.1):.2f}x, median {_pct(spreads, 0.5):.2f}x, "
+             f"90th {_pct(spreads, 0.9):.2f}x. Passing (<= {L.PASS_SPREAD}x and every guard): "
+             f"{sum(1 for r in ok if r['loss']['passes'])}.", "",
+             "## Each hull across every course", "",
+             "Standing = the hull's time over the geometric mean of the field on that course (1.00 = mid-field).", "",
+             "| hull | best standing | median | worst | fastest on | slowest on | today |", "|---|---|---|---|---|---|---|"]
+    for h in hulls:
+        st = []
+        for r in full:
+            gm = math.exp(sum(math.log(r["seconds"][x]) for x in hulls) / len(hulls))
+            st.append(r["seconds"][h] / gm)
+        first = sum(1 for r in full if min(hulls, key=lambda x: r["seconds"][x]) == h)
+        last = sum(1 for r in full if max(hulls, key=lambda x: r["seconds"][x]) == h)
+        gm0 = math.exp(sum(math.log(today["seconds"][x]) for x in hulls) / len(hulls))
+        lines.append(f"| {h} | {min(st):.2f} | {_pct(st, 0.5):.2f} | {max(st):.2f} | {first}/{len(full)} | "
+                     f"{last}/{len(full)} | {today['seconds'][h] / gm0:.2f} |")
+    outl = []
+    for h in hulls:
+        st = [r["seconds"][h] / math.exp(sum(math.log(r["seconds"][x]) for x in hulls) / len(hulls)) for r in full]
+        if min(st) > 1.15:
+            outl.append(f"the **{h}** is slower than mid-field on every course (best {min(st):.2f})")
+        elif max(st) < 0.87:
+            outl.append(f"the **{h}** is faster than mid-field on every course (worst {max(st):.2f})")
+    lines += ["", "## Outliers the course cannot fix (step 5: the vessel or its AI)", ""]
+    lines += [f"- {o}." for o in outl] or ["- none: every hull is mid-field or better on some course."]
+    lines += ["", "## The best courses", "", "| spread | fastest | slowest | kinds |", "|---|---|---|---|"]
+    for r in sorted(ok, key=lambda r: r["loss"]["loss"])[:10]:
+        lines.append(f"| {r['loss']['spread_x']:.2f}x | {r['loss']['fastest']} | {r['loss']['slowest']} | "
+                     f"{', '.join(r.get('kinds') or [])} |")
+    return "\n".join(lines) + "\n"
 
 
 # ── the engine pass: a designed set of courses raced in the game's own code ───────────────────────────────────────
@@ -1085,7 +1141,7 @@ def self_test():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("cmd", nargs="?", choices=("run", "compare", "equations", "engine-pass", "engine-report"))
+    ap.add_argument("cmd", nargs="?", choices=("run", "compare", "equations", "engine-pass", "engine-report", "report"))
     ap.add_argument("dirs", nargs="*")
     ap.add_argument("--budget", type=int, default=1500)
     ap.add_argument("--out", default="regatta_qd_out")
@@ -1115,6 +1171,23 @@ def main():
         print(json.dumps({k: v for k, v in s.items() if k != "trace"}, indent=1))
     elif a.cmd == "engine-pass":
         engine_pass(a.n, a.out, a.backend if a.backend != "model" else "mixed", a.seed)
+    elif a.cmd == "report":
+        recs = []
+        for d in a.dirs:
+            f = os.path.join(d, "records.jsonl")
+            f = f if os.path.exists(f) else os.path.join(d, "records.live.jsonl")
+            recs += [json.loads(l) for l in open(f, encoding="utf-8")]
+        backend = next((r.get("backend") for r in recs if r.get("valid")), a.backend)
+        hulls = sorted({h for r in recs if r.get("valid") for h in r["seconds"]})
+        set_hulls(hulls)
+        os.makedirs(a.out, exist_ok=True)
+        md = search_report(recs, backend)
+        open(os.path.join(a.out, "SEARCH.md"), "w").write(md)
+        s = fit_trusted([r for r in recs if r.get("valid")], min_n=20)
+        if s:
+            ref = next(r for r in recs if r.get("valid"))["seconds"]
+            open(os.path.join(a.out, "EQUATIONS.md"), "w").write(equations_md(s, ref, recs, backend))
+        print(md)
     elif a.cmd == "engine-report":
         rows = [json.loads(l) for d in a.dirs for l in open(os.path.join(d, "records.jsonl"), encoding="utf-8")]
         engine_report(rows, a.out)

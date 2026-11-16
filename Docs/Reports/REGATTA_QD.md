@@ -70,7 +70,14 @@ the engine runs race two seeds per hull from now on to measure the noise.
 
 ## What comes next
 
-1. Switch the search to W2's genome (PR #2036) and run ~200 random + mutated genomes on the engine for Urchin,
+Since this report: the search runs on W2's genome (`regatta_genome.py`: placements of every spawner kind, flora, circuit
+overrides) and on W1's engine with its eight reliable hulls (Dolphin, Manta, Rhino, Serpent, Sparrow, Squirrel, Stoat,
+Urchin; Scarab report-only), one seed per searched course. `regatta_qd.py report DIR` writes SEARCH.md (the spread
+distribution, each hull's standing on every course, the outliers no course fixes) and the engine-fitted EQUATIONS.md.
+Today's course on that judge: 4.07x (Rhino 32 s, Stoat 45, Urchin 51, Squirrel 79, Manta 83, Sparrow 92, Serpent 102,
+Dolphin 129).
+
+1. (Running) the search on W2's genome: ~200 random + mutated genomes on the engine for Urchin,
    Squirrel, Serpent and Rhino (Stoat, Dolphin and Manta join when W1 posts their new baseline): the spread
    distribution and which placement kinds move which hull.
 2. Fit the equations on those engine races, screen the search with them, pick a pool, and hand it to round 2's
