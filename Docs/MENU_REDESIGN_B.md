@@ -34,7 +34,7 @@ section here. The build that follows a pick is verified against the picked board
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
 | Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept) and on 2026-11-16 (Rev 100, 103, 108 and 111 taken off for room, copies kept; section 210); the board now holds Rev 113 (section 209); before that it held now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203; Rev 111 Full, P2A and P3A built in section 204), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
-| Voyages playtest | `voyages-playtest` | What the first Milestone 1 playtest asked for: four options each for the crew screen, the intro, the objective box, the toasts and the feel in flight (Rev 114) | Shombith, 2026-11-16 (section 210) |
+| Voyages playtest | `voyages-playtest` | What the first Milestone 1 playtest asked for: four options each for the crew screen, the intro, the objective box, the toasts and the feel in flight (Rev 114), and your Ark with its seat picker five ways (Rev 115) | Shombith, 2026-11-16 (sections 210, 211) |
 | Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
 | Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 187) |
 
@@ -8588,3 +8588,61 @@ Built in code (`VoyageCrewPopup`, no prefab or scene change), at the board's own
 
 Every word is a `VoyageLines` field (nine new, `CrewTitle` and `CrewLine` reworded); colours from the kit and the worn set.
 Not seen in Unity: a render of the screen still needs to sit beside the board.
+
+## 211. Rev 115 mockups: your Ark and the seat picker, five ways (2026-11-16, picked A)
+
+**Asked** (Shombith): "rework on the crew screen as well 5 mockups for the crew selection screen". After a first Rev 115
+of five crew-recommends screens, he clarified: "My bad delete all these by crew I meant the ark screen where I select
+vessels and the popup to select pilots, elements etc." The five crew-recommends boards were taken off the canvas and
+out of this copy. This round redraws page 3, Your Ark (built from Rev 113 Lobby), and the seat popup (built from Rev 113 Picker).
+
+**On the canvas**: the Voyages playtest tab, section `sec-rev115`. Each board is one option, two screens tall: the Ark page above,
+the same page with its picker open below. Copies: `Docs/MenuRedesignB/board/R115*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r115_voyages.py`.
+- **A Hangar line-up** (`R115A`, recommended): the three seats stand as vessels in a row on a hangar floor, each with its
+  pilot, element flower and artifact under a thin line (cyan for yours). No boxes. The picker slides in from the right
+  (Vessel, Pilot, Element, Artifact tabs) and leaves your seat visible behind it, changing as you pick.
+- **B Your seat first** (`R115B`): your vessel large, with its four picks as chips under it; wingmates in a column on the right.
+  The picker is a bottom sheet showing one row at a time (pilots here), LB and RB moving between rows.
+- **C Pilot cards** (`R115C`): each seat a tall card led by its pilot's portrait, the vessel beneath. The picker is a full
+  loadout in four columns (vessel, pilot, element, artifact) with a "You sail as" preview.
+- **D Formation** (`R115D`): the seats shown where they fly around the Ark, over the sea. The picker walks vessel, pilot,
+  element and artifact one step at a time ("Who flies your Manta?").
+- **E Garage list** (`R115E`): the seats as rows read across (vessel, pilot, element, artifact). The picker is a
+  vessel-by-element grid where one press sets both, with pilots beside it. In the game each cell would show the hull's element morph.
+
+All keep the lobby-only rules of section 209: friends pick their own seat, open seats offer Invite a friend and Change
+wingmate, "Fill the AI seats from a saved squad" (Y), and "You sail as" beside Set sail.
+
+**Room on the canvas**: the unpicked Rev 114 options (Intro C/D, Objective B-D, Feel B-D) came off the canvas for room
+(copies kept).
+
+**Differs from the build**: the build is Rev 113 Lobby and Picker (three glass seat cards, a centred popup with a 3 x 2 vessel grid).
+
+**Picked (Shombith, 2026-11-16): "Lets go A."** A, Hangar line-up, is the Ark page and seat picker to build. Build prompt:
+`/mnt/project-files/milestone1-mockups/rev115-build-prompt.md` (project files).
+
+
+### 211.1 Built: your Ark and the seat picker, Hangar line-up (Rev 115 A; 2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
+
+Asked (Shombith, "Lets go A."): build `R115A.dc.html` from `/mnt/project-files/milestone1-mockups/rev115-build-prompt.md`.
+
+Built in code (`VoyageArkPage`, `VoyageSeatPicker`; no prefab or scene change), at the board's own numbers:
+- **The Ark page** (now 1840 x 870, board y 176-1046): the voyage top left (its picture 90 x 48, its name, kind, worlds and
+  difficulty); three seats standing as vessels in a row, no boxes, 520 x 620 from board x 120, 580 apart, top 300: the role
+  and state (You in cyan, a friend IN YOUR LOBBY in Lime, AI wingmate in Sub) above, the hull render 480 x 260 on a soft
+  floor shadow, one thin line under it (cyan for yours), the pilot's face, the vessel (24), "pilot - artifact" and the
+  element's flower; at the foot "Change your seat" (X), "<friend> picks their own seat.", or Invite a friend and Change
+  wingmate. A faint hangar floor band runs under them. The bar at board y 990: Fill the AI seats (Y) left, "You sail as"
+  and Set sail (A) right. The Back button is gone (the header's steps go back), as the board draws it.
+- **The picker**: an 820 x 996 panel at board (1100, 84) that slides in from the right over a 45% scrim starting under
+  the menu bar, one thin line down its left edge. "Change your seat" and Close; the tabs underlined in cyan; the tab's
+  choices three across in 200 x 150 tiles (the Sees filter on the Pilot tab and "For this voyage" kept); the picked one's
+  name and line; "Your seat now" (face, "vessel - pilot - element - artifact", flower); the saved line and Done (A).
+  The Rev 113 preview column is gone.
+- Unchanged: a press saves to the voyage's seat (`VoyageSeatRecord`), never a saved squad; saved squads fill AI seats only;
+  a friend picks their own seat (209.2). The party still has no ready state, so a friend reads IN YOUR LOBBY rather than
+  Ready. A friend's pilot and element reach the host's card when PR #2050 (`VoyagePartySeats`) lands; this change leaves
+  that card's hull-only drawing as it was.
+
+Not seen in Unity: a render of both screens still needs to sit beside the board.

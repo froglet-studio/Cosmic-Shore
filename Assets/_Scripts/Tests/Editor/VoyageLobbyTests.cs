@@ -128,6 +128,28 @@ namespace CosmicShore.Tests
             Assert.IsFalse(VoyageSeatRecord.IsAiSeat(2, 0, 2));
         }
 
+        // ── The Hangar line-up (Rev 115 A) ───────────────────────────────────
+
+        [Test]
+        public void SeatState_IsYou_ThenFriends_ThenTheAi()
+        {
+            Assert.AreEqual(VoyageArkPage.SeatState.You, VoyageArkPage.StateOf(0, 0, 1));
+            Assert.AreEqual(VoyageArkPage.SeatState.Friend, VoyageArkPage.StateOf(1, 0, 1), "The first friend takes the seat after yours.");
+            Assert.AreEqual(VoyageArkPage.SeatState.Ai, VoyageArkPage.StateOf(2, 0, 1));
+            Assert.AreEqual(VoyageArkPage.SeatState.Ai, VoyageArkPage.StateOf(1, 0, 0), "With no friend every other seat is the AI's.");
+            for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
+                Assert.AreEqual(VoyageSeatRecord.IsAiSeat(seat, 0, 1), VoyageArkPage.StateOf(seat, 0, 1) == VoyageArkPage.SeatState.Ai,
+                    "The page's AI seats are not the ones Fill fills.");
+        }
+
+        [Test]
+        public void Picker_SlidesInFromTheRight()
+        {
+            Assert.Greater(VoyageSeatPicker.SlideOffset(0f), 0f, "The picker must start off to the right.");
+            Assert.AreEqual(0f, VoyageSeatPicker.SlideOffset(1f), 1e-4f, "The picker must end where the board draws it.");
+            Assert.Greater(VoyageSeatPicker.SlideOffset(0.3f), VoyageSeatPicker.SlideOffset(0.6f));
+        }
+
         // ── Open now and the crew popup ──────────────────────────────────────
 
         static VoyageBoard.Offer Offer(FactionType house, bool open) =>
@@ -228,12 +250,15 @@ namespace CosmicShore.Tests
             var l = content.Lines;
             foreach (var line in new[] { l.SeaOpenNow, l.SeaCrewButton, l.CrewTitle, l.CrewLockedPress, l.ArkSailAs, l.ArkFillSquad,
                          l.ArkInvite, l.ArkChangeWingmate, l.PickSaved, l.PickSavedSeat, l.CrewAsks, l.CrewQuote, l.CrewWorlds,
-                         l.CrewTake, l.CrewInstead, l.CrewArk, l.CrewArkAsks })
+                         l.CrewTake, l.CrewInstead, l.CrewArk, l.CrewArkAsks, l.ArkChangeSeat, l.PickSavedHere, l.PickSeatNow,
+                         l.PickSeatLine, l.ArkFriendLine })
                 Assert.IsFalse(string.IsNullOrEmpty(line), "A Rev 113 line is empty in the shipped content.");
             StringAssert.Contains("{vessel}", l.ArkSailAs);
             StringAssert.Contains("{voyage}", l.PickSaved);
             StringAssert.Contains("{quote}", l.CrewQuote);
             StringAssert.Contains("{pilot}", l.CrewAsks);
+            StringAssert.Contains("{name}", l.ArkFriendLine);
+            StringAssert.Contains("{vessel}", l.PickSeatLine);
         }
     }
 }

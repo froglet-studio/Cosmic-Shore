@@ -11,33 +11,34 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Voyages page's third step, your Ark, lobby only (Frogma Rev 113 Lobby, picked by Shombith 2026-11-16:
-    /// "For this milestone I want lobby approach to be the main task"; Docs/MENU_REDESIGN_B.md section 209.1):
+    /// The Voyages page's third step, your Ark, lobby only, as the Hangar line-up (Frogma Rev 115 A, picked by Shombith
+    /// 2026-11-16: "Lets go A."; Docs/MENU_REDESIGN_B.md section 211.1; on Rev 113 Lobby, section 209):
     /// <list type="bullet">
-    /// <item><b>Three seats</b>, filled in order: you, then the friends in your lobby, then AI wingmates
-    /// (<see cref="VoyageRules.FriendAt"/>, the order the voyage seats them). Your card says it flies this voyage and
-    /// carries Vessel, Pilot, Element and Artifact, each opening the seat popup (<see cref="VoyageSeatPicker"/>); a friend's
-    /// card says they pick their own; an AI seat offers Invite a friend and Change wingmate.</item>
-    /// <item><b>Fill the AI seats from a saved squad</b> (Y): a saved squad's wingmates go into the AI seats only.</item>
-    /// <item><b>You sail as</b> beside Set sail: the vessel and element the voyage spawns you in.</item>
+    /// <item><b>The voyage</b> top left: its picture, its name, then its kind, worlds and difficulty.</item>
+    /// <item><b>Three seats standing as vessels in a row</b>, no boxes, over a faint hangar floor, filled in order: you,
+    /// then the friends in your lobby, then AI wingmates (<see cref="VoyageRules.FriendAt"/>). Each: its role and state
+    /// above; the hull render on a soft floor shadow; one thin line under it (cyan for your seat); the pilot's face, the
+    /// vessel, "pilot - artifact" and the element's flower; and at the foot "Change your seat" (X) on yours, a line saying a
+    /// friend picks their own, or Invite a friend and Change wingmate on an AI seat.</item>
+    /// <item><b>The bar</b> at the foot: Fill the AI seats from a saved squad (Y) at the left; "You sail as" and Set sail
+    /// (A) at the right.</item>
     /// </list>
     /// The seats are the voyage's own (<see cref="VoyageSeatRecord"/>, a copy of the active squad made when the page
-    /// opens on a voyage): a pick here never changes a saved squad, and Set sail sails exactly these seats. There is no
-    /// squad view any more (Rev 108's "Fly a squad instead" is gone). The party carries no ready or choosing state yet, so a
-    /// friend's card says they are in your lobby and pick their own seat; it shows the hull they picked.
+    /// opens on a voyage): a pick never changes a saved squad, and Set sail sails exactly these seats. The seat picker
+    /// slides in from the right and leaves the seats in view, so your seat changes behind it as you pick.
     /// <para>On a friend's machine (<see cref="VoyageLaunch.IsPartyGuest"/>) the same page is their own seat in the host's
-    /// lobby (Shombith, 2026-11-16: "friends should be able to change their configuration as well, not just use their
-    /// vessel selected in the menu"): they change Vessel, Pilot, Element and Artifact on their own card, kept in
-    /// <see cref="VoyageSeatRecord.PartyKey"/>; each change is written to their player's replicated hull at once
-    /// (<see cref="VoyageLaunch.SeatLocal"/>), so the host's page shows it and the voyage spawns them in it, and their
-    /// voyage seeds their element from it. The AI seats and Set sail stay the host's.</para>
+    /// lobby (section 209.2): they change their own seat, kept in <see cref="VoyageSeatRecord.PartyKey"/> and written to
+    /// their player's replicated hull at once (<see cref="VoyageLaunch.SeatLocal"/>), so the host's page shows it and the
+    /// voyage spawns them in it. The AI seats and Set sail stay the host's.</para>
     /// </summary>
     public sealed class VoyageArkPage
     {
-        // Frogma Rev 113 Lobby (on Rev 108's), in its own units: the page is x 40-1880, y 176-934 of the 1920 x 1080 board.
-        static readonly Vector2 Design = new(1840f, 758f);
-        const float VoyageX = 1140f, SeatY = 124f, SeatHeight = 540f, SeatWidth = 590f, SeatStep = 625f, FootY = 702f;
-        const float FillWidth = 520f, SailAsX = 820f, SailAsWidth = 360f, FillRow = 52f;
+        // Frogma Rev 115 A, in its own units: the page is x 40-1880, y 176-1046 of the 1920 x 1080 board (the bar's foot).
+        static readonly Vector2 Design = new(1840f, 870f);
+        const float SeatX = 80f, SeatY = 124f, SeatWidth = 520f, SeatHeight = 620f, SeatStep = 580f;
+        const float HullY = 70f, HullHeight = 260f, LineY = 390f, NamesY = 410f, FootY = 520f, FootHeight = 48f;
+        const float FloorY = 464f, FloorHeight = 300f, BarY = 814f, BarHeight = 56f;
+        const float FillWidth = 420f, SailWidth = 300f, SailAsWidth = 640f, FillRow = 52f;
         const string LastKitKey = "Voyages.LastKit";
 
         readonly VoyageBoard _board;
@@ -49,19 +50,19 @@ namespace CosmicShore.UI
         public RectTransform Root { get; }
         readonly RectTransform _frame;
         Vector2 _fitFor = new(-1f, -1f);
-        TMP_Text _head, _headLine;
+        TMP_Text _guestLine;
         readonly List<SeatView> _seatViews = new();
         Button _sail;
         TMP_Text _sailWords;
         RectTransform _fillButton;
         VoyageSeatPicker _picker;
 
-        // The voyage, top right.
+        // The voyage, top left.
         Image _voyageFace;
-        TMP_Text _voyageKind, _voyageTitle, _voyageDifficulty;
+        TMP_Text _voyageTitle, _voyageKind, _voyageWorlds, _voyageDifficulty;
         VoyagePips _voyagePips;
 
-        // The foot: the fill button and its list of saved squads, and "You sail as".
+        // The bar: the fill button and its list of saved squads, and "You sail as".
         RectTransform _fillList, _sailAsFlower;
         TMP_Text _sailAs;
         readonly List<(RectTransform root, TMP_Text words)> _fillRows = new();
@@ -76,17 +77,12 @@ namespace CosmicShore.UI
 
         sealed class SeatView
         {
-            public RectTransform Root;
-            public VoyageKit.GlassCard Card;
-            public TMP_Text Role, Who, Vessel, Pilot, Element, Line, Badge;
-            public VoyageRing BadgeDot;
-            public RectTransform BadgeRoot;
+            public RectTransform Root, StateRoot, Flower, Change, AiButtons;
+            public TMP_Text Role, State, Vessel, Pilot, Element, Line;
+            public VoyageRing StateDot;
             public VoyageSeats.HullView Hull;
-            public Image Portrait;
-            public RectTransform Flower, Settings, AiButtons;
-            public VoyageEdgeGlow Glow;
-            public readonly Button[] Buttons = new Button[4];
-            public Button Invite, Wingmate;
+            public Image Portrait, Rule;
+            public Button ChangeButton, Invite, Wingmate;
         }
 
         public bool PickerOpen => _picker != null && _picker.IsOpen;
@@ -106,10 +102,10 @@ namespace CosmicShore.UI
             _frame = VoyageKit.Node("Frame", Root);
             VoyageKit.Fit(_frame, Design);
 
-            BuildHead();
+            BuildFloor();
             BuildVoyage();
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++) _seatViews.Add(BuildSeat(seat));
-            BuildFoot();
+            BuildBar();
             _picker = new VoyageSeatPicker(_board, _kit, _rules, Root);
             _rules.Changed += Refresh;
             _rules.VoyageChanged += SeatsChanged;
@@ -153,132 +149,123 @@ namespace CosmicShore.UI
             return rt;
         }
 
-        void BuildHead()
+        void BuildFloor()
         {
-            // "YOUR LOBBY" (caps 14, Light) over how the seats fill (15, Sub).
-            var head = At("Head", 0f, 10f, VoyageX - 40f, 60f);
-            VoyageKit.Column(head, 12f, TextAnchor.UpperLeft);
-            _head = _kit.Label(head, 14, _kit.Light);
-            _headLine = _kit.Text(head, 15, _kit.Sub, TextAlignmentOptions.Left);
+            // The hangar floor: a faint band across the whole board under the seats, lit a little toward the foot, its top
+            // edge one muted line.
+            var floor = At("Floor", -40f, FloorY, 1920f, FloorHeight);
+            var g = floor.gameObject.AddComponent<VoyageGradient>();
+            g.raycastTarget = false;
+            var light = FloorLight;
+            g.Set(VoyageKit.Fade(light, 0f), VoyageKit.Fade(light, 0.03f), VoyageKit.Fade(light, 0.06f), 0.5f);
+            VoyageKit.Block(At("Edge", 0f, 0f, 1920f, 1f, floor), VoyageKit.Fade(_kit.Outline, 0.4f));
         }
+
+        // The floor's and the shadows' soft blue light: the worn set's Light, toward Outline.
+        Color FloorLight => Color.Lerp(_kit.Light, _kit.Outline, 0.35f);
 
         void BuildVoyage()
         {
-            // The open voyage: its picture (the pilot, or the Ark, 110 x 60), its name (18), its kind with the difficulty.
-            var face = At("VoyagePicture", VoyageX, 6f, 110f, 60f);
+            // The open voyage, top left: its picture (90 x 48), its name (18), then its kind, worlds and difficulty (14, Sub).
+            var face = At("VoyagePicture", 0f, 4f, 90f, 48f);
             _voyageFace = VoyageKit.CoverBox(face);
-            var words = At("Voyage", VoyageX + 128f, 10f, Design.x - VoyageX - 128f, 60f);
-            VoyageKit.Column(words, 8f, TextAnchor.UpperLeft);
+            var words = At("Voyage", 106f, 4f, 900f, 52f);
+            VoyageKit.Column(words, 6f, TextAnchor.UpperLeft);
             _voyageTitle = _kit.Text(words, 18, _kit.Light, TextAlignmentOptions.Left);
             var meta = VoyageKit.Node("Meta", words);
-            VoyageKit.Row(meta, 12f);
+            var row = VoyageKit.Row(meta, 10f);
+            row.childForceExpandWidth = false;
             VoyageKit.Le(meta).preferredHeight = 18f;
             _voyageKind = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
             _voyageKind.overflowMode = TextOverflowModes.Overflow;
+            _voyageWorlds = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
+            _voyageWorlds.overflowMode = TextOverflowModes.Overflow;
             _voyagePips = _kit.Pips(meta);
             _voyageDifficulty = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
             VoyageKit.Le(_voyageDifficulty).minWidth = VoyageKit.Le(_voyageDifficulty).preferredWidth = 24f;
-            meta.GetComponent<HorizontalLayoutGroup>().childForceExpandWidth = false;
+
+            // On a friend's machine only: who picks what (15, Sub), at the right.
+            _guestLine = _kit.Text(At("GuestLine", 1040f, 10f, 800f, 40f), 15, _kit.Sub, TextAlignmentOptions.TopRight);
+            VoyageKit.Stretch(_guestLine.rectTransform);
+            _guestLine.textWrappingMode = TextWrappingModes.Normal;
         }
 
         SeatView BuildSeat(int seat)
         {
-            var view = new SeatView { Root = At("Seat" + seat, seat * SeatStep, SeatY, SeatWidth, SeatHeight) };
-            view.Card = _kit.Glass(view.Root, hit: false);
-            // A blue glow along the card's edges (Shombith, 2026-11-16), under its content.
-            var edgeGlow = VoyageKit.Node("EdgeGlow", view.Root);
-            VoyageKit.Le(edgeGlow).ignoreLayout = true;
-            VoyageKit.Stretch(edgeGlow);
-            edgeGlow.SetSiblingIndex(view.Card.Edge.transform.GetSiblingIndex());
-            view.Glow = edgeGlow.gameObject.AddComponent<VoyageEdgeGlow>();
-            var c = view.Card.Content;
+            var view = new SeatView { Root = At("Seat" + seat, SeatX + seat * SeatStep, SeatY, SeatWidth, SeatHeight) };
+            var c = view.Root;
             float w = SeatWidth;
 
-            // Top left: its place (caps 14, Sub) over who flies it (22); top right: its state, a dot and caps 14.
-            view.Role = _kit.Label(At("Role", 28f, 26f, w - 56f - 240f, 20f, c), 14, _kit.Sub);
+            // Above: its role (caps 14, Sub) at the left; its state, a dot and caps 14 in the state's colour, at the right.
+            view.Role = _kit.Label(At("Role", 0f, 0f, w - 260f, 20f, c), 14, _kit.Sub);
             VoyageKit.Stretch(view.Role.rectTransform);
-            view.Who = _kit.Text(At("Who", 28f, 52f, w - 56f - 240f, 30f, c), 22, _kit.Light, TextAlignmentOptions.Left);
-            VoyageKit.Stretch(view.Who.rectTransform);
-            view.BadgeRoot = At("State", w - 28f - 240f, 30f, 240f, 20f, c);
-            VoyageKit.Row(view.BadgeRoot, 8f, TextAnchor.MiddleRight);
-            var dot = VoyageKit.Node("Dot", view.BadgeRoot);
+            view.StateRoot = At("State", w - 260f, 0f, 260f, 20f, c);
+            VoyageKit.Row(view.StateRoot, 8f, TextAnchor.MiddleRight);
+            var dot = VoyageKit.Node("Dot", view.StateRoot);
             var dle = VoyageKit.Le(dot);
             dle.preferredWidth = dle.minWidth = dle.preferredHeight = dle.minHeight = 8f;
-            view.BadgeDot = dot.gameObject.AddComponent<VoyageRing>();
-            view.BadgeDot.raycastTarget = false;
-            view.BadgeDot.Width = 4f;
-            view.Badge = _kit.Label(view.BadgeRoot, 14, _kit.Light, TextAlignmentOptions.Right);
-            view.Badge.overflowMode = TextOverflowModes.Overflow;
+            view.StateDot = dot.gameObject.AddComponent<VoyageRing>();
+            view.StateDot.raycastTarget = false;
+            view.StateDot.Width = 4f;
+            view.State = _kit.Label(view.StateRoot, 14, _kit.Light, TextAlignmentOptions.Right);
+            view.State.overflowMode = TextOverflowModes.Overflow;
 
-            // The hull, large in the middle over a soft light.
-            var glow = At("Glow", 0.06f * w, 120f, 0.88f * w, 210f, c);
-            VoyageKit.Glow(glow, VoyageKit.Fade(_kit.Outline, 0.55f));
-            var hull = At("Hull", 0.08f * w, 100f, 0.84f * w, 220f, c);
-            view.Hull = VoyageSeats.HullBox(hull);
+            // The hull (480 x 260) standing on a soft floor shadow, and one thin line under it.
+            VoyageKit.Glow(At("Shadow", 40f, 300f, w - 80f, 60f, c), VoyageKit.Fade(FloorLight, 0.22f));
+            view.Hull = VoyageSeats.HullBox(At("Hull", 20f, HullY, w - 40f, HullHeight, c));
+            view.Rule = VoyageKit.Block(At("Line", 0f, LineY, w, 1f, c), _kit.Outline);
 
-            // The pilot (72 x 86), the vessel (22) and pilot (15, Sub) beside it; the element's flower (32) and name at the right.
-            var face = At("Pilot", 28f, 350f, 72f, 86f, c);
+            // Under the line: the pilot's face (60 x 72), the vessel (24) over "pilot - artifact" (14, Sub), and the element's
+            // flower (34) over its name (13, Sub) at the right.
+            var face = At("Pilot", 0f, NamesY, 60f, 72f, c);
             VoyageKit.Block(face, VoyageKit.Fade(_kit.Popup, 0.6f));
             view.Portrait = VoyageKit.CoverBox(face);
-            var faceEdge = VoyageKit.Node("Edge", face);
-            VoyageKit.Stretch(faceEdge);
-            faceEdge.gameObject.AddComponent<VoyageOutline>().Solid(VoyageKit.Fade(_kit.Light, 0.6f));
-            var names = At("Names", 118f, 364f, w - 118f - 120f, 60f, c);
-            VoyageKit.Column(names, 8f, TextAnchor.UpperLeft);
-            view.Vessel = _kit.Text(names, 22, _kit.Light, TextAlignmentOptions.Left);
-            view.Pilot = _kit.Text(names, 15, _kit.Sub, TextAlignmentOptions.Left);
-            var flowerBox = At("Flower", w - 28f - 32f - 14f, 360f, 32f, 32f, c);
+            var names = At("Names", 76f, NamesY + 6f, w - 76f - 96f, 64f, c);
+            VoyageKit.Column(names, 6f, TextAnchor.UpperLeft);
+            view.Vessel = _kit.Text(names, 24, _kit.Light, TextAlignmentOptions.Left);
+            view.Pilot = _kit.Text(names, 14, _kit.Sub, TextAlignmentOptions.Left);
+            var flowerBox = At("Flower", w - 34f - 24f, NamesY, 34f, 34f, c);
             view.Flower = VoyageKit.Flower(flowerBox, Element.Charge, _kit.Light);
             VoyageKit.Stretch(view.Flower);
-            view.Element = _kit.Text(At("Element", w - 28f - 120f, 398f, 120f, 20f, c), 14, _kit.Sub, TextAlignmentOptions.Right);
+            view.Element = _kit.Text(At("Element", w - 96f, NamesY + 40f, 96f, 18f, c), 13, _kit.Sub, TextAlignmentOptions.Center);
             VoyageKit.Stretch(view.Element.rectTransform);
 
-            // The foot (48 tall, 26 from the bottom): your four settings, an AI seat's two buttons, or a line.
-            float footY = SeatHeight - 26f - 48f;
-            view.Line = _kit.Text(At("Line", 28f, footY, w - 56f, 48f, c), 15, _kit.Sub, TextAlignmentOptions.Left);
+            // The foot: Change your seat (X) on yours; a friend's line; Invite a friend and Change wingmate on an AI seat.
+            view.Line = _kit.Text(At("Line", 0f, FootY, w, FootHeight, c), 14, _kit.Sub, TextAlignmentOptions.Left);
             VoyageKit.Stretch(view.Line.rectTransform);
             view.Line.textWrappingMode = TextWrappingModes.Normal;
-
-            view.Settings = At("Settings", 28f, footY + 4f, w - 56f, 40f, c);
-            VoyageKit.Row(view.Settings, 8f, TextAnchor.MiddleCenter, expandWidth: true);
-            string[] settings = { _lines?.CardSettingVessel, _lines?.CardSettingPilot, _lines?.CardSettingElement, _lines?.CardSettingArtifact };
-            for (int kind = 0; kind < 4; kind++)
-            {
-                int k = kind;
-                var b = VoyageKit.Node("Setting" + kind, view.Settings);
-                VoyageKit.Le(b).preferredHeight = 40f;
-                view.Buttons[kind] = _kit.Quiet(b, null, settings[kind], () => OpenPicker(seat, k), out var label);
-                label.fontSize = 14;
-            }
-
-            view.AiButtons = At("AiSeat", 28f, footY + 4f, w - 56f, 40f, c);
-            VoyageKit.Row(view.AiButtons, 8f, TextAnchor.MiddleCenter, expandWidth: true);
+            view.Change = At("Change", 0f, FootY, w, FootHeight, c);
+            view.ChangeButton = _kit.Quiet(view.Change, _lines?.ArkChangeSeatKey, _lines?.ArkChangeSeat,
+                () => OpenPicker(seat, VoyageSeats.Vessel));
+            view.AiButtons = At("AiSeat", 0f, FootY, w, FootHeight, c);
+            VoyageKit.Row(view.AiButtons, 10f, TextAnchor.MiddleCenter, expandWidth: true);
             var invite = VoyageKit.Node("Invite", view.AiButtons);
-            VoyageKit.Le(invite).preferredHeight = 40f;
+            VoyageKit.Le(invite).preferredHeight = FootHeight;
             view.Invite = _kit.Quiet(invite, null, _lines?.ArkInvite, InviteFriend, out var inviteWords);
             inviteWords.fontSize = 14;
             var wingmate = VoyageKit.Node("Wingmate", view.AiButtons);
-            VoyageKit.Le(wingmate).preferredHeight = 40f;
+            VoyageKit.Le(wingmate).preferredHeight = FootHeight;
             view.Wingmate = _kit.Quiet(wingmate, null, _lines?.ArkChangeWingmate, () => OpenPicker(seat, VoyageSeats.Pilot),
                 out var wingmateWords);
             wingmateWords.fontSize = 14;
             return view;
         }
 
-        void BuildFoot()
+        void BuildBar()
         {
-            var fill = At("FillFromSquad", 0f, FootY, FillWidth, 56f);
+            var fill = At("FillFromSquad", 0f, BarY, FillWidth, BarHeight);
             _fillButton = fill;
             _kit.Quiet(fill, _lines?.ArkFillKey, _lines?.ArkFillSquad, ToggleFill);
             // The saved squads to fill from, over the button while it is open.
-            _fillList = At("FillFrom", 0f, FootY, FillWidth, 0f);
+            _fillList = At("FillFrom", 0f, BarY, FillWidth, 0f);
             _kit.Box(_fillList, VoyageKit.Fade(_kit.Popup, 0.94f), _kit.Outline, hit: true);
             _fillList.gameObject.SetActive(false);
 
-            // "You sail as Manta - Space" and the element's flower (16, Sub; the hull and element in Light), right-aligned.
-            var sailAs = At("SailAs", SailAsX, FootY, SailAsWidth, 56f);
+            // "You sail as Manta - Space" and the element's flower (16; the hull and element in Light), 24 left of Set sail.
+            float sailX = Design.x - SailWidth;
+            var sailAs = At("SailAs", sailX - 24f - SailAsWidth, BarY, SailAsWidth, BarHeight);
             VoyageKit.Row(sailAs, 10f, TextAnchor.MiddleRight);
-            _sailAs = _kit.Text(sailAs, 16, _kit.Sub, TextAlignmentOptions.Right);
+            _sailAs = _kit.Text(sailAs, 16, Color.Lerp(_kit.Sub, _kit.Light, 0.6f), TextAlignmentOptions.Right);
             _sailAs.overflowMode = TextOverflowModes.Overflow;
             var flowerBox = VoyageKit.Node("Flower", sailAs);
             var fle = VoyageKit.Le(flowerBox);
@@ -286,9 +273,7 @@ namespace CosmicShore.UI
             _sailAsFlower = VoyageKit.Flower(flowerBox, Element.Charge, _kit.Light);
             VoyageKit.Stretch(_sailAsFlower);
 
-            var back = At("Back", 1200f, FootY, 200f, 56f);
-            _kit.Quiet(back, _lines?.PageBackKey, _lines?.PageBack, _board.StepBack);
-            var sail = At("SetSail", 1420f, FootY, 420f, 56f);
+            var sail = At("SetSail", sailX, BarY, SailWidth, BarHeight);
             (_sail, _sailWords) = _kit.Cta(sail, _lines?.BoardSailKey, _lines?.CardSetSail, _board.SetSail);
         }
 
@@ -372,8 +357,7 @@ namespace CosmicShore.UI
             bool editable = squad != null && !string.IsNullOrEmpty(SeatKey);
             bool guest = Guest;
 
-            VoyageKit.Set(_head, _lines?.ArkLobby);
-            VoyageKit.Set(_headLine, guest ? _lines?.ArkLobbyLineGuest : _lines?.ArkLobbyLine);
+            VoyageKit.Set(_guestLine, guest ? _lines?.ArkLobbyLineGuest : null);
             DrawVoyage();
 
             // You, then the friends in your lobby in the seats after yours (as the voyage seats them), then an AI wingmate
@@ -386,10 +370,10 @@ namespace CosmicShore.UI
                 else DrawSeat(_seatViews[seat], squad, seat, you: seat == mine, editable);
             }
             DrawSailAs(squad);
-            if (_fillList.gameObject.activeSelf) DrawFill();
             // A friend picks their seat; the host fills the AI seats and sets sail.
             _fillButton.gameObject.SetActive(!guest);
             if (guest) _fillList.gameObject.SetActive(false);
+            if (_fillList.gameObject.activeSelf) DrawFill();
             _sail.interactable = !guest && _offer?.SetSail != null;
             VoyageKit.Set(_sailWords, guest ? _lines?.ArkHostSails : _lines?.CardSetSail);
             if (_picker.IsOpen) _picker.Refresh();
@@ -399,11 +383,14 @@ namespace CosmicShore.UI
         {
             var offer = _offer;
             if (offer == null) return;
-            var picture = offer.Portrait ? offer.Portrait : offer.Picture;
-            VoyageKit.ShowCover(_voyageFace, picture, new Vector2(110f, 60f),
-                offer.Portrait ? VoyageKit.FaceFocus : new Vector2(0.5f, 0.5f));
-            VoyageKit.Set(_voyageKind, TemplateText.Fill(_lines?.ArkVoyageLine, "kind", offer.Kind));
+            var picture = offer.Picture ? offer.Picture : offer.Portrait;
+            VoyageKit.ShowCover(_voyageFace, picture, new Vector2(90f, 48f),
+                offer.Picture ? new Vector2(0.5f, 0.5f) : VoyageKit.FaceFocus);
             VoyageKit.Set(_voyageTitle, offer.Title);
+            VoyageKit.Set(_voyageKind, TemplateText.Fill(_lines?.ArkVoyageLine, "kind", offer.Kind));
+            VoyageKit.Set(_voyageWorlds, offer.Stops.Count > 0
+                ? TemplateText.Fill(_lines?.CrewWorlds, "worlds", offer.Stops.Count.ToString(CultureInfo.InvariantCulture))
+                : null);
             _voyagePips.Lit = _difficulty;
             VoyageKit.Set(_voyageDifficulty, _difficulty.ToString(CultureInfo.InvariantCulture));
         }
@@ -431,38 +418,63 @@ namespace CosmicShore.UI
             if (flower) VoyageSeatPicker.Petals(_sailAsFlower, element);
         }
 
-        void Badge(SeatView view, string words, Color color)
+        /// <summary>A seat's state over its hull (Rev 115 A): you, a friend in your lobby, or the AI.</summary>
+        public enum SeatState
         {
-            view.BadgeRoot.gameObject.SetActive(!string.IsNullOrEmpty(words));
-            VoyageKit.Set(view.Badge, words);
-            view.Badge.color = color;
-            view.BadgeDot.Set(color, color);
+            You = 0,
+            Friend = 1,
+            Ai = 2,
+        }
+
+        /// <summary>What a seat on the Ark page is: yours, a friend's (<see cref="VoyageRules.FriendAt"/>), else the AI's.</summary>
+        public static SeatState StateOf(int seat, int mySeat, int friends) =>
+            seat == mySeat ? SeatState.You : VoyageRules.FriendAt(seat, mySeat, friends) >= 0 ? SeatState.Friend : SeatState.Ai;
+
+        void State(SeatView view, SeatState state)
+        {
+            // You in cyan, a friend in Lime (they are here and ready to sail with you), the AI in Sub.
+            var (words, color) = state switch
+            {
+                SeatState.You => (_lines?.ArkYou, _kit.Cyan),
+                SeatState.Friend => (_lines?.ArkInLobby, _kit.CtaFill),
+                _ => (_lines?.ArkWingmate, _kit.Sub),
+            };
+            view.StateRoot.gameObject.SetActive(!string.IsNullOrEmpty(words));
+            VoyageKit.Set(view.State, words);
+            view.State.color = color;
+            view.StateDot.Set(color, color);
+            // One thin line under the hull: cyan under your seat, the muted line under the others.
+            view.Rule.color = state == SeatState.You ? _kit.Cyan : VoyageKit.Fade(_kit.Outline, 0.6f);
+        }
+
+        void Foot(SeatView view, SeatState state, string line)
+        {
+            view.Change.gameObject.SetActive(state == SeatState.You && string.IsNullOrEmpty(line));
+            view.AiButtons.gameObject.SetActive(state == SeatState.Ai && !Guest);
+            VoyageKit.Set(view.Line, line);
         }
 
         void DrawSeat(SeatView view, SavedSquad squad, int seat, bool you, bool editable)
         {
             view.Root.gameObject.SetActive(true);
-            view.Card.Pick(_kit, you);
-            Glow(view, you);
+            var state = you ? SeatState.You : SeatState.Ai;
+            VoyageKit.Set(view.Role, _rules.Role(seat));
+            State(view, state);
             if (squad == null)
             {
-                VoyageKit.Set(view.Who, _lines?.CardNoSquad);
-                view.Settings.gameObject.SetActive(false);
-                view.AiButtons.gameObject.SetActive(false);
-                Badge(view, null, _kit.Sub);
+                _rules.SetHull(view.Hull, null);
+                VoyageKit.Show(view.Portrait, null);
+                VoyageKit.Set(view.Vessel, null);
+                VoyageKit.Set(view.Pilot, null);
+                VoyageKit.Set(view.Element, null);
+                view.Flower.parent.gameObject.SetActive(false);
+                Foot(view, state, _lines?.CardNoSquad);
                 return;
             }
             var slot = squad.GetSlot(seat);
             var vessel = _rules.VesselOf(slot.Vessel);
             var pilot = _rules.PilotOf(slot, vessel);
             bool canEdit = editable && VoyageSeats.CanEdit(squad, seat);
-            VoyageKit.Set(view.Role, _rules.Role(seat));
-            // A squad member who is not in your lobby has the AI fly for them.
-            VoyageKit.Set(view.Who, you ? _lines?.ArkYou : slot.IsPlayer()
-                ? TemplateText.Fill(_lines?.ArkAiFor, "name", slot.MemberName)
-                : _lines?.ArkWingmate);
-            if (you) Badge(view, _lines?.ArkFlies, _kit.Light);
-            else Badge(view, _lines?.ArkSeatAiShort, _kit.Sub);
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
             VoyageKit.Show(view.Portrait, pilot ? pilot.Portrait : null);
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : null);
@@ -476,37 +488,24 @@ namespace CosmicShore.UI
             VoyageSeatPicker.Petals(view.Flower, slot.Element);
             VoyageKit.Set(view.Element, _rules.ElementName(slot.Element));
 
-            // Your seat: its four settings. An AI seat: Invite a friend and Change wingmate (when you may change it).
-            view.Settings.gameObject.SetActive(you && canEdit);
-            view.AiButtons.gameObject.SetActive(!you && !Guest);
+            // Your seat changes here when it is yours to change; an AI seat keeps its two buttons.
+            Foot(view, state, you && !canEdit ? _lines?.CardNoSquad : null);
+            view.ChangeButton.interactable = canEdit;
             view.Wingmate.interactable = canEdit;
-            VoyageKit.Set(view.Line, you && !canEdit ? _lines?.CardNoSquad : null);
-            int s = seat;
-            for (int k = 0; k < 4; k++)
-            {
-                int kind = k;
-                view.Buttons[k].onClick.RemoveAllListeners();
-                view.Buttons[k].onClick.AddListener(() => OpenPicker(s, kind));
-            }
-            view.Wingmate.onClick.RemoveAllListeners();
-            view.Wingmate.onClick.AddListener(() => OpenPicker(s, VoyageSeats.Pilot));
         }
 
         void DrawFriend(SeatView view, int seat, string id, string name)
         {
+            view.Root.gameObject.SetActive(true);
+            VoyageKit.Set(view.Role, _rules.Role(seat));
+            State(view, SeatState.Friend);
             // The hull the friend picked on their own page (their replicated hull); their pilot, element and artifact as
             // their machine reported them (VoyagePartySeats), once it has.
             var player = FriendPlayer(id, name);
             var reported = player ? VoyagePartySeats.Of(player.OwnerClientId) : null;
             var vessel = _rules.VesselOf(FriendHull(id, name));
-            view.Root.gameObject.SetActive(true);
-            view.Card.Pick(_kit, false);
-            Glow(view, false);
-            VoyageKit.Set(view.Role, _rules.Role(seat));
-            VoyageKit.Set(view.Who, name);
-            Badge(view, _lines?.ArkInLobby, _kit.Light);
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
-            VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : null);
+            VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : name);
             if (reported != null)
             {
                 var slot = reported.Slot;
@@ -520,21 +519,11 @@ namespace CosmicShore.UI
             else
             {
                 VoyageKit.Show(view.Portrait, null);
-                VoyageKit.Set(view.Pilot, null);
+                VoyageKit.Set(view.Pilot, vessel ? name : null);
                 view.Flower.parent.gameObject.SetActive(false);
                 VoyageKit.Set(view.Element, null);
             }
-            VoyageKit.Set(view.Line, _lines?.ArkFriendLine);
-            view.Settings.gameObject.SetActive(false);
-            view.AiButtons.gameObject.SetActive(false);
-        }
-
-        // The seat's blue edge glow (the worn colour set's cyan, as the picked edge): brighter on your own seat.
-        void Glow(SeatView view, bool you)
-        {
-            view.Glow.color = VoyageKit.Fade(_kit.Cyan, you ? 0.55f : 0.32f);
-            view.Glow.Outside = you ? 16f : 12f;
-            view.Glow.SetVerticesDirty();
+            Foot(view, SeatState.Friend, TemplateText.Fill(_lines?.ArkFriendLine, "name", name));
         }
 
         // ── Invite a friend ──────────────────────────────────────────────────
@@ -602,7 +591,7 @@ namespace CosmicShore.UI
             for (int i = rows; i < _fillRows.Count; i++) _fillRows[i].root.gameObject.SetActive(false);
             // The list stands over the button, 12 above it.
             float h = rows * FillRow;
-            VoyageKit.At(_fillList, 0f, FootY - 12f - h, FillWidth, h);
+            VoyageKit.At(_fillList, 0f, BarY - 12f - h, FillWidth, h);
         }
 
         void FillIndex(int index)

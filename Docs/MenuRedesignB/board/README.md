@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-16 from the canvas of **Frogma**: Rev 3 to Rev 114, 510 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-16 from canvas version `1794866653-6261` of **Frogma**: Rev 3 to Rev 115, 505 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -806,22 +806,20 @@ Copied on 2026-11-16 from the canvas of **Frogma**: Rev 3 to Rev 114, 510 boards
 
 ### Tab: Voyages playtest  (`voyages-playtest`)
 
+#### Rev 115 - Your Ark and the seat picker, five ways: hangar line-up, your seat first, pilot cards, formation, garage list
+
+- [`R115A.dc.html`](R115A.dc.html) - Rev 115 A - Ark A: Hangar line-up; the picker slides in from the right (recommended)
+- [`R115B.dc.html`](R115B.dc.html) - Rev 115 B - Ark B: Your seat first; a bottom-sheet picker
+- [`R115C.dc.html`](R115C.dc.html) - Rev 115 C - Ark C: Pilot cards; a loadout in four columns
+- [`R115D.dc.html`](R115D.dc.html) - Rev 115 D - Ark D: Formation around the Ark; a step-by-step picker
+- [`R115E.dc.html`](R115E.dc.html) - Rev 115 E - Ark E: Garage list; a vessel-by-element grid
+
 #### Rev 114 - Voyages playtest: four of each - crew screen, intro, a smaller objective, toasts, the feel in flight
 
-- [`R114C1.dc.html`](R114C1.dc.html) - Rev 114 C1 - Crew A: a drawer over the HyperSea; each job pinned on the map (recommended)
 - [`R114C2.dc.html`](R114C2.dc.html) - Rev 114 C2 - Crew B: pilot first; your crew's faces, each with the job they bring
-- [`R114C3.dc.html`](R114C3.dc.html) - Rev 114 C3 - Crew C: the job board; one poster per voyage in faction columns
-- [`R114C4.dc.html`](R114C4.dc.html) - Rev 114 C4 - Crew D: faction tabs across the top, two open voyages as a hero row
 - [`R114O1.dc.html`](R114O1.dc.html) - Rev 114 O1 - Objective A: a strip, 420 px; goal, hull and breach, next world
-- [`R114O2.dc.html`](R114O2.dc.html) - Rev 114 O2 - Objective B: a ribbon at top centre; the route is the hull bar
-- [`R114O3.dc.html`](R114O3.dc.html) - Rev 114 O3 - Objective C: a corner gauge, 260 px; hull first, everything else on demand
-- [`R114O4.dc.html`](R114O4.dc.html) - Rev 114 O4 - Objective D: opens on news, folds to one line (recommended)
 - [`R114F1.dc.html`](R114F1.dc.html) - Rev 114 F1 - Feel A: Chase; close behind you, the Ark the landmark ahead
-- [`R114F2.dc.html`](R114F2.dc.html) - Rev 114 F2 - Feel B: Guardian; pulled back, the Ark at the centre, threats read at a glance (recommended)
-- [`R114F3.dc.html`](R114F3.dc.html) - Rev 114 F3 - Feel C: Cinematic beats; the camera takes over for two seconds at the big moments
-- [`R114F4.dc.html`](R114F4.dc.html) - Rev 114 F4 - Feel D: Punch; every hit, kill and crystal answers in the world and the sound
 - [`R114IAB.dc.html`](R114IAB.dc.html) - Rev 114 IAB - Intro A: Departure (recommended), and B: From the map
-- [`R114ICD.dc.html`](R114ICD.dc.html) - Rev 114 ICD - Intro C: Threat first, and D: One take
 - [`R114TAB.dc.html`](R114TAB.dc.html) - Rev 114 TAB - Toasts A: the Rev 113 band, smaller, and B: the crew speaks
 - [`R114TCD.dc.html`](R114TCD.dc.html) - Rev 114 TCD - Toasts C: a feed under the objective, and D: two sizes (recommended)
 
