@@ -89,6 +89,12 @@ namespace CosmicShore.Utility
         public string SceneName;
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
+
+        [Tooltip("How a pilot is named when an earlier pilot in the same match already has the same display name. " +
+                 "Tokens: {name} the display name, {number} the pilot's place among the namesakes (2, 3, ...). " +
+                 "Keep {number} in it: the roster keys pilots by name, so two pilots must never read the same.")]
+        [SerializeField] string duplicatePlayerNameTemplate = "{name} ({number})";
+        public string DuplicatePlayerNameTemplate => duplicatePlayerNameTemplate;
         public int LocalPlayerAvatarId;
         public bool IsWeeklyChallenge;
         public bool IsTraining;

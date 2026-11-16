@@ -69,8 +69,17 @@ Each was read from the logs by one reader per run, then checked against the code
   host 165 points and 7 crystals, guest 140 and 0).
 - For real players who pick the same name: one scoreboard row for two people, both machines mark it "you", and
   everything credited by name (crystals, score, domain sums, end conditions) lands on one row.
-- Suggested fix: key the roster by identity (`PlayerNetId` / owner client id), and evict a same-name RoundStats
-  only when it is dead. Not fixed here.
+- **Fixed 2026-11-16** (`RosterNames`, `Player.ResolveRosterName`). The whole game keys a pilot by `Name` (251 sites
+  in 119 files: the roster, score sync, end conditions, HUDs), so the fix makes the name unique instead of re-keying
+  everything: among the spawned players with the same display name, the lowest `NetworkObjectId` keeps the name and
+  each later one is named from the authored template `GameDataSO.duplicatePlayerNameTemplate` (`{name} ({number})`,
+  so the second `ys1` reads `ys1 (2)`). Every machine reaches the same answer from the replicated names and ids;
+  nothing new crosses the wire, so the protocol version is unchanged. Held by `RosterNamesTests` (8).
+- Checked live the same day (a fourth driven run, same two `ys1` accounts): four stats rows on both machines,
+  `ys1` and `ys1 (2)`, with identical scores and crystals at the end of both rounds played (Skim Race I1, Joust I1),
+  and no "Replacing stale RoundStats" warning. That run's third round drew Cleave again and ended the same way as
+  run 1: the host froze, "Transport failure", the guest bounced (finding 1, now 2 of 2 Cleave draws).
+- Known limit: the numbered name is also what a match report or a spectate-by-name lookup sees for that pilot.
 
 ### 3. Scurry round that did not end in 12 minutes (run 2) - not proven a defect
 
