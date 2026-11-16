@@ -1,0 +1,713 @@
+{
+    "schemaVersion": 1,
+    "reportId": "93dd03814f15",
+    "timestamp": "2026-11-16T23:19:31.2990563Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "Ys-bleeding-edge",
+    "gitCommitHash": "64773f28cc",
+    "trigger": "Netcode scene load (client) — MinigameSkimRace",
+    "loadKind": "launch",
+    "completionReason": "Loaded — arena complete (laid + grown), connecting screen done",
+    "interrupted": false,
+    "sceneFrom": "Maelstrom",
+    "sceneTo": "MinigameSkimRace",
+    "gameMode": "SkimRace",
+    "intensity": 1,
+    "totalPlayers": 4,
+    "humanPlayers": 2,
+    "aiBackfill": 2,
+    "isMultiplayer": true,
+    "networkRole": "Client",
+    "connectedClients": 0,
+    "totalMs": 2961.790771484375,
+    "visualReadyMs": 1176.0797119140625,
+    "waitMs": 482.042236328125,
+    "humanWaitMs": 0.0,
+    "workMs": 2479.74853515625,
+    "unattributedMs": 178.00819396972657,
+    "framesDuringLoad": 85,
+    "avgFpsDuringLoad": 28.698854446411134,
+    "worstFrameMs": 1342.2403564453125,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Client scene load (MinigameSkimRace)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 1.1526000499725342,
+            "endMs": 1031.7637939453125,
+            "durationMs": 1030.6112060546875,
+            "exclusiveMs": 1029.91259765625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": 0,
+            "depth": 1,
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 1031.065185546875,
+            "endMs": 1664.0589599609375,
+            "durationMs": 632.9937744140625,
+            "exclusiveMs": 402.1192626953125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 1031.25244140625,
+            "endMs": 1262.126953125,
+            "durationMs": 230.87451171875,
+            "exclusiveMs": 79.9229736328125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 1039.5499267578125,
+            "endMs": 1040.189208984375,
+            "durationMs": 0.6392822265625,
+            "exclusiveMs": 0.6392822265625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 1050.7984619140625,
+            "endMs": 1051.40771484375,
+            "durationMs": 0.6092529296875,
+            "exclusiveMs": 0.6092529296875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Crystal spawn (SkimRaceRingCrystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 1053.0882568359375,
+            "endMs": 1054.6739501953125,
+            "durationMs": 1.585693359375,
+            "exclusiveMs": 1.585693359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1056.1181640625,
+            "endMs": 1056.793701171875,
+            "durationMs": 0.675537109375,
+            "exclusiveMs": 0.675537109375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1056.803955078125,
+            "endMs": 1056.8988037109375,
+            "durationMs": 0.0948486328125,
+            "exclusiveMs": 0.0948486328125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1056.908935546875,
+            "endMs": 1060.6739501953125,
+            "durationMs": 3.7650146484375,
+            "exclusiveMs": 3.7650146484375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Crystal spawn (SkimRaceRingCrystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 1060.7486572265625,
+            "endMs": 1062.35302734375,
+            "durationMs": 1.6043701171875,
+            "exclusiveMs": 1.6043701171875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Crystal spawn (SkimRaceRingCrystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 1062.3743896484375,
+            "endMs": 1063.6131591796875,
+            "durationMs": 1.23876953125,
+            "exclusiveMs": 1.23876953125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Crystal spawn (SkimRaceRingCrystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 1063.6318359375,
+            "endMs": 1065.001708984375,
+            "durationMs": 1.369873046875,
+            "exclusiveMs": 1.369873046875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Environment segment spawn (SpawnableTrack, intensity 1)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1065.3798828125,
+            "endMs": 1140.5283203125,
+            "durationMs": 75.1484375,
+            "exclusiveMs": 75.1484375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (Tiger)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 1160.440673828125,
+            "endMs": 1176.0758056640625,
+            "durationMs": 15.6351318359375,
+            "exclusiveMs": 15.6351318359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (Lion)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 1176.121337890625,
+            "endMs": 1192.5584716796875,
+            "durationMs": 16.4371337890625,
+            "exclusiveMs": 16.4371337890625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 15,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (Iggy)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 1192.5721435546875,
+            "endMs": 1207.878662109375,
+            "durationMs": 15.3065185546875,
+            "exclusiveMs": 15.3065185546875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 16,
+            "parentId": 2,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (PlanetDestroyer6)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 1207.893310546875,
+            "endMs": 1224.7349853515625,
+            "durationMs": 16.8416748046875,
+            "exclusiveMs": 16.8416748046875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 17,
+            "parentId": -1,
+            "depth": 0,
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "startMs": 1664.0687255859375,
+            "endMs": 1664.080078125,
+            "durationMs": 0.0113525390625,
+            "exclusiveMs": 0.0113525390625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 18,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1693.5203857421875,
+            "endMs": 2814.38525390625,
+            "durationMs": 1120.8648681640625,
+            "exclusiveMs": 1120.8648681640625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 1200.5487060546875,
+            "percent": 40.53455352783203,
+            "spanCount": 5,
+            "waitMs": 0.0
+        },
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 1029.91259765625,
+            "percent": 34.77330780029297,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 402.1192626953125,
+            "percent": 13.576896667480469,
+            "spanCount": 1,
+            "waitMs": 402.1192626953125
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 178.00819396972657,
+            "percent": 6.0101542472839359,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 1,
+            "name": "Netcode & Sync",
+            "attributedMs": 79.9229736328125,
+            "percent": 2.698467969894409,
+            "spanCount": 1,
+            "waitMs": 79.9229736328125
+        },
+        {
+            "category": 4,
+            "name": "AI Backfill",
+            "attributedMs": 32.148193359375,
+            "percent": 1.0854309797286988,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 32.072265625,
+            "percent": 1.0828673839569092,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 9,
+            "name": "Crystals",
+            "attributedMs": 5.7987060546875,
+            "percent": 0.19578377902507783,
+            "spanCount": 4,
+            "waitMs": 0.0
+        },
+        {
+            "category": 10,
+            "name": "Pooling & Prewarm",
+            "attributedMs": 1.24853515625,
+            "percent": 0.04215473681688309,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 12,
+            "name": "Game Flow & Countdown",
+            "attributedMs": 0.0113525390625,
+            "percent": 0.00038329983362928033,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1120.8648681640625,
+            "exclusiveMs": 1120.8648681640625,
+            "maxSingleMs": 1120.8648681640625,
+            "isWait": false
+        },
+        {
+            "label": "Client scene load (MinigameSkimRace)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 1030.6112060546875,
+            "exclusiveMs": 1029.91259765625,
+            "maxSingleMs": 1030.6112060546875,
+            "isWait": false
+        },
+        {
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 632.9937744140625,
+            "exclusiveMs": 402.1192626953125,
+            "maxSingleMs": 632.9937744140625,
+            "isWait": true
+        },
+        {
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "count": 1,
+            "totalMs": 230.87451171875,
+            "exclusiveMs": 79.9229736328125,
+            "maxSingleMs": 230.87451171875,
+            "isWait": true
+        },
+        {
+            "label": "Environment segment spawn (SpawnableTrack, intensity 1)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 75.1484375,
+            "exclusiveMs": 75.1484375,
+            "maxSingleMs": 75.1484375,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (PlanetDestroyer6)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 16.8416748046875,
+            "exclusiveMs": 16.8416748046875,
+            "maxSingleMs": 16.8416748046875,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Lion)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 16.4371337890625,
+            "exclusiveMs": 16.4371337890625,
+            "maxSingleMs": 16.4371337890625,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Tiger)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 15.6351318359375,
+            "exclusiveMs": 15.6351318359375,
+            "maxSingleMs": 15.6351318359375,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Iggy)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 15.3065185546875,
+            "exclusiveMs": 15.3065185546875,
+            "maxSingleMs": 15.3065185546875,
+            "isWait": false
+        },
+        {
+            "label": "Crystal spawn (SkimRaceRingCrystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "count": 4,
+            "totalMs": 5.7987060546875,
+            "exclusiveMs": 5.7987060546875,
+            "maxSingleMs": 1.6043701171875,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 3.7650146484375,
+            "exclusiveMs": 3.7650146484375,
+            "maxSingleMs": 3.7650146484375,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 2,
+            "totalMs": 1.24853515625,
+            "exclusiveMs": 1.24853515625,
+            "maxSingleMs": 0.6392822265625,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.675537109375,
+            "exclusiveMs": 0.675537109375,
+            "maxSingleMs": 0.675537109375,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.0948486328125,
+            "exclusiveMs": 0.0948486328125,
+            "maxSingleMs": 0.0948486328125,
+            "isWait": false
+        },
+        {
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "count": 1,
+            "totalMs": 0.0113525390625,
+            "exclusiveMs": 0.0113525390625,
+            "maxSingleMs": 0.0113525390625,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 1695.9110107421875,
+            "durationMs": 1342.2403564453125,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 1825.7696533203125,
+            "durationMs": 447.2627868652344,
+            "during": "InitDelayMs gate before InitializeGame (1000ms)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Netcode scene load (client) — MinigameSkimRace"
+        },
+        {
+            "atMs": 1.148300051689148,
+            "label": "Netcode scene load begins: MinigameSkimRace"
+        },
+        {
+            "atMs": 1011.43798828125,
+            "label": "Unity scene loaded: MinigameSkimRace (Single)"
+        },
+        {
+            "atMs": 1020.1152954101563,
+            "label": "Game controller spawned (SkimRaceController, IsServer=False)"
+        },
+        {
+            "atMs": 1031.4666748046875,
+            "label": "Game config received from server"
+        },
+        {
+            "atMs": 1031.76220703125,
+            "label": "Netcode scene load complete: MinigameSkimRace (client 1)"
+        },
+        {
+            "atMs": 1060.7266845703125,
+            "label": "Flora/fauna spawner started (cell 0, RandomLifeSpawner)"
+        },
+        {
+            "atMs": 1176.0804443359375,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 1224.7396240234375,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 1251.9322509765625,
+            "label": "Connecting panel shown (holding for arena build)"
+        },
+        {
+            "atMs": 1662.950439453125,
+            "label": "Game config received from server"
+        },
+        {
+            "atMs": 1663.0205078125,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 1663.1353759765625,
+            "label": "Connecting panel shown (holding for arena build)"
+        },
+        {
+            "atMs": 1663.81884765625,
+            "label": "Netcode scene load completed on ALL clients: MinigameSkimRace"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Pool objects prewarmed during load",
+            "value": 20
+        },
+        {
+            "name": "Crystals spawned during load",
+            "value": 4
+        },
+        {
+            "name": "Environment segments spawned during load",
+            "value": 1
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 360
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 360,
+            "totalMs": 34.673099517822269,
+            "maxSingleMs": 0.42160001397132876
+        }
+    ],
+    "errors": [
+        {
+            "timeSeconds": 1.2540569305419922,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)"
+        },
+        {
+            "timeSeconds": 1.2558552026748658,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)"
+        },
+        {
+            "timeSeconds": 1.2578890323638917,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)"
+        },
+        {
+            "timeSeconds": 1.2600574493408204,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)"
+        }
+    ],
+    "hints": [
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 1.3s during \"Client scene load (MinigameSkimRace)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "errors-during-load",
+            "severity": 1,
+            "title": "Errors fired during the load",
+            "finding": "4 error(s)/exception(s) during load — failures often add retry waits.",
+            "fixAdvice": "Fix the errors first; they may be the hidden cause of the slow path.",
+            "matchedMarker": ""
+        }
+    ]
+}

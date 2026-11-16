@@ -1,0 +1,390 @@
+{
+    "schemaVersion": 1,
+    "reportId": "936a12024119",
+    "timestamp": "2026-11-16T23:21:08.8977811Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "Ys-bleeding-edge",
+    "gitCommitHash": "64773f28cc",
+    "trigger": "Netcode scene load (client) — Maelstrom",
+    "loadKind": "launch",
+    "completionReason": "Superseded by new load (Cell swap -> Skim Race)",
+    "interrupted": false,
+    "sceneFrom": "MinigameSkimRace",
+    "sceneTo": "Maelstrom",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Client",
+    "connectedClients": 0,
+    "totalMs": 2314.918701171875,
+    "visualReadyMs": 2244.9453125,
+    "waitMs": 70.68212890625,
+    "humanWaitMs": 0.0,
+    "workMs": 2244.236572265625,
+    "unattributedMs": 2.4716999530792238,
+    "framesDuringLoad": 3,
+    "avgFpsDuringLoad": 1.2959418296813965,
+    "worstFrameMs": 219.8463134765625,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Client scene load (Maelstrom)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 2.4716999530792238,
+            "endMs": 2200.294189453125,
+            "durationMs": 2197.822509765625,
+            "exclusiveMs": 2197.62158203125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 2200.09326171875,
+            "endMs": 2314.918701171875,
+            "durationMs": 114.825439453125,
+            "exclusiveMs": 70.68212890625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 2208.4482421875,
+            "endMs": 2209.03759765625,
+            "durationMs": 0.58935546875,
+            "exclusiveMs": 0.58935546875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 2217.163818359375,
+            "endMs": 2217.856201171875,
+            "durationMs": 0.6923828125,
+            "exclusiveMs": 0.6923828125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (Tiger)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 2219.67138671875,
+            "endMs": 2244.941650390625,
+            "durationMs": 25.270263671875,
+            "exclusiveMs": 25.270263671875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (Lion)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 2244.982177734375,
+            "endMs": 2261.833984375,
+            "durationMs": 16.851806640625,
+            "exclusiveMs": 16.851806640625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 2264.505859375,
+            "endMs": 2265.148193359375,
+            "durationMs": 0.642333984375,
+            "exclusiveMs": 0.642333984375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 2265.156005859375,
+            "endMs": 2265.253173828125,
+            "durationMs": 0.09716796875,
+            "exclusiveMs": 0.09716796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 2197.62158203125,
+            "percent": 94.93299102783203,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 1,
+            "name": "Netcode & Sync",
+            "attributedMs": 70.68212890625,
+            "percent": 3.053330898284912,
+            "spanCount": 1,
+            "waitMs": 70.68212890625
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 42.1220703125,
+            "percent": 1.819591760635376,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 2.4716999530792238,
+            "percent": 0.10677264630794525,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 10,
+            "name": "Pooling & Prewarm",
+            "attributedMs": 1.28173828125,
+            "percent": 0.055368609726428989,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 0.739501953125,
+            "percent": 0.03194504976272583,
+            "spanCount": 2,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Client scene load (Maelstrom)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 2197.822509765625,
+            "exclusiveMs": 2197.62158203125,
+            "maxSingleMs": 2197.822509765625,
+            "isWait": false
+        },
+        {
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "count": 1,
+            "totalMs": 114.825439453125,
+            "exclusiveMs": 70.68212890625,
+            "maxSingleMs": 114.825439453125,
+            "isWait": true
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Tiger)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 25.270263671875,
+            "exclusiveMs": 25.270263671875,
+            "maxSingleMs": 25.270263671875,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Lion)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 16.851806640625,
+            "exclusiveMs": 16.851806640625,
+            "maxSingleMs": 16.851806640625,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 2,
+            "totalMs": 1.28173828125,
+            "exclusiveMs": 1.28173828125,
+            "maxSingleMs": 0.6923828125,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.642333984375,
+            "exclusiveMs": 0.642333984375,
+            "maxSingleMs": 0.642333984375,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.09716796875,
+            "exclusiveMs": 0.09716796875,
+            "maxSingleMs": 0.09716796875,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 2314.89501953125,
+            "durationMs": 219.8463134765625,
+            "during": "Client scene load (Maelstrom)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Netcode scene load (client) — Maelstrom"
+        },
+        {
+            "atMs": 2.407900094985962,
+            "label": "Netcode scene load begins: Maelstrom"
+        },
+        {
+            "atMs": 2160.402587890625,
+            "label": "Unity scene loaded: Maelstrom (Single)"
+        },
+        {
+            "atMs": 2200.292724609375,
+            "label": "Netcode scene load complete: Maelstrom (client 1)"
+        },
+        {
+            "atMs": 2244.9462890625,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 2261.839599609375,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 2265.260009765625,
+            "label": "Client ready — splash cleared, vessel visible"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Pool objects prewarmed during load",
+            "value": 20
+        }
+    ],
+    "accumulators": [],
+    "errors": [
+        {
+            "timeSeconds": 0.5527595281600952,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.5560106635093689,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.5601645112037659,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.5636208057403565,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.5952712893486023,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.5991297960281372,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.6018571853637695,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.6250560879707336,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 0.6269090175628662,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        }
+    ],
+    "hints": [
+        {
+            "id": "errors-during-load",
+            "severity": 1,
+            "title": "Errors fired during the load",
+            "finding": "9 error(s)/exception(s) during load — failures often add retry waits.",
+            "fixAdvice": "Fix the errors first; they may be the hidden cause of the slow path.",
+            "matchedMarker": ""
+        }
+    ]
+}

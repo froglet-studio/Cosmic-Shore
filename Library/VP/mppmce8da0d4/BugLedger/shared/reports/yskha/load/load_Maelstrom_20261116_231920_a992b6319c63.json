@@ -1,0 +1,665 @@
+{
+    "schemaVersion": 1,
+    "reportId": "a992b6319c63",
+    "timestamp": "2026-11-16T23:19:20.4907268Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "Ys-bleeding-edge",
+    "gitCommitHash": "64773f28cc",
+    "trigger": "Game launch — Maelstrom → Maelstrom",
+    "loadKind": "launch",
+    "completionReason": "Superseded by new load (Cell swap -> Skim Race)",
+    "interrupted": false,
+    "sceneFrom": "MinigameSkimRace",
+    "sceneTo": "Maelstrom",
+    "gameMode": "Maelstrom",
+    "intensity": 2,
+    "totalPlayers": 4,
+    "humanPlayers": 2,
+    "aiBackfill": 2,
+    "isMultiplayer": true,
+    "networkRole": "Host",
+    "connectedClients": 2,
+    "totalMs": 3943.040771484375,
+    "visualReadyMs": 3152.6787109375,
+    "waitMs": 703.4785766601563,
+    "humanWaitMs": 0.0,
+    "workMs": 3239.562255859375,
+    "unattributedMs": 516.9028930664063,
+    "framesDuringLoad": 4,
+    "avgFpsDuringLoad": 1.0144455432891846,
+    "worstFrameMs": 2190.18896484375,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 7.128399848937988,
+            "endMs": 24.028600692749025,
+            "durationMs": 16.90019989013672,
+            "exclusiveMs": 16.90019989013672,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Scene load → activation (Maelstrom)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 24.03499984741211,
+            "endMs": 2641.202880859375,
+            "durationMs": 2617.16796875,
+            "exclusiveMs": 2617.16796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 3150.970947265625,
+            "endMs": 3894.6142578125,
+            "durationMs": 743.643310546875,
+            "exclusiveMs": 0.02001953125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 2,
+            "depth": 1,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 3150.990966796875,
+            "endMs": 3870.81591796875,
+            "durationMs": 719.824951171875,
+            "exclusiveMs": 94.4912109375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 3,
+            "depth": 2,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 3151.738525390625,
+            "endMs": 3152.55078125,
+            "durationMs": 0.812255859375,
+            "exclusiveMs": 0.812255859375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 3,
+            "depth": 2,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 3152.56201171875,
+            "endMs": 3152.671875,
+            "durationMs": 0.10986328125,
+            "exclusiveMs": 0.10986328125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 3,
+            "depth": 2,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 3246.404296875,
+            "endMs": 3894.5947265625,
+            "durationMs": 648.1904296875,
+            "exclusiveMs": 45.395751953125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 6,
+            "depth": 3,
+            "label": "Vessel instantiate+inject+spawn (Squirrel)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 3246.75927734375,
+            "endMs": 3256.560546875,
+            "durationMs": 9.80126953125,
+            "exclusiveMs": 9.135009765625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 7,
+            "depth": 4,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 3254.53466796875,
+            "endMs": 3255.200927734375,
+            "durationMs": 0.666259765625,
+            "exclusiveMs": 0.666259765625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 6,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (PlanetDestroyer6)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 3256.573486328125,
+            "endMs": 3274.193359375,
+            "durationMs": 17.619873046875,
+            "exclusiveMs": 17.619873046875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 6,
+            "depth": 3,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 3274.888427734375,
+            "endMs": 3803.279052734375,
+            "durationMs": 528.390625,
+            "exclusiveMs": 497.95556640625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 10,
+            "depth": 4,
+            "label": "Vessel instantiate+inject+spawn (Squirrel)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 3275.219482421875,
+            "endMs": 3286.461181640625,
+            "durationMs": 11.24169921875,
+            "exclusiveMs": 10.277587890625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 11,
+            "depth": 5,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 3284.327392578125,
+            "endMs": 3285.29150390625,
+            "durationMs": 0.964111328125,
+            "exclusiveMs": 0.964111328125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 10,
+            "depth": 4,
+            "label": "Pair init - inject + vessel.Initialize (Iggy)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 3286.472900390625,
+            "endMs": 3305.666259765625,
+            "durationMs": 19.193359375,
+            "exclusiveMs": 19.193359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": 6,
+            "depth": 3,
+            "label": "Vessel instantiate+inject+spawn (Squirrel)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 3847.568603515625,
+            "endMs": 3855.7861328125,
+            "durationMs": 8.217529296875,
+            "exclusiveMs": 7.57568359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 15,
+            "parentId": 14,
+            "depth": 4,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 3854.1162109375,
+            "endMs": 3854.758056640625,
+            "durationMs": 0.641845703125,
+            "exclusiveMs": 0.641845703125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 16,
+            "parentId": 6,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (Lion)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 3855.79638671875,
+            "endMs": 3870.72314453125,
+            "durationMs": 14.9267578125,
+            "exclusiveMs": 14.9267578125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 17,
+            "parentId": 6,
+            "depth": 3,
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 3870.756103515625,
+            "endMs": 3943.040771484375,
+            "durationMs": 72.28466796875,
+            "exclusiveMs": 0.23828125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        },
+        {
+            "id": 18,
+            "parentId": 17,
+            "depth": 4,
+            "label": "Vessel instantiate+inject+spawn (Squirrel)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 3870.97509765625,
+            "endMs": 3879.394287109375,
+            "durationMs": 8.419189453125,
+            "exclusiveMs": 7.766357421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 19,
+            "parentId": 18,
+            "depth": 5,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 3877.643310546875,
+            "endMs": 3878.296142578125,
+            "durationMs": 0.65283203125,
+            "exclusiveMs": 0.65283203125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 20,
+            "parentId": 17,
+            "depth": 4,
+            "label": "Pair init - inject + vessel.Initialize (Tiger)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 3879.40478515625,
+            "endMs": 3894.554443359375,
+            "durationMs": 15.149658203125,
+            "exclusiveMs": 15.149658203125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 21,
+            "parentId": 17,
+            "depth": 4,
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 3894.563232421875,
+            "endMs": 3943.040771484375,
+            "durationMs": 48.4775390625,
+            "exclusiveMs": 48.4775390625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 2617.16796875,
+            "percent": 66.37435913085938,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 703.4785766601563,
+            "percent": 17.84101676940918,
+            "spanCount": 7,
+            "waitMs": 703.4785766601563
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 516.9028930664063,
+            "percent": 13.109245300292969,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 4,
+            "name": "AI Backfill",
+            "attributedMs": 56.225830078125,
+            "percent": 1.4259510040283204,
+            "spanCount": 4,
+            "waitMs": 0.0
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 45.41845703125,
+            "percent": 1.151863694190979,
+            "spanCount": 4,
+            "waitMs": 0.0
+        },
+        {
+            "category": 10,
+            "name": "Pooling & Prewarm",
+            "attributedMs": 2.925048828125,
+            "percent": 0.07418256253004074,
+            "spanCount": 4,
+            "waitMs": 0.0
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 0.922119140625,
+            "percent": 0.023385990411043168,
+            "spanCount": 2,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Scene load → activation (Maelstrom)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 2617.16796875,
+            "exclusiveMs": 2617.16796875,
+            "maxSingleMs": 2617.16796875,
+            "isWait": false
+        },
+        {
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 4,
+            "totalMs": 2640.04931640625,
+            "exclusiveMs": 637.862548828125,
+            "maxSingleMs": 743.643310546875,
+            "isWait": true
+        },
+        {
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 2,
+            "totalMs": 120.76220703125,
+            "exclusiveMs": 48.7158203125,
+            "maxSingleMs": 72.28466796875,
+            "isWait": true
+        },
+        {
+            "label": "Vessel instantiate+inject+spawn (Squirrel)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 2,
+            "totalMs": 21.04296875,
+            "exclusiveMs": 19.41259765625,
+            "maxSingleMs": 11.24169921875,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Iggy)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 19.193359375,
+            "exclusiveMs": 19.193359375,
+            "maxSingleMs": 19.193359375,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (PlanetDestroyer6)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 17.619873046875,
+            "exclusiveMs": 17.619873046875,
+            "maxSingleMs": 17.619873046875,
+            "isWait": false
+        },
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 16.90019989013672,
+            "exclusiveMs": 16.90019989013672,
+            "maxSingleMs": 16.90019989013672,
+            "isWait": true
+        },
+        {
+            "label": "Vessel instantiate+inject+spawn (Squirrel)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 2,
+            "totalMs": 16.63671875,
+            "exclusiveMs": 15.342041015625,
+            "maxSingleMs": 8.419189453125,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Tiger)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 15.149658203125,
+            "exclusiveMs": 15.149658203125,
+            "maxSingleMs": 15.149658203125,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Lion)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 14.9267578125,
+            "exclusiveMs": 14.9267578125,
+            "maxSingleMs": 14.9267578125,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 4,
+            "totalMs": 2.925048828125,
+            "exclusiveMs": 2.925048828125,
+            "maxSingleMs": 0.964111328125,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.812255859375,
+            "exclusiveMs": 0.812255859375,
+            "maxSingleMs": 0.812255859375,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.10986328125,
+            "exclusiveMs": 0.10986328125,
+            "maxSingleMs": 0.10986328125,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 3896.908935546875,
+            "durationMs": 2190.18896484375,
+            "during": "Scene load → activation (Maelstrom)"
+        },
+        {
+            "atMs": 1249.200439453125,
+            "durationMs": 1190.4112548828125,
+            "during": "Scene load → activation (Maelstrom)"
+        },
+        {
+            "atMs": 980.0781860351563,
+            "durationMs": 178.48190307617188,
+            "during": "Scene load → activation (Maelstrom)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Game launch — Maelstrom → Maelstrom"
+        },
+        {
+            "atMs": 948.6712036132813,
+            "label": "Netcode scene load begins: Maelstrom"
+        },
+        {
+            "atMs": 3110.756591796875,
+            "label": "Unity scene loaded: Maelstrom (Single)"
+        },
+        {
+            "atMs": 3151.28857421875,
+            "label": "Netcode scene load complete: Maelstrom (client 0)"
+        },
+        {
+            "atMs": 3152.679443359375,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 3870.726318359375,
+            "label": "Client ready — splash cleared, vessel visible"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Pool objects prewarmed during load",
+            "value": 40
+        },
+        {
+            "name": "Vessels spawned during load",
+            "value": 4
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 12
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 24,
+            "totalMs": 2.895699977874756,
+            "maxSingleMs": 0.4738999903202057
+        }
+    ],
+    "errors": [],
+    "hints": [
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "0.7s (18%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 2.2s during \"Scene load → activation (Maelstrom)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        }
+    ]
+}
