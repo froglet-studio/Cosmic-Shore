@@ -223,6 +223,58 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ObjectiveStrip_Escort_TitleHullPlaceAndOneJobLine()
+        {
+            var lines = new VoyageLines();
+            var o = new VoyageObjective
+            {
+                Goal = VoyageObjective.Kind.Escort, Difficulty = 3, Breach = 0.25f, Hull = 0.784f, To = "The Maw", Cells = 5,
+                Cell = 2, Stops = new[] { "Shoal", "Scarab Reef", "", "Drift", "The Maw" }, World = "Scarab Reef",
+                Inside = true, Hostile = true,
+            };
+            Assert.AreEqual("ESCORT THE ARK", VoyageObjectiveText.Title(lines, o), "no difficulty on the strip");
+            Assert.AreEqual("78%", VoyageObjectiveText.Figure(lines, o));
+            Assert.AreEqual("Scarab Reef - hostile", VoyageObjectiveText.Place(lines, o));
+            Assert.AreEqual((lines.ObjectiveEscortHostile, true), VoyageObjectiveText.StripAction(lines, o));
+            o.Hostile = false;
+            Assert.AreEqual("Scarab Reef - calm", VoyageObjectiveText.Place(lines, o));
+            Assert.AreEqual((lines.ObjectiveEscortCalm, false), VoyageObjectiveText.StripAction(lines, o));
+        }
+
+        [Test]
+        public void ObjectiveStrip_CrystalRun_CountCellAndThreatOnly()
+        {
+            var lines = new VoyageLines();
+            var o = new VoyageObjective
+            {
+                Goal = VoyageObjective.Kind.CrystalRun, Target = 20, Done = 12, Hull = 0.9f, To = "Tidehold", Cells = 4,
+                Cell = 2, Hostile = true,
+            };
+            Assert.AreEqual(lines.ObjectiveRaidKicker, VoyageObjectiveText.Title(lines, o));
+            Assert.AreEqual("12 / 20", VoyageObjectiveText.Figure(lines, o));
+            Assert.AreEqual("Cell 2 - hostile", VoyageObjectiveText.Place(lines, o), "the cell the Ark is in, by name");
+            Assert.AreEqual((string.Empty, false), VoyageObjectiveText.StripAction(lines, o),
+                "a Crystal Run's strip says nothing more unless the Ark is threatened");
+            o.Done = 20;
+            Assert.AreEqual((lines.ObjectiveGoalMet, false), VoyageObjectiveText.StripAction(lines, o));
+            o.UnderAttack = true;
+            Assert.AreEqual((lines.ObjectiveActionUnderAttack, true), VoyageObjectiveText.StripAction(lines, o));
+        }
+
+        [Test]
+        public void ObjectiveStrip_NoGoal_ShowsNothing_AndAnEmptyTemplateDeletesTheLine()
+        {
+            var lines = new VoyageLines();
+            var none = new VoyageObjective { Goal = VoyageObjective.Kind.None };
+            Assert.AreEqual(string.Empty, VoyageObjectiveText.Title(lines, none));
+            Assert.AreEqual(string.Empty, VoyageObjectiveText.Figure(lines, none));
+            Assert.AreEqual(string.Empty, VoyageObjectiveText.Place(lines, none));
+            lines.ObjectiveStripPlace = string.Empty;
+            var o = new VoyageObjective { Goal = VoyageObjective.Kind.Escort, World = "Reef" };
+            Assert.AreEqual(string.Empty, VoyageObjectiveText.Place(lines, o));
+        }
+
+        [Test]
         public void HudLines_AreAuthored_InTheShippedContent()
         {
             var lines = VoyageContentSO.Load()?.Lines;
@@ -232,6 +284,7 @@ namespace CosmicShore.Tests
                          lines.ToastSetOff, lines.ToastCellHostile, lines.ToastCellCalm, lines.ToastFinalCell, lines.ToastGoalReached,
                          lines.ToastHome, lines.ToastArkUnderAttack, lines.ToastBreachClose, lines.ObjectiveRaidKicker,
                          lines.ObjectiveEscortKicker, lines.ObjectiveEscortGoal, lines.ObjectiveActionAssault, lines.ScoreFinish,
+                         lines.ObjectiveStripEscort, lines.ObjectiveStripHull, lines.ObjectiveStripPlace, lines.ObjectiveStripElement,
                          lines.ScoreVenture, lines.ScoreTryAgain, lines.ScoreColGuarded, lines.ScoreColScore,
                      })
                 Assert.IsFalse(string.IsNullOrEmpty(line));

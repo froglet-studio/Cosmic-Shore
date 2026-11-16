@@ -23608,3 +23608,29 @@ changed files); the new `VoyageIntroTests.CrystalRunIntro_LoadsFromResources_And
 4. Escort the Ark: the intro plays as before; no toast shows over it; "STAY WITH THE ARK" and the departure toast come
    after it. If the intro does not play, the console says why (`[ArkEscort] The escort opens without its intro: ...`).
 5. Venture further at a Crystal Run stop: no second intro.
+
+## 🔴 Rev 114 picks in the game: the Departure intro, the objective strip, the chase camera (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-a5f46g` (PR into `voyages`). Shombith picked O1, Intro A and F1 on Frogma's Voyages
+playtest tab. Compiled with `unity_refcompile` (player and editor, 0 errors in changed files); the new and changed
+tests in `VoyageIntroTests`, `VoyageCrystalRunTests` and `VoyageChaseCameraTests` never ran.
+
+1. Sail Escort the Ark the first time. The intro plays letterboxed for about 9 s: the Ark wide (no words), a push along
+   its hull with "THE ARK · hull 100%", your vessel with a name card (face, vessel, pilot, element flower), each
+   wingmate for half a second with a card, then "ESCORT THE ARK", the goal line and five dots. The camera swings in
+   behind your vessel, the bars slide away, "GO" pops, and the HUD fades up. Holding B does nothing on this first run.
+2. Sail it again: "Hold B to skip" shows, and holding B (Escape, right mouse, or a held touch) skips to the hand-over.
+3. Crystal Run plays the same reel with "CRYSTAL RUN" and its own goal.
+4. The objective strip: 420 x 120, 40 px in from the top left, one thin left line, no glow. Escort: "ESCORT THE ARK" and
+   the hull percent, the hull bar with its breach line, "Scarab Reef - hostile" and five route dots, one job line red when
+   it is a threat. Crystal Run: "CRYSTAL RUN" and "12 / 20", the bar, four element flowers with counts, then
+   "Cell 2 - hostile"; a job line only when the Ark is under attack or the goal is met. It hides during the intro and
+   the scoreboard.
+5. The chase camera: in a voyage the camera sits closer behind and lower than in freestyle, a little to the right.
+   Leaving the voyage gives back the vessel's own framing. Tune it in `Resources/Voyages/VoyageCamera.asset` (a row per
+   vessel class where a hull needs its own).
+6. The intro's swing lands exactly on that camera: no jump at the cut back.
+7. Fauna biting the Ark: up to four red point lights on them, and the Ark's plates near them glow red.
+8. Not built: the FOV opening on boost (the speed tunnel is a platform law that narrows FOV with speed and no mode may
+   change it), dust streaks on boost, the Ark's engines lighting one by one. The Ark at a third of the frame is a
+   framing tendency (the side shift), not a lock.

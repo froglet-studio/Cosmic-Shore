@@ -38,17 +38,18 @@ namespace CosmicShore.Gameplay
             var cast = new VoyageIntro.Cast { Ark = Ark, ArkSize = HullHalfLength };
             cast.Squad.Add(new VoyageIntro.Member
             {
-                Hull = local.Transform, Vessel = local.VesselType, Seat = mySeat, IsYou = true,
+                Hull = local.Transform, Vessel = local.VesselType, Seat = mySeat, IsYou = true, Slot = _squad.GetSlot(mySeat),
             });
             var wingmates = new List<VoyageIntro.Member>();
             foreach (var w in _wingmates)
             {
                 var status = Alive(w);
                 if (status == null || !status.Transform) continue;
+                int seat = _seatOf.TryGetValue(status, out int seated) ? seated : -1;
                 wingmates.Add(new VoyageIntro.Member
                 {
-                    Hull = status.Transform, Vessel = status.VesselType,
-                    Seat = _seatOf.TryGetValue(status, out int seat) ? seat : -1,
+                    Hull = status.Transform, Vessel = status.VesselType, Seat = seat,
+                    Slot = seat >= 0 ? _squad.GetSlot(seat) : new SquadSlot(status.VesselType, default),
                 });
             }
             wingmates.Sort((a, b) => a.Seat.CompareTo(b.Seat));
