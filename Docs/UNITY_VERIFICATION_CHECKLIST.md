@@ -24258,6 +24258,23 @@ Not compiled: the editor was in use by the multiplayer testing session. Files: `
 - Step 5: the host's hull took 2:46 this time, not 6 minutes, so the slow run went with Player 2's wandering hull.
 - `1167a0a2f9` (FunCard): compiled, and no `get_isBatchMode` error in a full Play and stop afterwards (82 before).
 
+**Retest of 2026-11-17** (`8c8aa5eae5`, recompiled in the open editor; editor "Lion" + MPPM Player 2 "Tiger", driven by a
+session; nobody flew a hull by hand):
+- Step 2 **PASSED, gate count read**: Player 2's link was shut down in a two-player Switchback; on the host its hull
+  went `NetIsAI` true with the autopilot on and reached `SwitchesThreaded` 10 before the rejoin.
+- Step 3 **PASSED as a state check** again: REJOIN gave the seat back (turn running, not AI-flown, input not paused on
+  both machines). Step 4 **PASSED** again (the refusal text).
+- Sign-in (`3ae828d03b`): no `already signing in` and no `Friends service did not come up` on either player at boot.
+- FunCard (`1167a0a2f9`): no error after a recompile.
+- Missing stat (`a1942abe89`): Bloomrush, both scoreboards read `Tiger 0.00s` / `Tiger 0`, no dash.
+- "The host left" (`efb09adaec`, `8c8aa5eae5`): Player 2 carried a stale REJOIN offer into a new party and match; the
+  notice was closed in the game scene. It was still offered on the menu after Player 2 had rejoined that same party.
+- **Found and fixed in this run:** the host's scoreboard showed the LAST match's Longest Drift and Max Boost for its
+  own pilot in a new match (Switchback then Bloomrush: host `Lion 3.05s`, guest `Lion 0.00s`).
+  `EventDrivenStatsProvider.SubscribeToStats` seeded its cache from `VesselStatEventSO.CurrentValue`, which outlives
+  the scene. It now seeds 0. Replayed (Switchback, Main Menu, Bloomrush): both machines read `Lion 0.00s`. EditMode
+  tests not run for this change (the editor was handed to another session).
+
 ## 🔴 Thornline upgrade: the honest line (2026-11-17, `claude/shrike-time-upgrade-5c12f0`, NOT COMPILED BY UNITY, NOT RUN IN EDITOR)
 
 Docs/Thornline/UPGRADE_SPEC.md; Assets/_Scripts/Controller/Arcade/THORNLINE.md §7 is the full list. Affects: Garrett's
