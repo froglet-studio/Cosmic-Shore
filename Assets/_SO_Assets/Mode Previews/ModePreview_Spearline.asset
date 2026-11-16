@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_Spearline
   m_EditorClassIdentifier:
   Mode: 96
-  Notes: 'The circuit (HeadlongCircuit) and its seals are laid at match start from the rings, so a preview shows the shell. It teaches the seal - a ring that counts only through a hole you cut.'
+  Notes: 'The circuit (HeadlongCircuit) and its seals are laid at match start from the rings, so a preview shows the shell. It teaches the seal - a ring that counts only through a hole you cut - and from I2 the armour, a shielded face to read and avoid.'
   PreviewCell: {fileID: 11400000, guid: 2eba111a4fbc8e28ab4882234dac13fd, type: 2}
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: 2eba111a4fbc8e28ab4882234dac13fd, type: 2}
@@ -25,7 +25,7 @@ MonoBehaviour:
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 30
-  ObjectiveText: Swing the bill through each sealed ring
+  ObjectiveText: Swing the bill into each sealed ring
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

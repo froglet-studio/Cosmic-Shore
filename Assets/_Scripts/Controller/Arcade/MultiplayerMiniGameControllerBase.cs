@@ -620,6 +620,9 @@ namespace CosmicShore.Gameplay
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsListening) return;
 
+            // A running turn has no gate to pass: it opened before the countdown and closes at the next turn.
+            if (gameData.IsTurnRunning) return;
+
             // Departed clients are pruned rather than trusted: the set is keyed on client id and a
             // stale entry would let the gate pass on behalf of somebody who is gone.
             _readyClients.RemoveWhere(id => !IsClientConnected(nm, id));
