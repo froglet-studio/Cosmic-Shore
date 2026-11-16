@@ -150,18 +150,18 @@ namespace CosmicShore.Tests
             var variable = Track(ScriptableObject.CreateInstance<NetworkMonitorDataVariable>());
             var data = new NetworkMonitorData { OnNetworkLost = lost, OnNetworkFound = found };
             variable.Value = data;
-            int lostCount = 0;
-            lost.OnRaised += () => lostCount++;
 
+            // Counted on the monitor, not on the channel: a SOAP event does nothing outside Play mode
+            // (SoapCoreTests.Event_RaisedOutsidePlayMode_DoesNothing), so a subscriber here never hears it.
             bool reachable = true;
             var monitor = new NetworkMonitor(variable, () => reachable);
             monitor.Poll();
-            Assert.AreEqual(0, lostCount, "no transition, no event");
+            Assert.AreEqual(0, monitor.LossesSeen, "no transition, no event");
 
             reachable = false;
             monitor.Poll();
             monitor.Poll();
-            Assert.AreEqual(1, lostCount, "one loss is one notice, however many polls see it");
+            Assert.AreEqual(1, monitor.LossesSeen, "one loss is one notice, however many polls see it");
             Assert.IsFalse(data.IsOnline);
         }
 

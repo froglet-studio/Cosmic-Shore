@@ -682,7 +682,7 @@ namespace CosmicShore.Tests
 
         /// <summary>A pass flown through the shell at 150 u/s, 60 fps, as the executor flies it (the velocity carried from the
         /// touch, the hull at its own speed along it): the degrees it was turned (+ right).</summary>
-        static float FlyThrough(float lineShare, float radius = 60f, float speed = 150f, float soft = 0.35f)
+        static float FlyThrough(float lineShare, float radius = 30f, float speed = 150f, float soft = 0.35f)
         {
             var pos = new Vector3(-lineShare * radius, 0f, -2f * radius);   // the centre lineShare x R to the right of the line
             var fwd = Vector3.forward;
@@ -710,11 +710,23 @@ namespace CosmicShore.Tests
             float graze = FlyThrough(0.9f), shipped = FlyThrough(0.75f), deep = FlyThrough(0.4f);
             // The shell sits to the right of the line, so it throws the hull LEFT (negative).
             Assert.Less(shipped, 0f, "thrown away from the shell");
-            Assert.That(-shipped, Is.InRange(30f, 55f), "the shipped 0.75 graze: about 37-51 deg (stoat_orbit_sim.py)");
+            Assert.That(-shipped, Is.InRange(15f, 35f), "the shipped 0.75 graze of the 30 u shell: about 23 deg (stoat_orbit_sim.py)");
             Assert.Less(-graze, -shipped, "a lighter graze turns less");
             Assert.Greater(-deep, -shipped, "a deeper touch turns more");
             Assert.AreEqual(180f, Mathf.Abs(FlyThrough(0f)), 1f, "head-on: stopped and sent straight back");
             Assert.AreEqual(0f, FlyThrough(1.1f), 1e-3f, "a miss turns nothing");
+            // The hard core: a fast hull flying straight in is thrown back, never through the centre (the spring alone let
+            // 190 u/s through the 30 u shell).
+            foreach (var speed in new[] { 190f, 230f, 300f })
+                Assert.AreEqual(180f, Mathf.Abs(FlyThrough(0f, speed: speed)), 1f, $"head-on at {speed} u/s");
+            Assert.Less(-FlyThrough(0.75f, speed: 230f), -shipped, "faster, the same graze turns less");
+        }
+
+        [Test]
+        public void SlingConfig_TheShellIsHalfTheOldSize_AndTurnsLessThanIt()
+        {
+            // Yash, 2026-11-07: "it moves the vessel too much, make the radius of white hole smaller by 50 percent".
+            Assert.Less(-FlyThrough(0.75f, radius: 30f), -FlyThrough(0.75f, radius: 60f), "the same graze of the smaller shell turns less");
         }
 
         [Test]
@@ -733,21 +745,105 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void SlingConfig_ShipsTheTrampoline()
+        public void SlingConfig_KeepsTheTrampoline_Off()
         {
+            // The trampoline (2026-11-04) is kept as an off switch since the swing (2026-11-11): its rows stay as they were.
             var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
-            foreach (var row in new[] { "trampoline: 1\n", "trampolineAhead: 140\n", "trampolineRadius: 60\n", "trampolineLine: 0.75\n",
+            foreach (var row in new[] { "trampoline: 0\n", "trampolineAhead: 140\n", "trampolineRadius: 30\n", "trampolineLine: 0.75\n",
                          "trampolineSoftSeconds: 0.35\n", "trampolineSeconds: 4\n", "trampolinePredictDegrees: 90\n",
-                         "trampolineAiTurnScale: 100\n" })
+                         "trampolineAiTurnScale: 55\n" })
                 StringAssert.Contains("  " + row, text);
-            // The AI bounces only for a turn of 35 deg or more (stoat_orbit_sim.py --trampoline: 20 bounced it off its line).
-            StringAssert.Contains("  aiSlingMinTurnDegrees: 35\n", text);
             // Slingshot's own AI rows are the trained ones (2026-11-08, Tools/Build/promote_trained_drives.py): it hardly
             // presses to turn (148 deg) and presses for the warp on long legs instead.
             StringAssert.Contains("  aiSlingMinTurnDegrees: 147.951\n", Read("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset"));
             var cfg = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
-            try { Assert.IsTrue(cfg.Trampoline, "on by default"); }
+            try
+            {
+                Assert.IsTrue(cfg.Swing, "the swing is on by default");
+                Assert.IsFalse(cfg.Trampoline, "the trampoline is off by default");
+            }
             finally { UnityEngine.Object.DestroyImmediate(cfg); }
+        }
+
+        // The swing (Yash, 2026-11-11: "change it to a black hole only as before, then make the slingshot angle dynamic based on
+        // our controller's axis like before... try a better approach this time").
+
+        [Test]
+        public void SwingHole_LaidAheadOnThePressedSide()
+        {
+            var right = StoatSlingMath.SwingHole(Vector3.zero, Vector3.forward, Vector3.right, true, 150f, 35f);
+            Assert.AreEqual(new Vector3(35f, 0f, 150f), right);
+            var left = StoatSlingMath.SwingHole(Vector3.zero, Vector3.forward, Vector3.right, false, 150f, 35f);
+            Assert.AreEqual(new Vector3(-35f, 0f, 150f), left);
+        }
+
+        [Test]
+        public void SwingStarts_PassingBesideTheHole_NeverFlyingIntoIt()
+        {
+            var hole = new Vector3(35f, 0f, 0f);
+            Assert.IsTrue(StoatSlingMath.SwingStarts(Vector3.zero, Vector3.forward, hole, 55f, 40f), "beside it, close: it starts");
+            Assert.IsFalse(StoatSlingMath.SwingStarts(Vector3.zero, Vector3.forward, new Vector3(35f, 0f, 150f), 55f, 40f), "still far");
+            Assert.IsFalse(StoatSlingMath.SwingStarts(Vector3.zero, Vector3.forward, new Vector3(5f, 0f, 40f), 55f, 40f),
+                "dead ahead: flying into it is not a swing");
+        }
+
+        [Test]
+        public void SwingAxis_TurnsTheNoseTowardTheHole_InAnyPlane()
+        {
+            var axis = StoatSlingMath.SwingAxis(Vector3.forward, Vector3.right * 35f, Vector3.up);
+            var turned = StoatSlingMath.SwingExit(Vector3.forward, axis, 45f);
+            Assert.Greater(turned.x, 0f, "a hole on the right swings you right");
+            Assert.AreEqual(45f, Vector3.Angle(Vector3.forward, turned), 0.01f);
+            var up = StoatSlingMath.SwingExit(Vector3.forward, StoatSlingMath.SwingAxis(Vector3.forward, Vector3.up * 35f, Vector3.up), 30f);
+            Assert.Greater(up.y, 0f, "a hole above swings you up");
+            Assert.AreEqual(Vector3.up, StoatSlingMath.SwingAxis(Vector3.forward, Vector3.forward * 10f, Vector3.up), "dead ahead: the hull's up");
+        }
+
+        [Test]
+        public void SwingTurnDegrees_TheStickPicksTheAngle_TowardTheHoleTheMost()
+        {
+            // The hole on the right (hull frame x = 35): stick right = toward it.
+            Assert.AreEqual(52.5f, StoatSlingMath.SwingTurnDegrees(0f, 0f, 35f, 0f, 15f, 90f), 1e-4f, "at rest: the middle");
+            Assert.AreEqual(90f, StoatSlingMath.SwingTurnDegrees(1f, 0f, 35f, 0f, 15f, 90f), 1e-4f, "toward the hole: the most");
+            Assert.AreEqual(15f, StoatSlingMath.SwingTurnDegrees(-1f, 0f, 35f, 0f, 15f, 90f), 1e-4f, "away: the least");
+            Assert.AreEqual(52.5f, StoatSlingMath.SwingTurnDegrees(0f, 1f, 35f, 0f, 15f, 90f), 1e-4f, "square to the hole: the middle");
+            // A hole above: stick up is toward it.
+            Assert.AreEqual(90f, StoatSlingMath.SwingTurnDegrees(0f, 1f, 0f, 35f, 15f, 90f), 1e-4f);
+            Assert.AreEqual(90f, StoatSlingMath.SwingTurnDegrees(3f, 0f, 35f, 0f, 15f, 90f), 1e-4f, "past full is full");
+        }
+
+        [Test]
+        public void SwingRate_IsSpeedOverDistance_CappedForAiming()
+        {
+            Assert.AreEqual(60f / 35f * Mathf.Rad2Deg, StoatSlingMath.SwingRate(60f, 35f, 720f), 1e-3f, "omega = v / d");
+            Assert.AreEqual(150f, StoatSlingMath.SwingRate(188f, 35f, 150f), 1e-4f, "never faster than the cap");
+        }
+
+        [Test]
+        public void SwingAi_LetsGoFacingItsTarget_OrWhenTheTargetIsNoLongerOnItsSide()
+        {
+            Assert.IsFalse(StoatSlingMath.SwingAiLetsGo(10f, 2f, 15f, 90f, 8f, true), "under the least turn: never");
+            Assert.IsTrue(StoatSlingMath.SwingAiLetsGo(30f, 5f, 15f, 90f, 8f, true), "facing its target");
+            Assert.IsFalse(StoatSlingMath.SwingAiLetsGo(30f, 40f, 15f, 90f, 8f, true), "still turning toward it");
+            Assert.IsTrue(StoatSlingMath.SwingAiLetsGo(30f, 40f, 15f, 90f, 8f, false), "turning on would turn it away (a warp press)");
+            Assert.IsTrue(StoatSlingMath.SwingAiLetsGo(90f, 60f, 15f, 90f, 8f, true), "the most it turns");
+            var axis = StoatSlingMath.SwingAxis(Vector3.forward, Vector3.right, Vector3.up);
+            Assert.IsTrue(StoatSlingMath.OnSwingSide(Vector3.forward, new Vector3(1f, 0f, 1f), axis), "a target to the right of a right swing");
+            Assert.IsFalse(StoatSlingMath.OnSwingSide(Vector3.forward, new Vector3(-1f, 0f, 1f), axis));
+        }
+
+        [Test]
+        public void SlingConfig_ShipsTheSwing()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            foreach (var row in new[] { "swing: 1\n", "swingAhead: 150\n", "swingSide: 35\n", "swingHorizon: 0.8\n", "swingReach: 55\n",
+                         "swingCatchDegrees: 40\n", "swingMinDegrees: 15\n", "swingMaxDegrees: 90\n", "swingDegreesPerSecond: 150\n",
+                         "swingSeconds: 4\n", "aiSwingFaceDegrees: 8\n" })
+                StringAssert.Contains("  " + row, text);
+            // The hull's own AI swings for a turn of 20 deg or more (stoat_orbit_sim.py --swing).
+            StringAssert.Contains("  aiSlingMinTurnDegrees: 20\n", text);
+            // Half the orbit's poles: the smaller hole.
+            StringAssert.Contains("  poleHorizon: 1.6\n", text);
         }
 
         [Test]

@@ -132,6 +132,7 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | `GameToastConfig_Switchback` / `_Skein` | Switchback (45) / Skein (51) | halfway / lead change / home stretch (`gate` / `ring`), `Comeback system is on` — open chains, so no final lap |
 | `GameToastConfig_Headlong` / `_Redline` / `_Breakwater` | Headlong (49) / Redline (53) / Breakwater (50) | halfway / lead change / home stretch (`gate` / `gate` / `station`) + `{0} is on the final lap`, `Comeback system is on` |
 | `GameToastConfig_ThresherTime` | ThresherTime (66) | Redline's set word for word (halfway / lead change / home stretch `gate {1}/{2}`, `{0} is on the final lap`, `Comeback system is on`) — authored by `author_thresher_time_assets.py` |
+| `GameToastConfig_BrittleStarTime` | BrittleStarTime (74) | the race beats (129-132, 30) + the Shift Line's own 410-419 (2026-11-16): a start hint per rung (410 I1-I2 Speed Mode, 417 I3 the let-go posts, 418 I4 the roll), streak `{0}` (411), lap split / best lap `{0}` `{1}` (412/413), clean lap (414), first flat out (415), first clean shift (416), dark-start reminder (419) — authored by `author_brittle_star_time_assets.py`, posted by `BrittleStarTimeController.Heat` to the local pilot |
 | `GameToastConfig_AstroLeague` | AstroLeague (37) | `{0} scores! {1}/{2}`, `MATCH POINT - {0} needs one more goal`, `Golden goal - the next one wins`, `Comeback system is on` |
 | `GameToastLibrary` | — | shared + every mode config above |
 | `GameToastSettings` | — | slide-in, age dim, retention cap, auto-scroll |

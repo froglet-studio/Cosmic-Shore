@@ -903,3 +903,28 @@ validate-before-write.
 - `PauseMenu.mainMenuButtonLabel` (Session 6's other prefab-field row) is still unwired.
 - The host's tally reads `(n/humans)` where `humans` INCLUDES the host, who cannot vote — so it can
   never reach `(n/n)`. Pre-existing; the face row is now the primary read.
+
+---
+
+## Session 8 — 2026-11-07 (SOAP replacement smoke: invite, accept, leave — main editor + 1 VP, driven by the `party` command)
+
+**Branch tested:** `Ys-bleeding-edge` (our own SOAP, `Assets/Plugins/CosmicShoreSoap/`, replacing the Obvious plugin;
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` "Our own SOAP replaces the Obvious plugin" step 4).
+
+**Setup.** Main editor + VP "Player 2" (tag `Player2`, auth profile `mppm-Player2`, a distinct PlayerId). Each editor
+was driven through its own Pipeline control server (the VP writes its port file to
+`Library/VP/<id>/Library/Pipeline/.unity-pipeline-port`) calling `PartyConsoleCommand.Handle`, the same entry point the
+buttons use. Both accounts happen to carry the display name `ys1`.
+
+**S1 Accept.** `party invite ys1` on main → VP showed `invite=ys1` within 3 s and `PartyInviteNotificationPanel` was
+active → `party accept` on the VP → after ~15 s both read session `7msskCZn`, `members=2/4`; main `conns=2 humans=2`,
+VP `role=client partyHost=0`, Menu_Main on both. Party slots: main `ys1 You / Host` + `ys1 Pilot`; VP `ys1 Host` +
+`ys1 You`. **Pass.**
+
+**S3 Leave.** `party leave` on the VP → within 7 s the VP hosted its own solo party (`As4A8Zj8`, 1/4) and main read
+`members=1/4 conns=1`; both still listed each other online. **Pass.**
+
+**Console.** Main: 0 errors. VP: only FMOD `EventNotFoundException`s (the VP's banks; the working tree carried a
+modified, uncommitted `SFX.bank`), none from party, SOAP or Netcode.
+
+**Not run:** S2 decline, S4 re-accept, 3-4 VP scenarios, S9 host return with a party.
