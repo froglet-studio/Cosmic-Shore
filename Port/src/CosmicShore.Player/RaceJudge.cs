@@ -143,6 +143,7 @@ namespace CosmicShore.Player
             var hostHull = all.First(h => !_hulls.Contains(h));
             gameData.SyncFromArcadeGame(card);
             ApplyStart(gameData);
+            ApplyCrystalGenes();
             gameData.IsTraining = false;
             if (gameData.selectedVesselClass != null) gameData.selectedVesselClass.Value = hostHull;
             if (gameData.SelectedIntensity != null) gameData.SelectedIntensity.Value = intensity;
@@ -246,6 +247,10 @@ namespace CosmicShore.Player
                                       | (st != null && st.IsSlowed ? 16 : 0) | (st != null && st.IsTranslationRestricted ? 32 : 0);
                             traces[k].AddRange(new[] { (float)o.Phase, o.Ring, o.Objective.x, o.Objective.y, o.Objective.z, tgt.x, tgt.y, tgt.z,
                                                        fwd.x, fwd.y, fwd.z, flags });
+                            // Where the pilot COMMANDS the nose (the nose lead judges from here) and how fast the nose follows.
+                            var vt = st?.VesselTransformer;
+                            var cmd = vt ? vt.CommandedRotation * Vector3.forward : Vector3.zero;
+                            traces[k].AddRange(new[] { cmd.x, cmd.y, cmd.z, vt ? vt.NoseFollowRate : 0f });
                             // Slow (under 50 u/s): what is within 30 u, by the root object's name, for a stall's cause.
                             if ((v.VesselStatus?.Speed ?? 0f) < 50f)
                             {
@@ -303,7 +308,7 @@ namespace CosmicShore.Player
                     });
                     if (_trace)
                     {
-                        seats[seats.Count - 1]!["trace_columns"] = "t,x,y,z,speed,phase,ring,ox,oy,oz,tx,ty,tz,fx,fy,fz,flags";
+                        seats[seats.Count - 1]!["trace_columns"] = "t,x,y,z,speed,phase,ring,ox,oy,oz,tx,ty,tz,fx,fy,fz,flags,cx,cy,cz,follow";
                         seats[seats.Count - 1]!["trace"] = new JsonArray(traces[k].Select(t => (JsonNode)Math.Round(t, 2)).ToArray());
                         seats[seats.Count - 1]!["near_when_slow"] = new JsonArray(nears[k].Select(t => (JsonNode)t).ToArray());
                     }
@@ -377,6 +382,21 @@ namespace CosmicShore.Player
             _notes.Add("start: " + start.ToJsonString());
         }
 
+        /// <summary><c>"crystal_genes": {"Scarab": 150}</c>: each hull's learned crystal detour budget (world units) for this
+        /// run, as <c>RaceAICrystalGenesSO</c> would hold it, without an asset: the judge installs an in-memory one as the
+        /// project's genes. Absent = whatever the project ships (no asset = 0, the old rule).</summary>
+        void ApplyCrystalGenes()
+        {
+            if (_spec["crystal_genes"] is not JsonObject genes) return;
+            var so = ScriptableObject.CreateInstance<RaceAICrystalGenesSO>();
+            foreach (var (hull, slack) in genes)
+                so.Rows.Add(new RaceAICrystalGenesSO.Row { Hull = Enum.Parse<VesselClassType>(hull), DetourSlack = slack!.GetValue<float>() });
+            const BindingFlags S = BindingFlags.Static | BindingFlags.NonPublic;
+            typeof(RaceAICrystalGenesSO).GetField("_cached", S)!.SetValue(null, so);
+            typeof(RaceAICrystalGenesSO).GetField("_looked", S)!.SetValue(null, true);
+            _notes.Add("crystal_genes: " + genes.ToJsonString());
+        }
+
         /// <summary>Every game but Regatta draws a fresh course per match (GateRaceController.PickCourseSeed), so the judge
         /// forces it: race r flies course <c>course_seeds[r]</c>, or its race seed when the spec names none. The same
         /// seeds then mean the same courses in every process, which a parameter search needs. (Regatta's course comes
@@ -426,11 +446,30 @@ namespace CosmicShore.Player
         }
 
         static object ConvertJson(JsonNode value, Type type, string what) =>
-            type == typeof(float) ? value!.GetValue<float>()
+            type.IsArray && value is JsonArray items ? BuildArray(items, type.GetElementType()!, what)
+            : type == typeof(float) ? value!.GetValue<float>()
             : type == typeof(int) ? value!.GetValue<int>()
             : type == typeof(bool) ? value!.GetValue<bool>()
             : type.IsEnum ? Enum.Parse(type, value!.ToString())
             : throw new InvalidOperationException($"{what} is a {type.Name}, not a number, flag or enum");
+
+        /// <summary>A whole array from JSON: numbers for a number array, or objects whose fields fill each struct
+        /// (<c>"aiNoseLead": [{"Hull": "Scarab", "Gain": 1, "MaxExtraDegrees": 40}]</c>).</summary>
+        static Array BuildArray(JsonArray items, Type elem, string what)
+        {
+            var arr = Array.CreateInstance(elem, items.Count);
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] is JsonObject fields)
+                {
+                    object box = Activator.CreateInstance(elem)!;
+                    foreach (var (name, value) in fields) SetPath(box, new[] { name }, 0, value!, $"{what}[{i}]");
+                    arr.SetValue(box, i);
+                }
+                else arr.SetValue(ConvertJson(items[i]!, elem, $"{what}[{i}]"), i);
+            }
+            return arr;
+        }
 
         static FieldInfo FieldOf(object target, string name)
         {
