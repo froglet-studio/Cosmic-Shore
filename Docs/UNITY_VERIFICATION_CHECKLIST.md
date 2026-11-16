@@ -24516,3 +24516,19 @@ nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed
    placement stands on a rail while the ring mouths stay open. Run the EditMode tests `CellPhaseRulesTests`
    (`Raised_*`). A Linked Rings spawner with 20+ rings of 64 blocks no longer lays blocks at infinity (it hung the
    course before). Refcompile: 0 errors in the changed files; the editor did not run.
+
+## 🔴 The standard element ladder: I2 start, I3 team crystals, I4 fauna, the crystal-detour gene (2026-11-16, Garrett's project thread, #2055 #2059 #2060, NOT RUN IN EDITOR)
+
+Garrett's ladder (`Docs/ElementalLoop/PLAYBOOK.md` step 2): I1 nothing, I2 every hull at level 5 in the game's element,
+I3 each team's own crystals of it, I4 its fauna in the cell's colour. Applies to every non-arena card with no
+`StartingElements` table. Refcompile: 0 errors in the changed files; the editor and the `unity` CLI did not run; the
+new EditMode tests (`ElementLadderTests`, `ElementLadderCrystalsTests`, the gene test in `RaceAIWaypointsOnlyTests`)
+compiled and did not run. Owed:
+
+1. Run the EditMode tests above.
+2. Switchback at I1: the Dolphin starts at rest. At I2: it starts at Time 5 (the HUD's Time bar half full).
+3. Switchback at I3: 4 Time crystals in your colour sit beside the rings and regrow ~12 s after you take one. In a
+   two-team arcade mode, the other team cannot take yours. Skim Race (scored on crystals) and Harvest lay none of these.
+4. Switchback at I4: sharks, piranhas, brittle stars and tadpoles appear as Time variants in the controlling colour.
+   On two machines, the client sees the same creatures (the fauna sync indexes `Cell.FaunaRoster`). Watch frame time.
+5. Redline, Headlong and the other cards with their own `StartingElements` table are unchanged at every rung.
