@@ -182,13 +182,17 @@ def run_shader(cand_dir, cand, args, unity):
 
 def run_scene(cand_dir, cand, args, unity):
     sc = cand["scene"]
-    for role in ("change", "neg"):
+    # "states": {"<name>": {flags}} measures the change again from another view or game state (role state_<name>):
+    # the screen must stay identical there and the metric must not get worse.
+    roles = ["change", "neg"] + ["state_" + n for n in sc.get("states", {})]
+    for role in roles:
         if os.path.exists(os.path.join(cand_dir, "reports", "editor", role + ".json")):
             continue
         out = os.path.abspath(os.path.join(cand_dir, "out", "editor", role + ".json"))
         os.makedirs(os.path.dirname(out), exist_ok=True)
         flags = []
-        for k, v in {**sc.get("common", {}), **sc.get(role, {})}.items():
+        own = sc.get("states", {}).get(role[6:], {}) if role.startswith("state_") else sc.get(role, {})
+        for k, v in {**sc.get("common", {}), **own}.items():
             flags += [f"-{k}", str(v)]
         cmd = [unity, "-projectPath", args.project, "-buildTarget", args.build_target,
                "-executeMethod", "CosmicShore.Editor.ProvenWin.ProvenWinSceneBenchBuilder.RunInEditor", *flags,

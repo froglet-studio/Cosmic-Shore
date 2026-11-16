@@ -145,6 +145,17 @@ def scene_verdict(cand, reports):
             fails.append(f"{api}: the screen differs ({c['screenshotPixelsDifferent']} px); if the scene animates, freeze it")
         if not (s["medianB"] < s["medianA"] and s["shareBLower"] >= SCENE_WIN_SHARE):
             fails.append(f"{api}: '{metric}' not categorically lower (B lower in {100*s['shareBLower']:.0f} % of frames)")
+        for role, st in sorted(roles.items()):
+            if not role.startswith("state_"):
+                continue
+            ss = next((x for x in st.get("series", []) if x["counter"] == metric), None)
+            if st.get("screenshotPixelsDifferent", 0) != 0:
+                fails.append(f"{api} {role}: the screen differs in this state ({st['screenshotPixelsDifferent']} px)")
+            if ss and ss["medianB"] > ss["medianA"] * STATE_MAX_RATIO and ss["shareBLower"] < STATE_MIN_SHARE:
+                fails.append(f"{api} {role}: the change COSTS {100*(ss['medianB']/ss['medianA']-1):.1f} % in this state")
+            if ss:
+                rows[f"{api} {role}"] = dict(a=ss["medianA"], b=ss["medianB"], share=ss["shareBLower"],
+                                             screen=st.get("screenshotPixelsDifferent", 0))
         n = roles.get("neg")
         if not n:
             holds.append(f"{api}: no negative control")

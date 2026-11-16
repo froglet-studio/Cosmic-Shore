@@ -111,6 +111,10 @@ namespace CosmicShore.Editor.ProvenWin
                     // the change is about (a 1200-unit membrane).
                     if (Arg("-cameraFar") is { } far) cam.farClipPlane = float.Parse(far, System.Globalization.CultureInfo.InvariantCulture);
                     cam.tag = "MainCamera";
+                    // Where the eye is, "x,y,z" and "pitch,yaw,roll": a prefab is often seen from somewhere other than its
+                    // pivot in the game (a membrane from near its wall, not only from its centre).
+                    if (Arg("-cameraPos") is { } cp) cam.transform.position = ParseVector(cp);
+                    if (Arg("-cameraEuler") is { } ce) cam.transform.eulerAngles = ParseVector(ce);
                 }
                 var bench = new GameObject("ProvenWinSceneBench").AddComponent<ProvenWinSceneBench>();
                 var so = new SerializedObject(bench);
@@ -182,6 +186,12 @@ namespace CosmicShore.Editor.ProvenWin
             var args = Environment.GetCommandLineArgs();
             int i = Array.IndexOf(args, flag);
             return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
+        }
+
+        static Vector3 ParseVector(string s)
+        {
+            var p = s.Split(',').Select(v => float.Parse(v.Trim(), System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            return new Vector3(p[0], p[1], p[2]);
         }
     }
 }

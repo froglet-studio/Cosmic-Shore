@@ -14,11 +14,19 @@
    "setupMethod": "none",
    "staticToggle": "CosmicShore.Game.CapsuleMembrane.FrustumCull",
    "cameraFar": 12000,
-   "extraCounters": "CapsuleMembrane.FrustumCull;CapsuleMembrane.RenderMeshInstanced;CapsuleMembrane.UpdateMatrices"
+   "extraCounters": "CapsuleMembrane.FrustumCull;CapsuleMembrane.RenderMeshInstanced;CapsuleMembrane.UpdateMatrices",
+   "cameraPos": "0,0,900",
+   "cameraEuler": "0,30,0"
   },
   "change": {},
   "neg": {
    "staticSet": "CosmicShore.Game.CapsuleMembrane.CullRadiusScale=0"
+  },
+  "states": {
+   "centre": {
+    "cameraPos": "0,0,0",
+    "cameraEuler": "0,0,0"
+   }
   }
  },
  "machine": "an RTX 3080 (Gbox), editor Play mode",
