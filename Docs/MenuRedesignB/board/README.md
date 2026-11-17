@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-17 from canvas version `1794923793-4923` of **Frogma**: Rev 3 to Rev 116, 509 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-17 from canvas version `1794943098-588a` of **Frogma**: Rev 3 to Rev 117, 511 boards on 14 tabs. The canvas opens on the tab `launch-console`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -639,6 +639,11 @@ Copied on 2026-11-17 from canvas version `1794923793-4923` of **Frogma**: Rev 3 
 - `R63Notes.dc.html` (not copied yet) - Rev 63 - notes: what each costs to build and how big the words are
 
 ### Tab: Launch Console  (`launch-console`)
+
+#### Rev 117 - Launch Console, the release tool: six pages in one board - Mission, Pipeline, Builds, Release, Signals, Theme
+
+- [`R117Console.dc.html`](R117Console.dc.html) - Rev 117 Console - Console: Mission, Pipeline, Builds, Release, Signals and Theme; the rail switches pages, the swatches switch the theme - interactive
+- [`R117Notes.dc.html`](R117Notes.dc.html) - Rev 117 - notes: what each page reads, what is sample data, the open questions
 
 #### Rev 58 - Launch Console in the Unity editor: the window docked, narrow, and what it reads
 

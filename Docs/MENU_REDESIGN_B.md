@@ -8829,3 +8829,37 @@ the toasts one fixed spot of their own.
   side with their captions under them.
 - **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
   colour shard tiles (no such systems yet).
+
+## 213. Rev 117 mockups: the Launch Console as the release tool, six pages (2026-11-17, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-17): "this is a tool I want to use for performing releases whenever I want and in the
+future too and make this tool the best. So first up why not pull up frogma and create some state of the art mockups
+like 6 with seperate pages animations theme setup cosmic shore vibes".
+
+**On the canvas**: the Launch Console tab, under "Rev 117 - Launch Console, the release tool: six pages in one board".
+Copies in `Docs/MenuRedesignB/board/R117*.dc.html`; generator `Docs/MenuRedesignB/rounds/r117_launch_console/`
+(`gen.py <dir> Console Notes`; the page names write each page as its own board too).
+- **R117Console** (interactive): one board, six pages switched from the left rail. Mission (the stage track from
+  Beta Phase 1 to Game 2 with its gates, the Gate 1 meter, six platforms' go or no-go, next steps, Start a release),
+  Pipeline (Bleeding Edge, Development, Master, Release with their vessels and what each feeds; Promote opens a drawer
+  of what would move), Builds (platform by branch, a build's steps live, where it goes, size over time; Build again),
+  Release (five steps: what, checks that tick in live with "Leave iOS out" past a block, notes, audience with the later
+  tiers locked to their gates, launch with a per-platform rollout and its way back), Signals (access tiers, the gate
+  meter, retention by build, data from the builds, the feedback inbox), Theme (Deep Sea, Shore, Nocturne and Dart Frog
+  previewed live; motion full, calm or off; density; the sea and the cell behind). The theme swatches in the top bar
+  and the Ask panel work on every page.
+- **R117Notes**: what each page would read, what is sample data, the open questions.
+
+One board instead of six because Frogma holds 512 files besides the type's and had two free (the publish of six boards
+was refused, "manifest exceeds 512 entries"). Freeing room is Shombith's call; the generator writes the six boards
+when there is.
+
+**Look**: Deep Sea tokens and the colour-set themes from `Tools/Analytics/console/themes.css`; the menu cell and slow
+sea lines behind 95 % opaque panels; the sliver on every surface; only the call to action glows; status keeps the live
+console's rule (Lime go, Fire dashed at risk, Fire solid no-go); Ruby for no way back (Promote, Release).
+`check_mockup.py`: type on the scale; it fails the noise budget (a tool page carries 100-140 elements against the
+menu's 60) and counts the theme blocks' own hexes as typed-in colours. Every number is sample data and says so.
+
+**Differs from the live console** (`Docs/LAUNCH/console/index.html`): the live page is one long scroll of panels;
+this splits it into pages around the release itself, adds the stage track, the branch pipeline, per-build steps,
+the five-step release and the themes. Nothing in the live console changed.

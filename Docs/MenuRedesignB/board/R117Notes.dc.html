@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 117 notes - the Launch Console as six pages</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+[data-th=deep]{--g:#00041F;--gd:#00010A;--s:#222645;--sr:#434C89;--ln:#434C89;--tx:#E6E9FF;--ts:#747BAD;--to:#5C5F70;--cta:#99FF80;--ctaf:#99FF80;--on:#00041F;--dg:#FF4B3A;--sel:#00D4FF;--cm:#A600FF;--oncm:#FFFFFF;--data:#AABCFF;--sea1:#49B8FF;--sea2:#7F98FF;--sea3:#9C8CFF;--wash:#002042;--imgop:.42;--hullbg:#00041F}
+[data-th=shore]{--g:#F4F5FF;--gd:#E6E9FF;--s:#FFFFFF;--sr:#DDE1F7;--ln:#B8C0F0;--tx:#00041F;--ts:#434C89;--to:#8A8FAE;--cta:#487C1F;--ctaf:#99FF80;--on:#00041F;--dg:#CD373A;--sel:#007D73;--cm:#893BFF;--oncm:#FFFFFF;--data:#434C89;--sea1:#7F98FF;--sea2:#B8C0F0;--sea3:#9C8CFF;--wash:#FFFFFF;--imgop:.10;--hullbg:#00041F}
+[data-th=nocturne]{--g:#13010C;--gd:#050003;--s:#3C1D31;--sr:#70405F;--ln:#70405F;--tx:#F5E6EE;--ts:#A8869A;--to:#6C5A65;--cta:#C4F637;--ctaf:#C4F637;--on:#13010C;--dg:#FF8169;--sel:#65E1DF;--cm:#DF5CE5;--oncm:#13010C;--data:#7BA0FF;--sea1:#65E1DF;--sea2:#7BA0FF;--sea3:#DF5CE5;--wash:#210118;--imgop:.30;--hullbg:#13010C}
+[data-th=dartfrog]{--g:#150100;--gd:#060000;--s:#3F200B;--sr:#754526;--ln:#754526;--tx:#F6E7DF;--ts:#AB8975;--to:#6D5C52;--cta:#C2F625;--ctaf:#C2F625;--on:#150100;--dg:#FF513A;--sel:#85E1C2;--cm:#C75EE5;--oncm:#150100;--data:#6EB5FF;--sea1:#85E1C2;--sea2:#6EB5FF;--sea3:#C75EE5;--wash:#260901;--imgop:.30;--hullbg:#150100}
+
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.root{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--gd);color:var(--tx);font-family:'Aldrich',sans-serif;font-size:18px;transition:background-color .5s ease,color .5s ease}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--ts)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.soft{color:var(--ts)}.off{color:var(--to)}
+.h1{font-size:36px;line-height:1.1;margin:0;font-weight:400}
+.h2{font-size:28px;line-height:1.15;margin:0;font-weight:400}
+.h3{font-size:22px;line-height:1.2;margin:0;font-weight:400}
+.sm{font-size:15px}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.pn{position:absolute;box-sizing:border-box;padding:var(--pad,28px);background:color-mix(in srgb,var(--g) 95%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ln) 80%,transparent);transition:background-color .5s ease}
+.pn.raised{background:color-mix(in srgb,var(--s) 70%,var(--g))}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);transition:transform .12s cubic-bezier(.5,1,.89,1),filter .2s}
+.btn.s{height:44px;padding:0 18px;font-size:14px}
+.btn:active{transform:scale(.97)}
+.cta{background:var(--ctaf);color:var(--on)}
+.commit{background:var(--cm);color:var(--oncm)}
+.def{background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1px var(--ts)}
+.def:hover{box-shadow:inset 0 0 0 1px var(--tx)}
+.danger{background:transparent;color:var(--dg);box-shadow:inset 0 0 0 1px var(--dg)}
+.glow{animation:glow 3.6s ease-in-out infinite}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--cta) 30%,transparent))}50%{filter:drop-shadow(0 0 18px color-mix(in srgb,var(--cta) 60%,transparent))}}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible,.nav:focus-visible,.chip:focus-visible{outline:2px solid var(--sel);outline-offset:3px}
+.chip{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:0;cursor:pointer;background:transparent;color:var(--ts);font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;box-shadow:inset 0 0 0 1px var(--ln);clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:color .2s,box-shadow .2s,background-color .2s}
+.chip:hover{color:var(--tx)}
+.chip[aria-pressed=true]{color:var(--tx);box-shadow:inset 0 0 0 1px var(--sel);background:color-mix(in srgb,var(--sel) 12%,transparent)}
+.st{display:inline-flex;align-items:center;gap:8px;height:26px;padding:0 10px;box-sizing:border-box;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;border:1px solid;white-space:nowrap}
+.st i{width:8px;height:8px;display:inline-block;background:currentColor}
+.st.go{color:var(--cta)}.st.nogo{color:var(--dg)}.st.risk{color:var(--dg);border-style:dashed}.st.risk i{background:linear-gradient(135deg,currentColor 50%,transparent 50%)}
+.st.run{color:var(--sel)}.st.run i{animation:blink 1.2s steps(2) infinite}.st.none{color:var(--to)}
+@keyframes blink{50%{opacity:.2}}
+.mono{font-family:'Chakra Petch',sans-serif;font-weight:500;letter-spacing:.04em}
+.hr{height:1px;background:color-mix(in srgb,var(--ln) 70%,transparent)}
+.hull{mix-blend-mode:screen;object-fit:contain;width:100%;height:100%}
+.hullbox{background:var(--hullbg);overflow:hidden;position:relative}
+/* the sea */
+.bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:var(--imgop);transition:opacity .6s ease;animation:breath 48s ease-in-out infinite alternate}
+@keyframes breath{from{transform:scale(1.02)}to{transform:scale(1.08) translate(-12px,6px)}}
+.wash{position:absolute;inset:0;background:radial-gradient(1100px 640px at 72% 18%,color-mix(in srgb,var(--wash) 80%,transparent),transparent 70%),linear-gradient(180deg,transparent 30%,var(--gd) 100%)}
+.seawrap{position:absolute;left:0;top:0;width:3840px;height:1080px;animation:drift 140s linear infinite}
+.seawrap path{fill:none;stroke-width:1.2}
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(-1920px)}}
+/* rail */
+.rail{position:absolute;left:0;top:0;width:232px;height:1080px;box-sizing:border-box;padding:28px 0 28px;background:color-mix(in srgb,var(--g) 96%,transparent);box-shadow:inset -1px 0 0 color-mix(in srgb,var(--ln) 70%,transparent)}
+.nav{position:relative;display:flex;align-items:center;gap:16px;height:52px;padding:0 28px;color:var(--ts);text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase;transition:color .2s,background-color .2s}
+.nav:hover{color:var(--tx);background:color-mix(in srgb,var(--sr) 25%,transparent)}
+.nav.on{color:var(--tx);background:color-mix(in srgb,var(--sel) 10%,transparent)}
+.nav.on::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:2px;background:var(--sel)}
+.top{position:absolute;left:232px;top:0;right:0;height:96px;display:flex;align-items:center;gap:20px;padding:0 32px;box-sizing:border-box}
+.sw{width:30px;height:30px;border:0;cursor:pointer;padding:0;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);background:linear-gradient(135deg,var(--g) 0 50%,var(--sel) 50% 100%);transition:transform .2s}
+.sw:hover{transform:translateY(-2px)}
+.swring{padding:3px;display:inline-flex}
+/* motion */
+.rise{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+.d1{animation-delay:.05s}.d2{animation-delay:.12s}.d3{animation-delay:.19s}.d4{animation-delay:.26s}.d5{animation-delay:.33s}.d6{animation-delay:.40s}.d7{animation-delay:.47s}.d8{animation-delay:.54s}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.fade{animation:fade .5s ease both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.draw{stroke-dasharray:2400;stroke-dashoffset:2400;animation:draw 2.6s .3s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.spin{animation:spin 1.1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pulse{animation:pulse 2.8s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.2);opacity:0}}
+.lift{transition:transform .25s cubic-bezier(.33,1,.68,1),box-shadow .25s}
+.lift:hover{transform:translateY(-3px)}
+.slidein{animation:slidein .45s cubic-bezier(.22,1,.36,1) both}
+@keyframes slidein{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+[data-mo=calm] .seawrap{animation-duration:420s}
+[data-mo=calm] .bgimg,[data-mo=calm] .glow,[data-mo=calm] .pulse,[data-mo=calm] .flow{animation:none}
+[data-mo=off] *,[data-mo=off] *::before,[data-mo=off] *::after{animation-duration:0s!important;animation-delay:0s!important;animation-iteration-count:1!important;transition:none!important}
+[data-sea=off] .seawrap{display:none}
+[data-dn=compact]{--pad:18px}
+</style>
+</helmet>
+<div class="root" data-th="deep" style="width:1920px;height:900px;padding:56px 64px;box-sizing:border-box;background:var(--g)"><div class="lab">Rev 117 notes</div><div class="h1" style="margin:10px 0 8px">The Launch Console, as the tool you release with</div><div class="soft" style="max-width:1400px;line-height:1.5">Six pages in one look: press Play, the left rail switches pages, the swatches in the top bar switch the theme, and only the call to action glows. Status keeps the live console's rule: Lime for go, Fire dashed for at risk, Fire solid for no-go. No way back (Promote, Release) is Ruby.</div><div style="display:flex;gap:56px;margin-top:36px"><div style="flex:1"><div class="lab" style="margin-bottom:16px">The six pages</div><div style="margin-bottom:14px"><div style="font-size:18px">Mission</div><div class="sm soft" style="margin-top:4px;line-height:1.5">The stage you are in, its gate, every platform's go or no-go, the next steps, and Start a release.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Pipeline</div><div class="sm soft" style="margin-top:4px;line-height:1.5">Bleeding Edge, Development, Master, Release side by side with their vessels and what each feeds. Promote opens what would move.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Builds</div><div class="sm soft" style="margin-top:4px;line-height:1.5">Every platform on every branch. A build's steps live, where it goes (Drive, Play, TestFlight, Steam, the Toybox), its size over time.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Release</div><div class="sm soft" style="margin-top:4px;line-height:1.5">Perform a release in five steps: what, checks, notes, audience, launch. A check that blocks says how to get past it.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Signals</div><div class="sm soft" style="margin-top:4px;line-height:1.5">Who is playing by access tier, the gate meter, retention by build, data from the builds, and the feedback inbox.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Theme</div><div class="sm soft" style="margin-top:4px;line-height:1.5">Deep Sea, Shore, Nocturne and Dart Frog, each previewed. Motion full, calm or off; density; the sea and the cell behind.</div></div></div><div style="flex:1"><div class="lab" style="margin-bottom:16px">What each would read</div><div style="margin-bottom:14px"><div style="font-size:18px">Mission</div><div class="sm soft" style="margin-top:4px;line-height:1.5">The launch-status board, READINESS.md and the stages in the launch-flow skill, as the console reads them today.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Pipeline and Builds</div><div class="sm soft" style="margin-top:4px;line-height:1.5">The branches, the Bleeding-edge guard, the release-builds and sync-build-branches workflows, the build profiles.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Release</div><div class="sm soft" style="margin-top:4px;line-height:1.5">The release-promote workflow, the checklist, the runbook and the changelog already in the console's store.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Signals</div><div class="sm soft" style="margin-top:4px;line-height:1.5">Feedback from the Bug Ledger and the in-game button. Retention and sessions need an analytics source; none is connected yet.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Theme</div><div class="sm soft" style="margin-top:4px;line-height:1.5">The style guide's tokens and the colour-set themes the analytics console already generates. Saved per person.</div></div></div><div style="flex:1"><div class="lab" style="margin-bottom:16px">Sample data, and what is open</div><div style="margin-bottom:14px"><div style="font-size:18px">Every number is made up</div><div class="sm soft" style="margin-top:4px;line-height:1.5">The boards say Sample data. Building it means wiring each page to the sources beside it.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">The Release branch does not exist</div><div class="sm soft" style="margin-top:4px;line-height:1.5">Pipeline, Builds and Release show it as not created. When is it made: at Gate 1?</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Gate 1 has no measure or target</div><div class="sm soft" style="margin-top:4px;line-height:1.5">Mission and Signals show 42% against a target that is not set. Which number, and what bar?</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Vessel counts after Beta Phase 1</div><div class="sm soft" style="margin-top:4px;line-height:1.5">X and Y on the stage plan are open, so the later stages show no counts.</div></div><div style="margin-bottom:14px"><div style="font-size:18px">Six pages, one board</div><div class="sm soft" style="margin-top:4px;line-height:1.5">Frogma holds 512 files and had two free, so the six pages share one board: the rail switches them and the theme follows. Free some room and each page gets its own board.</div></div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -4194,6 +4194,23 @@
       "h": 1080,
       "page": "voyages-playtest",
       "title": "116F Blocks - The end scoreboard"
+    },
+    "R117Console.dc.html": {
+      "x": 0,
+      "y": 3620,
+      "w": 1920,
+      "h": 1080,
+      "page": "launch-console",
+      "title": "Rev 117 Console - Console: Mission, Pipeline, Builds, Release, Signals and Theme; the rail switches pages, the swatches switch the theme - interactive",
+      "is_interactive": true
+    },
+    "R117Notes.dc.html": {
+      "x": 0,
+      "y": 4880,
+      "w": 1920,
+      "h": 900,
+      "page": "launch-console",
+      "title": "Rev 117 - notes: what each page reads, what is sample data, the open questions"
     }
   },
   "createdOnFiles": {
@@ -4202,7 +4219,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "voyages-playtest",
+    "page": "launch-console",
     "view": "canvas"
   },
   "noteOrder": [
@@ -4333,6 +4350,7 @@
     "sec-rev116-2",
     "sec-rev116-3",
     "sec-rev116-4",
+    "sec-rev117",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -4453,7 +4471,8 @@
     "grp-116c-console-t",
     "grp-116d-corners-t",
     "grp-116e-edges-t",
-    "grp-116f-blocks-t"
+    "grp-116f-blocks-t",
+    "rev117"
   ],
   "notes": {
     "hud_end": {
@@ -7602,6 +7621,30 @@
         "border-radius": "0px 0px 40px 0px"
       },
       "page": "voyages-playtest"
+    },
+    "rev117": {
+      "kind": "title1",
+      "text": "Rev 117 - Launch Console, the release tool: six pages in one board - Mission, Pipeline, Builds, Release, Signals, Theme",
+      "x": 0,
+      "y": 3220,
+      "w": 240,
+      "maxW": 6120,
+      "page": "launch-console"
+    },
+    "sec-rev117": {
+      "kind": "rect",
+      "x": -160,
+      "y": 3060,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "launch-console"
     }
   },
   "order": [
@@ -8113,7 +8156,9 @@
     "R116F_Toasts.dc.html",
     "R116F_Sail.dc.html",
     "R116F_Pause.dc.html",
-    "R116F_Score.dc.html"
+    "R116F_Score.dc.html",
+    "R117Console.dc.html",
+    "R117Notes.dc.html"
   ],
   "pages": [
     {
