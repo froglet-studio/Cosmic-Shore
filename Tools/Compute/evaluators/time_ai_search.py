@@ -225,6 +225,20 @@ GAMES = {
         # gene. No nose rate of its own either: the fleet lag, searched through the judge.
         "lead": None, "rows": [], "nose_gene": 1.5,
     },
+    "Meerkat": {
+        "mode": "BurrowRun",
+        # The Meerkat flies the gate race's own steering (no drive asset, no ability autopilot in a Time race) and
+        # BurrowRunController has no aiNoseLead table, so its genes are the race controller's AI knobs (GateRaceController
+        # aiCommitDistance / aiApproachLead / aiThroughDistance, as MinigameBurrowRun ships them; only the Meerkat races
+        # Burrow Run) and the nose rate, set through the judge (fleet lag 1.5/s shipped). No lead gene.
+        "assets": {},
+        "fields": {},
+        "ctrl_fields": {"aiCommitDistance": (40.0, 600.0), "aiApproachLead": (40.0, 800.0),
+                        "aiThroughDistance": (40.0, 600.0)},
+        "ctrl_defaults": {"aiCommitDistance": 160.0, "aiApproachLead": 180.0, "aiThroughDistance": 120.0},
+        "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
+        "lead": None, "rows": [], "nose_gene": 1.5,
+    },
 }
 LEAD_RANGE = (0.0, 3.0)
 # The AI nose follow rate (VesselTransformer.AINoseFollowPerSecond). Games with no knob of their own fly the fleet lag,
@@ -278,8 +292,9 @@ def dims_for(g):
 def shipped_genomes(g):
     """Every drive the game ships for this vessel and game, with today's nose lead and no crystal detour."""
     out = []
-    for rel in sorted(set(g["assets"].values())):
-        p = read_fields(rel, g["fields"])
+    # A game with no drive asset (the Meerkat: the gate race's own steering) seeds from its controller knobs alone.
+    for rel in sorted(set(g["assets"].values())) or [None]:
+        p = read_fields(rel, g["fields"]) if rel else {}
         p.update({k: int(v) for k, v in p.items() if k in g.get("ints", ())})
         p.update(g.get("ctrl_defaults", {}))
         if "nose_gene" in g:
@@ -287,7 +302,7 @@ def shipped_genomes(g):
         if g["lead"] is not None:
             p[LEAD] = g["lead"]
         p[CRYSTAL] = 0.0
-        p["_from"] = os.path.basename(rel)
+        p["_from"] = os.path.basename(rel) if rel else "controller defaults"
         out.append(p)
     return out
 
