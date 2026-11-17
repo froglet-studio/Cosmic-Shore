@@ -3115,6 +3115,9 @@
   "ToastHullLeakingSub": "The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.",
   "ToastRaiders": "RAIDERS IN OPEN WATER",
   "ToastRaidersSub": "Big creatures are coming for the Ark between the cells.",
+  "ToastGoalMissed": "GOAL MISSED: {done} / {goal}",
+  "ToastGoalMissedSub": "This run's haul is lost. Try again, or sail home.",
+  "ScoreRetryRaid": "Same goal: {goal} crystals in {cells} cells",
   "ToastKaiju": "KAIJU IN OPEN WATER",
   "ToastKaijuSub": "A giant waits between the cells for the Ark's hull. Bring it down."
  },

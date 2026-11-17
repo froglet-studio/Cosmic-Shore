@@ -500,7 +500,9 @@ namespace CosmicShore.Gameplay
         {
             if (!cell || !_active || routeIndex < 0 || _profile == null || routeIndex >= _profile.Count) return;
             NoteLegCell(cell, routeIndex);
-            cell.RuntimePopulationScale = Mathf.Max(0.1f, _profile[routeIndex]);
+            // The leg's pacing, times the voyage's own life scale (its cells are big: Shombith 2026-11-17, more fauna and
+            // more crystals).
+            cell.RuntimePopulationScale = Mathf.Max(0.1f, _profile[routeIndex]) * (_def ? Mathf.Max(0.1f, _def.CellLifeScale) : 1f);
             // The job's hostile cells (VoyageRun.Assault.cs); without a pattern, the destination when its place is hostile.
             if (PrepareAssaultCell(cell, routeIndex))
                 cell.SetReplicatedStartingController(CellControlRules.Opposing(LiveDomain(_context)));

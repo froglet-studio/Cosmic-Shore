@@ -13,8 +13,8 @@ R113Compare, R113Score). Not yet run in the Unity editor: `Docs/UNITY_VERIFICATI
   **10%** (40% until round 3, so the hold can leak below 30% before the Ark falls).
 - Crystals count from the moment the Ark sets sail, through every cell, not only at the stop.
 - **Any pilot can bring it**: the job is on every board (`always`), credited to the first seated pilot.
-- At the stop the job resolves: met the goal, it succeeds and its pay is owed too; missed, it fails and only what was
-  stolen is owed. Owed crystals are **at stake until the Ark docks home**, and lost with the Ark.
+- At the stop the job resolves: met the goal, it succeeds and its pay is owed too; missed, it fails and this run's
+  haul is lost (§9; until 2026-11-17 what was stolen was still owed). Owed crystals are **at stake until the Ark docks home**, and lost with the Ark.
 - **Finish** sails the Ark home with the squad escorting it; docking banks everything (`VoyageRules.Extract`) and
   ends the voyage. (Prompt 1 said Finish banks at once; Shombith's own answer, "the ark should sail home and players
   should accompany", wins.)
@@ -188,3 +188,27 @@ them smaller and more attacks outside the cell big kaiju level fauna attacking t
   read as spread, how long a crossing takes now (the core-to-core leg is 6400 u, the Ark crawls inside the bigger
   cell), whether a 12x kaiju reads as huge and still bites (its mouth reach may not grow with its body), and whether leashed
   raiders now reach the Ark.
+
+## 9. Round 5: more life, the lag, a missed goal (Shombith, 2026-11-17)
+
+"I need more fauna inside the cells and more crystals and it is sometimes very laggy. When we miss the goal nothing
+happens."
+
+- **More fauna and crystals.** `cellLifeScale` (2) on `Voyage.asset` multiplies every voyage cell's fauna and flora
+  populations (seed floors and caps) on top of the leg's pacing (`VoyageRun.OnPrepareCell`). Every lifeform carries one
+  crystal, so this doubles the crystals too.
+- **The lag.** Shombith's voyage profile of 2026-11-17 01:55 (`BugLedger/shared/reports/shombith/perf/prof_Voyage_*`)
+  had a 64 ms spike frame, 41 ms of it one fauna spawn batch: 10 creatures instantiated in a frame (27 ms) and 6 console
+  warnings (7.9 ms). Two fixes:
+  - `NetworkSceneObjectGuard.NeutralizeStray` read the prefab's hash after destroying the NetworkObject, so its
+    once-per-prefab warning fired on every creature birth (the capture's log: 10-11 per species). It reads the hash
+    first now.
+  - A satellite cell (a voyage's corridor world) instantiates 2 creatures a frame instead of 6
+    (`RandomLifeSpawner.SatelliteFaunaSpawnBatchPerFrame`): the same waves over more frames.
+  - Not measured: the 12x kaiju's cost. Profile again in a voyage with `prof` if the lag stays.
+- **A missed goal** (Shombith's pick on the decision card). At the stop, a run short of its goal: a threat toast
+  (ToastGoalMissed, "GOAL MISSED: {done} / {goal}", ToastGoalMissedSub), this run's haul is lost (`raidMissForfeits`,
+  `VoyageRaid.Arrive(..., forfeitOnMiss)`; what earlier legs owe is kept), and the board offers Try again (A: the same
+  goal and cells from here, `VoyageRaid.Retry`, caption ScoreRetryRaid) or Finish (B: sail home). No Venture further on
+  a failed run.
+- **Not run in Unity.** To check: the 2x populations' frame time with the 12x kaiju, and the missed-goal board.
