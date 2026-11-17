@@ -64,12 +64,8 @@ MonoBehaviour:
       instead of merely being stripped of it.
   - Element: 4
     AbilityLabel: Skimming
-    AbilityDescription: Time raises the boost energy gained per prism-skimmer
-      collision (SkimmerBoostPrismEffectSO.energyMultiplier, x1 -> x2 at level 10
-      floored at x0.25, read live per hit). Skim energy is the Squirrel's speed, so
-      the element that makes the pilot faster owns it. At level 5 danger prisms
-      grant the 10x energy bonus (below it they pay base energy - the bonus is
-      earned, no longer always on).
+    AbilityDescription: Skim prisms to build boost. Time raises the energy of
+      every skim, up to 2x at level 10. At level 5 danger prisms pay 10x.
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

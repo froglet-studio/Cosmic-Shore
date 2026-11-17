@@ -47,6 +47,7 @@ namespace CosmicShore.Gameplay
 
         IVesselStatus _status;
         ResourceSystem _resources;
+        GrizzlyDigInActionExecutor _digIn;   // Dig In braces the cannon: its Charge dial winds the charge faster
 
         Projectile _shot;
         int _shotGeneration;
@@ -80,6 +81,7 @@ namespace CosmicShore.Gameplay
         {
             _status = shipStatus;
             _resources = shipStatus.ResourceSystem;
+            if (!_digIn) TryGetComponent(out _digIn);   // the Grizzly's executors share one GameObject
 
             if (gun != null)
                 gun.Initialize(shipStatus);
@@ -166,7 +168,9 @@ namespace CosmicShore.Gameplay
                     await UniTask.Delay(TimeSpan.FromSeconds(ChargeTickSeconds),
                         DelayType.DeltaTime, PlayerLoopTiming.Update, token);
 
-                    _resources.ChangeResourceAmount(so.EnergyIndex, so.ChargePerSecond * ChargeTickSeconds);
+                    // Dug in, the brace winds the cannon faster (Dig In's Charge dial; 1 when not planted).
+                    float brace = _digIn ? _digIn.CannonChargeMultiplier : 1f;
+                    _resources.ChangeResourceAmount(so.EnergyIndex, so.ChargePerSecond * brace * ChargeTickSeconds);
                     OnChargeChanged?.Invoke(Charge01(so));
                 }
             }

@@ -81,12 +81,6 @@ namespace CosmicShore.Gameplay
         private const string JOINED_PARTY_KEY         = "joined_party";
         private const string PARTY_SESSION_KEY        = "partySession";
 
-        /// <summary>
-        /// After creating a lobby, wait this long before re-querying to detect
-        /// a simultaneous-creation race (two clients both create a lobby at the
-        /// same millisecond in MPPM or near-simultaneous launches).
-        /// </summary>
-        private const int LOBBY_RACE_SETTLE_MS   = 1500;
 
         // ─────────────────────────────────────────────────────────────────────
         // Private state
@@ -168,9 +162,9 @@ namespace CosmicShore.Gameplay
         /// Three-step algorithm:
         /// <list type="number">
         ///   <item>Query UGS for an existing presence lobby.</item>
-        ///   <item>If none, create one; then re-query after a settling delay to detect
-        ///         a simultaneous creation by another client (MPPM / near-simultaneous
-        ///         launch). If a rival lobby is found, delete own and merge into it.</item>
+        ///   <item>If none, create one. A simultaneous creation by another client (MPPM /
+        ///         near-simultaneous launch) is healed by the caller's refresh loop, which
+        ///         converges on the canonical lobby a few seconds after the join.</item>
         ///   <item>On any exception, fall back to creating a new lobby.</item>
         /// </list>
         /// </remarks>
@@ -199,13 +193,13 @@ namespace CosmicShore.Gameplay
                     await CreateAsync(maxPlayers);
 
                     // A rival may have created a lobby at the same instant (MPPM or
-                    // near-simultaneous launch).  After a short settle for UGS session
-                    // indexing, converge on the canonical (smallest-id) lobby so both
-                    // sides deterministically pick the SAME one instead of staying
-                    // split.  A symmetric "join the first rival" merge could have both
-                    // sides swap into each other's lobby and end up split again.
-                    await UniTask.Delay(LOBBY_RACE_SETTLE_MS, DelayType.UnscaledDeltaTime);
-                    await ConvergeToCanonicalAsync(maxPlayers);
+                    // near-simultaneous launch). That split is healed by the caller's refresh
+                    // loop, which converges on the canonical (smallest-id) lobby about 2 s and
+                    // 7 s after the join and on every safety poll after that
+                    // (HostConnectionService: ConvergeToCanonicalAsync on each fetch tick).
+                    // A 1.5 s settle and a converge used to run HERE as well: measured
+                    // 2026-11-17 they cost 1.9-2.6 s and one query on the boot's critical path,
+                    // in front of the party session create, for a check the loop repeats.
                 }
             }
             catch (Exception e)

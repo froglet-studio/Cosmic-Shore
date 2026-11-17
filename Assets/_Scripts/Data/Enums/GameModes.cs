@@ -585,7 +585,16 @@ namespace CosmicShore.Data
         // that hits another breaks both. Hostile prisms broken score, first domain to the target wins. Roster row 17.
         CaveIn = 107,
 
-        // 97) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // The Jewel Wasp's CHARGE game (MARIONETTE.md): a duel among Kelpwood's kelp and herds. Sting a creature, ride it
+        // into a rival pilot: its attack is a Strike, one point, and with Charge 5 leaving it bursts it on every rival
+        // hull near it. First domain to the target wins. 126 is the id GAME_KIT_ROSTER.md reserved for it (rows 36-37).
+        Marionette = 126,
+
+        // The Jewel Wasp's SPACE game (GORGE.md): a timed feast on Chum's reef. Ride a creature to a shoal of neutral
+        // prisms and hold RT: its suction pulls them in (Space widens the reach; every shield is food to a possessed
+        // creature). Most prisms taken off the board when the clock runs out wins. 127, the roster's (rows 36-37).
+        Gorge = 127,
+
         // The Grizzly's CHARGE game (STANDOFF.md): square posts of prism tiles stand on a sphere round an open centre.
         // A trigger bomb that touches a rival hull freezes on it; pull and release again to blow it. Every rival a blast
         // of yours catches is a point; Dig In behind a post to aim and recharge. First domain to the target wins.
@@ -623,7 +632,7 @@ namespace CosmicShore.Data
         Blastline = 113,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 118) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 120) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

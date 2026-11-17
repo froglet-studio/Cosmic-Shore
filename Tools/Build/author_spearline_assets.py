@@ -4,20 +4,24 @@ Authors every serialized asset Spearline needs (GameModes.Spearline, the id READ
 hint toast 171 in Docs/ElementalLoop/GAME_KIT_ROSTER.md). The shared work is hull_time_race.author; this file is the
 Swordfish's spec.
 
-Run from the repo root:  python3 Tools/Build/author_spearline_assets.py [--check]
+Run from the repo root:  py -3 Tools/Build/author_spearline_assets.py [--check]
 
-WHAT THIS MODE IS. The Swordfish's TIME card (Garrett, 2026-11-15: "make all the missing games you can"). The
-Swordfish's Time ability is Quickdraw, the sword's RATE (swipe recovery 0.35 -> 0.14 s, energize hold 1 -> 0.4 s,
-x1 -> x2.5 across Time 0-10). The race is Headlong's circuit (HeadlongCircuit, cut for this airframe's 840 u/s ramp and
-its turn), three laps, and the rings carry SEALS: panes of prisms in the mouth (SpearlineSeals). A sealed ring counts
-only through a hole, and the hull alone rams a lane narrower than the hole, so each seal asks for a swing of the bill
-on the way through; the faster the sword swings, the less speed a seal costs. I1 seals every other ring and one stroke
-opens it, I2 seals every ring and wants a stroke to each side, I3 shields every second seal (two strokes in one place),
-I4 shields them all and wants the bill stood up too. Doc: SPEARLINE.md; tests: SpearlineSealsTests.
+WHAT THIS MODE IS. The Swordfish's TIME card (Garrett, 2026-11-15: "make all the missing games you can"), upgraded in
+place by the 2026-11-16 fun pass (SPEARLINE.md, Docs/Spearline/FUN_PASS.md). The race is Headlong's circuit
+(HeadlongCircuit, cut for this airframe's 840 u/s ramp and its turn) with Spearline's own mouths (96 / 84 / 74 / 66),
+five laps, and the gentlest rings of each lap carry SEALS: panes of prisms in the mouth (SpearlineSeals). A sealed ring
+counts only through a HOLE of at least 8 prisms (the connected run of gone prisms the crossing sits in); the hull alone
+punches 3-7, the hull plus one stroke of the bill INTO the pane 8-19. From I2 every seal is ARMOURED: a shielded sector
+(120 / 180 / 240 degrees, its side a hash of the ring) that only cracks, so the pilot reads where the plain face is,
+crosses it and swings into it. Each closed pass wears that pilot's need there by 2, so nobody is trapped. The AI reads
+the seal the same way (SpearlineSeals.Read) and strokes through its shipped sword hand (SwordfishSwordAutopilot.Coach).
+Tests: SpearlineSealsTests (Tools/Build/spearline_harness); timing: Tools/Build/spearline_race_model.py.
 
 THE DONOR IS THORNLINE'S SCENE (barren race cell, equatorial spawn ring, a plain GateRaceController block). The clone
 swaps the controller script, the scoring rule asset, the AI numbers, the detection clamp and the Netcode ids, and adds
-the seal prefab; the card's Vessels list clamps every seat to the Swordfish. Nothing about the vessel changes.
+the seal prefab; the card's Vessels list clamps every seat to the Swordfish. Nothing about the vessel changes. The
+controller's fun-pass fields (the AI's read, the feedback, the three FMOD slots) are not written into the scene: they
+ship at their C# defaults, the sound slots empty, as Redline's do.
 """
 import os
 import re
@@ -50,13 +54,18 @@ THORN_FIELDS = f"""  thornPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABL
   crystalRegrowSeconds: 5
   aiTakesSnipes: 1
 """
-SEAL_FIELDS = f"""  laps: 3
+LAPS = 5            # SpearlineCourseSource.DefaultLaps; 3 until the 2026-11-16 fun pass (50-70 s in the race model)
+SEAL_FIELDS = f"""  laps: {LAPS}
   sealPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}
   sealRegrowPerFrame: 40
   sealClearance: 60
 """
-LAPS = 3
 GATES_PER_LAP = 8   # HeadlongCircuitSettings.ForIntensity's GateCount
+
+
+# The fun pass's toasts (ids reserved 400-409 for it; 403-409 spare) and its sound slots.
+FUN_TOASTS = (("SpearlineSealHeld", 400), ("SpearlineCleanStreak", 401), ("SpearlineArmourHint", 402))
+SOUND_SLOTS = ("sealOpenedEvent", "sealHeldEvent", "cleanStreakEvent")
 
 
 def _errors():
@@ -68,17 +77,33 @@ def _errors():
     toasts = open(os.path.join(root, "Assets/_Scripts/Data/Enums/GameToastSituation.cs"), encoding="utf-8").read()
     if f"SpearlineHint = {HINT_TOAST}," not in toasts:
         errs.append(f"GameToastSituation.SpearlineHint is not the roster's reserved {HINT_TOAST}")
+    for member, value in FUN_TOASTS:
+        if f"{member} = {value}," not in toasts:
+            errs.append(f"GameToastSituation.{member} is not {value} (the fun pass's reserved 400-409)")
+        if len(re.findall(rf"= {value},", toasts)) != 1:
+            errs.append(f"GameToastSituation value {value} is used more than once")
     src = open(os.path.join(root, f"{MODE_DIR}/SpearlineCourseSource.cs"), encoding="utf-8").read()
     if f"DefaultLaps = {LAPS};" not in src:
         errs.append(f"SpearlineCourseSource.DefaultLaps is not {LAPS}")
     circuit = open(os.path.join(root, "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs"), encoding="utf-8").read()
     if f"GateCount = {GATES_PER_LAP}," not in circuit:
         errs.append(f"HeadlongCircuitSettings.ForIntensity no longer lays {GATES_PER_LAP} rings a lap")
-    ctl = open(os.path.join(root, f"{MODE_DIR}/SpearlineController.cs"), encoding="utf-8").read()
-    # The LOCKED mode rule: the mode lays seals and judges rings; it never touches the vessel's kit.
+    ctl = "".join(open(os.path.join(root, f"{MODE_DIR}/{f}"), encoding="utf-8").read()
+                  for f in ("SpearlineController.cs", "SpearlineController.Coach.cs", "SpearlineController.Feedback.cs"))
+    # The LOCKED mode rule: the mode lays seals, judges rings and coaches its AI's input; it never touches the
+    # vessel's kit. The AI's strokes go through the shipped sword hand (SwordfishSwordAutopilot.Coach).
     for banned in ("PerformShipControllerActions", "InputStatus", "ElementalScaling", "IsUpgradeActive"):
         if banned in ctl:
-            errs.append(f"SpearlineController mentions {banned} - a mode never changes the vessel")
+            errs.append(f"SpearlineController* mentions {banned} - a mode never changes the vessel")
+    # Every sound is an exposed FMOD slot, shipped empty (never a path in code).
+    for event in SOUND_SLOTS:
+        if not re.search(rf"\[SerializeField\] FMODUnity\.EventReference {event};", ctl):
+            errs.append(f"SpearlineController has no empty FMOD slot {event}")
+    if "PlayOneShot(" in ctl or "event:/" in ctl:
+        errs.append("SpearlineController names an FMOD event path in code")
+    hand = open(os.path.join(root, "Assets/_Scripts/Controller/AI/Rhino/SwordfishSwordAutopilot.cs"), encoding="utf-8").read()
+    if "public ISwordfishSwordCoach Coach" not in hand or "Coach.TryHold(" not in hand:
+        errs.append("SwordfishSwordAutopilot has no Coach seam - Spearline's AI cannot stroke through a seal")
     return errs
 
 
@@ -86,6 +111,8 @@ htr.author(dict(
     member="Spearline", display="Spearline", hull="Swordfish", class_id=lib.VESSEL_CLASS_ID["Swordfish"],
     scripts={
         "SpearlineController":   f"{MODE_DIR}/SpearlineController.cs",
+        "SpearlineController.Coach":    f"{MODE_DIR}/SpearlineController.Coach.cs",
+        "SpearlineController.Feedback": f"{MODE_DIR}/SpearlineController.Feedback.cs",
         "SpearlineSeals":        f"{MODE_DIR}/SpearlineSeals.cs",
         "SpearlineCourseSource": f"{MODE_DIR}/SpearlineCourseSource.cs",
         "SpearlineSealsTests":   "Assets/_Scripts/Tests/Editor/SpearlineSealsTests.cs",
@@ -103,14 +130,18 @@ htr.author(dict(
     # A quarter-of-race deficit (6 rings) x 0.2 = 1.2 element levels; Time speeds the sword, so the buff lands on the
     # very thing the seals ask for.
     comeback=0.2,
-    description="""Swordfish only. Three laps of the circuit, and the rings are sealed with
-    panes of prisms. A sealed ring counts only through a hole - your hull alone punches too
-    small a one, so swing the bill as you go through. The hard levels shield the seals and want
-    more strokes. Time swings the sword faster. First team to put a pilot over the line wins.""",
-    preview_objective="Swing the bill through each sealed ring",
-    preview_notes="The circuit (HeadlongCircuit) and its seals are laid at match start from the rings, so a preview shows the shell. It teaches the seal - a ring that counts only through a hole you cut.",
+    description="""Swordfish only. Five laps of the circuit, and the gentle rings are sealed
+    with panes of prisms. A sealed ring counts only through a hole - your hull alone punches
+    too small a one, so swing the bill into the pane as you go through. From level two part
+    of every pane is shielded and only cracks - cross the bright face and swing into it.
+    First team to put a pilot over the line wins.""",
+    preview_objective="Swing the bill into each sealed ring",
+    preview_notes="The circuit (HeadlongCircuit) and its seals are laid at match start from the rings, so a preview shows the shell. It teaches the seal - a ring that counts only through a hole you cut - and from I2 the armour, a shielded face to read and avoid.",
     build_after="MinigameThornline",
-    extra_toasts=[(HINT_TOAST, "Swing the bill as you go through - a sealed ring counts only through a hole you cut",
-                   dict(domain_names=0))],
+    extra_toasts=[(HINT_TOAST, "Swing the bill into the pane as you go through - a sealed ring counts only through a hole you cut",
+                   dict(domain_names=0)),
+                  (400, "The seal held - cut a hole of your own, then come back through it", dict(domain_names=0)),
+                  (401, "{0} seals cut clean", dict(domain_names=0)),
+                  (402, "Shields only crack - cross the bright face and swing into it", dict(domain_names=0))],
     extra_errors=_errors(),
 ))

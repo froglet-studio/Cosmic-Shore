@@ -772,7 +772,7 @@ MonoBehaviour:
     Max: 2.5
     element: 2
     UseFloor: 1
-    Floor: 0.4
+    Floor: 0.5
   offset: 20
   Gap: 17
   MinimumGap: 1
@@ -1753,6 +1753,8 @@ MonoBehaviour:
     Min: 20
     Max: 40
     element: 3
+    UseFloor: 1
+    Floor: 10
   nudgeShardPoolManager: {fileID: 0}
   markerDistance: 70
   AOEPrefab: {fileID: 0}

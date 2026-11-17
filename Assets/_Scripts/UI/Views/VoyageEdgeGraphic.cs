@@ -65,7 +65,7 @@ namespace CosmicShore.UI
         readonly List<(double x, double y, double z)> _nuclei = new();
         readonly List<(double u, double v)> _section = new();
         readonly List<Vector2> _poly = new();
-        readonly HashSet<long> _walls = new();
+        readonly List<(double u, double v)> _wet = new();
         float _lastPaint = float.NegativeInfinity;
         // The colour set the strip was last painted in (ColorTrace.Version): another one worn paints it again.
         int _colorVersion;
@@ -74,6 +74,20 @@ namespace CosmicShore.UI
 
         /// <summary>Follow <paramref name="map"/>'s view; <paramref name="caption"/> is the authored line under the strip
         /// (empty shows nothing), <paramref name="labelTemplate"/> the text it copies its look from.</summary>
+        /// <summary>No caption line (the Voyages table, Frogma Rev 111 Full: its front face is the side view alone).</summary>
+        public bool Uncaptioned
+        {
+            get => _uncaptioned;
+            set
+            {
+                if (_uncaptioned == value) return;
+                _uncaptioned = value;
+                Caption(_captionText, _template);
+            }
+        }
+
+        bool _uncaptioned;
+
         public void Follow(VoyageMapGraphic map, string caption, TMP_Text labelTemplate)
         {
             if (_map != map)
@@ -290,33 +304,37 @@ namespace CosmicShore.UI
             float fill = Mathf.Clamp01((px - 60f) / 30f);
             bool inner = px > 90f;
             float nucA = (float)HyperSeaCells.NucleusAlpha(px);
-            double R = HyperSeaCells.NucleusRadius;
             int budget = vh.currentVertCount + SideCellVerts;
-            _walls.Clear();
+            // the liquid between the cells, under them
+            VoyageCellDraw.Liquid(vh, r, Mathf.Max(.4f, (float)HyperSeaCells.MembraneAlpha(px)) * alpha, white);
             for (int pass = 0; pass < 3; pass++)
                 foreach (var c in _nuclei)
                 {
                     if (vh.currentVertCount > budget) return;
                     if (!HyperSeaCells.TrySection(c, (0, ys, 0), (1, 0, 0), (0, 0, 1), _section, out var sec)) continue;
-                    var at = ToRect((float)c.x, (float)c.z, s, zc);
+                    // a sliver the sheet only grazes is left to the liquid between cells
+                    if (!HyperSeaCells.TryWetOutline(_section, _wet)) continue;
+                    // the nucleus sits at its cell's middle (u is x, v is z on this sheet)
+                    var at = ToRect((float)sec.Mu, (float)sec.Mv, s, zc);
                     if (pass == 2)
                     {
-                        double h = Math.Abs(sec.H);
+                        double R = sec.NucleusR, h = Math.Abs(sec.Mh);
                         if (h >= R || nucA <= 0f) continue;
                         float rad = (float)(Math.Sqrt(R * R - h * h) * s);
                         VoyageCellDraw.NucleusQuad(vh, at, rad, nucA, VoyageCellDraw.SpriteUv(rad, TexW, TexRows, 0, SpriteRow));
                         continue;
                     }
                     _poly.Clear();
-                    foreach (var p in _section) _poly.Add(ToRect((float)p.u, (float)p.v, s, zc));
+                    foreach (var p in _wet) _poly.Add(ToRect((float)p.u, (float)p.v, s, zc));
                     if (pass == 0)
                     {
                         if (fill <= 0f) continue;
-                        var (cr, cg, cb) = HyperSea.SeaColor(HyperSea.Density(c.x, c.y, c.z));
+                        var l = HyperSeaCells.LatticePoint(c);
+                        var (cr, cg, cb) = HyperSea.SeaColor(HyperSea.Density(l.x, l.y, l.z));
                         VoyageCellDraw.Cell(vh, _poly, at, new Color((float)cr / 255f, (float)cg / 255f, (float)cb / 255f, 1f),
                             px, fill * alpha, inner, white);
                     }
-                    else VoyageCellDraw.Walls(vh, _poly, px, alpha, _walls, white);
+                    else VoyageCellDraw.Walls(vh, _poly, px, alpha, white);
                 }
         }
 
@@ -493,7 +511,7 @@ namespace CosmicShore.UI
                 var existing = transform.Find(CaptionName);
                 if (existing) existing.TryGetComponent(out _caption);
             }
-            bool show = !string.IsNullOrEmpty(caption);
+            bool show = !_uncaptioned && !string.IsNullOrEmpty(caption);
             if (!_caption && !show) return;
             if (!_caption)
             {

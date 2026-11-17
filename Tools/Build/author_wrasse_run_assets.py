@@ -117,9 +117,11 @@ CRUISE_RADIUS = CRUISE_SPEED / ((CRUISE_SPEED * 0.1 + 100.0) * 3.141592653589793
 # circle: the AI Grouper flies its hull through each ring - which puts the ring in the kite's plane, on
 # its board - and the AI navigator slings the kite through the mouth (KiteNavigatorConfig
 # aiCrewNavigates). The Grouper spends the boosts the Wrasse saves while the next ring is far ahead.
-AI_COMMIT_DISTANCE = 72
-AI_APPROACH_LEAD = 80
-AI_THROUGH_DISTANCE = 55
+# Trained 2026-11-17 (Wrasse run1, time_ai_search.py in the real game; the ratios above were 72 / 80 / 55): the AI commits
+# to a ring far out and turns in late, and the run is about 9% faster over I1-I4.
+AI_COMMIT_DISTANCE = 433
+AI_APPROACH_LEAD = 423
+AI_THROUGH_DISTANCE = 68
 
 # Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn - for the hull AND
 # for the probe (the kite). The kite's world step is the hull's boosted 260 u/s + the slung kite's
@@ -363,8 +365,10 @@ for h in re.findall(r"GlobalObjectIdHash: (\d+)", scene):
 if MAX_PLAUSIBLE_SPEED < 2 * KITE_WORST_SPEED:
     errors.append(f"maxPlausibleSpeed {MAX_PLAUSIBLE_SPEED} is under twice the kite's worst world speed "
                   f"({KITE_WORST_SPEED:.0f} u/s)")
+# (The approach lead used to have to exceed the commit distance, Slingshot's ratio; the real-game search put it just
+# under, 423 vs 433, and raced faster, so only "outside the cruise circle" is a rule.)
 if not (AI_THROUGH_DISTANCE > CRUISE_RADIUS and AI_COMMIT_DISTANCE > 2 * CRUISE_RADIUS
-        and AI_APPROACH_LEAD > AI_COMMIT_DISTANCE):
+        and AI_APPROACH_LEAD > 2 * CRUISE_RADIUS):
     errors.append("AI approach geometry is not sized outside the Grouper's cruise circle "
                   f"(commit {AI_COMMIT_DISTANCE} / lead {AI_APPROACH_LEAD} / through "
                   f"{AI_THROUGH_DISTANCE} against {CRUISE_RADIUS:.0f} u)")

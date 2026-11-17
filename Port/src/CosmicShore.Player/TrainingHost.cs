@@ -367,7 +367,16 @@ namespace CosmicShore.Player
         }
 
         // ── Assets ─────────────────────────────────────
-        static object LoadAsset(ContentRuntime runtime, string projectPath)
+        /// <summary>One component of a prefab asset by its fileID (the <c>--- !u!114 &amp;ID</c> header in the prefab's
+        /// YAML): the cached template every instance is cloned from, so an edit to it reaches every vessel spawned after.</summary>
+        internal static object LoadPrefabComponent(ContentRuntime runtime, string projectPath, long fileId)
+        {
+            string guid = runtime.Db.GuidOf(projectPath);
+            if (guid == null) return null;
+            return runtime.Assets.Load(new ObjRef(fileId, guid, 2), typeof(Component));
+        }
+
+        internal static object LoadAsset(ContentRuntime runtime, string projectPath)
         {
             string guid = runtime.Db.GuidOf(projectPath);
             if (guid == null) return null;
@@ -378,7 +387,7 @@ namespace CosmicShore.Player
         /// UnityEditor.AssetDatabase.FindAssets("t:T")[0] over the project's .asset files: the
         /// first asset (by path) whose script is T. Reads only the head of each file.
         /// </summary>
-        static object FindFirstAsset(ContentRuntime runtime, string typeName)
+        internal static object FindFirstAsset(ContentRuntime runtime, string typeName)
         {
             string script = runtime.Db.AllAssetPaths.FirstOrDefault(p => p.Replace('\\', '/').EndsWith("/" + typeName + ".cs", StringComparison.Ordinal));
             if (script == null) return null;

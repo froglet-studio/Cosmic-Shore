@@ -269,7 +269,11 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 | Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
 | Scarab / Scramble, Tollway | Snap Dash | dashes on straights (`SnapDashAIPolicySO`) |
 
-### 6.1 A racing AI flies the waypoints, never a crystal (Yash, 2026-10-26)
+### 6.1 A racing AI flies the waypoints, never a crystal (Yash, 2026-10-26; RELAXED 2026-11-16)
+
+**Relaxed by Garrett, 2026-11-16:** the detour is now a learned gene of each hull's Time genome
+(`RaceAICrystalGenesSO`, read by `GateRaceController.AICrystalDetourSlackFor`; 0 until a search writes a row, which
+is the rule below). `AI_PLAN.md` rule 9. The history:
 
 > "While playing any racing game mode, AI should not go for crystals. It should only focus on waypoints. If the
 > crystals are the waypoints, then go for crystals. [...] I figured out the AI dolphins were collecting crystals more
@@ -504,7 +508,7 @@ press period and length are recorded in every race's `buttonEvents`).
 | Hull | Cruise / top, u/s | Own Time game, flights (finished) | Regatta, modelled seconds I1-I4 | For | Against |
 |---|---:|---|---|---|---|
 | **Stoat** | 60 / 164 warped (336 at Time 10) | Slingshot 4 (1), Warpline 15 | 60 / 61 / 65 / 94 AI at Time 10 (gate steering only) | In the pack with the Dolphin and Squirrel; Yash's own vessel (§8); the steering fix, a learner and starting numbers exist; the race asks a skill (where to turn, a timed release) | Hairpins cost it about twice the field trajectory's time; Mass and two level-5s have nothing to act on while parked; Yash's `stoat/skim-sling` branch rebuilds the same Time mode |
-| Manta | 180 / 720 | Redline 0 | 25 / 31 / 35 / 35 | The fastest hull, a learner and a drive model; tops the compute queue | Already twice the field: the plan's job is closing that gap, so more speed widens it. No races, and Redline lacks the Regatta steering |
+| Manta | 180 / 720 | Redline 0 | 25 / 31 / 35 / 35 | The fastest hull, a learner and a drive model; tops the compute queue | Already twice the field: the plan's job is closing that gap, so more speed widens it. No races, and Redline lacked the Regatta steering (it flies it since 2026-11-03, §13) |
 | Rhino | 50 / 840 | Headlong 0 | 51 / 63 / 75 / 61 | The highest top speed, a learner and a drive model | No element reaches it, so the balance stage cannot level it. No races, and Headlong lacks the Regatta steering |
 | Sparrow | 35 / 135 | Breakwater 12 (9) | 74-90 at Time 10 (competent-pilot model) | The most proven remaining game | The slowest modelled hull on the card; no drive model |
 

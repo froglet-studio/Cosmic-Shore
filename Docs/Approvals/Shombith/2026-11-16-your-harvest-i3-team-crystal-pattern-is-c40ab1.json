@@ -1,0 +1,13 @@
+{
+  "id": "2026-11-16-your-harvest-i3-team-crystal-pattern-is-c40ab1",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T22:22:43+00:00",
+  "area": "Harvest / Shatterplane I3 team crystals",
+  "summary": "Your Harvest I3 team-crystal pattern is now a platform default (ElementLadderCrystals) for every non-arena card at I3-I4; Harvest and Shatterplane opt out (LaysOwnLadderCrystals) and keep theirs. Your code was copied, not changed; folding Harvest onto the shared one is a later option.",
+  "branch": "claude/project-thread-31ri4q",
+  "commit": "76b6c9349",
+  "loop": {
+    "step": "2"
+  }
+}

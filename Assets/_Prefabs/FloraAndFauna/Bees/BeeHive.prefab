@@ -84,11 +84,11 @@ MonoBehaviour:
   senseSeconds: 0.5
   hiveGrowSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
 --- !u!1001 &8186157953130318967
 PrefabInstance:
   m_ObjectHideFlags: 0

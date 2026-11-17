@@ -1467,6 +1467,20 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Disconnected = the front-door init has not joined the presence lobby yet (or the layer was
+            // reset or signed out). That init owns the first transition and ends in this method itself,
+            // so a caller that arrives early (the boot's Relay retry, the retry button) must not start a
+            // host here: both transitions below are refused from Disconnected, the host used to come up
+            // anyway, and the init's own call then returned at the fast path, leaving the machine in
+            // InPresenceLobby with a live host for the whole session (seen 2026-11-17).
+            if (!IsInitialized)
+            {
+                if (!_joining && !ApplicationLifecycleManager.IsQuitting &&
+                    authenticationDataVariable != null && IsAuthSignedInAndHasId())
+                    await EnsureInitializedAsync();
+                return;
+            }
+
             // Fast path - already hosting, no work to do.
             if (IsHostingParty) return;
 
@@ -1486,8 +1500,11 @@ namespace CosmicShore.Gameplay
                 // must never tear down a live offline host (HARDENING_PLAN_STEAM_LAUNCH.md §4.2).
                 if (OfflineSessionBegan("while session creation waited for its turn")) return;
 
-                if (_stateMachine.CurrentState != PartyState.HostingParty)
-                    _stateMachine.TryTransition(PartyState.HostingParty);
+                // Refused only from Disconnected: the layer was reset or signed out while this call
+                // waited for its turn. No host is built on a machine that does not know about it.
+                if (_stateMachine.CurrentState != PartyState.HostingParty &&
+                    !_stateMachine.TryTransition(PartyState.HostingParty))
+                    return;
 
                 using var shutdownCts = new System.Threading.CancellationTokenSource();
                 // .AsMainThread() guarantees the continuation (and the SOAP raise
@@ -2610,12 +2627,27 @@ namespace CosmicShore.Gameplay
                 // Clear party-member UI slots + raise OnPartyMemberLeft per member.
                 _memberService.ClearWithEvents(connectionData.LocalPlayerId);
 
-                // Only toast when a real party dropped - solo recovery is silent.
+                // Recreate a fresh solo Relay session the way every other route back to a solo menu does: tear down,
+                // reload Menu_Main, then create (PartyInviteController.RecoverFromSessionGoneAsync). Restarting the host
+                // IN PLACE left the menu's spawner unable to find the new host Player, so the pilot was never paired
+                // and the next match seated them on the wrong domain (Docs/PartySystem/BUGS.md B48). In place is kept
+                // only for a scene with no controller to do it.
+                var controller = PartyInviteController.Instance;
+                if (controller != null)
+                {
+                    // False: a join or leave is running and makes its own session - nothing to do here.
+                    if (!await controller.RecoverFromSessionGoneAsync()) return;
+                }
+                else
+                {
+                    await EnsurePartySessionAsync();
+                }
+
+                // Only toast when a real party dropped - solo recovery is silent. Raised AFTER the recovery: the
+                // Menu_Main reload recreates the scene-bound listeners, and a notice raised before it is dropped
+                // (the same reason BounceToSoloMenuAsync shows its toast last).
                 if (hadRemoteMembers)
                     _eventBus.RaiseHostConnectionLost();
-
-                // Recreate a fresh solo Relay session.
-                await EnsurePartySessionAsync();
             }
             finally
             {

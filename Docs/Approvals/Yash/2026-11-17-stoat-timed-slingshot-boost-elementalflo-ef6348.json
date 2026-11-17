@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-stoat-timed-slingshot-boost-elementalflo-ef6348",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T09:25:03+00:00",
+  "area": "the Stoat's Time slingshot boost",
+  "summary": "Stoat Timed Slingshot boost ElementalFloat Max 4 -> 3.75 (5 -> 3.75 in all, -25%, the cap; Min 2.5 unchanged), step 5 of the elemental loop for Regatta.",
+  "why": "The Stoat is in the fast trio (about 0.76 of the six's mean). Real-game judge, 33 archive2 courses: Stoat card 53.3 -> 59.3 s, L5 47.1 -> 51.1 s. With Scarab 1.125 (#2135) the slow/fast trio ratio goes card 1.78 -> 1.66, L5 1.69 -> 1.57. Slingshot (AI, seeds 1-2) I1 51 s unchanged, I2 40 -> 43, I3 44 -> 45, I4 53 -> 49 s, all inside the rung bars.",
+  "branch": "claude/project-thread-cwavhz",
+  "lane": "stoat",
+  "commit": "e31660483",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset"
+  ],
+  "loop": {
+    "vessels": [
+      "Stoat"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "1"
+  }
+}

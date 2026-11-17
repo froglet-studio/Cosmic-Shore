@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-17-legendary-nose-lead-16-9-2-and-nose-foll-9a88b7",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T08:27:06+00:00",
+  "area": "Thornline AI (Shrike), ThornlineAIPlan Legendary row",
+  "summary": "Legendary nose lead 16 -> 9.2 and nose follow fleet lag -> 1.6/s, trained in the real game (time_ai_search Shrike run1): confirm on seeds 101-104, 32 flights a side, none unfinished, loss 2.67 -> 2.39; the wide course 77 -> 44 s, I4 from Time 5 49 -> 42 s. Easy/Medium/Hard rows unchanged. THORNLINE.md 4.1.",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "42062ab9d"
+}

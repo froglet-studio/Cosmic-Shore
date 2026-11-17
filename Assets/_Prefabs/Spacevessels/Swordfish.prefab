@@ -1431,11 +1431,11 @@ MonoBehaviour:
   driftAmountParameterName: Drift Amount
   releaseEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1579691313
+      Data2: 1086872641
+      Data3: 763564937
+      Data4: -488243266
+    Path: event:/SFX/Oneshots/Gameplay sfx/trigger off
   attachReleaseEventToShip: 1
   driveParamToOneOnRelease: 0
   triggerDeadzone: 0.05
@@ -12186,6 +12186,16 @@ PrefabInstance:
         type: 3}
       propertyPath: Scale.Min
       value: 24
+      objectReference: {fileID: 0}
+    - target: {fileID: 1957019139854139517, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: Scale.UseFloor
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1957019139854139517, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: Scale.Floor
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 1957019139854139517, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}

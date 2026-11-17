@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-10-cheaper-lenses-vortex-ring-nearest-point-081676",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-10T18:52:13+00:00",
+  "area": "screen-space lens shaders (VortexRingLens, BlackHoleLens, SolitonTunnel)",
+  "summary": "Cheaper lenses: vortex ring nearest point by a 3-step curvature iteration instead of the 32-step bisection (3.3x, max 0.32 px off; VORTEX_RING_LENS_NEAREST_ITERS 0 restores it), black hole per-well influence early-out (~1.8x, exact), and an opt-in march-free Soliton wall bend (_MW_STANDIN, on only outside a tube and by default only on phones; 3-14x, approximate)",
+  "why": "Offline cost study of the game's shaders (Unity stand-ins thread); Soliton's march was the costliest pass after the HyperSea sky",
+  "branch": "claude/standin-lenses",
+  "commit": "385d3018c",
+  "paths": [
+    "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl",
+    "Assets/_Graphics/Materials/Graphs/SolitonTunnel.shader",
+    "Assets/_Graphics/Materials/Graphs/VortexRingLens.hlsl",
+    "Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonTunnelLensPass.cs"
+  ]
+}

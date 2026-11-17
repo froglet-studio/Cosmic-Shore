@@ -386,6 +386,9 @@ namespace CosmicShore.Gameplay
             var style = LineStyleFor(pilot.Vessel.VesselStatus.VesselType);
             autopilot.NoseLeadGain = style ? style.NoseLeadGain : 0f;
             autopilot.NoseLeadMaxExtraDegrees = style ? style.NoseLeadMaxExtraDegrees : AIPilot.DefaultNoseLeadMaxExtraDegrees;
+            // The hull's learned nose rate; 0 (or no style) leaves the fleet lag.
+            var transformer = pilot.Vessel.VesselStatus.VesselTransformer;
+            if (style && style.NoseFollowPerSecond > 0f && transformer) transformer.AINoseFollowPerSecond = style.NoseFollowPerSecond;
         }
 
         /// <summary>

@@ -1,0 +1,26 @@
+{
+  "id": "2026-11-17-the-serpent-s-pellet-boost-ai-pelletboos-d323ad",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T02:29:41+00:00",
+  "area": "the AI boost policies and AI learning",
+  "summary": "The Serpent's pellet boost AI (PelletBoostAIPolicySO) gains a refuel action and pacing genes: at or under refuelBelowPellets it presses the cloak itself to lay a wall and refuel, coasts along it for refuelCoastSeconds, and paces a low tank. Off by default (refuelBelowPellets -1), so no shipped AI changes until a trained genome is promoted.",
+  "why": "FINDINGS 23: the Serpent's tank runs dry by Regatta's third lap because the AI never refuels; the kit is untouched (a game mode never changes the vessel).",
+  "branch": "claude/project-thread-qaz3ia",
+  "lane": "ai-system",
+  "commit": "0031e668f",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/SerpentAIBoostPolicy_SerpentTime.asset",
+    "Assets/_Scripts/Controller/AI/Boost/PelletBoostAIPolicySO.cs",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Serpent"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

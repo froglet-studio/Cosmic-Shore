@@ -141,7 +141,7 @@ namespace CosmicShore.Gameplay
         /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
         /// </summary>
         [SerializeField] ElementalFloat chargeRangeMultiplier =
-            ElementalFloat.Multiplier(1f, 2.5f, Element.Charge, 0.4f);
+            ElementalFloat.Multiplier(1f, 2.5f, Element.Charge, 0.5f);
 
         public FiringPatterns FiringPattern => firingPattern;
         public bool RepeatWhileHeld => repeatWhileHeld;

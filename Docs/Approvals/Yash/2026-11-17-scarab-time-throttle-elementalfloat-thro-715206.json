@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-scarab-time-throttle-elementalfloat-thro-715206",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T05:48:59+00:00",
+  "area": "the Scarab's Time throttle",
+  "summary": "Scarab Time throttle ElementalFloat (ThrottleScalerMultiplier) Max 1.5 -> 1.3, step 5 for the Regatta six-vessel pool.",
+  "why": "Real-game judge, 11 archive2 courses: Scarab pool card 53 -> 59 s, L5 51 -> 55 s; with the Stoat and Sparrow tunings the pool goes 2.14x/2.00x -> 1.92x/1.87x. Scarab Rally I1-I4 stays inside its rung bars (64/57/57/124 -> 64/54/55/116 s).",
+  "branch": "claude/project-thread-cwavhz",
+  "lane": "scarab",
+  "commit": "71e54d327",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Scarab.prefab"
+  ],
+  "loop": {
+    "vessels": [
+      "Scarab"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "1"
+  }
+}

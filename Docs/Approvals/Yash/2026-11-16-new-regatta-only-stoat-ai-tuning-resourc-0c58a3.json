@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-16-new-regatta-only-stoat-ai-tuning-resourc-0c58a3",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-16T20:52:47+00:00",
+  "area": "the Stoat's AI in Regatta",
+  "summary": "New Regatta-only Stoat AI tuning (Resources/AIBoostPolicies/StoatSlingConfig_Regatta, a copy of StoatSlingConfig with aiWarpMinDistance 400): the trampoline autopilot now also presses for the warp on long straights, as the Slingshot variant already does (310).",
+  "why": "On Regatta's race line the steering target sits dead ahead, so the 35-degree turn rule never fired and the Stoat AI crawled at 60 u/s (239 s alone at I1). Real-game judge: 250 -> 64 s, 310 -> 63 s, 400 -> 53 s, 500 -> 51 s, 600 -> 82 s.",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "0e7aacc2e",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset"
+  ]
+}

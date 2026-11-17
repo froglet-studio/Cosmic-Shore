@@ -412,6 +412,7 @@ namespace CosmicShore.UI
             // Settings no longer opens with the pause: it is the X button's window. A prefab with no
             // style-B window still gets the old behaviour, so nothing is left with no screen at all.
             if (!windowGroup && settingsModalWindowManager != null) settingsModalWindowManager.ModalWindowIn();
+            ShowGameAction();
             LinkDpadNavigation();
             Select(resumeButton);
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
@@ -423,10 +424,49 @@ namespace CosmicShore.UI
         /// keycaps still work alongside. Explicit, not automatic: automatic navigation could step
         /// off the window onto the HUD behind it.
         /// </summary>
+        // ── The game's own choice (PauseMenuAction: a voyage's "Complete and set sail") ──
+
+        UnityEngine.UI.Button _gameActionButton;
+
+        /// <summary>The running game's one extra choice, under Resume: a copy of the Resume button (so it wears the
+        /// window's own look) labelled with the provider's authored words, hidden when there is none.</summary>
+        void ShowGameAction()
+        {
+            string label = PauseMenuAction.Label;
+            bool on = !string.IsNullOrEmpty(label) && resumeButton;
+            if (on && !_gameActionButton)
+            {
+                _gameActionButton = Instantiate(resumeButton, resumeButton.transform.parent);
+                _gameActionButton.name = "GameActionButton";
+                _gameActionButton.transform.SetSiblingIndex(resumeButton.transform.GetSiblingIndex() + 1);
+                // Resume's pad shortcut must not fire twice: the copy is reached with the D-pad and A only.
+                foreach (var pad in _gameActionButton.GetComponentsInChildren<ControllerButtonPress>(true)) Destroy(pad);
+                _gameActionButton.onClick = new UnityEngine.UI.Button.ButtonClickedEvent();
+                _gameActionButton.onClick.AddListener(OnClickGameAction);
+            }
+            if (!_gameActionButton) return;
+            _gameActionButton.gameObject.SetActive(on);
+            if (!on) return;
+            foreach (var text in _gameActionButton.GetComponentsInChildren<TMPro.TMP_Text>(true))
+            {
+                // The button's words, not a one-glyph pad hint beside them.
+                if (text.text == null || text.text.Length <= 1) continue;
+                text.text = label;
+                break;
+            }
+        }
+
+        void OnClickGameAction()
+        {
+            var action = PauseMenuAction.Current;
+            OnClickResumeGameButton();
+            action?.OnPauseAction();
+        }
+
         void LinkDpadNavigation()
         {
-            var chain = new System.Collections.Generic.List<UnityEngine.UI.Selectable>(3);
-            foreach (var b in new[] { resumeButton, settingsButton, leaveButton })
+            var chain = new System.Collections.Generic.List<UnityEngine.UI.Selectable>(4);
+            foreach (var b in new[] { resumeButton, _gameActionButton, settingsButton, leaveButton })
                 if (b && b.gameObject.activeInHierarchy) chain.Add(b);
             for (int i = 0; i < chain.Count; i++)
             {

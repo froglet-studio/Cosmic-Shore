@@ -1415,11 +1415,11 @@ MonoBehaviour:
   attachTickEventToShip: 1
   boostLoopEvent:
     Guid:
-      Data1: 175162526
-      Data2: 1078581788
-      Data3: 1171656846
-      Data4: 200696093
-    Path: event:/SFX/Oneshots/Gameplay sfx/Skim
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   boostAmountParameterName: Boost Amount
   boostBaseMultiplier: {fileID: 0}
   boostMaxMultiplier: {fileID: 0}
@@ -3691,6 +3691,16 @@ PrefabInstance:
         type: 3}
       propertyPath: Scale.Min
       value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.UseFloor
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Floor
+      value: 7.5
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

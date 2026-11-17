@@ -65,6 +65,39 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Serpent AI presses its refuel cloak only when it is ready, and can pick a corner for the wall (`claude/project-thread-qaz3ia`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
+
+`PelletBoostAIPolicySO`'s refuel used to re-press on a `cooldown + 0.1 s` timer, but the wall runs about 17 s, so every
+second press was dropped. It now presses when `CloakSeedWallActionExecutor.IsReady` (new, read-only) and retries every
+0.5 s; two new genes `refuelMinCornerDegrees` and `refuelMaxRunwaySeconds` (0 = anywhere, the shipped value) choose
+where to lay it. Raced in Amoebius only; `unity_refcompile` has 0 errors in the changed files.
+
+1. Regatta, an AI Serpent: its walls come about every 15-17 s while Wall Seeds last, then one per about 42 s.
+2. SerpentTime: the same, and nothing else about the Serpent AI changes (both genes ship at 0).
+
+### 🟡 One authentication facade per Play: no competing UGS sign-in at boot (`Ys-bleeding-edge`, 2026-11-15, Yash)
+
+Affects: Shombith's UGS layer and the DI root (`AppManager.InstallBindings`).
+
+**What landed.** AppManager's bindings are installed into two Reflex containers (the root scope from the prefab asset,
+the Bootstrap scene's scope from its instance), so AppManager and every later scene each got their own
+`AuthenticationServiceFacade`. The Authentication scene's facade could not join the boot sign-in and could start a second
+one (`[UGS Auth] Sign-in failed ... The player is already signing in`, twice), or raise `OnSignedIn` a second time. The
+binding now hands out `AuthenticationServiceFacade.Shared` (one per Play, reset on entering Play), and
+`ResetStartupState` keeps a sign-in that is still in flight. Test: `AuthenticationFacadeSingleInstanceTests`.
+
+**Verified (2026-11-15, open editor, no batch mode).** Compiled in the editor. The 3 new tests pass (run by reflection
+through the Pipeline eval, not the Test Runner window). Before the fix a trace showed two facade instances on 11 of 11
+boots and `[FriendsInitializer] Friends service did not come up` on each. After: 6 boots with
+`CosmicShore.OfflinePreferred` = 1 and 3 with 0; AppManager's facade and the root container's facade are the same
+object on all 9; no `already signing in`, no Friends warning; the online boots reached `state=InParty`.
+
+**Not verified.**
+1. The SDK refusal itself was not reproduced before the fix on this machine (sign-in finished before the scene asked),
+   so the proof is the two-instance trace plus the code path, not a before/after of the warning.
+2. Menu online/offline toggle (ReconnectService): go offline, go online, confirm sign-in and the party come back.
+3. A player build (the shared instance is reset by `RuntimeInitializeOnLoadMethod`; a build starts with none).
+4. `unity_refcompile` and `gates.sh` did not run (Windows).
 ### 🔴 The Stoat's Charge and Space games: Shockfront (119) and Fulmen (120), and the Ripple as a scored hit (`claude/stoat-arcade-games`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Arcade/SHOCKFRONT.md`, `Arcade/FULMEN.md`. Shockfront is a Stoat-only Charge duel in Dog Fight's
@@ -751,6 +784,130 @@ ladders in `CORONA.md`.
 
 ---
 
+### 🔴 B21 (scoring): every pilot's drift, boost and prisms damaged on every scoreboard (`Ys-bleeding-edge`, 2026-11-10, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/ScoringSystem/BUGS.md` B21. Every hull gets a telemetry with its three base stats (from
+`Resources/GameModeStatsProfile` when the prefab has none or leaves a link empty); each pilot's machine reports its
+values to its `RoundStats` (`n_VesselStats`, server-written); the scoreboard's stat block lists every human pilot.
+`ProtocolVersion` 30: both machines need this build. Compiled with the editor's Roslyn (0 errors). Not run: EditMode,
+a play.
+
+**Verify in editor:**
+1. The project compiles; EditMode `VesselStatsSyncTests` (7) passes. **PASSED 2026-11-15** (Unity 6000.3.17f1 batch
+   mode on `Ys-bleeding-edge` `8a306db1b1`: 0 compile errors, 7/7).
+
+**Run of 2026-11-15** (`Ys-bleeding-edge` `4b414df525`, the editor + MPPM Player 2, driven by a session through the
+editor's command server; the AI flew the hulls, nobody was at the controls):
+- Step 2 **PASSED**: solo Switchback on a Dolphin; the scoreboard showed Longest Drift 2.65s, Max Boost 0.84s, Prisms
+  Damaged 6, and the console had no "[TelemetryBootstrap]" warning.
+- Step 3 **PARTLY**: in a two-player Switchback each machine showed the same values for both pilots all through the
+  race (host 29 / guest 185, then 425 / 210 on both). Not covered: different hulls (both spawned on Dolphins) and the
+  final scoreboard's rows (the guest's hull never finished the course, so the race did not end by itself).
+- Steps 4-6 **NOT RUN** (Play Again reset, the per-ram count judged by a person, a Sparrow or Squirrel match).
+- **Missing value reads zero everywhere (2026-11-15, NOT COMPILED, not played).** Compile, run `VesselStatsSyncTests` (8), then play two players where one never scores a stat (no prisms damaged).
+- Look for: that pilot reads "0" (or "0.00s") on BOTH machines, in the same position order rules as before; no "-" anywhere in the stat block.
+
+**Second run, 2026-11-15** (two-player Bloomrush, both on Mantas, the match ended on its 90 s timer):
+- Step 3, the final scoreboard **PASSED for the stat block**: the host showed Prisms Damaged "ys1 5 · ys1 4" and
+  Player 2 "ys1 4 · ys1 5" (the same numbers, each machine's own pilot first).
+- **Found: both MPPM test accounts are named "ys1", and the roster is keyed by display name**
+  (`GameDataSO.AddPlayer`: one `Players` / `RoundStatsList` entry per name). With two pilots of one name each machine's
+  `RoundStatsList` held one entry: the scoreboard listed ONE pilot row, and after Play Again the host kept the guest's
+  old value (4) because the guest's stats were not in the list that is cleared. Step 5 (Play Again) cannot be judged
+  until Player 2 has another name. Whether two real players can share a display name is the open question
+  (`Docs/Multiplayer/BUGS.md`, Open).
+
+**Third run, 2026-11-15** (Player 2's test account renamed YS2; two-player Bloomrush, Mantas, `efb09adaec`):
+- Step 3 **PASSED**: both scoreboards listed both pilots with the same scores (ys1 970 Volume, YS2 0), and the stat
+  block matched with each machine's own pilot first (host "ys1 9 · YS2 -", Player 2 "YS2 0 · ys1 9"). One cosmetic
+  difference: a pilot with nothing reported reads "0" on their own machine and "-" on the other.
+- Step 5 **PASSED**: after Play Again and READY, every pilot's stats were empty on both machines, locally and in the
+  synced list.
+- Still not run: different hulls in one match (the modes tried are single-hull), step 4 by a person, step 6.
+**Fourth run, 2026-11-15** (`8b6d91b909`, the editor + MPPM Player 2, driven by a session; every button below was
+pressed as a pointer click on the live `UnityEngine.UI.Button` through `ExecuteEvents`, so the scene's own wiring ran):
+- **Buttons (B18 / B22) PASSED.** Two-player Bloomrush ended on its timer. On both machines Play Again, Main Menu,
+  Leave Lobby and the pause menu's Leave each carry one runtime listener (wired in code; no inspector call, so there is
+  no `{fileID: 0}` target left to break). Guest REMATCH then host PLAY AGAIN started a rematch with every stat empty on
+  both machines (step 5 by click). Guest pause menu > Leave mid-match: the guest landed on its menu in its own party
+  (1/4), the host kept YS2's Manta (AI-flown) and its score row to the end. Guest LEAVE LOBBY on the scoreboard: same,
+  and the host stayed on its scoreboard. Host MAIN MENU: back to Menu_Main in its party (three times).
+- **Different hulls (step 3) PASSED.** Brood Rush (the card allows seven hulls), host on a Dolphin, Player 2 on a
+  Squirrel; the match ended by itself. Both scoreboards listed both pilots with their hulls ("YS2 Jade Squirrel 3
+  Broods", "ys1 Jade Dolphin 0 Broods") and all three stat rows for both (host "ys1 33 · YS2 -", Player 2
+  "YS2 0 · ys1 33"). The "0" against "-" cosmetic is still there.
+- Still not run: step 4 by a person, step 6.
+**Fifth run, 2026-11-15** (`a1942abe89` compiled in the open editor, 0 errors; two-player Bloomrush to its timer, Player 2 idle):
+- Missing value reads zero **PASSED for Longest Drift and Max Boost**: neither pilot reported them, and both scoreboards
+  read "0.00s" for both pilots (host "ys1 0.00s · YS2 0.00s", Player 2 "YS2 0.00s · ys1 0.00s"), no "-" anywhere.
+  Prisms Damaged was not a missing value this time (Player 2's idle hull damaged 1 prism; both read "1" on both
+  machines), so its "0" case was not exercised. Read from the scoreboard's text, no screenshot. `VesselStatsSyncTests` not run.
+2. Solo, fly a Dolphin (or Manta, Rhino, Serpent, Swordfish) in any arcade mode and ram some prisms. **Pass:** the
+   scoreboard's Prisms Damaged is above 0, and Longest Drift / Max Boost show your values. The console no longer
+   warns "[TelemetryBootstrap] ... serialized stat SO refs will be null".
+3. Two players (editor + MPPM Player 2, or a dev build), different hulls, both ram prisms. **Pass:** both scoreboards
+   show the same stat block: "<you> N · <them> M" on each row, the same numbers on both machines, yours first.
+4. The numbers match what each pilot did (one ram is a handful, not one per ship in the arena: the old double count).
+5. Play Again: the block starts from 0 for both.
+6. A Sparrow or Squirrel match (Skim Race): their extra rows (blocks shot, clean streak...) show both pilots too.
+
+---
+
+### 🔴 B50: a rejoiner joins the running turn instead of landing on READY (`Ys-bleeding-edge`, 2026-11-10, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/PartySystem/BUGS.md` B50. `ServerPlayerVesselInitializer.TryReclaimSeat` sends the turn state
+with the seat (`SeatReclaimed_ClientRpc`: running, seconds in, rounds, turns); the client joins the running turn
+(`GameDataSO.JoinRunningTurn`: no countdown, no stat zeroing) and unpauses input; `MiniGameHUD` skips the intro and
+READY when the turn is already running; the host ignores a Ready press during a turn. Compiled with the editor's
+Roslyn and response files (0 errors). Not run: EditMode, a play.
+
+**Verify in editor:**
+1. The project compiles; EditMode `GameDataSOTests` passes, the three `JoinRunningTurn_*` included. **PASSED
+   2026-11-15** (Unity 6000.3.17f1 batch mode on `Ys-bleeding-edge` `8a306db1b1`: 0 compile errors, 41/41).
+
+**Run of 2026-11-15** (`Ys-bleeding-edge` `4b414df525`, the editor + MPPM Player 2, Switchback, driven by a session;
+Player 2 was dropped by shutting its Netcode client down mid-race, not by stopping its Play):
+- Steps 2-3 **PASSED** on what a log and a screenshot show: the host logged `clientLeft 1`, `leaverToAI`, then
+  `clientApproved 2 rejoin` and `seatReclaimed`; Player 2 logged `rejoinedRunningTurn 344.8s in`; Player 2 was back
+  in its old seat with the turn running, the vessel HUD up, no intro and no READY, and its stats as they were (Prisms
+  Damaged 210 before and after). Same `netConfig` hash on both. No "Double initialization" (B47) and no
+  `ArgumentNullException` (B46) on either console. **Not checked: input by hand.**
+- The race clock: Player 2 read about 2 s behind the host right after the rejoin and 6 s behind 90 s later, so the gap
+  is the two editors' own `Time.time` drifting apart while unfocused (both logged 3 s stalls), not the hand-off.
+- Step 4 **PASSED**: the host recorded one `readyGate` press for the whole match and no second countdown.
+- Step 5 **NOT RUN**: the race did not end by itself (Player 2's hull never finished the course).
+- Step 6 **OPEN, one thing to look at**: when the turn was ended from the host by raising the turn-end condition by
+  hand, the host went back to READY and Player 2 (the rejoiner) showed no READY button. That end was forced, so it is
+  not proof of a fault; a multi-turn mode needs the check (does a rejoiner get READY for the next turn?).
+**Second run, 2026-11-15** (`8b6d91b909`, the editor + MPPM Player 2, Brood Rush, host Dolphin, Player 2 Squirrel):
+- Step 3 **PASSED again**: drop, then REJOIN once the notice was shown; the host marked `seatReclaimed`, Player 2
+  marked `rejoinedRunningTurn`.
+- **Input after the rejoin: a state check, not a flight.** On Player 2 after `rejoinedRunningTurn`: its Player is the
+  local pilot and owner, `InputStatus.Paused` false, `NetIsAI` false, `IsInitializedAsAI` false, the vessel's
+  `AutoPilotEnabled` false; the host agrees (`NetIsAI` false, autopilot false). Nobody flew the ship: a person still
+  owes the flight.
+- Step 5 **PASSED**: the match ended by itself for both; Player 2 (the rejoiner) got the scoreboard with its row,
+  REMATCH and LEAVE LOBBY.
+- Step 6 **NOT RUN, cannot be run today**: no shipped mode has more than one turn or round. All 54 controllers in
+  `Assets/_Scenes/Multiplayer Scenes/*.unity` serialize `numberOfRounds: 1` and `numberOfTurnsPerRound: 1`, and every
+  controller that sets them in code sets 1. A rejoiner's READY between turns can only be checked once a mode has a
+  second turn.
+- Harness trap: the first REJOIN of this run was refused ("ys1's party is no longer available"). The script had
+  invoked `Rejoin` on a hidden notice whose `_rejoinVia` was a snapshot from an older session. Not a game fault (a
+  hidden notice has no button to press); the script now presses only a shown notice.
+2. Two players (main editor + MPPM Player 2, or the editor + a dev build), a party match of any arcade mode, both press
+   READY, the race starts. Drop Player 2 mid-race (stop its Play, or kill the build) and wait for "handed to the AI".
+3. Player 2 comes back and presses REJOIN. **Pass:** after the connecting panel, Player 2 is flying its old ship at
+   once: no intro, no READY button, the HUD shows its score as it was (not 0), the race timer reads the same as on
+   Player 1 (within a second), input works. The net log has `seatReclaimed` on the host and `rejoinedRunningTurn` on
+   Player 2.
+4. Player 1 sees no "ready" toast and no second countdown at any point.
+5. The match ends normally for both; the scoreboard has Player 2's whole score.
+6. Mode check, one each if time allows: a race (Skim Race or a Time mode: gate progress after the rejoin), a score mode
+   (Serpent), a multi-turn mode. Note anything that restarted from zero on Player 2 only.
+
+---
+
 ### 🔴 Kelpwood, the Angler's Charge game (GameModes 86) (`claude/sweet-wozniak-tk48pb`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/KELPWOOD.md`. An Angler hunt through a 0G ball of kelp (`SpawnableKelpwood`, four
@@ -1041,6 +1198,27 @@ NOT run: Unity, any EditMode test inside Unity, a play.
 7. Voyages: open the job board. **Pass:** each job names a crew person, and their faction type decides the work.
 8. Quit and relaunch online. **Pass:** the inventory is the same. The cloud record `ACCOUNT_INVENTORY` exists in the UGS dashboard.
 
+---
+
+### 🔴 Arcade Start refuses while no network host is running (`fix/party-offline-host-fallback` into `Ys-bleeding-edge`, 2026-11-08) — NOT EDITOR-VERIFIED
+
+**What landed:** `ArcadeGameConfigureModal.OnStartGameClicked` returns with a warning, without latching ready, when the
+modal has an `arcadeConfigSyncManager` and `NetworkManager.Singleton` is null or not listening. Ready-up is a ServerRpc
+round trip, so with no host the player sat on "Waiting for others..." for good. Taken from dbrutus's `30682778cd` on
+`prototype-level`. Its other half (entering the offline loopback host after a failed recovery) was NOT carried over:
+`OfflineSessionTests.Case4_OnlyTheBootGateEverEntersAnOfflineSession` forbids it, and B48 rebuilds a reaped session
+through the menu reload.
+
+**Verified without the editor:** `check_console_logging.py` 0 problems. NOT run: any compile (no .NET SDK in the
+session), any EditMode test, a play.
+
+**Verify in editor:**
+1. The project compiles; EditMode `OfflineSessionTests` all pass.
+2. In Menu_Main, open an Arcade card's Configure, stop the host (`NetworkManager.Singleton.Shutdown()` from a debug
+   hook, or drop the network until recovery fails), press Start: the button stays, one warning
+   "[ArcadeConfigModal] Start refused - no network host is running" logs, nothing latches.
+3. With a normal host, Start still readies up and launches.
+
 ### 🔴 Meerkat HUD gauges take the UI theme's tokens (`Ys-bleeding-edge`, 2026-11-06) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatHUDView` takes its gauge colours from `UIThemeSO` through `UITheme.Resolve`:
@@ -1206,6 +1384,107 @@ one was not permitted), so this C# is checked by eye only: one serialized `Sprit
    solid petal. Same on an arena card's launch screen.
 2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
 3. Console clean.
+
+### 🔴 Thresher AI: reads the Belfry's clock - leads the swinging ring, ducks danger maces (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** `ThresherBelfryAI` (`ThresherTime/AI/`): an arrival-time solve aims an AI Thresher where a swinging
+ring will be when it gets there (latched close in, fading to the gate far out; planted, it leads for the straight 4.8x
+launch), and an emergency steer ducks it under a danger mace whose head will be on its path. An adversarial review
+(34 agents) confirmed 8 defects before commit, all fixed (the worst: a launch led for the orbit's speed threaded 6/32 at
+I4). Serialized on the controller (`belfryAILead`, `belfryAIDuck`, ...). The soak
+gains `-ttSoakBelfryAI 0|1`, `ducks` and `belfryBroken`. `check_ai_no_state_writes.py` now walks `ThresherTime/AI`
+(proved: a planted `s.Speed = 1f` there fails it). Plan step: time-arcade.
+
+**Raced (2026-11-07):** the A/B soak ran in batch Unity (so the real editor compiled it): every race finished in both arms;
+median AI-off -> AI-on I1 96.5 -> 88.8 s, I2 126.5 -> 119.8 s, I3 146.3 -> 148.0 s, I4 215.7 -> 217.8 s (mean
+245.6 -> 202.8 s); 23 ducks at I4, Belfry prisms broken 980 -> 886 (`THRESHERTIME.md` §0a). Steps 2 and 3 below are done;
+the EditMode tests (step 1), the watched race and the profiler are not.
+
+**Verified:** the changed and new files compile with Unity's own Roslyn (`Editor/Data/DotNetSdkRoslyn/csc.dll`,
+LangVersion 9, the project's 142 define symbols) against the project's built assemblies, runtime and tests, 0 errors.
+The open editor could NOT recompile (a Multiplayer Play Mode session was running; `unity recompile` answered
+"up_to_date" with the 04:05 assemblies). The flier thresholds were measured offline by a Python twin. NOT run: the
+EditMode tests, any race.
+
+**Verify in editor:**
+1. EditMode: `ThresherBelfryAITests` (14 tests) and `ThresherBelfryTests` pass.
+2. Soak A/B, same seeds: `-ttSoak "1,2,3,4:6" -ttSoakBelfryAI 0 -ttSoakTag before` then `-ttSoakBelfryAI 1 -ttSoakTag
+   after`. Expected: every race finishes; I1 no slower; I3-I4 faster, with fewer `offRingMedian` misses; `ducks` > 0 at
+   I3-I4 and 0 at I1-I2; `belfryBroken` lower.
+3. Watch one I4 race (the soak without `-batchmode`): AI Threshers meet the swinging rings and dip under the maces.
+4. Profiler: `ThresherTime.BelfryAI` stays well under 0.05 ms a frame.
+
+### 🔴 Thresher Time: the Belfry, a clockwork course (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** every ring swings on a chain across the flight line (faster and wider each intensity); maces swing
+across the straights from I2 (danger heads from I3, two opposed a straight at I4); danger shutters slide across every
+mouth at I4. All closed form on the server clock (`ThresherBelfry`, `ThresherTimeController.TickBelfry`). The ring is
+still the gate: thread its live mouth, the next one lime, the arrow follows it. `THRESHERTIME.md` §0a.
+
+**Verified:** the open editor compiled it (`unity recompile`, 0 errors, 0 warnings; `ThresherBelfry` and
+`ThresherBelfryTests` are in the built assemblies); `author_thresher_time_assets.py --check` OK. NOT run:
+`ThresherBelfryTests` (the CLI cannot run tests in an open editor), any race, any frame-time measure.
+
+**Verify in editor:**
+1. EditMode: `ThresherBelfryTests` and `ThresherTimeCourseTests` pass.
+2. Thresher Time I1: each ring hangs on a chain and swings gently; your next one is lime and the arrow tracks it as it
+   moves; fly through it and it counts.
+3. I2: a plain mace swings across every other straight; I3 every straight, with a danger head (it debuffs).
+4. I4: two maces a straight swinging against each other, and two danger bars sliding across each ring; there is always
+   a gap between the bars.
+5. Break a chain link or a mace spike: it grows back about 6 s later, where that part now is, without popping in.
+6. Two machines (MPPM): the rings and maces swing in the same place on both.
+7. Frame time at I4 (about 450 moving prisms): `ThresherTime.Belfry` in the profiler.
+8. AI Threshers finish at every intensity (expected slower at I3-I4: they do not lead the ring or dodge maces yet).
+
+### 🔴 Thresher Time: the rings are the gates again, nests off (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** Yash: "on passing through rings, doesn't register ... I dont wanna break anything in here, just pass
+through waypoints". `ThresherTimeController.nestsAtGates` (authored 0) skips the nests, so the rings show and count as
+before 2026-11-04, the next one lime. The card and preview text say so. The places (plants and creatures) stay.
+
+**Verified:** `unity recompile` in the open editor, 0 errors and 0 warnings; `author_thresher_time_assets.py --check` OK.
+
+**Verify in editor:**
+1. Thresher Time at any intensity: every ring shows, your next one lime, and no blue nests stand in them.
+2. Fly through a ring: it counts (the objective arrow moves on, the lap counter climbs) without breaking anything.
+
+### 🔴 B48: a reaped party session now rebuilds through the menu reload, not in place (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** when UGS reports this machine's party session gone (`auto-recovering to solo session`),
+`HostConnectionService.HandleDefiniteSessionGoneAsync` now runs `PartyInviteController.RecoverFromSessionGoneAsync`
+(destroy player and vessel, reset runtime data, leave, shut down, reload Menu_Main, then the solo session) instead of
+restarting the host in place. In place, the menu's spawner never found the new host Player
+(`FindUnprocessedPlayerByOwnerClientId(0) returned NULL`), and a match launched next seated the pilot on the wrong
+domain. `Docs/PartySystem/BUGS.md` B48. Affects: the party layer (Shombith's backend area; Yash's party hardening).
+
+**Verified:** the open editor compiled it through `unity recompile` (0 errors, 0 warnings). Read-checked: `LeavePartySessionAsync` skips a null
+session, and every refresh path stands down while `PartyInviteController.IsTransitioning`.
+
+**Verify (live UGS, the owner's go-ahead):**
+1. Play in the editor and sit in Menu_Main until the log shows `Party session gone server-side ... auto-recovering to
+   solo session` (B33's carry-over usually triggers it about 30 s into a second Play without a domain reload).
+2. Expected now: Menu_Main reloads once, you land on Home with one vessel, and NO `FindUnprocessedPlayerByOwnerClientId(0)
+   returned NULL` follows.
+3. Open Thresher Time, pick Jade, place AIs on Ruby and Gold, launch: the scoreboard shows three columns, you on Jade.
+4. Negative control: the same steps on the commit before this one show the NULL line, and the wrong-domain scoreboard
+   when it reproduces.
+
+### 🔴 Thresher Time: your next nest is ringed in lime (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the local pilot's next gate shows its ring again round its nest, in the gate races' lime "yours
+next" colour. It blooms in over 0.35 s (`nextTargetBloomSeconds`) and the old one withers out; every other ring stays
+hidden. `RaceGateRing.SetVisualShown` is new (bloom in, or wither and hide; the latest call wins). The card text and
+the preview objective now say "the nest ringed in lime". `THRESHERTIME.md` §0.
+
+**Verified without the editor:** `author_thresher_time_assets.py --check` passes. NOT verified: the C# compile (the open editor's `unity recompile` timed out after 540 s without a result; its console showed no compile errors, which proves nothing) and `unity_refcompile` (Linux-only on this machine).
+
+**Verify in editor:**
+1. Thresher Time at any intensity: one lime ring stands round one nest, the one the objective arrow points to. No
+   other ring shows.
+2. Break that nest and fly through: the ring withers, and the next nest's ring blooms in lime.
+3. At I4 the lime ring clears the nest's danger halo, and you can read it from across the cell.
+4. Finish the race: no lime ring is left standing.
 
 ### 🔴 Thresher Time: each intensity its own place, plants and creatures grown by the cell (`Ys-bleeding-edge`, 2026-11-04) — NOT EDITOR-VERIFIED
 
@@ -22486,20 +22765,78 @@ colour sets.
    prism, trail and HUD colour be told from every other's, and do danger (Fire) and the free pickup (Lime) still read?
    The sets were measured before bloom and ACES.
 
-## 🟡 Our own SOAP replaces the Obvious plugin (2026-11-06, Yash, COMPILED AND EDITMODE-TESTED IN EDITOR, NOT PLAYED)
+## ✅ No save prompt before every Play; scene cameras untouched after Play (2026-11-07, Yash, VERIFIED IN EDITOR)
 
-Branch `Ys-bleeding-edge`; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP. `Assets/Plugins/Obvious` is gone; `Assets/Plugins/CosmicShoreSoap/`
-keeps the plugin's script GUIDs and field names, so no scene, prefab or SOAP asset changed. Compiled in the open editor and
-`SoapCoreTests` / `SoapFormatTests` pass there; nothing has been played.
+`SceneBootstrapper` asks "Scene(s) Have Been Modified" only when it must switch to Bootstrap; `CameraAspectFit` fits
+cameras only while playing. Why (measured with `ObjectChangeEvents` and a `sceneDirtied` stack trace): Cinemachine's
+Save During Play (per-user preference) registers an undo on every virtual camera at each Play exit, dirtying Bootstrap
+with no change, and `CameraAspectFit`'s render hook outlived Stop (domain reload off) and rewrote the four Bootstrap
+cameras to a physical 36 x 20.25 lens in edit mode. Compiled in the open editor (0 errors); `unity_refcompile` and
+`gates.sh` not run (Windows).
+- [x] Save During Play off: Play from a clean Bootstrap to Menu_Main and Stop. Scene stays clean; cameras keep focal 50, not physical.
+- [x] Save During Play on: Play and Stop leaves Bootstrap dirty (Cinemachine); the next Play starts with no prompt.
+- [x] A two-editor party session (MPPM) and Stop: Bootstrap clean, cameras untouched.
+- [ ] Play from Menu_Main (not Bootstrap) with an unsaved edit: the prompt still appears, and Save / Don't Save / Cancel each behave.
 
-1. **Boot from Bootstrap into Menu_Main.** Sign-in, the boot status and the menu screens come up as before; the console has no
+## ✅ Our own SOAP replaces the Obvious plugin (2026-11-06, Yash, EDITOR-TESTED AND PLAYED, ALL STEPS DONE 2026-11-07)
+
+Branch `Ys-bleeding-edge`, commit `7437d4210d`, PR froglet-studio/Cosmic-Shore#1771; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP.
+`Assets/Plugins/Obvious` is gone; `Assets/Plugins/CosmicShoreSoap/` keeps the plugin's script GUIDs and field names, so no
+scene, prefab or SOAP asset changed. Compiled in the open editor (6000.3.17f1); `SoapCoreTests` / `SoapFormatTests` 11/11; the
+full EditMode suite 5145/5179 with none of the 34 failures in SOAP code. Steps 1, 2 and 5 are done: Play from Bootstrap to
+Menu_Main (0 errors, no `_SO_Assets` change after Stop) and Yash's 9 Regatta races and Thresher Time on 2026-11-07 (the
+bug-ledger report from them has no SOAP error). `unity_refcompile`, `gates.sh` and the Amoebius build were not run (Windows,
+no .NET 10 SDK). The refcompile output folder kept the deleted plugin's `Obvious.Soap.rsp`, which failed
+`check_generated_assets.py`'s schema step on a reused tree; that gate now skips an `.rsp` whose sources are gone.
+
+1. [x] **Boot from Bootstrap into Menu_Main.** Sign-in, the boot status and the menu screens come up as before; the console has no
    `MissingReferenceException`, "missing script" or `NullReferenceException` from a listener.
-2. **Launch an arcade game and play it to the end.** HUD, boost, scoreboard and toasts update; the end screen appears and the
+2. [x] **Launch an arcade game and play it to the end.** HUD, boost, scoreboard and toasts update; the end screen appears and the
    return to the menu works.
-3. **Open Settings and move the music, SFX and haptics sliders.** They change the sound and stay where you left them.
-4. **Invite a friend to a party (two editors or a build).** The invite toast, the party slots and the Friends lists update.
-5. **Stop Play, then check `git status`.** None of `Assets/_SO_Assets/Game Data/Runtime …Selected….asset` shows as changed:
+3. [x] **Open Settings and move the music and SFX sliders.** They change the sound and stay where you left them. (2026-11-07,
+   driven in Play: the panel's injected app-state variable read the menu and left the sliders unlocked; 0.30 / 0.45 reached
+   `GameSetting`, PlayerPrefs, the 30 / 45 readouts and `AudioSystem` (0.06 / 0.09); a close and reopen kept them; restored to
+   1 / 1 / 1; 0 console errors. There is no haptics slider: `SettingsView.prefab` leaves `hapticsSlider` empty and has since
+   before this change, so haptics is its on/off toggle only.)
+4. [x] **Invite a friend to a party (two editors or a build).** The invite toast, the party slots and the Friends lists update.
+   (2026-11-07, main editor + MPPM Player 2: invite, toast, accept, 2/4 slots on both, leave back to solo; no party or SOAP
+   error. `Docs/PartySystem/MPPM_SESSION_LOG.md` Session 8.)
+5. [x] **Stop Play, then check `git status`.** None of `Assets/_SO_Assets/Game Data/Runtime …Selected….asset` shows as changed:
    values set while playing no longer reach the asset.
+
+## 🟡 Stoat: the trampoline's shell halved, 60 → 30 u (2026-11-07, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "The smaller shell". `StoatSlingConfig`:
+trampolineRadius 30, trampolineAiTurnScale 55, aiSlingMinTurnDegrees 50 (and its Slingshot copy); a hard core in
+`StoatSlingMath.TrampolineStep`.
+- [ ] Press RT in Slingshot: the dotted ball is half the size it was; grazing it turns you gently (about 20-30 deg), not a big swing.
+- [ ] Fly straight into it, fast: you are sent straight back, never through it.
+- [ ] Slingshot I1-I4: AI Stoats finish (model: 133-145 s, 0-3 rings missed a race; they bounce rarely).
+
+## 🔴 Party recovery: a requested Stop ends the flow (B38 again, E-0de9ec6c70) (2026-11-06, Yash, NOT RUN IN EDITOR)
+`PartyInviteController.IsPlaying` defaults to `UnityIsPlaying()`, which in the editor reads a requested Stop
+(`EditorApplication.isPlayingOrWillChangePlaymode` false) as Play ended; `PartyRecoveryAfterPlayTests` gains
+`UnityFlag_IsOff_InEditMode`. Why: `Docs/PartySystem/BUGS.md` B38 ("Again, 2026-11-06"). Commit `93765d6aa8`.
+Verified: `unity_refcompile` (0 project errors), `check_conditional_compilation.py`, `/ship` gates (all OK but
+`generated_assets`, which fails the same way without this change: its schema tool still reads the removed Obvious
+SOAP plugin). No Unity editor here: no compile in Unity, the EditMode test is unrun.
+- [ ] The project compiles; EditMode `PartyRecoveryAfterPlayTests` (4) pass.
+- [ ] Two machines: the joiner stops Play while "Bouncing to solo menu" (or right after a host drop) is on screen. No `Recovery failed` error in the console after Play stops.
+
+## Flight recordings name their build; the Stoat learns from trampoline races only (2026-11-07) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scripts/Controller/AI/SkimRace/HumanFlightRecorder.cs` (`AppendBuild`: `"gitCommitHash"` and
+`"gitBranch"` of the editor's checkout, read once a session, editor only), `Tools/Build/learn_drives_from_flights.py`
+(`KIT_SINCE`, `JUDGED_KIT`, `on_current_kit`, `yaw_off_nose`, the per-flight press gaps in `measure_stoat`). Yash asked
+for the Slingshot learner to learn from trampoline races only (8abe1fe83b). A flight's date could not say which kit it
+raced (the trampoline reached bleeding-edge two days after it was committed), so the learner now checks the race's
+build. `/verify-unity` did not run: no editor in the session. The reference compile passes (player and editor, 0 errors
+in project code), and so do `learn_drives_from_flights.py --self-test` (with a negative control for the press gaps:
+-15 s pooled across flights before, 5 s now) and `ai_learn.py --self-test`.
+
+1. Fly any race in the editor (Slingshot with the Stoat, for example) and finish or leave it. **Pass:** the new
+   `flight_*.json` has `"gitCommitHash":"<10 hex>"` and `"gitBranch":"<your branch>"` after `courseIntensity`/`funType`,
+   matching `git rev-parse --short=10 HEAD`, and the console shows no error and no hitch at race end.
+2. In a player build (dev build), finish a race. **Pass:** the flight has no `gitCommitHash` field and no error.
 
 ## 🔴 Brittle Star Time: four movement rungs (2026-11-06, Shombith, NOT RUN IN EDITOR)
 
@@ -23269,6 +23606,76 @@ control during the guide. Restored; `unity_refcompile` only, not run in the edit
 3. With the mouse only (no key pressed), no focus ring appears on the spotlit control.
 4. Settings still opens from Home while the guide runs, and SKIP (bottom right) still ends the tutorial.
 
+## 🔴 Waystation's Lantern Towers, the Tiger Moth's Time game (2026-11-11, Yash, NOT COMPILED BY UNITY, NOT RUN IN EDITOR)
+
+Branch `claude/tigermoth-time-upgrade-4dda34` (pushed to `Ys-bleeding-edge`). Docs: `Assets/_Scripts/Controller/Arcade/WAYSTATION.md`
+"Lantern Towers", `Docs/Studios/TIGER_MOTH_TIME.md` §6. Unity was not imported or run (ten sessions share this machine,
+2026-11-11), and `unity_refcompile` does not run on Windows. Ran here: `waystation_tower_course.py --check` (200 seeds x 4,
+16 checks), `--self-test`, `--compile` (the shipped `WaystationTower.cs` + `WaystationHopPlan.cs` built with dotnet and
+compared with the model: rings, lantern posts, shelves, far edges, AI targets, crown gems), `--sweep`;
+`waystation_tower_harness/run_tests.sh --self-test` (the shipped `WaystationTowerTests` and `WaystationHopPlanTests`
+compiled with Roslyn against a Unity math stub: 22 pass, 8 source mutations each turn a test red);
+`author_waystation_assets.py --check`; `check_console_logging.py`; `check_conditional_compilation.py`. The controller
+partials (`WaystationController.cs`, `WaystationController.Feedback.cs`) reach Netcode and the gameplay assemblies and
+have NOT been type-checked.
+
+1. **Compile, then run `WaystationTowerTests` and `WaystationHopPlanTests`** (EditMode). Expect 22 green.
+2. **I1 race with AI backfill**: lantern posts (two dotted Blue columns either side of a hop's drop line) stand on the
+   towers with more than one hop. Drop between them: a landing at their foot lights them in your colour for a second.
+   Is the light visible from the chase camera and through the drop camera?
+3. **I2**: some hops' lanterns are visibly SHORT. Land past a short hop's lanterns: you should reach the next ring
+   before the Drop is back and miss it. Land at their foot: the Drop is back exactly as you pass over the next ring.
+4. **Streak**: three deep landings in a row light the whole tower (six and ten again, brighter). A short or missed hop
+   ends it. All sound slots are empty (`hopDeepEvent` ... `crownGemEvent`): silence is expected.
+5. **I4**: a Time crystal hangs on each tower's last plunge. Land a little short of the deepest landing and you fly
+   through it (+1 Time); land at the deepest and you skip it. It grows back after 5 s.
+6. **AI at I1-I4**: the four AI Tiger Moths drop through the towers (not around them), differ from one another, and
+   FINISH. Watch one that overshoots a press point: it should turn round and drop on the way back, not fly away.
+   Write each rung's finish times here (the model's median is in WAYSTATION.md "Measured").
+7. **The dust and the walls**: a tile the dust steals keeps standing in the thief's colour; no second Blue tile is
+   laid on top of it. Walls and lanterns regrow one piece per 1.5 s.
+8. **Phones**: frame rate at I4 (up to ~2,000 wall tiles and ~130 lantern segments a course).
+
+## 🟡 Stoat: the swing - a small black hole, the stick picks the angle (2026-11-11, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "The swing". `StoatSlingConfig`: swing on (ahead 150,
+side 35, horizon 0.8, reach 55, catch 40 deg, 15-90 deg, 150 deg/s, 4 s), trampoline 0, aiSlingMinTurnDegrees 50 -> 20 (the
+hull's; Slingshot's copy keeps Garrett's trained rows).
+- [ ] EditMode `StoatSlingTests` and `StoatSkimTests`: all pass, the seven new Swing* tests included.
+- [ ] Press RT in Slingshot: a small black hole appears ahead-right (no white hole), a faint ring round it and a dotted line from your nose.
+- [ ] Move the stick: the dotted line swings between a slight and a right-angle turn; stick toward the hole = the sharpest.
+- [ ] Fly past it: you curve round it to the line and are flung on with a kick; no pull toward it, no orbit.
+- [ ] Let go of RT halfway round: you are flung at once. Fly past it without turning: it collapses (the Charge ripple), nothing happens to you.
+- [ ] Slingshot I1-I4: AI Stoats finish (model: 61-76 s on Slingshot's trained rows).
+
+## 🔴 Grizzly Time: the powder kegs (2026-11-11, Yash, NOT COMPILED IN UNITY, NOT PLAYED)
+
+`GameModes.GrizzlyTime = 63`. A keg beside every ring (`GrizzlyTimeKegs`, `GrizzlyTimeController.Kegs.cs`); spec
+`Docs/GrizzlyTime/POWDER_KEGS_SPEC.md`, doc `GRIZZLYTIME.md` §0. Ran: `Tools/Build/grizzly_time_course_harness/run.sh`
+(the shipped course and keg code plus `GrizzlyTimeCourseTests` and `GrizzlyTimeKegsTests`, compiled with Roslyn and run
+over 400 seeds x I1-I4; `--self-test` negative controls), `author_grizzly_time_assets.py --check`. Not run: Unity (a
+compile of the controller partial, which the harness does not build), `unity_refcompile` (cannot run on this Windows box).
+
+1. **Compile**, then run the EditMode tests `GrizzlyTimeKegsTests` and `GrizzlyTimeCourseTests`.
+2. **Grizzly Time, I1, two players.** A keg (3 blue cubes in a ring of 12 slabs) stands about 140 u to the inside of
+   every ring. Freeze a full bomb by one and blow it: the keg bursts, the gate clears (the lime ring moves on), and the
+   blast throws you away from the bomb. Threading the ring mouth still clears the gate. The hint toast shows once.
+3. **Regrow.** An opened keg grows back as a live ribbon about 3 s later, never on top of a hull.
+4. **I2 bank shot.** A rail of 6 chalk dots marks each keg's exit lane, on the corner's inside. Blow a keg from its far
+   side (keg between you and the next ring): you are thrown down the lane and "Bank shot (1)" shows; a straight blow
+   throws you wide and shows nothing. Fly the ring-to-ring line: you never hit a chalk dot.
+5. **I3 shielded cores.** The first blast only strips the core's shield (no burst); a second opens it. Leave a stripped
+   keg alone: it shields itself again about 2.5 s later. Confirm a Grizzly blast damages these Blue `GrizzlyTimeKeg`
+   prisms at all (the spec's reading of `PrismSpatialIndex`, unverified).
+6. **Silence.** A rival's blast that catches you silences you for 8 s; your blasts then do not open kegs, and the ring
+   mouths still work.
+7. **AI, every seat, I1-I4.** AI Grizzlies pass beside I1-I2 kegs and open most of them, take open kegs, thread the
+   mouths at I3-I4, and finish every level. An AI stuck at one ring for 18 s is steered back to it.
+8. **Two clients (MPPM).** Both see the same kegs and chalk; a keg one client opens opens on the other; a gate is
+   credited once.
+9. **Feedback and cost.** A crown of debris bursts off each ring you clear; the burst doubles in speed on your final
+   lap. On a phone-class device the bursts and regrow cost no visible hitch. The four sound slots are empty (by design).
+10. **Kegs off.** Untick `kegsAtGates` on the scene's controller: the race is rings only, as before.
+
 ## 🔴 The colour trace: every colour the game draws comes from the worn colour set (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/nifty-cray-41hy43`. Docs/VesselModels/COLOR_TRACE.md. Every colour authored outside the palette blocks is
@@ -23527,6 +23934,18 @@ against Unity reference assemblies (`unity_refcompile`), not opened in the edito
 3. **The story** reads as three short paragraphs with a blank line between, inside the panel, on every pilot.
 4. **A voyage's jobs** for a starter come from the painted faction (VOLT: a Merchant's courier and convoy work).
 
+## 🔴 An Ark heals only inside a nucleus its domain holds (2026-11-16, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/project-thread-wlkcla`; `Docs/VesselModels/ArkReverse.md` (the reactor), `Ark.InOwnNucleus`,
+`ArkReactor.MayRegrowIn`, `Ark.RegrowOverride` (the escort's stricter test). Compiled against Unity reference assemblies
+(editor, changed files clean), not opened in the editor; `ArkModelTests` not run.
+
+1. **Run the EditMode tests** `ArkModelTests` (new: `Reactor_RegrowsOnlyInsideANucleusTheArksDomainHolds`).
+2. **Arkway (Wander, With Ark)**: graze the Ark's hull out in a cell and watch it NOT regrow; fly it into a nucleus its
+   domain holds and watch the reactor glow and the hull grow back, one prism every 2 s. A cell with no nucleus never heals it.
+3. **Ark escort voyage**: unchanged. It heals only in a held nucleus, by the escort's own test, and after the run ends
+   the Ark is back on the fleet rule.
+
 ## 🔴 Both thumbs off pulls both triggers and steers by gyro (2026-11-14, Garrett, NOT OPENED IN EDITOR)
 
 Branch `claude/project-thread-wlkcla`; `Docs/claude/ARCHITECTURE_CORE.md` § Input Strategy (the touch profile line),
@@ -23724,6 +24143,73 @@ is kept, so no prefab or asset reference changes. Compiled against the Unity ref
 2. Fly the Swordfish in the Toybox: swipe, energize, afterimages, combos and the Surge ring all work as before.
 3. The Rhino and the Jacks fly as before (they share only `RhinoAnimation` and `RhinoAIBoostPolicy`, which keep their names).
 
+## 🔴 Voyages: the HyperSea's cells as an uneven wet Kelvin foam on the galaxy map (2026-11-13, Shombith's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-ev7zfw`, into `voyages`. `HyperSeaCells` packs the cells as the Voyage Board does
+(`Docs/Voyages/VOYAGE_BOARD.md` §4d): a jittered BCC lattice with uneven power cells and knots of small cells, wet
+rounded outlines, the nucleus at each cell's middle at its own size and in the game's white caged look. The maths was
+run under .NET against `cells_golden.js` (0 differences); `unity_refcompile` (player and editor): 0 errors in changed
+files. `colour_trace.py --check` ok. No Unity editor ran and `HyperSeaCellsTests` did not run in Unity.
+
+1. Run `HyperSeaCellsTests` in the Test Runner: all pass.
+2. Open the Voyages tab's galaxy map and zoom in until cells show: rounded cells of uneven sizes with a pale liquid
+   between them, no square slivers, each cell darker at its wall and brighter round its nucleus.
+3. Zoom further: the nuclei are white caged spheres with a deep-blue edge, sitting in their cells (none on a wall), and
+   small cells have small nuclei. The cell tags (Nucleus, Cytoplasm, Membrane) sit on the cell nearest the centre.
+4. Tap open water: the cell under the tap is outlined along its rounded wall; a second tap closes it.
+5. The edge strip under the map shows the same foam cut upright.
+6. Wear another colour set (Nocturne, Nacre): the nuclei's blues follow it.
+
+## 🔴 Quests window: its own screen, Rev 107 D (2026-11-13, Shombith's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-ytvai5`, `Docs/MENU_REDESIGN_B.md` section 200. Compiled with `Tools/Build/unity_refcompile`
+only. No Unity editor ran.
+
+1. Menu_Main starts with no errors; the Quests window is not visible until opened.
+2. Home's quest card opens the Quests window (not the Voyage window). Back and gamepad B close it.
+3. The route shows five pictures over five stations, names and states under them, the course solid up to the open
+   quest and dotted after it. Pressing a station shows its goals and reward below.
+4. A quest ready to claim: Claim claims it, the next station lights and its stretch draws in.
+5. An open quest: Play quest opens the Arcade.
+6. The reward column names the colour set and shows four prisms in its colours; wearing another set from the Profile
+   recolours the window.
+7. The Voyage window has no Quests tab; Voyages, Saga and Episodes still switch.
+
+## 🔴 Saga and Episodes locked at the foot of the Voyages page (Rev 103 A) (2026-11-14, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-z6k09o` (PR into `voyages`). Board: Frogma, Voyages tab, Rev 103 A (narrowed). The changed
+files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files; the 30 it
+reports are in multiplayer and camera files this change does not touch). `author_voyage_assets.py --check` and the
+`/ship` gates pass. No Unity editor ran.
+
+1. Menu_Main, open the Voyage window. The tab row shows no Saga and no Episodes tab (Quests too once its own screen lands).
+2. At the foot of the Voyages page: two cards, 520 wide each, centred, 24 apart: the Saga card with Tandava's card art
+   dimmed, "SAGA", "Tandava and The Severing", a lock top right, "COMING SOON"; the Episodes card the same with the
+   galaxy picture and "Episode 2".
+3. Press the Saga card: its line reads "Not open yet. Voyages are open now."; nothing opens. Press again: "Coming soon".
+4. The voyage list, the map and the right panel stand above the strip, none of them covered by it.
+5. Configure / go to the squad screen: the strip is gone and the map fills the page; back to the voyage screen, it returns.
+6. Wear another colour set: the cards repaint with it.
+
+## 🔴 Voyages: galaxy at Sector and Region, Galaxy view on open, one-line Saga strip, sharp route map, Ark seats (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-hllqh5` (PR into `voyages`). Record: `Docs/MENU_REDESIGN_B.md` section 205.3. The changed
+files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files; the 30 it
+reports are in multiplayer and camera files this change does not touch). No Unity editor ran.
+
+1. Menu_Main, open the Voyage window: the table shows the whole galaxy (Galaxy underlined in the zoom row).
+2. Zoom to Arm, Sector and Region with the zoom row, the wheel and a drag: the galaxy's water, stars and pins show at every
+   step (before, the whole map vanished at Sector and Region). No "Mesh can not have more than 65000 vertices" in the Console.
+3. Pick a voyage, close the window and open it again: it opens at Galaxy view again.
+4. At the page's foot: two single-line strips, 600 x 44: lock, SAGA, "Tandava and The Severing", COMING SOON; the same for
+   Episodes. Press one: the name reads "Not open yet. Voyages are open now."; press again: the name is back.
+5. Open voyage: the map on the voyage page is sharp (the course's water, not a blur of a few texels).
+6. Set sail through to the Ark page: every seat card has a soft blue glow on its edges, yours brighter. Seats that are not
+   yours show an "AI" tag and "AI wingmate" (or "AI flies for <name> until they join" for a squad member not in your lobby);
+   no card says "Open seat". "Fly a squad instead" / "Fly without a squad" switches between the two.
+7. With two friends in your party: the Ark page shows you and both friends, no AI; set sail: three players and no AI
+   wingmates. With one friend: you, the friend and one AI; set sail: one AI wingmate.
+
 ## Scarab Rally I4: the next ring stays in sight (2026-11-14, `claude/project-thread-v8enx0`)
 
 Not run in a Unity editor. Headless: `switchback_sim_harness/run.sh tests` 78 passed (the new sight-line test failed
@@ -23741,6 +24227,93 @@ Legendary pace (8 seeds) moved by under 5 s a race (I1 62 -> 58, I2 101 -> 102, 
 2. Take a key facing the ring: the blast opens the door behind it.
 3. I4: both doors sit behind the ring (8 u and 24 u). The gauntlet tunnels still hide the ring on about half the legs.
 4. AI seats still blast most blocked gates and do not stall on a door.
+
+## 🔴 A leaver's hull flies the gates in a gate race (Switchback, 2026-11-15) — NOT COMPILED, NOT EDITOR-VERIFIED
+
+Not compiled: the editor was in use by the multiplayer testing session. Files: `ServerPlayerVesselInitializer.cs`
+(`ConvertPlayerToAI` now arms the mode's AI steering, `IAIPilotArming`), `PilotControl.cs` (refuses a remote pilot's hull).
+
+1. Compile; run the EditMode tests.
+2. Editor host + MPPM Player 2, Switchback, both on Dolphins, no AI rivals (`gameData.ConfigurePlayerCounts(2, 2)`).
+   After the countdown, close Player 2 (or deactivate it in the MPPM window).
+   **Expect:** the "handed to the AI" toast, then Player 2's hull flies gate to gate (its gate count climbs; with the
+   Third Eye its objective reads Approach / Through, never only the cell centre) and finishes or keeps progressing.
+   Before: it circled through the cell centre and stayed at its gate count.
+3. Same match, Player 2 rejoins: its hull is its own again and its own flying threads gates.
+4. From the host, `PilotControl.TrySetAIFlies(player2, true, gameData, out refusal)` while Player 2 is connected.
+   **Expect:** false, refusal says the hull is flown on their machine. The host's own hull still hands over as before.
+5. Still open, not explained by reading: the host's own handed-over hull took over 6 minutes and damaged 425 prisms in
+   the two-human match (21 of 26 in 2:00 solo). Re-time it once Player 2's hull is no longer wandering the course.
+
+**Run of 2026-11-15** (`9a851bf91b` compiled in the editor, 0 errors; editor + MPPM Player 2, driven by a session):
+- Step 1: compiled. EditMode tests **not run** for this change.
+- Step 2 **PASSED on its outcome**: Player 2 left 36 s into the race (`party leave`); the race then ended by itself, the
+  host's hull at 26 gates in 2:46, and the leaver's hull scored (166) where before it stayed at 2 gates and the race
+  never ended. Its gate count was not read gate by gate and nobody watched it fly.
+- Step 3 **PASSED as a state check (second run, 2026-11-15, `1d1391ae40`)**: two-player Switchback on Dolphins, the
+  host's hull handed to the AI, Player 2 dropped; the host showed YS2's hull AI-flown (`NetIsAI` true, autopilot on).
+  Player 2 pressed REJOIN: it was back in its seat with the turn running and no READY button; on both machines YS2
+  was then `NetIsAI` false, autopilot off, input not paused. The race ended by itself when the host's hull finished
+  (26 gates, 2:16); both scoreboards listed both pilots (YS2 3 gates). Nobody flew Player 2's hull after the rejoin,
+  so "its own flying threads gates" still needs a person.
+- Step 4 **PASSED**: the host's call returned false with "ys1's hull is flown on their machine: the host's AI cannot
+  steer it"; the host's own hull handed over as before.
+- Step 5: the host's hull took 2:46 this time, not 6 minutes, so the slow run went with Player 2's wandering hull.
+- `1167a0a2f9` (FunCard): compiled, and no `get_isBatchMode` error in a full Play and stop afterwards (82 before).
+
+## 🔴 Thornline upgrade: the honest line (2026-11-17, `claude/shrike-time-upgrade-5c12f0`, NOT COMPILED BY UNITY, NOT RUN IN EDITOR)
+
+Docs/Thornline/UPGRADE_SPEC.md; Assets/_Scripts/Controller/Arcade/THORNLINE.md §7 is the full list. Affects: Garrett's
+Shrike / Thornline. **What ran:** the course and AI plan C# compiled and tested with Roslyn outside Unity
+(`bash Tools/Build/thornline_course_harness/run.sh --self-test`: 20 EditMode tests, 11 course controls, the AI race
+replica and 3 AI controls), `author_thornline_assets.py --check`, and the static gates. **What did not:** a Unity
+compile of `ThornlineController.cs`, `.AI.cs` and `.Feedback.cs` (`unity_refcompile` does not run on this Windows box;
+an independent review read them against the declarations instead: no compile error found; six logic bugs in the local feedback fixed - the snipe call, the sight at the gun, crystal-taker attribution, pass calls on ties, a toast tint, the 423 scope - and spawn poses now wait for the cell), and anything in the editor.
+
+- [ ] Unity compiles the three controller files; open `MinigameThornline` once and save; `author_thornline_assets.py --check`.
+- [ ] Pilots spawn on the seat cone facing the start thorn and the first sling reaches it (I1-I4).
+- [ ] The sight sits on the next thorn's face, grows while reloading, turns Lime when ready; a press inside it anchors at I4 from 1,000 u, a press on the drawn edge outside it does not.
+- [ ] I2: a sling through a rim crystal takes it (25 Hz tunnelling risk) and the next sling is ready on docking.
+- [ ] Four AI Shrikes (one per difficulty) finish I1 and I4, Legendary first, Easy last; note seconds in Space mode (lancing trails), Charge mode, and any stranded detach.
+- [ ] A lanced plain thorn regrows 3 s after the hull leaves its box, even with the hull hanging where its face was.
+- [ ] Toasts 420-426 read right; the nine sound slots are empty; a rival's thorn glows in their colour.
+- [ ] MPPM: thorns, crystals and seats agree on both peers; the sight and glow are local only.
+
+## 🔴 Brittle Star Time: the Shift Line - let-go gates, race coach, heat, laps per rung (2026-11-16, Ys-bleeding-edge, NOT COMPILED BY UNITY, NOT EDITOR-VERIFIED)
+
+What ran instead:
+- the pure code and its EditMode tests, compiled and run by `bash Tools/Build/brittle_star_time_course_harness/run.sh
+  --self-test`: 25 tests, the measured claims (`--check-race`), and 10 negative controls;
+- `author_brittle_star_time_assets.py --check`;
+- the static gates, `colour_trace.py --check` and `check_ai_no_state_writes.py`.
+
+The four controller partials were reviewed by an independent session, not compiled. Unity was not imported or run in
+this worktree (`unity_refcompile` does not run on this Windows box). Owner: Shombith (BRITTLESTARTIME.md section 0).
+
+1. **Compile.** Open the project, or run `bash Tools/Build/verify_unity.sh`. Then run the EditMode tests
+   `BrittleStarTimeLineTests` and `BrittleStarTimeCourseTests`. Open and save `MinigameBrittleStarTime.unity` once, then
+   re-run `author_brittle_star_time_assets.py --check`.
+2. **I1 with 3 AI (Easy, Medium, Legendary).**
+   - The I1 start toast (410) shows.
+   - Fly without lighting Speed Mode for 6 s: the reminder (419) shows once.
+   - The AIs light Speed Mode on the straights, without chattering (watch the mode cue), and all three finish.
+   - Note the finish times against the model's 98 / 74 / 52 s.
+3. **I3 Coast-in hairpins.**
+   - Two columns of Blue posts stand before each hairpin apex, either side of the line.
+   - Let go of Speed Mode at them and thread the apex: the shock ring flares, the gate lights in your colour, and 416
+     shows once.
+   - No AI shoots the posts (no Space or Charge mode switch near them).
+   - Laps: three.
+4. **I4 Corkscrew.**
+   - The roll hint (418) shows.
+   - Four laps.
+   - Posts stand only on the three return rings.
+   - The coached AIs finish.
+5. **Heat.**
+   - Lap splits (412), a best lap (413), and a streak at 3 (411) appear.
+   - A clean lap runs the chase of flares.
+   - All 8 FMOD slots are empty and silent; that is expected.
+6. **Despawn.** Leave mid-race. No posts and no flares linger, and an AI's Speed wish is released.
 
 ## 🔴 Profile Colour sets: Rev 112 D, one scrolling list over the real cell (2026-11-14, Shombith, NOT RUN IN EDITOR)
 
@@ -23915,3 +24488,584 @@ environment's package fetch could not resolve). No Unity editor, Play mode or Ed
 - [ ] Riptide (Space): Shatterplane's plates; the undertow pulls loose tiles, the ring collapse smashes them and
       PrismsDestroyed rises; first domain to 600 wins; the end screen breakdown matches the server's.
 - [ ] An all-AI seat in each mode plays (the crew AI locks, snaps, routes islands); the console is clean.
+
+## 🔴 Spearline fun pass: the connected hole, armour, the worn seal, the AI's read (2026-11-16, Yash's round 5, `claude/swordfish-time-upgrade-9e60cf`, NOT RUN IN EDITOR, NOT COMPILED)
+
+Spearline (GameModes 96, the Swordfish's Time card) upgraded in place: a sealed ring counts through a connected hole of
+8 prisms; armoured seals from I2; the worn seal; mouths 96 / 84 / 74 / 66; 5 laps (40 rings); the AI reads each seal
+and strokes through `SwordfishSwordAutopilot.Coach`; toasts 400-402; three empty FMOD slots. What ran headless:
+`Tools/Build/spearline_harness/run.sh --self-test` (11 SpearlineSealsTests compiled with Roslyn against a Unity stub,
+8 negative controls), `spearline_race_model.py --self-test`, `author_spearline_assets.py --check`, and the
+using-directive, console-logging, conditional-compilation, enum-member and switch-label gates. **Not run:** Unity, the
+reference compile (`unity_refcompile` does not run on this Windows box), the EditMode suite in the editor, card art.
+The three `SpearlineController` partials and the autopilot seam were read by an independent reviewer, not compiled.
+Docs: `Assets/_Scripts/Controller/Arcade/SPEARLINE.md`, `Docs/Spearline/FUN_PASS.md`.
+
+- [ ] The project compiles; `SpearlineSealsTests` pass in the editor (11).
+- [ ] I1 in the Toybox, alone: fly straight through a sealed ring with the bill at rest - it does NOT count (toast 400
+      once). Come round and hold one trigger through it, the bill out toward the pane's middle - it counts, and the
+      hole flashes. Note how wide the bill's cut really is (the model's `ModelStrokeReach` is 6.15 u).
+- [ ] At 840 u/s (a long straight into a gentle sealed ring) a held stroke still counts: the bill's cut lands before the
+      hull's crossing is judged.
+- [ ] I3: the armour (shielded sector) reads from ~900 u, and the plain face is lifted; a stroke into the armour does
+      not count; crossing the plain face and swinging into it does. Toast 402 at the first armoured seal.
+- [ ] The worn seal: ram the same armoured seal at its centre with no stroke; by the fifth pass it counts.
+- [ ] Seals regrow behind the field (2.5-4 s) and never in front of a pilot still flying for that ring; a cracked shield
+      regrows too; no seal prism is left behind as an invisible object after a regrow (Hierarchy count stays flat).
+- [ ] Four AI Swordfish at I1-I4 (Easy to Legendary): each strokes through seals (the bill swings out before the pane,
+      never stands up to energize in front of one) and finishes; note closed passes per lap.
+- [ ] A human Swordfish in Cleave / Astro League / Brood Rush: the sword hand's own AI and the human's triggers behave as
+      before (the coach seam is only set by Spearline).
+- [ ] Toasts 401 ("3 seals cut clean") fire on a run of first-pass seals; the console is clean.
+
+## 🔴 Slip Line fun pass 1: the AI rival and the ride's landing (2026-11-16, Garrett's project thread, `claude/project-thread-ewu2bo`, NOT RUN IN EDITOR)
+
+From Garrett's fun card (I1, "almost", weakest Rivals). `unity_refcompile` ran: 0 errors in the changed files (30
+pre-existing errors in the UGS party and multiplayer code, from the package versions the cloud fetch could get); the
+offline course tests (`slip_line_harness/run.sh`, 11 pass) and `slip_line_ai_sim.py --self-test` ran. The Unity editor
+and the `unity` CLI did not. Owed (`Arcade/SLIP_LINE.md` §8 items 9-10, §10):
+
+1. EditMode: `SlipLineCourseTests` (the new race-line test among them).
+2. I1 against one Medium AI: the rival cruises at about 52 u/s, flies ring to ring without bumping rails, never circles a
+   ring for more than a few seconds, and finishes near your time. Then answer the fun card.
+3. A Honeyguide whose Eyelet Jet or Thruster Swarm (a Ratel card) ends just past a ring's plane: the ring counts.
+4. Any vessel whose ability teleports (the Butterfly's fold, `VesselController.Teleport`) still threads nothing on its
+   jump: only a pose write that does not move the hull stopped counting as a teleport.
+
+## 🔴 Editor Churn W1: the open-and-diff harness against a real Unity (2026-11-13, Caleb, NOT RUN IN UNITY)
+
+Branch `claude/editor-churn-w1-harness`; `Docs/EditorChurn/TRACKER.md`. `Tools/Build/editor_churn.py` is Python only
+(no C#). Its `--self-test` passes, and `measure` was run end to end with stand-in editors; no real Unity ran.
+
+1. **Clone `bleeding-edge` fresh** (a full checkout, no `Library/`) and run
+   `UNITY=<path to 6000.3.17f1> python3 Tools/Build/editor_churn.py measure --project <clone> --machine <name>`
+   on Windows (Git Bash) and on macOS. It opens the project twice in batchmode (the first import is slow).
+2. **It writes** `open1/` and `open2/` (status, `churn.patch`, what each open changed, `classified.txt`) and
+   `summary.md`, whose measurement row goes into the tracker's Measurements table.
+3. **Compare with the tracker**: every dirty file is an existing row or a new `seen` row; a file in open 2's
+   "changed BY open 2" list is a writer that never settles.
+
+## 🔴 Jewel Wasp games: Marionette (Charge, 126) and Gorge (Space, 127) (2026-11-15, Garrett's project thread, `claude/jewel-wasp-games`, NOT RUN IN EDITOR)
+
+Authored headless by `Tools/Build/author_marionette_assets.py` and `author_gorge_assets.py` (both `--check` green,
+shared checks in `wasp_games_common.py`). `unity_refcompile` ran in both configs: 0 errors in this branch's files (the 30
+it reports are the existing UGS package gaps on bleeding-edge). Card art rendered by `/cardart`. Docs:
+`Assets/_Scripts/Controller/Arcade/MARIONETTE.md`, `GORGE.md`.
+
+- [ ] The project compiles in the real editor (the two controllers, settings, scoring rules, AI helpers, turn monitors,
+      `WaspGames/WaspSeats.cs`; `EndConditionOverridesSO` and its window; `MiniGameHUD`'s two provider rows;
+      `EnumIntegrityTests` counts 120 modes after the merges with the Meerkat, Standoff, Wrasse and Goby games).
+- [ ] Arcade grid: both Jewel Wasp cards show their renders and open their own scenes with the wasp.
+- [ ] Marionette (126): sting a tadpole in Kelpwood's kelp, fly it at a rival, RT lands a Strike: the score goes up by
+      one; with Charge 5 a burst on leaving scores each rival within 60 u; first domain to 12 wins; the hint toast shows.
+- [ ] Marionette AI: a free AI wasp turns toward a creature near its chosen rival (Legendary picks well, Easy picks any)
+      and never steers while in a host.
+- [ ] Gorge (127): Chum's reef is laid at the countdown; ride a creature to a shoal and hold RT: prisms are sucked in and
+      the score counts them (and only once, for host and client); 90 s round, most prisms wins.
+- [ ] Gorge AI: free AI wasps head for creatures near the fuller shoals on the higher difficulties; in a host, check
+      whether the wasp's own AI feeds or chases rivals (it chases the nearest rival within 400 u).
+- [ ] Gorge in multiplayer: whether a client's local reef visibly shrinks when a creature feeds on the server.
+- [ ] End Game Conditions window shows and saves `marionetteStrikeTarget` and `gorgeRoundSeconds`.
+
+## 🔴 Regatta course genome: every spawner as a course gene (2026-11-16, Garrett's project thread, `claude/project-thread-cwavhz`, NOT RUN IN EDITOR)
+
+Regatta flywheel W2 (`Docs/AI_SYSTEM/REGATTA_COURSE_GENOME.md`). `unity_refcompile` ran: 0 errors in the changed files
+(the cloud fetch could not reach several packages, so the run reports pre-existing errors elsewhere). The genome was
+laid through the game's own code in Amoebius (`regatta_genome_harness/run.sh gate`: the empty genome lays today's
+course prism for prism, 40 random genomes lay 244,651 prisms with none in the line tube, a ring mouth, a rail, the
+nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed:
+
+1. Open MinigameRegatta at I1: the course is unchanged (no genome is set on any shipped prefab).
+2. Paste a laid genome (any `Tools/Compute/evaluators/regatta_genome.py --random 1` output) into a Regatta rails
+   prefab's `courseGenome` field, play, and fly the line: the placed spawners stand clear of the line and the rings,
+   and the lap still counts.
+3. Watch the frame time on that course: up to 6,000 extra prisms can be laid (the cap was 12,000 until round 3).
+4. Round 3 (`cross_rail`, the cell's phase ladder): on a genome with placements, the cell opens in the same phase as
+   the plain course (`Cell.ResolveThresholds` raises every boundary by what the placements laid), and a `cross_rail`
+   placement stands on a rail while the ring mouths stay open. Run the EditMode tests `CellPhaseRulesTests`
+   (`Raised_*`). A Linked Rings spawner with 20+ rings of 64 blocks no longer lays blocks at infinity (it hung the
+   course before). Refcompile: 0 errors in the changed files; the editor did not run.
+5. Round 4 (`TrainingCourseOverlay`): play any gate race (Switchback, Redline) normally. Nothing changes, because the
+   overlay is null outside the judge and the trainers. The judge proves the overlay in Amoebius. The editor did not run.
+
+## 🔴 The standard element ladder: I2 start, I3 team crystals, I4 fauna, the crystal-detour gene (2026-11-16, Garrett's project thread, #2055 #2059 #2060, NOT RUN IN EDITOR)
+
+Garrett's ladder (`Docs/ElementalLoop/PLAYBOOK.md` step 2): I1 nothing, I2 every hull at level 5 in the game's element,
+I3 each team's own crystals of it, I4 its fauna in the cell's colour. Applies to every non-arena card with no
+`StartingElements` table. Refcompile: 0 errors in the changed files; the editor and the `unity` CLI did not run; the
+new EditMode tests (`ElementLadderTests`, `ElementLadderCrystalsTests`, the gene test in `RaceAIWaypointsOnlyTests`)
+compiled and did not run. Owed:
+
+1. Run the EditMode tests above.
+2. Switchback at I1: the Dolphin starts at rest. At I2: it starts at Time 5 (the HUD's Time bar half full).
+3. Switchback at I3: 4 Time crystals in your colour sit beside the rings and regrow ~12 s after you take one. In a
+   two-team arcade mode, the other team cannot take yours. Skim Race (scored on crystals) and Harvest lay none of these.
+4. Switchback at I4: sharks, piranhas, brittle stars and tadpoles appear as Time variants in the controlling colour.
+   On two machines, the client sees the same creatures (the fauna sync indexes `Cell.FaunaRoster`). Watch frame time.
+5. Redline, Headlong and the other cards with their own `StartingElements` table are unchanged at every rung.
+
+## 🔴 All fifty painted pilots in every crew, the Ark's Pilots tab pages, a see-through story panel (2026-11-16, Garrett's project thread, `claude/all-fifty-pilots`, NOT RUN IN EDITOR)
+
+Garrett, 2026-11-16: "lets get all 50 into the game. it is ok if we duplicate callsign everything else will be the
+different" and "a tiny bit of transparency would mean not throwing away the nice art behind it". `unity_refcompile`
+ran (see the PR's verification line); the generators' `--check` and `--self-test` passed; the Unity editor and the
+`unity` CLI did not run. Owed:
+
+1. Run the EditMode tests `PaintedCrewTests`, `PilotSceneAssetTests` and `AccountInventoryTests`.
+2. Start on a fresh account: the Ark's PILOTS tab says "Pilots: 50", shows 18 cells, and "<" / ">" with "1 / 3" step
+   through the pages (wrapping). Each cell's close-up is that person's own (Flux and Shrapnel are both VOLT and look
+   different). A press on page 2 opens the pilot drawn in that cell.
+3. Start on an account saved before this change (18 starters): the same 18 keep their ids and seats, 32 join, and the
+   squads that seated someone still seat them.
+4. Open a profile page over a bright scene (Astrofoil, Comet): the art shows faintly through the words panel and every
+   line still reads.
+5. The Hangar's PILOTS list for a vessel shows every person whose callsign can fly it, each with their own close-up,
+   and seating one still lights IN THE SEAT.
+6. Phone build size: the 32 added 1536x864 scenes should add about 40 MB; measure it.
+6. Harvest at I4 (authored fauna, now pinned): every shark, piranha, brittle star and tadpole is the Space variant, not
+   a spread across elements; at I3 and below Harvest's fauna are unchanged. Spot-check Wildlife Liberation and Chum at
+   I4 still play (their creatures are one element now). Not run in editor; refcompile 0 errors in the changed files.
+
+## 🔴 The ten weakest abilities raised (2026-11-16, Garrett's project thread, `claude/weakest-abilities-pass`, NOT RUN IN EDITOR)
+
+Garrett, 2026-11-16: "fix all of these" (the ten least polished abilities). `unity_refcompile` ran with 0 errors in the
+changed files; `author.py grizzly|jacks --check`, `author_goby_assets.py`, `author_meerkat_assets.py --check` and
+`author_jacks_assets.py --check` passed; the Unity editor and the `unity` CLI did not run. Owed:
+
+1. Grizzly Mass (Weapon Systems): Mass still grows the trail's prisms; the claw's reach is fixed. A weapon cycle
+   flashes the Mass card.
+2. Grizzly Charge (Dig In): dug in, the cannon charges 2x at rest and up to 5x at Charge 10; the Charge card stays lit
+   and flashes as the anchor bites.
+3. Grizzly Time (Rush): a ram devastates rival prisms in its path (host only); the Time card flashes on a ram and its
+   veil shows the refill when the bank is empty; Time 10 refills in about 2.5 s.
+4. Dolphin: Drift Charge fills 2.5x faster at Time 10; a seeded crystal still lands at a random point of the
+   cytoplasm, now on a 15 s cooldown.
+5. Goby Time (Dart): the Pistol's dart is longer and comes back sooner at Time 10. Run `GobyPistolTests`.
+6. Meerkat Time (Ride): the ride is up to 2x faster at Time 10.
+7. Jacks Space (Wide): the herd spreads out about 2.2x wider over 0.6 s when Wide is on and gathers again when off.
+## 🔴 Voyage jobs come from the active squad only, and a starter squad (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-j3ua9b` (PR into `voyages`). The board offers one job per pilot in the active squad (no
+crew fill to six), and a player with no squad is given a starter squad saved into their squad book
+(`VoyageRun.ActiveSquad`, `VoyageToyDefinitionSO` starter seats, `Docs/Voyages/DEPTH.md` §14 decision 8). The changed
+runtime files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files);
+the new `VoyageStarterSquadTests` (editor) were not compiled or run. No Unity editor ran.
+
+1. Run `VoyageStarterSquadTests`, `VoyageRulesTests`, `VoyageDepthTests`: all pass.
+2. With an account that has squads: open the Voyage window. The board shows at most three pilot jobs (plus Escort the
+   Ark, and Sail home when away), each brought by a pilot of the active squad. Switch the active squad on the Ark's
+   Squads tab: the jobs change with it.
+3. With an account that has no squad (or delete them all): open the Voyage window. The board shows three jobs, from
+   TALON, ANVIL and CITADEL's people. The Ark's Squads tab now lists "Starter Squad": Sparrow in Charge (you), Squirrel
+   in Mass and Dolphin in Space on AI. Restart the game: the squad is still there.
+4. Escort the Ark with the starter squad: the two wingmates spawn as the Squirrel and the Dolphin.
+## 🔴 Fauna attack the Ark in assaults, per-cell hostile legs, breach lines (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-dlzvop` (PR into `voyages`). `ArkAssaultClock`, `ArkAssaultDriver`,
+`ArkEscortRun.Assault.cs`, `VoyageRun.Assault.cs`, new tier and job fields (`Docs/Voyages/ARK_ESCORT.md` §4.2). The
+changed files compile clean against the Unity reference assemblies (`unity_refcompile` player and editor: 0 errors in
+changed files). No Unity editor ran, so no EditMode test ran and the numbers are not sim-tuned.
+
+1. Run `ArkAssaultTests`, `ArkPacingTests`, `VoyageRulesTests`, `VoyageShellTests`: all pass.
+2. Escort the Ark at difficulty 3. About 10 s after the Ark crosses into a hostile world, a banner reads "THE FAUNA OF
+   <world> ARE CIRCLING THE ARK"; 5 s later "THE ARK IS UNDER ATTACK - KILL 6 ATTACKERS NEAR IT", and the world's
+   creatures visibly converge on the Ark's hull and eat plates.
+3. Kill six creatures near the Ark: "ATTACK DRIVEN OFF", and the creatures drift back to grazing. Let one run out
+   instead: "THE ATTACKERS FALL BACK - THE ARK LOST <n> PLATES". The next warning comes about 35 s later.
+4. Ignore the Ark at d1-d3: the escort is overrun when the hull falls below 25%.
+5. Pacify a world: no more assaults there.
+6. Re-run the escort sim at d1, d4, d7, d9 (`ArkEscortSimLauncher`): d4 and up were fitted without assaults and may now
+   be too hard; tune `tier.{d}.assault*`.
+7. A job with `hostileCells` (Crystal Run, once its job lands): calm cell 1 has no assaults and its fauna ignore the
+   Ark; cells 2-4 start in the opposing colour and assault the Ark; below the job's `breachHull` the Ark falls.
+## 🔴 Escort the Ark opens with an intro: the Ark, the squad, the objective (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-st7qvh` (PR into `voyages`), Milestone 1. When the Ark sets sail (the load veil comes
+down) `ArkEscortRun` plays `VoyageIntro` from `Assets/Resources/Voyages/ArkEscortIntro.asset` (`VoyageIntroSO`):
+letterbox bars, the Ark, one shot per squad vessel (yours last), then the course and the objective, and a blend into
+your chase camera. Meanwhile your vessel flies on the escort AI with the stick held. The changed runtime files compile
+clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files); the new
+`VoyageIntroTests` (editor) were not run. No Unity editor ran.
+
+1. Run `VoyageIntroTests` and `VoyageShellTests`: all pass. Select `ArkEscortIntro.asset`: the inspector shows three
+   shots and the vessel list `SO_Classlist_All`.
+2. Escort the Ark from the Voyage window. When the veil comes down: black bars slide in, the flight HUD hides, the
+   camera arcs around the Ark with "THE ARK" and its line, then visits each wingmate and then your own vessel (vessel
+   name, seat, "You" or "AI wingmate"), then looks down the course with "ESCORT THE ARK" and the five world names.
+3. The bars leave and the camera settles behind your vessel; the flight HUD is back, you have the stick, and the
+   "ESCORT THE ARK THROUGH 5 WORLDS" banner shows. Your vessel is beside the Ark, not left behind.
+4. Escort again and hold any key or pad button (or touch) once the intro starts: the fill under "Hold any button to
+   skip" grows and the camera goes straight to the hand-over. A key held from before the intro does not skip it.
+5. Leave the voyage (pause menu, Main Menu) during the intro: the menu loads with the normal camera; no stuck bars.
+6. Run the escort sim (`ArkEscortSimLauncher`): no intro plays.
+
+## 🔴 Crystal Run, the voyage HUD and the end-of-voyage scoreboard (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-i45oov` (PR into `voyages`). Compiled with `unity_refcompile` only (0 errors in changed
+files); `VoyageCrystalRunTests` never ran. Spec: `Docs/Voyages/CRYSTAL_RUN.md`.
+
+1. Voyages page: the board offers "Crystal Run to {place}" whoever is seated. Sail it: a toast "STEAL 20 CRYSTALS" with
+   a line under it; the objective box top left shows CRYSTAL RUN, 0 / 20, the four elements, four cells (first Calm,
+   then three Hostile), the hull bar with a red mark at 40%.
+2. Each new cell raises one toast (white when calm, red when hostile); the last says FINAL CELL. Toasts show one at a
+   time, top centre, and never one per crystal.
+3. Pick up elemental crystals (any of the four): the counter and the element split count up; omni crystals do not.
+   At 20 a green toast. In a hostile cell an assault's lines are red; a repelled assault is green.
+4. Let the hull drop near 40%: "BREACH CLOSE" (red). Losing plates: "ARK UNDER ATTACK", no more than every 20 s.
+5. At the stop: the scoreboard (seats with Crystals, Kills, Off the Ark, Score; rewards; Finish B, Venture further A).
+   Venture: goal 30, five cells. Finish: the Ark sails home ("SAIL THE ARK HOME"), docking shows HOME and the crystals
+   land in the pilot's loadout. The scene does not return to the menu while a board is open.
+6. Lose the Ark: the board says THE ARK IS LOST with what went down; Try again (A) sails a fresh Crystal Run, Back to
+   Voyages (B) returns to the menu.
+7. Escort the Ark: the objective box shows ESCORT THE ARK - DIFFICULTY n, the five worlds, the hull with its breach
+   line, "Ark bound for / inside {world}", and the assault line. At the last world the scoreboard offers Venture
+   further (difficulty + 1) and Finish (sail home, then bank). A fallen escort offers Try again.
+8. The toasts' and scoreboard's sound slots on `Voyage.asset` are empty: nothing plays until they are wired.
+
+## 🔴 Voyage toasts wait for the load screen and the intro; Crystal Run opens with an intro (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-a5f46g` (PR into `voyages`). Shombith's play test after #2022 and #2025 merged: no intro,
+and no toasts, only text at the top over the Ark. Compiled with `unity_refcompile` (player and editor, 0 errors in
+changed files); the new `VoyageIntroTests.CrystalRunIntro_LoadsFromResources_AndNamesTheGoal` never ran.
+
+1. Sail Crystal Run from the Voyages page. When the load screen lifts, the intro plays (bars, THE ARK, each vessel,
+   CRYSTAL RUN "Steal 20 crystals before the Ark reaches {place}..."), then the camera lands behind your vessel.
+2. Only after the intro: the toast "STEAL 20 CRYSTALS" with its line under it, then "STAY WITH THE ARK". Before this
+   change the set-off toast played behind the load screen and was never seen.
+3. Hold any button during the intro: it skips to the hand-over and the same toasts follow.
+4. Escort the Ark: the intro plays as before; no toast shows over it; "STAY WITH THE ARK" and the departure toast come
+   after it. If the intro does not play, the console says why (`[ArkEscort] The escort opens without its intro: ...`).
+5. Venture further at a Crystal Run stop: no second intro.
+
+## 🔴 Rev 114 picks in the game: the Departure intro, the objective strip, the chase camera (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-a5f46g` (PR into `voyages`). Shombith picked O1, Intro A and F1 on Frogma's Voyages
+playtest tab. Compiled with `unity_refcompile` (player and editor, 0 errors in changed files); the new and changed
+tests in `VoyageIntroTests`, `VoyageCrystalRunTests` and `VoyageChaseCameraTests` (since removed) never ran.
+
+1. Sail Escort the Ark the first time. The intro plays letterboxed for about 9 s: the Ark wide (no words), a push along
+   its hull with "THE ARK · hull 100%", your vessel with a name card (face, vessel, pilot, element flower), each
+   wingmate for half a second with a card, then "ESCORT THE ARK", the goal line and five dots. The camera swings in
+   behind your vessel, the bars slide away, "GO" pops, and the HUD fades up. Holding B does nothing on this first run.
+2. Sail it again: "Hold B to skip" shows, and holding B (Escape, right mouse, or a held touch) skips to the hand-over.
+3. Crystal Run plays the same reel with "CRYSTAL RUN" and its own goal.
+4. The objective strip: 420 x 120, 40 px in from the top left, one thin left line, no glow. Escort: "ESCORT THE ARK" and
+   the hull percent, the hull bar with its breach line, "Scarab Reef - hostile" and five route dots, one job line red when
+   it is a threat. Crystal Run: "CRYSTAL RUN" and "12 / 20", the bar, four element flowers with counts, then
+   "Cell 2 - hostile"; a job line only when the Ark is under attack or the goal is met. It hides during the intro and
+   the scoreboard.
+5. (Retired 2026-11-17, Shombith: the chase camera is gone. In a voyage every vessel flies its own camera, exactly as
+   in every other mode; `VoyageChaseCamera`, `VoyageCameraSO` and `CustomCameraController.Mode` were removed.)
+6. The intro's swing lands exactly on the vessel's own follow camera: no jump at the cut back.
+7. Fauna biting the Ark: up to four red point lights on them, and the Ark's plates near them glow red.
+8. Not built: the FOV opening on boost (the speed tunnel is a platform law that narrows FOV with speed and no mode may
+   change it), dust streaks on boost, the Ark's engines lighting one by one. The Ark at a third of the frame is a
+   framing tendency (the side shift), not a lock.
+
+## AI nose follow knobs, neutral at 0 (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; the 29 errors it reports are the known Cinemachine
+stubs) and the Amoebius live compile and judge. Not verified: a real Unity editor compile and EditMode run.
+
+1. Open MinigameSwitchback, MinigameBreakwater and MinigameSerpentTime: each controller's AI Nose Lead rows show a new
+   "Nose Follow" field at 0, and the races fly exactly as before (0 leaves the AI nose rate alone).
+2. Open any `Resources/RaceLines/<Hull>_Regatta` asset: a "Nose follow (fleet lag at 0)" header with Nose Follow Per
+   Second 0. Regatta's AIs fly as before.
+3. Set one row to 9 (e.g. Sparrow in Breakwater) and race: the AI Sparrow's nose turns visibly quicker. Put it back.
+
+## Scarab racing AI trained in Scarab Rally (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; the 29 it reports are the known Cinemachine stubs), the
+Amoebius judge on the shipped files (Scarab Rally I1 64.2 / 61.8 s, I4 111.5 / 102.2 s on seeds 101-102), and the
+search's confirm (32 fresh flights a side, no DNF). Not verified: a real Unity editor compile and EditMode run
+(`SwitchbackAISteeringTests.ScarabRally_FliesItsOwnNoseTable`).
+
+1. Open MinigameScarabRally: the controller shows an "AI nose" header with its own table (Legendary 15 / 15 / 18 / 18)
+   and No Dodge Near Ring 224. MinigameSwitchback's table is unchanged (Legendary 5 / 5 / 6 / 6, 200 u).
+2. Race Scarab Rally I4 against a Legendary AI Scarab: it threads the rings without wide loops, near 105-120 s.
+3. Race Regatta with an AI Scarab: its drive changed too (`ScarabAIBoostPolicy`), so it should race at least as well
+   as before.
+
+## Serpent racing AI trained in Serpentine (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: the Amoebius judge on the shipped files (Serpentine I1 121.0 / 120.9 s, I4 141.1 / 94.7 s on seeds 101-102;
+the race is not deterministic run to run, the confirm's same seeds gave I4 89 / 121) and the search's confirm (32 fresh
+flights a side, no DNF, every condition faster) and `unity_refcompile` (0 errors in the changed files; 29 known
+Cinemachine stubs elsewhere). Not verified: a real Unity editor.
+
+1. Open MinigameSerpentTime: the AI Nose Lead row for the Serpent reads Gain 2.1, Nose Follow 6.87.
+2. Race Serpentine I4 against a Legendary AI Serpent: it threads the rings without corkscrewing, near 85-120 s
+   (it took 160-190 s before).
+## 🔴 Fleet floor rule: every rising elemental float floored at half its rest (2026-11-16, Garrett's project thread "Rank least polished ability floors", `claude/ability-floor-rule`, NOT RUN IN EDITOR)
+
+Every rising `ElementalFloat` (Max > Min) now has `UseFloor: 1`, `Floor = Min / 2`, so at element level -5 an ability
+keeps half its resting strength (`Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`, "The fleet floor rule";
+gate `python3 Tools/Build/elemental_floor_rule.py --check`). Rhino's Heft and Carry now rest at 20 u and 10 u instead of 0.
+The Stoat's ripple reach and launch power no longer clamp a deficit back to x1. The editor and the `unity` CLI did not
+run; the EditMode tests touched (`AnglerFundamentalsTests`, `RhinoReworkTests`, `StoatRippleTests`) did not run. Owed:
+
+1. Run the EditMode tests above, plus `JacksScalingTests`, `ShrikeConfigTests`, `SwordfishQuickdrawTests`, `ElementalScalingUnificationTests`.
+2. Open three changed prefabs (Urchin, Falcon, Swordfish): the skimmer `Scale` and gun `ProjectileTime` show Use Floor ticked with the new Floor, and nothing else on the prefab changed.
+3. Rhino at rest (no Mass, no Charge): a ploughed prism is thrown about 20 u further than before, and a thrown prism strikes another up to 10 u past its landing point.
+4. Drain an element to -5 on Angler (any element) and Honeyguide: the ability visibly weakens to about half (the Angler's paint brush half as wide), where it used to stay full.
+5. Meerkat at Charge -5: a zap still takes a petal share you can see (0.05 a zap, was 0.025).
+
+## Dolphin racing AI trained in Switchback (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Switchback I1 83.4 / 90.0 s, I4 279.2 / 237.3 s on seeds 101-102; the race varies run to run) and the
+search's confirm (32 fresh flights a side, no DNF). Not verified: a real Unity editor and its EditMode run
+(`SwitchbackAISteeringTests`, updated for the new defaults).
+
+1. Open MinigameSwitchback: the Dolphin's nose lead row reads 2.03, the Legendary column of the nose table 11.18 / 11.18 /
+   13.41 / 13.41, the gauntlet's Legendary 13.41, No Dodge Near Ring 177.
+2. Race Switchback I1 against a Legendary AI Dolphin: near 85 s (about 110 s before).
+3. Easy, Medium and Hard are unchanged; Legendary is now further ahead of Hard than the 10 s bands.
+
+## Rhino racing AI trained in Headlong (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Headlong I1 99.3 / 99.2 s, I4 111.7 / 114.7 s on seeds 101-102, all 40 gates; the old AI timed out at
+I4) and the trainer's confirm (28 fresh flights a side: 6 vs 28 finished). Not verified: a real Unity editor.
+
+1. Open MinigameHeadlong: the Rhino's AI Nose Lead row reads Gain 2.47, Nose Follow 7.5.
+2. Race Headlong I4 against a Legendary AI Rhino: it clears every gate without circling one, near 110-115 s.
+
+## Manta racing AI: Legendary nose 15/s at Redline I1-I2 (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Redline I1 56.7 / 60.5 s, I2 61.2 / 59.6 s on seeds 101-102) and the split confirms (40 flights a side).
+Not verified: a real Unity editor and `RedlineAISteeringTests`.
+
+1. Open MinigameRedline: the AI nose table's Legendary column reads 15 / 15 / 9 / 9.
+2. Race Redline I1 against a Legendary AI Manta: near 56-60 s (about 65 s before). I3-I4 fly as before.
+
+## Sparrow racing AI trained in Breakwater (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Breakwater I1 98.3 / 96.1 s, I4 81.6 / 85.0 s on seeds 101-102; the old AI timed out at I4) and the
+confirm (32 fresh flights a side). Not verified: a real Unity editor.
+
+1. Open MinigameBreakwater: the Sparrow's AI Nose Lead row reads Gain 1.29, Nose Follow 7.9.
+2. Race Breakwater I4 against a Legendary AI Sparrow: it finishes, near 80-86 s, without circling a station.
+
+## Serpent AI refuel action and pacing genes (2026-11-17, Regatta flywheel, FINDINGS 23)
+
+Verified: Amoebius compiled the change and raced it (SerpentTime I2 at Regatta length, 24 gates, seed 11: refuel off
+167 s with the tank at 0 from about a third of the race; refuel on at 1.5 pellets with a 3 s coast 126 s, the tank
+refilled by the walls) and `unity_refcompile` (0 errors in the changed files; 29 known errors elsewhere). Not verified:
+a real Unity editor. The new fields ship OFF (`refuelBelowPellets -1`), so no AI changes until a genome is promoted.
+
+1. Open `SerpentAIBoostPolicy_SerpentTime`: the Refuel (the wall) header shows Refuel Below Pellets -1, Refuel Coast
+   Seconds 0, Low Tank Seconds Between Pellets 0.
+2. Set Refuel Below Pellets to 1.5 and Refuel Coast Seconds to 3, race Serpentine with an AI Serpent: when its pellets
+   run low it cloaks, lays a wall and its pellet pips refill; with -1 it behaves as before.
+
+## Serpent run4: Serpentine AI with the refuel genes, carried into Regatta (2026-11-17, Regatta flywheel, FINDINGS 23)
+
+Verified: Amoebius raced the shipped files (SerpentTime I1 100 s and I4 89 s on seeds 101-102; the confirm on 40 fresh
+flights a side against run3b had every condition faster, loss 2.40 -> 2.25, no DNF; Regatta alone on the I1 course
+127 s, unchanged from before) and `unity_refcompile` (0 errors in the changed files). Not verified: a real Unity editor.
+
+1. Open MinigameSerpentTime: the Serpent's AI Nose Lead row reads Gain 2.09, Nose Follow 10.42.
+2. Open `SerpentAIBoostPolicy_SerpentTime` and `SerpentAIBoostPolicy`: Refuel Below Pellets 4, Refuel Coast Seconds
+   0.291, Low Tank Seconds Between Pellets 0.175.
+3. Race Serpentine I4 against a Legendary AI Serpent: it finishes near 85-100 s, and when its pellets run low it cloaks
+   and lays a wall.
+
+## Urchin run1: Skein AI trained in the real game (2026-11-17, Regatta flywheel)
+
+Verified: Amoebius raced the genome headless through `time_ai_search.py` (search on seeds 11-14, confirm on seeds
+101-104, 9 conditions, 36 flights a side: the shipped AI DNFed all 12 of its I4 flights, the trained one finished all
+36; I1 79 -> 53 s, I2 143 -> 77, I4 DNF -> 261, I1@T10 86 -> 50), the shipped files raced again after the write (see
+the PR), `unity_refcompile` (see the PR). Not verified: a real Unity editor. The values it replaced, for a revert:
+RailLeadDistance 260, AssessIntervalSeconds 0.3451, ScanArc 2277.61, CaptureFraction 0.917, ClosingFraction 0.1238,
+LaunchPreferArc 501.981, DryCrawlArc 46.3683, MaxDryCrawlSeconds 1.3127, ReverseLeadTurnRadii 1.8716, ParkedSpeed
+7.0595, ParkedSeconds 4.148, MinSlipIntervalSeconds 1.5847, SpikeIntervalSeconds 1.4303, SpikeMinAmmo 0.5479,
+TrackAimDegrees 8.7529, TrackMinRangeInLengths 3.5138, TrackAxisAlignment 0.4495; Skein's Urchin row Gain 0, no nose rate.
+
+1. Open MinigameSkein: the Urchin's AI Nose Lead row reads Gain 1.39, Nose Follow 14.41.
+2. Race Skein I4 against a Legendary AI Urchin: it finishes (near 260 s) instead of timing out.
+
+## Stoat run1: Slingshot AI trained in the real game, its nose pair carried into Regatta (2026-11-17, Regatta flywheel)
+
+Verified: Amoebius raced the genome headless through `time_ai_search.py` (search on seeds 11-14, confirm on seeds
+101-104, 8 conditions, 32 flights a side, no DNF either side: every rung 18-40% faster, I1 68 -> 51 s, I2 51 -> 36,
+I4 62 -> 42, I1@T10 39 -> 26, I4@T0 95 -> 56), `promote_trained_drives.py` wrote the file, `author_race_lines.py --check`
+OK, `unity_refcompile` (see the PR). Not verified: the shipped files raced again after the write (the box's four game
+slots were training the Squirrel), and a real Unity editor.
+
+1. Open MinigameSlingshot: the Stoat's AI Nose Lead row reads Gain 2.62, Nose Follow 10.43.
+2. Open `Resources/AIBoostPolicies/StoatSlingConfig_Slingshot`: AI Sling Min Turn Degrees 154.471, AI Warp Min
+   Distance 11.523, AI Hold For Window Degrees 58.721, Trampoline AI Turn Scale 67.159.
+3. Race Slingshot I1 against a Legendary AI Stoat: it finishes near 50 s, warping on most legs.
+
+## Sparrow run4: Breakwater AI at the Legendary nose 13.9/s, carried into Regatta (2026-11-17, Regatta flywheel)
+
+Verified: Amoebius raced the genome headless through `time_ai_search.py` (seeds 11-14, confirm on 101-104, 32 flights a
+side, no DNF: I1 99 -> 98 s, I2 83 -> 76, I4 78 -> 73, I1@T10 95 -> 81, I4@T0 98 -> 93), `promote_trained_drives.py`
+wrote the file, `author_race_lines.py --check` OK, `unity_refcompile` (see the PR). Not verified: the shipped files raced
+after the write, a real Unity editor. The lead stays 1.29 (run4's 2.08 judges the same at 13.9/s and would have changed
+Easy and Medium).
+
+1. Open MinigameBreakwater: the Sparrow's AI Nose Lead row reads Gain 1.29, Nose Follow 13.9; AI Nose Follow By
+   Difficulty still 1.8 / 2 / 3.5 / -1.
+2. Race Breakwater I2 against a Legendary AI Sparrow: it finishes near 76 s; a Medium one still near 110 s.
+
+## Breakwater AI pace by difficulty (2026-11-17, elemental loop step 2, overnight run)
+
+Verified: Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py`): Breakwater's four levels race
+about 125 / 110 / 85-109 / 80-97 s at every rung on fresh seeds 4-6, every race finished. `unity_refcompile` 0 errors
+in the changed files. Not verified: a real Unity editor.
+
+1. Arcade > Breakwater, Sparrow, I3 with Medium rivals: they finish in about 110 s, slower than Legendary rivals (about
+   82 s); select MinigameBreakwater's controller and see AI Nose Follow By Difficulty 1.8 / 2 / 3.5 / -1.
+
+## Scarab Rally and Skein AI pace by difficulty (2026-11-17, elemental loop step 2, overnight run)
+
+Verified: Amoebius raced the shipped C# headless (the AI alone, real game). Scarab Rally on fresh seeds 4-6: Easy
+74-85 s at I1 and 178-213 s at I4, Medium 69-75 s at I2 and 162-172 s at I4 (Medium and Easy never finished I4 before).
+Skein on seeds 4-6: I2 / I4 Easy 172 / 384 s, Medium 173 / 360, Hard 162 / 343, Legendary 139 / 334. `unity_refcompile`
+0 errors in the changed files. Not verified: a real Unity editor.
+
+1. Arcade > Scarab Rally, I4 with Medium rivals: they finish (about 160-170 s), behind Legendary rivals (about 120 s).
+   MinigameScarabRally's controller shows AI Scarab Nose Follow By Intensity rows 3.5 / 5 / 8 / 15 (I1-I2), 3.5 / 5 / 8
+   / 18 (I3-I4).
+2. Arcade > Skein, I2 with Medium rivals: about 165-175 s against Legendary's 135-145 s. MinigameSkein's controller
+   shows AI Seek Gain By Difficulty 0.5 / 0.5 / 0.7 / -1.
+
+## Perch Run AI no longer circles a ring (2026-11-17, elemental loop step 2, overnight run)
+
+Verified:
+- Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py --mode PerchRun --hull Goby`). The AI Goby
+  finished 12 of 12 Legendary races and 11 of 12 Medium races at I1-I4 on fresh seeds 4-6. Before, it finished 0 of 2
+  at I4.
+- `perch_run_harness` ran 11 tests, all passed, including the new turning-circle test.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor.
+
+1. Arcade > Perch Run, Goby, I2 with two AI Gobys: neither circles a ring. When a ring is close beside one, it flies
+   straight on, turns back and darts through. Both finish.
+
+## Breach AI re-attacks a missed ring (2026-11-17, elemental loop step 2, overnight run)
+
+Verified:
+- Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py --mode Breach --hull Orca`). On fresh seeds
+  4-6, 24 of 24 Medium and Legendary races finished at I1-I4. Before, 1 of 8 finished at I3-I4.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor.
+
+1. Arcade > Breach, Orca, I3 with two AI Orcas: when one misses a walled ring, it turns back and threads it instead of
+   wandering on. Both finish, in about 160 s.
+
+## Thornline Legendary AI row trained (2026-11-17, elemental loop step 3, overnight run)
+
+Verified:
+- The real-game race judge (`time_ai_search.py --hull Shrike`) confirmed the new row on seeds 101-104: 32 flights a
+  side, none unfinished, loss 2.67 to 2.39.
+- `thornline_course_harness` ran 20 tests, all passed.
+- `author_thornline_assets.py --check` passed.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor. Also, `author_thornline_assets.py` without `--check` appended a second copy of the
+controller's AI block to the scene when the values changed. The scene here was edited by hand instead, so do not run the
+writer until that is looked at.
+
+1. Arcade > Thornline, Shrike, I1 with a Legendary rival: it finishes in about 49 s, aiming crisply with no wobble.
+   MinigameThornline's controller shows AI Nose Lead By Difficulty 2.5 / 3 / 8 / 9.2 and Follow -1 / -1 / -1 / 1.6.
+
+## Honeyguide and Spearline AI stalls fixed (2026-11-17, elemental loop step 3, overnight run)
+
+Verified:
+- Honeyguide: the race judge's trace showed the hull frozen in place, with its transformer off and no ride under way.
+  A ride that began on top of another (a trigger's dart, then a slip in the same frame) read the transformer as already
+  off and never turned it back on. On the Slip Line confirm (seeds 101-104, 96 races) the timeouts went from 8 to 0.
+- Spearline: the trace showed the AI circling 11 u wide, 630 u from its ring, for up to 185 s, its nose lead commanding
+  up to 40 degrees past the aim. With the lead capped at 10 degrees: seeds 1-2 at Legendary I3-I4 went from 4 timeouts to
+  4 finishes, and on seeds 3-5 at I1-I4 (12 races a side) every race finished on both, with a total time within 1%.
+- No frozen or long slowed span in 12 traced races of the polish six's Time games.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor.
+
+1. Arcade > Slip Line, Honeyguide AI rival, I2: watch a few races. The rival never stops dead mid-course after a slip or
+   a dart, and finishes in about 2 minutes.
+2. Arcade > Spearline, Swordfish AI rival at Legendary, I3: the rival never spins in a tight circle away from the ring.
+
+## AI spin escape (2026-11-17, elemental loop step 3, overnight run)
+
+Verified (race judge, Amoebius headless):
+- AIPilot now lets the nose lead go for 3 s when the hull turns a full circle in place (inside 3 s, net travel under
+  35% of its path) while its objective is at least 4 turn radii away. The orbit detector cannot see that stall, because
+  the bearing to a far objective barely turns.
+- Positive test: Spearline with the nose lead's old 40-degree cap (the stall #2138 fixed by capping) finished 4 of 4
+  Legendary I3-I4 races, where it timed out 4 of 4 before. The escape fired 11 times.
+- Negative control: it never fired in 12 home races of the polish six's Time games (Scarab, Serpent, Dolphin, Rhino,
+  Manta, Sparrow at I4) or in 16 Regatta races of 8 hulls on the calibration course.
+- `unity_refcompile` found 0 errors in the changed files, and `check_console_logging.py` reported 0 problems.
+
+Not verified: a real Unity editor.
+
+1. Any Time race with AI rivals: no rival spins in a tight circle away from its ring. The new Spin escape fields are on
+   the AIPilot component, under its own header.
+
+## Brittle Star Time Legendary AI nose trained (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+`BrittleStarTimeCoach.NoseFollowByIntensity` Legendary column changes from 4.13 / 8 / 1.83 / 8 to 13.66 / 13.66 / 15.04 / 15.04
+(I1..I4). This is BrittleStar run1, searched in the real game through the Amoebius judge (`time_ai_search.py`, seeds 11-14) and
+confirmed on fresh seeds 101-104: 32 flights a side, 0 DNF, loss 2.36 -> 2.06. Mean times went I1 51.4 -> 49.5 s,
+I2 53.7 -> 54.2 s, I3 84.8 -> 32.6 s, I4 73.2 -> 56.3 s. Easy, Medium and Hard are unchanged. The crystal gene stays at 0,
+because its effect was within noise. The coach table test now allows up to 16/s. Not run in Unity (the reference compile shows 0
+errors in the changed files).
+- [ ] Fly Brittle Star Time I1-I4 against a Legendary AI. It should race clean and finish ahead of the old times, most of all at I3
+  (about 33 s, against 54 s at I2: the I3 team crystals make that rung faster rather than harder, a ladder question for step 2).
+
+## Dolphin Regatta race line: fewer missed rings (2026-11-17, Regatta flywheel, overnight run)
+
+Verified (race judge, Amoebius headless):
+- Most of the Dolphin's "overlong" Regatta legs are long legs flown in drift, which is the kit's pace. The real losses
+  are missed rings: a drift committed at L5 speed carries the hull past the mouth, then the re-approach runs about
+  900 u out.
+- Risk 0.25 and LaneShare 0.6 (was 0.5 and the people-learned 0.785), on 18 archive2 courses x seeds 1-4, 72 races a
+  side: card mean 110.8 to 98.0 s, L5 86.7 to 88.5 s (flat within noise), missed rings 72 to 56.
+- `author_race_lines.py --check` passed.
+
+Not verified: a real Unity editor.
+
+1. Regatta with a Dolphin AI rival at the card start: the rival makes most rings first time, and finishes about 10%
+   sooner than before.
+
+## Thresher racing AI trained in Thornline, carried into Regatta (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+`ThresherAIBoostPolicy_ThresherTime` takes Thresher run1's drive (`time_ai_search.py` in the real game through the Amoebius judge,
+seeds 11-14), and `ThresherTimeController`'s Thresher row goes from lead 2.5 at the fleet nose lag (1.5/s) to lead 2.77 at 6.37/s.
+Confirm on fresh seeds 101-104, 24 flights a side: the shipped AI did not finish 2 of them, the trained one finished all; loss
+3.10 -> 1.57; I1 134 -> 94 s, I2 163 -> 115, I4 289 -> 185, I4 from Time 5 373 -> 143. Regatta gets the same drive in a new
+`ThresherAIBoostPolicy_Regatta` and the same pair on `Thresher_Regatta`: the judge, alone, on four courses, 98.5 -> 91.4 s.
+Not run in Unity (the reference compile shows 0 errors in the changed files).
+- [ ] Fly Thornline I1-I4 against a Legendary Thresher AI: it should plant and sling cleanly and finish every rung.
+- [ ] Fly Regatta with a Thresher ally: it should no longer orbit gates.
+
+## Wrasse Run AI trained (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+MinigameWrasseRun's race controller AI knobs go from commit 72 / approach 80 / through 55 to 433 / 423 / 68, written by
+`author_wrasse_run_assets.py`. `WrasseRunController.aiNoseLead` gets the row Wrasse lead 0.69 at 4.37/s (it had the fleet
+lag of 1.5/s). These come from Wrasse run1 (`time_ai_search.py`, Amoebius real-game judge). Confirm on fresh seeds
+101-104, 28 flights a side, 0 DNF: loss 2.445 -> 2.420, and the mean of the condition means 171.5 -> 156.6 s. I1 went
+225 -> 197 s, I4 224 -> 179 s, I2 116 -> 118 s (flat), and wide 1 137 -> 147 s. Wrasse Run is noisy run to run. The
+generator's rule that the approach lead must exceed the commit distance is relaxed to "outside the cruise circle".
+Not run in Unity: the reference compile shows 0 errors in the changed files.
+- [ ] Fly Wrasse Run against the AI. The Grouper should commit to each ring early and thread it, and finish faster than before.
+
+## Burrow Run AI trained (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+MinigameBurrowRun's race controller AI knobs go from commit 160 / approach 180 / through 120 to 42 / 702 / 74, written by
+`author_burrowrun_assets.py`. `BurrowRunController` gets an `aiNoseLead` table with the row Meerkat lead 0 at 7.97/s (it
+had the fleet lag of 1.5/s). These come from Meerkat run1 (`time_ai_search.py`, Amoebius real-game judge, seeds 11-14).
+Confirm on fresh seeds 101-104, 8 conditions, 32 flights a side, 0 DNF either side: loss 2.35 -> 1.87; I1 129 -> 112 s,
+I2 118 -> 96, I4 139 -> 101, I1 from Time 10 104 -> 90, I4 from Time 0 152 -> 114, wide 0 127 -> 96, wide 1 118 -> 97.
+I1 at rest is now the slowest rung after I4 from rest, so the ladder still runs flat.
+Not run in Unity: the reference compile shows 0 errors in the changed files.
+- [ ] Fly Burrow Run against a Legendary Meerkat AI: it should commit late, tunnel down each leg and finish faster than before.

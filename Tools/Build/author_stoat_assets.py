@@ -64,6 +64,9 @@ import struct
 import sys
 import uuid
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sound_placeholders  # noqa: E402
+
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 VESSELS = os.path.join(ROOT, "Assets", "_Prefabs", "Spacevessels")
 DONOR = os.path.join(VESSELS, "Squirrel.prefab")
@@ -1445,7 +1448,7 @@ def ripple_config_asset() -> str:
             "  radiusPerSeparation: 0.6\n"
             "  minRadius: 30\n"
             "  maxRadius: 160\n"
-            "  reach:\n" + elemental(1, 1, 2, 1, 1) +
+            "  reach:\n" + elemental(1, 1, 2, 1, 0.5) +
             "  expandSeconds: 0.9\n"
             "  fadeSeconds: 0.5\n"
             "  bandWidth: 0.08\n"
@@ -1617,7 +1620,7 @@ def check_stage6(files, prefab, errors):
          "the mode / ripple executors are not in the ActionExecutorRegistry")
     for path, want_text in stage6_files().items():
         rel = os.path.relpath(path, ROOT)
-        if files.get(rel) != want_text:
+        if files.get(rel) != sound_placeholders.fill_file(path, want_text):
             errors.append(f"{rel} is missing or not as authored - run without --check")
     hud = files.get(os.path.relpath(HUD_VARIANT_PATH, ROOT), "")
     if not hud:
@@ -1762,7 +1765,7 @@ def check(files: "dict[str, str]") -> "list[str]":
             elif f"m_Script: {{fileID: 11500000, guid: {seeded[path]}, type: 3}}" not in text:
                 errors.append(f"{rel} does not carry its script (guid {seeded[path]})")
             continue
-        if files.get(rel) != want_text:
+        if files.get(rel) != sound_placeholders.fill_file(path, want_text):
             errors.append(f"{rel} is missing or not as authored - run without --check")
     rel_class = os.path.relpath(CLASS_ASSET, ROOT)
     if files.get(rel_class) != class_asset():
@@ -1800,7 +1803,7 @@ def read_all() -> "dict[str, str]":
 
 def write(path: str, text: str) -> None:
     with open(path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(text)
+        f.write(sound_placeholders.fill_file(path, text))  # listed placeholder sounds survive a re-run
 
 
 # ----------------------------------------------------------------------------- self-test

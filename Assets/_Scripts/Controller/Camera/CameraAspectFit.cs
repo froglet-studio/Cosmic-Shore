@@ -47,6 +47,11 @@ namespace CosmicShore.Gameplay
 
         static void OnBeginCameraRendering(ScriptableRenderContext context, Camera cam)
         {
+            // Play only. With domain reload off (Enter Play Mode Options) this subscription outlives
+            // the play session, and the Game view renders scene cameras in edit mode: without this
+            // the fit rewrote the open scene's cameras (physical, 36 x 20.25 sensor, Overscan, a
+            // 17.537 mm focal length) every time a session ended. Always true in a player.
+            if (!Application.isPlaying) return;
             if (cam.cameraType != CameraType.Game || cam.targetTexture != null || cam.orthographic) return;
             Apply(cam);
         }

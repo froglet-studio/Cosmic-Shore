@@ -15,6 +15,24 @@ namespace CosmicShore.Tests
     [TestFixture]
     public class VoyageRulesTests
     {
+        [Test]
+        public void FriendAt_SeatsTheLobbyAfterThePlayer_AndAiInTheRest()
+        {
+            // You lead with two friends: they fly seats 1 and 2, no AI.
+            Assert.AreEqual(-1, VoyageRules.FriendAt(0, 0, 2));
+            Assert.AreEqual(0, VoyageRules.FriendAt(1, 0, 2));
+            Assert.AreEqual(1, VoyageRules.FriendAt(2, 0, 2));
+            // One friend: seat 2 is the AI's.
+            Assert.AreEqual(0, VoyageRules.FriendAt(1, 0, 1));
+            Assert.AreEqual(-1, VoyageRules.FriendAt(2, 0, 1));
+            // You in seat 1 of a joined squad: the friend takes seat 0, the AI seat 2.
+            Assert.AreEqual(0, VoyageRules.FriendAt(0, 1, 1));
+            Assert.AreEqual(-1, VoyageRules.FriendAt(1, 1, 1));
+            Assert.AreEqual(-1, VoyageRules.FriendAt(2, 1, 1));
+            // Nobody in the lobby: every other seat is an AI's.
+            Assert.AreEqual(-1, VoyageRules.FriendAt(1, 0, 0));
+        }
+
         const string Hunter = "pilot.callsign.citadel";
         const string Merchant = "pilot.callsign.volt";
         const string Pirate = "pilot.callsign.galleon";

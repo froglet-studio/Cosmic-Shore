@@ -23,10 +23,12 @@ namespace CosmicShore.UI
     /// vessel (<see cref="IHangarHeader"/>). A match reads the seat through <c>VesselPilotLoadout</c>.
     ///
     /// <para>2026-10-27 (Garrett): the ability each pilot used to rewrite, and the default "base kit" pilot, are gone.</para>
-    /// <para>2026-11-07 (Garrett): pilots are people, not the eighteen callsign assets; a crew holds at most one person
-    /// per callsign, so the rows are never more than the callsigns the hull can fly. A seat saved before then holds a bare
-    /// callsign id, which <see cref="PilotLoadoutStore.TryGetPilot"/> resolves to the crew's person on that callsign, so
-    /// the comparison that lights the seated row goes through the resolved person, never the raw id.</para>
+    /// <para>2026-11-07 (Garrett): pilots are people, not the eighteen callsign assets. A seat saved before then holds a
+    /// bare callsign id, which <see cref="PilotLoadoutStore.TryGetPilot"/> resolves to the crew's first person on that
+    /// callsign, so the comparison that lights the seated row goes through the resolved person, never the raw id.</para>
+    /// <para>2026-11-16 (Garrett: "it is ok if we duplicate callsign everything else will be the different"): several
+    /// people may share a callsign, so a row's picture is the person's own close-up
+    /// (<see cref="PilotSceneCatalogSO.TryGetFor"/>), and the callsign's portrait only when no scene paints them.</para>
     /// </summary>
     public class HangarPilotsPage : MonoBehaviour, IHangarTabPage, IHangarHeader
     {
@@ -46,6 +48,8 @@ namespace CosmicShore.UI
         }
 
         [SerializeField] private PilotArtifactCatalogSO catalog;
+        [Tooltip("Each painted pilot's close-up (Tools/Build/author_pilot_scene_assets.py). Empty shows the callsign's portrait.")]
+        [SerializeField] private PilotSceneCatalogSO scenes;
         [SerializeField] private CanvasGroup emptyGroup;
 
         [Header("Cards")]
@@ -110,7 +114,12 @@ namespace CosmicShore.UI
                 if (!used) continue;
                 var person = _pilots[i];
                 var p = _callsigns[i];
-                if (card.portrait) { card.portrait.sprite = p.Portrait; card.portrait.enabled = p.Portrait; }
+                if (card.portrait)
+                {
+                    Sprite face = scenes && scenes.TryGetFor(person, out var scene) && scene.closeUp ? scene.closeUp : p.Portrait;
+                    card.portrait.sprite = face;
+                    card.portrait.enabled = face;
+                }
                 if (card.nameText) card.nameText.text = person.DisplayName();
                 if (card.lineText)
                     card.lineText.text = TemplateText.Fill(lineTemplate, "callsign", CallsignOf(p), "sight", SightOf(p),

@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-rhinoaiboostpolicy-headlong-takes-rhino-e0bc14",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T03:12:26+00:00",
+  "area": "the Rhino racing AI",
+  "summary": "RhinoAIBoostPolicy_Headlong takes Rhino run1's drive and HeadlongController's Rhino row goes to lead 2.47 with a 7.5/s nose (was 2.5 at the fleet lag, where it orbited a gate).",
+  "why": "Garrett's Regatta flywheel: confirm on 28 fresh flights a side, shipped finished 6 (I4, Time 10, Time 0 and W0 all timed out at 360 s), trained finished 28 in 98-120 s.",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "89d50956a",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Headlong.asset",
+    "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Rhino"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

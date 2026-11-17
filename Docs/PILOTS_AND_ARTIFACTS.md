@@ -30,7 +30,7 @@ ability → level-5 upgrade contract), `Docs/ELEMENTAL_ECONOMY.md` (petals, the 
 >
 > **SUPERSEDED FOR ARTIFACTS TOO (Garrett, 2026-10-27).** The artifact concept is now
 > [`Docs/Pilots/ARTIFACTS.md`](Pilots/ARTIFACTS.md): **an artifact transforms the payload**, a parcel of the Ark's
-> hull that any vessel grabs and fires to crack super-shielded mass. An artifact no longer turns a "fifth knob", so §3
+> hull that any vessel of the Ark's own domain grabs and fires to crack super-shielded mass (Garrett, 2026-11-16: "an ark should not produce the weapons that kill it"). An artifact no longer turns a "fifth knob", so §3
 > is history too. The squad-as-a-deck frame (§1), the compatibility keywords (§4) and the data foundation built from
 > §7 still stand.
 

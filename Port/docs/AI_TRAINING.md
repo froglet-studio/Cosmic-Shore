@@ -28,6 +28,16 @@ export COSMIC_SHORE_NET=off
 `LiveAssetsDir` picks the `Assets/` tree the Live assembly compiles; `LiveSrcDir` keeps its
 synced sources apart from the default tree's, so the two builds never share a sync directory.
 
+## Nobody answers the first-run prompts
+
+A headless run has no person for the first-run privacy overlay (age gate + consent) or the username step, and the
+Authentication scene waits on the overlay with no timeout. `UnattendedBoot` (`src/CosmicShore.Player/UnattendedBoot.cs`)
+answers both the way the game's soak runners do: the overlay closes unanswered (nothing granted, analytics stays off) and
+a fresh account goes straight to the menu with no name claimed. It runs only in `--train` and `--race-judge` runs
+(2026-11-16; before it every training run stalled in Authentication).
+
+The Regatta race judge (`--race-judge`) reuses the same headless loop: `../Docs/Reports/REGATTA_JUDGE.md`.
+
 ## Commands
 
 All modes read `Assets/_SO_Assets/AI Training/TrainingControl.asset` and its scenario, session

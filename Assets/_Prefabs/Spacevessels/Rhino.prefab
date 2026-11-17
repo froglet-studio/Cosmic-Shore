@@ -1324,11 +1324,11 @@ MonoBehaviour:
   driftAmountParameterName: Drift Amount
   releaseEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1579691313
+      Data2: 1086872641
+      Data3: 763564937
+      Data4: -488243266
+    Path: event:/SFX/Oneshots/Gameplay sfx/trigger off
   attachReleaseEventToShip: 1
   driveParamToOneOnRelease: 0
   triggerDeadzone: 0.05
@@ -13128,7 +13128,7 @@ MonoBehaviour:
     Max: 40
     element: 3
     UseFloor: 1
-    Floor: 10
+    Floor: 7
 --- !u!114 &7740000000000001700
 MonoBehaviour:
   m_ObjectHideFlags: 0

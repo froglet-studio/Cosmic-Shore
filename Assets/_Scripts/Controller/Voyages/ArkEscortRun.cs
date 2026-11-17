@@ -151,9 +151,16 @@ namespace CosmicShore.Gameplay
         /// Deploy <paramref name="squad"/> and sail the escort at <paramref name="difficulty"/> (1-9).
         /// <paramref name="aiLocal"/> hands the local pilot's own seat to the AI too (the sim).
         /// </summary>
-        public bool SetSail(IVesselStatus local, SavedSquad squad, int difficulty, bool aiLocal)
+        public bool SetSail(IVesselStatus local, SavedSquad squad, int difficulty, bool aiLocal, VoyageCourse course = null)
         {
             if (_active || local?.Transform == null || !_def || !_escort || squad == null) return false;
+            // A friend sails the host's escort (Docs/Voyages/PARTY.md): its difficulty, and its seed for the same roll.
+            if (course is { Kind: VoyageCourseKind.EscortSail })
+            {
+                difficulty = course.Difficulty;
+                if (course.Seed != 0) NextVoyageSeed = course.Seed;
+                aiLocal = false;
+            }
             UseRuntimeEscort(difficulty);
             var tier = _escort.TierFor(difficulty);
             if (tier == null || _escort.Legs.Count == 0)
@@ -162,9 +169,10 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
+            _aiLocal = aiLocal;
+            BeginParty(local, ref squad, course);
             _squad = squad;
             _difficulty = Mathf.Clamp(difficulty, ArkEscortSO.MinDifficulty, ArkEscortSO.MaxDifficulty);
-            _aiLocal = aiLocal;
             _rng = new System.Random(_difficulty * 7919 + _voyageSeed);   // the voyage's seed: one roll per voyage
             _survived = _fallen = false;
             _endAt = -1f;
@@ -190,6 +198,9 @@ namespace CosmicShore.Gameplay
             _sea.Configure(_cfg, _context, _context?.Container, _corridor, OnSeaEnded);
             _corridor.PrepareCell = PrepareCell;
             _sea.SetRoute(route);
+            // Every peer stands the worlds from the host's pose; a friend's own Ark's fall waits for the host's outcome.
+            if (!_aiLocal) _sea.HomeOverride = _home;
+            _sea.EndsOnArkFall = !_following;
 
             _report = new ArkEscortReport
             {
@@ -215,6 +226,7 @@ namespace CosmicShore.Gameplay
             _context_.Install();
             Deploy(local, VoyageRun.LiveDomain(_context));
             _sea.Begin(local);
+            AnnounceSail();
             return true;
         }
 
@@ -275,9 +287,12 @@ namespace CosmicShore.Gameplay
             if (!swapper || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
             var t = local.Transform;
             var prefabs = swapper.VesselPrefabContainer;
+            // The friends who came with the host fly the first seats after the host's, as in Arena; an AI wingmate flies
+            // every seat left (VoyageRules.FriendAt; Shombith, 2026-11-16).
+            int friends = Mathf.Max(0, NetworkManager.Singleton.ConnectedClientsIds.Count - 1);
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
             {
-                if (seat == mySeat) continue;
+                if (seat == mySeat || VoyageRules.FriendAt(seat, mySeat, friends) >= 0) continue;
                 var slot = _squad.GetSlot(seat);
                 if (!VesselRequirement.IsConcrete(slot.Vessel)) continue;
                 // A hull with no registered prefab (Falcon, Termite, Shrike) cannot be released: the seat sails empty,
@@ -315,12 +330,12 @@ namespace CosmicShore.Gameplay
 
         void OnUnderway()
         {
-            Banner(TemplateText.Fill(_escort.DepartLine, "legs", _escort.Legs.Count.ToString(),
-                "difficulty", _difficulty.ToString()) + CourseBannerSuffix() + VoyageBannerSuffix());
             BringWingmates(force: true);
+            SignalUnderway();
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;
             HookArk();
+            ShowOnHud();
             // The first world was entered behind the veil, before the hull was laid: its entry is the moment it opens.
             if (_leg >= 0)
             {
@@ -328,15 +343,25 @@ namespace CosmicShore.Gameplay
                 r.HullAtEntry = r.HullMin = Ark ? Ark.AliveCount : 0;
                 r.EnteredAt = Time.time;
             }
+            BeginIntro();
+        }
+
+        /// <summary>The departure banner: what the voyage is, once the pilot has the stick (after the intro).</summary>
+        void Depart()
+        {
+            if (!_active || !_sea) return;
+            Banner(TemplateText.Fill(_escort.DepartLine, "legs", _escort.Legs.Count.ToString(),
+                "difficulty", _difficulty.ToString()) + CourseBannerSuffix() + VoyageBannerSuffix());
         }
 
         void OnRouteEnded()
         {
             if (!_active || _fallen) return;
+            if (FollowerHolds(ArkEscortReport.Outcome.Survived)) return;
             // The Ark holds at the last world's core: it made it through.
             _survived = true;
             CloseLeg(_leg);
-            Banner(TemplateText.Fill(_escort.SurvivedLine, "difficulty", _difficulty.ToString(),
+            Banner(ArkwayVoyageHud.Mood.Good, TemplateText.Fill(_escort.SurvivedLine, "difficulty", _difficulty.ToString(),
                 "hull", Ark ? Mathf.RoundToInt(Ark.HealthFraction * 100f).ToString() : "0") + BerthedBannerSuffix());
             _endAt = Time.time + EndAfterSurvivedSeconds;
         }
@@ -344,11 +369,12 @@ namespace CosmicShore.Gameplay
         void OnArkFallen()
         {
             if (!_active) return;
+            if (FollowerHolds(ArkEscortReport.Outcome.Fallen)) return;
             _fallen = true;
             CloseLeg(_leg);
             int leg = Mathf.Max(0, _leg);
             _report.FallenLeg = leg;
-            Banner(TemplateText.Fill(_escort.FallenLine, "name", _escort.Legs[leg].Name,
+            Banner(ArkwayVoyageHud.Mood.Threat, TemplateText.Fill(_escort.FallenLine, "name", _escort.Legs[leg].Name,
                 "leg", (leg + 1).ToString(), "legs", _escort.Legs.Count.ToString()));
         }
 
@@ -363,7 +389,8 @@ namespace CosmicShore.Gameplay
         {
             if (!_active || !_sea) return;
             SeedSeats();
-            if (!_sea.IsRunning) return;
+            TickParty();
+            if (!_active || !_sea.IsRunning) return;
 
             if (_endAt > 0f && Time.time >= _endAt)
             {
@@ -409,8 +436,9 @@ namespace CosmicShore.Gameplay
             r.HullMin = r.HullAtEntry;
             OpenLegMetrics(leg);
             var authored = _escort.Legs[leg];
-            Banner(TemplateText.Fill(authored.Arrival, "name", authored.Name, "leg", (leg + 1).ToString(),
+            Banner(r.Hostile ? ArkwayVoyageHud.Mood.Threat : ArkwayVoyageHud.Mood.Event, TemplateText.Fill(authored.Arrival, "name", authored.Name, "leg", (leg + 1).ToString(),
                 "legs", _escort.Legs.Count.ToString()));
+            OnAssaultLegChanged();
         }
 
         /// <summary>Below the tier's breach line the Ark is overrun: the escort is lost, as if it had fallen.</summary>
@@ -418,15 +446,17 @@ namespace CosmicShore.Gameplay
         {
             var ark = Ark;
             if (!ark || _fallen || _survived || _leg < 0 || ark.TotalCount == 0) return;
+            if (_localOutcome != ArkEscortReport.Outcome.None) return;
             float line = _escort.TierFor(_difficulty)?.BreachHull ?? 0f;
             if (line <= 0f || ark.HealthFraction >= line) return;
+            if (FollowerHolds(ArkEscortReport.Outcome.Fallen)) return;
             _fallen = true;
             _report.Overrun = true;
             _report.HullMinFraction = Mathf.Min(_report.HullMinFraction, ark.HealthFraction);
             CloseLeg(_leg);
             _report.FallenLeg = _leg;
             var authored = _escort.Legs[_leg];
-            Banner(TemplateText.Fill(_escort.OverrunLine, "name", authored.Name, "leg", (_leg + 1).ToString(),
+            Banner(ArkwayVoyageHud.Mood.Threat, TemplateText.Fill(_escort.OverrunLine, "name", authored.Name, "leg", (_leg + 1).ToString(),
                 "legs", _escort.Legs.Count.ToString(), "hull", Mathf.RoundToInt(ark.HealthFraction * 100f).ToString()));
             _sea.End(returnToCell: true, "the Ark was overrun");
         }
@@ -574,9 +604,13 @@ namespace CosmicShore.Gameplay
         void Finish(ArkEscortReport.Outcome outcome)
         {
             _active = false;
+            StopIntro();
+            LeaveHud();
             _report.Result = outcome;
             _report.EndedAt = Time.time;
             FinishMetrics();
+            AnnounceEnd();
+            EndParty();
             _report.ReachedLegs = 0;
             foreach (var r in _report.LegReports)
                 if (r.Reached) _report.ReachedLegs++;
@@ -618,6 +652,8 @@ namespace CosmicShore.Gameplay
             var sea = new GameObject("ArkEscortArkwayRun");
             sea.transform.SetParent(_root, false);
             _sea = sea.AddComponent<ArkwayRun>();
+            // A toast never plays under the intro: it waits, and is read when the pilot has the stick.
+            _sea.HoldBanners = () => VoyageIntro.IsPlaying;
             _sea.Underway += OnUnderway;
             _sea.RouteEnded += OnRouteEnded;
             _sea.ArkFallen += OnArkFallen;
@@ -639,7 +675,10 @@ namespace CosmicShore.Gameplay
             return vessel.VesselStatus;
         }
 
-        void Banner(string line) => _sea?.ShowBanner(line, BannerSeconds);
+        void Banner(string line) => Banner(ArkwayVoyageHud.Mood.Event, line);
+
+        /// <summary>A toast of <paramref name="mood"/> on the run's one banner path (<see cref="VoyageToasts"/>).</summary>
+        void Banner(ArkwayVoyageHud.Mood mood, string line) => VoyageToasts.Show(_sea, mood, line, null, BannerSeconds);
 
         void OnDestroy()
         {
@@ -649,9 +688,16 @@ namespace CosmicShore.Gameplay
                 _sea.RouteEnded -= OnRouteEnded;
                 _sea.ArkFallen -= OnArkFallen;
             }
+            StopIntro();
+            LeaveHud();
             if (_active) SquadDeployment.Recall();
+            // Destroyed while out (a scene unload that ended nothing first): the escort's static hooks leave with it, or
+            // the next scene's crystals would still be placed by this escort's resolver.
+            _context_?.Uninstall();
+            _context_ = null;
             if (_reactor) Destroy(_reactor);
             UnhookMetrics();
+            EndParty();
             if (_escortCopy) Destroy(_escortCopy);
             _onEnded = null;
         }

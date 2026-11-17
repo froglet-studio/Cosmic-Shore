@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-switchback-s-legendary-nose-rate-goes-5-e12cac",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T03:05:16+00:00",
+  "area": "the Dolphin racing AI and Switchback's nose-lag bands",
+  "summary": "Switchback's Legendary nose rate goes 5/6 to 11.18/13.41 per second (I1-I2 / I3-I4 and the gauntlet), aiNoDodgeNearRing 200 to 177, the Dolphin's lead 2.5 to 2.03, and the four DolphinAIBoostPolicy_Switchback files take Dolphin run2's drive. Legendary is now further ahead of Hard than your 10 s bands.",
+  "why": "Garrett's Regatta flywheel: confirm on 32 fresh flights a side, no DNF, I1 110->86 s, I1@T10 110->97, wide courses -5 to -8%, I2 -5%, I4 even (the gauntlet ~240 s either way).",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "4b2da3e5e",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset",
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Dolphin"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}
