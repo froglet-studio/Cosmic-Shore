@@ -124,6 +124,38 @@ namespace CosmicShore.Player
             }
         }
 
+        /// <summary>The idle host's hull: an original hull no seat flies when there is one, otherwise any seated hull.
+        /// Seats are read from the AI players, never by hull, so the host sharing a seat's hull changes no result.</summary>
+        internal static VesselClassType HostHull(IReadOnlyList<VesselClassType> seated)
+        {
+            var originals = new[] { "Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow" }
+                .Select(Enum.Parse<VesselClassType>);
+            foreach (var h in originals)
+                if (!seated.Contains(h)) return h;
+            return seated.Count > 0 ? seated[0] : throw new InvalidOperationException("the spec has no seats");
+        }
+
+        /// <summary>
+        /// Seat any requested hull by name, on the card or not: a hull the card does not list is added to the loaded card
+        /// in memory for this run only (nothing is written), from its class asset. Without it the game swaps an off-card
+        /// hull for one the card lists (ClampVesselToGame), and the judge would time that hull under the requested name.
+        /// Regatta keeps hulls that finish too slowly to be an ally AI's draw off its card (author_regatta_assets.py
+        /// JUDGE_ONLY_HULLS); this is how step 5 and their AI training still race them.
+        /// </summary>
+        void SeatOffCardHulls(SO_ArcadeGame card)
+        {
+            card.Vessels ??= new List<SO_Vessel>();
+            foreach (var hull in _hulls)
+            {
+                if (card.Vessels.Any(v => v != null && v.Class == hull)) continue;
+                string path = $"Assets/_SO_Assets/Classes/SO_Class_{hull}.asset";
+                var vessel = TrainingHost.LoadAsset(_runtime, path) as SO_Vessel
+                    ?? throw new InvalidOperationException($"{hull} is not on the card and {path} did not load");
+                card.Vessels.Add(vessel);
+                _notes.Add($"seated off the card: {hull}");
+            }
+        }
+
         IEnumerator Run()
         {
             var gameData = TrainingHost.FindFirstAsset(_runtime, "GameDataSO") as GameDataSO
@@ -145,9 +177,8 @@ namespace CosmicShore.Player
             if (IsRegatta) ApplyCourse(genome, intensity);
             else ApplyTrainingOverlay(genome);
 
-            var all = new[] { "Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow" }
-                .Select(Enum.Parse<VesselClassType>);
-            var hostHull = all.First(h => !_hulls.Contains(h));
+            SeatOffCardHulls(card);
+            var hostHull = HostHull(_hulls);
             gameData.SyncFromArcadeGame(card);
             ApplyStart(gameData);
             ApplyCrystalGenes();
@@ -377,7 +408,11 @@ namespace CosmicShore.Player
             foreach (var o in _spec["overrides"]?.AsArray() ?? new JsonArray())
             {
                 string path = o?["asset"]?.GetValue<string>() ?? throw new InvalidOperationException("an override without an asset");
-                object asset = TrainingHost.LoadAsset(_runtime, path) ?? throw new InvalidOperationException(path + " not found");
+                // A prefab's component by its fileID ({"asset": "...prefab", "component": 975128113266807093}); else an SO.
+                object asset = (o["component"] is JsonNode c
+                                   ? TrainingHost.LoadPrefabComponent(_runtime, path, c.GetValue<long>())
+                                   : TrainingHost.LoadAsset(_runtime, path))
+                               ?? throw new InvalidOperationException(path + " not found");
                 SetFields(asset, o["fields"]?.AsObject(), path);
                 _notes.Add("override: " + path);
             }
@@ -497,6 +532,12 @@ namespace CosmicShore.Player
                 var elemType = arr.GetType().GetElementType()!;
                 arr.SetValue(last ? ConvertJson(value, elemType, what) : SetPath(arr.GetValue(idx)!, parts, i + 1, value, what), idx);
                 return arr;
+            }
+            if (target is System.Collections.IList list && int.TryParse(parts[i], out int li))
+            {
+                var elemType = list.GetType().IsGenericType ? list.GetType().GetGenericArguments()[0] : typeof(object);
+                list[li] = last ? ConvertJson(value, elemType, what) : SetPath(list[li]!, parts, i + 1, value, what);
+                return list;
             }
             var f = FieldOf(target, parts[i]);
             if (last) f.SetValue(target, ConvertJson(value, f.FieldType, what));

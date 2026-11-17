@@ -24814,6 +24814,20 @@ flights a side against run3b had every condition faster, loss 2.40 -> 2.25, no D
 3. Race Serpentine I4 against a Legendary AI Serpent: it finishes near 85-100 s, and when its pellets run low it cloaks
    and lays a wall.
 
+## Urchin run1: Skein AI trained in the real game (2026-11-17, Regatta flywheel)
+
+Verified: Amoebius raced the genome headless through `time_ai_search.py` (search on seeds 11-14, confirm on seeds
+101-104, 9 conditions, 36 flights a side: the shipped AI DNFed all 12 of its I4 flights, the trained one finished all
+36; I1 79 -> 53 s, I2 143 -> 77, I4 DNF -> 261, I1@T10 86 -> 50), the shipped files raced again after the write (see
+the PR), `unity_refcompile` (see the PR). Not verified: a real Unity editor. The values it replaced, for a revert:
+RailLeadDistance 260, AssessIntervalSeconds 0.3451, ScanArc 2277.61, CaptureFraction 0.917, ClosingFraction 0.1238,
+LaunchPreferArc 501.981, DryCrawlArc 46.3683, MaxDryCrawlSeconds 1.3127, ReverseLeadTurnRadii 1.8716, ParkedSpeed
+7.0595, ParkedSeconds 4.148, MinSlipIntervalSeconds 1.5847, SpikeIntervalSeconds 1.4303, SpikeMinAmmo 0.5479,
+TrackAimDegrees 8.7529, TrackMinRangeInLengths 3.5138, TrackAxisAlignment 0.4495; Skein's Urchin row Gain 0, no nose rate.
+
+1. Open MinigameSkein: the Urchin's AI Nose Lead row reads Gain 1.39, Nose Follow 14.41.
+2. Race Skein I4 against a Legendary AI Urchin: it finishes (near 260 s) instead of timing out.
+
 ## Stoat run1: Slingshot AI trained in the real game, its nose pair carried into Regatta (2026-11-17, Regatta flywheel)
 
 Verified: Amoebius raced the genome headless through `time_ai_search.py` (search on seeds 11-14, confirm on seeds
@@ -24826,6 +24840,18 @@ slots were training the Squirrel), and a real Unity editor.
 2. Open `Resources/AIBoostPolicies/StoatSlingConfig_Slingshot`: AI Sling Min Turn Degrees 154.471, AI Warp Min
    Distance 11.523, AI Hold For Window Degrees 58.721, Trampoline AI Turn Scale 67.159.
 3. Race Slingshot I1 against a Legendary AI Stoat: it finishes near 50 s, warping on most legs.
+
+## Sparrow run4: Breakwater AI at the Legendary nose 13.9/s, carried into Regatta (2026-11-17, Regatta flywheel)
+
+Verified: Amoebius raced the genome headless through `time_ai_search.py` (seeds 11-14, confirm on 101-104, 32 flights a
+side, no DNF: I1 99 -> 98 s, I2 83 -> 76, I4 78 -> 73, I1@T10 95 -> 81, I4@T0 98 -> 93), `promote_trained_drives.py`
+wrote the file, `author_race_lines.py --check` OK, `unity_refcompile` (see the PR). Not verified: the shipped files raced
+after the write, a real Unity editor. The lead stays 1.29 (run4's 2.08 judges the same at 13.9/s and would have changed
+Easy and Medium).
+
+1. Open MinigameBreakwater: the Sparrow's AI Nose Lead row reads Gain 1.29, Nose Follow 13.9; AI Nose Follow By
+   Difficulty still 1.8 / 2 / 3.5 / -1.
+2. Race Breakwater I2 against a Legendary AI Sparrow: it finishes near 76 s; a Medium one still near 110 s.
 
 ## Breakwater AI pace by difficulty (2026-11-17, elemental loop step 2, overnight run)
 
@@ -24848,3 +24874,45 @@ Skein on seeds 4-6: I2 / I4 Easy 172 / 384 s, Medium 173 / 360, Hard 162 / 343, 
    / 18 (I3-I4).
 2. Arcade > Skein, I2 with Medium rivals: about 165-175 s against Legendary's 135-145 s. MinigameSkein's controller
    shows AI Seek Gain By Difficulty 0.5 / 0.5 / 0.7 / -1.
+
+## Perch Run AI no longer circles a ring (2026-11-17, elemental loop step 2, overnight run)
+
+Verified:
+- Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py --mode PerchRun --hull Goby`). The AI Goby
+  finished 12 of 12 Legendary races and 11 of 12 Medium races at I1-I4 on fresh seeds 4-6. Before, it finished 0 of 2
+  at I4.
+- `perch_run_harness` ran 11 tests, all passed, including the new turning-circle test.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor.
+
+1. Arcade > Perch Run, Goby, I2 with two AI Gobys: neither circles a ring. When a ring is close beside one, it flies
+   straight on, turns back and darts through. Both finish.
+
+## Breach AI re-attacks a missed ring (2026-11-17, elemental loop step 2, overnight run)
+
+Verified:
+- Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py --mode Breach --hull Orca`). On fresh seeds
+  4-6, 24 of 24 Medium and Legendary races finished at I1-I4. Before, 1 of 8 finished at I3-I4.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor.
+
+1. Arcade > Breach, Orca, I3 with two AI Orcas: when one misses a walled ring, it turns back and threads it instead of
+   wandering on. Both finish, in about 160 s.
+
+## Thornline Legendary AI row trained (2026-11-17, elemental loop step 3, overnight run)
+
+Verified:
+- The real-game race judge (`time_ai_search.py --hull Shrike`) confirmed the new row on seeds 101-104: 32 flights a
+  side, none unfinished, loss 2.67 to 2.39.
+- `thornline_course_harness` ran 20 tests, all passed.
+- `author_thornline_assets.py --check` passed.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor. Also, `author_thornline_assets.py` without `--check` appended a second copy of the
+controller's AI block to the scene when the values changed. The scene here was edited by hand instead, so do not run the
+writer until that is looked at.
+
+1. Arcade > Thornline, Shrike, I1 with a Legendary rival: it finishes in about 49 s, aiming crisply with no wobble.
+   MinigameThornline's controller shows AI Nose Lead By Difficulty 2.5 / 3 / 8 / 9.2 and Follow -1 / -1 / -1 / 1.6.

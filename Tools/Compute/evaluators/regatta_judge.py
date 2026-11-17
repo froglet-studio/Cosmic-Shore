@@ -50,7 +50,10 @@ DLL = os.path.join(BIN, "CosmicShore.dll")
 EDITOR_I1 = {"Urchin": 51.0, "Manta": 67.0, "Stoat": 70.0, "Squirrel": 75.0, "Rhino": 95.0, "Dolphin": 97.5,
              "Serpent": 100.0, "Sparrow": 133.0}
 CALIBRATION_GENOME = {"version": 1, "intensity": 1, "features": {}}
-REGATTA_HULLS = ["Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow"]
+REGATTA_HULLS = ["Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow",
+                 "Thresher", "BrittleStar"]   # the last two seated 2026-11-17 (author_regatta_assets.JUDGED_HULLS)
+# Any other hull is seated by name too: RaceJudge adds a requested hull the card does not list to the card in memory, for
+# that run only (author_regatta_assets.JUDGE_ONLY_HULLS: Wrasse, Meerkat, Grizzly, Angler).
 
 
 def _commit():
@@ -130,7 +133,9 @@ def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, work
     mode       any gate-race Time game by its card name (Switchback, Redline, Breakwater, SerpentTime, ScarabRally ...);
                only Regatta reads the genome, the others lay their own course at `intensity` (default the genome's, 1).
     overrides  [{"asset": "Assets/...asset", "fields": {"field.sub": value}}]: in-memory edits to loaded assets for this
-               run only (nothing is written), so a parameter search can score candidates in parallel.
+               run only (nothing is written), so a parameter search can score candidates in parallel. A prefab's
+               component is edited with {"asset": "Assets/...prefab", "component": <its fileID>, "fields": {...}}
+               (a vessel's VesselStatus throttle, a TrailFollower's ride speed): every spawn of that prefab reads it.
     controller_overrides  {"aiNoseLead.0.Gain": 1.5}: fields of the scene's race controller, set before each Ready.
     start      the element levels each hull starts at: "card" (default, the card's StartingElements), "rest" (all 0),
                "L5" (every hull at Time 5: every Time level-5 upgrade on) or {"Manta": {"Time": 5}} in levels.

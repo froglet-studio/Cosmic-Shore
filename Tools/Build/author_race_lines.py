@@ -39,7 +39,7 @@ COMMON = {"RiskSpread": 0.15, "CarefulLookaheadSeconds": 0.35, "BoldLookaheadSec
 # (1.5/s). Each hull's is the rate trained in its OWN Time game (time_ai_search.py; the home-game PRs #2087 Scarab, #2088
 # Serpent, #2092 Dolphin, #2093 Rhino, #2094 Manta, #2095 Sparrow), where the fleet lag was each AI's biggest handicap. The Manta takes
 # Redline's I3-I4 rate (9), not I1-I2's 15: with Soar lit 15 overshot the mouths. Each hull's NoseLeadGain is the lead
-# trained WITH that rate (a pair: Rhino 2.47, Dolphin 2.03, Serpent 2.09 at 10.42 (run4, with its refuel genes), Stoat 2.62 at 10.43 (run1, with its sling genes), Sparrow 1.29, Scarab 0, Manta 0). Not yet judged in Regatta.
+# trained WITH that rate (a pair: Rhino 2.47, Dolphin 2.03, Serpent 2.09 at 10.42 (run4, with its refuel genes), Stoat 2.62 at 10.43 (run1, with its sling genes), Sparrow 1.29 at 13.9 (run4), Scarab 0, Manta 0). Not yet judged in Regatta.
 OPTIONAL = ["NoseLeadGain", "NoseLeadMaxExtraDegrees", "NoseFollowPerSecond"]
 RANGES = {"NoseLeadGain": (0, 6), "NoseFollowPerSecond": (0, 30), "NoseLeadMaxExtraDegrees": (0, 120), "LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
           "CarefulLookaheadSeconds": (0, 3), "BoldLookaheadSeconds": (0, 3), "MinLookahead": (1, 400),
@@ -61,8 +61,23 @@ HULLS = {
     "Dolphin": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 2.03, "NoseFollowPerSecond": 11.18},   # a drift locks its course: room to slide; 2.5 circled (judge, 2026-11-16)
     "Stoat":   {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.60, "NoseLeadGain": 2.62, "NoseFollowPerSecond": 10.43},   # a 72 u turning circle at any warp
     "Serpent": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 2.09, "NoseFollowPerSecond": 10.42},   # single stick: 2.5 corkscrews it (#1832)
-    "Sparrow": {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseLeadGain": 1.29, "NoseFollowPerSecond": 7.9},
+    "Sparrow": {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseLeadGain": 1.29, "NoseFollowPerSecond": 13.9},
     "Scarab":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.45, "NoseLeadGain": 0, "NoseFollowPerSecond": 15},   # cannot slow quickly: a little more care
+    # The hulls seated 2026-11-17 on the real-game judge's word (author_regatta_assets.py JUDGED_HULLS). None trained a
+    # nose pair at home (their Time games fly the fleet lag), so the rate is the one the Regatta judge picked from
+    # 1.5 / 5 / 10 on the shipped course, alone, card start: Thresher 243 -> 149 s, Grizzly 304 -> 179 s at 10; the
+    # Wrasse, Meerkat and Angler barely move (190 -> 180, 261 -> 250, 385 -> 313). A home-game search replaces these.
+    # Seated in #2123: Wrasse, Thresher, Meerkat, Grizzly. Second round, the same rate: on its race line the Brittle Star
+    # races 73-89 s (on the gate way at the fleet lag it threaded 20 of 24 gates in 400 s), the Angler 350-432 s. The
+    # Honeyguide is not seated: 395-485 s and a 14-gate stall on one archive course, on its line or the gate way.
+    # The same night the Wrasse, Meerkat, Grizzly and Angler came off the card (2-5x the pace: the card is the ally AI's
+    # draw); their lines stay for the judge, which seats them by name.
+    "Wrasse":  {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseFollowPerSecond": 10},   # the Sparrow hull
+    "Thresher": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
+    "Meerkat": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
+    "Grizzly": {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.45, "NoseFollowPerSecond": 10},   # a big hull: room
+    "Angler":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
+    "BrittleStar": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
 }
 
 

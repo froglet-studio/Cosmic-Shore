@@ -351,7 +351,21 @@ g.emit_asset(POOL_ASSET, G_ASSET["RegattaCoursePool"],
 # one speed source a gate-following autopilot reaches by flying the racing line. Retire this when
 # the racing AI drives every hull (clear OpponentAIVessel and drop the assert below).
 OPPONENT_AI_HULL = "Squirrel"
-HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
+MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
+# Hulls seated on the REAL-GAME judge's word alone (2026-11-17, Garrett's "all 24 vessels racing Regatta"): each finished
+# the shipped course and three archive courses in Amoebius headless (regatta_judge.py), alone under both starts and in a
+# full field, on its race line (author_race_lines.py). regatta_balance.py has no model of them, so they take no
+# StartingElements row (rest at the card start; every hull is at Time 5 in the L5 start) until the real-game search
+# prices them. A hull joins only within about 1.5x of the first nine's pace: the card is the ally AI's hull draw
+# (PickAIVesselType reads the card's Vessels), so a slow hull here is a slow teammate on Garrett's team sum.
+JUDGED_HULLS = ["Thresher", "BrittleStar"]
+# Finish every course but at 2-5x the pace, so they are NOT on the card (#2123/#2127 seated them; taken off the same
+# night): the judge still seats them by name (RaceJudge adds a requested hull to the card in memory) and their race lines
+# stay, for step 5 and their own AI training to bring them within reach. REGATTA.md 6.6.
+JUDGE_ONLY_HULLS = ["Wrasse", "Meerkat", "Grizzly", "Angler"]
+HULL_ORDER = MODEL_HULLS + JUDGED_HULLS
+for _h in JUDGED_HULLS:
+    EXISTING.setdefault(f"Vessel_{_h}", lib.existing_guid(f"Assets/_SO_Assets/Classes/SO_Class_{_h}.asset"))
 VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n" for h in HULL_ORDER)
 
 
@@ -360,7 +374,7 @@ def starting_element_rows() -> str:
     row (the platform default IS rest, and a row of zeros would say the card decided it)."""
     rows = []
     for i in range(1, 5):
-        for h in HULL_ORDER:
+        for h in MODEL_HULLS:
             lv = BALANCE[i]["levels"][h]
             if lv == 0:
                 continue

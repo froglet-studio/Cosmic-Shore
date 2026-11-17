@@ -204,6 +204,36 @@
      "evidence": "ladder call: rivals by difficulty (Easy 3.5/Medium 5/Hard 8 nose; Medium I4 161 s, was DNF; SCARABRALLY.md AI pace by difficulty); bare I3 = I2 (57 s), lighter I3 field held on Yash's Switchback lane (patch in project files)"
     }
    }
+  },
+  "Goby": {
+   "Time": {
+    "2": {
+     "state": "doing",
+     "by": "Claude",
+     "date": "2026-11-17",
+     "evidence": "Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Goby orbiting a ring inside its turning circle and failing to finish most races past I1; the coach now flies straight on to open the range (PERCH_RUN.md 5.1): Legendary 44/47/46/72 s, 12 of 12 finished on fresh seeds. Open: difficulty does nothing (no seat error); I4 still loses up to 40 s at some reef rings."
+    }
+   }
+  },
+  "Orca": {
+   "Time": {
+    "2": {
+     "state": "doing",
+     "by": "Claude",
+     "date": "2026-11-17",
+     "evidence": "Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Orca timing out at I3-I4 (1 of 8 finished), missing a walled ring and wandering past it; Breach now uses the gate race's re-attack steering (BREACH.md 5.1): Legendary 120/116/160/141 s, Medium 126/121/167/150, 24 of 24 finished. Open: I4 easier than I3; Medium ~ Legendary."
+    }
+   }
+  },
+  "Shrike": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-17",
+     "evidence": "Shrike run1 (time_ai_search.py, real-game judge, 2026-11-17): Thornline's Legendary row trained (nose lead 16 -> 9.2, follow 1.6/s); confirm on seeds 101-104, 32 flights a side, none unfinished, loss 2.67 -> 2.39 (THORNLINE.md 4.1). Shrike is not on the Regatta card yet."
+    }
+   }
   }
  },
  "arenas": {

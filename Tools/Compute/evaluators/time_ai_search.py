@@ -132,7 +132,7 @@ GAMES = {
         "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
                    "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
                    "minHoldSeconds": (0.0, 3.0), "minRestSeconds": (0.0, 3.0)},
-        "lead": 1.29, "rows": [], "nose_gene": 7.9,    # BreakwaterController.aiNoseLead: Sparrow 1.29 at 7.9/s (run3)
+        "lead": 1.29, "rows": [], "nose_gene": 13.9,   # BreakwaterController.aiNoseLead: Sparrow 1.29 at 13.9/s (run4)
     },
     "Scarab": {
         "mode": "ScarabRally",
@@ -189,8 +189,8 @@ GAMES = {
                    "ParkedSpeed": (0.5, 40.0), "ParkedSeconds": (0.5, 12.0), "MinSlipIntervalSeconds": (0.25, 6.0),
                    "SpikeIntervalSeconds": (0.1, 6.0), "SpikeMinAmmo": (0.0, 1.0), "TrackAimDegrees": (1.0, 45.0),
                    "TrackMinRangeInLengths": (1.0, 10.0), "TrackAxisAlignment": (0.0, 1.0)},
-        # SkeinController.aiNoseLead: Urchin 0. Skein has no nose rate of its own: the fleet lag (a row's NoseFollow 0).
-        "lead": 0.0, "rows": [], "nose_gene": 1.5,
+        # SkeinController.aiNoseLead: Urchin 1.39 at 14.41/s (run1, 2026-11-17).
+        "lead": 1.39, "rows": [], "nose_gene": 14.41,
     },
     "Stoat": {
         "mode": "Slingshot",
@@ -225,12 +225,107 @@ GAMES = {
         # gene. No nose rate of its own either: the fleet lag, searched through the judge.
         "lead": None, "rows": [], "nose_gene": 1.5,
     },
+    "Meerkat": {
+        "mode": "BurrowRun",
+        # The Meerkat flies the gate race's own steering (no drive asset, no ability autopilot in a Time race) and
+        # BurrowRunController has no aiNoseLead table, so its genes are the race controller's AI knobs (GateRaceController
+        # aiCommitDistance / aiApproachLead / aiThroughDistance, as MinigameBurrowRun ships them; only the Meerkat races
+        # Burrow Run) and the nose rate, set through the judge (fleet lag 1.5/s shipped). No lead gene.
+        "assets": {},
+        "fields": {},
+        "ctrl_fields": {"aiCommitDistance": (40.0, 600.0), "aiApproachLead": (40.0, 800.0),
+                        "aiThroughDistance": (40.0, 600.0)},
+        "ctrl_defaults": {"aiCommitDistance": 160.0, "aiApproachLead": 180.0, "aiThroughDistance": 120.0},
+        "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
+        "lead": None, "rows": [], "nose_gene": 1.5,
+    },
+    "Shrike": {
+        "mode": "Thornline",
+        # Thornline aims the AI itself (ThornlineAIPlan) and sets its skill by difficulty on every arming
+        # (ThornlineController.aiNoseLeadByDifficulty / aiNoseFollowByDifficulty): the search moves the LEGENDARY row of
+        # both, through controller_overrides, and nothing on the vessel. ShrikeConfig carries the sling AI's own knobs; it
+        # is listed for the shipped-genome read only (no field of it is searched: it is the vessel's, every mode's).
+        "assets": {i: "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset" for i in (1, 2, 3, 4)},
+        "fields": {},
+        "ctrl_fields": {"noseLeadLegendary": (1.0, 32.0), "noseFollowLegendary": (1.5, 24.0)},
+        "ctrl_defaults": {"noseLeadLegendary": 9.2, "noseFollowLegendary": 1.6},    # Shrike run1 (was 16 and the fleet lag)
+        "ctrl": lambda p: {
+            "aiNoseLeadByDifficulty": [2.5, 3.0, 8.0, float(p["noseLeadLegendary"])],
+            "aiNoseFollowByDifficulty": [-1.0, -1.0, -1.0,
+                                         -1.0 if float(p["noseFollowLegendary"]) <= 1.5 else float(p["noseFollowLegendary"])]},
+        "lead": None, "rows": [],                      # no aiNoseLead table: the row above is the lead
+    },
+    "Thresher": {
+        "mode": "ThresherTime",
+        # ThresherAIBoostPolicy's Thresher Time variant (the plant-and-sling drive) and ThresherTimeController.aiNoseLead
+        # (Thresher 2.5). Thresher Time has no nose knob: the fleet lag, 1.5/s, set through the judge. In Regatta the hull
+        # flies the base policy (no Regatta variant) and its race line's nose pair, so a winner reaches Regatta through a
+        # ThresherAIBoostPolicy_Regatta variant and Resources/RaceLines/Thresher_Regatta.
+        "assets": {i: POL + "ThresherAIBoostPolicy_ThresherTime.asset" for i in (1, 2, 3, 4)},
+        "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
+                   "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
+                   "plantMinTurnDegrees": (0.0, 180.0), "plantMinDistance": (0.0, 400.0),
+                   "slingIntervalSeconds": (0.1, 4.0), "releaseConeDegrees": (1.0, 60.0), "maxPlantSeconds": (0.2, 6.0),
+                   "aimedHoldSeconds": (0.0, 4.0), "aimToleranceDegrees": (0.5, 45.0)},
+        "lead": 2.5, "rows": [], "nose_gene": 1.5,
+    },
+    "Wrasse": {
+        "mode": "WrasseRun",
+        # The Wrasse flies the gate race's own steering (no drive asset: its boosts are the kite's saved boosts, spent by
+        # KiteNavigatorAI) and WrasseRunController has no aiNoseLead table, so its genes are the race controller's AI
+        # knobs (as MinigameWrasseRun ships them) and the nose rate, set through the judge (fleet lag 1.5/s). In Regatta
+        # the nose pair reaches it through Resources/RaceLines/Wrasse_Regatta (the controller knobs are Wrasse Run's).
+        "assets": {},
+        "fields": {},
+        "ctrl_fields": {"aiCommitDistance": (20.0, 600.0), "aiApproachLead": (20.0, 800.0),
+                        "aiThroughDistance": (20.0, 600.0)},
+        "ctrl_defaults": {"aiCommitDistance": 72.0, "aiApproachLead": 80.0, "aiThroughDistance": 55.0},
+        "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
+        "lead": None, "rows": [], "nose_gene": 1.5,
+    },
+    "Grizzly": {
+        "mode": "GrizzlyTime",
+        # As the Wrasse: the gate race's own steering, Grizzly Time's controller knobs and the nose rate (fleet lag).
+        "assets": {},
+        "fields": {},
+        "ctrl_fields": {"aiCommitDistance": (40.0, 900.0), "aiApproachLead": (40.0, 1200.0),
+                        "aiThroughDistance": (40.0, 900.0)},
+        "ctrl_defaults": {"aiCommitDistance": 380.0, "aiApproachLead": 420.0, "aiThroughDistance": 285.0},
+        "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
+        "lead": None, "rows": [], "nose_gene": 1.5,
+    },
+    "Honeyguide": {
+        "mode": "SlipLine",
+        # Slip Line coaches the AI itself (SlipLineController: the rail it rides and the race line between rides); the
+        # search moves the coach's two leads through controller_overrides and the nose follow rate through the judge
+        # (Slip Line has no nose knob: the fleet lag, 1.5/s). Nothing on the vessel.
+        # HoneyguideConfig is listed for the shipped-genome read only: none of its fields is searched (it is the vessel's).
+        "assets": {i: "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset" for i in (1, 2, 3, 4)},
+        "fields": {},
+        "ctrl_fields": {"aiRailLead": (5.0, 200.0), "aiRaceLineLead": (5.0, 300.0)},
+        "ctrl_defaults": {"aiRailLead": 40.0, "aiRaceLineLead": 60.0},
+        "ctrl": lambda p: {"aiRailLead": float(p["aiRailLead"]), "aiRaceLineLead": float(p["aiRaceLineLead"])},
+        "lead": None, "rows": [], "nose_gene": 1.5,
+    },
+    "BrittleStar": {
+        "mode": "BrittleStarTime",
+        # The mode stands the hull's boost policy down (BrittleStarAIBoostPolicy_BrittleStarTime, engage runway 999 s):
+        # BrittleStarTimeCoach is the only Speed Mode writer, and its corner-share and nose tables are static C#, not
+        # serialized, so no drive field is searched here. The genes are the AI nose rate in two bands (I1-I2, I3-I4),
+        # set through the judge over the coach's own per-intensity Legendary row (4.13, 8, 1.83, 8), and the crystal gene.
+        "assets": {i: POL + "BrittleStarAIBoostPolicy_BrittleStarTime.asset" for i in (1, 2, 3, 4)},
+        "fields": {},
+        "lead": None, "rows": [],                      # BrittleStarTimeController has no nose lead table
+        "nose_gene": 8.0, "nose_split": 8.0,           # seeds: the coach's Legendary I2 / I4 rate
+        "nose_mode_sets": True,                        # the shipped AI (params None) keeps the coach's table
+    },
 }
 LEAD_RANGE = (0.0, 3.0)
 # The AI nose follow rate (VesselTransformer.AINoseFollowPerSecond). Games with no knob of their own fly the fleet lag,
 # 1.5/s (LERP_AMOUNT); the judge sets the searched rate on the AI's transformer ("nose_gene": the shipped rate).
 NOSE_RANGE = (1.5, 24.0)
 LEAD = "noseLead"
+NOSE34 = "noseFollowI34"       # with "nose_split": I3-I4's own nose rate; noseFollow then sets I1-I2
 
 
 def wide_genome(hull, w, seed):
@@ -270,6 +365,8 @@ def dims_for(g):
     dims += [{"name": k, "lo": lo, "hi": hi} for k, (lo, hi) in g.get("ctrl_fields", {}).items()]
     if "nose_gene" in g:
         dims.append({"name": "noseFollow", "lo": NOSE_RANGE[0], "hi": NOSE_RANGE[1]})
+    if "nose_split" in g:
+        dims.append({"name": NOSE34, "lo": NOSE_RANGE[0], "hi": NOSE_RANGE[1]})
     if g["lead"] is not None:                          # None: the game has no aiNoseLead table (Skim Race)
         dims.append({"name": LEAD, "lo": LEAD_RANGE[0], "hi": LEAD_RANGE[1]})
     return dims
@@ -278,21 +375,24 @@ def dims_for(g):
 def shipped_genomes(g):
     """Every drive the game ships for this vessel and game, with today's nose lead and no crystal detour."""
     out = []
-    for rel in sorted(set(g["assets"].values())):
-        p = read_fields(rel, g["fields"])
+    # A game with no drive asset (the Meerkat: the gate race's own steering) seeds from its controller knobs alone.
+    for rel in sorted(set(g["assets"].values())) or [None]:
+        p = read_fields(rel, g["fields"]) if rel else {}
         p.update({k: int(v) for k, v in p.items() if k in g.get("ints", ())})
         p.update(g.get("ctrl_defaults", {}))
         if "nose_gene" in g:
             p["noseFollow"] = g["nose_gene"]
+        if "nose_split" in g:
+            p[NOSE34] = g["nose_split"]
         if g["lead"] is not None:
             p[LEAD] = g["lead"]
         p[CRYSTAL] = 0.0
-        p["_from"] = os.path.basename(rel)
+        p["_from"] = os.path.basename(rel) if rel else "controller defaults"
         out.append(p)
     return out
 
 
-def spec_for(hull, g, params):
+def spec_for(hull, g, params, intensity=None):
     """None = the shipped AI. Otherwise ONE drive on every intensity's file, this hull's nose lead row and its crystal
     gene, all in memory."""
     if params is None:
@@ -301,7 +401,11 @@ def spec_for(hull, g, params):
     ov = [{"asset": rel, "fields": fields} for rel in sorted(set(g["assets"].values()))]
     # No mode knob: the judge sets the rate on the AI's transformer (left alone at the shipped fleet lag).
     nose = float(params.get("noseFollow", g.get("nose_gene", 0)))
-    out_nose = {hull: nose} if "nose_gene" in g and nose != g["nose_gene"] else None
+    if "nose_split" in g and intensity is not None and intensity >= 3:   # I3-I4's own band
+        nose = float(params.get(NOSE34, g["nose_split"]))
+    # "nose_mode_sets": the mode sets its own per-intensity rate (Brittle Star Time's coach), so a candidate always
+    # states its rate and only the shipped AI (params None, above) keeps the mode's table.
+    out_nose = {hull: nose} if "nose_gene" in g and (g.get("nose_mode_sets") or nose != g["nose_gene"]) else None
     ctrl = {}
     if g["lead"] is not None:
         ctrl["aiNoseLead"] = list(g["rows"]) + [{"Hull": hull, "Gain": float(params.get(LEAD, g["lead"])), "MaxExtraDegrees": 40}]
@@ -324,7 +428,7 @@ def race_one(hull, g, params, cond, seeds, limit_s, tries=3):
     """One process: this candidate in one condition over the seeds. A player that died (killed for memory, a crash)
     is not the AI's fault and is raced again rather than scored as a DNF."""
     name, intensity, start, genome = cond
-    extra = spec_for(hull, g, params)
+    extra = spec_for(hull, g, params, intensity)
     more = condition_extra(g, name)
     if more:
         extra = dict(extra)
@@ -509,8 +613,14 @@ def self_test():
                     out.append(f"{hull}: spec writes an aiNoseLead table the game does not have")
                 elif g["lead"] is not None and not any(r["Hull"] == hull for r in lead_rows or []):
                     out.append(f"{hull}: spec has no nose lead row")
-                if "ai_nose_follow" in spec:
+                if "ai_nose_follow" in spec and not g.get("nose_mode_sets"):
                     out.append(f"{hull}: the shipped genome changes the nose rate")
+                if "nose_split" in g:                  # each band reaches only its own rungs
+                    q = dict(p, noseFollow=3.0, **{NOSE34: 11.0})
+                    lo, hi = spec_for(hull, g, q, 2), spec_for(hull, g, q, 4)
+                    if lo.get("ai_nose_follow") != {hull: 3.0} or hi.get("ai_nose_follow") != {hull: 11.0}:
+                        out.append(f"{hull}: the nose bands do not split by intensity ({lo.get('ai_nose_follow')}, "
+                                   f"{hi.get('ai_nose_follow')})")
         return out
 
     for hull, g in sorted(GAMES.items()):
