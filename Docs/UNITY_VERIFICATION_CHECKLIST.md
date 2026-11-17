@@ -24654,7 +24654,7 @@ changed files); the new `VoyageIntroTests.CrystalRunIntro_LoadsFromResources_And
 
 Branch `claude/project-thread-a5f46g` (PR into `voyages`). Shombith picked O1, Intro A and F1 on Frogma's Voyages
 playtest tab. Compiled with `unity_refcompile` (player and editor, 0 errors in changed files); the new and changed
-tests in `VoyageIntroTests`, `VoyageCrystalRunTests` and `VoyageChaseCameraTests` never ran.
+tests in `VoyageIntroTests`, `VoyageCrystalRunTests` and `VoyageChaseCameraTests` (since removed) never ran.
 
 1. Sail Escort the Ark the first time. The intro plays letterboxed for about 9 s: the Ark wide (no words), a push along
    its hull with "THE ARK · hull 100%", your vessel with a name card (face, vessel, pilot, element flower), each
@@ -24667,10 +24667,9 @@ tests in `VoyageIntroTests`, `VoyageCrystalRunTests` and `VoyageChaseCameraTests
    it is a threat. Crystal Run: "CRYSTAL RUN" and "12 / 20", the bar, four element flowers with counts, then
    "Cell 2 - hostile"; a job line only when the Ark is under attack or the goal is met. It hides during the intro and
    the scoreboard.
-5. The chase camera: in a voyage the camera sits closer behind and lower than in freestyle, a little to the right.
-   Leaving the voyage gives back the vessel's own framing. Tune it in `Resources/Voyages/VoyageCamera.asset` (a row per
-   vessel class where a hull needs its own).
-6. The intro's swing lands exactly on that camera: no jump at the cut back.
+5. (Retired 2026-11-17, Shombith: the chase camera is gone. In a voyage every vessel flies its own camera, exactly as
+   in every other mode; `VoyageChaseCamera`, `VoyageCameraSO` and `CustomCameraController.Mode` were removed.)
+6. The intro's swing lands exactly on the vessel's own follow camera: no jump at the cut back.
 7. Fauna biting the Ark: up to four red point lights on them, and the Ark's plates near them glow red.
 8. Not built: the FOV opening on boost (the speed tunnel is a platform law that narrows FOV with speed and no mode may
    change it), dust streaks on boost, the Ark's engines lighting one by one. The Ark at a third of the frame is a

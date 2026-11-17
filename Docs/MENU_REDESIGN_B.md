@@ -8670,6 +8670,11 @@ them in the game". So: the crew screen B (C2, pilot first); the objective strip 
 IAB board, read as its option A); the chase camera (F1). No toast option was picked: the Rev 113 band stays, in screen
 space. The HyperSea page stays as built. Build prompts: `/mnt/project-files/milestone1-mockups/rev114-build-prompts.md`.
 
+**F1 retired (Shombith, 2026-11-17)**: "It should be exactly like how the vessels have their camera in any other game.
+Please remove whatever camera setup you have added." The chase camera (`VoyageChaseCamera`, `VoyageCameraSO`,
+`Resources/Voyages/VoyageCamera.asset`, `CustomCameraController.Mode`) was removed; a voyage flies each vessel's own
+follow camera. The intro still hands over onto that camera.
+
 ### 210.1 Built: the crew screen, pilot first (Rev 114 C2; 2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
 
 Asked (Shombith, on Rev 114): "I like c2 ... build them in the game"; the HyperSea page stays as built. Build prompt A of

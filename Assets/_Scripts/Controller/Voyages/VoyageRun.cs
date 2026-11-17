@@ -148,8 +148,6 @@ namespace CosmicShore.Gameplay
             _root = toyboxRoot;
             _onEnded = onEnded;
             _content = definition ? definition.Content : VoyageContentSO.Load();
-            // Voyages fly the chase camera while a job is out (Rev 114 F1).
-            VoyageChaseCamera.Attach(gameObject, () => _active, LocalVessel);
         }
 
         VoyageContent Content => _content ? _content.Content : null;

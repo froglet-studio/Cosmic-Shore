@@ -63,6 +63,11 @@ namespace CosmicShore.UI
         const float CellFadeTo = 58f, CellFillFrom = 60f, CellFillTo = 90f, CellInnerFrom = 90f, CellTagsFrom = 200f,
             CellTapFrom = 40f, NucleusOutlineFrom = 50f;
         const int MaxCells = 2500, CellVertBudget = 34000;
+        // The view's cells are drawn whole or not at all: past the budget the mesh would keep only the first rows the
+        // lattice yields, a band of foam across the top of the map (Shombith, 2026-11-17). They fade in over the last
+        // quarter of the budget instead, so the foam comes in across the whole view as the cells grow.
+        const float CellFitFade = .25f;
+        const int MinWetPoints = 12;
         const float Margin = 20f;
 
         static HyperSeaSkyCatalog s_Catalog;
@@ -322,7 +327,20 @@ namespace CosmicShore.UI
             _cellAlpha = Mathf.Clamp01((px - CellsFromPx) / (CellFadeTo - CellsFromPx));
             if (px < CellsFromPx) return;
             double m = HyperSeaCells.A;
-            HyperSeaCells.NucleiInSlice(_sliceZ, x0 - m, y0 - m, x1 + m, y1 + m, _nuclei, MaxCells);
+            HyperSeaCells.NucleiInSlice(_sliceZ, x0 - m, y0 - m, x1 + m, y1 + m, _nuclei, MaxCells + 1);
+            if (_nuclei.Count > MaxCells)
+            {
+                // More cells than the map draws: the plain sea until they are fewer.
+                _cellAlpha = 0f;
+                return;
+            }
+            // Every cell's wet outline has at least a dozen points; a view that could not draw even that many walls for half
+            // its nuclei (some only graze the slice and are dropped) skips the sections, and the frame time they cost.
+            if ((long)_nuclei.Count * MinWetPoints * (Tilted ? 6 : 4) > 2L * CellVertBudget)
+            {
+                _cellAlpha = 0f;
+                return;
+            }
             foreach (var c in _nuclei)
             {
                 if (!HyperSeaCells.TrySection(c, (0, 0, _sliceZ), (1, 0, 0), (0, 1, 0), _sectionScratch, out var sec)) continue;
@@ -336,6 +354,39 @@ namespace CosmicShore.UI
                 _cellPoly.AddRange(_wetScratch);
             }
             _cellStart.Add(_cellPoly.Count);
+            float fit = Mathf.Clamp01((CellVertBudget - CellsCost(px)) / (CellVertBudget * CellFitFade));
+            _cellAlpha *= fit;
+            if (_cellAlpha > 0f) return;
+            _cellNuclei.Clear();
+            _cellStart.Clear();
+            _cellPoly.Clear();
+        }
+
+        /// <summary>
+        /// What drawing the collected cells costs the mesh, in the units <see cref="Used"/> counts (vertices on a flat map,
+        /// the list's vertices on a tilted one): every wall a quad, a filled cell's fan with its rims, and each nucleus a
+        /// quad or its dashed outline. An upper bound, as <see cref="PopulateCells"/> skips short walls and cells off the
+        /// view.
+        /// </summary>
+        long CellsCost(float px)
+        {
+            bool tilted = Tilted;
+            int quad = tilted ? 6 : 4;
+            bool fill = px > CellFillFrom, inner = px > CellInnerFrom;
+            double s = _map.PixelsPerUnit;
+            long cost = quad;
+            for (int i = 0; i < _cellNuclei.Count; i++)
+            {
+                int n = _cellStart[i + 1] - _cellStart[i];
+                cost += (long)n * quad;
+                if (fill) cost += tilted ? 9L * n : 1L + 2L * n;
+                if (inner) cost += 2L * n * quad;
+                int dashes = px > NucleusOutlineFrom
+                    ? Mathf.Clamp(Mathf.RoundToInt(2f * Mathf.PI * (float)(_cellR[i] * s) / 7f), 6, 32)
+                    : 1;
+                cost += (long)dashes * quad;
+            }
+            return cost;
         }
 
         /// <summary>A cell's own sea: the colour of the water at its lattice point (a knot's cells share it).</summary>
@@ -392,7 +443,7 @@ namespace CosmicShore.UI
                 if (d < bestD) { bestD = d; best = h.Object; }
             }
             // Open water at the deep tiers opens the cell under the tap; a second tap on the same cell closes it.
-            if (best == null && _hasView && CellPx >= CellTapFrom)
+            if (best == null && _hasView && _cellAlpha > 0f && CellPx >= CellTapFrom)
             {
                 var (x, y) = BoardAt(at);
                 var n = HyperSeaCells.CellAt(x, y, _sliceZ);

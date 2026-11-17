@@ -318,9 +318,11 @@ namespace CosmicShore.Gameplay
 
             float size = HullSize(you);
             var from = new Pose(_rig.position, _rig.rotation);
-            // Swing into the pilot's own follow camera, framed as voyages frame it (VoyageChaseCamera), so the cut back
-            // to it lands on the same pose; the script's chase numbers are the fallback when there is none to read.
-            var follow = VoyageChaseCamera.FollowCamera();
+            // Swing into the pilot's own follow camera (the vessel's normal camera, as in every other mode), so the cut
+            // back to it lands on the same pose; the script's chase numbers are the fallback when there is none to read.
+            var close = CameraManager.Instance ? CameraManager.Instance.GetCloseCamera() : null;
+            CustomCameraController follow = null;
+            if (close) close.TryGetComponent(out follow);
             if (follow && (!follow.FollowTarget || follow.FollowTarget.root != you.root)) follow = null;
             float elapsed = 0f;
             while (elapsed < seconds)
