@@ -190,8 +190,6 @@ namespace CosmicShore.Engine
         }
 
         public void SetKeyword(string keyword, bool value) { if (value) EnableKeyword(keyword); else DisableKeyword(keyword); }
-        public void SetKeyword(in LocalKeyword keyword, bool value) => SetKeyword(keyword.name, value);
-        public bool IsKeywordEnabled(in LocalKeyword keyword) => IsKeywordEnabled(keyword.name);
 
         public void SetOverrideTag(string tag, string val) => _tags[tag] = val;
         public string GetTag(string tag, bool searchFallbacks, string defaultValue = "") => _tags.TryGetValue(tag, out var v) ? v : defaultValue;
@@ -218,14 +216,5 @@ namespace CosmicShore.Engine
         public int[] GetTexturePropertyNameIDs() => new List<int>(_textures.Keys).ToArray();
 
         static string IdName(int id) => Shader.PropertyName(id);
-    }
-
-    /// <summary>Unity's LocalKeyword: a shader keyword by name, scoped to one shader. The port keys keywords by name.</summary>
-    public readonly struct LocalKeyword
-    {
-        public readonly string name;
-        public LocalKeyword(Shader shader, string name) { this.name = name; isValid = shader != null && !string.IsNullOrEmpty(name); }
-        public readonly bool isValid;
-        public override string ToString() => name;
     }
 }
