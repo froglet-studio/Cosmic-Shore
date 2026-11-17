@@ -537,10 +537,15 @@ next to look at with its own model.
 
 ### 6.6 Hulls seated on the real-game judge (2026-11-17)
 
-The card seated nine hulls; any other hull was swapped for a Squirrel. The Wrasse, Thresher, Meerkat and Grizzly now sit
-on it too (`author_regatta_assets.py` `JUDGED_HULLS`). Each finished the shipped course and three `archive3six` courses
-alone under both starts (card and every hull at Time 5) in Amoebius headless (`regatta_judge.py`, seed 11, 400 s limit),
-and kept threading gates in a twelve-hull field (the field race ends at the first finisher).
+The card seated nine hulls; any other hull was swapped for a Squirrel. Two more now sit on it, the **Thresher** and the
+**Brittle Star** (`author_regatta_assets.py` `JUDGED_HULLS`). Six were raced; all six finished the shipped course and
+three `archive3six` courses alone under both starts (card and every hull at Time 5) in Amoebius headless
+(`regatta_judge.py`, seed 11, Legendary), and kept threading gates in a fourteen-hull field (the field race ends at the
+first finisher). The card is also the hull draw for every ally AI (`PickAIVesselType` reads its Vessels; opponents are
+pinned to the Squirrel), so only the hulls within about 1.5x of the first nine stay on it. The **Wrasse, Meerkat, Grizzly
+and Angler** finish at 2-5x the pace and are judge-only (`JUDGE_ONLY_HULLS`): they keep their race lines, and the judge
+seats any hull by name (RaceJudge adds a requested hull the card does not list to the card, in memory, for that run).
+They were on the card for a few hours (#2123, #2127) before coming off.
 
 | hull | alone, card start (s) | alone, L5 start (s) | race line |
 |---|---|---|---|
@@ -551,9 +556,8 @@ and kept threading gates in a twelve-hull field (the field race ends at the firs
 
 Courses in order: shipped, then archive3six card records 9, 6 and 0. None of these hulls trained a nose pair in its own
 Time game (they fly the fleet lag there), so the race lines take the rate the Regatta judge picked from 1.5 / 5 / 10.
-`regatta_balance.py` has no model of them, so they take no StartingElements row. They are slow beside the first nine
-(Thresher apart): that gap is step 5's to close, measured by the real-game search, which now races them
-(`regatta_qd.ENGINE_TRUSTED`).
+`regatta_balance.py` has no model of them, so they take no StartingElements row. The Wrasse, Grizzly and Meerkat are
+slow beside the first nine: that gap is for step 5 and their own AI training to close before they return to the card.
 
 Second round (the same courses, seed and race line rate; a 600 s limit to read the Angler's time):
 
@@ -564,10 +568,13 @@ Second round (the same courses, seed and race line rate; a 600 s limit to read t
 
 Both kept threading gates in a fourteen-hull field (Brittle Star 10-13, Angler 2-3 by the first finish). On the gate way at
 the fleet lag the Brittle Star threaded 20 of 24 gates in 400 s with 800-1,300 prism hits: its race line is what seats it.
-The Angler finishes past the search's 400 s limit, so it is on the card but not in `regatta_qd.ENGINE_TRUSTED`.
+The Brittle Star is on the card and in `regatta_qd.ENGINE_TRUSTED`; the Angler finishes past the search's 400 s limit and
+is judge-only.
 
 Not seated yet:
-- **Honeyguide**: 395-485 s, and a 14-gate stall on one archive course, on its race line or on the gate way.
+- **Honeyguide**: 395-485 s, and a 14-gate stall on one archive course, on its race line or on the gate way. (A faster
+  read that night, 94-126 s, was a Squirrel standing in: the Honeyguide was off the card, so the game swapped it. Before
+  RaceJudge seated hulls by name, an off-card hull raced under its own name as the card's Squirrel.)
 - **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
   (Thornline's AI plan aims at thorns).
 - **Goby**: 0 gates. It wanders, and Perch Run's dart coach armed from RegattaController did not take hold in the judge.

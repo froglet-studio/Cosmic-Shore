@@ -135,6 +135,27 @@ namespace CosmicShore.Player
             return seated.Count > 0 ? seated[0] : throw new InvalidOperationException("the spec has no seats");
         }
 
+        /// <summary>
+        /// Seat any requested hull by name, on the card or not: a hull the card does not list is added to the loaded card
+        /// in memory for this run only (nothing is written), from its class asset. Without it the game swaps an off-card
+        /// hull for one the card lists (ClampVesselToGame), and the judge would time that hull under the requested name.
+        /// Regatta keeps hulls that finish too slowly to be an ally AI's draw off its card (author_regatta_assets.py
+        /// JUDGE_ONLY_HULLS); this is how step 5 and their AI training still race them.
+        /// </summary>
+        void SeatOffCardHulls(SO_ArcadeGame card)
+        {
+            card.Vessels ??= new List<SO_Vessel>();
+            foreach (var hull in _hulls)
+            {
+                if (card.Vessels.Any(v => v != null && v.Class == hull)) continue;
+                string path = $"Assets/_SO_Assets/Classes/SO_Class_{hull}.asset";
+                var vessel = TrainingHost.LoadAsset(_runtime, path) as SO_Vessel
+                    ?? throw new InvalidOperationException($"{hull} is not on the card and {path} did not load");
+                card.Vessels.Add(vessel);
+                _notes.Add($"seated off the card: {hull}");
+            }
+        }
+
         IEnumerator Run()
         {
             var gameData = TrainingHost.FindFirstAsset(_runtime, "GameDataSO") as GameDataSO
@@ -156,6 +177,7 @@ namespace CosmicShore.Player
             if (IsRegatta) ApplyCourse(genome, intensity);
             else ApplyTrainingOverlay(genome);
 
+            SeatOffCardHulls(card);
             var hostHull = HostHull(_hulls);
             gameData.SyncFromArcadeGame(card);
             ApplyStart(gameData);
