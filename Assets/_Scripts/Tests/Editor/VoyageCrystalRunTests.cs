@@ -31,13 +31,60 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(t, "voyage_slice.json has no " + RaidId);
             Assert.IsTrue(t.Always);
             Assert.IsTrue(t.CountsUnderway);
-            Assert.AreEqual(50f, t.Goal);
+            Assert.AreEqual(90f, t.Goal);
             Assert.AreEqual(4, t.Cells);
             CollectionAssert.AreEqual(new[] { false, true, true, true }, t.HostileCells);
             // Below the leak line (30%) the hold leaks before the Ark falls, so the breach sits under it.
             Assert.AreEqual(0.1f, t.BreachHull, 1e-4f);
             Assert.AreEqual(10f, t.VentureGoal);
             Assert.AreEqual(1, t.VentureCells);
+            // The leg cell by cell (Shombith's storyboard, 2026-11-17).
+            CollectionAssert.AreEqual(new[] { "Caldera", "Orrery", "Garland", "Geode" }, t.CellWorlds);
+            CollectionAssert.AreEqual(new[] { 20f, 30f, 30f, 40f }, t.CellAnchorSeconds);
+            CollectionAssert.AreEqual(new[] { 0.8f, 1.3f, 0.9f, 1.4f }, t.CellLife);
+        }
+
+        [Test]
+        public void Board_CopiesTheLegCellByCell()
+        {
+            var content = Shipped();
+            var job = Raid(VoyageRules.NewGalaxy(content, Domains.Jade), content);
+            Assert.IsNotNull(job);
+            CollectionAssert.AreEqual(new[] { "Caldera", "Orrery", "Garland", "Geode" }, job.CellWorlds);
+            CollectionAssert.AreEqual(new[] { 20f, 30f, 30f, 40f }, job.CellAnchorSeconds);
+            CollectionAssert.AreEqual(new[] { 0.8f, 1.3f, 0.9f, 1.4f }, job.CellLife);
+        }
+
+        [Test]
+        public void NameCells_StandsTheNamedWorlds_KeepsTheRest()
+        {
+            var pool = new[] { "Yggdra", "Caldera", "Orrery", "Garland", "Geode" };
+            var drawn = new System.Collections.Generic.List<int> { 0, 0, 0, 0, 0 };
+            var named = VoyageRaid.NameCells(drawn, new[] { "Caldera", "Nowhere", "", "geode" }, pool);
+            // Named and found; unknown and empty names keep the drawn world; cells past the list keep theirs; any case.
+            CollectionAssert.AreEqual(new[] { 1, 0, 0, 4, 0 }, named);
+            CollectionAssert.AreEqual(new[] { 0, 0, 0, 0, 0 }, drawn, "the drawn corridor is not changed in place");
+            Assert.AreSame(drawn, VoyageRaid.NameCells(drawn, new string[0], pool));
+        }
+
+        [Test]
+        public void PerCell_TakesTheLastEntryPastTheEnd()
+        {
+            var secs = new[] { 20f, 30f, 40f };
+            Assert.AreEqual(20f, VoyageRaid.PerCell(secs, 0, 99f));
+            Assert.AreEqual(40f, VoyageRaid.PerCell(secs, 2, 99f));
+            Assert.AreEqual(40f, VoyageRaid.PerCell(secs, 5, 99f));
+            Assert.AreEqual(99f, VoyageRaid.PerCell(secs, -1, 99f));
+            Assert.AreEqual(99f, VoyageRaid.PerCell(new float[0], 1, 99f));
+        }
+
+        [Test]
+        public void LayCellLife_OverridesThePacingCellByCell()
+        {
+            var paced = new System.Collections.Generic.List<float> { 1f, 1.3f, 0.9f, 1f, 1.2f };
+            var laid = VoyageRaid.LayCellLife(paced, new[] { 0.8f, 0f, 0.9f, 1.4f });
+            // A 0 entry keeps the pacing; a cell past the list (a ventured fifth) keeps the lane's.
+            CollectionAssert.AreEqual(new[] { 0.8f, 1.3f, 0.9f, 1.4f, 1.2f }, laid);
         }
 
         [Test]
@@ -47,7 +94,7 @@ namespace CosmicShore.Tests
             var state = VoyageRules.NewGalaxy(content, Domains.Jade);
             var job = Raid(state, content);
             Assert.IsNotNull(job, "the board offers no Crystal Run");
-            Assert.AreEqual(50f, job.Goal);
+            Assert.AreEqual(90f, job.Goal);
             Assert.AreEqual(4, job.Cells);
             Assert.AreEqual(0, job.Venture);
             Assert.IsTrue(job.CountsUnderway);
@@ -174,7 +221,7 @@ namespace CosmicShore.Tests
             var next = VoyageRaid.Venture(state, content, job);
             Assert.IsNotNull(next, "nowhere further to venture");
             Assert.AreEqual(1, next.Venture);
-            Assert.AreEqual(60f, next.Goal);
+            Assert.AreEqual(100f, next.Goal);
             Assert.AreEqual(5, next.Cells);
             Assert.AreEqual(state.At, next.From);
         }

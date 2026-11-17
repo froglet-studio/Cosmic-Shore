@@ -7,7 +7,7 @@ R113Compare, R113Score). Not yet run in the Unity editor: `Docs/UNITY_VERIFICATI
 ## 1. The rules (Shombith's answers, 2026-11-16)
 
 - "Steal these many elemental crystals during the voyage; a few cells attack you, a few don't."
-- The goal is **50 crystals** (20 until round 3, 2026-11-16), between the whole squad. Any elemental crystal counts (Space, Time, Charge, Mass); an
+- The goal is **90 crystals** (20 until round 3, 2026-11-16; 50 until the storyboard, §12), between the whole squad. Any elemental crystal counts (Space, Time, Charge, Mass); an
   omni crystal does not.
 - The leg is **4 cells: 1 calm, then 3 hostile** (`hostileCells` [false, true, true, true]). The breach line is
   **10%** (40% until round 3, so the hold can leak below 30% before the Ark falls).
@@ -281,3 +281,27 @@ nothing to collect."
   another colour counts: creatures whose colour is not the squad's, and the plants of a cell held by another colour. A
   calm cell still held by the squad's colour has nothing to steal, so the Ark sails through it.
 - Not run in Unity.
+
+## 12. The storyboard pass: the leg cell by cell (Shombith, 2026-11-17)
+
+Shombith marked his changes on the storyboard page (https://claude.ai/artifact/GiZT5uNi56zpXZur9QqP4X) and sent its
+Copy changes JSON. Built:
+
+- **Goal 90** (was 50); Venture further still adds 10.
+- **PC numbers** on `VoyageToyDefinitionSO` (code defaults, not serialized in `Voyage.asset`): `kaijuScale` 14 (was 12),
+  `cellLifeScale` 2.5 (was 2), `cellGap` 500 u (was 400). Phone values unchanged (kaiju 8x, life 1x).
+- **The leg is authored cell by cell** (voyage_slice.json, `JobTemplate` / `VoyageJob`):
+  - `cellWorlds` Caldera, Orrery, Garland, Geode: cell i stands the corridor world of that `CellName`
+    (`VoyageRaid.NameCells`, after `FitCorridor`). A name the pool lacks, and every cell past the list (a ventured
+    fifth), keeps the world the day drew. The destination's own world is overridden too.
+  - `cellAnchorSeconds` 20 / 30 / 30 / 40: the Ark's window in each cell (`VoyageRaid.PerCell`, past the end the last
+    entry), in place of the calm and hostile windows. The empty-cell rule (`raidAnchorMinLife`) and goal met still skip it.
+  - `cellLife` 0.8 / 1.3 / 0.9 / 1.4: each cell's life before the voyage's life scale, in place of the lane's pacing
+    (`VoyageRaid.LayCellLife`); cells past the list keep the pacing.
+- **A missed goal offers Venture further** (Shombith's note: "the ark can still collect crystals and complete the voyage
+  [and] the difficulty will get harder"). The board offers Venture further (A: the next run, goal + 10 and one more
+  cell) in place of Try again, and Finish (B). Venturing brings this run's haul along, owed and at stake again; Finish
+  sails home without it (`raidMissForfeits` still forfeits at the stop). "Harder" is the venture step (goal and cells);
+  nothing else is raised. ToastGoalMissedSub says so. `VoyageRaid.Retry` stays for tests and is no longer offered.
+- **Not run in Unity.** To check: the four worlds stand in that order, the stop clock reads 20 s in Caldera and 40 s in
+  Geode, and a missed run's Venture further carries its crystals into the owed list.
