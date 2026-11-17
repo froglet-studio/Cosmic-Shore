@@ -60,6 +60,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Each traversal cell's membrane and nucleus at this many times their authored size, with the spacing
         /// scaled to match (<see cref="Cell.SatelliteSizeScale"/>). 1 for the toy and the escort; the voyages set it.</summary>
         public float CellScale = 1f;
+        /// <summary>Open water between two neighbouring cells' membranes, u. Above 0 the corridor spaces cells by their
+        /// membranes (twice the largest authored membrane radius of its worlds, times <see cref="CellScale"/>, plus this)
+        /// instead of <see cref="CellSpacing"/> times the scale: the voyages' short crossings (Shombith 2026-11-17: "the
+        /// distances between them smaller"). 0 for the toy and the escort.</summary>
+        public float CellGap;
+        /// <summary>Each traversal cell's life is born all through its open water (<see cref="Cell.ScatterLifeSpawns"/>).
+        /// Off for the toy and the escort; the voyages set it.</summary>
+        public bool ScatterLifeSpawns;
         public float MaxTurnDegrees = 25f;
         public int PrismStride = 4;
         public float PopulationScale = 0.5f;

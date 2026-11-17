@@ -210,11 +210,42 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(50f), Tooltip("How far from the Ark, u, a raider comes in (ahead and to the side).")]
         float homewardRaiderDistance = 260f;
 
+        [SerializeField, Tooltip("Raiders come in the open water between cells on the way OUT of a Crystal Run too, not " +
+                                 "only on the way home (Shombith 2026-11-17: \"more attacks outside the cell\").")]
+        bool raidersOutbound = true;
+
+        [Header("Voyage - kaiju between the cells (Shombith 2026-11-17)")]
+        [SerializeField, Min(0), Tooltip("Kaiju waiting in the open water on each crossing between two cells: a huge grazer " +
+                                         "that comes for the Ark's hull. Never while the Ark is anchored. 0 = no kaiju.")]
+        int kaijuPerCrossing = 1;
+
+        [SerializeField, Min(0), Tooltip("No new kaiju while this many are alive.")]
+        int kaijuMax = 2;
+
+        [SerializeField, Min(1f), Tooltip("A kaiju's body is this many times its species' size (\"pretty huge\").")]
+        float kaijuScale = 12f;
+
+        [SerializeField, Min(0f), Tooltip("The crossing (and its kaiju) starts this far, u, before the Ark leaves the cell " +
+                                          "behind it, so the kaiju is already waiting in the gap when the Ark comes out.")]
+        float kaijuLeadDistance = 900f;
+
+        [SerializeField, Min(0f), Tooltip("How far off the Ark's line, u, a kaiju waits in the gap.")]
+        float kaijuSideOffset = 300f;
+
         [Header("Voyage - the cells")]
-        [SerializeField, Range(1f, 3f), Tooltip("A voyage cell's membrane and nucleus are this many times their authored " +
-                                                "size, and the corridor spaces cells to match (Shombith 2026-11-16: 50% " +
-                                                "bigger). The cell's own environment mass keeps its authored size.")]
-        float cellScale = 1.5f;
+        [SerializeField, Range(1f, 4f), Tooltip("A voyage cell's membrane and nucleus are this many times their authored " +
+                                                "size (Shombith 2026-11-16: 50% bigger; 2026-11-17: still not big enough, " +
+                                                "2.5). The cell's own environment mass keeps its authored size.")]
+        float cellScale = 2.5f;
+
+        [SerializeField, Min(0f), Tooltip("Open water between two neighbouring voyage cells' membranes, u (Shombith " +
+                                          "2026-11-17: \"the distances between them smaller\"). 0 = the corridor's " +
+                                          "authored spacing grown with the cells, which left 1200 u at 1.5x.")]
+        float cellGap = 400f;
+
+        [SerializeField, Tooltip("A voyage cell's life (and so its crystals, the hearts) is born all through its open " +
+                                 "water instead of on one feeding ground near the core (Cell.ScatterLifeSpawns).")]
+        bool scatterLifeSpawns = true;
 
         [Header("Voyage - the galaxy map (the Voyage window's cards)")]
         [SerializeField, Tooltip("The course a card's job sails, drawn over the map.")]
@@ -317,7 +348,15 @@ namespace CosmicShore.ScriptableObjects
         public int HomewardRaiderMax => homewardRaiderMax;
         public float HomewardRaiderScale => homewardRaiderScale;
         public float HomewardRaiderDistance => homewardRaiderDistance;
+        public bool RaidersOutbound => raidersOutbound;
+        public int KaijuPerCrossing => kaijuPerCrossing;
+        public int KaijuMax => kaijuMax;
+        public float KaijuScale => kaijuScale;
+        public float KaijuLeadDistance => kaijuLeadDistance;
+        public float KaijuSideOffset => kaijuSideOffset;
         public float CellScale => cellScale;
+        public float CellGap => cellGap;
+        public bool ScatterLifeSpawns => scatterLifeSpawns;
         public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);
         public Color VaultColor => ColorTrace.Retrace(ColorTrace.Ui, vaultColor);
         public Color CoreColor => ColorTrace.Retrace(ColorTrace.Ui, coreColor);
@@ -335,6 +374,8 @@ namespace CosmicShore.ScriptableObjects
             var cfg = withArk ? withArk.BuildConfig(label) : new ArkwayConfig { DisplayName = label };
             if (voyage && voyage.CellPool is { Count: > 0 }) cfg.Cells = voyage.CellPool;
             cfg.CellScale = Mathf.Max(1f, cellScale);
+            cfg.CellGap = Mathf.Max(0f, cellGap);
+            cfg.ScatterLifeSpawns = scatterLifeSpawns;
             return cfg;
         }
     }
