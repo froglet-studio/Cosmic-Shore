@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-stoat-timed-slingshot-boost-elementalflo-31bb58",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T08:25:23+00:00",
+  "area": "the Stoat's Time slingshot boost",
+  "summary": "Stoat Timed Slingshot boost ElementalFloat Max 4.5 -> 4 (5 -> 4 in all, -20%; Min 2.5 unchanged), step 5 of the elemental loop for Regatta.",
+  "why": "Since #2104 the Stoat races Regatta's L5 start at Time 10 and was the pool's fast end. Real-game judge, 33 archive2 courses, trunk with the promoted Stoat and Urchin AIs: Stoat L5 42.6 -> 47.1 s, card 52.3 -> 53.3 s; six-vessel pool L5 2.27x -> 2.05x, card 2.26x -> 2.22x. Slingshot (new AI, seeds 1-2) I1 51 s unchanged, I2 37 -> 40, I3 39 -> 42, I4 43 -> 53 s, all inside the rung bars.",
+  "branch": "claude/project-thread-cwavhz",
+  "lane": "stoat",
+  "commit": "f871f947d",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset"
+  ],
+  "loop": {
+    "vessels": [
+      "Stoat"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "1"
+  }
+}

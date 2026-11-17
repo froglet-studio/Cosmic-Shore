@@ -196,7 +196,7 @@ LADDER = {
     1: Rung(strands=5, laps=1, collar=190.0, pin_stride=0),
     2: Rung(strands=6, laps=2, collar=180.0, pin_stride=3),
     3: Rung(strands=7, laps=3, collar=165.0, pin_stride=2),
-    4: Rung(strands=9, laps=6, collar=150.0, pin_stride=1),
+    4: Rung(strands=9, laps=5, collar=150.0, pin_stride=1),
 }
 
 # `STRAND_COUNTS` is a derived VIEW of this table (see _derive), not a second authority - it

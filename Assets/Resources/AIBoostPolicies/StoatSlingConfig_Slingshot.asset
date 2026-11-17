@@ -30,7 +30,7 @@ MonoBehaviour:
     Max: 1.4
     element: 3
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   radiusFollowRate: 3
   radialCorrectionRate: 5
   innerPullRate: 1
@@ -69,14 +69,14 @@ MonoBehaviour:
     Max: 9
     element: 3
     UseFloor: 1
-    Floor: 1.5
-  aiSlingMinTurnDegrees: 147.951
-  aiReleaseConeDegrees: 15.999
-  aiCatchGiveUpSeconds: 4
-  aiSlingIntervalSeconds: 2.896
-  aiSlingMinDistance: 13.329
-  aiWarpMinDistance: 310.106
-  aiHoldForWindowDegrees: 120
+    Floor: 3
+  aiSlingMinTurnDegrees: 154.471
+  aiReleaseConeDegrees: 63.666
+  aiCatchGiveUpSeconds: 5.181
+  aiSlingIntervalSeconds: 1.594
+  aiSlingMinDistance: 115.742
+  aiWarpMinDistance: 11.523
+  aiHoldForWindowDegrees: 58.721
   holdStartEvent:
     Guid:
       Data1: -922617308
@@ -91,7 +91,7 @@ MonoBehaviour:
       Data3: 1086952125
       Data4: -723090544
     Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
-  trampolineAiTurnScale: 96.362
+  trampolineAiTurnScale: 67.159
   trampolineTouchEvent:
     Guid:
       Data1: 310883003

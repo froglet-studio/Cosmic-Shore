@@ -78,7 +78,16 @@ namespace CosmicShore.Gameplay
         /// <summary>True once the pilot has the stick and until they leave.</summary>
         public bool IsFlying => _flying;
 
-        void Awake() => s_current = this;
+        void Awake()
+        {
+            s_current = this;
+            // The game's loading screen stays up until the voyage is under way (Shombith, 2026-11-17: "only the intro
+            // scene and the loading scene each game gets"). Without it the splash lifted on the client being ready, and the
+            // player watched the hand-over to their vessel, flew while the corridor was readied, and then saw the voyage's
+            // own build screen rise before the intro. Claimed here, before the client is ready, so the splash never lifts
+            // early; released when the voyage opens (ArkwayRun.AnyUnderway, the intro's first frame) or cannot sail.
+            SceneRevealHold.Claim(this, sailTimeoutSeconds + 10f, "the voyage scene building its opening");
+        }
 
         void Start()
         {
@@ -95,6 +104,7 @@ namespace CosmicShore.Gameplay
             VoyageHarbour.Changed += HandleHarbourChanged;
             VoyageIntro.Playing += HandleIntroPlaying;
             VoyageScoreboard.Changed += HandleScoreboardChanged;
+            ArkwayRun.AnyUnderway += HandleVoyageOpened;
             _gameData?.InitializeGame();
             if (_gameData?.LocalPlayer?.Vessel != null) HandleClientReady();
         }
@@ -173,6 +183,9 @@ namespace CosmicShore.Gameplay
 
             if (_request == null)
             {
+                // A friend's opening is the host's course reaching their harbour (ArkwayRun.AnyUnderway); a host with no
+                // request has nothing to build, so the scene is shown now.
+                if (IsHost()) SceneRevealHold.Release(this);
                 if (IsHost())
                     CSDebug.LogWarning("[VoyageScene] No voyage was requested (the scene was opened directly?) - fly, " +
                                        "and leave to return to the menu.");
@@ -205,6 +218,10 @@ namespace CosmicShore.Gameplay
             CSDebug.LogWarning($"[VoyageScene] {_request} did not set sail within {sailTimeoutSeconds:0}s - back to the menu.");
             ReturnToMenu(0f);
         }
+
+        /// <summary>The voyage opened (its corridor and Ark stand, the Ark is under way, the intro starts): the game's
+        /// loading screen lifts onto it.</summary>
+        void HandleVoyageOpened() => SceneRevealHold.Release(this);
 
         /// <summary>The voyage's intro is a film, not flight: the flight HUD steps aside while it plays.</summary>
         void HandleIntroPlaying(bool playing)
@@ -283,6 +300,7 @@ namespace CosmicShore.Gameplay
             // This scene is already on its way out: the voyage's end must not ask for a second return to the menu.
             _returning = true;
             _flying = false;
+            SceneRevealHold.Release(this);
             EndVoyage("the voyage scene is closing");
         }
 
@@ -300,6 +318,7 @@ namespace CosmicShore.Gameplay
             if (!IsHost()) return;
             if (_returning) return;
             _returning = true;
+            SceneRevealHold.Release(this);
             ReturnAsync(delay, _cts.Token).Forget();
         }
 
@@ -336,9 +355,11 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            SceneRevealHold.Release(this);
             VoyageHarbour.Changed -= HandleHarbourChanged;
             VoyageIntro.Playing -= HandleIntroPlaying;
             VoyageScoreboard.Changed -= HandleScoreboardChanged;
+            ArkwayRun.AnyUnderway -= HandleVoyageOpened;
             if (_gameData)
             {
                 _gameData.OnClientReady.OnRaised -= HandleClientReady;

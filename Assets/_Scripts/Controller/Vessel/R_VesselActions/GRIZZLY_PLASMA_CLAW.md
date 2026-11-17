@@ -49,3 +49,13 @@ since it is net-new (no burn/ignite/DoT existed in the codebase before).
 - **Perf:** ~4 Hz tick, concurrent-burning cap (192), burnouts budgeted per tick
   (8) because each Steal/Damage triggers material/animation work. `ResetAll()`
   clears everything (call on turn end / scene transitions).
+
+## Mass stays on the trail (2026-11-16)
+
+The weakest-abilities pass first moved Mass onto the claw (reach 60 -> 120 u, prisms lit per tick 3 -> 8). Garrett
+turned it back the same day: "mass should only be increasing something beneficial to your team. growing the reach of
+something destructive is space not mass". So Mass grows the trail's prisms again (the prefab's `trailVolume`, up to
+x2.5), and the claw's `reach` (60 u) and `bite` (3) are fixed `ElementalFloat`s, disabled, kept so a later pass can
+bind them to another element. The Weapon Systems card is the claw's flame breaking a prism; its Mass 5 twin keeps
+the prism whole (Claimed Fire). The card flashes on every weapon cycle.
+

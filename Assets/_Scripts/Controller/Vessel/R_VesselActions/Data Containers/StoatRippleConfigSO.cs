@@ -40,7 +40,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("CHARGE's one dial: a multiplier on the ripple's radius — ×1 at rest, ×2 at level 10, floored at 1. Read at " +
                  "the REPLICATED level, so every peer sweeps the same sphere.")]
-        [SerializeField] ElementalFloat reach = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 1f);
+        [SerializeField] ElementalFloat reach = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.5f);
 
         [Header("The wave")]
         // Subtle by design (2026-10-14, play: the first cut was "far too big and bright"): a faint bend and a dim rim,
@@ -118,7 +118,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>The ripple's full radius for <paramref name="status"/>'s pair (Charge at the replicated level).</summary>
         public float Radius(float separation, IVesselStatus status) =>
             StoatRippleMath.Radius(separation, radiusPerSeparation, minRadius, Mathf.Max(minRadius, maxRadius),
-                Mathf.Max(1f, reach.EvaluateReplicated(status)));
+                reach.EvaluateReplicated(status));
 
         /// <summary>Whether the Charge-5 Siphon is live for <paramref name="status"/> (the replicated bit).</summary>
         public bool Siphons(IVesselStatus status)

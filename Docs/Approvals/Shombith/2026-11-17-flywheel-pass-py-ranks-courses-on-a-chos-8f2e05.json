@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-17-flywheel-pass-py-ranks-courses-on-a-chos-8f2e05",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T09:27:20+00:00",
+  "area": "the Regatta flywheel pass tool",
+  "summary": "flywheel_pass.py ranks courses on a chosen hull subset (--rank-hulls) and reports that sub-field (the polish six) above the full field, with a 'sub' block in summary.json.",
+  "why": "Garrett's polish-six focus: pass 2 needed courses ranked and pools judged on the six, not the nine.",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "e31660483",
+  "paths": [
+    "Tools/Build/flywheel_pass.py"
+  ]
+}

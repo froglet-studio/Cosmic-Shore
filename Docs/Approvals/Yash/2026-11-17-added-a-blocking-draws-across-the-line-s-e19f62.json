@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-17-added-a-blocking-draws-across-the-line-s-e19f62",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T04:19:16+00:00",
+  "area": "the AI docs folder (Docs/AI_SYSTEM)",
+  "summary": "Added a 'Blocking draws across the line' section to REGATTA_COURSE_GENOME.md (W2's own course-genome doc); no AI code, asset or learner changed.",
+  "why": "Documents the course genome's new blocking draws and on-line descriptors (W3's L5 trace).",
+  "branch": "claude/project-thread-cwavhz",
+  "lane": "ai-system",
+  "commit": "a87c79cc7",
+  "paths": [
+    "Docs/AI_SYSTEM/REGATTA_COURSE_GENOME.md"
+  ]
+}

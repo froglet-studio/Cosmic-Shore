@@ -71,6 +71,31 @@ PRISMS = ["Native", "Plain", "Danger", "Shielded", "SuperShielded"]
 CIRCUIT_RANGES = {"BaseRadius": (700.0, 900.0), "RingRadius": (50.0, 140.0), "CornerFloorRadius": (100.0, 260.0),
                   "RadialSwing": (0.0, 0.6), "AngularSpread": (0.5, 5.5), "LateralPerturbation": (0.0, 320.0),
                   "AxisJitterDegrees": (0.0, 50.0), "MaxPresentDegrees": (30.0, 85.0)}
+# Dense blocking kinds, laid ACROSS the line (W3, FINDINGS row 24): at L5 the random placements touched no hull, because
+# sparse shapes on the line leave a hollow to fly through and shapes off it have their line prisms carved away. These
+# four, at radius 0-40 with cross_line on, are what reached the fast hulls (two Walls a leg, Danger: Stoat +43 s).
+BLOCKING_KINDS = ["Wall", "Panes", "Flatline", "Jackstraw"]
+BLOCKING_SHARE = 0.3           # the share of placement draws that are a blocking draw
+BLOCKING_DANGER = 0.6          # a blocking draw's chance of Danger prisms (the rest: any prism kind)
+CORNER_TIGHTEN = 0.25          # the share of circuit-number mutations that only tighten a corner (floor or ring radius)
+# Course MOTIFS (W3's group fit, w3/equations/GROUPS.md, 2026-11-17: no gene moved the slow trio (Sparrow, Dolphin,
+# Squirrel) against the fast one (Urchin, Scarab, Stoat)). Each is a structured draw of genes that already exist, so
+# the C# lays it unchanged: strands of plain prisms at skim distance beside the line (the Squirrel), a constant-radius
+# sweep (the Dolphin's drift), a long gate-free straight (the Sparrow's afterburner), a slalom of hard corners close
+# together (punishes top speed). motif_shape() measures each from the laid gates.
+MOTIFS = ("skim_strands", "sweeper", "straight", "slalom")
+MOTIF_SHARE = 0.35             # the share of random genomes that carry one motif
+MOTIF_OP = 0.06                # the share of mutation operators that lay a motif
+# Which motif a draw lays. W3's A/B (w3/equations/MOTIFS.md, 2026-11-17): the sweeper narrowed the trio gap ~14%
+# (Dolphin -26%, Sparrow and Squirrel -18%); skim strands and straights did nothing; the slalom widened it.
+MOTIF_WEIGHTS = {"sweeper": 0.55, "skim_strands": 0.15, "straight": 0.15, "slalom": 0.15}
+SKIM_GAP = (4.0, 16.0)         # u from the line tube to a strand's inner edge (the Squirrel's skimmer is 15 u across)
+WALL_EDGE = 0.62               # a laid Wall's half side over its bounding radius (measured with the lay harness)
+STRAIGHT_TURN = 10.0           # a ring turning less than this is part of a straight
+SWEEP_TURN = (20.0, 70.0)      # a sweep's corners turn in this band ...
+SWEEP_STEP = 12.0              # ... each within this of the one before
+SLALOM_TURN = 40.0             # a slalom pair: two neighbouring rings both turning more than this ...
+SLALOM_CHORD = 0.6             # ... with the leg between them shorter than this share of the circuit's base radius
 FLORA_PRESETS = ["none", "groves", "thicket", "reef", "reef-fenced"]   # Tools/Build/regatta_lifeforms.py PRESETS
 FLORA_DEFAULTS = {"sitesPerLeg": [], "offsetMin": 90.0, "offsetMax": 160.0, "sideDegrees": 0.0,
                   "sideSpreadDegrees": 180.0, "legWindowStart": 0.2, "legWindowEnd": 0.8, "ringClearance": 60.0,
@@ -344,8 +369,155 @@ def random_params(rng, kind, share=0.5):
     return out
 
 
-def random_placement(rng, kind=None):
+def blocking_placement(rng):
+    """A dense blocking kind ACROSS the line: radius 0-40 u, cross_line on, mostly Danger prisms, scaled to block a
+    leg's width (W3's L5 trace: these are the placements that touch every hull, where a random one touches none)."""
     cat = catalogue()
+    kinds = [cat["by_id"][k] for k in BLOCKING_KINDS if k in cat["by_id"] and cat["by_id"][k]["usable"]]
+    p = random_placement(rng, rng.choice(kinds), blocking=False)
+    k = cat["by_id"][p["kind"]]
+    lo, hi = k["scale_lo"], k["scale_hi"]
+    p["scale"] = _log_uniform(rng, lo, min(hi, max(lo * 1.2, 260.0)))
+    p["offset"] = [rng.uniform(0.0, 40.0), rng.uniform(0.0, 360.0), rng.uniform(-60.0, 60.0)]
+    p["cross_line"] = True
+    p["prism"] = "Danger" if rng.random() < BLOCKING_DANGER else rng.choice(PRISMS)
+    return p
+
+
+def _circuit_profile(g):
+    c = g.get("circuit") or {}
+    prof = c.get("CornerProfile")
+    return list(prof) if isinstance(prof, list) and len(prof) == RINGS else list(
+        cp.regatta_settings(int(g.get("intensity", 1)))["CornerProfile"])
+
+
+def _runs(flags, ok_next=None):
+    """[(start, length)] of the circular runs of True in flags; ok_next(i, j) may also require i -> j to continue."""
+    n = len(flags)
+    if all(flags) and (ok_next is None or all(ok_next(i, (i + 1) % n) for i in range(n))):
+        return [(0, n)]
+    out = []
+    for i in range(n):
+        if not flags[i] or (flags[i - 1] and (ok_next is None or ok_next((i - 1) % n, i))):
+            continue
+        k = 1
+        while k < n and flags[(i + k) % n] and (ok_next is None or ok_next((i + k - 1) % n, (i + k) % n)):
+            k += 1
+        out.append((i, k))
+    return out
+
+
+def course_turns(g):
+    """(turn degrees at each ring, chord u of each leg i -> i+1), from the gates the game lays for this genome."""
+    gs = gates(g)
+    n = len(gs)
+    pts = [gt["p"] for gt in gs]
+    turns = [float(cp.angle(cp.sub(pts[i], pts[i - 1]), cp.sub(pts[(i + 1) % n], pts[i]))) for i in range(n)]
+    chords = [float(cp.magnitude(cp.sub(pts[(i + 1) % n], pts[i]))) for i in range(n)]
+    return turns, chords
+
+
+def straight_legs(turns):
+    """The legs of the longest straight: the run of rings turning under STRAIGHT_TURN, and the legs either side."""
+    n = len(turns)
+    runs = _runs([t < STRAIGHT_TURN for t in turns])
+    if not runs:
+        return []
+    start, k = max(runs, key=lambda r: r[1])
+    return [(start - 1 + j) % n for j in range(min(n, k + 1))]
+
+
+def motif_shape(g):
+    """What the motifs change, measured on the laid gates: the longest straight (u), the longest sweep (rings), the
+    slalom pairs, the tightest mouth (u)."""
+    turns, chords = course_turns(g)
+    n = len(turns)
+    best = max(chords)
+    for start, k in _runs([t < STRAIGHT_TURN for t in turns]):
+        best = max(best, sum(chords[(start - 1 + j) % n] for j in range(min(n, k + 1))))
+    lo, hi = SWEEP_TURN
+    sweeps = _runs([lo <= t <= hi for t in turns], lambda i, j: abs(turns[j] - turns[i]) <= SWEEP_STEP)
+    short = SLALOM_CHORD * float(circuit_settings(g)["BaseRadius"])
+    slalom = sum(1 for i in range(n) if turns[i] > SLALOM_TURN and turns[(i + 1) % n] > SLALOM_TURN
+                 and chords[i] < short)
+    return {"longest_straight_u": round(best, 1), "sweep_run": max((k for _, k in sweeps), default=0),
+            "slalom_pairs": slalom, "min_mouth": float(circuit_settings(g)["RingRadius"])}
+
+
+def is_skim_strand(p, clearance):
+    """A Wall turned edge-on along the line (yaw 90 or 270, no pitch or roll: the lay harness puts its prisms in the
+    plane of the tangent and the bearing) whose inner edge stands within SKIM_GAP[1] + 8 u of the line tube, off it."""
+    if p.get("kind") != "Wall" or p.get("cross_line"):
+        return False
+    def near(a, targets):
+        return any(abs(((float(a) - t + 180.0) % 360.0) - 180.0) <= 15.0 for t in targets)
+    if not (near(p.get("yaw", 0), (90.0, 270.0)) and near(p.get("pitch", 0), (0.0, 180.0))
+            and near(p.get("roll", 0), (0.0, 180.0))):
+        return False
+    edge = float(p["offset"][0]) - WALL_EDGE * float(p["scale"]) - clearance
+    return -2.0 <= edge <= SKIM_GAP[1] + 8.0
+
+
+def apply_motif(g, rng, name=None):
+    """Lay one motif into g (in place, before repair). Returns its name."""
+    name = name or rng.choices(MOTIFS, weights=[MOTIF_WEIGHTS[m] for m in MOTIFS])[0]
+    g.setdefault("placements", [])
+    c = g.setdefault("circuit", {})
+    if name == "skim_strands":
+        leg, clear, side = rng.randrange(RINGS), float(g.get("line_clearance", LINE_CLEARANCE[2])), rng.uniform(0, 360)
+        n = rng.randint(2, 4)
+        strands = []
+        for j in range(n):
+            scale = rng.uniform(50.0, 140.0)
+            strands.append({
+                "kind": "Wall", "leg": leg + 0.2 + 0.6 * (j + 0.5) / n,     # mid-leg: a ring mouth carves its edge
+                "offset": [clear + rng.uniform(*SKIM_GAP) + WALL_EDGE * scale,
+                           (side if rng.random() < 0.6 else side + 180.0) % 360.0, 0.0],
+                "scale": scale, "yaw": rng.choice([90.0, 270.0]), "pitch": 0.0, "roll": 0.0, "domain": "Native",
+                "prism": "Plain" if rng.random() < 0.7 else "Native", "seed": 0, "density": 1.0,
+                "cross_line": False, "cross_rail": False, "params": {}})
+        # First in the list: repair keeps placements in order and drops the last ones over the prism budget or the
+        # placement cap, and a searched elite is usually at its budget (W3, 2026-11-17).
+        g["placements"][:0] = strands
+    elif name == "sweeper":
+        a = rng.uniform(28.0, 50.0)
+        rest = (360.0 - 6.0 * a) / 2.0
+        c["CornerProfile"] = [rest, rest] + [a] * 6
+        c["RadialSwing"] = rng.uniform(0.0, 0.08)
+        c["LateralPerturbation"] = rng.uniform(0.0, 60.0)
+        c["AxisJitterDegrees"] = rng.uniform(0.0, 10.0)
+        c["CornerFloorRadius"] = rng.uniform(180.0, 260.0)
+    elif name == "straight":
+        # Five near-zero turns: the profile is laid sorted and interleaved (course_port._shuffled_targets), so five
+        # small ones put three in neighbouring rings. Three hard corners carry the lap (each under the 160 clamp, so
+        # repair stays idempotent).
+        c["CornerProfile"] = [120.0 * rng.uniform(0.85, 1.15) for _ in range(3)] + [rng.uniform(0.0, 4.0) for _ in range(5)]
+        c["LateralPerturbation"] = rng.uniform(0.0, 100.0)
+        legs = set(straight_legs(course_turns(g)[0]))
+        g["placements"] = [p for p in g["placements"] if int(float(p["leg"])) % RINGS not in legs]
+        f = g.get("features") or {}
+        if f.get("AlternateGates"):
+            f["AlternateGates"] = [x for x in f["AlternateGates"] if int(x["Ring"]) not in legs]
+    elif name == "slalom":
+        c["CornerProfile"] = [rng.uniform(55.0, 75.0) for _ in range(6)] + [rng.uniform(0.0, 10.0) for _ in range(2)]
+        c["AngularSpread"] = rng.uniform(3.5, 5.5)
+        # The intensity's base radius (820) and a small radial swing: at 700-760 the lanes ran too close to the
+        # nucleus or lost rail coverage on 7 of 12 courses (W3's shell guard).
+        c.pop("BaseRadius", None)
+        c["RadialSwing"] = rng.uniform(0.0, 0.2)
+        c["RingRadius"] = rng.uniform(50.0, 70.0)
+        c["CornerFloorRadius"] = rng.uniform(100.0, 140.0)
+    else:
+        raise ValueError(name)
+    return name
+
+
+def random_placement(rng, kind=None, blocking=True):
+    """Any kind in the catalogue anywhere near the course; BLOCKING_SHARE of free draws (no kind named) are a
+    blocking_placement instead."""
+    cat = catalogue()
+    if kind is None and blocking and rng.random() < BLOCKING_SHARE:
+        return blocking_placement(rng)
     kind = kind or rng.choice(cat["usable"])
     lo, hi = kind["scale_lo"], kind["scale_hi"]
     # Mostly obstacles a leg's width, sometimes a world the course runs through.
@@ -395,6 +567,8 @@ def random_genome(rng, intensity=None):
     if rng.random() < 0.3:
         g["flora"]["preset"] = rng.choice(FLORA_PRESETS[1:])
         g["flora"]["sitesPerLeg"] = [rng.randint(0, 6) for _ in range(RINGS)]
+    if rng.random() < MOTIF_SHARE:
+        apply_motif(g, rng)
     return repair(g)[0]
 
 
@@ -490,6 +664,17 @@ def mutate(genome, rng, strength=1.0, prior=None):
                 i = rng.randrange(RINGS)
                 prof[i] = max(0.0, prof[i] + rng.gauss(0.0, 25.0 * s))
                 c["CornerProfile"] = prof
+            elif rng.random() < CORNER_TIGHTEN:                     # tighter corners (W3: floor 100 cost the Scarab)
+                key = rng.choice(["CornerFloorRadius", "RingRadius", "HardCorner"])
+                if key == "HardCorner":                             # the hardest corner harder (W3 GROUPS: max_turn)
+                    prof = _circuit_profile(g)
+                    i = max(range(RINGS), key=lambda j: prof[j])
+                    prof[i] = min(160.0, prof[i] + abs(rng.gauss(0.0, 20.0 * s)))
+                    c["CornerProfile"] = prof
+                else:                                               # a narrower mouth or a tighter floor
+                    lo, hi = CIRCUIT_RANGES[key]
+                    base = c.get(key, cp.regatta_settings(g.get("intensity", 1)).get(key, (lo + hi) / 2))
+                    c[key] = _clamp(float(base) - abs(rng.gauss(0.0, 0.15 * s * (hi - lo))), lo, hi)
             else:
                 key = rng.choice(list(CIRCUIT_RANGES))
                 lo, hi = CIRCUIT_RANGES[key]
@@ -513,8 +698,10 @@ def mutate(genome, rng, strength=1.0, prior=None):
                                             "Bearing": rng.uniform(0.0, 360.0), "RadiusScale": rng.uniform(0.6, 1.4)})
             elif f["AlternateGates"]:
                 f["AlternateGates"].pop(rng.randrange(len(f["AlternateGates"])))
-        elif r < 0.96:                                             # the line tube
+        elif r < 0.96 - MOTIF_OP:                                  # the line tube
             g["line_clearance"] = float(g.get("line_clearance", 32.0)) + rng.gauss(0.0, 10.0 * s)
+        elif r < 0.96:                                             # a course motif (MOTIFS)
+            apply_motif(g, rng)
         else:                                                      # the lifeform ground
             fl = g.setdefault("flora", dict(FLORA_DEFAULTS, preset="none"))
             if rng.random() < 0.5:
@@ -561,6 +748,9 @@ def descriptors(genome):
     team = [p for p in painted if p["domain"] in ("Jade", "Ruby", "Gold")]
     hard = [p for p in pl if p.get("prism") in ("Shielded", "SuperShielded")]
     worlds = [p for p in pl if cat["by_id"].get(p["kind"], {}).get("world")]
+    # On the line = it may stand in the line's tube (cross_line; else its line prisms are carved away) AND it reaches
+    # the line (radius below its scale).
+    on_line = [p for p in pl if p.get("cross_line") and float(p["offset"][0]) - float(p["scale"]) < 0]
     f = genome.get("features") or {}
     return {
         "placements": len(pl),
@@ -578,11 +768,16 @@ def descriptors(genome):
         "world_share": round(len(worlds) / len(pl), 3) if pl else 0.0,
         "team_coloured_share": round(len(team) / len(pl), 3) if pl else 0.0,
         "hard_prism_share": round(len(hard) / len(pl), 3) if pl else 0.0,
+        "danger_on_line_share": round(sum(1 for p in on_line if p.get("prism") == "Danger") / len(pl), 3) if pl else 0.0,
+        "dense_on_line_count": sum(1 for p in on_line if p["kind"] in BLOCKING_KINDS),
+        "on_line_by_prism": {k: sum(1 for p in on_line if p.get("prism", "Native") == k) for k in PRISMS},
         "sections": len(f.get("Sections") or []),
         "alternates": len(f.get("AlternateGates") or []),
         "intensity": int(genome.get("intensity", 1)),
         "line_clearance": float(genome.get("line_clearance", 32.0)),
         "flora_sites": sum(int(x) for x in (genome.get("flora") or {}).get("sitesPerLeg") or []),
+        "skim_strands": sum(1 for p in pl if is_skim_strand(p, float(genome.get("line_clearance", 32.0)))),
+        **motif_shape(genome),
     }
 
 
@@ -658,6 +853,7 @@ def parity_inputs(n=40, seed=20261116):
 
 
 def self_test():
+    global BLOCKING_SHARE
     cat = catalogue()
     assert cat["usable"], "the catalogue has no placeable kind"
     # 1. The empty genome stays empty, and repair is idempotent.
@@ -675,6 +871,82 @@ def self_test():
             assert all(cat["by_id"][p["kind"]]["usable"] for p in x["placements"])
     d = descriptors(random_genome(random.Random(9)))
     assert {"count_by_kind", "mean_scale_by_kind", "leg_share", "min_line_clearance"} <= set(d), d
+    # 1a. Blocking draws (W3, FINDINGS row 24): about BLOCKING_SHARE of free placement draws are a dense kind across the
+    # line, mostly Danger, and the descriptors see them. Negative control: with the share at 0 none appear.
+    brng = random.Random(23)
+    draws = [random_placement(brng) for _ in range(2000)]
+    blk = [p for p in draws if p["kind"] in BLOCKING_KINDS and p["cross_line"] and p["offset"][0] <= 40.0]
+    assert abs(len(blk) / len(draws) - BLOCKING_SHARE) < 0.05, f"blocking share {len(blk) / len(draws):.3f}"
+    assert sum(p["prism"] == "Danger" for p in blk) / len(blk) > 0.55, "blocking draws are not mostly Danger"
+    dg = repair(dict(empty(), placements=blk[:6]))[0]
+    dd = descriptors(dg)
+    assert dd["dense_on_line_count"] == len(dg["placements"]) > 0, dd
+    assert dd["danger_on_line_share"] > 0 and dd["on_line_by_prism"]["Danger"] > 0, dd
+    off = copy.deepcopy(dg)
+    for p in off["placements"]:
+        p["cross_line"] = False
+    assert descriptors(off)["dense_on_line_count"] == 0, "a placement off the line counted as on it"
+    keep_share = BLOCKING_SHARE
+    try:
+        BLOCKING_SHARE = 0.0
+        nrng = random.Random(23)
+        none = [random_placement(nrng) for _ in range(400)]
+        assert sum(p["kind"] in BLOCKING_KINDS and p["cross_line"] and p["offset"][0] <= 40.0 for p in none) < 0.05 * 400, \
+            "negative control: blocking draws without the blocking share"
+    finally:
+        BLOCKING_SHARE = keep_share
+    # 1c. Course motifs (W3 GROUPS): each one moves its own descriptor well past courses without it, on the same
+    # circuits; MOTIF_SHARE of random genomes carry one. Negative controls: a strand turned across the line, or pushed
+    # out of skim distance, is no strand; a motif's circuit taken away takes its gain with it.
+    mrng = random.Random(31)
+    def _base():
+        b = empty()
+        b["intensity"], b["seed"] = mrng.randint(1, 4), mrng.randint(1, 2 ** 31 - 1)
+        return b
+    bases = [_base() for _ in range(30)]
+    plain = [descriptors(repair(b)[0]) for b in bases]
+    want = {"skim_strands": ("skim_strands", 2.0), "sweeper": ("sweep_run", 1.8),
+            "straight": ("longest_straight_u", 1.3), "slalom": ("slalom_pairs", 1.8)}
+    for name, (key, factor) in want.items():
+        laid = []
+        for b in bases:
+            m = copy.deepcopy(b)
+            apply_motif(m, mrng, name)
+            laid.append(repair(m)[0])
+        got = sum(descriptors(x)[key] for x in laid) / len(laid)
+        ref = sum(d[key] for d in plain) / len(plain)
+        assert got >= factor * max(ref, 0.5), f"motif {name}: {key} {got:.2f} against {ref:.2f} without it"
+        if name != "skim_strands":
+            bare = [dict(copy.deepcopy(x), circuit=b.get("circuit") or {}) for x, b in zip(laid, bases)]
+            back = sum(descriptors(repair(x)[0])[key] for x in bare) / len(bare)
+            assert back < got / max(1.0, factor * 0.8), f"negative control: {name} kept its {key} without its circuit"
+        else:
+            assert all(descriptors(x)["skim_strands"] >= 2 for x in laid), "a skim-strand motif laid under 2 strands"
+            x = copy.deepcopy(laid[0])
+            for p in x["placements"]:
+                p["yaw"] = 0.0
+            assert descriptors(x)["skim_strands"] == 0, "negative control: a Wall across the line counted as a strand"
+            for p in x["placements"]:
+                p["yaw"], p["offset"][0] = 90.0, float(p["offset"][0]) + 80.0
+            assert descriptors(x)["skim_strands"] == 0, "negative control: a strand out of skim distance counted"
+            # An elite at its prism budget and placement cap keeps a skim motif laid into it (repair drops the last).
+            frng = random.Random(37)
+            full = repair(dict(empty(), placements=[random_placement(frng, cat["by_id"]["Atlantis"], blocking=False)
+                                                    for _ in range(MAX_PLACEMENTS + 4)]))[0]
+            assert len(full["placements"]) == MAX_PLACEMENTS or \
+                sum(estimated_prisms(cat["by_id"][p["kind"]], p) for p in full["placements"]) > TOTAL_PRISM_BUDGET - 400, \
+                "the at-budget fixture is not at its budget"
+            topped = copy.deepcopy(full)
+            apply_motif(topped, frng, "skim_strands")
+            assert descriptors(repair(topped)[0])["skim_strands"] >= 2, "an at-budget elite dropped its skim strands"
+            tail = copy.deepcopy(full)
+            probe = copy.deepcopy(topped)
+            tail["placements"] = full["placements"] + [p for p in probe["placements"] if p["kind"] == "Wall"]
+            assert descriptors(repair(tail)[0])["skim_strands"] == 0, \
+                "negative control: strands appended after an at-budget elite should be the ones dropped"
+    share = sum(any(is_skim_strand(p, g2.get("line_clearance", 32.0)) for p in g2["placements"])
+                or motif_shape(g2)["sweep_run"] >= 4 for g2 in (random_genome(random.Random(i)) for i in range(60)))
+    assert share >= 6, f"random genomes carry almost no motifs ({share} of 60)"
     # 1b. The curriculum: w=0 is today's course, the placements and their hardness grow with w, and a Time game's
     # genome carries only what TrainingCourseOverlay lays.
     trng = random.Random(11)
@@ -714,7 +986,8 @@ def self_test():
     bad["line_clearance"] = float(bad["line_clearance"]) + 1.0
     assert _close(canonical(bad), canonical(rows[0]["out"])), "negative control: a moved number went unnoticed"
     print(f"regatta_genome self-test OK: {len(cat['usable'])} placeable kinds, {len(rows)} genomes repaired the same "
-          "as the C#, idempotent, mutation and crossover stay legal, the curriculum grows with w, 2 negative controls.")
+          "as the C#, idempotent, mutation and crossover stay legal, the four course motifs move their descriptors, the "
+          "curriculum grows with w, 5 negative controls.")
     return 0
 
 
@@ -738,7 +1011,7 @@ def training_genome(rng, w, for_mode=None, intensity=None):
     n = max(1, round(w * rng.randint(2, 16)))
     places = []
     for _ in range(n):
-        p = random_placement(rng)
+        p = random_placement(rng, blocking=False)      # the curriculum sets line, rail and prism hardness itself
         kind = catalogue()["by_id"][p["kind"]]
         top = kind["scale_lo"] + (min(kind["scale_hi"], 260.0) - kind["scale_lo"]) * w
         p["scale"] = min(p["scale"], max(kind["scale_lo"], top))

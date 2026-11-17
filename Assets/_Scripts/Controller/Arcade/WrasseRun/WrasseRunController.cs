@@ -31,6 +31,13 @@ namespace CosmicShore.Gameplay
                  "once, in the end-condition overrides, and the two can never disagree.")]
         [SerializeField, Min(1)] int laps = WrasseRunCourseSource.DefaultLaps;
 
+        [Header("AI nose")]
+        [Tooltip("The AI nose lead and follow rate per hull in this mode (GateRaceController.AINoseLeadRow). Empty: the " +
+                 "fleet nose lag, as before. Filled by a trained pair (time_ai_search.py, the Wrasse's own Time game).")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
         protected override string ModeName => "Wrasse Run";
 
         /// <summary>The kite collects the rings; the hull only carries it to them (an AI hull with no kite still threads).</summary>

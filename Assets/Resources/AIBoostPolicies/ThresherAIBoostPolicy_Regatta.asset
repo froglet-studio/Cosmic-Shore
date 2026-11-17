@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d76ff56a8067a7cc6c622a7ff08b4cec, type: 3}
+  m_Name: ThresherAIBoostPolicy_Regatta
+  m_EditorClassIdentifier: 
+  alignDegrees: 21.684
+  releaseAlignDegrees: 32.697
+  stickBand: 0.828
+  releaseStickBand: 0.641
+  engageRunwaySeconds: 1.384
+  releaseRunwaySeconds: 1.24
+  disabledInModes: []
+  requireAIPlayer: 1
+  plantMinTurnDegrees: 100.163
+  plantMinDistance: 94.095
+  slingIntervalSeconds: 0.301
+  releaseConeDegrees: 9.92
+  maxPlantSeconds: 2.134
+  windWhilePlanted: 1
+  aimedLaunch: 0
+  aimedHoldSeconds: 1.836
+  aimToleranceDegrees: 10.628

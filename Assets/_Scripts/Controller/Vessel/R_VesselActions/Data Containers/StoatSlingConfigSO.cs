@@ -73,7 +73,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(1f)] float orbitRadiusTight = 40f;
 
         [Tooltip("Space is reach: a multiplier on both orbit radii (and so the detection radius) - more Space, wider.")]
-        [SerializeField] ElementalFloat orbitReach = ElementalFloat.Multiplier(1f, 1.4f, Element.Space, 1f);
+        [SerializeField] ElementalFloat orbitReach = ElementalFloat.Multiplier(1f, 1.4f, Element.Space, 0.5f);
 
         [Tooltip("How fast the orbit radius follows a changing squeeze, per second.")]
         [SerializeField, Range(0.1f, 20f)] float radiusFollowRate = 3f;
@@ -125,7 +125,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("MASS's one dial on the Stoat: how hard a launch kicks, × the timed kick. ×1 at rest → ×2.5 at level 10, " +
                  "read live on the simulating machine.")]
-        [SerializeField] ElementalFloat launchPower = ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 1f);
+        [SerializeField] ElementalFloat launchPower = ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.5f);
 
         [Tooltip("MASS level 5, Armoured Wake: the prisms laid while a launch's kick lasts arrive SHIELDED. Gated on the " +
                  "replicated unlock bit; every peer runs it from the replicated release.")]
@@ -336,7 +336,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 20f)] float aheadHorizons = 4f;
 
         [Tooltip("How far to either side each crystal pole sits, in throat radii. Space scales it. Floored so the two can never overlap.")]
-        [SerializeField] ElementalFloat halfGapHorizons = ElementalFloat.Multiplier(6f, 9f, Element.Space, 1.5f);
+        [SerializeField] ElementalFloat halfGapHorizons = ElementalFloat.Multiplier(6f, 9f, Element.Space, 3f);
 
         [Header("Autopilot sling")]
         [Tooltip("An autopilot slings when its target is at least this many degrees off the nose, to the side it wants to turn. 0 disables the AI sling.")]

@@ -23,12 +23,15 @@ namespace CosmicShore.Tests
         [Test]
         public void TheBladeIsSpaceAndTheHeftIsMass()
         {
-            var blade = ElementalFloat.Multiplier(14f, 40f, Element.Space, 10f);
-            var heft = ElementalFloat.Multiplier(0f, 60f, Element.Mass, 0f);
+            var blade = ElementalFloat.Multiplier(14f, 40f, Element.Space, 7f);
+            var heft = ElementalFloat.Multiplier(20f, 60f, Element.Mass, 10f);
             Assert.AreEqual(Element.Space, blade.ScaledElement);
             Assert.AreEqual(Element.Mass, heft.ScaledElement);
             Assert.AreEqual(40f, blade.EvaluateAtNormalizedLevel(1f), 1e-4f);
             Assert.AreEqual(60f, heft.EvaluateAtNormalizedLevel(1f), 1e-4f);
+            Assert.AreEqual(20f, heft.EvaluateAtNormalizedLevel(0f), 1e-4f, "Heft is there at rest (fleet floor rule, 2026-11-16)");
+            Assert.AreEqual(10f, heft.EvaluateAtNormalizedLevel(-0.5f), 1e-4f, "half its rest at the deficit floor");
+            Assert.AreEqual(7f, blade.EvaluateAtNormalizedLevel(-0.5f), 1e-4f, "half its rest at the deficit floor");
         }
 
         [Test]

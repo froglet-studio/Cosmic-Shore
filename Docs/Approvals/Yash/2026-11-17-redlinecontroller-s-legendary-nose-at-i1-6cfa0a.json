@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-17-redlinecontroller-s-legendary-nose-at-i1-6cfa0a",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T03:18:35+00:00",
+  "area": "the Manta racing AI",
+  "summary": "RedlineController's Legendary nose at I1-I2 goes 9 to 15/s; I3-I4, the Soar bands and the lead stay as shipped.",
+  "why": "Garrett's Regatta flywheel: Manta split confirms (40 flights a side): 8-15% faster at I1, I2 and on wide courses, I4 identical; 15/s at I3-I4, run3's Soar bands and its crystal gene each made I4 worse.",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "19e88f817",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Redline/RedlineController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Manta"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

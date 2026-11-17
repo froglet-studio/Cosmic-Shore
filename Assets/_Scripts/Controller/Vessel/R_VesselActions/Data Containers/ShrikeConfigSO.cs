@@ -68,7 +68,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Lance cooldown, s.")]
         [SerializeField, Min(0.05f)] float lanceCooldown = 1.2f;
         [Tooltip("CHARGE: lance radius, u (lanceRadiusAt0 1.5 -> lanceRadiusAt10 5: \"wider radius on void lance\").")]
-        [SerializeField] ElementalFloat lanceRadius = ElementalFloat.Multiplier(1.5f, 5f, Element.Charge, 0.5f);
+        [SerializeField] ElementalFloat lanceRadius = ElementalFloat.Multiplier(1.5f, 5f, Element.Charge, 0.75f);
         [Tooltip("Game only: the debris speed of a block the lance breaks, u/s.")]
         [SerializeField, Min(0f)] float lanceDebrisSpeed = 60f;
         [Tooltip("Game only: how long the beam is drawn, s (0 draws nothing).")]
@@ -92,7 +92,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Lock range, u.")]
         [SerializeField, Min(10f)] float lockRange = 1500f;
         [Tooltip("SPACE: lock-on cone, degrees off the nose (lockConeAt0 5 -> lockConeAt10 14: \"larger lock-on radius for targeting array\").")]
-        [SerializeField] ElementalFloat lockCone = ElementalFloat.Multiplier(5f, 14f, Element.Space, 2f);
+        [SerializeField] ElementalFloat lockCone = ElementalFloat.Multiplier(5f, 14f, Element.Space, 2.5f);
         [Tooltip("Missile speed, u/s.")]
         [SerializeField, Min(1f)] float missileSpeed = 220f;
         [Tooltip("Missile turn, degrees per second.")]

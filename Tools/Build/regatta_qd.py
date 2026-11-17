@@ -60,7 +60,8 @@ import regatta_judge_model as jm   # noqa: E402
 import regatta_loss as L           # noqa: E402
 
 HULLS = list(jm.HULLS)
-REPORT_ONLY = ("Scarab",)           # races and is reported, not scored (it stalls in half its engine races, W1 2026-11-16)
+REPORT_ONLY = ()                    # hulls raced and reported but not scored. The Scarab was one until its trained AI
+                                    # (#2087) finished every race in the #2096 re-judge (33 courses, no DNF); W3 2026-11-17.
 SCORED = [h for h in HULLS if h not in REPORT_ONLY]
 
 
@@ -429,10 +430,15 @@ def _ref_mean(backend):
 
 # The hulls the engine judge flies reliably (W1's baseline 2026-11-16, after the Stoat and Dolphin AI fixes #2037 / #2038,
 # #2042; alone, I1, 4 seeds): Rhino 35.4, Stoat 46.1, Urchin 51.0, Squirrel 80.1, Manta 82.3, Sparrow 90.5, Serpent 107.0,
-# Dolphin 131.0 - a 3.7x field. The Scarab stalls in half its races and waits. "mixed" races these in the engine and
+# Dolphin 131.0 - a 3.7x field. The Scarab stalled in half its races until its trained AI (#2087); since 2026-11-17 it is
+# trusted too. The Thresher (79-113 s) and the Brittle Star (73-89 s) joined the card 2026-11-17 after finishing the
+# shipped course and three archive3six courses alone under both starts. The Wrasse, Meerkat, Grizzly and Angler finish
+# too but at 2-5x, so they are off the card (author_regatta_assets.JUDGE_ONLY_HULLS) and out of this pool; set
+# REGATTA_ENGINE_HULLS to race them.
+# "mixed" races these in the engine and
 # prices any other hull with the model; every seat carries the backend that timed it.
 ENGINE_TRUSTED = tuple(h for h in os.environ.get(
-    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Stoat,Urchin").split(",") if h)
+    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Stoat,Urchin,Scarab,Thresher,BrittleStar").split(",") if h)
 # The judge seeds each race at turn start, so (seed, race) is deterministic; the search races one seed per course (8
 # hulls x 2 seeds is ~4.5 min a course on 4 cores) and the pool's candidates are re-raced on more seeds for the noise.
 # The start condition every hull races under: "card" (the arcade card's own starting elements, today) or "L5" (every
@@ -1124,6 +1130,31 @@ def shard_files(root):
                   if d.startswith("shard_") and os.path.isfile(os.path.join(root, d, "records.jsonl")))
 
 
+SEED_FROM = tuple(p for p in os.environ.get("REGATTA_SEED_FROM", "").split(",") if p)
+SEED_N = int(os.environ.get("REGATTA_SEED_N", "24"))
+
+
+def seed_genomes(own, k, n):
+    """The best SEED_N courses of other archives (REGATTA_SEED_FROM: roots or records files, any start or roster), by
+    their spread over the hulls this run scores, raced first so a new archive or start grows from courses already
+    known to be tight. Split across shards (every n-th to shard k); courses this shard already raced are skipped."""
+    recs = []
+    for p in SEED_FROM:
+        for f in ([p] if p.endswith(".jsonl") else shard_files(p)):
+            recs += [r for r in read_jsonl(f) if r.get("valid") and r.get("genome")]
+    def spread(r):
+        t = [r["seconds"].get(h) for h in SCORED]
+        return max(t) / min(t) if all(t) else None
+    ranked, keys = [], set()
+    for r in sorted((r for r in recs if spread(r)), key=spread):
+        key = genome_key(r["genome"])
+        if key not in keys:
+            keys.add(key)
+            ranked.append(r["genome"])
+    done = {genome_key(r["genome"]) for r in own if r.get("genome")}
+    return [g for i, g in enumerate(ranked[:SEED_N]) if i % n == k and genome_key(g) not in done]
+
+
 def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=10, log=print):
     """One search runner. Writes ONLY out/records.jsonl (append-only, one line per judged course; it resumes from that
     file). Reads every sibling shard_* (read-only) so the elites, the surrogate and the gate are the whole team's.
@@ -1142,7 +1173,8 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
     # with the same K) never replays courses already raced.
     rng = random.Random(f"{k}/{n}/{START}/{len(own)}")
     peers, s, t0 = [], None, time.time()
-    log(f"[shard {k}/{n}] {len(own)} courses already in {mine}")
+    seed_q = seed_genomes(own, k, n)
+    log(f"[shard {k}/{n}] {len(own)} courses already in {mine}, {len(seed_q)} seed courses to race first")
     while len(own) < budget:
         if len(own) % peers_every == 0:
             peers = [r for f in shard_files(root) if os.path.abspath(f) != os.path.abspath(mine) for r in read_jsonl(f)
@@ -1155,7 +1187,9 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
             s = fit_trusted(every, seed=len(every))
         full = sorted(r["loss"]["spread_x"] for r in every if r.get("valid") and r["loss"].get("spread_x"))
         gate = full[len(full) // 2] if len(full) >= 10 and backend != "model" else None
-        if k == 0 and not every:
+        if seed_q:
+            g = seed_q.pop(0)
+        elif k == 0 and not every:
             g = today()
         elif len(archive) < 12 or rng.random() < 0.15:
             g = rand_g(rng)
