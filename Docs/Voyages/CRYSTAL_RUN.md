@@ -277,5 +277,7 @@ nothing to collect."
   still or slow distant bodies skip.
 - **Spawn hitches**: a voyage cell births one creature a frame on every platform (`RandomLifeSpawner`, was 2).
 - **Empty stops** (`raidAnchorMinLife` 6, `VoyageRun.CellLife`): on arrival the Ark anchors only when the cell holds at
-  least six lifeforms (each carries a crystal); otherwise it sails through.
+  least six lifeforms the squad can take a crystal from (each carries one); otherwise it sails through. Only life of
+  another colour counts: creatures whose colour is not the squad's, and the plants of a cell held by another colour. A
+  calm cell still held by the squad's colour has nothing to steal, so the Ark sails through it.
 - Not run in Unity.
