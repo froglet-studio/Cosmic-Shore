@@ -570,6 +570,9 @@ namespace CosmicShore.Tests
             Assert.Less(settings.MobileKaijuScale, settings.DesktopKaijuScale, "a phone's kaiju is smaller");
             Assert.Greater(settings.MobileRaiderMax, 0);
             Assert.Greater(settings.RaidAnchorMinLife, 0, "the Ark sails through a cell with nothing to steal");
+            Assert.LessOrEqual(settings.CellFloraScale, settings.DesktopCellLifeScale,
+                "plants (a cell's growing prism mass) never outgrow the creatures' scale");
+            Assert.Greater(CellConveyor.DepartedRetireMargin, 0f, "the cell behind retires once the Ark is clear of it");
         }
 
         [Test]
