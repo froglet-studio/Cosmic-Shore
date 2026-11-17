@@ -164,11 +164,13 @@ namespace CosmicShore.Gameplay
                 // clearance, so it is the measured best rather than the story's prediction.
                 BreakGap = 900f,
                 // Laps of the SPINE the 24 rings are spread over - not laps a pilot flies,
-                // which is 1. Intensity 4's six is what a PINNED ring costs: its spacing has to
-                // cover one rideable run plus the longest launch, and both of those are times.
+                // which is 1. Intensity 4's five is what a PINNED ring costs: its spacing has to
+                // cover one rideable run plus the longest launch, and both of those are times
+                // (1,745 u of spine against the 1,650 u transfer; six until 2026-11-17, when the
+                // AI's 6-minute top rung was cut to about 5.5 - SKEIN.md section 18).
                 // The lower rungs pin less often, so the same transfer window is bought over
                 // several ring gaps instead of one and the rings can sit close enough to see.
-                GateLaps = new[] { 1, 2, 3, 6 }[i - 1],
+                GateLaps = new[] { 1, 2, 3, 5 }[i - 1],
                 PinStride = new[] { 0, 3, 2, 1 }[i - 1],
                 PrismSpacing = 8f,
 

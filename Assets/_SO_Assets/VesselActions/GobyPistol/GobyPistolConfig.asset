@@ -17,6 +17,14 @@ MonoBehaviour:
   dartChargeSeconds: 0.8
   dartSeconds: 1
   dartCooldown: 1.2
+  dartPace:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.2
+    element: 4
+    UseFloor: 1
+    Floor: 0.5
   hullRadius: 3
   queryReach: 6
   ownPerchBlocks: 5
@@ -56,13 +64,13 @@ MonoBehaviour:
   pLaunchSpeed: 30
   pLaunchCharges: 1
   jumpCooldown:
-    Enabled: 1
-    Value: 9
-    Min: 9
-    Max: 3
-    element: 4
-    UseFloor: 1
-    Floor: 1
+    Enabled: 0
+    Value: 6
+    Min: 6
+    Max: 6
+    element: 0
+    UseFloor: 0
+    Floor: 0
   pGhostTime: 2.5
   pGhostCd: 8
   pSlingPull: 0.22
@@ -76,7 +84,7 @@ MonoBehaviour:
     Max: 2.5
     element: 2
     UseFloor: 1
-    Floor: 0.25
+    Floor: 0.5
   denMax: 80
   denShieldedShare: 0.4
   denDangerShare: 0.15
@@ -91,7 +99,7 @@ MonoBehaviour:
     Max: 200
     element: 3
     UseFloor: 1
-    Floor: 10
+    Floor: 20
   pullSpeed: 60
   pullWindow: 320
   pullMaxPerFrame: 96
@@ -111,7 +119,7 @@ MonoBehaviour:
     Max: 3
     element: 1
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   ringHitPad: 4
   ringHitClass: 1
   hitCooldown: 0.25

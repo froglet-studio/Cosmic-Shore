@@ -20,7 +20,7 @@ MonoBehaviour:
     Max: 8
     element: 4
     UseFloor: 1
-    Floor: 4
+    Floor: 3
   speedModeSpacingFollow: 1
   speedModeStretch: 1
   prismWidthScale:
@@ -30,7 +30,7 @@ MonoBehaviour:
     Max: 2
     element: 2
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   creationSpacing: 6
   creationRadiusScale: 1
   creationOffset: 2
@@ -47,7 +47,7 @@ MonoBehaviour:
     Max: 2
     element: 3
     UseFloor: 1
-    Floor: 0.7
+    Floor: 0.5
   projectileScale: 1
   projectileScaleMultiplier:
     Enabled: 1
@@ -56,7 +56,7 @@ MonoBehaviour:
     Max: 1.8
     element: 1
     UseFloor: 1
-    Floor: 0.6
+    Floor: 0.5
   roundGrowthFactor: 3
   armFocusDistance: 120
   armSplayDegrees: 25
@@ -78,7 +78,7 @@ MonoBehaviour:
     Max: 3.3333
     element: 3
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   coolRate: 0.12
   chargeCoolRate: 0.6
   overheatRecoverBelow: 0.35
@@ -113,7 +113,7 @@ MonoBehaviour:
     Max: 4
     element: 1
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   ringBlastCoreRadius: 40
   ringBlastFrontWidth: 0.05
   ringBlastFrontHeight: 0.04

@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-17-the-amoebius-race-judge-racejudge-seatof-5c8cff",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T08:34:00+00:00",
+  "area": "Amoebius race judge",
+  "summary": "The Amoebius race judge (RaceJudge.SeatOffCardHulls) seats any requested hull by name: a hull the card does not list is added to the loaded card in memory for that run, instead of the game swapping it for the card's Squirrel.",
+  "why": "Regatta keeps hulls too slow to be an ally AI off its card; step 5 and their AI training still need to race them, and before this an off-card hull was silently timed as a Squirrel.",
+  "branch": "claude/project-thread-iqvkw9",
+  "commit": "756cfeb04",
+  "paths": [
+    "Port/src/CosmicShore.Player/RaceJudge.cs"
+  ]
+}

@@ -9,8 +9,10 @@ so the guids hold. Picks made by the session on Garrett's go-ahead to choose:
   Charge  Danger Share  kept: `author_jacks_icons.py`'s fish struck through by a bolt still names the card (a spiked
                         creature stinging a rival hull was drawn and read worse at 40 px)
   Mass    The Call      the two jacks (above and below, facing in) and the herd called into a knot between them
-  Space   Wide          the view eased out: the whole cell's corner brackets round the herding view's (faint), the
-                        herd inside
+  Space   Wide          the view eased out: the whole cell's corner brackets round the herding view's (faint), and the
+                        herd FANNED OUT past the small view, each creature heading away from the middle - Wide opens the
+                        rings so the herd scatters to graze (2026-11-16, the weakest-abilities pass; before, the herd sat
+                        bunched inside the small view and Wide was only a camera)
   Time    Decoys        a jack and its decoy (a ghost of the jack) up and ahead of it: the decoy a trigger lays, and
                         flies the hull to
 
@@ -66,9 +68,11 @@ def wide():
         for sy in (-1, 1):
             cx, cy = 64 + sx * 48, 64 + sy * 48
             full |= stroke([(cx, cy - sy * 22), (cx, cy), (cx - sx * 22, cy)], w=11)
-            cx, cy = 64 + sx * 28, 64 + sy * 28
-            view |= stroke([(cx, cy - sy * 11), (cx, cy), (cx - sx * 11, cy)], w=6)
-    herd = creature(54, 54, 30, 17) | creature(76, 65, 30, 17) | creature(54, 77, 30, 17)
+            cx, cy = 64 + sx * 22, 64 + sy * 22
+            view |= stroke([(cx, cy - sy * 9), (cx, cy), (cx - sx * 9, cy)], w=6)
+    # the herd fanned out past the small view, each creature nosing away from the middle (ang: clockwise from right)
+    herd = (creature(100, 64, 26, 15, 0) | creature(64, 28, 26, 15, -90) | creature(28, 64, 26, 15, 180)
+            | creature(64, 100, 26, 15, 90))
     return [(full | herd, 1.0), (view & ~grow(herd, 2), 0.45)]
 
 

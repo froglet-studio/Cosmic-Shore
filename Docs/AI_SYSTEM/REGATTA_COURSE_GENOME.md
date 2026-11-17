@@ -114,9 +114,75 @@ Proof (judge, 2026-11-16, Dolphin alone in Switchback I1, seed 1): its own cours
 (`--curriculum 1 --for-mode Switchback`) laid 5,719 and 808 prisms round its gates; the Dolphin still threaded all 26
 gates, in 132.1 s and 155.0 s.
 
+## Blocking draws across the line (round 5, 2026-11-17)
+
+W3's L5 trace (regatta-flywheel FINDINGS row 24) found that the archive's random placements touched no hull. Every
+hull ran a course in the same time as its placement-free twin, to the millisecond. A sparse shape on the line leaves a
+hollow to fly through. A shape off the line has its line prisms carved away, unless `cross_line` is on. Designed
+courses with two Walls per leg at offset 0, cross_line on and Danger prisms did slow the fast group: Stoat +43 s,
+Urchin +13 s, Squirrel and Serpent +29 s each, Scarab +34%. The Rhino got 0.9 s faster, because Danger is its ram
+reward.
+
+So `regatta_genome.py` now does three things:
+- **Blocking draws.** `BLOCKING_SHARE` (0.3) of free placement draws are a `blocking_placement`. That is one of
+  `BLOCKING_KINDS` (Wall, Panes, Flatline, Jackstraw), at radius 0-40 u, with cross_line on, scaled to block a leg's
+  width, and Danger with probability `BLOCKING_DANGER` (0.6, otherwise any prism kind). This applies in
+  `random_genome`, mutate's add and kind-swap, and crossover's children. `training_genome` keeps its own curriculum.
+- **Descriptors.** `danger_on_line_share`, `dense_on_line_count` and `on_line_by_prism` count placements on the line.
+  On the line means cross_line is on and the radius is below the placement's scale. MAP-Elites can bin by these, so
+  blocking courses keep cells of their own (`w2:` keys in regatta_qd).
+- **Corner bias.** `CORNER_TIGHTEN` (0.25) of circuit-number mutations only tighten a corner, by lowering
+  CornerFloorRadius or RingRadius. A floor of 100 with a ring radius of 50 cost the Scarab +16 s (it also made the
+  Rhino AI stick, which is an AI fault, link 3).
+
+The self-test checks the blocking share, the Danger share and the descriptors. Its negative control sets the share to
+0, and then no blocking draw appears.
+
 ## Known gaps
 
 - A spawner that lays a prism at infinity is skipped prism by prism (Linked Rings did, with 20+ rings of 64 blocks,
   until its slide was fixed on 2026-11-16; the carve's grid looped forever on such a point).
 - Lifeform species still come from the cell config's spawn profile; `flora_preset` is recorded only.
 - Spawners that need an authored Vector3 scale or waypoints are left out (reading prefab values is the v2 idea).
+
+## Course motifs (round 6, 2026-11-17)
+
+W3's group fit (`regatta-flywheel/w3/equations/GROUPS.md`) split the six hulls into two groups that no course pulled
+apart. The fast trio is the Urchin, Scarab and Stoat, at about 0.76 of the six's mean; the slow trio is the Sparrow,
+Dolphin and Squirrel, at about 1.3. No existing gene moved the ratio between them. A MOTIF is a structured draw of
+genes that already exist, so the C# lays it unchanged. `regatta_genome.py` has `MOTIFS` and `apply_motif`. A
+random genome carries one motif `MOTIF_SHARE` (0.35) of the time, and the mutation operator lays one `MOTIF_OP`
+(0.06) of the time.
+
+| motif | genes | aimed at | descriptor |
+|---|---|---|---|
+| `skim_strands` | 2-4 Walls turned edge-on along the line (yaw 90/270), mid-leg, plain prisms, inner edge 4-16 u past the line tube | the Squirrel's skim | `skim_strands` |
+| `sweeper` | six equal corners (28-50 deg), radial swing and lateral jitter near 0, a wide corner floor | the Dolphin's drift | `sweep_run` (neighbouring rings, 20-70 deg, each within 12 deg of the last) |
+| `straight` | five near-zero corners (the profile is laid sorted and interleaved, so three land in neighbouring rings), placements and alternate rings cleared off its legs | the Sparrow's afterburner | `longest_straight_u` |
+| `slalom` | six hard corners (55-75 deg), high angular spread, base radius 700-760, mouths 50-70 u, floor 100-140 u | punishes top speed | `slalom_pairs` (neighbouring rings both over 40 deg with the leg between them under 0.6 x base radius) |
+
+The mutation's corner-tightening branch also makes the hardest corner harder ("HardCorner", W3's `max_turn`), next to
+the narrower mouth and the tighter floor it already had. The 50 u floor on `RingRadius` (C# and Python) was not lowered.
+The searches sat at 54 u only because that is I4's default; the 50-54 u band is now reachable. Going below 50 needs the
+C# range changed, plus a Stoat-AI and fauna check.
+
+Measured on 30 circuits, comparing each motif with the same circuits without it (self-test 1c):
+
+| motif | descriptor | without | with |
+|---|---|---|---|
+| `skim_strands` | strands | 0 | 2.7 |
+| `sweeper` | sweep run | 1.7 | 3.9 |
+| `straight` | longest straight | 808 u | 1250 u |
+| `slalom` | slalom pairs | 0.4 | 1.0 |
+
+The negative controls:
+- a strand turned across the line is not counted;
+- a strand pushed out of skim distance is not counted;
+- a motif whose circuit genes are taken away loses its gain.
+
+The lay harness puts a strand's prisms in the plane of the tangent and the bearing. A laid Wall's half side is 0.62
+of its bounding radius. Where the race line wanders off the spine, the line tube carves a strand's inner rows, so the
+edge lands at the tube's edge round the race line, which is where the AIs fly.
+
+Every motif genome passes `regatta_genome_harness/run.sh check`. The repair fixture was regenerated because the parity
+inputs changed.

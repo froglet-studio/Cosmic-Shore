@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-17-racejudge-takes-an-ai-nose-follow-spec-h-87539f",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T00:37:18+00:00",
+  "area": "the Amoebius race judge",
+  "summary": "RaceJudge takes an ai_nose_follow spec {hull: rate} and sets each AI's nose follow rate every frame, so the AI search can tune it in games with no knob of their own",
+  "why": "the nose lag, not the boost drive, is what holds the Dolphin, Sparrow and Serpent AIs back",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "5a34d6f95",
+  "paths": [
+    "Port/src/CosmicShore.Player/RaceJudge.cs"
+  ]
+}

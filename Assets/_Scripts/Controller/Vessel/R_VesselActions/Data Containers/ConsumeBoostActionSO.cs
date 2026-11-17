@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         /// <para>This is the burn's DURATION and deliberately not its SPEED.</para>
         [SerializeField] ElementalFloat timeDurationMultiplier =
-            ElementalFloat.Multiplier(1f, 1.6f, Element.Time, 0.25f);
+            ElementalFloat.Multiplier(1f, 1.6f, Element.Time, 0.5f);
 
         [Header("Fuel")]
         [Tooltip("Index of the vessel ResourceSystem resource that holds the fuel.")]

@@ -13128,7 +13128,7 @@ MonoBehaviour:
     Max: 40
     element: 3
     UseFloor: 1
-    Floor: 10
+    Floor: 7
 --- !u!114 &7740000000000001700
 MonoBehaviour:
   m_ObjectHideFlags: 0

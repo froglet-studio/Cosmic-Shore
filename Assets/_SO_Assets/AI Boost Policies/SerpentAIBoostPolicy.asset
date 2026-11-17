@@ -23,3 +23,8 @@ MonoBehaviour:
   maxConcurrentBurns: 3
   minSecondsBetweenPellets: 0.75
   reservePellets: 0
+  refuelBelowPellets: 4
+  refuelCoastSeconds: 0.291
+  lowTankSecondsBetweenPellets: 0.175
+  refuelMinCornerDegrees: 0
+  refuelMaxRunwaySeconds: 0

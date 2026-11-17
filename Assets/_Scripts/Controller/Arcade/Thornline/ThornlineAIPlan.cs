@@ -57,8 +57,11 @@ namespace CosmicShore.Gameplay
         // thorn and aims at the undocked third of the turn rate (measured, run.sh --ai, 2026-11-17). With no nose lead
         // (the shipped law) the cubic stick closes the last degree onto a 12 u disc at 1,000 u so slowly that 14 of 20
         // I1 races finish (median 216 s) and 4 of 20 at I4. ──
-        public static readonly float[] NoseLeadByDifficulty = { 2.5f, 3f, 8f, 16f };
-        public static readonly float[] NoseFollowByDifficulty = { -1f, -1f, -1f, -1f };
+        // Legendary (lead 9.2, follow 1.6/s) is Shrike run1 (Tools/Compute/evaluators/time_ai_search.py, the real-game
+        // judge, 2026-11-17): seeds 11-14 searched, 101-104 confirmed, 32 flights a side and none unfinished, loss
+        // 2.67 -> 2.39 against 16 and the fleet lag (THORNLINE.md section 4.1).
+        public static readonly float[] NoseLeadByDifficulty = { 2.5f, 3f, 8f, 9.2f };
+        public static readonly float[] NoseFollowByDifficulty = { -1f, -1f, -1f, 1.6f };
         /// <summary>How far past the aim the nose lead may put the command (AIPilot.NoseLeadMaxExtraDegrees). Tight, so the
         /// lead sharpens the last few degrees onto a 12 u disc at 1,000 u (at the fleet's 40 the replica's Hard lost its
         /// lead over Medium at I2, run.sh --ai).</summary>

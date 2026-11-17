@@ -111,7 +111,7 @@ MonoBehaviour:
     Max: 150
     element: 3
     UseFloor: 1
-    Floor: 20
+    Floor: 30
   elongateYOnly: 1
   markerDistance: 70
   AOEPrefab: {fileID: 0}

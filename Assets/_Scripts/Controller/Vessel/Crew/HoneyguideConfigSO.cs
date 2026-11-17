@@ -506,14 +506,14 @@ namespace CosmicShore.Gameplay
         [Header("Element scaling and level-5 upgrades (the vessel pass, Garrett, 2026-11-13)")]
         [Tooltip("CHARGE: Flit's strike radius (vessel contract: Charge = threat). Multiplies flitStrikeRadius: x1 at Charge 0 to " +
                  "x2 at Charge 10.")]
-        [SerializeField] ElementalFloat flitStrikeScale = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 1f);
+        [SerializeField] ElementalFloat flitStrikeScale = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.5f);
         [Tooltip("MASS: the hive's size (vessel contract: Mass = size). Multiplies hiveReach: x1 at Mass 0 to x2 at Mass 10.")]
-        [SerializeField] ElementalFloat hiveReachScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 1f);
+        [SerializeField] ElementalFloat hiveReachScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
         [Tooltip("SPACE: Peck's burst (vessel contract: Space = how much opposing prism volume RT reaches). Multiplies peckBurst: " +
                  "x1 at Space 0 to x2 at Space 10 (3 -> 6 shots).")]
-        [SerializeField] ElementalFloat peckBurstScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 1f);
+        [SerializeField] ElementalFloat peckBurstScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 0.5f);
         [Tooltip("TIME: the Slip's speed (vessel contract: Time = rate). Multiplies zipSpeed: x1 at Time 0 to x1.5 at Time 10.")]
-        [SerializeField] ElementalFloat slipSpeedScale = ElementalFloat.Multiplier(1f, 1.5f, Element.Time, 1f);
+        [SerializeField] ElementalFloat slipSpeedScale = ElementalFloat.Multiplier(1f, 1.5f, Element.Time, 0.5f);
         [Tooltip("CHARGE level-5 'Relentless': a Flit that strikes a vessel or creature is ready again at once. None = never.")]
         [SerializeField] Element relentlessUpgradeElement = Element.Charge;
         [Tooltip("MASS level-5 'Hive Chain': reaching a hive plants the next one at once. None = never.")]

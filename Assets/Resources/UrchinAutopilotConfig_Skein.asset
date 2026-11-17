@@ -12,20 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38f0c1fc666f45109136b44c2e387312, type: 3}
   m_Name: UrchinAutopilotConfig_Skein
   m_EditorClassIdentifier: 
-  RailLeadDistance: 260
-  AssessIntervalSeconds: 0.3451
-  ScanArc: 2277.61
-  CaptureFraction: 0.917
-  ClosingFraction: 0.1238
-  LaunchPreferArc: 501.981
-  DryCrawlArc: 46.3683
-  MaxDryCrawlSeconds: 1.3127
-  ReverseLeadTurnRadii: 1.8716
-  ParkedSpeed: 7.0595
-  ParkedSeconds: 4.148
-  MinSlipIntervalSeconds: 1.5847
-  SpikeIntervalSeconds: 1.4303
-  SpikeMinAmmo: 0.5479
-  TrackAimDegrees: 8.7529
-  TrackMinRangeInLengths: 3.5138
-  TrackAxisAlignment: 0.4495
+  RailLeadDistance: 300.0362
+  AssessIntervalSeconds: 0.82
+  ScanArc: 3117.13
+  CaptureFraction: 0.8066
+  ClosingFraction: 0.2371
+  LaunchPreferArc: 294.7577
+  DryCrawlArc: 81.921
+  MaxDryCrawlSeconds: 4.926
+  ReverseLeadTurnRadii: 3.9235
+  ParkedSpeed: 13.6543
+  ParkedSeconds: 3.1448
+  MinSlipIntervalSeconds: 1.3556
+  SpikeIntervalSeconds: 1.1681
+  SpikeMinAmmo: 0.737
+  TrackAimDegrees: 18.4601
+  TrackMinRangeInLengths: 5.6813
+  TrackAxisAlignment: 0.7147
