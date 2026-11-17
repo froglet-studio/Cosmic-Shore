@@ -33,6 +33,7 @@ namespace CosmicShore.Gameplay
             public Transform Hull;
             public int Seat;
             public int Order;
+            public float LaunchedAt = -1f;
             public Vector3 Pad, Exit, Slot;   // the Ark's frame
             public bool WasAi;
             public ArkEscortPilot Escort;
@@ -43,7 +44,6 @@ namespace CosmicShore.Gameplay
         readonly List<Member> _members = new();
         Ark _ark;
         ArkFormationSettings _settings;
-        float _launchedAt = -1f;
         bool _holding;
 
         /// <summary>True from <see cref="Stow"/> until the vessels are released.</summary>
@@ -93,8 +93,10 @@ namespace CosmicShore.Gameplay
             foreach (var (status, seat) in squad)
             {
                 if (status?.Vessel == null || !status.Transform || !Moves(status)) continue;
-                var m = new Member { Status = status, Hull = status.Transform, Seat = seat };
-                ArkFormation.Hangar(ark, seat, halfLength, sortie._settings, out m.Pad, out m.Exit);
+                // Launch order is the squad's order (the run lists the pilot's own vessel last): the first to go waits
+                // on the pad nearest the doors, so nobody launches through a vessel still waiting.
+                var m = new Member { Status = status, Hull = status.Transform, Seat = seat, Order = sortie._members.Count };
+                ArkFormation.Hangar(ark, m.Order, halfLength, sortie._settings, out m.Pad, out m.Exit);
                 m.Slot = ArkFormation.SlotLocal(seat, bounds, sortie._settings);
                 sortie._members.Add(m);
             }
@@ -103,13 +105,7 @@ namespace CosmicShore.Gameplay
                 Destroy(go);
                 return null;
             }
-            // The pad nearest the doors launches first.
-            sortie._members.Sort((a, b) => b.Pad.z.CompareTo(a.Pad.z));
-            for (int i = 0; i < sortie._members.Count; i++)
-            {
-                sortie._members[i].Order = i;
-                sortie.Hold(sortie._members[i]);
-            }
+            foreach (var m in sortie._members) sortie.Hold(m);
             sortie._holding = true;
             if (ark.Model) ark.Model.HoldHangarOpen = true;
             sortie.LateUpdate();
@@ -119,7 +115,49 @@ namespace CosmicShore.Gameplay
         /// <summary>The squad launches now, one pad after another (the intro's launch shot).</summary>
         public void Launch()
         {
-            if (_holding && _launchedAt < 0f) _launchedAt = Time.time;
+            if (!_holding) return;
+            int next = 0;
+            foreach (var m in _members)
+                if (m.LaunchedAt < 0f) m.LaunchedAt = Time.time + _settings.LaunchStagger * next++;
+        }
+
+        /// <summary>
+        /// <paramref name="hull"/>'s vessel launches now, on its own (the intro's close-up of that vessel: the wingmates
+        /// first, the pilot's own last, so the camera follows the pilot out into play). Null launches every vessel still
+        /// waiting, one after another. False when the vessel is not held here.
+        /// </summary>
+        public bool Launch(Transform hull)
+        {
+            if (!_holding) return false;
+            if (!hull)
+            {
+                Launch();
+                return true;
+            }
+            foreach (var m in _members)
+            {
+                if (m.Hull != hull) continue;
+                if (m.LaunchedAt < 0f) m.LaunchedAt = Time.time;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// A vessel that joined after the squad was stowed (an AI wingmate released late): it waits on its pad with the
+        /// rest. False when it is already held, or not this machine's to move.
+        /// </summary>
+        public bool Add(IVesselStatus status, int seat, float halfLength, Bounds bounds)
+        {
+            if (!_holding || !_ark || status?.Vessel == null || !status.Transform || !Moves(status)) return false;
+            foreach (var held in _members)
+                if (held.Hull == status.Transform) return false;
+            var m = new Member { Status = status, Hull = status.Transform, Seat = seat, Order = _members.Count };
+            ArkFormation.Hangar(_ark, m.Order, halfLength, _settings, out m.Pad, out m.Exit);
+            m.Slot = ArkFormation.SlotLocal(seat, bounds, _settings);
+            _members.Add(m);
+            Hold(m);
+            return true;
         }
 
         /// <summary>
@@ -146,7 +184,7 @@ namespace CosmicShore.Gameplay
         }
 
         bool Landed(Member m) =>
-            _launchedAt >= 0f && Time.time - _launchedAt >= m.Order * _settings.LaunchStagger + _settings.LaunchSeconds;
+            m.LaunchedAt >= 0f && Time.time - m.LaunchedAt >= _settings.LaunchSeconds;
 
         void OnDestroy()
         {
@@ -174,14 +212,14 @@ namespace CosmicShore.Gameplay
                 if (!m.Hull) continue;
                 Vector3 local;
                 Quaternion facing;
-                if (_launchedAt < 0f)
+                if (m.LaunchedAt < 0f)
                 {
                     local = m.Pad;
                     facing = Quaternion.identity;
                 }
                 else
                 {
-                    float into = (Time.time - _launchedAt - m.Order * _settings.LaunchStagger) / _settings.LaunchSeconds;
+                    float into = (Time.time - m.LaunchedAt) / _settings.LaunchSeconds;
                     if (into <= 0f)
                     {
                         local = m.Pad;

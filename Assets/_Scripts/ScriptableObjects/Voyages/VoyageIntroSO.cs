@@ -49,8 +49,9 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("Cut to this shot on the beat instead of easing into it.")]
             public bool HardCut;
 
-            [Tooltip("The squad launches from the Ark's hangar as this shot starts and forms up beside it (one seat off " +
-                     "each side, one over the back). Until then the vessels wait on the hangar's pads; a reel with no " +
+            [Tooltip("Launch from the Ark's hangar as this shot starts and form up beside it (one seat off each side, one " +
+                     "over the back). On a vessel's shot (You, Wingmates, Squad) that vessel launches, close up; on an " +
+                     "Ark shot the whole squad goes. Until then the vessels wait on the hangar's pads; a reel with no " +
                      "launch shot opens with them already in their slots.")]
             public bool Launch;
 

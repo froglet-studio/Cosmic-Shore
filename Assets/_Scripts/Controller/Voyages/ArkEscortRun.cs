@@ -311,6 +311,8 @@ namespace CosmicShore.Gameplay
                     _wingmates.Add(vessel);
                     SquadDeployment.Seat(vessel.VesselStatus, seated);
                     Escort(vessel, seated);
+                    // Released after the voyage opened: beside the Ark with the squad (or in the hangar, mid-intro).
+                    FormUpLate(vessel.VesselStatus, seated);
                 });
             }
         }

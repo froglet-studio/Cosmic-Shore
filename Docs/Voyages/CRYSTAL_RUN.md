@@ -249,6 +249,13 @@ formation and then the camera transitions behind the player and we start the gam
   doors held open (`ArkModel.HoldHangarOpen`); then one every `launchStagger` s it flies straight out past the jaws and
   turns out and back into its slot (`launchSeconds`). The reel then shows your vessel and the wingmates in formation, the
   title with the objective, and swings in behind you on your vessel's own camera. Skipping finishes the launch in the slots.
+- **Round 2 (Shombith, same evening: "I need a more close up view of the vessels when they come out and I only saw 2 not
+  the 3rd one ... your vessel controlled by the user comes last and the camera follows that to gameplay").** The reel is
+  now: the Ark wide, the title with the objective, then one close-up per wingmate as it launches, and last your own
+  vessel's launch, the camera swinging from ahead of it round to behind it and on into your vessel's own camera. Each
+  vessel's shot launches that vessel (`ArkSortie.Launch(Transform)`); launch order is the hangar pad order (the first to
+  go nearest the doors). A wingmate whose seat is not known yet takes a free seat, and one released after the voyage
+  opened joins the hangar (or its slot) instead of being left where it spawned (`FormUpLate`) - the likely missing third.
 - **While held** a vessel is stationary, its trail penned, its colliders off (it must not take plates off its own Ark)
   and an AI wingmate's AI and escort role wait; all of it comes back once, at the Ark's speed, however the intro ends.
 - **Party:** a machine moves only the vessels it owns (its pilot; on the host, the AI wingmates). A friend's vessel is
