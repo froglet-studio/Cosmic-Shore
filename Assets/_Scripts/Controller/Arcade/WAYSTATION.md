@@ -469,6 +469,22 @@ After the change, all 16 rungs finish (seed 1). Legendary runs 160 / 188 / 414 /
 365 s, Medium 151 / 275 / 368 / 407 s and Easy 211 / 287 / 447 / 385 s. These are long against the other Time
 games (90-180 s), and that is the next problem for this game.
 
+### The trained AI (2026-11-17)
+
+`time_ai_search.py --hull TigerMoth` (run1, 2 generations of 6, seeds 1-2, I1-I4 plus I1 and I4 at a Time-10
+start) searched the hop and drop gates and the AI nose rate. The winner, now the defaults: `aiHopLineShare`
+0.85, `aiHopMissMargin` 600, `aiHopLookahead` 155, `aiDropAimDegrees` 6.6, and the TigerMoth's nose at 6.41/s
+(`aiNoseLead`, no lead). Confirmed on fresh seeds 3-4, the shipped AI against the trained one:
+
+| Rung | Before (s) | Trained (s) |
+|---|---|---|
+| I1 | 189 / 123 | 151 / 130 |
+| I2 | 232 / 213 | 191 / 159 |
+| I3 | 334 / 302 | 190 / 210 |
+| I4 | 389 / 493 | 259 / 323 |
+
+29% less time in all. I4 still runs past 200 s; that rung is the course's (the plates), not the drive's.
+
 ### `OnServerTick` — a seam added so the drive could not break the platform
 
 `GateRaceController.Update` is a **Unity message, not a virtual**. A subclass that declared its own

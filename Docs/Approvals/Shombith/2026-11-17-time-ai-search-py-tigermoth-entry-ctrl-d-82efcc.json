@@ -1,0 +1,22 @@
+{
+  "id": "2026-11-17-time-ai-search-py-tigermoth-entry-ctrl-d-82efcc",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T23:44:53+00:00",
+  "area": "Froglet Compute evaluators",
+  "summary": "time_ai_search.py TigerMoth entry: ctrl defaults and nose gene set to the trained Waystation values",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "0b4640bf3",
+  "paths": [
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "loop": {
+    "vessels": [
+      "TigerMoth"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}
