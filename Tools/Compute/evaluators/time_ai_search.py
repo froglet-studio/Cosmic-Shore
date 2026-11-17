@@ -239,6 +239,35 @@ GAMES = {
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
         "lead": None, "rows": [], "nose_gene": 1.5,
     },
+    "Shrike": {
+        "mode": "Thornline",
+        # Thornline aims the AI itself (ThornlineAIPlan) and sets its skill by difficulty on every arming
+        # (ThornlineController.aiNoseLeadByDifficulty / aiNoseFollowByDifficulty): the search moves the LEGENDARY row of
+        # both, through controller_overrides, and nothing on the vessel. ShrikeConfig carries the sling AI's own knobs; it
+        # is listed for the shipped-genome read only (no field of it is searched: it is the vessel's, every mode's).
+        "assets": {i: "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset" for i in (1, 2, 3, 4)},
+        "fields": {},
+        "ctrl_fields": {"noseLeadLegendary": (1.0, 32.0), "noseFollowLegendary": (1.5, 24.0)},
+        "ctrl_defaults": {"noseLeadLegendary": 9.2, "noseFollowLegendary": 1.6},    # Shrike run1 (was 16 and the fleet lag)
+        "ctrl": lambda p: {
+            "aiNoseLeadByDifficulty": [2.5, 3.0, 8.0, float(p["noseLeadLegendary"])],
+            "aiNoseFollowByDifficulty": [-1.0, -1.0, -1.0,
+                                         -1.0 if float(p["noseFollowLegendary"]) <= 1.5 else float(p["noseFollowLegendary"])]},
+        "lead": None, "rows": [],                      # no aiNoseLead table: the row above is the lead
+    },
+    "Honeyguide": {
+        "mode": "SlipLine",
+        # Slip Line coaches the AI itself (SlipLineController: the rail it rides and the race line between rides); the
+        # search moves the coach's two leads through controller_overrides and the nose follow rate through the judge
+        # (Slip Line has no nose knob: the fleet lag, 1.5/s). Nothing on the vessel.
+        # HoneyguideConfig is listed for the shipped-genome read only: none of its fields is searched (it is the vessel's).
+        "assets": {i: "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset" for i in (1, 2, 3, 4)},
+        "fields": {},
+        "ctrl_fields": {"aiRailLead": (5.0, 200.0), "aiRaceLineLead": (5.0, 300.0)},
+        "ctrl_defaults": {"aiRailLead": 40.0, "aiRaceLineLead": 60.0},
+        "ctrl": lambda p: {"aiRailLead": float(p["aiRailLead"]), "aiRaceLineLead": float(p["aiRaceLineLead"])},
+        "lead": None, "rows": [], "nose_gene": 1.5,
+    },
 }
 LEAD_RANGE = (0.0, 3.0)
 # The AI nose follow rate (VesselTransformer.AINoseFollowPerSecond). Games with no knob of their own fly the fleet lag,

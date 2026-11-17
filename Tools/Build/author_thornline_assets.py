@@ -57,8 +57,8 @@ THORN_FIELDS = """  thornPrefab: {{fileID: 4563009547826722997, guid: {prism}, t
 """
 
 # ── The 2026-11-17 upgrade's fields, in ThornlineController.cs declaration order (all in that one file). ──
-AI_NOSE_LEAD = (2.5, 3, 8, 16)            # ThornlineAIPlan.NoseLeadByDifficulty (run.sh --ai measured)
-AI_NOSE_FOLLOW = (-1, -1, -1, -1)         # ThornlineAIPlan.NoseFollowByDifficulty (the fleet lag)
+AI_NOSE_LEAD = (2.5, 3, 8, 9.2)           # ThornlineAIPlan.NoseLeadByDifficulty (run.sh --ai measured)
+AI_NOSE_FOLLOW = (-1, -1, -1, 1.6)        # ThornlineAIPlan.NoseFollowByDifficulty (the fleet lag)
 AI_NOSE_LEAD_MAX_EXTRA = 10               # ThornlineAIPlan.NoseLeadMaxExtraDegrees
 TOASTS = (                                # (field, GameToastSituation member, value, template)
     ("hintToast", "ThornlineHint", 420, "Sling into the lit sight on the next thorn"),

@@ -137,6 +137,27 @@ plain thorn and aims at a third of the turn rate (measured; UPGRADE_SPEC.md §5)
 Habits of the kit the replica does not model (owed to the editor): Charge-mode paint at a rival in the 8 deg cone once
 a crystal has grown a missile flora; the nest a detach leaves; what a hull drifting into a thorn does.
 
+### 4.1 The Legendary row, trained in the real game (2026-11-17, elemental loop step 3)
+
+Shrike run1 used `Tools/Compute/evaluators/time_ai_search.py --hull Shrike`: the race judge, Amoebius headless, with the
+shipped C# and nothing modelled. The search moved only the Legendary row of `aiNoseLeadByDifficulty` and
+`aiNoseFollowByDifficulty`, through the controller, so nothing on the vessel changed.
+
+- **Search:** seeds 11-14, two constrained generations and one Pareto generation, popsize 4. The conditions were I1, I2
+  and I4, I1 at Time 10, I4 from Time 5, I4 from rest, and two wide courses.
+- **Confirm:** fresh seeds 101-104, 32 flights a side, and none unfinished. Loss went from 2.67 to 2.39 against 16 and
+  the fleet lag.
+
+| Legendary, seeds 101-104, mean s | I1 | I2 | I4 | I1 @T10 | I4 @T5 | I4 @T0 | W0 | W1 |
+|---|---|---|---|---|---|---|---|---|
+| before (lead 16, fleet lag) | 48.8 | 38.8 | 40.7 | 33.0 | 49.0 | 62.5 | 76.9 | 39.6 |
+| after (lead 9.2, follow 1.6/s) | 48.9 | 39.9 | 41.6 | 31.9 | 42.2 | 66.3 | 43.5 | 44.1 |
+
+Most of the gain is in the races that went wrong before: the 77 s wide course and the I4 start from Time 5. The card's
+own rungs stay within about 1 s. A crystal detour gene of 55 u scored a little better again (2.20), but it is not
+shipped: there is no `RaceAICrystalGenesSO` asset for it to live in yet, and its edge is within the noise. The files are
+in `/mnt/project-files/regatta-flywheel/train/Shrike/run1/`.
+
 ## 5. Numbers, and where they are authored
 
 | Knob | Where | Shipped |
