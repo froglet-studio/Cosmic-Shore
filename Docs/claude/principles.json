@@ -64,7 +64,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does the balance change rest on plateaued AIs scored on petals taken, in mirror matches first and Broadside second? If it is tuned by feel, it is off the plan.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-05",
@@ -215,32 +215,16 @@
    "owner": "Garrett",
    "date": "2026-11-02",
    "words": "AI training serves one plan (LOCKED rule, Garrett, 2026-11-02) ... one universal AI per vessel per element, trained on that element's arcade game and scored on I1-I4 together ... No AI is trained inside an arena game.",
-   "rule": "Every AI effort serves the one AI plan: one universal AI per vessel per element, trained on that element's arcade game and scored on I1-I4 together, with the pilot only biasing its choices; the ladder is arcade intensities, then the arena balanced against those fixed AIs, then voyages; no AI is trained inside an arena game.",
+   "rule": "Every AI effort serves one plan: one universal AI per vessel per element, trained in that element's arcade game over I1-I4 with the pilot only biasing its choices; then the element's arena balanced against those fixed AIs; then voyages, where the squad seat's cards (vessel, element, pilot) choose the AI. No AI is trained inside an arena game.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 211
+    "line": 275
    },
    "kind": "LOCKED",
    "area": "ai",
    "retired": "",
    "test": "Name the ai_plan.json step the work serves and check the AI is per vessel per element, trained in that element's arcade game; a per-mode or arena-trained AI fails.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-ai-15",
-   "owner": "Garrett",
-   "date": "2026-11-02",
-   "words": "We need our planning and learning to be working towards an AI training system that produces all the AI capabilities we need. The culminating experience is voyages. The AI you are playing against or with will be determined by the choices during squad configuration: vessel, element, pilot, artifact.",
-   "rule": "Every AI effort serves one plan: one universal AI per vessel per element, trained in that element's arcade game over I1-I4, then the element's arena balanced against those fixed AIs, then voyages, where the squad seat's cards (vessel, element, pilot) choose the AI.",
-   "source": {
-    "file": "Docs/AI_SYSTEM/AI_PLAN.md",
-    "line": 14
-   },
-   "kind": "LOCKED",
-   "area": "ai",
-   "retired": "the three drive searches trained inside Regatta and the two one-intensity Squirrel searches (ai_plan.json retired_jobs)",
-   "test": "Does the AI work name the plan step it serves (ai_plan.json), train in the element's arcade game and not in an arena, and produce one genome scored over all four intensities?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-16",
@@ -256,7 +240,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does the pilot or mode design alter a vessel's abilities, numbers or kit? If yes it is a vessel change for the vessel's owner, not a pilot or mode feature.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-17",
@@ -272,7 +256,7 @@
    "area": "ai",
    "retired": "the two one-intensity Squirrel searches",
    "test": "Does the AI work produce or promote a per-intensity or per-mode file as the answer? If yes it is a seed, not the deliverable.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-18",
@@ -288,7 +272,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does the design train, tune or learn an AI inside an arena game, or balance an arena against a still-moving AI? Either is out.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-19",
@@ -304,7 +288,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does a balance change touch a vessel's elemental baseline before the arena's course and features were searched? If yes it is out of order.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-20",
@@ -1303,7 +1287,7 @@
    "owner": "Garrett",
    "date": "2026-10-17",
    "words": "direct abilities should only steal or strip (for recollection), but if a player produces danger prisms that is a way for them to remove crystals from the environment.",
-   "rule": "A direct ability only steals or strips petals, which stay recollectable in the world; only a danger prism burns crystals out of the match, and control theft is never an economy form.",
+   "rule": "A direct ability only steals or strips petals, which stay recollectable in the world; only a danger prism burns crystals out of the match.",
    "source": {
     "file": "Docs/ELEMENTAL_ECONOMY.md",
     "line": 555
@@ -1312,7 +1296,7 @@
    "area": "economy",
    "retired": "the danger-prism control mute on the Sparrow and Grizzly (EventOnVesselSlowedByRhinoDangerPrism, deleted 2026-10-17)",
    "test": "Does the ability's hit do anything to a rival other than steal or strip petals, or burn them through a danger prism? If yes it is out.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-02",
@@ -1322,13 +1306,13 @@
    "rule": "Every elemental crystal is one size (the Ark converter's) and grants exactly one petal; the omni crystal is one size too.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12227
+    "line": 12263
    },
    "kind": "quote",
    "area": "economy",
    "retired": "variable crystal sizes and multi-petal crystals",
    "test": "Does the design spawn a crystal of another size or worth? If yes it breaks one size, one petal.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-03",
@@ -1344,7 +1328,7 @@
    "area": "economy",
    "retired": "",
    "test": "Is every buff/debuff in the design an element level change (petals)? A stat modifier outside the elementals fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-04",
@@ -1360,7 +1344,7 @@
    "area": "economy",
    "retired": "",
    "test": "For every petal the design moves, say where it came from and where it goes; a permanent buff or a petal from nowhere fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-05",
@@ -1552,7 +1536,7 @@
    "area": "modes",
    "retired": "",
    "test": "Does a Regatta balance change come from the course search against trained AIs before any elemental tuning, and is the tuning the smallest that closes the gap?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-modes-02",
@@ -1568,7 +1552,7 @@
    "area": "modes",
    "retired": "",
    "test": "Does the mode's target (score, laps, gates) put an experienced run near 90 s at intensity 1?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-modes-03",
@@ -1584,23 +1568,7 @@
    "area": "modes",
    "retired": "",
    "test": "Score the Time game on the six dimensions: is its floor the thing the design raises, and is the hull's own speed verb the way to win?",
-   "status": "drafted"
-  },
-  {
-   "id": "P-modes-04",
-   "owner": "Garrett",
-   "date": "2026-10-27",
-   "words": "go ahead and fix tandava etc.",
-   "rule": "A mode's world is scaled round the fleet-law creature body (Tandava inherits the Swarm's scaled body; its reef, cell and meals grow to fit), never the creature pinned back to fit the mode.",
-   "source": {
-    "file": "Docs/ECOSYSTEM.md",
-    "line": 12339
-   },
-   "kind": "quote",
-   "area": "modes",
-   "retired": "Tandava's pinned research body",
-   "test": "Does the mode override a lifeform's body, heart gap or element scale to fit its arena? If yes, scale the arena instead.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-modes-05",
