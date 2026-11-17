@@ -280,9 +280,9 @@ GAMES = {
         "fields": {},
         "ctrl_fields": {"aiCommitDistance": (20.0, 600.0), "aiApproachLead": (20.0, 800.0),
                         "aiThroughDistance": (20.0, 600.0)},
-        "ctrl_defaults": {"aiCommitDistance": 72.0, "aiApproachLead": 80.0, "aiThroughDistance": 55.0},
+        "ctrl_defaults": {"aiCommitDistance": 433.0, "aiApproachLead": 423.0, "aiThroughDistance": 68.0},   # run1
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
-        "lead": 0.0, "rows": [], "nose_gene": 1.5,
+        "lead": 0.69, "rows": [], "nose_gene": 4.37,                                                       # run1
     },
     "Grizzly": {
         "mode": "GrizzlyTime",
