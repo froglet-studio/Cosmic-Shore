@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: ChargeBoostAction
   m_EditorClassIdentifier: 
   maxBoostMultiplier: 3.3885
-  chargeRateMultiplierAtFullTime: 2.5
-  minChargeRateMultiplier: 0.5
+  chargeRateMultiplierAtFullTime: 3.4375
+  chargeRateMultiplierAtRestTime: 1.375
+  minChargeRateMultiplier: 0.6875
   maxNormalizedCharge: 1
   chargeTimeToFull: 3.636
   dischargeTimeToEmpty: 2.5
