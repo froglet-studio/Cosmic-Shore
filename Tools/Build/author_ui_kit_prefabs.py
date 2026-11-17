@@ -120,8 +120,8 @@ TOK = {
     # Rev 6's element colours: RETIRED 2026-10-24 (elements carry no colour in the UI, Docs/UI_COLOR_RULES.md). The
     # tokens keep their indices for serialized assets; no style-B surface may draw with them.
     "ElementCharge": "FFD34D", "ElementMass": "7FA8FF", "ElementSpace": "B07CFF", "ElementTime": "5FF0C8",
-    # Rev 7: whatever is selected or focused (UITheme.Selection).
-    "Selection": "3DB2FF",
+    # Whatever is selected or focused (UITheme.Selection): Jade, the control colour (Docs/UI_STYLE_GUIDE.md D3).
+    "Selection": "00D4FF",
 }
 TOKEN_INDEX = {"TextLight": 0, "TextInactive": 1, "InactiveLight": 2, "SurfaceBlack": 3,
                "SurfaceVeryDark": 4, "SurfaceDark": 5, "SurfaceLight": 6, "NeutralLightest": 7,
@@ -1268,7 +1268,7 @@ def validate(out):
         assert button_palette(variant, False) == button_palette("Default", False), f"retired {variant} must draw as Default"
     """Every local fileID resolves; anchors are unique; every referenced guid has an owner."""
     # Rev 7: a selection is the glowing sky blue everywhere (Docs/MENU_REDESIGN_B.md §47.1, the owner 2026-10-17).
-    assert tok("Selection")[:3] == tuple(int("3DB2FF"[i:i + 2], 16) / 255 for i in (0, 2, 4)), "Selection is not sky blue"
+    assert tok("Selection") == tok("ControlActive"), "Selection is not Jade (Docs/UI_STYLE_GUIDE.md D3)"
     assert tile_palette(True, False)["border"] == tok("Selection"), "a selected tile's border is not the Selection blue"
     tile = out[f"{PREFAB_DIR}/KitTile.prefab"]
     assert f"  selectedBorderToken: {TOKEN_INDEX['Selection']}\n" in tile, "KitTile's selected border is not Selection"

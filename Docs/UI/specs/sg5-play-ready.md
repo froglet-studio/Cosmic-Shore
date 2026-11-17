@@ -1,7 +1,7 @@
 # Spec sg5-play-ready: Play / Ready, the Ruby commit button
 
 Board: SGButtons.dc.html ("Style Guide 5 - Buttons and their states", Frogma Style Guide tab), version 1794500159-be82
-Status: approved (Shombith, 2026-11-05: decision D5 of Docs/UI_STYLE_GUIDE.md section 13, "Play, which launches a game, is Ruby like Ready"; the board draws it) - built in this PR; Q1-Q4 open, the build follows each "Meanwhile"
+Status: approved (Shombith, 2026-11-05: decision D5 of Docs/UI_STYLE_GUIDE.md section 13, "Play, which launches a game, is Ruby like Ready"; the board draws it) - built in this PR; Q2 and Q4 answered 2026-11-17 (Shombith: put the style guide's button colours in the game), Q1 and Q3 open, the build follows each "Meanwhile"
 Allowed overrides: 0
 Generators: Tools/Build/author_ui_kit_prefabs.py, Tools/Build/author_maelstrom_ui.py, Tools/Build/author_ingame_hud.py
 Extracted with: `frogma_to_unity.py extract SGButtons.dc.html --id sg5-play-ready` (then finished by hand)
@@ -98,13 +98,14 @@ None new. Hover is the kit's sheen (`micro`, 120 ms); the press is the kit's (`s
   so nothing ships transparent.
 - **Q2.** Which other "Play" buttons launch a game and should turn Ruby (Configure's START GAME, the arcade START, the
   end-of-match PLAY AGAIN and CONTINUE on GameCanvas, the Ark's ARENA)? Board: "Play / Ready - no way back: launch a
-  game, Ready". Meanwhile: they stay the lime `Play`. GameCanvas is in every mode's scene, so its two buttons wait for
-  a yes (CLAUDE.md: ask before changing a shared prefab every mode uses).
+  game, Ready". **Answered 2026-11-17** (Shombith asked for the guide's button colours in the game): Configure's START
+  (all three views), GameCanvas's READY and the scoreboard's PLAY AGAIN are `Commit`. CONTINUE does not launch a game
+  and the Ark's ARENA opens a screen, so both stay the lime `Play`, with JOIN, RECONNECT, RETRY, CONFIRM, WATCH, RESUME.
 - **Q3.** Maelstrom's NEXT (shown in READY's place between rounds): a commitment? Board: not drawn. Meanwhile: lime
   `Play`.
 - **Q4.** The focus ring: the board and the guide (D3) say Jade (`ControlActive`); the kit still draws the old sky-blue
-  `Selection`. Board: Jade ring. Meanwhile: unchanged; it is the guide's "Still to do in Unity" item 1, which moves
-  every selection (generators, SelectionRim materials, `colour_domains.json`), not this button.
+  `Selection`. Board: Jade ring. **Answered 2026-11-17**: `Selection` is Jade `#00D4FF` (the theme asset, the fallback,
+  the generators and every generated screen), so the ring is the board's.
 
 ## Build map
 
