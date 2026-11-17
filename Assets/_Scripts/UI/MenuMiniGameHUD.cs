@@ -54,6 +54,10 @@ namespace CosmicShore.UI
         bool _isInFreestyle;
         PauseMenu _pauseMenu;
 
+        /// <summary>In the voyage scene the pause window draws above the voyage HUD (20000-20001), its toasts and its end
+        /// board (25000), and under the load veil (30000).</summary>
+        const int VoyagePauseSortingOrder = 26000;
+
         void Awake()
         {
             volumePauseButton.onClick.AddListener(OnVolumePauseClicked);
@@ -261,7 +265,27 @@ namespace CosmicShore.UI
         void InstantiatePauseMenu()
         {
             if (!pauseMenuPrefab) return;
-            var go = Instantiate(pauseMenuPrefab, transform.parent);
+            // The voyage scene's "Game UI" is a zero-size rect (Voyage.unity: stretched with a -1920 x -1080 size delta),
+            // so a stretched pause panel made under it had no size and never showed (Shombith, 2026-11-17: "pressing
+            // select/back doesn't open the screen"). There the panel goes on the root canvas, on its own sorting canvas
+            // above the voyage HUD's overlays (20000-25000), filling the screen.
+            bool voyage = !crystalClickHandler;
+            var rootCanvas = voyage ? GetComponentInParent<Canvas>()?.rootCanvas : null;
+            var parent = rootCanvas ? rootCanvas.transform : transform.parent;
+            var go = Instantiate(pauseMenuPrefab, parent);
+            if (voyage && go.transform is RectTransform rt)
+            {
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = Vector2.zero;
+                rt.localScale = Vector3.one;
+                var sorting = go.AddComponent<Canvas>();
+                sorting.overrideSorting = true;
+                sorting.sortingOrder = VoyagePauseSortingOrder;
+                go.AddComponent<GraphicRaycaster>();
+            }
             GameObjectInjector.InjectRecursive(go, _container);
             go.SetActive(false);
 
