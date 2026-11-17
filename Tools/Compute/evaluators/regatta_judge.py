@@ -163,7 +163,10 @@ def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, work
     jobs = [("field", dict(base, seats=seats, field=True))] if field else \
         [(f"{i}_{s['hull']}", dict(base, seats=[s], field=False)) for i, s in enumerate(seats)]
     timeout_s = 120 + len(seeds) * (limit_s / 4 + 60)
-    workers = workers or max(1, min(len(jobs), os.cpu_count() or 1))
+    # REGATTA_JUDGE_WORKERS caps the game processes one judge runs at once (each ~1.4 GB): a shared desktop sets it
+    # so a shard leaves its person RAM and cores (Gbox, 2026-11-17: 8 hulls at once took free RAM to 2 GB).
+    cap = int(os.environ.get("REGATTA_JUDGE_WORKERS", "0") or 0)
+    workers = workers or max(1, min(len(jobs), cap or os.cpu_count() or 1))
     with concurrent.futures.ThreadPoolExecutor(workers) as ex:
         results = list(ex.map(lambda j: _run_one(j[1], timeout_s, workdir, j[0]), jobs))
     races, notes = [], []
