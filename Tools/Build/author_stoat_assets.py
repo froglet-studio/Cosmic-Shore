@@ -1448,7 +1448,7 @@ def ripple_config_asset() -> str:
             "  radiusPerSeparation: 0.6\n"
             "  minRadius: 30\n"
             "  maxRadius: 160\n"
-            "  reach:\n" + elemental(1, 1, 2, 1, 1) +
+            "  reach:\n" + elemental(1, 1, 2, 1, 0.5) +
             "  expandSeconds: 0.9\n"
             "  fadeSeconds: 0.5\n"
             "  bandWidth: 0.08\n"
