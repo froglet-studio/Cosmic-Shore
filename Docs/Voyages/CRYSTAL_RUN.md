@@ -230,3 +230,30 @@ are also designing it for the mobile too." The roster page: https://claude.ai/ar
   fauna and 81 flora in two corridor cells; the spike is still creature births (~2.3 ms each, mostly Awake and the rig).
   Both cells were Jade-held, so with a Jade squad no kaiju was alive in that capture: the kaiju's own cost is not
   measured yet. Not run in Unity.
+
+## 11. The squad beside the Ark, and the launch (Shombith, 2026-11-17)
+
+Shombith: "The vessel should always spawn side by side with the ark. Their spawn points should be two besides the ark and
+one on top of the ark. You can show the intro as the vessels flying outside the ark from the tube and making the
+formation and then the camera transitions behind the player and we start the game. The game's objective shows up too."
+
+- **Why it lined up before.** The Arkway lays the Ark 150 u ahead of the pilot on the pilot's own heading
+  (`ArkwayRun.BeginVoyageAsync`), and the wingmates were set down abeam and astern of it, strung out behind.
+- **The slots** (`ArkFormation`, settings `VoyageToyDefinitionSO.ArkFormation`): seat 1 off the Ark's port side, seat 2
+  off starboard, seat 3 over its back, all facing its heading, level with the hull's middle plus `alongShare` of its
+  length, and `abeamMargin` / `aboveMargin` clear of the hull's own extent (read from its renderers once per voyage, so the
+  wide ArkReverse shell is cleared). The seat picks the slot, so every machine in a party puts the same pilot in the same
+  place. Both the escort and Crystal Run use them as the voyage opens, and a wingmate past its leash comes back to its slot.
+- **The launch** (`ArkSortie`): the intro's second shot (`VoyageIntroSO.Shot.Launch`) watches the Ark from ahead while the
+  squad leaves the hangar. Until then each vessel waits on its pad (`hangar.slot.0..2`, seat 1 nearest the doors), the
+  doors held open (`ArkModel.HoldHangarOpen`); then one every `launchStagger` s it flies straight out past the jaws and
+  turns out and back into its slot (`launchSeconds`). The reel then shows your vessel and the wingmates in formation, the
+  title with the objective, and swings in behind you on your vessel's own camera. Skipping finishes the launch in the slots.
+- **While held** a vessel is stationary, its trail penned, its colliders off (it must not take plates off its own Ark)
+  and an AI wingmate's AI and escort role wait; all of it comes back once, at the Ark's speed, however the intro ends.
+- **Party:** a machine moves only the vessels it owns (its pilot; on the host, the AI wingmates). A friend's vessel is
+  launched by the friend's machine from its own Ark, as each machine sails its own Ark (PARTY.md).
+- **Mobile:** no new per-frame search: the hull's extent is read once, the launch is a few transform writes a frame for
+  four seconds.
+- **Not run in Unity.** To check: the launch path clears the jaws and the shell's wing tips, the side slots read as side
+  by side at play speed, and the hand-over lands behind your vessel.

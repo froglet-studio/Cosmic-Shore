@@ -16,6 +16,7 @@ MonoBehaviour:
   - Subject: 0
     Seconds: 2
     HardCut: 0
+    Launch: 0
     Sound:
       Guid:
         Data1: 0
@@ -32,8 +33,9 @@ MonoBehaviour:
     Title: ""
     Line: ""
   - Subject: 0
-    Seconds: 2
+    Seconds: 4
     HardCut: 0
+    Launch: 1
     Sound:
       Guid:
         Data1: 0
@@ -41,17 +43,18 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
-    FromAzimuth: 160
-    ToAzimuth: 120
-    Elevation: 6
-    FromDistance: 1.6
-    ToDistance: 1.1
+    FromAzimuth: 22
+    ToAzimuth: 8
+    Elevation: 9
+    FromDistance: 4.6
+    ToDistance: 3.8
     LookAhead: 0
     Title: "THE ARK \xB7 hull {hull}%"
     Line: ""
   - Subject: 3
     Seconds: 1
     HardCut: 1
+    Launch: 0
     Sound:
       Guid:
         Data1: 0
@@ -70,6 +73,7 @@ MonoBehaviour:
   - Subject: 4
     Seconds: 0.5
     HardCut: 1
+    Launch: 0
     Sound:
       Guid:
         Data1: 0
@@ -88,6 +92,7 @@ MonoBehaviour:
   - Subject: 2
     Seconds: 2
     HardCut: 0
+    Launch: 0
     Sound:
       Guid:
         Data1: 0

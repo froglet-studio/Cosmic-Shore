@@ -8,7 +8,7 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The voyage intro (Shombith, 2026-11-16, Milestone 1): the escort and Crystal Run ship Rev 114's Departure: the Ark
-    /// wide and along its hull, your vessel, the wingmates, the title and route, then GO, every line it shows is authored, and its camera maths frames what each shot names.
+    /// wide, the squad launching from its hangar into formation (2026-11-17), your vessel, the wingmates, the title and route, then GO, every line it shows is authored, and its camera maths frames what each shot names.
     /// </summary>
     public class VoyageIntroTests
     {
@@ -34,8 +34,18 @@ namespace CosmicShore.Tests
             Assert.AreEqual(5, shots.Count, "Departure (Rev 114) is five shots and the hand-over.");
             Assert.AreEqual(VoyageIntroSO.Subject.Ark, shots[0].Subject, "Shot 1 is wide on the Ark.");
             Assert.IsTrue(string.IsNullOrEmpty(shots[0].Title) && string.IsNullOrEmpty(shots[0].Line), "Shot 1 has no words.");
-            Assert.AreEqual(VoyageIntroSO.Subject.Ark, shots[1].Subject, "Shot 2 pushes along the Ark's hull.");
+            Assert.AreEqual(VoyageIntroSO.Subject.Ark, shots[1].Subject, "Shot 2 watches the squad launch from the Ark.");
             StringAssert.Contains("{hull}", shots[1].Title, "The hull caption does not show the hull.");
+            // Shombith 2026-11-17: the vessels fly out of the Ark and form up beside it before the camera finds the pilot.
+            Assert.IsTrue(shots[1].Launch, "Shot 2 does not launch the squad from the hangar.");
+            Assert.IsTrue(intro.LaunchesSquad);
+            for (int i = 0; i < shots.Count; i++)
+                if (i != 1) Assert.IsFalse(shots[i].Launch, $"Shot {i + 1} launches the squad a second time.");
+            Assert.Less(Mathf.Abs(Mathf.DeltaAngle(0f, shots[1].ToAzimuth)), 45f, "The launch is not watched from ahead of the Ark.");
+            var settings = VoyageToyDefinitionSO.Load();
+            var formation = settings ? settings.ArkFormation : new ArkFormationSettings();
+            Assert.LessOrEqual(formation.LaunchDuration(3), shots[1].Seconds,
+                "The last of three vessels is still flying to its slot when the launch shot ends.");
             Assert.AreEqual(VoyageIntroSO.Subject.You, shots[2].Subject, "Shot 3 is your own vessel.");
             Assert.AreEqual(VoyageIntroSO.Subject.Wingmates, shots[3].Subject, "Shot 4 is the wingmates.");
             Assert.AreEqual(VoyageIntroSO.Subject.Course, shots[4].Subject, "Shot 5 is the title and the route.");
@@ -44,8 +54,8 @@ namespace CosmicShore.Tests
             Assert.IsFalse(string.IsNullOrEmpty(intro.GoWord), "No GO over the hand-over.");
             StringAssert.Contains("{pilot}", intro.CardLine, "The name card does not name the pilot.");
             Assert.IsNotNull(intro.Vessels, "The intro reads no vessel list: the name cards would have no vessel.");
-            Assert.That(intro.Duration(3), Is.EqualTo(9f).Within(0.01f), "A three-seat Departure runs nine seconds.");
-            Assert.That(intro.Duration(1), Is.EqualTo(8f).Within(0.01f), "Alone: no wingmate shots.");
+            Assert.That(intro.Duration(3), Is.EqualTo(11f).Within(0.01f), "A three-seat Departure runs eleven seconds.");
+            Assert.That(intro.Duration(1), Is.EqualTo(10f).Within(0.01f), "Alone: no wingmate shots.");
             Assert.IsTrue(intro.SkippableAfterFirstRun, "The first run plays through; later ones may be skipped.");
         }
 
