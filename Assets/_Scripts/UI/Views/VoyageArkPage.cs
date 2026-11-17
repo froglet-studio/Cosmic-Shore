@@ -279,12 +279,22 @@ namespace CosmicShore.UI
 
         // ── The seats this voyage sails with ─────────────────────────────────
 
-        /// <summary>The open voyage's own seats (<see cref="VoyageSeatRecord"/>), made from the active squad the first time
-        /// the page opens on it; with no voyage key, the squad a voyage would sail with, shown but not changed.</summary>
+        /// <summary>The open voyage's own seats (<see cref="VoyageSeatRecord"/>), made the first time the page opens on it
+        /// from the active squad with the player's last line-up in it (the first line-up before they have picked one,
+        /// <see cref="VoyageSeats.Seed"/>); with no voyage key, the squad a voyage would sail with, shown but not changed.
+        /// A friend's seat in someone else's lobby starts from their squad as before.</summary>
         SavedSquad Seats()
         {
+            string key = SeatKey;
+            var made = VoyageSeatRecord.Get(key);
+            if (made != null) return made;
             var from = VoyageSeats.Active ?? VoyageRun.ActiveSquad(VoyageLaunch.ResolveGameData());
-            return VoyageSeatRecord.For(SeatKey, from) ?? from;
+            if (!Guest && !string.IsNullOrEmpty(key))
+            {
+                var settings = VoyageToyDefinitionSO.Load();
+                from = _rules.Seed(from, settings ? settings.FirstLineUp : null) ?? from;
+            }
+            return VoyageSeatRecord.For(key, from) ?? from;
         }
 
         // ── Showing ──────────────────────────────────────────────────────────
@@ -650,6 +660,8 @@ namespace CosmicShore.UI
         public void RememberSeat()
         {
             var squad = VoyageSeatRecord.Get(SeatKey) ?? VoyageSeats.Active;
+            // The line-up that sails is the one the next voyage opens on, even when no seat was changed.
+            if (!Guest) VoyageSeatRecord.Remember(VoyageSeatRecord.Get(SeatKey));
             int seat = VoyageSeats.MySeat(squad);
             if (seat < 0) return;
             var slot = squad.GetSlot(seat);

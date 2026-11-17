@@ -34,6 +34,7 @@ PATHS = {
     "element": "Assets/_Scripts/Data/Enums/Element.cs",
     "preview_library": "Assets/Resources/ModePreviewLibrary.asset",
     "cards": "Assets/_SO_Assets/Games",
+    "renames": "Assets/_Scripts/System/CloudData/GameModeRenameMigration.cs",
 }
 
 
@@ -103,6 +104,19 @@ def parse_mode_genre(text):
     if not modes or not metrics:
         raise ValueError("ModeGenre.cs: no mode rows or no metric rows found; the parser needs updating")
     return modes, metrics
+
+
+def parse_renames(text):
+    """{old GameModes name: current name} from GameModeRenameMigration.Renames, the map the game applies to every
+    cloud save. Analytics applies the same map so a match sent under an old name (HexRace, PeelTheCage,
+    MultiplayerCrystalCapture...) counts as the mode it is now."""
+    body = re.search(r"\bRenames\s*=\s*new\b[^{]*\{(.*?)\};", _strip_comments(text), re.S)
+    if not body:
+        raise ValueError("GameModeRenameMigration.Renames not found; the parser needs updating")
+    pairs = dict(re.findall(r'\{\s*"(\w+)"\s*,\s*"(\w+)"\s*\}', body.group(1)))
+    if not pairs:
+        raise ValueError("GameModeRenameMigration.Renames has no entries the parser can read")
+    return pairs
 
 
 def _guid_index(folders):
@@ -180,6 +194,10 @@ def build():
     unknown = [m for m in mode_rows if m not in game_modes] + [m for m in metric_rows if m not in metrics]
     if unknown:
         raise ValueError(f"ModeGenre.cs names members the enums do not have: {unknown}")
+    renames = parse_renames(_read(PATHS["renames"]))
+    bad = [f"{old} -> {new}" for old, new in renames.items() if new not in game_modes or old in game_modes]
+    if bad:
+        raise ValueError(f"GameModeRenameMigration.Renames: a target is not a GameModes member or a source still is: {bad}")
     metric_of = preview_metrics(_read(PATHS["preview_library"]), game_modes, metrics)
     modes, none = {}, []
     for name in sorted(game_modes, key=lambda n: game_modes[n]):
@@ -199,6 +217,7 @@ def build():
         "metric": dict(sorted(metric_of.items())),
         "mode_rows": sorted(mode_rows),
         "cards": card_modes(game_modes),
+        "renames": dict(sorted(renames.items())),
     }
 
 
@@ -218,6 +237,16 @@ def load(path=OUT):
         if isinstance(pair, list) and pair and pair[0] in ELEMENTS:
             out[str(mode)] = (pair[0], pair[1] if len(pair) > 1 and pair[1] in ELEMENTS else None)
     return out
+
+
+def load_renames(path=OUT):
+    """{old game_mode: current game_mode} from the committed json; {} when it is missing or unreadable."""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    return {str(k): str(v) for k, v in (data.get("renames") or {}).items() if isinstance(v, str) and v}
 
 
 def have_sources():
@@ -291,6 +320,17 @@ def self_test():
             expect(modes.get("Joust"), [game_metric_rows.get(data["metric"]["Joust"]), None], "Joust by its metric")
         expect("Maelstrom" in data["no_element"], True, "Maelstrom draws other modes: no element")
         expect("SkimRace" in modes, "SkimRace" in data["metric"], "SkimRace answers exactly when it has a metric")
+        for old, new in (("HexRace", "SkimRace"), ("PeelTheCage", "Cleave"), ("Ribcage", "Cleave"),
+                         ("MultiplayerCrystalCapture", "Scurry")):
+            expect(data["renames"].get(old), new, f"rename {old}")
+    sample_renames = 'static readonly Dictionary<string, string> Renames = new() { { "HexRace", "SkimRace" }, ' \
+                     '// { "Gone", "Nowhere" },\n { "PeelTheCage", "Cleave" }, };'
+    expect(parse_renames(sample_renames), {"HexRace": "SkimRace", "PeelTheCage": "Cleave"}, "sample renames")
+    try:
+        parse_renames("static readonly Dictionary<string, string> Other = new() { };")
+        failures.append("negative control: a file without Renames parsed")
+    except ValueError:
+        pass
     for line in failures:
         print("FAIL", line)
     print("mode_elements self-test:", "ok" if not failures else f"{len(failures)} failed")

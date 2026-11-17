@@ -394,6 +394,18 @@ namespace CosmicShore.Data
         /// <summary>Venture further: what each further run adds to the goal and to the leg's cells.</summary>
         public float VentureGoal;
         public int VentureCells;
+
+        // ── The leg cell by cell (Shombith's storyboard, 2026-11-17) ──────────────────────────────────────────────
+
+        /// <summary>The world each cell of the leg stands, by the cell config's name, in order (cell 1 first). A name the
+        /// corridor's pool does not have, and every cell past the end, keeps the world the day drew. Empty: all drawn.</summary>
+        public List<string> CellWorlds = new();
+        /// <summary>How long the Ark anchors in each cell, in order; cells past the end take the last entry. Empty: the
+        /// voyage's calm and hostile windows (VoyageToyDefinitionSO).</summary>
+        public List<float> CellAnchorSeconds = new();
+        /// <summary>Each cell's life (its fauna and flora populations before the voyage's own life scale), in order; cells
+        /// past the end take the lane's pacing. Empty: the lanes decide.</summary>
+        public List<float> CellLife = new();
     }
 
     /// <summary>What an outcome writes into the galaxy's news and state (VOYAGES.md §6.3, DEPTH.md §2): the chain.</summary>

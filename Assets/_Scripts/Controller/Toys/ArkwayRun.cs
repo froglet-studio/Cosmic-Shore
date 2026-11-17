@@ -283,6 +283,18 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        // ── The leash, as a run may shape it (Shombith, 2026-11-17: the voyage's stray recall) ──
+
+        /// <summary>The leash countdown's words for this many whole seconds left: a bold line and the line under it.
+        /// Unset (the toy) the countdown reads "RETURN TO THE ARK — n".</summary>
+        public System.Func<int, (string line, string under)> LeashCountdownText { get; set; }
+
+        /// <summary>Where a pilot who stayed past the leash is set back down. No answer (or unset) is the Ark's flank.</summary>
+        public System.Func<IVesselStatus, Pose?> RecallPose { get; set; }
+
+        /// <summary>A pilot stayed past the leash until the countdown ran out and was brought back to the Ark.</summary>
+        public event System.Action<IVesselStatus> Recalled;
+
         // ── Anchoring: a raid window at each cell (Shombith, 2026-11-16, P1) ──
         //
         // With AnchorSeconds set, the Ark DROPS ANCHOR on reaching each cell of its route: it stops dead for the window
@@ -368,6 +380,15 @@ namespace CosmicShore.Gameplay
             if (string.IsNullOrEmpty(line)) return;
             EnsureHud();
             _hud.ShowBanner(line, seconds, mood, under);
+        }
+
+        /// <summary>A running toast (a crystal picked up): it replaces the running toast already up or waiting instead of
+        /// queueing behind it, so a quick string of pickups is one toast that keeps count.</summary>
+        public void ShowRunningBanner(string line, float seconds, ArkwayVoyageHud.Mood mood, string under)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, seconds, mood, under, running: true);
         }
 
         /// <summary>
@@ -737,6 +758,7 @@ namespace CosmicShore.Gameplay
             // bug class), so the approach band read once at departure would be the fallback for
             // the whole leg.
             AimArk();
+            _conveyor.QueueDepartedOnceClear(_ark.Position);
 
             if (_holdingAtRouteEnd) return;
             if (!_ark.HasArrived(CellConveyor.ArriveDistance)) return;
@@ -886,18 +908,30 @@ namespace CosmicShore.Gameplay
             float remaining = _cfg.LeashGraceSeconds - (Time.unscaledTime - _leashBreachedAt);
             if (remaining > 0f)
             {
-                _hud.ShowCountdown($"RETURN TO THE ARK — {Mathf.CeilToInt(remaining)}");
+                int seconds = Mathf.CeilToInt(remaining);
+                if (LeashCountdownText != null)
+                {
+                    var (line, under) = LeashCountdownText(seconds);
+                    _hud.ShowCountdown(line, under);
+                }
+                else _hud.ShowCountdown($"RETURN TO THE ARK — {seconds}");
                 return;
             }
 
             _leashBreachedAt = -1f;
             _hud.HideCountdown();
             RecallToArk(vessel);
+            Recalled?.Invoke(vessel);
         }
 
         void RecallToArk(IVesselStatus vessel)
         {
             if (vessel?.Vessel == null || !_ark) return;
+            if (RecallPose?.Invoke(vessel) is { } seat)
+            {
+                Repose(vessel, seat);
+                return;
+            }
 
             // The Ark's FLANK: abeam and slightly back, facing along the course, well clear of
             // the hull plates (~0.22 × length). Never the bow, which would put a recalled pilot

@@ -3278,7 +3278,7 @@
     register(name, meta, page) { PAGES[name] = meta; EXTRA_PAGES[name] = page; },
     h, api, card, empty, table, chartPanel, seriesPanel, staticLoad, resultFrame, barList, statRow, fmt, when, store, state,
     render, setUpdated, pageFilters, filtersText, eraById, MEASURES, MATCH_MEASURES, MATCH_SPLITS, DAYS, SNAPSHOT,
-    DEVICES, deviceFilterLabel, buildLabel,
+    DEVICES, deviceFilterLabel, buildLabel, makeFrame, SEP, filterQuery, shortDay, segment, deviceLabel,
   };
 
   sea();

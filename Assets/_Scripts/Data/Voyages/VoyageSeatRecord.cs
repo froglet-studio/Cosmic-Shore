@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Data
@@ -8,8 +10,11 @@ namespace CosmicShore.Data
     /// picks into THAT copy, never into a saved squad, and Set sail sails exactly it. "You sail as" and the popup's saved
     /// line read the same copy, so what the page says is what spawns.
     /// <para>One voyage is held at a time, keyed by <see cref="JobKey"/> or <see cref="EscortKey"/>: opening another
-    /// voyage starts it again from the active squad. Nothing is saved to the cloud; the copy lasts until the app closes or
-    /// another voyage is opened.</para>
+    /// voyage starts it again. Nothing is saved to the cloud; the copy lasts until the app closes or another voyage is
+    /// opened.</para>
+    /// <para>The line-up the player last picked is kept on this device (<see cref="Remember"/>, <see cref="TryRecall"/>):
+    /// the next voyage the Ark page opens starts from it, not from the active squad (Shombith, 2026-11-17: "keep what I
+    /// selected last time as my pick").</para>
     /// </summary>
     public static class VoyageSeatRecord
     {
@@ -68,6 +73,60 @@ namespace CosmicShore.Data
 
         /// <summary>Forget the record (a test, or the voyage sailed and came home).</summary>
         public static void Clear() => ResetStatics();
+
+        // ── The last line-up, kept on this device ───────────────────────────
+
+        /// <summary>Where the last line-up is kept (PlayerPrefs, this device).</summary>
+        public const string LastLineUpKey = "Voyages.LastLineUp";
+
+        [Serializable]
+        sealed class LineUp
+        {
+            public SquadSlot Mine;
+            public SquadSlot[] Wingmates;
+        }
+
+        /// <summary>
+        /// Keep <paramref name="squad"/>'s line-up as the player's last pick: their own seat's four picks and the AI
+        /// wingmates' (every other seat no person holds), in seat order. Who sits where is not kept, only what they fly.
+        /// </summary>
+        public static void Remember(SavedSquad squad)
+        {
+            if (squad == null) return;
+            int mine = MySeatOf(squad);
+            if (mine < 0) return;
+            var lineUp = new LineUp { Mine = Loadout(squad.GetSlot(mine)) };
+            var wingmates = new List<SquadSlot>();
+            for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
+                if (seat != mine && !squad.GetSlot(seat).IsPlayer()) wingmates.Add(Loadout(squad.GetSlot(seat)));
+            lineUp.Wingmates = wingmates.ToArray();
+            PlayerPrefs.SetString(LastLineUpKey, JsonUtility.ToJson(lineUp));
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>
+        /// The line-up <see cref="Remember"/> kept: the player's own seat and the wingmates in seat order
+        /// (<paramref name="wingmates"/> is cleared first). False when nothing was kept yet: the first voyage.
+        /// </summary>
+        public static bool TryRecall(out SquadSlot mine, List<SquadSlot> wingmates)
+        {
+            mine = default;
+            wingmates?.Clear();
+            string json = PlayerPrefs.GetString(LastLineUpKey, string.Empty);
+            if (string.IsNullOrEmpty(json)) return false;
+            LineUp lineUp;
+            try { lineUp = JsonUtility.FromJson<LineUp>(json); }
+            catch (ArgumentException) { return false; }
+            if (lineUp == null) return false;
+            mine = lineUp.Mine;
+            if (wingmates != null && lineUp.Wingmates != null) wingmates.AddRange(lineUp.Wingmates);
+            return true;
+        }
+
+        /// <summary>Forget the last line-up (a test, or a reset): the next voyage opens on the first line-up.</summary>
+        public static void ForgetLineUp() => PlayerPrefs.DeleteKey(LastLineUpKey);
+
+        static SquadSlot Loadout(SquadSlot slot) => default(SquadSlot).WithLoadout(slot);
 
         /// <summary>The player's own seat in <paramref name="squad"/>: a joined squad's held seat, else the leader's.</summary>
         public static int MySeatOf(SavedSquad squad) =>

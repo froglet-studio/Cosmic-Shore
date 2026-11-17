@@ -3,7 +3,9 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using CosmicShore.Utility;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace CosmicShore.Tests
 {
@@ -36,6 +38,83 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0.1f, t.BreachHull, 1e-4f);
             Assert.AreEqual(10f, t.VentureGoal);
             Assert.AreEqual(1, t.VentureCells);
+            // The leg cell by cell (Shombith's storyboard, 2026-11-17).
+            CollectionAssert.AreEqual(new[] { "Caldera", "Orrery", "Garland", "Geode" }, t.CellWorlds);
+            CollectionAssert.AreEqual(new[] { 20f, 30f, 30f, 40f }, t.CellAnchorSeconds);
+            CollectionAssert.AreEqual(new[] { 0.8f, 1.3f, 0.9f, 1.4f }, t.CellLife);
+        }
+
+        [Test]
+        public void Board_CopiesTheLegCellByCell()
+        {
+            var content = Shipped();
+            var job = Raid(VoyageRules.NewGalaxy(content, Domains.Jade), content);
+            Assert.IsNotNull(job);
+            CollectionAssert.AreEqual(new[] { "Caldera", "Orrery", "Garland", "Geode" }, job.CellWorlds);
+            CollectionAssert.AreEqual(new[] { 20f, 30f, 30f, 40f }, job.CellAnchorSeconds);
+            CollectionAssert.AreEqual(new[] { 0.8f, 1.3f, 0.9f, 1.4f }, job.CellLife);
+        }
+
+        [Test]
+        public void Extract_AtHome_PaysTheEscortHomeBonus_ThenResetsIt()
+        {
+            var state = VoyageRules.NewGalaxy(Shipped(), Domains.Jade);
+            Assert.IsTrue(state.IsHome());
+            VoyageRaid.Owe(state, Element.Time, 5);
+            state.HomeRewardScale = 2f;
+            var x = VoyageRules.Extract(state, Shipped());
+            Assert.IsNotNull(x);
+            Assert.AreEqual(10, x.Crystals[(int)Element.Time]);
+            Assert.AreEqual(1f, state.HomeRewardScale);
+            Assert.AreEqual(0, state.OwedOf(Element.Time));
+        }
+
+        [Test]
+        public void Extract_Anywhere_BanksAtTheStopAsItIs_AndTheArkIsHome()
+        {
+            var state = VoyageRules.NewGalaxy(Shipped(), Domains.Jade);
+            string home = state.Home;
+            state.At = "somewhere.else";
+            VoyageRaid.Owe(state, Element.Mass, 4);
+            state.HomeRewardScale = 2f;
+            Assert.IsNull(VoyageRules.Extract(state, Shipped()), "away from home only Finish here banks");
+            var x = VoyageRules.Extract(state, Shipped(), anywhere: true);
+            Assert.IsNotNull(x);
+            Assert.AreEqual(4, x.Crystals[(int)Element.Mass], "finishing away from home pays no escort bonus");
+            Assert.AreEqual(home, state.At);
+            Assert.AreEqual(1f, state.HomeRewardScale);
+        }
+
+        [Test]
+        public void NameCells_StandsTheNamedWorlds_KeepsTheRest()
+        {
+            var pool = new[] { "Yggdra", "Caldera", "Orrery", "Garland", "Geode" };
+            var drawn = new System.Collections.Generic.List<int> { 0, 0, 0, 0, 0 };
+            var named = VoyageRaid.NameCells(drawn, new[] { "Caldera", "Nowhere", "", "geode" }, pool);
+            // Named and found; unknown and empty names keep the drawn world; cells past the list keep theirs; any case.
+            CollectionAssert.AreEqual(new[] { 1, 0, 0, 4, 0 }, named);
+            CollectionAssert.AreEqual(new[] { 0, 0, 0, 0, 0 }, drawn, "the drawn corridor is not changed in place");
+            Assert.AreSame(drawn, VoyageRaid.NameCells(drawn, new string[0], pool));
+        }
+
+        [Test]
+        public void PerCell_TakesTheLastEntryPastTheEnd()
+        {
+            var secs = new[] { 20f, 30f, 40f };
+            Assert.AreEqual(20f, VoyageRaid.PerCell(secs, 0, 99f));
+            Assert.AreEqual(40f, VoyageRaid.PerCell(secs, 2, 99f));
+            Assert.AreEqual(40f, VoyageRaid.PerCell(secs, 5, 99f));
+            Assert.AreEqual(99f, VoyageRaid.PerCell(secs, -1, 99f));
+            Assert.AreEqual(99f, VoyageRaid.PerCell(new float[0], 1, 99f));
+        }
+
+        [Test]
+        public void LayCellLife_OverridesThePacingCellByCell()
+        {
+            var paced = new System.Collections.Generic.List<float> { 1f, 1.3f, 0.9f, 1f, 1.2f };
+            var laid = VoyageRaid.LayCellLife(paced, new[] { 0.8f, 0f, 0.9f, 1.4f });
+            // A 0 entry keeps the pacing; a cell past the list (a ventured fifth) keeps the lane's.
+            CollectionAssert.AreEqual(new[] { 0.8f, 1.3f, 0.9f, 1.4f, 1.2f }, laid);
         }
 
         [Test]
@@ -503,12 +582,57 @@ namespace CosmicShore.Tests
             Assert.Less(cfg.CellGap, 1200f, "the open water between cells is shorter than at 1.5x (1200 u)");
             Assert.IsTrue(cfg.ScatterLifeSpawns, "a voyage cell's life is born all through its open water");
             Assert.Greater(settings.KaijuPerCrossing, 0);
-            Assert.GreaterOrEqual(settings.KaijuScale, 10f, "a kaiju is huge");
+            Assert.GreaterOrEqual(settings.DesktopKaijuScale, 10f, "a kaiju is huge");
             Assert.Greater(settings.KaijuMax, 0);
-            Assert.Greater(settings.KaijuScale, settings.HomewardRaiderScale, "a kaiju is bigger than a raider");
+            Assert.Greater(settings.MobileKaijuScale, settings.HomewardRaiderScale, "a kaiju is bigger than a raider, phones too");
             Assert.IsTrue(settings.RaidersOutbound);
             var lines = VoyageContentSO.Load().Lines;
             Assert.IsFalse(string.IsNullOrEmpty(lines.ToastKaiju));
+        }
+
+        [Test]
+        public void ShippedVoyage_StrayingPastTheArkCountsDownThenRecalls()
+        {
+            var settings = VoyageToyDefinitionSO.Load();
+            Assert.IsNotNull(settings, "Resources/Voyages/Voyage.asset");
+            var cfg = settings.BuildArkConfig(null);
+            // The voyage's leash is its own: within reach of a whole voyage cell (the Ark anchors at the core), well short
+            // of the Arkway's three cell radii, which a pilot never reached.
+            Assert.GreaterOrEqual(cfg.LeashRadiusFactor, 1f, "a pilot can raid the whole cell the Ark anchors in");
+            Assert.Less(cfg.LeashRadiusFactor, 2f, "straying is reached in a voyage, not three cell radii out");
+            Assert.AreEqual(settings.StrayRadiusCells, cfg.LeashRadiusFactor, 1e-4f);
+            Assert.AreEqual(5f, cfg.LeashGraceSeconds, 1e-4f, "the warning counts 5, 4, 3, 2, 1");
+            var lines = VoyageContentSO.Load().Lines;
+            StringAssert.Contains("{seconds}", lines.ToastStray, "the countdown shows the seconds left");
+            StringAssert.Contains("{carried}", lines.ToastStrayCarrySub, "the warning names the crystals at stake");
+            StringAssert.Contains("{count}", lines.ToastRecalledLostSub);
+            Assert.IsFalse(string.IsNullOrEmpty(lines.ToastRecalled));
+        }
+
+        [Test]
+        public void ShippedVoyage_PhonesTakeLighterLifeAndKaiju()
+        {
+            var settings = VoyageToyDefinitionSO.Load();
+            Assert.IsNotNull(settings, "Resources/Voyages/Voyage.asset");
+            Assert.AreEqual(1, settings.KaijuMax, "one kaiju alive at a time");
+            Assert.LessOrEqual(settings.MobileCellLifeScale, settings.DesktopCellLifeScale, "a phone holds no more life");
+            Assert.Less(settings.MobileKaijuScale, settings.DesktopKaijuScale, "a phone's kaiju is smaller");
+            Assert.Greater(settings.MobileRaiderMax, 0);
+            Assert.Greater(settings.RaidAnchorMinLife, 0, "the Ark sails through a cell with nothing to steal");
+            Assert.LessOrEqual(settings.CellFloraScale, settings.DesktopCellLifeScale,
+                "plants (a cell's growing prism mass) never outgrow the creatures' scale");
+            Assert.Greater(CellConveyor.DepartedRetireMargin, 0f, "the cell behind retires once the Ark is clear of it");
+            Assert.LessOrEqual(settings.CellLifeMax, 2.5f, "no voyage cell grows past 2.5x its creatures");
+            Assert.Less(settings.HomewardLureFactor, 2f, "the way home no longer draws most of a cell onto the Ark");
+        }
+
+        [Test]
+        public void KaijuSpecies_IsNeverAMissingConfig()
+        {
+            Assert.IsFalse(VoyageRun.IsKaijuSpecies(null));
+            var empty = ScriptableObject.CreateInstance<FaunaConfigurationSO>();
+            try { Assert.IsFalse(VoyageRun.IsKaijuSpecies(empty), "a config without a prefab is no kaiju"); }
+            finally { UnityEngine.Object.DestroyImmediate(empty); }
         }
     }
 }

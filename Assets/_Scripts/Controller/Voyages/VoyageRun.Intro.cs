@@ -10,7 +10,9 @@ namespace CosmicShore.Gameplay
     /// Crystal Run's opening (Shombith, 2026-11-16: "the in game still has no intro"): the escort's reel
     /// (<see cref="VoyageIntro"/>) with Crystal Run's words (<see cref="VoyageIntroSO.LoadCrystalRun"/>), played when the Ark
     /// first sets sail on a run. As in the escort (<c>ArkEscortRun.Intro.cs</c>), the pilot's own vessel flies on the escort
-    /// AI with the stick held while the camera is away, and the hand-over returns it exactly once however the intro ends.
+    /// AI with the stick held while the camera is away - or, when the reel launches the squad, waits in the Ark's hangar and
+    /// flies out to its slot beside the Ark (<see cref="ArkSortie"/>) - and the hand-over returns it exactly once however
+    /// the intro ends.
     /// The run's set-off toast waits for it (<see cref="ArkwayRun.HoldBanners"/>). A friend following the host's course
     /// sees it too, with the party's other pilots in the cast (Docs/Voyages/PARTY.md); a run that sails on from a stop has none.
     /// </summary>
@@ -80,16 +82,20 @@ namespace CosmicShore.Gameplay
                 "breach", Mathf.RoundToInt(job.BreachHull * 100f).ToString(),
             });
 
-            HoldForIntro(local, mySeat);
+            HoldForIntro(local, mySeat, script);
+            cast.Launch = LaunchSquad;
             _intro = VoyageIntro.Play(script, cast, _root, EndIntro);
         }
 
-        /// <summary>The pilot's vessel keeps with the Ark on the escort AI while the camera is away; the stick is held.</summary>
-        void HoldForIntro(IVesselStatus local, int seat)
+        /// <summary>The stick is held while the camera is away. The squad waits in the Ark's hangar for the reel's launch
+        /// shot and forms up beside the Ark (<see cref="ArkSortie"/>); a reel with no launch keeps the pilot's vessel with
+        /// the Ark on the escort AI instead.</summary>
+        void HoldForIntro(IVesselStatus local, int seat, VoyageIntroSO script)
         {
             _holdingForIntro = true;
             var input = _context?.GameData?.LocalPlayer?.InputController;
             if (input) input.SetPause(true);
+            if (StowForLaunch(script)) return;
             if (local.Vessel == null) return;
             local.Vessel.ToggleAIPilot(true);
             Escort(local.Vessel, seat);
@@ -103,6 +109,8 @@ namespace CosmicShore.Gameplay
             if (!_holdingForIntro) return;
             _holdingForIntro = false;
 
+            // The squad flies on from its slots (a launch the intro cut short finishes there first).
+            ReleaseSquad();
             if (_introPilot)
             {
                 _introPilot.Disarm();

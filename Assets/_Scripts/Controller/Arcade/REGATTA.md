@@ -208,14 +208,14 @@ corner it did not ask for.
 
 ## 6. AI
 
-**The Stoat (on the card 2026-10-17, Yash; orbit only since 2026-11-02, `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`).** It flies the same gate
+**The Stoat (on the card 2026-10-17, Yash; orbit only since 2026-11-02, `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`; OFF the card since 2026-11-17, Garrett: it will be reworked a lot, so it is judge-only in `author_regatta_assets.py` JUDGE_ONLY_HULLS, keeps its race line and is out of the polished set).** It flies the same gate
 steering, and its autopilot is `StoatSlingExecutor`: it slings to turn (ring ≥ 7.84° off, ≥ 123 u away, every 0.94 s) and presses for
 the warp alone while its ring is ≥ 280 u away (`aiWarpMinDistance`). In Regatta it reads those numbers through `AIModeTuning`
 (`StoatSlingConfig_Regatta`, which `Tools/Build/learn_drives_from_flights.py` would write; none exists, so it flies the hull's own row). A
 person flying the Stoat reads the same config. In the offline model (`Tools/Build/stoat_orbit_sim.py`, gate steering only, no race line or
 rails) an AI Stoat at the card's Time 10 runs 59.5 / 60.6 / 65.3 / 93.6 s at I1-I4, among the Dolphin and the Squirrel (54-72 s and
-48.5-59.5 s, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) and behind them at I4. Opponent AI stay pinned to the Squirrel
-(`OpponentAIVessel`); to race an AI Stoat, tap an AI chip in the launch panel (the host can pick any seat, an opponent's too), or fly your own
+48.5-59.5 s, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) and behind them at I4. Opponent AI draw from the card like allies (the
+Squirrel pin retired 2026-11-17); to race an AI Stoat on purpose, tap an AI chip in the launch panel (the host can pick any seat, an opponent's too), or fly your own
 hull on the Third Eye's AI.
 
 The platform's gate-race AI (two-waypoint approach, latched side) plus one override for the one
@@ -273,18 +273,19 @@ policy) — it flies the Skim Race pilot, below.
 **Two kinds of AI seat** (`AIHullSeating`, read by the lobby chips, the backfill and the arena
 hull backstop alike):
 
-- **Opponent seat** — an AI on a domain no human flies. The card pins
-  `SO_ArcadeGame.OpponentAIVessel` to the **Squirrel**, so every opponent is a Squirrel: it skims
-  the rails for boost energy, which is the one speed source a gate-following autopilot reaches
-  just by flying the racing line. Every Regatta Squirrel AI flies the **Skim Race pilot**
+- **Opponent seat** — an AI on a domain no human flies. It draws its hull from the card the way an ally
+  does (`PickAIVesselType`, arena seating: one pilot per hull). **The card pinned
+  `SO_ArcadeGame.OpponentAIVessel` to the Squirrel until 2026-11-17**, while the Squirrel was the only hull the racing
+  AI drove well; Garrett retired it once every card hull had a trained AI ("a vestige that needs to go away now that we
+  have more than the squirrel racing effectively"). In the real-game judge, a drawn five-AI field on the shipped course
+  and archive courses a9 and a6 (seed 11) went from three opponent Squirrels (9-14 gates when the race ended) to a
+  Sparrow, an Urchin and a Thresher (13-22 gates). The field and its pinned-opponent seating stay in the platform for a
+  card that wants them; `author_regatta_assets.py --check` fails if Regatta's card pins one again. Every Regatta Squirrel AI flies the **Skim Race pilot**
   (`SkimRacePilot`, `Docs/SKIM_RACE_AI.md`) with `RegattaRingObjective`: the same racing AI, its
   crystal swapped for the next ring and its track for the domain's rail. On the platform
   `AIPilot`'s ring waypoints the Squirrels threaded no rings at all (first playtest, 2026-10-06).
-  Pinned opponents sit **outside arena seating** — a grid of identical opponents is the point, and the arena backstop
-  (`ServerPlayerVesselInitializer.ResolveArenaUniqueHull`) skips them so a human who picked the
-  Squirrel keeps it. **This is a stopgap**: when the racing AI can drive every hull, clear
-  `OpponentAIVessel` in `author_regatta_assets.py` (and drop its assert) and the opponent grid
-  goes back to the card's mixed draw.
+  (A pinned opponent would sit outside arena seating, and the arena backstop
+  `ServerPlayerVesselInitializer.ResolveArenaUniqueHull` would skip it; Regatta no longer pins one.)
 - **Ally seat** — an AI on a domain a human flies. On the launch panel its avatar chip on the
   team tile shows the hull it will fly; **tap one of your own team's ally chips to step its hull**
   through *auto → the card's hulls in order → auto*, skipping hulls another pilot has claimed or
