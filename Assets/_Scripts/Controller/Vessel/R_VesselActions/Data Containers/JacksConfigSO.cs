@@ -182,6 +182,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("SPACE: every herder's ring, as a multiple of the thumb floor (RingFloor). The lab's floor at -5, +6% per " +
                  "level: 1.3 at rest, 1.9 at level 10.")]
         [SerializeField] ElementalFloat ringScale = ElementalFloat.Multiplier(1.3f, 1.9f, Element.Space, 1f);
+        [Tooltip("WIDE (the Space card): every ring opens to this many times its Space size while Wide is on, so the herd fans " +
+                 "out to graze a wide field; the view's whole-cell zoom shows it.")]
+        [SerializeField, Range(1f, 4f)] float wideRingScale = 2.2f;
+        [Tooltip("Seconds the rings take to open or close when Wide toggles.")]
+        [SerializeField, Min(0.05f)] float wideRingSeconds = 0.6f;
         [Tooltip("TIME: the herd's speed multiplier. The lab's +6% per level, floored at x0.4: 1 at rest, 1.6 at level 10.")]
         [SerializeField] ElementalFloat herdSpeed = ElementalFloat.Multiplier(1f, 1.6f, Element.Time, 0.4f);
 
@@ -353,6 +358,8 @@ namespace CosmicShore.Gameplay
         public float FeedsPerOffspringScaleFor(IVesselStatus status) => 1f / Mathf.Max(0.01f, herdBirthRate.EvaluateLive(status));
         /// <summary>SPACE: every herder's ring (u) on this hull.</summary>
         public float RingFor(IVesselStatus status) => RingFloor * ringScale.EvaluateLive(status);
+        public float WideRingScale => wideRingScale;
+        public float WideRingSeconds => wideRingSeconds;
         /// <summary>TIME: the herd's speed multiplier on this hull.</summary>
         public float HerdSpeedFor(IVesselStatus status) => herdSpeed.EvaluateLive(status);
     }

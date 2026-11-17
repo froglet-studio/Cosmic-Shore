@@ -191,8 +191,9 @@ GOBY_KIT = [
     (3, "Undertow", "Mass either side of the Pistol's plane is pulled into it, from further with Space (pullReach, 40 u at rest -> "
         "200 u at level 10). Danger, super-shielded and the pair's own prisms never move.", "Deep Undertow",
         "Shielded prisms are pulled in too."),
-    (4, "Quick Jump", "Time shortens the cooldown of the Pistol's jump, the burst of speed that flings it off its ground "
-        "(jumpCooldown, 9 s at rest -> 3 s at level 10).", "Phase Dart",
+    (4, "Dart", "Time is the Goby's dart: how fast it flies and how soon the next is ready (dartPace, x1 at rest -> x2.2 at "
+        "level 10 - a full dart takes 1 s at rest, under half a second at level 10). Darts lay the Pistol's ground, so a "
+        "quick Goby keeps the Pistol fed.", "Phase Dart",
         "The Goby's darts pass through prisms."),
 ]
 

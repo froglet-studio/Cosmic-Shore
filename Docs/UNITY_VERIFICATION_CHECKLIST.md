@@ -24556,6 +24556,24 @@ ran (see the PR's verification line); the generators' `--check` and `--self-test
 6. Harvest at I4 (authored fauna, now pinned): every shark, piranha, brittle star and tadpole is the Space variant, not
    a spread across elements; at I3 and below Harvest's fauna are unchanged. Spot-check Wildlife Liberation and Chum at
    I4 still play (their creatures are one element now). Not run in editor; refcompile 0 errors in the changed files.
+
+## 🔴 The ten weakest abilities raised (2026-11-16, Garrett's project thread, `claude/weakest-abilities-pass`, NOT RUN IN EDITOR)
+
+Garrett, 2026-11-16: "fix all of these" (the ten least polished abilities). `unity_refcompile` ran with 0 errors in the
+changed files; `author.py grizzly|jacks --check`, `author_goby_assets.py`, `author_meerkat_assets.py --check` and
+`author_jacks_assets.py --check` passed; the Unity editor and the `unity` CLI did not run. Owed:
+
+1. Grizzly Mass (Weapon Systems): Mass still grows the trail's prisms; the claw's reach is fixed. A weapon cycle
+   flashes the Mass card.
+2. Grizzly Charge (Dig In): dug in, the cannon charges 2x at rest and up to 5x at Charge 10; the Charge card stays lit
+   and flashes as the anchor bites.
+3. Grizzly Time (Rush): a ram devastates rival prisms in its path (host only); the Time card flashes on a ram and its
+   veil shows the refill when the bank is empty; Time 10 refills in about 2.5 s.
+4. Dolphin: Drift Charge fills 2.5x faster at Time 10; a seeded crystal still lands at a random point of the
+   cytoplasm, now on a 15 s cooldown.
+5. Goby Time (Dart): the Pistol's dart is longer and comes back sooner at Time 10. Run `GobyPistolTests`.
+6. Meerkat Time (Ride): the ride is up to 2x faster at Time 10.
+7. Jacks Space (Wide): the herd spreads out about 2.2x wider over 0.6 s when Wide is on and gathers again when off.
 ## 🔴 Voyage jobs come from the active squad only, and a starter squad (2026-11-16, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/project-thread-j3ua9b` (PR into `voyages`). The board offers one job per pilot in the active squad (no
