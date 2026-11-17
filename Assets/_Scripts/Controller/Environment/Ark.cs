@@ -612,7 +612,11 @@ namespace CosmicShore.Gameplay
             return ArkReactor.MayRegrowIn(Domain, cell.HasNucleusControlZone, cell.IsInsideNucleus(at), claimed, claimant);
         }
 
-        bool RegrowAllowedNow => RegrowOverride ?? InOwnNucleus();
+        /// <summary>
+        /// Whether the reactor may regrow a prism right now: the run's <see cref="RegrowOverride"/> when set, otherwise the
+        /// fleet rule (<see cref="InOwnNucleus"/>). The voyage HUD reads it for its "healing" mark.
+        /// </summary>
+        public bool RegrowAllowed => RegrowOverride ?? InOwnNucleus();
 
         /// <summary>
         /// The fixed rate: one beat every <see cref="CosmicShore.ScriptableObjects.ArkReactorSO.RegrowSeconds"/>, and a
@@ -623,7 +627,7 @@ namespace CosmicShore.Gameplay
             if (!_reactorDefinition || _retiring) return;
             float now = Time.time;
             float period = _reactorDefinition.RegrowSeconds;
-            if (_layComplete && !_hullLost && ArkReactor.Beat(ref _nextRegrowAt, now, period) && RegrowAllowedNow && RegrowOne())
+            if (_layComplete && !_hullLost && ArkReactor.Beat(ref _nextRegrowAt, now, period) && RegrowAllowed && RegrowOne())
                 _lastRegrowAt = now;
 
             if (_model) _model.SetReactor(now - _lastRegrowAt < 2f * period);
@@ -972,6 +976,28 @@ namespace CosmicShore.Gameplay
         public bool HasArrived(float within) =>
             _hasDestination && (transform.position - _destination).sqrMagnitude <= within * within;
 
+        /// <summary>True once <see cref="SetUnderway"/> has let the Ark sail (and until it is stopped).</summary>
+        public bool IsUnderway => _underWay;
+
+        bool _followPending;
+        Vector3 _followPosition;
+        Quaternion _followRotation;
+        float _followBlend;
+
+        /// <summary>
+        /// A party friend's Ark is kept where the host's is (Docs/Voyages/PARTY.md §2, <c>VoyageArkSync</c>): each machine
+        /// sails its own Ark through its own worlds, and this pulls this one a share <paramref name="blend"/> (0-1) of the way
+        /// toward <paramref name="position"/> and <paramref name="rotation"/> on its next step. The hull follows the move as it
+        /// follows the Ark's own course (the mover contract). A fallen hull is not moved.
+        /// </summary>
+        public void FollowPose(Vector3 position, Quaternion rotation, float blend)
+        {
+            _followPending = true;
+            _followPosition = position;
+            _followRotation = rotation;
+            _followBlend = Mathf.Clamp01(blend);
+        }
+
         void Update()
         {
             if (_retiring) return;
@@ -1007,6 +1033,18 @@ namespace CosmicShore.Gameplay
                     transform.rotation = Quaternion.RotateTowards(transform.rotation,
                         Quaternion.LookRotation(dir, Vector3.up),
                         TurnDegreesPerSecond * Time.deltaTime);
+                    moved = true;
+                }
+            }
+
+            // A party friend's Ark pulled toward the host's (FollowPose): after the course step, so the two add.
+            if (_followPending)
+            {
+                _followPending = false;
+                if (!_hullLost && _followBlend > 0f)
+                {
+                    transform.position = Vector3.Lerp(transform.position, _followPosition, _followBlend);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, _followRotation, _followBlend);
                     moved = true;
                 }
             }

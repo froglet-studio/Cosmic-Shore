@@ -154,6 +154,22 @@ namespace CosmicShore.Gameplay
             RegisterTier("superShieldBiteMin", (tier, v) => tier.SuperShieldBiteMin = Mathf.Max(0f, v));
             RegisterTier("biteScale", (tier, v) => tier.BiteScale = Mathf.Max(0f, v));
             RegisterTier("spawnPeriodScale", (tier, v) => tier.SpawnPeriodScale = Mathf.Max(0.05f, v));
+            RegisterTier("assaultLureShare", (tier, v) => tier.AssaultLureShare = Mathf.Clamp01(v));
+            RegisterTier("assaultSeconds", (tier, v) => tier.AssaultSeconds = Mathf.Max(1f, v));
+            RegisterTier("assaultGapSeconds", (tier, v) => tier.AssaultGapSeconds = Mathf.Max(1f, v));
+            RegisterTier("assaultRepelKills", (tier, v) => tier.AssaultRepelKills = Mathf.Max(1, Mathf.RoundToInt(v)));
+            Register("escort.assaultFirstDelay", (t, _, v) =>
+            {
+                if (v < 0f) return false;
+                t.Escort.AssaultFirstDelay = v;
+                return true;
+            });
+            Register("escort.assaultWarningSeconds", (t, _, v) =>
+            {
+                if (v < 0f) return false;
+                t.Escort.AssaultWarningSeconds = v;
+                return true;
+            });
 
             // ── Fauna: fauna.<species>.<field> (FaunaRuntimeTuning), and fauna.<world 1-9|all>.<scale> ──
             foreach (var field in FaunaRuntimeTuning.AllFields())

@@ -24575,3 +24575,122 @@ changed files; `author.py grizzly|jacks --check`, `author_goby_assets.py`, `auth
 6. Meerkat Time (Ride): the ride is up to 2x faster at Time 10.
 7. Jacks Space (Wide): the herd spreads out about 2.2x wider over 0.6 s when Wide is on and gathers again when off.
 8. Squirrel Time (Skimming): a run of skims less than 0.6 s apart builds boost faster each step, up to 2.5x; a gap resets it.
+## 🔴 Voyage jobs come from the active squad only, and a starter squad (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-j3ua9b` (PR into `voyages`). The board offers one job per pilot in the active squad (no
+crew fill to six), and a player with no squad is given a starter squad saved into their squad book
+(`VoyageRun.ActiveSquad`, `VoyageToyDefinitionSO` starter seats, `Docs/Voyages/DEPTH.md` §14 decision 8). The changed
+runtime files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files);
+the new `VoyageStarterSquadTests` (editor) were not compiled or run. No Unity editor ran.
+
+1. Run `VoyageStarterSquadTests`, `VoyageRulesTests`, `VoyageDepthTests`: all pass.
+2. With an account that has squads: open the Voyage window. The board shows at most three pilot jobs (plus Escort the
+   Ark, and Sail home when away), each brought by a pilot of the active squad. Switch the active squad on the Ark's
+   Squads tab: the jobs change with it.
+3. With an account that has no squad (or delete them all): open the Voyage window. The board shows three jobs, from
+   TALON, ANVIL and CITADEL's people. The Ark's Squads tab now lists "Starter Squad": Sparrow in Charge (you), Squirrel
+   in Mass and Dolphin in Space on AI. Restart the game: the squad is still there.
+4. Escort the Ark with the starter squad: the two wingmates spawn as the Squirrel and the Dolphin.
+## 🔴 Fauna attack the Ark in assaults, per-cell hostile legs, breach lines (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-dlzvop` (PR into `voyages`). `ArkAssaultClock`, `ArkAssaultDriver`,
+`ArkEscortRun.Assault.cs`, `VoyageRun.Assault.cs`, new tier and job fields (`Docs/Voyages/ARK_ESCORT.md` §4.2). The
+changed files compile clean against the Unity reference assemblies (`unity_refcompile` player and editor: 0 errors in
+changed files). No Unity editor ran, so no EditMode test ran and the numbers are not sim-tuned.
+
+1. Run `ArkAssaultTests`, `ArkPacingTests`, `VoyageRulesTests`, `VoyageShellTests`: all pass.
+2. Escort the Ark at difficulty 3. About 10 s after the Ark crosses into a hostile world, a banner reads "THE FAUNA OF
+   <world> ARE CIRCLING THE ARK"; 5 s later "THE ARK IS UNDER ATTACK - KILL 6 ATTACKERS NEAR IT", and the world's
+   creatures visibly converge on the Ark's hull and eat plates.
+3. Kill six creatures near the Ark: "ATTACK DRIVEN OFF", and the creatures drift back to grazing. Let one run out
+   instead: "THE ATTACKERS FALL BACK - THE ARK LOST <n> PLATES". The next warning comes about 35 s later.
+4. Ignore the Ark at d1-d3: the escort is overrun when the hull falls below 25%.
+5. Pacify a world: no more assaults there.
+6. Re-run the escort sim at d1, d4, d7, d9 (`ArkEscortSimLauncher`): d4 and up were fitted without assaults and may now
+   be too hard; tune `tier.{d}.assault*`.
+7. A job with `hostileCells` (Crystal Run, once its job lands): calm cell 1 has no assaults and its fauna ignore the
+   Ark; cells 2-4 start in the opposing colour and assault the Ark; below the job's `breachHull` the Ark falls.
+## 🔴 Escort the Ark opens with an intro: the Ark, the squad, the objective (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-st7qvh` (PR into `voyages`), Milestone 1. When the Ark sets sail (the load veil comes
+down) `ArkEscortRun` plays `VoyageIntro` from `Assets/Resources/Voyages/ArkEscortIntro.asset` (`VoyageIntroSO`):
+letterbox bars, the Ark, one shot per squad vessel (yours last), then the course and the objective, and a blend into
+your chase camera. Meanwhile your vessel flies on the escort AI with the stick held. The changed runtime files compile
+clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files); the new
+`VoyageIntroTests` (editor) were not run. No Unity editor ran.
+
+1. Run `VoyageIntroTests` and `VoyageShellTests`: all pass. Select `ArkEscortIntro.asset`: the inspector shows three
+   shots and the vessel list `SO_Classlist_All`.
+2. Escort the Ark from the Voyage window. When the veil comes down: black bars slide in, the flight HUD hides, the
+   camera arcs around the Ark with "THE ARK" and its line, then visits each wingmate and then your own vessel (vessel
+   name, seat, "You" or "AI wingmate"), then looks down the course with "ESCORT THE ARK" and the five world names.
+3. The bars leave and the camera settles behind your vessel; the flight HUD is back, you have the stick, and the
+   "ESCORT THE ARK THROUGH 5 WORLDS" banner shows. Your vessel is beside the Ark, not left behind.
+4. Escort again and hold any key or pad button (or touch) once the intro starts: the fill under "Hold any button to
+   skip" grows and the camera goes straight to the hand-over. A key held from before the intro does not skip it.
+5. Leave the voyage (pause menu, Main Menu) during the intro: the menu loads with the normal camera; no stuck bars.
+6. Run the escort sim (`ArkEscortSimLauncher`): no intro plays.
+
+## 🔴 Crystal Run, the voyage HUD and the end-of-voyage scoreboard (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-i45oov` (PR into `voyages`). Compiled with `unity_refcompile` only (0 errors in changed
+files); `VoyageCrystalRunTests` never ran. Spec: `Docs/Voyages/CRYSTAL_RUN.md`.
+
+1. Voyages page: the board offers "Crystal Run to {place}" whoever is seated. Sail it: a toast "STEAL 20 CRYSTALS" with
+   a line under it; the objective box top left shows CRYSTAL RUN, 0 / 20, the four elements, four cells (first Calm,
+   then three Hostile), the hull bar with a red mark at 40%.
+2. Each new cell raises one toast (white when calm, red when hostile); the last says FINAL CELL. Toasts show one at a
+   time, top centre, and never one per crystal.
+3. Pick up elemental crystals (any of the four): the counter and the element split count up; omni crystals do not.
+   At 20 a green toast. In a hostile cell an assault's lines are red; a repelled assault is green.
+4. Let the hull drop near 40%: "BREACH CLOSE" (red). Losing plates: "ARK UNDER ATTACK", no more than every 20 s.
+5. At the stop: the scoreboard (seats with Crystals, Kills, Off the Ark, Score; rewards; Finish B, Venture further A).
+   Venture: goal 30, five cells. Finish: the Ark sails home ("SAIL THE ARK HOME"), docking shows HOME and the crystals
+   land in the pilot's loadout. The scene does not return to the menu while a board is open.
+6. Lose the Ark: the board says THE ARK IS LOST with what went down; Try again (A) sails a fresh Crystal Run, Back to
+   Voyages (B) returns to the menu.
+7. Escort the Ark: the objective box shows ESCORT THE ARK - DIFFICULTY n, the five worlds, the hull with its breach
+   line, "Ark bound for / inside {world}", and the assault line. At the last world the scoreboard offers Venture
+   further (difficulty + 1) and Finish (sail home, then bank). A fallen escort offers Try again.
+8. The toasts' and scoreboard's sound slots on `Voyage.asset` are empty: nothing plays until they are wired.
+
+## 🔴 Voyage toasts wait for the load screen and the intro; Crystal Run opens with an intro (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-a5f46g` (PR into `voyages`). Shombith's play test after #2022 and #2025 merged: no intro,
+and no toasts, only text at the top over the Ark. Compiled with `unity_refcompile` (player and editor, 0 errors in
+changed files); the new `VoyageIntroTests.CrystalRunIntro_LoadsFromResources_AndNamesTheGoal` never ran.
+
+1. Sail Crystal Run from the Voyages page. When the load screen lifts, the intro plays (bars, THE ARK, each vessel,
+   CRYSTAL RUN "Steal 20 crystals before the Ark reaches {place}..."), then the camera lands behind your vessel.
+2. Only after the intro: the toast "STEAL 20 CRYSTALS" with its line under it, then "STAY WITH THE ARK". Before this
+   change the set-off toast played behind the load screen and was never seen.
+3. Hold any button during the intro: it skips to the hand-over and the same toasts follow.
+4. Escort the Ark: the intro plays as before; no toast shows over it; "STAY WITH THE ARK" and the departure toast come
+   after it. If the intro does not play, the console says why (`[ArkEscort] The escort opens without its intro: ...`).
+5. Venture further at a Crystal Run stop: no second intro.
+
+## 🔴 Rev 114 picks in the game: the Departure intro, the objective strip, the chase camera (2026-11-16, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-a5f46g` (PR into `voyages`). Shombith picked O1, Intro A and F1 on Frogma's Voyages
+playtest tab. Compiled with `unity_refcompile` (player and editor, 0 errors in changed files); the new and changed
+tests in `VoyageIntroTests`, `VoyageCrystalRunTests` and `VoyageChaseCameraTests` never ran.
+
+1. Sail Escort the Ark the first time. The intro plays letterboxed for about 9 s: the Ark wide (no words), a push along
+   its hull with "THE ARK · hull 100%", your vessel with a name card (face, vessel, pilot, element flower), each
+   wingmate for half a second with a card, then "ESCORT THE ARK", the goal line and five dots. The camera swings in
+   behind your vessel, the bars slide away, "GO" pops, and the HUD fades up. Holding B does nothing on this first run.
+2. Sail it again: "Hold B to skip" shows, and holding B (Escape, right mouse, or a held touch) skips to the hand-over.
+3. Crystal Run plays the same reel with "CRYSTAL RUN" and its own goal.
+4. The objective strip: 420 x 120, 40 px in from the top left, one thin left line, no glow. Escort: "ESCORT THE ARK" and
+   the hull percent, the hull bar with its breach line, "Scarab Reef - hostile" and five route dots, one job line red when
+   it is a threat. Crystal Run: "CRYSTAL RUN" and "12 / 20", the bar, four element flowers with counts, then
+   "Cell 2 - hostile"; a job line only when the Ark is under attack or the goal is met. It hides during the intro and
+   the scoreboard.
+5. The chase camera: in a voyage the camera sits closer behind and lower than in freestyle, a little to the right.
+   Leaving the voyage gives back the vessel's own framing. Tune it in `Resources/Voyages/VoyageCamera.asset` (a row per
+   vessel class where a hull needs its own).
+6. The intro's swing lands exactly on that camera: no jump at the cut back.
+7. Fauna biting the Ark: up to four red point lights on them, and the Ark's plates near them glow red.
+8. Not built: the FOV opening on boost (the speed tunnel is a platform law that narrows FOV with speed and no mode may
+   change it), dust streaks on boost, the Ark's engines lighting one by one. The Ark at a third of the frame is a
+   framing tendency (the side shift), not a lock.

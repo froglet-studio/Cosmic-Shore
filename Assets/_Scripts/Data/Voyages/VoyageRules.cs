@@ -151,6 +151,9 @@ namespace CosmicShore.Data
                 }
             }
 
+            // Work every squad is offered, whoever is seated (Crystal Run), before the way home.
+            board.AddRange(VoyageRaid.AlwaysOffered(state, content, here, seatedPilotIds, usedTo));
+
             if (state.At != state.Home && content.Location(state.Home) != null)
                 board.Add(ReturnJob(state, content));
             return board;
@@ -194,7 +197,7 @@ namespace CosmicShore.Data
             var grown = new List<VoyageJob>();
             foreach (var t in content.Jobs)
             {
-                if (t == null || t.Faction != person.Faction || t.Needs == NewsTag.None) continue;
+                if (t == null || t.Faction != person.Faction || t.Needs == NewsTag.None || t.Always) continue;
                 if (forRival && !t.RivalsMayTake) continue;
                 if (!forRival && t.Tier > tier) continue;
                 var news = FreshestNews(ledger, t.Needs, here.Id, usedNews, state, forRival);
@@ -211,7 +214,7 @@ namespace CosmicShore.Data
             options.AddRange(grown);
             foreach (var t in content.Jobs)
             {
-                if (t == null || t.Faction != person.Faction || t.Needs != NewsTag.None || t.Id == ReturnJobId) continue;
+                if (t == null || t.Faction != person.Faction || t.Needs != NewsTag.None || t.Id == ReturnJobId || t.Always) continue;
                 if (forRival && !t.RivalsMayTake) continue;
                 if (!forRival && t.Tier > tier) continue;
                 var to = StandingDestination(state, content, t, here, person, usedTo, forRival);
@@ -241,7 +244,7 @@ namespace CosmicShore.Data
 
         /// <summary>Where standing work goes: the nearest location of the template's kind, not here, not already on
         /// the board; ties broken by a draw seeded from the day and the pilot, so a board is the same when re-read.</summary>
-        static VoyageLocation StandingDestination(VoyageState state, VoyageContent content, JobTemplate t,
+        internal static VoyageLocation StandingDestination(VoyageState state, VoyageContent content, JobTemplate t,
             VoyageLocation here, CrewPerson person, List<string> usedTo, bool forRival)
         {
             var distances = Distances(content, here.Id, forRival ? null : state, null);
@@ -297,7 +300,7 @@ namespace CosmicShore.Data
             return best;
         }
 
-        static VoyageJob Make(VoyageState state, VoyageContent content, JobTemplate t, CrewPerson person,
+        internal static VoyageJob Make(VoyageState state, VoyageContent content, JobTemplate t, CrewPerson person,
             VoyageLocation here, string to, NewsItem from, NewsItem carried)
         {
             var dest = content.Location(to);
@@ -321,11 +324,15 @@ namespace CosmicShore.Data
                 Verb = EffectiveVerb(t),
                 Goal = t.Goal,
                 HullFloor = t.HullFloor,
+                HostileCells = t.HostileCells != null ? new List<bool>(t.HostileCells) : new List<bool>(),
+                BreachHull = t.BreachHull,
                 NoKill = t.NoKill,
                 Role = t.Role,
                 Intensity = intensity,
                 Hops = hops,
                 RivalId = crew?.Id ?? string.Empty,
+                CountsUnderway = t.CountsUnderway,
+                Cells = Math.Max(0, t.Cells),
             };
             // The Kaiju is never easier than the hardest felled (DEPTH.md §3).
             if (from != null && from.Tag == NewsTag.Kaiju && content.Kaiju != null)
@@ -359,7 +366,7 @@ namespace CosmicShore.Data
             };
         }
 
-        static VoyageJob ReturnJob(VoyageState state, VoyageContent content)
+        public static VoyageJob ReturnJob(VoyageState state, VoyageContent content)
         {
             var home = content.Location(state.Home);
             var here = content.Location(state.At);
@@ -895,6 +902,19 @@ namespace CosmicShore.Data
             if (here.Experience is VoyageExperience.Lair or VoyageExperience.Pen) return true;
             var place = state.PlaceIfAny(here.Id);
             return here.Experience == VoyageExperience.Core && place is { HasHolder: true } && place.Holder != SquadDomain(state, content);
+        }
+
+        /// <summary>
+        /// True when cell <paramref name="cell"/> (0-based) of a leg <paramref name="cells"/> long starts hostile for
+        /// <paramref name="job"/>: its <see cref="VoyageJob.HostileCells"/> pattern when it names one (cells past the end
+        /// take the last entry), else the old rule, the destination only when <paramref name="destinationHostile"/>.
+        /// </summary>
+        public static bool HostileCell(VoyageJob job, int cell, int cells, bool destinationHostile)
+        {
+            if (cell < 0 || cell >= cells) return false;
+            var pattern = job?.HostileCells;
+            if (pattern is { Count: > 0 }) return pattern[Math.Min(cell, pattern.Count - 1)];
+            return destinationHostile && cell == cells - 1;
         }
 
         /// <summary>True when the job under way is done by arriving (a courier with no hull floor, the way home).</summary>
@@ -1608,6 +1628,57 @@ namespace CosmicShore.Data
             if (seat == mySeat || friends <= 0 || seat < 0) return -1;
             int k = seat < mySeat ? seat : seat - 1;
             return k < friends ? k : -1;
+        }
+
+        /// <summary>
+        /// The party's seats as the host sends them (Docs/Voyages/PARTY.md §1): <paramref name="hostClient"/> in
+        /// <paramref name="mySeat"/>, each friend in <paramref name="friendClients"/> (lowest client id first) in the seat
+        /// <see cref="FriendAt"/> gives them, and -1 (an AI wingmate) in every seat left. Friends beyond the seats fly along
+        /// without one.
+        /// </summary>
+        public static List<long> SeatClients(int mySeat, long hostClient, IReadOnlyList<long> friendClients)
+        {
+            const int slots = SavedSquad.SlotCount;
+            mySeat = Math.Clamp(mySeat, 0, slots - 1);
+            var sorted = new List<long>(friendClients ?? Array.Empty<long>());
+            sorted.Remove(hostClient);
+            sorted.Sort();
+            var seats = new List<long>(slots);
+            for (int seat = 0; seat < slots; seat++)
+            {
+                if (seat == mySeat) { seats.Add(hostClient); continue; }
+                int k = FriendAt(seat, mySeat, sorted.Count);
+                seats.Add(k >= 0 ? sorted[k] : -1);
+            }
+            return seats;
+        }
+
+        /// <summary>
+        /// A friend's own seat moved into the seat the host gave them (<paramref name="seat"/>): their slot (the one their
+        /// <see cref="SavedSquad.MySeat"/> names) goes there and <see cref="SavedSquad.MySeat"/> follows; the other seats are
+        /// the host's to fill. The record is not changed.
+        /// </summary>
+        public static SavedSquad WithSeat(SavedSquad squad, int seat)
+        {
+            if (squad == null || seat < 0 || seat >= SavedSquad.SlotCount) return squad;
+            int mine = Math.Clamp(squad.MySeat, 0, SavedSquad.SlotCount - 1);
+            if (mine == seat) return squad;
+            var moved = new SavedSquad
+            {
+                Id = squad.Id,
+                Name = squad.Name,
+                OwnerId = squad.OwnerId,
+                OwnerName = squad.OwnerName,
+                Domain = squad.Domain,
+                Leader = squad.Leader,
+                RogueOne = squad.RogueOne,
+                RogueTwo = squad.RogueTwo,
+                MySeat = seat,
+            };
+            var own = squad.GetSlot(mine);
+            moved.SetSlot(seat, own);
+            moved.SetSlot(mine, squad.GetSlot(seat));
+            return moved;
         }
     }
 }
