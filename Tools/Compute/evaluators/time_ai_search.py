@@ -155,7 +155,7 @@ GAMES = {
         "assets": {i: POL + "MantaSoarAITuning_Redline.asset" for i in (1, 2, 3, 4)},
         "fields": {"BoostStickBand": (0.0, 1.0), "YawsteryStickBand": (0.0, 1.0)},
         "ctrl_fields": {"noseLegendary": (2.0, 24.0)},
-        "ctrl_defaults": {"noseLegendary": 9.0},
+        "ctrl_defaults": {"noseLegendary": 15.0, "noseLegendaryI34": 9.0},   # shipped since the split confirms
         # noseLegendaryI34 (optional, not searched): I3-I4's own Legendary rate. The Manta split confirm (2026-11-17) found
         # nose 15 wins I1-I2 by 12-21% and loses I4 from Time 5 and 10 by 13-19% (Soar overshoot), so a confirm can race
         # a split table.

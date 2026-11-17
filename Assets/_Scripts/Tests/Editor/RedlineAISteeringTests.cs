@@ -50,7 +50,7 @@ namespace CosmicShore.Tests
                     var row = table[intensity - 1];
                     var want = intensity == 4 ? new[] { 4f, 5f, 6f, 9f }
                         : intensity == 3 ? new[] { 2.5f, 3f, 6f, 9f }
-                        : new[] { 2f, 3f, 6f, 9f };
+                        : new[] { 2f, 3f, 6f, 15f };
                     CollectionAssert.AreEqual(want, new[] { row.easy, row.medium, row.hard, row.legendary },
                         $"I{intensity}");
                     for (int level = 1; level <= 4; level++)

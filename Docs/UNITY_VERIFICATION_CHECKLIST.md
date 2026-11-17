@@ -24761,3 +24761,12 @@ I4) and the trainer's confirm (28 fresh flights a side: 6 vs 28 finished). Not v
 
 1. Open MinigameHeadlong: the Rhino's AI Nose Lead row reads Gain 2.47, Nose Follow 7.5.
 2. Race Headlong I4 against a Legendary AI Rhino: it clears every gate without circling one, near 110-115 s.
+
+## Manta racing AI: Legendary nose 15/s at Redline I1-I2 (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Redline I1 56.7 / 60.5 s, I2 61.2 / 59.6 s on seeds 101-102) and the split confirms (40 flights a side).
+Not verified: a real Unity editor and `RedlineAISteeringTests`.
+
+1. Open MinigameRedline: the AI nose table's Legendary column reads 15 / 15 / 9 / 9.
+2. Race Redline I1 against a Legendary AI Manta: near 56-60 s (about 65 s before). I3-I4 fly as before.
