@@ -3709,49 +3709,6 @@
       "page": "ark",
       "title": "Rev 99 - notes: what was asked, what Garrett's tab has, what changes, the recommendation"
     },
-    "R103Compare.dc.html": {
-      "x": 0,
-      "y": 0,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 103 - the three strips side by side at full width, at rest and pressed"
-    },
-    "R103A.dc.html": {
-      "x": 2100,
-      "y": 0,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 103 A - One shelf: two locked cards side by side, each with its dimmed picture (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R103B.dc.html": {
-      "x": 4200,
-      "y": 0,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 103 B - One line: a single quiet line, lock mark, Saga and Episodes, Coming soon - interactive",
-      "is_interactive": true
-    },
-    "R103C.dc.html": {
-      "x": 0,
-      "y": 1260,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 103 C - Teaser band: one dimmed picture strip with both names over it - interactive",
-      "is_interactive": true
-    },
-    "R103Notes.dc.html": {
-      "x": 0,
-      "y": 2520,
-      "w": 1920,
-      "h": 900,
-      "page": "voyages",
-      "title": "Rev 103 - notes: what changes against the build and why A"
-    },
     "R101Compare.dc.html": {
       "x": 0,
       "y": 0,
@@ -3900,41 +3857,6 @@
       "page": "ark",
       "title": "Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen"
     },
-    "R100P1A.dc.html": {
-      "x": 0,
-      "y": 4880,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 P1A - Page 1 Table top: the HyperSea on a chart table, its edge view the front; the crew's voyages on the right (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R100P2A.dc.html": {
-      "x": 2100,
-      "y": 4880,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 P2A - Page 2 Briefing: the pilot's story, the route drawing itself, the rewards arriving; difficulty 1-9 (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R100P3A.dc.html": {
-      "x": 4200,
-      "y": 4880,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 P3A - Page 3 Lobby: your lobby's three seats; your seat changes in place; Set sail (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R100Notes.dc.html": {
-      "x": 0,
-      "y": 6140,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 - notes: what was asked, each page, the new rules to confirm"
-    },
     "R107Compare.dc.html": {
       "x": 0,
       "y": 4880,
@@ -3968,42 +3890,6 @@
       "h": 900,
       "page": "quests",
       "title": "Rev 107 - notes: the two mixes, the proposed reward per quest, what changed from Rev 101"
-    },
-    "R108Table.dc.html": {
-      "x": 0,
-      "y": 11200,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 108 Table - P1A again: table flatter at 34 deg, feathered round edges, slow float and sheen, side view upright beneath - interactive",
-      "is_interactive": true
-    },
-    "R108Lobby.dc.html": {
-      "x": 2100,
-      "y": 11200,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 108 Lobby - P3A again: glass cards with glowing rims and hover lift; your card opens the seat popup - interactive",
-      "is_interactive": true
-    },
-    "R108Squad.dc.html": {
-      "x": 4200,
-      "y": 11200,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 108 Squad - Fly a squad instead: squad choices on top, AI wingmates fill the seats, lobby kept - interactive",
-      "is_interactive": true
-    },
-    "R108Picker.dc.html": {
-      "x": 0,
-      "y": 12460,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 108 Picker - Seat popup: vessel, pilot, element, artifact tabs, quick kits, Sees filter, one press per pick - interactive",
-      "is_interactive": true
     },
     "R109Compare.dc.html": {
       "x": 0,
@@ -4065,15 +3951,6 @@
       "page": "ark",
       "title": "Rev 110 - the vessels in the hangar: real models over an empty-pad video, checked"
     },
-    "R111Full.dc.html": {
-      "x": 0,
-      "y": 15000,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 111 Full - The table animates to full screen: no border, zoom inside the map, back from full screen, Galaxy to Cell - interactive",
-      "is_interactive": true
-    },
     "R112Compare.dc.html": {
       "x": 0,
       "y": 43684,
@@ -4125,6 +4002,167 @@
       "h": 900,
       "page": "menu-redesign-c",
       "title": "Rev 112 - notes: what was asked, the four, Free vs Premium, how it maps to the built Showroom, decisions"
+    },
+    "R113Compare.dc.html": {
+      "x": 0,
+      "y": 17540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 - the toasts across one voyage, each beside the moment that raises it"
+    },
+    "R113Lobby.dc.html": {
+      "x": 2100,
+      "y": 17540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Lobby - Your Ark, lobby only: what you pick is what you fly, read back beside Set sail (recommended)"
+    },
+    "R113Picker.dc.html": {
+      "x": 4200,
+      "y": 17540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Picker - The seat popup on Vessel: one press saves your seat for this voyage, and says so"
+    },
+    "R113Crew.dc.html": {
+      "x": 0,
+      "y": 18800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Crew - Crew recommends as a popup: Escort the Ark and Crystal Run open, the rest by faction, locked"
+    },
+    "R113Hud.dc.html": {
+      "x": 2100,
+      "y": 18800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Hud - Escort the Ark HUD: the objective box (goal, five worlds, hull and breach line, your job) and a threat toast"
+    },
+    "R113Run.dc.html": {
+      "x": 4200,
+      "y": 18800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Run - Crystal Run HUD: the crystal counter leads, calm and hostile cells on the route"
+    },
+    "R113Score.dc.html": {
+      "x": 0,
+      "y": 20060,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Score - The end: the Ark's hull, a row per seat, rewards, Finish and Venture further"
+    },
+    "R113Notes.dc.html": {
+      "x": 0,
+      "y": 21320,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 113 - notes: what each board fixes from Shombith's Milestone 1 list"
+    },
+    "R113Sea.dc.html": {
+      "x": 2100,
+      "y": 20060,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 113 Sea - the HyperSea page with the popup closed: two open voyages and one Crew recommends button where the list was",
+      "is_interactive": true
+    },
+    "R114C2.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 114 C2 - Crew B: pilot first; your crew's faces, each with the job they bring"
+    },
+    "R114IAB.dc.html": {
+      "x": 0,
+      "y": 3780,
+      "w": 1920,
+      "h": 2200,
+      "page": "voyages-playtest",
+      "title": "Rev 114 IAB - Intro A: Departure (recommended), and B: From the map"
+    },
+    "R114O1.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 114 O1 - Objective A: a strip, 420 px; goal, hull and breach, next world"
+    },
+    "R114TAB.dc.html": {
+      "x": 4200,
+      "y": 3780,
+      "w": 1920,
+      "h": 2200,
+      "page": "voyages-playtest",
+      "title": "Rev 114 TAB - Toasts A: the Rev 113 band, smaller, and B: the crew speaks"
+    },
+    "R114TCD.dc.html": {
+      "x": 6300,
+      "y": 3780,
+      "w": 1920,
+      "h": 2200,
+      "page": "voyages-playtest",
+      "title": "Rev 114 TCD - Toasts C: a feed under the objective, and D: two sizes (recommended)"
+    },
+    "R114F1.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 114 F1 - Feel A: Chase; close behind you, the Ark the landmark ahead"
+    },
+    "R115A.dc.html": {
+      "x": 0,
+      "y": 7480,
+      "w": 1920,
+      "h": 2200,
+      "page": "voyages-playtest",
+      "title": "Rev 115 A - Ark A: Hangar line-up; the picker slides in from the right (recommended)"
+    },
+    "R115B.dc.html": {
+      "x": 2100,
+      "y": 7480,
+      "w": 1920,
+      "h": 2200,
+      "page": "voyages-playtest",
+      "title": "Rev 115 B - Ark B: Your seat first; a bottom-sheet picker"
+    },
+    "R115C.dc.html": {
+      "x": 4200,
+      "y": 7480,
+      "w": 1920,
+      "h": 2200,
+      "page": "voyages-playtest",
+      "title": "Rev 115 C - Ark C: Pilot cards; a loadout in four columns"
+    },
+    "R115D.dc.html": {
+      "x": 6300,
+      "y": 7480,
+      "w": 1920,
+      "h": 2200,
+      "page": "voyages-playtest",
+      "title": "Rev 115 D - Ark D: Formation around the Ark; a step-by-step picker"
+    },
+    "R115E.dc.html": {
+      "x": 8400,
+      "y": 7480,
+      "w": 1920,
+      "h": 2200,
+      "page": "voyages-playtest",
+      "title": "Rev 115 E - Ark E: Garage list; a vessel-by-element grid"
     }
   },
   "createdOnFiles": {
@@ -4133,10 +4171,12 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "menu-redesign-c",
+    "page": "voyages-playtest",
     "view": "canvas"
   },
   "noteOrder": [
+    "sec-rev114",
+    "sec-rev114-2",
     "sec-rev34",
     "sec-rev35",
     "sec-rev36",
@@ -4248,18 +4288,26 @@
     "sec-rev91",
     "sec-rev94",
     "sec-rev99",
-    "sec-rev103",
     "sec-rev101",
     "sec-rev104",
     "sec-rev105",
     "sec-rev106",
     "sec-rev107",
-    "sec-rev108",
     "sec-rev109",
     "sec-rev110",
-    "sec-rev111",
-    "sec-rev100",
     "sec-rev112",
+    "sec-rev113",
+    "sec-rev115",
+    "grp-toasts-a-d",
+    "grp-crew-recommends-a-d",
+    "grp-objective-box-a-d",
+    "grp-feel-in-flight-a-d",
+    "grp-intro-a-d",
+    "grp-crew-recommends-a-d-t",
+    "grp-objective-box-a-d-t",
+    "grp-feel-in-flight-a-d-t",
+    "grp-intro-a-d-t",
+    "grp-toasts-a-d-t",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4340,18 +4388,18 @@
     "rev91",
     "rev94",
     "rev99",
-    "rev103",
     "rev101",
     "rev104",
     "rev105",
     "rev106",
-    "rev100",
     "rev107",
-    "rev108",
     "rev109",
     "rev110",
-    "rev111",
-    "rev112"
+    "rev112",
+    "rev113",
+    "rev114",
+    "rev114-notes",
+    "rev115"
   ],
   "notes": {
     "hud_end": {
@@ -6779,30 +6827,6 @@
       },
       "page": "ark"
     },
-    "rev103": {
-      "kind": "title1",
-      "text": "Rev 103 - Saga and Episodes locked together: one coming-soon strip at the foot of the Voyages screen",
-      "x": 0,
-      "y": -400,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev103": {
-      "kind": "rect",
-      "x": -160,
-      "y": -560,
-      "w": 6440,
-      "h": 4140,
-      "css": {
-        "background": "rgba(150, 156, 190, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(150, 156, 190, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
-    },
     "rev101": {
       "kind": "title1",
       "text": "Rev 101 - Quests as a screen of its own: the episode's five quests, each one's goals, claim and what it opens",
@@ -6899,15 +6923,6 @@
       },
       "page": "ark"
     },
-    "rev100": {
-      "kind": "title1",
-      "text": "Rev 100 - Voyages, new: the HyperSea and your crew's voyages, the voyage opened, your Ark",
-      "x": 0,
-      "y": 4480,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
     "rev107": {
       "kind": "title1",
       "text": "Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no episode",
@@ -6931,30 +6946,6 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "quests"
-    },
-    "rev108": {
-      "kind": "title1",
-      "text": "Rev 108 Voyages: flatter table, cooler Ark cards, squad mode, seat popup",
-      "x": 0,
-      "y": 10800,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev108": {
-      "kind": "rect",
-      "x": -160,
-      "y": 10640,
-      "w": 6440,
-      "h": 3060,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
     },
     "rev109": {
       "kind": "title1",
@@ -7004,45 +6995,6 @@
       },
       "page": "ark"
     },
-    "rev111": {
-      "kind": "title1",
-      "text": "Rev 111 Voyages: the table opens to full screen, down to one Cell",
-      "x": 0,
-      "y": 14600,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev111": {
-      "kind": "rect",
-      "x": -160,
-      "y": 14440,
-      "w": 6440,
-      "h": 1800,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
-    },
-    "sec-rev100": {
-      "kind": "rect",
-      "x": -160,
-      "y": 4320,
-      "w": 6440,
-      "h": 3060,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
-    },
     "rev112": {
       "kind": "title1",
       "text": "Rev 112 - Colour sets for a growing catalog: a world preview, one scrolling list, Free and Premium apart, no empty middle",
@@ -7066,6 +7018,227 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "menu-redesign-c"
+    },
+    "rev113": {
+      "kind": "title1",
+      "text": "Rev 113 - Milestone 1: Escort the Ark and Crystal Run, end to end - lobby first, crew popup by faction, the voyage HUD, the scoreboard",
+      "x": 0,
+      "y": 17140,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev113": {
+      "kind": "rect",
+      "x": -160,
+      "y": 16980,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev114": {
+      "kind": "title1",
+      "text": "Rev 114 - Voyages playtest: four of each - crew screen, intro, a smaller objective, toasts, the feel in flight",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages-playtest"
+    },
+    "grp-crew-recommends-a-d-t": {
+      "kind": "title1",
+      "text": "Crew recommends, A-D",
+      "x": 2060,
+      "y": -136,
+      "w": 240,
+      "maxW": 2000,
+      "size": "l",
+      "page": "voyages-playtest"
+    },
+    "grp-objective-box-a-d-t": {
+      "kind": "title1",
+      "text": "Objective box, A-D",
+      "x": -40,
+      "y": 1124,
+      "w": 240,
+      "maxW": 2000,
+      "size": "l",
+      "page": "voyages-playtest"
+    },
+    "grp-feel-in-flight-a-d-t": {
+      "kind": "title1",
+      "text": "Feel in flight, A-D",
+      "x": -40,
+      "y": 2384,
+      "w": 240,
+      "maxW": 2000,
+      "size": "l",
+      "page": "voyages-playtest"
+    },
+    "grp-intro-a-d-t": {
+      "kind": "title1",
+      "text": "Intro, A-D",
+      "x": -40,
+      "y": 3644,
+      "w": 240,
+      "maxW": 2000,
+      "size": "l",
+      "page": "voyages-playtest"
+    },
+    "grp-toasts-a-d-t": {
+      "kind": "title1",
+      "text": "Toasts, A-D",
+      "x": 4160,
+      "y": 3644,
+      "w": 240,
+      "maxW": 4100,
+      "size": "l",
+      "page": "voyages-playtest"
+    },
+    "grp-toasts-a-d": {
+      "kind": "rect",
+      "x": 4160,
+      "y": 3740,
+      "w": 4100,
+      "h": 2280,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.02)",
+        "border-style": "dashed",
+        "border-color": "rgba(255, 92, 168, 0.7)",
+        "border-width": "2px 2px 2px 2px",
+        "border-radius": "20px 20px 20px 20px"
+      },
+      "page": "voyages-playtest"
+    },
+    "sec-rev114": {
+      "kind": "rect",
+      "x": -200,
+      "y": -560,
+      "w": 4310,
+      "h": 6740,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 0px 3px 3px",
+        "border-radius": "40px 0px 0px 40px"
+      },
+      "page": "voyages-playtest"
+    },
+    "sec-rev114-2": {
+      "kind": "rect",
+      "x": 4110,
+      "y": -560,
+      "w": 4310,
+      "h": 6740,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 0px",
+        "border-radius": "0px 40px 40px 0px"
+      },
+      "page": "voyages-playtest"
+    },
+    "rev114-notes": {
+      "x": 8560,
+      "y": 0,
+      "w": 1100,
+      "text": "Rev 114 notes: the Voyages playtest\n\nWhat Shombith saw: No intro. The objective box too big on the left. No toasts: the words showed over the Ark instead. The crew screen needs rework. The game did not feel good yet.\n\nCrew (C1-C4): A keeps the HyperSea in view and numbers each job on the map (recommended). B leads with your pilots' faces. C is a poster board by faction. D puts factions in tabs.\n\nIntro (I1-I4): A is the Ark, your squad by name, the goal and the route in nine seconds (recommended: it is his list). B dives from the map. C opens on the threat. D is a five-second launch.\n\nObjective (O1-O4): A is a 420 px strip. B a ribbon at top centre. C a 260 px hull gauge with the rest held on a button. D opens on news and folds to one line (recommended).\n\nToasts (T1-T4): A is the picked band, smaller. B is the crew on the radio. C a quiet feed. D two sizes: big moments take the screen (recommended). All are screen space; the playtest's words were drawn in the world.\n\nFeel (F1-F4): A chase camera. B guardian camera with the Ark central and its lights showing its hull (recommended). C two-second cinematic beats. D punch: hit-stop, shards, sound slots. B and D combine.\n\nRules kept: Every word an authored field; colours from the set; sounds empty slots; fauna shown lit in the world, never as rings; no glows in the UI; a game mode never changes the vessel kit.\n\nNext: Pick one per row (or mix). The picks become prompts for the in-game and app-shell threads.",
+      "size": "m",
+      "fill": "teal",
+      "page": "voyages-playtest"
+    },
+    "grp-crew-recommends-a-d": {
+      "kind": "rect",
+      "x": 2060,
+      "y": -40,
+      "w": 2000,
+      "h": 1160,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.02)",
+        "border-style": "dashed",
+        "border-color": "rgba(0, 212, 255, 0.7)",
+        "border-width": "2px 2px 2px 2px",
+        "border-radius": "20px 20px 20px 20px"
+      },
+      "page": "voyages-playtest"
+    },
+    "grp-objective-box-a-d": {
+      "kind": "rect",
+      "x": -40,
+      "y": 1220,
+      "w": 2000,
+      "h": 1160,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.02)",
+        "border-style": "dashed",
+        "border-color": "rgba(64, 120, 255, 0.7)",
+        "border-width": "2px 2px 2px 2px",
+        "border-radius": "20px 20px 20px 20px"
+      },
+      "page": "voyages-playtest"
+    },
+    "grp-feel-in-flight-a-d": {
+      "kind": "rect",
+      "x": -40,
+      "y": 2480,
+      "w": 2000,
+      "h": 1160,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.02)",
+        "border-style": "dashed",
+        "border-color": "rgba(0, 212, 255, 0.7)",
+        "border-width": "2px 2px 2px 2px",
+        "border-radius": "20px 20px 20px 20px"
+      },
+      "page": "voyages-playtest"
+    },
+    "grp-intro-a-d": {
+      "kind": "rect",
+      "x": -40,
+      "y": 3740,
+      "w": 2000,
+      "h": 2280,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.02)",
+        "border-style": "dashed",
+        "border-color": "rgba(255, 92, 168, 0.7)",
+        "border-width": "2px 2px 2px 2px",
+        "border-radius": "20px 20px 20px 20px"
+      },
+      "page": "voyages-playtest"
+    },
+    "rev115": {
+      "kind": "title1",
+      "text": "Rev 115 - Your Ark and the seat picker, five ways: hangar line-up, your seat first, pilot cards, formation, garage list",
+      "x": 0,
+      "y": 7080,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages-playtest"
+    },
+    "sec-rev115": {
+      "kind": "rect",
+      "x": -160,
+      "y": 6920,
+      "w": 6440,
+      "h": 2920,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages-playtest"
     }
   },
   "order": [
@@ -7520,11 +7693,6 @@
     "R99B.dc.html",
     "R99C.dc.html",
     "R99Notes.dc.html",
-    "R103Compare.dc.html",
-    "R103A.dc.html",
-    "R103B.dc.html",
-    "R103C.dc.html",
-    "R103Notes.dc.html",
     "R101Compare.dc.html",
     "R101A.dc.html",
     "R101B.dc.html",
@@ -7542,18 +7710,10 @@
     "R106B.dc.html",
     "R106C.dc.html",
     "R106Notes.dc.html",
-    "R100P1A.dc.html",
-    "R100P2A.dc.html",
-    "R100P3A.dc.html",
-    "R100Notes.dc.html",
     "R107Compare.dc.html",
     "R107D.dc.html",
     "R107E.dc.html",
     "R107Notes.dc.html",
-    "R108Table.dc.html",
-    "R108Lobby.dc.html",
-    "R108Squad.dc.html",
-    "R108Picker.dc.html",
     "R109Compare.dc.html",
     "R109A.dc.html",
     "R109B.dc.html",
@@ -7561,13 +7721,32 @@
     "R109Notes.dc.html",
     "R110B.dc.html",
     "R110Notes.dc.html",
-    "R111Full.dc.html",
     "R112Compare.dc.html",
     "R112A.dc.html",
     "R112B.dc.html",
     "R112C.dc.html",
     "R112D.dc.html",
-    "R112Notes.dc.html"
+    "R112Notes.dc.html",
+    "R113Compare.dc.html",
+    "R113Lobby.dc.html",
+    "R113Picker.dc.html",
+    "R113Crew.dc.html",
+    "R113Hud.dc.html",
+    "R113Run.dc.html",
+    "R113Score.dc.html",
+    "R113Sea.dc.html",
+    "R113Notes.dc.html",
+    "R114C2.dc.html",
+    "R114O1.dc.html",
+    "R114F1.dc.html",
+    "R114IAB.dc.html",
+    "R114TAB.dc.html",
+    "R114TCD.dc.html",
+    "R115A.dc.html",
+    "R115B.dc.html",
+    "R115C.dc.html",
+    "R115D.dc.html",
+    "R115E.dc.html"
   ],
   "pages": [
     {
@@ -7621,6 +7800,10 @@
     {
       "id": "quests",
       "name": "Quests"
+    },
+    {
+      "id": "voyages-playtest",
+      "name": "Voyages playtest"
     }
   ],
   "title": "Frogma"

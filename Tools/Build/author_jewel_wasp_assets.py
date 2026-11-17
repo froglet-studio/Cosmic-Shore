@@ -479,8 +479,13 @@ def errors() -> list:
         need(f"guid: {g}" in cfg, "an omni predator is missing from the config")
     need(f"onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_EVENT_GUID}" in cfg,
          "the attack scores on no channel (PvP is petals only: every hit is a scored hit)")
-    need(len(re.findall(r"^    Path: \n", cfg, re.M)) == len(FMOD_SLOTS) and not re.search(r"^    Path: \S", cfg, re.M)
-         and not re.search(r"^      Data\d: [1-9-]", cfg, re.M), "an FMOD slot is not empty (LOCKED: slots ship empty)")
+    # Every FMOD slot ships empty unless the placeholder ledger lists it (Garrett 2026-11-16: a recycled placeholder
+    # is allowed only when Docs/AudioSystem/sound_placeholders.json names it and the event that replaces it).
+    import sound_placeholders
+    listed = {it["field"]: it["path"] for it in sound_placeholders._lock(ROOT).get(os.path.relpath(CONFIG, ROOT).replace(os.sep, "/"), [])}
+    filled = re.findall(r"^  (\w+):\n    Guid:\n(?:      Data\d: -?\d+\n){4}    Path: (\S.*)$", cfg, re.M)
+    need(len(re.findall(r"^    Path:", cfg, re.M)) == len(FMOD_SLOTS) and all(listed.get(f) == ev for f, ev in filled),
+         "an FMOD slot holds an event the placeholder ledger does not list (LOCKED: slots ship empty or listed)")
     # one parameter per element (the fleet's rule), each its own element
     for key, element in (("hostSpeedScale", 4), ("suctionReachScale", 3), ("attackCooldown", 1), ("floraGrowth", 2)):
         m = re.search(rf"^  {key}:\n(?:    .*\n)*?    element: (\d)\n", cfg, re.M)

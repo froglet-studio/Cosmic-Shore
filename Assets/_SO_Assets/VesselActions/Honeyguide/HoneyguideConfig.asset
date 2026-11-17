@@ -121,11 +121,11 @@ MonoBehaviour:
     preview: 0
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 1870893843
+        Data2: 1090302803
+        Data3: -531107708
+        Data4: -1787684942
+      Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
     icon: {fileID: 21300000, guid: 50dc94dbf11d2798ac169967b60e106a, type: 3}
   - effect: 31
     trigger: 0
@@ -133,11 +133,11 @@ MonoBehaviour:
     preview: 1
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -159591309
+        Data2: 1318821736
+        Data3: -1568531009
+        Data4: 870809827
+      Path: event:/SFX/Oneshots/Gameplay sfx/Mine Explode
     icon: {fileID: 21300000, guid: 1ac94c7e97eae1e90912e516fb09bb42, type: 3}
   - effect: 20
     trigger: 0
@@ -145,11 +145,11 @@ MonoBehaviour:
     preview: 2
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 1800078172
+        Data2: 1135187538
+        Data3: 470108834
+        Data4: 2131099498
+      Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
     icon: {fileID: 21300000, guid: 74ff8913fd7a7cacc1edd87351439179, type: 3}
   - effect: 6
     trigger: 0
@@ -157,11 +157,11 @@ MonoBehaviour:
     preview: 3
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -1103610945
+        Data2: 1108376032
+        Data3: -1187393100
+        Data4: -416318210
+      Path: event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
     icon: {fileID: 21300000, guid: 1c1d6922d20d2afa8cbaa81e43418bdb, type: 3}
   - effect: 16
     trigger: 0
@@ -169,11 +169,11 @@ MonoBehaviour:
     preview: 3
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 521565762
+        Data2: 1177340277
+        Data3: 1735452291
+        Data4: -857705457
+      Path: event:/SFX/Oneshots/Gameplay sfx/Creature colide
     icon: {fileID: 21300000, guid: 3643cb8efffe34ef35515f47319451b9, type: 3}
   - effect: 7
     trigger: 0
@@ -181,11 +181,11 @@ MonoBehaviour:
     preview: 4
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
     icon: {fileID: 21300000, guid: 89eaac26ed4c6c75d12d996bc0a4af87, type: 3}
   - effect: 13
     trigger: 0
@@ -193,11 +193,11 @@ MonoBehaviour:
     preview: 0
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -80347349
+        Data2: 1177752133
+        Data3: 1086952125
+        Data4: -723090544
+      Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
     icon: {fileID: 21300000, guid: f9a5ca8fff11692c9992657741e0cde2, type: 3}
   - effect: 8
     trigger: 1
@@ -205,11 +205,11 @@ MonoBehaviour:
     preview: 5
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 310883003
+        Data2: 1266496358
+        Data3: -193662310
+        Data4: -709421328
+      Path: event:/SFX/Oneshots/Gameplay sfx/Track collide
     icon: {fileID: 21300000, guid: c2b06e51381ecf6d02bbe9ec4ff4cc24, type: 3}
   - effect: 38
     trigger: 1
@@ -217,11 +217,11 @@ MonoBehaviour:
     preview: 6
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -1163572034
+        Data2: 1312051193
+        Data3: -1732454749
+        Data4: 1656763241
+      Path: event:/SFX/Oneshots/Gameplay sfx/Space Joust
     icon: {fileID: 21300000, guid: 9aaa8504bfb9b3a674b24b0bd20918ee, type: 3}
   - effect: 34
     trigger: 1
@@ -229,11 +229,11 @@ MonoBehaviour:
     preview: 6
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -515106617
+        Data2: 1203647854
+        Data3: 206617753
+        Data4: 714713024
+      Path: event:/SFX/Oneshots/Gameplay sfx/space comeback
     icon: {fileID: 21300000, guid: d4c28ee0e2498e427081c915a128e273, type: 3}
   - effect: 35
     trigger: 1
@@ -241,11 +241,11 @@ MonoBehaviour:
     preview: 6
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 2118813290
+        Data2: 1222676418
+        Data3: 1472184977
+        Data4: 1179725894
+      Path: event:/SFX/Oneshots/Gameplay sfx/Space Joust friend
     icon: {fileID: 21300000, guid: 6c28fe399eabc4c9cbeeb356c4f2bdc3, type: 3}
   - effect: 30
     trigger: 1
@@ -253,11 +253,11 @@ MonoBehaviour:
     preview: 6
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: -1254976528
+        Data2: 1275513386
+        Data3: -981470078
+        Data4: 286922241
+      Path: event:/SFX/Oneshots/Gameplay sfx/Time Joust
     icon: {fileID: 21300000, guid: f3c42757b4e4dd876d9f5ad8a086048e, type: 3}
   - effect: 39
     trigger: 1
@@ -265,11 +265,11 @@ MonoBehaviour:
     preview: 7
     sfx:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
+        Data1: 1333840280
+        Data2: 1330870228
+        Data3: 856184972
+        Data4: -1867009068
+      Path: event:/SFX/Oneshots/Gameplay sfx/Charge Joust
     icon: {fileID: 21300000, guid: 7fc0d975f87792d278ad2b5b058ce683, type: 3}
   lassoCone: 30
   lassoReelSpeed: 220
@@ -753,86 +753,86 @@ MonoBehaviour:
     text: 'Each pattern made banks 1 extra AP (hold 2).'
   patternMadeSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 413717435
+      Data2: 1238803703
+      Data3: 1704894129
+      Data4: 1814326255
+    Path: event:/SFX/Oneshots/Menu/Confirmed
   slipSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 175162526
+      Data2: 1078581788
+      Data3: 1171656846
+      Data4: 200696093
+    Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   jumpSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   flitSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 175162526
+      Data2: 1078581788
+      Data3: 1171656846
+      Data4: 200696093
+    Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   upgradeSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -141012430
+      Data2: 1095164995
+      Data3: -224516441
+      Data4: 533331164
+    Path: event:/SFX/Oneshots/Menu/Upgrade
   spinSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 175162526
+      Data2: 1078581788
+      Data3: 1171656846
+      Data4: 200696093
+    Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   revealSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -107539407
+      Data2: 1195323467
+      Data3: -488055890
+      Data4: -1046372031
+    Path: event:/SFX/Oneshots/Menu/OpenView
   hiveEnterSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 310883003
+      Data2: 1266496358
+      Data3: -193662310
+      Data4: -709421328
+    Path: event:/SFX/Oneshots/Gameplay sfx/Track collide
   hiveChainSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
   hiveStingSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 521565762
+      Data2: 1177340277
+      Data3: 1735452291
+      Data4: -857705457
+    Path: event:/SFX/Oneshots/Gameplay sfx/Creature colide
   hiveColourSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 724249746
+      Data2: 1213064519
+      Data3: 1634220168
+      Data4: -897979471
+    Path: event:/SFX/Oneshots/Menu/Option Click
   hiveLeaveSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}

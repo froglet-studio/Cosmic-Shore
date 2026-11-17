@@ -620,6 +620,12 @@ namespace CosmicShore.UI
 
         float ViewWidth => Mathf.Max(1f, rectTransform.rect.width) / Scale();
 
+        /// <summary>How wide the view is, light years across (-1 before the map is drawn).</summary>
+        public float ViewLy => float.IsInfinity(_minX) ? -1f : ViewWidth;
+
+        /// <summary>True while the view flies to a tier or a dive.</summary>
+        public bool Flying => _flying;
+
         /// <summary>Fly to a view <paramref name="width"/> ly across centred on <paramref name="centre"/> (map units), as
         /// the board's dive does: longer the further it goes, at most 5.2 s.</summary>
         void FlyTo(Vector2 centre, float width)
@@ -681,7 +687,9 @@ namespace CosmicShore.UI
             float width = Mathf.Max(1f, rectTransform.rect.width);
             float lo = _chart != null ? width / MaxViewLy / frame : MinZoom;
             float hi = _chart != null ? width / _floorLy / frame : MaxZoom;
-            _zoom = Mathf.Clamp(_zoom * factor, Mathf.Min(lo, 1f), Mathf.Max(hi, 1f));
+            // A charted map keeps to its widths (light years) alone; the framed scale (1) is no bound, or a wheel could
+            // take the view past the narrowest width when the charted places span less than it.
+            _zoom = _chart != null ? Mathf.Clamp(_zoom * factor, lo, hi) : Mathf.Clamp(_zoom * factor, Mathf.Min(lo, 1f), Mathf.Max(hi, 1f));
             // The centre that puts world back under the pointer.
             _pan = world - (at - rectTransform.rect.center) / Scale() - FrameCentre;
             ClampView();

@@ -1049,11 +1049,11 @@ MonoBehaviour:
   attachTickEventToShip: 1
   boostLoopEvent:
     Guid:
-      Data1: 175162526
-      Data2: 1078581788
-      Data3: 1171656846
-      Data4: 200696093
-    Path: event:/SFX/Oneshots/Gameplay sfx/Skim
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   boostAmountParameterName: Boost Amount
   boostBaseMultiplier: {fileID: 0}
   boostMaxMultiplier: {fileID: 0}

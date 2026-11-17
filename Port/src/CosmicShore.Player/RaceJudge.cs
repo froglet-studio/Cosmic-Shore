@@ -217,9 +217,19 @@ namespace CosmicShore.Player
                 var nears = ais.Select(_ => new List<string>()).ToArray();
                 float nextSample = 0f;
                 string outcome;
+                var noseFollow = _spec["ai_nose_follow"] as JsonObject;
                 while (true)
                 {
                     bool someoneFinished = false;
+                    // "ai_nose_follow": {hull: rate/s} - a search's AI nose follow rate for hulls whose mode has no knob
+                    // (Switchback and Redline set their own as the AI is armed; this wins over both, every frame).
+                    if (noseFollow != null)
+                        foreach (var p in ais)
+                        {
+                            var st = p.Vessel?.VesselStatus;
+                            if (st?.VesselTransformer is { } vt && noseFollow[st.VesselType.ToString()] is JsonNode n)
+                                vt.AINoseFollowPerSecond = n.GetValue<float>();
+                        }
                     for (int k = 0; k < ais.Count; k++)
                     {
                         int now = ais[k].RoundStats?.SwitchesThreaded ?? 0;

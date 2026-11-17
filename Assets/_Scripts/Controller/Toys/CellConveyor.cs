@@ -114,6 +114,10 @@ namespace CosmicShore.Gameplay
 
         public bool HasCells => _cells.Count > 0;
 
+        /// <summary>Centre to centre between traversal cells: the authored spacing, grown with the cells
+        /// (<see cref="ArkwayConfig.CellScale"/>) so bigger cells never overlap.</summary>
+        float Spacing => _cfg.CellSpacing * Mathf.Max(1f, _cfg.CellScale);
+
         // The cell the Ark last left (its core reached, the corridor advanced): the departure anchor of the Ark's
         // cell-aware speed profile. None before the first advance (the voyage opens in open water).
         Cell _departedCell;
@@ -239,7 +243,7 @@ namespace CosmicShore.Gameplay
             // at the freestyle membrane's authored size so a mid-rebuild host can't fold the
             // corridor back onto itself.
             float hostRadius = Mathf.Max(1200f, _template.MembraneRadius);
-            Vector3 first = origin + _heading * (hostRadius + _cfg.CellSpacing * 0.5f);
+            Vector3 first = origin + _heading * (hostRadius + Spacing * 0.5f);
             // No departure anchor at the start: the Ark sets sail from wherever the player stood in the host (often deep
             // inside it), and crawling out through the host would be a long empty opening. It cruises to the first cell.
             _departedCell = null;
@@ -385,6 +389,7 @@ namespace CosmicShore.Gameplay
             cell.SatellitePrismStride = Mathf.Max(1, _cfg.PrismStride);
             cell.SatelliteEcologyEnabled = true;
             cell.RuntimePopulationScale = Mathf.Clamp(_cfg.PopulationScale, 0.1f, 1f);
+            cell.SatelliteSizeScale = Mathf.Max(1f, _cfg.CellScale);
             // NucleusIsControlZone is deliberately LEFT AT ITS DEFAULT (true). A traversal cell
             // is an ordinary cell, not a mode's borrowed play geometry: its nucleus is a claim
             // to contest, its interior is fauna sanctuary, and its exterior is the feeding
@@ -561,7 +566,7 @@ namespace CosmicShore.Gameplay
                 Vector3 axis = Quaternion.AngleAxis(roll, _heading) * side;
                 _heading = (Quaternion.AngleAxis(angle, axis) * _heading).normalized;
             }
-            return from + _heading * Mathf.Max(2000f, _cfg.CellSpacing);
+            return from + _heading * Mathf.Max(2000f, Spacing);
         }
 
         /// <summary>

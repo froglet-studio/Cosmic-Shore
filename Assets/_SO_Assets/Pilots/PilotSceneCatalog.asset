@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: PilotSceneCatalog
   m_EditorClassIdentifier: 
   scenes:
-  - callsign: 1
+  - key: ENSIGN
+    callsign: 1
     painted: Veliane Crestward
     resource: Pilots/Scenes/ENSIGN
     closeUp: {fileID: 21300000, guid: 980feda988d5964febf179f7d737f212, type: 3}
@@ -24,7 +25,8 @@ MonoBehaviour:
       width: 0.20182292
       height: 0.3587963
     side: 0
-  - callsign: 2
+  - key: MANGER
+    callsign: 2
     painted: Tamako Deephook
     resource: Pilots/Scenes/MANGER
     closeUp: {fileID: 21300000, guid: dc9eb1ae245a8dde1016ce7ef7b89510, type: 3}
@@ -35,7 +37,8 @@ MonoBehaviour:
       width: 0.24088542
       height: 0.42824075
     side: 0
-  - callsign: 3
+  - key: ANVIL
+    callsign: 3
     painted: Brikon Copperwright
     resource: Pilots/Scenes/ANVIL
     closeUp: {fileID: 21300000, guid: ce13b70217b5b47dfd532c41e04d7cdc, type: 3}
@@ -46,7 +49,8 @@ MonoBehaviour:
       width: 0.3580729
       height: 0.6365741
     side: 2
-  - callsign: 4
+  - key: VOLT
+    callsign: 4
     painted: Karenth Amberweaver
     resource: Pilots/Scenes/VOLT
     closeUp: {fileID: 21300000, guid: 0566f35f5349973c38ab12bb4389a542, type: 3}
@@ -57,7 +61,8 @@ MonoBehaviour:
       width: 0.3580729
       height: 0.6365741
     side: 0
-  - callsign: 5
+  - key: ZODIAC
+    callsign: 5
     painted: Ivelia Starreach
     resource: Pilots/Scenes/ZODIAC
     closeUp: {fileID: 21300000, guid: 3b11b8dcdfc3b921a34897e25c6e35be, type: 3}
@@ -68,7 +73,8 @@ MonoBehaviour:
       width: 0.33854166
       height: 0.6018519
     side: 2
-  - callsign: 6
+  - key: SUNDIAL
+    callsign: 6
     painted: Delmira Stillwater
     resource: Pilots/Scenes/SUNDIAL
     closeUp: {fileID: 21300000, guid: 9f6be8126f01c90dff0f7e90639ff1e9, type: 3}
@@ -79,7 +85,8 @@ MonoBehaviour:
       width: 0.28645834
       height: 0.5092593
     side: 2
-  - callsign: 7
+  - key: OPAL
+    callsign: 7
     painted: Quivera Pearlspark
     resource: Pilots/Scenes/OPAL
     closeUp: {fileID: 21300000, guid: 204b82eef2b454d3b3187633409f7df6, type: 3}
@@ -90,7 +97,8 @@ MonoBehaviour:
       width: 0.2734375
       height: 0.4861111
     side: 0
-  - callsign: 8
+  - key: RAMPART
+    callsign: 8
     painted: Obelo Stormstone
     resource: Pilots/Scenes/RAMPART
     closeUp: {fileID: 21300000, guid: 29a61d769ede32d1caecd4ebe5224115, type: 3}
@@ -101,7 +109,8 @@ MonoBehaviour:
       width: 0.28645834
       height: 0.5092593
     side: 2
-  - callsign: 9
+  - key: CITADEL
+    callsign: 9
     painted: Nedira Shellward
     resource: Pilots/Scenes/CITADEL
     closeUp: {fileID: 21300000, guid: 206b7156919cf4119499158882b746a3, type: 3}
@@ -112,7 +121,8 @@ MonoBehaviour:
       width: 0.29947916
       height: 0.5324074
     side: 2
-  - callsign: 10
+  - key: HORNET
+    callsign: 10
     painted: Zeko Mirethorn
     resource: Pilots/Scenes/HORNET
     closeUp: {fileID: 21300000, guid: 15f49e30e7a0bf308bce70710d070190, type: 3}
@@ -123,7 +133,8 @@ MonoBehaviour:
       width: 0.1953125
       height: 0.3472222
     side: 0
-  - callsign: 11
+  - key: IVY
+    callsign: 11
     painted: Mathalo Kelpbloom
     resource: Pilots/Scenes/IVY
     closeUp: {fileID: 21300000, guid: 668cfdc53523a7636a785bb2973305e8, type: 3}
@@ -134,7 +145,8 @@ MonoBehaviour:
       width: 0.20833333
       height: 0.37037036
     side: 2
-  - callsign: 12
+  - key: TALON
+    callsign: 12
     painted: Wyvendo Waveline
     resource: Pilots/Scenes/TALON
     closeUp: {fileID: 21300000, guid: 9a061d435d17162092748a2047be496c, type: 3}
@@ -145,18 +157,8 @@ MonoBehaviour:
       width: 0.3190104
       height: 0.5671296
     side: 0
-  - callsign: 13
-    painted: Fenlia Moonbell
-    resource: Pilots/Scenes/DOE
-    closeUp: {fileID: 21300000, guid: c541c59175e718b1310806c6f0cb82d8, type: 3}
-    face:
-      serializedVersion: 2
-      x: 0.5598958
-      y: 0.525463
-      width: 0.2669271
-      height: 0.47453704
-    side: 2
-  - callsign: 14
+  - key: WINGMAN
+    callsign: 14
     painted: Jorin Gullwing
     resource: Pilots/Scenes/WINGMAN
     closeUp: {fileID: 21300000, guid: 1cdd196f10fdc37c0ade1f14da8ed30e, type: 3}
@@ -167,7 +169,8 @@ MonoBehaviour:
       width: 0.29947916
       height: 0.5324074
     side: 0
-  - callsign: 15
+  - key: BANDIT
+    callsign: 15
     painted: Rosh Rusthook
     resource: Pilots/Scenes/BANDIT
     closeUp: {fileID: 21300000, guid: ba09e353706319c9b36e4d86d90880fb, type: 3}
@@ -178,7 +181,8 @@ MonoBehaviour:
       width: 0.234375
       height: 0.41666666
     side: 2
-  - callsign: 16
+  - key: NEEDLE
+    callsign: 16
     painted: Ilia Silvergate
     resource: Pilots/Scenes/NEEDLE
     closeUp: {fileID: 21300000, guid: 864557a982b2c90e0afba3d1f26d92c1, type: 3}
@@ -189,18 +193,20 @@ MonoBehaviour:
       width: 0.29622397
       height: 0.5266204
     side: 0
-  - callsign: 17
-    painted: Haradek Anchorkeel
-    resource: Pilots/Scenes/GALLEON
-    closeUp: {fileID: 21300000, guid: f4c614d0da5b0afecdc4e32c9156f0c1, type: 3}
+  - key: DOE
+    callsign: 13
+    painted: Fenlia Moonbell
+    resource: Pilots/Scenes/DOE
+    closeUp: {fileID: 21300000, guid: c541c59175e718b1310806c6f0cb82d8, type: 3}
     face:
       serializedVersion: 2
-      x: 0.234375
-      y: 0.49074075
-      width: 0.28645834
-      height: 0.5092593
-    side: 0
-  - callsign: 18
+      x: 0.5598958
+      y: 0.525463
+      width: 0.2669271
+      height: 0.47453704
+    side: 2
+  - key: FLUME
+    callsign: 18
     painted: Ekora Hollowbrook
     resource: Pilots/Scenes/FLUME
     closeUp: {fileID: 21300000, guid: a3396d4c3b67a83e7ca63dc18d260023, type: 3}
@@ -211,3 +217,399 @@ MonoBehaviour:
       width: 0.1953125
       height: 0.3472222
     side: 0
+  - key: GALLEON
+    callsign: 17
+    painted: Haradek Anchorkeel
+    resource: Pilots/Scenes/GALLEON
+    closeUp: {fileID: 21300000, guid: f4c614d0da5b0afecdc4e32c9156f0c1, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.234375
+      y: 0.49074075
+      width: 0.28645834
+      height: 0.5092593
+    side: 0
+  - key: Astrofoil
+    callsign: 5
+    painted: Astrofoil
+    resource: Pilots/Scenes/Astrofoil
+    closeUp: {fileID: 21300000, guid: e2f968e91542f46bda627652d0fde144, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.33854166
+      y: 0.537037
+      width: 0.24739583
+      height: 0.4398148
+    side: 1
+  - key: Bushy
+    callsign: 11
+    painted: Bushy
+    resource: Pilots/Scenes/Bushy
+    closeUp: {fileID: 21300000, guid: b4fd7d52fe1eb3fb66df4bdceea28e31, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.1953125
+      y: 0.6412037
+      width: 0.1953125
+      height: 0.3472222
+    side: 0
+  - key: Comet
+    callsign: 18
+    painted: Comet
+    resource: Pilots/Scenes/Comet
+    closeUp: {fileID: 21300000, guid: 3711141b999d75fbfff9a6631e5fb40b, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.390625
+      y: 0.5601852
+      width: 0.20833333
+      height: 0.37037036
+    side: 1
+  - key: Damsel
+    callsign: 14
+    painted: Damsel
+    resource: Pilots/Scenes/Damsel
+    closeUp: {fileID: 21300000, guid: 5fb32d910f87c5808eea8841b34316d8, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.26041666
+      y: 0.6064815
+      width: 0.22135417
+      height: 0.3935185
+    side: 0
+  - key: Dozer
+    callsign: 3
+    painted: Dozer
+    resource: Pilots/Scenes/Dozer
+    closeUp: {fileID: 21300000, guid: 33216cf313d19887383a5038fa5bbeb3, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.20833333
+      y: 0.5717593
+      width: 0.234375
+      height: 0.41666666
+    side: 0
+  - key: Echo
+    callsign: 6
+    painted: Echo
+    resource: Pilots/Scenes/Echo
+    closeUp: {fileID: 21300000, guid: 5a139317e65bdfcc43ea0e2ee44ca1c3, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.25390625
+      y: 0.4675926
+      width: 0.29947916
+      height: 0.5324074
+    side: 0
+  - key: Fiest
+    callsign: 15
+    painted: Fiest
+    resource: Pilots/Scenes/Fiest
+    closeUp: {fileID: 21300000, guid: 8d9e2a4c3b4cbe5b6af3a439c7efed85, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.63151044
+      y: 0.6180556
+      width: 0.1953125
+      height: 0.3472222
+    side: 2
+  - key: Flux
+    callsign: 4
+    painted: Flux
+    resource: Pilots/Scenes/Flux
+    closeUp: {fileID: 21300000, guid: ba515bfe001474eb21ed756e019d07b7, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.29947916
+      y: 0.45833334
+      width: 0.29947916
+      height: 0.5324074
+    side: 0
+  - key: Jugger
+    callsign: 17
+    painted: Jugger
+    resource: Pilots/Scenes/Jugger
+    closeUp: {fileID: 21300000, guid: 716d8301c593ee63db7539efb34055ba, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.60546875
+      y: 0.49074075
+      width: 0.28645834
+      height: 0.5092593
+    side: 2
+  - key: Krush
+    callsign: 10
+    painted: Krush
+    resource: Pilots/Scenes/Krush
+    closeUp: {fileID: 21300000, guid: c207b0a64b3619e9aa9b5da66e2652fe, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.2734375
+      y: 0.6527778
+      width: 0.1953125
+      height: 0.3472222
+    side: 0
+  - key: Longshift
+    callsign: 16
+    painted: Longshift
+    resource: Pilots/Scenes/Longshift
+    closeUp: {fileID: 21300000, guid: 575ce7072ed0084549fc9d6248ae1cec, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.5208333
+      y: 0.5138889
+      width: 0.2734375
+      height: 0.4861111
+    side: 2
+  - key: Maestro
+    callsign: 7
+    painted: Maestro
+    resource: Pilots/Scenes/Maestro
+    closeUp: {fileID: 21300000, guid: 0ffa92cbf65f672c9b313167a477fb3f, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.51432294
+      y: 0.39814815
+      width: 0.33854166
+      height: 0.6018519
+    side: 2
+  - key: Mason
+    callsign: 3
+    painted: Mason
+    resource: Pilots/Scenes/Mason
+    closeUp: {fileID: 21300000, guid: 4c7ee5babebf0028b602852c14c81d76, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.26041666
+      y: 0.6296296
+      width: 0.20833333
+      height: 0.37037036
+    side: 0
+  - key: Reaper
+    callsign: 9
+    painted: Reaper
+    resource: Pilots/Scenes/Reaper
+    closeUp: {fileID: 21300000, guid: b95ec9d1ba97ff02de853022942157b8, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.67057294
+      y: 0.6412037
+      width: 0.18880208
+      height: 0.33564815
+    side: 2
+  - key: Riptide
+    callsign: 9
+    painted: Riptide
+    resource: Pilots/Scenes/Riptide
+    closeUp: {fileID: 21300000, guid: 3ae0647d8b8ada097086fad87d014861, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.2734375
+      y: 0.5833333
+      width: 0.234375
+      height: 0.41666666
+    side: 0
+  - key: Scales
+    callsign: 1
+    painted: Scales
+    resource: Pilots/Scenes/Scales
+    closeUp: {fileID: 21300000, guid: ddad7f1b8e27bcaf71a9afb626a975de, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.22786458
+      y: 0.5949074
+      width: 0.22786458
+      height: 0.4050926
+    side: 0
+  - key: Shrapnel
+    callsign: 4
+    painted: Shrapnel
+    resource: Pilots/Scenes/Shrapnel
+    closeUp: {fileID: 21300000, guid: 35c871cd347a7a69e437334ea3e22d70, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.48177084
+      y: 0.49074075
+      width: 0.28645834
+      height: 0.5092593
+    side: 2
+  - key: Siphon
+    callsign: 16
+    painted: Siphon
+    resource: Pilots/Scenes/Siphon
+    closeUp: {fileID: 21300000, guid: 505a41f14308cdedbf5bd1b7efe5df63, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.13346355
+      y: 0.3287037
+      width: 0.37760416
+      height: 0.6712963
+    side: 0
+  - key: Slingshot
+    callsign: 14
+    painted: Slingshot
+    resource: Pilots/Scenes/Slingshot
+    closeUp: {fileID: 21300000, guid: 08fdba30ce8f6b53eea85b3e0fa9db18, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.3971354
+      y: 0.4675926
+      width: 0.29947916
+      height: 0.5324074
+    side: 1
+  - key: Strider
+    callsign: 12
+    painted: Strider
+    resource: Pilots/Scenes/Strider
+    closeUp: {fileID: 21300000, guid: 08769083e59b6bf7a4d1781b032721ac, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.33854166
+      y: 0.5833333
+      width: 0.234375
+      height: 0.41666666
+    side: 1
+  - key: Tenacious
+    callsign: 8
+    painted: Tenacious
+    resource: Pilots/Scenes/Tenacious
+    closeUp: {fileID: 21300000, guid: 7ce7b9d72147ac78c225941445d34d0b, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.14973958
+      y: 0.4560185
+      width: 0.3059896
+      height: 0.5439815
+    side: 0
+  - key: Tender
+    callsign: 2
+    painted: Tender
+    resource: Pilots/Scenes/Tender
+    closeUp: {fileID: 21300000, guid: 14616940ce9fb5c717b3ddb20a72b20d, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.48828125
+      y: 0.2939815
+      width: 0.390625
+      height: 0.6944444
+    side: 2
+  - key: Tomahawk
+    callsign: 12
+    painted: Tomahawk
+    resource: Pilots/Scenes/Tomahawk
+    closeUp: {fileID: 21300000, guid: 64370baee268214f7e2f7131af850e45, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.26041666
+      y: 0.49074075
+      width: 0.28645834
+      height: 0.5092593
+    side: 0
+  - key: Trace
+    callsign: 5
+    painted: Trace
+    resource: Pilots/Scenes/Trace
+    closeUp: {fileID: 21300000, guid: e684a09f8170304945b6aef51f9f4fcb, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.16666667
+      y: 0.44444445
+      width: 0.29947916
+      height: 0.5324074
+    side: 0
+  - key: Spare01
+    callsign: 6
+    painted: Korvane Ashwhistle
+    resource: Pilots/Scenes/Spare01
+    closeUp: {fileID: 21300000, guid: f35c51f842bf51de2cccf3d25c9fffbb, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.5729167
+      y: 0.6296296
+      width: 0.20833333
+      height: 0.37037036
+    side: 2
+  - key: Spare02
+    callsign: 13
+    painted: Lunari Hollowreach
+    resource: Pilots/Scenes/Spare02
+    closeUp: {fileID: 21300000, guid: 393d2a727245f9e4bd99ecc70e77f370, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.22135417
+      y: 0.5833333
+      width: 0.234375
+      height: 0.41666666
+    side: 0
+  - key: Spare03
+    callsign: 17
+    painted: Bellomo Stripewright
+    resource: Pilots/Scenes/Spare03
+    closeUp: {fileID: 21300000, guid: cdbea8e9b4598ad20be82da17eee9491, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.49804688
+      y: 0.4560185
+      width: 0.3059896
+      height: 0.5439815
+    side: 2
+  - key: Spare04
+    callsign: 10
+    painted: Zeria Emberwick
+    resource: Pilots/Scenes/Spare04
+    closeUp: {fileID: 21300000, guid: 4e1e9385d2cd406615a1b1c9bf699de9, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.15625
+      y: 0.5601852
+      width: 0.24739583
+      height: 0.4398148
+    side: 0
+  - key: Spare05
+    callsign: 1
+    painted: Halven Frostgate
+    resource: Pilots/Scenes/Spare05
+    closeUp: {fileID: 21300000, guid: bf0fcb2d070f26da5338fecb511b2cb5, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.25065103
+      y: 0.6296296
+      width: 0.20833333
+      height: 0.37037036
+    side: 0
+  - key: Spare06
+    callsign: 15
+    painted: Tamsin Dusklight
+    resource: Pilots/Scenes/Spare06
+    closeUp: {fileID: 21300000, guid: b1c6b6fb7d8240114123a1ada10bc71e, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.45572916
+      y: 0.4560185
+      width: 0.3059896
+      height: 0.5439815
+    side: 2
+  - key: Spare07
+    callsign: 2
+    painted: Fennaro Mossbell
+    resource: Pilots/Scenes/Spare07
+    closeUp: {fileID: 21300000, guid: 13c2a6349008aa24076d6e24d2193633, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.1953125
+      y: 0.5949074
+      width: 0.22786458
+      height: 0.4050926
+    side: 0
+  - key: Spare08
+    callsign: 8
+    painted: Oki Sandrunner
+    resource: Pilots/Scenes/Spare08
+    closeUp: {fileID: 21300000, guid: 4094717556dd16a46f631b5153bdc4f2, type: 3}
+    face:
+      serializedVersion: 2
+      x: 0.5208333
+      y: 0.49074075
+      width: 0.28645834
+      height: 0.5092593
+    side: 2

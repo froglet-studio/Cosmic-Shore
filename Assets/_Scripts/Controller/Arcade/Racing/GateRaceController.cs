@@ -1305,12 +1305,18 @@ namespace CosmicShore.Gameplay
             [Range(0f, 6f)] public float Gain;
             [Tooltip("How far past the aim the nose lead may place the command, degrees (AIPilot.NoseLeadMaxExtraDegrees).")]
             [Range(0f, 120f)] public float MaxExtraDegrees;
+            [Tooltip("The AI nose's follow rate per second in this mode (VesselTransformer.AINoseFollowPerSecond): 0 = leave " +
+                     "it alone (the fleet lag, 1.5/s, unless the mode sets its own rate), higher = a quicker nose. Learned " +
+                     "by the Time-game AI search (2026-11-17: the nose lag, not the boost drive, held the slow AIs back).")]
+            [Range(0f, 30f)] public float NoseFollow;
 
-            public AINoseLeadRow(VesselClassType hull, float gain, float maxExtraDegrees = AIPilot.DefaultNoseLeadMaxExtraDegrees)
+            public AINoseLeadRow(VesselClassType hull, float gain, float maxExtraDegrees = AIPilot.DefaultNoseLeadMaxExtraDegrees,
+                                 float noseFollow = 0f)
             {
                 Hull = hull;
                 Gain = gain;
                 MaxExtraDegrees = maxExtraDegrees;
+                NoseFollow = noseFollow;
             }
         }
 
@@ -1338,6 +1344,10 @@ namespace CosmicShore.Gameplay
             var row = NoseLeadFor(table, p.Vessel.VesselStatus.VesselType);
             autopilot.NoseLeadGain = row.Gain;
             autopilot.NoseLeadMaxExtraDegrees = row.MaxExtraDegrees;
+            // A learned nose rate for this hull in this mode; 0 leaves the transformer's rate alone (OnRacerArmed, which
+            // runs next, may still set the mode's own, as Switchback and Redline do).
+            var transformer = p.Vessel.VesselStatus.VesselTransformer;
+            if (row.NoseFollow > 0f && transformer) transformer.AINoseFollowPerSecond = row.NoseFollow;
         }
 
         void ArmRacer(IPlayer p, Vector3 centre, SkimRaceHandicapLevel handicapLevel)
