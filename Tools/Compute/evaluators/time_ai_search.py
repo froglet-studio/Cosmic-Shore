@@ -111,9 +111,17 @@ GAMES = {
         "assets": {i: POL + "SerpentAIBoostPolicy_SerpentTime.asset" for i in (1, 2, 3, 4)},
         "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
                    "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 6.0), "releaseRunwaySeconds": (0.0, 3.0),
-                   "maxConcurrentBurns": (1, 6), "minSecondsBetweenPellets": (0.0, 4.0), "reservePellets": (0, 4)},
+                   "maxConcurrentBurns": (1, 6), "minSecondsBetweenPellets": (0.0, 4.0), "reservePellets": (0, 4),
+                   # Refuel and pacing (FINDINGS 23: the tank runs dry by Regatta's third lap): lay a wall at or under
+                   # this many pellets (negative = off, the cycler keeps the cloak), coast along it, pace a low tank.
+                   "refuelBelowPellets": (-1.0, 4.0), "refuelCoastSeconds": (0.0, 6.0),
+                   "lowTankSecondsBetweenPellets": (0.0, 6.0)},
         "ints": ("maxConcurrentBurns", "reservePellets"),
         "lead": 2.1, "rows": [], "nose_gene": 6.87,    # SerpentTimeController.aiNoseLead: Serpent 2.1 at 6.87/s (run3b)
+        # --long: a Regatta-length race in the home game (24 gates as 3 laps of 8, 100-200 s), so pacing pays at home.
+        "long": {"overrides": [{"asset": "Assets/Resources/EndConditionOverrides.asset",
+                                "fields": {"serpentTimeGateTarget": 24}}],
+                 "controller_overrides": {"laps": 3}},
     },
     "Sparrow": {
         "mode": "Breakwater",
@@ -187,7 +195,13 @@ def conditions_for(a):
     out += [(f"I{i}@T5", i, {a.hull: {"Time": 5}}, None) for i in a.l5]
     out += [(f"I{i}@T0", i, "rest", None) for i in a.rest]
     out += [(f"W{k}@I2", 2, None, wide_genome(a.hull, a.wide_w, 900 + k)) for k in range(a.wide)]
+    out += [(f"L{i}", i, None, None) for i in a.long]
     return out
+
+
+def condition_extra(g, name):
+    """In-memory edits a condition adds on top of the candidate's (the --long rungs: the game's Regatta-length race)."""
+    return g.get("long", {}) if name.startswith("L") else {}
 
 
 def read_fields(rel, names):
@@ -251,6 +265,11 @@ def race_one(hull, g, params, cond, seeds, limit_s, tries=3):
     is not the AI's fault and is raced again rather than scored as a DNF."""
     name, intensity, start, genome = cond
     extra = spec_for(hull, g, params)
+    more = condition_extra(g, name)
+    if more:
+        extra = dict(extra)
+        extra["overrides"] = list(extra.get("overrides", [])) + list(more.get("overrides", []))
+        extra["controller_overrides"] = dict(extra.get("controller_overrides", {}), **more.get("controller_overrides", {}))
     for attempt in range(tries):
         wd = tempfile.mkdtemp(prefix=f"tas-{hull}-{name.replace('@', '-')}-")
         r = RJ.judge(genome, [hull], seeds, limit_s=limit_s, mode=g["mode"], intensity=intensity, workers=1, workdir=wd,
@@ -407,6 +426,7 @@ def main():
     ap.add_argument("--fast", default="1,4", help="rungs also raced at Time 10 (empty: none)")
     ap.add_argument("--l5", default="", help="rungs also raced from Time 5, the level-5 upgrade's threshold (empty: none)")
     ap.add_argument("--rest", default="", help="rungs also raced from Time 0 (empty: none)")
+    ap.add_argument("--long", default="", help="rungs also raced at Regatta length (the game's 'long' edits; empty: none)")
     ap.add_argument("--wide", type=int, default=0, help="how many W2 curriculum courses (raced at I2)")
     ap.add_argument("--wide-w", type=float, default=0.5, help="curriculum weight of the wide courses (0-1)")
     ap.add_argument("--seed-from", action="append", default=[], help="a best.json (or list) to seed phase 1 with; repeatable")
@@ -418,6 +438,9 @@ def main():
     a.fast = [int(s) for s in a.fast.split(",") if s]
     a.rest = [int(s) for s in a.rest.split(",") if s]
     a.l5 = [int(s) for s in a.l5.split(",") if s]
+    a.long = [int(s) for s in a.long.split(",") if s]
+    if a.long and "long" not in GAMES[a.hull]:
+        ap.error(f"--long: {a.hull}'s game has no Regatta-length edits in GAMES")
     # A confirm always races I4 from Time 5: at level-5 speed a fleet-lag nose orbits a gate and never clears it
     # (the Rhino in Headlong, FINDINGS row 21), and a drive that only won from rest must not ship that back.
     if a.confirm and 4 not in a.l5:
