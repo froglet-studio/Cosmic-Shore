@@ -93,6 +93,14 @@ namespace CosmicShore.ScriptableObjects
             new(VesselClassType.Dolphin, Element.Space, "pilot.callsign.citadel"),
         };
 
+        [Header("Voyage - the Ark's first line-up")]
+        [SerializeField, Tooltip("The vessels the Ark page seats on a player's first voyage, before they have picked any: " +
+                                 "yours first (the port seat), then the AI wingmates (starboard, then on top). After the " +
+                                 "first pick the Ark opens on the player's last line-up instead (VoyageSeatRecord.Remember). " +
+                                 "Shombith, 2026-11-17: you in the Sparrow, AI in the Butterfly (the Tiger Moth flies its " +
+                                 "airframe) and AI in the Serpent.")]
+        VesselClassType[] firstLineUp = { VesselClassType.Sparrow, VesselClassType.TigerMoth, VesselClassType.Serpent };
+
         [Header("Voyage - which voyages can sail (Milestone 1)")]
         [SerializeField, Tooltip("Lock the crew's job voyages, except the ones listed below (Shombith, 2026-11-16: make one " +
                                  "voyage good before the others open). The Ark escort is never locked. Off = every job sails.")]
@@ -345,6 +353,7 @@ namespace CosmicShore.ScriptableObjects
         public float SeedElementLevel => seedElementLevel;
         public string StarterSquadName => starterSquadName;
         public IReadOnlyList<SquadSlot> StarterSeats => starterSeats;
+        public IReadOnlyList<VesselClassType> FirstLineUp => firstLineUp;
 
         /// <summary>
         /// True when <paramref name="job"/> may set sail: jobs are not locked, or its template is one of
