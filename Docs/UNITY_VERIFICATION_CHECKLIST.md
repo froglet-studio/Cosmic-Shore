@@ -24876,3 +24876,15 @@ Not verified: a real Unity editor.
 
 1. Arcade > Perch Run, Goby, I2 with two AI Gobys: neither circles a ring. When a ring is close beside one, it flies
    straight on, turns back and darts through. Both finish.
+
+## Breach AI re-attacks a missed ring (2026-11-17, elemental loop step 2, overnight run)
+
+Verified:
+- Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py --mode Breach --hull Orca`). On fresh seeds
+  4-6, 24 of 24 Medium and Legendary races finished at I1-I4. Before, 1 of 8 finished at I3-I4.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor.
+
+1. Arcade > Breach, Orca, I3 with two AI Orcas: when one misses a walled ring, it turns back and threads it instead of
+   wandering on. Both finish, in about 160 s.
