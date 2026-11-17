@@ -24934,3 +24934,20 @@ Not verified: a real Unity editor.
 1. Arcade > Slip Line, Honeyguide AI rival, I2: watch a few races. The rival never stops dead mid-course after a slip or
    a dart, and finishes in about 2 minutes.
 2. Arcade > Spearline, Swordfish AI rival at Legendary, I3: the rival never spins in a tight circle away from the ring.
+
+## AI spin escape (2026-11-17, elemental loop step 3, overnight run)
+
+Verified (race judge, Amoebius headless):
+- AIPilot now lets the nose lead go for 3 s when the hull turns a full circle in place (inside 3 s, net travel under
+  35% of its path) while its objective is at least 4 turn radii away. The orbit detector cannot see that stall, because
+  the bearing to a far objective barely turns.
+- Positive test: Spearline with the nose lead's old 40-degree cap (the stall #2138 fixed by capping) finished 4 of 4
+  Legendary I3-I4 races, where it timed out 4 of 4 before. The escape fired 11 times.
+- Negative control: it never fired in 12 home races of the polish six's Time games (Scarab, Serpent, Dolphin, Rhino,
+  Manta, Sparrow at I4) or in 16 Regatta races of 8 hulls on the calibration course.
+- `unity_refcompile` found 0 errors in the changed files, and `check_console_logging.py` reported 0 problems.
+
+Not verified: a real Unity editor.
+
+1. Any Time race with AI rivals: no rival spins in a tight circle away from its ring. The new Spin escape fields are on
+   the AIPilot component, under its own header.
