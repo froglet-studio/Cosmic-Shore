@@ -71,6 +71,13 @@ PRISMS = ["Native", "Plain", "Danger", "Shielded", "SuperShielded"]
 CIRCUIT_RANGES = {"BaseRadius": (700.0, 900.0), "RingRadius": (50.0, 140.0), "CornerFloorRadius": (100.0, 260.0),
                   "RadialSwing": (0.0, 0.6), "AngularSpread": (0.5, 5.5), "LateralPerturbation": (0.0, 320.0),
                   "AxisJitterDegrees": (0.0, 50.0), "MaxPresentDegrees": (30.0, 85.0)}
+# Dense blocking kinds, laid ACROSS the line (W3, FINDINGS row 24): at L5 the random placements touched no hull, because
+# sparse shapes on the line leave a hollow to fly through and shapes off it have their line prisms carved away. These
+# four, at radius 0-40 with cross_line on, are what reached the fast hulls (two Walls a leg, Danger: Stoat +43 s).
+BLOCKING_KINDS = ["Wall", "Panes", "Flatline", "Jackstraw"]
+BLOCKING_SHARE = 0.3           # the share of placement draws that are a blocking draw
+BLOCKING_DANGER = 0.6          # a blocking draw's chance of Danger prisms (the rest: any prism kind)
+CORNER_TIGHTEN = 0.25          # the share of circuit-number mutations that only tighten a corner (floor or ring radius)
 FLORA_PRESETS = ["none", "groves", "thicket", "reef", "reef-fenced"]   # Tools/Build/regatta_lifeforms.py PRESETS
 FLORA_DEFAULTS = {"sitesPerLeg": [], "offsetMin": 90.0, "offsetMax": 160.0, "sideDegrees": 0.0,
                   "sideSpreadDegrees": 180.0, "legWindowStart": 0.2, "legWindowEnd": 0.8, "ringClearance": 60.0,
@@ -344,8 +351,27 @@ def random_params(rng, kind, share=0.5):
     return out
 
 
-def random_placement(rng, kind=None):
+def blocking_placement(rng):
+    """A dense blocking kind ACROSS the line: radius 0-40 u, cross_line on, mostly Danger prisms, scaled to block a
+    leg's width (W3's L5 trace: these are the placements that touch every hull, where a random one touches none)."""
     cat = catalogue()
+    kinds = [cat["by_id"][k] for k in BLOCKING_KINDS if k in cat["by_id"] and cat["by_id"][k]["usable"]]
+    p = random_placement(rng, rng.choice(kinds), blocking=False)
+    k = cat["by_id"][p["kind"]]
+    lo, hi = k["scale_lo"], k["scale_hi"]
+    p["scale"] = _log_uniform(rng, lo, min(hi, max(lo * 1.2, 260.0)))
+    p["offset"] = [rng.uniform(0.0, 40.0), rng.uniform(0.0, 360.0), rng.uniform(-60.0, 60.0)]
+    p["cross_line"] = True
+    p["prism"] = "Danger" if rng.random() < BLOCKING_DANGER else rng.choice(PRISMS)
+    return p
+
+
+def random_placement(rng, kind=None, blocking=True):
+    """Any kind in the catalogue anywhere near the course; BLOCKING_SHARE of free draws (no kind named) are a
+    blocking_placement instead."""
+    cat = catalogue()
+    if kind is None and blocking and rng.random() < BLOCKING_SHARE:
+        return blocking_placement(rng)
     kind = kind or rng.choice(cat["usable"])
     lo, hi = kind["scale_lo"], kind["scale_hi"]
     # Mostly obstacles a leg's width, sometimes a world the course runs through.
@@ -490,6 +516,11 @@ def mutate(genome, rng, strength=1.0, prior=None):
                 i = rng.randrange(RINGS)
                 prof[i] = max(0.0, prof[i] + rng.gauss(0.0, 25.0 * s))
                 c["CornerProfile"] = prof
+            elif rng.random() < CORNER_TIGHTEN:                     # tighter corners (W3: floor 100 cost the Scarab)
+                key = rng.choice(["CornerFloorRadius", "RingRadius"])
+                lo, hi = CIRCUIT_RANGES[key]
+                base = c.get(key, cp.regatta_settings(g.get("intensity", 1)).get(key, (lo + hi) / 2))
+                c[key] = _clamp(float(base) - abs(rng.gauss(0.0, 0.15 * s * (hi - lo))), lo, hi)
             else:
                 key = rng.choice(list(CIRCUIT_RANGES))
                 lo, hi = CIRCUIT_RANGES[key]
@@ -561,6 +592,9 @@ def descriptors(genome):
     team = [p for p in painted if p["domain"] in ("Jade", "Ruby", "Gold")]
     hard = [p for p in pl if p.get("prism") in ("Shielded", "SuperShielded")]
     worlds = [p for p in pl if cat["by_id"].get(p["kind"], {}).get("world")]
+    # On the line = it may stand in the line's tube (cross_line; else its line prisms are carved away) AND it reaches
+    # the line (radius below its scale).
+    on_line = [p for p in pl if p.get("cross_line") and float(p["offset"][0]) - float(p["scale"]) < 0]
     f = genome.get("features") or {}
     return {
         "placements": len(pl),
@@ -578,6 +612,9 @@ def descriptors(genome):
         "world_share": round(len(worlds) / len(pl), 3) if pl else 0.0,
         "team_coloured_share": round(len(team) / len(pl), 3) if pl else 0.0,
         "hard_prism_share": round(len(hard) / len(pl), 3) if pl else 0.0,
+        "danger_on_line_share": round(sum(1 for p in on_line if p.get("prism") == "Danger") / len(pl), 3) if pl else 0.0,
+        "dense_on_line_count": sum(1 for p in on_line if p["kind"] in BLOCKING_KINDS),
+        "on_line_by_prism": {k: sum(1 for p in on_line if p.get("prism", "Native") == k) for k in PRISMS},
         "sections": len(f.get("Sections") or []),
         "alternates": len(f.get("AlternateGates") or []),
         "intensity": int(genome.get("intensity", 1)),
@@ -658,6 +695,7 @@ def parity_inputs(n=40, seed=20261116):
 
 
 def self_test():
+    global BLOCKING_SHARE
     cat = catalogue()
     assert cat["usable"], "the catalogue has no placeable kind"
     # 1. The empty genome stays empty, and repair is idempotent.
@@ -675,6 +713,30 @@ def self_test():
             assert all(cat["by_id"][p["kind"]]["usable"] for p in x["placements"])
     d = descriptors(random_genome(random.Random(9)))
     assert {"count_by_kind", "mean_scale_by_kind", "leg_share", "min_line_clearance"} <= set(d), d
+    # 1a. Blocking draws (W3, FINDINGS row 24): about BLOCKING_SHARE of free placement draws are a dense kind across the
+    # line, mostly Danger, and the descriptors see them. Negative control: with the share at 0 none appear.
+    brng = random.Random(23)
+    draws = [random_placement(brng) for _ in range(2000)]
+    blk = [p for p in draws if p["kind"] in BLOCKING_KINDS and p["cross_line"] and p["offset"][0] <= 40.0]
+    assert abs(len(blk) / len(draws) - BLOCKING_SHARE) < 0.05, f"blocking share {len(blk) / len(draws):.3f}"
+    assert sum(p["prism"] == "Danger" for p in blk) / len(blk) > 0.55, "blocking draws are not mostly Danger"
+    dg = repair(dict(empty(), placements=blk[:6]))[0]
+    dd = descriptors(dg)
+    assert dd["dense_on_line_count"] == len(dg["placements"]) > 0, dd
+    assert dd["danger_on_line_share"] > 0 and dd["on_line_by_prism"]["Danger"] > 0, dd
+    off = copy.deepcopy(dg)
+    for p in off["placements"]:
+        p["cross_line"] = False
+    assert descriptors(off)["dense_on_line_count"] == 0, "a placement off the line counted as on it"
+    keep_share = BLOCKING_SHARE
+    try:
+        BLOCKING_SHARE = 0.0
+        nrng = random.Random(23)
+        none = [random_placement(nrng) for _ in range(400)]
+        assert sum(p["kind"] in BLOCKING_KINDS and p["cross_line"] and p["offset"][0] <= 40.0 for p in none) < 0.05 * 400, \
+            "negative control: blocking draws without the blocking share"
+    finally:
+        BLOCKING_SHARE = keep_share
     # 1b. The curriculum: w=0 is today's course, the placements and their hardness grow with w, and a Time game's
     # genome carries only what TrainingCourseOverlay lays.
     trng = random.Random(11)
@@ -738,7 +800,7 @@ def training_genome(rng, w, for_mode=None, intensity=None):
     n = max(1, round(w * rng.randint(2, 16)))
     places = []
     for _ in range(n):
-        p = random_placement(rng)
+        p = random_placement(rng, blocking=False)      # the curriculum sets line, rail and prism hardness itself
         kind = catalogue()["by_id"][p["kind"]]
         top = kind["scale_lo"] + (min(kind["scale_hi"], 260.0) - kind["scale_lo"]) * w
         p["scale"] = min(p["scale"], max(kind["scale_lo"], top))
