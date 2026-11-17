@@ -184,6 +184,7 @@ namespace CosmicShore.Gameplay
             }
 
             TickRaiders(ark, inside);
+            TickKaiju(ark, cell, inside, hostile, homeward);
             CheckBreachLine(ark);
         }
 
@@ -208,6 +209,7 @@ namespace CosmicShore.Gameplay
             HookAssaultArk(null);
             // Raiders are ordinary creatures once born: they live on (or starve) as any other; the run forgets them.
             _raiders.Clear();
+            EndKaiju();
             if (_assaultKillHooked) Fauna.Killed -= OnAssaultFaunaKilled;
             _assaultKillHooked = false;
             Assaults.End();
@@ -230,7 +232,9 @@ namespace CosmicShore.Gameplay
         {
             _raiders.RemoveAll(f => !f || f.IsDying);
             var job = _state?.Current;
-            if (!_def || job is not { IsReturn: true } || _fallen || _docked || _state is not { AtSea: true })
+            // The way home, and (raidersOutbound) the way out of a Crystal Run too: "more attacks outside the cell".
+            bool raiding = job is { IsReturn: true } || (job is { CountsUnderway: true } && _def && _def.RaidersOutbound);
+            if (!_def || !raiding || _fallen || _docked || _state is not { AtSea: true })
             {
                 _nextRaiderWave = -1f;
                 return;
@@ -258,6 +262,9 @@ namespace CosmicShore.Gameplay
                     host.ControllingDomain, at, cfg);
                 if (!raider) continue;
                 raider.GrowBody(_def.HomewardRaiderScale);
+                // On the run's leash when its species can wear one, so a raider born from a far cell swims for the Ark
+                // instead of home (VoyageRun.Kaiju.cs); a predator keeps its own hunt.
+                RaidLeash.Hold(raider);
                 _raiders.Add(raider);
                 spawned++;
             }

@@ -487,6 +487,9 @@ namespace CosmicShore.Gameplay
         public static Flora PlantFlora(Cell host, FloraConfigurationSO floraCfg, Domains? excluded)
         {
             if (!host || !floraCfg) return null;
+            // A scattering satellite (a voyage cell, Cell.ScatterLifeSpawns) roots every plant somewhere in its open water.
+            if (host.IsSatellite && host.ScatterLifeSpawns)
+                return SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, RandomPointInCytoplasm(host));
             return host.TryTakePlantingSite(floraCfg.PreferredSites, out var pos, out var up)
                 ? SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, pos, up)
                 : SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
@@ -526,6 +529,15 @@ namespace CosmicShore.Gameplay
                 // exactly on the point it is already seeking.
                 position = ClampToBand(host, cfg,
                     goal + UnityEngine.Random.insideUnitSphere * BandSpawnJitter);
+            }
+
+            // A scattering satellite (a voyage cell, Cell.ScatterLifeSpawns): an unbanded, unpenned creature is born at
+            // its own fresh point in the cell's open water and seeks it first, so a wave spreads through the whole cell
+            // instead of landing on one feeding ground. Its later goals are its own, as everywhere.
+            else if (host.IsSatellite && host.ScatterLifeSpawns && !host.HasFaunaPen)
+            {
+                goal = RandomPointInCytoplasm(host);
+                position = goal;
             }
 
             // The CELL's own pen (outer containment + inner exclusion) applies to the birth
