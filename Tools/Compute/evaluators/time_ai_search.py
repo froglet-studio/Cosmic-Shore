@@ -145,7 +145,7 @@ GAMES = {
                    "brakeLeadSeconds": (0.0, 2.0), "brakeSteerFloor": (0.0, 1.0), "cornerReleaseDegrees": (0.0, 90.0)},
         # HeadlongController.aiNoseLead: Rhino 2.5. At 2.5 the AI orbits in place (~70 s a lap at 33 u/s, 2026-11-17);
         # 1.0 halved I1 and I2. Headlong has no nose knob: the fleet lag.
-        "lead": 2.5, "rows": [], "nose_gene": 1.5,
+        "lead": 2.47, "rows": [], "nose_gene": 7.5,    # Rhino run1 (2026-11-17)
     },
     "Manta": {
         "mode": "Redline",
