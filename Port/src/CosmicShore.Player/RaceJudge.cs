@@ -386,7 +386,11 @@ namespace CosmicShore.Player
             foreach (var o in _spec["overrides"]?.AsArray() ?? new JsonArray())
             {
                 string path = o?["asset"]?.GetValue<string>() ?? throw new InvalidOperationException("an override without an asset");
-                object asset = TrainingHost.LoadAsset(_runtime, path) ?? throw new InvalidOperationException(path + " not found");
+                // A prefab's component by its fileID ({"asset": "...prefab", "component": 975128113266807093}); else an SO.
+                object asset = (o["component"] is JsonNode c
+                                   ? TrainingHost.LoadPrefabComponent(_runtime, path, c.GetValue<long>())
+                                   : TrainingHost.LoadAsset(_runtime, path))
+                               ?? throw new InvalidOperationException(path + " not found");
                 SetFields(asset, o["fields"]?.AsObject(), path);
                 _notes.Add("override: " + path);
             }
@@ -506,6 +510,12 @@ namespace CosmicShore.Player
                 var elemType = arr.GetType().GetElementType()!;
                 arr.SetValue(last ? ConvertJson(value, elemType, what) : SetPath(arr.GetValue(idx)!, parts, i + 1, value, what), idx);
                 return arr;
+            }
+            if (target is System.Collections.IList list && int.TryParse(parts[i], out int li))
+            {
+                var elemType = list.GetType().IsGenericType ? list.GetType().GetGenericArguments()[0] : typeof(object);
+                list[li] = last ? ConvertJson(value, elemType, what) : SetPath(list[li]!, parts, i + 1, value, what);
+                return list;
             }
             var f = FieldOf(target, parts[i]);
             if (last) f.SetValue(target, ConvertJson(value, f.FieldType, what));
