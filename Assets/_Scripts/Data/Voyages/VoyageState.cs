@@ -253,6 +253,11 @@ namespace CosmicShore.Data
         public int Cells;
         /// <summary>How many times the squad ventured further to reach this run (0 for the first).</summary>
         public int Venture;
+        /// <summary>The leg cell by cell, copied from the template (<see cref="JobTemplate.CellWorlds"/>,
+        /// <see cref="JobTemplate.CellAnchorSeconds"/>, <see cref="JobTemplate.CellLife"/>).</summary>
+        public List<string> CellWorlds = new();
+        public List<float> CellAnchorSeconds = new();
+        public List<float> CellLife = new();
 
         /// <summary>A shallow copy (the warnings and news are shared): the voyage page sets a copy's difficulty, never the
         /// board's own job.</summary>

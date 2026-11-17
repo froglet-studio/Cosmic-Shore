@@ -1778,7 +1778,7 @@
    "OnSuccess": "",
    "OnFail": "",
    "Verb": 3,
-   "Goal": 50,
+   "Goal": 90,
    "HullFloor": 0,
    "NoKill": false,
    "Role": 3,
@@ -1796,6 +1796,24 @@
     1
    ],
    "BreachHull": 0.1,
+   "CellWorlds": [
+    "Caldera",
+    "Orrery",
+    "Garland",
+    "Geode"
+   ],
+   "CellAnchorSeconds": [
+    20,
+    30,
+    30,
+    40
+   ],
+   "CellLife": [
+    0.8,
+    1.3,
+    0.9,
+    1.4
+   ],
    "Always": true,
    "CountsUnderway": true,
    "Cells": 4,

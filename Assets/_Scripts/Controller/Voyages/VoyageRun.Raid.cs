@@ -52,13 +52,17 @@ namespace CosmicShore.Gameplay
         // ── The leg ─────────────────────────────────────────────────────────
 
         /// <summary>A Crystal Run's corridor, fitted to its cells (<see cref="VoyageRaid.FitCorridor"/>).</summary>
+        /// The job's named worlds (<see cref="VoyageJob.CellWorlds"/>) then stand in the cells they name.
         List<int> FitLeg(VoyageJob job, List<int> route) =>
-            job is { Cells: > 0 } ? VoyageRaid.FitCorridor(route, job.Cells, _worlds, _state.Day, job.From + ">" + job.To) : route;
+            job is { Cells: > 0 }
+                ? VoyageRaid.NameCells(VoyageRaid.FitCorridor(route, job.Cells, _worlds, _state.Day, job.From + ">" + job.To),
+                    job.CellWorlds, _worldNames)
+                : route;
 
         /// <summary>A new leg: the pacing fitted like the corridor, the count started over, and the counter armed.</summary>
         void BeginLegCount(VoyageJob job)
         {
-            if (job is { Cells: > 0 }) _profile = VoyageRaid.FitProfile(_profile, job.Cells);
+            if (job is { Cells: > 0 }) _profile = VoyageRaid.LayCellLife(VoyageRaid.FitProfile(_profile, job.Cells), job.CellLife);
             _legIndex.Clear();
             _toastedCell = -1;
             _goalToastShown = false;
@@ -199,7 +203,9 @@ namespace CosmicShore.Gameplay
             if (_def.RaidAnchorMinLife > 0 && ark && CellLife(CurrentCell, ark.Domain) < _def.RaidAnchorMinLife) return 0f;
             int cell = LegCell(out _);
             bool hostile = cell > 0 && LegHostile(cell - 1);
-            return hostile ? _def.RaidAnchorHostileSeconds : _def.RaidAnchorCalmSeconds;
+            float window = hostile ? _def.RaidAnchorHostileSeconds : _def.RaidAnchorCalmSeconds;
+            // The job's own window for this cell, when it names one (Shombith's storyboard: 20 / 30 / 30 / 40 s).
+            return Mathf.Max(0f, VoyageRaid.PerCell(_state?.Current?.CellAnchorSeconds, cell - 1, window));
         }
 
         /// <summary>The lifeforms in <paramref name="cell"/> the squad can take a crystal from now: creatures of another
@@ -513,13 +519,20 @@ namespace CosmicShore.Gameplay
 
             if (!_following && missed && forfeit)
             {
-                // Missed and forfeited: no venturing on a failed run. Try again (the same goal from here) or Finish.
-                var again = VoyageRaid.Retry(_state, Content, job);
-                if (again != null)
+                // Missed (Shombith's storyboard, 2026-11-17): Venture further keeps the run going, harder (the goal raised
+                // and one more cell), and this run's haul comes along, owed and at stake again. Finish sails home without it.
+                var kept = new VoyageRaidTally();
+                kept.Absorb(_raid);
+                var next = VoyageRaid.Venture(_state, Content, job);
+                if (next != null)
                 {
-                    board.NextGoal = Mathf.CeilToInt(again.Goal);
-                    board.NextCells = again.Cells;
-                    board.TryAgain = () => SailOn(again);
+                    board.NextGoal = Mathf.CeilToInt(next.Goal);
+                    board.NextCells = next.Cells;
+                    board.Venture = () =>
+                    {
+                        VoyageRaid.Owe(_state, kept);
+                        SailOn(next);
+                    };
                 }
                 board.Finish = SailHome;
             }

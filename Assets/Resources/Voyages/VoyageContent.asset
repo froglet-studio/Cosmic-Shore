@@ -1528,7 +1528,7 @@ MonoBehaviour:
       OnSuccess: 
       OnFail: 
       Verb: 3
-      Goal: 50
+      Goal: 90
       HullFloor: 0
       NoKill: 0
       Role: 3
@@ -1545,6 +1545,21 @@ MonoBehaviour:
       - 1
       - 1
       BreachHull: 0.1
+      CellWorlds:
+      - Caldera
+      - Orrery
+      - Garland
+      - Geode
+      CellAnchorSeconds:
+      - 20
+      - 30
+      - 30
+      - 40
+      CellLife:
+      - 0.8
+      - 1.3
+      - 0.9
+      - 1.4
       Always: 1
       CountsUnderway: 1
       Cells: 4
@@ -3366,5 +3381,5 @@ MonoBehaviour:
     ToastKaiju: KAIJU IN OPEN WATER
     ToastKaijuSub: A giant waits between the cells for the Ark's hull. Bring it down.
     ToastGoalMissed: 'GOAL MISSED: {done} / {goal}'
-    ToastGoalMissedSub: This run's haul is lost. Try again, or sail home.
+    ToastGoalMissedSub: Venture further to keep this run's haul, or sail home without it.
     ScoreRetryRaid: 'Same goal: {goal} crystals in {cells} cells'

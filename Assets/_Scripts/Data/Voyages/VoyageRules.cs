@@ -333,6 +333,9 @@ namespace CosmicShore.Data
                 RivalId = crew?.Id ?? string.Empty,
                 CountsUnderway = t.CountsUnderway,
                 Cells = Math.Max(0, t.Cells),
+                CellWorlds = t.CellWorlds != null ? new List<string>(t.CellWorlds) : new List<string>(),
+                CellAnchorSeconds = t.CellAnchorSeconds != null ? new List<float>(t.CellAnchorSeconds) : new List<float>(),
+                CellLife = t.CellLife != null ? new List<float>(t.CellLife) : new List<float>(),
             };
             // The Kaiju is never easier than the hardest felled (DEPTH.md §3).
             if (from != null && from.Tag == NewsTag.Kaiju && content.Kaiju != null)

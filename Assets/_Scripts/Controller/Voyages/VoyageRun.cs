@@ -59,6 +59,9 @@ namespace CosmicShore.Gameplay
         CellConveyor _corridor;
         ArkwayConfig _arkCfg;
         int _worlds;
+        /// <summary>The corridor's worlds by name, in route-index order (<see cref="CellConveyor.TraversalWorlds"/>), so a
+        /// job can name the world each cell stands.</summary>
+        readonly List<string> _worldNames = new();
 
         VoyageState _state;
         SavedSquad _squad;
@@ -1193,6 +1196,8 @@ namespace CosmicShore.Gameplay
             if (!cell) cell = Cell.FindNearestActiveCell(at, sceneCellsOnly: true);
             var worlds = new List<CellConfigDataSO>();
             CellConveyor.TraversalWorlds(_arkCfg?.Cells, cell, worlds);
+            _worldNames.Clear();
+            foreach (var w in worlds) _worldNames.Add(w ? w.CellName : string.Empty);
             if (worlds.Count == 0)
                 CSDebug.LogWarning("[Voyage] No worlds to sail through (no cell pool and no host cell configs) - no leg can be set.");
             return worlds.Count;

@@ -234,7 +234,7 @@ namespace CosmicShore.ScriptableObjects
         int kaijuMax = 1;
 
         [SerializeField, Min(1f), Tooltip("A kaiju's body is this many times its species' size (\"pretty huge\").")]
-        float kaijuScale = 12f;
+        float kaijuScale = 14f;
 
         [SerializeField, Min(0f), Tooltip("The crossing (and its kaiju) starts this far, u, before the Ark leaves the cell " +
                                           "behind it, so the kaiju is already waiting in the gap when the Ark comes out.")]
@@ -252,7 +252,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0f), Tooltip("Open water between two neighbouring voyage cells' membranes, u (Shombith " +
                                           "2026-11-17: \"the distances between them smaller\"). 0 = the corridor's " +
                                           "authored spacing grown with the cells, which left 1200 u at 1.5x.")]
-        float cellGap = 400f;
+        float cellGap = 500f;
 
         [SerializeField, Tooltip("A voyage cell's life (and so its crystals, the hearts) is born all through its open " +
                                  "water instead of on one feeding ground near the core (Cell.ScatterLifeSpawns).")]
@@ -262,7 +262,7 @@ namespace CosmicShore.ScriptableObjects
                                                   "together) times this, on top of the leg's pacing (Shombith 2026-11-17: " +
                                                   "\"more fauna inside the cells and more crystals\"; every lifeform carries " +
                                                   "one crystal). Production gating only: nothing is culled.")]
-        float cellLifeScale = 2f;
+        float cellLifeScale = 2.5f;
 
         [Header("Voyage - phones (Shombith 2026-11-17: \"keep in mind we are also designing it for the mobile too\")")]
         [SerializeField, Range(0.5f, 4f), Tooltip("Cell Life Scale on a phone or tablet (Application.isMobilePlatform): " +
