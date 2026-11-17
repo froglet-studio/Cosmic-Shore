@@ -228,8 +228,8 @@ def plain_kit_button(k, name, x, y, variant, opaque, caption, cap, active=True):
 # and the domain colours are read from the worn colour set at runtime (PosterDomainPaint), so a band ships transparent.
 
 SPLASH_DIR = "Assets/_Graphics/UI/Splash"
-# Names are the bust files' stems in Docs/Pilots/art/busts/, case and all (Shombith's picks, 2026-11-17; the centre card is the third).
-CAPTAINS = (("GALLEON", 400, 230), ("ANVIL", 470, 260), ("Siphon", 540, 300), ("Krush", 470, 260), ("FLUME", 400, 230))
+# Names are the bust files' stems in Docs/Pilots/art/busts/, case and all (Shombith's second picks, 2026-11-17; the centre card is the third).
+CAPTAINS = (("Spare01", 400, 230), ("Spare06", 470, 260), ("Siphon", 540, 300), ("Maestro", 470, 260), ("ANVIL", 400, 230))
 CAPTAIN_X = (452, 700, 960, 1220, 1468)        # card centres; the middle card is drawn last, in front
 CAPTAIN_ORDER = (0, 4, 1, 3, 2)
 CAPTAIN_FOOT = 862                             # the cards' bottom edge on the board: 2 px under the foot's top edge
@@ -453,7 +453,7 @@ def ground(p, img, go, raycast):
 
 
 RETIRED_BACKDROP = ("Dim", "Lattice", "BottomFade")       # section 26's dim and bottom fade, section 70's sea node
-RETIRED_CAPTAINS = ("Hornet", "Needle", "Sundial")       # the first five's cards no pick carries (2026-11-17)
+RETIRED_CAPTAINS = ("Hornet", "Needle", "Sundial", "Galleon", "Krush", "Flume")       # the first five's cards no pick carries (2026-11-17)
 
 
 def retire_backdrop(p, prefix):
@@ -1355,7 +1355,7 @@ def self_test(files):
                                                      lambda d: d.replace(f"  - {K.f32(STEP_ENDS[1])}\n", "  - 0.3\n", 1))),
         ("the bar off the boot status channel", edit_doc(SPLASH, str(splash_ctx().c("Splash/Readout", "stepbar")),
                                                  lambda d: re.sub(r"  requestEvent: .*", "  requestEvent: {fileID: 0}", d, count=1))),
-        ("a captain missing", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(art_guid("captain_galleon.jpg"), "0" * 32))),
+        ("a captain missing", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(art_guid("captain_siphon.jpg"), "0" * 32))),
         ("the retry window see-through", edit_doc(SPLASH, str(splash_ctx().c("Retry/Fill", "th")), lambda d: d.replace("  alpha: 1\n", "  alpha: 0.92\n"))),
         ("the bar stays up under the retry window", edit_doc(SPLASH, SP["panel_comp"], lambda d: re.sub(
             r"(  readoutGroup: )\{fileID: -?\d+\}", r"\1{fileID: %s}" % splash_ctx().c("Splash/Readout/StepWords", "cg"), d))),
