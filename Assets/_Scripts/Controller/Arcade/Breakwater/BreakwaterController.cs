@@ -33,10 +33,11 @@ namespace CosmicShore.Gameplay
     public class BreakwaterController : GateRaceController
     {
         [Header("AI nose lead")]
-        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
-                 "the lead off. Sparrow 1 (was 2, 2026-11-16): at 2 the lead spun the hull at its 35 u/s base speed and it " +
-                 "circled stations for minutes (BREAKWATER.md, AI: the nose lead).")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Sparrow, 1.0f) };
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain) and nose follow rate (0 = the fleet lag), set as it is " +
+                 "armed. A hull with no row flies with the lead off. Sparrow: lead 1.29 with its nose at 7.9/s, trained in this " +
+                 "race (time_ai_search.py, Sparrow run3, 2026-11-17). At the fleet lag a lead of 2 circled stations for " +
+                 "minutes (BREAKWATER.md, AI: the nose lead) and at 1 every I4 race timed out.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Sparrow, 1.29f, noseFollow: 7.9f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
