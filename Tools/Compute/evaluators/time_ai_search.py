@@ -113,7 +113,7 @@ GAMES = {
                    "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 6.0), "releaseRunwaySeconds": (0.0, 3.0),
                    "maxConcurrentBurns": (1, 6), "minSecondsBetweenPellets": (0.0, 4.0), "reservePellets": (0, 4)},
         "ints": ("maxConcurrentBurns", "reservePellets"),
-        "lead": 1.0, "rows": [], "nose_gene": 1.5,     # SerpentTimeController.aiNoseLead: Serpent 1.0; fleet nose lag
+        "lead": 2.1, "rows": [], "nose_gene": 6.87,    # SerpentTimeController.aiNoseLead: Serpent 2.1 at 6.87/s (run3b)
     },
     "Sparrow": {
         "mode": "Breakwater",
