@@ -438,7 +438,7 @@ def _ref_mean(backend):
 # "mixed" races these in the engine and
 # prices any other hull with the model; every seat carries the backend that timed it.
 ENGINE_TRUSTED = tuple(h for h in os.environ.get(
-    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Urchin,Scarab,Thresher,BrittleStar").split(",") if h)
+    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Urchin,Scarab,Thresher,BrittleStar,Swordfish").split(",") if h)
 # The judge seeds each race at turn start, so (seed, race) is deterministic; the search races one seed per course (8
 # hulls x 2 seeds is ~4.5 min a course on 4 cores) and the pool's candidates are re-raced on more seeds for the noise.
 # The start condition every hull races under: "card" (the arcade card's own starting elements, today) or "L5" (every

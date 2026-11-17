@@ -356,7 +356,10 @@ MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sp
 # StartingElements row (rest at the card start; every hull is at Time 5 in the L5 start) until the real-game search
 # prices them. A hull joins only within about 1.5x of the first nine's pace: the card is the ally AI's hull draw
 # (PickAIVesselType reads the card's Vessels), so a slow hull here is a slow teammate on Garrett's team sum.
-JUDGED_HULLS = ["Thresher", "BrittleStar"]
+# The Swordfish joined 2026-11-17 (Garrett: "the regatta 10"): the Rhino's airframe, ramp and line, and level with the
+# Rhino on every judged course (alone: shipped 32 s vs 36, L5 31 vs 31, three archive courses 31-47 vs 35-40). It is the
+# fastest hull on the card with the Rhino, at the edge of the 1.5x rule against the Stoat (49 s).
+JUDGED_HULLS = ["Thresher", "BrittleStar", "Swordfish"]
 # Finish every course but at 2-5x the pace, so they are NOT on the card (#2123/#2127 seated them; taken off the same
 # night): the judge still seats them by name (RaceJudge adds a requested hull to the card in memory) and their race lines
 # stay, for step 5 and their own AI training to bring them within reach. REGATTA.md 6.6. The Stoat joined them

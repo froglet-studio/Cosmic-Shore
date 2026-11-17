@@ -25063,3 +25063,13 @@ Not run in the Unity editor; reference compile clean for the changed files. `Doc
       Scramble (Maelstrom stays off the grid as before); TIME and CHARGE are unchanged.
 - [ ] Scurry and Scarab Scramble cards draw no element petal, and their descriptions end in a PARTY RULES line.
 - [ ] Scurry at I2 still starts every hull at level 5 in Mass (party games keep their ladder).
+
+## Swordfish seated in Regatta; Spearline seals one more ring at I3 and I4 (2026-11-17, Regatta ten)
+
+Not run in the Unity editor. `SpearlineSeals` seals 2 / 3 / 4 / 5 rings a lap (was 2 / 3 / 3 / 4). The Regatta card adds
+the Swordfish (`author_regatta_assets.py` `JUDGED_HULLS`) with a race line (`Swordfish_Regatta`, the Rhino's line and nose
+pair). `TigerMoth_Regatta` is written for the judge only. Race judge: Spearline Legendary 141 / 150 / 159 / 208 s and
+Medium 174 / 182 / 185 / 220 s; Swordfish in Regatta 31-47 s, level with the Rhino. `spearline_harness --self-test` passes.
+
+- [ ] Fly Spearline I3 and I4: four and five sealed rings a lap, and each still opens with a stroke into the plain face.
+- [ ] Regatta: a Swordfish appears among the AI hulls, takes the line like the Rhino and threads the rings.

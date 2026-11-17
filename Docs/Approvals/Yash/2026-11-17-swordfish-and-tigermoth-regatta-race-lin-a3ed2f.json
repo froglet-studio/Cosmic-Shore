@@ -1,0 +1,26 @@
+{
+  "id": "2026-11-17-swordfish-and-tigermoth-regatta-race-lin-a3ed2f",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T22:50:39+00:00",
+  "area": "vessel AI (race lines, time_ai_search)",
+  "summary": "Swordfish and TigerMoth Regatta race lines added; Swordfish seated on the Regatta card; TigerMoth added to time_ai_search's hull table (Waystation's hop gates as genes)",
+  "why": "Garrett's Regatta ten: Swordfish judged level with the Rhino in Regatta; TigerMoth's Time AI training",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "6d1bd6419",
+  "paths": [
+    "Tools/Build/author_race_lines.py",
+    "Tools/Build/author_regatta_assets.py",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Swordfish",
+      "TigerMoth"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

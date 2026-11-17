@@ -308,6 +308,22 @@ GAMES = {
         "ctrl": lambda p: {"aiRailLead": float(p["aiRailLead"]), "aiRaceLineLead": float(p["aiRaceLineLead"])},
         "lead": None, "rows": [], "nose_gene": 1.5,
     },
+    "TigerMoth": {
+        "mode": "Waystation",
+        # Waystation drives the AI itself (WaystationController: the Fold toward far rings, the belly-aimed drop, and
+        # the tower hop over each ring under a plate). The genes are that controller's hop and drop gates, through
+        # controller_overrides, and the nose follow rate through the judge (Waystation has no nose knob: the fleet lag).
+        # TigerMothDropAction is listed for the shipped-genome read only: it is the vessel's, never searched.
+        "assets": {i: "Assets/_SO_Assets/VesselActions/TigerMoth/TigerMothDropAction.asset" for i in (1, 2, 3, 4)},
+        "fields": {},
+        "ctrl_fields": {"aiHopLineShare": (0.3, 0.9), "aiHopMissMargin": (120.0, 800.0),
+                        "aiHopLookahead": (60.0, 400.0), "aiDropAimDegrees": (3.0, 25.0)},
+        "ctrl_defaults": {"aiHopLineShare": 0.7, "aiHopMissMargin": 400.0, "aiHopLookahead": 150.0,
+                          "aiDropAimDegrees": 10.0},   # the tower-hop fix (2026-11-17)
+        "ctrl": lambda p: {k: float(p[k]) for k in ("aiHopLineShare", "aiHopMissMargin", "aiHopLookahead",
+                                                    "aiDropAimDegrees")},
+        "lead": None, "rows": [], "nose_gene": 1.5,
+    },
     "BrittleStar": {
         "mode": "BrittleStarTime",
         # The mode stands the hull's boost policy down (BrittleStarAIBoostPolicy_BrittleStarTime, engage runway 999 s):
