@@ -1213,7 +1213,7 @@ MonoBehaviour:
     Enabled: 1
     Value: 1
     Min: 1
-    Max: 1.5
+    Max: 1.65
     element: 4
     UseFloor: 1
     Floor: 0.5
