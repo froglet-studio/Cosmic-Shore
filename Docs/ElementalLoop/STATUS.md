@@ -18,7 +18,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
 | Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Meerkat | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
-| Orca | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| Orca | `b ~ .` | `b b .` | `b b .` | `b b .` | - | - |
 | Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
 | Serpent | `b b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
@@ -83,6 +83,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Manta Time | 1 fun (abilities + game, one intensity) | doing | Claude (Garrett's thread) | 2026-11-13 |  | Redline round 5 (Yash, 2026-11-11) brought onto bleeding-edge: Soar was dark in Redline since 2026-11-07 (Time level-5 upgrade, card started at Time 0); now Time 6 start, 8 laps, AI race line and throttle floors, the heat. Waiting on one human's fun card at I2 (REDLINE.md section 0.2) |
 | Manta Time | 2 intensities I1-I4 | built | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder Legendary 58/62/75/96 s (good); the default Medium rival stalled at mouths (152/298/226/214 s) and Easy DNF'd 7 of 12; AI noses now Easy 5 / Medium 7 / Hard 7-9, every race finishes (REDLINE.md 0.3) |
 | Manta Time | 3 AI on I1-I4 | doing | Regatta plan threads | 2026-11-08 |  | Redline AI nose rate (#1844); the Soar steering should be re-searched at the new nose rates (AI_PLAN.md section 5) |
+| Orca Time | 2 intensities I1-I4 | doing | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Orca timing out at I3-I4 (1 of 8 finished), missing a walled ring and wandering past it; Breach now uses the gate race's re-attack steering (BREACH.md 5.1): Legendary 120/116/160/141 s, Medium 126/121/167/150, 24 of 24 finished. Open: I4 easier than I3; Medium ~ Legendary. |
 | Rhino Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | RhinoAIBoostPolicy_Headlong from drive-rhino-headlong-on-lead, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | Scarab Time | 1 fun (abilities + game, one intensity) | doing | Claude for Garrett | 2026-11-13 |  | Rally I1-I3 off Blast Run, AI no crystal detours (SCARABRALLY.md 2026-11-13); awaiting Garrett's fun card at I2 |
 | Scarab Time | 2 intensities I1-I4 | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | ladder call: rivals by difficulty (Easy 3.5/Medium 5/Hard 8 nose; Medium I4 161 s, was DNF; SCARABRALLY.md AI pace by difficulty); bare I3 = I2 (57 s), lighter I3 field held on Yash's Switchback lane (patch in project files) |
