@@ -65,15 +65,18 @@ ROWS = {
         fields={"alignDegrees": 90, "releaseAlignDegrees": 120, "stickBand": 1, "releaseStickBand": 1,
                 "engageRunwaySeconds": 0, "releaseRunwaySeconds": 0},
         source=R + "sparrow-breakwater/breakwater-sparrow-time__D.json"),
-    # Rhino, Headlong: lead-on B (job drive-rhino-headlong-on-lead, PR #1828), over the hull's own policy (the job's
-    # `shipped` is empty). Headlong's gate steering (AICommitFromApproachPoint) is on since #1790; needs the lead at 2.5.
+    # Rhino, Headlong: Rhino run1 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
+    # HeadlongController's Rhino row at lead 2.47 and nose 7.5/s. The shipped AI orbited a gate at the fleet nose lag
+    # (FINDINGS row 21): confirm, 28 fresh flights a side, shipped finished 6, trained 28 (98-120 s). minSpeedGain and
+    # throttleSlewPerSecond were not searched and keep lead-on B's (job drive-rhino-headlong-on-lead, PR #1828).
     "RhinoAIBoostPolicy_Headlong": dict(
         base=L.POLICY_DIR + "/RhinoAIBoostPolicy.asset",
-        fields={"cornerSpeed": 153.536, "minCornerSpeed": 144.359, "brakeMarginUnits": 0.705, "brakeLeadSeconds": 0.44,
-                "minSpeedGain": 17.571, "cornerReleaseDegrees": 24.321, "engageRunwaySeconds": 1.439,
-                "releaseRunwaySeconds": 0.161, "alignDegrees": 22.708, "releaseAlignDegrees": 26.95, "stickBand": 0.454,
-                "releaseStickBand": 0.682, "throttleSlewPerSecond": 7.366, "brakeSteerFloor": 0.408},
-        source=R + "rhino-lead/drive-rhino-headlong-on-lead__B.json"),
+        fields={"cornerSpeed": 274.153, "minCornerSpeed": 64.441, "brakeMarginUnits": 25.574,
+                "brakeLeadSeconds": 0.943, "cornerReleaseDegrees": 0.877, "engageRunwaySeconds": 2.211,
+                "releaseRunwaySeconds": 0.083, "alignDegrees": 56.368, "releaseAlignDegrees": 41.815,
+                "stickBand": 0.398, "releaseStickBand": 0.372, "brakeSteerFloor": 0.694, "minSpeedGain": 17.571,
+                "throttleSlewPerSecond": 7.366},
+        source="/mnt/project-files/regatta-flywheel/train/Rhino/run1/best.json"),
 }
 
 # Dolphin, Switchback: lead-on C (job switchback-dolphin-time-lead, PR #1833), ONE drive raced at every intensity over
@@ -103,7 +106,8 @@ OLD = {
                                    "aiWarpMinDistance": 0},
     "SparrowAIBoostPolicy_Breakwater": {"alignDegrees": 45, "releaseAlignDegrees": 60, "stickBand": 1,
                                         "releaseStickBand": 1, "engageRunwaySeconds": 2, "releaseRunwaySeconds": 1.25},
-    "RhinoAIBoostPolicy_Headlong": None,   # new: Headlong flew the hull's own RhinoAIBoostPolicy (delete to revert)
+    # lead-on B, as it shipped before Rhino run1 (2026-11-17); before #1828 Headlong flew the hull's own policy
+    "RhinoAIBoostPolicy_Headlong": {"cornerSpeed": 153.536, "minCornerSpeed": 144.359, "brakeMarginUnits": 0.705, "brakeLeadSeconds": 0.44, "cornerReleaseDegrees": 24.321, "engageRunwaySeconds": 1.439, "releaseRunwaySeconds": 0.161, "alignDegrees": 22.708, "releaseAlignDegrees": 26.95, "stickBand": 0.454, "releaseStickBand": 0.682, "brakeSteerFloor": 0.408},
     "DolphinAIBoostPolicy_Switchback": {"alignDegrees": 35.308, "stickBand": 0.262, "engageRunwaySeconds": 1.422,
                                         "spendAtCharge01": 0.835, "maxHoldOffSeconds": 4, "peakMarginUnits": 3,
                                         "minDischargeSeconds": 0.2, "minPulseGainUnits": 30},
