@@ -35,6 +35,9 @@ namespace CosmicShore.Gameplay
             public int TargetFrameRate = 60;
             public string OutputFile = "";
             public string Tag = "";
+            /// <summary>A "before" soak: fly the AI WITHOUT speed over breaking (the cost model alone decides, as before
+            /// 2026-11-17) and count the turn-aways the rule removes (<see cref="SwitchbackBlastAI.BreakFirstForSoak"/>).</summary>
+            public bool BreakFirst;
         }
 
         public static SwitchbackSoakRunner Active { get; private set; }
@@ -48,6 +51,7 @@ namespace CosmicShore.Gameplay
         public static SwitchbackSoakRunner Launch(Settings s)
         {
             if (Active != null) Destroy(Active.gameObject);
+            SwitchbackBlastAI.BreakFirstForSoak = s.BreakFirst;   // set either way, so one soak never leaks into the next
             var go = new GameObject("[Switchback Soak]");
             DontDestroyOnLoad(go);
             var r = go.AddComponent<SwitchbackSoakRunner>();
@@ -90,6 +94,8 @@ namespace CosmicShore.Gameplay
                   .Append("\"emergencies\":").Append(r.Emergencies).Append(',')
                   .Append("\"avoids\":").Append(r.Avoids).Append(',')
                   .Append("\"blasts\":").Append(r.Blasts).Append(',')
+                  .Append("\"passes\":").Append(r.Passes).Append(',')
+                  .Append("\"turnAways\":").Append(r.TurnAways).Append(',')
                   .Append("\"gates\":").Append(r.Threaded).Append(',')
                   .Append("\"finish\":").Append(r.FinishTime.ToString("F2", inv))
                   .Append("}\n");
@@ -248,6 +254,11 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
-        void OnDestroy() { if (Active == this) Active = null; }
+        void OnDestroy()
+        {
+            if (Active != this) return;
+            Active = null;
+            SwitchbackBlastAI.BreakFirstForSoak = false;
+        }
     }
 }

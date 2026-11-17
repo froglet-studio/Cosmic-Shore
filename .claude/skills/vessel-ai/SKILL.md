@@ -44,6 +44,15 @@ instead of copying them:
    the Third Eye and the studio draw it (§4.2). An AI that cannot say where it is going cannot be watched.
 7. **Never read `VesselStatus.AIPilot` from a tool or a reader.** Its getter is `GetOrAdd<AIPilot>()`: reading
    it ADDS an autopilot to a human's ship. Use `status.TryGetComponent(out AIPilot pilot)`.
+8. **In a Time game mode, speed comes before breaking** (Yash, 2026-11-17; `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`
+   §6.2). An AI breaks only what it cannot pass, and passes as soon as it can: once the hull can fly through its ring
+   (a gap wide enough exists, however it got there) it commits to the ring and never leaves for a pickup to break more.
+   When it must break, it takes the pickup on its way, not one beside or behind it. "Passable" is measured from the
+   game's data (the prisms' real boxes against the hull's size), at the replan rate, never per frame. The decision is a
+   pure function with an edit-mode test: blocked ring and a crystal ahead takes the crystal; a ring partly opened and
+   passable is flown even with another crystal nearby; an open ring is never left
+   (`SwitchbackBlastPlanner.Passable` / `KeyOnTheWay`, `SwitchbackSpeedOverBreakingTests`). The rule is about the AI's
+   choice: it never changes or rations what a vessel's ability does.
 
 ## 2. Where a new AI goes (the lowest layer that works)
 
@@ -235,6 +244,15 @@ the same source as the studios' `studio-domains.js`): game Ruby is magenta, neve
 - **A plan costed over one obstacle's box undercounts the plan that ignores the obstacle.** Splitting a gate into several
   keys made "thread straight to the ring" look cheap at the first key, because only that key's box was counted; the AI
   skipped every first key. Cost each plan over the whole way to the ring (`SwitchbackBlastPlanner.PathPenalty`).
+- **A point to fly through must be sized from the RING's mouth, not from whatever hangs behind it.** Switchback's
+  pass points were first spread across the door's eye (42 u at I4), wider than the ring (20 u): the AI aimed outside
+  its own mouth and missed 73 rings in 24 races where it had missed 4 (2026-11-17). A missed mouth costs a loop, a
+  plain prism 0.25 s, so a pass point stays well inside the mouth (`SwitchbackBlastPlanner.PassMouthShare`).
+- **"On the way" is a time, not a distance off the line.** Judged as "within 20 u of the line and a turn under
+  15 deg", a key 12 u off the line 40 u ahead was refused (17 deg) though flying through it costs 0.06 s, and the AI
+  gave up blasts that paid (Switchback I2 Legendary 5 s slower offline, 2026-11-17). Cost the extra distance at the
+  hull's speed plus the bend at its turn rate (`SwitchbackBlastPlanner.KeyDetourSeconds`, 0.15 s or less = on the way):
+  the same number refuses a gauntlet key 50 u off the line 150 u ahead (a 37 deg bend, 0.33 s).
 - **Run a mode's EditMode tests headless before Unity does.** When the tested code is pure (layout, planner), compile
   the SHIPPED test file against the harness's Unity shim with an NUnit shim (`switchback_sim_harness/run.sh tests`:
   `NUnitShim.cs` expands `[Values]`, `TestRunner.cs` reports PASS/FAIL), then negative-control the new tests by planting

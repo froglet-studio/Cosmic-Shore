@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-16-added-non-negotiable-8-to-vessel-ai-in-a-959853",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-16T23:34:09+00:00",
+  "area": "the /vessel-ai skill (Claude skills, tooling)",
+  "summary": "Added non-negotiable 8 to /vessel-ai: in a Time game mode an AI puts speed before breaking (breaks only what it cannot pass, passes as soon as it can, takes a pickup on its way). Added two traps the Switchback work hit (a pass point sized from the door's eye instead of the ring's mouth; 'on the way' judged by distance instead of time).",
+  "why": "Yash, 2026-11-17, after watching a Switchback AI leave a ring it could fly for another crystal: 'we should always prioritize speed over breaking as it is time game. This is the general rule for AI training in Time Game Modes.'",
+  "branch": "Ys-bleeding-edge",
+  "lane": "ai-system",
+  "commit": "5a02bf38f",
+  "paths": [
+    ".claude/skills/vessel-ai/SKILL.md"
+  ]
+}
