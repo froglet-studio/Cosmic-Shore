@@ -65,6 +65,11 @@ What the element of a game is comes from the game itself (`ModeGenre.TryElements
 
 ## 2. Step 0: the game kit
 
+**2026-11-17 (Garrett): Mass and Space are one arcade category, and each vessel's Mass and Space games become one
+Mass-Space game** (Brood Rush's rule in the vessel's own environment, in teams; `../ArcadeRestructure/PLAN.md`). Games
+that teach no element are **Party** (Scurry, Scarab Scramble, Maelstrom) and count for no vessel's kit. Until every
+vessel's games are merged, the board below still shows Mass and Space as two columns; one Mass-Space game fills either.
+
 **Rule.** Every vessel has at least three arcade games: a Time game, a Charge game, and a Mass or a Space game. A
 vessel whose kit has no real mass-making is excused from Mass (the Dolphin); one with no destroyer verb is excused from
 Space (the Squirrel, which may get a stealing game, and stealing scores as Mass). Excuses are in `loop.json`
@@ -287,6 +292,7 @@ model number (standing rule).
 
 | Date | What moved |
 |---|---|
+| 2026-11-17 | **Garrett**: Mass and Space games merge into one Mass-Space category, team games of up to 9 vessels (3 per team); Party is everything else (Scurry, Scarab Scramble, Maelstrom), with no rules but every exception told to the player. Categories landed; plan in `../ArcadeRestructure/PLAN.md` |
 | 2026-11-16 | **Honeyguide Time step 1**, driven by the first fun card (Garrett, Slip Line I1, "almost", weakest Rivals): the recorded race showed the rival's ring uncounted after a ride and a 65 s far-side circle; the mode's AI now flies a rail-safe race line with the Regatta steering and a throttle floor, and `VesselTransformer.SetPose` no longer counts a zero-length pose as a teleport (`SLIP_LINE.md` section 10, `slip_line_ai_sim.py`). I1 unchanged; waits on Garrett's next flight and card |
 | 2026-11-15 | **Garrett**: "make all the missing games you can" (one per element is ideal). Step 0 rostered for the whole fleet in `GAME_KIT_ROSTER.md`: 35 games with reserved `GameModes` ids 91-125 (126-127 for the Jewel Wasp) and hint toasts 166-202; Grizzly, Jacks and Stoat Mass and Urchin Space excused in `no_game_ok` (kits make nothing to score); Starling waits for its kit |
 | 2026-11-12 | **Garrett**: the loop dominates `/swimlanes` and `/approve`. The swim lanes board now opens with every unoccupied vessel as its own loop lane (progress and next step, `elemental_loop.vessel_lanes`); the approval queues rank entries by loop impact, the rework a late "against the vessel's spirit" catch would cause (`elemental_loop.rework`) |

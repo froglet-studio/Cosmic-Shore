@@ -208,7 +208,7 @@ corner it did not ask for.
 
 ## 6. AI
 
-**The Stoat (on the card 2026-10-17, Yash; orbit only since 2026-11-02, `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`).** It flies the same gate
+**The Stoat (on the card 2026-10-17, Yash; orbit only since 2026-11-02, `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`; OFF the card since 2026-11-17, Garrett: it will be reworked a lot, so it is judge-only in `author_regatta_assets.py` JUDGE_ONLY_HULLS, keeps its race line and is out of the polished set).** It flies the same gate
 steering, and its autopilot is `StoatSlingExecutor`: it slings to turn (ring ≥ 7.84° off, ≥ 123 u away, every 0.94 s) and presses for
 the warp alone while its ring is ≥ 280 u away (`aiWarpMinDistance`). In Regatta it reads those numbers through `AIModeTuning`
 (`StoatSlingConfig_Regatta`, which `Tools/Build/learn_drives_from_flights.py` would write; none exists, so it flies the hull's own row). A
@@ -579,6 +579,27 @@ Not seated yet:
 - **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
   (Thornline's AI plan aims at thorns).
 - **Goby**: 0 gates. It wanders, and Perch Run's dart coach armed from RegattaController did not take hold in the judge.
+
+### 6.7 The Serpent's burn length, its step-5 Time lever (2026-11-17)
+
+The Serpent sat at Time 10 on the card and still raced the pools at 138 s (card) and 142 s (L5), about 1.9x the field:
+it spends its pellets in lap 1 and its Wall Seeds refill (one wall per about 42 s, `train/Serpent/regatta-trace`) cannot
+keep up. Its one Time lever is the pellet burn length, `ConsumeBoostAction.timeDurationMultiplier` (x1.6 at Time 10).
+Swept on `w3/SIX_POOLS_1225.json` plus the pass-3 pools (8 card, 8 L5 courses, 3 seeds, Serpent alone, no DNF):
+
+| burn Max at Time 10 | change | card mean (s) | L5 mean (s) |
+|---|---|---|---|
+| 1.6 | 0 | 138.1 | 141.7 |
+| 2.0 | +25% | 111.7 | 117.4 |
+| 2.4 | +50% | 98.0 | 104.8 |
+| **2.8** | **+75%** | **75.0** | **80.7** |
+| 3.2 | +100% | 61.8 | 65.9 |
+
+The curve has no knee: every step buys more, because a longer burn also stretches the lap-1 tank further. Pool
+imbalance stops falling where the Serpent stops being the slowest hull (the Squirrel, about 83 s card and 90 s L5),
+near +70%. **Shipped 2.8**, which lands the Serpent mid-field (pass 3's card median is about 76 s) and does not overshoot it;
+3.2 would put it among the fast hulls. Serpentine, seeds 1-2: I1 103 s unchanged (Time 0), I2 74 -> 62, I3 76 -> 68,
+I4 93 -> 75, every rung inside its bars. A kit change: it moves the Serpent in every mode that raises its Time.
 
 ## 6.5 Scoring — the team sum
 

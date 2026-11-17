@@ -15,7 +15,8 @@ Mass or Space arcade game), 1 fun (abilities and game together, one intensity), 
 challenging, very hard), 3 one AI on all four rungs; then per arena game (Regatta for Time, Broadside for Charge,
 Brood Rush for Mass and Space together, balanced on net control of space): 4 an environment creator trained against
 the fixed AI pool, 5 the plateau's vessel imbalance tuned and sent back to steps 2-4 until no step 5 is needed. Each
-loop needs fewer people. Process: [`Docs/ElementalLoop/PLAYBOOK.md`](Docs/ElementalLoop/PLAYBOOK.md); board:
+loop needs fewer people. **2026-11-17: each vessel's Mass and Space games merge into one Mass-Space game (team play, up to 9
+vessels, 3 per team); games that teach no element are Party** ([`Docs/ArcadeRestructure/PLAN.md`](Docs/ArcadeRestructure/PLAN.md)). Process: [`Docs/ElementalLoop/PLAYBOOK.md`](Docs/ElementalLoop/PLAYBOOK.md); board:
 `Docs/ElementalLoop/STATUS.md` (generated); sign-offs: `loop.json`, written by `elemental_loop.py set`.
 
 ## Where everything else lives (read the topic file before touching its area)

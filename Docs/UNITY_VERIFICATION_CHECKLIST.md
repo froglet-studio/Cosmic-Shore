@@ -25053,3 +25053,13 @@ The reference compile shows no errors in the changed file (it has 29 elsewhere, 
 - [ ] Fly Waystation I1 and I3 against a Legendary TigerMoth: on a tower, it flies over the ring and drops through it,
       instead of circling above it until the clock runs out.
 - [ ] A drop lands inside the ring (not grazing its rim), and a bot that overshoots flies out, turns and comes back level.
+## Arcade categories: Time, Charge, Mass-Space, Party (2026-11-17, arcade restructure)
+
+Not run in the Unity editor; reference compile clean for the changed files. `Docs/ArcadeRestructure/PLAN.md`.
+
+- [ ] Menu_Main > Arcade: the dropdown reads "Games: All" and its tabs read ALL, TIME, CHARGE, MASS-SPACE, PARTY on
+      one row without clipping (MASS-SPACE is the longest label).
+- [ ] MASS-SPACE shows Rampage, Tollway, Hijack and the other Mass and Space cards; PARTY shows Scurry and Scarab
+      Scramble (Maelstrom stays off the grid as before); TIME and CHARGE are unchanged.
+- [ ] Scurry and Scarab Scramble cards draw no element petal, and their descriptions end in a PARTY RULES line.
+- [ ] Scurry at I2 still starts every hull at level 5 in Mass (party games keep their ladder).

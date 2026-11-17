@@ -50,3 +50,4 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: 'Phase Dart'
     UpgradeDescription: 'The Goby''s darts pass through prisms.'
+  omniAbilityLabel: restocks the pair
