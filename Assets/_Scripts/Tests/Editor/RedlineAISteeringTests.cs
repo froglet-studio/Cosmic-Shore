@@ -33,7 +33,7 @@ namespace CosmicShore.Tests
         /// Medium 3, Hard 6, Legendary 9 per second at I1-I2, each faster than the fleet lag and a harder level never
         /// slower than the one below. Since 2026-11-11 Easy is 2.5 at I3 and the I4 row 4 / 5 / 6 / 9: with Soar lit from
         /// the gun a 2/s nose could not hold the 72 / 44 u mouths (manta_redline_sim.py: 5 of 6 I3 and 2-4 of 6 I4 races
-        /// finished; 6 of 6 at 2.5/s and 4/s).</summary>
+        /// finished; 6 of 6 at 2.5/s and 4/s). Since 2026-11-17 Easy 5, Medium 7, Hard 7 / 9 (the real game: REDLINE.md 0.3).</summary>
         [Test]
         public void Redline_AINoseLag_TableByIntensityAndDifficulty()
         {
@@ -48,9 +48,9 @@ namespace CosmicShore.Tests
                 for (int intensity = 1; intensity <= 4; intensity++)
                 {
                     var row = table[intensity - 1];
-                    var want = intensity == 4 ? new[] { 4f, 5f, 6f, 9f }
-                        : intensity == 3 ? new[] { 2.5f, 3f, 6f, 9f }
-                        : new[] { 2f, 3f, 6f, 15f };
+                    // 2026-11-17: Easy 5 and Medium 7 at every rung (the old Easy 2-4 / Medium 3-5 stalled at the mouths in
+                    // the real game); Hard 7 at I1-I2 and 9 at I3-I4; Legendary 15 at I1-I2, 9 at I3-I4.
+                    var want = intensity >= 3 ? new[] { 5f, 7f, 9f, 9f } : new[] { 5f, 7f, 7f, 15f };
                     CollectionAssert.AreEqual(want, new[] { row.easy, row.medium, row.hard, row.legendary },
                         $"I{intensity}");
                     for (int level = 1; level <= 4; level++)
