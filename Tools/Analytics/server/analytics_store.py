@@ -99,6 +99,7 @@ SETTING_VALUE = re.compile(r"^[a-z0-9_]{1,40}$")
 ELEMENTS = ("Charge", "Mass", "Space", "Time", "Omni")
 MODE_ELEMENTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mode_elements.json")
 _mode_elements = {"stamp": None, "table": {}}
+_mode_renames = {"stamp": None, "table": {}}
 
 
 def mode_elements(path=MODE_ELEMENTS_PATH):
@@ -111,6 +112,29 @@ def mode_elements(path=MODE_ELEMENTS_PATH):
         import mode_elements as M
         _mode_elements.update(stamp=stamp, table=M.load(path))
     return _mode_elements["table"]
+
+
+def mode_renames(path=MODE_ELEMENTS_PATH):
+    """{old game_mode: current game_mode}: the game's GameModeRenameMigration.Renames, carried in mode_elements.json
+    (Ian, 2026-11-17: HexRace, PeelTheCage and MultiplayerCrystalCapture showed as modes of their own, with no
+    element). Re-read when the file changes."""
+    try:
+        stamp = os.stat(path).st_mtime_ns
+    except OSError:
+        return {}
+    if stamp != _mode_renames["stamp"]:
+        import mode_elements as M
+        _mode_renames.update(stamp=stamp, table=M.load_renames(path))
+    return _mode_renames["table"]
+
+
+def canonical_mode(props, renames=None):
+    """`props` with its game_mode under the name the mode carries now (HexRace -> SkimRace), in place; returned."""
+    if isinstance(props, dict):
+        mode = props.get("game_mode")
+        if isinstance(mode, str):
+            props["game_mode"] = (mode_renames() if renames is None else renames).get(mode, mode)
+    return props
 
 
 def _element_name(value):
@@ -126,7 +150,8 @@ def element_of(props, table=None):
     if own:
         second = _element_name(props.get("element_secondary"))
         return own, (second if second != own else None), "event"
-    found = (mode_elements() if table is None else table).get(str(props.get("game_mode") or ""))
+    mode = str(props.get("game_mode") or "")
+    found = (mode_elements() if table is None else table).get(mode_renames().get(mode, mode))
     if found:
         return found[0], found[1], "table"
     return None, None, None
@@ -1477,7 +1502,7 @@ class Store:
         db.close()
         if not events and not row:
             return None
-        props_of = [json.loads(e["props"]) for e in events]
+        props_of = [canonical_mode(json.loads(e["props"])) for e in events]
         count = lambda key: _counts(e[key] for e in events if e[key])
         starts, dones = {}, {}
         for e, p in zip(events, props_of):
@@ -1613,7 +1638,8 @@ class Store:
                 "ORDER BY ts_ms"):
             key = (distinct_id, match_id)
             if key not in starts:
-                starts[key] = (ts, build, platform, version, json.loads(props), imported, country, device)
+                starts[key] = (ts, build, platform, version, canonical_mode(json.loads(props)), imported, country,
+                               device)
         dones = {}
         for distinct_id, match_id, ts, props in reader.execute(
                 "SELECT distinct_id, match_id, ts_ms, props FROM events "
@@ -1886,7 +1912,7 @@ def _rebuild_details(reader, out, first_day, days_seen):
     for player, build, day, ts, event, platform, raw in reader.execute(
             f"SELECT distinct_id, build_kind, day, ts_ms, event, platform, props FROM events "
             f"WHERE event IN ({placeholders}) ORDER BY ts_ms", DETAIL_EVENTS):
-        props = json.loads(raw)
+        props = canonical_mode(json.loads(raw))
         who = (player, build)
         # the distinct counts (players, funnels, launches, balances, settings) also go under '*', each player once;
         # the counts of events (economy, unlocks, signals, session ends) are rows, summed across builds instead
@@ -1896,7 +1922,10 @@ def _rebuild_details(reader, out, first_day, days_seen):
                     day, platform_seen.get((b, platform), {}).get(player, day))
             if event in marks:
                 reached.setdefault((player, b), set()).add(event)
-            if event == "menu_ready" and as_float(props.get("seconds_since_launch")) is not None:
+            # launch-to-menu: only the first menu of each app run (is_first). Every return to the menu after a match
+            # also sends menu_ready, and counting those put the release p90 at 41 minutes (Ian, 2026-11-17)
+            if event == "menu_ready" and props.get("is_first") in (True, "true", "True", 1) \
+                    and as_float(props.get("seconds_since_launch")) is not None:
                 launch_times.setdefault((b, platform or "unknown"), []).append(
                     (day, as_float(props.get("seconds_since_launch"))))
             elif event == "ftue_step_completed":
