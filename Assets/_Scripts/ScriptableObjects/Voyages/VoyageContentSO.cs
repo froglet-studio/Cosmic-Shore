@@ -1097,6 +1097,8 @@ namespace CosmicShore.ScriptableObjects
         public string PauseCompleteAndSail = "Complete and set sail";
         public string ObjectiveStripComplete = "Goal met. Pause to complete and set sail.";
         public string ObjectiveStripArkHull = "Ark hull {hull}%";
+        /// <summary>The caption on the Ark's hull rail down the left edge (Frogma Rev 116 A).</summary>
+        public string ObjectiveRailLabel = "Ark hull";
         public string ObjectiveStripLeaking = "Hull below {line}%: the hold is losing crystals.";
         public string ToastHullLeaking = "THE HOLD IS LEAKING";
         public string ToastHullLeakingSub = "The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.";

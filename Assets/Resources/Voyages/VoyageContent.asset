@@ -3355,6 +3355,7 @@ MonoBehaviour:
     PauseCompleteAndSail: Complete and set sail
     ObjectiveStripComplete: Goal met. Pause to complete and set sail.
     ObjectiveStripArkHull: 'Ark hull {hull}%'
+    ObjectiveRailLabel: Ark hull
     ObjectiveStripLeaking: 'Hull below {line}%: the hold is losing crystals.'
     ToastHullLeaking: THE HOLD IS LEAKING
     ToastHullLeakingSub: 'The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.'

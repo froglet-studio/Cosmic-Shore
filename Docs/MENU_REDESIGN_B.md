@@ -8754,3 +8754,71 @@ Built in code (`VoyageArkPage`, `VoyageSeatPicker`; no prefab or scene change), 
   that card's hull-only drawing as it was.
 
 Not seen in Unity: a render of both screens still needs to sit beside the board.
+
+
+## 212. Rev 116 mockups: the in-game voyage UI, six ways (2026-11-17; Shombith picked A, built in 212.1)
+
+**Asked** (Shombith, after playing the round-3 build): "the In game UI is too stupid and old like we need to work more
+on that for sure. I need new mockups lets say 6 of each in game screen including toasts, the toasts should come in the
+designated toast spot as it comes in many arcade games."
+
+**On the canvas**: the Voyages playtest tab, section `sec-rev116`. Every screen of every option is its own board, `R116<option>_<screen>.dc.html` (36 boards, 1920 x 1080; the toast spot boards 1920 x 1330 with the other toast kinds under the screen), one row per option in its group (116A Marquee ... 116F Blocks), the screens in the same order on every row. First published as one board per screen with all six options on it, then as one board per option; Shombith asked twice the same day for each to be separate. To fit 36 boards under the canvas's 512-file limit, on Shombith's word (2026-11-17) 32 superseded voyage boards came off the canvas, their repo copies kept: Rev 113 (all nine), Rev 114 (C2, F1, IAB, O1, TAB, TCD), Rev 115 B-E and the Rev 14-17 voyage windows (VoyageA-L and R14Notes). Generator: `Docs/MenuRedesignB/rounds/r116_voyage_hud.py <root> 116 singles`.
+
+Each option has the same six screens:
+- **In flight**: flying in a raided cell: 23 of 50 banked, 7 carried, the Ark's hull 64% (on the left in every
+  option that has room), cell 3 of 6, the Ark sails in 0:18.
+- **The Ark under attack**: a kaiju-sized raider on the hull, the hull at 27% (under the 30% leak line, near the 10%
+  breach line), THE HOLD IS LEAKING in the toast spot. The raider is lit red in the world; no rings or arrows on the screen.
+- **The toast spot**: each option's one fixed toast spot, outlined in cyan, with ARK UNDER ATTACK landing in it;
+  under each screen the same spot holding an event, the goal and a small BANKED toast. One toast at a time; a threat
+  jumps the queue.
+- **The raid countdown**: the last five seconds at anchor (ToastAnchorClosing), bank what you carry or lose it.
+- **Pause, goal met**: the goal met, Resume, Complete and set sail (the one Lime call to action), Settings,
+  Leave voyage.
+- **The end scoreboard**: docked at Home, a row per seat, rewards, Finish and Venture further (goal 60). The rewards
+  (crew trust, pilot XP, colour shards) are placeholders: there is no voyage XP or trust system yet.
+
+The options:
+- **116A Marquee** (recommended): arcade top centre. The banked count is the score at the top, the route a line under it;
+  the toast spot is a slanted band right under the score, where the eye already goes; the hull a tall bar on the left
+  edge with the breach and leak lines on it. Recommended because the toast spot and the number that matters share one
+  place, like an arcade game's score and combo callouts, and the middle of the screen stays the game's.
+- **116B Rail**: one column on the left, the hull first, then the goal, the timer and the route. Toasts slide out of the rail.
+- **116C Console**: a racing game's console at bottom centre (hull gauge, count, timer); the route across the top; toasts in
+  the lower third above the console.
+- **116D Corners**: a shooter's corners, hull top left and crystals top right; toasts are a feed of up to three under the
+  crystals, newest on top.
+- **116E Edges**: two arcs on the screen's sides, hull left and goal right; toasts are big spaced words at top centre with
+  no box.
+- **116F Blocks**: a fighting game's top bar in segments with the timer boxed between; toasts are a slanted banner that slams
+  in at mid left. Busiest of the six (its segments fail `check_mockup.py`'s noise budget).
+
+Every word is the authored voyage text already in the assets (ToastArkUnderAttack, ObjectiveStripAnchor, PauseCompleteAndSail,
+...); the vessel's own HUD keeps its corner (bottom right); nothing moves at rest except a toast's entry. `check_mockup.py`
+still flags the large display numbers as off the type scale and a few threat reds inherited from the Rev 113/114 kit.
+
+**Differs from the build**: the build is `ArkwayVoyageHud`'s Rev 114 O1 strip (420 px, top left) with toasts on the
+Rev 113 band at top centre, and the pause button is a copy of Resume made in code. Any pick replaces the strip and gives
+the toasts one fixed spot of their own.
+
+**Picked** (Shombith, 2026-11-17): "build A". 116A Marquee.
+
+### 212.1 Built: 116A Marquee in the game (2026-11-17, not yet seen in Unity)
+
+- **In flight** (`VoyageObjectiveBox`, `VoyageHud.cs`, replaces the Rev 114 O1 strip): the count top centre (72 pt, the
+  goal smaller and dimmer), the route under it with the cells done lit, then the flowers by element, the place and the
+  clock, and the action line. The hull is a tall bar on the left edge (x 75, 380 high) with its figure above, the breach
+  mark and the leak line's dashes on it and the new authored label `ObjectiveRailLabel` ("Ark hull") under it; it turns
+  the threat colour while leaking, under attack or in an assault. What the crew carries is a chip at mid height.
+- **The raid countdown**: the last five seconds at anchor draw a ring in the middle (`VoyageCountdownRing`, a mesh, no
+  sprite) emptying clockwise round the seconds left.
+- **The toast spot** (`ArkwayVoyageHud`): while the marquee is up (`VoyageObjectiveBox.Showing`) the toast sits right
+  under it (y 238), on a slanted band (`ArkwayToastBand`) with a thin line along its foot in the toast's mood colour
+  (event, threat, good). The leash countdown sits under the toast. The Arkway toy, which has no marquee, keeps the old
+  top spot.
+- **The end scoreboard** (`VoyageScoreboardView`): one centred column 900 wide: the kicker, title, the big count of
+  crystals with the count by element (flowers) under it and the stats line; the seats table; a row of reward tiles (the
+  Ark's hull with its bar, the pay); banked or at stake; then the quiet button and the call to action centred side by
+  side with their captions under them.
+- **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
+  colour shard tiles (no such systems yet).
