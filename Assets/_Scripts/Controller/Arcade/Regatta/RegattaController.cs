@@ -256,38 +256,7 @@ namespace CosmicShore.Gameplay
             // two times in three a rival's, ridden at 20 u/s or slipped and re-latched (2026-10-14 Regatta audit).
             if (hasGate && status.VesselType == VesselClassType.Urchin && TryOwnLaneAhead(pilot, tf.position, out target))
                 return true;
-            // The Tiger Moth: line the belly up for a Drop to the next ring (RegattaTigerMothDrop, Waystation's coach).
-            if (TryGetNextGate(pilot, out var ring) && ring && aiTigerMothDrop.TryAim(pilot, status, ring.position, out target))
-                return true;
             return false;
-        }
-
-        [Header("AI Tiger Moth Drop")]
-        [Tooltip("The Tiger Moth's Drop for an autopilot: Waystation's belly-aim coach on Regatta's rings. Only a hull that " +
-                 "binds a TigerMothDropActionSO is touched.")]
-        [SerializeField] RegattaTigerMothDrop aiTigerMothDrop = new();
-
-        protected override bool OverrideAimIsLead(IPlayer pilot) => aiTigerMothDrop.IsAiming(pilot);
-
-        protected override bool OverrideBellyTarget(IPlayer pilot, out Vector3 worldDirection)
-        {
-            worldDirection = default;
-            return TryGetNextGate(pilot, out var ring) && ring &&
-                   aiTigerMothDrop.TryBelly(pilot, pilot?.Vessel?.VesselStatus, ring.position, out worldDirection);
-        }
-
-        /// <summary>The server tick (never a <c>void Update()</c> here: it would hide the platform's crossing detection).
-        /// Presses and releases the Tiger Moth's Drop for every autopilot that flies one.</summary>
-        protected override void OnServerTick()
-        {
-            base.OnServerTick();
-            if (gameData == null) return;
-            if (!gameData.IsTurnRunning)
-            {
-                aiTigerMothDrop.ReleaseAll();
-                return;
-            }
-            aiTigerMothDrop.Tick(gameData.Players, p => TryGetNextGate(p, out var g) ? g : null);
         }
 
         [Tooltip("A free AI Urchin aims this many lane prisms ahead of the nearest point of its own-domain lane, so it " +
@@ -667,7 +636,6 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
-            aiTigerMothDrop.ReleaseAll();
             _urchinAI?.Clear();
             _pilotLines.Clear();
             _gapLines.Clear();
