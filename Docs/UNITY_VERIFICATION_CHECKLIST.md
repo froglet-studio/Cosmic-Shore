@@ -24841,6 +24841,18 @@ slots were training the Squirrel), and a real Unity editor.
    Distance 11.523, AI Hold For Window Degrees 58.721, Trampoline AI Turn Scale 67.159.
 3. Race Slingshot I1 against a Legendary AI Stoat: it finishes near 50 s, warping on most legs.
 
+## Sparrow run4: Breakwater AI at the Legendary nose 13.9/s, carried into Regatta (2026-11-17, Regatta flywheel)
+
+Verified: Amoebius raced the genome headless through `time_ai_search.py` (seeds 11-14, confirm on 101-104, 32 flights a
+side, no DNF: I1 99 -> 98 s, I2 83 -> 76, I4 78 -> 73, I1@T10 95 -> 81, I4@T0 98 -> 93), `promote_trained_drives.py`
+wrote the file, `author_race_lines.py --check` OK, `unity_refcompile` (see the PR). Not verified: the shipped files raced
+after the write, a real Unity editor. The lead stays 1.29 (run4's 2.08 judges the same at 13.9/s and would have changed
+Easy and Medium).
+
+1. Open MinigameBreakwater: the Sparrow's AI Nose Lead row reads Gain 1.29, Nose Follow 13.9; AI Nose Follow By
+   Difficulty still 1.8 / 2 / 3.5 / -1.
+2. Race Breakwater I2 against a Legendary AI Sparrow: it finishes near 76 s; a Medium one still near 110 s.
+
 ## Breakwater AI pace by difficulty (2026-11-17, elemental loop step 2, overnight run)
 
 Verified: Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py`): Breakwater's four levels race

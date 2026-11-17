@@ -132,7 +132,7 @@ GAMES = {
         "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
                    "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
                    "minHoldSeconds": (0.0, 3.0), "minRestSeconds": (0.0, 3.0)},
-        "lead": 1.29, "rows": [], "nose_gene": 7.9,    # BreakwaterController.aiNoseLead: Sparrow 1.29 at 7.9/s (run3)
+        "lead": 1.29, "rows": [], "nose_gene": 13.9,   # BreakwaterController.aiNoseLead: Sparrow 1.29 at 13.9/s (run4)
     },
     "Scarab": {
         "mode": "ScarabRally",
