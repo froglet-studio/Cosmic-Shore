@@ -103,8 +103,11 @@ def genome_key(g):
     return json.dumps(g, sort_keys=True)
 
 
-def pick_courses(root, n, archives):
-    """{start: [{"rank", "loss", "game_genome", "archive_seconds", "source"}]}, the n best per start."""
+def pick_courses(root, n, archives, rank_hulls=None):
+    """{start: [{"rank", "loss", "game_genome", "archive_seconds", "source"}]}, the n best per start. rank_hulls: rank on
+    the archive's slowest / fastest over those hulls alone (archives searched on different fields compare), else on the
+    archive's own loss."""
+    need = rank_hulls or H8
     out = {}
     for st in STARTS:
         files = sorted(f for a in archives for f in glob.glob(os.path.join(root, a, f"shard_{st}_*", "records.jsonl")))
@@ -112,13 +115,14 @@ def pick_courses(root, n, archives):
         for f in files:
             for r in read_jsonl(f):
                 secs = r.get("seconds") or {}
-                if not (r.get("valid") and r.get("game_genome") and all(secs.get(h) for h in H8)):
+                if not (r.get("valid") and r.get("game_genome") and all(secs.get(h) for h in need)):
                     continue
                 k = genome_key(r["game_genome"])
                 if k in seen:
                     continue
                 seen.add(k)
-                recs.append((r["loss"]["loss"], os.path.relpath(f, root), r))
+                key = (max(secs[h] for h in need) / min(secs[h] for h in need)) if rank_hulls else r["loss"]["loss"]
+                recs.append((key, os.path.relpath(f, root), r))
         recs.sort(key=lambda t: t[0])
         out[st] = [{"rank": i, "loss": loss, "game_genome": r["game_genome"], "archive_seconds": r["seconds"],
                     "source": src} for i, (loss, src, r) in enumerate(recs[:n])]
@@ -140,10 +144,11 @@ def run(a, judge=None):
                          "(or pass --any-sha to race anyway)")
     meta = write_json_once(os.path.join(d, "pass.json"), {
         "name": a.name, "sha": a.sha or have, "n": a.n, "archives": a.archives, "repeats": a.repeats,
-        "hulls": HULLS, "dnf_s": a.dnf, "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+        "hulls": HULLS, "rank_hulls": a.rank_hulls or None, "dnf_s": a.dnf, "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
     if meta["sha"] and a.sha and not meta["sha"].startswith(a.sha) and not meta["sha"].startswith(have[:len(a.sha)]):
         raise SystemExit(f"pass {a.name} was pinned to {meta['sha']}, not {a.sha}: name a new pass")
-    courses = write_json_once(os.path.join(d, "courses.json"), pick_courses(a.root, meta["n"], meta["archives"]))
+    courses = write_json_once(os.path.join(d, "courses.json"), pick_courses(a.root, meta["n"], meta["archives"],
+                                                                                  meta.get("rank_hulls")))
     K, N = (int(x) for x in a.shard.split("/"))
     out = os.path.join(d, f"races.s{K}of{N}.jsonl")
     done = {(r["start"], r["rank"], r["hull"], r["rep"]) for r in read_jsonl(out)}
@@ -278,22 +283,24 @@ def fold(d, dnf_s):
     return out
 
 
-def summarise(F, kmin, kmax, cancel):
+def summarise(F, kmin, kmax, cancel, hulls=None):
+    """Over hulls (default the whole field): a sub-field's numbers come from the same races, its other hulls left out."""
+    hulls = hulls or HULLS
     S = {}
     for st, f in F.items():
-        T = f["T"]
+        T = [{h: t[h] for h in hulls} for t in f["T"]]
         if not T:
             S[st] = {"courses": 0, "of": f["courses"]}
             continue
-        stand = {h: gm([t[h] / gm([t[x] for x in HULLS]) for t in T]) for h in HULLS}
+        stand = {h: gm([t[h] / gm([t[x] for x in hulls]) for t in T]) for h in hulls}
         spreads = sorted(max(t.values()) / min(t.values()) for t in T)
-        v, m, idx = best_pool(T, HULLS, kmin, kmax)
-        lead = one_leader(T, idx, HULLS)
+        v, m, idx = best_pool(T, hulls, kmin, kmax)
+        lead = one_leader(T, idx, hulls)
         S[st] = {"courses": len(T), "of": f["courses"], "standing": stand, "best_course": spreads[0],
                  "median_course": spreads[len(spreads) // 2], "pool": v, "pool_means": m,
                  "pool_ranks": [f["ranks"][i] for i in idx], "pool_passes": v <= cancel and lead is None,
                  "pool_one_leader": lead, "slowest": max(m, key=m.get), "fastest": min(m, key=m.get),
-                 "dnf": {h: n for h, n in f["dnf"].items() if n}}
+                 "dnf": {h: n for h, n in f["dnf"].items() if n and h in hulls}}
     return S
 
 
@@ -318,38 +325,48 @@ def delta(new, old, fmt="{:+.2f}"):
 def report(a):
     d = pass_dir(a.root, a.name)
     meta = json.load(open(os.path.join(d, "pass.json"), encoding="utf-8"))
-    S = summarise(fold(d, meta.get("dnf_s", a.dnf)), a.pool_min, a.pool_max, a.cancel)
+    F = fold(d, meta.get("dnf_s", a.dnf))
+    S = summarise(F, a.pool_min, a.pool_max, a.cancel)
+    sub = meta.get("rank_hulls")
+    if sub:                                   # the field the courses were ranked on, from the same races
+        S["sub"] = {"hulls": sub, **summarise(F, a.pool_min, a.pool_max, a.cancel, sub)}
     prev = a.prev or previous(a.root, a.name)
     P = json.load(open(os.path.join(pass_dir(a.root, prev), "summary.json"))) if prev else {}
+    rank_on = f"ranked on {', '.join(sub)}'s slowest / fastest" if sub else "ranked on each archive's loss"
     L = [f"# Regatta flywheel pass {a.name}", "",
          f"Bleeding-edge `{meta['sha'][:10]}`, the field as shipped ({', '.join(HULLS)}), each hull alone. The "
-         f"{meta['n']} best search courses per start from {', '.join(meta['archives'])}. A DNF counts as "
+         f"{meta['n']} best search courses per start from {', '.join(meta['archives'])}, {rank_on}. A DNF counts as "
          f"{meta.get('dnf_s', a.dnf):.0f} s. Standing = time over the field's geometric mean on a course, geometric mean "
          f"over courses (1.00 = mid-field). Pool: {a.pool_min}-{a.pool_max} courses, value = slowest / fastest hull "
          f"mean, passing at {a.cancel:.2f}x with no hull fastest on every course.",
          "", f"Deltas in brackets are from pass {prev}." if prev else "No earlier pass to compare with.", ""]
-    for st in STARTS:
-        s, p = S[st], (P.get(st) or {})
-        L.append(f"## Start: {st} ({s['courses']} of {s['of']} courses complete)")
-        L.append("")
-        if not s["courses"]:
-            L += ["No complete course yet.", ""]
-            continue
-        ps = p.get("standing") or {}
-        L.append("| Hull | Standing | Pool mean (s) |")
-        L.append("|---|---|---|")
-        for h in sorted(HULLS, key=s["standing"].get):
-            L.append(f"| {h} | {s['standing'][h]:.2f}{delta(s['standing'][h], ps.get(h))} | "
-                     f"{s['pool_means'][h]:.0f}{delta(s['pool_means'][h], (p.get('pool_means') or {}).get(h), '{:+.0f}')} |")
-        L.append("")
-        verdict = "PASSES" if s["pool_passes"] else ("fails: " + (f"{s['pool_one_leader']} leads every course"
-                                                                 if s["pool_one_leader"] else f"over {a.cancel:.2f}x"))
-        L.append(f"- Best pool **{s['pool']:.3f}x**{delta(s['pool'], p.get('pool'), '{:+.3f}')} ({verdict}), courses "
-                 f"{', '.join(map(str, s['pool_ranks']))}: slowest {s['slowest']}, fastest {s['fastest']}.")
-        L.append(f"- Best single course {s['best_course']:.2f}x{delta(s['best_course'], p.get('best_course'))}, "
-                 f"median {s['median_course']:.2f}x{delta(s['median_course'], p.get('median_course'))}.")
-        L.append("- DNFs: " + (", ".join(f"{h} {n}" for h, n in s["dnf"].items()) or "none") + ".")
-        L.append("")
+    groups = [("the full field", HULLS, S, P)]
+    if sub:
+        psub = P.get("sub") if (P.get("sub") or {}).get("hulls") == sub else {}
+        groups.insert(0, (", ".join(sub), sub, S["sub"], psub or {}))
+    for label, hulls, G, PG in groups:
+        for st in STARTS:
+            s, p = G[st], (PG.get(st) or {})
+            L.append(f"## {label[0].upper() + label[1:]}, start {st} ({s['courses']} of {s['of']} courses complete)")
+            L.append("")
+            if not s["courses"]:
+                L += ["No complete course yet.", ""]
+                continue
+            ps = p.get("standing") or {}
+            L.append("| Hull | Standing | Pool mean (s) |")
+            L.append("|---|---|---|")
+            for h in sorted(hulls, key=s["standing"].get):
+                L.append(f"| {h} | {s['standing'][h]:.2f}{delta(s['standing'][h], ps.get(h))} | "
+                         f"{s['pool_means'][h]:.0f}{delta(s['pool_means'][h], (p.get('pool_means') or {}).get(h), '{:+.0f}')} |")
+            L.append("")
+            verdict = "PASSES" if s["pool_passes"] else ("fails: " + (f"{s['pool_one_leader']} leads every course"
+                                                                     if s["pool_one_leader"] else f"over {a.cancel:.2f}x"))
+            L.append(f"- Best pool **{s['pool']:.3f}x**{delta(s['pool'], p.get('pool'), '{:+.3f}')} ({verdict}), courses "
+                     f"{', '.join(map(str, s['pool_ranks']))}: slowest {s['slowest']}, fastest {s['fastest']}.")
+            L.append(f"- Best single course {s['best_course']:.2f}x{delta(s['best_course'], p.get('best_course'))}, "
+                     f"median {s['median_course']:.2f}x{delta(s['median_course'], p.get('median_course'))}.")
+            L.append("- DNFs: " + (", ".join(f"{h} {n}" for h, n in s["dnf"].items()) or "none") + ".")
+            L.append("")
     json.dump(S, open(os.path.join(d, "summary.json"), "w"), indent=1)
     open(os.path.join(d, "REPORT.md"), "w", encoding="utf-8").write("\n".join(L) + "\n")
     print("\n".join(L))
@@ -404,11 +421,16 @@ def self_test():
     def args(**kw):
         ns = argparse.Namespace(root=root, name="t1", sha="", any_sha=True, n=8, archives=["archiveX"],
                                 repeats={"Dolphin": 3}, dnf=400.0, shard="0/1", prev=None, pool_min=4, pool_max=6,
-                                cancel=1.10)
+                                cancel=1.10, rank_hulls=None)
         ns.__dict__.update(kw)
         return ns
 
     courses = pick_courses(root, 8, ["archiveX"])
+    # ranked on a sub-field: the archive's own loss is ignored, the sub-field's slowest / fastest decides
+    six = ["Dolphin", "Sparrow", "Squirrel", "Stoat", "Urchin", "Manta"]
+    sub = pick_courses(root, 8, ["archiveX"], six)["card"]
+    sp = [max(c["archive_seconds"][h] for h in six) / min(c["archive_seconds"][h] for h in six) for c in sub]
+    assert sp == sorted(sp), ("ranked on the six's spread", sp[:3])
     assert all(len(courses[st]) == 8 for st in STARTS), "n best per start"
     assert courses["card"][0]["loss"] < courses["card"][1]["loss"], "ranked by loss"
     assert len({genome_key(c["game_genome"]) for c in courses["L5"]}) == 8, "deduped"
@@ -454,6 +476,10 @@ def self_test():
     rep = open(os.path.join(pass_dir(root, "t2"), "REPORT.md")).read()
     assert "Deltas in brackets are from pass t1" in rep and "(+" in rep or "(-" in rep, "deltas shown"
     assert previous(root, "t2") == "t1"
+    run(args(name="t4", shard="0/1", rank_hulls=six), fake_judge)
+    S3 = report(args(name="t4"))
+    assert S3["sub"]["hulls"] == six and set(S3["sub"]["card"]["standing"]) == set(six), "the sub-field is reported"
+    assert set(S3["card"]["standing"]) == set(HULLS), "and the full field beside it"
     # a checkout on the wrong commit refuses
     try:
         run(args(name="t3", sha="0000000", any_sha=False), fake_judge)
@@ -482,6 +508,8 @@ def main():
     r.add_argument("--archives", nargs="*", default=["archive2", "archive3"])
     r.add_argument("--repeats", default="Dolphin=3", help="HULL=SEEDS,... a noisy hull raced on more seeds (median)")
     r.add_argument("--dnf", type=float, default=400.0)
+    r.add_argument("--rank-hulls", type=lambda x: [h for h in x.split(",") if h], default=None,
+                   help="rank the courses on these hulls' archive spread (and report them as a sub-field too)")
     for name in ("report", "status"):
         p = sub.add_parser(name)
         p.add_argument("--name", required=True)
