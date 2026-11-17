@@ -1,182 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Cosmic Shore Launch Console</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@400;500;600&display=swap">
+<!-- The Launch Console: Frogma Rev 117 (Docs/MENU_REDESIGN_B.md section 213), built 2026-11-17 on Shombith's "build all
+     these": five pages (Mission, Pipeline, Builds, Release, Signals) on the console's own store, with the theme picker at
+     the foot of the rail like Froglet Analytics. theme.js and themes.css are Froglet Analytics' generated files
+     (Tools/Analytics/console/make_themes.py), published beside this page from there; see README.md. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@400;500;600;700&display=swap">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="themes.css">
 <style>
-/* Layout: a go/no-go header, then one column of panels that becomes two on wide screens.
-   Tokens: the Froglet themes (Docs/UI/froglet.css). Deep Sea is the dark theme, Shore its light twin.
-   Families keep one meaning each: Lime = go / call to action, Fire = no-go, Ruby = no way back, Jade = selection. */
-:root {
-  --ground: #F4F5FF; --ground-deep: #E6E9FF; --surface: #FFFFFF; --raised: #DDE1F7; --line: #B8C0F0;
-  --text: #00041F; --soft: #434C89; --off: #6B7092;
-  --lime: #487C1F; --lime-fill: #99FF80; --fire: #CD373A; --ruby: #893BFF; --jade: #007D73; --on-fill: #00041F;
-  --font-body: 'Chakra Petch', 'Aldrich', system-ui, sans-serif; --font-head: 'Aldrich', 'Chakra Petch', system-ui, sans-serif;
-  --cut: 10px;
+/* Every colour is a theme token (themes.css). Families keep one meaning each: the call to action (Lime) is the one thing
+   to do now and the only thing that glows; danger (Fire) is no-go; commit (Ruby) is no way back (promote, release, tag);
+   selection (Jade) is what you picked and focus. Nothing is rounded: corners are cut. */
+:root { --rail-w: 236px; --gutter: 40px; --cut: 14px; --cut-s: 10px;
+  --fs-font-body: 'Aldrich', 'Chakra Petch', system-ui, sans-serif; --fs-font-label: 'Chakra Petch', 'Aldrich', system-ui, sans-serif;
+  --ease: cubic-bezier(.22, 1, .36, 1); }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; min-height: 100%; }
+body { background: var(--fs-ground); color: var(--fs-text); font-family: var(--fs-font-body); font-size: 15px; line-height: 1.45; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--fs-selection); }
+:focus-visible { outline: 2px solid var(--fs-selection); outline-offset: 2px; }
+.sl:focus-visible, .sls:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--fs-selection); }
+h1, h2, h3 { font-weight: 400; margin: 0; text-wrap: balance; }
+.h1 { font-size: 32px; } .h2 { font-size: 24px; } .h3 { font-size: 18px; }
+.lab { font-family: var(--fs-font-label); font-weight: 600; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--fs-text-soft); }
+.small { font-size: 14px; color: var(--fs-text-soft); margin: 0; }
+.src { font-family: var(--fs-font-label); font-size: 13px; color: var(--fs-text-off); }
+.num { font-variant-numeric: tabular-nums; }
+.sl { clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+.sls { clip-path: polygon(var(--cut-s) 0, 100% 0, 100% calc(100% - var(--cut-s)), calc(100% - var(--cut-s)) 100%, 0 100%, 0 var(--cut-s)); }
+
+/* the sea behind every page (Froglet Analytics' sea: three layers of the menu's SeaLines in the theme's rims) */
+.sea { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 70% 55% at 50% 22%, color-mix(in srgb, var(--sea-glow) 14%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--sea-wash) 0%, color-mix(in srgb, var(--sea-wash) 40%, var(--fs-ground)) 50%, var(--fs-ground) 100%); }
+.sea-lines { position: absolute; inset: 0; -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%); }
+.sea-layer { position: absolute; inset: 0; background: linear-gradient(90deg, var(--sea-1), var(--sea-2) 50%, var(--sea-3)); -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x; }
+.sea-layer:nth-child(1) { animation: sea-slide 90s linear infinite; } .sea-layer:nth-child(2) { animation: sea-slide 68s linear infinite; } .sea-layer:nth-child(3) { animation: sea-slide 45s linear infinite; }
+@keyframes sea-slide { from { -webkit-mask-position: 0 0; mask-position: 0 0; } to { -webkit-mask-position: -480px 0; mask-position: -480px 0; } }
+
+/* the shell: the rail of pages and the page */
+.shell { position: relative; z-index: 1; display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); min-height: 100vh;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fs-ground-deep) 82%, transparent) 0 var(--rail-w), var(--fs-line) var(--rail-w) calc(var(--rail-w) + 1px), transparent calc(var(--rail-w) + 1px)); }
+.rail { position: sticky; top: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; padding: 20px 0 0; min-width: 0; }
+.brand { display: flex; flex-direction: column; gap: 4px; padding: 0 24px 18px; color: var(--fs-text); text-decoration: none; }
+.brand .strip { display: flex; gap: 3px; margin-top: 6px; } .brand .strip i { display: block; width: 26px; height: 3px; }
+.navs { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 4px 12px 12px; }
+.nav { font-family: var(--fs-font-label); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--fs-text-soft);
+  text-decoration: none; display: flex; align-items: center; gap: 11px; min-height: 40px; padding: 0 12px; transition: color .12s, background .12s; }
+.nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; flex: none; }
+.nav:hover { color: var(--fs-text); background: color-mix(in srgb, var(--fs-surface) 45%, transparent); }
+.nav[aria-current="page"] { color: var(--fs-text); background: var(--fs-surface); box-shadow: inset 2px 0 0 var(--fs-selection); }
+.nav .count { margin-left: auto; font-size: 12px; color: var(--fs-danger); }
+.rail-foot { flex: none; display: flex; flex-direction: column; gap: 12px; padding: 12px 24px 16px; box-shadow: inset 0 1px 0 var(--fs-line); }
+.looks { display: flex; flex-direction: column; gap: 6px; }
+.looks-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.looks .lab, .who .lab { font-size: 11px; } .looks-now { font-size: 12px; }
+.sets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.set { display: flex; padding: 5px; border: 0; background: transparent; cursor: pointer; min-width: 0; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fs-line) 70%, transparent); }
+.set:hover { box-shadow: inset 0 0 0 1px var(--fs-text-soft); }
+.set[aria-pressed="true"] { background: var(--fs-surface); box-shadow: inset 0 0 0 2px var(--fs-selection); }
+.set:focus-visible { outline-offset: -2px; }
+.set-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.swatch { display: flex; gap: 2px; flex: 1; } .swatch i { flex: 1; height: 14px; display: block; }
+.who { display: flex; flex-direction: column; gap: 2px; } .who .small { font-size: 12px; overflow-wrap: anywhere; }
+
+/* the page */
+.main { padding: 28px var(--gutter) 64px; display: grid; gap: 20px; align-content: start; min-width: 0; max-width: 1400px; }
+.top { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: flex-end; justify-content: space-between; }
+.top .when { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: baseline; }
+.days { font-size: 28px; color: var(--fs-text); }
+.verdict { display: inline-flex; align-items: center; gap: 8px; font-family: var(--fs-font-label); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
+.page { display: grid; gap: 20px; min-width: 0; }
+.grid2 { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+.grid3 { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid3 { grid-template-columns: 2fr 1fr; } }
+.panel { position: relative; padding: 20px 22px; display: grid; gap: 14px; align-content: start; min-width: 0;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--fs-surface-raised) 34%, transparent) 0%, transparent 38%),
+    linear-gradient(180deg, color-mix(in srgb, var(--fs-surface) 95%, transparent), color-mix(in srgb, var(--fs-surface) 88%, var(--fs-ground-deep)));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rim) 28%, var(--fs-line)), inset 0 1px 0 color-mix(in srgb, var(--rim) 45%, transparent); }
+.page > .panel { scroll-margin-top: 64px; }
+.panel > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
+.empty { padding: 14px; color: var(--fs-text-soft); font-size: 14px; box-shadow: inset 0 0 0 1px var(--fs-line); background-image: repeating-linear-gradient(135deg, transparent 0 9px, color-mix(in srgb, var(--fs-line) 30%, transparent) 9px 10px); }
+@media (prefers-reduced-motion: no-preference) {
+  .page.in > * { animation: rise .6s var(--ease) both; }
+  .page.in > *:nth-child(2) { animation-delay: .06s; } .page.in > *:nth-child(3) { animation-delay: .12s; } .page.in > *:nth-child(4) { animation-delay: .18s; } .page.in > *:nth-child(n+5) { animation-delay: .24s; }
+  .btn.cta.glow { animation: breathe 3.2s ease-in-out infinite; }
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --ground: #00041F; --ground-deep: #00010A; --surface: #121638; --raised: #222645; --line: #434C89;
-  --text: #E6E9FF; --soft: #9AA0CF; --off: #7A7F9E;
-  --lime: #99FF80; --lime-fill: #99FF80; --fire: #FF4B3A; --ruby: #B866FF; --jade: #00D4FF; --on-fill: #00041F; color-scheme: dark } }
-:root[data-theme="dark"] {
-  --ground: #00041F; --ground-deep: #00010A; --surface: #121638; --raised: #222645; --line: #434C89;
-  --text: #E6E9FF; --soft: #9AA0CF; --off: #7A7F9E;
-  --lime: #99FF80; --lime-fill: #99FF80; --fire: #FF4B3A; --ruby: #B866FF; --jade: #00D4FF; --on-fill: #00041F; color-scheme: dark }
-body { background: var(--ground); color: var(--text); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
-.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 48px; display: grid; gap: 16px; }
-h1, h2, h3 { font-family: var(--font-head); font-weight: 400; margin: 0; text-wrap: balance; }
-h1 { font-size: 26px; letter-spacing: .02em; } h2 { font-size: 19px; } h3 { font-size: 16px; }
-a { color: var(--jade); } a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
-.cut { clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
-.panel { background: var(--surface); border: 1px solid var(--line); padding: 14px; display: grid; gap: 12px; min-width: 0; }
-.panel > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
-.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--soft); }
-.muted { color: var(--soft); } .small { font-size: 13px; } .num { font-variant-numeric: tabular-nums; }
-.src { font-size: 12px; color: var(--off); }
-.grid2 { display: grid; gap: 16px; grid-template-columns: 1fr; }
-@media (min-width: 900px) { .grid2 { grid-template-columns: 1fr 1fr; } }
-/* Go / no-go header */
-.top { display: grid; gap: 12px; background: var(--ground-deep); border: 1px solid var(--line); padding: 16px; }
-.top .row { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; }
-.days { font-family: var(--font-head); font-size: 40px; line-height: 1; }
-.pills { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-.pill { display: grid; gap: 2px; padding: 10px 12px; border: 2px solid var(--line); background: var(--surface); text-align: left; font: inherit; color: inherit; cursor: pointer; }
-.pill .state { font-family: var(--font-head); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
-.pill .why { font-size: 12px; color: var(--soft); }
-.dot { width: 10px; height: 10px; flex: none; border: 2px solid currentColor; }
-.s-go { border-color: var(--lime); } .s-go .state { color: var(--lime); } .s-go .dot { background: var(--lime); }
-.s-risk { border-color: var(--fire); border-style: dashed; } .s-risk .state { color: var(--fire); } .s-risk .dot { background: linear-gradient(135deg, var(--fire) 50%, transparent 50%); }
-.s-nogo { border-color: var(--fire); } .s-nogo .state { color: var(--fire); } .s-nogo .dot { background: var(--fire); }
-.s-unknown .state { color: var(--off); }
-.pill[aria-pressed="true"] { background: var(--raised); box-shadow: inset 0 -4px 0 var(--jade); }
-/* Tables become cards on a phone */
-.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
-.tbl th { text-align: left; font-weight: 500; color: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-.tbl td { padding: 8px; border-bottom: 1px solid var(--raised); vertical-align: top; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes breathe { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--fs-cta-fill) 0%, transparent); } 50% { box-shadow: 0 0 26px 2px color-mix(in srgb, var(--fs-cta-fill) 45%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .sea-layer { animation: none; } * { transition: none !important; } }
+
+/* buttons: the call to action, the default, the no-way-back commit */
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; cursor: pointer; text-decoration: none;
+  font-family: var(--fs-font-label); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase;
+  background: transparent; color: var(--fs-text); box-shadow: inset 0 0 0 1px var(--fs-text-soft); transition: background .15s, box-shadow .15s; }
+.btn:hover { background: color-mix(in srgb, var(--fs-surface-raised) 50%, transparent); }
+.btn.cta { background: var(--fs-cta-fill); color: var(--fs-on-fill); box-shadow: none; }
+.btn.cta:hover { background: color-mix(in srgb, var(--fs-cta-fill) 85%, var(--fs-text)); }
+.btn.commit { color: var(--fs-commit); box-shadow: inset 0 0 0 1px var(--fs-commit); }
+.btn.commit:hover { background: color-mix(in srgb, var(--fs-commit) 16%, transparent); }
+.btn.s { min-height: 34px; padding: 0 12px; font-size: 12px; }
+.btn[disabled], .btn.off { opacity: .45; cursor: default; pointer-events: none; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 0; cursor: pointer; background: transparent; color: var(--fs-text-soft);
+  font-family: var(--fs-font-label); font-weight: 600; font-size: 13px; letter-spacing: .06em; box-shadow: inset 0 0 0 1px var(--fs-line); }
+.chip[aria-pressed="true"] { color: var(--fs-text); background: var(--fs-surface); box-shadow: inset 0 0 0 2px var(--fs-selection); }
+.tag { display: inline-block; padding: 1px 8px; font-family: var(--fs-font-label); font-weight: 600; font-size: 12px; letter-spacing: .06em; box-shadow: inset 0 0 0 1px var(--fs-line); white-space: nowrap; }
+.r-success { color: var(--fs-cta); box-shadow: inset 0 0 0 1px var(--fs-cta); } .r-failure { color: var(--fs-danger); box-shadow: inset 0 0 0 1px var(--fs-danger); }
+.r-running, .r-skipped, .r-cancelled { color: var(--fs-text-soft); }
+.stale { color: var(--fs-danger); }
+
+/* status: Lime solid = go, Fire dashed = at risk, Fire solid = no-go */
+.pills { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.pill { display: grid; gap: 4px; padding: 12px 14px; border: 0; text-align: left; cursor: pointer; color: var(--fs-text); background: color-mix(in srgb, var(--fs-ground-deep) 50%, transparent);
+  box-shadow: inset 0 0 0 1px var(--fs-line); transition: background .15s; }
+.pill:hover { background: var(--fs-surface); }
+.pill .state { display: flex; align-items: center; gap: 8px; font-family: var(--fs-font-label); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
+.pill .why { font-size: 13px; color: var(--fs-text-soft); }
+.dot { width: 10px; height: 10px; flex: none; box-shadow: inset 0 0 0 2px currentColor; }
+.s-go .state { color: var(--fs-cta); } .s-go .dot { background: var(--fs-cta); } .s-go { box-shadow: inset 0 0 0 1px var(--fs-cta); }
+.s-risk .state { color: var(--fs-danger); } .s-risk .dot { background: linear-gradient(135deg, var(--fs-danger) 50%, transparent 50%); } .s-risk { box-shadow: none; outline: 1px dashed var(--fs-danger); outline-offset: -1px; }
+.s-nogo .state { color: var(--fs-danger); } .s-nogo .dot { background: var(--fs-danger); } .s-nogo { box-shadow: inset 0 0 0 2px var(--fs-danger); }
+.s-unknown .state { color: var(--fs-text-off); }
+.pill[aria-pressed="true"] { background: var(--fs-surface); box-shadow: inset 0 0 0 2px var(--fs-selection); }
+
+/* Mission: the stage track */
+.track { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; position: relative; margin-top: 4px; }
+.track::before { content: ""; position: absolute; left: 8%; right: 8%; top: 17px; height: 2px; background: var(--fs-line); }
+.track .fill { position: absolute; left: 8%; top: 17px; height: 2px; background: var(--fs-selection); transition: width .8s var(--ease); }
+.stop { position: relative; display: grid; justify-items: center; gap: 8px; padding: 0 4px 6px; border: 0; background: transparent; cursor: pointer; color: var(--fs-text-soft); text-align: center; }
+.stop .mark { width: 22px; height: 22px; margin-top: 7px; transform: rotate(45deg); background: var(--fs-ground-deep); box-shadow: inset 0 0 0 2px var(--fs-line); transition: background .2s, box-shadow .2s; }
+.stop.past .mark { background: var(--fs-selection); box-shadow: none; }
+.stop.now .mark { background: var(--fs-cta-fill); box-shadow: 0 0 18px color-mix(in srgb, var(--fs-cta-fill) 55%, transparent); }
+.stop .nm { font-family: var(--fs-font-label); font-weight: 600; font-size: 13px; letter-spacing: .04em; line-height: 1.2; }
+.stop.now .nm { color: var(--fs-text); }
+.stop[aria-pressed="true"] .nm { color: var(--fs-text); text-decoration: underline 2px var(--fs-selection); text-underline-offset: 5px; }
+.stop:focus-visible { outline-offset: -2px; }
+dl.kv { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; font-size: 14px; }
+dl.kv dt { color: var(--fs-text-soft); font-family: var(--fs-font-label); font-weight: 600; letter-spacing: .04em; } dl.kv dd { margin: 0; min-width: 0; }
+.gatebox { display: grid; gap: 12px; padding: 18px; background: color-mix(in srgb, var(--fs-ground-deep) 60%, transparent); box-shadow: inset 3px 0 0 var(--fs-commit); }
+.meter { height: 10px; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--fs-line) 60%, transparent) 6px 8px); box-shadow: inset 0 0 0 1px var(--fs-line); }
+.start { display: grid; gap: 12px; align-content: center; justify-items: start; }
+
+/* Pipeline: four lanes */
+.lanes { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .lanes { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.lane { display: grid; gap: 10px; align-content: start; padding: 18px; background: color-mix(in srgb, var(--fs-ground-deep) 55%, transparent); box-shadow: inset 0 0 0 1px var(--fs-line); position: relative; }
+.lane.ghost { box-shadow: none; outline: 1px dashed var(--fs-line); outline-offset: -1px; background: transparent; }
+.lane .big { font-size: 40px; line-height: 1; }
+.lane .arrow { display: none; }
+@media (min-width: 1000px) { .lane .arrow { display: block; position: absolute; right: -12px; top: 40px; width: 10px; height: 10px; transform: rotate(45deg); background: var(--fs-selection); z-index: 2; } }
+.rows { display: grid; gap: 0; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 14px 0; box-shadow: inset 0 -1px 0 var(--fs-line); }
+.row:last-child { box-shadow: none; }
+
+/* tables become scrollable on a phone */
 .scroll { overflow-x: auto; }
-.chip { display: inline-block; padding: 1px 8px; border: 1px solid var(--line); font-size: 12px; white-space: nowrap; }
-.r-success { color: var(--lime); border-color: var(--lime); } .r-failure { color: var(--fire); border-color: var(--fire); }
-.r-running, .r-skipped, .r-cancelled { color: var(--soft); }
-.stale { color: var(--fire); }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised); color: var(--text); font: 500 14px var(--font-body); text-decoration: none; cursor: pointer; }
-.btn.cta { background: var(--lime-fill); color: var(--on-fill); border-color: var(--lime-fill); }
-.btn.commit { background: transparent; color: var(--ruby); border-color: var(--ruby); }
-.btn[disabled] { opacity: .5; cursor: default; }
-/* Checklist */
-.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-select, input[type="text"], input[type="url"], input[type="date"], textarea { font: inherit; color: var(--text); background: var(--ground); border: 1px solid var(--line); padding: 6px 8px; min-height: 36px; max-width: 100%; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tbl th { text-align: left; font-family: var(--fs-font-label); font-weight: 600; color: var(--fs-text-soft); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; padding: 6px 8px; box-shadow: inset 0 -1px 0 var(--fs-line); }
+.tbl td { padding: 9px 8px; box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--fs-line) 55%, transparent); vertical-align: top; }
+
+/* the checklist */
+.filters { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+select, input[type="text"], input[type="url"], input[type="date"], textarea { color: var(--fs-text); background: var(--fs-ground-deep); border: 0; box-shadow: inset 0 0 0 1px var(--fs-line); padding: 6px 10px; min-height: 38px; max-width: 100%; font-family: var(--fs-font-label); font-size: 14px; }
+select option { background: var(--fs-ground-deep); color: var(--fs-text); }
+textarea { width: 100%; min-height: 84px; resize: vertical; line-height: 1.45; }
 .items { display: grid; gap: 8px; }
-.item { border: 1px solid var(--line); padding: 10px 12px; display: grid; gap: 6px; background: var(--ground); }
-.item .head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.item .rank { font-family: var(--font-head); color: var(--soft); min-width: 2ch; }
-.item .title { font-weight: 600; flex: 1 1 260px; min-width: 0; }
-.item.done .title { text-decoration: line-through; color: var(--soft); }
-.item .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--soft); }
+.item { padding: 12px 14px; display: grid; gap: 6px; background: color-mix(in srgb, var(--fs-ground-deep) 55%, transparent); box-shadow: inset 0 0 0 1px var(--fs-line); }
+.item .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.item .rank { color: var(--fs-text-soft); min-width: 2.5ch; }
+.item .title { flex: 1 1 260px; min-width: 0; }
+.item.done .title { text-decoration: line-through; color: var(--fs-text-soft); }
+.item .meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-family: var(--fs-font-label); font-size: 13px; color: var(--fs-text-soft); }
 .item .edit { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.item details summary { cursor: pointer; color: var(--soft); font-size: 13px; }
-.steps { white-space: pre-wrap; font-size: 13px; margin: 6px 0 0; }
-.human { color: var(--fire); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-.empty { border: 1px dashed var(--line); padding: 14px; color: var(--soft); font-size: 14px; }
-/* Runbook timeline */
-.tl { display: grid; gap: 10px; }
-.tl .phase { display: grid; grid-template-columns: 64px 1fr; gap: 10px; }
-.tl .when { font-family: var(--font-head); color: var(--soft); padding-top: 2px; }
-.tl ol { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
-/* Metrics */
-.metrics { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
-.metric { border: 1px dashed var(--line); padding: 10px 12px; display: grid; gap: 2px; }
-.metric .v { font-family: var(--font-head); font-size: 24px; color: var(--off); }
-.ask { display: grid; gap: 8px; } .ask textarea { min-height: 64px; width: 100%; box-sizing: border-box; }
-.answer { white-space: pre-wrap; font-size: 14px; border-left: 2px solid var(--jade); padding-left: 10px; }
-@media (prefers-reduced-motion: no-preference) { .pill, .btn { transition: border-color .15s, background .15s; } }
+.item details summary { cursor: pointer; color: var(--fs-text-soft); font-family: var(--fs-font-label); font-size: 13px; }
+.steps { white-space: pre-wrap; font-family: var(--fs-font-label); font-size: 14px; margin: 6px 0 0; }
+.human { color: var(--fs-danger); font-family: var(--fs-font-label); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+
+/* Release: the five steps */
+.stepnav { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0; background: linear-gradient(180deg, var(--fs-ground) 70%, transparent); }
+.stepnav a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; text-decoration: none; color: var(--fs-text-soft); font-family: var(--fs-font-label); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; box-shadow: inset 0 0 0 1px var(--fs-line); }
+.stepnav a b { color: var(--fs-selection); font-weight: 700; }
+.stepnav a.ok b { color: var(--fs-cta); } .stepnav a.bad b { color: var(--fs-danger); }
+.stepn { font-size: 34px; line-height: 1; color: var(--fs-selection); }
+.sum { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.sum > div { padding: 12px 14px; display: grid; gap: 2px; box-shadow: inset 0 0 0 1px var(--fs-line); }
+.sum .v { font-size: 26px; }
+ol.do { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; counter-reset: do; }
+ol.do > li { counter-increment: do; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 4px 12px; padding: 14px 0; box-shadow: inset 0 -1px 0 var(--fs-line); }
+ol.do > li::before { content: counter(do); font-size: 22px; color: var(--fs-commit); }
+ol.do > li > * { grid-column: 2; }
+ol.do > li > :first-child { grid-row: 1; }
+code, .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; background: var(--fs-ground-deep); padding: 2px 6px; overflow-wrap: anywhere; }
+pre.code { margin: 0; padding: 10px 12px; white-space: pre-wrap; box-shadow: inset 0 0 0 1px var(--fs-line); }
+.tl { display: grid; gap: 12px; }
+.tl .phase { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; }
+.tl .when { color: var(--fs-text-soft); padding-top: 2px; }
+.tl ol { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.tiers { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.tier { padding: 16px; display: grid; gap: 6px; align-content: start; box-shadow: inset 0 0 0 1px var(--fs-line); }
+.tier.on { box-shadow: inset 0 0 0 2px var(--fs-selection); background: color-mix(in srgb, var(--fs-surface) 60%, transparent); }
+.tier.locked { opacity: .55; outline: 1px dashed var(--fs-line); outline-offset: -1px; box-shadow: none; }
+
+/* Signals */
+.metrics { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.metric { padding: 12px 14px; display: grid; gap: 2px; outline: 1px dashed var(--fs-line); outline-offset: -1px; }
+.metric .v { font-size: 18px; color: var(--fs-text-off); }
+.answer { white-space: pre-wrap; font-size: 15px; box-shadow: inset 2px 0 0 var(--fs-selection); padding-left: 12px; }
+
+/* phones: the rail becomes a bar of pages over the page, the theme picker folds under it */
+@media (max-width: 760px) {
+  :root { --gutter: 16px; }
+  .shell { display: block; background: none; }
+  .rail { position: relative; z-index: 5; height: auto; padding: 10px 0 0; background: var(--fs-ground-deep); box-shadow: inset 0 -1px 0 var(--fs-line); }
+  .brand { flex-direction: row; align-items: baseline; gap: 10px; padding: 0 var(--gutter) 6px; } .brand .strip { display: none; }
+  .navs { flex-direction: row; overflow-x: auto; padding: 0 var(--gutter) 6px; gap: 2px; }
+  .nav { min-height: 40px; padding: 0 10px; flex: none; } .nav svg { display: none; }
+  .nav[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--fs-selection); }
+  .rail-foot { flex-direction: row; flex-wrap: wrap; gap: 8px 16px; padding: 8px var(--gutter) 10px; }
+  .looks { flex: 1 1 100%; } .sets { grid-template-columns: repeat(7, minmax(0, 1fr)); } .who { display: none; }
+  .main { padding: 20px var(--gutter) 48px; gap: 16px; }
+  .panel { padding: 16px; }
+  .track { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 14px; } .track::before, .track .fill { display: none; }
+  .h1 { font-size: 26px; }
+}
 </style>
-
-<div class="wrap">
-  <section class="top cut" aria-labelledby="t-title">
-    <div class="row">
-      <div><div class="eyebrow">Cosmic Shore · Launch Console</div><h1 id="t-title">Mobile first, then Steam</h1></div>
-      <div class="small" style="display:grid;gap:2px"><span><strong>Mobile release</strong> (iOS, Android): when activation is ready. Date not set.</span><span><strong>Steam keys</strong>: March 2027, before GDC. <span class="days num" id="days" style="font-size:28px">—</span> days to 1 Mar 2027.</span></div>
-      <div class="small" id="verdict">Loading the board…</div>
+</head>
+<body>
+<div class="sea" aria-hidden="true"><div class="sea-lines"><div class="sea-layer"></div><div class="sea-layer"></div><div class="sea-layer"></div></div></div>
+<div class="shell">
+  <nav class="rail" aria-label="Pages">
+    <a class="brand" href="#mission"><span class="lab">Cosmic Shore</span><span class="h3">Launch Console</span><span class="strip" aria-hidden="true"></span></a>
+    <div class="navs">
+      <a class="nav" href="#mission" data-page="mission"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l3 5h-6zM7 7v7l3 4 3-4V7M4 13l3-2M16 13l-3-2"/></svg><span>Mission</span></a>
+      <a class="nav" href="#pipeline" data-page="pipeline"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="5" r="2"/><circle cx="4" cy="15" r="2"/><circle cx="16" cy="10" r="2"/><path d="M4 7v6M6 5c5 0 5 5 8 5"/></svg><span>Pipeline</span></a>
+      <a class="nav" href="#builds" data-page="builds"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6l7-3 7 3-7 3zM3 6v8l7 3 7-3V6M10 9v8"/></svg><span>Builds</span><span class="count" id="nb-builds"></span></a>
+      <a class="nav" href="#release" data-page="release"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17l5-5M8 12c0-5 4-9 9-9 0 5-4 9-9 9zM6 9l-3 1M11 14l-1 3"/></svg><span>Release</span><span class="count" id="nb-release"></span></a>
+      <a class="nav" href="#signals" data-page="signals"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10h4l2-5 4 10 2-5h4"/></svg><span>Signals</span></a>
     </div>
-    <div class="pills" id="pills" role="group" aria-label="Status per platform"></div>
-    <div class="src" id="boardsrc">Status comes from the launch-status branch, synced into this page.</div>
-  </section>
-
-  <section class="panel cut" id="platform" aria-labelledby="p-title">
-    <header><h2 id="p-title">Platform</h2><span class="src" id="p-src"></span></header>
-    <div id="p-body" class="grid2"></div>
-  </section>
-
-  <section class="panel cut" id="checklist" aria-labelledby="c-title">
-    <header><h2 id="c-title">Launch checklist</h2><span class="src" id="c-count"></span></header>
-    <div class="filters">
-      <label class="small" for="f-plat">Platform</label>
-      <select id="f-plat"><option value="">All</option></select>
-      <label class="small" for="f-status">Status</label>
-      <select id="f-status"><option value="">Not done</option><option value="all">All</option><option value="open">Open</option><option value="in-progress">In progress</option><option value="blocked">Blocked</option><option value="done">Done</option></select>
-      <label class="small"><input type="checkbox" id="f-human"> Needs a human</label>
+    <div class="rail-foot">
+      <div class="looks" id="looks" aria-label="Theme"></div>
+      <div class="who"><span class="lab">Signed in</span><span class="small" id="who-name">Not signed in</span></div>
     </div>
-    <div class="items" id="items"><div class="empty">The checklist loads from this page's shared store. If it stays empty, the console has not been seeded yet.</div></div>
-    <div class="src">Anyone who can open this page can take an item, change its status and add evidence. Owners are the area's decider, not an assignee: an item is nobody's until someone takes it.</div>
-  </section>
+  </nav>
 
-  <div class="grid2">
-    <section class="panel cut" id="liveops" aria-labelledby="l-title">
-      <header><h2 id="l-title">Live ops</h2><span class="src">UGS, flags and the web build</span></header>
-      <div id="l-body"></div>
-    </section>
-    <section class="panel cut" id="gates" aria-labelledby="g-title">
-      <header><h2 id="g-title">Quality gates</h2><span class="src">each with its source and age</span></header>
-      <div id="g-body"></div>
-    </section>
-  </div>
-
-  <section class="panel cut" id="runbook" aria-labelledby="r-title">
-    <header><h2 id="r-title">Launch day runbook</h2><a class="small" href="https://github.com/froglet-studio/Cosmic-Shore/blob/claude/exciting-pascal-t8ijbo/Docs/LAUNCH/RUNBOOK.md">Full runbook</a></header>
-    <div class="tl" id="tl"><div class="empty">The timeline loads from this page's shared store.</div></div>
-    <h3>If something breaks: roll back</h3>
-    <div class="scroll"><table class="tbl" id="rollback"><thead><tr><th>Platform</th><th>Roll back by</th><th>Start here</th></tr></thead><tbody></tbody></table></div>
-  </section>
-
-  <div class="grid2">
-    <section class="panel cut" id="metrics" aria-labelledby="m-title">
-      <header><h2 id="m-title">After launch</h2><span class="src">no analytics source is connected to this page yet</span></header>
-      <div class="metrics" id="m-body"></div>
-    </section>
-    <section class="panel cut" id="changelog" aria-labelledby="ch-title">
-      <header><h2 id="ch-title">Changelog</h2><span class="src">from each release's generated notes</span></header>
-      <div id="ch-body"><div class="empty">No release has been tagged through the release pipeline yet. Each tagged build's notes land here.</div></div>
-    </section>
-  </div>
-
-  <section class="panel cut" id="askp" aria-labelledby="a-title" hidden>
-    <header><h2 id="a-title">Ask about the launch</h2><span class="src">Claude answers from this page's status and checklist only</span></header>
-    <div class="ask">
-      <label for="q" class="small">Question</label>
-      <textarea id="q" placeholder="What blocks the iOS invite build, and who decides each item?"></textarea>
-      <div class="actions"><button class="btn cta" id="askbtn" type="button">Ask</button><span class="small muted" id="askstate"></span></div>
-      <div class="answer" id="answer" hidden></div>
+  <main class="main" id="main">
+    <div class="top">
+      <div><div class="lab" id="page-lab">Mission</div><h1 class="h1" id="page-title" tabindex="-1">Where the launch stands</h1></div>
+      <div class="when small">
+        <span><strong class="days num" id="days">—</strong> days to Steam keys (1 Mar 2027, before GDC)</span>
+        <span>Mobile: when activation is ready</span>
+        <span class="verdict" id="verdict">Loading</span>
+      </div>
     </div>
-  </section>
+
+    <!-- MISSION -->
+    <section class="page" data-page="mission" aria-label="Mission">
+      <div class="panel sl">
+        <header><span class="lab">The launch plan, six stages</span><span class="src">Shombith's phase diagram, 2026-11-17</span></header>
+        <div class="track" id="track" role="group" aria-label="Launch stages"></div>
+      </div>
+      <div class="grid3">
+        <div class="panel sl" id="stage-detail"></div>
+        <div class="panel sl start">
+          <span class="lab">Ready when you are</span>
+          <h2 class="h2">Start a release</h2>
+          <p class="small" id="start-why">Pick what goes out, check it, write the notes, choose who gets it, then launch.</p>
+          <a class="btn cta glow sl" href="#release">Start a release</a>
+        </div>
+      </div>
+      <div class="panel sl">
+        <header><span class="lab">Platforms</span><span class="src" id="boardsrc">Status comes from the launch-status branch.</span></header>
+        <div class="pills" id="pills" role="group" aria-label="Status per platform"></div>
+      </div>
+      <div class="grid2">
+        <div class="panel sl"><header><span class="lab">Next on the checklist</span><a class="src" href="#release/checks">The whole checklist</a></header><div class="items" id="next"></div></div>
+        <div class="panel sl"><header><span class="lab">Next on the runbook</span><a class="src" href="#release/launch">The whole runbook</a></header><div id="rb-next"></div></div>
+      </div>
+    </section>
+
+    <!-- PIPELINE -->
+    <section class="page" data-page="pipeline" aria-label="Pipeline" hidden>
+      <div class="panel sl">
+        <header><span class="lab">Work flows one way: Bleeding Edge, Development, Master, Release</span><a class="src" href="https://github.com/froglet-studio/Cosmic-Shore/blob/bleeding-edge/Docs/BRANCHING_AND_RELEASE.md" target="_blank" rel="noopener">The release model</a></header>
+        <div class="lanes" id="lanes"></div>
+      </div>
+      <div class="grid3">
+        <div class="panel sl"><header><span class="lab">Promote</span><span class="src">Nothing ever flows back up</span></header><div class="rows" id="promos"></div><div id="promo-claude"></div></div>
+        <div class="panel sl"><header><span class="lab">On a schedule</span></header><div class="rows" id="sched"></div></div>
+      </div>
+      <div class="panel sl"><header><span class="lab">Checks on the trunk</span><span class="src">each with its source and age</span></header><div id="g-body"></div></div>
+    </section>
+
+    <!-- BUILDS -->
+    <section class="page" data-page="builds" aria-label="Builds" hidden>
+      <div class="pills" id="bpills" role="group" aria-label="Pick a platform"></div>
+      <div class="panel sl"><header><h2 class="h2" id="p-title">Platform</h2><span class="src" id="p-rollback"></span></header><div id="p-body" class="grid2"></div></div>
+      <div class="panel sl"><header><span class="lab">Live ops</span><span class="src">UGS, flags and the web build</span></header><div id="l-body"></div></div>
+    </section>
+
+    <!-- RELEASE -->
+    <section class="page" data-page="release" aria-label="Release" hidden>
+      <nav class="stepnav" id="stepnav" aria-label="Release steps"></nav>
+      <div class="panel sl" id="r-what">
+        <header><span class="stepn">1</span><span class="lab" style="flex:1">What goes out</span><span class="src">a draft kept in this browser</span></header>
+        <div class="grid2">
+          <div style="display:grid;gap:12px">
+            <dl class="kv"><dt>From</dt><dd><strong>development</strong>: the code that has been through a test build. <a id="r-compare" target="_blank" rel="noopener" href="#">What moves to master</a></dd>
+              <dt>Stage</dt><dd id="r-stage"></dd></dl>
+            <label class="lab" for="r-version">Version</label>
+            <input type="text" id="r-version" placeholder="0.9.5" autocomplete="off" style="max-width:220px">
+          </div>
+          <div style="display:grid;gap:10px;align-content:start"><span class="lab">Platforms</span><div class="actions" id="r-plats" role="group" aria-label="Platforms in this release"></div></div>
+        </div>
+      </div>
+      <div class="panel sl" id="r-checks">
+        <header><span class="stepn">2</span><span class="lab" style="flex:1">Checks: what blocks it</span><span class="src" id="c-count"></span></header>
+        <div class="sum" id="r-sum"></div>
+        <div class="filters">
+          <label class="lab" for="f-plat">Platform</label><select id="f-plat"><option value="">All</option></select>
+          <label class="lab" for="f-status">Status</label>
+          <select id="f-status"><option value="">Not done</option><option value="all">All</option><option value="open">Open</option><option value="in-progress">In progress</option><option value="blocked">Blocked</option><option value="done">Done</option></select>
+          <label class="small"><input type="checkbox" id="f-human"> Needs a human</label>
+        </div>
+        <div class="items" id="items"><div class="empty">The checklist loads from this page's shared store.</div></div>
+        <div class="src">Anyone who can open this page can take an item, change its status and add evidence. Owners are the area's decider, not an assignee: an item is nobody's until someone takes it.</div>
+      </div>
+      <div class="panel sl" id="r-notes">
+        <header><span class="stepn">3</span><span class="lab" style="flex:1">Notes</span></header>
+        <div class="grid2">
+          <div style="display:grid;gap:10px;align-content:start"><label class="lab" for="r-pn">For players, in the game and on the store</label><textarea id="r-pn" placeholder="What players will notice, in a few short lines."></textarea><div id="notes-claude"></div></div>
+          <div style="display:grid;gap:10px;align-content:start"><span class="lab">Earlier releases</span><div class="changelog"></div></div>
+        </div>
+      </div>
+      <div class="panel sl" id="r-who">
+        <header><span class="stepn">4</span><span class="lab" style="flex:1">Who gets it</span><span class="src">set by the stage; later tiers open when their gate passes</span></header>
+        <div class="tiers" id="tiers"></div>
+      </div>
+      <div class="panel sl" id="r-launch">
+        <header><span class="stepn">5</span><span class="lab" style="flex:1">Launch</span><a class="src" href="https://github.com/froglet-studio/Cosmic-Shore/blob/bleeding-edge/Docs/BRANCHING_AND_RELEASE.md" target="_blank" rel="noopener">Runbook: cut a release</a></header>
+        <ol class="do" id="r-do"></ol>
+        <div id="release-claude"></div>
+        <h3 class="h3" style="margin-top:8px">Launch day</h3>
+        <div class="tl" id="tl"><div class="empty">The timeline loads from this page's shared store.</div></div>
+        <h3 class="h3" style="margin-top:8px">If something breaks: roll back</h3>
+        <div class="scroll"><table class="tbl" id="rollback"><thead><tr><th>Platform</th><th>Roll back by</th><th>Start here</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- SIGNALS -->
+    <section class="page" data-page="signals" aria-label="Signals" hidden>
+      <div class="grid3">
+        <div class="panel sl"><header><span class="lab">Who is playing now</span><span class="src" id="sig-stage"></span></header><div class="tiers" id="sig-tiers"></div></div>
+        <div class="panel sl" id="sig-gate"></div>
+      </div>
+      <div class="panel sl"><header><span class="lab">After launch</span><span class="src">no analytics source is connected to this page yet</span></header><div class="metrics" id="m-body"></div></div>
+      <div class="grid2">
+        <div class="panel sl"><header><span class="lab">Changelog</span><span class="src">from each release's generated notes</span></header><div class="changelog"></div></div>
+        <div class="panel sl" id="askp" hidden>
+          <header><span class="lab">Ask about the launch</span><span class="src">answered from this page's data only</span></header>
+          <label for="q" class="small">Question</label>
+          <textarea id="q" placeholder="What blocks the iOS invite build, and who decides each item?"></textarea>
+          <div class="actions"><button class="btn cta sl" id="askbtn" type="button">Ask</button><span class="small" id="askstate"></span></div>
+          <div class="answer" id="answer" hidden></div>
+        </div>
+      </div>
+    </section>
+  </main>
 </div>
 
 <script>
 (() => {
   const REPO = 'https://github.com/froglet-studio/Cosmic-Shore';
   const WF = (f) => `${REPO}/actions/workflows/${f}`;
-  const MILESTONE_DATE = '2027-03-01'; // Steam keys by March 2027, before GDC (Shombith, 2026-11-06). The mobile release has no date: it waits on activation.
+  // Workflows on bleeding-edge (2026-11-17). An action whose workflow is not here shows as "not built yet", not a dead link.
+  const HAVE_WF = new Set(['bleeding-edge-guard.yml', 'build-branch-ci.yml', 'ios-testflight.yml', 'launch-tools-check.yml', 'sync-build-branches.yml', 'tag-internal-build.yml', 'team-tasks.yml', 'toybox-publish.yml', 'ugs-deploy.yml', 'unity-ci.yml']);
+  const MILESTONE_DATE = '2027-03-01'; // Steam keys by March 2027, before GDC (Shombith, 2026-11-06). Mobile waits on activation.
   const STALE_HOURS = 48;
+  // The launch stages (Shombith's phase diagram, 2026-11-17; .claude/skills/launch-flow/references/STAGES.md).
+  // Move CURRENT_STAGE only when Shombith says a gate passed.
+  const CURRENT_STAGE = 'beta1';
+  const STAGES = [
+    { key: 'beta1', name: 'Beta Phase 1', vessels: { be: '21', dev: '6', master: '6', release: null },
+      internal: 'Drive builds, prototype feedback in Unity, bug testing, instrumented data',
+      master: 'Alpha access: Friends, Family and Tadpoles feedback', release: null, data: 'Instrumented data',
+      gate: ['Gate 1', 'Co-op players come back, week after week, to the same experience', 'Co-op repeat retention over weeks'] },
+    { key: 'beta2', name: 'Beta Phase 2', vessels: { be: 'X', dev: 'Y', master: 'Y', release: 'Y' },
+      internal: 'Drive builds, prototype feedback, bug testing, instrumented data',
+      master: 'Pre-release access: FFT feedback', release: 'Beta access: limited Beta keys, one at a time, from the FFT feedback', data: 'Activation data',
+      gate: ['Gate 2', 'X% of new users play again after 1 week', 'Week-1 return rate'] },
+    { key: 'beta3', name: 'Beta Phase 3', vessels: { be: 'X', dev: 'Y', master: 'Y', release: 'Y' },
+      internal: 'Drive builds, prototype feedback, bug testing, instrumented data',
+      master: 'Alpha access: Tadpole feedback', release: 'Beta access: limited Beta keys, one at a time, from the Tadpole feedback', data: 'Activation, retention, referral data',
+      gate: ['Gate 3', 'X% of surveyed users say they would give a 5-star review', 'Would-give-5-stars share'] },
+    { key: 'early', name: 'Early access', vessels: { be: 'X', dev: 'Y', master: 'Y', release: 'Y' },
+      internal: 'Drive builds, prototype feedback, bug testing, instrumented data',
+      master: 'Alpha access: Tadpole feedback', release: '$15 early access', data: 'Activation, retention, referral data',
+      gate: ['Gate 4', 'Feature complete: only content is added from here', 'Feature complete'] },
+    { key: 'full', name: 'Full release', vessels: { be: 'X', dev: 'Y', master: 'Y', release: 'Y' },
+      internal: 'Drive builds, prototype feedback, bug testing, instrumented data',
+      master: 'Alpha access: Tadpole feedback', release: 'Free to play', data: 'Activation, retention, referral data', gate: null },
+    { key: 'game2', name: 'Game 2 and beyond', vessels: null, internal: '', master: '', release: '', data: '',
+      note: 'Game 2 design; everlasting content releases, bug fixing and balance updates', gate: null },
+  ];
   // Each platform: the component ids it shows (Docs/LAUNCH/STATUS_CONTRACT.md), its actions and its rollback.
   const PLATFORMS = [
-    { key: 'windows', name: 'Windows / Steam', channels: ['windows-prerelease', 'windows-production'], build: 'build-windows',
+    { key: 'windows', name: 'Windows / Steam', channels: ['windows-prerelease', 'windows-production'], build: 'build-windows', ship: true,
       actions: [['Build', WF('release-builds.yml'), 'cta'], ['Upload to Playtest internal', WF('release-builds.yml'), 'cta'], ['Promote', WF('release-promote.yml'), 'commit'], ['Roll back', WF('release-promote.yml'), 'commit'], ['Steamworks', 'https://partner.steamgames.com/apps', '']],
       rollback: 'Set the previous build live on the branch in Steamworks App Admin > Builds' },
-    { key: 'ios', name: 'iOS', channels: ['ios-prerelease', 'ios-production'], build: 'build-ios',
+    { key: 'ios', name: 'iOS', channels: ['ios-prerelease', 'ios-production'], build: 'build-ios', ship: true,
       actions: [['Build', WF('release-builds.yml'), 'cta'], ['Upload to TestFlight', WF('ios-testflight.yml'), 'cta'], ['Promote', 'https://appstoreconnect.apple.com/apps', 'commit'], ['Roll back', 'https://appstoreconnect.apple.com/apps', 'commit']],
       rollback: 'Pause the phased release in App Store Connect; ship a fixed build (Apple has no binary rollback)' },
-    { key: 'android', name: 'Android', channels: ['android-prerelease', 'android-production'], build: 'build-android',
+    { key: 'android', name: 'Android', channels: ['android-prerelease', 'android-production'], build: 'build-android', ship: true,
       actions: [['Build', WF('release-builds.yml'), 'cta'], ['Upload to internal', WF('release-builds.yml'), 'cta'], ['Promote', WF('release-promote.yml'), 'commit'], ['Halt rollout', WF('release-promote.yml'), 'commit'], ['Play Console', 'https://play.google.com/console', '']],
       rollback: 'Halt the staged rollout in Play Console, then roll out the previous release' },
-    { key: 'web', name: 'Web Toybox', channels: ['web-staging', 'web-production'], build: 'build-web',
+    { key: 'web', name: 'Web Toybox', channels: ['web-staging', 'web-production'], build: 'build-web', ship: true,
       actions: [['Stage', WF('toybox-publish.yml'), 'cta'], ['Promote to /play', WF('toybox-publish.yml'), 'commit'], ['Roll back', WF('toybox-publish.yml'), 'commit'], ['Open /play', 'https://www.froglet.games/play', '']],
       rollback: 'Point toybox/latest.json at the previous build (the publish workflow’s rollback action)' },
     { key: 'liveops', name: 'Live ops', channels: ['ugs-development', 'ugs-production'], build: null,
@@ -186,31 +433,87 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
       actions: [['UGS dashboard', 'https://cloud.unity.com', ''], ['Multiplayer start here', `${REPO}/blob/bleeding-edge/Docs/MULTIPLAYER_START_HERE.md`, '']],
       rollback: 'Kill switch in the launch flags (deploy to production), then fix forward' },
     { key: 'launch', name: 'Launch-wide', channels: [], build: null,
-      actions: [['Readiness audit', `${REPO}/blob/claude/exciting-pascal-t8ijbo/Docs/LAUNCH/READINESS.md`, ''], ['Froglet Tasks', 'https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f', '']],
+      actions: [['Readiness audit', `${REPO}/blob/bleeding-edge/Docs/LAUNCH/READINESS.md`, ''], ['Froglet Tasks', 'https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f', '']],
       rollback: '' },
   ];
   const GATES = [['trunk-static', 'Trunk static checks'], ['unity-compile', 'Unity compile + EditMode']];
-  // "Work on this in Claude": a new Claude Code session on the repo whose first message is the platform's launch-flow skill.
-  // The skills live on SKILL_REF; switch it to 'bleeding-edge' once PR #1758 merges.
-  const REPO_GIT = 'https://github.com/froglet-studio/Cosmic-Shore';
-  const SKILL_REF = 'claude/exciting-pascal-t8ijbo';
+  // "Work on this in Claude": a new Claude Code session on the repo whose first message is a launch-flow skill.
+  const SKILL_REF = 'bleeding-edge';
   const CCR = 'Claude Code Remote';
   const skillFor = (key) => `/launch-flow-${key === 'launch' ? 'launch-wide' : key}`;
-  let mcp = null, chat = { key: null, open: false, envs: null, envId: '', state: '', note: '', link: null, busy: false };
-  const $ = (s) => document.querySelector(s);
-  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const PAGES = { mission: ['Mission', 'Where the launch stands'], pipeline: ['Pipeline', 'From the trunk to players'], builds: ['Builds', 'Every platform, its channels and its actions'], release: ['Release', 'Cut a release'], signals: ['Signals', 'What players tell us'] };
 
-  let board = null, boardMeta = null, items = [], runbook = [], changelog = [], quality = null, selected = 'windows';
-  let db = null, user = null, me = null, names = {};
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const link = (cls, text, href) => { const a = el('a', cls, text); a.href = href; if (/^https:/.test(href)) { a.target = '_blank'; a.rel = 'noopener'; } return a; };
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+  let board = null, items = [], runbook = [], changelog = [], quality = null, selected = 'windows', page = 'mission', viewStage = CURRENT_STAGE;
+  let db = null, user = null, me = null, names = {}, mcp = null;
+  const chats = {}; let envs = null, envId = '';
+  let draft = { version: '', plats: ['windows', 'ios', 'android', 'web'], notes: '' };
+  try { Object.assign(draft, JSON.parse(store.get('lc-release-draft') || '{}')); } catch (e) {}
+  const saveDraft = () => store.set('lc-release-draft', JSON.stringify(draft));
 
   const hoursSince = (iso) => { const t = Date.parse(iso || ''); return isNaN(t) ? null : (Date.now() - t) / 36e5; };
   const age = (iso) => { const h = hoursSince(iso); if (h == null) return 'age unknown'; if (h < 1) return 'under an hour ago'; if (h < 48) return `${Math.round(h)} h ago`; return `${Math.round(h / 24)} days ago`; };
   const safeUrl = (u) => (typeof u === 'string' && /^https:\/\/[^\s"'<>]+$/.test(u)) ? u : null;
+  const stageOf = (k) => STAGES.find((s) => s.key === k) || STAGES[0];
+  const nowIdx = () => STAGES.findIndex((s) => s.key === CURRENT_STAGE);
 
-  // Days left: the milestone date the team set, counted in UTC.
-  const daysLeft = Math.ceil((Date.parse(MILESTONE_DATE + 'T00:00:00Z') - Date.now()) / 864e5);
-  $('#days').textContent = String(daysLeft);
+  $('#days').textContent = String(Math.ceil((Date.parse(MILESTONE_DATE + 'T00:00:00Z') - Date.now()) / 864e5));
 
+  // ---------------------------------------------------------------- theme, sea, pages
+  function looks() {
+    const T = window.FA_THEMES, box = $('#looks');
+    if (!T || !box) { if (box) box.hidden = true; return; }
+    const now = T.current();
+    const sets = el('div', 'sets'); sets.setAttribute('role', 'group'); sets.setAttribute('aria-label', 'Theme');
+    T.themes.forEach((t) => {
+      const b = el('button', 'set'); b.type = 'button'; b.title = `${t.name}: ${t.line}`; b.setAttribute('aria-pressed', String(t.id === now));
+      const sw = el('span', 'swatch'); sw.setAttribute('aria-hidden', 'true');
+      t.swatch.forEach(([rim, face]) => { const i = el('i'); i.style.background = face; i.style.boxShadow = `inset 0 3px 0 ${rim}`; sw.append(i); });
+      b.append(sw, el('span', 'set-name', t.name));
+      b.addEventListener('click', () => { T.pick(t.id); looks(); });
+      sets.append(b);
+    });
+    const cur = T.themes.find((t) => t.id === now);
+    const head = el('div', 'looks-head'); head.append(el('span', 'lab', 'Theme'), el('span', 'looks-now', cur ? cur.name : ''));
+    box.replaceChildren(head, sets);
+    const strip = $('.brand .strip');
+    if (strip) strip.replaceChildren(...[1, 2, 3, 4].map((n) => { const i = el('i'); i.style.background = `var(--series-${n})`; return i; }));
+  }
+  function sea() {
+    const T = window.FA_THEMES, layers = $$('.sea-layer');
+    if (!T || !T.sea || layers.length !== 3) return;
+    const { spacing, loop, amplitude } = T.sea, tall = 2400, k1 = 2 * Math.PI / loop, k2 = 3 * k1;
+    const mod3 = (x) => x - 3 * Math.floor(x / 3);
+    T.sea.layers.forEach((layer, n) => {
+      let lines = '';
+      for (let i = 0; i * spacing <= tall + spacing; i++) {
+        if (mod3(i) !== n) continue;
+        const a1 = amplitude * (1 + 0.45 * mod3(i * 7)), a2 = amplitude * (0.45 + 0.22 * mod3(i * 5)); const pts = [];
+        for (let x = 0; x <= loop; x += 6) pts.push(`${x},${(i * spacing + a1 * Math.sin(k1 * x + i * 0.9) + a2 * Math.sin(k2 * x + i * 1.7)).toFixed(1)}`);
+        lines += `<polyline points='${pts.join(' ')}' fill='none' stroke='#fff' stroke-opacity='${layer.alpha}' stroke-width='${layer.width}'/>`;
+      }
+      const url = `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${loop}' height='${tall}' viewBox='0 0 ${loop} ${tall}'>${lines}</svg>`)}")`;
+      const e = layers[n]; e.style.webkitMaskImage = url; e.style.maskImage = url;
+      e.style.webkitMaskSize = `${loop}px ${tall}px`; e.style.maskSize = `${loop}px ${tall}px`; e.style.animationDuration = `${layer.seconds}s`;
+    });
+  }
+  function route() {
+    const [p, sub] = (location.hash.slice(1) || 'mission').split('/');
+    const next = PAGES[p] ? p : 'mission';
+    const changed = next !== page; page = next;
+    $$('.page').forEach((s) => { const on = s.dataset.page === page; s.hidden = !on; if (on && changed) { s.classList.remove('in'); void s.offsetWidth; s.classList.add('in'); } });
+    $$('.nav').forEach((a) => { if (a.dataset.page === page) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    $('#page-lab').textContent = PAGES[page][0]; $('#page-title').textContent = PAGES[page][1];
+    if (sub) { const t = document.getElementById(`r-${sub}`); if (t) requestAnimationFrame(() => t.scrollIntoView({ behavior: 'smooth', block: 'start' })); }
+    else if (changed) window.scrollTo(0, 0);
+  }
+
+  // ---------------------------------------------------------------- status
   function comps() { return (board && board.components) || {}; }
   // An item on 'mobile' (activation) blocks both the iOS and the Android release.
   function openBlockers(key) { return items.filter((i) => (i.platform === key || (i.platform === 'mobile' && (key === 'ios' || key === 'android'))) && i.blocks && i.status !== 'done'); }
@@ -219,125 +522,81 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     const gateIds = p.key === 'launch' ? Object.keys(c).filter((id) => GATES.some(([g]) => g === id) || id.startsWith('smoke-')) : [];
     const failed = [...p.channels, p.build, ...gateIds].filter(Boolean).filter((id) => c[id] && c[id].result === 'failure');
     const stale = [...p.channels, p.build].filter(Boolean).filter((id) => c[id] && (c[id].result !== 'success' || (hoursSince((c[id].details && c[id].details.event_date) || c[id].updated_at) || 0) > STALE_HOURS));
-    const blockers = openBlockers(p.key);
-    const idle = blockers.filter((i) => i.status !== 'in-progress');
+    const blockers = openBlockers(p.key); const idle = blockers.filter((i) => i.status !== 'in-progress');
     if (!items.length && !board) return ['s-unknown', 'Unknown', 'waiting for data'];
     if (failed.length) return ['s-nogo', 'No-go', `${failed.length} failed run${failed.length > 1 ? 's' : ''}`];
     if (idle.length) return ['s-nogo', 'No-go', `${blockers.length} open blocker${blockers.length > 1 ? 's' : ''}`];
     if (blockers.length || stale.length) return ['s-risk', 'At risk', blockers.length ? `${blockers.length} blocker${blockers.length > 1 ? 's' : ''} in progress` : 'last run is old or did not succeed'];
     return ['s-go', 'Go', 'no open blockers'];
   }
-
-  function renderPills() {
-    const box = $('#pills'); box.replaceChildren();
-    let worst = 's-go';
-    for (const p of PLATFORMS) {
-      const [cls, state, why] = platformState(p);
-      if (cls === 's-nogo' || (cls === 's-risk' && worst === 's-go')) worst = cls;
-      const b = el('button', `pill cut ${cls}`); b.type = 'button'; b.setAttribute('aria-pressed', String(p.key === selected));
-      const s = el('span', 'state'); s.append(el('span', 'dot'), document.createTextNode(state));
-      b.append(el('span', '', p.name), s, el('span', 'why', why));
-      b.addEventListener('click', () => { selected = p.key; renderAll(); $('#platform').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-      box.append(b);
-    }
-    const total = items.filter((i) => i.blocks && i.status !== 'done').length;
-    $('#verdict').textContent = !items.length && !board ? 'Waiting for the board to load.'
-      : worst === 's-go' ? 'Go: nothing open blocks the invite build.'
-      : `${worst === 's-nogo' ? 'No-go' : 'At risk'}: ${total} open launch blocker${total === 1 ? '' : 's'} across every platform.`;
-    $('#boardsrc').textContent = board
-      ? `Pipeline status from the launch-status branch, generated ${age(board.generated_at)}; synced into this page ${age(boardMeta && boardMeta.synced_at)}. Blockers are this page's checklist.`
-      : 'No pipeline status synced yet. Blockers are this page’s checklist.';
+  function pill(p, pressed, onClick) {
+    const [cls, state, why] = platformState(p);
+    const b = el('button', `pill sls ${cls}`); b.type = 'button'; if (pressed != null) b.setAttribute('aria-pressed', String(pressed));
+    const s = el('span', 'state'); s.append(el('span', 'dot'), document.createTextNode(state));
+    b.append(el('span', '', p.name), s, el('span', 'why', why)); b.addEventListener('click', onClick); return b;
   }
+  function renderPills() {
+    const pick = (k) => () => { selected = k; renderBuilds(); renderPillsOnly(); if (page !== 'builds') location.hash = '#builds'; };
+    $('#pills').replaceChildren(...PLATFORMS.map((p) => pill(p, null, pick(p.key))));
+    renderPillsOnly();
+    const worst = PLATFORMS.map((p) => platformState(p)[0]).reduce((w, c) => c === 's-nogo' || (c === 's-risk' && w === 's-go') ? c : w, 's-go');
+    const total = items.filter((i) => i.blocks && i.status !== 'done').length;
+    const v = $('#verdict'); v.className = `verdict ${worst}`; v.replaceChildren(el('span', 'dot'));
+    v.append(document.createTextNode(!items.length && !board ? 'Waiting for data' : worst === 's-go' ? 'Go: nothing open blocks a build' : `${worst === 's-nogo' ? 'No-go' : 'At risk'}: ${total} open blocker${total === 1 ? '' : 's'}`));
+    v.style.color = worst === 's-go' ? 'var(--fs-cta)' : worst === 's-unknown' ? 'var(--fs-text-off)' : 'var(--fs-danger)';
+    $('#nb-release').textContent = total ? String(total) : '';
+    const failedBuilds = PLATFORMS.filter((p) => platformState(p)[0] === 's-nogo').length; $('#nb-builds').textContent = failedBuilds ? String(failedBuilds) : '';
+    $('#boardsrc').textContent = board ? `Pipeline status generated ${age(board.generated_at)}, synced ${age(board.synced_at)}. Blockers are the checklist.` : 'No pipeline status synced yet. Blockers are the checklist.';
+  }
+  function renderPillsOnly() { $('#bpills').replaceChildren(...PLATFORMS.map((p) => pill(p, p.key === selected, () => { selected = p.key; renderBuilds(); renderPillsOnly(); }))); }
 
   function compRow(id, label) {
-    const c = comps()[id];
-    const tr = el('tr');
-    tr.append(el('td', '', label));
-    if (!c) { const td = el('td', 'muted', 'No run recorded'); td.colSpan = 3; tr.append(td); return tr; }
+    const c = comps()[id]; const tr = el('tr'); tr.append(el('td', '', label));
+    if (!c) { const td = el('td', 'small', 'No run recorded'); td.colSpan = 3; tr.append(td); return tr; }
     const v = el('td', 'num'); v.textContent = [c.version, c.build && `(${c.build})`, c.commit && c.commit.slice(0, 9)].filter(Boolean).join(' ') || '—';
-    const r = el('td'); r.append(el('span', `chip r-${c.result}`, c.result));
-    if (c.summary) r.append(el('div', 'small muted', c.summary));
-    const at = (c.details && c.details.event_date) || c.updated_at;
-    const a = el('td', 'src'); const h = hoursSince(at);
-    const when = el('span', h != null && h > STALE_HOURS ? 'stale' : '', age(at)); a.append(when);
-    const link = safeUrl(c.run_url) || safeUrl(c.link);
-    a.append(document.createTextNode(' · '));
-    if (link) { const l = el('a', '', c.source || 'run'); l.href = link; l.target = '_blank'; l.rel = 'noopener'; a.append(l); } else a.append(document.createTextNode(c.source || ''));
+    const r = el('td'); r.append(el('span', `tag r-${c.result}`, c.result)); if (c.summary) r.append(el('div', 'small', c.summary));
+    const at = (c.details && c.details.event_date) || c.updated_at; const a = el('td', 'src'); const h = hoursSince(at);
+    a.append(el('span', h != null && h > STALE_HOURS ? 'stale' : '', age(at)), document.createTextNode(' · '));
+    const u = safeUrl(c.run_url) || safeUrl(c.link); if (u) a.append(link('', c.source || 'run', u)); else a.append(document.createTextNode(c.source || ''));
     tr.append(v, r, a); return tr;
   }
-
-  function renderPlatform() {
-    const p = PLATFORMS.find((x) => x.key === selected) || PLATFORMS[0];
-    $('#p-title').textContent = p.name;
-    const body = $('#p-body'); body.replaceChildren();
-    const left = el('div'); left.style.display = 'grid'; left.style.gap = '10px'; left.style.minWidth = '0';
-    if (p.channels.length || p.build) {
-      left.append(el('h3', '', 'Channels and the last run'));
-      const wrap = el('div', 'scroll'); const t = el('table', 'tbl');
-      const th = el('thead'); const hr = el('tr'); ['', 'Version', 'Result', 'Age · source'].forEach((h) => hr.append(el('th', '', h))); th.append(hr);
-      const tb = el('tbody'); p.channels.forEach((id) => tb.append(compRow(id, id.split('-').slice(1).join(' ') || id)));
-      if (p.build) tb.append(compRow(p.build, 'last build'));
-      t.append(th, tb); wrap.append(t); left.append(wrap);
-    }
-    left.append(el('h3', '', 'Start here'));
-    const acts = el('div', 'actions');
-    for (const [label, href, kind] of p.actions) { const a = el('a', `btn cut ${kind}`, label); a.href = href; a.target = '_blank'; a.rel = 'noopener'; acts.append(a); }
-    left.append(acts, el('div', 'src', 'Each button opens the workflow or dashboard where the action runs. Production steps wait for a reviewer’s approval there; this page holds no tokens.'));
-    left.append(claudeBox(p));
-    const right = el('div'); right.style.display = 'grid'; right.style.gap = '8px'; right.style.minWidth = '0';
-    const blockers = openBlockers(p.key);
-    right.append(el('h3', '', blockers.length ? `Open blockers (${blockers.length})` : 'Open blockers'));
-    if (!blockers.length) right.append(el('div', 'empty', items.length ? 'None open for this platform.' : 'The checklist has not loaded.'));
-    blockers.sort((a, b) => (a.rank || 99) - (b.rank || 99)).forEach((i) => right.append(itemCard(i, true)));
-    body.append(left, right);
-    $('#p-src').textContent = '';
+  function compTable(rows) { const w = el('div', 'scroll'); const t = el('table', 'tbl'); const tb = el('tbody'); rows.forEach(([id, l]) => tb.append(compRow(id, l))); t.append(tb); w.append(t); return w; }
+  function actionBtn([label, href, kind]) {
+    const m = /\/actions\/workflows\/([^/?#]+)$/.exec(href);
+    if (m && !HAVE_WF.has(m[1])) { const b = el('span', `btn sls off ${kind}`, label); b.title = `${m[1]} is not in the repository yet`; return b; }
+    return link(`btn sls ${kind}`, label, href);
   }
 
-  function claudeBox(p) {
-    const box = el('div'); box.style.display = 'grid'; box.style.gap = '8px'; box.style.minWidth = '0';
-    const cmd = skillFor(p.key);
-    box.append(el('h3', '', 'Work on this in Claude'));
-    box.append(el('div', 'small muted', `A chat of its own for ${p.name}: it lists the open blockers, says where the platform stands and plans the fix, then works the item you pick.`));
-    if (chat.key !== p.key) chat = { key: p.key, open: false, envs: chat.envs, envId: chat.envId, state: '', note: '', link: null, busy: false };
+  // ---------------------------------------------------------------- Claude sessions (Claude Code Remote)
+  function claudeBox(ctx) {
+    // ctx: { key, title, cmd, blurb }
+    const st = chats[ctx.key] || (chats[ctx.key] = { open: false, state: '', note: '', link: null, busy: false });
+    const box = el('div'); box.style.cssText = 'display:grid;gap:8px;min-width:0';
+    box.append(el('span', 'lab', 'Work on this in Claude'), el('p', 'small', ctx.blurb));
+    const rerender = () => box.replaceWith(claudeBox(ctx));
     const row = el('div', 'actions');
-    if (mcp && !chat.open && !chat.link) {
-      const start = el('button', 'btn cut cta', 'Start a chat'); start.type = 'button';
-      start.addEventListener('click', () => { chat.open = true; chat.state = ''; renderPlatform(); loadEnvs(); });
-      row.append(start);
+    if (mcp && !st.open && !st.link) { const b = el('button', 'btn sls cta', 'Start a chat'); b.type = 'button'; b.addEventListener('click', () => { st.open = true; st.state = ''; rerender(); loadEnvs(rerender); }); row.append(b); }
+    const copy = el('button', 'btn sls', 'Copy command'); copy.type = 'button';
+    copy.addEventListener('click', async () => { try { await navigator.clipboard.writeText(ctx.cmd); st.note = 'Copied. Paste it into a new Claude Code session on this repository.'; } catch (e) { st.note = 'Copy the command below by hand.'; } rerender(); });
+    row.append(copy, link('btn sls', 'Open Claude Code', 'https://claude.ai/code')); box.append(row, el('code', '', ctx.cmd));
+    if (st.open && !st.link) {
+      const pn = el('div', 'item sls');
+      pn.append(el('p', 'small', `This starts a new Claude Code session on froglet-studio/Cosmic-Shore (${SKILL_REF}) as you, with the command above as its first message. It plans first and asks before any push.`));
+      const r = el('div', 'edit'); const lab = el('label', 'lab', 'Environment'); lab.htmlFor = `env-${ctx.key}`;
+      const sel = el('select'); sel.id = `env-${ctx.key}`;
+      if (!envs) sel.append(new Option('Loading environments…', '')); else envs.forEach((e) => sel.append(new Option(e.name || e.environment_id, e.environment_id)));
+      if (envId) sel.value = envId; sel.addEventListener('change', () => { envId = sel.value; });
+      const go = el('button', 'btn sls cta', st.busy ? 'Starting…' : 'Start session'); go.type = 'button'; go.disabled = st.busy || !envs || !envs.length;
+      go.addEventListener('click', () => startChat(ctx, st, rerender));
+      const cancel = el('button', 'btn sls', 'Cancel'); cancel.type = 'button'; cancel.addEventListener('click', () => { st.open = false; st.state = ''; rerender(); });
+      r.append(lab, sel, go, cancel); pn.append(r); box.append(pn);
     }
-    const copy = el('button', 'btn cut', 'Copy command'); copy.type = 'button';
-    copy.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(cmd); chat.note = `Copied ${cmd}. Paste it into a new Claude Code session on this repository.`; }
-      catch (e) { chat.note = `Copy ${cmd} by hand and paste it into a new Claude Code session.`; }
-      renderPlatform();
-    });
-    const open = el('a', 'btn cut', 'Open Claude Code'); open.href = 'https://claude.ai/code'; open.target = '_blank'; open.rel = 'noopener';
-    row.append(copy, open); box.append(row);
-    box.append(el('code', 'small', cmd));
-    if (chat.open && !chat.link) {
-      const panel = el('div', 'item cut');
-      panel.append(el('div', 'small', `This starts a new Claude Code session on froglet-studio/Cosmic-Shore (branch ${SKILL_REF}) as you, with ${cmd} as its first message. It plans first and changes nothing until you pick an item in that chat.`));
-      const lab = el('label', 'small', 'Environment'); lab.htmlFor = 'envsel';
-      const sel = el('select'); sel.id = 'envsel';
-      if (!chat.envs) sel.append(new Option('Loading environments…', ''));
-      else chat.envs.forEach((e) => sel.append(new Option(e.name || e.environment_id, e.environment_id)));
-      if (chat.envId) sel.value = chat.envId;
-      sel.addEventListener('change', () => { chat.envId = sel.value; });
-      const go = el('button', 'btn cut cta', chat.busy ? 'Starting…' : 'Start session'); go.type = 'button';
-      go.disabled = chat.busy || !chat.envs || !chat.envs.length;
-      go.addEventListener('click', () => startChat(p));
-      const cancel = el('button', 'btn cut', 'Cancel'); cancel.type = 'button';
-      cancel.addEventListener('click', () => { chat.open = false; chat.state = ''; renderPlatform(); });
-      const r = el('div', 'edit'); r.append(lab, sel, go, cancel); panel.append(r);
-      box.append(panel);
-    }
-    if (chat.link) { const a = el('a', 'btn cut cta', 'Open the new chat'); a.href = chat.link; a.target = '_blank'; a.rel = 'noopener'; box.append(a); }
-    if (chat.state) box.append(el('div', 'small', chat.state));
-    if (chat.note) box.append(el('div', 'small muted', chat.note));
-    if (!mcp) box.append(el('div', 'src', 'Starting a chat from here needs the Claude Code Remote connector on this page; copy the command instead.'));
+    if (st.link) box.append(link('btn sls cta', 'Open the new chat', st.link));
+    if (st.state) box.append(el('p', 'small', st.state));
+    if (st.note) box.append(el('p', 'small', st.note));
+    if (!mcp) box.append(el('div', 'src', 'Starting a chat from here needs the Claude Code Remote connector; copy the command instead.'));
     return box;
   }
-
   function mcpProblem(e, writing) {
     const c = e && e.code;
     if (c === 'server_not_connected' || c === 'server_not_found') return 'Claude Code Remote is not connected for you. Add it under claude.ai Settings > Connectors, or copy the command.';
@@ -349,89 +608,236 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     if (c === 'cancelled') return 'Cancelled.';
     return `That did not work (${c || 'unknown'}). Copy the command instead.`;
   }
-
-  async function loadEnvs() {
-    if (chat.envs || !mcp) return;
+  async function loadEnvs(done) {
+    if (envs || !mcp) return;
     try {
       const r = await mcp.callTool(CCR, 'list_environments', { limit: 20 });
-      const list = (r && r.payload && r.payload.environments) || [];
-      chat.envs = list.filter((e) => e && typeof e.environment_id === 'string' && (!e.state || e.state === 'active'));
-      if (!chat.envId && chat.envs.length) chat.envId = (chat.envs.find((e) => /default/i.test(e.name || '')) || chat.envs[0]).environment_id;
-      if (!chat.envs.length) chat.state = 'No cloud environment is available to you. Copy the command instead.';
-    } catch (e) { chat.state = mcpProblem(e, false); chat.envs = []; }
-    renderPlatform();
+      envs = ((r && r.payload && r.payload.environments) || []).filter((e) => e && typeof e.environment_id === 'string' && (!e.state || e.state === 'active'));
+      if (!envId && envs.length) envId = (envs.find((e) => /default/i.test(e.name || '')) || envs[0]).environment_id;
+    } catch (e) { envs = []; Object.values(chats).forEach((s) => { if (s.open) s.state = mcpProblem(e, false); }); }
+    if (envs && !envs.length) Object.values(chats).forEach((s) => { if (s.open && !s.state) s.state = 'No cloud environment is available to you. Copy the command instead.'; });
+    done();
   }
-
-  async function startChat(p) {
-    if (chat.busy || !chat.envId) return;
-    chat.busy = true; chat.state = ''; renderPlatform();
-    const cmd = skillFor(p.key);
+  async function startChat(ctx, st, done) {
+    if (st.busy || !envId) return;
+    st.busy = true; st.state = ''; done();
     try {
-      const r = await mcp.callTool(CCR, 'create_session', { prompt: cmd, title: `Launch flow: ${p.name}`, source_url: REPO_GIT, source_revision: SKILL_REF, environment_id: chat.envId });
-      const text = JSON.stringify((r && (r.payload ?? r.structuredContent)) ?? r ?? '');
-      const m = text.match(/session_[A-Za-z0-9]{8,}/);
-      chat.link = m ? `https://claude.ai/code/${m[0]}` : 'https://claude.ai/code';
-      chat.state = m ? `Started. ${cmd} is its first message.` : 'Started. It is at the top of your Claude Code sessions.';
-      chat.open = false;
-    } catch (e) { chat.state = mcpProblem(e, true); }
-    chat.busy = false; renderPlatform();
+      const r = await mcp.callTool(CCR, 'create_session', { prompt: ctx.cmd, title: ctx.title, source_url: REPO, source_revision: SKILL_REF, environment_id: envId });
+      const m = JSON.stringify((r && (r.payload ?? r.structuredContent)) ?? r ?? '').match(/session_[A-Za-z0-9]{8,}/);
+      st.link = m ? `https://claude.ai/code/${m[0]}` : 'https://claude.ai/code';
+      st.state = m ? 'Started. The command is its first message.' : 'Started. It is at the top of your Claude Code sessions.'; st.open = false;
+    } catch (e) { st.state = mcpProblem(e, true); }
+    st.busy = false; done();
   }
 
+  // ---------------------------------------------------------------- checklist items
   function itemCard(i, compact) {
-    const card = el('div', `item cut${i.status === 'done' ? ' done' : ''}`);
-    const head = el('div', 'head');
-    head.append(el('span', 'rank num', i.rank ? `#${i.rank}` : ''), el('span', 'title', i.title || '(untitled)'));
+    const card = el('div', `item sls${i.status === 'done' ? ' done' : ''}`);
+    const head = el('div', 'head'); head.append(el('span', 'rank num', i.rank ? `#${i.rank}` : ''), el('span', 'title', i.title || '(untitled)'));
     if (i.needsHuman) head.append(el('span', 'human', 'Needs a human'));
     card.append(head);
-    const meta = el('div', 'meta');
-    const plat = PLATFORMS.find((p) => p.key === i.platform);
-    [plat ? plat.name : (i.platform === 'mobile' ? 'iOS + Android' : i.platform), i.owner && `Decides: ${i.owner}`, i.risk && `Risk ${i.risk}`, i.size && `Size ${i.size}`, i.due && `Due ${i.due}`].filter(Boolean).forEach((t) => meta.append(el('span', '', t)));
-    const taker = i.takenBy ? (names[i.takenBy] || 'someone') : null;
-    meta.append(el('span', '', taker ? `Taken by ${taker}` : 'Not taken'));
-    card.append(meta);
+    const meta = el('div', 'meta'); const plat = PLATFORMS.find((p) => p.key === i.platform);
+    [plat ? plat.name : (i.platform === 'mobile' ? 'iOS + Android' : i.platform), i.owner && `Decides: ${i.owner}`, i.risk && `Risk ${i.risk}`, i.size && `Size ${i.size}`, i.due && `Due ${i.due}`, i.status && i.status !== 'open' && i.status.replace('-', ' ')].filter(Boolean).forEach((t) => meta.append(el('span', '', t)));
+    meta.append(el('span', '', i.takenBy ? `Taken by ${names[i.takenBy] || 'someone'}` : 'Not taken')); card.append(meta);
     if (!compact) {
       const edit = el('div', 'edit');
-      const st = el('select'); st.setAttribute('aria-label', 'Status');
-      ['open', 'in-progress', 'blocked', 'done'].forEach((v) => { const o = new Option(v.replace('-', ' '), v); st.append(o); });
-      st.value = i.status || 'open';
-      st.addEventListener('change', () => write(i.id, { status: st.value }));
-      edit.append(st);
-      if (me && me.id) {
-        const mine = i.takenBy === me.id;
-        const tb = el('button', 'btn', mine ? 'Release' : (i.takenBy ? 'Take over' : 'Take it')); tb.type = 'button';
-        tb.addEventListener('click', () => write(i.id, { takenBy: mine ? null : me.id }));
-        edit.append(tb);
-      }
+      const st = el('select'); st.setAttribute('aria-label', 'Status'); ['open', 'in-progress', 'blocked', 'done'].forEach((v) => st.append(new Option(v.replace('-', ' '), v)));
+      st.value = i.status || 'open'; st.addEventListener('change', () => write(i.id, { status: st.value })); edit.append(st);
+      if (me && me.id) { const mine = i.takenBy === me.id; const tb = el('button', 'btn s sls', mine ? 'Release' : (i.takenBy ? 'Take over' : 'Take it')); tb.type = 'button'; tb.addEventListener('click', () => write(i.id, { takenBy: mine ? null : me.id })); edit.append(tb); }
       const due = el('input'); due.type = 'date'; due.value = i.due || ''; due.setAttribute('aria-label', 'Due date');
       due.addEventListener('change', () => { if (!due.value || due.validity.valid) write(i.id, { due: due.value || null }); });
       const ev = el('input'); ev.type = 'url'; ev.placeholder = 'Evidence link (https://…)'; ev.value = i.evidence || ''; ev.setAttribute('aria-label', 'Evidence link'); ev.style.flex = '1 1 220px';
       ev.addEventListener('change', () => { const v = ev.value.trim(); if (!v || safeUrl(v)) write(i.id, { evidence: v || null }); else ev.setCustomValidity('Use an https:// link'); });
-      edit.append(due, ev);
-      card.append(edit);
+      edit.append(due, ev); card.append(edit);
     }
-    const ev = safeUrl(i.evidence);
-    if (ev && compact) { const a = el('a', 'small', 'Evidence'); a.href = ev; a.target = '_blank'; a.rel = 'noopener'; card.append(a); }
+    const evu = safeUrl(i.evidence); if (evu && compact) card.append(link('small', 'Evidence', evu));
     if (i.steps || i.source) {
       const d = el('details'); d.append(el('summary', '', i.needsHuman ? 'The exact steps' : 'Details'));
       if (i.steps) d.append(el('p', 'steps', i.steps));
-      const src = safeUrl(i.source); if (src) { const a = el('a', 'small', 'Where this comes from'); a.href = src; a.target = '_blank'; a.rel = 'noopener'; d.append(a); }
+      const src = safeUrl(i.source); if (src) d.append(link('small', 'Where this comes from', src));
       card.append(d);
     }
     return card;
   }
-
   async function write(id, patch) {
     if (!db) return;
     try { await db.collection('checklist').doc(id).update({ ...patch, updatedBy: me && me.id || null, updatedAt: new Date().toISOString() }); }
     catch (e) { $('#c-count').textContent = e && e.code === 'invalid_argument' ? 'You can view this checklist but not change it.' : 'That change did not save. Try again.'; }
   }
 
+  // ---------------------------------------------------------------- Mission
+  function renderMission() {
+    const track = $('#track'); const ni = nowIdx();
+    const fill = el('span', 'fill'); fill.style.width = `${(84 * ni) / (STAGES.length - 1)}%`; track.replaceChildren(fill);
+    STAGES.forEach((s, i) => {
+      const b = el('button', `stop${i < ni ? ' past' : ''}${i === ni ? ' now' : ''}`); b.type = 'button'; b.setAttribute('aria-pressed', String(s.key === viewStage));
+      b.append(el('span', 'mark'), el('span', 'nm', s.name), el('span', 'src', i < ni ? 'passed' : i === ni ? 'we are here' : s.gate ? '' : ''));
+      b.addEventListener('click', () => { viewStage = s.key; renderMission(); }); track.append(b);
+    });
+    const s = stageOf(viewStage); const i = STAGES.indexOf(s); const box = $('#stage-detail');
+    const head = el('header'); head.append(el('span', 'lab', i === ni ? 'Now' : i < ni ? 'Passed' : 'Later'), el('span', 'src', 'every stage runs Bleeding Edge, Development, Master, Release'));
+    const kids = [head, el('h2', 'h2', s.name)];
+    if (s.note) kids.push(el('p', 'small', s.note));
+    else {
+      const dl = el('dl', 'kv'); const v = s.vessels;
+      [['Vessels', `Bleeding Edge ${v.be} · Development ${v.dev} · Master ${v.master}${v.release ? ` · Release ${v.release}` : ' · no Release branch'}`], ['Team builds', s.internal], ['Master goes to', s.master], ['Release goes to', s.release || 'nobody yet: the Release branch is first needed in Beta Phase 2'], ['The gate reads', s.data]]
+        .forEach(([k, val]) => dl.append(el('dt', '', k), el('dd', '', val)));
+      kids.push(dl);
+    }
+    if (s.gate) {
+      const g = el('div', 'gatebox sls'); const nextName = STAGES[i + 1] ? STAGES[i + 1].name : '';
+      g.append(el('span', 'lab', `${s.gate[0]}, to ${nextName}`), el('div', 'h3', s.gate[1]), el('div', 'meter'),
+        el('p', 'small', 'Not measured: its data source is not connected yet, and its threshold is not set. Shombith calls the gate.'));
+      kids.push(g);
+    }
+    box.replaceChildren(...kids);
+    const open = items.filter((x) => x.blocks && x.status !== 'done').sort((a, b) => (a.rank || 99) - (b.rank || 99));
+    const nx = $('#next'); nx.replaceChildren();
+    if (!items.length) nx.append(el('div', 'empty', 'The checklist has not loaded.'));
+    else if (!open.length) nx.append(el('div', 'empty', 'Nothing open blocks a build.'));
+    open.slice(0, 5).forEach((x) => nx.append(itemCard(x, true)));
+    const order = ['T-7', 'T-1', 'T-0', 'T+1', 'T+7'];
+    const todo = runbook.filter((r) => (r.status || 'todo') === 'todo').sort((a, b) => order.indexOf(a.phase) - order.indexOf(b.phase) || (a.order || 0) - (b.order || 0));
+    const rb = $('#rb-next'); rb.replaceChildren();
+    if (!todo.length) rb.append(el('div', 'empty', runbook.length ? 'Every runbook step is done or skipped.' : 'The runbook has not loaded.'));
+    else { const ol = el('ol', 'do'); todo.slice(0, 5).forEach((r) => { const li = el('li'); li.append(el('div', '', r.step || ''), el('span', 'src', `${r.phase} · ${r.owner || 'whoever takes it'}`)); ol.append(li); }); rb.append(ol); }
+    $('#start-why').textContent = open.length ? `${open.length} item${open.length === 1 ? '' : 's'} still block a build. The release page walks you through them, the notes, who gets it and the launch.` : 'Pick what goes out, check it, write the notes, choose who gets it, then launch.';
+  }
+
+  // ---------------------------------------------------------------- Pipeline
+  function renderPipeline() {
+    const s = stageOf(CURRENT_STAGE); const v = s.vessels || {}; const c = comps();
+    const guard = (ids) => { const res = ids.map((id) => c[id]).filter(Boolean); if (!res.length) return ['tag', 'no run synced']; return res.some((x) => x.result === 'failure') ? ['tag r-failure', 'failing'] : res.every((x) => x.result === 'success') ? ['tag r-success', 'passing'] : ['tag', res[0].result]; };
+    const LANES = [
+      { n: 'Bleeding Edge', b: 'bleeding-edge', v: v.be, what: 'Where everyone works. All development lands here.', build: 'Internal build every Friday, 06:00 PT (UGS watches the branch). Tagged internal/<date>.', guard: guard(['trunk-static', 'unity-compile']) },
+      { n: 'Development', b: 'development', v: v.dev, what: 'What testers get. Fed from Bleeding Edge when a batch is worth testing.', build: 'Test build every third Wednesday, 06:00 PT, through build/android and build/windows.', cmp: 'development...bleeding-edge', guard: guard([]) },
+      { n: 'Master', b: 'master', v: v.master, what: 'What players get. Release builds only, fed from Development.', build: 'Release build when you decide: built from master in UGS by hand, tagged v<version>.', cmp: 'master...development' },
+      { n: 'Release', b: null, v: v.release, what: 'release/<version>, cut from a tagged master commit for a store submission.', build: 'Not created yet. First needed in Beta Phase 2, for limited Beta keys.' },
+    ];
+    $('#lanes').replaceChildren(...LANES.map((L, i) => {
+      const d = el('div', `lane sl${L.b ? '' : ' ghost'}`);
+      d.append(el('span', 'lab', `${i + 1} · ${L.n}`));
+      const big = el('div'); big.append(el('span', 'big num', L.v || '—'), el('span', 'lab', ' vessels')); d.append(big);
+      d.append(el('p', 'small', L.what), el('p', 'small', L.build));
+      if (L.guard) { const g = el('div', 'actions'); g.append(el('span', 'lab', 'Guard'), el('span', L.guard[0], L.guard[1])); d.append(g); }
+      const a = el('div', 'actions');
+      if (L.b) a.append(link('btn s sls', 'Branch', `${REPO}/tree/${L.b}`));
+      if (L.cmp) a.append(link('btn s sls', 'What would move in', `${REPO}/compare/${L.cmp}`));
+      d.append(a); if (i < 3) d.append(el('span', 'arrow'));
+      return d;
+    }));
+    const row = (title, sub, ...btns) => { const r = el('div', 'row'); const t = el('div'); t.append(el('div', 'h3', title), el('p', 'small', sub)); const a = el('div', 'actions'); a.append(...btns); r.append(t, a); return r; };
+    const go = (txt, hash) => link('btn s sls', txt, hash);
+    $('#promos').replaceChildren(
+      row('Bleeding Edge to Development', 'Give testers a newer batch before a Wednesday cycle. Fast-forward only; through a PR, create a merge commit and never squash.', link('btn s sls commit', 'Open the promotion PR', `${REPO}/compare/development...bleeding-edge?expand=1`)),
+      row('Development to Master', 'A release: the version bump, master moved fast-forward, the tag, the UGS build.', go('Release page', '#release')),
+      row('Master to release/<version>', 'For a store submission that sits in review for days. Not needed until Beta Phase 2.', el('span', 'tag', 'later')));
+    $('#promo-claude').replaceChildren(claudeBox({ key: 'promote', title: 'Launch flow: promote to development',
+      cmd: '/launch-flow-launch-wide Promote bleeding-edge to development (Docs/BRANCHING_AND_RELEASE.md, "Runbook: promote bleeding-edge to development"): show me what moves and whether the guard is green, then wait for my go before the fast-forward push.',
+      blurb: 'A chat that shows what would move and the guard\'s state, and pushes the fast-forward only on your go.' }));
+    $('#sched').replaceChildren(
+      row('Promote test build', 'Every third Wednesday, 06:00 PT: development to build/android and build/windows.', link('btn s sls', 'Run now', WF('sync-build-branches.yml'))),
+      row('Tag internal build', 'Every Friday, 06:00 PT: tags what bleeding-edge points at.', link('btn s sls', 'Runs', WF('tag-internal-build.yml'))),
+      row('Bleeding-edge guard', 'Every push to bleeding-edge and development: static checks, then a repair attempt.', link('btn s sls', 'Runs', WF('bleeding-edge-guard.yml'))));
+    renderGates();
+  }
+  function renderGates() {
+    const c = comps(); const box = $('#g-body');
+    const rows = [...GATES, ...Object.keys(c).filter((id) => id.startsWith('smoke-')).sort().map((id) => [id, `Smoke: ${id.slice(6)}`])];
+    if (!Object.keys(c).some((id) => id.startsWith('smoke-'))) rows.push(['smoke-*', 'Smoke per mode']);
+    const q = el('div', 'small'); q.style.cssText = 'display:grid;gap:4px';
+    if (quality) {
+      [['QA backlog open', quality.qa_open], ['of which P0', quality.qa_p0], ['EditMode failures at last full run', quality.editmode_failures], ['Unverified editor checks', quality.verification_red]].forEach(([k, v]) => { if (v != null) q.append(el('div', 'num', `${k}: ${v}`)); });
+      q.append(el('div', 'src', `${quality.source || ''} · as of ${quality.as_of || 'unknown'}`));
+    }
+    q.append(el('div', '', 'Crash-free rate and performance budgets: not connected.'));
+    box.replaceChildren(compTable(rows), q);
+  }
+
+  // ---------------------------------------------------------------- Builds
+  function renderBuilds() {
+    const p = PLATFORMS.find((x) => x.key === selected) || PLATFORMS[0];
+    $('#p-title').textContent = p.name; $('#p-rollback').textContent = p.rollback ? `Roll back: ${p.rollback}` : '';
+    const left = el('div'); left.style.cssText = 'display:grid;gap:12px;min-width:0;align-content:start';
+    if (p.channels.length || p.build) { left.append(el('span', 'lab', 'Channels and the last run')); left.append(compTable([...p.channels.map((id) => [id, id.split('-').slice(1).join(' ') || id]), ...(p.build ? [[p.build, 'last build']] : [])])); }
+    left.append(el('span', 'lab', 'Start here')); const acts = el('div', 'actions'); p.actions.forEach((a) => acts.append(actionBtn(a)));
+    left.append(acts, el('div', 'src', 'Each button opens the workflow or dashboard where the action runs; production steps wait for a reviewer there. Greyed buttons are workflows not in the repository yet. This page holds no tokens.'));
+    left.append(claudeBox({ key: p.key, title: `Launch flow: ${p.name}`, cmd: skillFor(p.key), blurb: `A chat of its own for ${p.name}: it lists the open blockers, says where the platform stands and plans the fix, then works the item you pick.` }));
+    const right = el('div'); right.style.cssText = 'display:grid;gap:8px;min-width:0;align-content:start';
+    const blockers = openBlockers(p.key).sort((a, b) => (a.rank || 99) - (b.rank || 99));
+    right.append(el('span', 'lab', blockers.length ? `Open blockers (${blockers.length})` : 'Open blockers'));
+    if (!blockers.length) right.append(el('div', 'empty', items.length ? 'None open for this platform.' : 'The checklist has not loaded.'));
+    blockers.forEach((i) => right.append(itemCard(i, true)));
+    $('#p-body').replaceChildren(left, right);
+  }
+  function renderLiveops() {
+    const c = comps(); const flags = c['ugs-production'] && c['ugs-production'].details; const f = el('div', 'small'); f.style.marginTop = '8px';
+    if (flags && (flags.minimum_version || flags.kill_switches)) { f.append(el('div', '', `Minimum client version: ${flags.minimum_version || 'none set'}`), el('div', '', `Kill switches on: ${flags.kill_switches || 'none'}`)); }
+    else f.append(el('div', '', 'Launch flags (minimum version, kill switches) appear here once a production deploy records them.'));
+    $('#l-body').replaceChildren(compTable([['ugs-development', 'UGS development'], ['ugs-production', 'UGS production'], ['web-production', 'Web at /play'], ['web-staging', 'Web staging']]), f);
+  }
+
+  // ---------------------------------------------------------------- Release
+  function renderRelease() {
+    const s = stageOf(CURRENT_STAGE); const ver = draft.version.trim();
+    $('#r-compare').href = `${REPO}/compare/master...development`;
+    $('#r-stage').textContent = `${s.name}: master goes to ${s.master.split(':')[0].toLowerCase()}${s.release ? '' : '; no Release branch yet'}.`;
+    const vin = $('#r-version'); if (document.activeElement !== vin) vin.value = draft.version;
+    $('#r-plats').replaceChildren(...PLATFORMS.filter((p) => p.ship).map((p) => {
+      const b = el('button', 'chip sls', p.name); b.type = 'button'; b.setAttribute('aria-pressed', String(draft.plats.includes(p.key)));
+      b.addEventListener('click', () => { draft.plats = draft.plats.includes(p.key) ? draft.plats.filter((k) => k !== p.key) : [...draft.plats, p.key]; saveDraft(); renderRelease(); });
+      return b;
+    }));
+    // checks for the chosen platforms
+    const chosen = PLATFORMS.filter((p) => draft.plats.includes(p.key));
+    const blk = [...new Set(chosen.flatMap((p) => openBlockers(p.key)).concat(openBlockers('launch')))];
+    const c = comps(); const gateRes = GATES.map(([id]) => c[id]).filter(Boolean);
+    const gatesBad = gateRes.filter((g) => g.result === 'failure').length;
+    const nogo = chosen.filter((p) => platformState(p)[0] === 's-nogo').length;
+    const sum = (v, k, bad) => { const d = el('div', 'sls'); const n = el('span', 'v num', String(v)); if (bad) n.style.color = 'var(--fs-danger)'; d.append(n, el('span', 'small', k)); return d; };
+    $('#r-sum').replaceChildren(sum(blk.length, 'open blockers on these platforms', blk.length > 0), sum(nogo, 'of the platforms say no-go', nogo > 0),
+      sum(gateRes.length ? `${gateRes.length - gatesBad}/${gateRes.length}` : '—', gateRes.length ? 'trunk checks passing' : 'trunk checks: none synced', gatesBad > 0),
+      sum(items.filter((i) => i.needsHuman && i.status !== 'done').length, 'waiting on a human', false));
+    renderChecklist();
+    // notes
+    const pn = $('#r-pn'); if (document.activeElement !== pn) pn.value = draft.notes;
+    $('#notes-claude').replaceChildren(claudeBox({ key: 'notes', title: `Launch flow: notes for ${ver || 'the next release'}`,
+      cmd: `/launch-flow-launch-wide Draft the player release notes for ${ver || 'the next release'}: what players will notice, from the pull requests merged into development since the last v* tag. Short lines, no internal names.`,
+      blurb: 'A chat that drafts the player notes from the merged pull requests, for you to paste here.' }));
+    // who gets it
+    const ni = nowIdx(); const tier = (k, title, what, on, locked) => { const d = el('div', `tier sls${on ? ' on' : ''}${locked ? ' locked' : ''}`); d.append(el('span', 'lab', k), el('div', 'h3', title), el('p', 'small', what)); return d; };
+    const tiers = [tier('Team', 'Internal and test builds', s.internal, false, false), tier('Master', s.master.split(':')[0], s.master.split(':').slice(1).join(':').trim() || s.master, true, false)];
+    tiers.push(s.release ? tier('Release', s.release.split(':')[0], s.release, true, false) : tier('Release', 'Limited Beta keys', 'Opens in Beta Phase 2, once Gate 1 passes.', false, true));
+    STAGES.slice(ni + 1).filter((x) => x.release && (!s.release || x.release !== s.release)).slice(0, 2).forEach((x) => tiers.push(tier(x.name, x.release.split(':')[0], `Opens with ${x.name}.`, false, true)));
+    $('#tiers').replaceChildren(...tiers);
+    // launch steps: the release runbook, in order
+    const v = ver || '<version>'; const ol = $('#r-do'); ol.replaceChildren();
+    const step = (title, body, ...extra) => { const li = el('li'); li.append(el('div', 'h3', title)); if (body) li.append(el('p', 'small', body)); extra.forEach((x) => li.append(x)); ol.append(li); };
+    const acts = (...a) => { const d = el('div', 'actions'); d.style.marginTop = '6px'; d.append(...a); return d; };
+    step('Set the version', `Bump bundleVersion to ${v} in ProjectSettings on bleeding-edge and let it flow down. Never on master.`);
+    step('Move master', 'Fast-forward only. If it refuses, something committed to development directly: find it, do not force it.',
+      Object.assign(el('pre', 'code'), { textContent: 'git fetch origin\ngit checkout master\ngit merge --ff-only origin/development\ngit push origin master' }), acts(link('btn s sls', 'What moves', `${REPO}/compare/master...development`)));
+    step('Tag it', 'So the shipped build can be found after the branches move on.', Object.assign(el('pre', 'code'), { textContent: `git tag -a v${v} -m "Release ${v}"\ngit push origin v${v}` }));
+    step('Build from master in UGS', 'By hand for now: release automation is not built yet.', acts(link('btn s sls', 'UGS dashboard', 'https://cloud.unity.com')));
+    const shipActs = chosen.flatMap((p) => p.actions.filter((a) => a[2] === 'commit' && !/roll back|halt/i.test(a[0])).map((a) => actionBtn([`${a[0]}: ${p.name}`, a[1], 'commit'])));
+    step('Put it in front of players', chosen.length ? `On ${chosen.map((p) => p.name).join(', ')}. No way back from here: each opens the store or workflow, where a reviewer approves.` : 'Pick at least one platform in step 1.', acts(...shipActs));
+    $('#release-claude').replaceChildren(claudeBox({ key: 'release', title: `Launch flow: release ${ver || ''}`.trim(),
+      cmd: `/launch-flow-launch-wide Cut release ${v} from development for ${chosen.map((p) => p.name).join(', ') || 'the chosen platforms'}, following Docs/BRANCHING_AND_RELEASE.md "Runbook: cut a release". Check the blockers first, then ask me before every push and tag.`,
+      blurb: 'A chat that walks these five steps with you: it checks the blockers, then asks before every push and tag.' }));
+    renderStepNav(blk.length, nogo + gatesBad);
+  }
+  function renderStepNav(blockers, bad) {
+    const ver = draft.version.trim();
+    const S = [['what', 'What', ver && draft.plats.length ? 'ok' : ''], ['checks', 'Checks', blockers || bad ? 'bad' : (items.length ? 'ok' : '')], ['notes', 'Notes', draft.notes.trim() ? 'ok' : ''], ['who', 'Who gets it', 'ok'], ['launch', 'Launch', '']];
+    $('#stepnav').replaceChildren(...S.map(([id, n, cls], i) => { const a = el('a', `sls ${cls}`); a.href = `#release/${id}`; const b = el('b', '', cls === 'ok' ? '✓' : cls === 'bad' ? '!' : String(i + 1)); a.append(b, document.createTextNode(n)); return a; }));
+  }
+  $('#r-version').addEventListener('input', (e) => { draft.version = e.target.value; saveDraft(); clearTimeout(renderRelease.t); renderRelease.t = setTimeout(renderRelease, 400); });
+  $('#r-pn').addEventListener('input', (e) => { draft.notes = e.target.value; saveDraft(); renderStepNav(0, 0); clearTimeout(renderRelease.t); renderRelease.t = setTimeout(renderRelease, 400); });
+
   function renderChecklist() {
     const fp = $('#f-plat'), fs = $('#f-status'), fh = $('#f-human');
     if (fp.options.length === 1) PLATFORMS.forEach((p) => fp.append(new Option(p.name, p.key)));
-    const list = items.filter((i) => (!fp.value || i.platform === fp.value)
-      && (fs.value === 'all' || (fs.value === '' ? i.status !== 'done' : i.status === fs.value))
-      && (!fh.checked || i.needsHuman)).sort((a, b) => (a.rank || 99) - (b.rank || 99));
+    const list = items.filter((i) => (!fp.value || i.platform === fp.value) && (fs.value === 'all' || (fs.value === '' ? i.status !== 'done' : i.status === fs.value)) && (!fh.checked || i.needsHuman)).sort((a, b) => (a.rank || 99) - (b.rank || 99));
     const box = $('#items'); box.replaceChildren();
     if (!items.length) box.append(el('div', 'empty', 'No checklist items yet. They are seeded from the readiness audit’s ranked blockers.'));
     else if (!list.length) box.append(el('div', 'empty', 'Nothing matches these filters.'));
@@ -439,121 +845,91 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     const done = items.filter((i) => i.status === 'done').length;
     $('#c-count').textContent = items.length ? `${done} of ${items.length} done · ${items.filter((i) => i.needsHuman && i.status !== 'done').length} waiting on a human` : '';
   }
-
-  function renderLiveops() {
-    const c = comps(); const box = $('#l-body'); box.replaceChildren();
-    const t = el('table', 'tbl'); const tb = el('tbody');
-    [['ugs-development', 'UGS development'], ['ugs-production', 'UGS production'], ['web-production', 'Web at /play'], ['web-staging', 'Web staging']].forEach(([id, l]) => tb.append(compRow(id, l)));
-    t.append(tb); const w = el('div', 'scroll'); w.append(t); box.append(w);
-    const flags = c['ugs-production'] && c['ugs-production'].details;
-    const f = el('div', 'small'); f.style.marginTop = '8px';
-    if (flags && (flags.minimum_version || flags.kill_switches)) {
-      f.append(el('div', '', `Minimum client version: ${flags.minimum_version || 'none set'}`));
-      f.append(el('div', '', `Kill switches on: ${flags.kill_switches || 'none'}`));
-    } else f.append(el('div', 'muted', 'Launch flags (minimum version, kill switches) appear here once a production deploy records them.'));
-    box.append(f);
-  }
-
-  function renderGates() {
-    const c = comps(); const box = $('#g-body'); box.replaceChildren();
-    const t = el('table', 'tbl'); const tb = el('tbody');
-    GATES.forEach(([id, l]) => tb.append(compRow(id, l)));
-    Object.keys(c).filter((id) => id.startsWith('smoke-')).sort().forEach((id) => tb.append(compRow(id, `Smoke: ${id.slice(6)}`)));
-    if (!Object.keys(c).some((id) => id.startsWith('smoke-'))) { const tr = el('tr'); tr.append(el('td', '', 'Smoke per mode')); const td = el('td', 'muted', 'No smoke run recorded'); td.colSpan = 3; tr.append(td); tb.append(tr); }
-    t.append(tb); const w = el('div', 'scroll'); w.append(t); box.append(w);
-    const q = el('div', 'small'); q.style.display = 'grid'; q.style.gap = '4px';
-    if (quality) {
-      [['QA backlog open', quality.qa_open], ['of which P0', quality.qa_p0], ['EditMode failures at last full run', quality.editmode_failures], ['Unverified editor checks', quality.verification_red]].forEach(([k, v]) => { if (v != null) q.append(el('div', 'num', `${k}: ${v}`)); });
-      q.append(el('div', 'src', `${quality.source || ''} · as of ${quality.as_of || 'unknown'}`));
-    }
-    q.append(el('div', 'muted', 'Crash-free rate and performance budgets: not connected.'));
-    box.append(q);
-  }
+  ['#f-plat', '#f-status', '#f-human'].forEach((s) => $(s).addEventListener('change', renderChecklist));
 
   function renderRunbook() {
-    const box = $('#tl'); box.replaceChildren();
-    const order = ['T-7', 'T-1', 'T-0', 'T+1', 'T+7'];
+    const box = $('#tl'); box.replaceChildren(); const order = ['T-7', 'T-1', 'T-0', 'T+1', 'T+7'];
     if (!runbook.length) box.append(el('div', 'empty', 'No runbook steps yet.'));
     for (const ph of order) {
-      const steps = runbook.filter((s) => s.phase === ph).sort((a, b) => (a.order || 0) - (b.order || 0));
-      if (!steps.length) continue;
-      const row = el('div', 'phase'); row.append(el('div', 'when', ph));
-      const ol = el('ol');
-      steps.forEach((s) => { const li = el('li'); li.append(document.createTextNode(s.step || ''));
-        const m = el('span', 'small muted', ` · ${s.owner || 'whoever takes it'}`); li.append(m);
-        const st = el('select'); st.setAttribute('aria-label', 'Step status'); st.style.marginLeft = '8px';
-        ['todo', 'done', 'skipped'].forEach((v) => st.append(new Option(v, v))); st.value = s.status || 'todo';
+      const steps = runbook.filter((s) => s.phase === ph).sort((a, b) => (a.order || 0) - (b.order || 0)); if (!steps.length) continue;
+      const row = el('div', 'phase'); row.append(el('div', 'when h3', ph)); const ol = el('ol');
+      steps.forEach((s) => {
+        const li = el('li'); li.append(document.createTextNode(s.step || ''), el('span', 'src', ` · ${s.owner || 'whoever takes it'}`));
+        const st = el('select'); st.setAttribute('aria-label', 'Step status'); st.style.marginLeft = '8px'; ['todo', 'done', 'skipped'].forEach((v) => st.append(new Option(v, v))); st.value = s.status || 'todo';
         st.addEventListener('change', async () => { try { await db.collection('runbook').doc(s.id).update({ status: st.value, updatedAt: new Date().toISOString() }); } catch (e) { st.value = s.status || 'todo'; } });
-        li.append(st); ol.append(li); });
+        li.append(st); ol.append(li);
+      });
       row.append(ol); box.append(row);
     }
-    const tb = $('#rollback tbody'); tb.replaceChildren();
-    PLATFORMS.filter((p) => p.rollback).forEach((p) => {
+    $('#rollback tbody').replaceChildren(...PLATFORMS.filter((p) => p.rollback).map((p) => {
       const tr = el('tr'); tr.append(el('td', '', p.name), el('td', '', p.rollback));
-      const td = el('td'); const rb = p.actions.find((a) => /roll back|halt|previous|deploy to production/i.test(a[0])) || p.actions[p.actions.length - 1];
-      const a = el('a', '', rb[0]); a.href = rb[1]; a.target = '_blank'; a.rel = 'noopener'; td.append(a); tr.append(td); tb.append(tr);
-    });
+      const rb = p.actions.find((a) => /roll back|halt|previous|deploy to production/i.test(a[0])) || p.actions[p.actions.length - 1];
+      const td = el('td'); td.append(actionBtn([rb[0], rb[1], 's'])); tr.append(td); return tr;
+    }));
   }
 
-  function renderMetrics() {
-    const box = $('#m-body'); box.replaceChildren();
-    ['D1 retention', 'D7 retention', 'Crash-free sessions', 'Installs: Steam', 'Installs: iOS', 'Installs: Android', 'Website to install'].forEach((m) => {
-      const d = el('div', 'metric cut'); d.append(el('span', 'small muted', m), el('span', 'v', 'not connected')); box.append(d);
-    });
+  // ---------------------------------------------------------------- Signals
+  function renderSignals() {
+    const s = stageOf(CURRENT_STAGE); $('#sig-stage').textContent = s.name;
+    const t = (k, title, data) => { const d = el('div', 'tier sls on'); d.append(el('span', 'lab', k), el('div', 'h3', title), el('p', 'small', data)); return d; };
+    const tiers = [t('Team', 'Bleeding Edge and Development builds', 'Prototype feedback, bug testing, instrumented data'), t('Master', s.master.split(':')[0], s.master.split(':').slice(1).join(':').trim() || s.data)];
+    if (s.release) tiers.push(t('Release', s.release.split(':')[0], s.data));
+    $('#sig-tiers').replaceChildren(...tiers);
+    const g = $('#sig-gate'); const nx = STAGES[nowIdx() + 1];
+    if (s.gate) g.replaceChildren(el('span', 'lab', `${s.gate[0]}${nx ? `, to ${nx.name}` : ''}`), el('div', 'h3', s.gate[1]), el('div', 'meter'),
+      el('p', 'small', `${s.gate[2]}: not measured. It reads ${s.data.toLowerCase()}, which is not connected to this page yet, and its threshold is not set.`));
+    else g.replaceChildren(el('span', 'lab', 'No gate'), el('p', 'small', 'This stage has no gate after it.'));
+    $('#m-body').replaceChildren(...['D1 retention', 'D7 retention', 'Co-op repeat play', 'Crash-free sessions', 'Installs: Steam', 'Installs: iOS', 'Installs: Android', 'Website to install'].map((m) => { const d = el('div', 'metric sls'); d.append(el('span', 'small', m), el('span', 'v', 'not connected')); return d; }));
   }
-
   function renderChangelog() {
-    const box = $('#ch-body'); if (!changelog.length) return; box.replaceChildren();
-    changelog.sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 8).forEach((r) => {
-      const d = el('details'); const s = el('summary'); s.append(el('strong', '', r.tag || r.id), document.createTextNode(` · ${r.date || ''}`)); d.append(s);
-      d.append(el('p', 'steps', r.notes || '')); const u = safeUrl(r.url); if (u) { const a = el('a', 'small', 'The release'); a.href = u; a.target = '_blank'; a.rel = 'noopener'; d.append(a); }
-      box.append(d);
+    $$('.changelog').forEach((box) => {
+      if (!changelog.length) { box.replaceChildren(el('div', 'empty', 'No release has been tagged through the release pipeline yet. Each tagged build\'s notes land here.')); return; }
+      box.replaceChildren(...[...changelog].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 8).map((r) => {
+        const d = el('details'); const s = el('summary'); s.append(el('strong', '', r.tag || r.id), document.createTextNode(` · ${r.date || ''}`)); d.append(s, el('p', 'steps', r.notes || ''));
+        const u = safeUrl(r.url); if (u) d.append(link('small', 'The release', u)); return d;
+      }));
     });
   }
 
-  function renderAll() { renderPills(); renderPlatform(); renderChecklist(); renderLiveops(); renderGates(); renderRunbook(); renderChangelog(); }
-  ['#f-plat', '#f-status', '#f-human'].forEach((s) => $(s).addEventListener('change', renderChecklist));
-  renderMetrics(); renderAll();
+  function renderAll() { renderPills(); renderMission(); renderPipeline(); renderBuilds(); renderLiveops(); renderRelease(); renderRunbook(); renderSignals(); renderChangelog(); }
+  looks(); sea(); renderAll(); route();
+  window.addEventListener('hashchange', route);
 
   async function resolveNames() {
-    if (!user) return;
-    const ids = [...new Set(items.map((i) => i.takenBy).filter(Boolean))];
-    if (!ids.length) return;
-    const ps = await user.profiles(ids);
-    ids.forEach((id) => { names[id] = (ps[id] && ps[id].name) || 'someone'; });
-    renderAll();
+    if (!user) return; const ids = [...new Set(items.map((i) => i.takenBy).filter(Boolean))].filter((id) => !names[id]); if (!ids.length) return;
+    try { const ps = await user.profiles(ids); ids.forEach((id) => { names[id] = (ps[id] && ps[id].name) || 'someone'; }); renderAll(); } catch (e) {}
   }
-
+  const use = (cap) => (window.claude && claude.use) ? claude.use(cap).catch(() => null) : Promise.resolve(null);
   (async () => {
-    claude.use('mcp').then((m) => { mcp = m; renderPlatform(); });
-    db = await claude.use('db');
-    user = await claude.use('user');
-    if (user) { try { me = await user.me(); } catch (e) { me = null; } }
-    if (!db) { $('#verdict').textContent = 'This view cannot reach the console’s shared store.'; return; }
+    use('mcp').then((m) => { mcp = m; renderAll(); });
+    db = await use('db'); user = await use('user');
+    if (user) { try { me = await user.me(); $('#who-name').textContent = (me && me.name) || 'Signed in'; } catch (e) { me = null; } }
+    if (!db) { $('#boardsrc').textContent = 'This view cannot reach the console’s shared store.'; return; }
     const err = () => { $('#boardsrc').textContent = 'The shared store stopped answering. Reload the page.'; };
-    db.doc('status/board').onSnapshot((s) => { board = s.exists ? s.data() : null; boardMeta = board; renderAll(); }, err);
+    db.doc('status/board').onSnapshot((s) => { board = s.exists ? s.data() : null; renderAll(); }, err);
     db.doc('status/quality').onSnapshot((s) => { quality = s.exists ? s.data() : null; renderGates(); }, err);
     db.collection('checklist').onSnapshot((q) => { items = q.docs.map((d) => ({ id: d.id, ...d.data() })); renderAll(); resolveNames(); }, err);
-    db.collection('runbook').onSnapshot((q) => { runbook = q.docs.map((d) => ({ id: d.id, ...d.data() })); renderRunbook(); }, err);
+    db.collection('runbook').onSnapshot((q) => { runbook = q.docs.map((d) => ({ id: d.id, ...d.data() })); renderRunbook(); renderMission(); }, err);
     db.collection('changelog').onSnapshot((q) => { changelog = q.docs.map((d) => ({ id: d.id, ...d.data() })); renderChangelog(); }, err);
   })();
 
   // Ask Claude: answers only from what this page shows. Hidden when the viewer cannot use it.
   (async () => {
-    const sample = await claude.use('sample');
-    if (!sample) return;
-    $('#askp').hidden = false;
-    let ctl = null;
+    const sample = await use('sample'); if (!sample) return;
+    $('#askp').hidden = false; let ctl = null;
     $('#askbtn').addEventListener('click', async () => {
       const q = $('#q').value.trim(); if (!q) return;
       if (ctl) ctl.abort(); ctl = new AbortController();
       const out = $('#answer'); out.hidden = false; out.textContent = ''; $('#askstate').textContent = 'Thinking…';
-      const ctx = { milestones: 'Mobile release (iOS, Android) when activation is ready, no date set; Steam keys by March 2027, before GDC', steamCountdownTo: MILESTONE_DATE, components: comps(),
-        checklist: items.map(({ rank, title, platform, owner, status, needsHuman, risk, size, steps }) => ({ rank, title, platform, owner, status, needsHuman, risk, size, steps })) };
-      const prompt = `You help the Cosmic Shore team read their launch console. Answer the question using ONLY the JSON below (pipeline status and the launch checklist). Say plainly when the data does not answer it. Be brief; name the checklist rank (#n) and who decides. Never invent numbers or dates.\n\nJSON:\n${JSON.stringify(ctx)}\n\nQuestion: ${q}`;
+      const ctx = { milestones: 'Mobile release (iOS, Android) when activation is ready, no date set; Steam keys by March 2027, before GDC', steamCountdownTo: MILESTONE_DATE, currentStage: CURRENT_STAGE, stages: STAGES, components: comps(),
+        checklist: items.map(({ rank, title, platform, owner, status, needsHuman, risk, size, steps }) => ({ rank, title, platform, owner, status, needsHuman, risk, size, steps })),
+        runbook: runbook.map(({ phase, step, owner, status }) => ({ phase, step, owner, status })), releaseDraft: draft };
+      const prompt = `You help the Cosmic Shore team read their launch console. Answer the question using ONLY the JSON below (pipeline status, the launch checklist, the runbook and the release draft). Say plainly when the data does not answer it. Be brief; name the checklist rank (#n) and who decides. Never invent numbers or dates.\n\nJSON:\n${JSON.stringify(ctx)}\n\nQuestion: ${q}`;
       try { const r = await sample(prompt, { signal: ctl.signal, onText: ({ text }) => { out.textContent = text; $('#askstate').textContent = ''; } }); out.textContent = r.text; $('#askstate').textContent = ''; }
       catch (e) { $('#askstate').textContent = e && e.code === 'rate_limited' ? 'Too many questions at once. Wait a minute.' : e && e.code === 'cancelled' ? '' : 'No answer came back.'; if (e && e.text) out.textContent = e.text; }
     });
   })();
 })();
 </script>
+</body>
+</html>

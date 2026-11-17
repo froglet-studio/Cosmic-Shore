@@ -8830,7 +8830,7 @@ the toasts one fixed spot of their own.
 - **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
   colour shard tiles (no such systems yet).
 
-## 213. Rev 117 mockups: the Launch Console as the release tool, six pages (2026-11-17, awaiting a pick)
+## 213. Rev 117 mockups: the Launch Console as the release tool, six pages (2026-11-17, built as five pages)
 
 **Asked** (Shombith, 2026-11-17): "this is a tool I want to use for performing releases whenever I want and in the
 future too and make this tool the best. So first up why not pull up frogma and create some state of the art mockups
@@ -8863,3 +8863,12 @@ menu's 60) and counts the theme blocks' own hexes as typed-in colours. Every num
 **Differs from the live console** (`Docs/LAUNCH/console/index.html`): the live page is one long scroll of panels;
 this splits it into pages around the release itself, adds the stage track, the branch pipeline, per-build steps,
 the five-step release and the themes. Nothing in the live console changed.
+
+**Picked and built** (Shombith, 2026-11-17): "build all these", then "I dont think theme needs another page it can be
+on the bottom left with the bar check analytics page we have". Built into `Docs/LAUNCH/console/index.html` and published
+to the Launch Console artifact as five pages, Mission, Pipeline, Builds, Release and Signals, on the console's own store
+(no sample numbers: what is not connected says so). The Theme page was dropped: the theme picker sits at the foot of the
+rail, Froglet Analytics' own picker and sea (`theme.js`, `themes.css` from `Tools/Analytics/console/`, published beside
+the page). The Pipeline and Release pages follow `Docs/BRANCHING_AND_RELEASE.md` (fast-forward promotions, the five
+steps of "cut a release"); the Release page's draft (version, platforms, notes) is kept in the viewer's browser.
+
