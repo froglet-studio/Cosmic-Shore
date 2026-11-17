@@ -1115,5 +1115,17 @@ namespace CosmicShore.ScriptableObjects
         public string ScoreRetryRaid = "Same goal: {goal} crystals in {cells} cells";
         public string ToastKaiju = "KAIJU IN OPEN WATER";
         public string ToastKaijuSub = "A giant waits between the cells for the Ark's hull. Bring it down.";
+        [Tooltip("Toast: the pilot is past the stray radius; held while the countdown runs ({seconds}: 5, 4, 3, 2, 1).")]
+        public string ToastStray = "RETURN TO THE ARK: {seconds}";
+        [Tooltip("Toast: the line under the stray countdown when the pilot carries nothing ({seconds}).")]
+        public string ToastStraySub = "Too far out. Turn back or the Ark recalls you.";
+        [Tooltip("Toast: the line under the stray countdown when the pilot carries crystals ({carried}, {seconds}).")]
+        public string ToastStrayCarrySub = "Turn back or lose the {carried} crystals you carry.";
+        [Tooltip("Toast: the countdown ran out and the pilot was set back in their formation seat.")]
+        public string ToastRecalled = "RECALLED TO THE ARK";
+        [Tooltip("Toast: the line under the recall when nothing was lost.")]
+        public string ToastRecalledSub = "Back in your seat beside the Ark.";
+        [Tooltip("Toast: the line under the recall when carried crystals were lost ({count}).")]
+        public string ToastRecalledLostSub = "{count} carried crystals lost.";
     }
 }

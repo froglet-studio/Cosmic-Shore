@@ -60,6 +60,17 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(200f), Tooltip("An AI wingmate further than this from the Ark is brought back to its flank.")]
         float wingmateLeash = 1600f;
 
+        [Header("Voyage - straying from the Ark")]
+        [SerializeField, Range(1f, 3f), Tooltip("How far the pilot may range from the Ark, in radii of the cell it is at " +
+                                                "(Shombith 2026-11-17). The Ark anchors at a cell's core, so 1 is that " +
+                                                "cell's membrane; 1.25 at 2.5x cells is about 3750 u. Past it a 5-4-3-2-1 " +
+                                                "warning runs; still out when it ends, the pilot is set back in their " +
+                                                "formation seat and loses every crystal they carry unbanked.")]
+        float strayRadiusCells = 1.25f;
+
+        [SerializeField, Range(1f, 15f), Tooltip("Seconds of warning before a pilot past the stray radius is recalled.")]
+        float strayCountdownSeconds = 5f;
+
         [SerializeField, Tooltip("Where the squad sails beside the Ark - one seat off each side, one over its back - and how " +
                                  "the intro launches them there from the hangar (Shombith 2026-11-17).")]
         ArkFormationSettings arkFormation = new();
@@ -357,6 +368,8 @@ namespace CosmicShore.ScriptableObjects
         }
 
         public float WingmateLeash => wingmateLeash;
+        public float StrayRadiusCells => strayRadiusCells;
+        public float StrayCountdownSeconds => strayCountdownSeconds;
         public ArkFormationSettings ArkFormation => arkFormation ??= new ArkFormationSettings();
         public float FindDistance => findDistance;
         public float VaultRadius => vaultRadius;
@@ -434,6 +447,9 @@ namespace CosmicShore.ScriptableObjects
             cfg.CellScale = Mathf.Max(1f, cellScale);
             cfg.CellGap = Mathf.Max(0f, cellGap);
             cfg.ScatterLifeSpawns = scatterLifeSpawns;
+            // The voyage's own leash (the Arkway's is three cell radii, which a pilot never reaches in a voyage cell).
+            cfg.LeashRadiusFactor = Mathf.Max(1f, strayRadiusCells);
+            cfg.LeashGraceSeconds = Mathf.Max(1f, strayCountdownSeconds);
             return cfg;
         }
     }

@@ -321,3 +321,24 @@ sweeps (9.7 + 7 ms), the crystals' shimmer (171 calls).
   too, and plants are the cell's growing prism mass. Creatures stay at 2x (their crystals), plants go back to authored
   (on a phone, never above `mobileCellLifeScale`).
 - Not run in Unity.
+
+## 14. Straying from the Ark: the 5-4-3-2-1 recall (Shombith, 2026-11-17)
+
+"When the player goes far beyond the ark there should be the teleporting feature but only with a warning 5 4 3 2 1 ...
+if the player does not come inside the threshold during that timer they lose all their crystals."
+
+- **The rule is the Arkway's leash**, which the voyage already ran at three cell radii (about 9,000 u at 2.5x cells, so
+  nobody reached it). Voyage.asset now sets it: `strayRadiusCells` 1.25 (radii of the cell the Ark is at; the Ark
+  anchors at the core, so the whole cell stays raidable, about 3,750 u) and `strayCountdownSeconds` 5
+  (`VoyageToyDefinitionSO.BuildArkConfig` writes them into `LeashRadiusFactor`/`LeashGraceSeconds`).
+- **The warning** is a threat toast in the toast's own spot that counts 5, 4, 3, 2, 1 (`ToastStray`); the line under it
+  names the crystals at stake when the pilot carries any (`ToastStrayCarrySub`, else `ToastStraySub`). Other toasts wait
+  behind it. Flying back inside (0.95 of the radius) clears it. The ghostly leash shell (`ArkLeashShell`) already draws
+  the line.
+- **The recall**: still out when it ends, the pilot is set back in their own formation seat (seat 1 port, 2 starboard,
+  3 over the back, `ArkFormation.SlotPose`), speed kept, trail penned for the jump, and every crystal they carry
+  unbanked is gone (not spilled into the sea). Toast `ToastRecalled` with `ToastRecalledLostSub` or `ToastRecalledSub`.
+- Code: hooks on `ArkwayRun` (`LeashCountdownText`, `RecallPose`, `Recalled`), the countdown band in
+  `ArkwayVoyageHud.ShowCountdown(line, under)`, the voyage's side in `VoyageRun.Stray.cs`. Each machine leashes its own
+  pilot (a party friend's carried crystals are their own). AI wingmates keep their own leash (`BringWingmates`).
+- Not run in Unity.
