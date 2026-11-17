@@ -381,6 +381,7 @@ def main():
     ap.add_argument("--rest", default="", help="rungs also raced from Time 0 (empty: none)")
     ap.add_argument("--wide", type=int, default=0, help="how many W2 curriculum courses (raced at I2)")
     ap.add_argument("--wide-w", type=float, default=0.5, help="curriculum weight of the wide courses (0-1)")
+    ap.add_argument("--seed-from", action="append", default=[], help="a best.json (or list) to seed phase 1 with; repeatable")
     ap.add_argument("--limit", type=float, default=400)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out", default=None)
@@ -444,6 +445,12 @@ def main():
     space = Space(dims)
     es = SepCMAES(space, seed=1, popsize=a.popsize, sigma0=0.2)
     shipped = shipped_genomes(g)
+    # --seed-from: earlier searches' best genomes join the shipped ones ("a new round grows from every genome that
+    # exists", AI_PLAN.md); genes they lack (a gene added since) take the shipped value.
+    for path in a.seed_from:
+        extra = json.load(open(path))
+        for e in (extra if isinstance(extra, list) else [extra]):
+            shipped.append(dict(shipped[0], **{k: v for k, v in e.items() if not k.startswith("_")}))
     es.seed([space.encode(p) for p in shipped])
     archive = []
     for gen in range(a.generations):
