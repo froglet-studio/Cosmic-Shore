@@ -1,0 +1,675 @@
+{
+    "schemaVersion": 1,
+    "reportId": "86d8bc229dd4",
+    "timestamp": "2026-11-17T00:08:41.2490857Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "bleeding-edge",
+    "gitCommitHash": "81dd375f55",
+    "trigger": "Cell swap -> Barren",
+    "loadKind": "launch",
+    "completionReason": "Cell swap: the new world is laid and grown, the veil lifts",
+    "interrupted": false,
+    "sceneFrom": "Voyage",
+    "sceneTo": "Voyage",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 5980.048828125,
+    "visualReadyMs": -1.0,
+    "waitMs": 599.7994995117188,
+    "humanWaitMs": 0.0,
+    "workMs": 5380.24951171875,
+    "unattributedMs": 2127.65869140625,
+    "framesDuringLoad": 117,
+    "avgFpsDuringLoad": 19.5650577545166,
+    "worstFrameMs": 622.2140502929688,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 20.796899795532228,
+            "endMs": 620.5963745117188,
+            "durationMs": 599.7994995117188,
+            "exclusiveMs": 599.7994995117188,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: 0 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 620.6715698242188,
+            "endMs": 649.2230224609375,
+            "durationMs": 28.55145263671875,
+            "exclusiveMs": 28.55145263671875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 649.2313842773438,
+            "endMs": 1748.816650390625,
+            "durationMs": 1099.585205078125,
+            "exclusiveMs": 1099.585205078125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1749.9898681640625,
+            "endMs": 1753.294189453125,
+            "durationMs": 3.3043212890625,
+            "exclusiveMs": 3.3043212890625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1775.61474609375,
+            "endMs": 1978.6768798828125,
+            "durationMs": 203.0621337890625,
+            "exclusiveMs": 1.5736083984375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 4,
+            "depth": 1,
+            "label": "Cell environment spawn (cell 0, SpawnableYggdra)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1777.1883544921875,
+            "endMs": 1978.4998779296875,
+            "durationMs": 201.3115234375,
+            "exclusiveMs": 1.43310546875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 5,
+            "depth": 2,
+            "label": "Spawnable node: SpawnableYggdra (SpawnableYggdra)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1778.6214599609375,
+            "endMs": 1971.8587646484375,
+            "durationMs": 193.2373046875,
+            "exclusiveMs": 5.8392333984375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 6,
+            "depth": 3,
+            "label": "Prism layout bake: SpawnableYggdra",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1779.805908203125,
+            "endMs": 1798.3941650390625,
+            "durationMs": 18.5882568359375,
+            "exclusiveMs": 18.5882568359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 6,
+            "depth": 3,
+            "label": "Streamed prism lay (SpawnableYggdra::BLOCK, 8585 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1803.0489501953125,
+            "endMs": 3896.764404296875,
+            "durationMs": 2093.71533203125,
+            "exclusiveMs": 635.549560546875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 8,
+            "depth": 4,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1978.6966552734375,
+            "endMs": 1978.923828125,
+            "durationMs": 0.2271728515625,
+            "exclusiveMs": 0.2271728515625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 8,
+            "depth": 4,
+            "label": "Flora spawn (GyroidFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "startMs": 1979.283447265625,
+            "endMs": 1993.5185546875,
+            "durationMs": 14.235107421875,
+            "exclusiveMs": 14.235107421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 8,
+            "depth": 4,
+            "label": "Flora spawn (GyroidFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "startMs": 1993.577880859375,
+            "endMs": 2033.01953125,
+            "durationMs": 39.441650390625,
+            "exclusiveMs": 39.441650390625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 8,
+            "depth": 4,
+            "label": "Flora spawn (GyroidFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "startMs": 2033.0736083984375,
+            "endMs": 2034.9771728515625,
+            "durationMs": 1.903564453125,
+            "exclusiveMs": 1.903564453125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 8,
+            "depth": 4,
+            "label": "Flora spawn (SchwarzPFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "startMs": 2034.998779296875,
+            "endMs": 2069.818603515625,
+            "durationMs": 34.81982421875,
+            "exclusiveMs": 34.81982421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": 8,
+            "depth": 4,
+            "label": "Flora spawn (QuasicrystalFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "startMs": 2069.87109375,
+            "endMs": 2086.686767578125,
+            "durationMs": 16.815673828125,
+            "exclusiveMs": 16.815673828125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 15,
+            "parentId": 8,
+            "depth": 4,
+            "label": "Streamed prism lay (Ark, 2 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 2109.834228515625,
+            "endMs": 3004.311279296875,
+            "durationMs": 894.47705078125,
+            "exclusiveMs": 894.47705078125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 16,
+            "parentId": 8,
+            "depth": 4,
+            "label": "Streamed prism lay (Ark, 2 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 3007.46826171875,
+            "endMs": 3353.98291015625,
+            "durationMs": 346.5146484375,
+            "exclusiveMs": 346.5146484375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 17,
+            "parentId": 8,
+            "depth": 4,
+            "label": "Streamed prism lay (Ark, 104 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 3354.025390625,
+            "endMs": 3463.756591796875,
+            "durationMs": 109.731201171875,
+            "exclusiveMs": 109.731201171875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 3145.375,
+            "percent": 52.597816467285159,
+            "spanCount": 12,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 2127.65869140625,
+            "percent": 35.57928466796875,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 599.7994995117188,
+            "percent": 10.030010223388672,
+            "spanCount": 1,
+            "waitMs": 599.7994995117188
+        },
+        {
+            "category": 6,
+            "name": "Flora",
+            "attributedMs": 107.2158203125,
+            "percent": 1.7928920984268189,
+            "spanCount": 5,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Streamed prism lay (Ark, 2 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 2,
+            "totalMs": 1240.99169921875,
+            "exclusiveMs": 1240.99169921875,
+            "maxSingleMs": 894.47705078125,
+            "isWait": false
+        },
+        {
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1099.585205078125,
+            "exclusiveMs": 1099.585205078125,
+            "maxSingleMs": 1099.585205078125,
+            "isWait": false
+        },
+        {
+            "label": "Streamed prism lay (SpawnableYggdra::BLOCK, 8585 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 2093.71533203125,
+            "exclusiveMs": 635.549560546875,
+            "maxSingleMs": 2093.71533203125,
+            "isWait": false
+        },
+        {
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 599.7994995117188,
+            "exclusiveMs": 599.7994995117188,
+            "maxSingleMs": 599.7994995117188,
+            "isWait": true
+        },
+        {
+            "label": "Streamed prism lay (Ark, 104 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 109.731201171875,
+            "exclusiveMs": 109.731201171875,
+            "maxSingleMs": 109.731201171875,
+            "isWait": false
+        },
+        {
+            "label": "Flora spawn (GyroidFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "count": 3,
+            "totalMs": 55.580322265625,
+            "exclusiveMs": 55.580322265625,
+            "maxSingleMs": 39.441650390625,
+            "isWait": false
+        },
+        {
+            "label": "Flora spawn (SchwarzPFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "count": 1,
+            "totalMs": 34.81982421875,
+            "exclusiveMs": 34.81982421875,
+            "maxSingleMs": 34.81982421875,
+            "isWait": false
+        },
+        {
+            "label": "Cell swap: 0 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 28.55145263671875,
+            "exclusiveMs": 28.55145263671875,
+            "maxSingleMs": 28.55145263671875,
+            "isWait": false
+        },
+        {
+            "label": "Prism layout bake: SpawnableYggdra",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 18.5882568359375,
+            "exclusiveMs": 18.5882568359375,
+            "maxSingleMs": 18.5882568359375,
+            "isWait": false
+        },
+        {
+            "label": "Flora spawn (QuasicrystalFlora)",
+            "category": 6,
+            "categoryName": "Flora",
+            "count": 1,
+            "totalMs": 16.815673828125,
+            "exclusiveMs": 16.815673828125,
+            "maxSingleMs": 16.815673828125,
+            "isWait": false
+        },
+        {
+            "label": "Spawnable node: SpawnableYggdra (SpawnableYggdra)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 193.2373046875,
+            "exclusiveMs": 5.8392333984375,
+            "maxSingleMs": 193.2373046875,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 3.3043212890625,
+            "exclusiveMs": 3.3043212890625,
+            "maxSingleMs": 3.3043212890625,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 203.0621337890625,
+            "exclusiveMs": 1.5736083984375,
+            "maxSingleMs": 203.0621337890625,
+            "isWait": false
+        },
+        {
+            "label": "Cell environment spawn (cell 0, SpawnableYggdra)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 201.3115234375,
+            "exclusiveMs": 1.43310546875,
+            "maxSingleMs": 201.3115234375,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.2271728515625,
+            "exclusiveMs": 0.2271728515625,
+            "maxSingleMs": 0.2271728515625,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 181.86810302734376,
+            "durationMs": 622.2140502929688,
+            "during": "Cell swap: the retiring world suctions away (1.1s)"
+        },
+        {
+            "atMs": 2280.569091796875,
+            "durationMs": 423.643798828125,
+            "during": "Streamed prism lay (Ark, 2 prisms)"
+        },
+        {
+            "atMs": 3468.02294921875,
+            "durationMs": 318.9322814941406,
+            "during": "Streamed prism lay (Ark, 2 prisms)"
+        },
+        {
+            "atMs": 3899.2978515625,
+            "durationMs": 303.06439208984377,
+            "during": "Streamed prism lay (SpawnableYggdra::BLOCK, 8585 prisms)"
+        },
+        {
+            "atMs": 2683.822509765625,
+            "durationMs": 246.5019989013672,
+            "during": "Streamed prism lay (Ark, 2 prisms)"
+        },
+        {
+            "atMs": 3356.957275390625,
+            "durationMs": 206.50750732421876,
+            "during": "Streamed prism lay (Ark, 2 prisms)"
+        },
+        {
+            "atMs": 2844.809814453125,
+            "durationMs": 163.51998901367188,
+            "during": "Streamed prism lay (Ark, 2 prisms)"
+        },
+        {
+            "atMs": 3009.82763671875,
+            "durationMs": 160.64059448242188,
+            "during": "Streamed prism lay (Ark, 2 prisms)"
+        },
+        {
+            "atMs": 2526.03466796875,
+            "durationMs": 159.09999084472657,
+            "during": "Streamed prism lay (Ark, 2 prisms)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Cell swap -> Barren"
+        },
+        {
+            "atMs": 1753.40673828125,
+            "label": "Flora/fauna spawner started (cell 0, RandomLifeSpawner)"
+        },
+        {
+            "atMs": 2086.74951171875,
+            "label": "Flora/fauna spawner started (cell 0, RandomLifeSpawner)"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Suction: prisms not created yet (invisible; creation cancelled)",
+            "value": 163
+        },
+        {
+            "name": "Prisms reused from the environment pool",
+            "value": 4259
+        },
+        {
+            "name": "Prisms laid during load",
+            "value": 8693
+        },
+        {
+            "name": "Flora spawned during load",
+            "value": 5
+        },
+        {
+            "name": "Prisms cloned by InstantiateAsync",
+            "value": 4434
+        },
+        {
+            "name": "Frames an async clone batch waited to integrate",
+            "value": 6
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 8828
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism clone: InstantiateAsync batch, call to integrated (wall time)",
+            "count": 5,
+            "totalMs": 1166.145751953125,
+            "maxSingleMs": 346.31829833984377
+        },
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 8829,
+            "totalMs": 797.667724609375,
+            "maxSingleMs": 25.521900177001954
+        },
+        {
+            "label": "Prism lay: Initialize (reset + grow coroutine start)",
+            "count": 8693,
+            "totalMs": 292.02288818359377,
+            "maxSingleMs": 13.335399627685547
+        },
+        {
+            "label": "Prism lay: team + pose",
+            "count": 8693,
+            "totalMs": 201.4763946533203,
+            "maxSingleMs": 0.22339999675750733
+        },
+        {
+            "label": "Prism lay: TargetScale (scale-manager registration)",
+            "count": 8693,
+            "totalMs": 85.77580261230469,
+            "maxSingleMs": 0.414000004529953
+        },
+        {
+            "label": "Prism lay: kind + trail.Add",
+            "count": 8693,
+            "totalMs": 18.631000518798829,
+            "maxSingleMs": 0.6638000011444092
+        },
+        {
+            "label": "Prism lay: authored-scale admission",
+            "count": 108,
+            "totalMs": 0.1615000069141388,
+            "maxSingleMs": 0.015200000256299973
+        }
+    ],
+    "errors": [],
+    "hints": [
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "0.6s (10%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "spawn-heavy",
+            "severity": 0,
+            "title": "Object spawning is the main workload",
+            "finding": "3.3s (54%) went to spawning environment/lifeforms/AI.",
+            "fixAdvice": "Pool the prefabs, pre-instantiate during the splash, or spread instantiation across more frames.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "unattributed",
+            "severity": 0,
+            "title": "A large share of the load is unattributed",
+            "finding": "2.1s (36%) had no active span.",
+            "fixAdvice": "Add LoadInsights.Measure(...) spans around the code that runs there (check the stalls list and timeline gaps for where).",
+            "matchedMarker": ""
+        }
+    ]
+}
