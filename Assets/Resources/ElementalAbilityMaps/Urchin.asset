@@ -78,3 +78,4 @@ MonoBehaviour:
     UpgradeDescription: Enemy trail is ridden at your friendly speed. Hostile mass
       normally crawls, which punishes the raid exactly when you most want to be
       moving; overcharged, you cross it at full pace while still converting it.
+  omniAbilityLabel: reloads its spikes
