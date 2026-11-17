@@ -24916,3 +24916,21 @@ writer until that is looked at.
 
 1. Arcade > Thornline, Shrike, I1 with a Legendary rival: it finishes in about 49 s, aiming crisply with no wobble.
    MinigameThornline's controller shows AI Nose Lead By Difficulty 2.5 / 3 / 8 / 9.2 and Follow -1 / -1 / -1 / 1.6.
+
+## Honeyguide and Spearline AI stalls fixed (2026-11-17, elemental loop step 3, overnight run)
+
+Verified:
+- Honeyguide: the race judge's trace showed the hull frozen in place, with its transformer off and no ride under way.
+  A ride that began on top of another (a trigger's dart, then a slip in the same frame) read the transformer as already
+  off and never turned it back on. On the Slip Line confirm (seeds 101-104, 96 races) the timeouts went from 8 to 0.
+- Spearline: the trace showed the AI circling 11 u wide, 630 u from its ring, for up to 185 s, its nose lead commanding
+  up to 40 degrees past the aim. With the lead capped at 10 degrees: seeds 1-2 at Legendary I3-I4 went from 4 timeouts to
+  4 finishes, and on seeds 3-5 at I1-I4 (12 races a side) every race finished on both, with a total time within 1%.
+- No frozen or long slowed span in 12 traced races of the polish six's Time games.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor.
+
+1. Arcade > Slip Line, Honeyguide AI rival, I2: watch a few races. The rival never stops dead mid-course after a slip or
+   a dart, and finishes in about 2 minutes.
+2. Arcade > Spearline, Swordfish AI rival at Legendary, I3: the rival never spins in a tight circle away from the ring.
