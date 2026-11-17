@@ -876,20 +876,26 @@ zig-zag's next key after a blast had already opened the way), and Hard at I1 and
 threading pilot out to the key beside it). The full table is in `MINIGAME_TRAINING_PLAN.md` section 6.2.
 
 **In the editor** (2026-11-17, the open Unity editor, `SwitchbackSoakRunner`: I4 gauntlet, fixed seed 45_504, three AI
-Dolphins at Medium, offline host, time scale 1, the same build both sides; "before" is `BreakFirst`). First batch, three
-races a side:
+Dolphins at Medium, offline host, time scale 1, the same build both sides; "before" is `BreakFirst`). Six races a side,
+in two batches with the order swapped (before, after; then after, before):
 
-| | Winner's finish, s | Turn-aways (9 pilot-races) | Passes | Hits: course / rival trail / own trail | Gates threaded (9 pilots) |
+| | Winner's finish, s | Turn-aways (18 pilot-races) | Passes | Hits: course / rival trail / own trail | Gates threaded (18 pilots) |
 |---|---|---|---|---|---|
-| Before | 189.6, 190.4, 184.1 (mean 188.0) | 6 (2, 1, 3 a race) | - | 436 / 212 / 10 | 204 |
-| After | 190.5, 204.7, 197.4 (mean 197.5) | 0 | 14 | 526 / 277 / 62 | 208 |
+| Before | 189.6, 190.4, 184.1, 183.7, 202.5, 215.1 (mean 194.2, sd 12.3) | 17 (1 to 5 a race) | - | 912 / 463 / 14 | 417 |
+| After | 190.5, 204.7, 197.4, 209.1, 202.5, 188.7 (mean 198.8, sd 8.1) | 0 | 31 | 1061 / 581 / 76 | 423 |
 
-Every race finished (the winner threaded 26 of 26). The turn-aways are gone. The clock is NOT shown faster: the three
-"after" winners averaged 9.5 s slower, inside the spread of three races (the slowest, 204.7 s, was won by a pilot the
-rule never touched: 0 passes, 105 course hits), and the pilots hit more prisms. Read with the offline table (24
-courses: unchanged to 3 s faster at I4), this batch cannot tell a real cost from noise; a second batch is recorded
-below when it is in. If the gauntlet does turn out slower with the rule, the lever is how much air a line needs to
-count as a pass (`PassMargin`, 2 u), not the rule.
+Every race finished (the winner threaded 26 of 26). The turn-aways are gone: the old AI left a flyable ring for a
+crystal about three times a race here. The clock is NOT shown to move: 4.6 s between the means, with 8-12 s between
+one race and the next on the same course (after the first three races a side the gap read 9.5 s; the next three took
+it back). The "after" pilots hit about 16% more course prisms, which is also inside the spread (22 hits either way per
+pilot). So the editor shows the rule holding and does not show it faster or slower; the offline table (24 courses)
+says unchanged to 3 s faster at I4. The lever, if it is ever shown to cost time, is how much air a line needs to count
+as a pass (`PassMargin`, 2 u), not the rule.
+
+A wider lane was tried the same day and not kept: `PassMargin` 5 u (the 8 u lane the planner gives a threading pilot,
+11 u off a Danger prism), three races: 205.4, 217.8, 186.1 s (mean 203.1), 11 passes, no turn-aways. No better, and it
+would not call the opening Yash described a pass (a seal is a 3 x 3 of 7 u cubes: two cubes gone is a 14 u hole, a
+pass at 2 u of air and not at 5). The raw rows of all 15 races are kept beside the session's hand-over note.
 
 **Three things the first drafts got wrong** (all caught offline before any editor time): pass points spread across the
 door's eye (42 u at I4) instead of the ring's mouth (20 u) made the AI miss 73 rings in 24 races where it had missed 4;

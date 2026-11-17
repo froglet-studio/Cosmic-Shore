@@ -248,6 +248,10 @@ the same source as the studios' `studio-domains.js`): game Ruby is magenta, neve
   pass points were first spread across the door's eye (42 u at I4), wider than the ring (20 u): the AI aimed outside
   its own mouth and missed 73 rings in 24 races where it had missed 4 (2026-11-17). A missed mouth costs a loop, a
   plain prism 0.25 s, so a pass point stays well inside the mouth (`SwitchbackBlastPlanner.PassMouthShare`).
+- **Three editor races a side cannot settle a 5% question.** Switchback's speed-over-breaking A/B (I4, three AI
+  Dolphins, the same course): after three races a side the new rule's winners looked 9.5 s slower; after six a side the
+  gap was 4.6 s inside a 12 s spread, with one "before" race at 215 s. An I4 winner's time has a standard deviation of
+  8-12 s. Run the sides in swapped order, at least six races each, and say plainly when the races cannot tell.
 - **"On the way" is a time, not a distance off the line.** Judged as "within 20 u of the line and a turn under
   15 deg", a key 12 u off the line 40 u ahead was refused (17 deg) though flying through it costs 0.06 s, and the AI
   gave up blasts that paid (Switchback I2 Legendary 5 s slower offline, 2026-11-17). Cost the extra distance at the

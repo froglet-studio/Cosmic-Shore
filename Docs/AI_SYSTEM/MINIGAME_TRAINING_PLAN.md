@@ -341,8 +341,9 @@ open, whatever a gene says.
 Now (`SWITCHBACK.md` "AI: speed over breaking"):
 
 - `SwitchbackBlastPlanner.Passable` answers "can the hull fly from here through the ring and past its doors?" with a
-  hull-wide straight line against every standing prism's real box, through the mouth's centre and twelve points round
-  it. `KeyOnTheWay` answers "does this key cost under 0.15 s to fly through?".
+  hull-wide straight line (the 6 u hull and 2 u of air each side, 5 u off a Danger prism) against every standing
+  prism's real box, through the mouth's centre and twelve points round it. `KeyOnTheWay` answers "does this key cost
+  under 0.15 s to fly through?".
 - `Decide` refuses a key that is off the way while the ring is passable (`why=passable`), at every difficulty. A pilot
   that turned for the ring keeps it (`why=committed`), and flies through the point in the mouth the clear line runs
   through.
@@ -366,9 +367,14 @@ rule kept the pilot on its ring:
 Every race finishes on both sides. Where it happened: the I4 gauntlet at every level that blasts (about one turn-away
 a race: the zig-zag's next key, 40-60 u off the line, after a blast had already opened the way), and Hard at I1 and I3
 (a pilot threading the bore whose next look re-rolled its choice and swung it out to the key beside it). Easy never
-blasts, so it never did it. The rule removes every one; the clock is unchanged to within the model's noise (about 2 s)
-at I1-I3 and 1-3 s faster at I4. Passes outnumber turn-aways because a pass is also counted where the old AI would
-have threaded anyway. It is a model, one AI alone: the editor races are in `SWITCHBACK.md`.
+blasts, so it never did it. The rule removes every one; in the model the clock is unchanged to within its noise (about
+2 s) at I1-I3 and 1-3 s faster at I4. Passes outnumber turn-aways because a pass is also counted where the old AI
+would have threaded anyway. It is a model, one AI alone, and it flies a line more exactly than the game's AI does.
+
+**In the editor** (2026-11-17: the I4 gauntlet, fixed seed 45_504, three Medium AI Dolphins, six races a side in
+swapped order): turn-aways 17 -> 0, every race finished, and the winner's time was 194.2 s before (184-215 s) and
+198.8 s after (189-209 s). That 4.6 s is inside the spread: the races show the rule holding and do not show the clock
+moving either way. Details, and a wider-lane variant that was tried, are in `SWITCHBACK.md`.
 
 **The other Time-mode pilots, read 2026-11-17.** None of them leaves an open way for a breaking pickup today:
 
