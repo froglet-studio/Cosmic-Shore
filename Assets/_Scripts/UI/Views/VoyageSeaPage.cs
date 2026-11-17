@@ -49,6 +49,12 @@ namespace CosmicShore.UI
         const int DeepTiers = 2;
         // Pins: names show from Sector inwards; past Region they stand down (only the picked one stays at Region).
         const int NamedFrom = 2, PinsTo = 3;
+        // The table (tilted) stays in Region: down to Region's narrowest view (550 ly), not its button's width (1,200 ly),
+        // so the table can frame a short course the way the voyage card does; the 2 fps were the closer tiers. The flat
+        // full screen goes on to the row's closest tier, Cell, which is why the row shows its two deep tiers only there
+        // (Shombith, 2026-11-17: "in full screen I cannot zoom past 1200 ly", and the table "not zoomed in" on a course).
+        static float TableFloorLy => (float)HyperSeaSky.Tiers[PinsTo].min;
+        static float FullFloorLy => (float)HyperSeaSky.Tiers[RowTiers[0]].width;
 
         readonly VoyageBoard _board;
         readonly VoyageKit _kit;
@@ -373,8 +379,9 @@ namespace CosmicShore.UI
             map.Tilt = _tilt;
             map.Plain = true;
             map.Unnamed = true;
-            // The table zooms no closer than Region: the closer tiers cost the frame rate (2 fps, Shombith 2026-11-14).
-            map.NarrowestLy = (float)HyperSeaSky.Tiers[PinsTo].width;
+            // The table zooms no closer than Region's narrowest view: the closer tiers cost the frame rate (2 fps, Shombith
+            // 2026-11-14).
+            map.NarrowestLy = TableFloorLy;
             // The table's rim, drawn over the map at the same tilt.
             var rim = VoyageKit.Node("Rim", map.transform);
             VoyageKit.Stretch(rim);
@@ -660,10 +667,12 @@ namespace CosmicShore.UI
                 Root.SetParent(_overlay, true);
                 _overlay.gameObject.SetActive(true);
                 _overlay.SetAsLastSibling();
+                if (_map) _map.NarrowestLy = FullFloorLy;
             }
-            else if (_map && _map.Tier >= 4)
+            else if (_map && _map.ViewLy >= 0f && _map.ViewLy < TableFloorLy)
             {
-                // Out of the foam: back to Sector on the way home.
+                // Out of the foam: back to Sector on the way home. The table's floor comes back once the flight lands
+                // (Tick), so the flight is not cut short at Region.
                 _map.ZoomToTier(2);
             }
             _laidFull = -1f;
@@ -722,8 +731,16 @@ namespace CosmicShore.UI
                 if (_fullT <= 0f && !_full) Home();
             }
             Layout();
+            RestoreTableFloor();
             MarkTier();
             PlacePins();
+        }
+
+        /// <summary>Back on the table, the map zooms no closer than Region again, once any flight out of the foam lands.</summary>
+        void RestoreTableFloor()
+        {
+            if (_full || !_map || _map.Flying || Mathf.Approximately(_map.NarrowestLy, TableFloorLy)) return;
+            _map.NarrowestLy = TableFloorLy;
         }
 
         void MarkTier()
