@@ -201,8 +201,8 @@ GAMES = {
                    "aiCatchGiveUpSeconds": (0.5, 10.0), "aiSlingIntervalSeconds": (0.5, 20.0),
                    "aiSlingMinDistance": (0.0, 400.0), "aiWarpMinDistance": (0.0, 1200.0),
                    "aiHoldForWindowDegrees": (0.0, 360.0), "trampolineAiTurnScale": (40.0, 300.0)},
-        # SlingshotController.aiNoseLead: Stoat 2.5. No nose rate of its own: the fleet lag.
-        "lead": 2.5, "rows": [], "nose_gene": 1.5,
+        # SlingshotController.aiNoseLead: Stoat 2.62 at 10.43/s (run1, 2026-11-17).
+        "lead": 2.62, "rows": [], "nose_gene": 10.43,
     },
     "Squirrel": {
         "mode": "SkimRace",

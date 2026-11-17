@@ -24814,6 +24814,19 @@ flights a side against run3b had every condition faster, loss 2.40 -> 2.25, no D
 3. Race Serpentine I4 against a Legendary AI Serpent: it finishes near 85-100 s, and when its pellets run low it cloaks
    and lays a wall.
 
+## Stoat run1: Slingshot AI trained in the real game, its nose pair carried into Regatta (2026-11-17, Regatta flywheel)
+
+Verified: Amoebius raced the genome headless through `time_ai_search.py` (search on seeds 11-14, confirm on seeds
+101-104, 8 conditions, 32 flights a side, no DNF either side: every rung 18-40% faster, I1 68 -> 51 s, I2 51 -> 36,
+I4 62 -> 42, I1@T10 39 -> 26, I4@T0 95 -> 56), `promote_trained_drives.py` wrote the file, `author_race_lines.py --check`
+OK, `unity_refcompile` (see the PR). Not verified: the shipped files raced again after the write (the box's four game
+slots were training the Squirrel), and a real Unity editor.
+
+1. Open MinigameSlingshot: the Stoat's AI Nose Lead row reads Gain 2.62, Nose Follow 10.43.
+2. Open `Resources/AIBoostPolicies/StoatSlingConfig_Slingshot`: AI Sling Min Turn Degrees 154.471, AI Warp Min
+   Distance 11.523, AI Hold For Window Degrees 58.721, Trampoline AI Turn Scale 67.159.
+3. Race Slingshot I1 against a Legendary AI Stoat: it finishes near 50 s, warping on most legs.
+
 ## Breakwater AI pace by difficulty (2026-11-17, elemental loop step 2, overnight run)
 
 Verified: Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py`): Breakwater's four levels race
