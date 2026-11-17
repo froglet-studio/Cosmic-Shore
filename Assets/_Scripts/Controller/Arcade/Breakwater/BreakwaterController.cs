@@ -34,10 +34,12 @@ namespace CosmicShore.Gameplay
     {
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain) and nose follow rate (0 = the fleet lag), set as it is " +
-                 "armed. A hull with no row flies with the lead off. Sparrow: lead 1.29 with its nose at 7.9/s, trained in this " +
-                 "race (time_ai_search.py, Sparrow run3, 2026-11-17). At the fleet lag a lead of 2 circled stations for " +
-                 "minutes (BREAKWATER.md, AI: the nose lead) and at 1 every I4 race timed out.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Sparrow, 1.29f, noseFollow: 7.9f) };
+                 "armed. A hull with no row flies with the lead off. Sparrow: nose 13.9/s, trained in this race with its drive " +
+                 "(time_ai_search.py, Sparrow run4, 2026-11-17; run3 flew 7.9). The rate is Legendary's: the lower levels set " +
+                 "their own below. The lead stays 1.29: at 7.9/s and faster any lead up to 2.6 judges from the command alone " +
+                 "(AIPilot.EffectiveNoseLeadGain floors at 1), and run4's 2.08 would have changed Easy and Medium. At the fleet " +
+                 "lag a lead of 2 circled stations for minutes (BREAKWATER.md, AI: the nose lead) and at 1 every I4 race timed out.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Sparrow, 1.29f, noseFollow: 13.9f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 

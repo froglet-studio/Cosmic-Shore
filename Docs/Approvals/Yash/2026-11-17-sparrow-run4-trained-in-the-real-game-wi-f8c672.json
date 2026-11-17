@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-17-sparrow-run4-trained-in-the-real-game-wi-f8c672",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T08:09:11+00:00",
+  "area": "Breakwater Sparrow AI (SparrowAIBoostPolicy_Breakwater, BreakwaterController nose row, Sparrow_Regatta)",
+  "summary": "Sparrow run4, trained in the real game with time_ai_search.py, replaced run3's Breakwater drive and raised the Legendary nose from 7.9 to 13.9/s (lower difficulties keep #2109's rates; the lead stays 1.29). 2-14% faster on 32 fresh flights a side, most at Time 10. Regatta's Sparrow race line takes the same rate. promote_trained_drives.py --revert SparrowAIBoostPolicy_Breakwater puts run3 back.",
+  "branch": "sparrow-promote",
+  "commit": "f871f947d"
+}

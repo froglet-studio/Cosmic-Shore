@@ -64,13 +64,14 @@ ROWS = {
                 "aiSlingIntervalSeconds": 1.594, "aiSlingMinDistance": 115.742, "aiWarpMinDistance": 11.523,
                 "aiHoldForWindowDegrees": 58.721, "trampolineAiTurnScale": 67.159, "autopilotHold01": 0.012},
         source="/mnt/project-files/regatta-flywheel/train/Stoat/run1/best.json"),
-    # Sparrow, Breakwater: Sparrow run3 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
-    # BreakwaterController's Sparrow row at lead 1.29 and nose 7.9/s. Confirm on 32 fresh flights a side: shipped timed
-    # out on all 8 I4 races, trained finished every race (I4 82 s, I1 99, I2 85). Replaced D (PR #1793).
+    # Sparrow, Breakwater: Sparrow run4 in the real game (time_ai_search.py, 2026-11-17, seeded from run3 and the #2095
+    # drive, on bleeding-edge with the #2112 afterburner and #2109's difficulty rates), flown at the Legendary nose 13.9/s.
+    # Confirm on seeds 101-104, 32 flights a side, no DNF: I1 99 -> 98 s, I2 83 -> 76, I4 78 -> 73, I1@T10 95 -> 81,
+    # I4@T0 98 -> 93. Replaced run3 (#2095), which replaced D (PR #1793).
     "SparrowAIBoostPolicy_Breakwater": dict(
         base=L.POLICY_DIR + "/SparrowAIBoostPolicy.asset",
-        fields={"alignDegrees": 63.004, "releaseAlignDegrees": 94.815, "stickBand": 0.978, "releaseStickBand": 0.804, "engageRunwaySeconds": 1.559, "releaseRunwaySeconds": 0.049, "minHoldSeconds": 1.996, "minRestSeconds": 0.243},
-        source="/mnt/project-files/regatta-flywheel/train/Sparrow/run3/best.json"),
+        fields={"alignDegrees": 79.394, "releaseAlignDegrees": 89.527, "stickBand": 0.73, "releaseStickBand": 0.993, "engageRunwaySeconds": 0.192, "releaseRunwaySeconds": 1.674, "minHoldSeconds": 1.631, "minRestSeconds": 0.183},
+        source="/mnt/project-files/regatta-flywheel/train/Sparrow/run4/best.json"),
     # Rhino, Headlong: Rhino run1 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
     # HeadlongController's Rhino row at lead 2.47 and nose 7.5/s. The shipped AI orbited a gate at the fleet nose lag
     # (FINDINGS row 21): confirm, 28 fresh flights a side, shipped finished 6, trained 28 (98-120 s). minSpeedGain and
@@ -114,8 +115,8 @@ OLD = {
                                    "aiCatchGiveUpSeconds": 4, "aiSlingIntervalSeconds": 2.896, "aiSlingMinDistance": 13.329,
                                    "aiWarpMinDistance": 310.106, "aiHoldForWindowDegrees": 120,
                                    "trampolineAiTurnScale": 96.362, "autopilotHold01": 0.012},
-    "SparrowAIBoostPolicy_Breakwater": {"alignDegrees": 45, "releaseAlignDegrees": 60, "stickBand": 1,
-                                        "releaseStickBand": 1, "engageRunwaySeconds": 2, "releaseRunwaySeconds": 1.25, "minHoldSeconds": 0.6, "minRestSeconds": 0.4},
+    # run3, as it shipped before run4 (2026-11-17; #2095)
+    "SparrowAIBoostPolicy_Breakwater": {"alignDegrees": 63.004, "releaseAlignDegrees": 94.815, "stickBand": 0.978, "releaseStickBand": 0.804, "engageRunwaySeconds": 1.559, "releaseRunwaySeconds": 0.049, "minHoldSeconds": 1.996, "minRestSeconds": 0.243},
     # lead-on B, as it shipped before Rhino run1 (2026-11-17); before #1828 Headlong flew the hull's own policy
     "RhinoAIBoostPolicy_Headlong": {"cornerSpeed": 153.536, "minCornerSpeed": 144.359, "brakeMarginUnits": 0.705, "brakeLeadSeconds": 0.44, "cornerReleaseDegrees": 24.321, "engageRunwaySeconds": 1.439, "releaseRunwaySeconds": 0.161, "alignDegrees": 22.708, "releaseAlignDegrees": 26.95, "stickBand": 0.454, "releaseStickBand": 0.682, "brakeSteerFloor": 0.408},
     "DolphinAIBoostPolicy_Switchback": {"alignDegrees": 35.308, "stickBand": 0.262, "engageRunwaySeconds": 1.422,
