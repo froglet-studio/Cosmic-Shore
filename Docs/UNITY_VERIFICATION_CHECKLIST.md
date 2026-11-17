@@ -65,6 +65,33 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Element armour now lands on EVERY light fauna and boid: Mass shielded, Charge all danger (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED, changes shipped creatures
+
+**What was wrong.** `LightFauna` and `Boid` arm their bodies in `Initialize`, which every spawner calls BEFORE
+`AssignLineage` rolls the element and provisions its heart. The body was armed for the PREFAB's crystal: the QuadFish
+(a Space crystal in its one prefab) wore no shield as Mass and no danger as Charge. `Fauna.AssignLineage` now arms the
+body after the heart is provisioned (one line). Reference compile: 0 errors in changed files.
+
+**Measured by running the game's own spawn order in Amoebius** (no Unity), 60 and 300 frames after spawn:
+
+| | Mass: plain prisms shielded | Charge: prisms danger | Time, Space (controls) |
+|---|---|---|---|
+| QuadFish before | 0 of 4 | 0 of 4 | none |
+| QuadFish after | 4 of 4 | 4 of 4 | none |
+| Ray before | 0 of 8 | 1 of 9 (its authored sting) | sting only |
+| Ray after | 8 of 8 | 9 of 9 | sting only |
+
+1. **Mass creatures are shielded** on the Spawn Matrix (QuadFish, Clawfish, tadpole, Brittlestar, shark, the Ray):
+   every plain body prism wears a shield, a shed shield comes back one every few seconds, and the heart's swing
+   still clears them.
+2. **Charge creatures are all danger**, not only teeth and stings. A Charge predator's MOUTH still sits at its
+   authored danger prisms (`IsAuthoredDanger`), not at the centroid of the whole body.
+3. **Balance.** This is the law of `Docs/ECOSYSTEM.md` 65.4 arriving in play for the first time on these species, so
+   cells with Mass or Charge fauna will feel different: Mass schools take two passes, Charge schools hurt to touch.
+   If that is not wanted, the dial is the law's (`ElementalArmour`), not this line.
+4. **A pooled body** that comes back as another element sheds the last one's armour (it did in the harness's
+   Time and Space controls; not tested through the pool).
+
 ### 🔴 The Ray, the first GROWN creature in Unity: four element prefabs, its wave in the spindle shader, on the Spawn Matrix (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
 
 Written by `Tools/Build/fauna_kit/unity_port.py ray` from `specs/ray.py` and `elements.py`; the whole path with what

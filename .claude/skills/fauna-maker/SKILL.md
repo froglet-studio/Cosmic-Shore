@@ -302,6 +302,12 @@ python3 Tools/Build/verify_fauna_heart_seat.py
 python3 Tools/Build/colour_trace.py --check
 ```
 
+Then RUN it, because a file check cannot see behaviour: load `/amoebius`, build the engine, spawn each element's
+config through the spawner's own calls (`BindSpeciesData`, `Initialize`, `AssignLineage`, `FaunaNetworkSync.ServerSpawn`)
+and read back: no error or exception; every prism active; Mass plain prisms shielded; Charge prisms all danger; the
+Space root at its scale with its meshes' vertex counts unchanged. The Ray's run found a fault in the game itself.
+Say in the checklist entry what the run showed and that Amoebius is not Unity (it does not draw the spindle shader).
+
 It writes ONE PREFAB FOR EACH ELEMENT (the Time form keeps the creature's name; the others are `<Species>Charge`,
 `<Species>Mass`, `<Species>Space`), each with its own meshes and its own material, one data asset, the four element
 configs (each pointing at its own prefab, with the body size from the spec's `"elements"`) and four network list

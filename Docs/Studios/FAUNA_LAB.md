@@ -74,6 +74,24 @@ has judged them.** They are proposals: ride each and say which to keep. They por
   trial body was not kept. What this says: the skill reproduces the PROCESS on a small model; whether the result is
   the animal, and beautiful, still needs the bigger model's eye or a person's.
 
+**The game's own code was run on the four prefabs, in Amoebius** (the engine under `Port/`, which compiles
+`Assets/_Scripts` and reads the real assets). It is not Unity and does not run the spindle shader, so it says nothing
+about the wave's look. What it did show, 300 to 750 frames an element:
+- the engine builds with the changed source; the four prefabs and their 72-byte meshes load at the asset's own counts;
+- each element spawns through the spawner's own order and swims, 0 errors, 0 exceptions;
+- nine prisms an element, active, sized; **every rider prism sits exactly on seat + riderSin sin t + riderCos cos t**
+  on all four (the driver ran and nothing overwrote it);
+- RaySpace: root scale 2.0596, girth factor 0.6069, mesh vertex counts identical before and after tuning (not eroded
+  twice), plates the law's needles;
+- **and one fault nobody had seen: the element armour never landed.** Ray Mass 0 of 8 shielded, Ray Charge only its
+  sting danger; then the SHIPPED QuadFish the same (Mass 0 of 4, Charge 0 of 4). `LightFauna` and `Boid` arm the body
+  in `Initialize`, before `AssignLineage` rolls the element. Fixed in `Fauna.AssignLineage` (one line); after it, in
+  the same harness: QuadFish Mass 4 of 4, Charge 4 of 4; Ray Mass 8 of 8, Charge 9 of 9; Time and Space unchanged.
+  **This changes shipped creatures** (`Docs/ECOSYSTEM.md` 65.4; its own entry in the verification checklist).
+- Not done there: the Spawn Matrix itself (a fresh profile stops at the sign-in prompts), so the Rays were spawned by
+  a throwaway harness calling what the spawner calls. An engine gap noted for Shombith, not changed: its mesh
+  importer keeps each UV channel as two floats, so the wave's z would be dropped there (the Ray's wave has none).
+
 **Checked:** every gate in round 8's list, plus `wire_spindle_grown_sway.py --check` / `--self-test`,
 `verify_spindle_grown_sway.py`, `wire_spindle_lod.py --check`, `unity_port.py --self-test` (five planted defects).
 **NOT checked: the Unity editor.** The shared spindle shader changed: the first hand test is that every other

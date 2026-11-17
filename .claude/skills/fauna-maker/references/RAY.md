@@ -98,6 +98,7 @@ What went wrong on the way:
 | the wave only at the joints | the lab rippled and Unity would have folded at three hinges | the wave went into the shader |
 | the game's Space erosion left on | `erosion.py` (the game's erosion ported, pinned to its C# tests) drew a crumpled wing | the Space form is authored eroded |
 | Mass at x 0.58 | the kit took the SMALLEST body that clears the shields | Mass is never under the base body (law L8) |
+| Mass unshielded, Charge not dangerous | running the game's spawn order in Amoebius: 0 of 8 shielded. The shipped QuadFish was the same | the game armed a body before it rolled its element; `Fauna.AssignLineage` arms it after (a fix for every light fauna) |
 
 ## 6. What is proven, and what only a person can judge
 
@@ -108,6 +109,7 @@ What went wrong on the way:
 | the five spindle graphs are wired right | `wire_spindle_grown_sway.py --check`, `wire_spindle_lod.py --check` |
 | every mesh vertex carries the spec's position and wave; every prism is at its seat; the driver, class and material are on the prefab | `unity_port.py ray --check`, `--self-test` (five planted defects) |
 | the C# compiles against Unity's reference assemblies | `Tools/Build/unity_refcompile/run.sh` (0 errors in changed files) |
+| the game's own code runs on the prefabs: they load, spawn, swim; prisms ride the wave exactly; Mass is shielded, Charge all danger; Space is not thinned twice | a run in Amoebius (`/amoebius`): spawn each element's config through the spawner's own calls and read the prisms back. Do this for every creature you port; it found the armour fault no file check could |
 
 | only a person, in the editor | where |
 |---|---|

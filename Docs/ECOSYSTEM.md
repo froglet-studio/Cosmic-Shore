@@ -12738,6 +12738,20 @@ flora branch spindles, which never erode: memory only). The Space tadpole's scho
 on top of the Space spread); its senses stay world. The Space shark is unchanged (334.8 long); its teeth still sit
 in its crystal, as §64.8 records. Measured through the game's own `AssignLineage` in Amoebius at bind pose.
 
+**The armour did not land on a creature whose prefab crystal is not its rolled element (found and fixed 2026-11-17).**
+`LightFauna` and `Boid` call `ArmourBody` in `Initialize`, and every spawner calls `Initialize` BEFORE `AssignLineage`,
+which is where the element is rolled and the heart of that element provisioned. So the body was armed for the PREFAB's
+authored crystal. A species whose four configs share one prefab was armed for that prefab's element whatever it rolled:
+the QuadFish (a Space crystal) wore no shield as Mass and no danger as Charge. Measured by running the game's own spawn
+order (`BindSpeciesData`, `Initialize`, `AssignLineage`, `FaunaNetworkSync.ServerSpawn`) on the shipped configs in
+Amoebius: QuadFish Mass 0 of 4 plain prisms shielded at 60 and 300 frames, QuadFish Charge 0 of 4 danger, with the
+heart's element correct in both. `Fauna.AssignLineage` now calls `ArmourBody` once the heart is provisioned (it takes a
+previous arming off first and does nothing until the body prisms exist). **This changes shipped creatures**: every
+Mass light fauna and boid is now shielded and re-armoured, and every Charge one is all danger, as this section always
+said. The numbers after the fix are in `Docs/Studios/FAUNA_LAB.md` round 9; nobody has seen it in the Unity editor
+(`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
+
 ### 65.5 The Mandelbulb family
 
 Its Charge armour fit (a 0.60 cross-section shrink and a 0.45 dash) moved to Mass, re-derived for the law

@@ -2028,3 +2028,11 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: when a body is split for a rig, keep every piece's mesh in the BODY's space and set the piece's transform back by its joint's place; then any position-driven shader is one function across the cut. Evaluate the shader's own formula on both sides of each cut as a check.
 - Evidence: `unity_port.joints_of` and the skin transforms in `prefab`; `Docs/ECOSYSTEM.md` 47.8.
 - Promoted: `.claude/skills/fauna-maker/references/RAY.md`
+
+### L-STU-192 — Run the game's own code on what you built before you call it done: file checks cannot see order
+
+- Lab: Fauna Possession Lab, the Ray's Unity port · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: four element prefabs had passed every file check (laws, budgets, mesh contents, prism seats, guids) and a reference compile. Spawning each element's config in Amoebius through the spawner's own calls showed the Mass form unshielded and the Charge form harmless. The cause was not in the new assets: the game arms a body in `Initialize`, before `AssignLineage` rolls the element, and the shipped QuadFish had the same fault (0 of 4 shielded) with every gate green for weeks.
+- Do instead: after a headless port, spawn the thing with the engine's real spawn order and read back the BEHAVIOUR the design promises (counts of shielded and danger prisms, a scale, a position over time). When it fails, run the same probe on a shipped sibling first: it tells you whether the fault is yours or the game's.
+- Evidence: `Docs/ECOSYSTEM.md` 65.4 (the added paragraph); `Docs/Studios/FAUNA_LAB.md` round 9; `Fauna.AssignLineage`.
+- Promoted: `/fauna-maker` Into Unity step A; `.claude/skills/fauna-maker/references/RAY.md`

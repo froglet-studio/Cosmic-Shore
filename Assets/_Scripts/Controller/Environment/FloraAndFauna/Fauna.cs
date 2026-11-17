@@ -593,6 +593,16 @@ namespace CosmicShore.Gameplay
                 // Until 2026-08 this job was done by Fauna.SetLevel, as an incidental
                 // side-effect of seeding the spawn level (Docs/ECOSYSTEM.md §40.3).
                 ApplyHeartSize();
+
+                // ARM THE BODY FOR THE ELEMENT THAT WAS JUST ROLLED. The same inversion a third time: LightFauna
+                // and Boid arm their bodies in Initialize, which runs BEFORE this method, when the heart is still
+                // the prefab's authored crystal. A species whose four configs share one prefab (the QuadFish: a
+                // Space crystal) was therefore armed for Space whatever it rolled: its Mass form wore no shield and
+                // its Charge form no danger, with nothing reporting it (measured by running the spawn order headless,
+                // 2026-11-17: QuadFish Mass 0 of 4 shielded, QuadFish Charge 0 of 4 danger). ArmourBody takes a
+                // previous arming off first and is a no-op until the body prisms exist, so this is safe on every
+                // ordering.
+                ArmourBody();
             }
         }
 
