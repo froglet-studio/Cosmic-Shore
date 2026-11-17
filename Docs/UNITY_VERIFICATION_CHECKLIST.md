@@ -24977,3 +24977,14 @@ Not verified: a real Unity editor.
 
 1. Regatta with a Dolphin AI rival at the card start: the rival makes most rings first time, and finishes about 10%
    sooner than before.
+
+## Thresher racing AI trained in Thornline, carried into Regatta (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+`ThresherAIBoostPolicy_ThresherTime` takes Thresher run1's drive (`time_ai_search.py` in the real game through the Amoebius judge,
+seeds 11-14), and `ThresherTimeController`'s Thresher row goes from lead 2.5 at the fleet nose lag (1.5/s) to lead 2.77 at 6.37/s.
+Confirm on fresh seeds 101-104, 24 flights a side: the shipped AI did not finish 2 of them, the trained one finished all; loss
+3.10 -> 1.57; I1 134 -> 94 s, I2 163 -> 115, I4 289 -> 185, I4 from Time 5 373 -> 143. Regatta gets the same drive in a new
+`ThresherAIBoostPolicy_Regatta` and the same pair on `Thresher_Regatta`: the judge, alone, on four courses, 98.5 -> 91.4 s.
+Not run in Unity (the reference compile shows 0 errors in the changed files).
+- [ ] Fly Thornline I1-I4 against a Legendary Thresher AI: it should plant and sling cleanly and finish every rung.
+- [ ] Fly Regatta with a Thresher ally: it should no longer orbit gates.

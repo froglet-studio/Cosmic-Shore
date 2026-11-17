@@ -73,7 +73,9 @@ HULLS = {
     # The same night the Wrasse, Meerkat, Grizzly and Angler came off the card (2-5x the pace: the card is the ally AI's
     # draw); their lines stay for the judge, which seats them by name.
     "Wrasse":  {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseFollowPerSecond": 10},   # the Sparrow hull
-    "Thresher": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
+    # The Thresher takes its Time game's trained pair (Thornline run1, 2026-11-17) with the same drive
+    # (ThresherAIBoostPolicy_Regatta): the shipped course plus three archive courses, 98.5 -> 91.4 s; 10/s with lead 2.77 was 103.
+    "Thresher": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 2.77, "NoseFollowPerSecond": 6.37},
     "Meerkat": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
     "Grizzly": {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.45, "NoseFollowPerSecond": 10},   # a big hull: room
     "Angler":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
