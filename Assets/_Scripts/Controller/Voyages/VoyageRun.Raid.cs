@@ -104,14 +104,35 @@ namespace CosmicShore.Gameplay
             if (CrystalsAtRisk)
             {
                 _raid.Carry(playerName, element);
+                ToastPickup(playerName, element, true);
                 return;
             }
             if (!_raid.Add(playerName, element)) return;
+            ToastPickup(playerName, element, false);
             // A party (Docs/Voyages/PARTY.md §4): a friend tells the host, the host tells everyone.
             ReportToHost(VoyagePartyReport.ReportKind.Crystal, playerName, element, false);
             if (!_following) _tallyDirty = true;
             CheckGoalToast();
         }
+
+        /// <summary>The local pilot's pickup toast (Shombith, 2026-11-17: "when we collect the crystals no popup comes"):
+        /// one running toast that each pickup rewrites, so a string of crystals never floods the toast spot. No sound of its
+        /// own; the crystal already sounds.</summary>
+        void ToastPickup(string playerName, Element element, bool carried)
+        {
+            var local = LocalVessel();
+            if (local == null || local.PlayerName != playerName || string.IsNullOrEmpty(Lines?.ToastCrystal)) return;
+            string line = TemplateText.Fill(Lines.ToastCrystal, "element", CosmicShore.UI.VoyageHudColors.ElementName(Lines, element));
+            string under;
+            if (carried)
+                under = TemplateText.Fill(Lines.ToastCrystalCarrySub, "carried", _raid.CarriedBy(playerName).ToString());
+            else
+                under = TemplateText.Fill(Lines.ToastBankedSub, "count", "1", "done", _raid.Total.ToString(),
+                    "goal", Mathf.CeilToInt(_state?.Current?.Goal ?? 0f).ToString());
+            if (_sea) _sea.ShowRunningBanner(line, PickupToastSeconds, ArkwayVoyageHud.Mood.Good, under);
+        }
+
+        const float PickupToastSeconds = 1.8f;
 
         /// <summary>The goal toast, once a leg, when the squad's count (the party's, in a party) reaches it.</summary>
         void CheckGoalToast()

@@ -3347,6 +3347,8 @@ MonoBehaviour:
     ToastWeighed: THE ARK SAILS ON
     ToastBanked: 'BANKED {count}'
     ToastBankedSub: '{done} of {goal} aboard.'
+    ToastCrystal: '+1 {element}'
+    ToastCrystalCarrySub: 'Carrying {carried}. Bank them at the Ark.'
     ToastSpilled: CRYSTALS SPILLED
     ToastSpilledSub: '{count} lost. Grab them back before the Ark sails.'
     ObjectiveStripAnchor: 'Raid: the Ark sails in {time}'
