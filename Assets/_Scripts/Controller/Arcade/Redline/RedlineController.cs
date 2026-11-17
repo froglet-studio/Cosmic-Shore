@@ -83,8 +83,11 @@ namespace CosmicShore.Gameplay
                  "over I1-I4). A negative entry leaves that level on the fleet lag.")]
         [SerializeField] SwitchbackNoseFollow[] aiNoseFollowByIntensity =
         {
-            new(2f, 3f, 6f, 9f),   // I1
-            new(2f, 3f, 6f, 9f),   // I2
+            // I1-I2 Legendary 15/s, trained in the Manta's own race (time_ai_search.py, Manta run3 split confirms,
+            // 2026-11-17): 8-15% faster at I1, I2 and on wide courses. At I3-I4 (Soar lit) 15/s overshoots the mouths
+            // (+13-19% at I4 from Time 5 and 10), so I3-I4 keep 9.
+            new(2f, 3f, 6f, 15f),  // I1
+            new(2f, 3f, 6f, 15f),  // I2
             // I3-I4: Easy (and at I4 Medium) a step quicker (2026-11-11). With Soar lit (1104 u/s) a 2/s nose could not
             // hold the 72 / 44 u mouths: offline it finished 5 of 6 I3 races (6 of 6 at 2.5/s) and 2-4 of 6 I4 races in
             // 500 s (6 of 6 at 4/s) (manta_redline_sim.py).
