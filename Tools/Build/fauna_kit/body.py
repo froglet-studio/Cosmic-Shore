@@ -127,7 +127,8 @@ def from_spec(spec):
     by_name = {s["name"]: s for s in spec["spindles"]}
     for s in spec["spindles"]:
         if s.get("mesh") == "grown":
-            verts, edges, sway, glow, lines = organic.tube(s, base_of(s))
+            end = by_name.get(s.get("to_limb"))      # a limb that ends ON another limb rides both (a rib between two edges)
+            verts, edges, sway, glow, lines = organic.tube(s, base_of(s), organic.sway_at(end, s["to"], base_of(end)) if end else None)
             wires.append({"name": s["name"], "source": "grown", "limb": s["name"], "verts": [[round(c, 4) for c in v] for v in verts],
                           "edges": edges, "sway": sway, "glow": glow, "tris": [], "parent": s.get("parent"), "pivot": list(s["from"]), "beat": None,
                           "lines": lines, "design": s.get("design"), "section": s.get("section", 3), "wire": s.get("wire", [0.09, 0.04])})

@@ -336,6 +336,9 @@ def check(spec):
         want(el["Mass"].get("body_scale", 0) >= need - 1e-3,
              f"L8 Mass body_scale {el['Mass'].get('body_scale')} is under {need:.3f}: a Mass heart's swing needs {MASS_SWING} u "
              f"(ElementalArmour.HeartSwingClearance) to every shield octahedron (1.5 x a prism's size)")
+        want(el["Mass"].get("body_scale", 0) >= 1.0 - 1e-6,
+             f"L8 Mass body_scale {el['Mass'].get('body_scale')} is under 1: Mass has SIZE (Docs/ECOSYSTEM.md 64.8); a body is grown "
+             "to hold the heart's swing, never shrunk to it")
         if "Space" in el:
             want(abs(el["Space"].get("body_scale", 0) - el["Mass"].get("body_scale", 0) * SPACE_OVER_MASS) < 1e-3,
                  f"L8 Space body_scale must be Mass's x {SPACE_OVER_MASS} (= {el['Mass'].get('body_scale', 0) * SPACE_OVER_MASS:.4f})")
@@ -459,6 +462,8 @@ def self_test():
     planted("a Time body resized", lambda s: s["elements"]["Time"].update(body_scale=2.0), "L8")
     planted("a stinger that keeps its size on Space", lambda s: s["elements"]["Space"].update(stinger_thins=False), "L8")
     planted("a Mass heart inside its shields", lambda s: s["elements"]["Mass"].update(body_scale=2.5), "L8")
+    planted("a Mass body shrunk under the base body", lambda s: (s["elements"]["Mass"].update(body_scale=0.6),
+                                                                  s["elements"]["Space"].update(body_scale=0.6 * SPACE_OVER_MASS)), "L8")
     planted("a leg by name", lambda s: s["spindles"][1].update(name="Leg1") or [p.update(spindle="Leg1") for p in s["prisms"] if p["spindle"] == base["spindles"][1]["name"]], "L9")
 
     def overlap(s):

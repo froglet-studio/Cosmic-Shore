@@ -65,38 +65,60 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 The Ray, the first GROWN creature in Unity: jointed body, wingbeat, its own class, on the Spawn Matrix (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
+### 🔴 The Ray, the first GROWN creature in Unity: four element forms, each its own prefab, jointed, on the Spawn Matrix (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
 
-Written by `Tools/Build/fauna_kit/unity_port.py ray` from `specs/ray.py`. Two new scripts: `GrownLimbDriver` (turns
-the joints) and `RayFauna` (a LightFauna that feeds on the wing). **Reference compile:** `unity_refcompile/run.sh`
-reports 0 errors in the files this branch changed (30 in existing code that needs packages this container lacks,
-Cinemachine among them). **No Unity editor ran.** Headless: `unity_port.py ray --check` and `--self-test`,
-`author_spawn_matrix_roster.py --check`, `check_network_prefab_hashes.py`, `author_lifeform_heart_collection.py
---check`, `colour_trace.py --check`.
+Written by `Tools/Build/fauna_kit/unity_port.py ray` from `specs/ray.py` and `elements.py`. Scripts: `GrownLimbDriver`
+(turns the joints), `RayFauna` (a LightFauna that feeds on the wing), and one new field on `Fauna`,
+`spindleAuthoredEroded` (off on every existing prefab). **Reference compile:** `unity_refcompile/run.sh` reports 0
+errors in the files this branch changed (30 in existing code that needs packages this container lacks, Cinemachine
+among them). **No Unity editor ran.** Headless: `unity_port.py ray --check` and `--self-test`, `elements.py --check`,
+`--self-test` and `--silhouette ray`, `erosion.py --self-test`, `author_spawn_matrix_roster.py --check`,
+`check_network_prefab_hashes.py`, `author_lifeform_heart_collection.py --check`, `verify_fauna_heart_seat.py`,
+`colour_trace.py --check`.
 
 **Where to see it:** Cell Selector > Barren, then the Spawn Matrix: the **Ray** row, one station an element. It is in
 no cell's own spawn profile.
 
-1. **The meshes import.** `Assets/_Models/Fauna/RayBody.asset` and the nine `RayVane*` / `RayLash*` assets open as
-   Meshes with no console error (native Mesh assets written as text, in the format of `_Models/Testing/Prism.asset`).
-   If Unity rewrites them on import, say so: `unity_port.py --check` will report drift.
-2. **It draws, from both sides,** in the domain's spindle colour: a woven vane each side, two lobes curling forward
-   past the crystal, the whip. No seam should show where a vane is cut (three pieces a vane, three on the whip).
-3. **The vanes beat.** Both tips rise and fall together, each joint a little behind the one before, slow when it
-   drifts and quicker and deeper as it speeds up. The whip sways side to side. If a vane hinges the wrong way, the
-   sign is `degrees` in the spec's `unity` block.
-4. **The shader's sway does not tear the pieces apart.** All ten renderers are one Spindle's
-   (`additionalRenderedObjects`), so they share a phase; a small mismatch at the hinges is possible and is what to look for.
-5. **The prisms ride it.** Three plates on each outer vane piece, one on each middle piece and the sting on the last
-   whip joint move with their joints, take hits, and killing them kills it; the heart drops one crystal.
-6. **It swims level** (LightFauna steers with world up).
-7. **Each element** on its Spawn Matrix station: Mass shielded with the heart clear, Space larger, Charge all danger.
-8. **A Jewel Wasp possesses it:** steer, RT at prisms eats what is within its lobes on every side (not a mouthful
-   ahead), RT at a vessel WHIPS both vanes and the whip toward it (three limbs under the Body), A leaves.
-9. **Two clients** see the same Ray.
-10. **Budget.** Nine prisms a Ray; the Spawn Matrix releases them on demand, so no shipped cell's collider count moves.
+| element | prefab | what it should look like | size |
+|---|---|---|---|
+| Time | `Ray.prefab` | the comet: the base Ray with a long streamer flying from each wingtip | x 1 |
+| Charge | `RayCharge.prefab` | the storm: thorns forward along the leading edges, a talon hooked forward at each wingtip, a three-tined tail, every prism danger | x 1 |
+| Mass | `RayMass.prefab` | the leviathan: thick wire, four ribs across each wing, a tail fluke, every plain prism shielded | x 1 |
+| Space | `RaySpace.prefab` | the ghost: thin ribbon wire, a long torn sleeve hanging from the outer half of each hind edge, needle prisms | x 1.6477 |
 
-Not built: the lab's ripple across the membrane and light running down the limbs; the slow change of speed; a Codex page.
+1. **The meshes import.** The `Ray*`, `RayCharge*`, `RayMass*` and `RaySpace*` assets under `Assets/_Models/Fauna/`
+   open as Meshes with no console error (native Mesh assets written as text, in the format of
+   `_Models/Testing/Prism.asset`). If Unity rewrites them on import, say so: `unity_port.py --check` will report drift.
+2. **Each form draws, from both sides,** in the domain's spindle colour, and looks like its row above. No seam should
+   show where a wing is cut (three pieces a wing, three on the tail).
+3. **The wings beat.** Both tips rise and fall together, each joint a little behind the one before, slow when it
+   drifts and quicker and deeper as it speeds up. Time beats fastest (0.53 Hz idle), then Charge (0.44), Space (0.30),
+   Mass slowest and shallowest (0.27). If a wing hinges the wrong way, the sign is `degrees` in the spec's `unity` block.
+4. **The Time streamers** hang from the wingtip joints and wave up and down in three pieces each. If one swings about
+   the wrong point or leaves its wingtip, the numbers are `origin` and `parent` in `comet()` in `specs/ray.py`.
+5. **The shader's sway does not tear the pieces apart.** Every renderer is one Spindle's (`additionalRenderedObjects`),
+   so they share a phase; a small mismatch at the hinges is possible and is what to look for.
+6. **The prisms ride it.** Three plates on each outer wing piece, one on each middle piece and the sting on the last
+   tail joint move with their joints, take hits, and killing them kills it; the heart drops one crystal.
+7. **SPACE IS NOT THINNED A SECOND TIME.** `RaySpace.prefab` says `spindleAuthoredEroded`, so `Fauna.ErodeSpindle`
+   must leave its meshes and prisms alone. Look for: wings whole and joined at their hinges (not crumpled toward the
+   middle of each piece, which is what the runtime erosion does to a jointed wing: `erosion.py Ray` draws it), and the
+   plates as thin needles about 3.5 long, the sting a hair-thin needle about 8.7 long. If the needles look too thin to
+   read in the game, say so: they are the lattice law's numbers (`erosion.needle`), the same the runtime gives the
+   QuadFish's prisms, but nobody has seen them on a wire body.
+8. **Sizes.** Mass is the same size as Time (the kit used to shrink it to x 0.58; a Mass body is never under the base
+   body now) and Space is 1.65 x that, about 112 u across. Mass: the heart's swing clears every shield.
+9. **It swims level** (LightFauna steers with world up).
+10. **A Jewel Wasp possesses each form:** steer, RT at prisms eats what is within its lobes on every side, RT at a
+    vessel WHIPS both wings and the tail toward it (three limbs under the Body; the Time streamers must NOT become
+    part of the wing's whip chain: they hang after the wing piece's skin), A leaves.
+11. **Two clients** see the same Ray of each element (four network prefabs).
+12. **Budget.** Nine prisms a Ray on every element; vertices 2,688 / 3,650 / 4,575 / 2,838 (Time / Charge / Mass /
+    Space) against the 5,072 bar; renderers 16 on Time (the six streamer pieces) and 10 on the others. The Spawn Matrix
+    releases them on demand, so no shipped cell's collider count moves. Nothing here measured draw calls or overdraw.
+
+Not built: the lab's ripple across the membrane and light running down the limbs (so in Unity a sleeve, a fluke or a
+streamer moves only at its joints); the slow change of speed; a Codex page.
 
 ### 🔴 The Jacks' vessel pass: authored element scaling, four level-5 cards, their own HUD (`claude/jacks-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 

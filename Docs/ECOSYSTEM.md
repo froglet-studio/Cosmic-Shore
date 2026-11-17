@@ -12547,6 +12547,15 @@ With size Mass's, Space's fauna identity is three things, one number - the plant
   Boid, right after `Initialize`) admits each body prism's authored size (`Prism.AuthoredScale`) into the window and
   retargets it. Reproduced in Amoebius: without it, the shark's teeth target 10 against an authored 15.
 
+  **A body of several JOINTED skins is authored eroded instead (2026-11-17, the Ray).** The erosion runs on each skin
+  about its own spine, which suits one skin and a few wings; a wing cut into jointed pieces (`fauna_kit/unity_port.py`)
+  is drawn toward the middle of each piece and tears at its hinges (`Tools/Build/fauna_kit/erosion.py Ray`, a port of
+  `SpindleErosion` pinned to `FaunaElementalFormTests`' numbers: 6.7 u). Such a body's Space PREFAB is grown at the
+  law's girth (`ErodedGirth` limb by limb, the body's thickest girth the reference), its prisms authored as the law's
+  needles (`ShapeLeaf` in the socket, less 3%), and it says `Fauna.spindleAuthoredEroded`: `ErodeSpindle` then leaves
+  skins and prisms as authored and reports `ThickestGirth`, so the body-relative dials still read the Mass girth. Its
+  config is unchanged in shape (`BaseBodyScale` 1.647 x Mass, `ErodeSpindle` on).
+
   Authored on the Space SHARK only (`Docs/Ecology/FaunaScale/sharks_four_elements.png`). Another species takes it with
   `BaseBodyScale` = 1.647 x its Mass scale, `ErodeSpindle` on, and Read/Write on its model's import.
 

@@ -90,7 +90,7 @@ def joints_of(key, spec, made):
     """The body cut at its hinges (the spec's `unity` block): (core vertices, core triangles, joints, prism homes).
     A joint is {name, parent, origin, axis, degrees, phase, V, T}; its mesh is in its own space (origin subtracted).
     A triangle goes to the last hinge its centre has passed, walking out from the body; before the first, to the core."""
-    rows = {name: (v, t) for name, _d, _nv, _nt, v, t in SP.creature_mesh(key)}
+    rows = {w["name"]: SP.mesh(w) for w in made["wires"] if w.get("source") == "grown"}
     unity = spec.get("unity") or {}
     claimed, joints, home = set(), [], {}
     core_v, core_t = [], []
@@ -110,8 +110,10 @@ def joints_of(key, spec, made):
         seg = lambda c: sum(1 for h in limb["hinges"] if c * sgn >= h * sgn)
         chain = []
         for j, h in enumerate(limb["hinges"]):
-            origin = [h, 0.0, 0.0] if ax == 0 else [0.0, 0.0, h]
-            chain.append({"name": f"{limb['name']}{j}", "parent": chain[-1]["name"] if chain else None, "origin": origin, "axis": limb["axis"],
+            origin = [float(v) for v in limb.get("origin", [0.0, 0.0, 0.0])]      # where the hinge line is, off the body's axes
+            origin[ax] = h
+            # a limb hangs from the body, or from another limb's joint (`parent`: a streamer on a wingtip)
+            chain.append({"name": f"{limb['name']}{j}", "parent": chain[-1]["name"] if chain else limb.get("parent"), "origin": origin, "axis": limb["axis"],
                           "degrees": limb["degrees"][j], "phase": limb["lag"] * j, "V": [], "T": [], "_map": {}})
         for w in limb["wires"]:
             claimed.add(w)
@@ -119,7 +121,10 @@ def joints_of(key, spec, made):
             cmap = {}
             for tri in T:
                 k = seg(sum(V[i][ax] for i in tri) / 3.0)
-                if k == 0:
+                if k == 0 and limb.get("parent"):      # before its first hinge it rides the joint it hangs from
+                    host = next(q for q in joints if q["name"] == limb["parent"])
+                    add(host["V"], host["T"], host["_map"].setdefault(w, {}), tri, V, host["origin"])
+                elif k == 0:
                     add(core_v, core_t, cmap, tri, V, [0.0, 0.0, 0.0])
                 else:
                     jt = chain[k - 1]
@@ -172,10 +177,13 @@ Transform:
 """
 
 
-def body_mesh(key):
+def body_mesh(made):
     """(vertices, triangles): every grown limb and membrane of the body as one mesh, in the creature's own space."""
     V, T = [], []
-    for _name, _design, _nv, _nt, v, t in SP.creature_mesh(key):
+    for w in made["wires"]:
+        if w.get("source") != "grown":
+            continue
+        v, t = SP.mesh(w)
         base = len(V)
         V += v
         T += [(a + base, b + base, c + base) for a, b, c in t]
@@ -296,7 +304,7 @@ def prefab(key, spec, made):
          lambda m: m.group(1) + "".join(f"  - {{fileID: {k}}}\n" for k in kids), "the body's children")
     once(r"m_Mesh: \{fileID: -?\d+, guid: \w+, type: 3\}", f"m_Mesh: {{fileID: 4300000, guid: {guid('mesh:' + key)}, type: 2}}", "the body's mesh")
     once(r"(m_Materials:\n  - \{fileID: 2100000, guid: )\w+", r"\g<1>" + SPINDLE_MATERIAL, "the body's material")
-    once(r"(  data: \{fileID: 11400000, guid: )\w+", r"\g<1>" + guid("data:" + key), "LightFauna.data")
+    once(r"(  data: \{fileID: 11400000, guid: )\w+", r"\g<1>" + guid("data:" + key.split(":")[0]), "LightFauna.data")
     import author_stoat_assets as stoat      # the one GlobalObjectId hash implementation (self-tested there)
     once(r"(--- !u!114 &%d\n(?:.*\n)*?  GlobalObjectIdHash: )\d+" % NETOBJ,
          r"\g<1>%d" % stoat.global_object_id_hash(guid("prefab:" + key), NETOBJ), "the network identity")
@@ -310,7 +318,9 @@ def prefab(key, spec, made):
     docs, skins = "", []
     for j in joints:
         go, tr = jid[j["name"]]
-        nxt = [jid[c["name"]][1] for c in joints if c["parent"] == j["name"]]
+        limb_of = lambda n: n.rstrip("0123456789")
+        nxt = [jid[c["name"]][1] for c in joints if c["parent"] == j["name"] and limb_of(c["name"]) == limb_of(j["name"])]
+        hung = [jid[c["name"]][1] for c in joints if c["parent"] == j["name"] and limb_of(c["name"]) != limb_of(j["name"])]
         parent = j["parent"]
         local = [j["origin"][c] - (next(q for q in joints if q["name"] == parent)["origin"][c] if parent else 0.0) for c in range(3)]
         mine = list(nxt)
@@ -325,6 +335,7 @@ def prefab(key, spec, made):
                            re.sub(r"m_GameObject: \{fileID: \d+\}", f"m_GameObject: {{fileID: {sgo}}}", re.sub(r"&\d+", f"&{smf}", mf, count=1)), count=1)
             docs += re.sub(r"m_GameObject: \{fileID: \d+\}", f"m_GameObject: {{fileID: {sgo}}}", re.sub(r"&\d+", f"&{smr}", mr, count=1))
         mine += under[j["name"]]
+        mine += hung      # a limb hung from this joint comes AFTER the skin: the attack walks first children, and stops at a skin
         docs += GO_DOC.format(go=go, layer=layer, name=j["name"], comps=f"  - component: {{fileID: {tr}}}\n")
         docs += TR_DOC.format(tr=tr, go=go, x=num(local[0]), y=num(local[1]), z=num(local[2]),
                               kids="".join(f"\n  - {{fileID: {k}}}" for k in mine) if mine else " []",
@@ -351,6 +362,8 @@ def prefab(key, spec, made):
         light = re.search(r"guid: (\w+)", read(SCRIPTS + "LightFauna.cs.meta")).group(1)
         once(r"(m_Script: \{fileID: 11500000, guid: )%s" % light, r"\g<1>" + script_guid(unity["klass"]), "LightFauna's script")
         once(r"(  data: \{fileID: 11400000, guid: \w+, type: 2\}\n)", r"\g<1>" + f"  ramRadius: {num(unity.get('ram_radius', 20.0))}\n", "LightFauna.data (for ramRadius)")
+    if spec.get("eroded") == "authored":      # the Space form: grown at the law's girth, its prisms the law's needles (elements.py)
+        once(r"(  data: \{fileID: 11400000, guid: \w+, type: 2\}\n)", r"\g<1>  spindleAuthoredEroded: 1\n", "LightFauna.data (for spindleAuthoredEroded)")
     return t + blocks + docs
 
 
@@ -369,7 +382,7 @@ def data_so(key, spec):
 def config(key, spec, e):
     t = read(DONOR_CFG.format(e=e))
     t = re.sub(r"m_Name: .*", f"m_Name: {spec['species']} Fauna {e}", t, count=1)
-    t, n = re.subn(r"(FaunaPrefab: \{fileID: \d+, guid: )\w+", r"\g<1>" + guid("prefab:" + key), t, count=1)
+    t, n = re.subn(r"(FaunaPrefab: \{fileID: \d+, guid: )\w+", r"\g<1>" + guid("prefab:" + form_key(key, e)), t, count=1)
     if n != 1:
         raise SystemExit(f"{DONOR_CFG.format(e=e)}: no FaunaPrefab")
     scale = num(spec["elements"][e]["body_scale"])
@@ -382,7 +395,18 @@ def config(key, spec, e):
     return t
 
 
+def form_key(key, e):
+    """The Time form is the base body and keeps the creature's own asset names; the others add their element."""
+    return key if e == "Time" else f"{key}:{e}"
+
+
 def network(text, key):
+    for e in ELEMENTS:
+        text = _network_one(text, form_key(key, e))
+    return text
+
+
+def _network_one(text, key):
     pg = guid("prefab:" + key)
     if pg in text:
         return text
@@ -395,31 +419,40 @@ def network(text, key):
 
 
 def emit(key):
-    spec = C.load(key)
-    errs = C.check(spec)
+    """([(form key, the form's spec, its body, its mesh, its own files)], the files every form shares)."""
+    import elements as EL
+    base = C.load(key)
+    errs = C.check(base)
     if errs:
         raise SystemExit(f"{key} breaks the celestial laws: {errs[0]}")
-    made = BODY.from_spec(spec)
-    sp = spec["species"]
-    V, T = body_mesh(key)
-    core_v, core_t, joints, _home = joints_of(key, spec, made)
     mesh_meta = lambda g: re.sub(r"guid: \w+", "guid: " + g, read(MESH_TEMPLATE + ".meta"), count=1)
-    out = {}
-    for j in joints:
-        if j["T"]:
-            out[f"Assets/_Models/Fauna/{sp}{j['name']}.asset"] = mesh_asset(sp + j["name"], j["V"], j["T"])
-            out[f"Assets/_Models/Fauna/{sp}{j['name']}.asset.meta"] = mesh_meta(guid("mesh:" + key + ":" + j["name"]))
-    out.update({f"Assets/_Models/Fauna/{sp}Body.asset": mesh_asset(sp + "Body", core_v, core_t),
-           f"Assets/_Models/Fauna/{sp}Body.asset.meta": re.sub(r"guid: \w+", "guid: " + guid("mesh:" + key), read(MESH_TEMPLATE + ".meta"), count=1),
-           f"Assets/_Prefabs/FloraAndFauna/{sp}.prefab": prefab(key, spec, made),
-           f"Assets/_Prefabs/FloraAndFauna/{sp}.prefab.meta": meta_of(DONOR, guid("prefab:" + key)),
-           f"Assets/_SO_Assets/Light Fauna Data/{sp}FaunaDataSO.asset": data_so(key, spec),
-           f"Assets/_SO_Assets/Light Fauna Data/{sp}FaunaDataSO.asset.meta": meta_of(DONOR_DATA, guid("data:" + key)),
-           NETWORK: network(read(NETWORK), key)})
+    forms = []
     for e in ELEMENTS:
-        out[f"Assets/_SO_Assets/Lifeforms/{sp} Fauna {e}.asset"] = config(key, spec, e)
-        out[f"Assets/_SO_Assets/Lifeforms/{sp} Fauna {e}.asset.meta"] = meta_of(DONOR_CFG.format(e=e), guid(f"config:{key}:{e}"))
-    return spec, made, (V, T), out
+        fk = form_key(key, e)
+        spec = EL.form(base, e)
+        sp = base["species"] + ("" if e == "Time" else e)
+        spec["species"] = sp
+        made = BODY.from_spec(spec)
+        V, T = body_mesh(made)
+        core_v, core_t, joints, _home = joints_of(fk, spec, made)
+        out = {}
+        for j in joints:
+            if j["T"]:
+                out[f"Assets/_Models/Fauna/{sp}{j['name']}.asset"] = mesh_asset(sp + j["name"], j["V"], j["T"])
+                out[f"Assets/_Models/Fauna/{sp}{j['name']}.asset.meta"] = mesh_meta(guid("mesh:" + fk + ":" + j["name"]))
+        out[f"Assets/_Models/Fauna/{sp}Body.asset"] = mesh_asset(sp + "Body", core_v, core_t)
+        out[f"Assets/_Models/Fauna/{sp}Body.asset.meta"] = mesh_meta(guid("mesh:" + fk))
+        out[f"Assets/_Prefabs/FloraAndFauna/{sp}.prefab"] = prefab(fk, spec, made)
+        out[f"Assets/_Prefabs/FloraAndFauna/{sp}.prefab.meta"] = meta_of(DONOR, guid("prefab:" + fk))
+        forms.append((fk, spec, made, (V, T), out))
+    sp = base["species"]
+    shared = {f"Assets/_SO_Assets/Light Fauna Data/{sp}FaunaDataSO.asset": data_so(key, base),
+              f"Assets/_SO_Assets/Light Fauna Data/{sp}FaunaDataSO.asset.meta": meta_of(DONOR_DATA, guid("data:" + key)),
+              NETWORK: network(read(NETWORK), key)}
+    for e in ELEMENTS:
+        shared[f"Assets/_SO_Assets/Lifeforms/{sp} Fauna {e}.asset"] = config(key, base, e)
+        shared[f"Assets/_SO_Assets/Lifeforms/{sp} Fauna {e}.asset.meta"] = meta_of(DONOR_CFG.format(e=e), guid(f"config:{key}:{e}"))
+    return forms, shared
 
 
 def verify(key, spec, made, mesh, out):
@@ -470,6 +503,15 @@ def verify(key, spec, made, mesh, out):
                 problems.append("the root is missing its limb driver or its own class")
         if "QuadFishSwimDriver" in [s for n in root.walk() for s in n.scripts]:
             problems.append("the donor's swim driver is still on the prefab")
+    # Space: the config says ErodeSpindle as every species' does; a jointed body is authored eroded and its prefab says so
+    flagged = "spindleAuthoredEroded: 1" in pf
+    if flagged != (spec.get("eroded") == "authored"):
+        problems.append("only the Space form's prefab says spindleAuthoredEroded, and it must")
+    if spec.get("element") == "Space" and on_disk == pf and not flagged:
+        import erosion
+        tear = erosion.runtime(sp)[1]
+        if tear > erosion.GAP:
+            problems.append(f"the game's Space erosion would tear this body {tear:.1f} u at its joints: author the form eroded (elements.py)")
     if "GlobalObjectIdHash: 2720972683" in pf:
         problems.append("the prefab still carries the donor's network identity")
     return problems
@@ -477,21 +519,24 @@ def verify(key, spec, made, mesh, out):
 
 def self_test():
     fails = []
-    spec, made, mesh, out = emit("ray")
-    if verify("ray", spec, made, mesh, out):
-        fails.append("the ray as emitted does not verify: " + "; ".join(verify("ray", spec, made, mesh, out)[:2]))
+    forms, _shared = emit("ray")
+    key, spec, made, mesh, out = next(f for f in forms if f[1]["species"] == "Ray")      # the Time form: the base body
+    if verify(key, spec, made, mesh, out):
+        fails.append("the ray as emitted does not verify: " + "; ".join(verify(key, spec, made, mesh, out)[:2]))
+    if len({o for f in forms for o in f[4]}) != sum(len(f[4]) for f in forms):
+        fails.append("two element forms write the same file")
     bad = dict(out)
-    key = "Assets/_Models/Fauna/RayBody.asset"
-    bad[key] = re.sub(r"m_VertexCount: (\d+)", lambda m: "m_VertexCount: %d" % (int(m.group(1)) - 1), bad[key], count=1)
+    body = "Assets/_Models/Fauna/RayBody.asset"
+    bad[body] = re.sub(r"m_VertexCount: (\d+)", lambda m: "m_VertexCount: %d" % (int(m.group(1)) - 1), bad[body], count=1)
     try:
-        if not verify("ray", spec, made, mesh, bad):
+        if not verify(key, spec, made, mesh, bad):
             fails.append("a mesh asset with the wrong vertex count verified")
     except SystemExit:
         pass
     bad = dict(out)
-    key = "Assets/_Prefabs/FloraAndFauna/Ray.prefab"
-    bad[key] = bad[key].replace(guid("mesh:ray"), "0123456789abcdef0123456789abcdef", 1)
-    if not any("no asset owns" in p for p in verify("ray", spec, made, mesh, bad)):
+    pf = "Assets/_Prefabs/FloraAndFauna/Ray.prefab"
+    bad[pf] = bad[pf].replace(guid("mesh:ray"), "0123456789abcdef0123456789abcdef", 1)
+    if not any("no asset owns" in p for p in verify(key, spec, made, mesh, bad)):
         fails.append("a prefab naming a mesh guid nobody owns verified")
     return fails
 
@@ -509,24 +554,42 @@ def main(argv):
         return 2
     bad = 0
     for key in keys:
-        spec, made, mesh, out = emit(key)
+        forms, shared = emit(key)
+        files = dict(shared)
+        for f in forms:
+            files.update(f[4])
         if "--check" in argv:
-            drift = [p for p, text in out.items() if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p)).read() != text]
+            drift = [p for p, text in files.items() if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p)).read() != text]
             for p in drift:
                 print("DRIFT", p)
         else:
-            for p, text in out.items():
+            drift = []
+            n = 0
+            for p, text in files.items():
                 full = os.path.join(REPO, p)
                 if not os.path.exists(full) or open(full).read() != text:
                     open(full, "w").write(text)
-                    print("wrote", p)
-            drift = []
-        problems = verify(key, spec, made, mesh, out)
-        for p in problems:
-            print("FAIL", p)
-        print(f"{spec['species']}: {len(mesh[0])} vertices, {len(mesh[1]) * 2} triangles (double-sided), {len(made['prisms'])} prisms; "
-              + ("ok" if not (drift or problems) else f"{len(drift)} drifted, {len(problems)} problem(s)"))
-        bad += bool(drift or problems)
+                    n += 1
+            print(f"wrote {n} file(s)")
+        for fk, spec, made, mesh, out in forms:
+            problems = verify(fk, spec, made, mesh, dict(out, **{k: v for k, v in shared.items() if k.endswith(".meta")}))
+            for p in problems:
+                print("FAIL", spec["species"], p)
+            print(f"{spec['species']}: {len(mesh[0])} vertices, {len(mesh[1]) * 2} triangles (double-sided), {len(made['prisms'])} prisms; "
+                  + ("ok" if not problems else f"{len(problems)} problem(s)"))
+            bad += bool(problems)
+        base = C.load(key)
+        for e in ELEMENTS:
+            cfg = shared[f"Assets/_SO_Assets/Lifeforms/{base['species']} Fauna {e}.asset"]
+            want = base["elements"][e]["body_scale"]
+            got = re.search(r"(?m)^    BaseBodyScale: ([0-9.]+)", cfg)
+            if not got or abs(float(got.group(1)) - want) > 1e-4:
+                print(f"FAIL {base['species']} Fauna {e}: BaseBodyScale {got.group(1) if got else 'missing'}, the element law says {want}")
+                bad += 1
+            if (e == "Space") != bool(re.search(r"(?m)^    ErodeSpindle: 1", cfg)):
+                print(f"FAIL {base['species']} Fauna {e}: ErodeSpindle is on for Space and only for Space")
+                bad += 1
+        bad += bool(drift)
     return 1 if bad else 0
 
 

@@ -117,6 +117,32 @@ round the body one limb after another.
 toward the tip, 90 stands out), `sides` (1, 2 or more), `dir: "tangent"` lays them round the body, `flutter`.
 Barbs are the costliest part: 16 a limb is lush, 30 is heavy.
 
+## 2.6 The wire changes with the element (`elements.py`)
+
+A limb's wire is not the same on the four elements. `elements.form(spec, element)` rewrites every grown limb by this
+table before the creature's own `forms` are added (`/fauna-maker` step 6.5). You never type these; know them so you
+can predict what a design becomes.
+
+| | Time | Charge | Mass | Space |
+|---|---|---|---|---|
+| strands | same | same | +1 | -1 (never under 2) |
+| wire gauge | x 1 | x 0.9 | x 1.7 | x 0.607 (the law's 1/1.6477: the body is 1.6477 x bigger, so the wire is no thicker in the world) |
+| girth (how wide the braid opens) | x 1 | x 1.5 | x 1.15 | THE LAW: `erosion.girth` against the body's thickest limb; the thickest comes to x 0.607, a thin limb is left whole |
+| twist | x 1 | x 1.3 | x 0.7 | x 1 |
+| section | the design's | the design's | 3 (a tube) | 2 (a ribbon) |
+| sway amplitude / tempo | x 1 / x 1.4 | x 1.1 / x 1.15 | x 0.7 / x 0.72 | x 1.35 / x 0.8 |
+| membrane weave (`across`) | same | same | same | x 0.6 |
+| extra | light runs faster | sparks on limbs with no barbs (`barbs: False` on a limb refuses them) | | prisms become the law's needles |
+
+What this means when you shape a spindle:
+- **Budget for Mass.** Mass costs about 1.4 to 1.9 x the base mesh (a strand more, every strand a tube). A body at
+  4,000 vertices has a Mass form over the bar. Aim the BASE body at 2,700 or less if it will carry its own anatomy.
+- **A two-strand ribbon design stays two ribbons on Space** and becomes three tubes on Mass: check both on the sheet.
+- **Barbs need a stated side** on a body with twins: `"dir": [0, 0, 1]`. A barb's default side is the limb's own, and
+  the two twins of a pair run opposite ways, so their barbs would too.
+- **A strut between two limbs** is a limb with `to_limb`: it rides its parent at its root and the other limb at its
+  tip (`organic.tube`'s `base_end`). Give a straight strut `step=2.0`; it needs few rings.
+
 ## 3. Motion and light belong to the limb, and are carried by every vertex
 
 `organic.py` gives each vertex its limb's SWAY as a sine part and a cosine part (so a limb's own wave ADDS to what the
@@ -137,22 +163,34 @@ own lattice. The bar is the heaviest single shipped body, the Brittlestar's **5,
 
 ## 5. Into the game (not done; the route)
 
-`spindle.py --obj <species> <dir>` writes each limb as an `.obj` Unity imports (x negated for its importer). Nothing
-has been imported, and no `.meta` is written. A grown creature in Unity still needs: its meshes as assets, a
-`Spindle` per limb (so the LOD and the phase stamp find it), and a sway that reads a per-vertex offset and phase
-(today's `SpindleSway` is one shear along z). Space erosion of grown wire is not designed.
+`unity_port.py` is the route (`/fauna-maker`, Into Unity): it writes each element form's limbs as native Mesh assets,
+cut at the spec's hinges, under one `Spindle`. Done for the Ray's four elements; not opened in the editor.
+`spindle.py --obj <species> <dir>` still writes each limb as an `.obj` for looking at one in another tool.
+
+**Space erosion of grown wire is authored** (section 2.6, `erosion.py`): the game's runtime erosion thins each mesh
+about its own spine and tears a body cut into jointed pieces, so the Space form is grown at the law's girth and its
+prefab says `spindleAuthoredEroded`. Still missing in the game: a sway that reads a per-vertex offset and phase
+(today's `SpindleSway` is one shear along z), so the lab's ripple and running light are not in Unity.
 
 ## 6. Gates
 
 ```bash
 python3 Tools/Build/fauna_kit/spindle.py --self-test     # the shipped braid still reads as three 3-sided strands; a design's mesh counts are exact
 python3 Tools/Build/fauna_kit/spindle.py --budget --check
+python3 Tools/Build/fauna_kit/elements.py --check        # every ported creature's four forms: under the bar, inside the laws
+python3 Tools/Build/fauna_kit/elements.py --self-test    # a form keeps the prisms and the body's plan; Space is the law's erosion
+python3 Tools/Build/fauna_kit/erosion.py --self-test     # the port of the game's erosion against the numbers its C# tests pin
 python3 Tools/Build/fauna_kit/celestial.py --all         # the body's laws (/fauna-creation)
 python3 Tools/Build/fauna_kit/silhouette.py --check      # an outline of its own (about four minutes)
 python3 Tools/Build/fauna_kit/lab_export.py && node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/FaunaLab.html
 ```
 
 ## 7. Round log
+
+- **2026-11-17, element forms.** Section 2.6: the wire by element, `elements.py`, `erosion.py`. The Ray's four forms
+  (comet, storm, leviathan, ghost) each add their own limbs; barbs take a stated `dir`; a limb can end on another
+  limb (`to_limb`). Measured: the other four grown bodies' Mass forms are over the bar (4,000-vertex bases are too
+  heavy to carry a Mass form).
 
 - **2026-11-17.** Section 2.5 (the shaping cookbook). `/fauna-maker` is the step-by-step path that uses this skill.
   Garrett accepted the Plume's and the Nettle's outlines and decided all five grown creatures go to Unity (not started).

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
   m_Name: Ray Fauna Space
   m_EditorClassIdentifier:
-  FaunaPrefab: {fileID: 4652232322436628206, guid: 62d1674a156046272f5c667744321e56, type: 3}
+  FaunaPrefab: {fileID: 4652232322436628206, guid: 7717159530195b51241052fd5676dc6d, type: 3}
   InitialSpawnCount: 4
   PopulationSize: 4
   SpawnProbability: 1
@@ -24,5 +24,5 @@ MonoBehaviour:
   Variant:
     Enabled: 1
     HeartWorldScale: 1.75
-    BaseBodyScale: 0.9557
+    BaseBodyScale: 1.6477
     ErodeSpindle: 1

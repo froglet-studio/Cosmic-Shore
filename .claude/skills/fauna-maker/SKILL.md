@@ -1,9 +1,9 @@
 ---
 name: fauna-maker
-description: Make a NEW Cosmic Shore creature step by step, from "make a <animal>" to a body a person can ride in the Fauna Possession Lab. The short procedural path for any model - where the crystal goes, how to place spindles (limbs) and prisms with exact numbers, a working template to start from, ONE command that checks everything and prints a fix for each failure, and how to put the creature in the lab. Use on "/fauna-maker", "make a creature / fauna / lifeform", "add a <animal> to the lab", "more fauna", "a new species", or whenever asked for a new creature body. For shaping the wire of a limb load /spindle. For why the rules are what they are, and anything that changes a law, load /fauna-creation.
+description: Make a NEW Cosmic Shore creature step by step, from "make a <animal>" to a body a person can ride in the Fauna Possession Lab, and its FOUR ELEMENT FORMS (Time, Charge, Mass, Space - each a creature of its own on the one body plan, by the game's element law). The short procedural path for any model - where the crystal goes, how to place spindles (limbs) and prisms with exact numbers, a working template to start from, ONE command that checks everything and prints a fix for each failure, and how to put the creature in the lab. Use on "/fauna-maker", "make a creature / fauna / lifeform", "add a <animal> to the lab", "more fauna", "a new species", or whenever asked for a new creature body. For shaping the wire of a limb load /spindle. For why the rules are what they are, and anything that changes a law, load /fauna-creation.
 ---
 
-# Fauna maker: a creature in seven steps
+# Fauna maker: a creature in seven steps, and its four elements
 
 You are making a HyperSea lifeform: a body of glowing wire grown round a crystal. Follow the steps in order. Do not
 skip the check in step 5; it tells you exactly what to fix.
@@ -86,7 +86,8 @@ prisms.append({"name": f"Plate{k}", "spindle": limb["name"], "kind": "health", "
 | the STING | exactly as the template: `"kind": "danger", "role": "stinger"`, 4 or longer and 6 times its thickness, on a limb NOTHING grows from, and nothing reaches further back than it |
 | several stings | allowed when they are copies round the axis (same radius and z through `P(...)`), each on its own end limb |
 
-Use `K.elements(prisms)` for `"elements"`. Never type those numbers.
+Use `K.elements(prisms)` for `"elements"`. Never type those numbers. (It gives the four body sizes by the game's
+law: Time and Charge 1, Mass grown until the heart's swing clears its shields and never under 1, Space 1.6477 x Mass.)
 
 `"possession"` needs `top_speed`, `mouth_reach`, `attack`. `attack` is `"whip"` only when three or more limbs grow
 from ONE limb; otherwise `"lunge"`.
@@ -121,12 +122,77 @@ python3 Tools/Build/fauna_kit/fauna.py check <name> --silhouette     # about fou
    (`silhouette.ACCEPTED` records an outline a person accepted).
 4. Publish the lab to the SAME artifact (`Docs/Studios/FAUNA_LAB.md` has the link). Never a new one.
 
+## Step 6.5. The four element forms (a creature is four creatures)
+
+Every creature spawns as one of four elements, and each must be told from the others at a glance. You get all four
+from the one spec, in three layers. Do them in this order.
+
+**Layer 1, the game's law. You do nothing.** The game changes the prisms and the size by itself: Time is the base
+body, 1.4 x faster; Charge makes every prism danger; Mass shields every plain prism; Space is 1.6477 x the Mass body,
+thinned, its prisms needles. Never copy any of that into a spec.
+
+**Layer 2, the element's style. You do nothing.** `elements.py` changes the WIRE of every limb by rule (Charge opens
+the braid and adds sparks, Mass adds a strand and thickens it into tubes and slows the beat, Space drops a strand,
+makes ribbons, weaves membranes sparser, and applies the law's thinning). Look at what you got:
+
+```bash
+python3 Tools/Build/fauna_kit/elements.py                              # the four mesh sizes; every form under 5,072
+python3 Tools/Build/fauna_kit/elements.py --sheet <name> <scratchpad>/<name>_forms.png
+```
+
+**Layer 3, the creature's own anatomy for each element. THIS is your work, and it is what makes a flagship.** Give
+each element ONE feeling and one or two things only this creature grows for it. Write a small function for each and
+put them in the spec as `"forms"` (copy `comet`, `storm`, `leviathan`, `ghost` in `specs/ray.py`):
+
+| element | the feeling to aim for | what to add (the Ray's answer) | what NOT to do |
+|---|---|---|---|
+| Time | quick, joyful | things that STREAM behind and show speed (two wingtip streamers) | do not change the body: Time is the base body |
+| Charge | beautiful and dangerous | points: thorns facing forward, a talon, a forked tail (`barbs` with a stated `"dir"`) | no blobs; danger is sharp |
+| Mass | heavy, calm, old | structure: ribs between two edges (`to_limb`), a broad tail fan (a membrane between two short limbs) | nothing thin or fluttering |
+| Space | vast, thin, lonely | things that HANG and drift: long strands with a membrane between neighbours | do not fill the outline in (see the silhouette step) |
+
+```python
+"forms": {"Mass": {"feeling": "one line: the name of the form and the feeling",
+                   "add": [K.grown(...), ...],                       # new limbs; parent each to a limb of the body
+                   "membranes": [{"name": "FlukeWeb", "a": "Fluke0", "b": "Fluke1", "across": 7}],
+                   "limbs": {"Lead0": {"barbs": {...}}, "Core": {"barbs": False}},   # change a limb of the body (False: no sparks here)
+                   "unity": {"wires": {"VaneA": ["Rib00", ...]}}}}   # which moving part each new limb rides (Into Unity, step B)
+```
+
+Rules for a form (the self-test holds them):
+- **Never touch the prisms.** Not their number, seats or sizes. An element changes what a prism IS, by the game's law.
+- **Never remove or re-route a limb that carries a prism.** Add limbs; change only a limb's wire (`barbs`, `strands`, `glow`).
+- Build every added limb inside the `for k, a` loop with `P(radius, z)`, like the body, so it has its twin.
+- A sting's limb must stay childless: hang a new tail limb from the limb BEFORE it (the Ray's tines leave the Core).
+- A limb that ends on another limb (a rib) says `rib["to_limb"] = "<that limb>"` so it stays joined when both move.
+- A barb's side is stated: `"dir": [0, 0, 1]` forward, `[0, 0, -1]` back, or the way out along the limb. Without it
+  the barbs of the two twins point opposite ways.
+
+Then check, in this order, and fix the first thing that fails:
+
+```bash
+python3 Tools/Build/fauna_kit/elements.py --self-test        # the ray's forms keep the rules above
+python3 Tools/Build/fauna_kit/elements.py --check            # every form under the mesh bar and inside the laws
+python3 Tools/Build/fauna_kit/elements.py --silhouette <name>   # every form 0.41 or more from every OTHER body
+python3 Tools/Build/fauna_kit/elements.py --sheet <name> <scratchpad>/<name>_forms.png      # LOOK at it
+```
+
+| what you see | do |
+|---|---|
+| a form is over the bar | on what the form ADDS: `step=2.0` on straight struts, fewer barbs, `across` 5 on a new membrane |
+| `UNDER the bar` on a form | what the form adds filled the outline in. Move it so it leaves gaps (the Ray's veil hung along the whole hind edge read as the Sparrow hull; hung from the outer half only, as sleeves, it passed) |
+| two forms look the same on the sheet | one of them has no anatomy of its own yet. Give it the one thing from the table |
+| `L5 stinger ... has child limbs` | you hung a new limb from the sting's limb. Hang it from that limb's parent |
+
+A creature with no `"forms"` block still has four forms (layers 1 and 2). That is enough for a first pass in the lab
+and NOT enough to ship: a creature that goes to Unity has its own anatomy for all four.
+
 ## Step 7. Record and hand back
 
 - Add a short round section at the top of `Docs/Studios/FAUNA_LAB.md`: what you made, the check's result, the mesh
   size, the silhouette distance, what a person must judge.
-- Run before committing: `celestial.py --all`, `spindle.py --budget --check`, `recreate.py --check`,
-  `lab_export.py --check` (all under `Tools/Build/fauna_kit/`), then `python3 Tools/Build/approvals.py check --me <person>`.
+- Run before committing: `celestial.py --all`, `spindle.py --budget --check`, `elements.py --check`,
+  `recreate.py --check`, `lab_export.py --check` (all under `Tools/Build/fauna_kit/`), then `python3 Tools/Build/approvals.py check --me <person>`.
 - Say plainly: it is a lab proposal, nothing is in Unity, and whether it is beautiful is the person's to judge.
 
 ## When something goes wrong
@@ -144,7 +210,7 @@ python3 Tools/Build/fauna_kit/fauna.py check <name> --silhouette     # about fou
 
 Garrett: all five grown creatures (Ray, Nettle, Plume, Lantern, Ammon) go to Unity. Only do this when a person asks.
 
-**Step A, the body in Unity (a tool does it; done for the Ray on 2026-11-17):**
+**Step A, the body in Unity (a tool does it; done for the Ray's four elements on 2026-11-17):**
 
 ```bash
 python3 Tools/Build/fauna_kit/unity_port.py <name>           # writes the assets
@@ -155,9 +221,18 @@ python3 Tools/Build/colour_trace.py --check
 python3 Tools/Build/fauna_kit/prefab_read.py Assets/_Prefabs/FloraAndFauna/<Species>.prefab --root   # read it: prisms under Body, a crystal at the root
 ```
 
-It writes one body mesh, the prefab (the QuadFish's re-fitted: one mesh under one Spindle, the prisms its direct
-children, the heart at the root), a data asset, four element configs and the network list entry. It adds the
-creature to NO cell, so nothing spawns it. Then add an entry to `Docs/UNITY_VERIFICATION_CHECKLIST.md` (copy the
+It writes ONE PREFAB FOR EACH ELEMENT (the Time form keeps the creature's name; the others are `<Species>Charge`,
+`<Species>Mass`, `<Species>Space`), each with its own meshes (the QuadFish's prefab re-fitted: meshes under one
+Spindle, the prisms its children, the heart at the root), one data asset, the four element configs (each pointing at
+its own prefab, with the body size from the spec's `"elements"`) and four network list entries. It adds the creature
+to NO cell, so nothing spawns it.
+
+**The Space prefab is authored already thinned, and says so.** The game thins a Space body when it spawns, one mesh
+at a time. On a jointed body that tears the wing at its hinges (`python3 Tools/Build/fauna_kit/erosion.py <Species>`
+measures it: 6.7 u on the Ray). So the Space form is thinned by the same law when it is made, its prisms are written
+as the law's needles, and its prefab carries `spindleAuthoredEroded: 1` (a field on `Fauna`), which tells the game to
+leave it alone. The Space config still says `ErodeSpindle: 1`, like every species. `unity_port.py` does all of this
+and checks it; you only need to know it when a person asks why the Space prefab differs. Then add an entry to `Docs/UNITY_VERIFICATION_CHECKLIST.md` (copy the
 Ray's: it lists what a person must check in the editor), because nothing here opens Unity.
 
 A creature whose body is over 65,535 vertices or whose spec fails `fauna.py check` is refused.
@@ -174,6 +249,13 @@ pieces from joints that `GrownLimbDriver` turns:
      "lag": 0.9}]}                                            # how far behind each joint runs: that is the wave
 ```
 
+A limb a FORM adds rides a moving part in one of two ways (both in the form's `"unity"`):
+- `"wires": {"VaneA": ["Rib00", "Talon0"]}`: it is cut and carried with that part (ribs, thorns, a veil, tail tines).
+- `"limbs": [{"name": "StreamA", "wires": ["Stream0"], "cut": "z", "hinges": [-19.0, -32.0, -46.0],
+  "origin": P(34.5, 0.0), "parent": "VaneA2", "axis": [1, 0, 0], "degrees": [6.0, 9.0, 13.0], "lag": 1.1}]`: it is a
+  moving part of its own, hung from another part's joint (`parent`), with its hinge line at `origin` (a streamer on
+  a wingtip). Use this only for something long that should whip; each joint is one more object in the game.
+
 Rules: a hinge is a straight cut, so it suits flat or straight limbs (a vane, a tail), not a coil; three or more
 limbs under the Body make the attack a whip; give mirrored twins opposite `degrees` so they move together. A
 species with a move of its own gets a small class (`RayFauna` is the example) named in `"klass"`; that is C#, so run
@@ -183,5 +265,5 @@ species with a move of its own gets a small class (`RayFauna` is the example) na
 the Ray's), run it, then `--check`. That is where a person inspects one species alone. A cell's own spawn profile is
 `/ecology`'s (it changes the collider budget): do not add a creature to a cell from this skill.
 
-**Not available yet for any grown creature:** the lab's ripple and travelling light (needs the spindle shader), a
-carried up, and a Codex page.
+**Not available yet for any grown creature:** the lab's ripple and travelling light (needs the spindle shader; so in
+Unity a veil or a streamer moves only at its joints), a carried up, and a Codex page.

@@ -100,9 +100,13 @@ def sway_at(spindle, at, base=None):
     return sway6(spindle.get("sway"), P[i], i / (len(P) - 1), C.unit(spindle.get("normal", [0.0, 1.0, 0.0])), base)
 
 
-def tube(spindle, base=None):
+def tube(spindle, base=None, base_end=None):
     """A limb grown along spindle['path']: (verts, edges, sway [6 each], glow [2 each], lines).
-    `lines` is what spindle.py sweeps into the game's mesh: each strand and each barb as (vertex indices, kind)."""
+    `lines` is what spindle.py sweeps into the game's mesh: each strand and each barb as (vertex indices, kind).
+    `base` is what the limb's root rides (its parent's sway there); a limb that ENDS on another limb (a rib between two
+    edges, `to_limb`) rides `base_end` at its far end and a blend between, so it stays joined at both."""
+    if base_end is not None:
+        full = base or ZERO6
     P = centre(spindle)
     n = len(P)
     g0, g1 = spindle.get("girth", [0.5, 0.2])
@@ -119,7 +123,8 @@ def tube(spindle, base=None):
         a2 = C.cross(t, a1)
         frames.append((t, a1, a2))
         r = g0 + (g1 - g0) * s
-        sw, gl = sway6(spindle.get("sway"), p, s, normal, base), glow2(spindle.get("glow"), s)
+        here = base if base_end is None else [full[c] + (base_end[c] - full[c]) * s for c in range(6)]
+        sw, gl = sway6(spindle.get("sway"), p, s, normal, here), glow2(spindle.get("glow"), s)
         for k in range(strands):
             ang = 2 * math.pi * (k / strands + twist * s)
             verts.append([p[c] + r * (math.cos(ang) * a1[c] + math.sin(ang) * a2[c]) for c in range(3)])
@@ -141,7 +146,8 @@ def tube(spindle, base=None):
             s = barbs.get("from", 0.08) + (barbs.get("to", 0.97) - barbs.get("from", 0.08)) * b / max(1, count - 1)
             i = min(n - 1, int(round(s * (n - 1))))
             p, (t, a1, a2) = P[i], frames[i]
-            lat0 = _tangential(p, a1) if barbs.get("dir") == "tangent" else a1
+            bd = barbs.get("dir")      # which way a barb leaves: the limb's own side, round the travel axis, or a stated way
+            lat0 = _tangential(p, a1) if bd == "tangent" else ([float(v) for v in bd] if isinstance(bd, (list, tuple)) else a1)
             lat0 = C.unit(C.sub(lat0, C.mul(t, C.dot(lat0, t))))
             other = C.cross(t, lat0)
             ln = l0 + (l1 - l0) * s

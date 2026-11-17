@@ -75,6 +75,21 @@ def check(name, silhouette=False):
             for r in sorted(rows, key=lambda r: -r[2])[:3]:
                 print(f"  heavy: {r[0]} ({r[1]}) {r[2]}")
             print("   FIX on the heavy limbs, in this order: section=2, a larger step, fewer barbs, fewer strands (/spindle section 4)")
+        # the four element forms (elements.py): a warning until the creature is ported, then elements.py --check fails on it
+        import elements as EL
+        own = spec.get("forms") or {}
+        print("== element forms (vertices; each must be under the bar before a port):")
+        for e in EL.ELEMENTS:
+            f = EL.form(spec, e)
+            size, laws = EL.mesh_size(f), C.check(EL.form(spec, e, refit=False))
+            note = "" if e in own else "   no anatomy of its own yet (/fauna-maker step 6.5)"
+            if size > SP.CREATURE_VERTS:
+                note += f"   OVER by {size - SP.CREATURE_VERTS}: lighten the base body or what the form adds"
+            if laws:
+                note += "   breaks a law: " + laws[0]
+                bad = bad or bool(spec.get("unity"))
+            bad = bad or (size > SP.CREATURE_VERTS and bool(spec.get("unity")))
+            print(f"  {e:<7}{size:>6}{note}")
     if silhouette and not bad:
         import subprocess
         out = subprocess.run([sys.executable, os.path.join(HERE, "silhouette.py"), "--check"], capture_output=True, text=True).stdout

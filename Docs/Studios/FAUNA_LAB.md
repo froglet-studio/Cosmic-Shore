@@ -24,6 +24,61 @@ give me a vessel, ark, and prism cluster to attack."
 - **Retire condition for a new creature:** a "cut it" in the feedback log, or a second round in which it still wins
   no column and nobody says it feels good.
 
+## Round 8 (2026-11-17): the Ray's four elements are four creatures
+
+Garrett: "be sure that you create all four elements and follow the rules for doing so. when differentiating by element
+really take things to the next level where these four fauna become our flagship fauna ... emotionally provocative
+lifeforms of the highest fidelity that define our own unique whimsical style while remaining scalable and performant.
+then be sure that all those learnings further upgrade these skills"; "by four fauna i mean each element of ray".
+
+**The four forms** (`specs/ray.py`: `comet`, `storm`, `leviathan`, `ghost`; `elements.py --sheet ray <png>` draws them):
+
+| element | the form | one feeling | what only this form grows | size | vertices | beat |
+|---|---|---|---|---|---|---|
+| Time | the comet | joy | a streamer from each wingtip, jointed, whipping behind | x 1 | 2,688 | 0.53 Hz |
+| Charge | the storm | awe with fear in it | thorns forward on the leading edges, serrated hind edges, a talon at each wingtip, a trident tail | x 1 | 3,650 | 0.44 Hz |
+| Mass | the leviathan | reverence | four ribs vaulting each wing, a tail fluke, thick tube wire | x 1 | 4,575 | 0.27 Hz |
+| Space | the ghost | longing | a torn sleeve hanging from the outer half of each hind edge; the law's eroded, ribbon wire | x 1.6477 | 2,838 | 0.30 Hz |
+
+**How a form is made: three layers** (`elements.py`).
+1. The game's law, untouched: prisms and size (`Fauna.ArmourBody`, `BaseBodyScale`).
+2. The element's style, by rule for every grown creature: strands, wire gauge, section, tempo, sparks.
+3. The creature's own anatomy for the element: the spec's `forms` block. A form may add limbs and membranes and change
+   a limb's wire; it may not touch the prisms or drop a limb of the body's plan (the self-test holds both).
+
+**Three things the rules turned out to need, each measured:**
+- **The game's Space erosion tears a jointed body.** It thins each mesh about its own spine; a wing cut into three
+  jointed pieces is drawn toward the middle of each piece. `erosion.py` is a port of `SpindleErosion` (pinned to the
+  numbers `FaunaElementalFormTests` pins) and measures it: vertices that touched across a hinge end up 6.7 u apart on
+  the Ray. That was true of round 7's Ray at Space. Now the Space form is thinned by the same law when it is made
+  (each limb's girth by `ErodedGirth`, the wire by 1/1.6477, each prism the law's needle), and its prefab says
+  `spindleAuthoredEroded`, a new field on `Fauna` that makes `ErodeSpindle` leave it alone and report the law's girth.
+- **The kit shrank Mass.** `K.elements` took the smallest body whose shields clear the heart's swing; for a body whose
+  prisms are far from the heart that is under 1 (the Ray: x 0.58, and Space x 0.96). "Let mass have size": Mass is
+  never under the base body now (law L8 says so), so the Ray is x 1 at Mass and x 1.6477 at Space. This also moved the
+  Nettle, Plume, Lantern and Ammon (lab only).
+- **A form can lose its outline.** The first ghost hung a veil along the whole hind edge; it filled the outline in and
+  read as the Sparrow hull (0.35, under the 0.41 bar). Hung from the outer half only, as sleeves, it is 0.44.
+  `elements.py --silhouette ray`: Time 0.49 (nearest the Manta), Charge 0.45 (Manta), Mass 0.45 (Goby), Space 0.44
+  (Sparrow). Between the Ray's own forms: 0.19 to 0.33 (kin; no bar).
+
+**In Unity:** one prefab an element (`Ray`, `RayCharge`, `RayMass`, `RaySpace`), each with its own meshes, the four
+configs pointing at their own prefab, four network entries. A limb a form adds rides a moving part (`wires`) or is one
+(`limbs` with `parent` and `origin`: the Time streamers hang from the wingtip joints).
+
+**In the lab:** pick Ray, then Time / Charge / Mass / Space under Ride. Each draws its own body at its own size and
+tempo; the HUD names the form.
+
+**Checked:** the gates in the list above and the kit's others; the reference compile (0 errors in changed files).
+**NOT checked:** the Unity editor (twelve hand tests in `Docs/UNITY_VERIFICATION_CHECKLIST.md`); whether the four
+feelings land, which is Garrett's to judge on the page and in the game. **Not modelled in Unity:** the ripple and the
+light, so a sleeve, a fluke or a streamer moves only at its joints there.
+
+**Open:** the other four grown creatures have layers 1 and 2 only, and their Mass forms (Charge too on the Lantern
+and Nettle) are over the mesh bar (`elements.py`); each needs its own `forms` and a lighter wire before its port.
+Mass at x 1 is the law's floor, not a tuned size: a bigger leviathan is one number in `specs/ray.py`'s `elements`
+(and Space follows at 1.6477 x).
+
 ## Round 7 (2026-11-17): the Ray completed in Unity, and on the Spawn Matrix
 
 Garrett: "take the ray all the way to completion and place it in the spawn matrix".

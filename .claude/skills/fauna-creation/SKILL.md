@@ -62,7 +62,7 @@ that out of the HyperSea's own parts.
 | L5 | **A stinger: one long, skinny, authored danger prism** at the trailing extremity, on a terminal limb (length ≥ 4 and ≥ 6× its thickness). Any axis outside the scale animator's [0.5, 10] window is `seat_authored` (`Fauna.SeatAuthoredSize`). The spec declares where the creature feeds (`mouth`), because LightFauna puts the mouth at the authored-danger centroid. | Garrett 2026-11-01; ECOSYSTEM.md §64.9; `LightFauna.cs` 458-465 |
 | L6 | **No sense of up.** The body is n-fold symmetric round +z, n ≥ 3, and the species steers with a CARRIED up (parallel-transported, like `SubstrateArms.Frame`), never `Vector3.up`. | Garrett 2026-11-01; ECOSYSTEM.md §18.1 |
 | L7 | **Prisms never interpenetrate**; spindles may pass through anything. Fit flush: keep every prism, shrink minimally, at authoring time. | PRINCIPLES (LOCKED); Garrett 2026-10-20 |
-| L8 | **The four element forms are written down.** Mass: every plain prism shielded, the body grown until the heart's 12.44 u swing clears every shield. Charge: every prism danger, spindles part hardest. Space: 1.6477× Mass's span, spindles eroded where thickest, every prism refit as a needle, the stinger too. Time: the base body (scale 1), 1.4× faster. | ECOSYSTEM.md §64.8-9, §65 (Garrett 2026-10-27/28); Garrett 2026-11-01 (Time, the stinger) |
+| L8 | **The four element forms are written down.** Mass: every plain prism shielded, the body grown until the heart's 12.44 u swing clears every shield and NEVER under the base body ("let mass have size": `K.elements` used to shrink a body whose prisms sit far from the heart, the Ray to x 0.58). Charge: every prism danger, spindles part hardest. Space: 1.6477× Mass's span, spindles eroded where thickest, every prism refit as a needle, the stinger too. Time: the base body (scale 1), 1.4× faster. | ECOSYSTEM.md §64.8-9, §65 (Garrett 2026-10-27/28); Garrett 2026-11-01 (Time, the stinger) |
 | L9 | **No Earth anatomy names** (leg, belly, back, eye, antenna, wing, thorax...). Name a part for what it is here: spine, vane, rib, plate, sting, tine. | this skill |
 | L10 | **A premise and a role.** What it is, the feeling it is for ("surrounded ... scary", Garrett on the substrate), and what it does in the food web. Every lifeform feeds and reproduces. | Garrett 2026-10-08; SUBSTRATE_FAUNA.md |
 | L12 | **A silhouette of its own.** Seen from far away with no detail, from the side and from ahead, at any roll, a new species stands further from every vessel hull, every shipped creature and every other new species than three in four shipped bodies stand from their nearest look-alike. `Tools/Build/fauna_kit/silhouette.py --check` (it takes about two minutes; the bar is measured from the fleet each run). Section 9. | Garrett 2026-11-16: "the fauna and vessels need to have unique silhouettes so they are all distinguished" |
@@ -264,6 +264,30 @@ form, against a vessel, an Ark and a prism cluster. The loop for a new creature:
 5. publish to the same artifact; the person rides it and leaves feedback (the Feedback tab);
 6. the next round starts with `ArtifactData list decisions` and applies it.
 Only then does a creature earn a Unity build (section 4, steps 4-8).
+
+## 12. An element form is a creature of its own (2026-11-17): `elements.py`, `erosion.py`
+
+Garrett: "be sure that you create all four elements and follow the rules for doing so ... these four fauna become our
+flagship fauna". Law L8 says what the GAME does to a body on each element. `elements.form(spec, element)` carries
+that into the body in three layers (the procedure is `/fauna-maker` step 6.5; the wire table is `/spindle` 2.6):
+
+1. **the game's law**, untouched (prisms, size);
+2. **the element's style** in the wire, by rule, for every grown creature;
+3. **the creature's own anatomy** for the element, the spec's `forms` block. The Ray: the comet (Time), the storm
+   (Charge), the leviathan (Mass), the ghost (Space).
+
+What a form may not do, and why: it may not change the prisms (an element changes what a prism IS by the game's law;
+the species' count and seats are its balance) and it may not drop a limb of the body's plan (the four are one species).
+
+**Why Space is authored and the others are not.** Charge and Mass act on prisms, which are the same objects in any
+prefab. Space acts on the MESH: `Fauna.ErodeSpindle` thins each skin about its own spine. On a body of jointed skins
+that tears it (`erosion.py <Prefab>` is `SpindleErosion` ported and pinned to the C# tests' numbers; the Ray's wing
+tears 6.7 u). So the Space form applies the law's own functions when it is made, and its prefab carries
+`Fauna.spindleAuthoredEroded`. The law is not relaxed: the same function, the same reference, the same needles. If
+you are asked to "turn the erosion off" for a creature, this is the only sanctioned way.
+
+**Each form answers L12 on its own** (`elements.py --silhouette <name>`): against every other species and vessel,
+not against its own kin.
 
 ## 11. Bodies are built from spindle DESIGNS (2026-11-16): load `/spindle`
 

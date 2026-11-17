@@ -1979,3 +1979,28 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: an alignment is one pose, and every view of it is scored together; weight views by the area they carry. Add the shape that breaks the measure (two different flat bodies) to its self-test before quoting a table, and mark an earlier table superseded rather than leaving it.
 - Evidence: `silhouette.py` (`views`, `_one_way`); `Docs/Studios/FAUNA_LAB.md` round 3, Measured.
 - Promoted: no
+
+
+### L-STU-186 — Port the game's own transform of your body before you ship the body: a per-part rule tears what you cut into parts
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/erosion.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the Ray went to Unity as a wing cut into jointed pieces, with a Space config that turns on the game's spindle erosion like every species. The erosion thins each mesh about its own principal axis. Nobody could see it without the editor, and the earlier check ("the gap between two pieces did not grow") passed because crumpled pieces overlap. Porting `SpindleErosion` to Python and measuring how far apart two vertices that TOUCHED end up showed 6.7 u.
+- Do instead: when the game transforms a body at spawn (erosion, scaling, armour), port that transform, pin the port to the numbers the game's own tests pin, run it on the asset you wrote, and DRAW the result. Measure tearing as the distance between points that were together, never as the smallest gap between two parts.
+- Evidence: `erosion.py` (`runtime`, `self_test`); `Docs/Studios/FAUNA_LAB.md` round 8.
+- Promoted: `/fauna-maker` Into Unity step A; `/fauna-creation` section 12; `Docs/ECOSYSTEM.md` 64.9
+
+### L-STU-187 — "The smallest value that passes the law" is a default that can contradict the law's intent: state the floor
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/specs/_kit.py` (`elements`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the law says a Mass body is grown until its heart's swing clears its shields. The helper returned the smallest scale that clears them. For bodies whose prisms sit far from the heart that is under 1, so the "gentle giant" came out at 0.58 of the base body and Space under the base body too, on five creatures, with every gate green.
+- Do instead: when a helper solves a law's inequality, write the direction the law intends as a second clause (never under the base body) and plant a case on the far side of it in the self-test.
+- Evidence: `specs/_kit.py` `elements`; `celestial.py` L8; `Docs/Studios/FAUNA_LAB.md` round 8.
+- Promoted: `/fauna-creation` law L8
+
+### L-STU-188 — A variant that adds detail can erase the outline: measure every variant against the roster, not only the base
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/elements.py` (`silhouettes`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the Ray's Space form hung a veil along its whole hind edge. It looked the most different of the four, and it was the one that failed: the veil filled the outline into a delta and read as the Sparrow hull (0.35 under a 0.41 bar) while the base Ray stood at 0.49.
+- Do instead: run the distinctness measure on each variant against every OTHER body (its own kin excluded), and shape additions so they leave gaps in the outline.
+- Evidence: `elements.py --silhouette ray`; `specs/ray.py` `ghost`.
+- Promoted: `/fauna-maker` step 6.5

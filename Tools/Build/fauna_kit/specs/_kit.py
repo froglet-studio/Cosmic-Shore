@@ -53,10 +53,12 @@ def chain(prefix, parent, points, girth=1.0):
 
 
 def elements(prisms, margin=1.01):
-    """The four element forms (law L8). Mass grows until the heart's swing clears every plain prism's shield."""
+    """The four element forms (law L8). Mass grows until the heart's swing clears every plain prism's shield, and is
+    never SMALLER than the base body ("let mass have size", Docs/ECOSYSTEM.md 64.8: a body is grown to hold the swing,
+    never shrunk to it; a body that already clears it keeps its size, and Space still out-spans it 1.6477 x)."""
     plain = [p for p in prisms if p["kind"] == "health"]
     need = max(C.MASS_SWING / max(C.shield_dist(p, [0, 0, 0]), 1e-9) for p in plain)
-    mass = math.ceil(need * margin * 100) / 100
+    mass = max(1.0, math.ceil(need * margin * 100) / 100)
     return {"Mass": {"body_scale": mass, "shield_all": True},
             "Charge": {"body_scale": 1.0, "all_danger": True},
             "Space": {"body_scale": round(mass * C.SPACE_OVER_MASS, 4), "erode_spindle": True,
