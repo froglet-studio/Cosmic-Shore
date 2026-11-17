@@ -147,7 +147,8 @@ namespace CosmicShore.Player
             card.Vessels ??= new List<SO_Vessel>();
             foreach (var hull in _hulls)
             {
-                if (card.Vessels.Any(v => v != null && v.Class == hull)) continue;
+                // "Random" asks for the game's own draw (the card's roster, or a pinned opponent hull): nothing to seat.
+                if (hull == VesselClassType.Random || card.Vessels.Any(v => v != null && v.Class == hull)) continue;
                 string path = $"Assets/_SO_Assets/Classes/SO_Class_{hull}.asset";
                 var vessel = TrainingHost.LoadAsset(_runtime, path) as SO_Vessel
                     ?? throw new InvalidOperationException($"{hull} is not on the card and {path} did not load");

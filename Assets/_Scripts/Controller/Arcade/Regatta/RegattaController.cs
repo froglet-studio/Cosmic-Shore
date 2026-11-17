@@ -11,9 +11,9 @@ namespace CosmicShore.Gameplay
     /// with three super-shielded rails (one per domain) braided along the racing line. Every
     /// pilot flies LAPS of it in order. The race ends when the first pilot threads the last gate
     /// of the last lap, and the TEAM with the most gates threaded - every pilot's gates, summed
-    /// (<see cref="RegattaScoringRuleSO"/>) - wins. Opponent AI fly the card's pinned
-    /// <c>OpponentAIVessel</c> (the Squirrel) until the racing AI can drive every hull; ally AI
-    /// fly what their teammates pick on the launch panel.
+    /// (<see cref="RegattaScoringRuleSO"/>) - wins. Every AI, ally or opponent, draws its hull from
+    /// the card unless someone picks it on the launch panel (the opponent Squirrel pin retired
+    /// 2026-11-17).
     ///
     /// <para><b>The mode is a question about what your hull is FOR.</b> A Rhino ramps to 1200 u/s
     /// on a straight and pays five seconds for every corner it cannot hold; a Manta trades Soar
