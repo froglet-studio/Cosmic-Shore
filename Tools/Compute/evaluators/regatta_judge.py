@@ -51,7 +51,7 @@ EDITOR_I1 = {"Urchin": 51.0, "Manta": 67.0, "Stoat": 70.0, "Squirrel": 75.0, "Rh
              "Serpent": 100.0, "Sparrow": 133.0}
 CALIBRATION_GENOME = {"version": 1, "intensity": 1, "features": {}}
 REGATTA_HULLS = ["Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow",
-                 "Wrasse", "Thresher", "Meerkat", "Grizzly"]   # the last four seated 2026-11-17 (author_regatta_assets.JUDGED_HULLS)
+                 "Wrasse", "Thresher", "Meerkat", "Grizzly", "BrittleStar", "Angler"]   # the last six seated 2026-11-17 (author_regatta_assets.JUDGED_HULLS)
 
 
 def _commit():

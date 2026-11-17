@@ -67,10 +67,15 @@ HULLS = {
     # nose pair at home (their Time games fly the fleet lag), so the rate is the one the Regatta judge picked from
     # 1.5 / 5 / 10 on the shipped course, alone, card start: Thresher 243 -> 149 s, Grizzly 304 -> 179 s at 10; the
     # Wrasse, Meerkat and Angler barely move (190 -> 180, 261 -> 250, 385 -> 313). A home-game search replaces these.
+    # Seated in #2123: Wrasse, Thresher, Meerkat, Grizzly. Second round, the same rate: on its race line the Brittle Star
+    # races 73-89 s (on the gate way at the fleet lag it threaded 20 of 24 gates in 400 s), the Angler 350-432 s. The
+    # Honeyguide is not seated: 395-485 s and a 14-gate stall on one archive course, on its line or the gate way.
     "Wrasse":  {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseFollowPerSecond": 10},   # the Sparrow hull
     "Thresher": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
     "Meerkat": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
     "Grizzly": {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.45, "NoseFollowPerSecond": 10},   # a big hull: room
+    "Angler":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
+    "BrittleStar": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
 }
 
 

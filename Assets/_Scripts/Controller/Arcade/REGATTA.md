@@ -555,10 +555,19 @@ Time game (they fly the fleet lag there), so the race lines take the rate the Re
 (Thresher apart): that gap is step 5's to close, measured by the real-game search, which now races them
 (`regatta_qd.ENGINE_TRUSTED`).
 
+Second round (the same courses, seed and race line rate; a 600 s limit to read the Angler's time):
+
+| hull | alone, card start (s) | alone, L5 start (s) |
+|---|---|---|
+| Brittle Star | 82 / 82 / 89 / 87 | 73 / 73 / 77 / 79 |
+| Angler | 372 / 376 / 428 / 432 | 350 / 365 / 417 / 430 |
+
+Both kept threading gates in a fourteen-hull field (Brittle Star 10-13, Angler 2-3 by the first finish). On the gate way at
+the fleet lag the Brittle Star threaded 20 of 24 gates in 400 s with 800-1,300 prism hits: its race line is what seats it.
+The Angler finishes past the search's 400 s limit, so it is on the card but not in `regatta_qd.ENGINE_TRUSTED`.
+
 Not seated yet:
-- **Angler**: finishes the shipped course (313-385 s) but times out at 400 s on two archive courses.
-- **Honeyguide**: 21 of 24 gates in one run, 305 s in another; noisy.
-- **Brittle Star**: 20 of 24 gates at the fleet lag, 476 s at 10/s, with 800-1,300 prism hits.
+- **Honeyguide**: 395-485 s, and a 14-gate stall on one archive course, on its race line or on the gate way.
 - **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
   (Thornline's AI plan aims at thorns).
 - **Goby**: 0 gates. It wanders, and Perch Run's dart coach armed from RegattaController did not take hold in the judge.
