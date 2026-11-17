@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -34,7 +35,7 @@ namespace CosmicShore.Gameplay
         [Header("AI nose")]
         [Tooltip("The AI nose lead and follow rate per hull in this mode (GateRaceController.AINoseLeadRow). Empty: the " +
                  "fleet nose lag, as before. Filled by a trained pair (time_ai_search.py, the Wrasse's own Time game).")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { };
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Wrasse, 0.69f, noseFollow: 4.37f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 

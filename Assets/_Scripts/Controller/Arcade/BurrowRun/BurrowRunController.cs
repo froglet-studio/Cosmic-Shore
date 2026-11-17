@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -25,6 +26,13 @@ namespace CosmicShore.Gameplay
                  "length, so the circuit is laid with target/laps rings - one number authored " +
                  "once, in the end-condition overrides, and the two can never disagree.")]
         [SerializeField, Min(1)] int laps = BurrowRunCourseSource.DefaultLaps;
+
+        [Header("AI nose")]
+        [Tooltip("The AI Meerkat's nose: no lead, follow 7.97/s (Meerkat run1, the real-game search, 2026-11-17; it " +
+                 "had the fleet lag of 1.5/s).")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Meerkat, 0f, noseFollow: 7.97f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
         protected override string ModeName => "BurrowRun";
 
