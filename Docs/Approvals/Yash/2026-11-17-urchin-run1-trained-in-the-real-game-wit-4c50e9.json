@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-17-urchin-run1-trained-in-the-real-game-wit-4c50e9",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T07:11:48+00:00",
+  "area": "Skein Urchin AI (UrchinAutopilotConfig_Skein, SkeinController nose row)",
+  "summary": "Urchin run1, trained in the real game with time_ai_search.py, replaced the Skein autopilot numbers and the nose pair (1.39 at 14.41/s instead of the lead off at the fleet lag). On 36 fresh flights a side the shipped AI DNFed every I4 race and the trained one finished all 36 (I1 79 -> 53 s, I2 143 -> 77). The old values are in the checklist entry for a revert.",
+  "branch": "urchin-promote",
+  "commit": "8f3e8a6ca"
+}

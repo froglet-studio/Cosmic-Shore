@@ -47,8 +47,34 @@ MonoBehaviour:
     Max: 2
     element: 4
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   lockBiteCooldown: 1
+  biteRate:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
+  swallowUpgradeElement: 1
+  lureScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 2
+    UseFloor: 1
+    Floor: 0.5
+  brushScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 3
+    UseFloor: 1
+    Floor: 0.5
+  riptideUpgradeElement: 4
   lockBiteReach: 6
   omniFauna:
   - {fileID: 11400000, guid: 9a71c56e49ff4ee493c70be766f1b335, type: 2}

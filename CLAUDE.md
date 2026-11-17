@@ -6,23 +6,39 @@ You are expected to work autonomously and persistently. Complete the entire task
 
 When a task spans multiple files or systems, complete ALL of them in a single pass. Do not stop after the first file and ask if you should proceed to the next.
 
+## TOP PRIORITY: the elemental vessel loop (Garrett, 2026-11-12)
+
+"Pushing every vessel through this plan in a systematic way remains the highest priority for anyone who has any
+cycles." When a person has no task for you, or asks what to work on, start here: **`/elemental-loop`**, or
+`python3 Tools/Build/elemental_loop.py next`. The loop, per vessel and element: 0 a game kit (a Time, a Charge and a
+Mass or Space arcade game), 1 fun (abilities and game together, one intensity), 2 the I1-I4 ladder (intro, fun,
+challenging, very hard), 3 one AI on all four rungs; then per arena game (Regatta for Time, Broadside for Charge,
+Brood Rush for Mass and Space together, balanced on net control of space): 4 an environment creator trained against
+the fixed AI pool, 5 the plateau's vessel imbalance tuned and sent back to steps 2-4 until no step 5 is needed. Each
+loop needs fewer people. Process: [`Docs/ElementalLoop/PLAYBOOK.md`](Docs/ElementalLoop/PLAYBOOK.md); board:
+`Docs/ElementalLoop/STATUS.md` (generated); sign-offs: `loop.json`, written by `elemental_loop.py set`.
+
 ## Where everything else lives (read the topic file before touching its area)
 
 This file holds only the rules every session needs. Everything else moved verbatim into topic files under `Docs/claude/`. Each entry lists the section headings the file contains, so a reference like "CLAUDE.md § Anti-Patterns" can be found by grepping this index. To find a passage quoted from the old single-file CLAUDE.md, search both places: `grep -rn '<phrase>' CLAUDE.md Docs/claude/`.
 
+- [`Docs/ElementalLoop/PLAYBOOK.md`](Docs/ElementalLoop/PLAYBOOK.md): **The elemental vessel loop, the top priority** (`/elemental-loop`, Garrett 2026-11-12): steps 0-5 with each step's start, work, exit and sign-off, the game kit rule, the three arena games, how the loop needs fewer people each round, the missing scaffolding and Garrett's open decisions. Board `STATUS.md` and sign-offs `loop.json`, both through `Tools/Build/elemental_loop.py` (`next`, `vessel`, `set`, `--check`).
+  Sections: Garrett's words; The loop at a glance; Step 0 the game kit; The steps; Running the loop; What the loop pays for; How this maps onto what exists; Missing scaffolding; Rules this loop keeps; Decisions for Garrett; Log
 - [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **Froglet Tasks, the team's hand-off tickets** - tests, playtests, setup, content and decisions one collaborator's session leaves for another: GitHub issues labelled `team-task`, read on the Froglet Tasks page, written only through the `/team-tasks` skill (`Tools/Build/team_tasks.py`). Tickets are nobody's until someone takes one.
   Sections: a pointer to the tickets (the board moved to GitHub Issues)
-- [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels, games, app-shell sections and systems are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the tickets, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`).
-  Sections: Run it; How occupancy is read; Answer the person; Polished or rough is a person's call; Adding, fixing or archiving a lane
+- [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels, games, app-shell sections and systems are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the tickets, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`). **Hand-offs** (Shombith 2026-11-13): `/handoff-to-<person>` (NEW on their board), `/handoff-open`, `/handoff-for-test` (to Andrew, who answers with `/handoff-feedback`); `Tools/Build/handoff.py`, files in `Docs/Handoffs/`, procedure `HANDOFF.md`. **The Swim Lanes page** (https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf): the board, claim, hand off, test feedback and every approval queue in a browser, synced by `/swimlanes` section 6.
+  Sections: Run it; How occupancy is read; Answer the person; Polished or rough is a person's call; 4.5 Hand-offs; Adding, fixing or archiving a lane; 6 The Swim Lanes page
 - [`.claude/skills/approve/SKILL.md`](.claude/skills/approve/SKILL.md): **Approve after the fact** (`/approve`, Garrett 2026-11-10) - changes to someone else's work go through unless they collide with an occupied swim lane (`Tools/Build/approvals.py check`), and land in that person's queue (`Docs/Approvals/<Person>/`, [`Docs/Approvals/README.md`](Docs/Approvals/README.md)); `/approve` retrieves the list and records approve / discuss / resolve.
   Sections: Who you are; Retrieve the list; Walk through it; Record the answers; Commit the answers; What your own changes queued; Filing entries
+- [`.claude/skills/trunk-doctor/SKILL.md`](.claude/skills/trunk-doctor/SKILL.md): **Trunk doctor** (`/trunk-doctor`, 2026-11-12) - when bleeding-edge is red: why, who broke it (the guard's runs and logs, classified static / generator / compile / tests / infra, and the PR that introduced each finding), the smallest safe repair (fix forward or a revert PR, never a skipped check), and `trunk_doctor.py --gate`, which /ship runs before every push and merge so nobody piles onto a red trunk. Every incident goes in [`Docs/Reports/TRUNK_HEALTH.md`](Docs/Reports/TRUNK_HEALTH.md).
+  Sections: Rules; Status; Diagnose; Decide; Repair; Confirm; Guard against piling on; Record; Prove it works; Not this skill
 - [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
   Sections: The people; The rules for every session; What happened without this; The map (generated); Decisions about our tools
 - [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **DECIDED 2026-10-19 (§6)**: Amoebius stays (Shombith drives it), the Vessel Studio is an artifact and not part of the engine, no single unifying tool. The evidence, options and recommendation that led there. Volunteered feedback: `Docs/TOOLING_FEEDBACK.md`.
   Sections: The questions; What we have today; Amoebius: keep, narrow, or stop?; The Vessel Studio: keep, narrow, or remove?; The one tool; Decision record; How we decide
 - [`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`](Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): LOCKED. Read before any ecology, fauna, flora, or HyperSea change.
   Sections: Ecosystem Design Principles (LOCKED — read before any ecology change)
-- [`Docs/ProvenWin/PLAYBOOK.md`](Docs/ProvenWin/PLAYBOOK.md): **Proven wins** (`/proven-win`, Garrett 2026-11-11): one cost-free improvement at a time, measured in real Unity on a GPU (paired A/B with null and negative controls, `ShaderABBench`), output proven identical, a blind sign-off page. `WINS.md` is the record of proven, rejected and queued candidates.
+- [`Docs/ProvenWin/PLAYBOOK.md`](Docs/ProvenWin/PLAYBOOK.md): **Proven wins** (`/proven-win`, Garrett 2026-11-11; `/proven-win-scout` finds candidates; `Tools/Build/proven_win/` run.py, verdict.py, signoff.py make every judgment mechanical): one cost-free improvement at a time, measured in real Unity on a GPU (paired A/B with null and negative controls, `ShaderABBench`), output proven identical, a blind sign-off page. `WINS.md` is the record of proven, rejected and queued candidates.
   Sections: what counts; pick; isolate; measure (and the batchmode GPU traps); the human A/B; record; limits
 - [`Docs/claude/ABOUT_PROJECT.md`](Docs/claude/ABOUT_PROJECT.md): Vessel classes, team domains, tech stack.
   Sections: About This Project; Vessel Classes; Team Domains; Tech Stack
@@ -111,8 +127,14 @@ This file holds only the rules every session needs. Everything else moved verbat
   gates, the sheet beside the nearest references, the writer that keeps every guid and wires the `PilotSO`).
   Garrett's bar (2026-11-07): "art like the ones we have but even better". Read before touching
   `Assets/_Graphics/Pilots/**`, a `Pilot_<Callsign>.asset` portrait or `Tools/Build/pilot_art/**`. The painted set
-  is the reference and is never overwritten.
-  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions
+  is the reference and is never overwritten. A pilot's realistic widescreen SCENE and the player AVATAR cut from its
+  close-up are made by **`/pilot-creator`** (`scene.py`, `refs.py`, `Docs/Pilots/art/scenes/`; Garrett, 2026-11-11:
+  the scenes replaced the signature busts; each pilot is designed as ONE creature; the sea in a picture is painted
+  from the game's own frames). It also rolls a player's unique pilot (`creator.py`), and `blind.py` is the blind
+  read that measures whether a stranger names both animals. The eighteen callsign scenes are in the build
+  (`author_pilot_scene_assets.py`) for the Ark's Pilots tab and each pilot's full-screen profile page
+  (`PilotProfileModal`, `Docs/MENU_REDESIGN_B.md` section 92.1).
+  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions; the signature busts; the scenes
 - [`Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md`](Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md): Namespace convention, key systems & classes reference, async pattern.
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.
@@ -315,7 +337,7 @@ colour that is not traced. How it works and what is still unfinished: `Docs/Vess
 Workflows in `.github/workflows/` (2026-10-29):
 
 - `unity-ci.yml` (Unity CI): compile / mono / il2cpp / static tiers. **No Unity runner has been attached since 2026-10-13**, so the `unity` job is skipped while `UNITY_RUNNER_LABEL` is unset; only the static tier does real work. A green run here is not a Unity compile.
-- `amoebius-parity-ci.yml` (Amoebius parity CI): on every bleeding-edge push, compiles the port, runs the engine tests and smoke-runs scenes.
+- `amoebius-parity-ci.yml` (Amoebius parity CI): nightly (11:17 UTC, on bleeding-edge) and by hand from the Actions tab, compiles the port, runs the engine tests and smoke-runs scenes. It stopped running on every bleeding-edge push on 2026-11-13 (Shombith): it had never passed and mailed every merger a failure.
 - `bleeding-edge-guard.yml` (Bleeding-edge guard): verifies every commit landing on `bleeding-edge` / `development` and attempts a repair.
 - `build-branch-ci.yml` (Build branch CI): verifies `build/android` and `build/windows`.
 - `ios-testflight.yml` (iOS TestFlight): Xcode sign + upload, no Unity step.
@@ -450,6 +472,19 @@ can judge (the final look, feel, audio). A clip never replaces the verify rule (
 For the FINAL LOOK, the look sheet (`Docs/LOOK_SHEET.md`, `/unity-look`, built 2026-11-07, not yet run in Unity) captures the real
 renderer headless (menu screens, a race with the AI on every seat), gated and laid out, locally or through the `Look sheet` CI job.
 
+## Spend few tokens (recommended to every collaborator, Yash, 2026-11-15)
+
+A session re-reads its whole history on every turn, so a long session costs more for the same answer.
+- **Start a new session for a new task**, and for an old task whose session is days old or long: brief it in a few
+  lines (the files, what done looks like) or point it at a hand-over note. Do not wake a long session to ask it one thing.
+- **Leave a short hand-over note** when a task is parked (where things are, commands, traps), so the next session reads
+  one page and not the old transcript.
+- **No workflows or subagent fan-outs unless the person asks.** One session, one task.
+- **Search before reading, and read the part you need**: grep for the line, then read that range. Do not paste large
+  tool output, logs or whole files into the chat.
+- **Prefer something the person runs for free** (a build, a script, a button in the editor) over a session doing the
+  same thing by hand each time: watching a game is a launch the person clicks, not a session flying it.
+
 ## Code Style
 
 - Clean, maintainable C# — favor readability over cleverness
@@ -523,6 +558,6 @@ Do not guess at performance problems. Profile first.
 - Leave TODO comments as a substitute for completing the work
 - Generate code that compiles but ignores the established architecture patterns above
 - Add if-null guards on SOAP ScriptableEvent serialized fields — fail loud
-- Plug a placeholder/temp FMOD event into a new sound, or hardcode an event path in code. Add the `[SerializeField] EventReference` (per ability, per trigger, per emitter), ship it **empty**, and say so — an unwired slot is a visible TODO; a temp event is one nobody ever finds
+- Plug a placeholder/temp FMOD event into a new sound by hand, or hardcode an event path in code. Add the `[SerializeField] EventReference` (per ability, per trigger, per emitter), ship it **empty**, and say so — an unwired slot is a visible TODO; a temp event is one nobody ever finds. The one exception is a LISTED placeholder (Garrett, 2026-11-16): a recycled banked event the ledger `Docs/AudioSystem/sound_placeholders.json` names together with the target that replaces it, written by `Tools/Build/sound_placeholders.py --apply` and swapped by `--promote` (`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md` § Audio)
 - **Leave a spent one-shot `assert` sitting ABOVE a generator's validation section.** A `Tools/Build/author_*.py` script typically performs a one-time migration (clone a donor scene, patch its wiring) and *then* validates everything it built. When the donor moves on, the migration's `assert` fires — and takes every check below it with it, while `--check` is still wired into the workflow and still looks like a gate. `author_dogfight_assets.py` validated **nothing** for as long as that was true, including four checks added specifically to guard the missile-tier scoring; `author_ribcage_assets.py` and `author_wildlife_liberation_assets.py` sat in that state on the identical `controller field block not found in donor scene` assertion. **Measured across the family on 2026-09-09, SIX of the eight mode generators then checked were red and nobody was reading them**, in two distinct classes: those two plus `author_drumfire_assets.py` (`donor crystal block not found`) aborted on a spent one-shot, while `author_salvo_assets.py`, `author_dogfight_assets.py` and `author_hijack_assets.py` failed their asset-key validation because they still emitted `CallToActionTargetType`, a field the call-to-action retirement deleted from `SO_ArcadeGame` — that retirement swept the 42 shipped assets and left the generators that author them untouched, so re-running any of them re-introduced the retired key. (`author_switchback_assets.py` was a third shape: its asserts passed and it reported drift from its own output.) A fourth class surfaced when the whole family was measured again: twelve generators re-emitted the legacy `CardBackground` placeholder over the `/cardart` render. **Fixed, measured 2026-10-06:** #969 moved the shared pieces into `arcade_mode_lib.py` — `card_background()` (the guid comes from the mode's render, so a card that drifts back to the placeholder fails), `card_errors`/`check_cards` (retired keys), `drift()` (Dog Fight, Hijack and Salvo used to print "no files written" and exit 0 without diffing) and `committed_scene()` (the clone stands down once the scene is committed), all held by `arcade_mode_lib.py --self-test`; #967 guarded Wildlife Liberation's spent clone and fixed Tollway. All 25 `author_*_assets.py` scripts (21 mode generators plus four flora/vessel kits) now pass `--check`, and the Ribcage and Drumfire modes have been retired with their generators. `author_urchin_assets.py --check` still validates without diffing against disk. The general lesson restated: **a generator that owns an asset's content is a second place every schema change has to land, and it does not fail at the time of the change — it fails the next time somebody runs the generator, which may be months later and on somebody else's branch.** **A spent one-shot must STAND DOWN, not abort** — guard it (`if not DONOR_STILL_MATCHES: skip`), register the already-committed output so the downstream checks describe the shipped artifact, and prove the checks fire with a negative control. Corollary worth stating separately: **a gate that aborts looks exactly like a gate that passes if nobody reads its output**, so a green `--check` in a commit message is only evidence if you can name a failure it produced.
 - Use `renderer.material` when `renderer.sharedMaterial` + MaterialPropertyBlock works

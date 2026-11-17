@@ -1,0 +1,13 @@
+{
+ "schema": "froglet.rung-bars/1",
+ "doc": "Docs/ElementalLoop/PLAYBOOK.md step 2; read by Tools/Build/rung_bars.py",
+ "set_by": "Garrett, 2026-11-12: defaults, then learned",
+ "note": "The bar each arcade game's rung is checked against, from human flight records. min_finish: the least share of human flights that finish the rung (max_finish, optional: the most, for a rung that must challenge). seconds: the band a finished run's median time should fall in. The defaults are wide on time because games differ (Switchback I2 runs about 220 s); a game narrows them under 'games' (mode name -> rung -> fields), and a rung's bar is LEARNED from the fun card once three runs of it were rated 'right' for the rung (rung_bars.py replaces min_finish and seconds then). The finish rates come from the playbook's proposed bars: I1 a first-time pilot finishes, I2 the fun bar holds, I3 a skilled pilot finishes, I4 the best finish near the limit.",
+ "defaults": {
+  "1": {"goal": "intro", "min_finish": 0.9, "seconds": [30, 240]},
+  "2": {"goal": "fun", "min_finish": 0.75, "seconds": [30, 300]},
+  "3": {"goal": "challenging", "min_finish": 0.5, "seconds": [45, 360]},
+  "4": {"goal": "very hard", "min_finish": 0.25, "seconds": [45, 420]}
+ },
+ "games": {}
+}

@@ -1,0 +1,813 @@
+{
+ "about": "Pilot scenes: one widescreen picture a pilot. close is the avatar's square (the head, with the second animal's nearest piece); side is where the pilot stands, so text goes on the other side; crops are the largest box of each aspect that keeps the pilot; chart, on a few, says the scene shows the sea on a display. Written by Tools/Build/pilot_art/scene.py manifest.",
+ "frame": [1536, 864],
+ "scenes": {
+  "ENSIGN": {
+   "name": "Veliane Crestward",
+   "file": "Docs/Pilots/art/scenes/ENSIGN.jpg",
+   "size": [1536, 864],
+   "close": [296, 0, 606, 310],
+   "side": "left",
+   "treatment": "Medium-format garden portrait at waist level, first warmth",
+   "source": "profession: an aristocrat who keeps a garden's sea wall by hand sits in the one gap left in it",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [19, 0, 883, 864],
+    "4:5": [106, 0, 797, 864],
+    "9:16": [208, 0, 694, 864]
+   }
+  },
+  "MANGER": {
+   "name": "Tamako Deephook",
+   "file": "Docs/Pilots/art/scenes/MANGER.jpg",
+   "size": [1536, 864],
+   "close": [490, 155, 860, 525],
+   "side": "left",
+   "treatment": "Field documentary, a long lens from far off",
+   "source": "profession: a hunter who wades the feeding flats sets a lure line",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [99, 0, 1251, 864],
+    "1:1": [243, 0, 1107, 864],
+    "4:5": [330, 0, 1021, 864],
+    "9:16": [432, 0, 918, 864]
+   }
+  },
+  "ANVIL": {
+   "name": "Brikon Copperwright",
+   "file": "Docs/Pilots/art/scenes/ANVIL.jpg",
+   "size": [1536, 864],
+   "close": [640, 0, 1190, 550],
+   "side": "right",
+   "treatment": "Industrial reportage side-on, deep focus, mid-push",
+   "source": "profession: a dealer in heavy crystal brings a boulder of it up from the quarry by hand",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [339, 0, 1491, 864],
+    "1:1": [483, 0, 1347, 864],
+    "4:5": [570, 0, 1261, 864],
+    "9:16": [672, 0, 1158, 864]
+   }
+  },
+  "VOLT": {
+   "name": "Karenth Amberweaver",
+   "file": "Docs/Pilots/art/scenes/VOLT.jpg",
+   "size": [1536, 864],
+   "close": [150, 0, 700, 550],
+   "side": "left",
+   "treatment": "Workshop reportage at a slow shutter, one hand a blur",
+   "source": "profession: a dealer in lamps and the charge that lights them proves each bulb by hand before it is sold",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [80, 0, 771, 864],
+    "9:16": [182, 0, 668, 864]
+   }
+  },
+  "ZODIAC": {
+   "name": "Ivelia Starreach",
+   "file": "Docs/Pilots/art/scenes/ZODIAC.jpg",
+   "size": [1536, 864],
+   "close": [800, 0, 1320, 520],
+   "side": "right",
+   "treatment": "Travel reportage on slow slide film, a chart house lit by the reef outside",
+   "source": "history: \"was apprenticed to a cartographer\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [628, 0, 1492, 864],
+    "4:5": [714, 0, 1405, 864],
+    "9:16": [817, 0, 1303, 864]
+   },
+   "chart": "hologram of the waters"
+  },
+  "SUNDIAL": {
+   "name": "Delmira Stillwater",
+   "file": "Docs/Pilots/art/scenes/SUNDIAL.jpg",
+   "size": [1536, 864],
+   "close": [860, 0, 1300, 440],
+   "side": "right",
+   "treatment": "Window-light interior on a tripod, a private moment walked in on",
+   "source": "hobby: \"has never once arrived early\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [648, 0, 1512, 864],
+    "4:5": [734, 0, 1425, 864],
+    "9:16": [837, 0, 1323, 864]
+   }
+  },
+  "OPAL": {
+   "name": "Quivera Pearlspark",
+   "file": "Docs/Pilots/art/scenes/OPAL.jpg",
+   "size": [1536, 864],
+   "close": [395, 0, 815, 420],
+   "side": "left",
+   "treatment": "Deadpan colour documentary, squared-up, harsh noon",
+   "source": "hobby: \"refuses to fly on an empty stomach\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [29, 0, 1181, 864],
+    "1:1": [173, 0, 1037, 864],
+    "4:5": [260, 0, 951, 864],
+    "9:16": [362, 0, 848, 864]
+   }
+  },
+  "RAMPART": {
+   "name": "Obelo Stormstone",
+   "file": "Docs/Pilots/art/scenes/RAMPART.jpg",
+   "size": [1536, 864],
+   "close": [660, 20, 1100, 460],
+   "side": "right",
+   "treatment": "Unposed side-on documentary in a yard, storm light",
+   "source": "want: \"a quiet harbour and a long sleep\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [304, 0, 1456, 864],
+    "1:1": [448, 0, 1312, 864],
+    "4:5": [534, 0, 1225, 864],
+    "9:16": [637, 0, 1123, 864]
+   }
+  },
+  "CITADEL": {
+   "name": "Nedira Shellward",
+   "file": "Docs/Pilots/art/scenes/CITADEL.jpg",
+   "size": [1536, 864],
+   "close": [760, 0, 1220, 460],
+   "side": "right",
+   "treatment": "Window light in the Dutch manner, a storeroom",
+   "source": "profession: an aristocrat whose house feeds its harbour through the winter measures out the alms grain by hand",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [558, 0, 1422, 864],
+    "4:5": [644, 0, 1335, 864],
+    "9:16": [747, 0, 1233, 864]
+   }
+  },
+  "HORNET": {
+   "name": "Zeko Mirethorn",
+   "file": "Docs/Pilots/art/scenes/HORNET.jpg",
+   "size": [1536, 864],
+   "close": [180, 0, 480, 300],
+   "side": "left",
+   "treatment": "Night exterior by one hazard lamp, from a boat alongside",
+   "source": "profession: a hunter who keeps the hazard light on a danger shoal stands the night under it",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [0, 0, 691, 864],
+    "9:16": [87, 0, 573, 864]
+   }
+  },
+  "IVY": {
+   "name": "Mathalo Kelpbloom",
+   "file": "Docs/Pilots/art/scenes/IVY.jpg",
+   "size": [1536, 864],
+   "close": [790, 60, 1110, 380],
+   "side": "right",
+   "treatment": "Botanical-survey portrait from the next bough, deadpan",
+   "source": "profession: an aristocrat who keeps a hanging garden judges its one bloom of the year",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [374, 0, 1526, 864],
+    "1:1": [518, 0, 1382, 864],
+    "4:5": [604, 0, 1295, 864],
+    "9:16": [707, 0, 1193, 864]
+   }
+  },
+  "TALON": {
+   "name": "Wyvendo Waveline",
+   "file": "Docs/Pilots/art/scenes/TALON.jpg",
+   "size": [1536, 864],
+   "close": [245, 0, 735, 490],
+   "side": "left",
+   "treatment": "Raking-light documentary at sunrise, eye to eye",
+   "source": "profession: a tracker finds, in a brickyard at sunrise, the print of what walked through town in the night",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [58, 0, 922, 864],
+    "4:5": [144, 0, 835, 864],
+    "9:16": [247, 0, 733, 864]
+   }
+  },
+  "DOE": {
+   "name": "Fenlia Moonbell",
+   "file": "Docs/Pilots/art/scenes/DOE.jpg",
+   "size": [1536, 864],
+   "close": [860, 0, 1270, 410],
+   "side": "right",
+   "treatment": "Half-second exposure at nightfall on a tripod",
+   "source": "profession: a hunter who tracks by ear stands in still water at nightfall and listens",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [633, 0, 1497, 864],
+    "4:5": [720, 0, 1411, 864],
+    "9:16": [822, 0, 1308, 864]
+   }
+  },
+  "WINGMAN": {
+   "name": "Jorin Gullwing",
+   "file": "Docs/Pilots/art/scenes/WINGMAN.jpg",
+   "size": [1536, 864],
+   "close": [250, 0, 710, 460],
+   "side": "left",
+   "treatment": "Hard sea light on a cliff ledge, from a burrow's doorway",
+   "source": "want: \"a crew that stays\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [48, 0, 912, 864],
+    "4:5": [134, 0, 825, 864],
+    "9:16": [237, 0, 723, 864]
+   }
+  },
+  "BANDIT": {
+   "name": "Rosh Rusthook",
+   "file": "Docs/Pilots/art/scenes/BANDIT.jpg",
+   "size": [1536, 864],
+   "close": [1040, 80, 1400, 440],
+   "side": "right",
+   "treatment": "Low-tide documentary at crouch height, flat silver light",
+   "source": "profession: a pirate at home in the den, the hoard laid out at the door, opening the day's take",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [845, 0, 1536, 864],
+    "9:16": [977, 0, 1463, 864]
+   }
+  },
+  "NEEDLE": {
+   "name": "Ilia Silvergate",
+   "file": "Docs/Pilots/art/scenes/NEEDLE.jpg",
+   "size": [1536, 864],
+   "close": [320, 0, 775, 455],
+   "side": "left",
+   "treatment": "Architectural interior with a shift lens, verticals true",
+   "source": "profession: an aristocrat whose house keeps a harbour's sea gate stands the last watch of the night",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [116, 0, 980, 864],
+    "4:5": [202, 0, 893, 864],
+    "9:16": [304, 0, 790, 864]
+   },
+   "chart": "panel of the waters"
+  },
+  "GALLEON": {
+   "name": "Haradek Anchorkeel",
+   "file": "Docs/Pilots/art/scenes/GALLEON.jpg",
+   "size": [1536, 864],
+   "close": [360, 0, 800, 440],
+   "side": "left",
+   "treatment": "Cinematic film still, anamorphic, one work lamp",
+   "source": "hobby: \"ties a ribbon on the hull for every friend lost\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [4, 0, 1156, 864],
+    "1:1": [148, 0, 1012, 864],
+    "4:5": [234, 0, 925, 864],
+    "9:16": [337, 0, 823, 864]
+   }
+  },
+  "FLUME": {
+   "name": "Ekora Hollowbrook",
+   "file": "Docs/Pilots/art/scenes/FLUME.jpg",
+   "size": [1536, 864],
+   "close": [230, 10, 530, 310],
+   "side": "left",
+   "treatment": "Split-level waterline shot, half above and half below",
+   "source": "history: \"grew up on a salvage barge\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [34, 0, 725, 864],
+    "9:16": [137, 0, 623, 864]
+   }
+  },
+  "Astrofoil": {
+   "name": "Astrofoil",
+   "file": "Docs/Pilots/art/scenes/Astrofoil.jpg",
+   "size": [1536, 864],
+   "close": [520, 20, 900, 400],
+   "side": "centre",
+   "treatment": "Climbing photograph from the anchor above, looking down the wall",
+   "source": "profession: an explorer goes past the last fixed marker, and is pleased to be caught at it",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [134, 0, 1286, 864],
+    "1:1": [278, 0, 1142, 864],
+    "4:5": [364, 0, 1055, 864],
+    "9:16": [467, 0, 953, 864]
+   }
+  },
+  "Bushy": {
+   "name": "Bushy",
+   "file": "Docs/Pilots/art/scenes/Bushy.jpg",
+   "size": [1536, 864],
+   "close": [300, 10, 600, 310],
+   "side": "left",
+   "treatment": "Harvest reportage into the sun, backlit dust at golden hour",
+   "source": "profession: a gatherer winnows the day's seed on the hill floor, and the birds get the last of each basket",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [18, 0, 882, 864],
+    "4:5": [104, 0, 795, 864],
+    "9:16": [207, 0, 693, 864]
+   }
+  },
+  "Comet": {
+   "name": "Comet",
+   "file": "Docs/Pilots/art/scenes/Comet.jpg",
+   "size": [1536, 864],
+   "close": [600, 60, 920, 380],
+   "side": "centre",
+   "treatment": "Night sports-desk photograph after the event, floodlights still on",
+   "source": "want: \"a rematch\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [184, 0, 1336, 864],
+    "1:1": [328, 0, 1192, 864],
+    "4:5": [414, 0, 1105, 864],
+    "9:16": [517, 0, 1003, 864]
+   }
+  },
+  "Damsel": {
+   "name": "Damsel",
+   "file": "Docs/Pilots/art/scenes/Damsel.jpg",
+   "size": [1536, 864],
+   "close": [400, 0, 740, 340],
+   "side": "left",
+   "treatment": "Morning street photograph from across the quay, caught mid-sip",
+   "source": "profession: an activist, up before the dawn walk, is caught at breakfast in a wall bloom",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [138, 0, 1002, 864],
+    "4:5": [224, 0, 915, 864],
+    "9:16": [327, 0, 813, 864]
+   }
+  },
+  "Dozer": {
+   "name": "Dozer",
+   "file": "Docs/Pilots/art/scenes/Dozer.jpg",
+   "size": [1536, 864],
+   "close": [320, 10, 680, 370],
+   "side": "left",
+   "treatment": "Through a new pane from inside, the glazier dozing on the outside of the glass",
+   "source": "profession: a contractor glazes a great canopy from the outside, held on by sticky palms",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [68, 0, 932, 864],
+    "4:5": [154, 0, 845, 864],
+    "9:16": [257, 0, 743, 864]
+   }
+  },
+  "Echo": {
+   "name": "Echo",
+   "file": "Docs/Pilots/art/scenes/Echo.jpg",
+   "size": [1536, 864],
+   "close": [390, 0, 850, 460],
+   "side": "left",
+   "treatment": "Candid snapshot by a crewmate, desk-lamp light",
+   "source": "hobby: \"keeps a jar of every crystal they have ever missed\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [44, 0, 1196, 864],
+    "1:1": [188, 0, 1052, 864],
+    "4:5": [274, 0, 965, 864],
+    "9:16": [377, 0, 863, 864]
+   }
+  },
+  "Fiest": {
+   "name": "Fiest",
+   "file": "Docs/Pilots/art/scenes/Fiest.jpg",
+   "size": [1536, 864],
+   "close": [970, 30, 1270, 330],
+   "side": "right",
+   "treatment": "Wide 21mm interior from the doorway, available light, a little crooked",
+   "source": "hobby: \"laughs at exactly the wrong moments\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [774, 0, 1465, 864],
+    "9:16": [877, 0, 1363, 864]
+   }
+  },
+  "Flux": {
+   "name": "Flux",
+   "file": "Docs/Pilots/art/scenes/Flux.jpg",
+   "size": [1536, 864],
+   "close": [460, 8, 920, 468],
+   "side": "left",
+   "treatment": "Onboard camera under a shut canopy, the course streaming behind",
+   "source": "profession: a racer mid-heat, just through a ring, checking the display for the two behind",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [114, 0, 1266, 864],
+    "1:1": [258, 0, 1122, 864],
+    "4:5": [344, 0, 1035, 864],
+    "9:16": [447, 0, 933, 864]
+   },
+   "chart": "volume of the race"
+  },
+  "Jugger": {
+   "name": "Jugger",
+   "file": "Docs/Pilots/art/scenes/Jugger.jpg",
+   "size": [1536, 864],
+   "close": [930, 0, 1370, 440],
+   "side": "right",
+   "treatment": "65mm epic film still, deep focus, a bridge lit by its display",
+   "source": "history: \"grew up in the shadow of a dead Ark\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [804, 0, 1495, 864],
+    "9:16": [907, 0, 1393, 864]
+   },
+   "chart": "volume of the siege"
+  },
+  "Krush": {
+   "name": "Krush",
+   "file": "Docs/Pilots/art/scenes/Krush.jpg",
+   "size": [1536, 864],
+   "close": [420, 0, 720, 300],
+   "side": "left",
+   "treatment": "Flash snapshot by whoever came down the cellar stairs",
+   "source": "hobby: \"cannot resist a dare\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [138, 0, 1002, 864],
+    "4:5": [224, 0, 915, 864],
+    "9:16": [327, 0, 813, 864]
+   }
+  },
+  "Longshift": {
+   "name": "Longshift",
+   "file": "Docs/Pilots/art/scenes/Longshift.jpg",
+   "size": [1536, 864],
+   "close": [800, 0, 1220, 420],
+   "side": "right",
+   "treatment": "Blue hour at a snowbound halt, one warm lamp",
+   "source": "want: \"to see the edge of the map\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [578, 0, 1442, 864],
+    "4:5": [664, 0, 1355, 864],
+    "9:16": [767, 0, 1253, 864]
+   },
+   "chart": "panel of the galaxy"
+  },
+  "Maestro": {
+   "name": "Maestro",
+   "file": "Docs/Pilots/art/scenes/Maestro.jpg",
+   "size": [1536, 864],
+   "close": [790, 0, 1310, 520],
+   "side": "right",
+   "treatment": "Long view down a nave on a 135mm from a tripod, candle points",
+   "source": "hobby: \"hums off-key during every jump\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [618, 0, 1482, 864],
+    "4:5": [704, 0, 1395, 864],
+    "9:16": [807, 0, 1293, 864]
+   }
+  },
+  "Mason": {
+   "name": "Mason",
+   "file": "Docs/Pilots/art/scenes/Mason.jpg",
+   "size": [1536, 864],
+   "close": [400, 0, 720, 320],
+   "side": "left",
+   "treatment": "Wall-height working frame from the seaward side, caught in the act in sea haze",
+   "source": "profession: a contractor leaves one glass marble in the mortar of every wall, where nobody will look",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [128, 0, 992, 864],
+    "4:5": [214, 0, 905, 864],
+    "9:16": [317, 0, 803, 864]
+   }
+  },
+  "Reaper": {
+   "name": "Reaper",
+   "file": "Docs/Pilots/art/scenes/Reaper.jpg",
+   "size": [1536, 864],
+   "close": [1030, 20, 1320, 310],
+   "side": "right",
+   "treatment": "Level-tripod interior across a great shell, the wall plainly vertical",
+   "source": "want: \"a vault no one else has opened\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [830, 0, 1521, 864],
+    "9:16": [932, 0, 1418, 864]
+   }
+  },
+  "Riptide": {
+   "name": "Riptide",
+   "file": "Docs/Pilots/art/scenes/Riptide.jpg",
+   "size": [1536, 864],
+   "close": [420, 0, 780, 360],
+   "side": "left",
+   "treatment": "Midday postcard colour on a sandbar, primaries hard against each other",
+   "source": "profession: a pirate changes a craft's stripes between raids, by hand",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [24, 0, 1176, 864],
+    "1:1": [168, 0, 1032, 864],
+    "4:5": [254, 0, 945, 864],
+    "9:16": [357, 0, 843, 864]
+   }
+  },
+  "Scales": {
+   "name": "Scales",
+   "file": "Docs/Pilots/art/scenes/Scales.jpg",
+   "size": [1536, 864],
+   "close": [350, 0, 700, 350],
+   "side": "left",
+   "treatment": "Formal state-occasion photograph down the length of a bridge, soft daylight",
+   "source": "profession: a diplomat watches the first joint patrol fly under the treaty just signed",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [93, 0, 957, 864],
+    "4:5": [180, 0, 871, 864],
+    "9:16": [282, 0, 768, 864]
+   },
+   "chart": "volume of the cell"
+  },
+  "Shrapnel": {
+   "name": "Shrapnel",
+   "file": "Docs/Pilots/art/scenes/Shrapnel.jpg",
+   "size": [1536, 864],
+   "close": [740, 0, 1180, 440],
+   "side": "right",
+   "treatment": "Frozen at 1/4000 s like a sports frame, a fruit in the air",
+   "source": "profession: an activist holds a street overnight, and breakfast is the barricade",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [528, 0, 1392, 864],
+    "4:5": [614, 0, 1305, 864],
+    "9:16": [717, 0, 1203, 864]
+   }
+  },
+  "Siphon": {
+   "name": "Siphon",
+   "file": "Docs/Pilots/art/scenes/Siphon.jpg",
+   "size": [1536, 864],
+   "close": [205, 0, 785, 580],
+   "side": "left",
+   "treatment": "From the sill itself among the shells, one night lamp, the port's night behind",
+   "source": "hobby: \"collects shells from every port and gives them away to strangers\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [63, 0, 927, 864],
+    "4:5": [150, 0, 841, 864],
+    "9:16": [252, 0, 738, 864]
+   }
+  },
+  "Slingshot": {
+   "name": "Slingshot",
+   "file": "Docs/Pilots/art/scenes/Slingshot.jpg",
+   "size": [1536, 864],
+   "close": [610, 0, 1070, 460],
+   "side": "centre",
+   "treatment": "Rear-curtain flash at dusk with the shutter dragged, ice in the air",
+   "source": "profession: a racer clears the intake the evening before a winter heat, with one rap of the hand",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [264, 0, 1416, 864],
+    "1:1": [408, 0, 1272, 864],
+    "4:5": [494, 0, 1185, 864],
+    "9:16": [597, 0, 1083, 864]
+   }
+  },
+  "Strider": {
+   "name": "Strider",
+   "file": "Docs/Pilots/art/scenes/Strider.jpg",
+   "size": [1536, 864],
+   "close": [520, 0, 880, 360],
+   "side": "centre",
+   "treatment": "Remote nest camera at sand level, tripped as the keeper bends",
+   "source": "profession: a hunter keeps the hatchery beach of the quarry through the dry weeks, a billful of water at a time",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [124, 0, 1276, 864],
+    "1:1": [268, 0, 1132, 864],
+    "4:5": [354, 0, 1045, 864],
+    "9:16": [457, 0, 943, 864]
+   }
+  },
+  "Tenacious": {
+   "name": "Tenacious",
+   "file": "Docs/Pilots/art/scenes/Tenacious.jpg",
+   "size": [1536, 864],
+   "close": [230, 0, 700, 470],
+   "side": "left",
+   "treatment": "Aftermath portrait, medium format, eye to eye",
+   "source": "profession: a first responder, in the first minute after a rescue",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [33, 0, 897, 864],
+    "4:5": [120, 0, 811, 864],
+    "9:16": [222, 0, 708, 864]
+   }
+  },
+  "Tender": {
+   "name": "Tender",
+   "file": "Docs/Pilots/art/scenes/Tender.jpg",
+   "size": [1536, 864],
+   "close": [750, 10, 1350, 610],
+   "side": "right",
+   "treatment": "Editorial portrait for a feature, held mid-task under flat bright overcast",
+   "source": "profession: a preservationist replants a bleached reef one seed at a time, and opens each seed case in the bill",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [618, 0, 1482, 864],
+    "4:5": [704, 0, 1395, 864],
+    "9:16": [807, 0, 1293, 864]
+   }
+  },
+  "Tomahawk": {
+   "name": "Tomahawk",
+   "file": "Docs/Pilots/art/scenes/Tomahawk.jpg",
+   "size": [1536, 864],
+   "close": [400, 0, 840, 440],
+   "side": "left",
+   "treatment": "Panned at 1/30 s from a skiff keeping pace, the runner sharp, the lagoon drawn into lines",
+   "source": "profession: a hunter who tracks over water follows a wake across a lagoon on foot before its skin closes",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [44, 0, 1196, 864],
+    "1:1": [188, 0, 1052, 864],
+    "4:5": [274, 0, 965, 864],
+    "9:16": [377, 0, 863, 864]
+   }
+  },
+  "Trace": {
+   "name": "Trace",
+   "file": "Docs/Pilots/art/scenes/Trace.jpg",
+   "size": [1536, 864],
+   "close": [256, 20, 716, 480],
+   "side": "left",
+   "treatment": "Working photograph in a survey vessel's cabin: a sprig, the survey, and the growth itself in the port",
+   "source": "profession: a researcher matches a sprig taken that day against the survey of the whole growth",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [54, 0, 918, 864],
+    "4:5": [140, 0, 831, 864],
+    "9:16": [243, 0, 729, 864]
+   },
+   "chart": "volume of the garden"
+  },
+  "Spare01": {
+   "name": "Korvane Ashwhistle",
+   "file": "Docs/Pilots/art/scenes/Spare01.jpg",
+   "size": [1536, 864],
+   "close": [880, 0, 1200, 320],
+   "side": "right",
+   "treatment": "Rain photographed against the light from under the gate, every drop a bright streak",
+   "source": "profession: a priest keeps a shrine with no roof, whose one rite of the year is to stand in the first rain",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [608, 0, 1472, 864],
+    "4:5": [694, 0, 1385, 864],
+    "9:16": [797, 0, 1283, 864]
+   }
+  },
+  "Spare02": {
+   "name": "Lunari Hollowreach",
+   "file": "Docs/Pilots/art/scenes/Spare02.jpg",
+   "size": [1536, 864],
+   "close": [340, 0, 700, 360],
+   "side": "left",
+   "treatment": "One frame lit by a lightning bolt, the shutter left open on a tripod in the dark",
+   "source": "profession: a hunter carries the season's decoys home across the bog ahead of a storm, on the back",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [88, 0, 952, 864],
+    "4:5": [174, 0, 865, 864],
+    "9:16": [277, 0, 763, 864]
+   }
+  },
+  "Spare03": {
+   "name": "Bellomo Stripewright",
+   "file": "Docs/Pilots/art/scenes/Spare03.jpg",
+   "size": [1536, 864],
+   "close": [765, 0, 1235, 470],
+   "side": "right",
+   "treatment": "Across the counter from the other party's side, thin hard light at altitude, colour deep and clean",
+   "source": "want: \"to pay back an old debt, with interest\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [568, 0, 1432, 864],
+    "4:5": [654, 0, 1345, 864],
+    "9:16": [757, 0, 1243, 864]
+   }
+  },
+  "Spare04": {
+   "name": "Zeria Emberwick",
+   "file": "Docs/Pilots/art/scenes/Spare04.jpg",
+   "size": [1536, 864],
+   "close": [240, 0, 620, 380],
+   "side": "left",
+   "treatment": "From the sand of the den, lens wide open, lit by the sitter's own lantern glow",
+   "source": "profession: a thief caches the night's take in the sand of the den, beside a row of single boots",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [84, 0, 775, 864],
+    "9:16": [187, 0, 673, 864]
+   }
+  },
+  "Spare05": {
+   "name": "Halven Frostgate",
+   "file": "Docs/Pilots/art/scenes/Spare05.jpg",
+   "size": [1536, 864],
+   "close": [385, 0, 705, 320],
+   "side": "left",
+   "treatment": "Snow-light interior, large format, very still",
+   "source": "hobby: \"writes letters to a sibling who never writes back\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [113, 0, 977, 864],
+    "4:5": [200, 0, 891, 864],
+    "9:16": [302, 0, 788, 864]
+   }
+  },
+  "Spare06": {
+   "name": "Tamsin Dusklight",
+   "file": "Docs/Pilots/art/scenes/Spare06.jpg",
+   "size": [1536, 864],
+   "close": [700, 0, 1170, 470],
+   "side": "right",
+   "treatment": "From inside the reed bed, lens wide open, the near stems soft bars across the frame",
+   "source": "profession: a bounty hunter waits in the reeds beside a towpath for a quarry that is late",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [359, 0, 1511, 864],
+    "1:1": [503, 0, 1367, 864],
+    "4:5": [590, 0, 1281, 864],
+    "9:16": [692, 0, 1178, 864]
+   }
+  },
+  "Spare07": {
+   "name": "Fennaro Mossbell",
+   "file": "Docs/Pilots/art/scenes/Spare07.jpg",
+   "size": [1536, 864],
+   "close": [300, 0, 650, 350],
+   "side": "left",
+   "treatment": "One frame of handheld 16mm documentary film, late sun, walking backward ahead of the subject",
+   "source": "history: \"was raised among reef gardeners\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [43, 0, 907, 864],
+    "4:5": [130, 0, 821, 864],
+    "9:16": [232, 0, 718, 864]
+   }
+  },
+  "Spare08": {
+   "name": "Oki Sandrunner",
+   "file": "Docs/Pilots/art/scenes/Spare08.jpg",
+   "size": [1536, 864],
+   "close": [800, 0, 1240, 440],
+   "side": "right",
+   "treatment": "Boat-interior shot from amidships looking aft, the morning after a flood, mist on brown water",
+   "source": "profession: a first responder brings the last one out of a drowned hamlet the morning after the flood",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [588, 0, 1452, 864],
+    "4:5": [674, 0, 1365, 864],
+    "9:16": [777, 0, 1263, 864]
+   }
+  }
+ }
+}

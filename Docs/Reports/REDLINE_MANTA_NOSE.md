@@ -17,7 +17,7 @@ to what a person flies: a human's nose has no lag. No Soar band comes near that.
 ## 1. The sweep: the best Soar bands at each nose rate (6 courses an intensity, seeds 1-6)
 
 `python3 Tools/Build/manta_redline_nose_sweep.py --seeds 6 --seedbase 1` races 36 band pairs (BoostStickBand
-0-1 x YastriStickBand 0.5-1, plus the shipped 0.35 / 0.75 and the Regatta genome 0.975 / 0.975) at seven nose rates.
+0-1 x YawsteryStickBand 0.5-1, plus the shipped 0.35 / 0.75 and the Regatta genome 0.975 / 0.975) at seven nose rates.
 Each cell shows the median of 6 races, how many finished, and the missed mouths summed over the 6. "Best" is the lowest
 `redline_fit` score.
 
@@ -116,7 +116,7 @@ first, then the row.
 
 - In the editor: AI Mantas race Redline at I1-I4 with `AINoseFollowPerSecond` set to 3 / 6 / 9, alone and in a
   six-AI grid. Check that no ring mouth is missed and that each time is within 10% of the model.
-- The model has no rivals, no Yastri trails and no lobby handicap. Easy-Hard times will be slower.
+- The model has no rivals, no Yawstery trails and no lobby handicap. Easy-Hard times will be slower.
 - There is no human Redline finish to compare against (brief rule 10).
 
 ## Reproduce
@@ -159,7 +159,7 @@ forward axis).
 Two independent restarts by hand (`local_run.py redline-manta-time-lead B|C 540 2`, 300 + 240 evals, 75-78 min each on
 2 cloud cores):
 
-| run | evals | loss | BoostStickBand | YastriStickBand | I1 | I2 | I3 | I4 |
+| run | evals | loss | BoostStickBand | YawsteryStickBand | I1 | I2 | I3 | I4 |
 |---|---:|---:|---:|---:|---|---|---|---|
 | B | 540 | 47.45 | 0.006 | 0.939 | 4/4 140 s m0 | 2/4 156 s m13 | 0/4 m52 | 0/4 m64 |
 | C | 546 | 48.61 | 0.173 | 0.834 | 4/4 140 s m0 | 1/4 113 s m8 | 0/4 m26 | 0/4 m38 |
@@ -169,7 +169,7 @@ Two independent restarts by hand (`local_run.py redline-manta-time-lead B|C 540 
 No band pair finishes a single I3 or I4 race with the lead on: the restarts land 2.4% apart on a floor that is the
 not-finished penalty, and C was still inching down at eval 450 of 546, so by rule 11 it is not converged, and it does
 not matter: the best lead-on drive (47.5) is three times worse than the lead-off winner (16.0). The bands only buy I1
-(both restarts agree on the parent's direction: Boost near 0, Yastri 0.83-0.94, and I1 finishes in 140 s against
+(both restarts agree on the parent's direction: Boost near 0, Yawstery 0.83-0.94, and I1 finishes in 140 s against
 190 s). **Nothing here is a proposal; the twin's `promote` rule cannot be met.**
 
 ### Is it the roll rule? What-ifs on AIPilot's roll while leading (`lead_roll`, new, model only)

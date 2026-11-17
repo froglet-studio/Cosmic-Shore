@@ -31,7 +31,7 @@ player_ids,STRING,"Comma-joined, sorted UGS player ids of the humans in the matc
 player_won,BOOL,True when the local player was on the winning side.,1
 quest,STRING,Title of the quest that was completed.,1
 reason,STRING,Why the session ended: pause or quit.,1
-seconds_since_launch,INT,Seconds elapsed since the app launched. Time-to-first-action analysis.,3
+seconds_since_launch,INT,Seconds elapsed since the app launched. Time-to-first-action analysis.,6
 setting,STRING,"Which setting was changed, by key name.",1
 shard_value,INT,Reward value granted for completing the quest.,1
 source,STRING,"What caused the crystal transaction, such as a game reward or a vessel purchase.",2
@@ -41,3 +41,7 @@ timestamp_utc_ms,LONG,"Client clock at game completion, Unix epoch milliseconds 
 value,STRING,"The setting's new value, as a string.",1
 vessel,STRING,"The vessel involved, as its VesselClassType enum name.",1
 vessel_class,STRING,"The vessel the local player flew, as its VesselClassType enum name.",2
+quest_id,STRING,The FTUE quest graph's id; "unknown" when the quest has none.,3
+phase_index,INT,Zero-based index of the FTUE quest phase.,2
+step_id,STRING,The FTUE node's stable id; re-wording a node never forks the funnel.,1
+step_name,STRING,The FTUE node's display name; its id when it has none.,1

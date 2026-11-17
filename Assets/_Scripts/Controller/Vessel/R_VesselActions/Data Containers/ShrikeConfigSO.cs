@@ -68,7 +68,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Lance cooldown, s.")]
         [SerializeField, Min(0.05f)] float lanceCooldown = 1.2f;
         [Tooltip("CHARGE: lance radius, u (lanceRadiusAt0 1.5 -> lanceRadiusAt10 5: \"wider radius on void lance\").")]
-        [SerializeField] ElementalFloat lanceRadius = ElementalFloat.Multiplier(1.5f, 5f, Element.Charge, 0.5f);
+        [SerializeField] ElementalFloat lanceRadius = ElementalFloat.Multiplier(1.5f, 5f, Element.Charge, 0.75f);
         [Tooltip("Game only: the debris speed of a block the lance breaks, u/s.")]
         [SerializeField, Min(0f)] float lanceDebrisSpeed = 60f;
         [Tooltip("Game only: how long the beam is drawn, s (0 draws nothing).")]
@@ -92,7 +92,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Lock range, u.")]
         [SerializeField, Min(10f)] float lockRange = 1500f;
         [Tooltip("SPACE: lock-on cone, degrees off the nose (lockConeAt0 5 -> lockConeAt10 14: \"larger lock-on radius for targeting array\").")]
-        [SerializeField] ElementalFloat lockCone = ElementalFloat.Multiplier(5f, 14f, Element.Space, 2f);
+        [SerializeField] ElementalFloat lockCone = ElementalFloat.Multiplier(5f, 14f, Element.Space, 2.5f);
         [Tooltip("Missile speed, u/s.")]
         [SerializeField, Min(1f)] float missileSpeed = 220f;
         [Tooltip("Missile turn, degrees per second.")]
@@ -124,6 +124,20 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float leaveNestSeconds = 2f;
         [Tooltip("Max nests: a new one past this retires the oldest.")]
         [SerializeField, Min(1)] int maxNests = 3;
+
+        [Header("Level-5 upgrades (the vessel pass, Garrett, 2026-11-13)")]
+        [Tooltip("CHARGE level-5 'Salvo': every nest flora launches salvoLaunchScale times as often while you paint. None = never.")]
+        [SerializeField] Element salvoUpgradeElement = Element.Charge;
+        [Tooltip("Salvo: missileEvery is divided by this.")]
+        [SerializeField, Min(1f)] float salvoLaunchScale = 2f;
+        [Tooltip("MASS level-5 'Armed Nests': a left-behind nest's flora carries armedNestMissiles instead of detachNestMissiles. None = never.")]
+        [SerializeField] Element armedNestsUpgradeElement = Element.Mass;
+        [Tooltip("Armed Nests: the missiles a left-behind nest's flora carries.")]
+        [SerializeField, Min(0)] int armedNestMissiles = 2;
+        [Tooltip("TIME level-5 'Whipcrack': the Void Sling reaches its anchor in whipcrackSeconds instead of slingSeconds. None = never.")]
+        [SerializeField] Element whipcrackUpgradeElement = Element.Time;
+        [Tooltip("Whipcrack: seconds the sling takes to reach its anchor.")]
+        [SerializeField, Min(0.05f)] float whipcrackSeconds = 0.6f;
 
         [Header("Nest flora (a collected crystal, or a left-behind nest's crown) grows the missiles")]
         [Tooltip("Turret regen, s: the time one flora takes to grow a missile (twice as fast while docked in its nest).")]
@@ -222,6 +236,40 @@ namespace CosmicShore.Gameplay
         public int DetachNestMissiles => detachNestMissiles;
         public float LeaveNestSeconds => leaveNestSeconds;
         public int MaxNests => maxNests;
+        public float SalvoLaunchScale => salvoLaunchScale;
+        public int ArmedNestMissiles => armedNestMissiles;
+        public float WhipcrackSeconds => whipcrackSeconds;
+
+        /// <summary>Seconds between one flora's launches for <paramref name="status"/>: shorter under Salvo.</summary>
+        public float MissileEveryFor(IVesselStatus status) => missileEvery / (SalvoActive(status) ? salvoLaunchScale : 1f);
+        /// <summary>Missiles a left-behind nest's flora carries for <paramref name="status"/>: more under Armed Nests.</summary>
+        public int NestMissilesFor(IVesselStatus status) => ArmedNestsActive(status) ? armedNestMissiles : detachNestMissiles;
+        /// <summary>Seconds the sling takes to its anchor for <paramref name="status"/>: shorter under Whipcrack.</summary>
+        public float SlingSecondsFor(IVesselStatus status) => WhipcrackActive(status) ? whipcrackSeconds : slingSeconds;
+
+        /// <summary>Charge 5 'Salvo'.</summary>
+        public bool SalvoActive(IVesselStatus status)
+        {
+            if (salvoUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(salvoUpgradeElement);
+        }
+
+        /// <summary>Mass 5 'Armed Nests'.</summary>
+        public bool ArmedNestsActive(IVesselStatus status)
+        {
+            if (armedNestsUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(armedNestsUpgradeElement);
+        }
+
+        /// <summary>Time 5 'Whipcrack'.</summary>
+        public bool WhipcrackActive(IVesselStatus status)
+        {
+            if (whipcrackUpgradeElement == Element.None || status == null) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(whipcrackUpgradeElement);
+        }
         public float TurretRegen => turretRegen;
         public int FloraMissileMax => floraMissileMax;
         public int MaxFlora => maxFlora;

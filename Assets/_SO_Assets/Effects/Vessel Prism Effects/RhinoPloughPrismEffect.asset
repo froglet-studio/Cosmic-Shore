@@ -17,22 +17,22 @@ MonoBehaviour:
   maxThrowDistance: 90
   furrowDistance:
     Enabled: 1
-    Value: 0
-    Min: 0
+    Value: 20
+    Min: 20
     Max: 60
-    element: 3
+    element: 2
     UseFloor: 1
-    Floor: 0
+    Floor: 10
   unstoppableUpgradeElement: 3
   carryDistance:
     Enabled: 1
-    Value: 0
-    Min: 0
+    Value: 10
+    Min: 10
     Max: 40
     element: 1
     UseFloor: 1
-    Floor: 0
-  avalancheUpgradeElement: 1
+    Floor: 5
+  avalancheUpgradeElement: 0
   avalancheLinks: 3
   bermUpgradeElement: 2
   slideSeconds: 0.25

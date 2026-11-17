@@ -375,7 +375,50 @@ namespace CosmicShore.Engine.Rendering
         public CameraType cameraType { get; set; }
         public CameraRenderType renderType { get; set; }
         public bool isSceneViewCamera => cameraType == CameraType.SceneView;
+
+        /// <summary>Original contract: the descriptor of the camera's colour target - its pixel size, one sample.</summary>
+        public RenderTextureDescriptor cameraTargetDescriptor
+        {
+            get
+            {
+                var d = camera != null ? new RenderTextureDescriptor(camera.pixelWidth, camera.pixelHeight) : new RenderTextureDescriptor(1, 1);
+                d.graphicsFormat = CosmicShore.Engine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB;
+                d.depthStencilFormat = CosmicShore.Engine.Experimental.Rendering.GraphicsFormat.D32_SFloat;
+                return d;
+            }
+        }
+
         public override void Reset() { camera = null; cameraType = CameraType.Game; renderType = CameraRenderType.Base; }
+    }
+
+    /// <summary>
+    /// URP's forward renderer (original: UnityEngine.Rendering.Universal.UniversalRenderer). The game reaches it only
+    /// for its static render-graph helper; the port's renderer does not execute render graphs (see the file note).
+    /// </summary>
+    public sealed class UniversalRenderer : ScriptableRenderer
+    {
+        /// <summary>Original contract: a render-graph texture sized and formatted from <paramref name="desc"/>.</summary>
+        public static TextureHandle CreateRenderGraphTexture(RenderGraph renderGraph, RenderTextureDescriptor desc, string name, bool clear,
+            FilterMode filterMode = FilterMode.Point, TextureWrapMode wrapMode = TextureWrapMode.Clamp)
+            => CreateRenderGraphTexture(renderGraph, desc, name, clear, Color.clear, filterMode, wrapMode);
+
+        public static TextureHandle CreateRenderGraphTexture(RenderGraph renderGraph, RenderTextureDescriptor desc, string name, bool clear, Color clearColor,
+            FilterMode filterMode = FilterMode.Point, TextureWrapMode wrapMode = TextureWrapMode.Clamp)
+        {
+            var td = new TextureDesc(Math.Max(1, desc.width), Math.Max(1, desc.height))
+            {
+                name = name,
+                clearBuffer = clear,
+                clearColor = clearColor,
+                filterMode = filterMode,
+                wrapMode = wrapMode,
+                bindTextureMS = desc.bindMS,
+                msaaSamples = desc.msaaSamples switch { 2 => MSAASamples.MSAA2x, 4 => MSAASamples.MSAA4x, 8 => MSAASamples.MSAA8x, _ => MSAASamples.None },
+                colorFormat = desc.graphicsFormat,
+                depthBufferBits = desc.depthStencilFormat == CosmicShore.Engine.Experimental.Rendering.GraphicsFormat.None ? DepthBits.None : DepthBits.Depth32,
+            };
+            return renderGraph.CreateTexture(td);
+        }
     }
 
     public class UniversalRenderingData : ContextItem

@@ -214,8 +214,8 @@ the warp alone while its ring is ≥ 280 u away (`aiWarpMinDistance`). In Regatt
 (`StoatSlingConfig_Regatta`, which `Tools/Build/learn_drives_from_flights.py` would write; none exists, so it flies the hull's own row). A
 person flying the Stoat reads the same config. In the offline model (`Tools/Build/stoat_orbit_sim.py`, gate steering only, no race line or
 rails) an AI Stoat at the card's Time 10 runs 59.5 / 60.6 / 65.3 / 93.6 s at I1-I4, among the Dolphin and the Squirrel (54-72 s and
-48.5-59.5 s, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) and behind them at I4. Opponent AI stay pinned to the Squirrel
-(`OpponentAIVessel`); to race an AI Stoat, tap an AI chip in the launch panel (the host can pick any seat, an opponent's too), or fly your own
+48.5-59.5 s, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) and behind them at I4. Opponent AI draw from the card like allies (the
+Squirrel pin retired 2026-11-17); to race an AI Stoat on purpose, tap an AI chip in the launch panel (the host can pick any seat, an opponent's too), or fly your own
 hull on the Third Eye's AI.
 
 The platform's gate-race AI (two-waypoint approach, latched side) plus one override for the one
@@ -273,18 +273,19 @@ policy) — it flies the Skim Race pilot, below.
 **Two kinds of AI seat** (`AIHullSeating`, read by the lobby chips, the backfill and the arena
 hull backstop alike):
 
-- **Opponent seat** — an AI on a domain no human flies. The card pins
-  `SO_ArcadeGame.OpponentAIVessel` to the **Squirrel**, so every opponent is a Squirrel: it skims
-  the rails for boost energy, which is the one speed source a gate-following autopilot reaches
-  just by flying the racing line. Every Regatta Squirrel AI flies the **Skim Race pilot**
+- **Opponent seat** — an AI on a domain no human flies. It draws its hull from the card the way an ally
+  does (`PickAIVesselType`, arena seating: one pilot per hull). **The card pinned
+  `SO_ArcadeGame.OpponentAIVessel` to the Squirrel until 2026-11-17**, while the Squirrel was the only hull the racing
+  AI drove well; Garrett retired it once every card hull had a trained AI ("a vestige that needs to go away now that we
+  have more than the squirrel racing effectively"). In the real-game judge, a drawn five-AI field on the shipped course
+  and archive courses a9 and a6 (seed 11) went from three opponent Squirrels (9-14 gates when the race ended) to a
+  Sparrow, an Urchin and a Thresher (13-22 gates). The field and its pinned-opponent seating stay in the platform for a
+  card that wants them; `author_regatta_assets.py --check` fails if Regatta's card pins one again. Every Regatta Squirrel AI flies the **Skim Race pilot**
   (`SkimRacePilot`, `Docs/SKIM_RACE_AI.md`) with `RegattaRingObjective`: the same racing AI, its
   crystal swapped for the next ring and its track for the domain's rail. On the platform
   `AIPilot`'s ring waypoints the Squirrels threaded no rings at all (first playtest, 2026-10-06).
-  Pinned opponents sit **outside arena seating** — a grid of identical opponents is the point, and the arena backstop
-  (`ServerPlayerVesselInitializer.ResolveArenaUniqueHull`) skips them so a human who picked the
-  Squirrel keeps it. **This is a stopgap**: when the racing AI can drive every hull, clear
-  `OpponentAIVessel` in `author_regatta_assets.py` (and drop its assert) and the opponent grid
-  goes back to the card's mixed draw.
+  (A pinned opponent would sit outside arena seating, and the arena backstop
+  `ServerPlayerVesselInitializer.ResolveArenaUniqueHull` would skip it; Regatta no longer pins one.)
 - **Ally seat** — an AI on a domain a human flies. On the launch panel its avatar chip on the
   team tile shows the hull it will fly; **tap one of your own team's ally chips to step its hull**
   through *auto → the card's hulls in order → auto*, skipping hulls another pilot has claimed or
@@ -535,6 +536,50 @@ with remote players, and Garrett's call (`VesselTransformer`).
 equal on every course, but the Manta and the Scarab still miss mouths at I2-I4 in the fixed-speed model; the Scarab is
 next to look at with its own model.
 
+### 6.6 Hulls seated on the real-game judge (2026-11-17)
+
+The card seated nine hulls; any other hull was swapped for a Squirrel. Two more now sit on it, the **Thresher** and the
+**Brittle Star** (`author_regatta_assets.py` `JUDGED_HULLS`). Six were raced; all six finished the shipped course and
+three `archive3six` courses alone under both starts (card and every hull at Time 5) in Amoebius headless
+(`regatta_judge.py`, seed 11, Legendary), and kept threading gates in a fourteen-hull field (the field race ends at the
+first finisher). The card is also the hull draw for every ally AI (`PickAIVesselType` reads its Vessels; opponents are
+pinned to the Squirrel), so only the hulls within about 1.5x of the first nine stay on it. The **Wrasse, Meerkat, Grizzly
+and Angler** finish at 2-5x the pace and are judge-only (`JUDGE_ONLY_HULLS`): they keep their race lines, and the judge
+seats any hull by name (RaceJudge adds a requested hull the card does not list to the card, in memory, for that run).
+They were on the card for a few hours (#2123, #2127) before coming off.
+
+| hull | alone, card start (s) | alone, L5 start (s) | race line |
+|---|---|---|---|
+| Thresher | 79 / 81 / 110 / 96 | 79 / 81 / 110 / 96 | trained in Thornline: nose 6.37/s, lead 2.77, drive `ThresherAIBoostPolicy_Regatta` (was 98.5 s mean at 10/s on its own policy) |
+| Wrasse | 167 / 169 / 196 / 171 | 110 / 118 / 123 / 130 | nose follow 10/s; about 900 rail contacts a race |
+| Grizzly | 209 / 209 / 176 / 350 | 164 / 164 / 176 / 350 | nose follow 10/s (gate way at 1.5/s stalled on one archive course) |
+| Meerkat | 280 / 280 / 372 / 353 | 274 / 274 / 327 / 319 | nose follow 10/s |
+
+Courses in order: shipped, then archive3six card records 9, 6 and 0 (Thresher: mean of seeds 11-12). Apart from the Thresher (Thornline run1, 2026-11-17), none of these hulls trained a nose pair in its own
+Time game (they fly the fleet lag there), so the race lines take the rate the Regatta judge picked from 1.5 / 5 / 10.
+`regatta_balance.py` has no model of them, so they take no StartingElements row. The Wrasse, Grizzly and Meerkat are
+slow beside the first nine: that gap is for step 5 and their own AI training to close before they return to the card.
+
+Second round (the same courses, seed and race line rate; a 600 s limit to read the Angler's time):
+
+| hull | alone, card start (s) | alone, L5 start (s) |
+|---|---|---|
+| Brittle Star | 82 / 82 / 89 / 87 | 73 / 73 / 77 / 79 |
+| Angler | 372 / 376 / 428 / 432 | 350 / 365 / 417 / 430 |
+
+Both kept threading gates in a fourteen-hull field (Brittle Star 10-13, Angler 2-3 by the first finish). On the gate way at
+the fleet lag the Brittle Star threaded 20 of 24 gates in 400 s with 800-1,300 prism hits: its race line is what seats it.
+The Brittle Star is on the card and in `regatta_qd.ENGINE_TRUSTED`; the Angler finishes past the search's 400 s limit and
+is judge-only.
+
+Not seated yet:
+- **Honeyguide**: 395-485 s, and a 14-gate stall on one archive course, on its race line or on the gate way. (A faster
+  read that night, 94-126 s, was a Squirrel standing in: the Honeyguide was off the card, so the game swapped it. Before
+  RaceJudge seated hulls by name, an off-card hull raced under its own name as the card's Squirrel.)
+- **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
+  (Thornline's AI plan aims at thorns).
+- **Goby**: 0 gates. It wanders, and Perch Run's dart coach armed from RegattaController did not take hold in the judge.
+
 ## 6.5 Scoring — the team sum
 
 `RegattaScoringRuleSO` (a `GateRaceScoringRuleSO` subclass; the asset is points rules,
@@ -671,7 +716,7 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   model, first through the last ring wins outright; (4) a playtest before any of them, because
   this model is arithmetic.
 - **2026-10-16 Rhino kit — needs a playtest.** (1) **AI Rhinos now cut the rails.**
-  `RhinoSwordAutopilot` holds the energize stance near super-shielded mass, and every rail prism is
+  `SwordfishSwordAutopilot` holds the energize stance near super-shielded mass, and every rail prism is
   super-shielded, so an AI Rhino flying beside a rail will now energize and pop holes in it — before
   today no AI could. A rider bridges a hole at full pace, but whether a bot grid shreds the braid is
   a playtest question. (2) **The AI now ramps** (`RampBoostAIPolicySO`), so the AI Rhino's lap time

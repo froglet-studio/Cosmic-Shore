@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Manages a forcefield crackle overlay on a skimmer surface. Receives impact
     /// points (from <see cref="SkimmerForcefieldCracklePrismEffectSO"/> on the sphere
-    /// skimmers, or from <see cref="RhinoSwordFXController"/> on the sword blade) and
+    /// skimmers, or from <see cref="SwordfishSwordFXController"/> on the sword blade) and
     /// feeds them to the crackle shader via MaterialPropertyBlock each frame.
     ///
     /// Two surface parameterizations, matching the two overlay shaders:

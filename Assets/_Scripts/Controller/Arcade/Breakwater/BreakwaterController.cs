@@ -33,11 +33,31 @@ namespace CosmicShore.Gameplay
     public class BreakwaterController : GateRaceController
     {
         [Header("AI nose lead")]
-        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
-                 "the lead off. Sparrow 2: the Sparrow lead.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Sparrow, 2.0f) };
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain) and nose follow rate (0 = the fleet lag), set as it is " +
+                 "armed. A hull with no row flies with the lead off. Sparrow: nose 13.9/s, trained in this race with its drive " +
+                 "(time_ai_search.py, Sparrow run4, 2026-11-17; run3 flew 7.9). The rate is Legendary's: the lower levels set " +
+                 "their own below. The lead stays 1.29: at 7.9/s and faster any lead up to 2.6 judges from the command alone " +
+                 "(AIPilot.EffectiveNoseLeadGain floors at 1), and run4's 2.08 would have changed Easy and Medium. At the fleet " +
+                 "lag a lead of 2 circled stations for minutes (BREAKWATER.md, AI: the nose lead) and at 1 every I4 race timed out.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Sparrow, 1.29f, noseFollow: 13.9f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
+        [Tooltip("The AI nose's follow rate per second by the lobby's AI difficulty (Easy / Medium / Hard / Legendary), set as " +
+                 "each AI is armed, over the row above; a negative entry keeps the row's rate. Before 2026-11-17 every level " +
+                 "flew the trained 7.9/s, and from I2 up (the Time level-5 start) Medium raced as fast as Legendary (89 / 78 / " +
+                 "83 s against 82 / 82 / 81 at I2-I4, the real game). Measured in the real game on course seeds 1-3, the AI " +
+                 "alone (Tools/Build/time_ladder_judge.py): Easy 1.8 about 126-133 s at every rung, Medium 2.0 about 110-120, " +
+                 "Hard 3.5 about 84-109, Legendary 7.9 about 80-99 (elemental loop step 2, BREAKWATER.md \"AI: pace by difficulty\").")]
+        [SerializeField] SwitchbackNoseFollow aiNoseFollowByDifficulty = new(1.8f, 2f, 3.5f, -1f);
+
+        protected override void OnRacerArmed(IPlayer pilot)
+        {
+            var transformer = pilot?.Vessel?.VesselStatus?.VesselTransformer;
+            if (transformer == null) return;
+            float rate = aiNoseFollowByDifficulty.For((int)gameData.AIDifficultyFor(pilot));
+            if (rate >= 0f) transformer.AINoseFollowPerSecond = rate;
+        }
 
         [Header("Breakwater")]
         [Tooltip("The station geometry — dishes, collars, danger plugs and the shoals strung " +

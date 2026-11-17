@@ -117,6 +117,13 @@ namespace CosmicShore.Gameplay
 
         // ---------------- API ----------------
 
+        /// <summary>The cloak is laying a wall now.</summary>
+        public bool IsRunning => _isRunning;
+
+        /// <summary>A press would start the cloak now: not running and past its cooldown. A read, for pilots
+        /// (the AI) that want to press only when the press counts.</summary>
+        public bool IsReady => !_isRunning && Time.time >= _cooldownEndTime;
+
         public void Toggle(CloakSeedWallActionSO so, IVesselStatus status)
         {
             if (!so || status == null) return;

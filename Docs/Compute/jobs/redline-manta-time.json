@@ -4,7 +4,7 @@
  "kind": "search",
  "status": "ready",
  "title": "The Manta's universal Time AI: one Soar drive for Redline I1-I4, grown from every Manta genome",
- "goal": "The Manta's universal Time AI (Docs/AI_SYSTEM/AI_PLAN.md step time-arcade): ONE Soar drive (MantaSoarAITuningSO's BoostStickBand and YastriStickBand) that races all four Redline intensities well. Its first generation is every Manta Time genome (the executor's shipped bands 0.35 / 0.75 and MantaSoarAITuning_Regatta's 0.975 / 0.975, learned from people's Regatta races; MantaSoarAITuning_Redline joins when the AI learning sweep writes it) and mutations of each; the loss is the four intensities' scores together (mean + 0.5 x the worst), raced on the Redline simulator (Tools/Build/manta_redline_sim.py: the shipped five-lap course on the Soar-only ladder of 2026-11-04 and its Time crystals, the gate aim, AIPilot stick, skill throttle and orbit break-off, the Soar triggers, the hull's turn law and AI nose lag; on Regatta's I1 course it laps in 28 s against the editor's Hard AI Mantas' 23-28 s). Measured 2026-11-04 on this job's 4 courses an intensity: the shipped bands score 21.98 and finish 16 of 16 (median I1 186 / I2 176 / I3 193 / I4 538 s), the Regatta genome 25.05, a first local search's 0.118 / 0.83 20.46 (I4 491 s). It replaces drive-manta-redline, whose model was about 3x too fast and whose best bands (1.0 / 0.63) score 49.28 here and finish none of I3-I4. The bands are a small lever; the AI nose lag is the big one (AI_PLAN.md decision 7). The winner is the Manta that Regatta is searched against (step time-arena-course).",
+ "goal": "The Manta's universal Time AI (Docs/AI_SYSTEM/AI_PLAN.md step time-arcade): ONE Soar drive (MantaSoarAITuningSO's BoostStickBand and YawsteryStickBand) that races all four Redline intensities well. Its first generation is every Manta Time genome (the executor's shipped bands 0.35 / 0.75 and MantaSoarAITuning_Regatta's 0.975 / 0.975, learned from people's Regatta races; MantaSoarAITuning_Redline joins when the AI learning sweep writes it) and mutations of each; the loss is the four intensities' scores together (mean + 0.5 x the worst), raced on the Redline simulator (Tools/Build/manta_redline_sim.py: the shipped five-lap course on the Soar-only ladder of 2026-11-04 and its Time crystals, the gate aim, AIPilot stick, skill throttle and orbit break-off, the Soar triggers, the hull's turn law and AI nose lag; on Regatta's I1 course it laps in 28 s against the editor's Hard AI Mantas' 23-28 s). Measured 2026-11-04 on this job's 4 courses an intensity: the shipped bands score 21.98 and finish 16 of 16 (median I1 186 / I2 176 / I3 193 / I4 538 s), the Regatta genome 25.05, a first local search's 0.118 / 0.83 20.46 (I4 491 s). It replaces drive-manta-redline, whose model was about 3x too fast and whose best bands (1.0 / 0.63) score 49.28 here and finish none of I3-I4. The bands are a small lever; the AI nose lag is the big one (AI_PLAN.md decision 7). The winner is the Manta that Regatta is searched against (step time-arena-course).",
  "asked_by": "Yash 2026-11-03, the AI owner: \"Let's make Manta AI training\". Garrett's plan (AI_PLAN.md rules 2 and 3) sets its shape.",
  "area_owner": "Yash (vessel AI, Redline and the Manta's AI)",
  "plan": "regatta-balance",
@@ -46,7 +46,7 @@
    "init": 0.35
   },
   {
-   "name": "YastriStickBand",
+   "name": "YawsteryStickBand",
    "lo": 0.0,
    "hi": 1.0,
    "init": 0.75

@@ -393,6 +393,22 @@ namespace CosmicShore.Core
                 EnsurePersistent(field);
         }
 
+        /// <summary>
+        /// Binds the authentication facade. These bindings are installed into more than one container (the root
+        /// scope from the prefab asset, the Bootstrap scene's scope from its instance), and a Singleton factory
+        /// is single per container only, so the factory hands out <see cref="AuthenticationServiceFacade.Shared"/>:
+        /// two facades meant two competing UGS sign-ins at boot (Docs/Multiplayer/BUGS.md, "already signing in").
+        /// </summary>
+        internal static void RegisterAuthenticationFacade(ContainerBuilder builder,
+            AuthenticationDataVariable authenticationDataVariable, bool allowLog)
+        {
+            builder.RegisterFactory(
+                _ => AuthenticationServiceFacade.Shared(authenticationDataVariable, allowLog),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+        }
+
         public void InstallBindings(ContainerBuilder builder)
         {
             // Best-effort early resolution. Reflex may call InstallBindings
@@ -438,11 +454,7 @@ namespace CosmicShore.Core
             // ── Pure C# service singletons ───────────────────────────────
             // Created by factory, no scene object needed. Lazy so they are
             // only instantiated when first injected.
-            builder.RegisterFactory(
-                _ => new AuthenticationServiceFacade(authenticationDataVariable, authenticationWithLog),
-                lifetime: Lifetime.Singleton,
-                resolution: Resolution.Lazy
-            );
+            RegisterAuthenticationFacade(builder, authenticationDataVariable, authenticationWithLog);
 
             builder.RegisterFactory(
                 _ => new NetworkMonitor(networkMonitorDataVariable),

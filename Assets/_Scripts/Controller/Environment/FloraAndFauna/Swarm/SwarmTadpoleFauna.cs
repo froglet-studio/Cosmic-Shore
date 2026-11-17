@@ -57,6 +57,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The member rides its swarm - jousting its heart means outrunning the body.</summary>
         public override float CurrentSpeed => Swarm ? Swarm.MemberSpeed(Index) : 0f;
 
+        /// <summary>A rider that stings a member takes its whole murmuration (Garrett, 2026-11-14: "possessing the whole
+        /// murmuration does sound fun").</summary>
+        public override Fauna PossessionHost => Swarm ? Swarm : this;
+
         /// <summary>No goal coroutine: the swarm steers every member (the base Start would tick a
         /// Goal nothing reads, once per tadpole).</summary>
         protected override void Start() { }

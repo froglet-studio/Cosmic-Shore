@@ -6,7 +6,8 @@
     "scoring_metric": "Assets/_Scripts/Data/Enums/ScoringMetric.cs",
     "element": "Assets/_Scripts/Data/Enums/Element.cs",
     "preview_library": "Assets/Resources/ModePreviewLibrary.asset",
-    "cards": "Assets/_SO_Assets/Games"
+    "cards": "Assets/_SO_Assets/Games",
+    "renames": "Assets/_Scripts/System/CloudData/GameModeRenameMigration.cs"
   },
   "modes": {
     "AstroLeague": [
@@ -15,6 +16,10 @@
     ],
     "Bends": [
       "Charge",
+      null
+    ],
+    "Blastline": [
+      "Space",
       null
     ],
     "Bloomrush": [
@@ -41,16 +46,44 @@
       "Mass",
       "Space"
     ],
+    "Bullrush": [
+      "Charge",
+      null
+    ],
     "BurrowRun": [
       "Time",
+      null
+    ],
+    "CaveIn": [
+      "Space",
+      null
+    ],
+    "Chum": [
+      "Space",
+      null
+    ],
+    "CleanerRam": [
+      "Charge",
       null
     ],
     "Cleave": [
       "Space",
       null
     ],
+    "Corona": [
+      "Charge",
+      null
+    ],
     "DecoyRun": [
       "Time",
+      null
+    ],
+    "DenBuilder": [
+      "Mass",
+      null
+    ],
+    "DepthCharge": [
+      "Space",
       null
     ],
     "DogFight": [
@@ -61,6 +94,26 @@
       "Charge",
       null
     ],
+    "Flatline": [
+      "Charge",
+      null
+    ],
+    "Flitstrike": [
+      "Charge",
+      null
+    ],
+    "Fulmen": [
+      "Space",
+      null
+    ],
+    "Glasshouse": [
+      "Mass",
+      null
+    ],
+    "Gorge": [
+      "Space",
+      null
+    ],
     "GrizzlyCharge": [
       "Space",
       null
@@ -69,28 +122,88 @@
       "Time",
       null
     ],
+    "Harvest": [
+      "Space",
+      null
+    ],
+    "Haul": [
+      "Mass",
+      null
+    ],
     "Headlong": [
       "Time",
+      null
+    ],
+    "Hedgerow": [
+      "Mass",
       null
     ],
     "Hijack": [
       "Mass",
       null
     ],
+    "Honeycomb": [
+      "Mass",
+      null
+    ],
+    "IceShelf": [
+      "Mass",
+      null
+    ],
+    "Jackstraw": [
+      "Charge",
+      null
+    ],
     "Joust": [
       "Charge",
+      null
+    ],
+    "Kelpwood": [
+      "Charge",
+      null
+    ],
+    "Lancefall": [
+      "Space",
+      null
+    ],
+    "Landslide": [
+      "Space",
       null
     ],
     "LanternRun": [
       "Time",
       null
     ],
+    "Larder": [
+      "Charge",
+      null
+    ],
+    "Longshot": [
+      "Mass",
+      null
+    ],
+    "Marionette": [
+      "Charge",
+      null
+    ],
     "Multiplayer2v2CoOpVsAI": [
       "Time",
       null
     ],
+    "Palisade": [
+      "Mass",
+      null
+    ],
     "PerchRun": [
       "Time",
+      null
+    ],
+    "PodHunt": [
+      "Charge",
+      null
+    ],
+    "Railrush": [
+      "Charge",
       null
     ],
     "Rampage": [
@@ -101,8 +214,20 @@
       "Time",
       null
     ],
+    "Reefbuild": [
+      "Mass",
+      null
+    ],
     "Regatta": [
       "Time",
+      null
+    ],
+    "Riposte": [
+      "Charge",
+      null
+    ],
+    "Riptide": [
+      "Space",
       null
     ],
     "Salvo": [
@@ -121,12 +246,24 @@
       "Mass",
       null
     ],
+    "Sentry": [
+      "Charge",
+      null
+    ],
     "SerpentHood": [
       "Charge",
       null
     ],
     "SerpentTime": [
       "Time",
+      null
+    ],
+    "Shatterplane": [
+      "Space",
+      null
+    ],
+    "Shockfront": [
+      "Charge",
       null
     ],
     "Sirocco": [
@@ -149,6 +286,26 @@
       "Time",
       null
     ],
+    "Snap": [
+      "Charge",
+      null
+    ],
+    "Spearline": [
+      "Time",
+      null
+    ],
+    "Standoff": [
+      "Charge",
+      null
+    ],
+    "Starweave": [
+      "Mass",
+      null
+    ],
+    "Stingherd": [
+      "Charge",
+      null
+    ],
     "Switchback": [
       "Time",
       null
@@ -165,6 +322,10 @@
       "Mass",
       null
     ],
+    "Thornbush": [
+      "Mass",
+      null
+    ],
     "Thornline": [
       "Time",
       null
@@ -177,6 +338,10 @@
       "Mass",
       null
     ],
+    "Trawl": [
+      "Space",
+      null
+    ],
     "Undertow": [
       "Charge",
       null
@@ -185,11 +350,23 @@
       "Time",
       null
     ],
+    "Warren": [
+      "Mass",
+      null
+    ],
     "Waystation": [
       "Time",
       null
     ],
     "WildlifeLiberation": [
+      "Space",
+      null
+    ],
+    "Windrow": [
+      "Mass",
+      null
+    ],
+    "Woodpecker": [
       "Space",
       null
     ],
@@ -235,50 +412,94 @@
   "metric": {
     "AstroLeague": "Goals",
     "Bends": "CombatPoints",
+    "Blastline": "PrismsDestroyed",
     "Bloomrush": "VolumeDestroyed",
     "Breach": "SwitchesThreaded",
     "Breakwater": "SwitchesThreaded",
     "BrittleStarTime": "SwitchesThreaded",
     "Broadside": "CombatPoints",
     "BroodRush": "Goals",
+    "Bullrush": "CombatPoints",
     "BurrowRun": "SwitchesThreaded",
+    "CaveIn": "PrismsDestroyed",
+    "Chum": "PrismsDestroyed",
+    "CleanerRam": "CombatPoints",
     "Cleave": "PrismsDestroyed",
+    "Corona": "CombatPoints",
     "DecoyRun": "SwitchesThreaded",
+    "DenBuilder": "VolumeRemaining",
+    "DepthCharge": "PrismsDestroyed",
     "DogFight": "CombatPoints",
     "Dustup": "CombatPoints",
+    "Flatline": "CombatPoints",
+    "Flitstrike": "CombatPoints",
+    "Fulmen": "PrismsDestroyed",
+    "Glasshouse": "VolumeRemaining",
+    "Gorge": "PrismsDestroyed",
     "GrizzlyCharge": "PrismsDestroyed",
     "GrizzlyTime": "SwitchesThreaded",
+    "Harvest": "PrismsDestroyed",
+    "Haul": "VolumeRemaining",
     "Headlong": "SwitchesThreaded",
+    "Hedgerow": "VolumeRemaining",
     "Hijack": "PrismsStolen",
+    "Honeycomb": "VolumeRemaining",
+    "IceShelf": "VolumeRemaining",
+    "Jackstraw": "CombatPoints",
     "Joust": "Jousts",
+    "Kelpwood": "CombatPoints",
+    "Lancefall": "PrismsDestroyed",
+    "Landslide": "PrismsDestroyed",
     "LanternRun": "SwitchesThreaded",
+    "Larder": "CombatPoints",
+    "Longshot": "VolumeRemaining",
+    "Marionette": "CombatPoints",
     "Multiplayer2v2CoOpVsAI": "Crystals",
+    "Palisade": "VolumeRemaining",
     "PerchRun": "SwitchesThreaded",
+    "PodHunt": "CombatPoints",
+    "Railrush": "CombatPoints",
     "Rampage": "PrismsDestroyed",
     "Redline": "SwitchesThreaded",
+    "Reefbuild": "VolumeRemaining",
     "Regatta": "SwitchesThreaded",
+    "Riposte": "CombatPoints",
+    "Riptide": "PrismsDestroyed",
     "Salvo": "PrismsDestroyed",
     "ScarabRally": "SwitchesThreaded",
     "ScarabScramble": "Goals",
     "Scurry": "Crystals",
+    "Sentry": "CombatPoints",
     "SerpentHood": "CombatPoints",
     "SerpentTime": "SwitchesThreaded",
+    "Shatterplane": "PrismsDestroyed",
+    "Shockfront": "CombatPoints",
     "Sirocco": "PrismsDestroyed",
     "Skein": "SwitchesThreaded",
     "SkimRace": "Crystals",
     "Slingshot": "SwitchesThreaded",
     "SlipLine": "SwitchesThreaded",
+    "Snap": "CombatPoints",
+    "Spearline": "SwitchesThreaded",
+    "Standoff": "CombatPoints",
+    "Starweave": "VolumeRemaining",
+    "Stingherd": "CombatPoints",
     "Switchback": "SwitchesThreaded",
     "Tandava": "LifeformsKilled",
     "TandavaSevering": "LifeformsKilled",
     "Tapestry": "VolumeRemaining",
+    "Thornbush": "VolumeRemaining",
     "Thornline": "SwitchesThreaded",
     "ThresherTime": "SwitchesThreaded",
     "Tollway": "Goals",
+    "Trawl": "PrismsDestroyed",
     "Undertow": "CombatPoints",
     "Warpline": "SwitchesThreaded",
+    "Warren": "VolumeRemaining",
     "Waystation": "SwitchesThreaded",
     "WildlifeLiberation": "LifeformsKilled",
+    "Windrow": "VolumeRemaining",
+    "Woodpecker": "PrismsDestroyed",
     "WrasseRun": "SwitchesThreaded",
     "WreckingBall": "PrismsDestroyed"
   },
@@ -291,6 +512,7 @@
   "cards": [
     "AstroLeague",
     "Bends",
+    "Blastline",
     "BlockBandit",
     "Bloomrush",
     "BotDuel",
@@ -299,45 +521,78 @@
     "BrittleStarTime",
     "Broadside",
     "BroodRush",
+    "Bullrush",
     "BurrowRun",
     "CatNMouse",
+    "CaveIn",
     "CellularBrawl",
+    "Chum",
+    "CleanerRam",
     "Cleave",
     "CoOpWildlifeBlitz",
+    "Corona",
     "Curvatious",
     "DashNGrab",
     "DecoyRun",
+    "DenBuilder",
     "Denial",
+    "DepthCharge",
     "Distraction",
     "DogFight",
     "DolphinDarts",
     "Dustup",
     "Elimination",
+    "Flatline",
+    "Flitstrike",
+    "Fulmen",
+    "Glasshouse",
+    "Gorge",
     "GrizzlyCharge",
     "GrizzlyTime",
+    "Harvest",
+    "Haul",
     "Headlong",
+    "Hedgerow",
     "Hijack",
+    "Honeycomb",
+    "IceShelf",
+    "Jackstraw",
     "Joust",
+    "Kelpwood",
     "KickinMass",
+    "Lancefall",
+    "Landslide",
     "LanternRun",
+    "Larder",
+    "Longshot",
     "Maelstrom",
+    "Marionette",
     "MasterExploder",
     "MazeRun",
     "Multiplayer2v2CoOpVsAI",
     "ObstacleCourse",
+    "Palisade",
     "PerchRun",
+    "PodHunt",
     "ProtectMission",
     "PumpNDump",
+    "Railrush",
     "Rampage",
     "Redline",
+    "Reefbuild",
     "Regatta",
+    "Riposte",
+    "Riptide",
     "RiskyDriftness",
     "Salvo",
     "ScarabRally",
     "ScarabScramble",
     "Scurry",
+    "Sentry",
     "SerpentHood",
     "SerpentTime",
+    "Shatterplane",
+    "Shockfront",
     "ShootingGallery",
     "Sirocco",
     "Skein",
@@ -345,20 +600,43 @@
     "Slingshot",
     "SlipLine",
     "SlipNStride",
+    "Snap",
     "Soar",
+    "Spearline",
+    "Standoff",
+    "Starweave",
+    "Stingherd",
     "Switchback",
     "Tandava",
     "TandavaSevering",
     "Tapestry",
+    "Thornbush",
     "Thornline",
     "ThresherTime",
     "Tollway",
+    "Trawl",
     "Undertow",
     "Warpline",
+    "Warren",
     "Waystation",
     "WildlifeBlitz",
     "WildlifeLiberation",
+    "Windrow",
+    "Woodpecker",
     "WrasseRun",
     "WreckingBall"
-  ]
+  ],
+  "renames": {
+    "CellularDuel": "DuelForTheCell",
+    "Darts": "DolphinDarts",
+    "HexRace": "SkimRace",
+    "MazeRunner": "MazeRun",
+    "MultiplayerCrystalCapture": "Scurry",
+    "MultiplayerJoust": "Joust",
+    "MultiplayerWildlifeBlitzGame": "CoOpWildlifeBlitz",
+    "NucleusRush": "BroodRush",
+    "PeelTheCage": "Cleave",
+    "Ribcage": "Cleave",
+    "Tournament": "Maelstrom"
+  }
 }

@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     ///    first. The space card shows the energy.
     ///  • MASS (Decoy) - a collected elemental crystal leaves a decoy behind, which lasts longer with Mass
     ///    (<see cref="DecoyLifetimeFor"/>); at level 5 the omni crystal leaves one too.
-    ///  • TIME - Yastri (the turn) and the soaring speed, with Soar unlocking at level 5 (not this asset).
+    ///  • TIME - Yawstery (the turn) and the soaring speed, with Soar unlocking at level 5 (not this asset).
     /// </summary>
     [CreateAssetMenu(fileName = "MantaStingConfig",
         menuName = "ScriptableObjects/Vessel Actions/Manta Sting Config")]

@@ -43,7 +43,7 @@ Course** rather than a negative Speed, and nothing in any of them was taught abo
 - **Backing into a ribbon latches the grind the way you are travelling.** `TrailFollower` takes its
   direction from `Course` at the moment of contact. Flying into your own forward-laid trail in
   reverse and riding it backwards is the Urchin's substitute for a turning circle — it has no
-  drift, no Yastri and no stop ability — and it is what the mode geometry (Hijack's burrs, Skein's
+  drift, no Yawstery and no stop ability — and it is what the mode geometry (Hijack's burrs, Skein's
   aimed breaks) already assumes a pilot can do.
 - **A danger prism still bites.** `throttleMultiplier` is applied before the split, so a slow scales
   a reverse exactly as it scales a cruise.

@@ -18,7 +18,7 @@ The race and the score are redline_fit's (manta_redline_sim.race, the same cours
           + rate_cost x mean over intensities of (rate - 1.5) / (hi - 1.5)    the smallest rate that buys the pace wins a tie
           + stay_near_shipped x the bands' pull toward the nearest genome      (redline_fit's)
 
-The space: BoostStickBand, YastriStickBand ([0, 1], the SO's fields by name) and NoseFollowI1..I4 (per second, from the
+The space: BoostStickBand, YawsteryStickBand ([0, 1], the SO's fields by name) and NoseFollowI1..I4 (per second, from the
 fleet lag 1.5 up to `rate_hi`, 9 by default: the human library's NoseFollowPerSecond; 0 = "no lag" is not in the range
 because 9/s already races within about 10% of it in the model and misses fewer mouths; manta_redline_nose_sweep.py,
 Docs/Reports/REDLINE_MANTA_NOSE.md).
@@ -70,7 +70,7 @@ def evaluate(params, ctx):
         base.setup(ctx)
     sim = base._CTX["sim"]
     p = base.clamp({k: float(params.get(k, v)) for k, v in base._CTX["shipped"].items()})
-    bands = (p["BoostStickBand"], p["YastriStickBand"])
+    bands = (p["BoostStickBand"], p["YawsteryStickBand"])
     hi = float(a.get("rate_hi", RATE_HI))
     rates = {i: max(FLEET, min(hi, float(params.get(k, FLEET)))) for k, i in RATES.items()}
     limit = float(a.get("limit", 900))
@@ -129,7 +129,7 @@ def self_test():
         sd = seeds({}, root)
         if not any(s["NoseFollowI4"] == FLEET for s in sd) or not any(s["NoseFollowI4"] == RATE_HI for s in sd):
             bad.append("redline_nose_fit: the seeds do not carry both ends of the rate range")
-        if [d["name"] for d in space_for(root)] != ["BoostStickBand", "YastriStickBand"] + list(RATES):
+        if [d["name"] for d in space_for(root)] != ["BoostStickBand", "YawsteryStickBand"] + list(RATES):
             bad.append("redline_nose_fit: the space is not the bands and four rates")
     except Exception as e:
         bad.append(f"redline_nose_fit: {type(e).__name__}: {e}")

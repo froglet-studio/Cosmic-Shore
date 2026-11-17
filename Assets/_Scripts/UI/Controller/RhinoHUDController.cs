@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Serialization;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -8,31 +7,15 @@ using Reflex.Attributes;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Rhino's HUD: pushes the sword's state onto the fleet's four ability cards.
+    /// The Rhino's HUD: pushes the plough's state onto the fleet's four ability cards (the 2026-11-12 rework; the sword and
+    /// its katana, afterimage and Blade Reach cards went to the Swordfish, <c>SwordfishHUDController</c>, and their code
+    /// left this class on 2026-11-13).
     ///
-    /// <para><b>Control chips.</b> Charge, Mass and Space wear the two-trigger glyph (map Input
-    /// BothSticksAction: hold both to energize, swing to cut; the afterimages follow the energize).
-    /// Time wears the sticks-apart glyph, set here because a gesture has no map input.</para>
+    /// <para><b>Control chips.</b> Time wears the sticks-apart glyph, set here because a gesture has no map input.</para>
     ///
-    /// <para><b>CHARGE card</b> - the katana follows the real sword: every frame the blade's pose
-    /// (<see cref="ShieldSwipeActionExecutor.CurrentPose"/>, the swipe, the chop and any flourish,
-    /// normalised by its config) goes to <see cref="RhinoVesselHUDView.SetKatanaPose"/>, and the lit
-    /// state tints it danger (<see cref="RhinoVesselHUDView.SetKatanaLit"/>). The card shows the sword's ENERGIZE, which the card is bound to (the both-triggers
-    /// stance), and how many petals a sword hit takes (Charge scales it; its level-5, Sword Steal,
-    /// lands them on the Rhino instead of ejecting them; 2026-10-26). The card is lit while the blade is
-    /// energized, the recharge veil sweeps over it through the energize cooldown, and an authored
-    /// gauge (if the row has one) shows the energize: filling as the stance is held, full while
-    /// lit, draining over the let-go tail (<see cref="ShieldSkimmerScaleDriver.EnergizeGauge01"/>).
-    /// It used to show stored energy; the Rhino has none since 2026-10-26.</para>
-    ///
-    /// <para><b>MASS card</b> - lit while the sword is laying its afterimages (the window after an
-    /// energize, and the whole of an omni-crystal surge); the card's prism copies show in the pilot's
-    /// domain colour for exactly that window (<see cref="RhinoVesselHUDView.SetAfterimage"/>).</para>
-    ///
-    /// <para><b>SPACE card</b> - Blade Reach: the blade's live length (<c>Skimmer.ElementalScale01</c>), the
-    /// super-shielded prism at its tip shattered once Shield Breaker is active
-    /// (<see cref="ShieldSkimmerScaleDriver.SuperShieldUpgradeActive"/>), danger while lit
-    /// (<see cref="RhinoVesselHUDView.SetBladeReach"/>).</para>
+    /// <para><b>CHARGE card - Gore</b>: the plate fills with the ram speed toward the gore's live minimum (full when a ram
+    /// counts), the card lights while it does or a Stampede runs, and flashes when a Stampede starts (<see cref="PushGore"/>).
+    /// <b>MASS</b> (Heft) and <b>SPACE</b> (Blade) are single pictures with their level-5 swaps; the base view handles them.</para>
     ///
     /// <para><b>TIME card</b> - the ramp. Lit while the ramp is BOOSTING (Garrett, 2026-10-17: "the
     /// time icon should respond to boosting"); its gauge fills with speed as a fraction of the
@@ -46,8 +29,8 @@ namespace CosmicShore.UI
     /// (<see cref="RhinoVesselHUDView.SetMomentum"/>; Garrett 2026-10-28). The ward's threshold is one mark on the
     /// gauge, the Sparrow's edge ticks (<see cref="RhinoVesselHUDView.SetMomentumMark"/>).</para>
     ///
-    /// <para>Polled rather than event-driven, deliberately: every value is a read of state the sword
-    /// driver already owns, so there is no subscription to leak or double across a re-initialise -
+    /// <para>Polled rather than event-driven, deliberately: every value is a read of state the hull's
+    /// components already own, so there is no subscription to leak or double across a re-initialise -
     /// the asymmetric subscribe/unsubscribe pair this replaced did both, depending on whether the
     /// re-init flipped the pilot between local and AI. Each push is change-detected, so a steady
     /// card costs a compare per frame.</para>
@@ -58,20 +41,15 @@ namespace CosmicShore.UI
         [SerializeField] private RhinoVesselHUDView view;
 
         [Header("Rhino – Scene Refs")]
-        [Tooltip("The sword's brain (energize phase, surge). On the Rhino root's ScaleSkimmerObject.")]
-        [FormerlySerializedAs("growSkimmerExecutor")]
-        [SerializeField] private ShieldSkimmerScaleDriver swordDriver;
-
-        [Tooltip("The sword's swipe (ShieldSwipeActionExecutor on the vessel), whose pose the Charge card's katana " +
-                 "follows. Found on the vessel when empty.")]
-        [SerializeField] private ShieldSwipeActionExecutor swipe;
-
-        [Tooltip("The Mass ability (afterimages), beside the sword driver. Found under the vessel when empty.")]
-        [SerializeField] private RhinoSwordAfterimage afterimage;
-
         [Tooltip("The Time level-5 ward (VesselElementalImmunity on the root, above 70% of top speed). " +
                  "Found on the vessel when empty.")]
         [SerializeField] private VesselElementalImmunity speedWard;
+
+        [Header("Charge card - the gore")]
+        [Tooltip("The Rhino's Gore speed (RhinoGoreSpeed, the asset RhinoGoreBySkimmerEffect gates on): " +
+                 "the Charge plate is the ram speed against the gore's live minimum - full when a ram counts - and " +
+                 "the card lights while it does or a Stampede runs.")]
+        [SerializeField] private JoustSpeedConfigSO goreSpeed;
 
         [Header("Time card - the ramp's line")]
         [Tooltip("The ramp (RampBoostActionExecutor on the vessel), whose straightness dims the Time gauge. " +
@@ -81,17 +59,15 @@ namespace CosmicShore.UI
                  "the ramp is engaged (1 = never dims). A straight line, or no ramp engaged, draws it as authored.")]
         [SerializeField, Range(0f, 1f)] private float bentLineGaugeAlpha = 0.3f;
 
-        // The palette, for the Mass card's prism copies (the pilot's domain colour). Injected, as the Sparrow's.
+        // The palette, for the Time card's hull (the pilot's domain colour). Injected, as the Sparrow's.
         [Inject] GameDataSO _gameData;
 
         IVesselStatus _vesselStatus;
         ITopSpeedSource _topSpeed;
 
         bool _chargeLit;
-        float _chargeVeil = -1f;
+        bool _stampede;
         float _chargeGauge = -1f;
-        bool _massLit;
-        Color _massColor;
         bool _timeLit;
         bool _warded;
         Color _timeHullColor;
@@ -112,19 +88,15 @@ namespace CosmicShore.UI
 
             // Explicit Unity-null tests, not `??` (a missing component can be a fake-null object).
             var root = vesselStatus?.ShipTransform;
-            if (!afterimage && root) afterimage = root.GetComponentInChildren<RhinoSwordAfterimage>(true);
             if (!speedWard && root) speedWard = root.GetComponentInChildren<VesselElementalImmunity>(true);
             _topSpeed = root ? root.GetComponentInChildren<ITopSpeedSource>(true) : null;
             if (!ramp && root) ramp = root.GetComponentInChildren<RampBoostActionExecutor>(true);
-            if (!swipe && root) swipe = root.GetComponentInChildren<ShieldSwipeActionExecutor>(true);
 
             // A re-initialise (menu vessel swap, pilot swap) starts the cards from a known state so
             // the change detection below pushes everything once.
             _chargeLit = false;
-            _chargeVeil = -1f;
+            _stampede = false;
             _chargeGauge = -1f;
-            _massLit = false;
-            _massColor = default;
             _timeLit = false;
             _warded = false;
             _timeHullColor = default;
@@ -139,10 +111,6 @@ namespace CosmicShore.UI
                 InputDeviceIconSetSwitcher.HintBinding.KeySticksOutward);
 
             view.SetAbilityPressed(Element.Charge, false);
-            view.SetKatanaLit(false);
-            view.SetKatanaPose(0f, 0f);
-            view.SetAbilityPressed(Element.Mass, false);
-            view.SetAfterimage(false, ResolveDomainSignalColor());
             view.SetAbilityPressed(Element.Time, false);
             view.SetMomentum(false, ResolveDomainSignalColor());
         }
@@ -151,15 +119,7 @@ namespace CosmicShore.UI
         {
             if (!view || !IsHudAllowed) return;
 
-            bool massLit = afterimage && afterimage.IsLaying;
-            var massColor = ResolveDomainSignalColor();
-            if (massLit != _massLit || massColor != _massColor)
-            {
-                if (massLit != _massLit) view.SetAbilityPressed(Element.Mass, massLit);
-                _massLit = massLit;
-                _massColor = massColor;
-                view.SetAfterimage(massLit, massColor);
-            }
+            var domainColor = ResolveDomainSignalColor();
 
             bool timeLit = _vesselStatus.IsBoosting;
             if (timeLit != _timeLit)
@@ -170,10 +130,10 @@ namespace CosmicShore.UI
 
             bool warded = speedWard && speedWard.IsHolding;
             if (warded && !_warded) view.PlayAbilityFlash(Element.Time);
-            if (warded != _warded || massColor != _timeHullColor)
+            if (warded != _warded || domainColor != _timeHullColor)
             {
-                _timeHullColor = massColor;
-                view.SetMomentum(warded, massColor);
+                _timeHullColor = domainColor;
+                view.SetMomentum(warded, domainColor);
             }
             _warded = warded;
 
@@ -187,37 +147,32 @@ namespace CosmicShore.UI
             }
             PushLineToTimeGauge();
 
-            PushSwordToKatana();
-            if (!swordDriver) return;
+            PushGore();
+        }
 
-            // Re-asserted every frame while lit, not change-detected: the card is bound to the
-            // both-triggers input, so the base press path darkens it the moment the stance is let
-            // go - while the energized tail still has seconds to run.
-            bool lit = swordDriver.IsEnergized;
-            if (lit || lit != _chargeLit)
+        // The Rhino's Charge card: the plate fills with the ram speed toward the gore's minimum (the same number the gore is
+        // admitted at: the replicated Charge level, or the Charge 10 one in a Stampede), the card lights while a ram would
+        // count, and flashes when a Stampede starts.
+        void PushGore()
+        {
+            if (!goreSpeed) return;
+
+            bool stampede = RhinoStampede.IsActive(_vesselStatus);
+            if (stampede && !_stampede) view.PlayAbilityFlash(Element.Charge);
+            _stampede = stampede;
+
+            float minimum = stampede ? goreSpeed.MinimumSpeedAtLevel(1f) : goreSpeed.MinimumSpeedFor(_vesselStatus);
+            float ready01 = minimum > 0f ? Mathf.Clamp01(_vesselStatus.Speed / minimum) : 1f;
+            if (!Mathf.Approximately(ready01, _chargeGauge) && view.TryGetAbilityGauge(Element.Charge, out var gauge))
             {
-                if (lit != _chargeLit) view.SetKatanaLit(lit);
-                _chargeLit = lit;
-                view.SetAbilityPressed(Element.Charge, lit);
+                _chargeGauge = ready01;
+                gauge.fillAmount = ready01;
             }
 
-            var skimmer = swordDriver.Skimmer;
-            view.SetBladeReach(skimmer ? skimmer.ElementalScale01 : 0f, swordDriver.SuperShieldUpgradeActive, lit,
-                ResolveShieldedColor());
-
-            float veil = swordDriver.EnergizeCooldownRemaining01;
-            if (!Mathf.Approximately(veil, _chargeVeil))
-            {
-                _chargeVeil = veil;
-                view.SetAbilityCooldown(Element.Charge, veil);
-            }
-
-            float energize = swordDriver.EnergizeGauge01;
-            if (!Mathf.Approximately(energize, _chargeGauge) && view.TryGetAbilityGauge(Element.Charge, out var gauge))
-            {
-                _chargeGauge = energize;
-                gauge.fillAmount = energize;
-            }
+            bool lit = stampede || ready01 >= 1f;
+            if (lit == _chargeLit) return;
+            _chargeLit = lit;
+            view.SetAbilityPressed(Element.Charge, lit);
         }
 
         // The pilot's domain colour (the domain can change mid-match); white until the palette resolves.
@@ -226,27 +181,6 @@ namespace CosmicShore.UI
             var colorSet = _gameData?.ThemeManagerData?.ColorSet;
             if (colorSet == null || _vesselStatus == null) return Color.white;
             return colorSet.GetDomainSignalColor(_vesselStatus.Domain);
-        }
-
-        // The pilot's SHIELDED colour for the Space card's super-shielded prism; alpha 0 until the palette resolves
-        // (the view keeps the prism's authored colour), never a plausible stand-in - as the Sparrow's Mass card.
-        Color ResolveShieldedColor()
-        {
-            var theme = _gameData?.ThemeManagerData;
-            if (theme == null || _vesselStatus == null || _vesselStatus.Domain == Domains.Blue) return new Color(0f, 0f, 0f, 0f);
-            return theme.GetShieldedSignalColor(_vesselStatus.Domain);
-        }
-
-        // The real sword's pose on the Charge card's katana: the swipe (-1..1) and the chop (0..1), each a fraction of
-        // its full single-axis travel, so a flourish past it clamps at the card's limit.
-        void PushSwordToKatana()
-        {
-            var config = swipe ? swipe.Config : null;
-            if (!config) return;
-            var pose = swipe.CurrentPose;
-            float s = config.SwipeYawDegrees != 0f ? pose.yaw / config.SwipeYawDegrees : 0f;
-            float c = config.ChopPitchDegrees != 0f ? pose.pitch / config.ChopPitchDegrees : 0f;
-            view.SetKatanaPose(s, c);
         }
 
         // The ramp's line on the Time gauge: its authored colour on a straight line (or with no ramp

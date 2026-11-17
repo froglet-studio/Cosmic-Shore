@@ -59,6 +59,35 @@ MonoBehaviour:
   stealCooldown: 1
   faunaChargeCost: 1
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  chargePetalScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
+  massClusterScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 2
+    UseFloor: 1
+    Floor: 0.5
+  spaceReachScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 3
+    UseFloor: 1
+    Floor: 0.5
+  crystalStealUpgradeElement: 1
+  shieldedClustersUpgradeElement: 2
+  shieldBreakerUpgradeElement: 3
+  tailwindUpgradeElement: 4
+  tailwindBoostScale: 1.5
   aiCrewNavigates: 1
   aiBoostRingDistance: 180
   aiSkill: 2
@@ -104,57 +133,57 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   loopClosedSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 413717435
+      Data2: 1238803703
+      Data3: 1704894129
+      Data4: 1814326255
+    Path: event:/SFX/Oneshots/Menu/Confirmed
   loopFizzledSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1646059356
+      Data2: 1119933905
+      Data3: 176281535
+      Data4: 614675135
+    Path: event:/SFX/Oneshots/Menu/Denied
   prismPoppedSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
   massClusterSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1935444665
+      Data2: 1209967654
+      Data3: -86979705
+      Data4: 855951193
+    Path: event:/SFX/Oneshots/Gameplay sfx/Mass joust
   timeBoostSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1254976528
+      Data2: 1275513386
+      Data3: -981470078
+      Data4: 286922241
+    Path: event:/SFX/Oneshots/Gameplay sfx/Time Joust
   chargeSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1333840280
+      Data2: 1330870228
+      Data3: 856184972
+      Data4: -1867009068
+    Path: event:/SFX/Oneshots/Gameplay sfx/Charge Joust
   stealSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1189365252
+      Data2: 1193688170
+      Data3: 1202708621
+      Data4: 740601339
+    Path: event:/SFX/Oneshots/Gameplay sfx/Charge comeback
   faunaStruckSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1638131852
+      Data2: 1318240636
+      Data3: 16663457
+      Data4: -705826648
+    Path: event:/SFX/Oneshots/Gameplay sfx/Creature Death

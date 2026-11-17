@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc5a7b883f6e7898ce968ea57403a820, type: 3}
+  m_Name: LongshotSettings
+  m_EditorClassIdentifier:
+  leadAnnounceAfterSeconds: 20
+  leadAnnounceMinGapSeconds: 10
+  progressSampleSeconds: 1
+  aiFireFraction:
+  - 0.25
+  - 0.45
+  - 0.65
+  - 0.8
+  aiScopeSettleSeconds:
+  - 1
+  - 0.6
+  - 0.35
+  - 0.2
+  aiRetargetSeconds:
+  - 14
+  - 11
+  - 9
+  - 7
+  aiRivalTrailDeficitFraction:
+  - 1
+  - 0.3
+  - 0.15
+  - 0.05
+  aiStandOff: 260
+  aiCarrot: 120
+  aiScopeLateral: 25
+  aiShotGiveUpSeconds: 4
+  aiDecisionSeconds: 5

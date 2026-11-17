@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Standoff Cell Config 4
+  m_EditorClassIdentifier:
+  CellName: Standoff
+  Description: 'Killing Field - intensity 4 of Standoff: eighteen big posts and an inner six, shielded
+    rims and danger corners, one omni crystal. 978 prisms in 24 posts, all neutral (408
+    shielded, 96 danger), outer posts at 320 u inside the standard 1200 u cell, spawn ring
+    420. 1 omni crystals float at the open centre (the scene''s CrystalManager). NO NUCLEUS,
+    no flora, no fauna. Authored by Tools/Build/author_standoff_assets.py from
+    standoff_budget.py - re-run it rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 4
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 0
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: 720a03c734d8fbae9b8c5fc32d77651e, type: 2}
+  EnvironmentPrefab: {fileID: 12500000000000203, guid: 5af79920ec9e4ec4b3363ad869f90c29, type: 3}
+  EnvironmentIntensity: 4
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 1678
+    RestlessExit: 1478
+    FrenzyEnter: 4578
+    FrenzyExit: 3978
+    RestlessEnterVolume: 198976
+    RestlessExitVolume: 195776
+    FrenzyEnterVolume: 245376
+    FrenzyExitVolume: 235776

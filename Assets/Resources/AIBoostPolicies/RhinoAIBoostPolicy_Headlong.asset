@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0d84783a08d4582a1882cc260dce84e, type: 3}
   m_Name: RhinoAIBoostPolicy_Headlong
   m_EditorClassIdentifier: 
-  alignDegrees: 22.708
-  releaseAlignDegrees: 26.95
-  stickBand: 0.454
-  releaseStickBand: 0.682
-  engageRunwaySeconds: 1.439
-  releaseRunwaySeconds: 0.161
+  alignDegrees: 56.368
+  releaseAlignDegrees: 41.815
+  stickBand: 0.398
+  releaseStickBand: 0.372
+  engageRunwaySeconds: 2.211
+  releaseRunwaySeconds: 0.083
   disabledInModes: []
   requireAIPlayer: 0
   steeringShareOfPlateau: 0.9
@@ -25,11 +25,11 @@ MonoBehaviour:
   minRestSeconds: 0.3
   minRearmSeconds: 0.5
   minSpeedGain: 17.571
-  cornerSpeed: 153.536
-  minCornerSpeed: 144.359
-  brakeMarginUnits: 0.705
-  brakeLeadSeconds: 0.44
+  cornerSpeed: 274.153
+  minCornerSpeed: 64.441
+  brakeMarginUnits: 25.574
+  brakeLeadSeconds: 0.943
   graceShare: 0.9
-  brakeSteerFloor: 0.408
+  brakeSteerFloor: 0.694
   throttleSlewPerSecond: 7.366
-  cornerReleaseDegrees: 24.321
+  cornerReleaseDegrees: 0.877

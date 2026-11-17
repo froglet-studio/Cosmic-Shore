@@ -118,6 +118,12 @@ namespace CosmicShore.Core
                 changed = true;
             }
 
+            // The crew is the painted pilots (PaintedCrewSO): every starter one is granted, and each is painted again on
+            // every read, so a crew saved before 2026-11-16 (eighteen, one a callsign), a pilot moved into the starter
+            // crew and an edited story all catch up.
+            var painted = PaintedCrewSO.Load();
+            if (painted && painted.Grant(inventory, now)) changed = true;
+
             if (!inventory.DeviceImportDone)
             {
                 ImportDevice(inventory, catalog, now);
@@ -139,13 +145,15 @@ namespace CosmicShore.Core
             }
         }
 
-        /// <summary>One pilot per callsign and one artifact of every free kind: everything the game offered before
-        /// pilots and artifacts were unique stays playable.</summary>
+        /// <summary>The starter crew and one artifact of every free kind: everything the game offered before pilots and
+        /// artifacts were unique stays playable. The crew is the painted pilots (<see cref="PaintedCrewSO.Grant"/>, run
+        /// by every read); a build without them gets one rolled pilot a callsign.</summary>
         public static void GrantStarter(AccountInventory inventory, PilotArtifactCatalogSO catalog, long now)
         {
-            foreach (var vision in Callsigns.All)
-                if (!inventory.HasCallsign(vision))
-                    inventory.MintPilot(vision, FactionType.None, "starter", now);
+            if (!PaintedCrewSO.Load())
+                foreach (var vision in Callsigns.All)
+                    if (!inventory.HasCallsign(vision))
+                        inventory.MintPilot(vision, FactionType.None, PaintedCrewSO.StarterOrigin, now);
 
             if (!catalog) return;
             foreach (var kind in catalog.Artifacts)

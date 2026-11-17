@@ -29,6 +29,39 @@ namespace CosmicShore.Gameplay
 
         protected override RaceCourseSource CreateCourseSource() => new ScarabRallyCourseSource();
 
+        /// <summary>Switchback became Blast Run two days after this race was cut (2026-10-29), and this class inherited it:
+        /// block fields across every blocked leg, doors of danger rakes and Dolphin key crystals (which a Scarab's skimmer
+        /// forges into a ball sitting on the line). Those ask for the Dolphin's blast and punish the Scarab's own verbs, a
+        /// drift's wide line and a held throttle. So I1-I3 fly the bare ring course they were designed as
+        /// (<see cref="ScarabRallyCourse.LaysBlastRun"/>); I4 keeps the field it had (the elemental loop's ladder step).</summary>
+        protected override bool LaysBlastRun(int intensity) => ScarabRallyCourse.LaysBlastRun(intensity);
+
+        /// <summary>A racing AI flies the rings and nothing else (Yash, 2026-10-26). Switchback's AI detours for Blast Run's
+        /// keys; a Scarab has no key blast, and a crystal it touches becomes a ball in its own path.</summary>
+        protected override bool AIDetoursForCrystals => false;
+
+        [Header("AI nose")]
+        [Tooltip("The Scarab AI's nose follow rate per second, one row per intensity (I1..I4), by difficulty: Scarab Rally's own " +
+                 "table, read instead of Switchback's (which is tuned for the Dolphin). 1.5 = the fleet lag, higher = faster. " +
+                 "Legendary trained in the Scarab's own race (time_ai_search.py, Scarab run3, 2026-11-17): 15/s at I1-I2 and " +
+                 "18/s at I3-I4; on 32 fresh flights I4 went 164 to 120 s and I1 from Time 10 103 to 87 s, no DNF. Easy 3.5, " +
+                 "Medium 5 and Hard 8 (2026-11-17, real game, alone, 3 courses a rung): at the old 1.8-3.5/s Medium took 4x " +
+                 "Legendary's time and Easy never finished I4; now Easy 85/102/108/189 s, Medium 74/73/72/161, Hard " +
+                 "66/64/64/144 against Legendary's 63/57/57/121 at I1-I4, every race finished.")]
+        [SerializeField] SwitchbackNoseFollow[] aiScarabNoseFollowByIntensity =
+        {
+            new(3.5f, 5f, 8f, 15f),      // I1
+            new(3.5f, 5f, 8f, 15f),      // I2
+            new(3.5f, 5f, 8f, 18f),      // I3
+            new(3.5f, 5f, 8f, 18f),      // I4 (no gauntlet in Scarab Rally)
+        };
+        [Tooltip("u from the ring inside which the Scarab AI stops dodging (Switchback's aiNoDodgeNearRing, Scarab Rally's own " +
+                 "value). Trained with the nose table above: 224.")]
+        [SerializeField, Min(0f)] float aiScarabNoDodgeNearRing = 224f;
+
+        protected override SwitchbackNoseFollow[] AINoseFollowTable => aiScarabNoseFollowByIntensity;
+        protected override float AINoDodgeNearRing => aiScarabNoDodgeNearRing;
+
         [Header("AI juke")]
         [Tooltip("The AI jukes when, flying on as it is, it would cross the next mouth's plane outside the mouth by no " +
                  "more than one juke (~40 u), and that crossing is at least this many seconds away (the dash takes 0.5 s).")]

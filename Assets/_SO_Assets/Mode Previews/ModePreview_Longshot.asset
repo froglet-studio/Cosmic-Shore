@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Longshot
+  m_EditorClassIdentifier:
+  Mode: 95
+  Notes: 'The bare nucleus cell at each intensity. OPEN-ENDED - the field is laid by LongshotController at match start,
+    so a preview has none - it teaches the stop. Vessel pinned to Serpent(7).'
+  PreviewCell: {fileID: 11400000, guid: 8a955ebc6b5debe7e1303408c9bcd90f, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 8a955ebc6b5debe7e1303408c9bcd90f, type: 2}
+  - {fileID: 11400000, guid: 4f04046d4244af645eec9c7e9a7f3987, type: 2}
+  - {fileID: 11400000, guid: b947fe12d1412cd34c61f6834669a2a7, type: 2}
+  - {fileID: 11400000, guid: 513dde924c83e0db6f346ed861925752, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 7
+  ObjectiveText: Line up along a lance and hold the scope - one round breaks every prism on its line
+  ObjectiveMetric: 12
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 450
+  SpawnRingRadiusFloorByIntensity:
+  - 450
+  - 450
+  - 450
+  - 450
+  SpawnFormation: 0
+  SpawnPoints: []

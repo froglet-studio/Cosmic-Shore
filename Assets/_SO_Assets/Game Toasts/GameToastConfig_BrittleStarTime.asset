@@ -64,3 +64,103 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 60
     repeatWhileIdle: 1
+  - situation: 410
+    messageTemplate: 'Light Speed Mode and keep it lit - six times cruise. Let go only when the nose is far off the next ring'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 411
+    messageTemplate: '{0} carried in a row'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 412
+    messageTemplate: 'Lap {0} - {1} s'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 413
+    messageTemplate: 'Lap {0} - {1} s - best lap'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 414
+    messageTemplate: 'Lap {0} carried end to end'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 415
+    messageTemplate: 'Flat out - through the heart at full Speed'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 416
+    messageTemplate: 'Clean shift - let go at the posts and coasted in'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 417
+    messageTemplate: 'Hairpins: let go of Speed Mode at the posts, coast in, light it again on the way out'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 418
+    messageTemplate: 'Corkscrew: you start at Time 5 - roll and pull to hold Speed Mode through the coil'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 419
+    messageTemplate: 'Speed Mode is dark - light it to race'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

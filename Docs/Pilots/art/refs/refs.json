@@ -1,0 +1,40 @@
+{
+ "about": "Reference pictures for a painter that takes pictures (Tools/Build/pilot_art/refs.py). role: what kind of thing it is. shows: the words the painter is told about it, a phrase that goes inside a sentence and names nothing of the game's. source: where the picture came from. A frame is a real frame of the game, never retouched, cut only to leave out the game's own lettering.",
+ "pictures": {
+  "sea_flora_approach": {
+   "role": "sea",
+   "shows": "a small bright craft, cyan plates on a dark frame, flying at a coral of indigo bricks of light, each brick a flat-sided block with a deep blue face and thin bright edges, set in rings round open holes with a spray of white needles in each; two wide bands of amber gold light run over the coral; behind them, black space sown with white dust and the far net of six-sided panes",
+   "source": "A frame of the game (Unity) from the studio site: assets/images/Image Sequence_030_0008.jpg, sized to 1600 x 900."
+  },
+  "sea_flora_through": {
+   "role": "sea",
+   "shows": "a small bright craft passing a coral of violet bricks edged in bright crimson, with short rows of cyan dashes at its edges and the far net of six-sided panes behind",
+   "source": "A frame of the game (Unity) from the studio site: assets/images/Image Sequence_018_0003.jpg, sized to 1600 x 900."
+  },
+  "sea_flora_crystal": {
+   "role": "sea",
+   "shows": "a coral of orange bricks edged in red, set in rings round open holes, holding a pale lilac crystal with many flat faces; rows of small blue dashes curve through the dark, and a swarm of tiny violet shards flows in the shape of a ring",
+   "source": "A frame of the game (Unity) from the studio site: assets/images/Image Sequence_025_0000.jpg, sized to 1600 x 900."
+  },
+  "sea_heart_beams": {
+   "role": "sea",
+   "shows": "the heart of the sphere: a glowing lime-green ball, long thin indigo beams and red rods standing through the dark, orange and violet corals, and clouds of tiny orange and violet shards",
+   "source": "A frame of the game (Unity) from the studio site: assets/images/Image Sequence_027_0000.jpg, sized to 1600 x 900."
+  },
+  "sea_cell_outside": {
+   "role": "sea",
+   "shows": "one whole sphere seen from outside: a wire ball of six-sided panes in black space sown with white dust, clouds of violet and orange inside it and a dotted blue ribbon winding round them",
+   "source": "A frame of the game (Unity) from the studio site: assets/images/Image Sequence_029_0001.jpg, sized to 1600 x 900."
+  },
+  "sea_flight_trail": {
+   "role": "sea",
+   "shows": "a small craft seen from behind in flight inside the sphere: its own trail a double row of bright cyan dashes curving away, the sphere's wall a net of blue lines in many-sided panes, the heart far off ringed by thin dotted trails, and a lime-green ball",
+   "source": "Flown here in the public browser build of the game (Unity WebGL, the site's Toybox) in a headless browser on 2026-11-12, entered into flight with a simulated gamepad; cut to leave out the HUD's ability row and minimap."
+  },
+  "ship_views": {
+   "role": "ship",
+   "shows": "a low dark ship like a closed scallop shell, a swept fan of ribbed plates spreading back from a domed bridge at its point, a row of round engine mouths glowing orange along its wide stern edge, thin bright seams between the plates and one small cyan crystal behind the bridge",
+   "source": "The game's own model of the ship: the top row of Docs/VesselModels/ArkReverse_sheet.png (chase, front, side, top), without the sheet's labels."
+  }
+ }
+}

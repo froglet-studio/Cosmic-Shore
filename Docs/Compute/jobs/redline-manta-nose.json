@@ -4,7 +4,7 @@
  "kind": "search",
  "status": "proposed",
  "title": "The Manta's Redline AI with its nose rate in the genome: one Soar drive and a nose rate per intensity, I1-I4",
- "goal": "AI_PLAN.md decision 7 for the Manta (step time-arcade): is the AI's nose follow rate part of its genome or a difficulty setting? In Redline's model the fleet AI nose lag (1.5/s) makes the AI Manta 1.7x (I1) to 5x (I4) slower than one with none, more than any Soar band buys (REDLINE.md section 5.1). This searches the two Soar bands (MantaSoarAITuningSO's BoostStickBand and YastriStickBand) together with one AI nose rate per intensity (VesselTransformer.AINoseFollowPerSecond, the knob Switchback sets per intensity and difficulty, SWITCHBACK.md 'Lag by difficulty'), on redline_fit's races and composite plus a small pull toward the fleet lag, so the smallest rate that buys the pace wins. Run by hand until Froglet Compute is back (Shombith paused it 2026-11-06): /mnt/project-files/regatta-training/local_run.py, two restarts. The sweep that frames it is Tools/Build/manta_redline_nose_sweep.py. Nothing writes an asset: the answer is the case for Yash.",
+ "goal": "AI_PLAN.md decision 7 for the Manta (step time-arcade): is the AI's nose follow rate part of its genome or a difficulty setting? In Redline's model the fleet AI nose lag (1.5/s) makes the AI Manta 1.7x (I1) to 5x (I4) slower than one with none, more than any Soar band buys (REDLINE.md section 5.1). This searches the two Soar bands (MantaSoarAITuningSO's BoostStickBand and YawsteryStickBand) together with one AI nose rate per intensity (VesselTransformer.AINoseFollowPerSecond, the knob Switchback sets per intensity and difficulty, SWITCHBACK.md 'Lag by difficulty'), on redline_fit's races and composite plus a small pull toward the fleet lag, so the smallest rate that buys the pace wins. Run by hand until Froglet Compute is back (Shombith paused it 2026-11-06): /mnt/project-files/regatta-training/local_run.py, two restarts. The sweep that frames it is Tools/Build/manta_redline_nose_sweep.py. Nothing writes an asset: the answer is the case for Yash.",
  "asked_by": "Garrett 2026-11-06 (the Regatta balancing plan, brief 6); the question is Yash's decision 7 (2026-11-03).",
  "area_owner": "Yash (vessel AI, Redline and the Manta's AI)",
  "plan": "regatta-balance",
@@ -48,7 +48,7 @@
    "init": 0.35
   },
   {
-   "name": "YastriStickBand",
+   "name": "YawsteryStickBand",
    "lo": 0.0,
    "hi": 1.0,
    "init": 0.75

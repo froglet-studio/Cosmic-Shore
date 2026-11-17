@@ -179,6 +179,32 @@ homeostasis the food web is meant to produce, both now gone:
 
 ---
 
+### 0.w Granted carve-out: possession, and wild strikes on escort vessels (Garrett, 2026-11-14)
+
+The Jewel Wasp (`Assets/_Scripts/Controller/Vessel/R_VesselActions/JEWEL_WASP.md`) possesses a creature and flies it.
+Garrett signed off three breaks with the concept ("any host should always be available"; "shielded prisms and
+supershielded prisms always edible"; "fauna missing this should have this and use it against vessels when attacking an
+ark"):
+
+- **Any creature can be possessed**, any diet, from any holder (`Fauna.TryPossess`; the old holder is told through
+  `IFaunaLeash.Released`). A worm is taken by its head, a murmuration whole. Grid colonies (builder, substrate, NCA) say
+  no (`Fauna.CanBePossessed`).
+- **A possessed creature eats every shield**, at its rider's word only. `Fauna.IsInedibleShield` returns false for it, and
+  `Fauna.BiteMass` drops a super-shield and eats the prism devastating. Mass is conserved: the ordinary consume and
+  implosion fill its stomach. The rider's own team's mass, creatures' bodies and the race corridor stay off the menu
+  (`Fauna.PossessedCanEat`).
+- **Wild strikes on Ark escort vessels.** On an escort world the squad has not pacified, a wild creature next to a squad
+  vessel plays its attack (`FaunaAttackDriver`) and lands the escort's danger contact, which costs petals only
+  (`ArkEscortRun.Strikes.cs`, `ArkEscortSO.faunaStrikeEffect`). It has one caller and runs in the escort's worlds only,
+  alongside the feeding lure (§0.z).
+
+The fence:
+- `IFaunaPossession` has one implementer, `JewelWaspExecutor`, and possession runs on the simulating peer only.
+- The host keeps its starvation clock (`Sustains` false), so no starvation exception enters.
+- Steering, the cell's grids, spawning and the one-fauna-colour rule are untouched.
+
+An exception, not a precedent: the next one needs its own sign-off.
+
 ### 0.x Granted carve-out: armour wears under creature bites in the Ark escort's worlds (2026-10-31)
 
 Resembles the rejected "make the Ark's plates edible by special-casing" and is NOT that. Asked for by Garrett
@@ -231,6 +257,29 @@ The fence:
   still hold.
 
 This is an exception, not a precedent: the next one needs its own sign-off.
+
+**Widened 2026-11-16 (Shombith, Voyages Milestone 1: "the cell faunas should attack the ark"), awaiting Garrett's
+sign-off through `/approve`:**
+- Assaults: the escort turns the lure on the Ark's own world up to the tier's `AssaultLureShare` (0.45 at d1 to 0.95 at
+  d9) for an announced assault, until the squad kills `AssaultRepelKills` attackers near the Ark or `AssaultSeconds` run
+  out (`ArkAssaultClock`, `ArkAssaultDriver`, `ArkEscortRun.Assault.cs`). Between assaults the steady `LureShare` holds.
+- A second caller, `VoyageRun.Assault.cs`: a job voyage's hostile cells (`VoyageJob.HostileCells`, per cell of the leg)
+  get the same lure, the same assaults and `ArmourIsFood`, at the escort's tier for the job's difficulty. Calm cells are
+  never lured, and everything is cleared when the leg changes and when the voyage ends.
+- The fence above still holds: steering only, never a cull, a diet or a population.
+
+**Widened again 2026-11-17 (Shombith: "more attacks outside the cell, big kaiju level fauna attacking the cell"; "all
+crystals and everything come in the same spot"), awaiting Garrett's sign-off through `/approve`
+(`Docs/Voyages/CRYSTAL_RUN.md` §8):**
+- Kaiju and raiders: `VoyageRun.Kaiju.cs` holds an `IFaunaLeash` (the Angler's contract) on the grown creatures a Crystal
+  Run sends at the Ark: a kaiju born in the open water between two cells on each crossing, and the raiders. The leash
+  steers them at the Ark and orders its nearest plate; the creature re-checks it with its own diet, eats with its own
+  mouthful and keeps its starvation clock. No mark, nothing sustained. At most `kaijuMax` (2) kaiju alive; a kaiju is
+  one creature of its species grown 12x (same body-prism and collider count, larger).
+- Scattered births: a voyage's satellite cells set `Cell.ScatterLifeSpawns`, so an unbanded, unpenned creature and every
+  plant is born at its own volume-uniform point between the nucleus and the membrane (`RandomPointInCytoplasm`) instead
+  of the wave's feeding ground. Placement only: populations, diets, steering and every later goal are untouched. Off
+  everywhere else.
 
 ## 1. The spine: everything keys off **prism count**
 
@@ -12990,3 +13039,28 @@ The first user is Regatta (`Assets/_Scripts/Controller/Arcade/REGATTA.md` 4.2): 
 off on every shipped course. Nothing in the locked law moves: the arena prepares ground and never spawns a
 lifeform, plants roll their colour and creatures take the cell's, rails stay super-shielded (never food), and the
 course's phase ladder is raised by the forest's measured volume.
+
+## 69. The element ladder's I4 fauna: one roster the spawners and the sync share (Garrett, 2026-11-16)
+
+Garrett's standard element ladder (`Docs/ElementalLoop/PLAYBOOK.md` step 2) makes I4 "fauna of the game's element",
+in the cell's colour (his answer kept the locked one-colour rule: "it is more consistent"). A cell whose I4 spawn
+profile carries NO fauna now gets `Resources/ElementLadderFauna`'s species (Harvest's I4 four, Shombith 2026-11-10),
+each a runtime clone with `SpreadElements` off and `Element` pinned to the game's element (the palette sibling's
+variant block when the species has one). A profile that authors fauna keeps its species, and under the same gate each
+is pinned the same way (Garrett's I4 card: "arenas with fauna keep theirs, recoloured to the element"). That reaches
+fourteen I4 profiles: Harvest, Shatterplane, Thresher Time, Serpentine, Rampage, Wildlife Liberation, Chum, Tollway,
+Glasshouse, Boneyard, Wrecking Ball, Kelpwood and the two Ark Escort cells (any of them a two-element or arena card
+stands down). No mode scores on a creature's element, so the change is the variant's look and stats, not a rule.
+
+- **One roster.** `Cell.FaunaRoster` is the profile's `SupportedFaunas` or, under the ladder gate (an arcade
+  controller in the scene, not an arena card, I4+, a one-element game), pinned clones of the authored species or, when
+  there are none, of the ladder's. Both spawners
+  (`IntensityWiseLifeSpawner`, `RandomLifeSpawner`) and `FaunaNetworkSync` (capture and resolve) read it, so the
+  config index means the same creature on every peer. Reproduction rides `SourceConfig` (the clone) unchanged.
+- **No asset is edited.** A null or prefab-less authored slot stays in place so the index still lines up. The clones live with the cell and are destroyed with it; nothing writes Harvest's assets.
+- **Invariants.** Continuity, no imposed death, wither-to-crystal: unchanged (same species, same code paths). Domain:
+  controlling colour, unchanged. **Collider budget:** at most 23 live creatures (3 + 10 + 4 + 6, the species' own
+  `MaxLivePopulation`), the set Harvest's 5,000-prism arena was sized with; arenas lighter than Harvest have more
+  headroom, none is measured yet in the editor.
+- **Not reached:** the Angler and Jacks keeper lookups and the toy Microscene still read the profile (no ladder fauna
+  there by design), and `Cell.IsBareCanvas` judges the authored config.

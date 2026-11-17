@@ -44,6 +44,26 @@ namespace CosmicShore.UI
             if (from) from.GetComponentsInParent(true, _groups);
         }
 
+        /// <summary>
+        /// The product of the alphas of the groups above (the excluded group left out), stopping at a group that
+        /// ignores its parents: how opaque the object is drawn, before masks.
+        /// </summary>
+        public float Alpha
+        {
+            get
+            {
+                float alpha = 1f;
+                for (int i = 0; i < _groups.Count; i++)
+                {
+                    var group = _groups[i];
+                    if (!group || !group.enabled) continue;
+                    if (group != _exclude) alpha *= group.alpha;
+                    if (group.ignoreParentGroups) break;
+                }
+                return alpha;
+            }
+        }
+
         /// <summary>True unless a group above zeroes the object or a mask has culled it.</summary>
         public bool Visible
         {

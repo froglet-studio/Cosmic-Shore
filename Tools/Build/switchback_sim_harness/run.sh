@@ -43,11 +43,12 @@ if [ "${1:-}" = "tests" ]; then
   printf '"%s"\n' "$ROOT/Tools/Build/skimrace_sim_harness/UnityShim.cs" "$HERE/ShimExtra.cs" "$HERE/NUnitShim.cs" \
     "$HERE/TestRunner.cs" "$A/Switchback/SwitchbackCourse.cs" "$A/Switchback/SwitchbackBlastRun.cs" \
     "$A/Switchback/SwitchbackFeatures.cs" "$A/Switchback/SwitchbackBlastPlanner.cs" "$A/Switchback/BlastRunKeyCrystals.cs" \
-    "$A/Switchback/SwitchbackRayMesh.cs" \
+    "$A/Switchback/SwitchbackRayMesh.cs" "$A/ScarabRally/ScarabRallyCourse.cs" \
     "$A/Racing/RaceCourseGeometry.cs" "$A/Breakwater/BreakwaterStationBuilder.cs" "$A/Breakwater/BreakwaterCourse.cs" \
     "$ROOT/Assets/_Scripts/Data/Enums/PrismKind.cs" \
     "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackBlastRunTests.cs" \
-    "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackBlastPlannerTests.cs" > "$OUT/tests.rsp"
+    "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackBlastPlannerTests.cs" \
+    "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackCourseTests.cs" > "$OUT/tests.rsp"
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
     -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0108,CS1587,CS0219 \
     -target:exe -main:TestRunner -out:"$OUT/tests.dll" "@$OUT/tests.rsp" >&2

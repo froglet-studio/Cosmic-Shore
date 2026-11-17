@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-12-new-skill-elemental-loop-and-tools-build-ab4044",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T18:09:38+00:00",
+  "area": "Claude skills and Mass/Space games plan",
+  "summary": "New skill /elemental-loop and Tools/Build/elemental_loop.py (the loop's board, next actions and sign-offs); /swimlanes 'what should I work on next' now offers the loop's next actions first; a top-priority section in CLAUDE.md. Docs/MassAndSpaceGames/PLAN.md is step 0 (the game kit) of the loop and is linked, not changed.",
+  "branch": "claude/project-thread-d7a2bi",
+  "commit": "2f63661a7"
+}

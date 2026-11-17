@@ -41,7 +41,11 @@ count, win/loss, duration), session start/end, menu navigation, activation miles
 in-game currency earned/spent, vessel unlocks, settings changes, social actions (friend
 requests, party invites, shares, favorites), progression/quest completion, and a derived
 play-style summary. Plus diagnostic events (e.g., failed cloud saves). These carry the
-anonymous player ID and gameplay parameters — **no real-world identifiers**.
+anonymous player ID and gameplay parameters — **no real-world identifiers**. They go to
+UGS Analytics and to **Froglet's own analytics server** (hosted on Oracle Cloud), which also
+records the country you connect from (two letters, derived from your IP address); the IP
+address itself is never stored. Versions released before November 2026 sent these events to
+PostHog (EU) instead; that account closes on 23 November 2026.
 
 **c. Saved game data (Cloud Save)**
 Your profile (display name, avatar, in-game currency balance, unlocked rewards,
@@ -157,6 +161,10 @@ reason for it. We may withhold details of how our detection works, but not the f
 - **Unity Technologies** — Unity Gaming Services: Analytics, Cloud Save, Authentication,
   Friends, Multiplayer/Relay/Lobby, Leaderboards[, Ads]. (Subject to Unity's data
   processing terms / DPA.)
+- **Oracle** — hosts Froglet's own analytics server (gameplay analytics). Only Froglet operates
+  and reads it. [Region: confirm; the VM's backups use us-ashburn-1.]
+- **PostHog (EU cloud)** — gameplay analytics from builds released before November 2026, until
+  the account closes on 23 November 2026.
 - **[Platform: Valve/Steam, Apple, Google]** — distribution, crash reporting, and
   payment processing for purchases.
 - **[Any other vendor — e.g., ad network]**.
@@ -182,7 +190,9 @@ in a given EU country, parental consent rules there apply.]
 ## 9. Data retention
 
 We retain account and saved-game data for as long as your account exists. Analytics data
-is retained per Unity's retention schedule [confirm]. You can request deletion at any time
+is retained per Unity's retention schedule [confirm] in UGS, and on Froglet's own analytics
+server raw events are deleted after 395 days (only aggregate counts with no player ids are kept
+longer). You can request deletion at any time
 (§10).
 
 ## 10. Your rights & choices

@@ -182,15 +182,18 @@ def check_containers(prefab_text: str):
 GOBY_KIT = [
     (1, "Vortex Sting", "A vortex ring from the Pistol's Snap that hits a rival hull takes petals from each of its elements; Charge "
         "raises how many (GobyPistolConfig ringPetals, 1 at rest -> 3 at level 10). While the Goby holds a lock on a rival that "
-        "is on the Pistol's screen, the ring flies at it.", "", ""),
+        "is on the Pistol's screen, the ring flies at it.", "Vortex Steal",
+        "A ring's hit steals the petals it takes: they land on the pair instead of being knocked loose (GobyPistolDuo."
+        "ScoreRingHit, IsUpgradeActive(Charge))."),
     (2, "Dens", "At each perch the Pistol rests and builds a den of prisms and shielded prisms, as many as the distance it travelled "
         "since its last den and Mass make (denMassScale, x1 at rest -> x2.5 at level 10). It can ride back to an old den to add "
         "to it.", "Fortress", "Dens also grow danger prisms and super-shielded prisms."),
     (3, "Undertow", "Mass either side of the Pistol's plane is pulled into it, from further with Space (pullReach, 40 u at rest -> "
         "200 u at level 10). Danger, super-shielded and the pair's own prisms never move.", "Deep Undertow",
         "Shielded prisms are pulled in too."),
-    (4, "Quick Jump", "Time shortens the cooldown of the Pistol's jump, the burst of speed that flings it off its ground "
-        "(jumpCooldown, 9 s at rest -> 3 s at level 10).", "Phase Dart",
+    (4, "Dart", "Time is the Goby's dart: how fast it flies and how soon the next is ready (dartPace, x1 at rest -> x2.2 at "
+        "level 10 - a full dart takes 1 s at rest, under half a second at level 10). Darts lay the Pistol's ground, so a "
+        "quick Goby keeps the Pistol fed.", "Phase Dart",
         "The Goby's darts pass through prisms."),
 ]
 

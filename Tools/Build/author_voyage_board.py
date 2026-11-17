@@ -28,24 +28,27 @@ STYLE_CS = "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs"
 BOARD_CS = "Assets/_Scripts/UI/Views/VoyageBoard.cs"
 TOKENS = "Docs/UI/froglet-tokens.json"
 KIT = "Assets/_Graphics/UI/Kit"
+PILOT_SCENES = "Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset"  # Rev 114 C2: the job told over its pilot's scene
 LABEL_FONT = "Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset"
 
 SPRITES = [  # field, kit file
-    ("Sliver14Fill", "kit_sliver14_fill"), ("Sliver14Line", "kit_sliver14_line1"), ("Sliver14Line2", "kit_sliver14_line2"),
-    ("Sliver10Fill", "kit_sliver10_fill"), ("Sliver10Line", "kit_sliver10_line1"), ("FadeV", "kit_fade_v"),
-    ("Pool", "kit_pool"),
+    ("Sliver10Fill", "kit_sliver10_fill"), ("Sliver10Line", "kit_sliver10_line1"),
+]
+PICTURES = [  # field, png (Frogma Rev 113 Sea and Crew draw the Ark on the escort's card)
+    ("ArkPicture", "Assets/_Graphics/UI/Loading/loading_tour_ark.png"),
 ]
 # field, hex, alpha, the token it is (a hex the tokens file must hold)
 COLOURS = [
     ("Light", "#E6E9FF", 1.0), ("Sub", "#747BAD", 1.0), ("Jade", "#21C0BD", 1.0), ("Cyan", "#00D4FF", 1.0),
-    ("Plate", "#222645", 0.72), ("CardFoot", "#222645", 0.92), ("Outline", "#434C89", 1.0), ("Popup", "#00010A", 1.0),
+    ("Outline", "#434C89", 1.0), ("Popup", "#00010A", 1.0),
     ("RowPicked", "#00041F", 0.86), ("CtaFill", "#99FF80", 1.0), ("CtaText", "#00041F", 1.0),
 ]
 CLASSES = "Assets/_SO_Assets/Classes"
 HULL_PAD = 6  # px of air kept round each measured hull
 NUMBERS = [
-    ("ListRight", "0.2935"), ("CourseLeft", "0.315"), ("CourseRight", "0.674"), ("PanelLeft", "0.696"), ("EdgeShare", "0.38"),
-    ("RowHeight", "176"), ("SeatCardShare", "0.41"),
+    # The Sea table's columns (Rev 89 A, 1840 across): chips 0-310, the table 340-1360, the squad from 1390.
+    ("ListRight", "0.1685"), ("CourseLeft", "0.1848"), ("CourseRight", "0.7391"), ("PanelLeft", "0.7554"),
+    ("RowHeight", "96"),
 ]
 
 
@@ -100,13 +103,14 @@ def asset(style_guid):
            "  m_EditorClassIdentifier: "]
     for field, kit in SPRITES:
         out.append(f"  {field}: {{fileID: 21300000, guid: {meta_guid(f'{KIT}/{kit}.png')}, type: 3}}")
+    for field, png in PICTURES:
+        out.append(f"  {field}: {{fileID: 21300000, guid: {meta_guid(png)}, type: 3}}")
+    out.append(f"  PilotScenes: {{fileID: 11400000, guid: {meta_guid(PILOT_SCENES)}, type: 2}}")
     out.append(f"  LabelFont: {{fileID: 11400000, guid: {meta_guid(LABEL_FONT)}, type: 2}}")
     for field, hexv, alpha in COLOURS:
         out.append(f"  {field}: {colour(hexv, alpha)}")
     for field, value in NUMBERS:
         out.append(f"  {field}: {value}")
-    out.append("  OptionHeights: {x: 84, y: 104, z: 72}")
-    out.append("  EditorFade: 0.2")
     crops = hull_crops()
     out.append("  HullCrops:" + ("" if crops else " []"))
     for guid, (x, y, w, h) in crops:

@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-12-the-voyage-window-s-four-tabs-are-redraw-79f8da",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-12T18:24:18+00:00",
+  "area": "the Voyage window and its galaxy map",
+  "summary": "The Voyage window's four tabs are redrawn as the Sea table (Frogma Rev 89 A and Rev 90): VoyageBoard rewritten, the seat editor replaced by steppers on the seat, and VoyageMapGraphic gains a Tilt mode that projects its mesh into perspective. Voyage data, launch and the Ark escort are unchanged. Not seen in Unity.",
+  "why": "Shombith picked the boards and asked for the build",
+  "branch": "claude/sweet-mccarthy-ow25e2",
+  "lane": "voyages",
+  "commit": "f35a2bc61",
+  "paths": [
+    "Assets/_Scripts/UI/Views/VoyageBoard.cs",
+    "Assets/_Scripts/UI/Views/VoyageJobsView.cs",
+    "Assets/_Scripts/UI/Views/VoyageMapGraphic.cs"
+  ]
+}

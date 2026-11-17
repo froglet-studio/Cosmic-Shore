@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-11-all-50-pilot-avatars-assets-graphics-pro-9fd1f4",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T15:19:32+00:00",
+  "area": "the profile avatars and the Claude skills",
+  "summary": "All 50 pilot avatars (Assets/_Graphics/Profile/Pilots) are re-cut at 256 px from new signature busts that show both animals, each in its own place; ids, guids, metas and SO_DefaultProfileIcons are unchanged. A new skill /pilot-creator joins the skills, with two reader workflows: the blind read (seven reader agents a run of 50) and the emblem sweep (about one reader agent per ten busts).",
+  "why": "Garrett asked for avatars that show both animal clades (2026-11-10) and for varied backgrounds and almost no hands (2026-11-11). Nothing in the profile window or avatar picker code or prefabs changed; the hand test is in Docs/UNITY_VERIFICATION_CHECKLIST.md.",
+  "branch": "claude/signature-pilot-busts",
+  "pr": 1894,
+  "commit": "c74ac0be6",
+  "paths": [
+    ".claude/skills/pilot-creator",
+    "Assets/_Graphics/Profile/Pilots",
+    "Tools/Build/author_pilot_avatar_assets.py",
+    "Tools/Build/pilot_art/blind.py"
+  ]
+}

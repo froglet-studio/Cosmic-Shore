@@ -49,12 +49,25 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [SerializeField] int spawnInView;
         [Tooltip("Optional (with spawnBehind): B sets updateWhenOffscreen = false on every SkinnedMeshRenderer of the spawned copies, with a local bounds cube of this full size (0 = keep the authored bounds).")]
         [SerializeField] float offscreenBoundsSize = -1f;
+        [Tooltip("With spawnBehind: A forces updateWhenOffscreen ON (the state before a change that turns it off has shipped), instead of whatever the spawned copies have after their Awake.")]
+        [SerializeField] bool offscreenAOn;
         [Tooltip("When > 0, skip the A/B and instead record, for this many frames, which UI objects re-dirty the canvases: RectTransforms whose transform changed, elements in uGUI's layout and graphic rebuild queues, and enabled Animators under a canvas. The candidate list for the next A/B.")]
         [SerializeField] int diagnoseFrames;
         [SerializeField] string[] counters = { "PostLateUpdate.PlayerUpdateCanvases", "Canvas.BuildBatch", "UGUI.Rendering.UpdateBatches", "Main Thread", "PreLateUpdate.UpdateAllSkinnedMeshes", "MeshSkinning.Update", "Mesh.CreateMesh", "SkinnedMeshRenderer.UpdateBounds" };
 
         [Serializable] class Series { public string counter; public List<double> a = new List<double>(); public List<double> b = new List<double>(); public double medianA, medianB, ratioBA, shareBLower; }
         [Serializable] class Report { public string prefab, toggled, device, gpu; public int pairs, framesPerHalf; public long screenshotPixels, screenshotPixelsDifferent; public List<Series> series = new List<Series>(); public string verdict; }
+
+        bool _sceneLeft;
+        string _leftFor;
+
+        // A scene that navigates on its own (Authentication goes on to Menu_Main) would destroy the bench mid-run and
+        // leave no report, so the editor waited out its 15-minute timeout. Survive the load and say what happened.
+        void Awake()
+        {
+            DontDestroyOnLoad(gameObject);
+            UnityEngine.SceneManagement.SceneManager.activeSceneChanged += (from, to) => { _sceneLeft = true; _leftFor = to.name; };
+        }
 
         IEnumerator Start()
         {
@@ -152,7 +165,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             if (toggled != null || group.Count > 0 || skinned.Count > 0)
             {
-                var authored = skinned.Select(r => (r.updateWhenOffscreen, r.localBounds)).ToList();
+                var authored = skinned.Select(r => (offscreenAOn || r.updateWhenOffscreen, r.localBounds)).ToList();
                 s_skinned = skinned; s_authored = authored; s_bounds = offscreenBoundsSize;
                 for (int i = 0; i < settleFrames; i++) yield return null;
                 // Find each counter by name among everything the profiler can record (markers keep their own category).
@@ -172,7 +185,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 var all = counters.Select(n => new Series { counter = n }).ToArray();
                 int bbIndex = Math.Max(0, Array.IndexOf(counters, "Canvas.BuildBatch"));
                 var countA = new List<double>(); var countB = new List<double>();
-                for (int p = 0; p < pairs; p++)
+                for (int p = 0; p < pairs && !_sceneLeft; p++)
                 {
                     for (int half = 0; half < 2; half++)
                     {
@@ -221,6 +234,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 report.verdict = (report.screenshotPixelsDifferent == 0 ? "SCREEN IDENTICAL" : $"SCREEN DIFFERS: {report.screenshotPixelsDifferent} px") + "; " +
                                  string.Join("; ", report.series.Select(s => $"{s.counter} A {s.medianA:F4} ms B {s.medianB:F4} ms (B lower in {100 * s.shareBLower:F0}% of frames)"));
             }
+            if (_sceneLeft)
+                report.verdict = $"ERROR: the scene loaded '{_leftFor}' by itself during the bench, so nothing measured here " +
+                                 "describes it. Bench it where it stays (its real boot path, or a prefab in an empty scene).";
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath)));
             File.WriteAllText(outPath, JsonUtility.ToJson(report, true));
             Debug.Log("ProvenWin scene: " + report.verdict);

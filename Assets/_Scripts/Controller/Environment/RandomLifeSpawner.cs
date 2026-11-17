@@ -56,13 +56,14 @@ namespace CosmicShore.Gameplay
         {
             var spawnProfile = config.SpawnProfile;
             if (!spawnProfile) yield break;
-            if (spawnProfile.SupportedFaunas is not { Count: > 0 })
+            var roster = host.FaunaRoster;   // the profile's species, or the element ladder's at I4 (Cell.FaunaRoster)
+            if (roster is not { Count: > 0 })
                 yield break;
 
             // Fauna spawn in the cell's controlling color (see SpawnFaunaPopulation), so
             // there is no excluded-domain roll here - that exclusion is exactly what kept
             // the controller's own color (e.g. Jade) from ever appearing.
-            foreach (var faunaCfg in spawnProfile.SupportedFaunas)
+            foreach (var faunaCfg in roster)
             {
                 if (!faunaCfg || !faunaCfg.FaunaPrefab) continue;
 
@@ -266,6 +267,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Creatures instantiated per frame while seeding a population (see the caller).</summary>
         const int FaunaSpawnBatchPerFrame = 6;
 
+        /// <summary>Creatures instantiated per frame in a SATELLITE cell (a voyage's corridor world), which seeds beside
+        /// live play: a voyage profile (2026-11-17) caught a 41 ms spawn frame at the scene batch, ~2.7 ms per creature.</summary>
+        const int SatelliteFaunaSpawnBatchPerFrame = 2;
+
         IEnumerator SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg, Domains color, int count, int wave)
         {
@@ -305,7 +310,7 @@ namespace CosmicShore.Gameplay
                 SpawnFaunaBanded(host, faunaCfg, color, goal,
                     banded ? null : goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter);
 
-                if (i + 1 < count && (i + 1) % FaunaSpawnBatchPerFrame == 0)
+                if (i + 1 < count && (i + 1) % (host.IsSatellite ? SatelliteFaunaSpawnBatchPerFrame : FaunaSpawnBatchPerFrame) == 0)
                     yield return null;
             }
         }

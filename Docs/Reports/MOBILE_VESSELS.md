@@ -32,7 +32,7 @@ options are given, and Garrett decides as vessel owner unless another owner is n
     everything".
   - What is lost:
     - the Rhino's sword: no swing, no energize, no combos (its three cards press nothing);
-    - the Manta's Soar boost: card only, and the card press also starts a Yastri turn;
+    - the Manta's Soar boost: card only, and the card press also starts a Yawstery turn;
     - the Angler's paint and erase;
     - the Serpent's scope zoom;
     - the Thresher's aimed launch;
@@ -57,7 +57,7 @@ gesture or card.
 |---|---|---|---|---|
 | Squirrel | ✅ | all (drift and ring by lift, passives) | card taps start a drift; idle snap | 🔧 |
 | Dolphin | ✅ | all (drift by lift, Echo by lift or card) | slow nose on touch | ✅ / 🔧 |
-| Manta | ✅ | Yastri ✅, **Soar card only** and it also turns | no boost gesture | 🧩 |
+| Manta | ✅ | Yawstery ✅, **Soar card only** and it also turns | no boost gesture | 🧩 |
 | Rhino | ✅ | Ramp ✅, **sword: contact only** | swing, energize and combos unreachable | 🧩 (Astro League, Cleave, Headlong) |
 | Urchin | ❌ reverses on let-go | Spikes, Track and Slip ✅ | full reverse at 65 u/s with no thumbs | 🔧 **urgent** |
 | Sparrow | ✅ | all | card tap fires Skyburst; 180 prisms/s in stance | 🔧 |
@@ -136,7 +136,7 @@ The rows are in order of how much of the fleet they unblock.
 - Today's only pattern is "lift one thumb, then hold a card with it". It works for the Dolphin's drift + Echo and the
   Serpent's scope + shot.
 - Affected:
-  - **Manta Soar** (boost is card only, and the card press also starts a Yastri turn);
+  - **Manta Soar** (boost is card only, and the card press also starts a Yawstery turn);
   - **Rhino energize, combos and the super-shield pop.** Astro League, Cleave and Headlong are Rhino-only, so phone
     players lose the sword there. Bots and pad pilots have it.
   - **Shrike zoom + fire;**
@@ -366,7 +366,7 @@ binding and no pad or keyboard control changed.
 | Hull | Before | Prototype |
 |---|---|---|
 | Stoat | TotemButtons: Space card held = left sling, the "Dipole Right" disc = right sling, the Hold disc, the Mode card | **ThumbLifts, "keep a thumb down to orbit"**: lifting the right thumb raises `LeftStickAction` (the left catch pair), the left thumb `RightStickAction`; the held orbit tightens by hold time (`Hold01`); putting the thumb back slings (`StopStickEffects` releases). Swap thumbs to chain turns. Lift defer 0.12 s; Hold is the only disc; the Mass (Mode) card is display-only, because the kit is orbit-only. The Space card still presses LT. This reverses the D1 TotemButtons call for this hull. |
-| Squirrel | ThumbLifts, pitch/yaw only on one thumb | + `tiltRollOnOneThumb`: while one thumb flies (the drift, also the tube lift) the phone rolls the hull 1:1 (the Dolphin's `TouchAttitudeRoll`). The base `VesselTransformer.ApplyHeldRoll` already applies it, so there is no code change. |
+| Squirrel | ThumbLifts, pitch/yaw only on one thumb | + `gyroRollOnOneThumb`: while one thumb flies (the drift, also the tube lift) the phone rolls the hull 1:1 (the Dolphin's `TouchAttitudeRoll`). The base `VesselTransformer.ApplyHeldRoll` already applies it, so there is no code change. |
 
 Open: no haptic for the Stoat's 90 degree window. None of the four allowed feels fits (`HapticController` two-feel policy), so it is a TODO for the "adding a feel" clause. Not yet flown on a phone.
 

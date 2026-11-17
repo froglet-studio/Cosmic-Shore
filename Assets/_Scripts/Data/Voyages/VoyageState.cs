@@ -142,6 +142,19 @@ namespace CosmicShore.Data
             Owed[(int)element] += amount;
         }
 
+        /// <summary>One owed crystal lost from the hold (the Ark's hull is below its leak line): of the element owed most.
+        /// Returns the element, or <see cref="Element.None"/> when nothing is owed.</summary>
+        public Element LeakOwed()
+        {
+            if (Owed == null) return Element.None;
+            int best = -1, bestCount = 0;
+            for (int i = 0; i < Owed.Count; i++)
+                if (Owed[i] > bestCount) { best = i; bestCount = Owed[i]; }
+            if (best < 0) return Element.None;
+            Owed[best]--;
+            return (Element)best;
+        }
+
         /// <summary>Repairs a record a partial save (or a save from before the depth pass) can carry. Idempotent.</summary>
         public void Normalize()
         {
@@ -215,18 +228,35 @@ namespace CosmicShore.Data
         public WorkVerb Verb;
         public float Goal;
         public float HullFloor;
+        /// <summary>The leg's hostile cells and breach line, copied from the template (<see cref="JobTemplate.HostileCells"/>,
+        /// <see cref="JobTemplate.BreachHull"/>).</summary>
+        public List<bool> HostileCells = new();
+        public float BreachHull;
         public bool NoKill;
         public SquadRole Role;
         /// <summary>The crystals it pays, the course's intensity and its lanes, as the board priced it (DEPTH.md §7).</summary>
         public int Pay;
         public int Intensity = 1;
         public int Hops = 1;
+        /// <summary>The difficulty (1-9) the crew picked on the voyage page (<see cref="VoyageDifficulty"/>); 0 is the one
+        /// its pilot recommends. <see cref="Intensity"/> and <see cref="Pay"/> already follow it.</summary>
+        public int Difficulty;
         /// <summary>The rival crew it is about (a bounty, a parley), or empty.</summary>
         public string RivalId;
         /// <summary>The saga chapter it is, or empty.</summary>
         public string Chapter;
         /// <summary>The warnings the board attached from the world as it was (authored lines).</summary>
         public List<string> Warnings = new();
+        /// <summary>Counted from the moment the Ark sets sail (<see cref="JobTemplate.CountsUnderway"/>).</summary>
+        public bool CountsUnderway;
+        /// <summary>The leg's length in cells (0: the lanes decide; <see cref="JobTemplate.Cells"/>).</summary>
+        public int Cells;
+        /// <summary>How many times the squad ventured further to reach this run (0 for the first).</summary>
+        public int Venture;
+
+        /// <summary>A shallow copy (the warnings and news are shared): the voyage page sets a copy's difficulty, never the
+        /// board's own job.</summary>
+        internal VoyageJob MemberwiseCloneJob() => (VoyageJob)MemberwiseClone();
     }
 
     [Serializable]

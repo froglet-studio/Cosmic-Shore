@@ -1,0 +1,1005 @@
+{
+ "about": "The painted pilots as people, one per painted scene (Docs/Pilots/art/scenes/scenes.json, keyed by the scene's word): the name, the animals, the faction, the home and the story on the profile page are the ones in the picture (Garrett, 2026-11-12: the stories must match the art). Garrett, 2026-11-16: all fifty go into the game, a callsign may be carried by more than one (everything else differs), and for now every crew is granted every pilot marked 'starter'; later crews grow one unique pilot at a time, so a pilot leaves the starter crew by setting 'starter' to false here. The story is short paragraphs about the wider world and the work the pilot's faction brings (Garrett, 2026-11-12); the callsign's sight has its own section and is not retold. Species are AnimalSpecies members (the ones after Species.LastRollable are painted pilots' alone). Printable ASCII only (the UI font). Written into Assets/Resources/Pilots/PaintedCrew.asset by Tools/Build/author_pilot_scene_assets.py.",
+ "people": {
+  "ENSIGN": {
+   "given": "Veliane",
+   "family": "Crestward",
+   "callsign": "ENSIGN",
+   "starter": true,
+   "species": [
+    "Crane",
+    "Lemur"
+   ],
+   "faction": [
+    "Aristocrat",
+    "Wardens of the Calm"
+   ],
+   "home": "Stillwater",
+   "story": [
+    "Veliane Crestward keeps the sea wall of a water garden in Stillwater, and mends it by hand, one stone at a time.",
+    "The Wardens of the Calm keep watch over the cores the quiet domains rely on. With Veliane aboard, the Wardens will ask your crew to patrol those cores, to answer when one calls for aid, and to hold it until the danger has passed.",
+    "The Wardens are slow to trust a crew, and slower to forget one."
+   ]
+  },
+  "MANGER": {
+   "given": "Tamako",
+   "family": "Deephook",
+   "callsign": "MANGER",
+   "starter": true,
+   "species": [
+    "Ibis",
+    "Platypus"
+   ],
+   "faction": [
+    "Hunter",
+    "Order of the Last Lure"
+   ],
+   "home": "Brackenmouth",
+   "story": [
+    "Tamako Deephook wades the feeding flats of Brackenmouth, inside a cell the size of a valley, and sets lure lines in water a hand deep.",
+    "The Order of the Last Lure keeps a ledger of every vault field and every sighting its members have ever heard of. With Tamako aboard, that ledger is open to your crew: vaults to open, and lairs to hunt.",
+    "The Order asks only that you write down what you find."
+   ]
+  },
+  "ANVIL": {
+   "given": "Brikon",
+   "family": "Copperwright",
+   "callsign": "ANVIL",
+   "starter": true,
+   "species": [
+    "Yak",
+    "Beetle"
+   ],
+   "faction": [
+    "Merchant",
+    "Tidewright Exchange"
+   ],
+   "home": "the Copper Reef",
+   "story": [
+    "Brikon Copperwright hauls heavy crystal up from the quarries of the Copper Reef, a boulder at a time, and sells it by weight to anyone with a hull to fill.",
+    "The Tidewright Exchange keeps a desk in every port worth the name. Fly with Brikon and the Exchange will hand your crew sealed dispatches to carry between them, and cargo for convoys bound to ports under pressure.",
+    "Pay is good when the sea is quiet. When it is not, the cargo still has to arrive."
+   ]
+  },
+  "VOLT": {
+   "given": "Karenth",
+   "family": "Amberweaver",
+   "callsign": "VOLT",
+   "starter": true,
+   "species": [
+    "Axolotl",
+    "Koi"
+   ],
+   "faction": [
+    "Merchant",
+    "Brass Lantern Company"
+   ],
+   "home": "the Lantern Reach",
+   "story": [
+    "Karenth Amberweaver makes lamps in a workshop in the Lantern Reach, and proves every bulb by hand before it is sold.",
+    "The Brass Lantern Company lights half the ports of the HyperSea. With Karenth aboard, the Company will give your crew its dispatches to carry, and its convoys to run when a port goes dark.",
+    "Every port you light remembers your name."
+   ]
+  },
+  "ZODIAC": {
+   "given": "Ivelia",
+   "family": "Starreach",
+   "callsign": "ZODIAC",
+   "starter": true,
+   "species": [
+    "Ocelot",
+    "Heron"
+   ],
+   "faction": [
+    "Merchant",
+    "Saltmark Consortium"
+   ],
+   "home": "Starwake",
+   "story": [
+    "Ivelia Starreach was apprenticed to a cartographer in Starwake, and now keeps the chart house of a trade barge crossing the HyperSea.",
+    "The Saltmark Consortium charts the trade lanes and sells passage along them. Fly with Ivelia and the Consortium will give your crew dispatches to carry, and convoys to bring to the ports its lanes have left short.",
+    "The charts are never finished. Neither is the work."
+   ]
+  },
+  "SUNDIAL": {
+   "given": "Delmira",
+   "family": "Stillwater",
+   "callsign": "SUNDIAL",
+   "starter": true,
+   "species": [
+    "Owl",
+    "Pangolin"
+   ],
+   "faction": [
+    "Aristocrat",
+    "House Verdance"
+   ],
+   "home": "Gloamwater",
+   "story": [
+    "Delmira Stillwater keeps the great water clock of Gloamwater, and has never once arrived early.",
+    "House Verdance trusts its clocks and its cores to the same few hands. With Delmira in your crew, you will patrol the house's cores, answer its calls for aid, and retake a core another domain has seized.",
+    "Verdance keeps time in seasons, not days."
+   ]
+  },
+  "OPAL": {
+   "given": "Quivera",
+   "family": "Pearlspark",
+   "callsign": "OPAL",
+   "starter": true,
+   "species": [
+    "Chameleon",
+    "Jellyfish"
+   ],
+   "faction": [
+    "Merchant",
+    "House of Seven Scales"
+   ],
+   "home": "the Silver Lane",
+   "story": [
+    "Quivera Pearlspark trades along the Silver Lane from a cargo quay that never sleeps, and refuses to fly on an empty stomach.",
+    "The House of Seven Scales moves goods to every port on the Lane. Fly with Quivera and your crew will carry its dispatches from port to port, and run its convoys to ports short of what they need.",
+    "A port under pressure pays well, and remembers who came."
+   ]
+  },
+  "RAMPART": {
+   "given": "Obelo",
+   "family": "Stormstone",
+   "callsign": "RAMPART",
+   "starter": true,
+   "species": [
+    "Badger",
+    "Armadillo"
+   ],
+   "faction": [
+    "Merchant",
+    "Quayside Mutual"
+   ],
+   "home": "Shellmouth",
+   "story": [
+    "Obelo Stormstone keeps a warehouse on the harbour at Shellmouth, and wants nothing more than a quiet harbour and a long sleep.",
+    "The Quayside Mutual insures cargo across the HyperSea, so it needs crews to carry its dispatches and see its convoys safe to ports where trouble is brewing. With Obelo aboard, that work comes to you.",
+    "The Mutual pays on arrival. Not one moment before."
+   ]
+  },
+  "CITADEL": {
+   "given": "Nedira",
+   "family": "Shellward",
+   "callsign": "CITADEL",
+   "starter": true,
+   "species": [
+    "Hedgehog",
+    "Tortoise"
+   ],
+   "faction": [
+    "Aristocrat",
+    "House Albrine"
+   ],
+   "home": "Coldharbour",
+   "story": [
+    "Nedira Shellward keeps the storerooms of House Albrine in Coldharbour, and every winter the harbour eats from them.",
+    "The house holds cores across the sea for the domains it answers to. With Nedira in your crew, Albrine will send you to patrol them, to answer its calls for aid, and to take back a core another domain has seized.",
+    "A house that feeds a harbour remembers who stood by it."
+   ]
+  },
+  "HORNET": {
+   "given": "Zeko",
+   "family": "Mirethorn",
+   "callsign": "HORNET",
+   "starter": true,
+   "species": [
+    "Mantis",
+    "Newt"
+   ],
+   "faction": [
+    "Hunter",
+    "Deepreed Stalkers"
+   ],
+   "home": "the Glass Shoals",
+   "story": [
+    "Zeko Mirethorn keeps the hazard light on a shoal in the Glass Shoals, and stands under it through the night, watching what the light draws in.",
+    "The Deepreed Stalkers hunt where the water is dangerous. With Zeko in your crew, they will send you after vaults rumoured in the shallows, and into lairs where the fauna have grown into predators.",
+    "A lair is cleared when nothing in it is left to bite."
+   ]
+  },
+  "IVY": {
+   "given": "Mathalo",
+   "family": "Kelpbloom",
+   "callsign": "IVY",
+   "starter": true,
+   "species": [
+    "Orangutan",
+    "Sloth"
+   ],
+   "faction": [
+    "Aristocrat",
+    "House Verdance"
+   ],
+   "home": "the Kelp Throne",
+   "story": [
+    "Mathalo Kelpbloom tends a forest that grows downward inside a living cell above the Kelp Throne, and judges its one bloom of the year.",
+    "House Verdance holds cores in the green reaches of the HyperSea. Fly with Mathalo and the house will ask your crew to patrol them, to answer its calls for aid, and to retake the ones another domain has taken.",
+    "Verdance is patient. It expects its crews to be patient too."
+   ]
+  },
+  "TALON": {
+   "given": "Wyvendo",
+   "family": "Waveline",
+   "callsign": "TALON",
+   "starter": true,
+   "species": [
+    "Lynx",
+    "Jackal"
+   ],
+   "faction": [
+    "Hunter",
+    "Hollowfen Trackers"
+   ],
+   "home": "Hollowfen",
+   "story": [
+    "Wyvendo Waveline grew up in the brickyards of Hollowfen, reading the prints of whatever walked through town in the night.",
+    "The Hollowfen Trackers follow sightings across the HyperSea. Fly with Wyvendo and you will hear of vault fields before other crews do, and of lairs where something has grown too large to leave alone.",
+    "The Trackers share what they find. Mostly."
+   ]
+  },
+  "WINGMAN": {
+   "given": "Jorin",
+   "family": "Gullwing",
+   "callsign": "WINGMAN",
+   "starter": true,
+   "species": [
+    "Puffin",
+    "Pelican"
+   ],
+   "faction": [
+    "Pirate",
+    "Gullbone Crew"
+   ],
+   "home": "Farshore",
+   "story": [
+    "Jorin Gullwing lives in a burrow on the sea cliffs of Farshore, and wants one thing above all: a crew that stays.",
+    "The Gullbone Crew raid the hoards other pirates leave unguarded, and strip the wrecks nobody else will touch. With Jorin aboard, they will tell your crew where both are.",
+    "Gullbone looks after its own. Stay long enough and that means you."
+   ]
+  },
+  "BANDIT": {
+   "given": "Rosh",
+   "family": "Rusthook",
+   "callsign": "BANDIT",
+   "starter": true,
+   "species": [
+    "Octopus",
+    "Raven"
+   ],
+   "faction": [
+    "Pirate",
+    "Black Tide"
+   ],
+   "home": "Wrackline",
+   "story": [
+    "Rosh Rusthook works the wrack at low tide on Wrackline, where old ships come apart on the sand and nothing stays buried for long.",
+    "The Black Tide knows where the other crews hide their hoards. With Rosh aboard, you will hear where those hoards sit, and where a fresh wreck is waiting to be stripped.",
+    "Not every port will be glad to see you after."
+   ]
+  },
+  "NEEDLE": {
+   "given": "Ilia",
+   "family": "Silvergate",
+   "callsign": "NEEDLE",
+   "starter": true,
+   "species": [
+    "Narwhal",
+    "Seahorse"
+   ],
+   "faction": [
+    "Aristocrat",
+    "The Jade Accord"
+   ],
+   "home": "the Old Harbour",
+   "story": [
+    "Ilia Silvergate keeps the sea gate of the Old Harbour, and stands its last watch before dawn, when the ships come in.",
+    "The Jade Accord binds a dozen harbours to keep each other's cores. With Ilia in your crew, the Accord will send you to patrol them, to answer a harbour's call for aid, and to take a core back when another domain holds it.",
+    "The gate opens for crews the Accord trusts."
+   ]
+  },
+  "DOE": {
+   "given": "Fenlia",
+   "family": "Moonbell",
+   "callsign": "DOE",
+   "starter": true,
+   "species": [
+    "Moose",
+    "Fennec"
+   ],
+   "faction": [
+    "Hunter",
+    "Longwake Lodge"
+   ],
+   "home": "Mirrorfen",
+   "story": [
+    "Fenlia Moonbell grew up on the floating meadows of Mirrorfen, where the turf drifts in the haze and the hunting is done by ear.",
+    "The Longwake Lodge trades in rumours: a vault field glimpsed through the mist, a lair where the predators have grown too bold. Fly with Fenlia and those rumours become your crew's work.",
+    "What a vault holds goes home in the Ark."
+   ]
+  },
+  "FLUME": {
+   "given": "Ekora",
+   "family": "Hollowbrook",
+   "callsign": "FLUME",
+   "starter": true,
+   "species": [
+    "Otter",
+    "Eel"
+   ],
+   "faction": [
+    "Pirate",
+    "Saltjaw Brethren"
+   ],
+   "home": "Tangleweed",
+   "story": [
+    "Ekora Hollowbrook grew up on a salvage barge anchored in the kelp of Tangleweed, and learned to swim before learning to steer.",
+    "The Saltjaw Brethren live off what the sea gives up. Sign Ekora on and the Brethren will point your crew at the stashes they know of, and at wrecks still fresh enough to strip.",
+    "Rival crews hunt the same wrecks. Whoever arrives first keeps what is aboard."
+   ]
+  },
+  "GALLEON": {
+   "given": "Haradek",
+   "family": "Anchorkeel",
+   "callsign": "GALLEON",
+   "starter": true,
+   "species": [
+    "Walrus",
+    "Bison"
+   ],
+   "faction": [
+    "Pirate",
+    "The Unmoored"
+   ],
+   "home": "the Grey Reach",
+   "story": [
+    "Haradek Anchorkeel keeps the hangar deck of a ship of the Unmoored, and ties a ribbon to a hull for every friend the sea has taken.",
+    "The Unmoored answer to no port. Fly with Haradek and you will hear of hoards to raid and wrecks to strip from one end of the Grey Reach to the other.",
+    "The pay is rich. So is the list of crews who would like a word with you."
+   ]
+  },
+  "Astrofoil": {
+   "given": "Astrofoil",
+   "family": "",
+   "callsign": "ZODIAC",
+   "starter": true,
+   "species": [
+    "Snail",
+    "Jellyfish"
+   ],
+   "faction": [
+    "Explorer",
+    "The Unmapped"
+   ],
+   "home": "the Glasswall",
+   "story": [
+    "Astrofoil climbs down the Glasswall, a cliff of sea glass with no top and no bottom, and goes past the last marker on purpose.",
+    "The Unmapped pay for places nobody has charted yet. With Astrofoil aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.",
+    "Whatever you find down there, you get to name it."
+   ]
+  },
+  "Bushy": {
+   "given": "Bushy",
+   "family": "",
+   "callsign": "IVY",
+   "starter": true,
+   "species": [
+    "HornedLizard",
+    "Hedgehog"
+   ],
+   "faction": [
+    "Gatherer",
+    "The Patient Harvest"
+   ],
+   "home": "Threshing Hill",
+   "story": [
+    "Bushy winnows seed on Threshing Hill, where the crop grows as tall as masts and the last of every basket is left on the wall for the birds.",
+    "The Patient Harvest knows when the blooms of the HyperSea will open. With Bushy aboard, your crew will be sent to harvest them while they last.",
+    "Take your share, and leave some for whoever comes after."
+   ]
+  },
+  "Comet": {
+   "given": "Comet",
+   "family": "",
+   "callsign": "FLUME",
+   "starter": true,
+   "species": [
+    "Clownfish",
+    "Lobster"
+   ],
+   "faction": [
+    "Sport",
+    "Slipstream Racing Club"
+   ],
+   "home": "the Anemone Pits",
+   "story": [
+    "Comet races out of the Anemone Pits, where the pit crews work inside a living anemone, and has not forgiven the course for the last heat.",
+    "The Slipstream Racing Club runs exhibition courses all over the HyperSea. With Comet aboard, your crew will be invited to fly them: skim the course, gather the crystals, and make the crowd stand up.",
+    "Second place is a long night."
+   ]
+  },
+  "Damsel": {
+   "given": "Damsel",
+   "family": "",
+   "callsign": "WINGMAN",
+   "starter": true,
+   "species": [
+    "Hummingbird",
+    "Lobster"
+   ],
+   "faction": [
+    "Activist",
+    "Open Current"
+   ],
+   "home": "Bloomwall Harbour",
+   "story": [
+    "Damsel leads the dawn walks along Bloomwall Harbour, lanterns in hand, and stops for breakfast in flowers the size of buckets.",
+    "Open Current believes no creature should be kept behind another domain's walls. With Damsel aboard, your crew will hear where those pens are, and be asked to break them open.",
+    "Some ports call that trouble. Damsel calls it a good morning."
+   ]
+  },
+  "Dozer": {
+   "given": "Dozer",
+   "family": "",
+   "callsign": "ANVIL",
+   "starter": true,
+   "species": [
+    "TreeFrog",
+    "Scorpion"
+   ],
+   "faction": [
+    "Contractor",
+    "Bright Hull Works"
+   ],
+   "home": "the Rib Yards",
+   "story": [
+    "Dozer glazes the canopies of great hulls in the Rib Yards, and can sleep stuck to the outside of a pane a hundred feet up.",
+    "Bright Hull Works mends what the HyperSea breaks. With Dozer aboard, your crew will be called to cores under pressure, to lay prisms in the breach until it holds.",
+    "Good work is the kind nobody notices."
+   ]
+  },
+  "Echo": {
+   "given": "Echo",
+   "family": "",
+   "callsign": "SUNDIAL",
+   "starter": true,
+   "species": [
+    "Mouse",
+    "Owl"
+   ],
+   "faction": [
+    "Researcher",
+    "The Tidal Archive"
+   ],
+   "home": "a bunk aboard the Long Ledger",
+   "story": [
+    "Echo keeps notes in a narrow cabin aboard the Long Ledger, and does the best work long after the rest of the ship is asleep.",
+    "The Tidal Archive wants to know how the HyperSea lives. With Echo aboard, your crew will be asked to find a creature or a bloom and stay near it long enough to study it.",
+    "Somebody has to write it all down."
+   ]
+  },
+  "Fiest": {
+   "given": "Fiest",
+   "family": "",
+   "callsign": "BANDIT",
+   "starter": true,
+   "species": [
+    "Cheetah",
+    "Hyena"
+   ],
+   "faction": [
+    "BountyHunter",
+    "Writ and Hook"
+   ],
+   "home": "Highgarret",
+   "story": [
+    "Fiest chases writs up and down the stairs of Highgarret, a port of tall narrow houses, and is usually one minute late and laughing about it.",
+    "Writ and Hook carries the warrants on the most notorious crews in the HyperSea. With Fiest aboard, your crew will be handed bounties, and told where the crew was last seen standing.",
+    "Be there when they are."
+   ]
+  },
+  "Flux": {
+   "given": "Flux",
+   "family": "",
+   "callsign": "VOLT",
+   "starter": true,
+   "species": [
+    "Oryx",
+    "KillerWhale"
+   ],
+   "faction": [
+    "Sport",
+    "The Glittering Heats"
+   ],
+   "home": "the Long Course",
+   "story": [
+    "Flux races a one-seat craft built around those horns, and lives on the Long Course more than anywhere with a roof.",
+    "The Glittering Heats put on exhibition runs in the brightest cells of the HyperSea. With Flux aboard, your crew will be invited to fly them, skimming the course for every crystal on it.",
+    "The crowd only remembers who was fastest."
+   ]
+  },
+  "Jugger": {
+   "given": "Jugger",
+   "family": "",
+   "callsign": "GALLEON",
+   "starter": true,
+   "species": [
+    "KillerWhale",
+    "Eagle"
+   ],
+   "faction": [
+    "Contractor",
+    "Keel and Rivet"
+   ],
+   "home": "the Plating Docks",
+   "story": [
+    "Jugger is a shipwright from the Plating Docks who re-plated a great ship in a dozen different years, and still watches every fight from its bridge.",
+    "Keel and Rivet builds and mends for anyone who pays. With Jugger aboard, your crew will be sent to cores under pressure, to lay prisms in the breach until the pressure drops.",
+    "What you build out there, the fauna will try to take apart."
+   ]
+  },
+  "Krush": {
+   "given": "Krush",
+   "family": "",
+   "callsign": "HORNET",
+   "starter": true,
+   "species": [
+    "Coyote",
+    "Turkey"
+   ],
+   "faction": [
+    "Thief",
+    "The Pickled Hand"
+   ],
+   "home": "Cellarside",
+   "story": [
+    "Krush grew up in the inn cellars of Cellarside, takes every dare, and has been caught on the way out more than once.",
+    "The Pickled Hand trades in what other ports would rather keep. With Krush aboard, your crew will be sent to lift dispatches from rival ports, and the freshest news there will be yours to carry.",
+    "Try not to get caught in the hatch."
+   ]
+  },
+  "Longshift": {
+   "given": "Longshift",
+   "family": "",
+   "callsign": "NEEDLE",
+   "starter": true,
+   "species": [
+    "Hare",
+    "Skunk"
+   ],
+   "faction": [
+    "Explorer",
+    "Far Shoal Society"
+   ],
+   "home": "the Frostline Field",
+   "story": [
+    "Longshift waits for ships at the Frostline Field, a landing field on a frozen shore, wrapped in that tail, and has been past every gate on the chart.",
+    "The Far Shoal Society sends crews where no one has been. With Longshift aboard, your crew will be asked to survey uncharted places, and to follow chart fragments wherever they lead.",
+    "The cold is the price of being first."
+   ]
+  },
+  "Maestro": {
+   "given": "Maestro",
+   "family": "",
+   "callsign": "OPAL",
+   "starter": true,
+   "species": [
+    "Platypus",
+    "Swallowtail"
+   ],
+   "faction": [
+    "Priest",
+    "Choir of the Deep"
+   ],
+   "home": "the Nested Chapel",
+   "story": [
+    "Maestro leads the choir in the Nested Chapel, a chapel built inside shells within shells, and tunes every fork by ear.",
+    "The Choir of the Deep keeps vigil at shrines across the HyperSea. With Maestro aboard, your crew will be asked to hold a shrine through its vigil, and the Choir has older rites it shares only with crews it trusts.",
+    "Listen long enough and the sea keeps time."
+   ]
+  },
+  "Mason": {
+   "given": "Mason",
+   "family": "",
+   "callsign": "ANVIL",
+   "starter": true,
+   "species": [
+    "Ostrich",
+    "Porcupine"
+   ],
+   "faction": [
+    "Contractor",
+    "Steadfast Joinery"
+   ],
+   "home": "Blacksand Shore",
+   "story": [
+    "Mason builds sea walls along Blacksand Shore, and every one of them hides a single glass marble in its mortar.",
+    "Steadfast Joinery shores up what is about to give way. With Mason aboard, your crew will be called to cores under pressure, to lay prisms in the breach until it holds.",
+    "Walls outlast the people who build them. That is the point."
+   ]
+  },
+  "Reaper": {
+   "given": "Reaper",
+   "family": "",
+   "callsign": "CITADEL",
+   "starter": true,
+   "species": [
+    "Gecko",
+    "Mantis"
+   ],
+   "faction": [
+    "Thief",
+    "Whisperkelp"
+   ],
+   "home": "the Pearl Vault",
+   "story": [
+    "Reaper opens the vaults nobody else can reach, like the round door high in the wall of the Pearl Vault, by listening to the lock.",
+    "Whisperkelp hears every secret that moves between ports. With Reaper aboard, your crew will be sent to lift dispatches from rival ports, and carry the freshest news home first.",
+    "Quiet hands, quiet crew."
+   ]
+  },
+  "Riptide": {
+   "given": "Riptide",
+   "family": "",
+   "callsign": "CITADEL",
+   "starter": true,
+   "species": [
+    "Zebra",
+    "Lionfish"
+   ],
+   "faction": [
+    "Pirate",
+    "Red Reef Rovers"
+   ],
+   "home": "the Careening Bar",
+   "story": [
+    "Riptide repaints the raider's stripes on the Careening Bar between raids, so nobody knows it is the same craft twice.",
+    "The Red Reef Rovers know where hoards are stashed and where wrecks have settled. With Riptide aboard, your crew will be told where to raid, and where a wreck is waiting to be stripped.",
+    "Change your colours often."
+   ]
+  },
+  "Scales": {
+   "given": "Scales",
+   "family": "",
+   "callsign": "ENSIGN",
+   "starter": true,
+   "species": [
+    "Egret",
+    "Koi"
+   ],
+   "faction": [
+    "Diplomat",
+    "The Treaty Table"
+   ],
+   "home": "the Treaty Bridge",
+   "story": [
+    "Scales sat at the Treaty Bridge for every round of talks, and watched two old enemies fly their first patrol side by side.",
+    "The Treaty Table brings rivals to terms. With Scales aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
+    "Peace is a long flight, and someone has to fly it."
+   ]
+  },
+  "Shrapnel": {
+   "given": "Shrapnel",
+   "family": "",
+   "callsign": "VOLT",
+   "starter": true,
+   "species": [
+    "Toucan",
+    "Newt"
+   ],
+   "faction": [
+    "Activist",
+    "Free Shoals League"
+   ],
+   "home": "Cratestreet",
+   "story": [
+    "Shrapnel held Cratestreet all night behind a barricade of fruit crates, and had the barricade for breakfast.",
+    "The Free Shoals League tears down the pens other domains build around the HyperSea's creatures. With Shrapnel aboard, your crew will be told where those pens are, and asked to break them open.",
+    "Bring something to eat. It can be a long night."
+   ]
+  },
+  "Siphon": {
+   "given": "Siphon",
+   "family": "",
+   "callsign": "NEEDLE",
+   "starter": true,
+   "species": [
+    "Caracal",
+    "RedPanda"
+   ],
+   "faction": [
+    "Thief",
+    "Velvet Gill"
+   ],
+   "home": "Ledgeport",
+   "story": [
+    "Siphon climbs the window ledges of Ledgeport at night, and is the only thief there known for leaving things behind.",
+    "The Velvet Gill moves news between ports before anyone knows it has moved. With Siphon aboard, your crew will be sent to lift dispatches from rival ports, and to be gone before morning.",
+    "Leave a shell. It is only polite."
+   ]
+  },
+  "Slingshot": {
+   "given": "Slingshot",
+   "family": "",
+   "callsign": "WINGMAN",
+   "starter": true,
+   "species": [
+    "Flamingo",
+    "MantisShrimp"
+   ],
+   "faction": [
+    "Sport",
+    "Spray and Spin"
+   ],
+   "home": "the Frozen Slips",
+   "story": [
+    "Slingshot races in the winter heats off the Frozen Slips, and knocks the ice off the intake with one rap of the hand.",
+    "Spray and Spin puts on exhibition runs wherever there is a crowd. With Slingshot aboard, your crew will be invited to fly them, skimming the course for every crystal along it.",
+    "The cold makes the engines sing."
+   ]
+  },
+  "Strider": {
+   "given": "Strider",
+   "family": "",
+   "callsign": "TALON",
+   "starter": true,
+   "species": [
+    "Shoebill",
+    "Crocodile"
+   ],
+   "faction": [
+    "Hunter",
+    "The Quiet Spear"
+   ],
+   "home": "the Greenwater Beaches",
+   "story": [
+    "Strider keeps the hatchery beaches of the Greenwater through the dry weeks, cooling the nests a billful of river water at a time.",
+    "The Quiet Spear follows rumours of old vaults and the lairs where predators gather. With Strider aboard, your crew will be sent to empty those vaults, and to hunt the lairs when they swell.",
+    "A good hunter knows the quarry before the hunt."
+   ]
+  },
+  "Tenacious": {
+   "given": "Tenacious",
+   "family": "",
+   "callsign": "RAMPART",
+   "starter": true,
+   "species": [
+    "Tiger",
+    "Tortoise"
+   ],
+   "faction": [
+    "FirstResponder",
+    "Harbour Watch"
+   ],
+   "home": "Stormward Station",
+   "story": [
+    "Tenacious stands watch at Stormward Station, a rescue deck that is busiest the morning after a storm.",
+    "Harbour Watch answers the distress calls nobody else will. With Tenacious aboard, your crew will be sent to derelicts where crews are stranded, to hold on until everyone is aboard.",
+    "Nobody is left out there."
+   ]
+  },
+  "Tender": {
+   "given": "Tender",
+   "family": "",
+   "callsign": "MANGER",
+   "starter": true,
+   "species": [
+    "Parrot",
+    "Narwhal"
+   ],
+   "faction": [
+    "Preservationist",
+    "Reefward Trust"
+   ],
+   "home": "the Bleached Flats",
+   "story": [
+    "Tender is replanting the Bleached Flats one seed at a time, and does not like being interrupted to have a picture taken.",
+    "The Reefward Trust keeps the nurseries of the HyperSea alive. With Tender aboard, your crew will be asked to tend a nursery and hold it, with no killing while you are there.",
+    "Growth is slow. Tender is slower."
+   ]
+  },
+  "Tomahawk": {
+   "given": "Tomahawk",
+   "family": "",
+   "callsign": "TALON",
+   "starter": true,
+   "species": [
+    "Basilisk",
+    "Hawk"
+   ],
+   "faction": [
+    "Hunter",
+    "Moonsedge Pack"
+   ],
+   "home": "Ashcrater Lagoon",
+   "story": [
+    "Tomahawk runs across the dusted water of Ashcrater Lagoon after quarry that swims beneath it, because there is no other way to follow.",
+    "The Moonsedge Pack hears every sighting first. With Tomahawk aboard, your crew will be sent after vaults the sightings point to, and into lairs when the predators gather.",
+    "Do not stop running."
+   ]
+  },
+  "Trace": {
+   "given": "Trace",
+   "family": "",
+   "callsign": "ZODIAC",
+   "starter": true,
+   "species": [
+    "Booby",
+    "Jellyfish"
+   ],
+   "faction": [
+    "Researcher",
+    "Lumen College"
+   ],
+   "home": "the survey ship Patience",
+   "story": [
+    "Trace surveys the growths of the HyperSea from the Patience, a small survey vessel that heaves to beside one and stays for weeks.",
+    "Lumen College wants every living thing in the sea written down. With Trace aboard, your crew will be asked to study creatures and blooms up close, for as long as they will let you.",
+    "Look closely. Then look again."
+   ]
+  },
+  "Spare01": {
+   "given": "Korvane",
+   "family": "Ashwhistle",
+   "callsign": "SUNDIAL",
+   "starter": true,
+   "species": [
+    "Mandrill",
+    "Peacock"
+   ],
+   "faction": [
+    "Priest",
+    "The Ninefold Shell"
+   ],
+   "home": "the Roofless Shrine",
+   "story": [
+    "Korvane Ashwhistle keeps the Roofless Shrine, whose one rite of the year is to stand out in the first rain.",
+    "The Ninefold Shell keeps shrines across the HyperSea and the rite of nine that links them. With Korvane aboard, your crew will be asked to hold a shrine through its vigil, and in time to join the ninefold rite.",
+    "Keep a straight face. Korvane rarely can."
+   ]
+  },
+  "Spare02": {
+   "given": "Lunari",
+   "family": "Hollowreach",
+   "callsign": "DOE",
+   "starter": true,
+   "species": [
+    "Opossum",
+    "Lynx"
+   ],
+   "faction": [
+    "Hunter",
+    "Longwake Lodge"
+   ],
+   "home": "the Black Bog",
+   "story": [
+    "Lunari Hollowreach carves the decoys for the Black Bog hunt, and carries them home on one plank path at the end of the season.",
+    "Longwake Lodge hunts the vaults and lairs of the outer reaches. With Lunari aboard, your crew will hear of vaults worth emptying, and of lairs that need hunting before they spread.",
+    "The storm can wait. So can Lunari."
+   ]
+  },
+  "Spare03": {
+   "given": "Bellomo",
+   "family": "Stripewright",
+   "callsign": "GALLEON",
+   "starter": true,
+   "species": [
+    "Zebra",
+    "Yak"
+   ],
+   "faction": [
+    "Merchant",
+    "Amber Ledger Guild"
+   ],
+   "home": "Cloudpass Halt",
+   "story": [
+    "Bellomo Stripewright trades at Cloudpass Halt, high above a sea of cloud, and pays every debt back with interest, to the grain.",
+    "The Amber Ledger Guild keeps accounts in every port. With Bellomo aboard, your crew will carry the Guild's dispatches, and run its convoys to ports under pressure.",
+    "A good name is worth more than the cargo."
+   ]
+  },
+  "Spare04": {
+   "given": "Zeria",
+   "family": "Emberwick",
+   "callsign": "HORNET",
+   "starter": true,
+   "species": [
+    "Fox",
+    "Firefly"
+   ],
+   "faction": [
+    "Thief",
+    "Velvet Gill"
+   ],
+   "home": "the Ribpier",
+   "story": [
+    "Zeria Emberwick lives in a den under the Ribpier, beside a collection of single boots, no two a pair.",
+    "The Velvet Gill trades in news before it is news. With Zeria aboard, your crew will be sent to lift dispatches from rival ports and carry them away first.",
+    "Bury the good stuff. Keep the boots."
+   ]
+  },
+  "Spare05": {
+   "given": "Halven",
+   "family": "Frostgate",
+   "callsign": "ENSIGN",
+   "starter": true,
+   "species": [
+    "Hare",
+    "Ram"
+   ],
+   "faction": [
+    "Aristocrat",
+    "Court of Still Water"
+   ],
+   "home": "Frostgate Tower",
+   "story": [
+    "Halven Frostgate writes letters from a tower desk in Frostgate, to people who will never write back.",
+    "The Court of Still Water holds cores across the cold reaches. With Halven aboard, the Court will ask your crew to patrol them, answer its calls for aid, and retake what another domain has taken.",
+    "A house is only as strong as its crews."
+   ]
+  },
+  "Spare06": {
+   "given": "Tamsin",
+   "family": "Dusklight",
+   "callsign": "BANDIT",
+   "starter": true,
+   "species": [
+    "Hare",
+    "Tiger"
+   ],
+   "faction": [
+    "BountyHunter",
+    "The Ninth Warrant"
+   ],
+   "home": "the Rustreed Canal",
+   "story": [
+    "Tamsin Dusklight waits in the striped reeds of the Rustreed Canal for whoever has a price on their head, ears showing above the reeds.",
+    "The Ninth Warrant takes the bounties others will not. With Tamsin aboard, your crew will be handed warrants on notorious crews, and told where to meet them.",
+    "Patience pays. Usually."
+   ]
+  },
+  "Spare07": {
+   "given": "Fennaro",
+   "family": "Mossbell",
+   "callsign": "MANGER",
+   "starter": true,
+   "species": [
+    "Hare",
+    "Deer"
+   ],
+   "faction": [
+    "Preservationist",
+    "Keepers of the Bloom"
+   ],
+   "home": "the Terrace Nurseries",
+   "story": [
+    "Fennaro Mossbell was raised among the reef gardeners of the Terrace Nurseries, and still plants the last tray of every day.",
+    "The Keepers of the Bloom look after the nurseries where the HyperSea's young things grow. With Fennaro aboard, your crew will be asked to tend a nursery and keep it safe, with no killing while you are there.",
+    "Tomorrow there will be another tray."
+   ]
+  },
+  "Spare08": {
+   "given": "Oki",
+   "family": "Sandrunner",
+   "callsign": "RAMPART",
+   "starter": true,
+   "species": [
+    "Kangaroo",
+    "Armadillo"
+   ],
+   "faction": [
+    "FirstResponder",
+    "Lifeline Corps"
+   ],
+   "home": "Floodmere",
+   "story": [
+    "Oki Sandrunner works the flood launches out of Floodmere, and brings home whoever is still out there, even a wild calf.",
+    "The Lifeline Corps answers every distress call in the HyperSea. With Oki aboard, your crew will be sent to derelicts with crews stranded aboard, and stay until everyone is safe.",
+    "Last one out is still one."
+   ]
+  }
+ }
+}

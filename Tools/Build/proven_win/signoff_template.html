@@ -1,0 +1,223 @@
+<meta charset="utf-8">
+<title>{{TITLE}}</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<link rel="stylesheet" href="froglet.css">
+<style>
+/* Layout: one column; the viewer is the hero, the question sits under it, the reveal replaces the question. */
+:root {
+  /* Deep Sea, the game's own UI theme (Docs/UI_STYLE_GUIDE.md); deliberately single-theme. */
+  --bg: var(--fs-ground, #00041F);
+  --panel: var(--fs-surface, #222645);
+  --line: var(--fs-line, #434C89);
+  --fg: var(--fs-text, #E6E9FF);
+  --soft: var(--fs-text-soft, #747BAD);
+  --cta: var(--fs-cta, #99FF80);
+  --select: var(--fs-selection, #00D4FF);
+  --danger: var(--fs-danger, #FF4B3A);
+  --on-fill: var(--fs-on-fill, #00041F);
+  --display: "Aldrich", "Chakra Petch", system-ui, sans-serif;
+  --ui: "Chakra Petch", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--body); font-size: 16px; line-height: 1.5; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(24px, 4vw, 36px); margin: 0; text-wrap: balance; letter-spacing: .02em; }
+h2 { font-family: var(--ui); font-weight: 600; font-size: 18px; margin: 0; text-transform: uppercase; letter-spacing: .08em; color: var(--soft); }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--soft); }
+.viewer { display: flex; flex-direction: column; gap: 10px; }
+.stage { position: relative; background: #000; border: 1px solid var(--line); aspect-ratio: 16 / 9; max-width: 100%; overflow: hidden; }
+.stage.crop { aspect-ratio: 1 / 1; max-width: min(100%, 640px); }
+.stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
+.stage.crop img { image-rendering: pixelated; }
+.tag { position: absolute; left: 12px; top: 10px; font-family: var(--ui); font-weight: 700; font-size: 20px; padding: 2px 12px; background: var(--fg); color: var(--on-fill); }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bar .label { font-family: var(--ui); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--soft); margin-right: 4px; }
+button, .seg label { font-family: var(--ui); font-weight: 600; font-size: 15px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); padding: 8px 14px; cursor: pointer; }
+button:focus-visible, .seg input:focus-visible + label, textarea:focus-visible { outline: 2px solid var(--select); outline-offset: 2px; }
+button[aria-pressed="true"] { border-color: var(--select); color: var(--select); }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg input:checked + label { border-color: var(--select); color: var(--select); }
+.card { background: var(--panel); border: 1px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+textarea { font-family: var(--body); font-size: 15px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); padding: 10px; width: 100%; box-sizing: border-box; min-height: 64px; resize: vertical; }
+.go { background: var(--cta); color: var(--on-fill); border-color: var(--cta); }
+.go:disabled { opacity: .45; cursor: not-allowed; }
+.note { font-size: 14px; color: var(--soft); }
+.err { color: var(--danger); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 560px; width: 100%; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 15px; }
+th { font-family: var(--ui); font-weight: 600; color: var(--soft); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+td.win { color: var(--cta); font-weight: 700; }
+code { font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+.tally { font-family: var(--ui); font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<main>
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>{{HEADING}}</h1>
+    <p class="lede">Two builds of {{SUBJECT}}, rendered by {{RENDERER}} at the same instants and angles. Which build is 1 and which is 2 is chosen at random for you. Look for any difference, then answer below.</p>
+  </header>
+
+  <section class="viewer" aria-label="Image viewer">
+    <div class="bar">
+      <span class="label">Show</span>
+      <button id="show1" aria-pressed="true">Image 1</button>
+      <button id="show2" aria-pressed="false">Image 2</button>
+      <button id="flicker" aria-pressed="false">Flicker 1 ↔ 2</button>
+    </div>
+    <div class="bar">
+      <span class="label">Moment</span>
+      <span class="seg" id="moments"></span>
+      <span class="label" style="margin-left:12px">View</span>
+      <button id="full" aria-pressed="true">Whole frame</button>
+      <button id="crop" aria-pressed="false">640 px at 1:1</button>
+    </div>
+    <div class="stage" id="stage">
+      <img id="img" alt="">
+      <span class="tag" id="tag">1</span>
+    </div>
+    <p class="note">Each moment is a different time and pose. The whole frame is the full render scaled down; the 1:1 view is an unscaled square of it. {{FRAME_NOTE}}</p>
+  </section>
+
+  <section class="card" id="ask" aria-labelledby="askh">
+    <h2 id="askh">Your call</h2>
+    <p>Can you see any difference between image 1 and image 2?</p>
+    <div class="seg" role="radiogroup" aria-label="Your answer">
+      <input type="radio" name="pick" id="p-none" value="none"><label for="p-none">No difference</label>
+      <input type="radio" name="pick" id="p-1" value="1"><label for="p-1">1 looks better</label>
+      <input type="radio" name="pick" id="p-2" value="2"><label for="p-2">2 looks better</label>
+    </div>
+    <label for="why" class="note">What did you see, and where? One line is plenty.</label>
+    <textarea id="why" placeholder="e.g. no change in the arcs or the facets on any moment"></textarea>
+    <div class="bar"><button class="go" id="submit" disabled>Sign off</button><span class="note" id="status" role="status"></span></div>
+  </section>
+
+  <section class="card" id="reveal" hidden aria-labelledby="revh">
+    <h2 id="revh">What you compared</h2>
+    <p id="revealWho"></p>
+    <p>{{WHAT_CHANGED}}</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Graphics API</th><th>Shipped (ms)</th><th>Change (ms)</th><th>Speed-up</th><th>Pairs won</th><th>Pixels different on screen</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <p class="note">{{MEASUREMENT_NOTE}}</p>
+    <h2>Not measured yet</h2>
+    <ul>
+      {{NOT_MEASURED_ITEMS}}
+    </ul>
+    <p class="tally" id="tally"></p>
+  </section>
+</main>
+
+<script>
+const TEST = "{{TEST_ID}}";
+const RESULTS = {{RESULTS_JSON}};
+const MOMENTS = {{MOMENTS}};
+
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+let assign = store(TEST + ":assign");
+if (assign !== "AB" && assign !== "BA") { assign = Math.random() < 0.5 ? "AB" : "BA"; store(TEST + ":assign", assign); }
+const variantOf = n => assign[n - 1];               // shown number -> "A" (shipped) or "B" (change)
+
+let shown = 1, moment = 0, crop = false, flickerTimer = null;
+const $ = id => document.getElementById(id);
+
+const seg = $("moments");
+for (let i = 0; i < MOMENTS; i++) {
+  seg.insertAdjacentHTML("beforeend",
+    `<input type="radio" name="moment" id="m${i}" value="${i}" ${i === 0 ? "checked" : ""}><label for="m${i}">${i + 1}</label>`);
+}
+seg.addEventListener("change", e => { moment = +e.target.value; draw(); });
+
+// Preload every image so flicker swaps instantly.
+const cache = {};
+for (const v of "AB") for (let i = 0; i < MOMENTS; i++) for (const c of ["", "c"]) {
+  const im = new Image(); im.src = `img/${v}${i}${c}.png`; cache[`${v}${i}${c}`] = im;
+}
+
+function draw() {
+  const v = variantOf(shown);
+  $("img").src = `img/${v}${moment}${crop ? "c" : ""}.png`;
+  $("img").alt = `Image ${shown}, moment ${moment + 1}`;
+  $("tag").textContent = shown;
+  $("show1").setAttribute("aria-pressed", shown === 1 && !flickerTimer);
+  $("show2").setAttribute("aria-pressed", shown === 2 && !flickerTimer);
+  $("stage").classList.toggle("crop", crop);
+  $("full").setAttribute("aria-pressed", !crop);
+  $("crop").setAttribute("aria-pressed", crop);
+}
+function stopFlicker() { if (flickerTimer) { clearInterval(flickerTimer); flickerTimer = null; $("flicker").setAttribute("aria-pressed", "false"); } }
+$("show1").onclick = () => { stopFlicker(); shown = 1; draw(); };
+$("show2").onclick = () => { stopFlicker(); shown = 2; draw(); };
+$("flicker").onclick = () => {
+  if (flickerTimer) { stopFlicker(); draw(); return; }
+  flickerTimer = setInterval(() => { shown = shown === 1 ? 2 : 1; draw(); }, 500);
+  $("flicker").setAttribute("aria-pressed", "true"); draw();
+};
+$("full").onclick = () => { crop = false; draw(); };
+$("crop").onclick = () => { crop = true; draw(); };
+draw();
+
+document.querySelectorAll('input[name="pick"]').forEach(r => r.addEventListener("change", () => { $("submit").disabled = false; }));
+
+function renderReveal(pickVariant) {
+  const who = { A: "the shipped shader (bleeding-edge)", B: "the change ({{CHANGE_NAME}})" };
+  $("revealWho").textContent =
+    `Image 1 was ${who[variantOf(1)]}; image 2 was ${who[variantOf(2)]}. ` +
+    (pickVariant === "none" ? "You saw no difference." : `You preferred ${who[pickVariant]}.`);
+  $("rows").innerHTML = RESULTS.map(r => r.ratio == null
+    ? `<tr><td>${r.api}</td><td colspan="5">${r.won}</td></tr>`
+    : `<tr><td>${r.api}</td><td>${r.a.toFixed(3)}</td><td class="win">${r.b.toFixed(3)}</td><td class="win">${(1 / r.ratio).toFixed(2)}×</td><td>${r.won}</td><td>${r.diff8}</td></tr>`).join("");
+  $("reveal").hidden = false;
+}
+
+let db = null, me = null;
+(async () => {
+  try {
+    if (!window.claude?.use) return;
+    db = await claude.use("db");
+    const user = await claude.use("user");
+    me = user ? await user.id() : null;
+    if (db && me) {
+      const mine = await db.doc("votes/" + me).get();
+      const mineData = mine?.data?.();
+      if (mineData?.test === TEST) { renderReveal(mineData.pick); $("ask").hidden = true; }
+      db.collection("votes").onSnapshot(snap => {
+        const rows = (snap.docs || []).map(d => d.data()).filter(v => v && v.test === TEST);
+        const n = k => rows.filter(v => v.pick === k).length;
+        $("tally").textContent = rows.length
+          ? `Sign-offs so far: ${n("none")} saw no difference, ${n("B")} preferred the change, ${n("A")} preferred the shipped shader.`
+          : "";
+      });
+    }
+  } catch (e) { /* the page works without the store; the vote then shows a copy line */ }
+})();
+
+$("submit").onclick = async () => {
+  const sel = document.querySelector('input[name="pick"]:checked');
+  if (!sel) return;
+  const pick = sel.value === "none" ? "none" : variantOf(+sel.value);
+  const why = $("why").value.trim().slice(0, 500);
+  $("submit").disabled = true;
+  let saved = false;
+  if (db && me) {
+    try {
+      await db.doc("votes/" + me).set({ test: TEST, pick, shown: sel.value, assign, why, device: navigator.userAgent.slice(0, 160), at: new Date().toISOString() });
+      saved = true;
+    } catch (e) { saved = false; }
+  }
+  $("status").textContent = saved ? "Signed off. Thank you." : "Your answer could not be saved here. Copy this line and send it to whoever shared this page: " +
+    `${TEST}: ${pick === "none" ? "no difference" : "preferred " + pick} - ${why}`;
+  $("status").classList.toggle("err", !saved);
+  renderReveal(pick);
+};
+</script>

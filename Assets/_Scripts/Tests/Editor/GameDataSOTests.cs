@@ -564,6 +564,35 @@ namespace CosmicShore.Tests
             Assert.IsFalse(_gameData.IsTurnRunning);
         }
 
+        // A pilot who rejoins a running match joins the turn where the others are (MatchRejoin, section 103).
+        [Test]
+        public void JoinRunningTurn_RunsTheTurnFromWhereTheOthersAre()
+        {
+            _gameData.JoinRunningTurn(42f);
+
+            Assert.IsTrue(_gameData.IsTurnRunning);
+            Assert.AreEqual(Time.time - 42f, _gameData.TurnStartTime, 0.001f, "the turn clock reads 42 s in");
+        }
+
+        [Test]
+        public void JoinRunningTurn_NegativeElapsed_StartsNow()
+        {
+            _gameData.JoinRunningTurn(-5f);
+
+            Assert.AreEqual(Time.time, _gameData.TurnStartTime, 0.001f);
+        }
+
+        [Test]
+        public void JoinRunningTurn_TurnAlreadyRunning_LeavesItAlone()
+        {
+            _gameData.StartTurn();
+            float started = _gameData.TurnStartTime;
+
+            _gameData.JoinRunningTurn(42f);
+
+            Assert.AreEqual(started, _gameData.TurnStartTime, "a running turn is not restarted or moved");
+        }
+
         #endregion
 
         #region DomainStats Struct

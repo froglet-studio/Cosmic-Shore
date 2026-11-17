@@ -332,7 +332,7 @@ namespace CosmicShore.Gameplay
         /// travel, with its goal far and dead ahead, and never cuts a slip short.</summary>
         bool FlitWanted(Vector3 pos, Vector3 fwd)
         {
-            if (StrikeOnLane(pos, fwd, _cfg.FlitDistance, _cfg.FlitStrikeRadius * 1.5f)) return true;
+            if (StrikeOnLane(pos, fwd, _cfg.FlitDistance, _cfg.FlitStrikeRadiusFor(_status) * 1.5f)) return true;
             if (_zipping) return false;
             if (!AIGoal(out var goal)) return true;   // the lab's freestyle rule: ahead is closer
             var to = goal - pos;

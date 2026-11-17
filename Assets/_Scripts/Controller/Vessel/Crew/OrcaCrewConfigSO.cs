@@ -24,7 +24,25 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float boostTank = 3f;
         [Tooltip("lab boostRefill x Time: tank seconds regained per second while not boosting. 0.25 at rest; the lab's kTime 0.6 " +
                  "at level 15 is 0.35 at level 10 (the lab's 1 + k x level / 15 is this channel's line through 1 and 1 + 2k/3).")]
-        [SerializeField] ElementalFloat boostRefill = ElementalFloat.Multiplier(0.25f, 0.35f, Element.Time, 0.05f);
+        [SerializeField] ElementalFloat boostRefill = ElementalFloat.Multiplier(0.25f, 0.35f, Element.Time, 0.125f);
+
+        [Header("Level-5 upgrades (game only: the fundamentals pass, Garrett 2026-11-12, ORCA_CREW.md 'Level 5')")]
+        [Tooltip("CHARGE level-5 'Rearm': with this element's upgrade active every gunner's magazine regains one missile every " +
+                 "rearmSeconds (up to its size), so the crew never runs dry between omni crystals. None = only crystals refill.")]
+        [SerializeField] Element rearmUpgradeElement = Element.Charge;
+        [Tooltip("Rearm: seconds between the missiles it gives each gunner seat.")]
+        [SerializeField, Min(1f)] float rearmSeconds = 12f;
+        [Tooltip("MASS level-5 'Bulwark': with this element's upgrade active the helm's shield is laid twice, a second shell " +
+                 "bulwarkGap further out, so the wall is twice as thick. None = one shell.")]
+        [SerializeField] Element bulwarkUpgradeElement = Element.Mass;
+        [Tooltip("Bulwark: how much further out the second shell stands (u).")]
+        [SerializeField, Min(0f)] float bulwarkGap = 14f;
+        [Tooltip("SPACE level-5 'Chain Burst': with this element's upgrade active a missile or bomb burst sets off every other " +
+                 "missile of this crew, and its bomb, inside its blast. None = each bursts on its own.")]
+        [SerializeField] Element chainUpgradeElement = Element.Space;
+        [Tooltip("TIME level-5 'Afterburner': with this element's upgrade active the boost tank keeps refilling while the helm " +
+                 "burns, so a burn lasts longer and an empty tank recovers under a held trigger. None = it refills only off the burn.")]
+        [SerializeField] Element afterburnerUpgradeElement = Element.Time;
 
         [Header("Helm: shield (prisms round the hull, the forward cone open: carried super-shielded, then dropped as danger)")]
         [Tooltip("lab shieldBlocks: danger prisms in the shield (DangerHemisphereConfig: 12 rays x 12 blocks).")]
@@ -36,7 +54,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("lab shieldOpenDeg: half-angle of the open cone ahead of the hull (deg), so the helm can see and fly out.")]
         [SerializeField, Range(0f, 90f)] float shieldOpenDeg = 45f;
         [Tooltip("lab shieldTime x Mass: seconds the shield rides with the hull. 4 at rest; the lab's kMass 0.8 is 6.13 at level 10. Then it drops.")]
-        [SerializeField] ElementalFloat shieldSeconds = ElementalFloat.Multiplier(4f, 6.1333333f, Element.Mass, 0.5f);
+        [SerializeField] ElementalFloat shieldSeconds = ElementalFloat.Multiplier(4f, 6.1333333f, Element.Mass, 2f);
         [Tooltip("lab shieldCd: seconds between shields, counted from the raise.")]
         [SerializeField, Min(0f)] float shieldCooldown = 9f;
         [Tooltip("DangerHemisphereConfig baseBlockScale: each shield prism's size (u).")]
@@ -68,7 +86,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("lab launchCd: a turret's reload after its missile ends (s).")]
         [SerializeField, Min(0f)] float launchCooldown = 0.6f;
         [Tooltip("lab blastR x Space: the burst's radius (u). 30 at rest (AOEExplosion MaxScale 60 is twice it); the lab's kSpace 0.8 is 46 at level 10.")]
-        [SerializeField] ElementalFloat blastRadius = ElementalFloat.Multiplier(30f, 46f, Element.Space, 5f);
+        [SerializeField] ElementalFloat blastRadius = ElementalFloat.Multiplier(30f, 46f, Element.Space, 15f);
         [Tooltip("lab blastTime: seconds the burst takes to reach full size (AOEExplosion's own ExplosionDuration is 3 s). What it takes from a rival hull is the explosion's own vessel effect (VesselCombatHitByMissileBlast: petals, a scored hit).")]
         [SerializeField, Min(0.05f)] float blastSeconds = 0.5f;
         [Tooltip("lab: a crystal within this of a flown missile is collected for the hull (u; the lab's 81 = 9 squared).")]
@@ -177,7 +195,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("lab bombLife: a safety (s). The bomb cruises until its gunner presses again (Garrett 2026-10-21: \"it never goes on cooldown it can just only have one bomb at a time so it must blow up a bomb to fire another\"); it also bursts on a rival hull or a hostile prism, and at this. It never knocks our own hull about.")]
         [SerializeField, Min(0.1f)] float bombFuse = 10f;
         [Tooltip("lab bombBlastR x Space: the blast radius (u). 50 at rest (the Grizzly's mid-charge MaxScale 100); the lab's kSpace 0.8 is 76.7 at level 10.")]
-        [SerializeField] ElementalFloat bombBlastRadius = ElementalFloat.Multiplier(50f, 76.666667f, Element.Space, 10f);
+        [SerializeField] ElementalFloat bombBlastRadius = ElementalFloat.Multiplier(50f, 76.666667f, Element.Space, 25f);
         [Tooltip("The bomb's projectile scale (GrizzlyTriggerBombConfig 2.5-5 by charge; the middle).")]
         [SerializeField, Min(0.1f)] float bombScale = 3.75f;
         [Tooltip("The bomb's colour (the Grizzly's danger red).")]
@@ -272,6 +290,18 @@ namespace CosmicShore.Gameplay
         public float AIBurnMinDistance => aiBurnMinDistance;
         public float AIBurnMinTank => aiBurnMinTank;
         public float BoostRefillAt(IVesselStatus status) => boostRefill.EvaluateLive(status);
+        public float RearmSeconds => rearmSeconds;
+        public float BulwarkGap => bulwarkGap;
+        /// <summary>Charge 5 'Rearm': every gunner seat regains a missile every <see cref="RearmSeconds"/>.</summary>
+        public bool RearmActive(IVesselStatus status) => Unlocked(status, rearmUpgradeElement) && status.ElementalAbilityHandler.IsUpgradeActive(rearmUpgradeElement);
+        /// <summary>Mass 5 'Bulwark': the shield is laid as two shells.</summary>
+        public bool BulwarkActive(IVesselStatus status) => Unlocked(status, bulwarkUpgradeElement) && status.ElementalAbilityHandler.IsUpgradeActive(bulwarkUpgradeElement);
+        /// <summary>Space 5 'Chain Burst': a burst sets off the crew's other missiles and its bomb inside the blast.</summary>
+        public bool ChainBurstActive(IVesselStatus status) => Unlocked(status, chainUpgradeElement) && status.ElementalAbilityHandler.IsUpgradeActive(chainUpgradeElement);
+        /// <summary>Time 5 'Afterburner': the boost tank refills while burning too.</summary>
+        public bool AfterburnerActive(IVesselStatus status) => Unlocked(status, afterburnerUpgradeElement) && status.ElementalAbilityHandler.IsUpgradeActive(afterburnerUpgradeElement);
+        static bool Unlocked(IVesselStatus status, Element element) =>
+            element != Element.None && status != null && status.ElementalAbilityHandler;
         public int ShieldBlocks => shieldBlocks;
         public float ShieldMinRadius => shieldMinRadius;
         public float ShieldMaxRadius => Mathf.Max(shieldMinRadius, shieldMaxRadius);

@@ -33,70 +33,107 @@ R = "/mnt/project-files/regatta-training/results/"   # where each search's JSON 
 # variant -> (base asset path, the genome file its untouched fields come from, {field: value}, source)
 # "start": the asset whose text the variant starts from when it is not the variant itself (copy_with's fallback).
 ROWS = {
-    # Serpent, Serpentine: trained C (job serpenttime-serpent-time, PR #1788; fresh composite 15.85 vs 17.66 today).
-    # Trained lead-off; Serpentine's lead is 1.0, under which C scores 15.24 (PR #1832).
+    # Serpent, Serpentine: run4 in the real game (time_ai_search.py with the nose and refuel genes, races at Regatta
+    # length, 2026-11-17), flown with SerpentTimeController's Serpent row at lead 2.09 and nose 10.42/s. It lays a wall
+    # to refuel at 4 pellets or under (#2089, FINDINGS 23). Confirm on 40 fresh flights a side against run3b, no DNF:
+    # loss 2.40 -> 2.25 and every condition faster (I1 121 -> 108 s, I4 104 -> 99, Regatta-length L2 160 -> 137, L4
+    # 202 -> 176). Replaced run3b (#2088), which replaced C (job serpenttime-serpent-time, PR #1788).
     "SerpentAIBoostPolicy_SerpentTime": dict(
         base=L.POLICY_DIR + "/SerpentAIBoostPolicy.asset",
-        fields={"alignDegrees": 13.106, "stickBand": 0.162, "engageRunwaySeconds": 4.456, "maxConcurrentBurns": 3,
-                "minSecondsBetweenPellets": 2.423, "reservePellets": 0},
-        source=R + "serpent-time/serpenttime-serpent-time__C.json"),
-    # Thresher, Thresher Time: lead-on B at 1,503 evaluations (job threshertime-thresher-time-lead, PR #1830). Needs the
-    # Time-mode nose lead at 2.5: without it this genome DNFs 4-17 of 48 fresh courses.
+        fields={"alignDegrees": 84.525, "releaseAlignDegrees": 66.04, "stickBand": 0.584, "releaseStickBand": 0.845,
+                "engageRunwaySeconds": 3.049, "releaseRunwaySeconds": 1.661, "maxConcurrentBurns": 3,
+                "minSecondsBetweenPellets": 0.415, "reservePellets": 0,
+                "refuelBelowPellets": 4, "refuelCoastSeconds": 0.291, "lowTankSecondsBetweenPellets": 0.175},
+        source="/mnt/project-files/regatta-flywheel/train/Serpent/run4/best.json"),
+    # Thresher, Thresher Time: run1 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
+    # ThresherTimeController's Thresher row at lead 2.77 and nose 6.37/s. Confirm on 24 fresh flights a side (seeds
+    # 101-104): shipped 2 DNF, trained none; I1 134 -> 94 s, I2 163 -> 115, I4 289 -> 185, I4@T5 373 -> 143, wide 188 -> 118
+    # and 169 -> 115. Replaced lead-on B (job threshertime-thresher-time-lead, PR #1830).
     "ThresherAIBoostPolicy_ThresherTime": dict(
         base=L.POLICY_DIR + "/ThresherAIBoostPolicy.asset",
-        fields={"plantMinTurnDegrees": 93.007, "plantMinDistance": 21.373, "slingIntervalSeconds": 0.586,
-                "releaseConeDegrees": 7.346, "maxPlantSeconds": 1.738, "aimedHoldSeconds": 1.279,
-                "aimToleranceDegrees": 9.485},
-        source=R + "thresher-lead/lead_B_1503.json"),
-    # Stoat, Slingshot: the parent's trained B (job slingshot-stoat-time, PR #1792), the lead-on round's pick (best with
-    # the lead at 2.5, PR #1831: fresh composite 1.108 vs 2.749 shipped). trampolineAiTurnScale is not in the variant's
-    # text yet (the variant was copied before the trampoline): it is added, the base asset has it.
+        fields={"alignDegrees": 21.684, "releaseAlignDegrees": 32.697, "stickBand": 0.828, "releaseStickBand": 0.641,
+                "engageRunwaySeconds": 1.384, "releaseRunwaySeconds": 1.24, "plantMinTurnDegrees": 100.163,
+                "plantMinDistance": 94.095, "slingIntervalSeconds": 0.301, "releaseConeDegrees": 9.92,
+                "maxPlantSeconds": 2.134, "aimedHoldSeconds": 1.836, "aimToleranceDegrees": 10.628},
+        source="/mnt/project-files/regatta-flywheel/train/Thresher/run1/best.json"),
+    # Thresher, Regatta: the same run1 drive (Regatta flew the hull's own ThresherAIBoostPolicy). The real-game judge,
+    # alone, the shipped course plus archive3six a9/a6/a0, seeds 11-12, card and L5 starts: 98.5 / 102 s -> 91.4 / 91.4 s,
+    # all 16 finished, with the race line's trained nose pair (author_race_lines.py); the drive alone at 10/s gave 95.4.
+    "ThresherAIBoostPolicy_Regatta": dict(
+        base=L.POLICY_DIR + "/ThresherAIBoostPolicy.asset",
+        fields={"alignDegrees": 21.684, "releaseAlignDegrees": 32.697, "stickBand": 0.828, "releaseStickBand": 0.641,
+                "engageRunwaySeconds": 1.384, "releaseRunwaySeconds": 1.24, "plantMinTurnDegrees": 100.163,
+                "plantMinDistance": 94.095, "slingIntervalSeconds": 0.301, "releaseConeDegrees": 9.92,
+                "maxPlantSeconds": 2.134, "aimedHoldSeconds": 1.836, "aimToleranceDegrees": 10.628},
+        source="/mnt/project-files/regatta-flywheel/train/Thresher/run1/best.json"),
+    # Stoat, Slingshot: Stoat run1 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
+    # SlingshotController's Stoat row at lead 2.62 and nose 10.43/s. Confirm on seeds 101-104, 32 flights a side, no DNF:
+    # every rung 18-40% faster (I1 68 -> 51 s, I2 51 -> 36, I4 62 -> 42, I1@T10 39 -> 26, I4@T0 95 -> 56). It presses for
+    # the warp on almost any leg (11.5 u) and holds for a 59 deg window. autopilotHold01 was not searched and keeps B's.
+    # Replaced the parent's trained B (job slingshot-stoat-time, PR #1792 and #1831).
     "StoatSlingConfig_Slingshot": dict(
         base=L.STOAT_DIR + "/StoatSlingConfig.asset",
-        fields={"aiSlingMinTurnDegrees": 147.951, "aiSlingIntervalSeconds": 2.896, "aiSlingMinDistance": 13.329,
-                "trampolineAiTurnScale": 96.362, "autopilotHold01": 0.012, "aiWarpMinDistance": 310.106},
-        source=R + "stoat-slingshot/rows.json (trained B)"),
-    # Sparrow, Breakwater: version 2's restarts D/E (job breakwater-sparrow-time, PR #1793): hold the afterburner, the
-    # rocket as the variant has it (fresh composite 278.5 vs 364.1 today; 13-22 Danger weave clips a race).
+        fields={"aiSlingMinTurnDegrees": 154.471, "aiReleaseConeDegrees": 63.666, "aiCatchGiveUpSeconds": 5.181,
+                "aiSlingIntervalSeconds": 1.594, "aiSlingMinDistance": 115.742, "aiWarpMinDistance": 11.523,
+                "aiHoldForWindowDegrees": 58.721, "trampolineAiTurnScale": 67.159, "autopilotHold01": 0.012},
+        source="/mnt/project-files/regatta-flywheel/train/Stoat/run1/best.json"),
+    # Sparrow, Breakwater: Sparrow run4 in the real game (time_ai_search.py, 2026-11-17, seeded from run3 and the #2095
+    # drive, on bleeding-edge with the #2112 afterburner and #2109's difficulty rates), flown at the Legendary nose 13.9/s.
+    # Confirm on seeds 101-104, 32 flights a side, no DNF: I1 99 -> 98 s, I2 83 -> 76, I4 78 -> 73, I1@T10 95 -> 81,
+    # I4@T0 98 -> 93. Replaced run3 (#2095), which replaced D (PR #1793).
     "SparrowAIBoostPolicy_Breakwater": dict(
         base=L.POLICY_DIR + "/SparrowAIBoostPolicy.asset",
-        fields={"alignDegrees": 90, "releaseAlignDegrees": 120, "stickBand": 1, "releaseStickBand": 1,
-                "engageRunwaySeconds": 0, "releaseRunwaySeconds": 0},
-        source=R + "sparrow-breakwater/breakwater-sparrow-time__D.json"),
-    # Rhino, Headlong: lead-on B (job drive-rhino-headlong-on-lead, PR #1828), over the hull's own policy (the job's
-    # `shipped` is empty). Headlong's gate steering (AICommitFromApproachPoint) is on since #1790; needs the lead at 2.5.
+        fields={"alignDegrees": 79.394, "releaseAlignDegrees": 89.527, "stickBand": 0.73, "releaseStickBand": 0.993, "engageRunwaySeconds": 0.192, "releaseRunwaySeconds": 1.674, "minHoldSeconds": 1.631, "minRestSeconds": 0.183},
+        source="/mnt/project-files/regatta-flywheel/train/Sparrow/run4/best.json"),
+    # Rhino, Headlong: Rhino run1 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
+    # HeadlongController's Rhino row at lead 2.47 and nose 7.5/s. The shipped AI orbited a gate at the fleet nose lag
+    # (FINDINGS row 21): confirm, 28 fresh flights a side, shipped finished 6, trained 28 (98-120 s). minSpeedGain and
+    # throttleSlewPerSecond were not searched and keep lead-on B's (job drive-rhino-headlong-on-lead, PR #1828).
     "RhinoAIBoostPolicy_Headlong": dict(
         base=L.POLICY_DIR + "/RhinoAIBoostPolicy.asset",
-        fields={"cornerSpeed": 153.536, "minCornerSpeed": 144.359, "brakeMarginUnits": 0.705, "brakeLeadSeconds": 0.44,
-                "minSpeedGain": 17.571, "cornerReleaseDegrees": 24.321, "engageRunwaySeconds": 1.439,
-                "releaseRunwaySeconds": 0.161, "alignDegrees": 22.708, "releaseAlignDegrees": 26.95, "stickBand": 0.454,
-                "releaseStickBand": 0.682, "throttleSlewPerSecond": 7.366, "brakeSteerFloor": 0.408},
-        source=R + "rhino-lead/drive-rhino-headlong-on-lead__B.json"),
+        fields={"cornerSpeed": 274.153, "minCornerSpeed": 64.441, "brakeMarginUnits": 25.574,
+                "brakeLeadSeconds": 0.943, "cornerReleaseDegrees": 0.877, "engageRunwaySeconds": 2.211,
+                "releaseRunwaySeconds": 0.083, "alignDegrees": 56.368, "releaseAlignDegrees": 41.815,
+                "stickBand": 0.398, "releaseStickBand": 0.372, "brakeSteerFloor": 0.694, "minSpeedGain": 17.571,
+                "throttleSlewPerSecond": 7.366},
+        source="/mnt/project-files/regatta-flywheel/train/Rhino/run1/best.json"),
 }
 
 # Dolphin, Switchback: lead-on C (job switchback-dolphin-time-lead, PR #1833), ONE drive raced at every intensity over
 # the _I1 genome (switchback_fit: the genome's other fields are _I1's). Written into the mode file and each intensity's.
-_DOLPHIN_C = {"alignDegrees": 75.03, "engageRunwaySeconds": 0.631, "spendAtCharge01": 0.662, "peakMarginUnits": 7.584,
-              "minDischargeSeconds": 0.147, "minPulseGainUnits": 12.571, "maxHoldOffSeconds": 4.247}
+# Dolphin run2 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with SwitchbackController's
+# Dolphin row at lead 2.03 and Legendary nose 11.18/s (13.41 at I3-I4 and the gauntlet). Confirm on 32 fresh flights a
+# side, no DNF: I1 110 -> 86 s, I1@T10 110 -> 97, wide courses 130 -> 119 and 117 -> 111, I2 119 -> 112, I4 even.
+# Replaced C (job dolphin-lead, switchback-dolphin-time-lead__C).
+_DOLPHIN_C = {"alignDegrees": 76.312, "stickBand": 0.023, "engageRunwaySeconds": 0.658, "spendAtCharge01": 0.724,
+              "peakMarginUnits": 9.768, "minDischargeSeconds": 0.047, "minPulseGainUnits": 41.811, "maxHoldOffSeconds": 0.65}
 for _n in ("DolphinAIBoostPolicy_Switchback", "DolphinAIBoostPolicy_Switchback_I1", "DolphinAIBoostPolicy_Switchback_I2",
            "DolphinAIBoostPolicy_Switchback_I4"):
     ROWS[_n] = dict(base=L.POLICY_DIR + "/DolphinAIBoostPolicy.asset", start="DolphinAIBoostPolicy_Switchback_I1",
-                    genome_fields=("stickBand", "releaseAlignDegrees", "releaseStickBand", "releaseRunwaySeconds"),
+                    genome_fields=("releaseAlignDegrees", "releaseStickBand", "releaseRunwaySeconds"),
                     fields=_DOLPHIN_C, source=R + "dolphin-lead/switchback-dolphin-time-lead__C.json")
 
 # Every value each row overwrote, as it shipped on bleeding-edge 8197bd92 (2026-11-07). --revert writes these back.
 OLD = {
-    "SerpentAIBoostPolicy_SerpentTime": {"alignDegrees": 34.29, "stickBand": 0.198, "engageRunwaySeconds": 0.985,
-                                         "maxConcurrentBurns": 3, "minSecondsBetweenPellets": 0.675, "reservePellets": 0},
+    # run3b, as it shipped before run4 (2026-11-17; #2088), refuel off
+    "SerpentAIBoostPolicy_SerpentTime": {"alignDegrees": 68.568, "releaseAlignDegrees": 72.845, "stickBand": 0.372,
+                                         "releaseStickBand": 0.497, "engageRunwaySeconds": 3.14, "releaseRunwaySeconds": 0.646,
+                                         "maxConcurrentBurns": 3, "minSecondsBetweenPellets": 0.351, "reservePellets": 0,
+                                         "refuelBelowPellets": -1, "refuelCoastSeconds": 0, "lowTankSecondsBetweenPellets": 0},
     "ThresherAIBoostPolicy_ThresherTime": {"plantMinTurnDegrees": 6.691, "plantMinDistance": 115.249,
                                            "slingIntervalSeconds": 2.866, "releaseConeDegrees": 15, "maxPlantSeconds": 3.156,
-                                           "aimedHoldSeconds": 1.54, "aimToleranceDegrees": 3},
-    "StoatSlingConfig_Slingshot": {"aiSlingMinTurnDegrees": 35, "aiSlingIntervalSeconds": 0.941,
-                                   "aiSlingMinDistance": 123.282, "trampolineAiTurnScale": 100, "autopilotHold01": 1.0,
-                                   "aiWarpMinDistance": 0},
-    "SparrowAIBoostPolicy_Breakwater": {"alignDegrees": 45, "releaseAlignDegrees": 60, "stickBand": 1,
-                                        "releaseStickBand": 1, "engageRunwaySeconds": 2, "releaseRunwaySeconds": 1.25},
-    "RhinoAIBoostPolicy_Headlong": None,   # new: Headlong flew the hull's own RhinoAIBoostPolicy (delete to revert)
+                                           "aimedHoldSeconds": 1.54, "aimToleranceDegrees": 3,
+                                           "alignDegrees": 12, "releaseAlignDegrees": 25, "stickBand": 0.35,
+                                           "releaseStickBand": 0.6, "engageRunwaySeconds": 1.5, "releaseRunwaySeconds": 0.5},
+    # trained B, as it shipped before Stoat run1 (2026-11-17; #1792, #1831)
+    "StoatSlingConfig_Slingshot": {"aiSlingMinTurnDegrees": 147.951, "aiReleaseConeDegrees": 15.999,
+                                   "aiCatchGiveUpSeconds": 4, "aiSlingIntervalSeconds": 2.896, "aiSlingMinDistance": 13.329,
+                                   "aiWarpMinDistance": 310.106, "aiHoldForWindowDegrees": 120,
+                                   "trampolineAiTurnScale": 96.362, "autopilotHold01": 0.012},
+    # run3, as it shipped before run4 (2026-11-17; #2095)
+    "SparrowAIBoostPolicy_Breakwater": {"alignDegrees": 63.004, "releaseAlignDegrees": 94.815, "stickBand": 0.978, "releaseStickBand": 0.804, "engageRunwaySeconds": 1.559, "releaseRunwaySeconds": 0.049, "minHoldSeconds": 1.996, "minRestSeconds": 0.243},
+    # lead-on B, as it shipped before Rhino run1 (2026-11-17); before #1828 Headlong flew the hull's own policy
+    "RhinoAIBoostPolicy_Headlong": {"cornerSpeed": 153.536, "minCornerSpeed": 144.359, "brakeMarginUnits": 0.705, "brakeLeadSeconds": 0.44, "cornerReleaseDegrees": 24.321, "engageRunwaySeconds": 1.439, "releaseRunwaySeconds": 0.161, "alignDegrees": 22.708, "releaseAlignDegrees": 26.95, "stickBand": 0.454, "releaseStickBand": 0.682, "brakeSteerFloor": 0.408},
     "DolphinAIBoostPolicy_Switchback": {"alignDegrees": 35.308, "stickBand": 0.262, "engageRunwaySeconds": 1.422,
                                         "spendAtCharge01": 0.835, "maxHoldOffSeconds": 4, "peakMarginUnits": 3,
                                         "minDischargeSeconds": 0.2, "minPulseGainUnits": 30},

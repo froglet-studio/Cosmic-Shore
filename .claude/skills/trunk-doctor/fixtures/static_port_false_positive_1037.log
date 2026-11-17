@@ -1,0 +1,24 @@
+2026-10-08T17:54:54.5679555Z ##[group]Run actions/checkout@v4
+2026-10-08T17:54:54.5680457Z with:
+2026-10-08T17:55:39.8352355Z ##[group]Run python3 Tools/CI/validate_project.py --github
+2026-10-08T17:55:39.8352820Z [36;1mpython3 Tools/CI/validate_project.py --github[0m
+2026-10-08T17:55:39.8416242Z shell: /usr/bin/bash -e {0}
+2026-10-08T17:55:39.8416539Z env:
+2026-10-08T17:55:39.8416762Z   REPORT_LABEL: ci-bleeding-edge
+2026-10-08T17:55:39.8417239Z   REPORT_TITLE: bleeding-edge is broken
+2026-10-08T17:55:39.8417541Z ##[endgroup]
+2026-10-08T17:55:40.6218959Z Scanned 15552 files under /home/runner/work/Cosmic-Shore/Cosmic-Shore
+2026-10-08T17:55:40.6219719Z 
+2026-10-08T17:55:40.6219962Z editor-in-runtime: 2 error(s)
+2026-10-08T17:55:40.6220764Z   Port/tests/CosmicShore.Tests/ShaderGraphCompilerTests.cs:178
+2026-10-08T17:55:40.6222313Z       References UnityEditor from player-visible code. Move the file under an Editor/ folder, or wrap it in #if UNITY_EDITOR.
+2026-10-08T17:55:40.6245813Z ##[error][editor-in-runtime] References UnityEditor from player-visible code. Move the file under an Editor/ folder, or wrap it in #if UNITY_EDITOR.
+2026-10-08T17:55:40.6252985Z   Port/src/CosmicShore.Content/Shaders/ShaderGraphAsset.cs:68
+2026-10-08T17:55:40.6253649Z       References UnityEditor from player-visible code. Move the file under an Editor/ folder, or wrap it in #if UNITY_EDITOR.
+2026-10-08T17:55:40.6255796Z ##[error][editor-in-runtime] References UnityEditor from player-visible code. Move the file under an Editor/ folder, or wrap it in #if UNITY_EDITOR.
+2026-10-08T17:55:40.6256797Z 
+2026-10-08T17:55:40.6257196Z monobehaviour-name: 66 warning(s)
+2026-10-08T17:55:40.6940729Z 
+2026-10-08T17:55:40.6940827Z 2 error(s), 66 warning(s).
+2026-10-08T17:55:40.6941237Z FAILED: problems here break a player build even though the editor compiles them.
+2026-10-08T17:55:40.6943899Z ##[error]Process completed with exit code 1.

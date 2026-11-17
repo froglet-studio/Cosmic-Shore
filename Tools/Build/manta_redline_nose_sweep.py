@@ -5,7 +5,7 @@ In Redline's model (manta_redline_sim.py) the fleet's AI nose lag (VesselTransfo
 Manta 1.7x (I1) to 5x (I4) slower than one without it, more than any Soar band buys (REDLINE.md section 5.1).
 Switchback already sets an AI's nose rate per intensity and difficulty (SwitchbackController.aiNoseFollowByIntensity,
 SWITCHBACK.md "Lag by difficulty"). This sweeps that knob the same way for Redline: for each nose rate and intensity it
-races a grid of Soar bands (MantaSoarAITuningSO's BoostStickBand x YastriStickBand, plus every Manta genome) and reports
+races a grid of Soar bands (MantaSoarAITuningSO's BoostStickBand x YawsteryStickBand, plus every Manta genome) and reports
 the best pair, its finished races, median time and missed mouths, against the shipped bands at the same rate.
 
 The score is redline_fit's per-intensity score (time over the flat-out path, + 0.5 x the worst race; a DNF always
@@ -14,7 +14,7 @@ manta_redline_sim.LIMITS. The sweep is a READER: it writes nothing but its own J
 
     python3 Tools/Build/manta_redline_nose_sweep.py                       # the table, 6 courses an intensity
     python3 Tools/Build/manta_redline_nose_sweep.py --seeds 6 --seedbase 1001 --out sweep.json --cores 4
-    python3 Tools/Build/manta_redline_nose_sweep.py --rates 1.5,3,0 --boost 0.35 --yastri 0.75   # one band pair
+    python3 Tools/Build/manta_redline_nose_sweep.py --rates 1.5,3,0 --boost 0.35 --yawstery 0.75   # one band pair
     python3 Tools/Build/manta_redline_nose_sweep.py --self-test
 """
 import json
@@ -29,7 +29,7 @@ import manta_redline_sim as sim   # noqa: E402
 
 RATES = (1.5, 2.0, 3.0, 4.0, 6.0, 9.0, 0.0)          # 1.5 = the fleet lag, 0 = none (a human's nose: no lag)
 BOOST = (0.0, 0.1, 0.2, 0.35, 0.5, 0.75, 1.0)
-YASTRI = (0.5, 0.65, 0.75, 0.85, 1.0)
+YAWSTERY = (0.5, 0.65, 0.75, 0.85, 1.0)
 GENOMES = ((0.35, 0.75), (0.975, 0.975))             # the executor's shipped bands; MantaSoarAITuning_Regatta
 LIMIT = 900.0
 FLAT_OUT = 720.0                                       # redline_fit.FLAT_OUT, RedlineCourse.MantaTopSpeed
@@ -145,10 +145,10 @@ def main(argv):
     rates = _arg(argv, "--rates", RATES, floats)
     intensities = _arg(argv, "--intensities", (1, 2, 3, 4), lambda s: tuple(int(x) for x in s.split(",")))
     n, base = _arg(argv, "--seeds", 6, int), _arg(argv, "--seedbase", 1, int)
-    boost, yastri = _arg(argv, "--boost", BOOST, floats), _arg(argv, "--yastri", YASTRI, floats)
-    pairs = sorted(set([(b, y) for b in boost for y in yastri] + list(GENOMES)))
-    if "--boost" in argv and "--yastri" in argv:
-        pairs = [(b, y) for b in boost for y in yastri]
+    boost, yawstery = _arg(argv, "--boost", BOOST, floats), _arg(argv, "--yawstery", YAWSTERY, floats)
+    pairs = sorted(set([(b, y) for b in boost for y in yawstery] + list(GENOMES)))
+    if "--boost" in argv and "--yawstery" in argv:
+        pairs = [(b, y) for b in boost for y in yawstery]
     cores = _arg(argv, "--cores", os.cpu_count() or 1, int)
     seeds = [base + k for k in range(n)]
     cells = sweep(rates, intensities, pairs, seeds, cores)

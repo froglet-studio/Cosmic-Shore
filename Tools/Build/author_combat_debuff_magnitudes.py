@@ -115,7 +115,7 @@ DRAINS = [
      "Squirrel joust overtake (the ally BUFF mirrors the debuff). The steal is the flat price since "
      "2026-11-11 (stealScale disabled): the Squirrel's Charge sets the least speed a joust needs "
      "(SquirrelJoustSpeed.asset) instead."),
-    ("Assets/_SO_Assets/Effects/Vessel Skimmer Effects/RhinoSwordStealBySkimmerEffect.asset",
+    ("Assets/_SO_Assets/Effects/Vessel Skimmer Effects/SwordfishSwordStealBySkimmerEffect.asset",
      "strike", "debuffMagnitude", "buffMagnitude", "effectDuration",
      "Rhino sword contact steal (same type, requireOvertake OFF - a blade connects on its own "
      "terms). Priced identically to the joust because they are the same VERB: Broadside prices a "

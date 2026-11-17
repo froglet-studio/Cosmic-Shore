@@ -31,7 +31,7 @@ MonoBehaviour:
     Max: 1.4
     element: 3
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   radiusFollowRate: 3
   radialCorrectionRate: 5
   holdAtCatch: 1
@@ -52,7 +52,7 @@ MonoBehaviour:
     Max: 2.5
     element: 2
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   massUpgradeShieldsLaunchTrail: 1
   aimedExit: 1
   exitMinDegrees: 30
@@ -60,28 +60,53 @@ MonoBehaviour:
   exitWindowSeconds: 1.1
   exitWindowHalfSeconds: 0.3
   exitWindowFalloffSeconds: 0.4
-  trampoline: 1
+  swing: 1
+  swingAhead: 150
+  swingSide: 35
+  swingHorizon: 0.8
+  swingReach: 55
+  swingCatchDegrees: 40
+  swingMinDegrees: 15
+  swingMaxDegrees: 90
+  swingDegreesPerSecond: 150
+  swingSeconds: 4
+  aiSwingFaceDegrees: 8
+  swingStartEvent:
+    Guid:
+      Data1: -922617308
+      Data2: 1092038894
+      Data3: -167764571
+      Data4: -698904471
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Activate
+  swingFlingEvent:
+    Guid:
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
+  trampoline: 0
   trampolineAhead: 140
-  trampolineRadius: 60
+  trampolineRadius: 30
   trampolineLine: 0.75
   trampolineSoftSeconds: 0.35
   trampolineSeconds: 4
   trampolinePredictDegrees: 90
-  trampolineAiTurnScale: 100
+  trampolineAiTurnScale: 55
   trampolineTouchEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 310883003
+      Data2: 1266496358
+      Data3: -193662310
+      Data4: -709421328
+    Path: event:/SFX/Oneshots/Gameplay sfx/Track collide
   trampolineBounceEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1058858236
+      Data2: 1166390557
+      Data3: -939827049
+      Data4: 1519737688
+    Path: event:/SFX/Oneshots/Gameplay sfx/Vessel impact
   accretionPerPrism: 0.04
   accretionMax: 0.4
   pressWarpShare: 0.5
@@ -104,11 +129,11 @@ MonoBehaviour:
   missKickShare: 0.35
   sweetSpotEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 413717435
+      Data2: 1238803703
+      Data3: 1704894129
+      Data4: 1814326255
+    Path: event:/SFX/Oneshots/Menu/Confirmed
   catchWarpShare: 1.15
   catchWarpFromPress: 1
   driftSpeed: 40
@@ -123,8 +148,8 @@ MonoBehaviour:
     Max: 9
     element: 3
     UseFloor: 1
-    Floor: 1.5
-  aiSlingMinTurnDegrees: 35
+    Floor: 3
+  aiSlingMinTurnDegrees: 20
   aiReleaseConeDegrees: 15.999
   aiCatchGiveUpSeconds: 4
   aiSlingIntervalSeconds: 0.941
@@ -133,15 +158,15 @@ MonoBehaviour:
   aiHoldForWindowDegrees: 120
   holdStartEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -922617308
+      Data2: 1092038894
+      Data3: -167764571
+      Data4: -698904471
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Activate
   slingEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst

@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-17-learn-drives-from-flights-py-check-accep-06b2e2",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T10:56:06+00:00",
+  "area": "the drive learner's variant check",
+  "summary": "learn_drives_from_flights.py --check accepts engageRunwaySeconds 999 (the stand-down value BrittleStarAIBoostPolicy_BrittleStarTime uses so its coach is the only Speed writer); every other value still has to sit in its range.",
+  "why": "promote_trained_drives.py --check was red on that asset since the Shift Line landed.",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "51c5a578f",
+  "paths": [
+    "Tools/Build/learn_drives_from_flights.py"
+  ]
+}

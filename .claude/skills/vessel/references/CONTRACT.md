@@ -474,13 +474,14 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
 - **Vessel side**: `VesselImpactor` on the root (RequireComponent pulls `NetworkVesselImpactor`)
   with `vesselImpactorDataContainerSO` → `Assets/_SO_Assets/Effects/Effect Containers/
   VesselContainers/{Vessel}ImpactorDataContainer.asset`. Baseline prism trio every shipping
-  vessel authors: `VesselDamagePrismEffect` + `VesselHapticsByPrismEffect` +
+  vessel authors: `VesselDamagePrismEffect` + `VesselHapticsByPrismEffect` (the punish thud; a hull whose verb is
+  contact, a rammer, carries `VesselRamRewardByPrismEffect` instead, `Docs/HAPTICS.md`) +
   `VesselElementalDebuffByDangerPrismEffect`; plus ≥1 crystal effect
   (`{Vessel}VesselExplosionByCrystalEffect` / `...ChangeResourceByCrystalEffect`). **The Rhino is
   the sanctioned exception to the first slot** (2026-10-13): its hull destroys nothing, so
   `RhinoPloughPrismEffect` REPLACES `VesselDamagePrismEffect` (`RhinoImpactorDataContainer`:
-  plough + haptics + elemental-debuff-by-danger), and its crystal pair is
-  `RhinoVesselExplosionByCrystalEffect` + `RhinoVesselSurgeByCrystalEffect` (the Surge replaced the
+  plough + ram reward haptic + elemental-debuff-by-danger), and its crystal pair is
+  `RhinoVesselExplosionByCrystalEffect` + `SwordfishVesselSurgeByCrystalEffect` (the Surge replaced the
   resource-change effect 2026-10-16). It also carries no `VesselChangeSpeedByPrismEffect` by design —
   "the bulldozer ignores mass". The trio is the default, not a law: a hull whose contact verb is
   not destruction swaps the first slot for its own verb. Empty arrays

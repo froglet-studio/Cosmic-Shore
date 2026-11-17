@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-12-swimlanes-leads-with-the-elemental-loop-77d60b",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T20:48:41+00:00",
+  "area": "the Claude skills and tools (/swimlanes, /approve)",
+  "summary": "/swimlanes leads with the elemental loop's vessel lanes (each vessel a parallel lane with its next loop step) and /approve ranks queues by loop impact (elemental_loop.rework: the work a late against-the-vessel catch sends back), with --vessel/--element/--loop-step on approvals.py add.",
+  "why": "Garrett 2026-11-12: the loop should dominate both tools",
+  "branch": "claude/project-thread-d7a2bi",
+  "lane": "claude-tooling",
+  "commit": "e0d9dd83f",
+  "paths": [
+    ".claude/skills/approve/SKILL.md",
+    ".claude/skills/elemental-loop/SKILL.md",
+    ".claude/skills/swimlanes/SKILL.md",
+    ".claude/skills/swimlanes/swimlanes.py",
+    "Tools/Build/approvals.py"
+  ]
+}

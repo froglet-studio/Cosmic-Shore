@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-12-c-program-files-git-proven-win-rewritten-c0df6f",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T16:51:49+00:00",
+  "area": "Claude skills and tooling",
+  "summary": "/proven-win rewritten as a strict checklist for weaker models, new /proven-win-scout, and Tools/Build/proven_win (run.py, verdict.py with a self-test, signoff.py). Garrett asked for it (2026-11-12).",
+  "branch": "claude/project-thread-yoh2s6",
+  "commit": "ce1d48c87"
+}

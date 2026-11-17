@@ -491,15 +491,21 @@ shared clock. The course is the Classic ladder unchanged (`SwitchbackCourseSetti
 
 **A blocked station** (`SwitchbackBlastRun.IsBlocked`, `Layout`): on the leg INTO a blocked gate -
 
-1. a **key crystal** on the leg line, `KeyLeadFor(leg)` = 0.62 x the leg clamped to 230-400 u upstream of the ring
-   (inside the explosion's 400 u minimum length, so a blast fired at the key reaches the door). Keys are ordinary
+1. a **key crystal** on the leg line, `KeyLeadFor(leg)` = 0.62 x the leg clamped to 230-384 u upstream of the ring
+   (the door hangs 8 u past the ring, so the door stays inside the explosion's 400 u minimum length, no farther from
+   its key than before 2026-11-14, and a blast fired at the key reaches it). Keys are ordinary
    `Domains.Blue` crystals (any domain may take them) laid by the server's `CrystalManager.SetCourseKeys`; they
    replace the passive crystal field for the match (`RetireCrystalsBeyondSlots`), and `ClearCourseKeys` runs at
    despawn. A key's explosion core is 1.25 x (`BlastRunKeyCrystals.KeyCoreMultiplier`, matched within 4 u of the
    explosion origin in `VesselExplosionByCrystalEffectSO` - CODE only; the shared
    `DolphinVesselExplosionByCrystalEffect` asset is untouched, so every other crystal is unchanged).
 2. a **door**: `BreakwaterStationBuilder.BuildDoor` - danger rakes round an always-open 18 u eye (`PortFor(i)`),
-   8 u upstream of the ring plane; I4 adds a second door 8 u downstream.
+   **8 u downstream of the ring plane** (`DoorSetback`); I4 adds a second door 24 u downstream (`SecondDoorSetback`).
+   The door hung 8 u in front of the ring until 2026-11-14: its plug reaches past the ring's rim, so it hid the lime
+   ring from the ring you leave on 12% / 14% / 67% of legs at I2 / I3 / I4 (Garrett: "respect sight lines from one
+   ring to another", `Docs/Reports/SIGHT_LINES.md`). Behind the ring, the ring is in sight and the door still stops a
+   pilot who neither blasted it nor threaded its eye; `TheDoorsHangBehindTheirRing` holds every door prism past its
+   ring's plane. The planner's thread and blast lanes run on through the doors (`SwitchbackBlastPlanner.Decide`).
 3. a **block field** (`BlastRunWorld.Blocks` family, `EmitField`) between the door's keepout and 40 u short of the key:
    a 3D grid of 24 u cells in the leg's frame (`Frame`: s1, s2 across, z upstream), `CellsHalf` cells each side
    across and up to `CellsDeep` cells deep (a field under 2 cells deep is skipped). Every cell is filled with
@@ -534,7 +540,8 @@ state, no physics and nothing reacts to players; a blasted mover prism simply st
 | I4 gauntlet (since 2026-11-03) | none | 11 x 11 x 12 (240 u across) | 70 % | + frames, jacks, hoops, ziggurats; tunnels on the route | <= 42 / 210; sealed double door; 2-3 keys a gate ("The I4 gauntlet" below) |
 
 The I4 row is now the field of a mode that turns the gauntlet off (Scarab Rally, `BlastRunGauntlet`); Switchback's own
-I4 is the gauntlet row and its section below.
+I4 is the gauntlet row and its section below. Since 2026-11-14 that row hangs no doors and keeps a sight bore of the
+bigger mouth + 12 u (`LaysDoors`, `SightBore`; SCARABRALLY.md "I4 keeps the sight line"); Switchback's rows are unchanged.
 
 Stations closer than `StationSpacing` = 280 u door to door are skipped (hairpins fold the course back on itself).
 
@@ -572,7 +579,7 @@ doors) for thicker fields.
 **Logs:** `[Switchback] BLAST RUN intensity N: G gates, S blocked gates, M movers, X prisms.` (verbose,
 ArcadeMatch), and the RUN line above. A scene with no
 CrystalManager logs `[Switchback] BLAST RUN: no CrystalManager in the scene ...` as an error and lays no keys.
-`SpawnableSwitchbackFeatures`' layout revision is 6 since the I4 gauntlet (it lays Blast Run only; older caches are invalid).
+`SpawnableSwitchbackFeatures`' layout revision is 7 since the plain I4 seals (6 was the I4 gauntlet; it lays Blast Run only; older caches are invalid).
 
 **Held headless:** `SwitchbackBlastRunTests` (EditMode; 60 seeds + the fixed seed per intensity, plus all four fixed
 seeds for budgets/clipping): Classic course, determinism (positions, scales, kinds, movers), the ladder (per station
@@ -600,8 +607,9 @@ but that need to be preety hard."
 seeds a level):
 
 1. **No bore, sealed eyes.** The field fills the leg's line (`BoreRadius(4)` = 0), and each of the two doors' 18 u eyes
-   holds a SEAL: a 3 x 3 of 7 u cubes, its middle a Danger heart (`EmitSeal`; corner reach 16.3 u, clear of every bar).
-   Flying straight in means ramming the field and two dead stops at the seals.
+   holds a SEAL: a 3 x 3 of 7 u plain cubes (`EmitSeal`; corner reach 16.3 u, clear of every bar). Flying straight in
+   means ramming the field and both seals. (Until 2026-11-13 the seal's middle was a Danger heart, two dead stops a gate
+   for every missed blast; see "The I4 gauntlet, softened" below.)
 2. **A zig-zag of keys** (`GauntletKeys`): two keys a gate (first key under 300 u out) or three, upstream first. The
    last sits on the line `GauntletFinalLead` = 120 u out, aimed at the door; the others step off the line to a hashed
    side by `GauntletZigZag` = 40 u (two keys: +1.5 x; three: +1 x, -1 x) and are each aimed at the NEXT key. Each key is
@@ -680,6 +688,29 @@ the budgets, clipping (laid and movers over a cycle), mouths and shape-mix tests
 the budget a real soak must confirm (`SwitchbackSoakRunner` at I4, `Docs/perf/SWITCHBACK_PRISM_BUDGET.md`); the rays'
 brightness and thickness are a first pick; whether a person can thread a tunnel at full speed after a well-aimed blast
 is the feel the playtest decides.
+
+### The I4 gauntlet, softened (2026-11-13, elemental loop step 2) - NOT editor-verified
+
+The Dolphin's Time ladder check (`Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md`) found I4 a cliff over I3, not one more
+demand: with one pilot pace on every rung (nose follow 2.2/s everywhere, 24 courses) a race paid about 23 prism hits at
+I3 and 140 at I4, and 3.5 dead stops against 28. No person had finished a gauntlet race (0 of 6 Blast Run I4 flights on
+the ledger; Garrett left two I4 runs early). Taking pieces out one at a time offline showed where the dead stops came
+from: the seals' Danger hearts were about nine in ten of them (Easy 40 a race to 2), the plug walls' hearts, the field's
+danger share and the plugs themselves each moved little. So the one change is **the seal is nine plain cubes**: a missed
+blast still means ramming two seals at a plain hit's slow per cube, never two 3 s dead stops a gate. Everything else in
+the gauntlet (no bore, the zig-zag keys, tunnels, plug walls and their hearts, the counts) is unchanged.
+
+With ramming cheaper, the Easy AI (which threads) overtook Medium, so `aiNoseFollowGauntlet` was retuned from 1.9 / 2.8 /
+3.5 / 5 to **1.5 / 2.2 / 3.5 / 6** (Easy on the fleet lag). Offline, 48 courses a level, median (slowest 10 %):
+
+| I4 gauntlet | Easy | Medium | Hard | Legendary | Danger hits a race (Easy / Medium / Legendary) |
+|---|---|---|---|---|---|
+| Before (24 courses) | 185 (197) | 172 (189) | - | 157 (165) | 40 / 24 / 12 |
+| After | 176 (202) | 167 (174) | 155 (166) | 141 (151) | 3.5 / 5 / 3.3 |
+
+I4 is still the hardest rung by far (Medium about 40 % slower than I3, five times its plain hits). Scarab Rally, which
+turns the gauntlet off, has no seals and is unchanged (`WithoutTheGauntlet_I4IsTheFortressOfBefore`). Affects: Yash's
+gauntlet and bands (queued for his `/approve`).
 
 ## AI: the blast planner (2026-10-29) - NOT editor-verified
 
@@ -1258,6 +1289,7 @@ Median seconds offline (48 courses a cell; slowest 10 % in brackets) and the ban
 | I3 (bands 120-140 / 110-130 / 100-120 / 90-110) | 130 (148) | 120 (136) | 111 (125) | 101 (109) |
 | I4 (Yash's bands 130-150 / 120-140 / 110-130 / 100-120) | 140 (149) | 129 (138) | 120 (127) | 112 (119) |
 | I4 gauntlet since 2026-11-03 (bands 175-195 / 165-185 / 155-175 / 145-165; `aiNoseFollowGauntlet`) | 185 (200) | 173 (190) | 165 (182) | 155 (164) |
+| I4 gauntlet, plain seals since 2026-11-13 (`aiNoseFollowGauntlet` 1.5 / 2.2 / 3.5 / 6) | 176 (202) | 167 (174) | 155 (166) | 141 (151) |
 
 The I1-I3 bands are this doc's reading of "similar differences" (10 s steps, 20 s wide); retune a row with
 `noseFollowI<n>=e,m,h,l` in the simulator. All 768 races finished. **These are simulator seconds:** in the step 1 soak

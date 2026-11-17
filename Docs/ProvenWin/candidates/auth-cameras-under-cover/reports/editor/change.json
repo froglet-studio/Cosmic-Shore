@@ -1,0 +1,94 @@
+{
+    "prefab": "Authentication",
+    "toggled": "1 components: Camera x1",
+    "device": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+    "gpu": "NVIDIA GeForce RTX 3080",
+    "pairs": 40,
+    "framesPerHalf": 30,
+    "screenshotPixels": 6314750,
+    "screenshotPixelsDifferent": 2983,
+    "series": [
+        {
+            "counter": "Canvas.BuildBatch calls per frame",
+            "a": [],
+            "b": [],
+            "medianA": 0.0,
+            "medianB": 0.0,
+            "ratioBA": 0.0,
+            "shareBLower": 0.0
+        },
+        {
+            "counter": "PostLateUpdate.PlayerUpdateCanvases",
+            "a": [],
+            "b": [],
+            "medianA": 0.0,
+            "medianB": 0.0,
+            "ratioBA": 0.0,
+            "shareBLower": 0.0
+        },
+        {
+            "counter": "Canvas.BuildBatch",
+            "a": [],
+            "b": [],
+            "medianA": 0.0,
+            "medianB": 0.0,
+            "ratioBA": 0.0,
+            "shareBLower": 0.0
+        },
+        {
+            "counter": "UGUI.Rendering.UpdateBatches",
+            "a": [],
+            "b": [],
+            "medianA": 0.0,
+            "medianB": 0.0,
+            "ratioBA": 0.0,
+            "shareBLower": 0.0
+        },
+        {
+            "counter": "Main Thread",
+            "a": [],
+            "b": [],
+            "medianA": 0.0,
+            "medianB": 0.0,
+            "ratioBA": 0.0,
+            "shareBLower": 0.0
+        },
+        {
+            "counter": "PreLateUpdate.UpdateAllSkinnedMeshes",
+            "a": [],
+            "b": [],
+            "medianA": 0.0,
+            "medianB": 0.0,
+            "ratioBA": 0.0,
+            "shareBLower": 0.0
+        },
+        {
+            "counter": "MeshSkinning.Update",
+            "a": [],
+            "b": [],
+            "medianA": 0.0,
+            "medianB": 0.0,
+            "ratioBA": 0.0,
+            "shareBLower": 0.0
+        },
+        {
+            "counter": "Mesh.CreateMesh",
+            "a": [],
+            "b": [],
+            "medianA": 0.0,
+            "medianB": 0.0,
+            "ratioBA": 0.0,
+            "shareBLower": 0.0
+        },
+        {
+            "counter": "SkinnedMeshRenderer.UpdateBounds",
+            "a": [],
+            "b": [],
+            "medianA": 0.0,
+            "medianB": 0.0,
+            "ratioBA": 0.0,
+            "shareBLower": 0.0
+        }
+    ],
+    "verdict": "ERROR: the scene loaded 'Menu_Main' by itself during the bench, so nothing measured here describes it. Bench it where it stays (its real boot path, or a prefab in an empty scene)."
+}

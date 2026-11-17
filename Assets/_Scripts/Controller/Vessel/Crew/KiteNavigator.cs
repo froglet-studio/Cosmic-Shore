@@ -1194,7 +1194,7 @@ namespace CosmicShore.Gameplay
 
             int got = 0;
             var rs = victim.ResourceSystem;
-            var form = Upgraded(Element.Charge) ? ElementalTransferForm.Steal : ElementalTransferForm.Eject;
+            var form = _cfg.CrystalStealActive(_status) ? ElementalTransferForm.Steal : ElementalTransferForm.Eject;
             while (want > 0 && rs != null)
             {
                 var element = Element.None; int most = 0;
@@ -1269,7 +1269,7 @@ namespace CosmicShore.Gameplay
         // SPACE: an AOEExplosion at the loop's centre, on the plane, sparing our own domain
         void FireSpace(int n, Vector3 at, KiteBurst burst)
         {
-            float maxScale = KiteNavigatorCore.Grow(_cfg.SpaceMaxScale, n, _cfg.Growth, _cfg.SpaceMaxScaleCap);
+            float maxScale = KiteNavigatorCore.Grow(_cfg.SpaceMaxScaleFor(_status), n, _cfg.Growth, _cfg.SpaceMaxScaleCapFor(_status));
             if (burst != null) burst.MaxScale = maxScale;
             WatchBlast(at, 0.5f * maxScale);
 
@@ -1280,7 +1280,7 @@ namespace CosmicShore.Gameplay
             // shield on its own (ExplosionImpactor and the Burst path both absorb the hit), so the super shields inside the
             // blast's reach are dropped here first, by the sanctioned sequence (DeactivateShields; the Rhino sword, the
             // Thresher, the Shrike), and the blast itself goes out devastating, which takes plain shields outright.
-            bool breaker = Upgraded(Element.Space);
+            bool breaker = _cfg.ShieldBreakerActive(_status);
             if (breaker) DropSuperShields(at, 0.5f * maxScale);
             var impactor = _vessel.Transform.GetComponentInChildren<VesselImpactor>();
             var init = new AOEExplosion.InitializeStruct
@@ -1347,7 +1347,7 @@ namespace CosmicShore.Gameplay
         // morphed into them (massMorphSeconds: the view flies each mote's petals, as blocks, into these very places)
         void FireMass(int n, Vector3 at, KiteBurst burst)
         {
-            int count = Mathf.RoundToInt(KiteNavigatorCore.Grow(_cfg.MassPrisms, n, _cfg.Growth, _cfg.MassPrismCap));
+            int count = Mathf.RoundToInt(KiteNavigatorCore.Grow(_cfg.MassPrismsFor(_status), n, _cfg.Growth, _cfg.MassPrismCapFor(_status)));
             float rad = Mathf.Max(4f, 2.6f * Mathf.Pow(count, 1f / 3f) * (_cfg.MassPrismScale.z / 5f));
             for (int i = 0; i < count; i++)
             {
@@ -1392,7 +1392,7 @@ namespace CosmicShore.Gameplay
                 prism.TargetScale = scale;
                 prism.ownerID = _status.PlayerName;
                 prism.ChangeTeam(_status.Domain);
-                if (Upgraded(Element.Mass)) prism.prismProperties.IsShielded = true;   // Mass L5: Initialize applies it
+                if (_cfg.ShieldedClustersActive(_status)) prism.prismProperties.IsShielded = true;   // Mass L5: Initialize applies it
                 prism.Initialize(_status.PlayerName);
                 // a stated size: admit it past the pool's scale window AFTER Initialize (whose reset re-clamps it)
                 prism.AdmitTargetScale(scale);
@@ -1455,7 +1455,7 @@ namespace CosmicShore.Gameplay
                     ulong id = (uint)data[1] | ((ulong)(uint)data[2] << 32);
                     if (CrewStations.TryFindHull(id, out var victim) && !ReferenceEquals(victim.VesselStatus, _status))
                         Steal(victim.VesselStatus, new Vector3(BitsFloat(data[4]), BitsFloat(data[5]), BitsFloat(data[6])),
-                              Mathf.Clamp(data[3], 0, Mathf.CeilToInt(_cfg.ChargeCap)));
+                              Mathf.Clamp(data[3], 0, Mathf.CeilToInt(_cfg.ChargeCapFor(_status))));
                     break;
             }
         }
@@ -1496,7 +1496,7 @@ namespace CosmicShore.Gameplay
             {
                 _savedBoosts--;
                 _boosting = true;
-                _boostEndsAt = Time.time + _cfg.TimeBoostSeconds;
+                _boostEndsAt = Time.time + _cfg.BoostSecondsFor(_status);   // Time L5 Tailwind: longer
                 _status.IsBoosting = true;
             }
         }
@@ -1529,14 +1529,6 @@ namespace CosmicShore.Gameplay
             if (trigger == 0) _boostHeld = down;
         }
 
-        // The hull's level-5 upgrade in an element: the fleet's replicated gate (the Wrasse's ElementalAbilityMap lists all four
-        // elements, unlocking at 5 and relocking below 4).
-        bool Upgraded(Element element)
-        {
-            var abilities = _status?.ElementalAbilityHandler;
-            return abilities && abilities.IsUpgradeActive(element);
-        }
-
         void EndBoost()
         {
             if (!_boosting) return;
@@ -1547,8 +1539,9 @@ namespace CosmicShore.Gameplay
         // CHARGE: kite power, spent by the next ram on a rival
         void FireCharge(int n, Vector3 at)
         {
-            float add = KiteNavigatorCore.Grow(_cfg.ChargePetals, n, _cfg.Growth, _cfg.ChargeCap);
-            _charge = Mathf.Min(_cfg.ChargeCap, _charge + add);
+            float cap = _cfg.ChargeCapFor(_status);
+            float add = KiteNavigatorCore.Grow(_cfg.ChargePetalsFor(_status), n, _cfg.Growth, cap);
+            _charge = Mathf.Min(cap, _charge + add);
             Play(_cfg.ChargeSfx, at);
         }
 

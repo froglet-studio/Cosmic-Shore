@@ -101,7 +101,14 @@ mode's action.** The three modes are picked with face and shoulder buttons. Mass
 | A / Space | **Mass** | Docked: detach, leaving a nest behind. | Mass: 12 → 32 nest blocks; trail wavelength 8 → 4 |
 | LT / RMB (held) | **Zoom** | The Serpent's eyepiece: a magnified window in the top left, cut to the mode's element petal, with the targeted mass lit. | none |
 
-The Space upgrade is the only designed level-5 upgrade. The other three slots are open.
+**Level-5 upgrades** (all four filled; the other three added in the vessel pass, Garrett, 2026-11-13; numbers on `ShrikeConfigSO`, each gated inline on its own `Element` field):
+
+| Element | Upgrade | What it does |
+|---|---|---|
+| Charge | **Salvo** | Every nest flora launches `salvoLaunchScale` (2) times as often while you paint (`MissileEveryFor`). |
+| Mass | **Armed Nests** | A nest you leave behind carries `armedNestMissiles` (2) instead of `detachNestMissiles` (`NestMissilesFor`). |
+| Space | **Void Pierce** | The lance breaks super-shielded mass. |
+| Time | **Whipcrack** | The sling reaches its anchor in `whipcrackSeconds` (0.6 s) instead of `slingSeconds` (`SlingSecondsFor`). |
 
 **Docking.**
 - Any block the hull touches docks it. The test is the hull radius against the block's oriented box.
@@ -257,7 +264,9 @@ The **selected mode's card** turns the ready colour.
 **The cards (2026-11-07 icon roster pass, `Tools/Build/icon_kit/specs/shrike.py`):** each card is drawn from the real
 hull in parts under its slot icon, painted by `ShrikeHUDView.RefreshParts`: the reticle solid and the missiles in while a
 lock is painted with a missile ready; the nest cup solid while docked and a flora once a nest stands; the lance's beam and
-broken prism while RT is held in Space mode (Void Pierce's block at Space 5); the sling's tether and laid blocks. The
+broken prism while RT is held in Space mode (Void Pierce's block at Space 5); the sling's tether and laid blocks. Each
+level-5 upgrade adds a part once it unlocks: Salvo a second volley beside the missiles (while painting), Armed Nests
+the flora's second missile (once a nest stands), Whipcrack the whip chevrons on the tether. The
 "ready colour" is the pilot's domain now, not the CTA lime.
 
 ## 5. Networking

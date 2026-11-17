@@ -1,0 +1,28 @@
+{
+  "id": "2026-11-17-risky-merge-pr-2139-tune-dolphin-drift-c-8fc7d6",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-17T09:50:16+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2139 (tune(dolphin): Drift Charge max boost 2.259 -> 2.82 (step 5, Regatta slow trio)) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset",
+  "branch": "claude/project-thread-cwavhz",
+  "pr": 2139,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset",
+    "Docs/Approvals/Yash/2026-11-17-dolphin-drift-charge-maxboostmultiplier-ac1124.json"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset"
+    }
+  ]
+}

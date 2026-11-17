@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
                  "two unrelated parameters off one number.")]
         [SerializeField] float chargeRateMultiplierAtFullTime = 1.5f;
         [Tooltip("Floor for the Time charge-rate multiplier so a deficit can never stall the fill.")]
-        [SerializeField] float minChargeRateMultiplier = 0.25f;
+        [SerializeField] float minChargeRateMultiplier = 0.5f;
 
         [Header("Optional Safety")]
         [SerializeField] float rechargeCooldownSeconds = 1f;

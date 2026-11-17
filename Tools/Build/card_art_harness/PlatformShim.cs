@@ -221,9 +221,16 @@ namespace CosmicShore.Gameplay
             UnityEngine.Debug.LogError("SpawnPrismTrail reached from the card-art harness");
         public virtual GameObject Spawn(int intensity = 1) { UnityEngine.Debug.LogError("Spawn reached from the card-art harness"); return null; }
         public IReadOnlyList<Trail> GetTrails() => trails;
-        protected void InvalidateCache() { }
+        public void InvalidateCache() { }
 
         public SpawnTrailData[] GenerateForHarness() => GenerateTrailData();
+    }
+
+    /// <summary>The shipped bake switch (PrismLayoutBake.Bypass): the harness never loads a bake.</summary>
+    public static class PrismLayoutBake
+    {
+        sealed class Scope : IDisposable { public void Dispose() { } }
+        public static IDisposable Bypass() => new Scope();
     }
 
     /// <summary>Same protected generation surface as the shipped base; Emit records instead of laying.</summary>

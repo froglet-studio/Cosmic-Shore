@@ -20,8 +20,6 @@ MonoBehaviour:
       Space grows the explosion radius. At level 5 your blasts spare allies, so you
       can bombard freely near teammates (you still ride your own shockwaves).
     Input: 8
-    MultiplierAtFullLevel: 2.5
-    MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -30,12 +28,11 @@ MonoBehaviour:
       vessels or your own domain's prisms. Self-propulsion is unaffected.
   - Element: 2
     AbilityLabel: Weapon Systems
-    AbilityDescription: Cycle your three weapons - explosives, sniper, and the
-      plasma-claw flamethrower. Mass grows your trail prisms. At level 5 the
-      claw stops destroying what it burns and STEALS it for your team instead.
+    AbilityDescription: Cycle your three weapons - explosives, sniper and the
+      plasma claw. Mass grows the prisms of your trail, up to 2.5x at level 10.
+      At level 5 the claw stops destroying what it burns and STEALS it for your
+      team instead.
     Input: 14
-    MultiplierAtFullLevel: 2.5
-    MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -45,28 +42,27 @@ MonoBehaviour:
       your own. The claw itself is available from the start.
   - Element: 1
     AbilityLabel: Dig In
-    AbilityDescription: Stop to dig in and reload - energy regenerates faster while
-      parked. Charge raises the parked regeneration rate. Level 5 grants battlefield
-      sight while dug in.
+    AbilityDescription: Stop to dig in and BRACE - while planted, energy regenerates
+      and the charged cannon winds up faster, x2 at rest and x5 at level 10. Dig
+      in, wind up, bombard, rush out. Level 5 grants battlefield sight while dug
+      in.
     Input: 6
-    MultiplierAtFullLevel: 3
-    MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Battle Sight
-    UpgradeDescription: While dug in, key targets are highlighted (design in
-      progress - vision/highlight ability per the class doc).
+    UpgradeDescription: While dug in, every rival vessel within range is marked
+      in its own domain colour, through mass.
   - Element: 4
     AbilityLabel: Rush
-    AbilityDescription: Spend energy to charge forward with a burst of momentum.
-      Time reduces the energy cost of each rush. At level 5 you can steer mid-rush.
+    AbilityDescription: Spend energy to RAM forward - for the length of the burst
+      the hull smashes every rival prism it ploughs into (plain and shielded;
+      super-shielded mass holds). Time refills a spent rush faster, 6 s at rest
+      and 2.5 s at level 10. At level 5 the ram follows your nose.
     Input: 7
-    MultiplierAtFullLevel: 0.4
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Vector Control
-    UpgradeDescription: Improved directional control - change direction while
-      charging instead of committing to a straight line.
+    UpgradeDescription: The ram follows your nose - turn mid-rush and the charge
+      turns with you, carving a curved swathe instead of a straight one.

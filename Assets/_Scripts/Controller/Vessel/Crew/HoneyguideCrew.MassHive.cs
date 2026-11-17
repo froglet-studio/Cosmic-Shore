@@ -50,10 +50,11 @@ namespace CosmicShore.Gameplay
                 if (_massHiveT <= 0f) PlantMassHive(pos);
                 return;
             }
-            if ((pos - _massHiveAt).sqrMagnitude < _cfg.HiveReach * _cfg.HiveReach)
+            float reach = _cfg.HiveReachFor(_status);
+            if ((pos - _massHiveAt).sqrMagnitude < reach * reach)
             {
                 _massHiveUp = false;
-                _massHiveT = _cfg.MassHiveSeconds;
+                _massHiveT = _cfg.HiveChainActive(_status) ? 0f : _cfg.MassHiveSeconds;   // Mass 5 Hive Chain: the next at once
                 ShowHiveMarker(false);
                 OnOmniCrystal(_massHiveAt);
                 return;

@@ -93,7 +93,10 @@ namespace CosmicShore.Engine.UI
 
         // ── Mesh generation (the uGUI OnPopulateMesh contract) ──────────────────
 
-        static Texture2D s_WhiteTexture;
+        /// <summary>Original contract: uGUI's shared white texture, set before any Graphic draws (subclasses read it).</summary>
+        protected static Texture2D s_WhiteTexture;
+
+        protected Graphic() { s_WhiteTexture ??= Texture2D.whiteTexture; }
 
         /// <summary>The texture this graphic samples (default: the material's main texture, else white).</summary>
         public virtual Texture mainTexture => m_Material != null && m_Material.mainTexture != null
@@ -103,7 +106,8 @@ namespace CosmicShore.Engine.UI
         /// <summary>The material actually used to draw (original: material after modifiers).</summary>
         public virtual Material materialForRendering => material;
 
-        static Material s_DefaultUI;
+        /// <summary>Original contract: the cached default UI material; a subclass may replace it (null: uGUI's own again).</summary>
+        protected static Material s_DefaultUI;
 
         /// <summary>The shared "UI/Default" material every Graphic without its own draws with (original contract).</summary>
         public static Material defaultGraphicMaterial => s_DefaultUI ??= new Material(Shader.Find("UI/Default")) { name = "Default UI Material" };

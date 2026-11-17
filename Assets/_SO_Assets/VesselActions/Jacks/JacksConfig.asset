@@ -66,6 +66,38 @@ MonoBehaviour:
   travelSpeed: 900
   travelMinSeconds: 0.35
   travelMaxSeconds: 1.2
+  dangerShare:
+    Enabled: 1
+    Value: 0.25
+    Min: 0.25
+    Max: 0.75
+    element: 1
+    UseFloor: 1
+    Floor: 0
+  herdBirthRate:
+    Enabled: 1
+    Value: 1.5
+    Min: 1.5
+    Max: 2.5
+    element: 2
+    UseFloor: 1
+    Floor: 0.75
+  ringScale:
+    Enabled: 1
+    Value: 1.3
+    Min: 1.3
+    Max: 1.9
+    element: 3
+    UseFloor: 1
+    Floor: 0.65
+  herdSpeed:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.6
+    element: 4
+    UseFloor: 1
+    Floor: 0.5
   pooEvery: 6
   pooCount: 7
   pooSpread: 22
@@ -89,22 +121,22 @@ MonoBehaviour:
   viewZoomEase: 3
   callSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -2144686006
+      Data2: 1203677490
+      Data3: 1188687745
+      Data4: -1802949205
+    Path: event:/SFX/Oneshots/Gameplay sfx/Massshark spawn
   decoySfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 310883003
+      Data2: 1266496358
+      Data3: -193662310
+      Data4: -709421328
+    Path: event:/SFX/Oneshots/Gameplay sfx/Track collide
   teleportSfx:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1163572034
+      Data2: 1312051193
+      Data3: -1732454749
+      Data4: 1656763241
+    Path: event:/SFX/Oneshots/Gameplay sfx/Space Joust

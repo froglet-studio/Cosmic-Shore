@@ -22,25 +22,32 @@ namespace CosmicShore.Gameplay
             var tier = _escort.TierFor(_difficulty);
             float lure = tier?.LureShare ?? 0f;
             bool regrow = false;
+            TickAssault(ark);   // an assault turns the Ark's own world's lure up (ArkEscortRun.Assault.cs)
             for (int leg = 0; leg < _cellOfLeg.Length; leg++)
             {
                 var cell = _cellOfLeg[leg];
                 if (!cell) continue;
-                // "Under the team's control": a hostile world the squad PACIFIED (earned: escort.pacifyShare, min volume and
-                // nucleus time), or a world that started friendly and is still the squad's. Leading an empty hostile
-                // nucleus with the Ark's own hull is not control.
-                var legReport = leg < _report.LegReports.Count ? _report.LegReports[leg] : null;
-                bool pacified = legReport is { Pacified: true };
-                bool held = pacified || legReport is { Hostile: false } && cell.DominantDomain == squad;
+                bool held = LegHeld(leg, cell, squad);
 
                 // The lure: hostile, unpacified worlds only (a pacified world's fauna are the squad's own colour).
-                if (held || lure <= 0f) cell.SetFeedingLure(null, squad, 0f);
-                else cell.SetFeedingLure(ark.transform, squad, lure);
+                float share = AssaultLure(leg, lure);
+                if (held || share <= 0f) cell.SetFeedingLure(null, squad, 0f);
+                else cell.SetFeedingLure(ark.transform, squad, share);
 
                 if (held && InCore(cell, ark.Position)) regrow = true;
             }
-            ark.RegrowAllowed = regrow;
+            ark.RegrowOverride = regrow;
             if (regrow) { r.RegrowSeconds += SampleSeconds; _report.RegrowSeconds += SampleSeconds; }
+        }
+
+        /// <summary>"Under the team's control": a hostile world the squad PACIFIED (earned: escort.pacifyShare, min volume and
+        /// nucleus time), or a world that started friendly and is still the squad's. Leading an empty hostile nucleus with
+        /// the Ark's own hull is not control.</summary>
+        bool LegHeld(int leg, Cell cell, Domains squad)
+        {
+            var legReport = _report != null && leg < _report.LegReports.Count ? _report.LegReports[leg] : null;
+            bool pacified = legReport is { Pacified: true };
+            return pacified || legReport is { Hostile: false } && cell.DominantDomain == squad;
         }
 
         static bool InCore(Cell cell, Vector3 at)
@@ -79,7 +86,7 @@ namespace CosmicShore.Gameplay
                     cell.SetFeedingLure(null, Domains.Blue, 0f);
                     cell.RuntimeFaunaSpawnPeriodScale = 1f;
                 }
-            if (Ark) Ark.RegrowAllowed = true;
+            if (Ark) Ark.RegrowOverride = null;   // back to the fleet rule
         }
     }
 }

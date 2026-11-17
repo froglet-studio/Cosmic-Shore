@@ -138,6 +138,46 @@ def hive():
     return [(walls | honey, 1.0), (laid, 0.6)]
 
 
+# ------------------------------------------------------------------ the level-5 cards (the vessel pass, 2026-11-13)
+
+def relentless():
+    """Charge 5: Flit again at once - the hull darting up a line of rivals, a strike burst on each one it has passed."""
+    hull = _hull(60, 92, 34, roll=-34)
+    out = hull
+    for (x, y, b) in [(26, 84, 34), (56, 56, 34)]:
+        rival = _hull(b, x, y, mirror=True, roll=34)
+        hit = burst(x + 22, y + 10, 12, spikes=7, inner=0.5)
+        out = out | _clear(hull, rival, 4) | _clear(hull, hit, 4)
+    return out
+
+
+def hive_chain():
+    """Mass 5: reach a hive and the next is planted at once - the full cell, a chevron, the next hive's walls going up."""
+    full = fill(ngon(6, 27.0, 38, 84, rot=0))
+    nxt = stroke(ngon(6, 22.0, 92, 44, rot=0), W_SECONDARY + 3, closed=True)
+    go = arrowhead((72.0, 62.0), (1.0, -0.35), 16.0, spread=0.7)
+    return [(full | go, 1.0), (nxt, 0.6)]
+
+
+def piercing_pecks():
+    """Space 5: a Peck goes through - two prisms in a line, each holed, the shot out the far side."""
+    a = prism(36, 70, 30) & ~fill([(8, 64), (64, 64), (64, 76), (8, 76)])
+    b = prism(80, 70, 30) & ~fill([(52, 64), (108, 64), (108, 76), (52, 76)])
+    shot = fill([(100, 64), (116, 64), (122, 70), (116, 76), (100, 76)])
+    return a | b | shot
+
+
+def slipstream():
+    """Time 5: out of a slip with twice the boost - the hull leaving the end of its trail, two long flames behind it."""
+    hull = _hull(56, 92, 36, roll=-34)
+    lane = trail([(16, 112), (44, 84)], 15, seg=18, gap=8)
+    flames = None
+    for off in (-13.0, 13.0):
+        f = fill(rotate([(18, 64 + off - 5), (66, 64 + off - 5), (72, 64 + off), (66, 64 + off + 5), (18, 64 + off + 5)], -34, 64, 64))
+        flames = f if flames is None else flames | f
+    return hull | _clear(hull, lane | shift(flames, 4, 2), 4)
+
+
 # ------------------------------------------------------------------ RT (Space): reduces opposing prism volume
 
 def genesis_lance():
@@ -266,6 +306,15 @@ ICONS = [
     dict(name="Honeyguide_Hive", element="Mass", act="Hive (passive): plant a hive", draw=hive),
     dict(name="Honeyguide_Peck", element="Space", act="Peck (RT base): a burst that knocks prism volume off", draw=peck),
     dict(name="Honeyguide_Slip", element="Time", act="Slip (passive): ride a trail to its end", draw=slip, exempt=HULL_GAP),
+    dict(name="Honeyguide_Relentless", element="Charge", act="Charge 5 Relentless: Flit again at once", draw=relentless,
+         exempt=dict(HULL_GAP, components="the hull, two rivals and a burst on each, by design")),
+    dict(name="Honeyguide_HiveChain", element="Mass", act="Mass 5 Hive Chain: the next hive at once", draw=hive_chain,
+         exempt={"components": "the full hive, the chevron and the next hive's walls, by design"}),
+    dict(name="Honeyguide_PiercingPecks", element="Space", act="Space 5 Piercing Pecks", draw=piercing_pecks,
+         exempt={"components": "two holed prisms and the shot through them, by design",
+                 "gap": "the prisms' negative-space X (the fleet's prism, roster pass 2026-11-07)"}),
+    dict(name="Honeyguide_Slipstream", element="Time", act="Time 5 Slipstream: twice the boost out of a slip", draw=slipstream,
+         exempt=dict(HULL_GAP, components="the hull, its trail blocks and two flames, by design")),
     # RT, Space
     dict(name="Honeyguide_GenesisLance", element="Space", act="Genesis Lance", draw=genesis_lance, subdir=SUB),
     dict(name="Honeyguide_LittleBangGrenade", element="Space", act="Little Bang Grenade", draw=little_bang_grenade, subdir=SUB),

@@ -754,7 +754,7 @@
     portalShare: 1.5, portalSizeL0: 0.4, portalSizeL10: 0.9, dangerPetals: 0.5,
     // Time, the rush: the ride's throat multiplier x rushL0 -> rushL10 by the Time level; Garrett's L5 Boost out leaves every
     // soliton at boostOut x the exit multiplier
-    rushL0: 1, rushL10: 1.4, boostOut: 1.5,
+    rushL0: 1, rushL10: 2, boostOut: 1.5,
     // the Mix's own: the throat held between throatFloorDiameter and throatCeilingDiameter; Chain Dig from mixChainShare of a
     // ride; Cave-in's cooldown and its Burial (petals); the alarm (a rival in your guard) lasts mixAlarmSeconds
     throatFloorDiameter: 3, throatCeilingDiameter: 25, mixChainShare: 0.7, mixCaveCooldownSeconds: 8, mixBurialPetals: 1, mixAlarmSeconds: 4,
@@ -6541,8 +6541,10 @@
   // MeerkatSolitonConfig ('new'; Tools/Build/studio_to_unity/meerkat.json links each one once it exists); 'lab' is the
   // studio's own (never in the game). Shown under every slider.
   const GAME_NAMES = {
-    areaL0: ['MeerkatSolitonConfig.areaL0', 'linked'],
-    areaL10: ['MeerkatSolitonConfig.areaL10', 'linked'],
+    // 2026-11-13: the game's area is the ElementalFloat surfaceArea (Min at Space 0, Max at Space 10), written by
+    // author_meerkat_assets.py like rush / zapPetals / portalSize, so these are 'field' (studio_to_unity.py writes plain fields only)
+    areaL0: ['MeerkatSolitonConfig.surfaceArea.Min', 'field'],
+    areaL10: ['MeerkatSolitonConfig.surfaceArea.Max', 'field'],
     suckRadius: ['MeerkatSolitonConfig.suckRadius', 'linked'],
     suckSpeed: ['MeerkatSolitonConfig.suckSpeed', 'linked'],
     swallowShare: ['MeerkatSolitonConfig.swallowShare', 'linked'],
@@ -6621,7 +6623,7 @@
     lopeRate: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
     lopeArch: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
     lopeSquash: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
-    omniOn: ['MeerkatSolitonConfig.omniOn', 'linked'],
+    omniOn: ['MeerkatSolitonConfig.omniOn (Unity-side 0 since 2026-11-11: the game's omnicrystal is Fulmen)', 'field'],
     omniCount: ['MeerkatSolitonConfig.omniCount', 'linked'],
     labyrinthBranchPointsMax: ['SolitonNetwork.networkBranchPointsMax', 'linked'],
     labyrinthOpeningsMax: ['SolitonNetwork.networkOpeningsMax', 'linked'],

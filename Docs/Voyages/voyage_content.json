@@ -969,7 +969,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": ""
+   "ChronicleLine": "",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.courier.dispatch",
@@ -1005,7 +1010,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Carried a dispatch to {to}."
+   "ChronicleLine": "Carried a dispatch to {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.convoy.contract",
@@ -1040,7 +1050,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Ran a convoy through to {to}."
+   "ChronicleLine": "Ran a convoy through to {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.hunt.sighting",
@@ -1076,7 +1091,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Opened the vaults at {to}."
+   "ChronicleLine": "Opened the vaults at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.hunt.rumour",
@@ -1111,7 +1131,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Followed a rumour to {to} and came back with an artifact."
+   "ChronicleLine": "Followed a rumour to {to} and came back with an artifact.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.hunt.lair",
@@ -1146,7 +1171,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Thinned the predators at {to}."
+   "ChronicleLine": "Thinned the predators at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.hunt.kaiju",
@@ -1179,7 +1209,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": false,
-   "ChronicleLine": "Felled the Leviathan at {to}."
+   "ChronicleLine": "Felled the Leviathan at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.defence.aid",
@@ -1214,7 +1249,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Held {to} when it called for aid."
+   "ChronicleLine": "Held {to} when it called for aid.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.defence.patrol",
@@ -1248,7 +1288,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Patrolled {to}."
+   "ChronicleLine": "Patrolled {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.defence.retake",
@@ -1281,7 +1326,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Retook {to} from the domain that held it."
+   "ChronicleLine": "Retook {to} from the domain that held it.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.salvage.wreck",
@@ -1315,7 +1365,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Stripped the wreck at {to}."
+   "ChronicleLine": "Stripped the wreck at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.raid.hoard",
@@ -1349,7 +1404,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Raided the thieves' hoard at {to}."
+   "ChronicleLine": "Raided the thieves' hoard at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.bounty.crew",
@@ -1382,7 +1442,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Brought in {rival} at {to}."
+   "ChronicleLine": "Brought in {rival} at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.bounty.writ",
@@ -1415,7 +1480,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Posted the warrants at {to}."
+   "ChronicleLine": "Posted the warrants at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.survey.uncharted",
@@ -1449,7 +1519,12 @@
    "GoesUncharted": true,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Charted {to}, where no lane ran before."
+   "ChronicleLine": "Charted {to}, where no lane ran before.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.survey.fragment",
@@ -1482,7 +1557,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Followed a chart fragment to {to}."
+   "ChronicleLine": "Followed a chart fragment to {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.survey.sound",
@@ -1515,7 +1595,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Sounded the lanes to {to}."
+   "ChronicleLine": "Sounded the lanes to {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.liberate.pen",
@@ -1549,7 +1634,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Opened the pens at {to}."
+   "ChronicleLine": "Opened the pens at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.lift.dispatch",
@@ -1582,7 +1672,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": true,
    "RivalsMayTake": true,
-   "ChronicleLine": "Lifted a dispatch from {to}."
+   "ChronicleLine": "Lifted a dispatch from {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.harvest.bloom",
@@ -1616,7 +1711,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Harvested the bloom at {to}."
+   "ChronicleLine": "Harvested the bloom at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.harvest.glean",
@@ -1649,7 +1749,58 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Gleaned the shallows at {to}."
+   "ChronicleLine": "Gleaned the shallows at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
+  },
+  {
+   "Id": "job.raid.crystals",
+   "Kind": 14,
+   "Faction": 0,
+   "Needs": 0,
+   "Goes": 1,
+   "Title": "Crystal Run to {to}",
+   "Summary": "Steal crystals between the three of you while the Ark sails to {to}. Hostile cells are rich in crystals, but their fauna go for the Ark. Bring the crystals home and they are yours; lose the Ark and you lose them.",
+   "SuccessLine": "The squad stole its crystals on the way to {to}.",
+   "FailLine": "The Crystal Run to {to} came up short.",
+   "SuccessLines": [
+    "The squad stole its crystals on the way to {to}.",
+    "The hold is heavy with stolen crystal. {to} never saw them coming."
+   ],
+   "FailLines": [
+    "The Crystal Run to {to} came up short."
+   ],
+   "Reward": 10,
+   "RewardElement": 5,
+   "OnSuccess": "",
+   "OnFail": "",
+   "Verb": 3,
+   "Goal": 50,
+   "HullFloor": 0,
+   "NoKill": false,
+   "Role": 3,
+   "Tier": 0,
+   "StandingDelta": 0,
+   "NotorietyDelta": 0,
+   "GoesUncharted": false,
+   "AvoidsOwnDomain": false,
+   "RivalsMayTake": true,
+   "ChronicleLine": "Ran crystals to {to}.",
+   "HostileCells": [
+    0,
+    1,
+    1,
+    1
+   ],
+   "BreachHull": 0.1,
+   "Always": true,
+   "CountsUnderway": true,
+   "Cells": 4,
+   "VentureGoal": 10,
+   "VentureCells": 1
   },
   {
    "Id": "job.build.breach",
@@ -1682,7 +1833,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Shored the breach at {to}."
+   "ChronicleLine": "Shored the breach at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.build.shore",
@@ -1715,7 +1871,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Laid shoring at {to}."
+   "ChronicleLine": "Laid shoring at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.exhibition.run",
@@ -1748,7 +1909,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Ran an exhibition to {to}."
+   "ChronicleLine": "Ran an exhibition to {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.study.creature",
@@ -1782,7 +1948,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Studied the predators at {to}."
+   "ChronicleLine": "Studied the predators at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.study.bloom",
@@ -1815,7 +1986,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Studied the bloom at {to}."
+   "ChronicleLine": "Studied the bloom at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.tend.nursery",
@@ -1848,7 +2024,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Tended the nursery at {to}."
+   "ChronicleLine": "Tended the nursery at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.rescue.derelict",
@@ -1882,7 +2063,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Rescued the stranded crew at {to}."
+   "ChronicleLine": "Rescued the stranded crew at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.vigil.shrine",
@@ -1916,7 +2102,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Kept a vigil at {to}."
+   "ChronicleLine": "Kept a vigil at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.parley.accord",
@@ -1949,7 +2140,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Carried an accord to {rival}."
+   "ChronicleLine": "Carried an accord to {rival}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   },
   {
    "Id": "job.parley.envoy",
@@ -1982,7 +2178,12 @@
    "GoesUncharted": false,
    "AvoidsOwnDomain": false,
    "RivalsMayTake": true,
-   "ChronicleLine": "Spoke for the accord at {to}."
+   "ChronicleLine": "Spoke for the accord at {to}.",
+   "Always": false,
+   "CountsUnderway": false,
+   "Cells": 0,
+   "VentureGoal": 0,
+   "VentureCells": 0
   }
  ],
  "Events": [

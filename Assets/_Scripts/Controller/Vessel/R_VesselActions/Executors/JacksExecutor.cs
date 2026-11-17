@@ -202,9 +202,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The jacks are out herding and the hull holds still (false: they are flying it).</summary>
         public bool Herding => _herding;
         /// <summary>The share of the herd that is danger at the current Charge.</summary>
-        public float DangerShare => JacksMath.DangerShare(Level(Element.Charge));
-        /// <summary>Every herder's ring now (u).</summary>
-        public float Ring => config ? JacksMath.Ring(config.RingFloor, Level(Element.Space)) : 0f;
+        public float DangerShare => config ? config.DangerShareFor(_status) : JacksMath.DangerShare(0f);
+        /// <summary>Every herder's ring now (u): the Space ring, opened up to <c>wideRingScale</c> times while Wide (eased).</summary>
+        public float Ring => config ? config.RingFor(_status) * Mathf.Lerp(1f, config.WideRingScale, _wideBlend) : 0f;
+        /// <summary>0 tight, 1 Wide: the ring's ease between the two (so the herd scatters and gathers, never jumps).</summary>
+        float _wideBlend;
         internal JacksConfigSO Config => config;
         internal IVesselStatus Status => _status;
         /// <summary>The hull's impactor: the net hands it every prism it touches, and the jacks every crystal they collect.</summary>
@@ -324,12 +326,6 @@ namespace CosmicShore.Gameplay
         /// <summary>The local human owns this hull (not an AI, not a remote copy).</summary>
         bool IsLocalHuman => _status != null && _status.Player != null && !_status.IsInitializedAsAI && _status.IsLocalUser;
 
-        float Level(Element e)
-        {
-            var resources = _status?.ResourceSystem;
-            return resources ? resources.GetNormalizedLevel(e) * 10f : 0f;
-        }
-
         // The four level-5 upgrades, each its own gate with its element written out, so /element-ability-table reads the
         // live gate off the source (an upgrade passed through a variable read as prose there).
         R_VesselElementalAbilityHandler Abilities => _status?.ElementalAbilityHandler;
@@ -367,7 +363,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>THE SPACE ABILITY, WIDE (Garrett, 2026-10-25: "Space be the zoomed out view in herding mode"): herding,
-        /// the view eases out to the whole cell and back. Nothing while netting ("remove the space ability in net mode").</summary>
+        /// the view eases out to the whole cell and back, AND every ring opens to <c>wideRingScale</c> times its Space size
+        /// (2026-11-16, the weakest-abilities pass: Wide was only a camera), so the herd fans out across a wide field to graze
+        /// and bunches again when Wide closes. Nothing while netting ("remove the space ability in net mode").</summary>
         public void ToggleWide()
         {
             if (!_herding || Time.unscaledTime < _wideToggleReadyAt) return;
@@ -523,6 +521,8 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (_status == null || !config || !_status.Transform) return;
+            // WIDE opens every ring (the herd fans out to graze a wide field); off, the rings close and the herd bunches.
+            _wideBlend = Mathf.MoveTowards(_wideBlend, _wide && _herding ? 1f : 0f, Time.deltaTime / Mathf.Max(0.05f, config.WideRingSeconds));
             if (IsLocalHuman)
             {
                 _view ??= new JacksView(this);
@@ -1020,7 +1020,7 @@ namespace CosmicShore.Gameplay
             var herders = Herders(ring);
             Vector3 hull = HullPosition, jacks = JacksCentre, centre = Vector3.zero;
             bool calling = Calling;
-            float pace = JacksMath.SpeedMultiplier(Level(Element.Time));
+            float pace = config.HerdSpeedFor(_status);
             float sep = config.Separation, nr = config.NeighbourRadius, nr2 = nr * nr;
             float callDead = 30f * config.LabScale;
             bool attacks = ChargeUpgraded;
@@ -1300,7 +1300,7 @@ namespace CosmicShore.Gameplay
             if (_herd.Count == 0 || !ElementalTransfer.IsDecidedHere(_status)) return;
             if (_status.Player is { IsNetworkOwner: false }) return;
             ScanVessels();
-            float charge = Level(Element.Charge);
+            float share = DangerShare;
             bool bites = ChargeUpgraded;
             var own = _status.Domain;
             for (int v = 0; v < _vessels.Count; v++)
@@ -1317,7 +1317,7 @@ namespace CosmicShore.Gameplay
                     float reach = config.ContactReach + m.Creature.LeashMouthReach * 0.25f;
                     Vector3 to = hp - m.LastPos;
                     if (to.sqrMagnitude > reach * reach) continue;
-                    bool danger = JacksMath.IsDanger(m.Roll, charge);
+                    bool danger = m.Roll < share;
                     if (!danger && !bites) continue;
                     if (!Strike(victim, to)) break;   // latched: this hull was just scored on
                     if (danger && m.Creature.IsSimAuthority) m.Creature.Jousted(_status.PlayerName);   // the sting spends it
@@ -1426,7 +1426,7 @@ namespace CosmicShore.Gameplay
         public bool EatsShields(Fauna creature) => SpaceUpgraded;
 
         /// <summary>MASS: the herd's birth rate (<see cref="JacksMath.FeedsPerOffspringScale"/>).</summary>
-        public float FeedsPerOffspringScale(Fauna creature) => JacksMath.FeedsPerOffspringScale(Level(Element.Mass));
+        public float FeedsPerOffspringScale(Fauna creature) => config ? config.FeedsPerOffspringScaleFor(_status) : 1f;
 
         /// <summary>The herd's mark: its spindles lean toward our domain's hue (<c>herdHueLean</c>), and light up
         /// (<c>herdGlow</c>) while the herd is drawn to the plane - always while herding, by the call while netting
@@ -1542,9 +1542,9 @@ namespace CosmicShore.Gameplay
                 if (!flightView || _herding) marks.Dot(_decoys[s], jackTint, dot * 3f, 8f);
                 marks.Ring(_decoys[s], _r, _f, ring, ringDots, decoyTint * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
             }
-            float charge = Level(Element.Charge);
+            float share = DangerShare;
             for (int i = 0; i < _herd.Count; i++)
-                if (JacksMath.IsDanger(_herd[i].Roll, charge))
+                if (_herd[i].Roll < share)
                     marks.Dot(_herd[i].LastPos + _u * 4f, dangerTint, dot * 1.5f, 5f);
             marks.End();
         }

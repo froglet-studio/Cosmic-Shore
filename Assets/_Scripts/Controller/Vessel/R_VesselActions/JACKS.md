@@ -229,12 +229,26 @@ crystal's own). The invisible hull's TOUCH leaves crystals and prisms alone in b
 | Time | **Decoys** (round 10, 2026-10-25: "in herding mode the triggers should drop decoys. in netting mode the triggers should fast travel to the decoy"): herding, a trigger lays the decoy at the jack on that side (a phone: a lifted thumb); netting, a trigger flies the hull fast to it (round 11: "don't teleport, move quickly"). There is ALWAYS one decoy (2026-10-25: "there should always be at least one decoy available"): laid between the jacks when they land and never spent by the travel. Time scales the herd's speed, +6% per level, floored at x0.4. (Rounds 8-9 made Time a herding DASH of both jacks to the decoy; retired with `dashSpeed`, `dashGap`, `decoyPlaceHold` and `decoyTapPixels`.) | **Second Decoy** (2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly to)"): each trigger has its own decoy - the left trigger lays the left one (at the jack further left on the herding view) and flies to it, the right likewise; a phone's both-thumbs lift flies to the one placed last. It replaced the Flying Decoy (netting, A dropped the decoy; Input 6 is unbound) |
 
 Each upgrade is its own gate with its element written out (`JacksExecutor.ChargeUpgraded` .. `TimeUpgraded`), so
-`/element-ability-table` reads all four as live (2026-10-25; through one `Upgraded(e)` helper it read three as prose). The
-table still reads no scaling for Charge, Mass and Time, and Space as the hidden skimmer's 30 -> 50: the real curves are the
-lab's formulas in `JacksMath` (`DangerShare`, `FeedsPerOffspringScale`, `Ring`, `SpeedMultiplier`), which no channel of
-the tool reads, and the skimmer's curve is switched off on the Jacks (`Scale.Enabled` 0, an override of the nested
-variant the tool reads past). The map's words are rewritten by the tool whenever they still carry an older round's words
-(`STALE_MAP_WORDS`). On the HUD (`JacksHUDController`): the Charge card's gauge is the danger share; the Mass card is the
+`/element-ability-table` reads all four as live (2026-10-25; through one `Upgraded(e)` helper it read three as prose).
+
+**The scaling is authored (the vessel pass, 2026-11-13).** The four curves were the lab's formulas in `JacksMath`
+(`DangerShare`, `FeedsPerOffspringScale`, `Ring`, `SpeedMultiplier`), which no inspector could tune and the table could
+not read. They are now `ElementalFloat` endpoints on `JacksConfigSO`, read through `DangerShareFor`, `FeedsPerOffspringScaleFor`,
+`RingFor` and `HerdSpeedFor`, and set to reproduce the lab's curves exactly across -5..15 (`JacksScalingTests`):
+
+| Element | Field | At rest | At level 10 | Floor |
+|---|---|---|---|---|
+| Charge | `dangerShare` (clamped 0..1) | 0.25 | 0.75 | 0 |
+| Mass | `herdBirthRate` (a birth takes the species' feeds over it) | 1.5 | 2.5 | 1 |
+| Space | `ringScale` (x the thumb floor `RingFloor`) | 1.3 | 1.9 | 1 |
+| Time | `herdSpeed` | 1 | 1.6 | 0.4 |
+
+`JacksMath`'s formulas stay as the lab's reference. The skimmer's Space curve is still switched off on the Jacks
+(`Scale.Enabled` 0, an override of the nested variant the tool reads past). The map's words are rewritten by the tool
+whenever they still carry an older round's words (`STALE_MAP_WORDS`). On the HUD (`JacksHUDController` on the Jacks' own `JacksHUDVariant` and `JacksHUDView`, forked from the Rhino's on
+2026-11-13 by `Tools/Build/author_jacks_hud.py`, because the Rhino's reworked view built its katana and reach blade over
+the Charge and Space cards; each card's level-5 picture is its binding's upgraded sprite: Attack, Mass Clusters, Eat
+Shields, Second Decoy, `icon_kit/specs/jacks.py`): the Charge card's gauge is the danger share; the Mass card is the
 call - herding, lit while it pulls the herd, its cooldown on the veil; netting, lit while the plane's pull is on - with
 the herd's size on it and its fill on the gauge; the Space card is lit while the herding view is Wide; the Time card flashes
 (`decoyFlashSeconds`) when a decoy is laid and is lit for the whole of a fast travel.
@@ -357,8 +371,6 @@ units and multiplied by `labScale` (0.4).
   while the herd is leashed on the host; whether the owner sees the creatures close enough to score is for the
   host-client test.
 - **Crystal hull fusion** still bakes the Rhino's hull shape (the four Jacks entries are the Rhino's).
-- `element_ability_table.py Jacks` reads the four level-5 gates (2026-10-25) but not the scaling (§2): the curves are
-  `JacksMath`'s lab formulas. Teaching the tool a channel for them, or moving the curves onto authored endpoints, is open.
 - **Hull-radius sweeps see the jacks.** The two jack models are children of the vessel root, up to the herd ring away
   from the hull while herding, and `PrismOcclusionCorridor.MeasureCircumscribedRadius` (scope pip, Echo Sight, occlusion
   corridor, crystal ejector) counts every active child renderer. The Wrasse's kite has the same shape; the fix is one
@@ -387,3 +399,21 @@ person already has:
   person's controls make (the jacks to points on the board, a trigger to lay a decoy, the seat swap under
   `PilotSwap.CooldownSeconds`, a trigger to fly to a decoy). Null everywhere outside the race, so the shipped AI is
   unchanged; a person's hull ignores it.
+
+## 8. The Charge and Space games: Stingherd and Trawl (2026-11-15)
+
+Garrett asked for every missing elemental game on 2026-11-15; the game kit roster (rows 27-28) named these two. The
+Jacks' Mass game is a recorded skip. Neither game changes the kit (the LOCKED vessel rule): their levers are the arena,
+the start levels and an AI on the race-coach seam above.
+
+- **Stingherd** (`GameModes.Stingherd` 117, `Arcade/STINGHERD.md`), Charge: herd your danger creatures into rival
+  hulls. A sting is a Strike point (`CombatPoints`), first domain to 12. Kelpwood's arena, referenced. The card's
+  start levels carry the ladder (Charge 5 at I1, 3, 1, at rest at I4). The AI is `StingherdDrover`, a coach whose
+  cycles run the two jacks to the far side of the herd from a rival hull; it lays no decoy.
+- **Trawl** (`GameModes.Trawl` 118, `Arcade/TRAWL.md`), Space: sweep a field with the net (§1.1). Dragged prisms
+  that break each other score `PrismsDestroyed`, first domain to 300. Harvest's field, referenced. The AI is
+  `TrawlSkipper`, a coach that never offers a cycle, so the AI nets the whole match; it steers the autopilot through
+  the densest hostile stand.
+
+Both were authored headless and have not been compiled or run in Unity.
+

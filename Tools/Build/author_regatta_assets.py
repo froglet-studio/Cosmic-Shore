@@ -13,9 +13,9 @@ eight switch rings, with three super-shielded rails - one per playable domain - 
 the racing line, so an Urchin grinds it and a Squirrel skims it while a Manta, a Rhino, a
 Scarab or a Sparrow flies beside it. The race ends when the first pilot threads the last gate of
 the last lap; the TEAM with the most gates threaded - every pilot's gates, summed
-(RegattaScoringRuleSO) - wins. Opponent AI (a domain no human flies) are pinned to the Squirrel
-through the card's OpponentAIVessel until the racing AI can drive every hull; ally AI fly what
-their teammates pick on the launch panel. See Assets/_Scripts/Controller/Arcade/REGATTA.md.
+(RegattaScoringRuleSO) - wins. Every AI, ally or opponent, draws its hull from the card
+(PickAIVesselType) unless someone picks it on the launch panel; the card pins no opponent hull
+(the Squirrel pin retired 2026-11-17, Garrett: a vestige once more than the Squirrel raced well). See Assets/_Scripts/Controller/Arcade/REGATTA.md.
 
 WHAT IS FORKED AND WHY. Four cell configs, because the arena is an AUTHORED environment (the
 rails, one SpawnableRegattaRails prefab variant per intensity) and its volume ladder has to
@@ -345,13 +345,24 @@ g.emit_asset(POOL_ASSET, G_ASSET["RegattaCoursePool"],
              lib.header_for(G_SCRIPT["RegattaCoursePoolSO"], "Regatta Course Pool") + "  entries:\n" + pool_rows())
 
 # ── 5. The arcade card: every playable hull, and the starting-element table ──
-# Every OPPONENT AI (a domain no human flies) flies this hull: the platform's gate-race AI holds
-# 0.6 throttle and drives no hull's speed ability but the Manta's, so a mixed opponent grid was
-# mostly hulls racing at cruise. The Squirrel skims the rails for its boost energy, which is the
-# one speed source a gate-following autopilot reaches by flying the racing line. Retire this when
-# the racing AI drives every hull (clear OpponentAIVessel and drop the assert below).
-OPPONENT_AI_HULL = "Squirrel"
-HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
+# No opponent pin: OPPONENT AI (a domain no human flies) draw from the card like allies do. The card pinned the
+# Squirrel while it was the only hull the racing AI drove well; retired 2026-11-17 (Garrett: "a vestige that needs to
+# go away now that we have more than the squirrel racing effectively"), since every card hull now has a trained AI.
+MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
+# Hulls seated on the REAL-GAME judge's word alone (2026-11-17, Garrett's "all 24 vessels racing Regatta"): each finished
+# the shipped course and three archive courses in Amoebius headless (regatta_judge.py), alone under both starts and in a
+# full field, on its race line (author_race_lines.py). regatta_balance.py has no model of them, so they take no
+# StartingElements row (rest at the card start; every hull is at Time 5 in the L5 start) until the real-game search
+# prices them. A hull joins only within about 1.5x of the first nine's pace: the card is the ally AI's hull draw
+# (PickAIVesselType reads the card's Vessels), so a slow hull here is a slow teammate on Garrett's team sum.
+JUDGED_HULLS = ["Thresher", "BrittleStar"]
+# Finish every course but at 2-5x the pace, so they are NOT on the card (#2123/#2127 seated them; taken off the same
+# night): the judge still seats them by name (RaceJudge adds a requested hull to the card in memory) and their race lines
+# stay, for step 5 and their own AI training to bring them within reach. REGATTA.md 6.6.
+JUDGE_ONLY_HULLS = ["Wrasse", "Meerkat", "Grizzly", "Angler"]
+HULL_ORDER = MODEL_HULLS + JUDGED_HULLS
+for _h in JUDGED_HULLS:
+    EXISTING.setdefault(f"Vessel_{_h}", lib.existing_guid(f"Assets/_SO_Assets/Classes/SO_Class_{_h}.asset"))
 VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n" for h in HULL_ORDER)
 
 
@@ -360,7 +371,7 @@ def starting_element_rows() -> str:
     row (the platform default IS rest, and a row of zeros would say the card decided it)."""
     rows = []
     for i in range(1, 5):
-        for h in HULL_ORDER:
+        for h in MODEL_HULLS:
             lv = BALANCE[i]["levels"][h]
             if lv == 0:
                 continue
@@ -403,7 +414,7 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
   PlayUserAction: 0
   StartingElements:
 {STARTING}  ComebackRatePerScoreDeficit: {lib.num(COMEBACK_RATE)}
-  OpponentAIVessel: {{fileID: 11400000, guid: {EXISTING[f'Vessel_{OPPONENT_AI_HULL}']}, type: 2}}
+  OpponentAIVessel: {{fileID: 0}}
 """)
 
 # ── 6. Toasts: two idle hints, the comeback line, and the shared race beats ──
@@ -682,10 +693,8 @@ card = g.files["Assets/_SO_Assets/Games/ArcadeGameRegatta.asset"]
 for h in HULL_ORDER:
     if card.count(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n") != 1:
         errors.append(f"card does not list {h} exactly once")
-if f"  OpponentAIVessel: {{fileID: 11400000, guid: {EXISTING[f'Vessel_{OPPONENT_AI_HULL}']}, type: 2}}\n" not in card:
-    errors.append(f"card does not pin the {OPPONENT_AI_HULL} as its OpponentAIVessel")
-if OPPONENT_AI_HULL not in HULL_ORDER:
-    errors.append(f"the opponent hull {OPPONENT_AI_HULL} is not on the card - ClampVesselToGame would move it")
+if "  OpponentAIVessel: {fileID: 0}\n" not in card:
+    errors.append("card pins an opponent hull: opponents must draw from the card like allies")
 rule = g.files["Assets/_SO_Assets/Scoring Rules/RegattaScoringRule.asset"]
 if G_SCRIPT["RegattaScoringRuleSO"] not in rule or "  golfRules: 0\n" not in rule:
     errors.append("RegattaScoringRule.asset is not the points-rules RegattaScoringRuleSO")
