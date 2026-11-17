@@ -41,6 +41,12 @@ retraining at each step downstream. Then entries you answered `discuss`, then pe
 the look (HUD, colour, icons, art), tools or docs carry no loop impact. `--all` adds the answered ones; `--json` for a
 page (`loopImpact`, `loopRework`).
 
+**RISKY MERGE** entries come next: merges that went into `bleeding-edge` without waiting, flagged by
+`Tools/Build/risky_merge.py` from the one definition in `Docs/Approvals/risky.json` (shared AI code, vessel kit numbers,
+`ProtocolVersion`, UGS or the backend, another person's area or occupied lane, a review-rule bypass). Each lists its
+`risky:` reasons; the PR carries the `risky-merge` label. Approve means the merge stands; discuss means it gets
+looked at or fixed forward on a new branch (Garrett, 2026-11-17: move fast, master fixing things even faster).
+
 If the list is empty, say so in one line and stop.
 
 ## 3. Walk through it with the person

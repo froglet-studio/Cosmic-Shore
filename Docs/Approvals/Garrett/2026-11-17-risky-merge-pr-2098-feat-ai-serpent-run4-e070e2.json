@@ -1,0 +1,37 @@
+{
+  "id": "2026-11-17-risky-merge-pr-2098-feat-ai-serpent-run4-e070e2",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-17T04:27:32+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2098 (feat(ai): Serpent run4 with the refuel genes, at home and in Regatta (carries #2089)) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; shared AI code every AI hull runs: Assets/_Scripts/Controller/AI/Boost/PelletBoostAIPolicySO.cs",
+  "branch": "claude/project-thread-sl73tv",
+  "pr": 2098,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/SerpentAIBoostPolicy_SerpentTime.asset",
+    "Assets/Resources/RaceLines/Serpent_Regatta.asset",
+    "Assets/_SO_Assets/AI Boost Policies/SerpentAIBoostPolicy.asset",
+    "Assets/_Scripts/Controller/AI/Boost/PelletBoostAIPolicySO.cs",
+    "Assets/_Scripts/Controller/Arcade/SerpentTime/SerpentTimeController.cs",
+    "Docs/Approvals/Yash/2026-11-17-the-serpent-s-pellet-boost-ai-pelletboos-d323ad.json",
+    "Docs/Approvals/Yash/2026-11-17-the-serpent-s-serpentine-ai-takes-run4-n-0dcf29.json",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+    "Tools/Build/author_race_lines.py",
+    "Tools/Build/promote_trained_drives.py",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "detail": "Assets/_Scripts/Controller/AI/Boost/PelletBoostAIPolicySO.cs"
+    }
+  ]
+}
