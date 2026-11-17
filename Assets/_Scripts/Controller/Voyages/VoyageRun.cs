@@ -509,9 +509,12 @@ namespace CosmicShore.Gameplay
             // The leg's pacing, times the voyage's own life scale (its cells are big: Shombith 2026-11-17, more fauna and
             // more crystals).
             float life = _def ? Mathf.Max(0.1f, _def.CellLifeScale) : 1f;
-            cell.RuntimePopulationScale = Mathf.Max(0.1f, _profile[routeIndex]) * life;
-            // Plants at their own scale (Cell Flora Scale): the cell's prism mass grows with them.
-            cell.RuntimeFloraShare = _def ? Mathf.Max(0.1f, _def.CellFloraScale) / life : 1f;
+            float creatures = Mathf.Max(0.1f, _profile[routeIndex]) * life;
+            if (_def) creatures = Mathf.Min(creatures, Mathf.Max(0.1f, _def.CellLifeMax));   // Cell Life Max
+            cell.RuntimePopulationScale = creatures;
+            // Plants at their own scale (Cell Flora Scale, with the leg's per-cell pacing): the cell's prism mass grows
+            // with them.
+            cell.RuntimeFloraShare = _def ? Mathf.Max(0.1f, _profile[routeIndex]) * Mathf.Max(0.1f, _def.CellFloraScale) / creatures : 1f;
             // The job's hostile cells (VoyageRun.Assault.cs); without a pattern, the destination when its place is hostile.
             if (PrepareAssaultCell(cell, routeIndex))
                 cell.SetReplicatedStartingController(CellControlRules.Opposing(LiveDomain(_context)));
