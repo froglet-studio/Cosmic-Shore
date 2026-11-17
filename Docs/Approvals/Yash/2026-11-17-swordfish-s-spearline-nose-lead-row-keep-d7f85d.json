@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-17-swordfish-s-spearline-nose-lead-row-keep-d7f85d",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T09:44:11+00:00",
+  "area": "the Spearline AI nose lead",
+  "summary": "Swordfish's Spearline nose lead row keeps gain 2.5 but caps the lead at 10 degrees past the aim (was the 40 default): at 40 the AI locked into an 11 u circle far from its ring and timed out at I3-I4; capped, 4 of 4 of those races finished and fresh seeds are unchanged.",
+  "why": "Overnight stall trace for the Regatta flywheel (race judge).",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "433607e47",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Spearline/SpearlineController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}
