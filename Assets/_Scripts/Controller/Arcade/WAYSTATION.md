@@ -449,6 +449,26 @@ pressing, and a bot that never presses flies the course exactly as it did before
 That is deliberate: pitch and yaw are dead for the fold's duration, so a bot that presses off-line
 lands off-line with no way to correct, and no amount of folding is worth one wrong jump.
 
+### The tower hop finishes (2026-11-17)
+
+The race judge (the real game code, headless) had the TigerMoth's AI finishing 0 of the 16 rungs (Easy to
+Legendary, I1-I4). The first tower hop never pressed. The trace showed two causes, both in this controller:
+
+- **The press was judged in two windows that never met.** It needed the belly within `aiHopBellyDegrees` (8) of
+  the drop line AND the hull over the ring within `aiHopLineShare` (0.45) of its radius. The bot's belly swung
+  through the line while the hull was 30-200 u off it, and the two were never true together. The press is now
+  judged where the FALL will cross the ring's plane: the line the belly points along, from where the hull is
+  (the drop follows the belly, `TigerMothDropMath.DropDirection`). It fires when that crossing is within 0.7 of
+  the radius, with the belly at most 20 degrees off as a cap. The hold is sized along the belly.
+- **The miss recovery turned back inside the turning circle.** `aiHopMissMargin` was 60 u past the press, which
+  is less than the hull's turn at 67 u/s. The bot reversed before it was round, so it looped over the ring
+  without ever flying the line level (I2 timed out at 16 of 27 rings). At 400 u it flies out, comes round and
+  returns on the line.
+
+After the change, all 16 rungs finish (seed 1). Legendary runs 160 / 188 / 414 / 345 s, Hard 177 / 259 / 289 /
+365 s, Medium 151 / 275 / 368 / 407 s and Easy 211 / 287 / 447 / 385 s. These are long against the other Time
+games (90-180 s), and that is the next problem for this game.
+
 ### `OnServerTick` — a seam added so the drive could not break the platform
 
 `GateRaceController.Update` is a **Unity message, not a virtual**. A subclass that declared its own
