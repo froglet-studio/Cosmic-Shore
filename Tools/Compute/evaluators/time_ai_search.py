@@ -272,16 +272,17 @@ GAMES = {
     "Wrasse": {
         "mode": "WrasseRun",
         # The Wrasse flies the gate race's own steering (no drive asset: its boosts are the kite's saved boosts, spent by
-        # KiteNavigatorAI) and WrasseRunController has no aiNoseLead table, so its genes are the race controller's AI
-        # knobs (as MinigameWrasseRun ships them) and the nose rate, set through the judge (fleet lag 1.5/s). In Regatta
-        # the nose pair reaches it through Resources/RaceLines/Wrasse_Regatta (the controller knobs are Wrasse Run's).
+        # KiteNavigatorAI), so its genes are the race controller's AI knobs (as MinigameWrasseRun ships them), the nose
+        # rate (set through the judge, fleet lag 1.5/s) and the nose lead, both promotable into WrasseRunController's
+        # aiNoseLead table (empty = the fleet lag, no lead). In Regatta the nose pair reaches it through
+        # Resources/RaceLines/Wrasse_Regatta (the controller knobs are Wrasse Run's).
         "assets": {},
         "fields": {},
         "ctrl_fields": {"aiCommitDistance": (20.0, 600.0), "aiApproachLead": (20.0, 800.0),
                         "aiThroughDistance": (20.0, 600.0)},
         "ctrl_defaults": {"aiCommitDistance": 72.0, "aiApproachLead": 80.0, "aiThroughDistance": 55.0},
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
-        "lead": None, "rows": [], "nose_gene": 1.5,
+        "lead": 0.0, "rows": [], "nose_gene": 1.5,
     },
     "Grizzly": {
         "mode": "GrizzlyTime",
