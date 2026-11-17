@@ -156,9 +156,13 @@ GAMES = {
         "fields": {"BoostStickBand": (0.0, 1.0), "YawsteryStickBand": (0.0, 1.0)},
         "ctrl_fields": {"noseLegendary": (2.0, 24.0)},
         "ctrl_defaults": {"noseLegendary": 9.0},
+        # noseLegendaryI34 (optional, not searched): I3-I4's own Legendary rate. The Manta split confirm (2026-11-17) found
+        # nose 15 wins I1-I2 by 12-21% and loses I4 from Time 5 and 10 by 13-19% (Soar overshoot), so a confirm can race
+        # a split table.
         "ctrl": lambda p: {"aiNoseFollowByIntensity": [
-            {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"])}
-            for e, m, h in ((2, 3, 6), (2, 3, 6), (2.5, 3, 6), (4, 5, 6))]},
+            {"easy": e, "medium": m, "hard": h,
+             "legendary": float(p["noseLegendary"] if i < 2 else p.get("noseLegendaryI34", p["noseLegendary"]))}
+            for i, (e, m, h) in enumerate(((2, 3, 6), (2, 3, 6), (2.5, 3, 6), (4, 5, 6)))]},
         "crystal_field": "aiTimeCrystalSlack",
         "lead": 0.0, "rows": [],                       # RedlineController.aiNoseLead: Manta 0
     },
