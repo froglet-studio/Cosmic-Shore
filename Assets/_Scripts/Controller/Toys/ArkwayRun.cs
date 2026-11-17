@@ -227,6 +227,13 @@ namespace CosmicShore.Gameplay
         /// <summary>The voyage opened: the veil is down, the pilot is docked beside the Ark and it is under way.</summary>
         public event System.Action Underway;
 
+        /// <summary>Any run's voyage opened (raised right after that run's <see cref="Underway"/>). The voyage scene lifts
+        /// the game's loading screen on it, so the player's first sight of the voyage is its opening.</summary>
+        public static event System.Action AnyUnderway;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetAnyUnderway() => AnyUnderway = null;
+
         /// <summary>The Ark's last hull prism fell. Raised just before the run ends itself.</summary>
         public event System.Action ArkFallen;
 
@@ -611,6 +618,7 @@ namespace CosmicShore.Gameplay
 
                 LogVoyageStart();
                 Underway?.Invoke();
+                AnyUnderway?.Invoke();
             }
             catch (System.OperationCanceledException)
             {
