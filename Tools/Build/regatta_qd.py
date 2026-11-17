@@ -438,7 +438,7 @@ def _ref_mean(backend):
 # "mixed" races these in the engine and
 # prices any other hull with the model; every seat carries the backend that timed it.
 ENGINE_TRUSTED = tuple(h for h in os.environ.get(
-    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Stoat,Urchin,Scarab,Thresher,BrittleStar").split(",") if h)
+    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Urchin,Scarab,Thresher,BrittleStar").split(",") if h)
 # The judge seeds each race at turn start, so (seed, race) is deterministic; the search races one seed per course (8
 # hulls x 2 seeds is ~4.5 min a course on 4 cores) and the pool's candidates are re-raced on more seeds for the noise.
 # The start condition every hull races under: "card" (the arcade card's own starting elements, today) or "L5" (every
@@ -446,9 +446,10 @@ ENGINE_TRUSTED = tuple(h for h in os.environ.get(
 # condition is its own archive; merge reports each.
 START = os.environ.get("REGATTA_START", "card")
 
-# Stage 1 of a gated engine course: the hulls most often fastest (Rhino, Stoat) and slowest (Serpent, Dolphin) on the
+# Stage 1 of a gated engine course: the hulls most often fastest (Rhino; the Scarab since the Stoat left the card,
+# 2026-11-17) and slowest (Serpent, Dolphin) on the
 # first engine courses; four is one round on four cores, so a course stopped here costs half.
-STAGE1 = tuple(h for h in os.environ.get("REGATTA_STAGE1", "Rhino,Stoat,Serpent,Dolphin").split(",") if h)
+STAGE1 = tuple(h for h in os.environ.get("REGATTA_STAGE1", "Rhino,Scarab,Serpent,Dolphin").split(",") if h)
 ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1").split(","))
 
 

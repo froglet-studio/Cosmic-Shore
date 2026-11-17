@@ -208,7 +208,7 @@ corner it did not ask for.
 
 ## 6. AI
 
-**The Stoat (on the card 2026-10-17, Yash; orbit only since 2026-11-02, `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`).** It flies the same gate
+**The Stoat (on the card 2026-10-17, Yash; orbit only since 2026-11-02, `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`; OFF the card since 2026-11-17, Garrett: it will be reworked a lot, so it is judge-only in `author_regatta_assets.py` JUDGE_ONLY_HULLS, keeps its race line and is out of the polished set).** It flies the same gate
 steering, and its autopilot is `StoatSlingExecutor`: it slings to turn (ring ≥ 7.84° off, ≥ 123 u away, every 0.94 s) and presses for
 the warp alone while its ring is ≥ 280 u away (`aiWarpMinDistance`). In Regatta it reads those numbers through `AIModeTuning`
 (`StoatSlingConfig_Regatta`, which `Tools/Build/learn_drives_from_flights.py` would write; none exists, so it flies the hull's own row). A
