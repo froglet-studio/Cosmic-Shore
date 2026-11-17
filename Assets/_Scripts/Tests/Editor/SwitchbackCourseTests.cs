@@ -115,7 +115,7 @@ namespace CosmicShore.Tests
         [Test]
         public void HairpinsStartAtIntensityTwo([Values(1, 2, 3, 4)] int intensity)
         {
-            // I1 teaches flying through gates; from I2 every second (I3: third) corner is a hairpin only a drift makes.
+            // I1 teaches flying through gates; from I2 every second corner is a hairpin only a drift makes (I3 too since 2026-11-17, elemental loop step 2).
             var s = Settings(intensity);
             int hairpins = 0;
             for (int i = 1; i < Gates - 1; i++)

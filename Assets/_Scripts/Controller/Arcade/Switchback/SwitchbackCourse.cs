@@ -78,13 +78,14 @@ namespace CosmicShore.Gameplay
                 // the straights a banked charge is spent down. I4's are the shortest.
                 MinStep = new[] { 420f, 400f, 460f, 360f }[i - 1],
                 MaxStep = new[] { 620f, 650f, 720f, 520f }[i - 1],
-                // The ordinary corners. Hairpins are their own band, below.
+                // The ordinary corners. Hairpins are their own band, below. I3 carves a hairpin every second corner, as I2
+                // and I4 do (every third until 2026-11-17: I3 then raced no slower than I2 in the real game, SWITCHBACK.md).
                 MaxTurnDegrees = new[] { 40f, 45f, 50f, 55f }[i - 1],
                 AxisJitterDegrees = new[] { 15f, 25f, 30f, 40f }[i - 1],
                 MaxPresentDegrees = new[] { 40f, 50f, 55f, 60f }[i - 1],
-                HairpinEvery = new[] { 0, 2, 3, 2 }[i - 1],
+                HairpinEvery = new[] { 0, 2, 2, 2 }[i - 1],
                 HairpinMinDegrees = new[] { 0f, 90f, 90f, 110f }[i - 1],
-                HairpinMaxDegrees = new[] { 0f, 150f, 130f, 150f }[i - 1],
+                HairpinMaxDegrees = new[] { 0f, 150f, 150f, 150f }[i - 1],
                 RingRadius = RingRadiusForIntensity(i),
                 // More than two mouths across at every level. Lower where hairpins fold the course back on
                 // itself: two 400u legs either side of a 150 degree hairpin put their outer gates 207u apart.
