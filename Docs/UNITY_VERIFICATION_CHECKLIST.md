@@ -24770,3 +24770,12 @@ Not verified: a real Unity editor and `RedlineAISteeringTests`.
 
 1. Open MinigameRedline: the AI nose table's Legendary column reads 15 / 15 / 9 / 9.
 2. Race Redline I1 against a Legendary AI Manta: near 56-60 s (about 65 s before). I3-I4 fly as before.
+
+## Sparrow racing AI trained in Breakwater (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Breakwater I1 98.3 / 96.1 s, I4 81.6 / 85.0 s on seeds 101-102; the old AI timed out at I4) and the
+confirm (32 fresh flights a side). Not verified: a real Unity editor.
+
+1. Open MinigameBreakwater: the Sparrow's AI Nose Lead row reads Gain 1.29, Nose Follow 7.9.
+2. Race Breakwater I4 against a Legendary AI Sparrow: it finishes, near 80-86 s, without circling a station.

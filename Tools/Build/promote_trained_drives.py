@@ -58,13 +58,13 @@ ROWS = {
         fields={"aiSlingMinTurnDegrees": 147.951, "aiSlingIntervalSeconds": 2.896, "aiSlingMinDistance": 13.329,
                 "trampolineAiTurnScale": 96.362, "autopilotHold01": 0.012, "aiWarpMinDistance": 310.106},
         source=R + "stoat-slingshot/rows.json (trained B)"),
-    # Sparrow, Breakwater: version 2's restarts D/E (job breakwater-sparrow-time, PR #1793): hold the afterburner, the
-    # rocket as the variant has it (fresh composite 278.5 vs 364.1 today; 13-22 Danger weave clips a race).
+    # Sparrow, Breakwater: Sparrow run3 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
+    # BreakwaterController's Sparrow row at lead 1.29 and nose 7.9/s. Confirm on 32 fresh flights a side: shipped timed
+    # out on all 8 I4 races, trained finished every race (I4 82 s, I1 99, I2 85). Replaced D (PR #1793).
     "SparrowAIBoostPolicy_Breakwater": dict(
         base=L.POLICY_DIR + "/SparrowAIBoostPolicy.asset",
-        fields={"alignDegrees": 90, "releaseAlignDegrees": 120, "stickBand": 1, "releaseStickBand": 1,
-                "engageRunwaySeconds": 0, "releaseRunwaySeconds": 0},
-        source=R + "sparrow-breakwater/breakwater-sparrow-time__D.json"),
+        fields={"alignDegrees": 63.004, "releaseAlignDegrees": 94.815, "stickBand": 0.978, "releaseStickBand": 0.804, "engageRunwaySeconds": 1.559, "releaseRunwaySeconds": 0.049, "minHoldSeconds": 1.996, "minRestSeconds": 0.243},
+        source="/mnt/project-files/regatta-flywheel/train/Sparrow/run3/best.json"),
     # Rhino, Headlong: Rhino run1 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
     # HeadlongController's Rhino row at lead 2.47 and nose 7.5/s. The shipped AI orbited a gate at the fleet nose lag
     # (FINDINGS row 21): confirm, 28 fresh flights a side, shipped finished 6, trained 28 (98-120 s). minSpeedGain and
@@ -105,7 +105,7 @@ OLD = {
                                    "aiSlingMinDistance": 123.282, "trampolineAiTurnScale": 100, "autopilotHold01": 1.0,
                                    "aiWarpMinDistance": 0},
     "SparrowAIBoostPolicy_Breakwater": {"alignDegrees": 45, "releaseAlignDegrees": 60, "stickBand": 1,
-                                        "releaseStickBand": 1, "engageRunwaySeconds": 2, "releaseRunwaySeconds": 1.25},
+                                        "releaseStickBand": 1, "engageRunwaySeconds": 2, "releaseRunwaySeconds": 1.25, "minHoldSeconds": 0.6, "minRestSeconds": 0.4},
     # lead-on B, as it shipped before Rhino run1 (2026-11-17); before #1828 Headlong flew the hull's own policy
     "RhinoAIBoostPolicy_Headlong": {"cornerSpeed": 153.536, "minCornerSpeed": 144.359, "brakeMarginUnits": 0.705, "brakeLeadSeconds": 0.44, "cornerReleaseDegrees": 24.321, "engageRunwaySeconds": 1.439, "releaseRunwaySeconds": 0.161, "alignDegrees": 22.708, "releaseAlignDegrees": 26.95, "stickBand": 0.454, "releaseStickBand": 0.682, "brakeSteerFloor": 0.408},
     "DolphinAIBoostPolicy_Switchback": {"alignDegrees": 35.308, "stickBand": 0.262, "engageRunwaySeconds": 1.422,
