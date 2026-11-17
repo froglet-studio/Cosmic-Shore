@@ -67,7 +67,8 @@ MonoBehaviour:
     AbilityLabel: Slip
     AbilityDescription: Let go of the trail you are riding and phase out for a moment,
       so you can clear the mass you were inside instead of being re-latched by it.
-      Time is how long the ghost lasts. At level 5 hostile trail no longer slows you
+      Time is how long the ghost lasts, and how fast you ride: the rail runs a fifth
+      faster by level 10. At level 5 hostile trail no longer slows you
       down, so raiding an enemy ribbon is as fast as riding your own.
     Input: 7
     UnlockLevel: 5

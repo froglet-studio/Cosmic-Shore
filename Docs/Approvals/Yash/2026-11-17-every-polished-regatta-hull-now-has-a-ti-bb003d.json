@@ -1,0 +1,31 @@
+{
+  "id": "2026-11-17-every-polished-regatta-hull-now-has-a-ti-bb003d",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T22:23:10+00:00",
+  "area": "Squirrel, Urchin, Sparrow and Dolphin Time abilities",
+  "summary": "Every polished Regatta hull now has a Time pace lever (Garrett 2026-11-17: no lever-free reference). Squirrel Time throttle multiplier switched on (x1.25 at rest -> x1.5 at Time 10); Urchin gets a new Time multiplier on its rail ride (TrailFollower.rideSpeedMultiplier, x0.75 at rest -> x0.9 at Time 10); Sparrow afterburner Max 2.0625->2.25; Dolphin Drift Charge max 3.106->3.3885",
+  "why": "Knee curve with five levered hulls: pool imbalance card 1.46->1.43, L5 1.36->1.18; every home Time rung (Skein, Skim Race, Breakwater, Switchback I1-I4) inside its bars. Kit change: flagged risky for Garrett's sign-off after the fact.",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "59599cc43",
+  "paths": [
+    "Assets/Resources/ElementalAbilityMaps/Squirrel.asset",
+    "Assets/Resources/ElementalAbilityMaps/Urchin.asset",
+    "Assets/_Prefabs/Spacevessels/Sparrow.prefab",
+    "Assets/_Prefabs/Spacevessels/Squirrel.prefab",
+    "Assets/_Prefabs/Spacevessels/Urchin.prefab",
+    "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset",
+    "Assets/_Scripts/Controller/Vessel/TrailFollower.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Squirrel",
+      "Urchin",
+      "Sparrow",
+      "Dolphin"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}
