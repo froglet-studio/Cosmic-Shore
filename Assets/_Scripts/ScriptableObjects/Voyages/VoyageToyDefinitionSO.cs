@@ -309,6 +309,18 @@ namespace CosmicShore.ScriptableObjects
                                  "Finish instead of Venture further. Off: the haul is owed as on a success.")]
         bool raidMissForfeits = true;
 
+        [Header("Voyage - finishing a met Crystal Run (Shombith 2026-11-17)")]
+        [SerializeField, Min(1f), Tooltip("A met Crystal Run's board offers Finish here (bank now, as it is) and Sail home: " +
+                                          "escorting the Ark home multiplies every crystal owed by this when it docks. " +
+                                          "1 turns Finish here off and Sail home pays as it is.")]
+        float homeEscortRewardScale = 2f;
+
+        [Header("Voyage - the Ark's speed")]
+        [SerializeField, Range(0.5f, 4f), Tooltip("The Ark's speed in a voyage (crawling through a cell and cruising between " +
+                                                  "them) times this, over the Arkway's own (Wander_WithArk). Shombith " +
+                                                  "2026-11-17: \"make the ark fly faster\".")]
+        float arkSpeedScale = 1.5f;
+
         [Header("Voyage - AI wingmates in a Crystal Run (a light nudge, Shombith 2026-11-17; his own AI plan comes later)")]
         [SerializeField, Min(0), Tooltip("An AI wingmate carrying this many crystals flies to the Ark to bank them before it " +
                                          "goes back to its escort role. 0 turns the bank run off.")]
@@ -451,6 +463,8 @@ namespace CosmicShore.ScriptableObjects
         static bool OnMobile => Application.isMobilePlatform;
         public bool RaidMissForfeits => raidMissForfeits;
         public int WingmateBankAt => wingmateBankAt;
+        public float HomeEscortRewardScale => homeEscortRewardScale;
+        public float ArkSpeedScale => arkSpeedScale;
         public float WingmateSeekSeconds => wingmateSeekSeconds;
         public float WingmateSeekPeriod => wingmateSeekPeriod;
         public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);
@@ -472,6 +486,15 @@ namespace CosmicShore.ScriptableObjects
             cfg.CellScale = Mathf.Max(1f, cellScale);
             cfg.CellGap = Mathf.Max(0f, cellGap);
             cfg.ScatterLifeSpawns = scatterLifeSpawns;
+            float speed = Mathf.Max(0.1f, arkSpeedScale);
+            cfg.ArkSpeed *= speed;
+            if (cfg.ArkPacing is { } pacing)
+            {
+                pacing.Cruise *= speed;
+                pacing.Entry *= speed;
+                pacing.Crawl *= speed;
+                cfg.ArkPacing = pacing;
+            }
             // The voyage's own leash (the Arkway's is three cell radii, which a pilot never reaches in a voyage cell).
             cfg.LeashRadiusFactor = Mathf.Max(1f, strayRadiusCells);
             cfg.LeashGraceSeconds = Mathf.Max(1f, strayCountdownSeconds);

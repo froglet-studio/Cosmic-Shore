@@ -1542,12 +1542,23 @@ namespace CosmicShore.Data
         public static Extraction Extract(VoyageState state) => Extract(state, null);
 
         /// <summary><see cref="Extract(VoyageState)"/>, naming the relics among the finds from <paramref name="content"/>.</summary>
-        public static Extraction Extract(VoyageState state, VoyageContent content)
+        public static Extraction Extract(VoyageState state, VoyageContent content) => Extract(state, content, anywhere: false);
+
+        /// <summary><see cref="Extract(VoyageState, VoyageContent)"/>; <paramref name="anywhere"/> also banks at a stop away
+        /// from home (a Crystal Run finished where it met its goal, Shombith 2026-11-17), and the Ark is then home: the next
+        /// voyage starts there. At home the crystals owed are multiplied by <see cref="VoyageState.HomeRewardScale"/>
+        /// (the escort home's bonus); finishing anywhere else pays them as they are.</summary>
+        public static Extraction Extract(VoyageState state, VoyageContent content, bool anywhere)
         {
-            if (state == null || !state.IsHome()) return null;
+            if (state == null || state.AtSea) return null;
+            bool home = state.IsHome();
+            if (!home && !anywhere) return null;
+            float scale = home ? Math.Max(1f, state.HomeRewardScale) : 1f;
+            state.HomeRewardScale = 1f;
+            if (!home && !string.IsNullOrEmpty(state.Home)) state.At = state.Home;
             var x = new Extraction();
             x.Artifacts.AddRange(state.Aboard);
-            for (int i = 0; i < x.Crystals.Length; i++) x.Crystals[i] = state.OwedOf((Element)i);
+            for (int i = 0; i < x.Crystals.Length; i++) x.Crystals[i] = (int)Math.Round(state.OwedOf((Element)i) * scale);
             foreach (var id in x.Artifacts)
             {
                 var saga = RelicSaga(content, id);

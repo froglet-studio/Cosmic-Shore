@@ -1055,9 +1055,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Home: everything aboard and every crystal owed is the player's now, a relic with its authored name and
         /// lore, and the voyage ends at the dock.</summary>
-        void Dock()
+        /// <summary>Docked home: everything owed is banked. <paramref name="here"/> banks at the stop the Ark holds at
+        /// instead (a Crystal Run finished where it met its goal) and ends the voyage there.</summary>
+        void Dock(bool here = false)
         {
-            var x = VoyageRules.Extract(_state, Content);
+            var x = VoyageRules.Extract(_state, Content, anywhere: here);
             if (x != null)
             {
                 foreach (var id in x.Artifacts)

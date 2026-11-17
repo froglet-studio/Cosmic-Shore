@@ -368,3 +368,19 @@ at 0, and only in a Crystal Run (`VoyageRun.Wingmates.cs`, through the new `ArkE
 - **Crystal hunt:** for `wingmateSeekSeconds` (8) of every `wingmateSeekPeriod` (25 s), while no creature threatens the
   Ark, a wingmate lets its hull's own pilot hunt crystals. Seats are a third of the period apart, so two never hunt at once.
 - The roles are untouched and still press their abilities. Queued for Garrett's `/approve` (escort AI). Not run in Unity.
+
+## 15. Finishing a met run, and a faster Ark (Shombith, 2026-11-17)
+
+"When the goal is completed there should be an option to finish the voyages right there and if selected set sail home
+they will get 2x the rewards and as usual venture further." And: "make the ark fly faster."
+
+- **A met run's board has three ways out** (left to right; `VoyageHud.ThreeWays`):
+  - **Finish here (X):** banks everything owed at the stop, as it is, and ends the voyage
+    (`VoyageRules.Extract(..., anywhere: true)`; the Ark counts as home again, so the next voyage starts there).
+  - **Sail home (B):** the Ark sails home escorted as before, and docking multiplies every crystal owed by
+    `homeEscortRewardScale` (2) (`VoyageState.HomeRewardScale`, set by the button, reset by docking).
+  - **Venture further (A):** as before.
+  - At 1 the bonus is off and the board is the old two buttons. Already at home, there is no Finish here.
+- **The Ark is 1.5x faster** in a voyage (`arkSpeedScale` on `Voyage.asset`, over Wander_WithArk's 18 u/s crawl and 4x
+  cruise; the escort pacing scales too). The Arkway toy keeps its speed.
+- Words: ScoreFinishHere(+Line, +Key), ScoreSailHome(+Line, {scale}). Not run in Unity.

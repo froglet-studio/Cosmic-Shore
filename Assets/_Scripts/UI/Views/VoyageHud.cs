@@ -742,9 +742,11 @@ namespace CosmicShore.UI
             var keys = Keyboard.current;
             bool a = pad != null && pad.buttonSouth.wasPressedThisFrame || keys != null && keys.enterKey.wasPressedThisFrame;
             bool back = pad != null && pad.buttonEast.wasPressedThisFrame || keys != null && keys.escapeKey.wasPressedThisFrame;
+            bool x = pad != null && pad.buttonWest.wasPressedThisFrame || keys != null && keys.xKey.wasPressedThisFrame;
             var backTo = b.Finish ?? (b.TryAgain != null ? b.Close : null);
             if (a) VoyageScoreboard.Choose(b.Venture ?? b.TryAgain ?? b.Close ?? b.Finish);
             else if (back && backTo != null) VoyageScoreboard.Choose(backTo);
+            else if (x && b.FinishHere != null) VoyageScoreboard.Choose(b.FinishHere);
         }
 
         // ── The page ────────────────────────────────────────────────────────
@@ -925,6 +927,11 @@ namespace CosmicShore.UI
             const float left = 960f - ButtonGap / 2f - ButtonWidth, right = 960f + ButtonGap / 2f;
             const float captionY = ButtonsY + 70f;
             Button primary = null;
+            if (b.FinishHere != null)
+            {
+                ThreeWays(frame, b, captionY);
+                return;
+            }
             if (b.Venture == null && b.Finish == null && b.TryAgain != null)
             {
                 // A lost Ark: back to Voyages (B, quiet) or the same voyage again (A, the call to action).
@@ -974,6 +981,41 @@ namespace CosmicShore.UI
                     : TemplateText.Fill(_lines.ScoreVentureRaid, "goal", b.NextGoal.ToString(), "cells", b.NextCells.ToString());
                 Caption(frame, both ? x : 0f, captionY, both ? ButtonWidth + 60f : 1920f, line,
                     both ? TextAlignmentOptions.Left : TextAlignmentOptions.Center);
+            }
+            if (primary && UnityEngine.EventSystems.EventSystem.current)
+                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(primary.gameObject);
+        }
+
+        /// <summary>A met Crystal Run (Shombith, 2026-11-17): Finish here (X, bank now), Sail home (B, the escort home pays
+        /// more) and Venture further (A, the call to action), left to right; without a further run, the first two.</summary>
+        void ThreeWays(RectTransform frame, VoyageScoreboard b, float captionY)
+        {
+            int count = b.Venture != null ? 3 : 2;
+            float total = count * ButtonWidth + (count - 1) * ButtonGap;
+            float x = 960f - total / 2f;
+            float Next() { float at = x; x += ButtonWidth + ButtonGap; return at; }
+
+            float hereX = Next();
+            var here = VoyageKit.Node("FinishHere", frame);
+            VoyageKit.At(here, hereX, ButtonsY, ButtonWidth, 64f);
+            Button primary = _kit.Quiet(here, _lines.ScoreFinishHereKey, _lines.ScoreFinishHere, () => VoyageScoreboard.Choose(b.FinishHere));
+            Caption(frame, hereX, captionY, ButtonWidth, _lines.ScoreFinishHereLine, TextAlignmentOptions.Center);
+
+            float homeX = Next();
+            var home = VoyageKit.Node("SailHome", frame);
+            VoyageKit.At(home, homeX, ButtonsY, ButtonWidth, 64f);
+            _kit.Quiet(home, _lines.ScoreFinishKey, _lines.ScoreSailHome, () => VoyageScoreboard.Choose(b.Finish));
+            Caption(frame, homeX, captionY, ButtonWidth, TemplateText.Fill(_lines.ScoreSailHomeLine, "scale",
+                b.HomeRewardScale.ToString("0.#")), TextAlignmentOptions.Center);
+
+            if (b.Venture != null)
+            {
+                float ventureX = Next();
+                var venture = VoyageKit.Node("Venture", frame);
+                VoyageKit.At(venture, ventureX, ButtonsY, ButtonWidth, 64f);
+                primary = _kit.Cta(venture, _lines.ScoreVentureKey, _lines.ScoreVenture, () => VoyageScoreboard.Choose(b.Venture)).button;
+                Caption(frame, ventureX, captionY, ButtonWidth, TemplateText.Fill(_lines.ScoreVentureRaid, "goal",
+                    b.NextGoal.ToString(), "cells", b.NextCells.ToString()), TextAlignmentOptions.Center);
             }
             if (primary && UnityEngine.EventSystems.EventSystem.current)
                 UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(primary.gameObject);
