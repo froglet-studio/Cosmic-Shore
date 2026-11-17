@@ -22,6 +22,44 @@ namespace CosmicShore.Tests
             string pc = "p.c") =>
             new("Squad", new SquadSlot(a, Element.Space, pa), new SquadSlot(b, Element.Charge, pb), new SquadSlot(c, Element.Time, pc));
 
+        // ── The last line-up (Shombith, 2026-11-17) ──────────────────────────
+
+        [Test]
+        public void LastLineUp_RoundTrips_YourSeatThenTheWingmates()
+        {
+            string kept = PlayerPrefs.GetString(VoyageSeatRecord.LastLineUpKey, null);
+            try
+            {
+                VoyageSeatRecord.ForgetLineUp();
+                Assert.IsFalse(VoyageSeatRecord.TryRecall(out _, new List<SquadSlot>()), "A first voyage must have nothing kept.");
+
+                VoyageSeatRecord.Remember(Squad(VesselClassType.Sparrow, VesselClassType.TigerMoth, VesselClassType.Serpent));
+                var wingmates = new List<SquadSlot>();
+                Assert.IsTrue(VoyageSeatRecord.TryRecall(out var mine, wingmates));
+                Assert.AreEqual(VesselClassType.Sparrow, mine.Vessel);
+                Assert.AreEqual("p.a", mine.PilotId);
+                Assert.AreEqual(Element.Space, mine.Element);
+                Assert.AreEqual(2, wingmates.Count);
+                Assert.AreEqual(VesselClassType.TigerMoth, wingmates[0].Vessel);
+                Assert.AreEqual(VesselClassType.Serpent, wingmates[1].Vessel);
+                Assert.AreEqual(Element.Time, wingmates[1].Element);
+            }
+            finally
+            {
+                if (string.IsNullOrEmpty(kept)) VoyageSeatRecord.ForgetLineUp();
+                else PlayerPrefs.SetString(VoyageSeatRecord.LastLineUpKey, kept);
+            }
+        }
+
+        [Test]
+        public void FirstLineUp_IsYouInTheSparrow_ThenTheButterflyAndTheSerpent()
+        {
+            var settings = VoyageToyDefinitionSO.Load();
+            Assert.IsNotNull(settings, "Resources/Voyages/Voyage is missing.");
+            CollectionAssert.AreEqual(
+                new[] { VesselClassType.Sparrow, VesselClassType.TigerMoth, VesselClassType.Serpent }, settings.FirstLineUp);
+        }
+
         // ── The voyage's own seats ───────────────────────────────────────────
 
         [Test]

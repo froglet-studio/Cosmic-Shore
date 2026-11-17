@@ -228,7 +228,8 @@ def plain_kit_button(k, name, x, y, variant, opaque, caption, cap, active=True):
 # and the domain colours are read from the worn colour set at runtime (PosterDomainPaint), so a band ships transparent.
 
 SPLASH_DIR = "Assets/_Graphics/UI/Splash"
-CAPTAINS = (("Hornet", 400, 230), ("Needle", 470, 260), ("Galleon", 540, 300), ("Sundial", 470, 260), ("Anvil", 400, 230))
+# Names are the bust files' stems in Docs/Pilots/art/busts/, case and all (Shombith's second picks, 2026-11-17; the centre card is the third).
+CAPTAINS = (("Spare01", 400, 230), ("Spare06", 470, 260), ("Siphon", 540, 300), ("Maestro", 470, 260), ("ANVIL", 400, 230))
 CAPTAIN_X = (452, 700, 960, 1220, 1468)        # card centres; the middle card is drawn last, in front
 CAPTAIN_ORDER = (0, 4, 1, 3, 2)
 CAPTAIN_FOOT = 862                             # the cards' bottom edge on the board: 2 px under the foot's top edge
@@ -238,7 +239,8 @@ CAPTAIN_FOOT = 862                             # the cards' bottom edge on the b
 ART = {"poster_cell.jpg": "Docs/MenuRedesignB/build_refs/sea_cell_outside.jpg",
        "poster_logo_cosmic_shore.png": "Docs/MenuRedesignB/build_refs/flat_cosmic_shore.png",
        "poster_logo_froglet.png": "Docs/MenuRedesignB/build_refs/flat_froglet.png"}
-ART.update({f"captain_{n.lower()}.jpg": f"Docs/Pilots/art/busts/{n.upper()}.jpg" for n, _, _ in CAPTAINS})
+# Each bust with headroom painted above it (Tools/Build/poster_captain_art.py), so no head or ear meets the card's top.
+ART.update({f"captain_{n.lower()}.jpg": f"Docs/MenuRedesignB/build_refs/captains/{n}.jpg" for n, _, _ in CAPTAINS})
 ART_META_DONOR = "Assets/_Graphics/CardImages/Squirrel_large.png.meta"     # a single sprite, no mipmaps
 HULLS = (("Squirrel", 500, 20, 9), ("Dolphin", 830, -10, 7), ("Sparrow", 1190, 20, 8))    # name, x, y, bob seconds
 HULL_SIZE = 300
@@ -380,12 +382,12 @@ def prism_run(k, i, domain, x, y, count, phase):
 def captain_card(k, name, cx, h, w):
     """A captain's bust in a slanted card that leans the way the bands lean, an ink line round it."""
     box = w + round(h * SLANT)
-    key = f"{k}/{name}"
-    n = N(key, name, TL(cx - box // 2, CAPTAIN_FOOT - h, box, h))
+    key = f"{k}/{name.capitalize()}"
+    n = N(key, name.capitalize(), TL(cx - box // 2, CAPTAIN_FOOT - h, box, h))
     n.child(N(f"{key}/Ink", "Ink", STRETCH)).add("cr", 222, K.canvas_renderer()) \
         .add("slant", 114, slant(tok("TextLight"))).add("th", 114, H.themed("TextLight"))
     n.child(N(f"{key}/Picture", "Picture", R((0, 0), (1, 1), (0, 0), (-6, -6)))).add("cr", 222, K.canvas_renderer()) \
-        .add("slant", 114, slant(K.WHITE, sprite=art_guid(f"captain_{name.lower()}.jpg"), focus=(0.5, 0.82)))
+        .add("slant", 114, slant(K.WHITE, sprite=art_guid(f"captain_{name.lower()}.jpg"), focus=(0.5, 0.5)))
     return n
 
 
@@ -451,6 +453,7 @@ def ground(p, img, go, raycast):
 
 
 RETIRED_BACKDROP = ("Dim", "Lattice", "BottomFade")       # section 26's dim and bottom fade, section 70's sea node
+RETIRED_CAPTAINS = ("Hornet", "Needle", "Sundial", "Galleon", "Krush", "Flume")       # the first five's cards no pick carries (2026-11-17)
 
 
 def retire_backdrop(p, prefix):
@@ -458,6 +461,8 @@ def retire_backdrop(p, prefix):
     the old sea node, the bottom fade, and the 180 x 2 KitLoadBar on the readout's track."""
     for name in RETIRED_BACKDROP:
         remove_go(p, str(p.ctx.go(f"{prefix}/{name}")))
+    for name in RETIRED_CAPTAINS:
+        remove_go(p, str(p.ctx.go(f"{prefix}/Poster/Stage/{name}")))
     bar = str(p.ctx.c(f"{prefix}/Readout/Track", "bar"))
     if p.sc.has(bar):
         p.sc.remove(bar)
@@ -1194,6 +1199,8 @@ def check_poster(path, sc, ctx, prefix, files):
     assert not any(f"guid: {S['loadbar']}" in d for d in sc.docs.values()), f"{path}: the 180 x 2 KitLoadBar is back"
     for name in RETIRED_BACKDROP:
         assert not sc.has(str(ctx.go(f"{prefix}/{name}"))), f"{path}: the still's {name} survives under the poster"
+    for name in RETIRED_CAPTAINS:
+        assert not sc.has(str(ctx.go(f"{prefix}/Poster/Stage/{name}"))), f"{path}: the retired captain {name} survives"
     # The bar: wired, on the boot status channel, cut where the model's shares end.
     _, bar = step_bar(path, sc)
     for f in ("fill", "fillGraphic", "glint", "stepText", "percentText", "stepRow", "bootWords", "returnWords"):
@@ -1348,7 +1355,7 @@ def self_test(files):
                                                      lambda d: d.replace(f"  - {K.f32(STEP_ENDS[1])}\n", "  - 0.3\n", 1))),
         ("the bar off the boot status channel", edit_doc(SPLASH, str(splash_ctx().c("Splash/Readout", "stepbar")),
                                                  lambda d: re.sub(r"  requestEvent: .*", "  requestEvent: {fileID: 0}", d, count=1))),
-        ("a captain missing", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(art_guid("captain_galleon.jpg"), "0" * 32))),
+        ("a captain missing", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(art_guid("captain_siphon.jpg"), "0" * 32))),
         ("the retry window see-through", edit_doc(SPLASH, str(splash_ctx().c("Retry/Fill", "th")), lambda d: d.replace("  alpha: 1\n", "  alpha: 0.92\n"))),
         ("the bar stays up under the retry window", edit_doc(SPLASH, SP["panel_comp"], lambda d: re.sub(
             r"(  readoutGroup: )\{fileID: -?\d+\}", r"\1{fileID: %s}" % splash_ctx().c("Splash/Readout/StepWords", "cg"), d))),

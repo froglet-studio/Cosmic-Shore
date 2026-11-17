@@ -311,6 +311,8 @@ namespace CosmicShore.Gameplay
                     _wingmates.Add(vessel);
                     SquadDeployment.Seat(vessel.VesselStatus, seated);
                     Escort(vessel, seated);
+                    // Released after the voyage opened: beside the Ark with the squad (or in the hangar, mid-intro).
+                    FormUpLate(vessel.VesselStatus, seated);
                 });
             }
         }
@@ -330,7 +332,9 @@ namespace CosmicShore.Gameplay
 
         void OnUnderway()
         {
-            BringWingmates(force: true);
+            // Every seat beside the Ark, side by side with it (ArkEscortRun.Formation.cs); the intro may stow them in the
+            // hangar next, to launch them there.
+            FormUp();
             SignalUnderway();
             _report.HullTotal = Ark ? Ark.TotalCount : 0;
             _report.UnderwayAt = Time.time;
@@ -563,7 +567,7 @@ namespace CosmicShore.Gameplay
         void BringWingmates(bool force)
         {
             var ark = Ark;
-            if (!ark) return;
+            if (!ark || _sortie && _sortie.IsHolding) return;
             // An escort's leash is its guard: a wingmate that strays past it is no use to the Ark. A seat's role may
             // let its own leash out (the Squirrel's nucleus run), by ArkEscortPilot.Leash.
             float leash = Mathf.Min(_def.WingmateLeash, ArkEscortPilot.GuardRadius * EscortGeneRegistry.LeashFactor);
@@ -577,6 +581,12 @@ namespace CosmicShore.Gameplay
                 if (status is Component sc && sc && sc.TryGetComponent(out ArkEscortPilot escortPilot))
                     seatLeash = escortPilot.Leash(leash);
                 if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= seatLeash * seatLeash) continue;
+                // Back to its seat's slot beside the Ark (ArkFormation: clear of the hull's own extent).
+                if (TryWingmateSlot(status, out var slot))
+                {
+                    vessel.SetPose(slot);
+                    continue;
+                }
                 var side = i % 2 == 0 ? -1f : 1f;
                 // Abeam of the hull, never inside it: a modelled hull is wider than the authored spindle, and a vessel
                 // set down in the plating destroys plates (friendly fire at deploy).

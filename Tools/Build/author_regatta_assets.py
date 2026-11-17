@@ -348,7 +348,8 @@ g.emit_asset(POOL_ASSET, G_ASSET["RegattaCoursePool"],
 # No opponent pin: OPPONENT AI (a domain no human flies) draw from the card like allies do. The card pinned the
 # Squirrel while it was the only hull the racing AI drove well; retired 2026-11-17 (Garrett: "a vestige that needs to
 # go away now that we have more than the squirrel racing effectively"), since every card hull now has a trained AI.
-MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
+# The Stoat came off the card 2026-11-17 (Garrett: it will be reworked a lot); it is judge-only below, so it takes no row.
+MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab"]
 # Hulls seated on the REAL-GAME judge's word alone (2026-11-17, Garrett's "all 24 vessels racing Regatta"): each finished
 # the shipped course and three archive courses in Amoebius headless (regatta_judge.py), alone under both starts and in a
 # full field, on its race line (author_race_lines.py). regatta_balance.py has no model of them, so they take no
@@ -358,8 +359,9 @@ MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sp
 JUDGED_HULLS = ["Thresher", "BrittleStar"]
 # Finish every course but at 2-5x the pace, so they are NOT on the card (#2123/#2127 seated them; taken off the same
 # night): the judge still seats them by name (RaceJudge adds a requested hull to the card in memory) and their race lines
-# stay, for step 5 and their own AI training to bring them within reach. REGATTA.md 6.6.
-JUDGE_ONLY_HULLS = ["Wrasse", "Meerkat", "Grizzly", "Angler"]
+# stay, for step 5 and their own AI training to bring them within reach. REGATTA.md 6.6. The Stoat joined them
+# 2026-11-17 (Garrett's decision: off the card and out of the polished set while it is reworked).
+JUDGE_ONLY_HULLS = ["Wrasse", "Meerkat", "Grizzly", "Angler", "Stoat"]
 HULL_ORDER = MODEL_HULLS + JUDGED_HULLS
 for _h in JUDGED_HULLS:
     EXISTING.setdefault(f"Vessel_{_h}", lib.existing_guid(f"Assets/_SO_Assets/Classes/SO_Class_{_h}.asset"))

@@ -268,8 +268,9 @@ namespace CosmicShore.Gameplay
         const int FaunaSpawnBatchPerFrame = 6;
 
         /// <summary>Creatures instantiated per frame in a SATELLITE cell (a voyage's corridor world), which seeds beside
-        /// live play: a voyage profile (2026-11-17) caught a 41 ms spawn frame at the scene batch, ~2.7 ms per creature.</summary>
-        const int SatelliteFaunaSpawnBatchPerFrame = 2;
+        /// live play: a voyage profile (2026-11-17) caught a 41 ms spawn frame at the scene batch, ~2.7 ms per creature,
+        /// and the next one 13.9 ms at two a frame. One a frame (Shombith, 2026-11-17: "very choppy").</summary>
+        const int SatelliteFaunaSpawnBatchPerFrame = 1;
 
         IEnumerator SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg, Domains color, int count, int wave)
