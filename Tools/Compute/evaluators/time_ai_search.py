@@ -119,6 +119,18 @@ GAMES = {
         **SWITCHBACK_NOSE,                             # Switchback's nose knobs: the Scarab flies them in the Rally
         "lead": 0.0, "rows": [{"Hull": "Dolphin", "Gain": 2.5, "MaxExtraDegrees": 40}],
     },
+    "Rhino": {
+        "mode": "Headlong",
+        # RampBoostAIPolicySO: the ramp boost's engage/release bands and the corner braking that keeps it.
+        "assets": {i: POL + "RhinoAIBoostPolicy_Headlong.asset" for i in (1, 2, 3, 4)},
+        "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
+                   "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
+                   "cornerSpeed": (60.0, 900.0), "minCornerSpeed": (30.0, 600.0), "brakeMarginUnits": (0.0, 300.0),
+                   "brakeLeadSeconds": (0.0, 2.0), "brakeSteerFloor": (0.0, 1.0), "cornerReleaseDegrees": (0.0, 90.0)},
+        # HeadlongController.aiNoseLead: Rhino 2.5. At 2.5 the AI orbits in place (~70 s a lap at 33 u/s, 2026-11-17);
+        # 1.0 halved I1 and I2. Headlong has no nose knob: the fleet lag.
+        "lead": 2.5, "rows": [], "nose_gene": 1.5,
+    },
     "Manta": {
         "mode": "Redline",
         # The Soar autopilot's bands (MantaSoarAITuning_Redline, written at the executor's own 0.35 / 0.75 so the shipped
