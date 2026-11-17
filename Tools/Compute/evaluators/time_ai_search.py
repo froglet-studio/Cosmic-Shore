@@ -70,6 +70,16 @@ GAMES = {
         "fields": {"alignDegrees": (0.0, 90.0), "stickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0),
                    "spendAtCharge01": (0.05, 1.0), "peakMarginUnits": (0.0, 30.0), "minDischargeSeconds": (0.0, 2.0),
                    "minPulseGainUnits": (0.0, 120.0), "maxHoldOffSeconds": (0.5, 8.0)},
+        # SwitchbackController's AI knobs: the Legendary nose follow rate (every intensity's row and the I4 gauntlet's)
+        # and how near a ring the AI stops dodging.
+        "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
+        "ctrl_defaults": {"noseLegendary": 5.0, "aiNoDodgeNearRing": 200.0},
+        "ctrl": lambda p: {
+            "aiNoseFollowByIntensity": [
+                {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"]) * k}
+                for e, m, h, k in ((1.9, 2.2, 3, 1.0), (2, 2.4, 3, 1.0), (2.1, 2.2, 2.8, 1.2), (1.8, 2.2, 3.5, 1.2))],
+            "aiNoseFollowGauntlet.legendary": float(p["noseLegendary"]) * 1.2,
+            "aiNoDodgeNearRing": float(p["aiNoDodgeNearRing"])},
         "lead": 2.5, "rows": [],                       # SwitchbackController.aiNoseLead: Dolphin 2.5
     },
     "Serpent": {
@@ -79,7 +89,7 @@ GAMES = {
                    "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 6.0), "releaseRunwaySeconds": (0.0, 3.0),
                    "maxConcurrentBurns": (1, 6), "minSecondsBetweenPellets": (0.0, 4.0), "reservePellets": (0, 4)},
         "ints": ("maxConcurrentBurns", "reservePellets"),
-        "lead": 1.0, "rows": [],                       # SerpentTimeController.aiNoseLead: Serpent 1.0
+        "lead": 1.0, "rows": [], "nose_gene": 1.5,     # SerpentTimeController.aiNoseLead: Serpent 1.0; fleet nose lag
     },
     "Sparrow": {
         "mode": "Breakwater",
@@ -87,7 +97,7 @@ GAMES = {
         "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
                    "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
                    "minHoldSeconds": (0.0, 3.0), "minRestSeconds": (0.0, 3.0)},
-        "lead": 1.0, "rows": [],                       # BreakwaterController.aiNoseLead: Sparrow 1.0 (#2054)
+        "lead": 1.0, "rows": [], "nose_gene": 1.5,     # BreakwaterController.aiNoseLead: Sparrow 1.0 (#2054); fleet nose lag
     },
     "Scarab": {
         "mode": "ScarabRally",
@@ -98,7 +108,7 @@ GAMES = {
                    "dashCooldownSeconds": (0.2, 6.0)},
         # Scarab Rally inherits Switchback's table, which has only the Dolphin's row: the Scarab flies with NO lead
         # there and 2.5 in Regatta (RaceLines/Scarab_Regatta). The search gives it a row.
-        "lead": 0.0, "rows": [{"Hull": "Dolphin", "Gain": 2.5, "MaxExtraDegrees": 40}],
+        "lead": 0.0, "rows": [{"Hull": "Dolphin", "Gain": 2.5, "MaxExtraDegrees": 40}], "nose_gene": 1.5,
     },
     "Manta": {
         "mode": "Redline",
@@ -117,6 +127,9 @@ GAMES = {
     },
 }
 LEAD_RANGE = (0.0, 3.0)
+# The AI nose follow rate (VesselTransformer.AINoseFollowPerSecond). Games with no knob of their own fly the fleet lag,
+# 1.5/s (LERP_AMOUNT); the judge sets the searched rate on the AI's transformer ("nose_gene": the shipped rate).
+NOSE_RANGE = (1.5, 24.0)
 LEAD = "noseLead"
 
 
@@ -149,6 +162,8 @@ def dims_for(g):
     ints = g.get("ints", ())
     dims = [{"name": k, "lo": lo, "hi": hi, **({"type": "int"} if k in ints else {})} for k, (lo, hi) in g["fields"].items()]
     dims += [{"name": k, "lo": lo, "hi": hi} for k, (lo, hi) in g.get("ctrl_fields", {}).items()]
+    if "nose_gene" in g:
+        dims.append({"name": "noseFollow", "lo": NOSE_RANGE[0], "hi": NOSE_RANGE[1]})
     dims.append({"name": LEAD, "lo": LEAD_RANGE[0], "hi": LEAD_RANGE[1]})
     return dims
 
@@ -160,6 +175,8 @@ def shipped_genomes(g):
         p = read_fields(rel, g["fields"])
         p.update({k: int(v) for k, v in p.items() if k in g.get("ints", ())})
         p.update(g.get("ctrl_defaults", {}))
+        if "nose_gene" in g:
+            p["noseFollow"] = g["nose_gene"]
         p[LEAD] = g["lead"]
         p[CRYSTAL] = 0.0
         p["_from"] = os.path.basename(rel)
@@ -175,10 +192,15 @@ def spec_for(hull, g, params):
     fields = {k: params[k] for k in g["fields"] if k in params}
     ov = [{"asset": rel, "fields": fields} for rel in sorted(set(g["assets"].values()))]
     rows = list(g["rows"]) + [{"Hull": hull, "Gain": float(params.get(LEAD, g["lead"])), "MaxExtraDegrees": 40}]
+    # No mode knob: the judge sets the rate on the AI's transformer (left alone at the shipped fleet lag).
+    nose = float(params.get("noseFollow", g.get("nose_gene", 0)))
+    out_nose = {hull: nose} if "nose_gene" in g and nose != g["nose_gene"] else None
     ctrl = {"aiNoseLead": rows}
     if "ctrl" in g:
         ctrl.update(g["ctrl"](dict(g.get("ctrl_defaults", {}), **params)))
     out = {"overrides": ov, "controller_overrides": ctrl}
+    if out_nose:
+        out["ai_nose_follow"] = out_nose
     if params.get(CRYSTAL, 0) > 0:
         if "crystal_field" in g:                       # the mode's own crystal knob (Redline's aiTimeCrystalSlack)
             ctrl[g["crystal_field"]] = float(params[CRYSTAL])
