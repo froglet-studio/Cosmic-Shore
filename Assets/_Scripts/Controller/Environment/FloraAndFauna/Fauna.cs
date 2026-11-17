@@ -1070,11 +1070,16 @@ namespace CosmicShore.Gameplay
         /// variant's body scale does. Call in the spawn frame, right after <c>SpawnFaunaWithDomain</c>, so the body blooms
         /// in at its grown size (continuity holds). A variant applied later re-sizes from the authored scale.
         /// </summary>
+        /// <summary>How many times <see cref="GrowBody"/> has grown this body over its species' size (1 = never).</summary>
+        public float GrownBy => _grownBy;
+        float _grownBy = 1f;
+
         public void GrowBody(float factor)
         {
             if (factor <= 0f || Mathf.Approximately(factor, 1f)) return;
             if (_authoredRootScale.x < 0f) _authoredRootScale = transform.localScale;
             transform.localScale *= factor;
+            _grownBy *= factor;
             RebuildRig();
             ApplyHeartSize();
         }
@@ -1892,12 +1897,26 @@ namespace CosmicShore.Gameplay
             var host = cell;
             Transform skeletonParent = host ? host.transform : null;
 
+            // A GROWN body (a voyage's kaiju at 12-14x, its raiders) leaves the frame its species leaves: each prism
+            // settles back to its species' size where it lies. Kept at the grown size, a kaiju's skeleton was a field of
+            // flat plates bigger than the Ark's own, standing in the open water beside it (Shombith, 2026-11-17: "what
+            // are these big sims like structure?").
+            float grown = _grownBy;
             var prisms = GetComponentsInChildren<HealthPrism>(true);
             for (int i = 0; i < prisms.Length; i++)
             {
                 var hp = prisms[i];
-                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent, recycleWhenDestroyed: true);
+                if (!hp || hp.destroyed) continue;
+                hp.LeaveAsSkeleton(skeletonParent, recycleWhenDestroyed: true);
+                if (grown > 1.01f) SettleToSpeciesSize(hp, grown);
             }
+        }
+
+        static void SettleToSpeciesSize(HealthPrism hp, float grown)
+        {
+            Vector3 size = hp.transform.localScale / grown;
+            hp.AdmitTargetScale(size);
+            hp.TargetScale = size;
         }
 
         /// <summary>
