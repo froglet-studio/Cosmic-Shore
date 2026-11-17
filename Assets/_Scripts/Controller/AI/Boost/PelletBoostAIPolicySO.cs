@@ -39,8 +39,19 @@ namespace CosmicShore.Gameplay
         [Tooltip("Pacing: the gap between two lights while the tank is at or under the refuel line, " +
                  "seconds. 0 uses Min Seconds Between Pellets everywhere.")]
         [SerializeField, Min(0f)] float lowTankSecondsBetweenPellets;
+        [Tooltip("Lay the refuel wall only where the course turns at least this much at the next gate (0 = " +
+                 "anywhere). The wall stands across the heading it was laid on, so the trail feeds it only " +
+                 "while the Serpent flies along it, which a corner right after the cloak gives.")]
+        [SerializeField, Range(0f, 180f)] float refuelMinCornerDegrees;
+        [Tooltip("And only within this many seconds of that gate at the current speed (0 = any distance).")]
+        [SerializeField, Min(0f)] float refuelMaxRunwaySeconds;
 
         bool Refuels => refuelBelowPellets >= 0f;
+
+        /// <summary>Whether this is a place to lay the refuel wall: a big enough corner close enough ahead.</summary>
+        bool RefuelSpot(in AIBoostContext c) =>
+            (refuelMinCornerDegrees <= 0f || c.CornerDegrees >= refuelMinCornerDegrees)
+            && (refuelMaxRunwaySeconds <= 0f || c.RunwaySeconds <= refuelMaxRunwaySeconds);
 
         public override AIBoostDriver CreateDriver(IVesselStatus status, ActionExecutorRegistry executors)
         {
@@ -118,11 +129,23 @@ namespace CosmicShore.Gameplay
             void TickRefuel(float now, in AIBoostContext c)
             {
                 if (!_cloak || now < _nextCloakAt || c.Restricted || !LowTank) return;
+                var cloak = CloakExecutor;
+                // Press only when the press counts: a wall runs longer than its cooldown, so a timer
+                // from the last press would fall in the running wall and lose a whole cooldown.
+                if (cloak && !cloak.IsReady) return;
+                if (!_policy.RefuelSpot(c)) return;
                 VesselActionTape.Start(_cloak, _executors, _status);
                 VesselActionTape.Stop(_cloak, _executors, _status);
-                _nextCloakAt = now + _cloak.CooldownSeconds + 0.1f;
-                _coastUntil = now + _policy.refuelCoastSeconds;
+                _nextCloakAt = now + RefuelRetrySeconds;
+                // Coast only behind a wall that really started (the scope, say, can refuse the press).
+                if (!cloak || cloak.IsRunning) _coastUntil = now + _policy.refuelCoastSeconds;
             }
+
+            const float RefuelRetrySeconds = 0.5f;
+
+            CloakSeedWallActionExecutor _cloakExecutor;
+            CloakSeedWallActionExecutor CloakExecutor =>
+                _cloakExecutor ? _cloakExecutor : _cloakExecutor = _executors?.Get<CloakSeedWallActionExecutor>();
 
             // Nothing is held: a pellet already lit burns out exactly as a human's does.
             public override void Release() { }

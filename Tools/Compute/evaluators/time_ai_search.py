@@ -115,7 +115,10 @@ GAMES = {
                    # Refuel and pacing (FINDINGS 23: the tank runs dry by Regatta's third lap): lay a wall at or under
                    # this many pellets (negative = off, the cycler keeps the cloak), coast along it, pace a low tank.
                    "refuelBelowPellets": (-1.0, 4.0), "refuelCoastSeconds": (0.0, 6.0),
-                   "lowTankSecondsBetweenPellets": (0.0, 6.0)},
+                   "lowTankSecondsBetweenPellets": (0.0, 6.0),
+                   # Where to lay the scarce walls (one per ~42 s of Wall Seeds): at a corner, close to its gate, so
+                   # the trail runs along the wall after the turn (regatta-trace FINDINGS). 0 = anywhere.
+                   "refuelMinCornerDegrees": (0.0, 180.0), "refuelMaxRunwaySeconds": (0.0, 4.0)},
         "ints": ("maxConcurrentBurns", "reservePellets"),
         "lead": 2.09, "rows": [], "nose_gene": 10.42,  # SerpentTimeController.aiNoseLead: Serpent 2.09 at 10.42/s (run4)
         # --long: a Regatta-length race in the home game (24 gates as 3 laps of 8, 100-200 s), so pacing pays at home.

@@ -65,6 +65,16 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Serpent AI presses its refuel cloak only when it is ready, and can pick a corner for the wall (`claude/project-thread-qaz3ia`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
+
+`PelletBoostAIPolicySO`'s refuel used to re-press on a `cooldown + 0.1 s` timer, but the wall runs about 17 s, so every
+second press was dropped. It now presses when `CloakSeedWallActionExecutor.IsReady` (new, read-only) and retries every
+0.5 s; two new genes `refuelMinCornerDegrees` and `refuelMaxRunwaySeconds` (0 = anywhere, the shipped value) choose
+where to lay it. Raced in Amoebius only; `unity_refcompile` has 0 errors in the changed files.
+
+1. Regatta, an AI Serpent: its walls come about every 15-17 s while Wall Seeds last, then one per about 42 s.
+2. SerpentTime: the same, and nothing else about the Serpent AI changes (both genes ship at 0).
+
 ### 🟡 One authentication facade per Play: no competing UGS sign-in at boot (`Ys-bleeding-edge`, 2026-11-15, Yash)
 
 Affects: Shombith's UGS layer and the DI root (`AppManager.InstallBindings`).
