@@ -56,6 +56,13 @@ SPEC = {
     "membranes": membranes,
     "prisms": prisms,
     "elements": K.elements(prisms),
+    # How the body is jointed in Unity (unity_port.py): a limb is cut where it crosses each hinge, each piece hangs
+    # from a joint, and GrownLimbDriver turns the joints. Vanes hinge about the travel axis (the tips rise and fall
+    # together: the second vane's sweep is negative), each joint a beat behind the one before: the wave.
+    "unity": {"klass": "RayFauna", "ram_radius": 20.0, "idle_hz": 0.38, "fast_hz": 0.9, "limbs": [
+        {"name": "VaneA", "wires": ["Lead0", "Trail0", "Web0"], "cut": "x", "hinges": [3.0, 13.0, 24.0], "axis": [0, 0, 1], "degrees": [9.0, 11.0, 13.0], "lag": 0.9},
+        {"name": "VaneB", "wires": ["Lead1", "Trail1", "Web1"], "cut": "x", "hinges": [-3.0, -13.0, -24.0], "axis": [0, 0, 1], "degrees": [-9.0, -11.0, -13.0], "lag": 0.9},
+        {"name": "Lash", "wires": ["Whip"], "cut": "z", "hinges": [-32.0, -42.0, -52.0], "axis": [0, 1, 0], "degrees": [3.0, 4.0, 5.0], "lag": 0.8}]},
     "possession": {"top_speed": 34.0, "mouth_reach": 30.0, "attack": "whip", "turn_rate": 3.0, "speed_ease": 0.9,
                    "suction": {"shape": "ram", "radius": 20.0},
                    "feel": "It glides: slow to gain speed, slow to lose it. Hold RT to feed on the wing. Roll it (one stick up, one down) and watch."},

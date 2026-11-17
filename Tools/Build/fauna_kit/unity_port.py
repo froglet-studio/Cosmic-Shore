@@ -17,10 +17,15 @@ kept; its mesh, material, scale, prisms and swim driver are replaced), never typ
   Assets/_SO_Assets/Lifeforms/<Species> Fauna <Element>.asset    the four element configs (body scale from the spec)
   Assets/DefaultNetworkPrefabs.asset                             the prefab's entry (a networked fauna)
 
-What it does NOT do (each is a later step, listed in Docs/UNITY_VERIFICATION_CHECKLIST.md): the per-vertex wave and
-the travelling light (the body wears the shared SpindleMaterial, so it sways by the game's one shear); a carried up
-(LightFauna steers with world up); the creature's own ride (glide, feeding on the wing); any cell's spawn profile,
-the Codex, the Spawn Matrix. Nothing here has been opened in the Unity editor.
+A spec with a `unity` block is JOINTED: each limb it names is cut where it crosses its hinges, each piece hangs from a
+plain joint transform (its skin a child, the next joint its first child), GrownLimbDriver turns the joints so a wave
+runs out along the limb, and the game's attack finds the limbs and whips them. `klass` swaps LightFauna for the
+species' own class in place.
+
+What it does NOT do: the lab's per-vertex ripple and travelling light (a jointed limb bends at its hinges; the body
+wears the shared SpindleMaterial); a carried up (LightFauna steers with world up); a slower change of speed (the
+lab's glide); any cell's spawn profile; the Codex. Nothing here has been opened in the Unity editor
+(Docs/UNITY_VERIFICATION_CHECKLIST.md).
 """
 import hashlib
 import os
@@ -74,6 +79,99 @@ def num(v):
 
 # ------------------------------------------------------------------ the mesh
 
+SCRIPTS = "Assets/_Scripts/Controller/Environment/FloraAndFauna/"
+
+
+def script_guid(name):
+    return re.search(r"guid: (\w+)", read(SCRIPTS + name + ".cs.meta")).group(1)
+
+
+def joints_of(key, spec, made):
+    """The body cut at its hinges (the spec's `unity` block): (core vertices, core triangles, joints, prism homes).
+    A joint is {name, parent, origin, axis, degrees, phase, V, T}; its mesh is in its own space (origin subtracted).
+    A triangle goes to the last hinge its centre has passed, walking out from the body; before the first, to the core."""
+    rows = {name: (v, t) for name, _d, _nv, _nt, v, t in SP.creature_mesh(key)}
+    unity = spec.get("unity") or {}
+    claimed, joints, home = set(), [], {}
+    core_v, core_t = [], []
+
+    def add(dst_v, dst_t, remap, tri, src, origin):
+        out = []
+        for i in tri:
+            if i not in remap:
+                remap[i] = len(dst_v)
+                dst_v.append([src[i][c] - origin[c] for c in range(3)])
+            out.append(remap[i])
+        dst_t.append(tuple(out))
+
+    for limb in unity.get("limbs", []):
+        ax = 0 if limb["cut"] == "x" else 2
+        sgn = 1.0 if limb["hinges"][0] >= 0 else -1.0
+        seg = lambda c: sum(1 for h in limb["hinges"] if c * sgn >= h * sgn)
+        chain = []
+        for j, h in enumerate(limb["hinges"]):
+            origin = [h, 0.0, 0.0] if ax == 0 else [0.0, 0.0, h]
+            chain.append({"name": f"{limb['name']}{j}", "parent": chain[-1]["name"] if chain else None, "origin": origin, "axis": limb["axis"],
+                          "degrees": limb["degrees"][j], "phase": limb["lag"] * j, "V": [], "T": [], "_map": {}})
+        for w in limb["wires"]:
+            claimed.add(w)
+            V, T = rows[w]
+            cmap = {}
+            for tri in T:
+                k = seg(sum(V[i][ax] for i in tri) / 3.0)
+                if k == 0:
+                    add(core_v, core_t, cmap, tri, V, [0.0, 0.0, 0.0])
+                else:
+                    jt = chain[k - 1]
+                    add(jt["V"], jt["T"], jt["_map"].setdefault(w, {}), tri, V, jt["origin"])
+        for p in made["prisms"]:
+            if p["limb"] in limb["wires"]:
+                k = seg(p["at"][ax])
+                if k:
+                    home[p["name"]] = chain[k - 1]
+        joints += chain
+    for name, (V, T) in rows.items():
+        if name not in claimed:
+            cmap = {}
+            for tri in T:
+                add(core_v, core_t, cmap, tri, V, [0.0, 0.0, 0.0])
+    return core_v, core_t, joints, home
+
+
+GO_DOC = """--- !u!1 &{go}
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  serializedVersion: 6
+  m_Component:
+{comps}  m_Layer: {layer}
+  m_Name: {name}
+  m_TagString: Untagged
+  m_Icon: {{fileID: 0}}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+"""
+TR_DOC = """--- !u!4 &{tr}
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {go}}}
+  serializedVersion: 2
+  m_LocalRotation: {{x: 0, y: 0, z: 0, w: 1}}
+  m_LocalPosition: {{x: {x}, y: {y}, z: {z}}}
+  m_LocalScale: {{x: 1, y: 1, z: 1}}
+  m_ConstrainProportionsScale: 0
+  m_Children:{kids}
+  m_Father: {{fileID: {father}}}
+  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}
+"""
+
+
 def body_mesh(key):
     """(vertices, triangles): every grown limb and membrane of the body as one mesh, in the creature's own space."""
     V, T = [], []
@@ -125,14 +223,15 @@ def mesh_counts(text):
     size = int(re.search(r"m_DataSize: (\d+)", text).group(1))
     blob = re.search(r"_typelessdata: ([0-9a-f]*)", text).group(1)
     ni = len(re.search(r"m_IndexBuffer: ([0-9a-f]*)", text).group(1)) // 4
-    if len(blob) != size * 2 or ni != int(re.search(r"indexCount: (\d+)", text).group(1)):
+    if len(blob) != size * 2 or size != nv * 48 or ni != int(re.search(r"indexCount: (\d+)", text).group(1)):
         raise SystemExit("the mesh asset's sizes do not agree with its data")
     return nv, ni // 3, size // max(nv, 1)
 
 
 # ------------------------------------------------------------------ the prefab
 
-def prism_block(species, i, p, block_guid):
+def prism_block(species, i, p, block_guid, parent=BODY_TR, origin=(0.0, 0.0, 0.0)):
+    p = dict(p, at=[p["at"][c] - origin[c] for c in range(3)])
     inst = nid(f"{species}:prism:{p['name']}")
     tr = (PRISM_TR ^ inst) & PR.MASK
     rows = [("m_RootOrder", str(i))]
@@ -144,7 +243,7 @@ def prism_block(species, i, p, block_guid):
     mods += (f"    - target: {{fileID: {PRISM_GO}, guid: {block_guid},\n        type: 3}}\n      propertyPath: m_Name\n"
              f"      value: {p['name']}\n      objectReference: {{fileID: 0}}\n")
     doc = (f"--- !u!1001 &{inst}\nPrefabInstance:\n  m_ObjectHideFlags: 0\n  serializedVersion: 2\n  m_Modification:\n"
-           f"    serializedVersion: 3\n    m_TransformParent: {{fileID: {BODY_TR}}}\n    m_Modifications:\n{mods}"
+           f"    serializedVersion: 3\n    m_TransformParent: {{fileID: {parent}}}\n    m_Modifications:\n{mods}"
            f"    m_RemovedComponents: []\n    m_RemovedGameObjects: []\n    m_AddedGameObjects: []\n    m_AddedComponents: []\n"
            f"  m_SourcePrefab: {{fileID: 100100000, guid: {block_guid}, type: 3}}\n"
            f"--- !u!4 &{tr} stripped\nTransform:\n  m_CorrespondingSourceObject: {{fileID: {PRISM_TR}, guid: {block_guid},\n    type: 3}}\n"
@@ -174,12 +273,15 @@ def prefab(key, spec, made):
     # the donor's stripped fin transforms go with their instances
     keep = [d for d in keep if not (" stripped" in d.split("\n")[0] and f"fileID: {PRISM_TR}, guid: {health_guid}" in d)]
     t = head + "".join(keep)
-    blocks, kids = "", []
+    _cv, _ct, joints, home = joints_of(key, spec, made)
+    jid = {j["name"]: (nid(f"{species}:go:{j['name']}"), nid(f"{species}:tr:{j['name']}")) for j in joints}
+    blocks, kids, under = "", [], {j["name"]: [] for j in joints}
     for i, p in enumerate(made["prisms"]):
-        doc, tr = prism_block(species, i, p, DANGER_BLOCK if p["kind"] == "danger" else health_guid)
+        j = home.get(p["name"])
+        doc, tr = prism_block(species, i, p, DANGER_BLOCK if p["kind"] == "danger" else health_guid,
+                              jid[j["name"]][1] if j else BODY_TR, j["origin"] if j else (0.0, 0.0, 0.0))
         blocks += doc
-        kids.append(tr)
-
+        (under[j["name"]] if j else kids).append(tr)
     def once(pattern, repl, what):
         nonlocal t
         t, n = re.subn(pattern, repl, t, count=1)
@@ -198,7 +300,58 @@ def prefab(key, spec, made):
     import author_stoat_assets as stoat      # the one GlobalObjectId hash implementation (self-tested there)
     once(r"(--- !u!114 &%d\n(?:.*\n)*?  GlobalObjectIdHash: )\d+" % NETOBJ,
          r"\g<1>%d" % stoat.global_object_id_hash(guid("prefab:" + key), NETOBJ), "the network identity")
-    return t + blocks
+    if not joints:
+        return t + blocks
+    # the jointed body: each joint a plain transform (so the attack finds it as a limb), its skin a child that draws
+    # its piece of the mesh, the next joint its FIRST child (the attack follows first children down a limb)
+    layer = re.search(r"--- !u!1 &6730920616416142416\n(?:.*\n)*?  m_Layer: (\d+)", t).group(1)
+    mf = re.search(r"--- !u!33 &\d+\n(?:.*\n)*?(?=--- )", t).group(0)
+    mr = re.search(r"--- !u!23 &\d+\n(?:.*\n)*?(?=--- )", t).group(0)
+    docs, skins = "", []
+    for j in joints:
+        go, tr = jid[j["name"]]
+        nxt = [jid[c["name"]][1] for c in joints if c["parent"] == j["name"]]
+        parent = j["parent"]
+        local = [j["origin"][c] - (next(q for q in joints if q["name"] == parent)["origin"][c] if parent else 0.0) for c in range(3)]
+        mine = list(nxt)
+        if j["T"]:
+            sgo, stri, smf, smr = (nid(f"{species}:{k}:{j['name']}") for k in ("skingo", "skintr", "skinmf", "skinmr"))
+            mine.append(stri)
+            skins.append(smr)
+            docs += GO_DOC.format(go=sgo, layer=layer, name=j["name"] + "Skin",
+                                  comps="".join(f"  - component: {{fileID: {c}}}\n" for c in (stri, smf, smr)))
+            docs += TR_DOC.format(tr=stri, go=sgo, x=0, y=0, z=0, kids=" []", father=tr)
+            docs += re.sub(r"guid: \w+, type: 2", f"guid: {guid('mesh:' + key + ':' + j['name'])}, type: 2",
+                           re.sub(r"m_GameObject: \{fileID: \d+\}", f"m_GameObject: {{fileID: {sgo}}}", re.sub(r"&\d+", f"&{smf}", mf, count=1)), count=1)
+            docs += re.sub(r"m_GameObject: \{fileID: \d+\}", f"m_GameObject: {{fileID: {sgo}}}", re.sub(r"&\d+", f"&{smr}", mr, count=1))
+        mine += under[j["name"]]
+        docs += GO_DOC.format(go=go, layer=layer, name=j["name"], comps=f"  - component: {{fileID: {tr}}}\n")
+        docs += TR_DOC.format(tr=tr, go=go, x=num(local[0]), y=num(local[1]), z=num(local[2]),
+                              kids="".join(f"\n  - {{fileID: {k}}}" for k in mine) if mine else " []",
+                              father=jid[parent][1] if parent else BODY_TR)
+    roots = [jid[j["name"]][1] for j in joints if not j["parent"]]
+    once(r"(--- !u!4 &%d\n(?:.*\n)*?  m_Children:\n)((?:  - \{fileID: -?\d+\}\n)*)" % BODY_TR,
+         lambda m: m.group(1) + "".join(f"  - {{fileID: {k}}}\n" for k in roots) + m.group(2), "the body's children (joints)")
+    once(r"(  RenderedObject: \{fileID: \d+\}\n)", lambda m: m.group(1) + "  additionalRenderedObjects:\n" + "".join(f"  - {{fileID: {k}}}\n" for k in skins),
+         "the Spindle's rendered object")
+    unity = spec["unity"]
+    drv = nid(f"{species}:driver")
+    once(r"(--- !u!1 &%d\n(?:.*\n)*?  m_Component:\n(?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO,
+         lambda m: m.group(1) + f"  - component: {{fileID: {drv}}}\n", "the root's components")
+    docs += (f"--- !u!114 &{drv}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n  m_PrefabInstance: {{fileID: 0}}\n"
+             f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {ROOT_GO}}}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+             f"  m_Script: {{fileID: 11500000, guid: {script_guid('GrownLimbDriver')}, type: 3}}\n  m_Name: \n  m_EditorClassIdentifier: \n"
+             "  joints:\n" + "".join(f"  - {{fileID: {jid[j['name']][1]}}}\n" for j in joints)
+             + "  axes:\n" + "".join("  - {x: %s, y: %s, z: %s}\n" % tuple(num(v) for v in j["axis"]) for j in joints)
+             + "  degrees:\n" + "".join(f"  - {num(j['degrees'])}\n" for j in joints)
+             + "  phases:\n" + "".join(f"  - {num(j['phase'])}\n" for j in joints)
+             + f"  idleHz: {num(unity.get('idle_hz', 0.38))}\n  fastHz: {num(unity.get('fast_hz', 0.9))}\n  idleSweepShare: 0.6\n"
+             + f"  speedForFullBeat: {num(spec['possession']['top_speed'] * 1.2)}\n")
+    if unity.get("klass"):      # the species' own class: the script guid is swapped in place, the component keeps its fileID
+        light = re.search(r"guid: (\w+)", read(SCRIPTS + "LightFauna.cs.meta")).group(1)
+        once(r"(m_Script: \{fileID: 11500000, guid: )%s" % light, r"\g<1>" + script_guid(unity["klass"]), "LightFauna's script")
+        once(r"(  data: \{fileID: 11400000, guid: \w+, type: 2\}\n)", r"\g<1>" + f"  ramRadius: {num(unity.get('ram_radius', 20.0))}\n", "LightFauna.data (for ramRadius)")
+    return t + blocks + docs
 
 
 def data_so(key, spec):
@@ -249,13 +402,20 @@ def emit(key):
     made = BODY.from_spec(spec)
     sp = spec["species"]
     V, T = body_mesh(key)
-    out = {f"Assets/_Models/Fauna/{sp}Body.asset": mesh_asset(sp + "Body", V, T),
+    core_v, core_t, joints, _home = joints_of(key, spec, made)
+    mesh_meta = lambda g: re.sub(r"guid: \w+", "guid: " + g, read(MESH_TEMPLATE + ".meta"), count=1)
+    out = {}
+    for j in joints:
+        if j["T"]:
+            out[f"Assets/_Models/Fauna/{sp}{j['name']}.asset"] = mesh_asset(sp + j["name"], j["V"], j["T"])
+            out[f"Assets/_Models/Fauna/{sp}{j['name']}.asset.meta"] = mesh_meta(guid("mesh:" + key + ":" + j["name"]))
+    out.update({f"Assets/_Models/Fauna/{sp}Body.asset": mesh_asset(sp + "Body", core_v, core_t),
            f"Assets/_Models/Fauna/{sp}Body.asset.meta": re.sub(r"guid: \w+", "guid: " + guid("mesh:" + key), read(MESH_TEMPLATE + ".meta"), count=1),
            f"Assets/_Prefabs/FloraAndFauna/{sp}.prefab": prefab(key, spec, made),
            f"Assets/_Prefabs/FloraAndFauna/{sp}.prefab.meta": meta_of(DONOR, guid("prefab:" + key)),
            f"Assets/_SO_Assets/Light Fauna Data/{sp}FaunaDataSO.asset": data_so(key, spec),
            f"Assets/_SO_Assets/Light Fauna Data/{sp}FaunaDataSO.asset.meta": meta_of(DONOR_DATA, guid("data:" + key)),
-           NETWORK: network(read(NETWORK), key)}
+           NETWORK: network(read(NETWORK), key)})
     for e in ELEMENTS:
         out[f"Assets/_SO_Assets/Lifeforms/{sp} Fauna {e}.asset"] = config(key, spec, e)
         out[f"Assets/_SO_Assets/Lifeforms/{sp} Fauna {e}.asset.meta"] = meta_of(DONOR_CFG.format(e=e), guid(f"config:{key}:{e}"))
@@ -267,9 +427,10 @@ def verify(key, spec, made, mesh, out):
     problems = []
     sp = spec["species"]
     V, T = mesh
-    nv, nt, stride = mesh_counts(out[f"Assets/_Models/Fauna/{sp}Body.asset"])
-    if (nv, nt, stride) != (len(V), len(T) * 2, 48):
-        problems.append(f"the mesh asset reads back {nv} vertices, {nt} triangles, {stride} bytes a vertex; the spec makes {len(V)}, {len(T) * 2}, 48")
+    counts = [mesh_counts(text) for path, text in out.items() if path.startswith("Assets/_Models/Fauna/") and path.endswith(".asset")]
+    nv, nt = sum(c[0] for c in counts), sum(c[1] for c in counts)
+    if nt != len(T) * 2 or nv < len(V) or any(c[2] != 48 for c in counts):
+        problems.append(f"the mesh assets read back {nv} vertices and {nt} triangles; the spec makes {len(V)} (or more, at the cuts) and {len(T) * 2}")
     pf = out[f"Assets/_Prefabs/FloraAndFauna/{sp}.prefab"]
     # every guid the prefab names has exactly one owner: a .meta in the repo, or one this run writes
     owners = dict(PR.guid_index())
@@ -293,12 +454,20 @@ def verify(key, spec, made, mesh, out):
                 continue
             if C.norm(C.sub(PR.world_pos(n), p["at"])) > 1e-3 or C.norm(C.sub(sorted(PR.world_scale(n)), sorted(p["size"]))) > 1e-3:
                 problems.append(f"prism {p['name']} sits at {[round(v, 3) for v in PR.world_pos(n)]}, not {p['at']}")
-            if not (n.parent and "Spindle" in n.parent.scripts):
-                problems.append(f"prism {p['name']} is not a direct child of the Spindle: it would not sway (/fauna section 4)")
+            jointed = {j["name"] for j in joints_of(key, spec, made)[2]}
+            if not (n.parent and ("Spindle" in n.parent.scripts or n.parent.name in jointed)):
+                problems.append(f"prism {p['name']} hangs from neither the Spindle nor a joint: it would not move with the body")
         if len(got) != len(made["prisms"]):
             problems.append(f"{len(got)} prisms in the prefab, {len(made['prisms'])} in the spec")
         if not any("Crystal" in n.scripts for n in root.walk()):
             problems.append("no heart crystal in the prefab")
+        if spec.get("unity"):
+            import dossier as D
+            limbs = D.attack_limbs(root)
+            if len(limbs) < 3:
+                problems.append(f"the game's attack finds {len(limbs)} limb(s) on the prefab (three or more whip; fewer lunge)")
+            if "GrownLimbDriver" not in root.scripts or (spec["unity"].get("klass") and spec["unity"]["klass"] not in root.scripts):
+                problems.append("the root is missing its limb driver or its own class")
         if "QuadFishSwimDriver" in [s for n in root.walk() for s in n.scripts]:
             problems.append("the donor's swim driver is still on the prefab")
     if "GlobalObjectIdHash: 2720972683" in pf:
@@ -313,7 +482,7 @@ def self_test():
         fails.append("the ray as emitted does not verify: " + "; ".join(verify("ray", spec, made, mesh, out)[:2]))
     bad = dict(out)
     key = "Assets/_Models/Fauna/RayBody.asset"
-    bad[key] = bad[key].replace("m_VertexCount: %d" % len(mesh[0]), "m_VertexCount: %d" % (len(mesh[0]) - 1), 1)
+    bad[key] = re.sub(r"m_VertexCount: (\d+)", lambda m: "m_VertexCount: %d" % (int(m.group(1)) - 1), bad[key], count=1)
     try:
         if not verify("ray", spec, made, mesh, bad):
             fails.append("a mesh asset with the wrong vertex count verified")

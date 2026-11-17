@@ -65,37 +65,38 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 The Ray, the first GROWN creature in Unity: its body, prefab, data and four element configs (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
+### 🔴 The Ray, the first GROWN creature in Unity: jointed body, wingbeat, its own class, on the Spawn Matrix (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
 
-Written by `Tools/Build/fauna_kit/unity_port.py ray` from `specs/ray.py` (no C# changed; no Unity ran, so the verify
-rule's compile steps do not apply). The prefab is the QuadFish's re-fitted: one mesh under one Spindle, nine prisms as
-its direct children, the heart at the root. Held headless: `unity_port.py ray --check` (the mesh asset reads back
-2,408 vertices and 8,404 triangles at 48 bytes a vertex; every prism reads back at its spec position as a direct
-child of the Spindle; every guid the prefab names has an owner; the network identity is its own),
-`check_network_prefab_hashes.py`, `author_lifeform_heart_collection.py --check`, `colour_trace.py --check`.
-**The Ray is in no cell's spawn profile, the Codex or the Spawn Matrix: it spawns nowhere until someone adds it.**
+Written by `Tools/Build/fauna_kit/unity_port.py ray` from `specs/ray.py`. Two new scripts: `GrownLimbDriver` (turns
+the joints) and `RayFauna` (a LightFauna that feeds on the wing). **Reference compile:** `unity_refcompile/run.sh`
+reports 0 errors in the files this branch changed (30 in existing code that needs packages this container lacks,
+Cinemachine among them). **No Unity editor ran.** Headless: `unity_port.py ray --check` and `--self-test`,
+`author_spawn_matrix_roster.py --check`, `check_network_prefab_hashes.py`, `author_lifeform_heart_collection.py
+--check`, `colour_trace.py --check`.
 
-To see it: add `Assets/_SO_Assets/Lifeforms/Ray Fauna Time.asset` to a test cell's fauna list (or drag
-`Assets/_Prefabs/FloraAndFauna/Ray.prefab` into a scene to look at the body alone).
+**Where to see it:** Cell Selector > Barren, then the Spawn Matrix: the **Ray** row, one station an element. It is in
+no cell's own spawn profile.
 
-1. **The mesh imports.** `Assets/_Models/Fauna/RayBody.asset` opens as a Mesh with no console error (it is a native
-   Mesh asset written as text, in the format of `_Models/Testing/Prism.asset`). If Unity rewrites the file on import,
-   say so: `unity_port.py --check` will then report drift and the writer must follow Unity's form.
-2. **It draws.** The body shows from BOTH sides (every triangle is listed twice for that) in the domain's spindle
-   colour, with the woven wing, two lobes curling forward past the crystal, and the whip.
-3. **It sways without tearing.** The whole body shears as one (one Spindle, the shared SpindleMaterial). The wings do
-   NOT ripple yet: the per-vertex wave of the lab is not in the spindle shader.
-4. **The prisms ride it.** Eight plates on the wing edges and the sting at the whip's end move with the sway, take
-   hits, and killing them kills it; the heart drops as one crystal that can be collected.
-5. **It swims level.** LightFauna steers with world up, so the wings stay flat like the animal's. (The spec asks for a
-   carried up; that needs the hook /fauna-creation section 5 describes.)
-6. **Each element.** Mass (body x1.38) wears its shields with the heart clear of them; Space is x2.27; Charge is all
-   danger; Time is the base body.
-7. **A Jewel Wasp can possess it**, steer it, eat with RT and leave. Its attack will be a LUNGE: the body is one mesh,
-   so the game finds no limbs to whip.
-8. **Two clients** see the same Ray (it has an entry in `DefaultNetworkPrefabs.asset`).
+1. **The meshes import.** `Assets/_Models/Fauna/RayBody.asset` and the nine `RayVane*` / `RayLash*` assets open as
+   Meshes with no console error (native Mesh assets written as text, in the format of `_Models/Testing/Prism.asset`).
+   If Unity rewrites them on import, say so: `unity_port.py --check` will report drift.
+2. **It draws, from both sides,** in the domain's spindle colour: a woven vane each side, two lobes curling forward
+   past the crystal, the whip. No seam should show where a vane is cut (three pieces a vane, three on the whip).
+3. **The vanes beat.** Both tips rise and fall together, each joint a little behind the one before, slow when it
+   drifts and quicker and deeper as it speeds up. The whip sways side to side. If a vane hinges the wrong way, the
+   sign is `degrees` in the spec's `unity` block.
+4. **The shader's sway does not tear the pieces apart.** All ten renderers are one Spindle's
+   (`additionalRenderedObjects`), so they share a phase; a small mismatch at the hinges is possible and is what to look for.
+5. **The prisms ride it.** Three plates on each outer vane piece, one on each middle piece and the sting on the last
+   whip joint move with their joints, take hits, and killing them kills it; the heart drops one crystal.
+6. **It swims level** (LightFauna steers with world up).
+7. **Each element** on its Spawn Matrix station: Mass shielded with the heart clear, Space larger, Charge all danger.
+8. **A Jewel Wasp possesses it:** steer, RT at prisms eats what is within its lobes on every side (not a mouthful
+   ahead), RT at a vessel WHIPS both vanes and the whip toward it (three limbs under the Body), A leaves.
+9. **Two clients** see the same Ray.
+10. **Budget.** Nine prisms a Ray; the Spawn Matrix releases them on demand, so no shipped cell's collider count moves.
 
-Not built: the glide and feeding on the wing (its own ride), the wingbeat, limb LOD beyond the one Spindle.
+Not built: the lab's ripple across the membrane and light running down the limbs; the slow change of speed; a Codex page.
 
 ### 🔴 The Jacks' vessel pass: authored element scaling, four level-5 cards, their own HUD (`claude/jacks-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 

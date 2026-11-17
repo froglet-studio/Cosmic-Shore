@@ -162,8 +162,26 @@ Ray's: it lists what a person must check in the editor), because nothing here op
 
 A creature whose body is over 65,535 vertices or whose spec fails `fauna.py check` is refused.
 
-**What Step A does not give the creature** (each is later work, with `/fauna`, `/ecology` and `/asset-surgery`
-loaded, and each needs C# and the verify rule): the per-vertex wave and travelling light (it sways by the game's one
-shear); limbs the attack can whip (one mesh has none, so it lunges); a carried up; its own ride from the spec's
-`possession` block; a place in a cell's spawn profile, the Codex and the Spawn Matrix (`/ecology` first: that
-changes the collider budget).
+**Step B, joints (the Ray has them: copy its `"unity"` block in `specs/ray.py`).** Without the block the body is one
+rigid mesh that the game can only lunge. With it, `unity_port.py` cuts each named limb at its hinges and hangs the
+pieces from joints that `GrownLimbDriver` turns:
+
+```python
+"unity": {"limbs": [
+    {"name": "VaneA", "wires": ["Lead0", "Trail0", "Web0"],   # the limbs and membranes that make this one moving part
+     "cut": "x", "hinges": [3.0, 13.0, 24.0],                 # where it is cut, walking OUT from the body (x: sideways, z: along the tail)
+     "axis": [0, 0, 1], "degrees": [9.0, 11.0, 13.0],         # each joint's turning axis and sweep; negative mirrors a twin
+     "lag": 0.9}]}                                            # how far behind each joint runs: that is the wave
+```
+
+Rules: a hinge is a straight cut, so it suits flat or straight limbs (a vane, a tail), not a coil; three or more
+limbs under the Body make the attack a whip; give mirrored twins opposite `degrees` so they move together. A
+species with a move of its own gets a small class (`RayFauna` is the example) named in `"klass"`; that is C#, so run
+`bash Tools/Build/unity_refcompile/run.sh` (after `python3 Tools/Build/unity_refcompile/dotnet_from_nuget.py` once).
+
+**Step C, the Spawn Matrix.** Add one row and one description in `Tools/Build/author_spawn_matrix_roster.py` (copy
+the Ray's), run it, then `--check`. That is where a person inspects one species alone. A cell's own spawn profile is
+`/ecology`'s (it changes the collider budget): do not add a creature to a cell from this skill.
+
+**Not available yet for any grown creature:** the lab's ripple and travelling light (needs the spindle shader), a
+carried up, and a Codex page.

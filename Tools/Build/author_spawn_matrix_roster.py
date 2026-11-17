@@ -145,6 +145,8 @@ FAUNA = [
     ("Wearer Builders", ["Cell Configs/Swarm Cell/Swarm Wearer Builder Fauna Config Data.asset"]),
     # the pollinator (Docs/ECOSYSTEM.md 66): released without a hive a bee pollinates wherever it is; a hive raises its own
     ("Bee", [f"Lifeforms/Bee Fauna {e}.asset" for e in ELEMENTS]),
+    # the first GROWN creature (Tools/Build/fauna_kit/unity_port.py ray; Docs/Studios/FAUNA_LAB.md round 7)
+    ("Ray", [f"Lifeforms/Ray Fauna {e}.asset" for e in ELEMENTS]),
 ]
 
 FLORA = [
@@ -261,6 +263,9 @@ DESCRIPTIONS = {
     "Bee Hive": "A comb of hexagonal cells and the bees it raises. The bees pollinate plants of every colour, which "
                 "then grow faster, and sting opposing creatures near the hive, carrying their mass home: the comb is "
                 "built from it, in the colours they brought. They eat no plants.",
+    "Ray": "A glider grown from woven wire: two great vanes that beat in a slow wave, two lobes curled round its "
+           "crystal, a long whip with a sting. It grazes mass as it passes. Ride it with a Jewel Wasp: it eats "
+           "whatever comes within its lobes.",
     "Bee": "A pollinator. It eats no plants: it makes the plants it visits, of every colour, grow faster. Released "
            "on its own it pollinates wherever it is; predators hunt it.",
     "Gyroid Topiary": "A clipped gyroid specimen for garden beds: 30-prism tiles with smaller leaves in "

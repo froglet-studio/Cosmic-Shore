@@ -24,6 +24,23 @@ give me a vessel, ark, and prism cluster to attack."
 - **Retire condition for a new creature:** a "cut it" in the feedback log, or a second round in which it still wins
   no column and nobody says it feels good.
 
+## Round 7 (2026-11-17): the Ray completed in Unity, and on the Spawn Matrix
+
+Garrett: "take the ray all the way to completion and place it in the spawn matrix".
+
+- **On the Spawn Matrix:** a Ray row with a station for each element (`author_spawn_matrix_roster.py`).
+- **Jointed:** each vane is cut into three pieces and the whip into three, each hanging from a joint
+  (`specs/ray.py`, the `unity` block). **`GrownLimbDriver`** turns the joints, each a beat behind the one before, so
+  the vanes rise and fall in a wave and the whip sways; the beat quickens and deepens with the Ray's speed.
+- **Its attack whips:** three limbs under the body (two vanes, the whip), which is what the game's attack looks for.
+- **`RayFauna`:** a LightFauna that feeds on the wing. A rider's suction takes what is round its mouth on every side.
+- **Checked:** the reference compile reports 0 errors in the files this branch changed; `unity_port.py ray --check`
+  (ten mesh assets read back at the spec's triangle count, every prism at its spec position under the body or a
+  joint, three attack limbs, the driver and the class on the root); the Spawn Matrix, network, heart and colour gates.
+- **NOT checked: the Unity editor.** Ten hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+- **Still different from the lab:** a jointed vane bends at three hinges; it does not ripple across its membrane, and
+  no light runs down it. Both need the spindle shader. The slow change of speed and a Codex page are not built.
+
 ## Round 6 (2026-11-17): the Ray in Unity, step one
 
 Garrett: "yes start the unity port with the ray".

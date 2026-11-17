@@ -126,6 +126,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: bf8b71ceef5d5c2d72b5f91153cefb04, type: 2}
     - {fileID: 11400000, guid: d178ed24d3b1f5225cd670822633f7b7, type: 2}
     - {fileID: 11400000, guid: e9cd5e24a37dca338302c40167224d61, type: 2}
+  - Name: Ray
+    ElementConfigs:
+    - {fileID: 11400000, guid: 1243a8c0942c8abaf753cc507bdcd81e, type: 2}
+    - {fileID: 11400000, guid: 7bab02eb972d9e8285139dff817a1ccf, type: 2}
+    - {fileID: 11400000, guid: 72cff7c2060cedd5e30681376f48ec9e, type: 2}
+    - {fileID: 11400000, guid: 38382646eaef4faeedab20a9138eedcb, type: 2}
   floraSpecies:
   - Name: Gyroid
     ElementConfigs:
@@ -324,6 +330,8 @@ MonoBehaviour:
     Description: "8 sprinters that hunt the shoal as a pack. A hunter streaks out when it bursts and can burn only after 0.4 s of it. Charge crystals. Spawn with a Shoal or it scavenges flora."
   - Species: Bee
     Description: "A pollinator. It eats no plants: it makes the plants it visits, of every colour, grow faster. Released on its own it pollinates wherever it is; predators hunt it."
+  - Species: Ray
+    Description: "A glider grown from woven wire: two great vanes that beat in a slow wave, two lobes curled round its crystal, a long whip with a sting. It grazes mass as it passes. Ride it with a Jewel Wasp: it eats whatever comes within its lobes."
   - Species: Gyroid
     Description: "A colony of 30-prism tiles of a saddle-shaped minimal surface, budding a neighbour about every 30s into one endless lattice. Space grows needles."
   - Species: SchwarzP
