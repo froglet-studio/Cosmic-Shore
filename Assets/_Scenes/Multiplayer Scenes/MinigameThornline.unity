@@ -839,12 +839,12 @@ MonoBehaviour:
   - 2.5
   - 3
   - 8
-  - 16
+  - 9.2
   aiNoseFollowByDifficulty:
   - -1
   - -1
   - -1
-  - -1
+  - 1.6
   aiNoseLeadMaxExtraDegrees: 10
   hintToast: 420
   snipeToast: 421

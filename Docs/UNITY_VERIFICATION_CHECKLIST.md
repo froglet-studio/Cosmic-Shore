@@ -24900,3 +24900,19 @@ Not verified: a real Unity editor.
 
 1. Arcade > Breach, Orca, I3 with two AI Orcas: when one misses a walled ring, it turns back and threads it instead of
    wandering on. Both finish, in about 160 s.
+
+## Thornline Legendary AI row trained (2026-11-17, elemental loop step 3, overnight run)
+
+Verified:
+- The real-game race judge (`time_ai_search.py --hull Shrike`) confirmed the new row on seeds 101-104: 32 flights a
+  side, none unfinished, loss 2.67 to 2.39.
+- `thornline_course_harness` ran 20 tests, all passed.
+- `author_thornline_assets.py --check` passed.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor. Also, `author_thornline_assets.py` without `--check` appended a second copy of the
+controller's AI block to the scene when the values changed. The scene here was edited by hand instead, so do not run the
+writer until that is looked at.
+
+1. Arcade > Thornline, Shrike, I1 with a Legendary rival: it finishes in about 49 s, aiming crisply with no wobble.
+   MinigameThornline's controller shows AI Nose Lead By Difficulty 2.5 / 3 / 8 / 9.2 and Follow -1 / -1 / -1 / 1.6.
