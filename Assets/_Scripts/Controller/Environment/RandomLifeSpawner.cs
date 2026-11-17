@@ -271,6 +271,12 @@ namespace CosmicShore.Gameplay
         /// live play: a voyage profile (2026-11-17) caught a 41 ms spawn frame at the scene batch, ~2.7 ms per creature.</summary>
         const int SatelliteFaunaSpawnBatchPerFrame = 2;
 
+        /// <summary>The same on a phone or tablet: one creature a frame (each is ~2.3 ms of Awake in the editor).</summary>
+        const int MobileSatelliteFaunaSpawnBatchPerFrame = 1;
+
+        static int SatelliteBatch => Application.isMobilePlatform
+            ? MobileSatelliteFaunaSpawnBatchPerFrame : SatelliteFaunaSpawnBatchPerFrame;
+
         IEnumerator SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg, Domains color, int count, int wave)
         {
@@ -310,7 +316,7 @@ namespace CosmicShore.Gameplay
                 SpawnFaunaBanded(host, faunaCfg, color, goal,
                     banded ? null : goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter);
 
-                if (i + 1 < count && (i + 1) % (host.IsSatellite ? SatelliteFaunaSpawnBatchPerFrame : FaunaSpawnBatchPerFrame) == 0)
+                if (i + 1 < count && (i + 1) % (host.IsSatellite ? SatelliteBatch : FaunaSpawnBatchPerFrame) == 0)
                     yield return null;
             }
         }

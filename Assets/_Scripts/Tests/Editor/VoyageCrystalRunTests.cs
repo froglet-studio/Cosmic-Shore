@@ -3,7 +3,9 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using CosmicShore.Utility;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace CosmicShore.Tests
 {
@@ -503,12 +505,32 @@ namespace CosmicShore.Tests
             Assert.Less(cfg.CellGap, 1200f, "the open water between cells is shorter than at 1.5x (1200 u)");
             Assert.IsTrue(cfg.ScatterLifeSpawns, "a voyage cell's life is born all through its open water");
             Assert.Greater(settings.KaijuPerCrossing, 0);
-            Assert.GreaterOrEqual(settings.KaijuScale, 10f, "a kaiju is huge");
+            Assert.GreaterOrEqual(settings.DesktopKaijuScale, 10f, "a kaiju is huge");
             Assert.Greater(settings.KaijuMax, 0);
-            Assert.Greater(settings.KaijuScale, settings.HomewardRaiderScale, "a kaiju is bigger than a raider");
+            Assert.Greater(settings.MobileKaijuScale, settings.HomewardRaiderScale, "a kaiju is bigger than a raider, phones too");
             Assert.IsTrue(settings.RaidersOutbound);
             var lines = VoyageContentSO.Load().Lines;
             Assert.IsFalse(string.IsNullOrEmpty(lines.ToastKaiju));
+        }
+
+        [Test]
+        public void ShippedVoyage_PhonesTakeLighterLifeAndKaiju()
+        {
+            var settings = VoyageToyDefinitionSO.Load();
+            Assert.IsNotNull(settings, "Resources/Voyages/Voyage.asset");
+            Assert.AreEqual(1, settings.KaijuMax, "one kaiju alive at a time");
+            Assert.LessOrEqual(settings.MobileCellLifeScale, settings.DesktopCellLifeScale, "a phone holds no more life");
+            Assert.Less(settings.MobileKaijuScale, settings.DesktopKaijuScale, "a phone's kaiju is smaller");
+            Assert.Greater(settings.MobileRaiderMax, 0);
+        }
+
+        [Test]
+        public void KaijuSpecies_IsNeverAMissingConfig()
+        {
+            Assert.IsFalse(VoyageRun.IsKaijuSpecies(null));
+            var empty = ScriptableObject.CreateInstance<FaunaConfigurationSO>();
+            try { Assert.IsFalse(VoyageRun.IsKaijuSpecies(empty), "a config without a prefab is no kaiju"); }
+            finally { UnityEngine.Object.DestroyImmediate(empty); }
         }
     }
 }
