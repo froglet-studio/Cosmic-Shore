@@ -24791,3 +24791,15 @@ a real Unity editor. The new fields ship OFF (`refuelBelowPellets -1`), so no AI
    Seconds 0, Low Tank Seconds Between Pellets 0.
 2. Set Refuel Below Pellets to 1.5 and Refuel Coast Seconds to 3, race Serpentine with an AI Serpent: when its pellets
    run low it cloaks, lays a wall and its pellet pips refill; with -1 it behaves as before.
+
+## Serpent run4: Serpentine AI with the refuel genes, carried into Regatta (2026-11-17, Regatta flywheel, FINDINGS 23)
+
+Verified: Amoebius raced the shipped files (SerpentTime I1 100 s and I4 89 s on seeds 101-102; the confirm on 40 fresh
+flights a side against run3b had every condition faster, loss 2.40 -> 2.25, no DNF; Regatta alone on the I1 course
+127 s, unchanged from before) and `unity_refcompile` (0 errors in the changed files). Not verified: a real Unity editor.
+
+1. Open MinigameSerpentTime: the Serpent's AI Nose Lead row reads Gain 2.09, Nose Follow 10.42.
+2. Open `SerpentAIBoostPolicy_SerpentTime` and `SerpentAIBoostPolicy`: Refuel Below Pellets 4, Refuel Coast Seconds
+   0.291, Low Tank Seconds Between Pellets 0.175.
+3. Race Serpentine I4 against a Legendary AI Serpent: it finishes near 85-100 s, and when its pellets run low it cloaks
+   and lays a wall.

@@ -20,5 +20,5 @@ MonoBehaviour:
   BoldLookaheadSeconds: 0.8
   MinLookahead: 60
   MaxLookahead: 520
-  NoseLeadGain: 2.1
-  NoseFollowPerSecond: 6.87
+  NoseLeadGain: 2.09
+  NoseFollowPerSecond: 10.42

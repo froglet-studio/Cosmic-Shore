@@ -117,7 +117,7 @@ GAMES = {
                    "refuelBelowPellets": (-1.0, 4.0), "refuelCoastSeconds": (0.0, 6.0),
                    "lowTankSecondsBetweenPellets": (0.0, 6.0)},
         "ints": ("maxConcurrentBurns", "reservePellets"),
-        "lead": 2.1, "rows": [], "nose_gene": 6.87,    # SerpentTimeController.aiNoseLead: Serpent 2.1 at 6.87/s (run3b)
+        "lead": 2.09, "rows": [], "nose_gene": 10.42,  # SerpentTimeController.aiNoseLead: Serpent 2.09 at 10.42/s (run4)
         # --long: a Regatta-length race in the home game (24 gates as 3 laps of 8, 100-200 s), so pacing pays at home.
         "long": {"overrides": [{"asset": "Assets/Resources/EndConditionOverrides.asset",
                                 "fields": {"serpentTimeGateTarget": 24}}],
