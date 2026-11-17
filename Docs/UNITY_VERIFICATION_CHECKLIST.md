@@ -24814,6 +24814,20 @@ flights a side against run3b had every condition faster, loss 2.40 -> 2.25, no D
 3. Race Serpentine I4 against a Legendary AI Serpent: it finishes near 85-100 s, and when its pellets run low it cloaks
    and lays a wall.
 
+## Urchin run1: Skein AI trained in the real game (2026-11-17, Regatta flywheel)
+
+Verified: Amoebius raced the genome headless through `time_ai_search.py` (search on seeds 11-14, confirm on seeds
+101-104, 9 conditions, 36 flights a side: the shipped AI DNFed all 12 of its I4 flights, the trained one finished all
+36; I1 79 -> 53 s, I2 143 -> 77, I4 DNF -> 261, I1@T10 86 -> 50), the shipped files raced again after the write (see
+the PR), `unity_refcompile` (see the PR). Not verified: a real Unity editor. The values it replaced, for a revert:
+RailLeadDistance 260, AssessIntervalSeconds 0.3451, ScanArc 2277.61, CaptureFraction 0.917, ClosingFraction 0.1238,
+LaunchPreferArc 501.981, DryCrawlArc 46.3683, MaxDryCrawlSeconds 1.3127, ReverseLeadTurnRadii 1.8716, ParkedSpeed
+7.0595, ParkedSeconds 4.148, MinSlipIntervalSeconds 1.5847, SpikeIntervalSeconds 1.4303, SpikeMinAmmo 0.5479,
+TrackAimDegrees 8.7529, TrackMinRangeInLengths 3.5138, TrackAxisAlignment 0.4495; Skein's Urchin row Gain 0, no nose rate.
+
+1. Open MinigameSkein: the Urchin's AI Nose Lead row reads Gain 1.39, Nose Follow 14.41.
+2. Race Skein I4 against a Legendary AI Urchin: it finishes (near 260 s) instead of timing out.
+
 ## Stoat run1: Slingshot AI trained in the real game, its nose pair carried into Regatta (2026-11-17, Regatta flywheel)
 
 Verified: Amoebius raced the genome headless through `time_ai_search.py` (search on seeds 11-14, confirm on seeds
