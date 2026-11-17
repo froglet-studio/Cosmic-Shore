@@ -3145,7 +3145,12 @@
   "ToastStrayCarrySub": "Turn back or lose the {carried} crystals you carry.",
   "ToastRecalled": "RECALLED TO THE ARK",
   "ToastRecalledSub": "Back in your seat beside the Ark.",
-  "ToastRecalledLostSub": "{count} carried crystals lost."
+  "ToastRecalledLostSub": "{count} carried crystals lost.",
+  "ScoreFinishHere": "FINISH HERE",
+  "ScoreFinishHereLine": "Bank it all now and end the voyage",
+  "ScoreFinishHereKey": "X",
+  "ScoreSailHome": "SAIL HOME",
+  "ScoreSailHomeLine": "Escort the Ark home for {scale}x the crystals"
  },
  "toy": {
   "id": "voyage",

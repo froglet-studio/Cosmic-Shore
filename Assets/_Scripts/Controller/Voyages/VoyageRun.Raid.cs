@@ -545,7 +545,20 @@ namespace CosmicShore.Gameplay
                     board.NextCells = next.Cells;
                     board.Venture = () => SailOn(next);
                 }
-                board.Finish = SailHome;
+                // Goal met (Shombith 2026-11-17): finish right here and bank now, or escort the Ark home for a bigger pay.
+                float bonus = _def ? _def.HomeEscortRewardScale : 1f;
+                if (!missed && bonus > 1f && !_state.IsHome())
+                {
+                    board.FinishHere = () => FinishHere();
+                    board.HomeRewardScale = bonus;
+                    board.Finish = () =>
+                    {
+                        _state.HomeRewardScale = bonus;
+                        SaveState();
+                        SailHome();
+                    };
+                }
+                else board.Finish = SailHome;
             }
             VoyageScoreboard.Show(board);
         }
@@ -605,6 +618,13 @@ namespace CosmicShore.Gameplay
             var local = LocalVessel();
             if (local == null) return;
             SetSail(local, next);
+        }
+
+        /// <summary>Finish here: bank everything owed at this stop, as it is, and end the voyage (the Ark is home again).</summary>
+        void FinishHere()
+        {
+            if (!_active || _state == null || _state.AtSea) return;
+            Dock(here: true);
         }
 
         /// <summary>Finish: the Ark sails home with the squad escorting it; docking banks everything.</summary>

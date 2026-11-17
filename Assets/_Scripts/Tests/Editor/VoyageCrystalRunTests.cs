@@ -56,6 +56,36 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Extract_AtHome_PaysTheEscortHomeBonus_ThenResetsIt()
+        {
+            var state = VoyageRules.NewGalaxy(Shipped(), Domains.Jade);
+            Assert.IsTrue(state.IsHome());
+            VoyageRaid.Owe(state, Element.Time, 5);
+            state.HomeRewardScale = 2f;
+            var x = VoyageRules.Extract(state, Shipped());
+            Assert.IsNotNull(x);
+            Assert.AreEqual(10, x.Crystals[(int)Element.Time]);
+            Assert.AreEqual(1f, state.HomeRewardScale);
+            Assert.AreEqual(0, state.OwedOf(Element.Time));
+        }
+
+        [Test]
+        public void Extract_Anywhere_BanksAtTheStopAsItIs_AndTheArkIsHome()
+        {
+            var state = VoyageRules.NewGalaxy(Shipped(), Domains.Jade);
+            string home = state.Home;
+            state.At = "somewhere.else";
+            VoyageRaid.Owe(state, Element.Mass, 4);
+            state.HomeRewardScale = 2f;
+            Assert.IsNull(VoyageRules.Extract(state, Shipped()), "away from home only Finish here banks");
+            var x = VoyageRules.Extract(state, Shipped(), anywhere: true);
+            Assert.IsNotNull(x);
+            Assert.AreEqual(4, x.Crystals[(int)Element.Mass], "finishing away from home pays no escort bonus");
+            Assert.AreEqual(home, state.At);
+            Assert.AreEqual(1f, state.HomeRewardScale);
+        }
+
+        [Test]
         public void NameCells_StandsTheNamedWorlds_KeepsTheRest()
         {
             var pool = new[] { "Yggdra", "Caldera", "Orrery", "Garland", "Geode" };

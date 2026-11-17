@@ -1127,5 +1127,15 @@ namespace CosmicShore.ScriptableObjects
         public string ToastRecalledSub = "Back in your seat beside the Ark.";
         [Tooltip("Toast: the line under the recall when carried crystals were lost ({count}).")]
         public string ToastRecalledLostSub = "{count} carried crystals lost.";
+        [Tooltip("Scoreboard: a met Crystal Run's button that banks everything at the stop and ends the voyage.")]
+        public string ScoreFinishHere = "FINISH HERE";
+        [Tooltip("Scoreboard: the line under Finish here.")]
+        public string ScoreFinishHereLine = "Bank it all now and end the voyage";
+        [Tooltip("Scoreboard: the key Finish here is on.")]
+        public string ScoreFinishHereKey = "X";
+        [Tooltip("Scoreboard: a met Crystal Run's escort-home button ({scale}: the reward multiplier).")]
+        public string ScoreSailHome = "SAIL HOME";
+        [Tooltip("Scoreboard: the line under Sail home ({scale}).")]
+        public string ScoreSailHomeLine = "Escort the Ark home for {scale}x the crystals";
     }
 }
