@@ -574,6 +574,9 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, SwitchbackRayMesh.AppendBeam(a, b, 0f, verts, normals, tris), "a ray of no width");
         }
 
+        /// <summary>Without the gauntlet (a mode reusing Switchback's course for a hull without the key blast: Scarab
+        /// Rally) I4 is the Fortress of before 2026-11-03: one key a gate on the line, open eyes, the 18 u bore, its own
+        /// budgets. I1-I3 do not depend on the switch.</summary>
         /// <summary>Scarab Rally's I4 (no gauntlet, its own course): from anywhere inside the ring you leave, every point of
         /// the next ring's rim is in plain sight - no prism, door or field, laid or on its mover's cycle, crosses the line
         /// (Garrett, 2026-11-14: "respect sight lines from one ring to another so that prisms are not occluding which ring
@@ -677,10 +680,6 @@ namespace CosmicShore.Tests
             return true;
         }
 
-        /// <summary>Without the gauntlet (a mode reusing Switchback's course for a hull without the key blast: Scarab
-        /// Rally) I4 is the Fortress of before 2026-11-03: one key a gate on the line, open eyes, the 18 u bore, its own
-        /// budgets. I1-I2 do not depend on the switch; I3 keeps
-        /// the field of before 2026-11-17.</summary>
         [Test]
         public void WithoutTheGauntlet_I4IsTheFortressOfBefore()
         {
@@ -690,10 +689,6 @@ namespace CosmicShore.Tests
             Assert.AreEqual(140, SwitchbackBlastRun.MovingPrismCap(4, false));
             Assert.AreEqual(5100, SwitchbackBlastRun.TotalCap(4), "the gauntlet's I4: 1.5x");
             Assert.AreEqual(600, SwitchbackBlastRun.ColliderCap(4));
-            Assert.AreEqual(22f, SwitchbackBlastRun.BoreRadius(3, false), "a mode without the gauntlet keeps the I3 field of before");
-            Assert.AreEqual(3000, SwitchbackBlastRun.TotalCap(3, false));
-            Assert.AreEqual(7, SwitchbackBlastRun.CellsDeep(3, false));
-            Assert.AreEqual(18f, SwitchbackBlastRun.BoreRadius(3), "Switchback's I3 field (2026-11-17)");
             foreach (int seed in new[] { 3, 11, SwitchbackBlastRun.FixedSeed(4) })
             {
                 var c = Course(4, seed);
@@ -705,15 +700,11 @@ namespace CosmicShore.Tests
                     Assert.AreEqual(BlastRunTunnel.None, st.Tunnel);
                     Assert.IsTrue(st.Target.Equals(st.Door));
                 }
-                for (int i = 1; i <= 2; i++)
+                for (int i = 1; i <= 3; i++)
                 {
                     var ci = Course(i, seed);
                     Assert.AreEqual(Layout(ci, i).Prisms.Count, Layout(ci, i, false).Prisms.Count, $"I{i} depends on the switch");
                 }
-                // I3: Switchback's field grew on 2026-11-17 (elemental loop step 2); without the gauntlet (Scarab Rally) the
-                // I3 field is the one it was tuned on.
-                var c3 = Course(3, seed);
-                Assert.Greater(Layout(c3, 3).Prisms.Count, Layout(c3, 3, false).Prisms.Count, "Switchback's I3 field is the bigger one");
             }
         }
 

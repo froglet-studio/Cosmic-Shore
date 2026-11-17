@@ -209,7 +209,7 @@ adds ONE demand on the Dolphin's three verbs - drift, skim, discharge - instead 
 |---|---|---|---|---|---|---|
 | 1 | Learn to fly | 72 (144) | 420–620 | ≤ 40° | none | none |
 | 2 | Carve | 48 (96) | 400–650 | ≤ 45° | every 2nd corner, 90–150° | none |
-| 3 | Charge economy | 32 (64) | 460–720 | ≤ 50° | every 2nd corner, 90–150° (every 3rd, 90–130°, before 2026-11-17) | **skim walls** on every 2nd leg |
+| 3 | Charge economy | 32 (64) | 460–720 | ≤ 50° | every 3rd corner, 90–130° | **skim walls** on every 2nd leg |
 | 4 | Gauntlet | 20 (40) | 360–520 | ≤ 55° | every 2nd corner, 110–150° | **danger prisms** just off every leg's line |
 
 Axis jitter climbs 15 / 25 / 30 / 40° and the presentation cap 40 / 50 / 55 / 60°. The numbers live in
@@ -535,20 +535,13 @@ state, no physics and nothing reacts to players; a blasted mover prism simply st
 |---|---|---|---|---|---|
 | I1 | 30 u | 7 x 7 x 5 | 30 % | cubes, blocks, pillars, slabs, small spheres, big cubes, long pillars | none (static) |
 | I2 | 26 u | 7 x 7 x 6 | 40 % | + big spheres, panels | sliders (<= 10 groups / 40 prisms) |
-| I3 | 18 u (22 before 2026-11-17) | 9 x 9 x 9 (x 7 before) | 60 % (50 before) | + beams | + rotors (<= 20 / 100) |
+| I3 | 22 u | 9 x 9 x 7 | 50 % | + beams | + rotors (<= 20 / 100) |
 | I4 | 18 u | 9 x 9 x 8 | 60 % | (more beams and panels) | + opposed slider pairs (<= 28 / 140), double door |
 | I4 gauntlet (since 2026-11-03) | none | 11 x 11 x 12 (240 u across) | 70 % | + frames, jacks, hoops, ziggurats; tunnels on the route | <= 42 / 210; sealed double door; 2-3 keys a gate ("The I4 gauntlet" below) |
 
 The I4 row is now the field of a mode that turns the gauntlet off (Scarab Rally, `BlastRunGauntlet`); Switchback's own
 I4 is the gauntlet row and its section below. Since 2026-11-14 that row hangs no doors and keeps a sight bore of the
 bigger mouth + 12 u (`LaysDoors`, `SightBore`; SCARABRALLY.md "I4 keeps the sight line"); Switchback's rows are unchanged.
-
-**I3 made a rung of its own (2026-11-17, elemental loop step 2).** Raced in the real game (Amoebius headless,
-`Tools/Build/time_ladder_judge.py`, the Dolphin's shipped AI alone, course seeds 1-6) I3 cost no time over I2: Medium
-152 vs 150 s (1.02x), Legendary 125 vs 118 (1.06x), while I4's gauntlet was 1.64-1.77x over I3. With the I3 row above
-(bore 18, 9 deep, fill 0.6, caps raised to between I2 and the gauntlet) and a hairpin every second corner up to 150 deg
-(`SwitchbackCourseSettings.ForIntensity`; Scarab Rally, which turns the gauntlet off, keeps the I3 field of before: a sixth row of the tables), I3 is 1.16x over I2 for the Medium AI (164 vs 141 s) and 1.21x for the
-Legendary (141 vs 116); I4 then sits 1.5x over I3. I3's long legs are kept. Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md.
 
 Stations closer than `StationSpacing` = 280 u door to door are skipped (hairpins fold the course back on itself).
 
@@ -557,9 +550,9 @@ in Unity; `BudgetsHold` asserts them on 60 seeds + the four fixed seeds per inte
 
 | | I1 | I2 | I3 | I4 | why |
 |---|---|---|---|---|---|
-| `ColliderCap` (prisms within 200 u of any prism) | 300 | 340 | 460 (370 before 2026-11-17) | 400 (gauntlet 600) | the physics/trail-collision cost near a Dolphin; all under Breakwater I1's shipped worst 568 (Breakwater 568 / 464 / 322 / 276); the gauntlet's 600 is about that worst and the one budget the soak must confirm |
-| `TotalCap` (prisms laid) | 1800 | 2400 | 3800 (3000 before 2026-11-17) | 3400 (gauntlet 5100) | instanced draw + spatial index memory; below the old Blast Run caps (4600-3000) and `LayCapacity` (6144 since the gauntlet) |
-| `StationCap` (field prisms a gate) | 150 | 170 | 240 (190 before 2026-11-17) | 210 (gauntlet 315 a key) | one blast clears one station's mass |
+| `ColliderCap` (prisms within 200 u of any prism) | 300 | 340 | 370 | 400 (gauntlet 600) | the physics/trail-collision cost near a Dolphin; all under Breakwater I1's shipped worst 568 (Breakwater 568 / 464 / 322 / 276); the gauntlet's 600 is about that worst and the one budget the soak must confirm |
+| `TotalCap` (prisms laid) | 1800 | 2400 | 3000 | 3400 (gauntlet 5100) | instanced draw + spatial index memory; below the old Blast Run caps (4600-3000) and `LayCapacity` (6144 since the gauntlet) |
+| `StationCap` (field prisms a gate) | 150 | 170 | 190 | 210 (gauntlet 315 a key) | one blast clears one station's mass |
 | `MovingPrismCap` / `MovingGroupCap` | 0 / 0 | 40 / 10 | 100 / 20 | 140 / 28 (gauntlet 210 / 42) | per-frame CPU: one closed-form pose per group, then a transform write + `NotifyPositionChanged` (spatial index, shell, render matrix) per prism - ~210 cheap writes at most, no physics bodies, no allocation |
 
 Network cost per frame: zero for the fields (static prisms are deterministic from the course seed; movers from the

@@ -63,7 +63,7 @@
      "state": "built",
      "by": "Claude",
      "date": "2026-11-17",
-     "evidence": "Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed I3 flat over I2 (1.02x) and I4 1.7x; I3 field + hairpins now 1.16-1.21x over I2, I4 ~1.5x (PR #2109, DOLPHIN_TIME_LADDER.md)"
+     "evidence": "Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed I3 flat over I2 (1.02x) and I4 1.7x; proposed I3 field + hairpins measure 1.16-1.21x over I2, I4 ~1.5x; HELD as a patch (Yash's occupied Switchback lane), DOLPHIN_TIME_LADDER.md"
     }
    }
   },

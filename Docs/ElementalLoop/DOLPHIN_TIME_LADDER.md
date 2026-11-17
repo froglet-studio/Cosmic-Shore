@@ -125,11 +125,14 @@ from the rung below, prism hits and slowest gate, and the start levels: I1 T0, I
 | I4 | 249 | 1.64x | 227 | 221 | 1.77x | 538 |
 
 Real races run about 1.4x the model's seconds, and the shape is the model's: I3 adds no time over I2 (it was the open
-point above), and the gauntlet is a step of 1.6-1.8x on top. **The change (I3 only, Switchback only):** I3's field takes
+point above), and the gauntlet is a step of 1.6-1.8x on top. **The proposed change (I3 only, Switchback only), HELD:**
+Switchback is Yash's occupied lane tonight (Ys-bleeding-edge, the AI), so the change is not merged: it is the patch
+`/mnt/project-files/regatta-flywheel/fun/switchback-i3-rung.patch` (applies on bleeding-edge of 2026-11-17, 127 harness
+tests pass), for Garrett or Yash to take or leave. I3's field takes
 the step between I2 and the gauntlet (bore 22 to 18 u, 7 to 9 cells deep, fill 50 to 60 %, caps 3000 to 3800 prisms, 190
 to 240 a station, 370 to 460 colliders) and I3 carves a hairpin every second corner up to 150 deg, as I2 and I4 do (it
-was every third, up to 130). I3's long legs stay. Scarab Rally, which reuses this course without the gauntlet, keeps
-the I3 field it was tuned on. Measured on 6 course seeds:
+was every third, up to 130). I3's long legs stay. Scarab Rally is unchanged: it lays no Blast Run at I3 and has its
+own course settings. Measured on 6 course seeds:
 
 | Rung | Medium s | step | Legendary s | step |
 |---|---|---|---|---|
