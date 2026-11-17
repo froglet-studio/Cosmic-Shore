@@ -24862,3 +24862,17 @@ Skein on seeds 4-6: I2 / I4 Easy 172 / 384 s, Medium 173 / 360, Hard 162 / 343, 
    / 18 (I3-I4).
 2. Arcade > Skein, I2 with Medium rivals: about 165-175 s against Legendary's 135-145 s. MinigameSkein's controller
    shows AI Seek Gain By Difficulty 0.5 / 0.5 / 0.7 / -1.
+
+## Perch Run AI no longer circles a ring (2026-11-17, elemental loop step 2, overnight run)
+
+Verified:
+- Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py --mode PerchRun --hull Goby`). The AI Goby
+  finished 12 of 12 Legendary races and 11 of 12 Medium races at I1-I4 on fresh seeds 4-6. Before, it finished 0 of 2
+  at I4.
+- `perch_run_harness` ran 11 tests, all passed, including the new turning-circle test.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor.
+
+1. Arcade > Perch Run, Goby, I2 with two AI Gobys: neither circles a ring. When a ring is close beside one, it flies
+   straight on, turns back and darts through. Both finish.

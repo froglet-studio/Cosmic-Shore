@@ -204,6 +204,16 @@
      "evidence": "ladder call: rivals by difficulty (Easy 3.5/Medium 5/Hard 8 nose; Medium I4 161 s, was DNF; SCARABRALLY.md AI pace by difficulty); bare I3 = I2 (57 s), lighter I3 field held on Yash's Switchback lane (patch in project files)"
     }
    }
+  },
+  "Goby": {
+   "Time": {
+    "2": {
+     "state": "doing",
+     "by": "Claude",
+     "date": "2026-11-17",
+     "evidence": "Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Goby orbiting a ring inside its turning circle and failing to finish most races past I1; the coach now flies straight on to open the range (PERCH_RUN.md 5.1): Legendary 44/47/46/72 s, 12 of 12 finished on fresh seeds. Open: difficulty does nothing (no seat error); I4 still loses up to 40 s at some reef rings."
+    }
+   }
   }
  },
  "arenas": {
