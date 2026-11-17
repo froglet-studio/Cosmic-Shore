@@ -402,6 +402,10 @@ def main():
     a.fast = [int(s) for s in a.fast.split(",") if s]
     a.rest = [int(s) for s in a.rest.split(",") if s]
     a.l5 = [int(s) for s in a.l5.split(",") if s]
+    # A confirm always races I4 from Time 5: at level-5 speed a fleet-lag nose orbits a gate and never clears it
+    # (the Rhino in Headlong, FINDINGS row 21), and a drive that only won from rest must not ship that back.
+    if a.confirm and 4 not in a.l5:
+        a.l5.append(4)
     g = GAMES[a.hull]
     seeds = [int(s) for s in a.seeds.split(",") if s]
     conds = conditions_for(a)
