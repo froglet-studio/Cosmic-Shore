@@ -239,7 +239,8 @@ CAPTAIN_FOOT = 862                             # the cards' bottom edge on the b
 ART = {"poster_cell.jpg": "Docs/MenuRedesignB/build_refs/sea_cell_outside.jpg",
        "poster_logo_cosmic_shore.png": "Docs/MenuRedesignB/build_refs/flat_cosmic_shore.png",
        "poster_logo_froglet.png": "Docs/MenuRedesignB/build_refs/flat_froglet.png"}
-ART.update({f"captain_{n.lower()}.jpg": f"Docs/Pilots/art/busts/{n}.jpg" for n, _, _ in CAPTAINS})
+# Each bust with headroom painted above it (Tools/Build/poster_captain_art.py), so no head or ear meets the card's top.
+ART.update({f"captain_{n.lower()}.jpg": f"Docs/MenuRedesignB/build_refs/captains/{n}.jpg" for n, _, _ in CAPTAINS})
 ART_META_DONOR = "Assets/_Graphics/CardImages/Squirrel_large.png.meta"     # a single sprite, no mipmaps
 HULLS = (("Squirrel", 500, 20, 9), ("Dolphin", 830, -10, 7), ("Sparrow", 1190, 20, 8))    # name, x, y, bob seconds
 HULL_SIZE = 300
@@ -386,7 +387,7 @@ def captain_card(k, name, cx, h, w):
     n.child(N(f"{key}/Ink", "Ink", STRETCH)).add("cr", 222, K.canvas_renderer()) \
         .add("slant", 114, slant(tok("TextLight"))).add("th", 114, H.themed("TextLight"))
     n.child(N(f"{key}/Picture", "Picture", R((0, 0), (1, 1), (0, 0), (-6, -6)))).add("cr", 222, K.canvas_renderer()) \
-        .add("slant", 114, slant(K.WHITE, sprite=art_guid(f"captain_{name.lower()}.jpg"), focus=(0.5, 0.82)))
+        .add("slant", 114, slant(K.WHITE, sprite=art_guid(f"captain_{name.lower()}.jpg"), focus=(0.5, 0.5)))
     return n
 
 
