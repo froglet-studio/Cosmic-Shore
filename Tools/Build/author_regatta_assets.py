@@ -357,7 +357,7 @@ MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sp
 # trained Time-game AI nose pair in its race line (author_race_lines.py). regatta_balance.py has no model of them, so they
 # take no StartingElements row (rest at the card start; every hull is at Time 5 in the L5 start) until the real-game
 # search prices them.
-JUDGED_HULLS = ["Wrasse", "Thresher", "Meerkat", "Grizzly"]
+JUDGED_HULLS = ["Wrasse", "Thresher", "Meerkat", "Grizzly", "BrittleStar", "Angler"]
 HULL_ORDER = MODEL_HULLS + JUDGED_HULLS
 for _h in JUDGED_HULLS:
     EXISTING.setdefault(f"Vessel_{_h}", lib.existing_guid(f"Assets/_SO_Assets/Classes/SO_Class_{_h}.asset"))

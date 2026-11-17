@@ -433,10 +433,12 @@ def _ref_mean(backend):
 # Dolphin 131.0 - a 3.7x field. The Scarab stalled in half its races until its trained AI (#2087); since 2026-11-17 it is
 # trusted too. The Wrasse, Thresher, Meerkat and Grizzly joined the card 2026-11-17 after finishing the shipped course and
 # three archive3six courses alone under both starts (Thresher 79-112 s, Wrasse 110-196, Grizzly 164-350, Meerkat 274-372).
+# The Brittle Star followed (73-89 s). The Angler is on the card but NOT trusted here: it finishes in 350-432 s, past the
+# search's 400 s limit, so every course would score it a DNF.
 # "mixed" races these in the engine and
 # prices any other hull with the model; every seat carries the backend that timed it.
 ENGINE_TRUSTED = tuple(h for h in os.environ.get(
-    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Stoat,Urchin,Scarab,Wrasse,Thresher,Meerkat,Grizzly").split(",") if h)
+    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Stoat,Urchin,Scarab,Wrasse,Thresher,Meerkat,Grizzly,BrittleStar").split(",") if h)
 # The judge seeds each race at turn start, so (seed, race) is deterministic; the search races one seed per course (8
 # hulls x 2 seeds is ~4.5 min a course on 4 cores) and the pool's candidates are re-raced on more seeds for the noise.
 # The start condition every hull races under: "card" (the arcade card's own starting elements, today) or "L5" (every
