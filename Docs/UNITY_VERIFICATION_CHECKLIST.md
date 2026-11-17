@@ -24822,3 +24822,16 @@ in the changed files. Not verified: a real Unity editor.
 
 1. Arcade > Breakwater, Sparrow, I3 with Medium rivals: they finish in about 110 s, slower than Legendary rivals (about
    82 s); select MinigameBreakwater's controller and see AI Nose Follow By Difficulty 1.8 / 2 / 3.5 / -1.
+
+## Scarab Rally and Skein AI pace by difficulty (2026-11-17, elemental loop step 2, overnight run)
+
+Verified: Amoebius raced the shipped C# headless (the AI alone, real game). Scarab Rally on fresh seeds 4-6: Easy
+74-85 s at I1 and 178-213 s at I4, Medium 69-75 s at I2 and 162-172 s at I4 (Medium and Easy never finished I4 before).
+Skein on seeds 4-6: I2 / I4 Easy 172 / 384 s, Medium 173 / 360, Hard 162 / 343, Legendary 139 / 334. `unity_refcompile`
+0 errors in the changed files. Not verified: a real Unity editor.
+
+1. Arcade > Scarab Rally, I4 with Medium rivals: they finish (about 160-170 s), behind Legendary rivals (about 120 s).
+   MinigameScarabRally's controller shows AI Scarab Nose Follow By Intensity rows 3.5 / 5 / 8 / 15 (I1-I2), 3.5 / 5 / 8
+   / 18 (I3-I4).
+2. Arcade > Skein, I2 with Medium rivals: about 165-175 s against Legendary's 135-145 s. MinigameSkein's controller
+   shows AI Seek Gain By Difficulty 0.5 / 0.5 / 0.7 / -1.

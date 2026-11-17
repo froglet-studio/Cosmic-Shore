@@ -126,6 +126,12 @@
      "by": "Regatta plan threads",
      "date": "2026-11-08",
      "evidence": "StoatSlingConfig_Slingshot from slingshot-stoat-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846)"
+    },
+    "2": {
+     "state": "built",
+     "by": "Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest",
+     "date": "2026-11-17",
+     "evidence": "ladder call: no change; Legendary 64/53/66/75 s on 8 courses a rung, Medium 76/66/72/95 s; denser I3 Orrery measured no effect"
     }
    }
   },
@@ -179,7 +185,7 @@
      "state": "built",
      "by": "Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest",
      "date": "2026-11-17",
-     "evidence": "ladder call: AI 85/141/209/361 s; I4 cut from 6 to 5 laps (AI 328 s), proofs pass (SKEIN.md 18); human flights: 1 at I3"
+     "evidence": "ladder call: AI 85/141/209/328 s after I4 at 5 laps (#2107); rivals by difficulty via rail-seek gain (SKEIN.md 19)"
     }
    }
   },
@@ -190,6 +196,12 @@
      "by": "Claude for Garrett",
      "date": "2026-11-13",
      "evidence": "Rally I1-I3 off Blast Run, AI no crystal detours (SCARABRALLY.md 2026-11-13); awaiting Garrett's fun card at I2"
+    },
+    "2": {
+     "state": "built",
+     "by": "Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest",
+     "date": "2026-11-17",
+     "evidence": "ladder call: rivals by difficulty (Easy 3.5/Medium 5/Hard 8 nose; Medium I4 161 s, was DNF; SCARABRALLY.md AI pace by difficulty); bare I3 = I2 (57 s), lighter I3 field held on Yash's Switchback lane (patch in project files)"
     }
    }
   }
