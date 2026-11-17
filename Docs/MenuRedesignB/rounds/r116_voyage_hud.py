@@ -27,7 +27,9 @@ Every word is the authored text already in the voyage assets (ToastArkUnderAttac
 game frame behind is the same real frame of the game Rev 114 used, fauna are lit in the world (no rings or arrows on
 the screen), the vessel's own HUD keeps its corner (bottom right), and nothing moves at rest.
 
-    python3 Docs/MenuRedesignB/rounds/r116_voyage_hud.py <scratch root> [rev]
+    python3 Docs/MenuRedesignB/rounds/r116_voyage_hud.py <scratch root> [rev]            the six combined boards (first publish)
+    python3 Docs/MenuRedesignB/rounds/r116_voyage_hud.py <scratch root> 116 options      one board per option, R116A-F (on the canvas)
+    python3 Docs/MenuRedesignB/rounds/r116_voyage_hud.py <scratch root> 116 singles      one board per option and screen (36: over the canvas file cap)
 """
 import importlib.util
 import sys
@@ -35,6 +37,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 _root, _rev = sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "116"
+_MODE = sys.argv[3] if len(sys.argv) > 3 else ""
 _spec = importlib.util.spec_from_file_location("r114", HERE / "r114_voyages.py")
 r114 = importlib.util.module_from_spec(_spec)
 sys.argv = [sys.argv[0], _root, _rev]
@@ -797,8 +800,70 @@ def board(key):
 
 BOARDS = {f"R{REV}{k}.dc.html": (lambda k=k: board(k)) for k in SCREENS}
 
-if __name__ == "__main__":
+if __name__ == "__main__" and not _MODE:
     print("board size", BW, "x", BH)
     for name, fn in BOARDS.items():
         (ROOT / name).write_text(fn(), encoding="utf-8")
         print("wrote", ROOT / name)
+
+
+# ── one board per option and screen (Shombith, 2026-11-17: "Make all the variations into seperate images ... 116A, 116B
+#    like this"): R116<letter>_<screen>.dc.html, each its own full screen; the Toasts board carries its strip under it ──
+TOAST_H = H + UNDER + 20
+
+
+def single(letter, key):
+    idx, title, sub = SCREENS[key]
+    fam = FAM[letter]
+    scr = fam[idx]()
+    h = H
+    if key == "Toasts":
+        scr = (f'<div class="scr" style="left:0;top:0;width:{W}px;height:{H}px">{scr}{slot_mark(letter)}</div>'
+               f'<div class="abs" style="left:0;top:{H + 20}px;width:{W}px;height:{UNDER - 20}px">{toast_strip(letter)}</div>')
+        h = TOAST_H
+    html = snap(r100.page(f"Rev {REV} {letter} {fam[0].replace(' (recommended)', '')} - {title}", scr, r113.LOGIC))
+    return html if h == H else html.replace("height: 1080px", f"height: {h}px").replace('"height":1080', f'"height":{h}')
+
+
+SINGLES = {f"R{REV}{letter}_{key}.dc.html": (lambda letter=letter, key=key: single(letter, key)) for letter in FAM for key in SCREENS}
+
+if __name__ == "__main__" and _MODE == "singles":
+    for name, fn in SINGLES.items():
+        (ROOT / name).write_text(fn(), encoding="utf-8")
+    print("wrote", len(SINGLES), "single boards")
+
+
+# ── one board per option (Shombith, 2026-11-17: "Make all the variations into seperate images rather than doing this mix
+#    up together ... 116A, 116B like this"): R116<letter>.dc.html holds that option's six screens and nothing else ──────
+SHORT = {"Hud": "In flight", "Attack": "The Ark under attack", "Toasts": "The toast spot", "Sail": "The raid countdown",
+         "Pause": "Pause, goal met", "Score": "The end scoreboard"}
+
+
+def option_board(letter):
+    fam = FAM[letter]
+    body = (f'<span class="abs hd" style="left:0;top:10px;font-size:44px">116{letter}  ·  {fam[0]}</span>'
+            f'<span class="abs" style="left:0;top:78px;font-size:22px;color:{SOFT};max-width:5200px">{fam[1]}</span>')
+    for n, key in enumerate(SCREENS):
+        idx, title, sub = SCREENS[key]
+        col, row = n % 3, n // 3
+        x, y = col * (W + GAP), HEAD + row * (CELL_H + GAP)
+        scr = fam[idx]()
+        if key == "Toasts":
+            scr += slot_mark(letter)
+        body += (f'<div class="abs row" style="left:{x}px;top:{y}px;width:{W}px;height:{LABEL - 10}px;gap:18px">'
+                 f'<span class="hd" style="font-size:28px;white-space:nowrap;flex:none">{SHORT[key]}</span>'
+                 f'<span style="font-size:17px;color:{SOFT}" class="ell">{sub}</span></div>'
+                 f'<div class="scr" style="left:{x}px;top:{y + LABEL}px;width:{W}px;height:{H}px">{scr}</div>')
+        if key == "Toasts":
+            body += f'<div class="abs" style="left:{x}px;top:{y + LABEL + H + 20}px;width:{W}px;height:{UNDER - 20}px">{toast_strip(letter)}</div>'
+    html = snap(r100.page(f"Rev {REV} {letter} - {fam[0]}: its six in-game screens", body, r113.LOGIC))
+    return (html.replace("width: 1920px; height: 1080px", f"width: {BW}px; height: {BH}px")
+            .replace('"width":1920,"height":1080', f'"width":{BW},"height":{BH}'))
+
+
+OPTIONS = {f"R{REV}{letter}.dc.html": (lambda letter=letter: option_board(letter)) for letter in FAM}
+
+if __name__ == "__main__" and _MODE == "options":
+    for name, fn in OPTIONS.items():
+        (ROOT / name).write_text(fn(), encoding="utf-8")
+    print("wrote", len(OPTIONS), "option boards")
