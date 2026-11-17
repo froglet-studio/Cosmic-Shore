@@ -24813,3 +24813,12 @@ flights a side against run3b had every condition faster, loss 2.40 -> 2.25, no D
    0.291, Low Tank Seconds Between Pellets 0.175.
 3. Race Serpentine I4 against a Legendary AI Serpent: it finishes near 85-100 s, and when its pellets run low it cloaks
    and lays a wall.
+
+## Breakwater AI pace by difficulty (2026-11-17, elemental loop step 2, overnight run)
+
+Verified: Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py`): Breakwater's four levels race
+about 125 / 110 / 85-109 / 80-97 s at every rung on fresh seeds 4-6, every race finished. `unity_refcompile` 0 errors
+in the changed files. Not verified: a real Unity editor.
+
+1. Arcade > Breakwater, Sparrow, I3 with Medium rivals: they finish in about 110 s, slower than Legendary rivals (about
+   82 s); select MinigameBreakwater's controller and see AI Nose Follow By Difficulty 1.8 / 2 / 3.5 / -1.
