@@ -127,6 +127,13 @@ namespace CosmicShore.Gameplay
             int next = RingIndexFor(threaded);
             if (next < 0 || next >= _course.Count) return false;
             aim = PerchRunCourse.PlanDart(hull.position, _course, next, _coral, out dartLength);
+            // A ring inside the turning circle is only ever orbited: fly straight on to open the range, then turn.
+            float speed = pilot.Vessel?.VesselStatus?.Speed ?? PerchRunCourse.AiCruiseSpeed;
+            if (PerchRunCourse.InsideTurn(hull.position, hull.forward, aim, PerchRunCourse.TurnRadius(speed)))
+            {
+                aim = hull.position + hull.forward * PerchRunCourse.DartRange;
+                dartLength = 0f;
+            }
             return true;
         }
     }

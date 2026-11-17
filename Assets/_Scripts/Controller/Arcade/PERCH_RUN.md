@@ -117,6 +117,25 @@ The AI never fires a dart that stops on coral (`The_AI_dart_threads_every_ring`,
 Not verified in the editor: that the turn settles within 0.5° at low frame rates, and how the Pistol's island laying
 looks when the Goby perches mid-race.
 
+### 5.1 The orbit, found in the real game (2026-11-17, elemental loop step 2)
+
+The race judge (`Tools/Build/time_ladder_judge.py --mode PerchRun --hull Goby`, Amoebius headless) showed the AI Goby
+failing to finish most races past I1: 0 of 2 finished at I4, and 1 of 2 at I2 and I3. The trace showed it circling one
+ring for 400 s. The ring sat inside the Goby's turning circle (it cruises at about 144 u/s and turns at 90 deg/s, so the
+circle's radius is about 92 u). Turning at full rate toward a point inside that circle settles into an orbit round it,
+so the nose never comes within the dart's 0.5 deg. Now, when the aim is inside the circle on its side of the nose (with
+a 1.25x margin; 1.6x measured slower), the coach flies straight on (`PerchRunCourse.InsideTurn`, `TurnRadius`) until the
+ring is outside the circle, then turns for it. The vessel is untouched: this is the mode's coach.
+
+| Legendary, seeds 1-2 before, fresh seeds 4-6 after | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| before: finished, median s | 2/2, 33.5 | 1/2, 40.9 | 0/2 | 0/2 |
+| after | 3/3, 44.4 | 3/3, 46.5 | 3/3, 46.3 | 3/3, 72.4 |
+
+Medium after: 3/3, 3/3, 3/3, 2/3 (one I4 timeout). Two things are still open:
+- **Difficulty does nothing.** Medium and Legendary race identically because the coach has no seat error.
+- **I4 still loses up to 40 s at some reef rings.** The Goby wanders near the ring, darting without threading it.
+
 ## 6. Numbers, and where they are authored
 
 | Knob | Where | Shipped |
