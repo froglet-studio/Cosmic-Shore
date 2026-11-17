@@ -178,6 +178,32 @@ GAMES = {
         "crystal_field": "aiTimeCrystalSlack",
         "lead": 0.0, "rows": [],                       # RedlineController.aiNoseLead: Manta 0
     },
+    "Urchin": {
+        "mode": "Skein",
+        # UrchinAutopilotConfigSO (AIPilot's rail-riding autopilot, the Skein file): bounds are the SO's own Range/Min
+        # limits, capped at a few times the shipped value where the SO has only a floor.
+        "assets": {i: "Assets/Resources/UrchinAutopilotConfig_Skein.asset" for i in (1, 2, 3, 4)},
+        "fields": {"RailLeadDistance": (10.0, 900.0), "AssessIntervalSeconds": (0.05, 1.5), "ScanArc": (50.0, 6000.0),
+                   "CaptureFraction": (0.1, 1.0), "ClosingFraction": (0.1, 0.95), "LaunchPreferArc": (0.0, 1500.0),
+                   "DryCrawlArc": (0.0, 400.0), "MaxDryCrawlSeconds": (0.5, 8.0), "ReverseLeadTurnRadii": (1.0, 6.0),
+                   "ParkedSpeed": (0.5, 40.0), "ParkedSeconds": (0.5, 12.0), "MinSlipIntervalSeconds": (0.25, 6.0),
+                   "SpikeIntervalSeconds": (0.1, 6.0), "SpikeMinAmmo": (0.0, 1.0), "TrackAimDegrees": (1.0, 45.0),
+                   "TrackMinRangeInLengths": (1.0, 10.0), "TrackAxisAlignment": (0.0, 1.0)},
+        # SkeinController.aiNoseLead: Urchin 0. Skein has no nose rate of its own: the fleet lag (a row's NoseFollow 0).
+        "lead": 0.0, "rows": [], "nose_gene": 1.5,
+    },
+    "Stoat": {
+        "mode": "Slingshot",
+        # StoatSlingConfigSO's AI sling rule (StoatSlingExecutor.AutopilotSling), the Slingshot file; only the ai* knobs
+        # and the trampoline AI turn scale, never the sling's own physics (a mode never changes the vessel).
+        "assets": {i: POL + "StoatSlingConfig_Slingshot.asset" for i in (1, 2, 3, 4)},
+        "fields": {"aiSlingMinTurnDegrees": (0.0, 180.0), "aiReleaseConeDegrees": (1.0, 90.0),
+                   "aiCatchGiveUpSeconds": (0.5, 10.0), "aiSlingIntervalSeconds": (0.5, 20.0),
+                   "aiSlingMinDistance": (0.0, 400.0), "aiWarpMinDistance": (0.0, 1200.0),
+                   "aiHoldForWindowDegrees": (0.0, 360.0), "trampolineAiTurnScale": (40.0, 300.0)},
+        # SlingshotController.aiNoseLead: Stoat 2.5. No nose rate of its own: the fleet lag.
+        "lead": 2.5, "rows": [], "nose_gene": 1.5,
+    },
 }
 LEAD_RANGE = (0.0, 3.0)
 # The AI nose follow rate (VesselTransformer.AINoseFollowPerSecond). Games with no knob of their own fly the fleet lag,
@@ -421,8 +447,63 @@ def child(parent, seed, dims, rng):
     return p
 
 
+def self_test():
+    """Offline: every hull's table entry reads every searched field from every asset it names, each shipped value lies
+    inside its bounds, the genome round-trips through the search space, and the race spec writes only the hull's own
+    fields. A negative control (a field the asset does not carry) must fail. No player is started."""
+    errs = []
+
+    def check(hull, g):
+        out = []
+        for rel in sorted(set(g["assets"].values())):
+            if not os.path.exists(os.path.join(ROOT, rel)):
+                out.append(f"{hull}: missing asset {rel}")
+                continue
+            got = read_fields(rel, g["fields"])
+            for k, (lo, hi) in g["fields"].items():
+                if k not in got:
+                    out.append(f"{hull}: {k} not a top-level number in {rel}")
+                elif not lo <= got[k] <= hi:
+                    out.append(f"{hull}: shipped {k}={got[k]} outside [{lo}, {hi}]")
+        if not out:
+            dims = dims_for(g)
+            space = Space(dims)
+            for p in shipped_genomes(g):
+                q = space.decode(space.encode(p))
+                for d in dims:
+                    if abs(float(q[d["name"]]) - float(p[d["name"]])) > 1e-6 * max(1.0, abs(d["hi"])):
+                        out.append(f"{hull}: {d['name']} does not round-trip ({p[d['name']]} -> {q[d['name']]})")
+                spec = spec_for(hull, g, p)
+                for ov in spec["overrides"]:
+                    extra = set(ov["fields"]) - set(g["fields"])
+                    if extra:
+                        out.append(f"{hull}: spec writes foreign fields {sorted(extra)}")
+                if not any(r["Hull"] == hull for r in spec["controller_overrides"]["aiNoseLead"]):
+                    out.append(f"{hull}: spec has no nose lead row")
+                if "ai_nose_follow" in spec:
+                    out.append(f"{hull}: the shipped genome changes the nose rate")
+        return out
+
+    for hull, g in sorted(GAMES.items()):
+        e = check(hull, g)
+        errs += e
+        print(f"{hull:8s} {g['mode']:12s} {'ok' if not e else 'FAIL'}  {len(g['fields'])} fields")
+    bogus = dict(GAMES["Urchin"], fields=dict(GAMES["Urchin"]["fields"], NotAField=(0.0, 1.0)))
+    if not check("Urchin", bogus):
+        errs.append("negative control: a field the asset does not carry passed")
+    else:
+        print("negative control: an unknown field fails (ok)")
+    for e in errs:
+        print("  " + e)
+    print("self-test", "FAILED" if errs else "passed")
+    return 1 if errs else 0
+
+
 def main():
+    if "--self-test" in sys.argv[1:]:
+        sys.exit(self_test())
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--self-test", action="store_true", help="offline check of the hull table (no players)")
     ap.add_argument("--hull", required=True, choices=sorted(GAMES))
     ap.add_argument("--search", action="store_true")
     ap.add_argument("--confirm", help="JSON file of params (or a list of them) to race against the shipped AI")
