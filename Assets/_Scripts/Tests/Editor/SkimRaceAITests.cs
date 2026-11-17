@@ -495,7 +495,10 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(i1);
             Assert.AreEqual(0f, i1.CrossingLeadSeconds);
             Assert.AreEqual(1f, i1.CrossingLookaheadScale);
-            Assert.AreEqual(1f, i1.CrossingThrottle);
+            // Squirrel run1 (2026-11-17) searched CrossingThrottle with CrossingSlowDistance: it found 0.72 over 0 u, a
+            // slow-down that never applies. Either one keeps the crossing slow-down off.
+            Assert.IsTrue(i1.CrossingThrottle >= 1f || i1.CrossingSlowDistance <= 0f,
+                $"I1 slows for crossings: throttle {i1.CrossingThrottle} over {i1.CrossingSlowDistance} u");
         }
 
         // ── Track-planner stagger (SkimRaceReplanGate) ────────────────────

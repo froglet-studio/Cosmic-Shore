@@ -63,6 +63,9 @@ namespace CosmicShore.Gameplay
                 ? SkimRaceDifficultySO.Load().For(difficulty)
                 : default;
             pilot.Bind(vessel, gameData, config, SkimRaceObjective.For(gameData), handicap);
+            // The nose rate the policy was trained with (0 = the fleet lag, left as it is).
+            var transformer = vessel.VesselStatus.VesselTransformer;
+            if (config.AINoseFollowPerSecond > 0f && transformer) transformer.AINoseFollowPerSecond = config.AINoseFollowPerSecond;
             CSDebug.LogVerbose(CSLogChannel.AITraining,
                 $"[SkimRaceAI] {vessel.VesselStatus.PlayerName} flies the Skim Race pilot " +
                 $"({config.PolicyVersion}, I{intensity}, {pilot.Objective?.GetType().Name}, " +

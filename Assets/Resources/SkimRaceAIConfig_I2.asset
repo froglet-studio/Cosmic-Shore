@@ -137,3 +137,4 @@ MonoBehaviour:
   RecoverySeconds: 2.5
   RecoveryThrottle: 0.673
   MissingTargetGrace: 0.25
+  AINoseFollowPerSecond: 0

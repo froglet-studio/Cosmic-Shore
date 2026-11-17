@@ -12,25 +12,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bf12f8c9f443417b8791c1048628978, type: 3}
   m_Name: SkimRaceAIConfig_I1
   m_EditorClassIdentifier: 
-  PolicyVersion: skimrace-v5-i1
+  PolicyVersion: skimrace-v6-i1-squirrel-run1
   TrackFingerprint: ed6cd993
   DeployInNormalPlay: 1
   DecisionHz: 0
-  LookaheadSeconds: 0.562
-  LookaheadMin: 69.398
-  LookaheadMax: 521.053
-  SkimHeight: 5.811
-  CrystalBumpHalfWidth: 411.096
-  LowBoostApproachScale: 0.905
-  LowBoostFull: 2.729
-  DirectBoost: 0
-  DirectBoostHysteresis: 0.7
+  LookaheadSeconds: 0.721
+  LookaheadMin: 31.654
+  LookaheadMax: 745.155
+  SkimHeight: 2.356
+  CrystalBumpHalfWidth: 207.814
+  LowBoostApproachScale: 0.71
+  LowBoostFull: 7.016
+  DirectBoost: 3.408
+  DirectBoostHysteresis: 1.658
   DirectViaClearance: 4
   DirectViaLift: 14
   DirectViaLateral: 26
   TrackGuard: 1
-  TrackGuardMargin: 1
-  PassMargin: 1.408
+  TrackGuardMargin: 2.663
+  PassMargin: 1.504
   DefaultCaptureRadius: 24
   RibbonClearHeight: 4.723
   RibbonClearLateral: 28.848
@@ -38,13 +38,13 @@ MonoBehaviour:
   SequencedCrossing: 0
   CrossingLeadSeconds: 0
   CrossingLookaheadScale: 1
-  CrossingThrottle: 1
-  CrossingSlowDistance: 150
+  CrossingThrottle: 0.719
+  CrossingSlowDistance: 0
   SlabGuardSeconds: 0
   HullGuardSeconds: 0
   HullMargin: 1.2
   HullEscapeLift: 40
-  CrystalDirectDistance: 280.877
+  CrystalDirectDistance: 324.194
   TerminalCentreBias: 0.017
   TerminalNeedsClearChord: 0
   TerminalChordClearance: 1.5
@@ -83,9 +83,9 @@ MonoBehaviour:
   MpcStrikeCost: 20
   MpcStrikeUsesBoostLoss: 0
   MpcNominalBias: 0.05
-  LeadGain: 2.451
-  MaxLeadDegrees: 32.221
-  StickGainPerDegree: 0.138
+  LeadGain: 3.801
+  MaxLeadDegrees: 47.281
+  StickGainPerDegree: 0.276
   LevelingRoll: 0.25
   UseLineTracker: 0
   TrackerConvergeSeconds: 0.6
@@ -95,8 +95,8 @@ MonoBehaviour:
   TrackerMaxLeadDegrees: 90
   TrackerCurvatureSpan: 12
   CruiseThrottle: 1
-  MinThrottle: 0.371
-  ReachabilityMargin: 0.128
+  MinThrottle: 0.182
+  ReachabilityMargin: 2.391
   CaptureThrottleSearch: 0
   CaptureHorizon: 1.5
   CaptureWindowSeconds: 2
@@ -132,8 +132,9 @@ MonoBehaviour:
   RingAlignDegrees: 1.5
   RingForwardDistance: 100
   RingCooldownSeconds: 20.5
-  StallSeconds: 4.447
+  StallSeconds: 7.27
   ProgressEpsilon: 25
   RecoverySeconds: 2.5
-  RecoveryThrottle: 0.842
+  RecoveryThrottle: 0.59
   MissingTargetGrace: 0.25
+  AINoseFollowPerSecond: 20.455

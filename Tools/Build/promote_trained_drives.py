@@ -201,8 +201,8 @@ def check():
             bad.append(f"Dolphin Switchback files disagree on {k}: {sorted(vals)}")
     # the Squirrel's Skim Race general policy is author_skimrace_ai_config.py's; it must carry the promoted version
     sk = open(os.path.join(L.REPO, "Assets", "Resources", "SkimRaceAIConfig.asset"), encoding="utf-8").read()
-    if field_of(sk, "PolicyVersion") != "skimrace-v4-time-arcade":
-        bad.append("SkimRaceAIConfig: not the promoted skimrace-v4-time-arcade (run author_skimrace_ai_config.py)")
+    if field_of(sk, "PolicyVersion") != "skimrace-v5-squirrel-run1":
+        bad.append("SkimRaceAIConfig: not the promoted skimrace-v5-squirrel-run1 (run author_skimrace_ai_config.py)")
     if L.check():
         bad.append("learn_drives_from_flights.py --check failed")
     for b in bad:

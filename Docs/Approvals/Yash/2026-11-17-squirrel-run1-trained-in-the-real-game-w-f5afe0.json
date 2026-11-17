@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-17-squirrel-run1-trained-in-the-real-game-w-f5afe0",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T07:19:34+00:00",
+  "area": "Skim Race Squirrel AI (author_skimrace_ai_config.py POLICIES, SkimRaceAIConfigSO)",
+  "summary": "Squirrel run1, trained in the real game with time_ai_search.py, replaced 21 drive numbers in the general, I1 and I4 Skim Race policies and added a per-file nose rate (SkimRaceAIConfigSO.AINoseFollowPerSecond, 20.455 there, 0 in I2 and Regatta). I3/I4 20-40% faster on 28 fresh flights a side; I2 untouched because a fast nose loses it. git log shows the old values in the generator.",
+  "branch": "squirrel-promote",
+  "commit": "66a0fce3f"
+}

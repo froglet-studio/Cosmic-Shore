@@ -347,6 +347,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds of no target before the pilot falls back to pure track following.")]
         [Min(0f)] public float MissingTargetGrace = 0.25f;
 
+        [Header("Nose")]
+        [Tooltip("The AI nose's follow rate per second while this policy flies (VesselTransformer.AINoseFollowPerSecond): " +
+                 "0 = leave it alone (the fleet lag, 1.5/s). A per-intensity file carries the rate it was trained with, " +
+                 "since the drive numbers and the nose rate are found together (time_ai_search.py).")]
+        [Min(0f)] public float AINoseFollowPerSecond = 0f;
+
         public static SkimRaceAIConfigSO LoadDefault()
         {
             var cfg = Resources.Load<SkimRaceAIConfigSO>(ResourcePath);
