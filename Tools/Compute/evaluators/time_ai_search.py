@@ -255,6 +255,45 @@ GAMES = {
                                          -1.0 if float(p["noseFollowLegendary"]) <= 1.5 else float(p["noseFollowLegendary"])]},
         "lead": None, "rows": [],                      # no aiNoseLead table: the row above is the lead
     },
+    "Thresher": {
+        "mode": "ThresherTime",
+        # ThresherAIBoostPolicy's Thresher Time variant (the plant-and-sling drive) and ThresherTimeController.aiNoseLead
+        # (Thresher 2.5). Thresher Time has no nose knob: the fleet lag, 1.5/s, set through the judge. In Regatta the hull
+        # flies the base policy (no Regatta variant) and its race line's nose pair, so a winner reaches Regatta through a
+        # ThresherAIBoostPolicy_Regatta variant and Resources/RaceLines/Thresher_Regatta.
+        "assets": {i: POL + "ThresherAIBoostPolicy_ThresherTime.asset" for i in (1, 2, 3, 4)},
+        "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
+                   "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
+                   "plantMinTurnDegrees": (0.0, 180.0), "plantMinDistance": (0.0, 400.0),
+                   "slingIntervalSeconds": (0.1, 4.0), "releaseConeDegrees": (1.0, 60.0), "maxPlantSeconds": (0.2, 6.0),
+                   "aimedHoldSeconds": (0.0, 4.0), "aimToleranceDegrees": (0.5, 45.0)},
+        "lead": 2.5, "rows": [], "nose_gene": 1.5,
+    },
+    "Wrasse": {
+        "mode": "WrasseRun",
+        # The Wrasse flies the gate race's own steering (no drive asset: its boosts are the kite's saved boosts, spent by
+        # KiteNavigatorAI) and WrasseRunController has no aiNoseLead table, so its genes are the race controller's AI
+        # knobs (as MinigameWrasseRun ships them) and the nose rate, set through the judge (fleet lag 1.5/s). In Regatta
+        # the nose pair reaches it through Resources/RaceLines/Wrasse_Regatta (the controller knobs are Wrasse Run's).
+        "assets": {},
+        "fields": {},
+        "ctrl_fields": {"aiCommitDistance": (20.0, 600.0), "aiApproachLead": (20.0, 800.0),
+                        "aiThroughDistance": (20.0, 600.0)},
+        "ctrl_defaults": {"aiCommitDistance": 72.0, "aiApproachLead": 80.0, "aiThroughDistance": 55.0},
+        "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
+        "lead": None, "rows": [], "nose_gene": 1.5,
+    },
+    "Grizzly": {
+        "mode": "GrizzlyTime",
+        # As the Wrasse: the gate race's own steering, Grizzly Time's controller knobs and the nose rate (fleet lag).
+        "assets": {},
+        "fields": {},
+        "ctrl_fields": {"aiCommitDistance": (40.0, 900.0), "aiApproachLead": (40.0, 1200.0),
+                        "aiThroughDistance": (40.0, 900.0)},
+        "ctrl_defaults": {"aiCommitDistance": 380.0, "aiApproachLead": 420.0, "aiThroughDistance": 285.0},
+        "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
+        "lead": None, "rows": [], "nose_gene": 1.5,
+    },
     "Honeyguide": {
         "mode": "SlipLine",
         # Slip Line coaches the AI itself (SlipLineController: the rail it rides and the race line between rides); the
