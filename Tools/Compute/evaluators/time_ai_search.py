@@ -165,7 +165,8 @@ GAMES = {
         # its own crystal gene, aiTimeCrystalSlack. The card starts Time 10, so Soar (Time's level-5 upgrade) is lit.
         "assets": {i: POL + "MantaSoarAITuning_Redline.asset" for i in (1, 2, 3, 4)},
         "fields": {"BoostStickBand": (0.0, 1.0), "YawsteryStickBand": (0.0, 1.0)},
-        "ctrl_fields": {"noseLegendary": (2.0, 24.0)},
+        # I1-I2 and I3-I4 each search their own Legendary rate (the split confirm below).
+        "ctrl_fields": {"noseLegendary": (2.0, 24.0), "noseLegendaryI34": (2.0, 24.0)},
         "ctrl_defaults": {"noseLegendary": 15.0, "noseLegendaryI34": 9.0},   # shipped since the split confirms
         # noseLegendaryI34 (optional, not searched): I3-I4's own Legendary rate. The Manta split confirm (2026-11-17) found
         # nose 15 wins I1-I2 by 12-21% and loses I4 from Time 5 and 10 by 13-19% (Soar overshoot), so a confirm can race
@@ -440,6 +441,7 @@ def main():
     ap.add_argument("--limit", type=float, default=400)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--hold", default="", help="drive fields held at their shipped value, not searched (comma list)")
     a = ap.parse_args()
     a.intensities = [int(s) for s in a.intensities.split(",") if s]
     a.fast = [int(s) for s in a.fast.split(",") if s]
@@ -453,6 +455,13 @@ def main():
     if a.confirm and 4 not in a.l5:
         a.l5.append(4)
     g = GAMES[a.hull]
+    hold = [s for s in a.hold.split(",") if s]
+    if hold:
+        unknown = [k for k in hold if k not in g["fields"]]
+        if unknown:
+            ap.error(f"--hold: {unknown} are not {a.hull}'s drive fields {sorted(g['fields'])}")
+        # A held field leaves the genome: no candidate overrides it, so every race flies the shipped value.
+        g = dict(g, fields={k: v for k, v in g["fields"].items() if k not in hold})
     seeds = [int(s) for s in a.seeds.split(",") if s]
     conds = conditions_for(a)
     out = a.out or tempfile.mkdtemp(prefix=f"time-ai-{a.hull}-")
