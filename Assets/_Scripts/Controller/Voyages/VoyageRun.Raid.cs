@@ -669,6 +669,9 @@ namespace CosmicShore.Gameplay
             string template = lost?.TemplateId;
             if (!_following && lost is { CountsUnderway: true } && !string.IsNullOrEmpty(template))
                 board.TryAgain = () => VoyageHarbour.Current?.TryAgain(template);
+            // Back to Voyages ends what is left of the voyage, so the scene returns to the menu (VoyageScene.AfterChoiceAsync
+            // waits for the harbour to stop being under way; a board that only closed left the pilot floating by a wreck).
+            if (!_following) board.Close = () => GiveUp("back to Voyages after the Ark fell");
             VoyageScoreboard.Show(board);
         }
 

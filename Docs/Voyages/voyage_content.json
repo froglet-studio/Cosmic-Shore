@@ -1778,7 +1778,7 @@
    "OnSuccess": "",
    "OnFail": "",
    "Verb": 3,
-   "Goal": 90,
+   "Goal": 50,
    "HullFloor": 0,
    "NoKill": false,
    "Role": 3,

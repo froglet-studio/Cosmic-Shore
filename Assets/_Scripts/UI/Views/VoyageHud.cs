@@ -840,8 +840,12 @@ namespace CosmicShore.UI
                     "vessel", r.Vessel.ToString());
                 var row = Line(panel, 56f, _kit.Light, false, name, crystals ? r.Crystals.ToString() : string.Empty,
                     r.Kills.ToString(), r.Guarded.ToString(), r.Score.ToString());
-                VoyageKit.Block(row, VoyageKit.Fade(_kit.Popup, r.You ? 0.85f : 0.6f));
-                if (r.You) VoyageKit.Block(row, VoyageKit.Fade(_kit.Light, 0.06f));
+                // One Image per row: a second AddComponent<Image> on the same object returns null, which threw here on
+                // your own row and left every board without its buttons (Shombith, 2026-11-17: "no button to sail home").
+                // Your row is the same fill lifted a touch toward the light.
+                var fill = VoyageKit.Fade(_kit.Popup, r.You ? 0.85f : 0.6f);
+                if (r.You) fill = Color.Lerp(fill, VoyageKit.Fade(_kit.Light, fill.a), 0.06f);
+                VoyageKit.Block(row, fill);
                 VoyageKit.Hairline(row, true, VoyageKit.Fade(_kit.Outline, 0.5f));
             }
         }

@@ -1382,7 +1382,7 @@
    "needs": "None",
    "goes": "Port",
    "verb": "Gather",
-   "goal": 90,
+   "goal": 50,
    "role": "Cultivator",
    "tier": 0,
    "standing": 0,
