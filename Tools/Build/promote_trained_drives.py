@@ -45,14 +45,27 @@ ROWS = {
                 "minSecondsBetweenPellets": 0.415, "reservePellets": 0,
                 "refuelBelowPellets": 4, "refuelCoastSeconds": 0.291, "lowTankSecondsBetweenPellets": 0.175},
         source="/mnt/project-files/regatta-flywheel/train/Serpent/run4/best.json"),
-    # Thresher, Thresher Time: lead-on B at 1,503 evaluations (job threshertime-thresher-time-lead, PR #1830). Needs the
-    # Time-mode nose lead at 2.5: without it this genome DNFs 4-17 of 48 fresh courses.
+    # Thresher, Thresher Time: run1 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
+    # ThresherTimeController's Thresher row at lead 2.77 and nose 6.37/s. Confirm on 24 fresh flights a side (seeds
+    # 101-104): shipped 2 DNF, trained none; I1 134 -> 94 s, I2 163 -> 115, I4 289 -> 185, I4@T5 373 -> 143, wide 188 -> 118
+    # and 169 -> 115. Replaced lead-on B (job threshertime-thresher-time-lead, PR #1830).
     "ThresherAIBoostPolicy_ThresherTime": dict(
         base=L.POLICY_DIR + "/ThresherAIBoostPolicy.asset",
-        fields={"plantMinTurnDegrees": 93.007, "plantMinDistance": 21.373, "slingIntervalSeconds": 0.586,
-                "releaseConeDegrees": 7.346, "maxPlantSeconds": 1.738, "aimedHoldSeconds": 1.279,
-                "aimToleranceDegrees": 9.485},
-        source=R + "thresher-lead/lead_B_1503.json"),
+        fields={"alignDegrees": 21.684, "releaseAlignDegrees": 32.697, "stickBand": 0.828, "releaseStickBand": 0.641,
+                "engageRunwaySeconds": 1.384, "releaseRunwaySeconds": 1.24, "plantMinTurnDegrees": 100.163,
+                "plantMinDistance": 94.095, "slingIntervalSeconds": 0.301, "releaseConeDegrees": 9.92,
+                "maxPlantSeconds": 2.134, "aimedHoldSeconds": 1.836, "aimToleranceDegrees": 10.628},
+        source="/mnt/project-files/regatta-flywheel/train/Thresher/run1/best.json"),
+    # Thresher, Regatta: the same run1 drive (Regatta flew the hull's own ThresherAIBoostPolicy). The real-game judge,
+    # alone, the shipped course plus archive3six a9/a6/a0, seeds 11-12, card and L5 starts: 98.5 / 102 s -> 91.4 / 91.4 s,
+    # all 16 finished, with the race line's trained nose pair (author_race_lines.py); the drive alone at 10/s gave 95.4.
+    "ThresherAIBoostPolicy_Regatta": dict(
+        base=L.POLICY_DIR + "/ThresherAIBoostPolicy.asset",
+        fields={"alignDegrees": 21.684, "releaseAlignDegrees": 32.697, "stickBand": 0.828, "releaseStickBand": 0.641,
+                "engageRunwaySeconds": 1.384, "releaseRunwaySeconds": 1.24, "plantMinTurnDegrees": 100.163,
+                "plantMinDistance": 94.095, "slingIntervalSeconds": 0.301, "releaseConeDegrees": 9.92,
+                "maxPlantSeconds": 2.134, "aimedHoldSeconds": 1.836, "aimToleranceDegrees": 10.628},
+        source="/mnt/project-files/regatta-flywheel/train/Thresher/run1/best.json"),
     # Stoat, Slingshot: Stoat run1 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
     # SlingshotController's Stoat row at lead 2.62 and nose 10.43/s. Confirm on seeds 101-104, 32 flights a side, no DNF:
     # every rung 18-40% faster (I1 68 -> 51 s, I2 51 -> 36, I4 62 -> 42, I1@T10 39 -> 26, I4@T0 95 -> 56). It presses for
@@ -109,7 +122,9 @@ OLD = {
                                          "refuelBelowPellets": -1, "refuelCoastSeconds": 0, "lowTankSecondsBetweenPellets": 0},
     "ThresherAIBoostPolicy_ThresherTime": {"plantMinTurnDegrees": 6.691, "plantMinDistance": 115.249,
                                            "slingIntervalSeconds": 2.866, "releaseConeDegrees": 15, "maxPlantSeconds": 3.156,
-                                           "aimedHoldSeconds": 1.54, "aimToleranceDegrees": 3},
+                                           "aimedHoldSeconds": 1.54, "aimToleranceDegrees": 3,
+                                           "alignDegrees": 12, "releaseAlignDegrees": 25, "stickBand": 0.35,
+                                           "releaseStickBand": 0.6, "engageRunwaySeconds": 1.5, "releaseRunwaySeconds": 0.5},
     # trained B, as it shipped before Stoat run1 (2026-11-17; #1792, #1831)
     "StoatSlingConfig_Slingshot": {"aiSlingMinTurnDegrees": 147.951, "aiReleaseConeDegrees": 15.999,
                                    "aiCatchGiveUpSeconds": 4, "aiSlingIntervalSeconds": 2.896, "aiSlingMinDistance": 13.329,

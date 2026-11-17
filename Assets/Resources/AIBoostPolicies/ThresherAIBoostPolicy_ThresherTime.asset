@@ -12,20 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d76ff56a8067a7cc6c622a7ff08b4cec, type: 3}
   m_Name: ThresherAIBoostPolicy_ThresherTime
   m_EditorClassIdentifier: 
-  alignDegrees: 12
-  releaseAlignDegrees: 25
-  stickBand: 0.35
-  releaseStickBand: 0.6
-  engageRunwaySeconds: 1.5
-  releaseRunwaySeconds: 0.5
+  alignDegrees: 21.684
+  releaseAlignDegrees: 32.697
+  stickBand: 0.828
+  releaseStickBand: 0.641
+  engageRunwaySeconds: 1.384
+  releaseRunwaySeconds: 1.24
   disabledInModes: []
   requireAIPlayer: 1
-  plantMinTurnDegrees: 93.007
-  plantMinDistance: 21.373
-  slingIntervalSeconds: 0.586
-  releaseConeDegrees: 7.346
-  maxPlantSeconds: 1.738
+  plantMinTurnDegrees: 100.163
+  plantMinDistance: 94.095
+  slingIntervalSeconds: 0.301
+  releaseConeDegrees: 9.92
+  maxPlantSeconds: 2.134
   windWhilePlanted: 1
   aimedLaunch: 1
-  aimedHoldSeconds: 1.279
-  aimToleranceDegrees: 9.485
+  aimedHoldSeconds: 1.836
+  aimToleranceDegrees: 10.628

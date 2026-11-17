@@ -549,12 +549,12 @@ They were on the card for a few hours (#2123, #2127) before coming off.
 
 | hull | alone, card start (s) | alone, L5 start (s) | race line |
 |---|---|---|---|
-| Thresher | 79 / 93 / 113 / 98 | 94 / 91 / 100 / 103 | nose follow 10/s |
+| Thresher | 79 / 81 / 110 / 96 | 79 / 81 / 110 / 96 | trained in Thornline: nose 6.37/s, lead 2.77, drive `ThresherAIBoostPolicy_Regatta` (was 98.5 s mean at 10/s on its own policy) |
 | Wrasse | 167 / 169 / 196 / 171 | 110 / 118 / 123 / 130 | nose follow 10/s; about 900 rail contacts a race |
 | Grizzly | 209 / 209 / 176 / 350 | 164 / 164 / 176 / 350 | nose follow 10/s (gate way at 1.5/s stalled on one archive course) |
 | Meerkat | 280 / 280 / 372 / 353 | 274 / 274 / 327 / 319 | nose follow 10/s |
 
-Courses in order: shipped, then archive3six card records 9, 6 and 0. None of these hulls trained a nose pair in its own
+Courses in order: shipped, then archive3six card records 9, 6 and 0 (Thresher: mean of seeds 11-12). Apart from the Thresher (Thornline run1, 2026-11-17), none of these hulls trained a nose pair in its own
 Time game (they fly the fleet lag there), so the race lines take the rate the Regatta judge picked from 1.5 / 5 / 10.
 `regatta_balance.py` has no model of them, so they take no StartingElements row. The Wrasse, Grizzly and Meerkat are
 slow beside the first nine: that gap is for step 5 and their own AI training to close before they return to the card.

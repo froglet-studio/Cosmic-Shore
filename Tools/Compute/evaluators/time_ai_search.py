@@ -267,7 +267,7 @@ GAMES = {
                    "plantMinTurnDegrees": (0.0, 180.0), "plantMinDistance": (0.0, 400.0),
                    "slingIntervalSeconds": (0.1, 4.0), "releaseConeDegrees": (1.0, 60.0), "maxPlantSeconds": (0.2, 6.0),
                    "aimedHoldSeconds": (0.0, 4.0), "aimToleranceDegrees": (0.5, 45.0)},
-        "lead": 2.5, "rows": [], "nose_gene": 1.5,
+        "lead": 2.77, "rows": [], "nose_gene": 6.37,    # ThresherTimeController.aiNoseLead: Thresher 2.77 at 6.37/s (run1)
     },
     "Wrasse": {
         "mode": "WrasseRun",
