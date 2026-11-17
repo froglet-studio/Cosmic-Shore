@@ -219,8 +219,9 @@ namespace CosmicShore.ScriptableObjects
                                          "that comes for the Ark's hull. Never while the Ark is anchored. 0 = no kaiju.")]
         int kaijuPerCrossing = 1;
 
-        [SerializeField, Min(0), Tooltip("No new kaiju while this many are alive.")]
-        int kaijuMax = 2;
+        [SerializeField, Min(0), Tooltip("No new kaiju while this many are alive (one per crossing, so a second only " +
+                                         "lingered from the gap before; 2026-11-17 perf pass: 1).")]
+        int kaijuMax = 1;
 
         [SerializeField, Min(1f), Tooltip("A kaiju's body is this many times its species' size (\"pretty huge\").")]
         float kaijuScale = 12f;
@@ -252,6 +253,19 @@ namespace CosmicShore.ScriptableObjects
                                                   "\"more fauna inside the cells and more crystals\"; every lifeform carries " +
                                                   "one crystal). Production gating only: nothing is culled.")]
         float cellLifeScale = 2f;
+
+        [Header("Voyage - phones (Shombith 2026-11-17: \"keep in mind we are also designing it for the mobile too\")")]
+        [SerializeField, Range(0.5f, 4f), Tooltip("Cell Life Scale on a phone or tablet (Application.isMobilePlatform): " +
+                                                  "a voyage cell's fauna and flora there. Every creature is a skinned, " +
+                                                  "rigged body with its own prisms, so a phone holds the authored floor.")]
+        float mobileCellLifeScale = 1f;
+
+        [SerializeField, Min(1f), Tooltip("Kaiju Scale on a phone or tablet. A bigger body is a bigger collider in the " +
+                                          "physics broadphase and more screen to shade; still several raiders tall.")]
+        float mobileKaijuScale = 8f;
+
+        [SerializeField, Min(0), Tooltip("Homeward Raider Max on a phone or tablet.")]
+        int mobileRaiderMax = 3;
 
         [Header("Voyage - Crystal Run goal missed (Shombith 2026-11-17)")]
         [SerializeField, Tooltip("A Crystal Run that reaches its stop short of its goal loses this run's haul (crystals " +
@@ -357,19 +371,29 @@ namespace CosmicShore.ScriptableObjects
         public float HomewardLureFactor => homewardLureFactor;
         public float HomewardRaiderSeconds => homewardRaiderSeconds;
         public int HomewardRaiderCount => homewardRaiderCount;
-        public int HomewardRaiderMax => homewardRaiderMax;
+        public int HomewardRaiderMax => OnMobile ? Mathf.Min(homewardRaiderMax, mobileRaiderMax) : homewardRaiderMax;
         public float HomewardRaiderScale => homewardRaiderScale;
         public float HomewardRaiderDistance => homewardRaiderDistance;
         public bool RaidersOutbound => raidersOutbound;
         public int KaijuPerCrossing => kaijuPerCrossing;
         public int KaijuMax => kaijuMax;
-        public float KaijuScale => kaijuScale;
+        public float KaijuScale => OnMobile ? Mathf.Min(kaijuScale, mobileKaijuScale) : kaijuScale;
         public float KaijuLeadDistance => kaijuLeadDistance;
         public float KaijuSideOffset => kaijuSideOffset;
         public float CellScale => cellScale;
         public float CellGap => cellGap;
         public bool ScatterLifeSpawns => scatterLifeSpawns;
-        public float CellLifeScale => cellLifeScale;
+        public float CellLifeScale => OnMobile ? Mathf.Min(cellLifeScale, mobileCellLifeScale) : cellLifeScale;
+
+        /// <summary>The desktop numbers, whatever the platform (tests and the kaiju page read these).</summary>
+        public float DesktopKaijuScale => kaijuScale;
+        public float DesktopCellLifeScale => cellLifeScale;
+        public float MobileKaijuScale => mobileKaijuScale;
+        public float MobileCellLifeScale => mobileCellLifeScale;
+        public int MobileRaiderMax => mobileRaiderMax;
+
+        /// <summary>A phone or tablet build: the voyage takes its mobile numbers there.</summary>
+        static bool OnMobile => Application.isMobilePlatform;
         public bool RaidMissForfeits => raidMissForfeits;
         public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);
         public Color VaultColor => ColorTrace.Retrace(ColorTrace.Ui, vaultColor);
