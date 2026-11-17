@@ -194,9 +194,27 @@ namespace CosmicShore.Gameplay
         float RaidAnchorSeconds()
         {
             if (!_active || !Raiding || _fallen || !_def || GoalMet) return 0f;
+            // Nothing to raid: sail through instead of waiting at an empty core.
+            if (_def.RaidAnchorMinLife > 0 && CellLife(CurrentCell) < _def.RaidAnchorMinLife) return 0f;
             int cell = LegCell(out _);
             bool hostile = cell > 0 && LegHostile(cell - 1);
             return hostile ? _def.RaidAnchorHostileSeconds : _def.RaidAnchorCalmSeconds;
+        }
+
+        /// <summary>The lifeforms living in <paramref name="cell"/> now (its spawn profile's fauna and flora): each one
+        /// carries a crystal, so this is what an anchor there could steal. 0 for no cell.</summary>
+        static int CellLife(Cell cell)
+        {
+            var profile = cell && cell.Config ? cell.Config.SpawnProfile : null;
+            if (!profile) return 0;
+            int live = 0;
+            if (profile.SupportedFaunas != null)
+                foreach (var f in profile.SupportedFaunas)
+                    if (f) live += cell.GetLiveFaunaCount(f);
+            if (profile.SupportedFloras != null)
+                foreach (var f in profile.SupportedFloras)
+                    if (f) live += cell.GetLiveFloraCount(f);
+            return live;
         }
 
         void OnRaidAnchored(float seconds)

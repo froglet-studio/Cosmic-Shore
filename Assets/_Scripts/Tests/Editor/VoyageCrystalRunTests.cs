@@ -522,6 +522,7 @@ namespace CosmicShore.Tests
             Assert.LessOrEqual(settings.MobileCellLifeScale, settings.DesktopCellLifeScale, "a phone holds no more life");
             Assert.Less(settings.MobileKaijuScale, settings.DesktopKaijuScale, "a phone's kaiju is smaller");
             Assert.Greater(settings.MobileRaiderMax, 0);
+            Assert.Greater(settings.RaidAnchorMinLife, 0, "the Ark sails through a cell with nothing to steal");
         }
 
         [Test]
