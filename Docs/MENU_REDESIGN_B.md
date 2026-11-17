@@ -8756,7 +8756,7 @@ Built in code (`VoyageArkPage`, `VoyageSeatPicker`; no prefab or scene change), 
 Not seen in Unity: a render of both screens still needs to sit beside the board.
 
 
-## 212. Rev 116 mockups: the in-game voyage UI, six ways (2026-11-17, awaiting a pick)
+## 212. Rev 116 mockups: the in-game voyage UI, six ways (2026-11-17; Shombith picked A, built in 212.1)
 
 **Asked** (Shombith, after playing the round-3 build): "the In game UI is too stupid and old like we need to work more
 on that for sure. I need new mockups lets say 6 of each in game screen including toasts, the toasts should come in the
@@ -8800,3 +8800,25 @@ still flags the large display numbers as off the type scale and a few threat red
 **Differs from the build**: the build is `ArkwayVoyageHud`'s Rev 114 O1 strip (420 px, top left) with toasts on the
 Rev 113 band at top centre, and the pause button is a copy of Resume made in code. Any pick replaces the strip and gives
 the toasts one fixed spot of their own.
+
+**Picked** (Shombith, 2026-11-17): "build A". 116A Marquee.
+
+### 212.1 Built: 116A Marquee in the game (2026-11-17, not yet seen in Unity)
+
+- **In flight** (`VoyageObjectiveBox`, `VoyageHud.cs`, replaces the Rev 114 O1 strip): the count top centre (72 pt, the
+  goal smaller and dimmer), the route under it with the cells done lit, then the flowers by element, the place and the
+  clock, and the action line. The hull is a tall bar on the left edge (x 75, 380 high) with its figure above, the breach
+  mark and the leak line's dashes on it and the new authored label `ObjectiveRailLabel` ("Ark hull") under it; it turns
+  the threat colour while leaking, under attack or in an assault. What the crew carries is a chip at mid height.
+- **The raid countdown**: the last five seconds at anchor draw a ring in the middle (`VoyageCountdownRing`, a mesh, no
+  sprite) emptying clockwise round the seconds left.
+- **The toast spot** (`ArkwayVoyageHud`): while the marquee is up (`VoyageObjectiveBox.Showing`) the toast sits right
+  under it (y 238), on a slanted band (`ArkwayToastBand`) with a thin line along its foot in the toast's mood colour
+  (event, threat, good). The leash countdown sits under the toast. The Arkway toy, which has no marquee, keeps the old
+  top spot.
+- **The end scoreboard** (`VoyageScoreboardView`): one centred column 900 wide: the kicker, title, the big count of
+  crystals with the count by element (flowers) under it and the stats line; the seats table; a row of reward tiles (the
+  Ark's hull with its bar, the pay); banked or at stake; then the quiet button and the call to action centred side by
+  side with their captions under them.
+- **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
+  colour shard tiles (no such systems yet).
