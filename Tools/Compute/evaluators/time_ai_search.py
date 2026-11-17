@@ -311,7 +311,9 @@ def evaluate_many(hull, g, cands, conds, seeds, limit_s, pool):
     for f in concurrent.futures.as_completed(futs):
         key = futs[f]
         res = f.result()
-        CACHE.put(key, res)
+        # A broken build or a dead player is not the candidate's result: never cache it, so a resume races it again.
+        if not any("judge failed" in n or "exited" in n or "build" in n.lower() for n in res["notes"]):
+            CACHE.put(key, res)
         for c, k in pending[key]:
             out[c][k] = res
     return out
