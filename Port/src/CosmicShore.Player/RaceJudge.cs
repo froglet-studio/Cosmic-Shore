@@ -354,11 +354,7 @@ namespace CosmicShore.Player
             foreach (var o in _spec["overrides"]?.AsArray() ?? new JsonArray())
             {
                 string path = o?["asset"]?.GetValue<string>() ?? throw new InvalidOperationException("an override without an asset");
-                // A prefab's component by its fileID ({"asset": "...prefab", "component": 975128113266807093}); else an SO.
-                object asset = (o["component"] is JsonNode c
-                                   ? TrainingHost.LoadPrefabComponent(_runtime, path, c.GetValue<long>())
-                                   : TrainingHost.LoadAsset(_runtime, path))
-                               ?? throw new InvalidOperationException(path + " not found");
+                object asset = TrainingHost.LoadAsset(_runtime, path) ?? throw new InvalidOperationException(path + " not found");
                 SetFields(asset, o["fields"]?.AsObject(), path);
                 _notes.Add("override: " + path);
             }
