@@ -13,8 +13,8 @@ R113Compare, R113Score). Not yet run in the Unity editor: `Docs/UNITY_VERIFICATI
   **10%** (40% until round 3, so the hold can leak below 30% before the Ark falls).
 - Crystals count from the moment the Ark sets sail, through every cell, not only at the stop.
 - **Any pilot can bring it**: the job is on every board (`always`), credited to the first seated pilot.
-- At the stop the job resolves: met the goal, it succeeds and its pay is owed too; missed, it fails and only what was
-  stolen is owed. Owed crystals are **at stake until the Ark docks home**, and lost with the Ark.
+- At the stop the job resolves: met the goal, it succeeds and its pay is owed too; missed, it fails and this run's
+  haul is lost (§9; until 2026-11-17 what was stolen was still owed). Owed crystals are **at stake until the Ark docks home**, and lost with the Ark.
 - **Finish** sails the Ark home with the squad escorting it; docking banks everything (`VoyageRules.Extract`) and
   ends the voyage. (Prompt 1 said Finish banks at once; Shombith's own answer, "the ark should sail home and players
   should accompany", wins.)
@@ -145,7 +145,7 @@ the left too." Then: "make the cell big by 50%".
   and grown `homewardRaiderScale` (1.8x) by `Fauna.GrowBody` in the spawn frame. No cell of another colour, no raiders.
   First wave: ToastRaiders.
 - **The Ark's hull on the strip.** A Crystal Run's strip shows ObjectiveStripArkHull ("Ark hull 72%") under the hull bar.
-- **Bigger cells.** `cellScale` (1.5) on `Voyage.asset` reaches the corridor as `ArkwayConfig.CellScale`: each voyage
+- **Bigger cells.** `cellScale` (1.5; 2.5 since §8) on `Voyage.asset` reaches the corridor as `ArkwayConfig.CellScale`: each voyage
   cell's membrane (`CapsuleMembrane.SetRuntimeScale`, its baked wobble kept) and nucleus are 1.5x, so
   `Cell.MembraneRadius`, the sense radius, the density grids, spawn points, the Ark's approach and the leash all see the
   bigger world, and the spacing grows 1.5x so cells never overlap. The cell's environment mass keeps its authored size.
@@ -153,3 +153,62 @@ the left too." Then: "make the cell big by 50%".
 - **Not run in Unity.** To check by hand: the pause button's look (it copies Resume), whether lured fauna really bring a
   hull under 30% in a calm cell, the raiders' size and whether they leave their cell's water, and the bigger membrane
   against the environment.
+
+## 8. Round 4: bigger cells, short crossings, spread crystals, kaiju (Shombith, 2026-11-17)
+
+"The cell is not big and all crystals and everything come in the same spot, make the cells bigger the distances between
+them smaller and more attacks outside the cell big kaiju level fauna attacking the cell."
+
+- **Cells 2.5x** (`cellScale`, was 1.5): a 1200 u membrane is now 3000 u. The nucleus grows with it; the environment
+  mass keeps its authored size.
+- **400 u of open water between cells** (`cellGap`, was 1200 u at 1.5x). With a gap the corridor spaces cells by their
+  membranes, `CellConveyor.CellSpacingFor`: twice the largest authored membrane radius among its worlds, times the
+  scale, plus the gap (6400 u centre to centre for 1200 u membranes). The Arkway toy and the escort keep the old rule
+  (`CellGap` 0).
+- **Crystals spread through the cell** (`scatterLifeSpawns`, `Cell.ScatterLifeSpawns`). The crystals are the
+  lifeforms' hearts, and every wave used to land on one feeding ground: the densest mass, which in a voyage cell is the
+  environment at the core or, under the lure, the Ark itself. Now each creature without a band or pen, and every
+  plant, is born at its own point between the nucleus and the membrane. Where creatures go afterwards is still their
+  own (they still seek mass and the Ark).
+- **Raiders on the way out too** (`raidersOutbound`): the open-water raider waves of §7 come between the cells of a
+  Crystal Run's outbound leg as well, not only on the way home.
+- **Kaiju between the cells** (`kaijuPerCrossing` 1, `kaijuMax` 2, `kaijuScale` 12, `kaijuLeadDistance` 900,
+  `kaijuSideOffset` 300). Shombith, same day: "the kaiju shouldn't reach when the Ark is in the 30-second stop time ...
+  when the Ark is between cells, the kaiju should be between cells, and it should be huge." On every crossing, once the
+  Ark is within 900 u of leaving the cell behind it (or in open water), one grazer from a leg cell held against the squad
+  is born in the middle of the gap, 300 u off the Ark's line, grown 12x, and waits there for the hull. Never while the
+  Ark is anchored. One toast per crossing (ToastKaiju). `VoyageRun.Kaiju.cs`.
+- **The raid leash.** Kaiju and raiders wear the run's `IFaunaLeash` (the Angler's contract): steer at the Ark, eat its
+  nearest plate, re-checked by the creature's own diet. Before this a raider was only lured through its home cell, which
+  could be far behind, so it could swim home instead. Only grazers a leash can hold become kaiju; a predator raider
+  keeps its own hunt. `Docs/ECOSYSTEM.md` §0.z records the widening.
+- **Party.** Each machine's sea runs its own kaiju and raiders, as before; nothing new is replicated and the protocol is
+  unchanged.
+- **Not run in Unity.** To check by hand: the 2.5x membrane against the environment, whether the scattered crystals
+  read as spread, how long a crossing takes now (the core-to-core leg is 6400 u, the Ark crawls inside the bigger
+  cell), whether a 12x kaiju reads as huge and still bites (its mouth reach may not grow with its body), and whether leashed
+  raiders now reach the Ark.
+
+## 9. Round 5: more life, the lag, a missed goal (Shombith, 2026-11-17)
+
+"I need more fauna inside the cells and more crystals and it is sometimes very laggy. When we miss the goal nothing
+happens."
+
+- **More fauna and crystals.** `cellLifeScale` (2) on `Voyage.asset` multiplies every voyage cell's fauna and flora
+  populations (seed floors and caps) on top of the leg's pacing (`VoyageRun.OnPrepareCell`). Every lifeform carries one
+  crystal, so this doubles the crystals too.
+- **The lag.** Shombith's voyage profile of 2026-11-17 01:55 (`BugLedger/shared/reports/shombith/perf/prof_Voyage_*`)
+  had a 64 ms spike frame, 41 ms of it one fauna spawn batch: 10 creatures instantiated in a frame (27 ms) and 6 console
+  warnings (7.9 ms). Two fixes:
+  - `NetworkSceneObjectGuard.NeutralizeStray` read the prefab's hash after destroying the NetworkObject, so its
+    once-per-prefab warning fired on every creature birth (the capture's log: 10-11 per species). It reads the hash
+    first now.
+  - A satellite cell (a voyage's corridor world) instantiates 2 creatures a frame instead of 6
+    (`RandomLifeSpawner.SatelliteFaunaSpawnBatchPerFrame`): the same waves over more frames.
+  - Not measured: the 12x kaiju's cost. Profile again in a voyage with `prof` if the lag stays.
+- **A missed goal** (Shombith's pick on the decision card). At the stop, a run short of its goal: a threat toast
+  (ToastGoalMissed, "GOAL MISSED: {done} / {goal}", ToastGoalMissedSub), this run's haul is lost (`raidMissForfeits`,
+  `VoyageRaid.Arrive(..., forfeitOnMiss)`; what earlier legs owe is kept), and the board offers Try again (A: the same
+  goal and cells from here, `VoyageRaid.Retry`, caption ScoreRetryRaid) or Finish (B: sail home). No Venture further on
+  a failed run.
+- **Not run in Unity.** To check: the 2x populations' frame time with the 12x kaiju, and the missed-goal board.

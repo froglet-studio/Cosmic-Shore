@@ -42,8 +42,13 @@ namespace CosmicShore.Gameplay
         static readonly Color UnderInk = new(0.722f, 0.753f, 0.941f);
         static readonly Color CountdownInk = new(1f, 0.92f, 0.6f);
 
+        // Frogma Rev 116 A (Marquee): in a voyage the toast has ONE spot, just under the marquee the objective box
+        // draws top centre, like an arcade cabinet's call-out line. Elsewhere (the Arkway toy) it keeps the top spot.
+        const float TopY = 40f, UnderMarqueeY = 238f, CountdownGap = 110f;
+
         CanvasGroup _bannerGroup, _countdownGroup;
-        Image _band;
+        ArkwayToastBand _band;
+        RectTransform _countdownRect;
         TMP_Text _head, _under, _countdown;
         bool _countdownShown;
         float _bannerFrom = -1f, _bannerUntil = -1f;
@@ -70,7 +75,7 @@ namespace CosmicShore.Gameplay
             // The banner: a band top centre, a bold line and an optional line under it.
             var band = Child("Banner", transform, new Vector2(0f, -40f), new Vector2(900f, 96f));
             _bannerGroup = band.gameObject.AddComponent<CanvasGroup>();
-            _band = band.gameObject.AddComponent<Image>();
+            _band = band.gameObject.AddComponent<ArkwayToastBand>();
             _band.raycastTarget = false;
             _head = Line(band, "Line", new Vector2(0f, -12f), new Vector2(860f, 44f), 32f, FontStyles.Bold);
             _under = Line(band, "Under", new Vector2(0f, -56f), new Vector2(860f, 30f), 21f, FontStyles.Normal);
@@ -78,7 +83,8 @@ namespace CosmicShore.Gameplay
             _bannerGroup.alpha = 0f;
 
             // The countdown: the leash, held while it is breached, below the banner.
-            var cd = Child("Countdown", transform, new Vector2(0f, -150f), new Vector2(900f, 60f));
+            var cd = Child("Countdown", transform, new Vector2(0f, -(TopY + CountdownGap)), new Vector2(900f, 60f));
+            _countdownRect = cd;
             _countdownGroup = cd.gameObject.AddComponent<CanvasGroup>();
             _countdown = Line(cd, "Line", Vector2.zero, new Vector2(900f, 60f), 34f, FontStyles.Normal);
             _countdown.color = ColorTrace.Retrace(ColorTrace.Ui, CountdownInk);
@@ -133,6 +139,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            Place();
             float now = Time.unscaledTime;
             float step = Time.unscaledDeltaTime / FadeSeconds;
             if (Hold != null && Hold())
@@ -157,6 +164,18 @@ namespace CosmicShore.Gameplay
             _countdownGroup.alpha = Mathf.MoveTowards(_countdownGroup.alpha, _countdownShown ? 1f : 0f, step);
         }
 
+        /// <summary>The toast spot: under the voyage marquee while it is up, the top spot otherwise.</summary>
+        void Place()
+        {
+            float y = CosmicShore.UI.VoyageObjectiveBox.Showing ? UnderMarqueeY : TopY;
+            var band = (RectTransform)_band.transform;
+            if (!Mathf.Approximately(band.anchoredPosition.y, -y))
+            {
+                band.anchoredPosition = new Vector2(0f, -y);
+                _countdownRect.anchoredPosition = new Vector2(0f, -(y + CountdownGap));
+            }
+        }
+
         void Next(float now)
         {
             var (mood, line, under, seconds) = _queue.Dequeue();
@@ -168,6 +187,7 @@ namespace CosmicShore.Gameplay
                 _ => EventInk,
             });
             _band.color = ColorTrace.Retrace(ColorTrace.Ui, mood == Mood.Threat ? ThreatBand : EventBand);
+            _band.Accent = _head.color;
             bool hasUnder = !string.IsNullOrEmpty(under);
             _under.text = under;
             _under.gameObject.SetActive(hasUnder);
@@ -175,6 +195,49 @@ namespace CosmicShore.Gameplay
             band.sizeDelta = new Vector2(band.sizeDelta.x, hasUnder ? 96f : 64f);
             _bannerFrom = now;
             _bannerUntil = now + seconds;
+        }
+    }
+
+    /// <summary>
+    /// The toast band (Frogma Rev 116 A): a slanted band with a thin accent line along its foot in the toast's mood
+    /// colour, so an event, a threat and a good turn read apart before the words are read.
+    /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
+    public sealed class ArkwayToastBand : MaskableGraphic
+    {
+        const float Slant = 22f;
+        const float AccentHeight = 4f;
+
+        Color _accent = Color.white;
+
+        /// <summary>The colour of the line along the band's foot (already traced through the colour set).</summary>
+        public Color Accent
+        {
+            get => _accent;
+            set { _accent = value; SetVerticesDirty(); }
+        }
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            var r = GetPixelAdjustedRect();
+            float s = Mathf.Min(Slant, r.width * 0.25f);
+            Quad(vh, r.xMin + s, r.xMax, r.xMin, r.xMax - s, r.yMax, r.yMin + AccentHeight, color);
+            float ax = s * AccentHeight / Mathf.Max(1f, r.height);
+            var accent = _accent;
+            Quad(vh, r.xMin + ax, r.xMax - s + ax, r.xMin, r.xMax - s, r.yMin + AccentHeight, r.yMin, accent);
+        }
+
+        static void Quad(VertexHelper vh, float topLeft, float topRight, float footLeft, float footRight, float top,
+            float foot, Color c)
+        {
+            int i = vh.currentVertCount;
+            vh.AddVert(new Vector3(footLeft, foot), c, Vector2.zero);
+            vh.AddVert(new Vector3(topLeft, top), c, Vector2.zero);
+            vh.AddVert(new Vector3(topRight, top), c, Vector2.zero);
+            vh.AddVert(new Vector3(footRight, foot), c, Vector2.zero);
+            vh.AddTriangle(i, i + 1, i + 2);
+            vh.AddTriangle(i, i + 2, i + 3);
         }
     }
 }

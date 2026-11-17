@@ -306,8 +306,11 @@ namespace CosmicShore.Core
             // LOADING bar reads the same build) until the veil lets go, so the player sees one screen
             // and then the finished world, never the veil as a second screen. Capped: a build the
             // veil itself has stopped waiting on never holds the splash for good.
+            // A scene that builds its opening after the client is ready (the voyage scene: its corridor and Ark) holds
+            // the splash itself until that opening stands (SceneRevealHold); each claim carries its own deadline.
             float holdUntil = Time.unscaledTime + MaxBootWorldHoldSeconds;
-            while (CosmicShore.Gameplay.EnvironmentLoadVeil.IsCovering && Time.unscaledTime < holdUntil)
+            while (SceneRevealHold.IsHeld
+                   || CosmicShore.Gameplay.EnvironmentLoadVeil.IsCovering && Time.unscaledTime < holdUntil)
                 await UniTask.Yield(PlayerLoopTiming.Update);
 
             // Runs on EVERY peer (clients never reach LoadSceneAsync's pre-load

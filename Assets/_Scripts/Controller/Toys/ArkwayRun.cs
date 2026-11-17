@@ -60,6 +60,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Each traversal cell's membrane and nucleus at this many times their authored size, with the spacing
         /// scaled to match (<see cref="Cell.SatelliteSizeScale"/>). 1 for the toy and the escort; the voyages set it.</summary>
         public float CellScale = 1f;
+        /// <summary>Open water between two neighbouring cells' membranes, u. Above 0 the corridor spaces cells by their
+        /// membranes (twice the largest authored membrane radius of its worlds, times <see cref="CellScale"/>, plus this)
+        /// instead of <see cref="CellSpacing"/> times the scale: the voyages' short crossings (Shombith 2026-11-17: "the
+        /// distances between them smaller"). 0 for the toy and the escort.</summary>
+        public float CellGap;
+        /// <summary>Each traversal cell's life is born all through its open water (<see cref="Cell.ScatterLifeSpawns"/>).
+        /// Off for the toy and the escort; the voyages set it.</summary>
+        public bool ScatterLifeSpawns;
         public float MaxTurnDegrees = 25f;
         public int PrismStride = 4;
         public float PopulationScale = 0.5f;
@@ -226,6 +234,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The voyage opened: the veil is down, the pilot is docked beside the Ark and it is under way.</summary>
         public event System.Action Underway;
+
+        /// <summary>Any run's voyage opened (raised right after that run's <see cref="Underway"/>). The voyage scene lifts
+        /// the game's loading screen on it, so the player's first sight of the voyage is its opening.</summary>
+        public static event System.Action AnyUnderway;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetAnyUnderway() => AnyUnderway = null;
 
         /// <summary>The Ark's last hull prism fell. Raised just before the run ends itself.</summary>
         public event System.Action ArkFallen;
@@ -611,6 +626,7 @@ namespace CosmicShore.Gameplay
 
                 LogVoyageStart();
                 Underway?.Invoke();
+                AnyUnderway?.Invoke();
             }
             catch (System.OperationCanceledException)
             {

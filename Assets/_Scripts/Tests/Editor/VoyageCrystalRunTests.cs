@@ -129,6 +129,39 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Arrive_MissedGoal_ForfeitsTheHaulButKeepsWhatEarlierLegsOwe()
+        {
+            var content = Shipped();
+            var state = VoyageRules.NewGalaxy(content, Domains.Jade);
+            var job = Raid(state, content);
+            Assert.IsTrue(VoyageRules.Take(state, content, job));
+            VoyageRaid.Owe(state, Element.Mass, 3);   // an earlier leg's haul
+            var tally = new VoyageRaidTally();
+            for (int i = 0; i < 5; i++) tally.Add("a", Element.Space);
+            VoyageRules.Arrive(state, content);
+            var r = VoyageRaid.Arrive(state, content, tally, forfeitOnMiss: true);
+            Assert.AreEqual(JobOutcome.Failed, r.Outcome);
+            Assert.AreEqual(0, state.OwedOf(Element.Space), "the missed run's haul is lost");
+            Assert.AreEqual(3, state.OwedOf(Element.Mass), "what earlier legs owe is kept");
+        }
+
+        [Test]
+        public void Retry_KeepsTheGoalAndCells()
+        {
+            var content = Shipped();
+            var state = VoyageRules.NewGalaxy(content, Domains.Jade);
+            var job = Raid(state, content);
+            Assert.IsTrue(VoyageRules.Take(state, content, job));
+            VoyageRules.Arrive(state, content);
+            var again = VoyageRaid.Retry(state, content, job);
+            Assert.IsNotNull(again, "nowhere to try again");
+            Assert.AreEqual(job.Venture, again.Venture);
+            Assert.AreEqual(job.Goal, again.Goal);
+            Assert.AreEqual(job.Cells, again.Cells);
+            Assert.AreEqual(state.At, again.From);
+        }
+
+        [Test]
         public void Venture_RaisesTheGoalByTenAndAddsACell()
         {
             var content = Shipped();
@@ -445,6 +478,37 @@ namespace CosmicShore.Tests
             var home = new VoyageObjective { Goal = VoyageObjective.Kind.SailingHome, Leaking = true, LeakLine = 0.3f, Hull = 0.2f };
             Assert.IsTrue(VoyageObjectiveText.StripAction(lines, home).threat, "the way home says the hold is leaking");
             Assert.AreEqual(string.Empty, VoyageObjectiveText.HullLine(lines, home), "the way home's figure is the hull already");
+        }
+
+        // ── Bigger cells, short crossings, kaiju (Shombith, 2026-11-17) ─────────────────────────────
+
+        [Test]
+        public void CellSpacing_IsTwoGrownMembranesAndTheGap()
+        {
+            Assert.AreEqual(2f * 1200f * 2.5f + 400f, CellConveyor.CellSpacingFor(1200f, 2.5f, 400f), 1e-3f);
+            // A membrane smaller than the freestyle one is taken at the floor; a scale below 1 at 1; a negative gap at 0.
+            Assert.AreEqual(2f * CellConveyor.MembraneRadiusFloor, CellConveyor.CellSpacingFor(300f, 0.5f, -10f), 1e-3f);
+            // A larger world's membrane spaces the whole corridor so no two cells overlap.
+            Assert.AreEqual(2f * 1635.2f * 2f + 400f, CellConveyor.CellSpacingFor(1635.2f, 2f, 400f), 1e-2f);
+        }
+
+        [Test]
+        public void ShippedVoyage_BigCellsShortGapsScatteredLifeAndKaiju()
+        {
+            var settings = VoyageToyDefinitionSO.Load();
+            Assert.IsNotNull(settings, "Resources/Voyages/Voyage.asset");
+            var cfg = settings.BuildArkConfig(null);
+            Assert.GreaterOrEqual(cfg.CellScale, 2.5f, "voyage cells are at least 2.5x their authored size");
+            Assert.Greater(cfg.CellGap, 0f, "the corridor spaces voyage cells by their membranes");
+            Assert.Less(cfg.CellGap, 1200f, "the open water between cells is shorter than at 1.5x (1200 u)");
+            Assert.IsTrue(cfg.ScatterLifeSpawns, "a voyage cell's life is born all through its open water");
+            Assert.Greater(settings.KaijuPerCrossing, 0);
+            Assert.GreaterOrEqual(settings.KaijuScale, 10f, "a kaiju is huge");
+            Assert.Greater(settings.KaijuMax, 0);
+            Assert.Greater(settings.KaijuScale, settings.HomewardRaiderScale, "a kaiju is bigger than a raider");
+            Assert.IsTrue(settings.RaidersOutbound);
+            var lines = VoyageContentSO.Load().Lines;
+            Assert.IsFalse(string.IsNullOrEmpty(lines.ToastKaiju));
         }
     }
 }

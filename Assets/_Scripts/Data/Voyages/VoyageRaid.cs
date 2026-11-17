@@ -101,6 +101,25 @@ namespace CosmicShore.Data
                    ?? Draw(state, content, t, here, person, new List<string>(), done.Venture + 1);
         }
 
+        /// <summary>
+        /// Try again after a missed goal: the same work at the same size (its goal and cells, <see cref="VoyageJob.Venture"/>
+        /// unchanged) from where the run stopped, to the next place of its kind. Null when there is none, at sea, or for a
+        /// way home.
+        /// </summary>
+        public static VoyageJob Retry(VoyageState state, VoyageContent content, VoyageJob missed)
+        {
+            if (state == null || content == null || missed == null || state.AtSea || missed.IsReturn) return null;
+            var t = content.Job(missed.TemplateId);
+            var here = content.Location(state.At);
+            if (t == null || here == null) return null;
+            var person = content.Person(missed.PilotId)
+                         ?? new CrewPerson { PilotId = missed.PilotId ?? string.Empty, Name = string.Empty, Faction = t.Faction };
+            var usedTo = new List<string>();
+            if (!string.IsNullOrEmpty(missed.From)) usedTo.Add(missed.From);
+            return Draw(state, content, t, here, person, usedTo, missed.Venture)
+                   ?? Draw(state, content, t, here, person, new List<string>(), missed.Venture);
+        }
+
         // ── The leg ─────────────────────────────────────────────────────────
 
         /// <summary>
@@ -150,12 +169,19 @@ namespace CosmicShore.Data
         /// the job resolves, succeeded when the goal was met (its pay owed too) and failed when not, paying only what was
         /// stolen. Null when no Crystal Run is under way.
         /// </summary>
-        public static VoyageRules.Resolution Arrive(VoyageState state, VoyageContent content, VoyageRaidTally tally)
+        public static VoyageRules.Resolution Arrive(VoyageState state, VoyageContent content, VoyageRaidTally tally) =>
+            Arrive(state, content, tally, forfeitOnMiss: false);
+
+        /// <summary>As <see cref="Arrive(VoyageState, VoyageContent, VoyageRaidTally)"/>; with
+        /// <paramref name="forfeitOnMiss"/>, a run short of its goal owes nothing of its haul (Shombith 2026-11-17: missing the
+        /// goal has to mean something). What earlier legs owe is untouched.</summary>
+        public static VoyageRules.Resolution Arrive(VoyageState state, VoyageContent content, VoyageRaidTally tally,
+            bool forfeitOnMiss)
         {
             var job = state?.Current;
             if (job == null || !job.CountsUnderway) return null;
-            Owe(state, tally);
             var ok = tally != null && tally.Total >= job.Goal;
+            if (ok || !forfeitOnMiss) Owe(state, tally);
             return VoyageRules.Resolve(state, content, ok ? JobOutcome.Succeeded : JobOutcome.Failed);
         }
 

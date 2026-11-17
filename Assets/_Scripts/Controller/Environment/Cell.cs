@@ -2837,6 +2837,18 @@ namespace CosmicShore.Gameplay
         public float SatelliteSizeScale { get; set; } = 1f;
 
         /// <summary>
+        /// A SATELLITE whose life is born all through its open water (the voyages' cells, Shombith 2026-11-17: "the cell
+        /// is not big and all crystals and everything come in the same spot"): every fauna birth that has no band and no
+        /// pen of its own, and every flora planting, lands at a fresh volume-uniform point between the nucleus and the
+        /// membrane (<see cref="CellLifeSpawnerBase.RandomPointInCytoplasm"/>) instead of the wave's one feeding ground,
+        /// the densest mass (the environment at the core, or the Ark under a lure) or an authored planting site. Placement
+        /// only: diets, steering, populations and every creature's own goal picks are untouched, so the hearts (the
+        /// elemental crystals) start spread across the bigger cell. Set BEFORE <see cref="InitializeSatellite"/>. Honoured
+        /// only while <see cref="IsSatellite"/>; false = as authored.
+        /// </summary>
+        public bool ScatterLifeSpawns { get; set; }
+
+        /// <summary>
         /// Opt a SATELLITE into running its life spawner. Default false - the mode preview's
         /// satellites are structure-only, because a seeded ecology is most of a second world's
         /// frame cost beside a menu that is still running (see <see cref="StartSpawnerForMode"/>).
