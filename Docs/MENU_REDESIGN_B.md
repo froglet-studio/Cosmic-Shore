@@ -8829,3 +8829,9 @@ the toasts one fixed spot of their own.
   side with their captions under them.
 - **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
   colour shard tiles (no such systems yet).
+
+**Made room (2026-11-17):** Frogma was full again (511 boards plus `canvas.json` = its 512-file cap, which the
+claude.ai Design type sets and nothing in the repo can raise). On Shombith's pick the 228 boards of Rev 3 to Rev 40
+(222 on Menu Redesign, 6 on Compute Console) came off the canvas with their 96 title notes and section frames
+(canvas version `1794949812-dbeb`): 283 boards are left, 228 files free. Their copies stay in
+`Docs/MenuRedesignB/board/R3*` to `R40*`; the repo index and README were rewritten from the live canvas.
