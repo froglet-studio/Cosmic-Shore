@@ -144,11 +144,15 @@ def run(a, judge=None):
                          "(or pass --any-sha to race anyway)")
     meta = write_json_once(os.path.join(d, "pass.json"), {
         "name": a.name, "sha": a.sha or have, "n": a.n, "archives": a.archives, "repeats": a.repeats,
-        "hulls": HULLS, "rank_hulls": a.rank_hulls or None, "dnf_s": a.dnf, "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+        "hulls": (a.hulls.split(",") if getattr(a, "hulls", None) else HULLS), "rank_hulls": a.rank_hulls or None, "dnf_s": a.dnf, "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
     if meta["sha"] and a.sha and not meta["sha"].startswith(a.sha) and not meta["sha"].startswith(have[:len(a.sha)]):
         raise SystemExit(f"pass {a.name} was pinned to {meta['sha']}, not {a.sha}: name a new pass")
-    courses = write_json_once(os.path.join(d, "courses.json"), pick_courses(a.root, meta["n"], meta["archives"],
-                                                                                  meta.get("rank_hulls")))
+    if getattr(a, "courses", None):          # a prepared course list ({start: [{rank, game_genome, ...}]}), pinned as given
+        courses = write_json_once(os.path.join(d, "courses.json"), json.load(open(a.courses, encoding="utf-8")))
+    else:
+        courses = write_json_once(os.path.join(d, "courses.json"), pick_courses(a.root, meta["n"], meta["archives"],
+                                                                                      meta.get("rank_hulls")))
+    field = meta.get("hulls") or HULLS
     K, N = (int(x) for x in a.shard.split("/"))
     out = os.path.join(d, f"races.s{K}of{N}.jsonl")
     done = {(r["start"], r["rank"], r["hull"], r["rep"]) for r in read_jsonl(out)}
@@ -161,12 +165,13 @@ def run(a, judge=None):
                 fh.write("\n")
     repeats = meta["repeats"] or {}
     raced = 0
-    for st in STARTS:
-        for c in courses.get(st, []):
+    # card and L5 interleaved by rank, so a pass read before it ends has both starts on the same courses
+    order = sorted(((c["rank"], i, st, c) for i, st in enumerate(STARTS) for c in courses.get(st, [])), key=lambda t: t[:2])
+    for _, _, st, c in order:
             if c["rank"] % N != K:
                 continue
             calls = []
-            first = [h for h in HULLS if (st, c["rank"], h, 0) not in done]
+            first = [h for h in field if (st, c["rank"], h, 0) not in done]
             if first:
                 calls.append((first, [1]))
             for h, reps in repeats.items():
@@ -507,6 +512,8 @@ def main():
     r.add_argument("--n", type=int, default=30, help="courses per start (pinned by the pass's first runner)")
     r.add_argument("--archives", nargs="*", default=["archive2", "archive3"])
     r.add_argument("--repeats", default="Dolphin=3", help="HULL=SEEDS,... a noisy hull raced on more seeds (median)")
+    r.add_argument("--hulls", default="", help="the field to race, comma-separated (default: the nine as shipped)")
+    r.add_argument("--courses", default="", help="a prepared courses.json to race instead of picking from the archives")
     r.add_argument("--dnf", type=float, default=400.0)
     r.add_argument("--rank-hulls", type=lambda x: [h for h in x.split(",") if h], default=None,
                    help="rank the courses on these hulls' archive spread (and report them as a sub-field too)")
