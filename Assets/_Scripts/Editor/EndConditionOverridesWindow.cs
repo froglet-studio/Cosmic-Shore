@@ -179,6 +179,9 @@ namespace CosmicShore.Editor
                 "default " + EndConditionOverridesSO.DefaultLarderMissileTarget + ".\n" +
                 "  • Thornbush: round length in SECONDS (timed - most nests and trail STANDING in a domain's colour at " +
                 "the whistle wins), default " + EndConditionOverridesSO.DefaultThornbushRoundSeconds + ".\n" +
+                "  • Friction: crystals a DOMAIN must collect to win (race to N), and the SECONDS the " +
+                "clock allows before the run ends with no winner. 0 on either keeps the scene monitors' " +
+                "per-intensity tables (10/20/30/50 crystals, 120/150/180/210 seconds).\n" +
                 "  • Lancefall: hostile prisms a DOMAIN must break with the Void Lance (race to N), default " +
                 EndConditionOverridesSO.DefaultLancefallPrismTarget + ".\n" +
                 "  • Flitstrike: strikes a DOMAIN needs - one Honeyguide Flit reaching a rival hull is 1 (race to N), " +
@@ -444,6 +447,8 @@ namespace CosmicShore.Editor
             int dc  = Mathf.Max(0, EditorGUILayout.IntField("Depth Charge - Prism Target", _config.depthChargePrismTarget));
             int ld  = Mathf.Max(0, EditorGUILayout.IntField("Larder - Missile Target", _config.larderMissileTarget));
             int tb  = Mathf.Max(0, EditorGUILayout.IntField("Thornbush - Round Seconds", _config.thornbushRoundSeconds));
+            int frc = Mathf.Max(0, EditorGUILayout.IntField("Friction - Crystal Count", _config.frictionCrystalCount));
+            int frs = Mathf.Max(0, EditorGUILayout.IntField("Friction - Run Seconds", _config.frictionSeconds));
             int lf  = Mathf.Max(0, EditorGUILayout.IntField("Lancefall - Prism Target", _config.lancefallPrismTarget));
             int fls = Mathf.Max(0, EditorGUILayout.IntField("Flitstrike - Strike Target", _config.flitstrikeStrikeTarget));
             int hcb = Mathf.Max(0, EditorGUILayout.IntField("Honeycomb - Round Seconds", _config.honeycombRoundSeconds));
@@ -543,6 +548,8 @@ namespace CosmicShore.Editor
                     _config.depthChargePrismTarget = dc;
                     _config.larderMissileTarget = ld;
                     _config.thornbushRoundSeconds = tb;
+                    _config.frictionCrystalCount = frc;
+                    _config.frictionSeconds = frs;
                     _config.lancefallPrismTarget = lf;
                     _config.flitstrikeStrikeTarget = fls;
                     _config.honeycombRoundSeconds = hcb;
@@ -653,6 +660,8 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Depth Charge", dc > 0 ? dc.ToString() : EndConditionOverridesSO.DefaultDepthChargePrismTarget + " (default)");
             EditorGUILayout.LabelField("Larder", ld > 0 ? ld.ToString() : EndConditionOverridesSO.DefaultLarderMissileTarget + " (default)");
             EditorGUILayout.LabelField("Thornbush (seconds)", tb > 0 ? tb.ToString() : EndConditionOverridesSO.DefaultThornbushRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Friction - crystals", frc > 0 ? frc.ToString() : "auto (per intensity: 10/20/30/50)");
+            EditorGUILayout.LabelField("Friction - seconds", frs > 0 ? frs + " seconds" : "auto (per intensity: 120/150/180/210)");
             EditorGUILayout.LabelField("Lancefall", lf > 0 ? lf.ToString() : EndConditionOverridesSO.DefaultLancefallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Flitstrike", fls > 0 ? fls.ToString() : EndConditionOverridesSO.DefaultFlitstrikeStrikeTarget + " (default)");
             EditorGUILayout.LabelField("Honeycomb (seconds)", hcb > 0 ? hcb.ToString() : EndConditionOverridesSO.DefaultHoneycombRoundSeconds + " (default)");
@@ -777,6 +786,8 @@ namespace CosmicShore.Editor
                    "Depth Charge: " + Fmt(_config.depthChargePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultDepthChargePrismTarget) + "\n" +
                    "Larder: " + Fmt(_config.larderMissileTargetBuild, "default " + EndConditionOverridesSO.DefaultLarderMissileTarget) + "\n" +
                    "Thornbush (seconds): " + Fmt(_config.thornbushRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultThornbushRoundSeconds) + "\n" +
+                   "Friction crystals: " + Fmt(_config.frictionCrystalCountBuild, "auto, per intensity") + "\n" +
+                   "Friction seconds: " + Fmt(_config.frictionSecondsBuild, "auto, per intensity") + "\n" +
                    "Lancefall: " + Fmt(_config.lancefallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultLancefallPrismTarget) + "\n" +
                    "Flitstrike: " + Fmt(_config.flitstrikeStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultFlitstrikeStrikeTarget) + "\n" +
                    "Honeycomb (seconds): " + Fmt(_config.honeycombRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultHoneycombRoundSeconds) + "\n" +

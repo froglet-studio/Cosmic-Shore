@@ -61,6 +61,13 @@ namespace CosmicShore.UI
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
         [SerializeField] protected SO_AIProfileList aiProfileList;
 
+        [Header("Winner Declaration")]
+        [Tooltip("For modes that can end with no winner at all (e.g. Friction's clock " +
+                 "expiring or the whole party being eliminated). When set, the banner uses " +
+                 "the server-declared GameDataSO.WinnerDomain instead of crowning whoever " +
+                 "ranked first, so a no-winner run reads GAME OVER rather than a victory.")]
+        [SerializeField] protected bool requireDeclaredWinner;
+
         [Header("Rev 8 glass ladder (Docs/MENU_REDESIGN_B.md section 49)")]
         [Tooltip("Spawned into the card container above each team's rows when any domain fields two or more pilots. " +
                  "Empty: no headers, every row shows its own score.")]
@@ -678,7 +685,11 @@ namespace CosmicShore.UI
             // produce results (freestyle, DuelForCell) fall back to the legacy path.
             if (gameData.Results is { Count: > 0 })
             {
-                var winnerDomain = gameData.WinnerDomain != Domains.Blue
+                // Blue from a mode that DECLARES its winner (requireDeclaredWinner) means nobody
+                // won - Friction's clock or its hunters ended the run - and the banner must say
+                // GAME OVER rather than crown whoever ranked first. Everywhere else Blue only
+                // means "the mode never set it", and the top-ranked domain is the winner.
+                var winnerDomain = gameData.WinnerDomain != Domains.Blue || requireDeclaredWinner
                     ? gameData.WinnerDomain
                     : gameData.Results[0].Domain;
                 SetBannerForDomain(winnerDomain);
@@ -716,6 +727,12 @@ namespace CosmicShore.UI
         /// </summary>
         protected virtual Domains DetermineWinnerDomain(List<IRoundStats> orderedStats)
         {
+            // Friction (and any mode that can end with NO winner) declares its result
+            // server-side. Blue is the "no team" sentinel, so returning it unchanged is what
+            // makes the banner read GAME OVER instead of crowning whoever ranked first.
+            if (requireDeclaredWinner)
+                return gameData.WinnerDomain;
+
             if (gameData.WinnerDomain != Domains.Blue)
                 return gameData.WinnerDomain;
             if (gameData.DomainStatsList is { Count: > 0 })

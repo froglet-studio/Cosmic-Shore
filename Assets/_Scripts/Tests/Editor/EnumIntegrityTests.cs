@@ -231,7 +231,9 @@ namespace CosmicShore.Tests
             // 115 -> 118 on 2026-11-15: Snap (114), DenBuilder (115), Riptide (116), the Goby & Pistol's Charge, Mass and
             // Space games, on the ids Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for them.
             // 118 -> 120 on 2026-11-16: Marionette (126) and Gorge (127), the Jewel Wasp's Charge and Space games (rows 36-37).
-            Assert.AreEqual(120, values.Length,
+            // 120 -> 121 on 2026-11-17: Friction (200), the prototype-level Rhino-hunter crystal race, ported onto
+            // bleeding-edge outside the sequential range so it cannot collide with a roster id.
+            Assert.AreEqual(121, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

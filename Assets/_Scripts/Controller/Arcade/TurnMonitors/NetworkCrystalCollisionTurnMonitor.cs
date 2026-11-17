@@ -61,8 +61,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void OnCrystalTargetSynced(int previousValue, int newValue)
         {
-            if (newValue > 0)
-                gameData.CrystalTargetCount = newValue;
+            if (newValue <= 0) return;
+            gameData.CrystalTargetCount = newValue;
+            // The readout raised at StartMonitor was computed against the fallback target;
+            // now that the real one has landed, publish the remaining count against it.
+            UpdateCrystalsRemainingUI();
         }
 
         public override void StartMonitor()
@@ -95,6 +98,12 @@ namespace CosmicShore.Gameplay
 
             _netCrystalCollisions.Value = CrystalCollisions;
             gameData.CrystalTargetCount = CrystalCollisions;
+
+            // UpdateCrystals above raised the remaining count against the rule's FALLBACK target
+            // (CrystalTargetCount was still 0). Raise it again against the target just published,
+            // or the goal row shows the fallback's arithmetic until the first crystal is collected -
+            // invisible where fallback ~= target (SkimRace's 39), a wrong "0/10" in Friction.
+            UpdateCrystalsRemainingUI();
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[NetworkCrystalMonitor] Server set crystal target: {CrystalCollisions} " +
                       $"(intensity={gameData.SelectedIntensity.Value})");
@@ -172,7 +181,14 @@ namespace CosmicShore.Gameplay
             return overrides != null ? overrides.GetCrystalCount(gameData.GameMode, autoCalc) : autoCalc;
         }
 
-        int ComputeAutoCalcCount()
+        /// <summary>
+        /// The count used when the tool says 0 (auto). The default derives it from the track -
+        /// crystals per lap x laps - which is right for a lap race and wrong for a mode whose
+        /// target is authored per intensity (Friction). Override to supply that mode's own
+        /// auto-calc; the tool's explicit count still wins over both, so the rule that end-game
+        /// counts are authored through the tool is unchanged.
+        /// </summary>
+        protected virtual int ComputeAutoCalcCount()
         {
             if (optionalEnvironment)
             {

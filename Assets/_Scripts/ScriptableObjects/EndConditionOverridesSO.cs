@@ -821,6 +821,18 @@ namespace CosmicShore.ScriptableObjects
                  "most mass standing in its own colour (nests plus trail) when the clock runs out wins. 0 = default (90).")]
         [Min(0)] public int thornbushRoundSeconds = 90;
 
+        [Tooltip("Friction: crystals a DOMAIN must collect between them to win (race to N), summed " +
+                 "across that domain's players - the Rhino hunters are Blue and never count. " +
+                 "0 = auto: the per-intensity table on the scene's FrictionCrystalTurnMonitor " +
+                 "(10/20/30/50), so a number here flattens all four intensities onto one target.")]
+        [Min(0)] public int frictionCrystalCount = 0;
+
+        [Tooltip("Friction: how many SECONDS a run lasts before the clock ends it with NO winner " +
+                 "- the second of the mode's end conditions (the first is the crystal target above; " +
+                 "total elimination by the hunters is the third). 0 = auto: the per-intensity table " +
+                 "on the scene's FrictionTimeBasedTurnMonitor (120/150/180/210).")]
+        [Min(0)] public int frictionSeconds = 0;
+
         [Tooltip("Lancefall: hostile PRISMS a DOMAIN must break to win (race to N), the Shrike's space game. The plates " +
                  "are neutral, so every plate tile the Void Lance breaks counts. 0 = default (600).")]
         [Min(0)] public int lancefallPrismTarget = 600;
@@ -1005,6 +1017,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int depthChargePrismTargetBuild = 1500;
         [Min(0)] public int larderMissileTargetBuild = 16;
         [Min(0)] public int thornbushRoundSecondsBuild = 90;
+        [Min(0)] public int frictionCrystalCountBuild = 0;
+        [Min(0)] public int frictionSecondsBuild = 0;
         [Min(0)] public int lancefallPrismTargetBuild = 600;
         [Min(0)] public int flitstrikeStrikeTargetBuild = 5;
         [Min(0)] public int honeycombRoundSecondsBuild = 90;
@@ -1053,6 +1067,7 @@ namespace CosmicShore.ScriptableObjects
             {
                 GameModes.SkimRace => hexRaceCrystalCount,
                 GameModes.Scurry => crystalCaptureCrystalCount,
+                GameModes.Friction => frictionCrystalCount,
                 _ => 0,
             };
             return configured > 0 ? configured : autoCalcFallback;
@@ -1604,6 +1619,15 @@ namespace CosmicShore.ScriptableObjects
             thornbushRoundSeconds > 0 ? thornbushRoundSeconds : DefaultThornbushRoundSeconds;
 
         /// <summary>
+        /// Friction run length in seconds: the configured value when &gt; 0, otherwise
+        /// <paramref name="autoCalcFallback"/> - the scene monitor's per-intensity entry. There is
+        /// deliberately no flat default, because a flat number is exactly what the intensity table
+        /// exists to avoid; 0 means "let intensity decide".
+        /// </summary>
+        public int GetFrictionSeconds(int autoCalcFallback) =>
+            frictionSeconds > 0 ? frictionSeconds : autoCalcFallback;
+
+        /// <summary>
         /// Lancefall prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
         /// <see cref="DefaultLancefallPrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
         /// </summary>
@@ -1782,6 +1806,7 @@ namespace CosmicShore.ScriptableObjects
             {
                 GameModes.SkimRace                   => hexRaceCrystalCount,
                 GameModes.Scurry => crystalCaptureCrystalCount,
+                GameModes.Friction                   => frictionCrystalCount,
                 GameModes.Joust          => joustCount > 0 ? joustCount : DefaultJoustCount,
                 GameModes.BroodRush               => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultBroodRushWaveTarget,
                 // Scalar only, as for Cleave below: the real answer is per-intensity
@@ -1984,6 +2009,8 @@ namespace CosmicShore.ScriptableObjects
             depthChargePrismTarget == depthChargePrismTargetBuild &&
             larderMissileTarget == larderMissileTargetBuild &&
             thornbushRoundSeconds == thornbushRoundSecondsBuild &&
+            frictionCrystalCount == frictionCrystalCountBuild &&
+            frictionSeconds == frictionSecondsBuild &&
             lancefallPrismTarget == lancefallPrismTargetBuild &&
             flitstrikeStrikeTarget == flitstrikeStrikeTargetBuild &&
             honeycombRoundSeconds == honeycombRoundSecondsBuild &&
@@ -2084,6 +2111,8 @@ namespace CosmicShore.ScriptableObjects
             depthChargePrismTarget = depthChargePrismTargetBuild;
             larderMissileTarget = larderMissileTargetBuild;
             thornbushRoundSeconds = thornbushRoundSecondsBuild;
+            frictionCrystalCount = frictionCrystalCountBuild;
+            frictionSeconds = frictionSecondsBuild;
             lancefallPrismTarget = lancefallPrismTargetBuild;
             flitstrikeStrikeTarget = flitstrikeStrikeTargetBuild;
             honeycombRoundSeconds = honeycombRoundSecondsBuild;
@@ -2185,6 +2214,8 @@ namespace CosmicShore.ScriptableObjects
             depthChargePrismTargetBuild = depthChargePrismTarget;
             larderMissileTargetBuild = larderMissileTarget;
             thornbushRoundSecondsBuild = thornbushRoundSeconds;
+            frictionCrystalCountBuild = frictionCrystalCount;
+            frictionSecondsBuild = frictionSeconds;
             lancefallPrismTargetBuild = lancefallPrismTarget;
             flitstrikeStrikeTargetBuild = flitstrikeStrikeTarget;
             honeycombRoundSecondsBuild = honeycombRoundSeconds;

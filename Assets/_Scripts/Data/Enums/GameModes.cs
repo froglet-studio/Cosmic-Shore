@@ -631,8 +631,16 @@ namespace CosmicShore.Data
         // prism target wins. Rampage's living forest, read-only, with mostly Space crystals; I1-I4 are Rampage's rungs.
         Blastline = 113,
 
+        // Friction (200): skim-race crystal collection under Rhino hunter pressure - collect the
+        // intensity's crystal target before time runs out while dormant Rhino hunters (woken by
+        // the first crystal collected) stalk the arena. Ported from the prototype-level branch,
+        // where it was 45 and then 48; both were taken on bleeding-edge (Switchback, Tollway), so
+        // it sits at 200, outside the sequential range GAME_KIT_ROSTER.md hands out, so parallel
+        // branches cannot collide with it. See ArcadeGameFriction.asset / MinigameFriction.unity.
+        Friction = 200,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 120) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 121) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

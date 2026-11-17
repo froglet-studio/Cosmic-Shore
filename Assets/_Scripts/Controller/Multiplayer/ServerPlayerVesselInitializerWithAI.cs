@@ -172,7 +172,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            int aiCount = gameData.RequestedAIBackfillCount;
+            int aiCount = ResolveAICount();
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}");
             if (aiCount <= 0)
             {
@@ -281,8 +281,12 @@ namespace CosmicShore.Gameplay
                     }
                     else
                     {
-                        aiDomain = GetBalancedDomain(totalCounts, humanCounts);
-                        totalCounts[aiDomain]++;
+                        // Routed through the virtual so a subclass can substitute its own pick.
+                        // Friction's hunters return Domains.Blue, which sits outside the active
+                        // domain set and so has no entry in totalCounts - and must not get one:
+                        // GetBalancedDomain needs every key in BOTH dicts.
+                        aiDomain = ResolveAIDomain(totalCounts, humanCounts);
+                        if (totalCounts.ContainsKey(aiDomain)) totalCounts[aiDomain]++;
                     }
 
                     // Deal the seat so every later round of this tournament replays it. Appended
@@ -293,7 +297,8 @@ namespace CosmicShore.Gameplay
 
                 // The HULL is decided after the DOMAIN, because which kind of seat this is
                 // (opponent or ally) is a question about the domain - see AIHullSeating.
-                var aiVesselType = ResolveAIVesselType(i, hasTemplate, aiDomain, humanDomains, hullsInUse);
+                var aiVesselType = ResolveAIVesselType(
+                    ResolveAIVesselType(i, hasTemplate, aiDomain, humanDomains, hullsInUse));
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;
@@ -305,6 +310,8 @@ namespace CosmicShore.Gameplay
                     aiPlayerNO.Despawn(true);
                     continue;
                 }
+
+                OnAIVesselSpawned(aiVesselNO, aiPlayer);
 
                 // Server-side initialization of the AI player-vessel pair
                 if (!aiVesselNO.TryGetComponent(out IVessel vessel))
@@ -320,8 +327,58 @@ namespace CosmicShore.Gameplay
                 var difficulty = gameData.RequestedAIDifficultyAt(i);
                 gameData.SetAIPilotDifficulty(aiPlayer.PlayerNetId, difficulty);
                 ConfigureAIPilot(aiVesselNO, difficulty);
+                OnAIPlayerInitialized(aiPlayer, i, aiCount);
             }
         }
+
+        /// <summary>
+        /// How many AI to spawn. Default: team-balancing backfill (desired total players minus
+        /// humans present). Friction overrides this with a fixed per-intensity hunter roster.
+        /// </summary>
+        protected virtual int ResolveAICount() => gameData.RequestedAIBackfillCount;
+
+        /// <summary>
+        /// Which domain a newly-spawned AI joins when the host did not place it. Default: the
+        /// standard team-balancing pick. Friction returns <see cref="Domains.Blue"/> (the "no
+        /// team" sentinel) since its hunters are allied with no human team - which also makes
+        /// <see cref="AIPilot"/>'s same-domain skip exclude hunters from targeting each other.
+        /// </summary>
+        protected virtual Domains ResolveAIDomain(Dictionary<Domains, int> totalCounts, Dictionary<Domains, int> humanCounts) =>
+            GetBalancedDomain(totalCounts, humanCounts);
+
+        /// <summary>
+        /// A last word on the hull an AI spawns in, after the seating rules (template, card draw,
+        /// arena claim, and the card's Vessels clamp) have resolved one. Default: unchanged.
+        ///
+        /// Friction overrides it: its hunters are not opponents playing the mode's game in the
+        /// mode's hull, they are the mode's ADVERSARY - Rhinos against a card whose Vessels list
+        /// is the Squirrel the human skims in. Left to the clamp alone, the whole pack becomes
+        /// Squirrels.
+        /// </summary>
+        protected virtual VesselClassType ResolveAIVesselType(VesselClassType resolved) => resolved;
+
+        /// <summary>
+        /// The AI's autopilot skill (0-1), or null to keep the mode's default (intensity x 0.25,
+        /// or the arena difficulty curve). Friction supplies its own per-intensity hunter curve.
+        /// </summary>
+        protected virtual float? ResolveAISkillOverride() => null;
+
+        /// <summary>
+        /// Called once an AI's vessel NetworkObject has spawned, before pair initialization and
+        /// pilot configuration. Default: no-op. Friction tags the spawned INSTANCE (never the
+        /// shared prefab asset) with <see cref="FrictionHunterTag"/>, so hunter-only impact
+        /// effects stay inert for every other mode's Rhino players.
+        /// </summary>
+        protected virtual void OnAIVesselSpawned(NetworkObject aiVesselNO, Player aiPlayer) { }
+
+        /// <summary>
+        /// Called once an AI's player-vessel pair is fully initialized and its pilot configured.
+        /// Default: no-op. This runs after <see cref="GameDataSO.AddPlayer"/> has handed the AI a
+        /// pose from the shared spawn pool, so it is the earliest point an override can place an
+        /// AI somewhere of its own choosing - Friction scatters its hunters around the arena
+        /// instead of stacking them on the human spawn cluster.
+        /// </summary>
+        protected virtual void OnAIPlayerInitialized(Player aiPlayer, int aiIndex, int aiCount) { }
 
         /// <summary>
         /// Picks the active domain for the next AI placement using a deterministic
@@ -610,7 +667,7 @@ namespace CosmicShore.Gameplay
         {
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
-            ConfigureAIPilotForMode(aiPilot, gameData, difficulty);
+            ConfigureAIPilotForMode(aiPilot, gameData, difficulty, ResolveAISkillOverride());
 
             // Skim Race seats fly the dedicated racing pilot (input-only; it stands AIPilot down).
             if (aiVesselNO.TryGetComponent(out IVessel vessel))
@@ -625,7 +682,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         /// <param name="difficulty">The level this pilot flies (its seat's own, stamped at spawn); null for the
         /// match's (a hull handed to the AI mid-match, an adopted hull).</param>
-        public static void ConfigureAIPilotForMode(AIPilot aiPilot, GameDataSO gameData, AIDifficulty? difficulty = null)
+        /// <param name="skillOverride">A spawner's own skill curve (Friction's hunters); null for the mode's default.</param>
+        public static void ConfigureAIPilotForMode(AIPilot aiPilot, GameDataSO gameData, AIDifficulty? difficulty = null,
+                                                   float? skillOverride = null)
         {
             if (aiPilot == null || gameData == null) return;
 
@@ -642,10 +701,13 @@ namespace CosmicShore.Gameplay
             bool shouldSeekPlayers =
                 gameData.GameMode == GameModes.Joust ||
                 gameData.GameMode == GameModes.DogFight ||
-                gameData.GameMode == GameModes.Broadside;
+                gameData.GameMode == GameModes.Broadside ||
+                gameData.GameMode == GameModes.Friction;
             // An arena card has no intensity row (it always plays SO_ArcadeGame.ArenaIntensity), so its autopilot skill
             // follows the AI difficulty the host picked instead; every other card keeps intensity x 0.25.
-            float skill = gameData.IsArenaMatch
+            float skill = skillOverride.HasValue
+                ? Mathf.Clamp01(skillOverride.Value)
+                : gameData.IsArenaMatch
                 ? VesselSelectionRules.ArenaAutopilotSkill(AIDifficultyRules.Resolve(difficulty ?? gameData.RequestedAIDifficulty))
                 : Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);

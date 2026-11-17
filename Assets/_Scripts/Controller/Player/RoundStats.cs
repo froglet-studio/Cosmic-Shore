@@ -51,6 +51,8 @@ namespace CosmicShore.Data
         public event Action<IRoundStats> OnCombatPointsChanged;
         public event Action<IRoundStats> OnSwitchesThreadedChanged;
         public event Action<IRoundStats> OnFusesBeatenChanged;
+        public event Action<IRoundStats> OnLivesChanged;
+        public event Action<IRoundStats> OnEliminatedChanged;
 
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -81,6 +83,8 @@ namespace CosmicShore.Data
         int _strikeHitsLandedLocal;
         int _switchesThreadedLocal;
         int _fusesBeatenLocal;
+        int _livesLocal;
+        bool _isEliminatedLocal;
 
         float _fullSpeedStraightAbilityActiveTimeLocal,
             _rightStickAbilityActiveTimeLocal,
@@ -202,6 +206,12 @@ namespace CosmicShore.Data
         readonly NetworkVariable<int> n_FusesBeaten =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
+        readonly NetworkVariable<int> n_Lives =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<bool> n_IsEliminated =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
@@ -294,6 +304,8 @@ namespace CosmicShore.Data
             OnCombatPointsChanged = null;
             OnSwitchesThreadedChanged = null;
             OnFusesBeatenChanged = null;
+            OnLivesChanged = null;
+            OnEliminatedChanged = null;
 
             OnFullSpeedStraightAbilityActiveTimeChanged = null;
             OnRightStickAbilityActiveTimeChanged = null;
@@ -766,6 +778,32 @@ namespace CosmicShore.Data
             }
         }
 
+        public int Lives
+        {
+            get => _livesLocal;
+            set
+            {
+                _livesLocal = value;
+                if (IsSpawned && IsServer) n_Lives.Value = value;
+
+                // Unconditional, like FusesBeaten: the server is the only writer and its own HUD
+                // must move on the write, not on a replication callback it never gets.
+                RaiseSpecific(OnLivesChanged);
+            }
+        }
+
+        public bool IsEliminated
+        {
+            get => _isEliminatedLocal;
+            set
+            {
+                _isEliminatedLocal = value;
+                if (IsSpawned && IsServer) n_IsEliminated.Value = value;
+
+                RaiseSpecific(OnEliminatedChanged);
+            }
+        }
+
         public float FullSpeedStraightAbilityActiveTime
         {
             get => _fullSpeedStraightAbilityActiveTimeLocal;
@@ -925,6 +963,8 @@ namespace CosmicShore.Data
             _combatPointsLocal          = n_CombatPoints.Value;
             _switchesThreadedLocal      = n_SwitchesThreaded.Value;
             _fusesBeatenLocal           = n_FusesBeaten.Value;
+            _livesLocal                 = n_Lives.Value;
+            _isEliminatedLocal          = n_IsEliminated.Value;
 
             _fullSpeedStraightAbilityActiveTimeLocal = n_FullSpeedStraightAbilityActiveTime.Value;
             _rightStickAbilityActiveTimeLocal        = n_RightStickAbilityActiveTime.Value;
@@ -1162,6 +1202,20 @@ namespace CosmicShore.Data
                 _fusesBeatenLocal = v;
                 if (!IsServer)
                     RaiseSpecific(OnFusesBeatenChanged);
+            };
+
+            n_Lives.OnValueChanged += (_, v) =>
+            {
+                _livesLocal = v;
+                if (!IsServer)
+                    RaiseSpecific(OnLivesChanged);
+            };
+
+            n_IsEliminated.OnValueChanged += (_, v) =>
+            {
+                _isEliminatedLocal = v;
+                if (!IsServer)
+                    RaiseSpecific(OnEliminatedChanged);
             };
 
             n_FullSpeedStraightAbilityActiveTime.OnValueChanged += (_, v) =>

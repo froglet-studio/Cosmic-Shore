@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8306b0405de94db08c6a969a3273de3c, type: 3}
+  m_Name: VesselLifeLossByHunterSkimmer
+  m_EditorClassIdentifier:
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  inputToMute: 7
+  muteSeconds: 3
+  forceStopIfActive: 1
+  invulnerabilitySeconds: 2
+  vesselHitByHunterEvent: {fileID: 0}
+  vesselEliminatedByHunterEvent: {fileID: 0}
