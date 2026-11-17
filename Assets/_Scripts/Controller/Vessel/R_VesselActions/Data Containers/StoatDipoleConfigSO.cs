@@ -72,7 +72,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 40f)] float sinkSofteningHorizons = 14f;
 
         [Tooltip("Space is size: a multiplier on both poles' horizon AND their GM (a bigger hole is a heavier one). Read live on the owner, replicated to peers as the horizon.")]
-        [SerializeField] ElementalFloat poleSize = ElementalFloat.Multiplier(1f, 2f, Element.Space, 1f);
+        [SerializeField] ElementalFloat poleSize = ElementalFloat.Multiplier(1f, 2f, Element.Space, 0.5f);
 
         [Tooltip("The source's push as a share of the sink's pull (ftWhite). 1 = equal and opposite: a true dipole.")]
         [SerializeField, Range(0f, 2f)] float sourcePush = 1f;
@@ -181,7 +181,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Time is rate: the warp boost, a multiple of the hull's flight clock while the path is warped — 2.5× at rest, " +
                  "3.75× at level 5, 5× at level 10 (the studio's 2→4, raised a quarter on 2026-10-13), floored at 1 (never a slow-down).")]
-        [SerializeField] ElementalFloat boost = ElementalFloat.Multiplier(2.5f, 5f, Element.Time, 1f);
+        [SerializeField] ElementalFloat boost = ElementalFloat.Multiplier(2.5f, 5f, Element.Time, 1.25f);
 
         [Tooltip("How fast the boost arrives, per second (ftRise).")]
         [SerializeField, Range(0.1f, 60f)] float boostRise = 20f;

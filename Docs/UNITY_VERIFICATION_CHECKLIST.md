@@ -24727,3 +24727,16 @@ Cinemachine stubs elsewhere). Not verified: a real Unity editor.
 1. Open MinigameSerpentTime: the AI Nose Lead row for the Serpent reads Gain 2.1, Nose Follow 6.87.
 2. Race Serpentine I4 against a Legendary AI Serpent: it threads the rings without corkscrewing, near 85-120 s
    (it took 160-190 s before).
+## 🔴 Fleet floor rule: every rising elemental float floored at half its rest (2026-11-16, Garrett's project thread "Rank least polished ability floors", `claude/ability-floor-rule`, NOT RUN IN EDITOR)
+
+Every rising `ElementalFloat` (Max > Min) now has `UseFloor: 1`, `Floor = Min / 2`, so at element level -5 an ability
+keeps half its resting strength (`Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`, "The fleet floor rule";
+gate `python3 Tools/Build/elemental_floor_rule.py --check`). Rhino's Heft and Carry now rest at 20 u and 10 u instead of 0.
+The Stoat's ripple reach and launch power no longer clamp a deficit back to x1. The editor and the `unity` CLI did not
+run; the EditMode tests touched (`AnglerFundamentalsTests`, `RhinoReworkTests`, `StoatRippleTests`) did not run. Owed:
+
+1. Run the EditMode tests above, plus `JacksScalingTests`, `ShrikeConfigTests`, `SwordfishQuickdrawTests`, `ElementalScalingUnificationTests`.
+2. Open three changed prefabs (Urchin, Falcon, Swordfish): the skimmer `Scale` and gun `ProjectileTime` show Use Floor ticked with the new Floor, and nothing else on the prefab changed.
+3. Rhino at rest (no Mass, no Charge): a ploughed prism is thrown about 20 u further than before, and a thrown prism strikes another up to 10 u past its landing point.
+4. Drain an element to -5 on Angler (any element) and Honeyguide: the ability visibly weakens to about half (the Angler's paint brush half as wide), where it used to stay full.
+5. Meerkat at Charge -5: a zap still takes a petal share you can see (0.05 a zap, was 0.025).

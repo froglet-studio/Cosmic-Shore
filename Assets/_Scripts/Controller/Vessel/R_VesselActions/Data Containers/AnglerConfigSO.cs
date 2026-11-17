@@ -80,22 +80,22 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float lureGrowth = 3f;
         [Tooltip("Time: your tamed fauna swim this many times as fast (following, gathering, thrown, eating an order, hunting), " +
                  "from x1 at Time 0 to x2 at Time 10. The element's one parameter (vessel contract: Time = rate / mobility).")]
-        [SerializeField] ElementalFloat faunaSpeed = ElementalFloat.Multiplier(1f, 2f, Element.Time, 1f);
+        [SerializeField] ElementalFloat faunaSpeed = ElementalFloat.Multiplier(1f, 2f, Element.Time, 0.5f);
         [Tooltip("Charge: a squad locked on to a vessel bites it as a scored Strike (PvP is petals only) at most once per this " +
                  "many seconds at Charge 0, however many creatures are on it (CombatHitDrain's per-pair latch). biteRate divides it.")]
         [SerializeField, Min(0.1f)] float lockBiteCooldown = 1f;
         [Tooltip("CHARGE: how often a hunter bites (vessel contract: Charge = threat). Divides lockBiteCooldown: x1 at Charge 0 " +
                  "(one bite a second) to x2.5 at Charge 10 (one every 0.4 s), so a charged Angler's hunters take petals 2.5 times as fast.")]
-        [SerializeField] ElementalFloat biteRate = ElementalFloat.Multiplier(1f, 2.5f, Element.Charge, 1f);
+        [SerializeField] ElementalFloat biteRate = ElementalFloat.Multiplier(1f, 2.5f, Element.Charge, 0.5f);
         [Tooltip("CHARGE level-5 'Swallow': with this element's upgrade active a bite's petals land on the Angler instead of " +
                  "coming loose as crystals. None = always eject.")]
         [SerializeField] Element swallowUpgradeElement = Element.Charge;
         [Tooltip("MASS: the lure's size (vessel contract: Mass = physical size). Multiplies the lure reach and the hold radius " +
                  "(and the ring drawn round the esca): x1 at Mass 0 to x2 at Mass 10.")]
-        [SerializeField] ElementalFloat lureScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 1f);
+        [SerializeField] ElementalFloat lureScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
         [Tooltip("SPACE: the paint brush's width (vessel contract: Space = reach / presence). Multiplies the brush's half-angle and " +
                  "its radius at the nose: x1 at Space 0 to x2 at Space 10. The eraser (Charge's beam) is unchanged.")]
-        [SerializeField] ElementalFloat brushScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 1f);
+        [SerializeField] ElementalFloat brushScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 0.5f);
         [Tooltip("TIME level-5 'Riptide': with this element's upgrade active a dash pressed while one is in flight is kept and " +
                  "fires the moment it lands, at the other group, so the Angler chains between its two groups. None = a press " +
                  "during a dash is ignored.")]

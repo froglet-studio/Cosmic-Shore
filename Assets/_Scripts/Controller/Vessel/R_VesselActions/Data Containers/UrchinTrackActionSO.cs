@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Floor for the Space length multiplier, so a deep deficit can never project a " +
                  "track too short to ride.")]
-        [SerializeField] float minLengthMultiplier = 0.4f;
+        [SerializeField] float minLengthMultiplier = 0.5f;
 
         [Tooltip("SPACE level-5 'Long Haul': extra world units of track added while the Space " +
                  "upgrade is active (per-deploy snapshot - a track already laid keeps the " +

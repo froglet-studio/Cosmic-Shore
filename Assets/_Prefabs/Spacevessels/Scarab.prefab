@@ -423,6 +423,8 @@ MonoBehaviour:
     Min: 1
     Max: 1.5
     element: 4
+    UseFloor: 1
+    Floor: 0.5
   PitchScaler: 100
   YawScaler: 100
   RollScaler: 30
@@ -854,6 +856,8 @@ MonoBehaviour:
     Min: 30
     Max: 60
     element: 3
+    UseFloor: 1
+    Floor: 15
   nudgeShardPoolManager: {fileID: 0}
   markerDistance: 70
   AOEPrefab: {fileID: 0}

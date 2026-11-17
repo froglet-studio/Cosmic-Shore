@@ -81,7 +81,7 @@ MonoBehaviour:
     Max: 2.5
     element: 2
     UseFloor: 1
-    Floor: 1
+    Floor: 0.75
   ringScale:
     Enabled: 1
     Value: 1.3
@@ -89,7 +89,7 @@ MonoBehaviour:
     Max: 1.9
     element: 3
     UseFloor: 1
-    Floor: 1
+    Floor: 0.65
   herdSpeed:
     Enabled: 1
     Value: 1
@@ -97,7 +97,7 @@ MonoBehaviour:
     Max: 1.6
     element: 4
     UseFloor: 1
-    Floor: 0.4
+    Floor: 0.5
   pooEvery: 6
   pooCount: 7
   pooSpread: 22

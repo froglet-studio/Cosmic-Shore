@@ -19,7 +19,7 @@ MonoBehaviour:
     Max: 1.6
     element: 4
     UseFloor: 1
-    Floor: 0.25
+    Floor: 0.5
   boostMultiplier: 3
   boostDuration: 6
   resourceIndex: 1

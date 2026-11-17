@@ -11,11 +11,11 @@ namespace CosmicShore.Gameplay
     {
         /// <summary>
         /// The ripple's full radius: <paramref name="separation"/> × <paramref name="perSeparation"/>, clamped to
-        /// [<paramref name="min"/>, <paramref name="max"/>], × <paramref name="charge"/> (≥ 1).
+        /// [<paramref name="min"/>, <paramref name="max"/>], × <paramref name="charge"/> (≥ 0; the config's floor holds it at half in the deficit band).
         /// </summary>
         public static float Radius(float separation, float perSeparation, float min, float max, float charge) =>
             Mathf.Clamp(Mathf.Max(0f, separation) * Mathf.Max(0f, perSeparation), Mathf.Max(0f, min), Mathf.Max(min, max))
-            * Mathf.Max(1f, charge);
+            * Mathf.Max(0f, charge);
 
         /// <summary>
         /// Where the front is <paramref name="age"/> seconds after birth: an ease-out (1 − (1 − t)³) to

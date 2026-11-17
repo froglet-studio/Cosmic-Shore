@@ -19,7 +19,7 @@ MonoBehaviour:
     Max: 2.5
     element: 1
     UseFloor: 1
-    Floor: 0.4
+    Floor: 0.5
   firingPattern: 2
   repeatWhileHeld: 0
   barrageSpikeCount: 36

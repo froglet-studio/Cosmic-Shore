@@ -19,7 +19,7 @@ MonoBehaviour:
     Max: 2.5
     element: 2
     UseFloor: 1
-    Floor: 0.4
+    Floor: 0.5
   flightVisualization: 0
   suctionDurationMultiplier: 5
   firedPrismState: 3
