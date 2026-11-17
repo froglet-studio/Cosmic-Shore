@@ -228,16 +228,16 @@ GAMES = {
     "Meerkat": {
         "mode": "BurrowRun",
         # The Meerkat flies the gate race's own steering (no drive asset, no ability autopilot in a Time race) and
-        # BurrowRunController has no aiNoseLead table, so its genes are the race controller's AI knobs (GateRaceController
-        # aiCommitDistance / aiApproachLead / aiThroughDistance, as MinigameBurrowRun ships them; only the Meerkat races
-        # Burrow Run) and the nose rate, set through the judge (fleet lag 1.5/s shipped). No lead gene.
+        # its genes are the race controller's AI knobs (GateRaceController aiCommitDistance / aiApproachLead /
+        # aiThroughDistance, as MinigameBurrowRun ships them; only the Meerkat races Burrow Run) and the nose rate
+        # (BurrowRunController.aiNoseLead: Meerkat lead 0 at 7.97/s, run1 2026-11-17). No lead gene.
         "assets": {},
         "fields": {},
         "ctrl_fields": {"aiCommitDistance": (40.0, 600.0), "aiApproachLead": (40.0, 800.0),
                         "aiThroughDistance": (40.0, 600.0)},
-        "ctrl_defaults": {"aiCommitDistance": 160.0, "aiApproachLead": 180.0, "aiThroughDistance": 120.0},
+        "ctrl_defaults": {"aiCommitDistance": 42.0, "aiApproachLead": 702.0, "aiThroughDistance": 74.0},
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
-        "lead": None, "rows": [], "nose_gene": 1.5,
+        "lead": None, "rows": [], "nose_gene": 7.97,
     },
     "Shrike": {
         "mode": "Thornline",
@@ -280,9 +280,9 @@ GAMES = {
         "fields": {},
         "ctrl_fields": {"aiCommitDistance": (20.0, 600.0), "aiApproachLead": (20.0, 800.0),
                         "aiThroughDistance": (20.0, 600.0)},
-        "ctrl_defaults": {"aiCommitDistance": 72.0, "aiApproachLead": 80.0, "aiThroughDistance": 55.0},
+        "ctrl_defaults": {"aiCommitDistance": 433.0, "aiApproachLead": 423.0, "aiThroughDistance": 68.0},   # run1
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
-        "lead": 0.0, "rows": [], "nose_gene": 1.5,
+        "lead": 0.69, "rows": [], "nose_gene": 4.37,                                                       # run1
     },
     "Grizzly": {
         "mode": "GrizzlyTime",

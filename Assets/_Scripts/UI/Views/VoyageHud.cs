@@ -112,11 +112,15 @@ namespace CosmicShore.UI
     public sealed class VoyageObjectiveBox : MonoBehaviour
     {
         const float RefreshSeconds = 0.1f;
-        // Rev 116 A, on the 1920 x 1080 frame.
-        const float TopY = 26f, RouteWidth = 520f, RouteDot = 14f;
-        const float RailX = 40f, RailY = 296f, RailWidth = 150f, BarX = 75f, BarY = 400f, BarWidth = 20f, BarHeight = 380f;
-        const float CarryY = 640f;
-        const float RingSize = 300f, RingFrom = 5f;
+        // Rev 116 A, in canvas units (1920 x 1080 reference, matched half width half height), inside the safe area. Each
+        // piece is anchored to its own edge or the centre, so a phone's wider screen moves them out, never off screen.
+        // Made smaller and clearer after the first playtest (Shombith, 2026-11-17): a dark plate behind the words, the
+        // count smaller, the lines under it larger and brighter.
+        const float TopY = 18f, RouteWidth = 360f, RouteDot = 12f, MarqueeMinWidth = 460f;
+        const float RailX = 20f, RailWidth = 92f, RailHeight = 340f, BarWidth = 16f, BarTop = 52f, BarHeight = 240f;
+        const float CarryY = -120f;
+        const float RingSize = 220f, RingY = 40f, RingFrom = 5f;
+        const float SubSize = 20f;
 
         VoyageHarbour _harbour;
         VoyageKit _kit;
@@ -124,7 +128,7 @@ namespace CosmicShore.UI
 
         CanvasGroup _group, _ringGroup;
         TMP_Text _count, _place, _clock, _action, _railFigure, _railLabel, _carry, _ringNumber;
-        RectTransform _route, _routeFill, _routeArk, _barFill, _breach, _leak, _carryChip, _flowers;
+        RectTransform _route, _routeFill, _routeArk, _barFill, _breach, _leak, _carryChip, _flowers, _marquee, _safe;
         Image _barFillImage;
         VoyageCountdownRing _ring;
         readonly Dictionary<Element, TMP_Text> _split = new();
@@ -149,7 +153,9 @@ namespace CosmicShore.UI
             go.transform.SetParent(transform, false);
             var root = VoyageHudColors.Overlay(go, 20001, hits: false);
             var frame = VoyageKit.Node("Frame", root);
-            VoyageKit.Fit(frame, new Vector2(1920f, 1080f));
+            VoyageKit.Stretch(frame);
+            frame.gameObject.AddComponent<SafeAreaFitter>();
+            _safe = frame;
             _group = frame.gameObject.AddComponent<CanvasGroup>();
             _group.alpha = 0f;
             _group.blocksRaycasts = _group.interactable = false;
@@ -160,52 +166,72 @@ namespace CosmicShore.UI
             BuildRing(frame);
         }
 
-        /// <summary>The score at top centre, the route under it, then the place and the raid clock, then one job line.</summary>
+        /// <summary>Place <paramref name="rt"/> by an anchor and pivot of its own, <paramref name="at"/> from that anchor.</summary>
+        static void Anchor(RectTransform rt, Vector2 anchor, Vector2 at, Vector2 size)
+        {
+            rt.anchorMin = rt.anchorMax = rt.pivot = anchor;
+            rt.anchoredPosition = at;
+            rt.sizeDelta = size;
+        }
+
+        /// <summary>The score at top centre on a dark plate, the route under it, then the place and the raid clock, then
+        /// one job line.</summary>
         void BuildMarquee(RectTransform frame)
         {
-            var top = VoyageKit.Node("Marquee", frame);
-            VoyageKit.At(top, 0f, TopY, 1920f, 200f);
-            VoyageKit.Column(top, 10f, TextAnchor.UpperCenter);
+            _marquee = VoyageKit.Node("Marquee", frame);
+            Anchor(_marquee, new Vector2(0.5f, 1f), new Vector2(0f, -TopY), new Vector2(MarqueeMinWidth, 150f));
+            VoyageKit.Block(_marquee, VoyageKit.Fade(_kit.Popup, 0.6f));
+            var col = VoyageKit.Column(_marquee, 6f, TextAnchor.UpperCenter);
+            col.childForceExpandWidth = false;
+            col.padding = new RectOffset(26, 26, 8, 12);
+            var fit = _marquee.gameObject.AddComponent<ContentSizeFitter>();
+            fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            VoyageKit.Le(_marquee).minWidth = MarqueeMinWidth;
 
-            _count = _kit.Text(top, 72f, _kit.Light, TextAlignmentOptions.Center);
+            _count = _kit.Text(_marquee, 54f, _kit.Light, TextAlignmentOptions.Center);
             _count.richText = true;
-            VoyageKit.Le(_count).minHeight = 80f;
+            VoyageKit.Le(_count).minHeight = 60f;
 
-            _route = VoyageKit.Node("Route", top);
+            _route = VoyageKit.Node("Route", _marquee);
             var rle = VoyageKit.Le(_route);
             rle.minWidth = rle.preferredWidth = RouteWidth;
-            rle.minHeight = rle.preferredHeight = RouteDot;
+            rle.minHeight = rle.preferredHeight = RouteDot + 4f;
 
-            var sub = VoyageKit.Node("Where", top);
-            VoyageKit.Row(sub, 22f, TextAnchor.MiddleCenter);
+            var sub = VoyageKit.Node("Where", _marquee);
+            VoyageKit.Row(sub, 20f, TextAnchor.MiddleCenter);
             _flowers = VoyageKit.Node("Flowers", sub);
-            VoyageKit.Row(_flowers, 14f);
+            VoyageKit.Row(_flowers, 12f);
             foreach (var e in VoyageRaid.Elements)
             {
                 var cell = VoyageKit.Node(e.ToString(), _flowers);
                 VoyageKit.Row(cell, 4f);
-                var flower = VoyageKit.Flower(cell, e, VoyageHudColors.Second);
+                var flower = VoyageKit.Flower(cell, e, _kit.Light);
                 var fle = VoyageKit.Le(flower);
-                fle.minWidth = fle.preferredWidth = fle.minHeight = fle.preferredHeight = 18f;
-                _split[e] = _kit.Text(cell, 17f, VoyageHudColors.Second, TextAlignmentOptions.Left);
+                fle.minWidth = fle.preferredWidth = fle.minHeight = fle.preferredHeight = 20f;
+                _split[e] = _kit.Text(cell, SubSize, _kit.Light, TextAlignmentOptions.Left);
             }
-            _place = _kit.Text(sub, 17f, VoyageHudColors.Second, TextAlignmentOptions.Center);
-            _clock = _kit.Text(sub, 17f, VoyageHudColors.Second, TextAlignmentOptions.Center);
+            _place = _kit.Text(sub, SubSize, _kit.Light, TextAlignmentOptions.Center);
+            _clock = _kit.Text(sub, SubSize, _kit.Light, TextAlignmentOptions.Center);
 
-            _action = _kit.Text(top, 17f, VoyageHudColors.Second, TextAlignmentOptions.Center);
+            _action = _kit.Text(_marquee, SubSize, _kit.Light, TextAlignmentOptions.Center);
         }
 
-        /// <summary>The Ark's hull down the left edge: its figure, a tall bar with the breach and leak lines, its caption.</summary>
+        /// <summary>The Ark's hull at the left edge, on a dark plate: its figure, a bar with the breach and leak lines, its
+        /// caption.</summary>
         void BuildRail(RectTransform frame)
         {
-            var head = VoyageKit.Node("RailFigure", frame);
-            VoyageKit.At(head, RailX, RailY, RailWidth, 90f);
-            VoyageKit.Column(head, 2f, TextAnchor.LowerLeft);
-            _railFigure = _kit.Text(head, 30f, _kit.Light, TextAlignmentOptions.BottomLeft);
+            var rail = VoyageKit.Node("Rail", frame);
+            Anchor(rail, new Vector2(0f, 0.5f), new Vector2(RailX, 0f), new Vector2(RailWidth, RailHeight));
+            VoyageKit.Block(rail, VoyageKit.Fade(_kit.Popup, 0.6f));
 
-            var track = VoyageKit.Node("HullBar", frame);
-            VoyageKit.At(track, BarX, BarY, BarWidth, BarHeight);
-            VoyageKit.Block(track, VoyageKit.Fade(_kit.Outline, 0.4f));
+            var head = VoyageKit.Node("RailFigure", rail);
+            VoyageKit.At(head, 0f, 8f, RailWidth, 38f);
+            _railFigure = _kit.Text(head, 28f, _kit.Light, TextAlignmentOptions.Center);
+            VoyageKit.Stretch(_railFigure.rectTransform);
+
+            var track = VoyageKit.Node("HullBar", rail);
+            VoyageKit.At(track, (RailWidth - BarWidth) * 0.5f, BarTop, BarWidth, BarHeight);
+            VoyageKit.Block(track, VoyageKit.Fade(_kit.Outline, 0.5f));
             _barFill = VoyageKit.Node("Fill", track);
             _barFillImage = VoyageKit.Block(_barFill, _kit.Light);
             SetVertical(_barFill, 0f);
@@ -216,65 +242,65 @@ namespace CosmicShore.UI
             _breach.anchorMin = new Vector2(0f, 0f);
             _breach.anchorMax = new Vector2(1f, 0f);
             _breach.pivot = new Vector2(0.5f, 0.5f);
-            _breach.offsetMin = new Vector2(-6f, -1f);
-            _breach.offsetMax = new Vector2(6f, 1f);
+            _breach.offsetMin = new Vector2(-8f, -1.5f);
+            _breach.offsetMax = new Vector2(8f, 1.5f);
 
             // The leak line, dashed: four short marks across the bar.
             _leak = VoyageKit.Node("Leak", track);
             _leak.anchorMin = new Vector2(0f, 0f);
             _leak.anchorMax = new Vector2(1f, 0f);
             _leak.pivot = new Vector2(0.5f, 0.5f);
-            _leak.offsetMin = new Vector2(-6f, -1f);
-            _leak.offsetMax = new Vector2(6f, 1f);
+            _leak.offsetMin = new Vector2(-8f, -1.5f);
+            _leak.offsetMax = new Vector2(8f, 1.5f);
             for (int i = 0; i < 4; i++)
             {
                 var dash = VoyageKit.Node("Dash", _leak);
                 dash.anchorMin = new Vector2(i / 4f, 0f);
                 dash.anchorMax = new Vector2((i + 0.6f) / 4f, 1f);
                 dash.offsetMin = dash.offsetMax = Vector2.zero;
-                VoyageKit.Block(dash, _kit.Sub);
+                VoyageKit.Block(dash, _kit.Light);
             }
 
-            var foot = VoyageKit.Node("RailLabel", frame);
-            VoyageKit.At(foot, RailX, BarY + BarHeight + 14f, RailWidth, 24f);
-            _railLabel = _kit.Label(foot, 13f, _kit.Light);
+            var foot = VoyageKit.Node("RailLabel", rail);
+            VoyageKit.At(foot, 0f, BarTop + BarHeight + 10f, RailWidth, 30f);
+            _railLabel = _kit.Label(foot, 14f, _kit.Light, TextAlignmentOptions.Center);
             VoyageKit.Stretch(_railLabel.rectTransform);
         }
 
-        /// <summary>What you carry unbanked, a quiet line under the Ark.</summary>
+        /// <summary>What you carry unbanked, a chip under the middle of the screen.</summary>
         void BuildCarry(RectTransform frame)
         {
             _carryChip = VoyageKit.Node("Carrying", frame);
-            VoyageKit.At(_carryChip, 0f, CarryY, 1920f, 40f);
+            Anchor(_carryChip, new Vector2(0.5f, 0.5f), new Vector2(0f, CarryY), new Vector2(800f, 44f));
             VoyageKit.Row(_carryChip, 0f, TextAnchor.MiddleCenter);
             var chip = VoyageKit.Node("Chip", _carryChip);
             VoyageKit.Block(chip, VoyageKit.Fade(_kit.Popup, 0.7f));
             var h = VoyageKit.Row(chip, 0f, TextAnchor.MiddleCenter);
-            h.padding = new RectOffset(16, 16, 8, 8);
+            h.padding = new RectOffset(18, 18, 8, 8);
             chip.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            _carry = _kit.Text(chip, 17f, _kit.Light, TextAlignmentOptions.Center);
+            _carry = _kit.Text(chip, SubSize, _kit.Light, TextAlignmentOptions.Center);
         }
 
-        /// <summary>The last seconds at anchor: a ring that empties and the seconds in it, at the centre.</summary>
+        /// <summary>The last seconds at anchor: a ring that empties and the seconds in it, a little above the centre.</summary>
         void BuildRing(RectTransform frame)
         {
             var holder = VoyageKit.Node("Countdown", frame);
-            VoyageKit.At(holder, (1920f - RingSize) * 0.5f, 330f, RingSize, RingSize);
+            Anchor(holder, new Vector2(0.5f, 0.5f), new Vector2(0f, RingY), new Vector2(RingSize, RingSize));
             _ringGroup = holder.gameObject.AddComponent<CanvasGroup>();
             _ringGroup.alpha = 0f;
             var disc = VoyageKit.Node("Disc", holder);
             VoyageKit.Stretch(disc);
             var back = disc.gameObject.AddComponent<VoyageCountdownRing>();
-            back.Thickness = 8f;
+            back.Thickness = 7f;
             back.Fill = 1f;
             back.Inner = VoyageKit.Fade(_kit.Popup, 0.55f);
             back.color = VoyageKit.Fade(_kit.Outline, 0.6f);
             var arc = VoyageKit.Node("Arc", holder);
             VoyageKit.Stretch(arc);
             _ring = arc.gameObject.AddComponent<VoyageCountdownRing>();
-            _ring.Thickness = 8f;
+            _ring.Thickness = 7f;
             _ring.color = _kit.Light;
-            _ringNumber = _kit.Text(holder, 150f, _kit.Light, TextAlignmentOptions.Center);
+            _ringNumber = _kit.Text(holder, 110f, _kit.Light, TextAlignmentOptions.Center);
             VoyageKit.Stretch(_ringNumber.rectTransform);
         }
 
@@ -330,6 +356,12 @@ namespace CosmicShore.UI
             bool shown = source != null && !VoyageScoreboard.IsOpen && !VoyageIntro.IsPlaying &&
                          source.TryGetObjective(out o) && Show(o);
             _group.alpha = Mathf.MoveTowards(_group.alpha, shown ? 1f : 0f, 0.5f);
+            if (shown && _marquee && _safe)
+            {
+                var canvas = (RectTransform)_safe.parent;
+                float safeTop = canvas.rect.height * (1f - _safe.anchorMax.y);
+                Bottom = safeTop + TopY + _marquee.rect.height;
+            }
             bool ring = shown && o.Goal == VoyageObjective.Kind.CrystalRun && o.Anchored && o.AnchorSeconds > 0f &&
                         o.AnchorSeconds <= RingFrom;
             if (ring)
@@ -343,6 +375,10 @@ namespace CosmicShore.UI
         /// <summary>While this HUD is up the toasts take the spot under its marquee (Rev 116 A).</summary>
         public static bool Showing { get; private set; }
 
+        /// <summary>Where the marquee ends, in canvas units down from the top of the screen (the 1920 x 1080 reference):
+        /// the toast spot starts just under it.</summary>
+        public static float Bottom { get; private set; } = 200f;
+
         void OnDisable() => Showing = false;
 
         bool Show(in VoyageObjective o)
@@ -353,7 +389,7 @@ namespace CosmicShore.UI
             bool raid = o.Goal == VoyageObjective.Kind.CrystalRun;
 
             // The score: a Crystal Run's count with its goal small and quiet beside it; else the Ark's hull.
-            string goalTag = "<size=42%><color=#" + ColorUtility.ToHtmlStringRGB(_kit.Sub) + ">";
+            string goalTag = "<size=50%><color=#" + ColorUtility.ToHtmlStringRGB(_kit.Sub) + ">";
             VoyageKit.Set(_count, raid
                 ? TemplateText.Fill(_lines.ObjectiveCount, "done", o.Done + goalTag, "goal", o.Target + "</color></size>")
                 : VoyageObjectiveText.Figure(_lines, o));
@@ -361,7 +397,7 @@ namespace CosmicShore.UI
             ShowRoute(o);
 
             VoyageKit.Set(_place, VoyageObjectiveText.Place(_lines, o));
-            _place.color = o.Hostile ? VoyageHudColors.Threat : VoyageHudColors.Second;
+            _place.color = o.Hostile ? VoyageHudColors.Threat : _kit.Light;
             _flowers.gameObject.SetActive(raid && o.Crystals != null);
             if (raid && o.Crystals != null)
                 foreach (var e in VoyageRaid.Elements)
@@ -371,14 +407,14 @@ namespace CosmicShore.UI
                 : string.Empty;
             _clock.gameObject.SetActive(!string.IsNullOrEmpty(clock));
             VoyageKit.Set(_clock, clock);
-            _clock.color = o.AnchorClosing ? VoyageHudColors.Threat : VoyageHudColors.Second;
+            _clock.color = o.AnchorClosing ? VoyageHudColors.Threat : _kit.Light;
 
             // One job line under it, unless it only repeats the clock or the carried line drawn elsewhere.
             var (action, threat) = VoyageObjectiveText.StripAction(_lines, o);
             if (action == clock || (raid && o.Carried > 0 && !threat && !o.CanComplete)) action = string.Empty;
             _action.gameObject.SetActive(!string.IsNullOrEmpty(action));
             VoyageKit.Set(_action, action);
-            _action.color = threat ? VoyageHudColors.Threat : VoyageHudColors.Second;
+            _action.color = threat ? VoyageHudColors.Threat : _kit.Light;
 
             // The hull rail.
             bool hot = o.Leaking || o.UnderAttack || o.Assault == ArkAssaultPhase.Active;

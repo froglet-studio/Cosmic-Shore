@@ -24988,3 +24988,25 @@ Confirm on fresh seeds 101-104, 24 flights a side: the shipped AI did not finish
 Not run in Unity (the reference compile shows 0 errors in the changed files).
 - [ ] Fly Thornline I1-I4 against a Legendary Thresher AI: it should plant and sling cleanly and finish every rung.
 - [ ] Fly Regatta with a Thresher ally: it should no longer orbit gates.
+
+## Wrasse Run AI trained (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+MinigameWrasseRun's race controller AI knobs go from commit 72 / approach 80 / through 55 to 433 / 423 / 68, written by
+`author_wrasse_run_assets.py`. `WrasseRunController.aiNoseLead` gets the row Wrasse lead 0.69 at 4.37/s (it had the fleet
+lag of 1.5/s). These come from Wrasse run1 (`time_ai_search.py`, Amoebius real-game judge). Confirm on fresh seeds
+101-104, 28 flights a side, 0 DNF: loss 2.445 -> 2.420, and the mean of the condition means 171.5 -> 156.6 s. I1 went
+225 -> 197 s, I4 224 -> 179 s, I2 116 -> 118 s (flat), and wide 1 137 -> 147 s. Wrasse Run is noisy run to run. The
+generator's rule that the approach lead must exceed the commit distance is relaxed to "outside the cruise circle".
+Not run in Unity: the reference compile shows 0 errors in the changed files.
+- [ ] Fly Wrasse Run against the AI. The Grouper should commit to each ring early and thread it, and finish faster than before.
+
+## Burrow Run AI trained (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+MinigameBurrowRun's race controller AI knobs go from commit 160 / approach 180 / through 120 to 42 / 702 / 74, written by
+`author_burrowrun_assets.py`. `BurrowRunController` gets an `aiNoseLead` table with the row Meerkat lead 0 at 7.97/s (it
+had the fleet lag of 1.5/s). These come from Meerkat run1 (`time_ai_search.py`, Amoebius real-game judge, seeds 11-14).
+Confirm on fresh seeds 101-104, 8 conditions, 32 flights a side, 0 DNF either side: loss 2.35 -> 1.87; I1 129 -> 112 s,
+I2 118 -> 96, I4 139 -> 101, I1 from Time 10 104 -> 90, I4 from Time 0 152 -> 114, wide 0 127 -> 96, wide 1 118 -> 97.
+I1 at rest is now the slowest rung after I4 from rest, so the ladder still runs flat.
+Not run in Unity: the reference compile shows 0 errors in the changed files.
+- [ ] Fly Burrow Run against a Legendary Meerkat AI: it should commit late, tunnel down each leg and finish faster than before.
