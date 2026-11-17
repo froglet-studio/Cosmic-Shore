@@ -81,6 +81,15 @@ HULLS = {
     "Angler":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
     # The Brittle Star takes its Time game's trained Legendary I1-I2 nose (run1, #2141).
     "BrittleStar": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 13.66},
+    # 2026-11-17, toward the Regatta ten. The Swordfish flies the Rhino's airframe and ramp (its Regatta ramp is the
+    # Rhino's, RhinoAIBoostPolicy_Regatta, by the base policy's name), so it takes the Rhino's line and nose pair, with
+    # Spearline's 10 degree lead cap: at the default 40 its AI locked into an 11 u circle (FINDINGS 30).
+    "Swordfish": {"LaneShare": 0.80, "HullClearance": 18, "Risk": 0.40,
+                  "CarefulLookaheadSeconds": 0.8, "BoldLookaheadSeconds": 1.4, "NoseLeadGain": 2.47,
+                  "NoseLeadMaxExtraDegrees": 10, "NoseFollowPerSecond": 7.5},
+    # The TigerMoth's Waystation AI is that controller's own (the Fold and the drop are pressed by the mode), so in
+    # Regatta it flies the plain line: the starting values of the mid-size hulls.
+    "TigerMoth": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
 }
 
 

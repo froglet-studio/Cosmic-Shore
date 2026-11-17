@@ -579,6 +579,14 @@ Not seated yet:
 - **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
   (Thornline's AI plan aims at thorns).
 - **Goby**: 0 gates. It wanders, and Perch Run's dart coach armed from RegattaController did not take hold in the judge.
+- **TigerMoth** (2026-11-17): 214 s on the shipped course, every gate, about 2.6x the slowest seated hull. Its speed is the
+  Fold and the drop, and only Waystation's controller presses them; in Regatta it flies the plain line at 67 u/s.
+
+**The Swordfish** joined the card on 2026-11-17, toward Garrett's "regatta 10". It flies the Rhino's airframe and ramp
+(`RhinoAIBoostPolicy_Regatta` by the base policy's name) on the Rhino's line and nose pair, with Spearline's 10 degree
+lead cap. Raced alone, it ran level with the Rhino: shipped course 32 vs 36 s, the L5 start 31 vs 31 s, three archive
+card courses 47 / 39 / 31 vs 40 / 35 / 38 s. It finishes in a full field too. With the Rhino it is the fastest hull on
+the card, at the edge of the 1.5x rule against the Stoat (49 s).
 
 ### 6.7 The Serpent's burn length, its step-5 Time lever (2026-11-17)
 
