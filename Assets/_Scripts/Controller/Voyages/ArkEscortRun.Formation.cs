@@ -29,20 +29,45 @@ namespace CosmicShore.Gameplay
         int WingmateSeat(IVesselStatus status) =>
             status != null && _seatOf.TryGetValue(status, out int seat) ? seat : -1;
 
-        /// <summary>The pilot's own vessel and each AI wingmate, with their seats (a party friend's is their machine's).</summary>
+        /// <summary>Each AI wingmate in seat order, then the pilot's own vessel, with their seats (a party friend's is
+        /// their machine's). The order is the launch order: the wingmates leave the hangar first and the pilot last, so the
+        /// intro's camera follows the pilot out into play (Shombith 2026-11-17). A wingmate whose seat is not known yet
+        /// takes the first seat nobody holds, so it still has a slot.</summary>
         List<(IVesselStatus status, int seat)> FormationSquad()
         {
             _formation.Clear();
             var local = LocalVessel();
-            if (local != null) _formation.Add((local, Mathf.Clamp(_squad.MySeat, 0, SavedSquad.SlotCount - 1)));
+            int mine = Mathf.Clamp(_squad.MySeat, 0, SavedSquad.SlotCount - 1);
+            int taken = 1 << mine;
             foreach (var w in _wingmates)
             {
                 var status = Alive(w);
-                if (status == null || !status.Transform) continue;
+                if (status == null || !status.Transform || status == local) continue;
                 int seat = WingmateSeat(status);
-                if (seat >= 0) _formation.Add((status, seat));
+                if (seat >= 0 && (taken & (1 << seat)) == 0) { taken |= 1 << seat; _formation.Add((status, seat)); }
             }
+            foreach (var w in _wingmates)
+            {
+                var status = Alive(w);
+                if (status == null || !status.Transform || status == local || WingmateSeat(status) >= 0) continue;
+                int free = 0;
+                while (free < SavedSquad.SlotCount && (taken & (1 << free)) != 0) free++;
+                if (free >= SavedSquad.SlotCount) break;
+                taken |= 1 << free;
+                _formation.Add((status, free));
+            }
+            _formation.Sort((a, b) => a.seat.CompareTo(b.seat));
+            if (local != null) _formation.Add((local, mine));
             return _formation;
+        }
+
+        /// <summary>A wingmate released after the voyage opened: into the hangar with the rest while the intro holds them,
+        /// otherwise straight into its slot.</summary>
+        void FormUpLate(IVesselStatus status, int seat)
+        {
+            if (status == null || !Ark || !(_sea && _sea.IsRunning)) return;
+            if (_sortie && _sortie.IsHolding && _sortie.Add(status, seat, HullHalfLength, ArkBounds())) return;
+            ArkSortie.SetDown(Ark, new[] { (status, seat) }, ArkBounds(), FormationSettings);
         }
 
         /// <summary>The voyage opens: every seat in its slot.</summary>
@@ -61,9 +86,9 @@ namespace CosmicShore.Gameplay
             return _sortie;
         }
 
-        void LaunchSquad()
+        void LaunchSquad(Transform hull)
         {
-            if (_sortie) _sortie.Launch();
+            if (_sortie) _sortie.Launch(hull);
         }
 
         void ReleaseSquad()

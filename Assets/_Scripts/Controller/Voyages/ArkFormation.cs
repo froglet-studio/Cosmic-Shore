@@ -91,17 +91,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Where <paramref name="seat"/> waits to launch, in the Ark's local frame: its hangar pad (seat 1 nearest the
-        /// doors, so it leads the launch), and the point ahead of the doors it flies out to. A model with no hangar
-        /// waits at its nose.
+        /// Where the vessel <paramref name="launchOrder"/> places into the launch waits, in the Ark's local frame: its
+        /// hangar pad (the first to go nearest the doors, so nobody launches through a vessel still waiting), and the
+        /// point ahead of the doors it flies out to. A model with no hangar waits at its nose.
         /// </summary>
-        public static void Hangar(Ark ark, int seat, float halfLength, ArkFormationSettings settings,
+        public static void Hangar(Ark ark, int launchOrder, float halfLength, ArkFormationSettings settings,
                                   out Vector3 padLocal, out Vector3 exitLocal)
         {
             settings ??= new ArkFormationSettings();
             var t = ark.transform;
             var model = ark.Model;
-            int pad = PadCount - 1 - Mathf.Clamp(seat, 0, PadCount - 1);
+            int pad = PadCount - 1 - Mathf.Clamp(launchOrder, 0, PadCount - 1);
             if (model && model.TryGetBone(PadBone + pad, out var padBone) &&
                 model.TryGetBone(DoorTopBone, out var top) && model.TryGetBone(DoorBottomBone, out var bottom))
             {
