@@ -9078,6 +9078,34 @@ second unrequested look change and the amplitude is what "barely perceptible" is
 
 ---
 
+### 47.8 Grown sway: a wave every vertex carries (2026-11-17, the Ray)
+
+`SpindleSway` is one shear along z, which is right for a branch or a fish and cannot make a wing ripple from shoulder
+to tip with its hind edge a beat behind. A GROWN creature (`Tools/Build/fauna_kit`) knows each vertex's wave as two
+vectors, and `SpindleGrownSway.hlsl` adds them in the vertex stage, after `SpindleSway`:
+
+    offset = _GrownSway * (TEXCOORD1.xyz * sin(t) + TEXCOORD2.xyz * cos(t))        t = _PrismClock * _GrownFrequency + _Phase
+
+- **Default 0 is the blast-radius control again.** `_GrownSway` is 0 on every material but the ones
+  `fauna_kit/unity_port.py` writes (`Assets/_Graphics/Materials/Fauna/`), and at 0 the function is a bit-identical
+  passthrough whatever a mesh holds in TEXCOORD1 and 2 (`Tools/Shaders/verify_spindle_grown_sway.py` T2, compiled from
+  the shipped file; the braid's LOD meshes keep other data there).
+- **It is wired after `SpindleSway`** (`Tools/Shaders/wire_spindle_grown_sway.py`), so `wire_spindle_lod.py`, which
+  splices into the edge that FEEDS `SpindleSway`, needed no change, and the four graphs it generates inherit the wave.
+  A creature's body draws with `SpindleDepthGraph` (`SpindleLodSystem.AddBody`), so that inheritance is how the wave
+  reaches the game.
+- **A grown body's material turns the shear off** (`_SwayAmplitude` 0), so `PrismSway` stamps nothing on its prisms
+  (`Spindle.TryGetSwayConstants` is false for a material that authors no shear). Its prisms are carried on the CPU
+  instead, by `GrownLimbDriver`, each along the wave of the limb where it sits, from `PrismClock.Now` and the
+  spindle's own phase (`Spindle.TryGetSwayPhase`): a prism is a collider and must be where it is drawn. That is nine
+  transform writes a frame for a Ray. It is the one place this sway spends CPU; §47.3's "zero per-frame CPU" still
+  holds for the mesh.
+- **Pieces of a cut body keep the body's own space** (`unity_port.joints_of`): `SpindleSway` is a function of a
+  vertex's own z, so a piece with its origin at its hinge sheared about a different point than its neighbour.
+- Not measured: the cost of two more vertex channels on every spindle draw (read, multiplied by 0). Not seen in the
+  editor: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, the Ray's entry, check 0.
+
+
 ## 48. Garland — a cell composed for the CAMERA, at a fifth of the weight (Sep 2026)
 
 The freestyle seven are 34–41k prisms each and are all composed for a pilot who is *inside*

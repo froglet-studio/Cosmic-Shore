@@ -134,7 +134,7 @@ def new_creature(key, origin="new"):
                         for e, v in spec["elements"].items()}}
     if "sway_hz" in spec:
         out["sway_hz"] = spec["sway_hz"]
-    if spec.get("unity"):      # a ported creature: its four element forms (elements.py), each its own body
+    if spec.get("forms"):      # a creature with its own element forms (elements.py): each is its own body in the lab
         import elements as EL
         fs = {e: EL.form(spec, e) for e in EL.ELEMENTS}
         out["forms"] = {e: dict(pack(BODY.from_spec(f)), ext=_extent(BODY.from_spec(f))) for e, f in fs.items()}

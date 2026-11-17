@@ -24,6 +24,61 @@ give me a vessel, ark, and prism cluster to attack."
 - **Retire condition for a new creature:** a "cut it" in the feedback log, or a second round in which it still wins
   no column and nobody says it feels good.
 
+## Round 9 (2026-11-17): the Ray taken to completion, and the skill proved on the other four
+
+Garrett: "fix everything and take it all to their natural conclusion so the skill can get the best possible flagship
+example both to refer to and develop the necessary skills to reproduce the start to completion process."
+
+**The Ray in Unity now moves as it does here.** Round 8's Ray moved only at its joints. Now:
+- **The wave is in the game's spindle shader.** Every mesh vertex carries the sine and cosine parts of its own wave
+  (the numbers this page plays), and `SpindleGrownSway.hlsl`, wired into `SpindleGraph` after `SpindleSway`, adds them
+  from the platform clock. It is off (0) for every other material, and off is a bit-identical passthrough (the
+  shipped file compiled with clang: `Tools/Shaders/verify_spindle_grown_sway.py`). `Docs/ECOSYSTEM.md` 47.8.
+- **Prisms ride it** on the CPU (`GrownLimbDriver`), from the same clock and phase. Joints are only what the attack whips.
+- **It glides and rolls** under a rider as it does here: `RayFauna` answers a turn at 0.3 and eases speed at 0.9, and
+  takes the rider's frame for its up (`IFaunaLeashFrame`, which the Jewel Wasp implements).
+- **The leviathan is bigger**: Mass x 1.25, so Space x 2.06 (one number, `K.elements(prisms, mass=1.25)`).
+- **A cut body's pieces keep the body's space**: the old shear sway would have torn the tail 2.6 u at its first hinge.
+- **The lace runs along each strand** (UV0), as on the shipped braid; it was one stripe.
+
+**The other four creatures have their four forms** (lab only; pick one, then an element):
+
+| creature | Time | Charge | Mass | Space |
+|---|---|---|---|---|
+| Plume | the comet: five streamers flung out between the plumes | the storm: barbs turned forward, five talons | the leviathan: braces from the cup to the arms | the ghost: five thin lines drifting far out |
+| Lantern | the drift: two ribbons from the comb tails | the corona: forward thorns on every comb, two tines | the nave: eight hoops between combs | the veil: four threads with gauze between |
+| Ammon | the jet: paired ribbons from each shell | the corona: thorned whorls, two horns | the elder: a hood | the drift: strands and a sleeve from each shell |
+| Nettle | the sprite: four flung ribbons | the thornbell: eight forward spears | the abbey: a girdle of hoops, curtains | the veil: four long strands with gossamer |
+
+Each passes the laws, the 5,072 bar (several lightened, x 1.6 at most) and the outline check (`elements.py --check`,
+`--silhouette <name>`). **They were made by smaller models following `/fauna-maker` step 6.5, not by hand, and nobody
+has judged them.** They are proposals: ride each and say which to keep. They port to Unity by one command each
+(`unity_port.py <name> --dry` passes) once the Ray has been opened in the editor.
+
+**The skill was tested by making it do the work** (the point of this round):
+- Round 1, four sessions on a smaller model, one creature each, the skill as written. All finished; each reported
+  where the skill failed it. Common: nothing said what the outline check measures or which way to move (all four
+  found "spread outward" by trial); law failures inside a form did not fail `fauna.py check`; `barbs: False` handed a
+  limb back its design's barbs (a bug); nothing said which key replaces what; a heavy body's budget.
+- What changed: step 6.5 rewritten (an example function, where to hang, how far to reach, a section on the outline, a
+  table from each failure to its fix); `fauna.py check` fails on a form's broken law and prints its fix;
+  `elements.py --check <name>`, `--silhouette <name> --form X` with three decimals and the base body's distance; a
+  form over the mesh bar lightens itself; the tool refuses a Time form that changes the body, a form that re-routes a
+  limb, and a form that strips more than half a limb's barbs (the first Plume had passed its outline by plucking its
+  feathers); a form may reach 2.5 x its body at most.
+- Round 2, the Plume again with the rewrite: two edit-and-check rounds (19 tool calls became 11), no kit source read,
+  feathers kept.
+- Round 3, the smallest model, a new creature from "make a seahorse" to four forms: every check passed in about nine
+  rounds with no kit source read, **and the body is not a seahorse** (its own verdict, and mine). The no-up law turned
+  the one curl into three and nothing in step 1 had made it decide what that should look like. Step 1 now asks. The
+  trial body was not kept. What this says: the skill reproduces the PROCESS on a small model; whether the result is
+  the animal, and beautiful, still needs the bigger model's eye or a person's.
+
+**Checked:** every gate in round 8's list, plus `wire_spindle_grown_sway.py --check` / `--self-test`,
+`verify_spindle_grown_sway.py`, `wire_spindle_lod.py --check`, `unity_port.py --self-test` (five planted defects).
+**NOT checked: the Unity editor.** The shared spindle shader changed: the first hand test is that every other
+spindle still draws (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, the Ray, check 0).
+
 ## Round 8 (2026-11-17): the Ray's four elements are four creatures
 
 Garrett: "be sure that you create all four elements and follow the rules for doing so. when differentiating by element

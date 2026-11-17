@@ -13,11 +13,25 @@ import celestial as C  # noqa: E402
 
 
 def angles(n, phase=90.0):
+    """n angles evenly round the travel axis, in RADIANS (ready for polar); `phase` is where the first one is, in DEGREES."""
     return [math.radians(phase + 360.0 * k / n) for k in range(n)]
 
 
+def find(limbs, name):
+    """The limb called `name` in a list of limbs (never pick a limb by its place in the list)."""
+    for s in limbs:
+        if s["name"] == name:
+            return s
+    raise SystemExit(f"no limb called {name}: " + ", ".join(s["name"] for s in limbs))
+
+
+def rz(point):
+    """(radius, z) of a point: what to hand P(radius, z) to make the same point on every copy round the axis."""
+    return (point[0] ** 2 + point[1] ** 2) ** 0.5, point[2]
+
+
 def polar(r, a, z):
-    """A point r out from the travel axis at angle a, z along it."""
+    """A point r out from the travel axis at angle a (RADIANS, as angles() returns them), z along it."""
     return [round(r * math.cos(a), 6), round(r * math.sin(a), 6), round(z, 6)]
 
 
@@ -52,13 +66,15 @@ def chain(prefix, parent, points, girth=1.0):
     return out
 
 
-def elements(prisms, margin=1.01):
+def elements(prisms, margin=1.01, mass=None):
     """The four element forms (law L8). Mass grows until the heart's swing clears every plain prism's shield, and is
     never SMALLER than the base body ("let mass have size", Docs/ECOSYSTEM.md 64.8: a body is grown to hold the swing,
     never shrunk to it; a body that already clears it keeps its size, and Space still out-spans it 1.6477 x)."""
     plain = [p for p in prisms if p["kind"] == "health"]
     need = max(C.MASS_SWING / max(C.shield_dist(p, [0, 0, 0]), 1e-9) for p in plain)
-    mass = max(1.0, math.ceil(need * margin * 100) / 100)
+    floor = max(1.0, math.ceil(need * margin * 100) / 100)
+    # `mass` is a species' own Mass size, for one that should be BIGGER than the law's floor (the Ray's leviathan)
+    mass = max(floor, float(mass)) if mass else floor
     return {"Mass": {"body_scale": mass, "shield_all": True},
             "Charge": {"body_scale": 1.0, "all_danger": True},
             "Space": {"body_scale": round(mass * C.SPACE_OVER_MASS, 4), "erode_spindle": True,

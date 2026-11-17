@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     [DefaultExecutionOrder(-50)]   // the hull is placed on its host in LateUpdate before the chase camera reads it
     [DisallowMultipleComponent]
-    public sealed class JewelWaspExecutor : ShipActionExecutorBase, IFaunaPossession
+    public sealed class JewelWaspExecutor : ShipActionExecutorBase, IFaunaPossession, IFaunaLeashFrame
     {
         [Header("Wiring (serialized on the prefab so a missing wire shows in the inspector)")]
         [Tooltip("Every number (Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspConfig.asset).")]
@@ -691,6 +691,12 @@ namespace CosmicShore.Gameplay
             speed = creature.PossessionTopSpeed * SpeedScale;
             turnRate = 10f;
             return true;
+        }
+
+        bool IFaunaLeashFrame.TryFrameUp(Fauna creature, out Vector3 up)
+        {
+            up = _frame * Vector3.up;
+            return config && creature == _host && _mode == WaspMode.InFauna;
         }
 
         Prism IFaunaLeash.OrderedMeal(Fauna creature) => null;   // the rider's RT decides every mouthful

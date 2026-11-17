@@ -23,5 +23,5 @@ MonoBehaviour:
   Element: 2
   Variant:
     Enabled: 1
-    BaseBodyScale: 1
+    BaseBodyScale: 1.25
     HeartWorldScale: 1.75

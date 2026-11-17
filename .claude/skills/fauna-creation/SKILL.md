@@ -287,7 +287,17 @@ tears 6.7 u). So the Space form applies the law's own functions when it is made,
 you are asked to "turn the erosion off" for a creature, this is the only sanctioned way.
 
 **Each form answers L12 on its own** (`elements.py --silhouette <name>`): against every other species and vessel,
-not against its own kin.
+not against its own kin. A species whose base outline a person accepted under the bar is held to its base.
+
+**What the tool refuses in a form, and why each exists** (all found by giving the skill to a smaller model and
+reading what it did): a Time form that changes the body (Time is the base body); a form that re-routes a limb (the
+prisms ride it); a form that leaves a limb fewer than half its barbs (the first Plume passed its outline by plucking
+its feathers); a form over 2.5 x its body's longest side (the creature must still be the creature). These are not
+celestial laws: they are what keeps four forms one species.
+
+**In the game the wave is the shader's** (`Docs/ECOSYSTEM.md` 47.8): every mesh vertex carries its wave and
+`SpindleGrownSway` adds it; `GrownLimbDriver` carries the prisms; joints exist only so the attack can whip. The
+whole path, with every wrong turn, is `.claude/skills/fauna-maker/references/RAY.md`.
 
 ## 11. Bodies are built from spindle DESIGNS (2026-11-16): load `/spindle`
 

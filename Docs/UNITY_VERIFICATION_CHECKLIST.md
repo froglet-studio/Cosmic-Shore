@@ -65,60 +65,80 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 The Ray, the first GROWN creature in Unity: four element forms, each its own prefab, jointed, on the Spawn Matrix (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
+### 🔴 The Ray, the first GROWN creature in Unity: four element prefabs, its wave in the spindle shader, on the Spawn Matrix (`cece/peaceful-babbage-tsg0kd`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
 
-Written by `Tools/Build/fauna_kit/unity_port.py ray` from `specs/ray.py` and `elements.py`. Scripts: `GrownLimbDriver`
-(turns the joints), `RayFauna` (a LightFauna that feeds on the wing), and one new field on `Fauna`,
-`spindleAuthoredEroded` (off on every existing prefab). **Reference compile:** `unity_refcompile/run.sh` reports 0
-errors in the files this branch changed (30 in existing code that needs packages this container lacks, Cinemachine
-among them). **No Unity editor ran.** Headless: `unity_port.py ray --check` and `--self-test`, `elements.py --check`,
-`--self-test` and `--silhouette ray`, `erosion.py --self-test`, `author_spawn_matrix_roster.py --check`,
-`check_network_prefab_hashes.py`, `author_lifeform_heart_collection.py --check`, `verify_fauna_heart_seat.py`,
-`colour_trace.py --check`.
+Written by `Tools/Build/fauna_kit/unity_port.py ray` from `specs/ray.py` and `elements.py`; the whole path with what
+went wrong at each step is `.claude/skills/fauna-maker/references/RAY.md`. **No Unity editor ran.**
 
-**Where to see it:** Cell Selector > Barren, then the Spawn Matrix: the **Ray** row, one station an element. It is in
-no cell's own spawn profile.
+**This change touches the SHARED spindle shader.** `SpindleGraph` gained one vertex function, `SpindleGrownSway`
+(after `SpindleSway`), and two material floats, `_GrownSway` and `_GrownFrequency`, both 0 by default; the four graphs
+generated from it (`SpindleLodMid/Far`, `SpindleDepth`, `SpindleWire`) were regenerated. With `_GrownSway` 0 the
+function returns the position it was given, bit for bit (proved by compiling the shipped HLSL: `verify_spindle_grown_sway.py` T2).
+**Check 0 before anything else: open any cell with flora and a shipped creature. Every spindle draws as before (not
+pink, not still). If one is pink, `git checkout` the five `.shadergraph` files and tell the session.**
+
+C# changed (reference compile: 0 errors in the files this branch changed; 30 in existing code that needs packages this
+container lacks): `GrownLimbDriver` (carries prisms along the shader's wave), `RayFauna` (the wing feeding, the glide,
+the rider's up), `Fauna.spindleAuthoredEroded`, `Spindle.TryGetSwayPhase`, `LightFauna.LeashTurnScale / LeashSpeedEase /
+LeashUp` (virtual, defaults unchanged), `IFaunaLeashFrame` (the Jewel Wasp implements it).
+
+Headless: `unity_port.py ray --check` and `--self-test`, `elements.py --check`, `--self-test`, `--silhouette ray`,
+`erosion.py --self-test`, `wire_spindle_grown_sway.py --check` and `--self-test`, `wire_spindle_lod.py --check`,
+`verify_spindle_grown_sway.py`, `verify_spindle_sway.py`, `verify_spindle_lod.py`, `author_spawn_matrix_roster.py --check`,
+`check_network_prefab_hashes.py`, `author_lifeform_heart_collection.py --check`, `verify_fauna_heart_seat.py`, `colour_trace.py --check`.
+
+**Where to see it:** Cell Selector > Barren, then the Spawn Matrix: the **Ray** row, one station an element.
 
 | element | prefab | what it should look like | size |
 |---|---|---|---|
 | Time | `Ray.prefab` | the comet: the base Ray with a long streamer flying from each wingtip | x 1 |
 | Charge | `RayCharge.prefab` | the storm: thorns forward along the leading edges, a talon hooked forward at each wingtip, a three-tined tail, every prism danger | x 1 |
-| Mass | `RayMass.prefab` | the leviathan: thick wire, four ribs across each wing, a tail fluke, every plain prism shielded | x 1 |
-| Space | `RaySpace.prefab` | the ghost: thin ribbon wire, a long torn sleeve hanging from the outer half of each hind edge, needle prisms | x 1.6477 |
+| Mass | `RayMass.prefab` | the leviathan: thick wire, four ribs across each wing, a tail fluke, every plain prism shielded | x 1.25 |
+| Space | `RaySpace.prefab` | the ghost: thin ribbon wire, a long torn sleeve hanging from the outer half of each hind edge, needle prisms | x 2.06 |
 
-1. **The meshes import.** The `Ray*`, `RayCharge*`, `RayMass*` and `RaySpace*` assets under `Assets/_Models/Fauna/`
-   open as Meshes with no console error (native Mesh assets written as text, in the format of
-   `_Models/Testing/Prism.asset`). If Unity rewrites them on import, say so: `unity_port.py --check` will report drift.
-2. **Each form draws, from both sides,** in the domain's spindle colour, and looks like its row above. No seam should
-   show where a wing is cut (three pieces a wing, three on the tail).
-3. **The wings beat.** Both tips rise and fall together, each joint a little behind the one before, slow when it
-   drifts and quicker and deeper as it speeds up. Time beats fastest (0.53 Hz idle), then Charge (0.44), Space (0.30),
-   Mass slowest and shallowest (0.27). If a wing hinges the wrong way, the sign is `degrees` in the spec's `unity` block.
-4. **The Time streamers** hang from the wingtip joints and wave up and down in three pieces each. If one swings about
-   the wrong point or leaves its wingtip, the numbers are `origin` and `parent` in `comet()` in `specs/ray.py`.
-5. **The shader's sway does not tear the pieces apart.** Every renderer is one Spindle's (`additionalRenderedObjects`),
-   so they share a phase; a small mismatch at the hinges is possible and is what to look for.
-6. **The prisms ride it.** Three plates on each outer wing piece, one on each middle piece and the sting on the last
-   tail joint move with their joints, take hits, and killing them kills it; the heart drops one crystal.
-7. **SPACE IS NOT THINNED A SECOND TIME.** `RaySpace.prefab` says `spindleAuthoredEroded`, so `Fauna.ErodeSpindle`
-   must leave its meshes and prisms alone. Look for: wings whole and joined at their hinges (not crumpled toward the
-   middle of each piece, which is what the runtime erosion does to a jointed wing: `erosion.py Ray` draws it), and the
-   plates as thin needles about 3.5 long, the sting a hair-thin needle about 8.7 long. If the needles look too thin to
-   read in the game, say so: they are the lattice law's numbers (`erosion.needle`), the same the runtime gives the
-   QuadFish's prisms, but nobody has seen them on a wire body.
-8. **Sizes.** Mass is the same size as Time (the kit used to shrink it to x 0.58; a Mass body is never under the base
-   body now) and Space is 1.65 x that, about 112 u across. Mass: the heart's swing clears every shield.
-9. **It swims level** (LightFauna steers with world up).
-10. **A Jewel Wasp possesses each form:** steer, RT at prisms eats what is within its lobes on every side, RT at a
-    vessel WHIPS both wings and the tail toward it (three limbs under the Body; the Time streamers must NOT become
-    part of the wing's whip chain: they hang after the wing piece's skin), A leaves.
-11. **Two clients** see the same Ray of each element (four network prefabs).
+1. **The meshes import.** The `Ray*` assets under `Assets/_Models/Fauna/` open as Meshes with no console error. They
+   are native Mesh assets written as text with a 72-byte vertex: position, normal, tangent, UV0, and **UV1 and UV2 as
+   three floats each** (the wave). In the mesh inspector UV1 and UV2 should show as present. If Unity rewrites the
+   files on import, say so: `unity_port.py --check` will report drift.
+2. **Each form draws, from both sides,** in the domain's spindle colour with the spindle's lace on it, and looks like
+   its row above. The lace now runs ALONG each strand (UV0 was one stripe before): if it looks stretched or too busy,
+   the number is `LACE_SPAN` in `fauna_kit/spindle.py`.
+3. **It ripples.** The wing waves smoothly from shoulder to tip, the hind edge a beat behind the leading edge; the
+   streamers, sleeves and fluke drift; there is NO fold at x = 3, 13, 24 (the wing is cut there, but the wave is not
+   the joints'). Time is quickest (0.53 Hz), then Charge (0.44), Space (0.30), Mass slowest (0.27).
+   **If the body is perfectly still:** the material's `_GrownSway` is not reaching the shader (look at
+   `RaySpindle.mat`, then at the depth material the LOD system gives the body at runtime, `RaySpindle_Phase*_Depth`).
+4. **The prisms ride the wave.** Each plate stays ON its wing edge as the edge moves (it is carried by
+   `GrownLimbDriver` from the same clock). A plate that floats off the wire, or lags it, is the thing to report, with
+   the element: the phase comes from `Spindle.TryGetSwayPhase`.
+5. **Nothing is culled early.** Fly so a Ray is half off screen: its wingtip must not vanish while in view (the mesh
+   bounds were grown by the wave's reach).
+6. **SPACE IS NOT THINNED A SECOND TIME.** `RaySpace.prefab` says `spindleAuthoredEroded`. Wings whole and joined
+   (not crumpled toward the middle of each piece), plates thin needles about 3.5 long, the sting a hair-thin needle
+   about 8.7 long. If the needles are too thin to read, say so: they are the lattice law's numbers.
+7. **Sizes.** Mass is a quarter bigger than Time; Space is 2.06 x Time, about 140 u across. Mass: the heart's swing
+   clears every shield.
+8. **A Jewel Wasp possesses each form:** steer, RT at prisms eats what is within its lobes on every side, RT at a
+   vessel WHIPS both wings and the tail toward it (the only thing the joints do), A leaves.
+9. **The glide.** Under a rider it turns slowly (about a third of another creature's rate) and is slow to gain and
+   lose speed. **Roll the wasp** (one stick up, one down): the Ray rolls with you and stays rolled; no other creature
+   does. If this feels wrong, the three numbers are on the prefab's `RayFauna`.
+10. **Every other creature under a wasp is unchanged** (the hooks' defaults are the old constants: turn x 1, ease 2.5, world up).
+11. **Multiplayer.** The Ray is NOT network-synced: its configs carry `NetworkSynced` off, like every fauna species
+    today (no config in `Assets/_SO_Assets/Lifeforms/` has it on), so each peer simulates its own and the spawn seam
+    strips the NetworkObject at birth (one warning a spawn in a development build is expected). The four prefabs are
+    in the network prefab list for the day a species is rolled out; turning it on is `/multiplayer`'s decision.
 12. **Budget.** Nine prisms a Ray on every element; vertices 2,688 / 3,650 / 4,575 / 2,838 (Time / Charge / Mass /
-    Space) against the 5,072 bar; renderers 16 on Time (the six streamer pieces) and 10 on the others. The Spawn Matrix
-    releases them on demand, so no shipped cell's collider count moves. Nothing here measured draw calls or overdraw.
+    Space) against the 5,072 bar; 10 renderers a Ray. Nothing here measured draw calls, overdraw, or the cost of two
+    more vertex channels on every spindle draw (they are read and multiplied by 0): run a frame-time A/B in a lattice
+    cell before believing it is free.
 
-Not built: the lab's ripple across the membrane and light running down the limbs (so in Unity a sleeve, a fluke or a
-streamer moves only at its joints); the slow change of speed; a Codex page.
+**If the shader's wave is wrong and cannot be fixed quickly:** `"sway": "joints"` in the `unity` block of
+`specs/ray.py`, then `python3 Tools/Build/fauna_kit/unity_port.py ray`: the body returns to the shared SpindleMaterial
+and beats at its joints on the CPU.
+
+Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
+lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
 ### 🔴 The Jacks' vessel pass: authored element scaling, four level-5 cards, their own HUD (`claude/jacks-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 

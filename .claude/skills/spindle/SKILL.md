@@ -150,6 +150,20 @@ limb it grows from is doing: a tendril rides its bell) and its GLOW (a brightnes
 stage plays both. Nothing is keyed. A membrane (`"membranes"` in the spec) is woven between two limbs and takes both
 from them.
 
+**The sway is what moves the creature in the game too.** `unity_port.py` bakes each vertex's two sway vectors into its
+mesh (TEXCOORD1 and 2) and the spindle shader adds them (`SpindleGrownSway.hlsl`, `Docs/ECOSYSTEM.md` 47.8). So a limb
+with no `sway` is still in Unity, and a wave you see in the lab is the wave the game draws. The GLOW is not ported: in
+the game the light on a spindle is the shader's own lace, laid along each strand by the mesh's UV0 (`spindle.mesh_data`:
+one lap every `LACE_SPAN` units).
+
+```python
+sway={"dir": [0, 1, 0],   # the way it waves: a vector, "radial" (out from the axis), "tangent" (round it) or "normal"
+      "amp": 7.5,         # how far the TIP moves, in units
+      "pow": 1.5,         # how the motion grows from root (0) to tip: 1 even, 2 mostly at the tip
+      "waves": 0.75,      # how many wavelengths lie along the limb: under 1 a slow bend, over 2 a ripple
+      "phase": 0.9}       # how far behind it runs (radians): give a hind edge 0.9 and it follows its leading edge
+```
+
 ## 4. Performance (`spindle.py --budget [--check]`)
 
 The mesh a limb makes is `spindle.mesh`: each strand swept as its design's section, each barb a ribbon, a membrane its
@@ -163,14 +177,15 @@ own lattice. The bar is the heaviest single shipped body, the Brittlestar's **5,
 
 ## 5. Into the game (not done; the route)
 
-`unity_port.py` is the route (`/fauna-maker`, Into Unity): it writes each element form's limbs as native Mesh assets,
-cut at the spec's hinges, under one `Spindle`. Done for the Ray's four elements; not opened in the editor.
+`unity_port.py` is the route (`/fauna-maker`, Into Unity): it writes each element form's limbs as native Mesh assets
+(position, normal, tangent, the lace's UV0, and the wave in UV1 and UV2), under one `Spindle`, with the form's own
+material (the shared spindle look, `_GrownSway` on at the form's tempo). Done for the Ray's four elements; not opened
+in the editor.
 `spindle.py --obj <species> <dir>` still writes each limb as an `.obj` for looking at one in another tool.
 
 **Space erosion of grown wire is authored** (section 2.6, `erosion.py`): the game's runtime erosion thins each mesh
 about its own spine and tears a body cut into jointed pieces, so the Space form is grown at the law's girth and its
-prefab says `spindleAuthoredEroded`. Still missing in the game: a sway that reads a per-vertex offset and phase
-(today's `SpindleSway` is one shear along z), so the lab's ripple and running light are not in Unity.
+prefab says `spindleAuthoredEroded`.
 
 ## 6. Gates
 
@@ -186,6 +201,10 @@ python3 Tools/Build/fauna_kit/lab_export.py && node .claude/skills/labmaker/veri
 ```
 
 ## 7. Round log
+
+- **2026-11-17, the wave in the shader.** `SpindleGrownSway` (section 3): the per-vertex sway reaches the game.
+  `mesh_data` returns what rides each mesh vertex and a lace mapping along its strand. A form over the bar lightens
+  itself (`elements._fit`). `barbs: False` used to hand a limb its design's barbs back; it stays off now.
 
 - **2026-11-17, element forms.** Section 2.6: the wire by element, `elements.py`, `erosion.py`. The Ray's four forms
   (comet, storm, leviathan, ghost) each add their own limbs; barbs take a stated `dir`; a limb can end on another

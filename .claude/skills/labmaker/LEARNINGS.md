@@ -2004,3 +2004,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: run the distinctness measure on each variant against every OTHER body (its own kin excluded), and shape additions so they leave gaps in the outline.
 - Evidence: `elements.py --silhouette ray`; `specs/ray.py` `ghost`.
 - Promoted: `/fauna-maker` step 6.5
+
+### L-STU-189 — Test a skill by giving it to a smaller model and reading what it did, not what it reports passing
+
+- Lab: Fauna Possession Lab, `.claude/skills/fauna-maker` step 6.5 · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: four sessions on a smaller model each followed the element-forms step on one creature and reported where the skill failed them. All four "passed". Reading the pictures showed the Plume had passed its outline check by cutting its arms' barbs from 16 to 3: it was no longer a feather creature. Nothing in the skill or the tools said the barbs were the species. The same four reports found one real bug (`barbs: False` handed a limb its design's barbs back, tripling a mesh) and that every tester had worked out "spread outward" by trial.
+- Do instead: after writing a skill, hand it to a smaller model with one concrete task, a hard file limit and "report every place the skill failed you". Then LOOK at what it made. Turn each failure into a refusal in the tool with its fix in the message (not a sentence in the skill), and run the task again: the second Plume took 2 rounds and 11 tool calls against 19, and kept its feathers.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 9; `elements.form` (the refusals), `fauna.py` `FORM_FIX`.
+- Promoted: `/fauna-maker` step 6.5; `/fauna-creation` section 12
+
+### L-STU-190 — A process a small model can complete is not a design a small model can make: say which one a check proves
+
+- Lab: Fauna Possession Lab, `.claude/skills/fauna-maker` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the smallest model took "make a seahorse" from nothing to four element forms in about nine rounds, every law, budget and outline check green, without reading kit source. The body was a ribbed column with fans. The no-up law had turned the animal's one curl into three, and no step had made it decide what a three-fold seahorse should look like before drawing.
+- Do instead: put the design question the laws will force (what happens to this animal's one-sided feature when it must repeat round the axis?) in step 1, before any geometry, and give the maker a line that stops it going on ("would a person name the animal from this picture alone?"). In the hand-back, separate "the process ran" from "the result is good", and do not keep a trial body that only did the first.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 9 (round 3 of the trial); `/fauna-maker` step 1, question 4.
+- Promoted: `/fauna-maker` step 1
+
+### L-STU-191 — A shader that computes from a vertex's own position tears anything you cut into pieces with their own origins
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/unity_port.py` (`joints_of`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the Ray's wing and tail were cut into jointed pieces, each mesh in its joint's own space. The shared spindle shader sways a vertex by its own z. Two vertices that touch across a cut had z measured from different origins, so the tail would have opened 2.6 u at its first hinge with nothing wrong in any asset.
+- Do instead: when a body is split for a rig, keep every piece's mesh in the BODY's space and set the piece's transform back by its joint's place; then any position-driven shader is one function across the cut. Evaluate the shader's own formula on both sides of each cut as a check.
+- Evidence: `unity_port.joints_of` and the skin transforms in `prefab`; `Docs/ECOSYSTEM.md` 47.8.
+- Promoted: `.claude/skills/fauna-maker/references/RAY.md`

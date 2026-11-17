@@ -324,9 +324,16 @@ def validate(docs, expect_wired):
                   if e["m_InputSlot"]["m_Node"]["m_Id"] == block["m_ObjectId"]
                   and e["m_InputSlot"]["m_SlotId"] == block_slot]
     assert len(into_block) == 1, f"{VERTEX_BLOCK} has {len(into_block)} feeders, expected 1"
-    assert into_block[0]["m_OutputSlot"]["m_Node"]["m_Id"] == cf["m_ObjectId"], \
+    # SpindleSway.Out reaches the block directly, or through SpindleGrownSway.PositionOS (the per-vertex wave of a
+    # grown creature, wire_spindle_grown_sway.py, which sits after it and holds its own half of the chain).
+    reach = into_block[0]["m_OutputSlot"]
+    grown = find_cf(docs, "SpindleGrownSway")
+    if grown is not None and reach["m_Node"]["m_Id"] == grown["m_ObjectId"]:
+        reach = next((e["m_OutputSlot"] for e in graph["m_Edges"]
+                      if e["m_InputSlot"]["m_Node"]["m_Id"] == grown["m_ObjectId"] and e["m_InputSlot"]["m_SlotId"] == 0), reach)
+    assert reach["m_Node"]["m_Id"] == cf["m_ObjectId"], \
         f"{VERTEX_BLOCK} is not fed by {FUNCTION}"
-    assert into_block[0]["m_OutputSlot"]["m_SlotId"] == 5, f"{VERTEX_BLOCK} fed by the wrong slot"
+    assert reach["m_SlotId"] == 5, f"{VERTEX_BLOCK} fed by the wrong slot"
 
 
 def wire(check_only):

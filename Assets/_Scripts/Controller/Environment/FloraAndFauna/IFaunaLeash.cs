@@ -55,4 +55,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool TryGetLeashMark(out Domains domain, out float lean, out float glow);
     }
+
+    /// <summary>
+    /// A leash whose holder flies a FRAME of its own (the Jewel Wasp riding a host: its two-thumb steering rolls as
+    /// well as turns). A creature with no up (<see cref="LightFauna.LeashUp"/>: the Ray, whose two faces are the same)
+    /// asks for that frame's up and rolls with its rider; every other creature never asks and keeps the world's.
+    /// Optional: a leash that does not implement it changes nothing.
+    /// </summary>
+    public interface IFaunaLeashFrame
+    {
+        /// <summary>The up of the frame <paramref name="creature"/> is being flown in. False when this leash is not
+        /// flying it.</summary>
+        bool TryFrameUp(Fauna creature, out Vector3 up);
+    }
 }

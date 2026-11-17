@@ -47,15 +47,13 @@ out_of = lambda a: [round(v, 6) for v in K.polar(1.0, a, 0.0)]      # the way ou
 def comet():
     """TIME, the comet: joy. Two streamers fly from the wingtips and whip behind it; nothing else is added, because a
     Time body is the base body going faster."""
-    add, jointed = [], []
+    add = []
     for k, a, lead, _trail in wings:
         P = lambda r, z, a=a: K.polar(r, a, z)
         add.append(K.grown(f"Stream{k}", lead["name"], [P(34.0, -17.0), P(35.4, -27.0), P(34.0, -38.0), P(35.2, -50.0), P(34.2, -61.0)],
                            girth=(0.2, 0.03), design="whip", sway={"dir": [0, 1, 0], "amp": 5.5, "waves": 2.4, "pow": 1.3, "phase": 1.4}))
-        jointed.append({"name": "Stream" + "AB"[k], "wires": [f"Stream{k}"], "cut": "z", "hinges": [-19.0, -32.0, -46.0],
-                        "origin": P(34.5, 0.0), "parent": "Vane" + "AB"[k] + "2", "axis": [1, 0, 0], "degrees": [6.0, 9.0, 13.0], "lag": 1.1})
     return {"feeling": "the comet: joy. It streaks past and its streamers write where it has been.",
-            "add": add, "unity": {"limbs": jointed}}
+            "add": add, "unity": {"wires": {"VaneA": ["Stream0"], "VaneB": ["Stream1"]}}}
 
 
 def storm():
@@ -76,7 +74,7 @@ def storm():
                            sway={"dir": out_of(a), "amp": 1.8, "waves": 1.8, "pow": 1.2},
                            barbs={"count": 6, "length": [1.2, 0.4], "angle": 70.0, "sides": 1, "dir": out_of(a), "flutter": 1.0}))
     return {"feeling": "the storm: awe with fear in it. Thorned, taloned, its lash a trident; do not touch.",
-            "limbs": change, "add": add, "unity": {"wires": dict(vanes, Lash=["Tine0", "Tine1"])}}
+            "change": change, "add": add, "unity": {"wires": dict(vanes, Lash=["Tine0", "Tine1"])}}
 
 
 def leviathan():
@@ -140,10 +138,12 @@ SPEC = {
     "spindles": [core] + limbs + [whip],
     "membranes": membranes,
     "prisms": prisms,
-    "elements": K.elements(prisms),
-    # How the body is jointed in Unity (unity_port.py): a limb is cut where it crosses each hinge, each piece hangs
-    # from a joint, and GrownLimbDriver turns the joints. Vanes hinge about the travel axis (the tips rise and fall
-    # together: the second vane's sweep is negative), each joint a beat behind the one before: the wave.
+    # Mass is the leviathan: a quarter bigger than the comet (the law's floor is 1). Space follows at 1.6477 x it.
+    "elements": K.elements(prisms, mass=1.25),
+    # How the body is jointed in Unity (unity_port.py): a limb is cut where it crosses each hinge and each piece
+    # hangs from a joint. The WAVE is not the joints': it runs in the spindle shader from what every vertex carries
+    # (SpindleGrownSway). The joints are what the game's attack whips (three limbs: two vanes and the lash), and the
+    # `degrees` and `lag` are only used by the fallback (`"sway": "joints"`), where GrownLimbDriver beats them.
     "unity": {"klass": "RayFauna", "ram_radius": 20.0, "idle_hz": 0.38, "fast_hz": 0.9, "limbs": [
         {"name": "VaneA", "wires": ["Lead0", "Trail0", "Web0"], "cut": "x", "hinges": [3.0, 13.0, 24.0], "axis": [0, 0, 1], "degrees": [9.0, 11.0, 13.0], "lag": 0.9},
         {"name": "VaneB", "wires": ["Lead1", "Trail1", "Web1"], "cut": "x", "hinges": [-3.0, -13.0, -24.0], "axis": [0, 0, 1], "degrees": [-9.0, -11.0, -13.0], "lag": 0.9},

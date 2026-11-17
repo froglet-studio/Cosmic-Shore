@@ -1088,6 +1088,8 @@ namespace CosmicShore.Gameplay
         /// Per-frame steer toward the holder's goal, the predator's homing (<see cref="UpdateHunting"/>) generalised: the
         /// heading slerps toward the goal at the holder's turn rate (or this creature's own rotationLerpSpeed) and the
         /// speed eases to the holder's at 2.5/s. The behaviour tick's separation still applies on its own cadence.
+        /// A species may answer more slowly (<see cref="LeashTurnScale"/>, <see cref="LeashSpeedEase"/>) and choose
+        /// its own up (<see cref="LeashUp"/>).
         /// </summary>
         void SteerOnLeash()
         {
@@ -1096,13 +1098,25 @@ namespace CosmicShore.Gameplay
             if (to.sqrMagnitude < 1e-4f) return;
             float current = currentVelocity.magnitude;
             Vector3 heading = current > 1e-3f ? currentVelocity / current : transform.forward;
-            float turn = turnRate > 0f ? turnRate : Mathf.Max(0.01f, data.rotationLerpSpeed);
+            float turn = (turnRate > 0f ? turnRate : Mathf.Max(0.01f, data.rotationLerpSpeed)) * LeashTurnScale;
             heading = Vector3.Slerp(heading, to.normalized, Mathf.Clamp01(Time.deltaTime * turn));
-            current = Mathf.Lerp(current, Mathf.Max(0f, speed), Mathf.Clamp01(Time.deltaTime * 2.5f));
+            current = Mathf.Lerp(current, Mathf.Max(0f, speed), Mathf.Clamp01(Time.deltaTime * LeashSpeedEase));
             currentVelocity = heading * current;
-            if (current > 1e-3f && SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
+            if (current > 1e-3f && SafeLookRotation.TryGet(currentVelocity, LeashUp(heading), out var rotation, this))
                 desiredRotation = rotation;
         }
+
+        /// <summary>How sharply this species answers its holder's turn rate: 1 for every creature, less for one that
+        /// banks slowly (the Ray's glide).</summary>
+        protected virtual float LeashTurnScale => 1f;
+
+        /// <summary>How fast this species' speed eases to its holder's, per second: 2.5 for every creature, less for
+        /// one that is slow to gain speed and slow to lose it.</summary>
+        protected virtual float LeashSpeedEase => 2.5f;
+
+        /// <summary>The up a leashed creature flies with on <paramref name="heading"/>: the world's, for every creature
+        /// with a belly. A body with no up (two identical faces) may take its rider's instead.</summary>
+        protected virtual Vector3 LeashUp(Vector3 heading) => Vector3.up;
 
         public override void LeashLaunch(Vector3 velocity)
         {

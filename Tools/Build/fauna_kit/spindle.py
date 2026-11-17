@@ -75,19 +75,34 @@ def resolve(limb):
 
 # ------------------------------------------------------------------ the mesh a limb makes
 
-def mesh(wire):
-    """(vertices, triangles) of one grown limb as the game would draw it: every strand a three-sided tube or a ribbon
-    (its design's `section`), every barb a ribbon. `wire` is a body.from_spec wire with `lines`."""
-    V, T = [], []
+LACE_SPAN = 12.0      # u of a strand's length that one lap of the lace texture covers (SpindleGraph reads UV0)
+
+
+def mesh_data(wire):
+    """(vertices, triangles, source, uv) of one grown limb as the game draws it: every strand a three-sided tube or a
+    ribbon (its design's `section`), every barb a ribbon. `source[i]` is the wire vertex mesh vertex i was swept
+    round (its sway and glow are that vertex's), and `uv[i]` is where SpindleGraph's lace lands on it: u runs along
+    the strand in LACE_SPANs, v round its faces, as on the shipped braid. `wire` is a body.from_spec wire."""
+    V, T, S, U = [], [], [], []
     src = wire["verts"]
+    if wire.get("membrane"):      # a membrane is its own mesh: its lattice points and its fill
+        across = wire.get("across") or 1
+        rows = max(1, len(src) // across)
+        run = sum(C.norm(C.sub(src[(i + 1) * across], src[i * across])) for i in range(rows - 1)) if across and rows > 1 else 0.0
+        for i, v in enumerate(src):
+            U.append([(i // across) / max(1, rows - 1) * run / LACE_SPAN, (i % across) / max(1, across - 1)])
+        return [list(v) for v in src], [tuple(t) for t in wire.get("tris", [])], list(range(len(src))), U
     w0, w1 = wire.get("wire", [0.09, 0.04])
     for idx, kind in wire.get("lines", []):
         k = 2 if kind == "barb" else wire.get("section", 3)
         n = len(idx)
         first = len(V)
+        run = 0.0
         for j, vi in enumerate(idx):
             p = src[vi]
             a, b = src[idx[max(j - 1, 0)]], src[idx[min(j + 1, n - 1)]]
+            if j > 0:
+                run += C.norm(C.sub(p, src[idx[j - 1]]))
             t = C.unit(C.sub(b, a))
             ref = [0.0, 1.0, 0.0] if abs(t[1]) < 0.9 else [1.0, 0.0, 0.0]
             n1 = C.unit(C.cross(ref, t))
@@ -96,13 +111,19 @@ def mesh(wire):
             for c in range(k):
                 ang = 2 * math.pi * c / k
                 V.append([p[i] + r * (math.cos(ang) * n1[i] + math.sin(ang) * n2[i]) for i in range(3)])
+                S.append(vi)
+                U.append([run / LACE_SPAN, c / k])
             if j > 0:
                 for c in range(k if k > 2 else 1):
                     a0, a1 = first + (j - 1) * k + c, first + (j - 1) * k + (c + 1) % k
                     b0, b1 = first + j * k + c, first + j * k + (c + 1) % k
                     T += [(a0, a1, b1), (a0, b1, b0)]
-    if wire.get("membrane"):      # a membrane is its own mesh: its lattice points and its fill
-        V, T = [list(v) for v in src], [tuple(t) for t in wire.get("tris", [])]
+    return V, T, S, U
+
+
+def mesh(wire):
+    """(vertices, triangles) of one grown limb as the game would draw it (mesh_data without what rides each vertex)."""
+    V, T, _S, _U = mesh_data(wire)
     return V, T
 
 

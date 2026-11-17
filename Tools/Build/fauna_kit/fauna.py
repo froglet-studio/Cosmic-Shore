@@ -19,6 +19,14 @@ import celestial as C  # noqa: E402
 import dossier as D  # noqa: E402
 import spindle as SP  # noqa: E402
 
+# what a FORM most often does to break a law, and the way out (/fauna-maker step 6.5)
+FORM_FIX = {
+    "REACH": "what the form adds has become the creature. Shorten its longest parts until the form is under 2.5 x the body",
+    "L1": "a limb the form adds reaches ahead of the spec's \"lead\". Keep it behind that z; for points that face forward use barbs with \"dir\": [0, 0, 1] on a limb that is already there",
+    "L5": "a limb the form adds hangs from the sting's limb, or reaches further back than the sting. Hang it from that limb's PARENT (the root limb when every arm carries a sting) and end it ahead of the sting",
+    "L6": "a limb the form adds has no twin. Add one copy for EVERY angle of K.angles(N), N the spec's own symmetry, each made with P(radius, z)",
+    "L11": "the form gave one limb a third child, so the game would whip a body whose \"attack\" is \"lunge\". Hang what the form adds from limbs that have fewer than two children (a limb's tail, an outer limb)",
+}
 FIX = {
     "L1": "Something is ahead of the crystal. Move the prism back (its front must be behind z = -1.78 and 4.33 from the "
           "crystal's centre), or for WIRE that should lead (a bell, lobes) add \"lead\": <how far> to SPEC (a quarter of the length at most).",
@@ -82,14 +90,21 @@ def check(name, silhouette=False):
         for e in EL.ELEMENTS:
             f = EL.form(spec, e)
             size, laws = EL.mesh_size(f), C.check(EL.form(spec, e, refit=False))
+            far = EL.reach(f, spec)
+            if far > EL.REACH:
+                laws.append(f"REACH the form is {far:.1f} x the body's own longest side (at most {EL.REACH})")
             note = "" if e in own else "   no anatomy of its own yet (/fauna-maker step 6.5)"
             if size > SP.CREATURE_VERTS:
                 note += f"   OVER by {size - SP.CREATURE_VERTS}: lighten the base body or what the form adds"
+            if f.get("lightened"):
+                note += f"   lightened x{f['lightened']:g}"
             if laws:
-                note += "   breaks a law: " + laws[0]
-                bad = bad or bool(spec.get("unity"))
-            bad = bad or (size > SP.CREATURE_VERTS and bool(spec.get("unity")))
+                note += "   BREAKS A LAW: " + laws[0]
+            held = bool(own)      # a creature with its own forms is held to them
+            bad = bad or (held and (bool(laws) or size > SP.CREATURE_VERTS))
             print(f"  {e:<7}{size:>6}{note}")
+            if laws:
+                print("          FIX (in what this form adds)", FORM_FIX.get(laws[0].split(" ")[0]) or FIX.get(laws[0].split(" ")[0], "see /fauna-creation section 2"))
     if silhouette and not bad:
         import subprocess
         out = subprocess.run([sys.executable, os.path.join(HERE, "silhouette.py"), "--check"], capture_output=True, text=True).stdout

@@ -2,9 +2,9 @@
 """The four ELEMENT FORMS of a grown creature, made from its one spec.
 
     python3 Tools/Build/fauna_kit/elements.py            # every grown creature's four forms: mesh size against the bar
-    python3 Tools/Build/fauna_kit/elements.py --check    # exit 1 when a PORTED creature's form is over the bar or breaks a law
+    python3 Tools/Build/fauna_kit/elements.py --check [name]   # exit 1 when a form of a creature that has its own forms is over the bar or breaks a law
     python3 Tools/Build/fauna_kit/elements.py --sheet <species> <png>     # the four forms side by side, at their sizes
-    python3 Tools/Build/fauna_kit/elements.py --silhouette <species>      # law L12 for each form (a few minutes)
+    python3 Tools/Build/fauna_kit/elements.py --silhouette <species> [--form Space]   # law L12 for each form, or for one
     python3 Tools/Build/fauna_kit/elements.py --self-test
 
 Garrett, 2026-11-17: "be sure that you create all four elements and follow the rules for doing so. when
@@ -32,10 +32,12 @@ THREE LAYERS, each on top of the one before:
 
 3. THE CREATURE'S OWN ANATOMY for an element (the spec's `forms` block), where a flagship is made. A form may add
    limbs and membranes, change a limb, and joint what it adds:
-     "forms": {"Space": {"feeling": "...", "add": [limbs], "membranes": [...], "limbs": {"Lead0": {...}},
-                         "unity": {"wires": {"VaneA": ["Veil0a", ...]}, "limbs": [a new jointed limb, ...]}}}
-   What a form may NOT change: the prisms (their count, seats and authored sizes are the species': an element changes
-   what a prism IS by the game's law, never how many there are), the heart, and the body's plan (the base limbs stay).
+     "forms": {"Space": {"feeling": "...", "add": [limbs], "membranes": [...], "change": {"Lead0": {...}},
+                         "unity": {"wires": {"VaneA": ["Veil0a", ...]}}}}
+   What a form may NOT do (form() refuses each): touch the prisms (their count, seats and authored sizes are the
+   species': an element changes what a prism IS by the game's law, never how many there are); drop or re-route a limb
+   of the body's plan; change the body at all on Time (Time is the base body: it may only add); or strip more than
+   half the barbs a limb of the body has (they are the species' look: a feather is not a whip).
 
 A form is a SPEC (form(spec, element)), so everything that reads a spec reads a form: the laws, the mesh budget, the
 lab, unity_port.py.
@@ -80,13 +82,24 @@ def form(spec, element, refit=True):
     out["element"] = element
     own = (spec.get("forms") or {}).get(element) or {}
     names = {s["name"] for s in out["spindles"]}
-    for name, change in (own.get("limbs") or {}).items():
+    who = f"{spec['species']} {element}"
+    if "limbs" in own:
+        raise SystemExit(f"{who}: a form's changes to the body's limbs are under \"change\" (\"limbs\" is the unity block's word)")
+    if element == "Time" and own.get("change"):
+        raise SystemExit(f"{who}: Time is the base body going faster. A Time form may ADD limbs; it may not change the body's own")
+    for name, change in (own.get("change") or {}).items():
         if name not in names:
-            raise SystemExit(f"{spec['species']} {element}: the form changes a limb the body has not got: {name}")
+            raise SystemExit(f"{who}: the form changes a limb the body has not got: {name}")
         limb = next(s for s in out["spindles"] if s["name"] == name)
-        limb.update(copy.deepcopy(change))
-        if "path" in change:
-            limb["from"], limb["to"] = list(change["path"][0]), list(change["path"][-1])
+        if set(change) & {"path", "from", "to", "parent", "name", "mesh"}:
+            raise SystemExit(f"{who}: the form re-routes {name}. A form changes a limb's WIRE (barbs, strands, step, twist, glow, sway), never where it runs")
+        had = (SP.resolve(limb).get("barbs") or {}).get("count", 0)
+        if "barbs" in change and had:
+            left = (change["barbs"] or {}).get("count", 0) if change["barbs"] is not False else 0
+            if left * 2 < had:
+                raise SystemExit(f"{who}: the form leaves {name} {left} of its {had} barbs. They are the species' look: keep at least half "
+                                 "(turn them, shorten them, still them), and pay for what the form adds somewhere else")
+        limb.update(copy.deepcopy(change))      # a changed key REPLACES the limb's whole value for that key (give every key of a barbs dict)
     for limb in copy.deepcopy(own.get("add") or []):
         if limb["name"] in names:
             raise SystemExit(f"{spec['species']} {element}: the form adds a limb the body already has: {limb['name']}")
@@ -115,8 +128,7 @@ def form(spec, element, refit=True):
         s["glow"] = g
         if r["sparks"] and not s.get("barbs") and s.get("barbs") is not False:
             s["barbs"] = dict(SPARKS)
-        if s.get("barbs") is False:
-            del s["barbs"]
+        # barbs False stays False: deleting the key would hand the limb back its DESIGN's barbs when the body is built
         limbs.append(s)
     out["spindles"] = limbs
 
@@ -144,7 +156,49 @@ def form(spec, element, refit=True):
         for lm in u["limbs"]:
             lm["wires"] = list(lm["wires"]) + list((mine.get("wires") or {}).get(lm["name"], []))
         u["limbs"] = [dict(lm, degrees=[d * r["amp"] for d in lm["degrees"]]) for lm in u["limbs"] + copy.deepcopy(mine.get("limbs") or [])]
+    return _fit(out)
+
+
+LIGHTEST = 2.6      # the coarsest a form's wire is ever made to fit the bar: rings this many times further apart
+
+
+def _fit(out):
+    """A form over the mesh bar is LIGHTENED until it fits, the same way a person would (/spindle section 4), and
+    says by how much (`lightened`): rings further apart on every limb, membranes woven sparser, then fewer barbs.
+    The body's plan, its limbs and its prisms are untouched. A form that would need more than LIGHTEST is left over
+    the bar for a person to lighten by design."""
+    if mesh_size(out) <= SP.CREATURE_VERTS:
+        return out
+    base = copy.deepcopy(out)
+    k = 1.0
+    while k < LIGHTEST:
+        k = round(k + 0.1, 2)
+        out = copy.deepcopy(base)
+        for s in out["spindles"]:
+            if s.get("mesh") != "grown":
+                continue
+            s["step"] = s.get("step", 1.0) * k
+            if s.get("barbs") and k > 1.5:
+                s["barbs"] = dict(s["barbs"], count=max(3, int(round(s["barbs"]["count"] / (k / 1.5)))))
+        out["membranes"] = [dict(m, across=max(4, int(round(m["across"] / k ** 0.5)))) for m in out["membranes"]]
+        out["lightened"] = k
+        if mesh_size(out) <= SP.CREATURE_VERTS:
+            break
     return out
+
+
+REACH = 2.5      # a form's longest extent over the base body's: past this the creature is its addition, not itself
+
+
+def reach(spec, base):
+    """How far a form reaches against the body it was made of: the longest side of its box over the base body's."""
+    import body as BODY
+
+    def longest(sp):
+        vs = [v for w in BODY.from_spec(sp)["wires"] for v in w["verts"]]
+        return max(max(v[i] for v in vs) - min(v[i] for v in vs) for i in range(3))
+    plain = {k: v for k, v in base.items() if k != "forms"}
+    return longest(spec) / max(longest(plain), 1e-9)
 
 
 def mesh_size(spec):
@@ -152,12 +206,22 @@ def mesh_size(spec):
     return sum(len(SP.mesh(w)[0]) for w in BODY.from_spec(spec)["wires"] if w.get("source") == "grown")
 
 
-def table():
+def table(names=None):
+    """[(creature, element, vertices, broken laws, in Unity)]. A form the tool refuses is a row with its reason as a law."""
     rows = []
     for key in SP.grown_species():
+        if names and key not in names:
+            continue
         base = C.load(key)
         for e in ELEMENTS:
-            rows.append((key, e, mesh_size(form(base, e)), C.check(form(base, e, refit=False)), bool(base.get("unity"))))
+            try:
+                laws = C.check(form(base, e, refit=False))
+                far = reach(form(base, e), base)
+                if far > REACH:
+                    laws.append(f"REACH the form is {far:.1f} x the body's own longest side (at most {REACH}): what it adds has become the creature. Pull it in")
+                rows.append((key, e, mesh_size(form(base, e)), laws, bool(base.get("unity"))))
+            except SystemExit as refused:
+                rows.append((key, e, 0, [str(refused)], bool(base.get("unity"))))
     return rows
 
 
@@ -180,7 +244,10 @@ def sheet(key, out_path, size=520):
         ox, oy = i * size + size / 2, 44 + top / 2
         nv = sum(len(SP.mesh(w)[0]) for w in b["wires"] if w.get("source") == "grown")
         d.text((i * size + 8, 6), f"{f['species']} {e}   x{k:g}   {nv} vertices   {f['sway_hz']:.2f} Hz", fill=tint[e])
-        d.text((i * size + 8, 20), (f.get("feeling") or "")[:88], fill=(150, 160, 180))
+        feel = f.get("feeling") or ""
+        cut = feel.rfind(" ", 0, int(size / 6.2)) if len(feel) > size / 6.2 else len(feel)
+        d.text((i * size + 8, 19), feel[:cut], fill=(150, 160, 180))
+        d.text((i * size + 8, 31), feel[cut:].strip()[:int(size / 6.2)], fill=(150, 160, 180))
         posed = []
         for w in b["wires"]:
             vs = w["verts"]
@@ -219,26 +286,31 @@ def sheet(key, out_path, size=520):
     return out_path
 
 
-def silhouettes(key):
-    """Law L12 for the four forms: each must be as far from every OTHER species and every vessel as a new species
-    must be (silhouette.BAR). Its own species is not counted: the forms are told apart, and are meant to be kin.
-    Returns ([(element, nearest name, distance)], {(a, b): distance between two forms}, the bar): the bar is
-    silhouette.py's own, the upper quartile of how far the shipped bodies stand from their nearest look-alike."""
+def silhouettes(key, only=None):
+    """Law L12 for the four forms (or the ones in `only`): each must be as far from every OTHER species and every vessel
+    as a new species must be. Its own species is not counted: the forms are told apart, and are meant to be kin.
+    Returns ([(element, nearest name, distance, the distance it must reach)], {(a, b): distance between two forms},
+    the bar, the base body's own (nearest, distance)). The bar is silhouette.py's own, the upper quartile of how far
+    the shipped bodies stand from their nearest look-alike. A species whose BASE outline a person accepted under the
+    bar (silhouette.ACCEPTED) is held to its base instead: a form may not be more alike than the body it was made of."""
     import numpy as np
     import body as BODY
     import silhouette as S
     base = C.load(key)
-    mine = {e: S.views(S.body_points(BODY.from_spec(form(base, e)))) for e in ELEMENTS}
+    mine = {e: S.views(S.body_points(BODY.from_spec(form(base, e)))) for e in (only or ELEMENTS)}
+    plain = S.views(S.body_points(BODY.from_spec(base)))
     ros = [(n, k, S.views(p)) for n, k, p in S.roster() if k != "archive"]
     shipped = [v for _n, k, v in ros if k in ("vessel", "fauna")]
     bar = float(np.percentile([min(S.distance(a, b) for b in shipped if b is not a) for a in shipped], 75))
     others = [(n, v) for n, _k, v in ros if n != base["species"]]
+    base_d, base_n = min((S.distance(plain, v), n) for n, v in others)
+    need = min(bar, base_d) if base["species"] in S.ACCEPTED else bar
     near = []
-    for e in ELEMENTS:
+    for e in mine:
         d, n = min((S.distance(mine[e], v), n) for n, v in others)
-        near.append((e, n, d))
-    kin = {(a, b): S.distance(mine[a], mine[b]) for i, a in enumerate(ELEMENTS) for b in ELEMENTS[i + 1:]}
-    return near, kin, bar
+        near.append((e, n, d, need))
+    kin = {(a, b): S.distance(mine[a], mine[b]) for i, a in enumerate(list(mine)) for b in list(mine)[i + 1:]}
+    return near, kin, bar, (base_n, base_d)
 
 
 def self_test():
@@ -276,12 +348,31 @@ def self_test():
         fails.append("only the Space form is authored eroded")
     # a form may not touch a limb the body has not got, or add one it has
     bad = copy.deepcopy(base)
-    bad.setdefault("forms", {}).setdefault("Mass", {})["limbs"] = {"NoSuchLimb": {"strands": 9}}
+    bad.setdefault("forms", {}).setdefault("Mass", {})["change"] = {"NoSuchLimb": {"strands": 9}}
     try:
         form(bad, "Mass")
         fails.append("a form changing a limb the body has not got was accepted")
     except SystemExit:
         pass
+    for label, element, change in (("a Time form that changes the body", "Time", {"Whip": {"strands": 4}}),
+                                   ("a form that re-routes a limb", "Mass", {"Whip": {"path": [[0, 0, -30], [0, 0, -40]]}}),
+                                   ("a form that strips a limb's barbs", "Charge", {"Lead0": {"barbs": {"count": 1, "length": [1, 1]}}})):
+        bad = copy.deepcopy(base)
+        if label.endswith("barbs"):
+            bad["spindles"] = [dict(s, barbs={"count": 12, "length": [2, 1]}) if s["name"] == "Lead0" else s for s in bad["spindles"]]
+        bad["forms"][element] = dict(bad["forms"][element], change=change)
+        try:
+            form(bad, element)
+            fails.append(f"{label} was accepted")
+        except SystemExit:
+            pass
+    off = copy.deepcopy(base)
+    off["spindles"] = [dict(s, design="rachis") if s["name"] == "Whip" else s for s in off["spindles"]]
+    off["forms"]["Mass"] = dict(off["forms"]["Mass"], change={})
+    with_barbs = mesh_size(form(off, "Space"))
+    off["spindles"] = [dict(s, barbs=False) if s["name"] == "Whip" else s for s in off["spindles"]]
+    if not mesh_size(form(off, "Space")) < with_barbs:
+        fails.append("barbs: False did not remove a design's barbs (the design's came back when the body was built)")
     return fails
 
 
@@ -294,28 +385,38 @@ def main(argv):
         return 1 if fails else 0
     if "--silhouette" in argv:
         key = argv[argv.index("--silhouette") + 1]
-        near, kin, bar = silhouettes(key)
+        only = [argv[argv.index("--form") + 1]] if "--form" in argv else None
+        near, kin, bar, (base_n, base_d) = silhouettes(key, only)
         bad = 0
-        for e, n, d in near:
-            ok = d >= round(bar, 2)
+        print(f"{key} base body: nearest other body {base_n} {base_d:.3f}; the bar is {bar:.3f}"
+              + (f"; a person accepted this outline, so each form must reach {min(bar, base_d):.3f}" if near and near[0][3] < bar else ""))
+        for e, n, d, need in near:
+            ok = d >= need - 0.0005
             bad += not ok
-            print(f"{key} {e:<7} nearest other body: {n} {d:.2f}" + ("" if ok else f"   UNDER the bar {bar:.2f}: change what this form adds"))
-        print("between its own forms (kin, no bar): " + ", ".join(f"{a}-{b} {d:.2f}" for (a, b), d in kin.items()))
+            print(f"{key} {e:<7} nearest other body: {n} {d:.3f}" + ("" if ok else f"   UNDER {need:.3f}: spread what this form adds OUTWARD, "
+                                                                     f"away from the shape of the {n} (/fauna-maker step 6.5)"))
+        if kin:
+            print("between its own forms (kin, no bar): " + ", ".join(f"{a}-{b} {d:.2f}" for (a, b), d in kin.items()))
         return 1 if bad else 0
     if "--sheet" in argv:
         i = argv.index("--sheet")
         print(sheet(argv[i + 1], argv[i + 2]))
         return 0
     bad = 0
+    names = [a for a in argv if not a.startswith("-")]
     print(f"{'creature':<10}" + "".join(f"{e:>9}" for e in ELEMENTS) + f"   vertices a form (bar {SP.CREATURE_VERTS})")
-    rows = table()
+    rows = table(names)
     for key in SP.grown_species():
+        if names and key not in names:
+            continue
         mine = {e: (v, errs, ported) for k, e, v, errs, ported in rows if k == key}
-        ported = mine["Time"][2]
+        ported = mine["Time"][2] or bool(C.load(key).get("forms"))      # a creature with its own forms is held to them
         flags = [e + (": " + mine[e][1][0] if mine[e][1] else " over the bar") for e in ELEMENTS if mine[e][0] > SP.CREATURE_VERTS or mine[e][1]]
         bad += bool(flags) and ported
+        light = [f"{e} x{form(C.load(key), e)['lightened']:g}" for e in ELEMENTS if mine[e][0] and form(C.load(key), e).get("lightened")]
         print(f"{key:<10}" + "".join(f"{mine[e][0]:>9}" for e in ELEMENTS)
-              + ("   " + ("FAIL " if ported else "lab only, to lighten before its port: ") + "; ".join(flags) if flags else ("   ported" if ported else "")))
+              + ("   " + ("FAIL " if ported else "no forms of its own yet: ") + "; ".join(flags) if flags else ("   ok" if ported else "   no forms of its own yet"))
+              + ("   lightened to fit (rings further apart): " + ", ".join(light) if light else ""))
     return 1 if ("--check" in argv and bad) else 0
 
 

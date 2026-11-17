@@ -39,6 +39,83 @@ for k, a in enumerate(K.angles(4, phase=22.5)):
     P = lambda r, z, a=a: K.polar(r, a, z)
     limbs.append(K.grown(f"Frill{k}", "Stalk", [P(0.5, -10.5), P(2.8, -17.0), P(1.6, -27.0), P(3.2, -38.0)], girth=(0.9, 0.2), design="frill", strands=3, sway={"dir": "radial", "amp": 2.6, "waves": 1.5, "phase": 1.1 * k}))
 
+# ---- THE FOUR ELEMENT FORMS (elements.py): the Nettle's own anatomy for each element, on the one bell above ----
+# Light on purpose: the base body is already near the mesh bar. Each form adds one or two things; where the form's
+# style would overrun the bar, a form also thins a limb's wire ("change"), which never touches a limb's path or prisms.
+frills = [(k, a, limbs[16 + k]) for k, a in enumerate(K.angles(4, phase=22.5))]
+ribs = [(k, a, limbs[2 * k]) for k, a in enumerate(A8)]
+outward = lambda a: [round(v, 6) for v in K.polar(1.0, a, 0.0)]
+
+
+def sprite():
+    """TIME, the sprite: joy. Four bright ribbons fly off the bell's rim, flung wide and trailing back past the tendrils,
+    so the whole jelly seems to be streaming. Nothing on the bell changes: Time is the base body."""
+    add = []
+    for k, a, rib in ribs:
+        if k % 2:
+            continue
+        P = lambda r, z, a=a: K.polar(r, a, z)
+        add.append(K.grown(f"Pennant{k}", rib["name"], [P(18.0, -9.5), P(26.0, -16.0), P(32.0, -26.0), P(31.0, -37.0), P(34.0, -47.0)],
+                           girth=(0.3, 0.04), design="whip", section=2, barbs=False, step=2.0,
+                           sway={"dir": "tangent", "amp": 5.0, "waves": 2.2, "pow": 1.3, "phase": 0.6 * k}))
+    return {"feeling": "the sprite: joy. Ribbons fly off its rim and stream behind; it is all speed and ribbon.",
+            "add": add}
+
+
+def thornbell():
+    """CHARGE, the thornbell: beauty with a warning in it. A crown of eight spears leans forward from the rim of the
+    bell, each one hooked a little, and the frilled arms are bare so the points are all you see. Every prism on it is
+    danger (the game's law)."""
+    add, change = [], {}
+    for k, a, rib in ribs:
+        P = lambda r, z, a=a: K.polar(r, a, z)
+        add.append(K.grown(f"Spear{k}", rib["name"], [P(17.6, -7.5), P(19.6, -3.6), P(20.8, 0.4), P(20.2, 2.9)],
+                           girth=(0.26, 0.04), design="spar", section=2, barbs=False))
+    for k, a, fr in frills:
+        change[fr["name"]] = {"barbs": False}
+    for k, a, rib in ribs:
+        change[f"Tendril{k}"] = {"barbs": {"count": 7, "length": [1.6, 0.5], "angle": 70.0, "sides": 1, "dir": [0, 0, 1], "flutter": 0.8}}
+    return {"feeling": "the thornbell: beauty with a warning in it. A crown of spears leans out of the bell; do not touch.",
+            "add": add, "change": change}
+
+
+def abbey():
+    """MASS, the abbey: reverence. A girdle of struts ties the ribs together round the rim like the hoop of a bell
+    or a cloister, and a curtain hangs between the oral arms. It is armoured (the game's law) and it does not hurry."""
+    add = []
+    for k, a, rib in ribs:
+        nxt = ribs[(k + 1) % 8][2]
+        p, q = K.along(rib, 0.9)[0], K.along(nxt, 0.9)[0]
+        mid = [(p[c] + q[c]) / 2 * 1.04 for c in range(3)]
+        hoop = K.grown(f"Hoop{k}", rib["name"], [p, mid, q], girth=(0.3, 0.26), design="rib", step=2.0)
+        hoop["to_limb"] = nxt["name"]
+        add.append(hoop)
+    webs = [{"name": f"Curtain{k}", "a": f"Frill{k}", "b": f"Frill{(k + 1) % 4}", "across": 5} for k in range(4)]
+    thin = {f"Tendril{k}": {"barbs": {"count": 5, "length": [1.6, 0.5], "angle": 95.0, "sides": 1, "flutter": 0.5}, "step": 2.0} for k in range(8)}
+    for k in range(8):
+        thin[f"Rib{k}"] = {"step": 1.6}
+    return {"feeling": "the abbey: reverence. A girdle hoops the bell and a curtain hangs between its arms; heavy and unhurried.",
+            "add": add, "membranes": webs, "change": thin}
+
+
+def veil():
+    """SPACE, the veil: longing. Four very long strands hang from the tips of the oral arms, further behind than
+    anything else on the body, with a thin web between neighbours; the bell is the law's eroded wire, vast and thin.
+    It is the one you watch drift away."""
+    add, hung = [], []
+    for k, a, fr in frills:
+        P = lambda r, z, a=a: K.polar(r, a, z)
+        at = K.along(fr, 1.0)[0]
+        r, z = (at[0] ** 2 + at[1] ** 2) ** 0.5, at[2]
+        add.append(K.grown(f"Drift{k}", fr["name"], [P(r, z), P(r + 1.0, z - 10.0), P(r + 0.2, z - 22.0), P(r + 1.6, z - 34.0), P(r + 0.6, z - 46.0)],
+                           girth=(0.14, 0.02), design="vein", section=2,
+                           sway={"dir": "tangent", "amp": 6.0, "waves": 1.6, "pow": 1.2, "phase": 0.9 * k}))
+        hung.append(f"Drift{k}")
+    webs = [{"name": f"Gossamer{k}", "a": hung[k], "b": hung[(k + 1) % 4], "across": 5} for k in range(4)]
+    return {"feeling": "the veil: longing. Long strands trail from its arms into the dark; the one you watch drift away.",
+            "add": add, "membranes": webs}
+
+
 SPEC = {
     "species": "Nettle",
     "premise": "A celestial jelly grown round its Etherion: a woven bell the light shows through, eight tendrils falling "
@@ -57,6 +134,7 @@ SPEC = {
     "membranes": membranes,
     "prisms": prisms,
     "elements": K.elements(prisms),
+    "forms": {"Time": sprite(), "Charge": thornbell(), "Mass": abbey(), "Space": veil()},
     "possession": {"top_speed": 18.0, "mouth_reach": 42.0, "attack": "whip", "turn_rate": 4.0, "body_radius": 20.0, "aim_cone": 180.0,
                    "suction": {"shape": "all"}, "motion": {"kind": "pulse", "period": 1.8, "kick": 1.8, "glide": 0.55, "glide_turn": 9.0},
                    "feel": "It swims in pulses and works all round: RT eats on every side and whips a vessel anywhere inside its tendrils."},

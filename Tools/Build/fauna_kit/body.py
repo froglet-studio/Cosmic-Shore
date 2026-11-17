@@ -148,7 +148,8 @@ def from_spec(spec):
         la, lb = by_name[m["a"]], by_name[m["b"]]
         verts, edges, sway, glow, tris = organic.sheet(la, lb, m.get("across", 9), base_of(la), base_of(lb))
         wires.append({"name": m["name"], "source": "grown", "limb": m["a"], "verts": [[round(c, 4) for c in v] for v in verts],
-                      "edges": edges, "sway": sway, "glow": glow, "tris": tris, "parent": None, "pivot": [0, 0, 0], "beat": None, "membrane": True})
+                      "edges": edges, "sway": sway, "glow": glow, "tris": tris, "parent": None, "pivot": [0, 0, 0], "beat": None, "membrane": True,
+                      "across": m.get("across", 9)})
     for p in spec["prisms"]:
         at, rot = B.prism_world(p)
         prisms.append({"name": p["name"], "kind": p["kind"], "shielded": bool(p.get("shielded")),
