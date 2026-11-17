@@ -98,10 +98,21 @@ def learned():
     return json.load(open(LEARNED, encoding="utf-8")).get("hulls", {})
 
 
+# Values the real-game race judge measured as better for the AI than the line people fly, applied last. People's crossing
+# lane (race_lines_learned.json) is kept as measured; this is the AI's own lane where the judge found one.
+# Dolphin (2026-11-17, overnight stall trace): a drift committed at L5 speed carried it past ring mouths, then a ~900 u
+# re-approach. Risk 0.25 + LaneShare 0.6 vs shipped (0.5, learned 0.785), 18 archive2 courses x seeds 1-4, 72 races a side:
+# card mean 110.8 -> 98.0 s, L5 86.7 -> 88.5 s (flat inside noise), missed rings 72 -> 56.
+JUDGED = {
+    "Dolphin": {"LaneShare": 0.60, "Risk": 0.25},
+}
+
+
 def values(hull):
     v = dict(COMMON)
     v.update(HULLS[hull])
     v.update({k: x for k, x in learned().get(hull, {}).items() if k in FIELDS})
+    v.update({k: x for k, x in JUDGED.get(hull, {}).items() if k in FIELDS})
     return v
 
 
