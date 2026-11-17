@@ -1,0 +1,68 @@
+{
+  "comment": "Tools/Build/risky_merge.py: the ONE definition of a risky merge (Garrett, 2026-11-17: 'as long as we have a way to flag the risky stuff, and get sign off after the fact I would rather move as fast as we can'). A merge is risky when it matches any category below. Each category says whether a hit queues a sign-off entry to the signer's /approve list ('queue') or only labels the PR ('label'). Globs are fnmatch patterns on repo paths; 'content' categories also need a changed line matching the regex. Change this file, not the script, to widen or narrow what counts.",
+  "label": "risky-merge",
+  "signer": "Garrett",
+  "categories": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "action": "label",
+      "why": "Every merge into bleeding-edge since 2026-11-16 went in with no approving review (109 of 109 checked), so a bypass alone labels the PR; it queues an entry only together with another category."
+    },
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "action": "queue",
+      "paths": [
+        "Assets/_Scripts/Controller/AI/*.cs",
+        "Assets/_Scripts/Controller/AI/Boost/*",
+        "Assets/_Scripts/Controller/AI/Racing/*",
+        "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+        "Assets/_Scripts/Controller/Arcade/Racing/RaceCourseSource.cs"
+      ]
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "action": "queue",
+      "paths": [
+        "Assets/_SO_Assets/VesselActions/*",
+        "Assets/_SO_Assets/VesselStats/*",
+        "Assets/_SO_Assets/Classes/*",
+        "Assets/Resources/ElementalAbilityMaps/*",
+        "Assets/_Prefabs/Spacevessels/*"
+      ],
+      "skip": ["*.meta"]
+    },
+    {
+      "key": "protocol",
+      "name": "multiplayer wire format (NetworkConfig.ProtocolVersion)",
+      "action": "queue",
+      "paths": ["Assets/_Prefabs/CORE/NetworkManager.prefab"],
+      "content": "ProtocolVersion"
+    },
+    {
+      "key": "backend",
+      "name": "UGS or the backend",
+      "action": "queue",
+      "paths": [
+        "Tools/UGS/*",
+        "Assets/_Scripts/System/CloudData/*",
+        "Assets/_Scripts/System/Moderation/*",
+        "Assets/_Scripts/System/UGSKeys.cs",
+        "Assets/_Scripts/System/AuthenticationServiceFacade.cs",
+        "Port/src/CosmicShore.Engine/Services/CloudCodeSdk.cs"
+      ]
+    },
+    {
+      "key": "owned-area",
+      "name": "an area another person owns (Docs/TEAM.json owners)",
+      "action": "queue"
+    },
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "action": "queue"
+    }
+  ]
+}
