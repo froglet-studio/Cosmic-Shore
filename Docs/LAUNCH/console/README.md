@@ -1,12 +1,18 @@
 # Launch Console (the artifact)
 
 **https://claude.ai/artifact/XwF8FQrHhUTvNv1gE8kws2** (private; share it from the page's Share menu). Its source is
-`index.html` here. Publish it with the Artifact tool to that URL **with two supporting files**, Froglet Analytics'
-generated theme (one source for both consoles):
+`index.html` here. Publish it with the Artifact tool to that URL **with its supporting files**: Froglet Analytics'
+generated theme (one source for both consoles; this console opens in Photic, the game's Deep Sea, and keeps its own
+choice under `lc-theme`), the menu cell behind every page, and the hangar card renders:
 
 ```
-files: { "theme.js": "Tools/Analytics/console/theme.js", "themes.css": "Tools/Analytics/console/themes.css" }
+files: { "theme.js": "Tools/Analytics/console/theme.js", "themes.css": "Tools/Analytics/console/themes.css",
+         "cell.jpg": "Docs/MenuRedesignB/build_refs/sea_cell_outside.jpg",
+         "hulls/<Vessel>.png": "Assets/_Graphics/Hangar/Cards/<Vessel>.png" }   # Sparrow Dolphin Squirrel Rhino Manta Serpent
 ```
+
+The six hulls shown for Development and Master (`SIX` in `index.html`) are the six original classes, assumed until
+Shombith names the six Beta Phase 1 carries.
 
 The FrogletTools editor window reads the same `launch-status` branch directly (`Docs/LAUNCH/STATUS_CONTRACT.md`).
 
