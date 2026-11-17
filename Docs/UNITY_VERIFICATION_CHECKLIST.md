@@ -24962,3 +24962,18 @@ because its effect was within noise. The coach table test now allows up to 16/s.
 errors in the changed files).
 - [ ] Fly Brittle Star Time I1-I4 against a Legendary AI. It should race clean and finish ahead of the old times, most of all at I3
   (about 33 s, against 54 s at I2: the I3 team crystals make that rung faster rather than harder, a ladder question for step 2).
+
+## Dolphin Regatta race line: fewer missed rings (2026-11-17, Regatta flywheel, overnight run)
+
+Verified (race judge, Amoebius headless):
+- Most of the Dolphin's "overlong" Regatta legs are long legs flown in drift, which is the kit's pace. The real losses
+  are missed rings: a drift committed at L5 speed carries the hull past the mouth, then the re-approach runs about
+  900 u out.
+- Risk 0.25 and LaneShare 0.6 (was 0.5 and the people-learned 0.785), on 18 archive2 courses x seeds 1-4, 72 races a
+  side: card mean 110.8 to 98.0 s, L5 86.7 to 88.5 s (flat within noise), missed rings 72 to 56.
+- `author_race_lines.py --check` passed.
+
+Not verified: a real Unity editor.
+
+1. Regatta with a Dolphin AI rival at the card start: the rival makes most rings first time, and finishes about 10%
+   sooner than before.
