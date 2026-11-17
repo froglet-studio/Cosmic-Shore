@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-17-ship-5-7-gains-step-2-5-risky-merge-py-c-d821ab",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T19:25:04+00:00",
+  "area": "the /ship skill and approvals.py",
+  "summary": "/ship §5.7 gains step 2.5: risky_merge.py checks every merge against Docs/Approvals/risky.json, labels risky PRs risky-merge and queues a RISKY MERGE entry to Garrett; approvals.py add accepts a risky self-entry and list sorts risky entries after loop impact.",
+  "why": "Garrett 2026-11-17: move as fast as we can, flag the risky stuff, sign off after the fact.",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "99f19068c",
+  "paths": [
+    ".claude/skills/ship/SKILL.md",
+    "Tools/Build/approvals.py",
+    "Tools/Build/risky_merge.py"
+  ]
+}

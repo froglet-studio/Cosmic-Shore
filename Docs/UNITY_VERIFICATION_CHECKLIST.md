@@ -25010,3 +25010,35 @@ I2 118 -> 96, I4 139 -> 101, I1 from Time 10 104 -> 90, I4 from Time 0 152 -> 11
 I1 at rest is now the slowest rung after I4 from rest, so the ladder still runs flat.
 Not run in Unity: the reference compile shows 0 errors in the changed files.
 - [ ] Fly Burrow Run against a Legendary Meerkat AI: it should commit late, tunnel down each leg and finish faster than before.
+
+## Spearline AI ramps between rings (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+Not run in the Unity editor. The change is one asset, `Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Spearline.asset`
+(a copy of `RhinoAIBoostPolicy_Headlong`), which the Swordfish's AI loads in Spearline only. Measured in the race
+judge (Amoebius headless, the real game code): Legendary 260-355 s -> 141-191 s, Medium 247-384 s -> 174-212 s, the
+I4 timeout gone.
+
+- [ ] Fly Spearline I1 and I4 against a Legendary Swordfish: between rings it presses the ramp (engage sound, the
+      speed climbs past 300 u/s) instead of coasting at about 50 u/s.
+- [ ] It still strokes through the seals and does not overshoot a ring into a long loop back.
+
+## 🔴 Play / Ready is the Ruby commit button: Maelstrom READY and PLAY AGAIN (2026-11-12, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/youthful-hawking-jxrvj0` (`/frogma-to-unity`'s first build). Spec: `Docs/UI/specs/sg5-play-ready.md`
+(Frogma, Style Guide tab, "Style Guide 5 - Buttons and their states", the Play / Ready row). Compiled with
+`unity_refcompile` only; no Unity editor and no look sheet ran. The offline proof sheet is
+`Docs/Look/sg5-play-ready_2026-11-12.jpg` (a simulation from the YAML, not the renderer).
+
+1. **Run `KitButtonCommitTests`** (EditMode): 5 tests, all green.
+2. **Open `Assets/_Scenes/Game_TestDesign/UIKitTestScene.unity`** and press Play: the button wall has a COMMIT row
+   (READY) under DANGER: the opaque one a flat Ruby (#A600FF) fill with a white label, no gradient; the transparent
+   one a Ruby border and label over a faint Ruby fill. The three vessel tiles moved down 60 to make room. Nothing in
+   the scene re-serializes on open (no dirty mark): the generator baked what `KitButton` computes.
+3. **Play Maelstrom** (Arcade > Maelstrom, any domain): the hub's **READY 4/4** button is flat Ruby with a white label;
+   hover it (one soft sheen, the fill lightens), press it (it darkens), let the pad focus it (the ring, still the old
+   sky-blue Selection: Q4 of the spec). **NEXT** between rounds stays the lime gradient (Q3). At the end, **PLAY AGAIN**
+   is Ruby; **STATS** and **MAIN MENU** unchanged.
+4. **Wear another colour set** (Profile > colour set, e.g. Dart Frog) and open the hub: READY takes the set's Ruby and
+   the label stays readable (white on it). Note any set where it is not.
+5. **Look at it at phone and iPad size** (Device Simulator, landscape): the button scales with the canvas, the label
+   stays inside it.

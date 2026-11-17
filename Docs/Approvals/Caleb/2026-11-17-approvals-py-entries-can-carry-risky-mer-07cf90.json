@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-17-approvals-py-entries-can-carry-risky-mer-07cf90",
+  "to": "Caleb",
+  "by": "Garrett",
+  "date": "2026-11-17T19:25:04+00:00",
+  "area": "the /approve skill and approvals.py",
+  "summary": "approvals.py entries can carry risky-merge reasons (shown as RISKY MERGE, sorted after loop impact) and the /approve skill explains them.",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "99f19068c",
+  "paths": [
+    ".claude/skills/approve/SKILL.md",
+    "Tools/Build/approvals.py"
+  ]
+}

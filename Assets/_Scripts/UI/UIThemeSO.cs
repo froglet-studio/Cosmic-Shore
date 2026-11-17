@@ -62,7 +62,7 @@ namespace CosmicShore.UI
         public Color controlActive = new Color32(0x00, 0xD4, 0xFF, 0xFF);
         [Tooltip("FFAE00 — currency and purchase affordance (§3, §10.1 Purchase). Same hex as Gold; never use it to mean the Gold team.")]
         public Color purchase = new Color32(0xFF, 0xAE, 0x00, 0xFF);
-        [Tooltip("A600FF — tooltip boxes (§3). Same hex as Ruby; never use it to mean the Ruby team.")]
+        [Tooltip("A600FF — tooltip boxes (§3), and the style guide's `commit` (Ruby: Play / Ready, no way back; KitButtonVariant.Commit). Same hex as Ruby; never use it to mean the Ruby team.")]
         public Color tooltip = new Color32(0xA6, 0x00, 0xFF, 0xFF);
 
         [Header("Elements (rev 6: the colours of meaning)")]
@@ -76,8 +76,9 @@ namespace CosmicShore.UI
         public Color elementTime = new Color32(0x5F, 0xF0, 0xC8, 0xFF);
 
         [Header("Selection (rev 7)")]
-        [Tooltip("Whatever is selected or focused - a tile, a card, a tab, the pad's ring - wears this sky blue.")]
-        public Color selection = new Color32(0x3D, 0xB2, 0xFF, 0xFF);
+        [Tooltip("00D4FF - whatever is selected or focused (a tile, a card, a tab, the pad's ring) wears Jade, the control " +
+                 "colour: a choice you can pick and change again (Docs/UI_STYLE_GUIDE.md D3; was sky blue 3DB2FF).")]
+        public Color selection = new Color32(0x00, 0xD4, 0xFF, 0xFF);
         [Tooltip("The selection's border light (SelectionRim.mat): a bright sweep running round the border while it " +
                  "breathes. Optional - without it the selection is the plain colour.")]
         public Material selectionMaterial;
