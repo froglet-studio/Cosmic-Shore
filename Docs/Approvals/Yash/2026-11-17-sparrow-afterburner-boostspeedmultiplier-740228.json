@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-sparrow-afterburner-boostspeedmultiplier-740228",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T05:51:12+00:00",
+  "area": "the Sparrow's Time afterburner",
+  "summary": "Sparrow Afterburner BoostSpeedMultiplier Max 1.5 -> 1.65, step 5 for the Regatta six-vessel pool.",
+  "why": "Real-game judge, 11 archive2 courses: Sparrow pool card 107 -> 102 s, L5 102 -> 99 s; with the Stoat (#2110) and Scarab (#2111) tunings the pool goes 2.14x/2.00x -> 1.92x/1.87x. Breakwater I1-I4 stays inside its rung bars (100/82/82/80 -> 100/78/78/76 s).",
+  "branch": "claude/project-thread-cwavhz",
+  "lane": "sparrow",
+  "commit": "2c7902e0c",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Sparrow.prefab"
+  ],
+  "loop": {
+    "vessels": [
+      "Sparrow"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "1"
+  }
+}
