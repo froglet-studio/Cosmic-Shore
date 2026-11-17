@@ -398,3 +398,11 @@ console commands. So:
 - **The way home pulls less** (`homewardLureFactor` 2 to 1.25): at 2 most of a cell's creatures swam onto the Ark,
   beside the camera.
 - Not run in Unity. The slow captures are how the next fix is found.
+
+## Kaiju skeletons (Shombith, 2026-11-17: "what are these big sims like structure?")
+
+The big flat peach squares beside the Ark were a dead kaiju's skeleton: a creature leaves its body prisms as cell mass
+when it dies (Docs/ECOSYSTEM.md §26), and a kaiju's are its species' prisms grown 12-14x, so they stood as plates
+bigger than the Ark's, in the colour of the cell it came from. A body grown by `Fauna.GrowBody` (kaiju, raiders) now
+leaves its skeleton at its species' size: each prism settles back by the growth factor where it lies
+(`Fauna.GrownBy`). Queued for Garrett's /approve. Not run in Unity.
