@@ -746,6 +746,7 @@ namespace CosmicShore.Gameplay
             // bug class), so the approach band read once at departure would be the fallback for
             // the whole leg.
             AimArk();
+            _conveyor.QueueDepartedOnceClear(_ark.Position);
 
             if (_holdingAtRouteEnd) return;
             if (!_ark.HasArrived(CellConveyor.ArriveDistance)) return;

@@ -2007,7 +2007,8 @@ namespace CosmicShore.Gameplay
         public int ResolveFloraPopulation(int authored)
         {
             var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
-            return ApplyRuntimePopulationScale(profile ? profile.ScaleFloraPopulation(authored) : authored);
+            return ApplyRuntimePopulationScale(profile ? profile.ScaleFloraPopulation(authored) : authored,
+                RuntimePopulationScale * RuntimeFloraShare);
         }
 
         /// <summary>
@@ -2016,10 +2017,11 @@ namespace CosmicShore.Gameplay
         /// keeps meaning exactly that), a non-zero number never rounds below 1, and scale 1 is
         /// exactly the identity so every cell that never sets the scale is bit-for-bit unchanged.
         /// </summary>
-        int ApplyRuntimePopulationScale(int resolved)
+        int ApplyRuntimePopulationScale(int resolved) => ApplyRuntimePopulationScale(resolved, RuntimePopulationScale);
+
+        static int ApplyRuntimePopulationScale(int resolved, float scale)
         {
             if (resolved <= 0) return resolved;
-            float scale = RuntimePopulationScale;
             if (scale <= 0f || Mathf.Approximately(scale, 1f)) return resolved;
             return Mathf.Max(1, Mathf.FloorToInt(resolved * scale + 0.5f));
         }
@@ -2888,6 +2890,15 @@ namespace CosmicShore.Gameplay
         /// lighter than its profile says.
         /// </summary>
         public float RuntimePopulationScale { get; set; } = 1f;
+
+        /// <summary>
+        /// The FLORA's share of <see cref="RuntimePopulationScale"/>: flora populations resolve at
+        /// RuntimePopulationScale x this, fauna at RuntimePopulationScale alone. Default 1 (both alike). A voyage doubles
+        /// its cells' creatures but keeps their plants near authored (a plant is the cell's growing prism mass, which
+        /// every sense, sweep and draw pays for; 2026-11-17). Production gating only, like the scale it shares; set by
+        /// code, never serialized.
+        /// </summary>
+        public float RuntimeFloraShare { get; set; } = 1f;
 
         /// <summary>
         /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still

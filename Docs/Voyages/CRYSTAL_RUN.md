@@ -305,3 +305,19 @@ Copy changes JSON. Built:
   nothing else is raised. ToastGoalMissedSub says so. `VoyageRaid.Retry` stays for tests and is no longer offered.
 - **Not run in Unity.** To check: the four worlds stand in that order, the stop clock reads 20 s in Caldera and 40 s in
   Geode, and a missed run's Venture further carries its crystals into the owed list.
+
+## 13. Round 8: the frame rate falls after a few cells (Shombith, 2026-11-17)
+
+"After we cross like 3 cells the FPS in my editor drops to 11." The 23:55 capture (Hesperides and Garland standing,
+3,015 draws a frame against 690 at 22:02): Hesperides in Frenzy with 222 plants and 36,656 prisms. The costs that spike
+all scale with prisms: the Serpent wall's sweep (13.7 ms in the spike frame), fauna prism scans (10.2 ms), projectile
+sweeps (9.7 + 7 ms), the crystals' shimmer (171 calls).
+
+- **The cell behind retires once the Ark is clear of it** (`CellConveyor.QueueDepartedOnceClear`, 600 u past its
+  membrane, called from `ArkwayRun.TickCorridor`). It used to wait until the Ark reached the NEXT core; with 2.5x cells
+  and the Ark crawling inside them, that kept three full worlds standing (plus one draining) and the one behind kept
+  growing. The retirement is unchanged: off-screen gated, frame-sliced, nothing dies.
+- **Plants at their own scale** (`cellFloraScale` 1, `Cell.RuntimeFloraShare`): `cellLifeScale` 2 doubled plant caps
+  too, and plants are the cell's growing prism mass. Creatures stay at 2x (their crystals), plants go back to authored
+  (on a phone, never above `mobileCellLifeScale`).
+- Not run in Unity.

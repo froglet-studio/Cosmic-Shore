@@ -264,6 +264,13 @@ namespace CosmicShore.ScriptableObjects
                                                   "one crystal). Production gating only: nothing is culled.")]
         float cellLifeScale = 2.5f;
 
+        [SerializeField, Range(0.25f, 4f), Tooltip("A voyage cell's PLANT populations (seed floors and caps) times this, " +
+                                                   "in place of Cell Life Scale (on a phone, never more than Mobile Cell " +
+                                                   "Life Scale). Plants are a cell's growing prism mass, which every sense, " +
+                                                   "sweep and draw pays for: at 2x one Hesperides grew 222 plants and 36,656 " +
+                                                   "prisms (2026-11-17 capture).")]
+        float cellFloraScale = 1f;
+
         [Header("Voyage - phones (Shombith 2026-11-17: \"keep in mind we are also designing it for the mobile too\")")]
         [SerializeField, Range(0.5f, 4f), Tooltip("Cell Life Scale on a phone or tablet (Application.isMobilePlatform): " +
                                                   "a voyage cell's fauna and flora there. Every creature is a skinned, " +
@@ -396,6 +403,7 @@ namespace CosmicShore.ScriptableObjects
         public float CellGap => cellGap;
         public bool ScatterLifeSpawns => scatterLifeSpawns;
         public float CellLifeScale => OnMobile ? Mathf.Min(cellLifeScale, mobileCellLifeScale) : cellLifeScale;
+        public float CellFloraScale => OnMobile ? Mathf.Min(cellFloraScale, mobileCellLifeScale) : cellFloraScale;
 
         /// <summary>The desktop numbers, whatever the platform (tests and the kaiju page read these).</summary>
         public float DesktopKaijuScale => kaijuScale;
