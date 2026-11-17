@@ -384,3 +384,17 @@ they will get 2x the rewards and as usual venture further." And: "make the ark f
 - **The Ark is 1.5x faster** in a voyage (`arkSpeedScale` on `Voyage.asset`, over Wander_WithArk's 18 u/s crawl and 4x
   cruise; the escort pacing scales too). The Arkway toy keeps its speed.
 - Words: ScoreFinishHere(+Line, +Key), ScoreSailHome(+Line, {scale}). Not run in Unity.
+
+## 16. Round 9: 10 FPS by cell 4, 2 FPS on the way home (Shombith, 2026-11-17)
+
+None of the captures covered the slow part (the editor's auto-capture runs once, 90 s in), and Shombith will not type
+console commands. So:
+
+- **Slow captures run by themselves** (`PerfAutoCapture`, editor only): when a gameplay scene stays under 20 FPS for
+  6 s, the usual `capture` runs as `<scene>-slow`, and once more as `<scene>-slower` if the rate then halves again.
+  Stopping Play sends them through the Bug Ledger as every capture is sent.
+- **No cell past 2.5x its creatures** (`cellLifeMax` 2.5, phones `mobileCellLifeMax` 1.25): the storyboard's per-cell
+  life times `cellLifeScale` made Geode (cell 4) 3.5x. Plants follow the per-cell life times `cellFloraScale`.
+- **The way home pulls less** (`homewardLureFactor` 2 to 1.25): at 2 most of a cell's creatures swam onto the Ark,
+  beside the camera.
+- Not run in Unity. The slow captures are how the next fix is found.

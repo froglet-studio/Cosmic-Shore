@@ -622,6 +622,8 @@ namespace CosmicShore.Tests
             Assert.LessOrEqual(settings.CellFloraScale, settings.DesktopCellLifeScale,
                 "plants (a cell's growing prism mass) never outgrow the creatures' scale");
             Assert.Greater(CellConveyor.DepartedRetireMargin, 0f, "the cell behind retires once the Ark is clear of it");
+            Assert.LessOrEqual(settings.CellLifeMax, 2.5f, "no voyage cell grows past 2.5x its creatures");
+            Assert.Less(settings.HomewardLureFactor, 2f, "the way home no longer draws most of a cell onto the Ark");
         }
 
         [Test]

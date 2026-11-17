@@ -220,8 +220,10 @@ namespace CosmicShore.ScriptableObjects
         float raidHullLeakSeconds = 1.5f;
 
         [SerializeField, Min(1f), Tooltip("On the way home, every cell's lure share is multiplied by this (calm cells " +
-                                          "start from the calm share), and the fauna's assaults may come in any cell.")]
-        float homewardLureFactor = 2f;
+                                          "start from the calm share), and the fauna's assaults may come in any cell. 2 drew most " +
+                                          "of a cell onto the Ark, beside the camera, on the way home: 2 FPS in the editor " +
+                                          "(Shombith 2026-11-17), so 1.25.")]
+        float homewardLureFactor = 1.25f;
 
         [SerializeField, Min(0f), Tooltip("On the way home, seconds between two waves of raiders in the open water " +
                                           "between cells. 0 = no raiders.")]
@@ -289,6 +291,14 @@ namespace CosmicShore.ScriptableObjects
                                                    "sweep and draw pays for: at 2x one Hesperides grew 222 plants and 36,656 " +
                                                    "prisms (2026-11-17 capture).")]
         float cellFloraScale = 1f;
+
+        [SerializeField, Range(0.5f, 6f), Tooltip("The most any one voyage cell's creatures are scaled, after the leg's " +
+                                                  "per-cell life and Cell Life Scale multiply (the storyboard's Geode, 1.4 " +
+                                                  "x 2.5 = 3.5x, held 10 FPS in the editor; Shombith 2026-11-17).")]
+        float cellLifeMax = 2.5f;
+
+        [SerializeField, Range(0.5f, 6f), Tooltip("Cell Life Max on a phone or tablet.")]
+        float mobileCellLifeMax = 1.25f;
 
         [Header("Voyage - phones (Shombith 2026-11-17: \"keep in mind we are also designing it for the mobile too\")")]
         [SerializeField, Range(0.5f, 4f), Tooltip("Cell Life Scale on a phone or tablet (Application.isMobilePlatform): " +
@@ -450,6 +460,7 @@ namespace CosmicShore.ScriptableObjects
         public float CellGap => cellGap;
         public bool ScatterLifeSpawns => scatterLifeSpawns;
         public float CellLifeScale => OnMobile ? Mathf.Min(cellLifeScale, mobileCellLifeScale) : cellLifeScale;
+        public float CellLifeMax => OnMobile ? Mathf.Min(cellLifeMax, mobileCellLifeMax) : cellLifeMax;
         public float CellFloraScale => OnMobile ? Mathf.Min(cellFloraScale, mobileCellLifeScale) : cellFloraScale;
 
         /// <summary>The desktop numbers, whatever the platform (tests and the kaiju page read these).</summary>
