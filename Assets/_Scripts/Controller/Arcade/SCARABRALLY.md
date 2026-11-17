@@ -30,7 +30,7 @@ first DOMAIN whose lead runner threads the last ring wins (golf: finish time).
 | Hairpins | none | every 2nd corner (90-150°) | every 3rd (90-130°) | every 2nd (110-150°) |
 | Mouth twist (jitter / cap) | 15° / 40° | 25° / 50° | 40° / 60° | 40° / 60° |
 | Legs | 420-620 | 400-620 | 420-620 | 360-520 |
-| Blast Run (fields, doors, keys) | none | none | none | Switchback's pre-gauntlet I4 field (unchanged) |
+| Blast Run field (no doors) | none | none | a lighter field (fill 0.40, 3 cells a side, 6 deep, sight bore) | Switchback's pre-gauntlet I4 field (unchanged) |
 
 **Blast Run only at I4 (2026-11-13, elemental loop step 1).** Switchback became Blast Run on 2026-10-29, two days
 after this race was cut, and Scarab Rally inherited it at every intensity: every second or third leg (every leg from I3)
@@ -42,6 +42,13 @@ been retired with the Classic ladder. Now I1-I3 lay no Blast Run (`ScarabRallyCo
 `SwitchbackController.LaysBlastRun`), so the passive crystals stay and the rings are the whole race, and the AI flies
 the rings and nothing else (`AIDetoursForCrystals` false, Yash's rule). I4 keeps the field it had; whether the I4
 rung should keep it is the ladder's question (loop step 2).
+
+**I3 lays a lighter field (2026-11-17, elemental loop step 2, Claude on Garrett's "do your best on fun", pending his
+playtest).** Bare, I3 asked no more than I2: the AI alone flew both in 57 s (3 courses each, the headless judge) while
+I4 took 121 s, so the ladder was flat and then a cliff. I3 now lays a lighter version of I4's doorless field
+(`SwitchbackBlastRun` row "I3 without the gauntlet": fill 0.40 against 0.60, 3 cells either side against 4, 6 deep
+against 8, the same sight bore, 2,400 prisms at most): the AI takes 91-99 s, so the rungs read 63 / 57 / 94 / 121 s.
+Switchback's own I3 (with its gauntlet flag) is unchanged.
 
 **I4 keeps the sight line (2026-11-14, Garrett's I4 playtest).** "It is too hard to find the rings ... the lime green is
 not visible when it is occluded by so many prisms ... respect sight lines from one ring to another." Two things hid the

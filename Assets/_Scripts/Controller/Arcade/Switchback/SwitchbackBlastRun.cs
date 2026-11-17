@@ -220,20 +220,22 @@ namespace CosmicShore.Gameplay
         public const int MinCellsDeep = 2;              // a leg too short for this many slices gets no field
 
         static int I(int intensity) => Mathf.Clamp(intensity, 1, 4) - 1;
-        /// <summary>The row of the per-intensity tables: I1-I4, and a fifth for I4 WITHOUT the gauntlet - the Fortress as it
+        /// <summary>The row of the per-intensity tables: I1-I4, a fifth for I4 WITHOUT the gauntlet - the Fortress as it
         /// was before 2026-11-03, which a mode reusing Switchback's course keeps (Scarab Rally,
-        /// <c>SwitchbackController.BlastRunGauntlet</c>). Every table's one-argument form is the gauntlet's.</summary>
-        static int R(int intensity, bool gauntlet) => intensity >= 4 && !gauntlet ? 4 : I(intensity);
+        /// <c>SwitchbackController.BlastRunGauntlet</c>) - and a sixth for I3 without the gauntlet: Scarab Rally's lighter,
+        /// doorless field (2026-11-17), so its I3 asks more than its bare I2 and less than its I4. Every table's one-argument
+        /// form is the gauntlet's.</summary>
+        static int R(int intensity, bool gauntlet) => gauntlet ? I(intensity) : intensity >= 4 ? 4 : intensity == 3 ? 5 : I(intensity);
         /// <summary>Cells either side of the line (the field is 2n x 2n cells across).</summary>
         public static int CellsHalf(int intensity) => CellsHalf(intensity, true);
-        public static int CellsHalf(int intensity, bool gauntlet) => new[] { 3, 3, 4, 5, 4 }[R(intensity, gauntlet)];
+        public static int CellsHalf(int intensity, bool gauntlet) => new[] { 3, 3, 4, 5, 4, 3 }[R(intensity, gauntlet)];
         /// <summary>Slices along the leg, at most (the leg between the mouth gap and the key gap may hold fewer).</summary>
         public static int CellsDeep(int intensity) => CellsDeep(intensity, true);
-        public static int CellsDeep(int intensity, bool gauntlet) => new[] { 5, 6, 7, 12, 8 }[R(intensity, gauntlet)];
+        public static int CellsDeep(int intensity, bool gauntlet) => new[] { 5, 6, 7, 12, 8, 6 }[R(intensity, gauntlet)];
         /// <summary>The open bore round the line: no object's box, and no mover's sweep, comes inside it. I4 has none:
         /// its way through is the gauntlet (<see cref="HasGauntlet"/>), and the field fills the line.</summary>
         public static float BoreRadius(int intensity) => BoreRadius(intensity, true);
-        public static float BoreRadius(int intensity, bool gauntlet) => new[] { 30f, 26f, 22f, 0f, 18f }[R(intensity, gauntlet)];
+        public static float BoreRadius(int intensity, bool gauntlet) => new[] { 30f, 26f, 22f, 0f, 18f, 22f }[R(intensity, gauntlet)];
         /// <summary>u past the bigger of a leg's two mouths that the sight line keeps clear (<see cref="SightBore"/>): half a
         /// cell, so the next ring's whole rim, and a little water round it, shows down the leg.</summary>
         public const float SightMargin = 12f;
@@ -245,12 +247,12 @@ namespace CosmicShore.Gameplay
         public static float SightBore(int intensity, bool gauntlet, float mouthRadius, float previousMouthRadius)
         {
             float bore = BoreRadius(intensity, gauntlet);
-            if (R(intensity, gauntlet) != 4) return bore;
+            if (R(intensity, gauntlet) < 4) return bore;
             return Mathf.Max(bore, Mathf.Max(mouthRadius, previousMouthRadius) + SightMargin);
         }
         /// <summary>The chance a free cell starts an object (bigger objects then claim more cells).</summary>
         public static float Fill(int intensity) => Fill(intensity, true);
-        public static float Fill(int intensity, bool gauntlet) => new[] { 0.30f, 0.40f, 0.50f, 0.70f, 0.60f }[R(intensity, gauntlet)];
+        public static float Fill(int intensity, bool gauntlet) => new[] { 0.30f, 0.40f, 0.50f, 0.70f, 0.60f, 0.40f }[R(intensity, gauntlet)];
         /// <summary>The share of small cubes and pillars laid as danger prisms.</summary>
         public static float DangerShare(int intensity) => new[] { 0.06f, 0.08f, 0.10f, 0.12f }[I(intensity)];
 
@@ -308,33 +310,33 @@ namespace CosmicShore.Gameplay
         public static bool HasSliderPairs(int intensity) => intensity >= 4;
         public static bool HasBeams(int intensity) => intensity >= 3;
         public static bool HasDoubleDoor(int intensity) => intensity >= 4;
-        /// <summary>Whether a blocked gate hangs its door(s). Every row does except I4 WITHOUT the gauntlet (Scarab Rally): a
+        /// <summary>Whether a blocked gate hangs its door(s). Every row does except I3 and I4 WITHOUT the gauntlet (Scarab Rally): a
         /// door is a plug across the port with an 18 u eye, so it hid the 22 u lime ring behind it from down the leg, and its
         /// eye only opens to the Dolphin's blast (Garrett, 2026-11-14: keep the sight line from one ring to the next). The
         /// door's keepout stays, so the field still leaves the mouth clear.</summary>
-        public static bool LaysDoors(int intensity, bool gauntlet) => R(intensity, gauntlet) != 4;
+        public static bool LaysDoors(int intensity, bool gauntlet) => R(intensity, gauntlet) < 4;
 
         // ── budgets (the 100 fps target; SWITCHBACK.md "Blast Run - budgets") ──
         /// <summary>Whole-course prism ceilings, doors and moving prisms included (Breakwater lays about 4600 at I1). I4
         /// is 1.5x its 3400 of before the gauntlet (Yash, 2026-11-03: "increase object counts by 50 percent"); the
         /// headless I4 soak measured +1,500 static prisms within noise (Docs/perf/SWITCHBACK_PRISM_BUDGET.md).</summary>
         public static int TotalCap(int intensity) => TotalCap(intensity, true);
-        public static int TotalCap(int intensity, bool gauntlet) => new[] { 1800, 2400, 3000, 5100, 3400 }[R(intensity, gauntlet)];
+        public static int TotalCap(int intensity, bool gauntlet) => new[] { 1800, 2400, 3000, 5100, 3400, 2400 }[R(intensity, gauntlet)];
         /// <summary>One station's own prisms (its tunnel; the last of a gate also its field), moving prisms included.</summary>
         public static int StationCap(int intensity) => StationCap(intensity, true);
-        public static int StationCap(int intensity, bool gauntlet) => new[] { 150, 170, 190, 315, 210 }[R(intensity, gauntlet)];
+        public static int StationCap(int intensity, bool gauntlet) => new[] { 150, 170, 190, 315, 210, 170 }[R(intensity, gauntlet)];
         /// <summary>At most this many laid prisms within <see cref="ColliderRadius"/> of any laid prism - the colliders
         /// <c>PrismColliderLodManager</c> keeps live round a pilot there. Breakwater's measured worst is 568 / 464 / 322 /
         /// 276 (I1-I4) of a 1,500 band; I1-I3 stay at or under 70 % of its I1 worst. I4 is 1.5x its 400 of before the
         /// gauntlet, about Breakwater I1's shipped worst: the one budget the real-game soak has to confirm.</summary>
         public static int ColliderCap(int intensity) => ColliderCap(intensity, true);
-        public static int ColliderCap(int intensity, bool gauntlet) => new[] { 300, 340, 370, 600, 400 }[R(intensity, gauntlet)];
+        public static int ColliderCap(int intensity, bool gauntlet) => new[] { 300, 340, 370, 600, 400, 340 }[R(intensity, gauntlet)];
         public const float ColliderRadius = 200f;       // PrismColliderLodManager.lodRadiusMeters
         /// <summary>Prisms written every frame (pose + <c>Prism.NotifyPositionChanged</c>) across the whole course.</summary>
         public static int MovingPrismCap(int intensity) => MovingPrismCap(intensity, true);
-        public static int MovingPrismCap(int intensity, bool gauntlet) => new[] { 0, 40, 100, 210, 140 }[R(intensity, gauntlet)];
+        public static int MovingPrismCap(int intensity, bool gauntlet) => new[] { 0, 40, 100, 210, 140, 70 }[R(intensity, gauntlet)];
         public static int MovingGroupCap(int intensity) => MovingGroupCap(intensity, true);
-        public static int MovingGroupCap(int intensity, bool gauntlet) => new[] { 0, 10, 20, 42, 28 }[R(intensity, gauntlet)];
+        public static int MovingGroupCap(int intensity, bool gauntlet) => new[] { 0, 10, 20, 42, 28, 14 }[R(intensity, gauntlet)];
         /// <summary>SpawnableSwitchbackFeatures' lay pool: over every TotalCap.</summary>
         public const int LayCapacity = 6144;
 
@@ -414,8 +416,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Blast Run's layout of <paramref name="course"/>: stations (keys, doors), then each station's tunnel (I4)
         /// and block field (movers first, then the static objects) - each filtered by everything before it.
-        /// <paramref name="gauntlet"/> false keeps I4 as it was before the gauntlet (a mode that reuses Switchback's course
-        /// without the Dolphin's key blast: Scarab Rally); it changes nothing at I1-I3.</summary>
+        /// <paramref name="gauntlet"/> false keeps I4 as it was before the gauntlet and lays a lighter doorless field at I3 (a
+        /// mode that reuses Switchback's course without the Dolphin's key blast: Scarab Rally); it changes nothing at I1-I2.</summary>
         public static SwitchbackFeatureLayout Layout(IReadOnlyList<RaceGate> course, int intensity,
                                                      Vector3 centre = default, float clearRadius = 0f, bool gauntlet = true)
         {
@@ -671,6 +673,7 @@ namespace CosmicShore.Gameplay
             new[] {     2,        2,    2,     2,   2,          2,      2,        2,      2,         3,   0,    0,   0,   0 },
             new[] {     2,        2,    2,     2,   1,          2,      2,        2,      2,         4,   2,    2,   2,   2 },
             new[] {     2,        2,    2,     2,   1,          2,      2,        3,      2,         5,   0,    0,   0,   0 },   // I4 without the gauntlet
+            new[] {     3,        2,    2,     2,   2,          2,      1,        2,      2,         3,   0,    0,   0,   0 },   // I3 without the gauntlet
         };
 
         struct LBox

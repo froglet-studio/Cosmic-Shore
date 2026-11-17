@@ -172,6 +172,12 @@
      "by": "Claude for Garrett",
      "date": "2026-11-13",
      "evidence": "Rally I1-I3 off Blast Run, AI no crystal detours (SCARABRALLY.md 2026-11-13); awaiting Garrett's fun card at I2"
+    },
+    "2": {
+     "state": "built",
+     "by": "Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest",
+     "date": "2026-11-17",
+     "evidence": "ladder call: bare I3 = I2 (AI 57 s both), I4 121 s cliff; I3 lays a lighter doorless field, AI 63/57/94/121 s (SCARABRALLY.md 2026-11-17); PR held: Switchback lane collision (Yash)"
     }
    }
   }

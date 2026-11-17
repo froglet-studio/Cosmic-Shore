@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     /// <item><b>I1, learn the throttle:</b> wide mouths, gentle corners, long legs. Hold it down.</item>
     /// <item><b>I2, drift:</b> every second corner is a 90-150 degree hairpin.</item>
     /// <item><b>I3, the juke:</b> tighter mouths twisted further off the flow line, a hairpin every
-    /// third corner, and Switchback's prism walls along the legs (<see cref="SwitchbackFeatures"/>).</item>
+    /// third corner, and a light doorless block field along the legs (Blast Run without its doors or gauntlet).</item>
     /// <item><b>I4, gauntlet:</b> short legs, a hairpin every second corner, the tightest mouths and
     /// Switchback's danger prisms beside the racing line - the fast line is the risky one.</item>
     /// </list>
@@ -100,10 +100,11 @@ namespace CosmicShore.Gameplay
         public static float RingRadiusForIntensity(int intensity) =>
             new[] { WidestRingRadius, 46f, 32f, 22f }[Mathf.Clamp(intensity, 1, 4) - 1];
 
-        /// <summary>Whether a Scarab Rally intensity lays Switchback's Blast Run (block fields, doors, key crystals): only
-        /// I4. I1-I3 are the bare ring course, so the throttle, the drift and the juke are the whole question
-        /// (<c>ScarabRallyController.LaysBlastRun</c>, SCARABRALLY.md "The ladder").</summary>
-        public static bool LaysBlastRun(int intensity) => intensity >= 4;
+        /// <summary>Whether a Scarab Rally intensity lays Switchback's Blast Run field (blocks and movers, never its doors):
+        /// I3 (the lighter field) and I4. I1-I2 are the bare ring course, so the throttle and the drift are the whole
+        /// question. Bare, I3 asked no more than I2 (AI 57 s on both, 2026-11-17), so it lays the light field: 94 s,
+        /// and I4 121 s (<c>ScarabRallyController.LaysBlastRun</c>, SCARABRALLY.md "The ladder").</summary>
+        public static bool LaysBlastRun(int intensity) => intensity >= 3;
 
         public static SwitchbackCourseSettings ForIntensity(int intensity)
         {

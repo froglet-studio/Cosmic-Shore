@@ -125,12 +125,14 @@ namespace CosmicShore.Tests
         }
     
         [Test]
-        public void Only_intensity_four_lays_Blast_Run()
+        public void Intensities_three_and_four_lay_the_doorless_field()
         {
-            // I1-I3 are the bare ring course: Switchback's Blast Run fields, doors and Dolphin keys ask for a blast the
-            // Scarab does not have. I4 keeps the field it had.
-            for (int i = 1; i <= 3; i++) Assert.IsFalse(ScarabRallyCourse.LaysBlastRun(i), $"I{i} is the bare ring course");
+            // I1-I2 are the bare ring course. I3 lays a lighter doorless field (2026-11-17: bare, I3 asked no more than I2),
+            // I4 keeps the field it had; neither hangs Switchback's doors, which only the Dolphin's blast opens.
+            for (int i = 1; i <= 2; i++) Assert.IsFalse(ScarabRallyCourse.LaysBlastRun(i), $"I{i} is the bare ring course");
+            Assert.IsTrue(ScarabRallyCourse.LaysBlastRun(3), "I3 lays the lighter field");
             Assert.IsTrue(ScarabRallyCourse.LaysBlastRun(4), "I4 keeps its field");
+            for (int i = 3; i <= 4; i++) Assert.IsFalse(SwitchbackBlastRun.LaysDoors(i, false), $"I{i} hangs no door");
         }
 
         // ── The AI's juke (ScarabRallyCourse.JukeShove) ──

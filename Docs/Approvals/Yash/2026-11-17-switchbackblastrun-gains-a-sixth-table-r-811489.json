@@ -1,0 +1,25 @@
+{
+  "id": "2026-11-17-switchbackblastrun-gains-a-sixth-table-r-811489",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T05:33:02+00:00",
+  "area": "Switchback's Blast Run tables",
+  "summary": "SwitchbackBlastRun gains a sixth table row, 'I3 without the gauntlet' (a lighter doorless field), used only by Scarab Rally's I3; Switchback's own rows and every gauntlet path are unchanged",
+  "why": "Scarab Rally's bare I3 asked no more than I2 (AI 57 s on both), and its I4 was a 2x cliff (121 s). With the light field the rungs read 63/57/94/121 s",
+  "branch": "claude/project-thread-frbecj",
+  "lane": "switchback",
+  "commit": "80ef61c5e",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastRun.cs",
+    "Assets/_Scripts/Tests/Editor/SwitchbackBlastRunTests.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Scarab"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "2"
+  }
+}

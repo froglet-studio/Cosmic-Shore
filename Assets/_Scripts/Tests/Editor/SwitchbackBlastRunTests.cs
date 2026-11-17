@@ -488,7 +488,8 @@ namespace CosmicShore.Tests
             int open4 = 0;
             SwitchbackBlastRun.EmitDoorPrisms(Vector3.zero, Vector3.forward, port, false, (p, r, s, k) => open4++);
             Assert.AreEqual(open4 + SwitchbackBlastRun.SealPrisms, SwitchbackBlastRun.DoorPrisms(4));
-            Assert.AreEqual(SwitchbackBlastRun.DoorPrisms(3), SwitchbackBlastRun.DoorPrisms(3, false), "no seal below I4");
+            Assert.AreEqual(0, SwitchbackBlastRun.DoorPrisms(3, false), "I3 without the gauntlet hangs no door either (Scarab Rally's lighter field)");
+            Assert.AreEqual(SwitchbackBlastRun.DoorPrisms(2), SwitchbackBlastRun.DoorPrisms(2, false), "no seal below I4");
             var door = new List<SwitchbackFeaturePrism>();
             Vector3 at = new(10f, -40f, 300f), axis = new Vector3(0.3f, 0.2f, 1f).normalized;
             SwitchbackBlastRun.EmitDoorPrisms(at, axis, port, true, (p, r, s, k) => door.Add(new SwitchbackFeaturePrism(p, r, s, k)));
@@ -574,9 +575,6 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, SwitchbackRayMesh.AppendBeam(a, b, 0f, verts, normals, tris), "a ray of no width");
         }
 
-        /// <summary>Without the gauntlet (a mode reusing Switchback's course for a hull without the key blast: Scarab
-        /// Rally) I4 is the Fortress of before 2026-11-03: one key a gate on the line, open eyes, the 18 u bore, its own
-        /// budgets. I1-I3 do not depend on the switch.</summary>
         /// <summary>Scarab Rally's I4 (no gauntlet, its own course): from anywhere inside the ring you leave, every point of
         /// the next ring's rim is in plain sight - no prism, door or field, laid or on its mover's cycle, crosses the line
         /// (Garrett, 2026-11-14: "respect sight lines from one ring to another so that prisms are not occluding which ring
@@ -680,6 +678,9 @@ namespace CosmicShore.Tests
             return true;
         }
 
+        /// <summary>Without the gauntlet (a mode reusing Switchback's course for a hull without the key blast: Scarab
+        /// Rally) I4 is the Fortress of before 2026-11-03: one key a gate on the line, open eyes, the 18 u bore, its own
+        /// budgets. I1-I2 do not depend on the switch (I3 has its own row since 2026-11-17).</summary>
         [Test]
         public void WithoutTheGauntlet_I4IsTheFortressOfBefore()
         {
@@ -700,11 +701,32 @@ namespace CosmicShore.Tests
                     Assert.AreEqual(BlastRunTunnel.None, st.Tunnel);
                     Assert.IsTrue(st.Target.Equals(st.Door));
                 }
-                for (int i = 1; i <= 3; i++)
+                for (int i = 1; i <= 2; i++)
                 {
                     var ci = Course(i, seed);
                     Assert.AreEqual(Layout(ci, i).Prisms.Count, Layout(ci, i, false).Prisms.Count, $"I{i} depends on the switch");
                 }
+            }
+        }
+
+        /// <summary>I3 without the gauntlet (Scarab Rally's I3, 2026-11-17): a lighter field than its I4, no doors, and the
+        /// sight line from ring to ring kept, so I3 asks more than the bare I2 course and less than I4.</summary>
+        [Test]
+        public void WithoutTheGauntlet_I3IsALighterDoorlessField()
+        {
+            Assert.IsFalse(SwitchbackBlastRun.LaysDoors(3, false));
+            Assert.IsTrue(SwitchbackBlastRun.LaysDoors(3));
+            Assert.Less(SwitchbackBlastRun.Fill(3, false), SwitchbackBlastRun.Fill(4, false));
+            Assert.Less(SwitchbackBlastRun.TotalCap(3, false), SwitchbackBlastRun.TotalCap(4, false));
+            Assert.AreEqual(22f + SwitchbackBlastRun.SightMargin, SwitchbackBlastRun.SightBore(3, false, 22f, 10f), "the sight bore");
+            Assert.AreEqual(SwitchbackBlastRun.BoreRadius(3), SwitchbackBlastRun.SightBore(3, true, 22f, 10f), "Switchback's I3 is unchanged");
+            foreach (int seed in new[] { 3, 11, SwitchbackBlastRun.FixedSeed(3) })
+            {
+                var c = Course(3, seed);
+                var L = Layout(c, 3, false);
+                Assert.Greater(L.Prisms.Count, 0, "I3 lays a field");
+                Assert.LessOrEqual(L.Prisms.Count, SwitchbackBlastRun.TotalCap(3, false));
+                Assert.AreEqual(Layout(c, 3).Prisms.Count, Layout(c, 3, true).Prisms.Count);
             }
         }
 
