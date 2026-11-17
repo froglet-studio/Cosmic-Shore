@@ -339,6 +339,28 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>Open water the Ark must put between itself and the membrane of the cell it departed before that cell
+        /// is queued for its (off-screen-gated) retirement.</summary>
+        public const float DepartedRetireMargin = 600f;
+
+        /// <summary>
+        /// Queue the cell the Ark departed for its off-screen retirement once the Ark is
+        /// <see cref="DepartedRetireMargin"/> clear of its membrane, instead of only when the Ark reaches the NEXT core.
+        /// Voyage cells are big (2.5x) and the Ark crawls inside them, so waiting kept the cell behind standing, still
+        /// growing its whole ecology, for the length of a cell: three full worlds plus one draining, the frame-rate fall
+        /// after a few cells (Shombith, 2026-11-17). The retirement itself is unchanged (off-screen gate, frame-sliced
+        /// drain, nothing dies), so nothing is watched popping out.
+        /// </summary>
+        public void QueueDepartedOnceClear(Vector3 arkPosition)
+        {
+            if (!_hasDeparture || _targetIndex < 1 || _targetIndex - 1 >= _cells.Count) return;
+            var record = _cells[_targetIndex - 1];
+            if (record.RetireQueued || !record.Root) return;
+            float r = record.Cell && record.Cell.MembraneRadius > 1f ? record.Cell.MembraneRadius : MembraneRadiusFloor;
+            float clear = r + DepartedRetireMargin;
+            if ((arkPosition - record.Centre).sqrMagnitude > clear * clear) record.RetireQueued = true;
+        }
+
         void Update()
         {
             if (IsDraining) return;

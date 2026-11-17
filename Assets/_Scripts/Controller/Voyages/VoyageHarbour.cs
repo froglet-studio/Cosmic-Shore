@@ -374,6 +374,8 @@ namespace CosmicShore.Gameplay
             {
                 int again = report.Difficulty;
                 board.TryAgain = () => TryAgainEscort(again);
+                // Back to Voyages ends what is left of the escort, so the scene returns to the menu.
+                board.Close = () => GiveUp("back to Voyages after the Ark fell");
             }
             VoyageScoreboard.Show(board);
         }

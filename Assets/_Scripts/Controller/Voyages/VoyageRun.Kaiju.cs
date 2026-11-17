@@ -144,6 +144,15 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
+        /// <summary>
+        /// Can this species be a kaiju? A leashable herbivore that swims alone: a <see cref="LightFauna"/> (today the
+        /// Brittlestar and the QuadFish of the voyage worlds). A <see cref="Boid"/> (the TadPole) is a flock member whose
+        /// steering reads its neighbours, so one grown 12x is a tadpole the size of a cell wall that still flocks; the
+        /// colony and swarm bodies take a leash's meal order but not its steering. 2026-11-17 perf pass.
+        /// </summary>
+        public static bool IsKaijuSpecies(FaunaConfigurationSO f) =>
+            f && f.FaunaPrefab is LightFauna { Diet: FaunaDiet.Herbivore, Leashable: true };
+
         static bool TakeGrazers(Cell c, Domains squad, List<FaunaConfigurationSO> into)
         {
             into.Clear();
@@ -151,8 +160,7 @@ namespace CosmicShore.Gameplay
             var profile = c.Config ? c.Config.SpawnProfile : null;
             if (!profile || profile.SupportedFaunas is not { Count: > 0 }) return false;
             foreach (var f in profile.SupportedFaunas)
-                if (f && f.FaunaPrefab && f.FaunaPrefab.Diet == FaunaDiet.Herbivore && f.FaunaPrefab.Leashable)
-                    into.Add(f);
+                if (IsKaijuSpecies(f)) into.Add(f);
             return into.Count > 0;
         }
 

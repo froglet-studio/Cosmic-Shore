@@ -78,6 +78,10 @@ namespace CosmicShore.Gameplay
             public readonly List<Member> Squad = new();
             /// <summary>Token pairs every line can use ("voyage", "ARK ESCORT", "legs", "5", ...).</summary>
             public readonly List<string> Tokens = new();
+            /// <summary>Called as a launch shot starts (<see cref="VoyageIntroSO.Shot.Launch"/>) with the vessel it frames,
+            /// which leaves the hangar now (<see cref="ArkSortie.Launch(Transform)"/>); null on a shot of the Ark: the whole
+            /// squad goes.</summary>
+            public System.Action<Transform> Launch;
         }
 
         VoyageIntroSO _script;
@@ -262,6 +266,11 @@ namespace CosmicShore.Gameplay
             if (!subject) return !_skipped;
             float size = member != null ? HullSize(subject) : Mathf.Max(MinSubjectSize, _cast.ArkSize);
 
+            if (shot.Launch)
+            {
+                try { _cast.Launch?.Invoke(member is { } launching ? launching.Hull : null); }
+                catch (System.Exception e) { CSDebug.LogError($"[VoyageIntro] The launch threw: {e.Message}\n{e.StackTrace}"); }
+            }
             VoyageToasts.PlayUi(shot.Sound);
             var words = ShowWords(shot, member);
             var from = new Pose(_rig.position, _rig.rotation);

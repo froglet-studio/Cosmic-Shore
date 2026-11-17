@@ -49,6 +49,12 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("Cut to this shot on the beat instead of easing into it.")]
             public bool HardCut;
 
+            [Tooltip("Launch from the Ark's hangar as this shot starts and form up beside it (one seat off each side, one " +
+                     "over the back). On a vessel's shot (You, Wingmates, Squad) that vessel launches, close up; on an " +
+                     "Ark shot the whole squad goes. Until then the vessels wait on the hangar's pads; a reel with no " +
+                     "launch shot opens with them already in their slots.")]
+            public bool Launch;
+
             [Tooltip("Played as the shot starts (a sting, a whoosh). Empty plays nothing.")]
             public FMODUnity.EventReference Sound;
 
@@ -156,6 +162,17 @@ namespace CosmicShore.ScriptableObjects
         public float HandOverSeconds => handOverSeconds;
         public float ChaseDistance => chaseDistance;
         public float ChaseHeight => chaseHeight;
+
+        /// <summary>True when a shot launches the squad from the hangar (<see cref="Shot.Launch"/>).</summary>
+        public bool LaunchesSquad
+        {
+            get
+            {
+                foreach (var s in shots)
+                    if (s is { Launch: true }) return true;
+                return false;
+            }
+        }
 
         /// <summary>The intro's whole running time for a squad of <paramref name="squadVessels"/> hulls, hand-over
         /// included.</summary>
