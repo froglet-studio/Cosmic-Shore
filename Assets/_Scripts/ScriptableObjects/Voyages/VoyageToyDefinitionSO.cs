@@ -247,6 +247,18 @@ namespace CosmicShore.ScriptableObjects
                                  "water instead of on one feeding ground near the core (Cell.ScatterLifeSpawns).")]
         bool scatterLifeSpawns = true;
 
+        [SerializeField, Range(0.5f, 4f), Tooltip("Every voyage cell's fauna and flora populations (seed floors and caps " +
+                                                  "together) times this, on top of the leg's pacing (Shombith 2026-11-17: " +
+                                                  "\"more fauna inside the cells and more crystals\"; every lifeform carries " +
+                                                  "one crystal). Production gating only: nothing is culled.")]
+        float cellLifeScale = 2f;
+
+        [Header("Voyage - Crystal Run goal missed (Shombith 2026-11-17)")]
+        [SerializeField, Tooltip("A Crystal Run that reaches its stop short of its goal loses this run's haul (crystals " +
+                                 "earlier legs owe are kept), and the board offers Try again (the same goal from here) or " +
+                                 "Finish instead of Venture further. Off: the haul is owed as on a success.")]
+        bool raidMissForfeits = true;
+
         [Header("Voyage - the galaxy map (the Voyage window's cards)")]
         [SerializeField, Tooltip("The course a card's job sails, drawn over the map.")]
         Color routeColor = new(0.70f, 1f, 0.35f, 1f);
@@ -357,6 +369,8 @@ namespace CosmicShore.ScriptableObjects
         public float CellScale => cellScale;
         public float CellGap => cellGap;
         public bool ScatterLifeSpawns => scatterLifeSpawns;
+        public float CellLifeScale => cellLifeScale;
+        public bool RaidMissForfeits => raidMissForfeits;
         public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);
         public Color VaultColor => ColorTrace.Retrace(ColorTrace.Ui, vaultColor);
         public Color CoreColor => ColorTrace.Retrace(ColorTrace.Ui, coreColor);

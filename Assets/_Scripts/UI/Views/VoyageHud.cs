@@ -906,7 +906,9 @@ namespace CosmicShore.UI
                 // A party friend's board: the host chooses what next, and the choice reaches every friend's voyage.
                 Caption(frame, 0f, captionY, 1920f, b.Following ? _lines.ScoreHostChooses : _lines.ScoreDoneLine, TextAlignmentOptions.Center);
             }
-            bool both = b.Finish != null && b.Venture != null;
+            // A missed Crystal Run: Finish (B, quiet) or Try again (A), the same goal from here.
+            bool retry = b.Venture == null && b.TryAgain != null && b.Finish != null;
+            bool both = b.Finish != null && (b.Venture != null || retry);
             if (b.Finish != null)
             {
                 float x = both ? left : 960f - ButtonWidth / 2f;
@@ -917,13 +919,17 @@ namespace CosmicShore.UI
                 Caption(frame, both ? x - 60f : 0f, captionY, both ? ButtonWidth + 60f : 1920f, _lines.ScoreFinishLine,
                     both ? TextAlignmentOptions.Right : TextAlignmentOptions.Center);
             }
-            if (b.Venture != null)
+            if (b.Venture != null || retry)
             {
                 float x = both ? right : 960f - ButtonWidth / 2f;
-                var venture = VoyageKit.Node("Venture", frame);
+                var venture = VoyageKit.Node(retry ? "TryAgain" : "Venture", frame);
                 VoyageKit.At(venture, x, ButtonsY, ButtonWidth, 64f);
-                primary = _kit.Cta(venture, _lines.ScoreVentureKey, _lines.ScoreVenture, () => VoyageScoreboard.Choose(b.Venture)).button;
-                string line = b.Board == VoyageScoreboard.Kind.Escort
+                var choice = retry ? b.TryAgain : b.Venture;
+                primary = _kit.Cta(venture, _lines.ScoreVentureKey, retry ? _lines.ScoreTryAgain : _lines.ScoreVenture,
+                    () => VoyageScoreboard.Choose(choice)).button;
+                string line = retry
+                    ? TemplateText.Fill(_lines.ScoreRetryRaid, "goal", b.NextGoal.ToString(), "cells", b.NextCells.ToString())
+                    : b.Board == VoyageScoreboard.Kind.Escort
                     ? TemplateText.Fill(_lines.ScoreVentureEscort, "difficulty", b.NextDifficulty.ToString())
                     : TemplateText.Fill(_lines.ScoreVentureRaid, "goal", b.NextGoal.ToString(), "cells", b.NextCells.ToString());
                 Caption(frame, both ? x : 0f, captionY, both ? ButtonWidth + 60f : 1920f, line,

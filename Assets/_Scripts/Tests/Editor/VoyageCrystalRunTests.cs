@@ -129,6 +129,39 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Arrive_MissedGoal_ForfeitsTheHaulButKeepsWhatEarlierLegsOwe()
+        {
+            var content = Shipped();
+            var state = VoyageRules.NewGalaxy(content, Domains.Jade);
+            var job = Raid(state, content);
+            Assert.IsTrue(VoyageRules.Take(state, content, job));
+            VoyageRaid.Owe(state, Element.Mass, 3);   // an earlier leg's haul
+            var tally = new VoyageRaidTally();
+            for (int i = 0; i < 5; i++) tally.Add("a", Element.Space);
+            VoyageRules.Arrive(state, content);
+            var r = VoyageRaid.Arrive(state, content, tally, forfeitOnMiss: true);
+            Assert.AreEqual(JobOutcome.Failed, r.Outcome);
+            Assert.AreEqual(0, state.OwedOf(Element.Space), "the missed run's haul is lost");
+            Assert.AreEqual(3, state.OwedOf(Element.Mass), "what earlier legs owe is kept");
+        }
+
+        [Test]
+        public void Retry_KeepsTheGoalAndCells()
+        {
+            var content = Shipped();
+            var state = VoyageRules.NewGalaxy(content, Domains.Jade);
+            var job = Raid(state, content);
+            Assert.IsTrue(VoyageRules.Take(state, content, job));
+            VoyageRules.Arrive(state, content);
+            var again = VoyageRaid.Retry(state, content, job);
+            Assert.IsNotNull(again, "nowhere to try again");
+            Assert.AreEqual(job.Venture, again.Venture);
+            Assert.AreEqual(job.Goal, again.Goal);
+            Assert.AreEqual(job.Cells, again.Cells);
+            Assert.AreEqual(state.At, again.From);
+        }
+
+        [Test]
         public void Venture_RaisesTheGoalByTenAndAddsACell()
         {
             var content = Shipped();

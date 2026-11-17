@@ -434,8 +434,10 @@ namespace CosmicShore.Gameplay
         void ArriveRaid(VoyageJob job)
         {
             var seconds = Time.time - _legStartedAt;
-            var r = VoyageRaid.Arrive(_state, Content, _raid);
+            bool forfeit = _def && _def.RaidMissForfeits;
+            var r = VoyageRaid.Arrive(_state, Content, _raid, forfeit);
             if (r == null) return;
+            bool missed = r.Outcome != JobOutcome.Succeeded;
             Chronicle(r);
             Relic(r);
             SaveState();
@@ -459,7 +461,24 @@ namespace CosmicShore.Gameplay
             foreach (var e in VoyageRaid.Elements) board.Crystals[(int)e] = _raid.Of(e);
             AddRows(board);
 
-            if (!_following)
+            if (missed && Lines != null)
+                VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Threat,
+                    TemplateText.Fill(Lines.ToastGoalMissed, "done", _raid.Total.ToString(), "goal", board.Goal.ToString()),
+                    forfeit ? Lines.ToastGoalMissedSub : string.Empty);
+
+            if (!_following && missed && forfeit)
+            {
+                // Missed and forfeited: no venturing on a failed run. Try again (the same goal from here) or Finish.
+                var again = VoyageRaid.Retry(_state, Content, job);
+                if (again != null)
+                {
+                    board.NextGoal = Mathf.CeilToInt(again.Goal);
+                    board.NextCells = again.Cells;
+                    board.TryAgain = () => SailOn(again);
+                }
+                board.Finish = SailHome;
+            }
+            else if (!_following)
             {
                 var next = VoyageRaid.Venture(_state, Content, job);
                 if (next != null)
