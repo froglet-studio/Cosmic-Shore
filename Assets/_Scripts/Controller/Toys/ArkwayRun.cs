@@ -370,6 +370,15 @@ namespace CosmicShore.Gameplay
             _hud.ShowBanner(line, seconds, mood, under);
         }
 
+        /// <summary>A running toast (a crystal picked up): it replaces the running toast already up or waiting instead of
+        /// queueing behind it, so a quick string of pickups is one toast that keeps count.</summary>
+        public void ShowRunningBanner(string line, float seconds, ArkwayVoyageHud.Mood mood, string under)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, seconds, mood, under, running: true);
+        }
+
         /// <summary>
         /// Holds the run's banners while it answers true (a voyage's intro is playing). The banners are always held while
         /// the voyage builds behind the load veil: a toast raised as a voyage sets sail is shown when the screen opens.

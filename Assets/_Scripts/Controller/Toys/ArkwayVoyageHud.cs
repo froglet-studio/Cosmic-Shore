@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
 
         // Frogma Rev 116 A (Marquee): in a voyage the toast has ONE spot, just under the marquee the objective box
         // draws top centre, like an arcade cabinet's call-out line. Elsewhere (the Arkway toy) it keeps the top spot.
-        const float TopY = 40f, UnderMarqueeY = 238f, CountdownGap = 110f;
+        const float TopY = 40f, UnderMarqueeGap = 10f, CountdownGap = 110f;
 
         CanvasGroup _bannerGroup, _countdownGroup;
         ArkwayToastBand _band;
@@ -52,7 +52,8 @@ namespace CosmicShore.Gameplay
         TMP_Text _head, _under, _countdown;
         bool _countdownShown;
         float _bannerFrom = -1f, _bannerUntil = -1f;
-        readonly Queue<(Mood mood, string line, string under, float seconds)> _queue = new();
+        bool _upIsRunning;
+        readonly Queue<(Mood mood, string line, string under, float seconds, bool running)> _queue = new();
 
         /// <summary>
         /// While this answers true the surface is held: nothing new comes up, a banner already up fades and keeps the
@@ -73,12 +74,12 @@ namespace CosmicShore.Gameplay
             scaler.matchWidthOrHeight = 0.5f;
 
             // The banner: a band top centre, a bold line and an optional line under it.
-            var band = Child("Banner", transform, new Vector2(0f, -40f), new Vector2(900f, 96f));
+            var band = Child("Banner", transform, new Vector2(0f, -TopY), new Vector2(720f, 90f));
             _bannerGroup = band.gameObject.AddComponent<CanvasGroup>();
             _band = band.gameObject.AddComponent<ArkwayToastBand>();
             _band.raycastTarget = false;
-            _head = Line(band, "Line", new Vector2(0f, -12f), new Vector2(860f, 44f), 32f, FontStyles.Bold);
-            _under = Line(band, "Under", new Vector2(0f, -56f), new Vector2(860f, 30f), 21f, FontStyles.Normal);
+            _head = Line(band, "Line", new Vector2(0f, -10f), new Vector2(680f, 40f), 28f, FontStyles.Bold);
+            _under = Line(band, "Under", new Vector2(0f, -52f), new Vector2(680f, 28f), 19f, FontStyles.Normal);
             _under.color = ColorTrace.Retrace(ColorTrace.Ui, UnderInk);
             _bannerGroup.alpha = 0f;
 
@@ -130,11 +131,41 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Show a banner of <paramref name="mood"/>, with <paramref name="under"/> beneath it (may be empty), for
         /// <paramref name="seconds"/>. Banners show one at a time: a new one waits until the one up has been read.</summary>
-        public void ShowBanner(string line, float seconds, Mood mood, string under)
+        public void ShowBanner(string line, float seconds, Mood mood, string under) =>
+            ShowBanner(line, seconds, mood, under, running: false);
+
+        /// <summary>As above; a <paramref name="running"/> toast (a count that keeps going up, like crystals picked up)
+        /// takes over the running toast on screen, or the one waiting, instead of queueing another behind it.</summary>
+        public void ShowBanner(string line, float seconds, Mood mood, string under, bool running)
         {
             if (string.IsNullOrEmpty(line)) return;
+            under ??= string.Empty;
+            seconds = Mathf.Max(0.5f, seconds);
+            if (running)
+            {
+                float now = Time.unscaledTime;
+                if (_upIsRunning && _bannerUntil >= 0f && now < _bannerUntil && _queue.Count == 0)
+                {
+                    Write(mood, line, under);
+                    _bannerUntil = Mathf.Max(_bannerUntil, now + seconds);
+                    return;
+                }
+                bool replaced = false;
+                int n = _queue.Count;
+                for (int i = 0; i < n; i++)
+                {
+                    var item = _queue.Dequeue();
+                    if (item.running && !replaced)
+                    {
+                        item = (mood, line, under, seconds, true);
+                        replaced = true;
+                    }
+                    _queue.Enqueue(item);
+                }
+                if (replaced) return;
+            }
             if (_queue.Count >= MaxQueued) _queue.Dequeue(); // a backlog never outlives the moment it described
-            _queue.Enqueue((mood, line, under ?? string.Empty, Mathf.Max(0.5f, seconds)));
+            _queue.Enqueue((mood, line, under, seconds, running));
         }
 
         void Update()
@@ -167,7 +198,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The toast spot: under the voyage marquee while it is up, the top spot otherwise.</summary>
         void Place()
         {
-            float y = CosmicShore.UI.VoyageObjectiveBox.Showing ? UnderMarqueeY : TopY;
+            float y = CosmicShore.UI.VoyageObjectiveBox.Showing ? CosmicShore.UI.VoyageObjectiveBox.Bottom + UnderMarqueeGap : TopY;
             var band = (RectTransform)_band.transform;
             if (!Mathf.Approximately(band.anchoredPosition.y, -y))
             {
@@ -178,7 +209,15 @@ namespace CosmicShore.Gameplay
 
         void Next(float now)
         {
-            var (mood, line, under, seconds) = _queue.Dequeue();
+            var (mood, line, under, seconds, running) = _queue.Dequeue();
+            Write(mood, line, under);
+            _upIsRunning = running;
+            _bannerFrom = now;
+            _bannerUntil = now + seconds;
+        }
+
+        void Write(Mood mood, string line, string under)
+        {
             _head.text = line;
             _head.color = ColorTrace.Retrace(ColorTrace.Ui, mood switch
             {
@@ -192,9 +231,7 @@ namespace CosmicShore.Gameplay
             _under.text = under;
             _under.gameObject.SetActive(hasUnder);
             var band = (RectTransform)_band.transform;
-            band.sizeDelta = new Vector2(band.sizeDelta.x, hasUnder ? 96f : 64f);
-            _bannerFrom = now;
-            _bannerUntil = now + seconds;
+            band.sizeDelta = new Vector2(band.sizeDelta.x, hasUnder ? 90f : 58f);
         }
     }
 

@@ -38,7 +38,7 @@ namespace CosmicShore.UI
                  "freestyle (chrome_close). Empty = no glyph (Docs/MENU_REDESIGN_B.md section 22.5).")]
         [SerializeField] Sprite exitGlyph;
         [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle. Empty in the voyage " +
-                 "scene, where the button leaves the voyage instead (VoyageScene.Leave).")]
+                 "scene, where the button (and Escape / the pad's Select) opens the pause menu instead.")]
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
         [Header("SOAP Events")]
@@ -52,6 +52,7 @@ namespace CosmicShore.UI
         [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
 
         bool _isInFreestyle;
+        PauseMenu _pauseMenu;
 
         void Awake()
         {
@@ -188,6 +189,14 @@ namespace CosmicShore.UI
         // itself guards against re-entrancy while a transition is mid-flight.
         void Update()
         {
+            if (!crystalClickHandler)
+            {
+                // The voyage scene: Escape / Select opens the pause menu (Shombith, 2026-11-17), the same gesture every
+                // game scene uses. Not while the end board is up (its B / Escape is Finish) or the intro plays.
+                if (VoyageScoreboard.Current == null && !VoyageIntro.IsPlaying && OverviewGesture.RequestedThisFrame())
+                    Exit();
+                return;
+            }
             if (!_isInFreestyle) return;
             if (OverviewGesture.RequestedThisFrame())
                 Exit();
@@ -196,10 +205,11 @@ namespace CosmicShore.UI
         void OnVolumePauseClicked() => Exit();
 
         /// <summary>Leave the flight: freestyle back to the menu, or (in the voyage scene, which has no freestyle toggle)
-        /// leave the voyage.</summary>
+        /// open the pause menu, whose Leave takes the pilot out of the voyage. With no pause menu the voyage is left.</summary>
         void Exit()
         {
             if (crystalClickHandler) crystalClickHandler.ToggleTransition();
+            else if (_pauseMenu) _pauseMenu.OnClickPauseGameButton();
             else VoyageScene.Current?.Leave();
         }
 
@@ -261,6 +271,7 @@ namespace CosmicShore.UI
             var pauseMenu = go.GetComponentInChildren<PauseMenu>(true);
             if (pauseMenu != null)
                 pauseMenu.Prewarm();
+            _pauseMenu = pauseMenu;
         }
     }
 }

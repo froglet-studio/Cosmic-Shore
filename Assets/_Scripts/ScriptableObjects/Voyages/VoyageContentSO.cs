@@ -1085,6 +1085,12 @@ namespace CosmicShore.ScriptableObjects
         public string ToastBanked = "BANKED {count}";
         [Tooltip("Toast: the line under the banked toast ({count}, {done}, {goal}).")]
         public string ToastBankedSub = "{done} of {goal} aboard.";
+        [Tooltip("Toast: the pilot picked up a crystal ({element}). A quick string of pickups is one toast that keeps " +
+                 "count; empty shows no pickup toast.")]
+        public string ToastCrystal = "+1 {element}";
+        [Tooltip("Toast: the line under the pickup toast while crystals are carried until banked ({carried}). When " +
+                 "crystals count at once, the banked toast's line ({done} of {goal}) is used instead.")]
+        public string ToastCrystalCarrySub = "Carrying {carried}. Bank them at the Ark.";
         [Tooltip("Toast: a hit spilled what the pilot carried ({count}).")]
         public string ToastSpilled = "CRYSTALS SPILLED";
         [Tooltip("Toast: the line under the spilled toast ({count}).")]

@@ -213,7 +213,25 @@ happens."
   a failed run.
 - **Not run in Unity.** To check: the 2x populations' frame time with the 12x kaiju, and the missed-goal board.
 
-## 10. The squad beside the Ark, and the launch (Shombith, 2026-11-17)
+## 10. Round 6: the kaiju roster and a phone pass (Shombith, 2026-11-17)
+
+Asked: "The kaijus are laggy can you show me as an artifact which are the kaijus you are selecting ... keep in mind we
+are also designing it for the mobile too." The roster page: https://claude.ai/artifact/RqzuAL8XkiFELBtweLNqcw.
+
+- **Who becomes a kaiju** (`VoyageRun.IsKaijuSpecies`): a LightFauna herbivore that takes a leash, from a leg cell held
+  against the squad. In the corridor worlds that is the Brittlestar (every world) and the QuadFish (Garland). The
+  TadPole (a Boid) is no longer drafted: it steers by its flock, so a 12x tadpole kept flocking with normal ones. The
+  Shark never was (a predator eats creatures, not plates).
+- **One kaiju alive** (`kaijuMax` 2 to 1). One per crossing already; the second was only a leftover from the last gap.
+- **Phones** (Voyage.asset "Voyage - phones", applied when `Application.isMobilePlatform`; the editor keeps the PC
+  numbers): `mobileCellLifeScale` 1 (PC 2), `mobileKaijuScale` 8 (PC 12), `mobileRaiderMax` 3 (PC 6), and a voyage cell
+  births one creature a frame (`RandomLifeSpawner`, PC 2).
+- **Measured** (Shombith's 22:02 capture, commit baeb72fb): CPU-bound, 18.4 ms average, 29.9 ms p99, GPU 2 ms, 66
+  fauna and 81 flora in two corridor cells; the spike is still creature births (~2.3 ms each, mostly Awake and the rig).
+  Both cells were Jade-held, so with a Jade squad no kaiju was alive in that capture: the kaiju's own cost is not
+  measured yet. Not run in Unity.
+
+## 11. The squad beside the Ark, and the launch (Shombith, 2026-11-17)
 
 Shombith: "The vessel should always spawn side by side with the ark. Their spawn points should be two besides the ark and
 one on top of the ark. You can show the intro as the vessels flying outside the ark from the tube and making the
