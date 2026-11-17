@@ -525,7 +525,9 @@ namespace CosmicShore.Gameplay
                 }
             _holdKnown = hold ? hold.Artifacts.Count : 0;
             _underway = true;
-            BringWingmates(force: true);
+            // Every seat beside the Ark, side by side with it (VoyageRun.Formation.cs); the intro may stow them in the
+            // hangar next, to launch them there.
+            FormUp();
             OnAssaultUnderway();
             BeginIntro();
         }
@@ -1134,7 +1136,7 @@ namespace CosmicShore.Gameplay
         void BringWingmates(bool force)
         {
             var ark = _sea ? _sea.Ark : null;
-            if (!ark) return;
+            if (!ark || _sortie && _sortie.IsHolding) return;
             float leash = Mathf.Min(_def.WingmateLeash, ArkEscortPilot.GuardRadius * EscortGeneRegistry.LeashFactor);
             for (int i = 0; i < _wingmates.Count; i++)
             {
@@ -1145,8 +1147,13 @@ namespace CosmicShore.Gameplay
                 if (status is Component sc && sc && sc.TryGetComponent(out ArkEscortPilot escortPilot))
                     seatLeash = escortPilot.Leash(leash);
                 if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= seatLeash * seatLeash) continue;
+                // Back to its seat's slot beside the Ark (clear of the hull: a vessel set down in the plating destroys plates).
+                if (TryWingmateSlot(status, out var slot))
+                {
+                    w.SetPose(slot);
+                    continue;
+                }
                 var side = i % 2 == 0 ? -1f : 1f;
-                // Abeam of the hull, never inside it: a vessel set down in the plating destroys plates.
                 float abeam = Mathf.Max(WingmateAbeam * 2f, (_escort?.HullRadius ?? HullHalfLength) + EscortGeneRegistry.ArkLaneMargin + 60f);
                 var at = ark.Position + ark.transform.right * (side * abeam) - ark.Forward * (WingmateAbeam * (1 + i));
                 w.SetPose(new Pose(at, Quaternion.LookRotation(ark.Forward, Vector3.up)));

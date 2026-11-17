@@ -60,6 +60,10 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(200f), Tooltip("An AI wingmate further than this from the Ark is brought back to its flank.")]
         float wingmateLeash = 1600f;
 
+        [SerializeField, Tooltip("Where the squad sails beside the Ark - one seat off each side, one over its back - and how " +
+                                 "the intro launches them there from the hangar (Shombith 2026-11-17).")]
+        ArkFormationSettings arkFormation = new();
+
         [Header("Voyage - the starter squad")]
         [SerializeField, Tooltip("The name of the squad a player with no squad is given (Shombith, 2026-11-16: the board's " +
                                  "jobs come from the active squad's three pilots only, so every player needs one). Empty " +
@@ -326,6 +330,7 @@ namespace CosmicShore.ScriptableObjects
         }
 
         public float WingmateLeash => wingmateLeash;
+        public ArkFormationSettings ArkFormation => arkFormation ??= new ArkFormationSettings();
         public float FindDistance => findDistance;
         public float VaultRadius => vaultRadius;
         public int VaultPrisms => vaultPrisms;
