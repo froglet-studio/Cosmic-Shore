@@ -166,6 +166,12 @@ namespace CosmicShore.ScriptableObjects
                                           "0 = it does not stop.")]
         float raidAnchorCalmSeconds = 30f;
 
+        [SerializeField, Min(0), Tooltip("The Ark anchors at a cell only when it holds at least this many lifeforms (every " +
+                                         "lifeform carries one crystal); a cell with less is sailed through (Shombith " +
+                                         "2026-11-17: \"the ark stops at cells where there is literally nothing to " +
+                                         "collect\"). 0 = anchor at every cell.")]
+        int raidAnchorMinLife = 6;
+
         [SerializeField, Min(0f), Tooltip("Seconds before the Ark sails that its horn sounds and the window-closing toast shows.")]
         float raidAnchorWarnSeconds = 10f;
 
@@ -366,6 +372,7 @@ namespace CosmicShore.ScriptableObjects
         public FMODUnity.EventReference ArkHornSound => arkHornSound;
         public float RaidAnchorHostileSeconds => raidAnchorHostileSeconds;
         public float RaidAnchorCalmSeconds => raidAnchorCalmSeconds;
+        public int RaidAnchorMinLife => raidAnchorMinLife;
         public float RaidAnchorWarnSeconds => raidAnchorWarnSeconds;
         public bool RaidCrystalsAtRisk => raidCrystalsAtRisk;
         public float RaidBankRadius => raidBankRadius;

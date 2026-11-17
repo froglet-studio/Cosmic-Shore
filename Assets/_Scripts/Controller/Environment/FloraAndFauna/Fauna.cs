@@ -1539,8 +1539,15 @@ namespace CosmicShore.Gameplay
         // FarBodySyncDistance from the view camera a creature's index entry, shell and render matrix are refreshed every
         // FarBodySyncEvery frames, staggered by instance; at that range a frame or two of lag is under a pixel and the
         // senses that read the index tick slower than that anyway. Near ones, and any with no camera, sync every frame.
+        //
+        // The skip never lets a body's prisms fall more than FarBodySyncMaxDrift (radians as seen from the camera, about two
+        // pixels) behind the body, and never applies to a leashed creature (a voyage's kaiju and raiders, a herd): voyage
+        // cells are thousands of units across, so nearly every creature there was "far" and its prisms stepped at a third
+        // of the frame rate, which read as choppy fauna (Shombith, 2026-11-17). A still or slow creature still skips.
         const float FarBodySyncDistance = 250f;
         const int FarBodySyncEvery = 3;
+        const float FarBodySyncMaxDrift = 0.002f;
+        Vector3 _lastBodySyncPos;
         static int s_farCheckFrame = -1;
         static Vector3 s_viewPos;
         static bool s_hasView;
@@ -1555,8 +1562,11 @@ namespace CosmicShore.Gameplay
                 s_hasView = cam;
                 if (s_hasView) s_viewPos = cam.transform.position;
             }
-            if (!s_hasView) return false;
-            if ((transform.position - s_viewPos).sqrMagnitude < FarBodySyncDistance * FarBodySyncDistance) return false;
+            if (!s_hasView || Leash != null) return false;
+            Vector3 at = transform.position;
+            float viewSq = (at - s_viewPos).sqrMagnitude;
+            if (viewSq < FarBodySyncDistance * FarBodySyncDistance) return false;
+            if ((at - _lastBodySyncPos).sqrMagnitude > viewSq * (FarBodySyncMaxDrift * FarBodySyncMaxDrift)) return false;
             return (frame + GetInstanceID()) % FarBodySyncEvery != 0;
         }
 
@@ -1565,6 +1575,7 @@ namespace CosmicShore.Gameplay
             var prisms = _bodyPrisms;
             if (prisms == null) return;
             if (SkipFarBodySyncThisFrame()) return;
+            _lastBodySyncPos = transform.position;
             using (s_BodySyncMarker.Auto())
             {
                 for (int i = 0; i < prisms.Length; i++)

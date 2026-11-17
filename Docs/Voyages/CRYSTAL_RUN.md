@@ -257,3 +257,18 @@ formation and then the camera transitions behind the player and we start the gam
   four seconds.
 - **Not run in Unity.** To check: the launch path clears the jaws and the shell's wing tips, the side slots read as side
   by side at play speed, and the hand-over lands behind your vessel.
+
+## 11. Round 7: choppy fauna, empty stops (Shombith, 2026-11-17)
+
+"The game is also very choppy, the faunas outside are choppy too, the ark stops at cells where there is literally
+nothing to collect."
+
+- **Choppy fauna** (`Fauna.SkipFarBodySyncThisFrame`). Beyond 250 u from the camera a creature's body prisms (index
+  entry, shell, render matrix) refreshed every third frame. Voyage cells are thousands of units across, so nearly every
+  creature there stepped at a third of the frame rate. The skip now never lets the prisms fall more than about two
+  pixels (0.002 rad from the camera) behind the body and never applies to a leashed creature (kaiju, raiders), so only
+  still or slow distant bodies skip.
+- **Spawn hitches**: a voyage cell births one creature a frame on every platform (`RandomLifeSpawner`, was 2).
+- **Empty stops** (`raidAnchorMinLife` 6, `VoyageRun.CellLife`): on arrival the Ark anchors only when the cell holds at
+  least six lifeforms (each carries a crystal); otherwise it sails through.
+- Not run in Unity.
