@@ -24740,3 +24740,15 @@ run; the EditMode tests touched (`AnglerFundamentalsTests`, `RhinoReworkTests`, 
 3. Rhino at rest (no Mass, no Charge): a ploughed prism is thrown about 20 u further than before, and a thrown prism strikes another up to 10 u past its landing point.
 4. Drain an element to -5 on Angler (any element) and Honeyguide: the ability visibly weakens to about half (the Angler's paint brush half as wide), where it used to stay full.
 5. Meerkat at Charge -5: a zap still takes a petal share you can see (0.05 a zap, was 0.025).
+
+## Dolphin racing AI trained in Switchback (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Switchback I1 83.4 / 90.0 s, I4 279.2 / 237.3 s on seeds 101-102; the race varies run to run) and the
+search's confirm (32 fresh flights a side, no DNF). Not verified: a real Unity editor and its EditMode run
+(`SwitchbackAISteeringTests`, updated for the new defaults).
+
+1. Open MinigameSwitchback: the Dolphin's nose lead row reads 2.03, the Legendary column of the nose table 11.18 / 11.18 /
+   13.41 / 13.41, the gauntlet's Legendary 13.41, No Dodge Near Ring 177.
+2. Race Switchback I1 against a Legendary AI Dolphin: near 85 s (about 110 s before).
+3. Easy, Medium and Hard are unchanged; Legendary is now further ahead of Hard than the 10 s bands.

@@ -125,7 +125,7 @@ namespace CosmicShore.Tests
             {
                 var c = go.AddComponent<SwitchbackController>();
                 Assert.IsTrue(Field<bool>(c, "aiDodgeDangerOnly"));
-                Assert.AreEqual(200f, Field<float>(c, "aiNoDodgeNearRing"));
+                Assert.AreEqual(177f, Field<float>(c, "aiNoDodgeNearRing"));
                 Assert.IsFalse(Field<bool>(c, "aiStrikeSetupLeg"), "the setup leg cost about what the blast saved");
             }
             finally { Object.DestroyImmediate(go); }
@@ -142,7 +142,7 @@ namespace CosmicShore.Tests
                 var table = Field<SwitchbackNoseFollow[]>(go.AddComponent<SwitchbackController>(), "aiNoseFollowByIntensity");
                 Assert.AreEqual(4, table.Length, "one row per intensity");
                 var i4 = table[3];
-                CollectionAssert.AreEqual(new[] { 1.8f, 2.2f, 3.5f, 6f }, new[] { i4.easy, i4.medium, i4.hard, i4.legendary });
+                CollectionAssert.AreEqual(new[] { 1.8f, 2.2f, 3.5f, 13.41f }, new[] { i4.easy, i4.medium, i4.hard, i4.legendary });
                 for (int intensity = 1; intensity <= 4; intensity++)
                 for (int level = 1; level <= 4; level++)
                 {
@@ -171,7 +171,7 @@ namespace CosmicShore.Tests
                 var c = go.AddComponent<SwitchbackController>();
                 var table = Field<SwitchbackNoseFollow[]>(c, "aiNoseFollowByIntensity");
                 var g = Field<SwitchbackNoseFollow>(c, "aiNoseFollowGauntlet");
-                CollectionAssert.AreEqual(new[] { 1.5f, 2.2f, 3.5f, 6f }, new[] { g.easy, g.medium, g.hard, g.legendary });
+                CollectionAssert.AreEqual(new[] { 1.5f, 2.2f, 3.5f, 13.41f }, new[] { g.easy, g.medium, g.hard, g.legendary });
                 for (int level = 1; level <= 4; level++)
                 {
                     Assert.AreEqual(g.For(level), SwitchbackController.NoseFollowFor(table, g, true, 4, level), "I4 gauntlet");
@@ -210,8 +210,8 @@ namespace CosmicShore.Tests
                 var dolphin = new GameObject("SwitchbackAISteeringTests_DolphinNose").AddComponent<SwitchbackController>();
                 try
                 {
-                    Assert.AreEqual(5f, ((SwitchbackNoseFollow[])table.GetValue(dolphin))[0].legendary, "Switchback keeps its own table");
-                    Assert.AreEqual(200f, (float)noDodge.GetValue(dolphin));
+                    Assert.AreEqual(11.18f, ((SwitchbackNoseFollow[])table.GetValue(dolphin))[0].legendary, "Switchback keeps its own table");
+                    Assert.AreEqual(177f, (float)noDodge.GetValue(dolphin));
                 }
                 finally { Object.DestroyImmediate(dolphin.gameObject); }
             }
