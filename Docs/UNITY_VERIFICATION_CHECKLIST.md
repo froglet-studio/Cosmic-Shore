@@ -24685,3 +24685,16 @@ stubs) and the Amoebius live compile and judge. Not verified: a real Unity edito
 2. Open any `Resources/RaceLines/<Hull>_Regatta` asset: a "Nose follow (fleet lag at 0)" header with Nose Follow Per
    Second 0. Regatta's AIs fly as before.
 3. Set one row to 9 (e.g. Sparrow in Breakwater) and race: the AI Sparrow's nose turns visibly quicker. Put it back.
+
+## Scarab racing AI trained in Scarab Rally (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; the 29 it reports are the known Cinemachine stubs), the
+Amoebius judge on the shipped files (Scarab Rally I1 64.2 / 61.8 s, I4 111.5 / 102.2 s on seeds 101-102), and the
+search's confirm (32 fresh flights a side, no DNF). Not verified: a real Unity editor compile and EditMode run
+(`SwitchbackAISteeringTests.ScarabRally_FliesItsOwnNoseTable`).
+
+1. Open MinigameScarabRally: the controller shows an "AI nose" header with its own table (Legendary 15 / 15 / 18 / 18)
+   and No Dodge Near Ring 224. MinigameSwitchback's table is unchanged (Legendary 5 / 5 / 6 / 6, 200 u).
+2. Race Scarab Rally I4 against a Legendary AI Scarab: it threads the rings without wide loops, near 105-120 s.
+3. Race Regatta with an AI Scarab: its drive changed too (`ScarabAIBoostPolicy`), so it should race at least as well
+   as before.

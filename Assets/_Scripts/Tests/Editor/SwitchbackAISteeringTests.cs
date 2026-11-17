@@ -185,6 +185,39 @@ namespace CosmicShore.Tests
             finally { Object.DestroyImmediate(go); }
         }
 
+        /// <summary>Scarab Rally reuses Switchback's course but serves the Scarab's own trained nose table and no-dodge radius
+        /// (Scarab run3, 2026-11-17); Switchback keeps the Dolphin's.</summary>
+        [Test]
+        public void ScarabRally_FliesItsOwnNoseTable()
+        {
+            var go = new GameObject("SwitchbackAISteeringTests_ScarabNose");
+            try
+            {
+                var table = typeof(SwitchbackController).GetProperty("AINoseFollowTable", BindingFlags.Instance | BindingFlags.NonPublic);
+                var noDodge = typeof(SwitchbackController).GetProperty("AINoDodgeNearRing", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsNotNull(table, "SwitchbackController.AINoseFollowTable is gone");
+                Assert.IsNotNull(noDodge, "SwitchbackController.AINoDodgeNearRing is gone");
+                var scarab = go.AddComponent<ScarabRallyController>();
+                var rows = (SwitchbackNoseFollow[])table.GetValue(scarab);
+                Assert.AreEqual(4, rows.Length);
+                Assert.AreEqual(15f, rows[0].legendary);
+                Assert.AreEqual(18f, rows[3].legendary);
+                Assert.AreEqual(224f, (float)noDodge.GetValue(scarab));
+                for (int i = 0; i < 4; i++)
+                for (int level = 2; level <= 4; level++)
+                    Assert.GreaterOrEqual(rows[i].For(level), rows[i].For(level - 1), "a harder level follows at least as fast");
+
+                var dolphin = new GameObject("SwitchbackAISteeringTests_DolphinNose").AddComponent<SwitchbackController>();
+                try
+                {
+                    Assert.AreEqual(5f, ((SwitchbackNoseFollow[])table.GetValue(dolphin))[0].legendary, "Switchback keeps its own table");
+                    Assert.AreEqual(200f, (float)noDodge.GetValue(dolphin));
+                }
+                finally { Object.DestroyImmediate(dolphin.gameObject); }
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
         [Test]
         public void OtherGateRaces_KeepTheirSceneSwitch()
         {
