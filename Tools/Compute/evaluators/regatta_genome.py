@@ -86,6 +86,9 @@ CORNER_TIGHTEN = 0.25          # the share of circuit-number mutations that only
 MOTIFS = ("skim_strands", "sweeper", "straight", "slalom")
 MOTIF_SHARE = 0.35             # the share of random genomes that carry one motif
 MOTIF_OP = 0.06                # the share of mutation operators that lay a motif
+# Which motif a draw lays. W3's A/B (w3/equations/MOTIFS.md, 2026-11-17): the sweeper narrowed the trio gap ~14%
+# (Dolphin -26%, Sparrow and Squirrel -18%); skim strands and straights did nothing; the slalom widened it.
+MOTIF_WEIGHTS = {"sweeper": 0.55, "skim_strands": 0.15, "straight": 0.15, "slalom": 0.15}
 SKIM_GAP = (4.0, 16.0)         # u from the line tube to a strand's inner edge (the Squirrel's skimmer is 15 u across)
 WALL_EDGE = 0.62               # a laid Wall's half side over its bounding radius (measured with the lay harness)
 STRAIGHT_TURN = 10.0           # a ring turning less than this is part of a straight
@@ -457,7 +460,7 @@ def is_skim_strand(p, clearance):
 
 def apply_motif(g, rng, name=None):
     """Lay one motif into g (in place, before repair). Returns its name."""
-    name = name or rng.choice(MOTIFS)
+    name = name or rng.choices(MOTIFS, weights=[MOTIF_WEIGHTS[m] for m in MOTIFS])[0]
     g.setdefault("placements", [])
     c = g.setdefault("circuit", {})
     if name == "skim_strands":
@@ -498,7 +501,10 @@ def apply_motif(g, rng, name=None):
     elif name == "slalom":
         c["CornerProfile"] = [rng.uniform(55.0, 75.0) for _ in range(6)] + [rng.uniform(0.0, 10.0) for _ in range(2)]
         c["AngularSpread"] = rng.uniform(3.5, 5.5)
-        c["BaseRadius"] = rng.uniform(700.0, 760.0)
+        # The intensity's base radius (820) and a small radial swing: at 700-760 the lanes ran too close to the
+        # nucleus or lost rail coverage on 7 of 12 courses (W3's shell guard).
+        c.pop("BaseRadius", None)
+        c["RadialSwing"] = rng.uniform(0.0, 0.2)
         c["RingRadius"] = rng.uniform(50.0, 70.0)
         c["CornerFloorRadius"] = rng.uniform(100.0, 140.0)
     else:
