@@ -129,7 +129,7 @@ namespace CosmicShore.Tests
                 float step = speed * dt;
                 path += step;
                 bool lay = TrailSpeedShape.StepLay(ref travelled, step, spacing, out float back);
-                for (int n = 0; lay && n < 64; n++)   // the primitive owes every point; the controller caps at four
+                for (int n = 0; lay && n < 64; n++)   // the primitive owes every point; the controller caps at MaxLaysPerFrame
                 {
                     Assert.GreaterOrEqual(back, 0f);
                     double layAt = path - back;

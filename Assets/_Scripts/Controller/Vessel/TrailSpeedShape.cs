@@ -73,6 +73,13 @@ namespace CosmicShore.Gameplay
                  "(1 = exactly the ratio of each rail's arc to the vessel's). Lab: shArc.")]
         [Range(0f, 1f)] public float TurnGeometry = 1f;
 
+        /// <summary>
+        /// Most prisms one rail lays in one frame. A frame that flies past more spacing points than this (a long
+        /// hitch) opens one gap instead. Eight, not the first cut's four: at 30 fps the Rhino (wavelength 5) flies
+        /// just over four spacings a frame between 600 and 690 u/s, so four put frame-rate gaps back into its trail.
+        /// </summary>
+        public const int MaxLaysPerFrame = 8;
+
         /// <summary>Hermite smoothstep of <paramref name="v"/> between <paramref name="a"/> and <paramref name="b"/>
         /// (the lab's <c>smooth</c>; not <see cref="Mathf.SmoothStep"/>, which interpolates between two values).</summary>
         public static float Smooth(float a, float b, float v)
@@ -107,7 +114,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The speed shape's lay pacing: lay by distance flown, not by a timer. Add this frame's flight with
-        /// <see cref="StepLay"/>, then keep calling <see cref="NextLay"/> for further prisms the same frame owes.
+        /// <see cref="StepLay"/>, then keep calling <see cref="NextLay"/> for further prisms the same frame owes (up to <see cref="MaxLaysPerFrame"/>).
         /// A timer (<c>UniTask.Delay(wavelength / speed)</c>) ends on a frame, so it laid up to twice the
         /// wavelength apart and flipped as the frame time wobbled; this lays every prism exactly one spacing from
         /// the last, at any frame rate, through a hitch included.

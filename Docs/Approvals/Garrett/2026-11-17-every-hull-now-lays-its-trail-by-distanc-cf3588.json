@@ -1,0 +1,31 @@
+{
+  "id": "2026-11-17-every-hull-now-lays-its-trail-by-distanc-cf3588",
+  "to": "Garrett",
+  "by": "Caleb",
+  "date": "2026-11-17T00:34:14+00:00",
+  "area": "fleet trail balance (elemental loop step 5)",
+  "summary": "Every hull now lays its trail by distance instead of a frame-bound timer, so trail mass no longer depends on frame rate; at 60 fps hulls lay 0-20% more at cruise and up to 1.75x at top speed (the timer dropped prisms), and only hulls past 600 u/s (Thresher, Rhino) stretch, at the Manta's limits.",
+  "why": "The timer laid half the trail at 30 fps on Thresher, Rhino, Manta and Serpent; any mass balancing was measured against a frame-rate-dependent number.",
+  "branch": "claude/fervent-pascal-o28ftt",
+  "commit": "81dd375f5",
+  "paths": [
+    "Assets/_Scripts/Controller/Vessel/TrailStretch.cs",
+    "Assets/_Scripts/Controller/Vessel/VesselPrismController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Dolphin",
+      "Squirrel",
+      "Rhino",
+      "Serpent",
+      "Sparrow",
+      "Stoat",
+      "Thresher",
+      "Urchin",
+      "Scarab"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

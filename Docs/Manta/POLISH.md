@@ -256,3 +256,51 @@ at -18". `followOffset` (0, 0, -18), dynamic pair -16.2 / -18. The wingspan is a
 
 **Next question.** Should the camera look slightly ahead (`lookAheadDistance`, `lookAheadLift`) so the hull sits lower
 in the frame and shows where it is going?
+
+## Round: trail lay by distance, fleet-wide (2026-11-17)
+
+**Question (Caleb).** Round 1 showed that every other hull's trail mass depends on frame rate. Port the Manta's
+pacing to the fleet, but decouple it from the stretch: only hulls fast enough to make sense of stretched prisms
+stretch, only when VERY fast, at the Manta's speed limits. The thread's own write-up of the pacing (equations,
+gates, traps) agreed with this port line for line.
+
+**Why.** The timed lay waits a whole number of frames (`n = max(1, ceil(wavelength / (speed * dt)))`). Modelled on
+the elemental-loop hulls' prefab values at their top speed, against 60 fps: Thresher and Rhino laid 0.5x the mass at
+30 fps and 2x at 120; Manta and Serpent 0.5x at 30; Dolphin and Urchin 0.75x and 1.2x; Squirrel and Stoat 1.33x at
+120. At cruise every hull was within about 15%.
+
+**Built.**
+- Every hull lays by distance (`VesselPrismController.DistanceSpawnLoopAsync`, the round-1 loop with the same
+  gates, teleport guard, 3 s floor and nominal sizing). The timed loop is gone.
+- The hull's spawn rule is kept as a spacing multiplier (`LaySpacingAt`: spacing x `ApplyBoostSpawnDelay(1)`).
+  That covers the Sparrow family's unboosted x2 and the Shrike's and Brittle Star's spacing multipliers, which the
+  round-1 loop skipped.
+- `TrailStretch`, the fleet stretch, on every controller by default: nothing below 600 u/s; complete at 1100 u/s
+  with spacing x3, Z x2 (under 0.9 of the gap, never shorter than the hull's own prism) and Y x0.4. These are the
+  Manta's limits and multipliers, applied to each hull's own prism. Of the loop hulls only Thresher (its sling, to
+  2,299) and Rhino (about half at its 840 top) ever reach it. The Manta keeps its own shape and stretch through
+  `TrailSpeedShape`, which is unchanged.
+- At most 8 prisms per rail per frame (`TrailSpeedShape.MaxLaysPerFrame`; it was 4). At 30 fps the Rhino flies just
+  over 4 spacings a frame between 600 and 690 u/s. On the Manta this only matters on a long hitch.
+- `TrailStretchTests`: the defaults are the Manta's numbers, nothing stretches at or below 600, top-speed shape,
+  never touching, and the same prism count at 30, 60 and 120 fps for every loop hull up to its top speed. The
+  timed lay was removed and the spawn rule kept, and no prefab moves the limits.
+
+**Expect.** Trail mass is the same at every frame rate. At 60 fps every hull lays at least what it did, because the
+timer dropped prisms:
+- At cruise, 0-20% more.
+- At top speed, without the stretch: Serpent 1.75x, Dolphin 1.5x, Squirrel and Stoat 1.4x, Urchin 1.3x, Scarab 1.2x,
+  Sparrow 1.1x.
+- With the stretch: Rhino about 1.5x and Thresher about 1.8x the prism count.
+
+Mobile at 30 fps lays up to twice what it did at speed, so watch the prism budget there (`tierHold`). Any hull's
+mass balancing and any AI trained on the old trails was measured against a frame-rate-dependent number: elemental
+loop steps 2-5.
+
+**Not verified in Unity.** Fly from the Toybox Vessel Changer:
+- Sparrow cruising unboosted: still sparse, about 14 m.
+- Squirrel and Dolphin drift.
+- Urchin reversing: prisms stay on the path.
+- Rhino at its top speed: the first half of the stretch.
+- Thresher's sling: stretched, never touching.
+- Any hull on a 30 fps phone: the same trail as on PC.

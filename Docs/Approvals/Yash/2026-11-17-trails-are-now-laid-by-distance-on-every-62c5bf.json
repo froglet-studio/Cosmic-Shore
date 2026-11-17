@@ -1,0 +1,27 @@
+{
+  "id": "2026-11-17-trails-are-now-laid-by-distance-on-every-62c5bf",
+  "to": "Yash",
+  "by": "Caleb",
+  "date": "2026-11-17T00:34:14+00:00",
+  "area": "vessel AIs and their minigames (Sparrow, Stoat, every loop hull)",
+  "summary": "Trails are now laid by distance on every hull (denser at speed and identical at any frame rate), so the AIs and minigame balance trained on the old frame-bound trails may need re-checking.",
+  "why": "Recorded editor runs at ~115 fps laid different trails than a 60 fps game; now every frame rate lays the same.",
+  "branch": "claude/fervent-pascal-o28ftt",
+  "commit": "81dd375f5",
+  "paths": [
+    "Assets/_Scripts/Controller/Vessel/VesselPrismController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Sparrow",
+      "Stoat",
+      "Squirrel",
+      "Dolphin",
+      "Rhino",
+      "Serpent",
+      "Thresher",
+      "Urchin",
+      "Scarab"
+    ]
+  }
+}

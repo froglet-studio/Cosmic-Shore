@@ -75,12 +75,18 @@ namespace CosmicShore.Gameplay
                  "Picked in the Manta Trail Lab (Docs/Manta/POLISH.md).")]
         [SerializeField] TrailSpeedShape speedShape = new();
 
+        [Header("Stretch at very high speed (the fleet rule)")]
+        [Tooltip("Past 600 u/s the gap between prisms grows and each prism lengthens and thins, complete at 1100 u/s " +
+                 "(the Manta's limits, the same for every hull; Caleb, 2026-11-17). A hull that never flies that fast " +
+                 "never stretches. Not used by a vessel with the speed shape on, which stretches through it.")]
+        [SerializeField] TrailStretch stretch = new();
+
         // The vessel's yaw rate at the last lay (rad/s, + = turning right), measured lay to lay for the speed
         // shape's inside/outside rails. Only kept while the speed shape is on.
         float _layYawRate;
         Vector3 _lastLayForward;
         float _lastLayTime = -1f;
-        // The speed shape lays by distance (TrailSpeedShape.StepLay): the spacing behind this lay (unwarped)
+        // Every trail lays by distance (TrailSpeedShape.StepLay): the spacing behind this lay (unwarped)
         // and how far behind the vessel it goes (world units).
         float _laySpacing;
         float _layBack;
@@ -330,50 +336,19 @@ namespace CosmicShore.Gameplay
         {
             await UniTask.Delay(TimeSpan.FromSeconds(startDelay), cancellationToken: ct);
 
-            if (speedShape.Enabled)
-            {
-                await ShapedSpawnLoopAsync(ct);
-                return;
-            }
-
-            while (!ct.IsCancellationRequested)
-            {
-                // The warp field's local length scale here (Docs/WARP_FIELD.md; exactly 1 with no
-                // field). Speed arrives already multiplied by it, so the gate and the wavelength
-                // are measured in the same shrunken lengths and the lay RATE is unchanged.
-                float warp = WarpFieldRuntime.ScaleAt(transform.position);
-
-                if (spawnerEnabled && !trailPenUp && !tierHold && !vesselStatus.IsAttached && vesselStatus.Speed > 3f * warp)
-                {
-                    if (speedShape.Enabled) MeasureLayYawRate();
-                    if (Mathf.Approximately(Gap, 0f))
-                    {
-                        CreateBlock(ApplyBoostGap(0f), Trail);
-                    }
-                    else
-                    {
-                        CreateBlock(ApplyBoostGap(Gap * 0.5f), Trail);
-                        CreateBlock(ApplyBoostGap(-Gap * 0.5f), Trail2);
-                    }
-                }
-
-                float raw = vesselStatus.Speed > 0f ? wavelength * warp / vesselStatus.Speed : defaultWaitTime;
-                float clamped = float.IsNaN(raw) || float.IsInfinity(raw)
-                    ? defaultWaitTime
-                    : Mathf.Clamp(raw, 0f, 3f);
-
-                float finalDelay = ApplyBoostSpawnDelay(clamped);
-                await UniTask.Delay(TimeSpan.FromSeconds(finalDelay), cancellationToken: ct);
-            }
+            await DistanceSpawnLoopAsync(ct);
         }
 
         /// <summary>
-        /// The speed shape's lay loop: every frame, lay when the vessel has flown a wavelength since the last prism
+        /// The lay loop, every hull: every frame, lay when the vessel has flown a wavelength since the last prism
         /// (<see cref="TrailSpeedShape.StepLay"/>), placed back along the course to the exact wavelength point, so
-        /// the spacing is even at every speed; above Soar, one prism a frame sized to the distance flown. Same
-        /// gates as the timed loop, and a prism at least every 3 s while they hold.
+        /// the spacing is even at every speed and the mass laid per second is the same at every frame rate. It
+        /// replaced the timed lay (<c>UniTask.Delay(wavelength / speed)</c>, which ended on a frame and so laid up to
+        /// half as much on a 30 fps phone as at 60 fps, and twice as much at 120; Docs/Manta/POLISH.md, round
+        /// "trail lay by distance, fleet-wide"). Same gates as the timed loop, and a prism at least every 3 s while
+        /// they hold.
         /// </summary>
-        async UniTask ShapedSpawnLoopAsync(CancellationToken ct)
+        async UniTask DistanceSpawnLoopAsync(CancellationToken ct)
         {
             float travelled = float.PositiveInfinity, sinceLay = 0f;
             Vector3 lastPos = transform.position;
@@ -397,8 +372,8 @@ namespace CosmicShore.Gameplay
                 {
                     float step = moved;
                     sinceLay += Time.deltaTime;
-                    // Lay spacing in unwarped lengths (it stretches above Soar), then back into the warped world.
-                    float nominal = speedShape.LaySpacing(wavelength, vesselStatus.Speed / Mathf.Max(warp, 1e-4f));
+                    // Lay spacing in unwarped lengths (it stretches past 600 u/s), then back into the warped world.
+                    float nominal = LaySpacingAt(vesselStatus.Speed / Mathf.Max(warp, 1e-4f));
                     float wl = nominal * warp;
                     // Every prism is sized to the NOMINAL spacing, so lengths stay regular whatever the frame did.
                     _laySpacing = speedShape.FrameAwareSpacing ? nominal : wavelength;
@@ -408,12 +383,12 @@ namespace CosmicShore.Gameplay
                         lay = true; back = 0f; travelled = 0f;
                     }
                     // A long frame (a hitch, a low frame rate at Top Speed) can fly past several spacing points: lay
-                    // each one back along the path, so the trail stays even. Past four, the rest open one gap.
+                    // each one back along the path, so the trail stays even. Past the cap, the rest open one gap.
                     for (int n = 0; lay; n++)
                     {
                         sinceLay = 0f;
                         _layBack = back;
-                        if (n == 0) MeasureLayYawRate();
+                        if (n == 0 && speedShape.Enabled) MeasureLayYawRate();
                         if (Mathf.Approximately(Gap, 0f))
                         {
                             CreateBlock(ApplyBoostGap(0f), Trail);
@@ -424,7 +399,7 @@ namespace CosmicShore.Gameplay
                             CreateBlock(ApplyBoostGap(-Gap * 0.5f), Trail2);
                         }
                         _layBack = 0f;
-                        if (n >= 3) { travelled = Mathf.Repeat(travelled, wl); break; }
+                        if (n >= TrailSpeedShape.MaxLaysPerFrame - 1) { travelled = Mathf.Repeat(travelled, wl); break; }
                         lay = TrailSpeedShape.NextLay(ref travelled, wl, out back);
                     }
                 }
@@ -437,6 +412,21 @@ namespace CosmicShore.Gameplay
 
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
+        }
+
+        /// <summary>
+        /// The gap between prisms on one rail at this (unwarped) speed: the wavelength, stretched past 600 u/s (the
+        /// speed shape's own stretch on the Manta, <see cref="TrailStretch"/> on every other hull), times the hull's
+        /// spawn rule (<see cref="ApplyBoostSpawnDelay"/>: the Sparrow family's unboosted x2, the Shrike's and the Brittle
+        /// Star's spacing multipliers). Those rules were written as a multiplier on the timed delay
+        /// <c>wavelength / speed</c>, so the same multiplier on the spacing lays exactly what they meant.
+        /// </summary>
+        float LaySpacingAt(float speed)
+        {
+            float spacing = speedShape.Enabled
+                ? speedShape.LaySpacing(wavelength, speed)
+                : stretch.LaySpacing(wavelength, speed);
+            return spacing * Mathf.Max(0.1f, ApplyBoostSpawnDelay(1f));
         }
 
         /// <summary>
@@ -550,6 +540,13 @@ namespace CosmicShore.Gameplay
                 float spacing = _laySpacing > 0f ? _laySpacing : wavelength;
                 scale = speedShape.Evaluate(BaseScale.y, BaseScale.z, halfGap, speedHere, _turnFlare01,
                     _layYawRate, (int)Mathf.Sign(halfGap), spacing);
+            }
+            else if (!speedShape.Enabled)
+            {
+                // The fleet stretch (past 600 u/s only): the hull's own prism, longer and thinner.
+                float fieldScale = WarpFieldRuntime.ScaleAt(transform.position);
+                float speedHere = vesselStatus.Speed / Mathf.Max(fieldScale, 1e-4f);
+                scale = stretch.Apply(scale, speedHere, _laySpacing > 0f ? _laySpacing : wavelength);
             }
 
             // MASS -> trail prism volume: live per-spawn read of the prefab-authored
