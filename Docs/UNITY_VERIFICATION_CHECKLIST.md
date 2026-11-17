@@ -24556,6 +24556,24 @@ ran (see the PR's verification line); the generators' `--check` and `--self-test
 6. Harvest at I4 (authored fauna, now pinned): every shark, piranha, brittle star and tadpole is the Space variant, not
    a spread across elements; at I3 and below Harvest's fauna are unchanged. Spot-check Wildlife Liberation and Chum at
    I4 still play (their creatures are one element now). Not run in editor; refcompile 0 errors in the changed files.
+
+## 🔴 The ten weakest abilities raised (2026-11-16, Garrett's project thread, `claude/weakest-abilities-pass`, NOT RUN IN EDITOR)
+
+Garrett, 2026-11-16: "fix all of these" (the ten least polished abilities). `unity_refcompile` ran with 0 errors in the
+changed files; `author.py grizzly|jacks --check`, `author_goby_assets.py`, `author_meerkat_assets.py --check` and
+`author_jacks_assets.py --check` passed; the Unity editor and the `unity` CLI did not run. Owed:
+
+1. Grizzly Mass (Weapon Systems): Mass still grows the trail's prisms; the claw's reach is fixed. A weapon cycle
+   flashes the Mass card.
+2. Grizzly Charge (Dig In): dug in, the cannon charges 2x at rest and up to 5x at Charge 10; the Charge card stays lit
+   and flashes as the anchor bites.
+3. Grizzly Time (Rush): a ram devastates rival prisms in its path (host only); the Time card flashes on a ram and its
+   veil shows the refill when the bank is empty; Time 10 refills in about 2.5 s.
+4. Dolphin: Drift Charge fills 2.5x faster at Time 10; a seeded crystal still lands at a random point of the
+   cytoplasm, now on a 15 s cooldown.
+5. Goby Time (Dart): the Pistol's dart is longer and comes back sooner at Time 10. Run `GobyPistolTests`.
+6. Meerkat Time (Ride): the ride is up to 2x faster at Time 10.
+7. Jacks Space (Wide): the herd spreads out about 2.2x wider over 0.6 s when Wide is on and gathers again when off.
 ## 🔴 Voyage jobs come from the active squad only, and a starter squad (2026-11-16, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/project-thread-j3ua9b` (PR into `voyages`). The board offers one job per pilot in the active squad (no
@@ -24685,3 +24703,79 @@ stubs) and the Amoebius live compile and judge. Not verified: a real Unity edito
 2. Open any `Resources/RaceLines/<Hull>_Regatta` asset: a "Nose follow (fleet lag at 0)" header with Nose Follow Per
    Second 0. Regatta's AIs fly as before.
 3. Set one row to 9 (e.g. Sparrow in Breakwater) and race: the AI Sparrow's nose turns visibly quicker. Put it back.
+
+## Scarab racing AI trained in Scarab Rally (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; the 29 it reports are the known Cinemachine stubs), the
+Amoebius judge on the shipped files (Scarab Rally I1 64.2 / 61.8 s, I4 111.5 / 102.2 s on seeds 101-102), and the
+search's confirm (32 fresh flights a side, no DNF). Not verified: a real Unity editor compile and EditMode run
+(`SwitchbackAISteeringTests.ScarabRally_FliesItsOwnNoseTable`).
+
+1. Open MinigameScarabRally: the controller shows an "AI nose" header with its own table (Legendary 15 / 15 / 18 / 18)
+   and No Dodge Near Ring 224. MinigameSwitchback's table is unchanged (Legendary 5 / 5 / 6 / 6, 200 u).
+2. Race Scarab Rally I4 against a Legendary AI Scarab: it threads the rings without wide loops, near 105-120 s.
+3. Race Regatta with an AI Scarab: its drive changed too (`ScarabAIBoostPolicy`), so it should race at least as well
+   as before.
+
+## Serpent racing AI trained in Serpentine (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: the Amoebius judge on the shipped files (Serpentine I1 121.0 / 120.9 s, I4 141.1 / 94.7 s on seeds 101-102;
+the race is not deterministic run to run, the confirm's same seeds gave I4 89 / 121) and the search's confirm (32 fresh
+flights a side, no DNF, every condition faster) and `unity_refcompile` (0 errors in the changed files; 29 known
+Cinemachine stubs elsewhere). Not verified: a real Unity editor.
+
+1. Open MinigameSerpentTime: the AI Nose Lead row for the Serpent reads Gain 2.1, Nose Follow 6.87.
+2. Race Serpentine I4 against a Legendary AI Serpent: it threads the rings without corkscrewing, near 85-120 s
+   (it took 160-190 s before).
+## 🔴 Fleet floor rule: every rising elemental float floored at half its rest (2026-11-16, Garrett's project thread "Rank least polished ability floors", `claude/ability-floor-rule`, NOT RUN IN EDITOR)
+
+Every rising `ElementalFloat` (Max > Min) now has `UseFloor: 1`, `Floor = Min / 2`, so at element level -5 an ability
+keeps half its resting strength (`Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`, "The fleet floor rule";
+gate `python3 Tools/Build/elemental_floor_rule.py --check`). Rhino's Heft and Carry now rest at 20 u and 10 u instead of 0.
+The Stoat's ripple reach and launch power no longer clamp a deficit back to x1. The editor and the `unity` CLI did not
+run; the EditMode tests touched (`AnglerFundamentalsTests`, `RhinoReworkTests`, `StoatRippleTests`) did not run. Owed:
+
+1. Run the EditMode tests above, plus `JacksScalingTests`, `ShrikeConfigTests`, `SwordfishQuickdrawTests`, `ElementalScalingUnificationTests`.
+2. Open three changed prefabs (Urchin, Falcon, Swordfish): the skimmer `Scale` and gun `ProjectileTime` show Use Floor ticked with the new Floor, and nothing else on the prefab changed.
+3. Rhino at rest (no Mass, no Charge): a ploughed prism is thrown about 20 u further than before, and a thrown prism strikes another up to 10 u past its landing point.
+4. Drain an element to -5 on Angler (any element) and Honeyguide: the ability visibly weakens to about half (the Angler's paint brush half as wide), where it used to stay full.
+5. Meerkat at Charge -5: a zap still takes a petal share you can see (0.05 a zap, was 0.025).
+
+## Dolphin racing AI trained in Switchback (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Switchback I1 83.4 / 90.0 s, I4 279.2 / 237.3 s on seeds 101-102; the race varies run to run) and the
+search's confirm (32 fresh flights a side, no DNF). Not verified: a real Unity editor and its EditMode run
+(`SwitchbackAISteeringTests`, updated for the new defaults).
+
+1. Open MinigameSwitchback: the Dolphin's nose lead row reads 2.03, the Legendary column of the nose table 11.18 / 11.18 /
+   13.41 / 13.41, the gauntlet's Legendary 13.41, No Dodge Near Ring 177.
+2. Race Switchback I1 against a Legendary AI Dolphin: near 85 s (about 110 s before).
+3. Easy, Medium and Hard are unchanged; Legendary is now further ahead of Hard than the 10 s bands.
+
+## Rhino racing AI trained in Headlong (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Headlong I1 99.3 / 99.2 s, I4 111.7 / 114.7 s on seeds 101-102, all 40 gates; the old AI timed out at
+I4) and the trainer's confirm (28 fresh flights a side: 6 vs 28 finished). Not verified: a real Unity editor.
+
+1. Open MinigameHeadlong: the Rhino's AI Nose Lead row reads Gain 2.47, Nose Follow 7.5.
+2. Race Headlong I4 against a Legendary AI Rhino: it clears every gate without circling one, near 110-115 s.
+
+## Manta racing AI: Legendary nose 15/s at Redline I1-I2 (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Redline I1 56.7 / 60.5 s, I2 61.2 / 59.6 s on seeds 101-102) and the split confirms (40 flights a side).
+Not verified: a real Unity editor and `RedlineAISteeringTests`.
+
+1. Open MinigameRedline: the AI nose table's Legendary column reads 15 / 15 / 9 / 9.
+2. Race Redline I1 against a Legendary AI Manta: near 56-60 s (about 65 s before). I3-I4 fly as before.
+
+## Sparrow racing AI trained in Breakwater (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; 29 known Cinemachine stubs elsewhere), the Amoebius judge on
+the shipped files (Breakwater I1 98.3 / 96.1 s, I4 81.6 / 85.0 s on seeds 101-102; the old AI timed out at I4) and the
+confirm (32 fresh flights a side). Not verified: a real Unity editor.
+
+1. Open MinigameBreakwater: the Sparrow's AI Nose Lead row reads Gain 1.29, Nose Follow 7.9.
+2. Race Breakwater I4 against a Legendary AI Sparrow: it finishes, near 80-86 s, without circling a station.

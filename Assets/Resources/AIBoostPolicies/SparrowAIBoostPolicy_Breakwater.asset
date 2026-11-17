@@ -12,18 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d4ef6a9416c4f3faa4a192734c8b913, type: 3}
   m_Name: SparrowAIBoostPolicy_Breakwater
   m_EditorClassIdentifier: 
-  alignDegrees: 90
-  releaseAlignDegrees: 120
-  stickBand: 1
-  releaseStickBand: 1
-  engageRunwaySeconds: 0
-  releaseRunwaySeconds: 0
+  alignDegrees: 63.004
+  releaseAlignDegrees: 94.815
+  stickBand: 0.978
+  releaseStickBand: 0.804
+  engageRunwaySeconds: 1.559
+  releaseRunwaySeconds: 0.049
   disabledInModes:
   - 41
   - 40
   requireAIPlayer: 0
-  minHoldSeconds: 0.6
-  minRestSeconds: 0.4
+  minHoldSeconds: 1.996
+  minRestSeconds: 0.243
   clearWayRocket: {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
   rocketMaxRange: 651.421
   rocketMinRange: 55.448

@@ -40,14 +40,15 @@ namespace CosmicShore.Gameplay
             _sprayCts = CancellationTokenSource.CreateLinkedTokenSource(
                 this.GetCancellationTokenOnDestroy());
 
-            // Draw the reach. The cone is built from this ability's own Range and
+            // Draw the reach. The cone is built from this ability's own reach (Mass, live) and
             // ConeHalfAngle - the same two numbers IgniteCone filters on - so the
-            // visual cannot drift from what actually catches fire.
+            // visual cannot drift from what actually catches fire. IgniteCone redraws it
+            // each tick, so a Mass level that moves mid-spray moves the cone with it.
             var vesselTf = status.Transform;
             if (vesselTf != null)
             {
                 _cone = GrizzlyClawConeVisual.EnsureFor(vesselTf);
-                _cone?.Show(so.Range, so.ConeHalfAngle);
+                _cone?.Show(so.RangeFor(status), so.ConeHalfAngle);
             }
 
             OnSprayChanged?.Invoke(true);
@@ -89,11 +90,14 @@ namespace CosmicShore.Gameplay
 
             var origin = vesselTf.position;
             var forward = vesselTf.forward;
+            float range = so.RangeFor(status);
+            int bite = so.IgnitesPerTickFor(status);
+            _cone?.Show(Mathf.Round(range), so.ConeHalfAngle);   // whole units: a drifting level rebuilds the mesh only when the reach really moved
 
             // Sphere centered mid-cone, then angle-filter — QuerySphere is the only
             // spatial primitive and this keeps the scan cheap.
             _scratch.Clear();
-            index.QuerySphere(origin + forward * (so.Range * 0.5f), so.Range * 0.6f, _scratch);
+            index.QuerySphere(origin + forward * (range * 0.5f), range * 0.6f, _scratch);
 
             bool convert = status.ElementalAbilityHandler != null &&
                            status.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
@@ -102,13 +106,13 @@ namespace CosmicShore.Gameplay
 
             foreach (var prism in _scratch)
             {
-                if (ignited >= so.IgnitesPerTick) break;
+                if (ignited >= bite) break;
                 if (prism == null || prism.destroyed) continue;
                 if (prism.Domain == status.Domain) continue;
 
                 var to = prism.transform.position - origin;
                 float dist = to.magnitude;
-                if (dist > so.Range || dist < 0.01f) continue;
+                if (dist > range || dist < 0.01f) continue;
                 if (Vector3.Dot(to / dist, forward) < cosLimit) continue;
 
                 // Super-shielded mass cannot burn; the flame still lands on it, visibly - the

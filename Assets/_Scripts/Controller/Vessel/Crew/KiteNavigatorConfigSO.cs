@@ -169,13 +169,13 @@ namespace CosmicShore.Gameplay
         [Header("Element scaling and level-5 upgrades (the vessel pass, Garrett, 2026-11-13)")]
         [Tooltip("CHARGE: kite power per Charge loop (vessel contract: Charge = threat). Multiplies chargePetals and chargeCap: " +
                  "x1 at Charge 0 to x2 at Charge 10, so a charged Wrasse's rams take twice the petals.")]
-        [SerializeField] ElementalFloat chargePetalScale = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 1f);
+        [SerializeField] ElementalFloat chargePetalScale = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.5f);
         [Tooltip("MASS: the cluster's size (vessel contract: Mass = size). Multiplies massPrisms and massPrismCap: x1 at Mass 0 " +
                  "to x2 at Mass 10.")]
-        [SerializeField] ElementalFloat massClusterScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 1f);
+        [SerializeField] ElementalFloat massClusterScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
         [Tooltip("SPACE: the blast's reach (vessel contract: Space = reach). Multiplies spaceMaxScale and spaceMaxScaleCap: x1 at " +
                  "Space 0 to x2 at Space 10.")]
-        [SerializeField] ElementalFloat spaceReachScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 1f);
+        [SerializeField] ElementalFloat spaceReachScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 0.5f);
         [Tooltip("CHARGE level-5 'Crystal Steal': a ram steals the rival's petals instead of knocking them loose. None = never.")]
         [SerializeField] Element crystalStealUpgradeElement = Element.Charge;
         [Tooltip("MASS level-5 'Shielded Clusters': Mass clusters are laid shielded. None = never.")]

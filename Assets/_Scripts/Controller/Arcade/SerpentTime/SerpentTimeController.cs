@@ -57,9 +57,10 @@ namespace CosmicShore.Gameplay
     public class SerpentTimeController : GateRaceController, IPlayerSpawnLine
     {
         [Header("AI nose lead")]
-        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
-                 "the lead off. Serpent 1: the fleet 2.5 corkscrews the single-stick Serpent, 1.0 was best in the model.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Serpent, 1.0f) };
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain) and nose follow rate (0 = the fleet lag), set as it is " +
+                 "armed. A hull with no row flies with the lead off. Serpent: lead 2.1 with its nose at 6.9/s, trained in this " +
+                 "race (time_ai_search.py, Serpent run3b, 2026-11-17); the fleet lag of 1.5/s was its biggest handicap.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Serpent, 2.1f, noseFollow: 6.87f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 

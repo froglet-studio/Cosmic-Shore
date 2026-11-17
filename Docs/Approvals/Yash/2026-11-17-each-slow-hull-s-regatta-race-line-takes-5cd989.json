@@ -1,0 +1,21 @@
+{
+  "id": "2026-11-17-each-slow-hull-s-regatta-race-line-takes-5cd989",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T03:37:15+00:00",
+  "area": "the Regatta AIs",
+  "summary": "Each slow hull's Regatta race line takes the nose rate and lead its AI was trained to in its own Time game: Dolphin 11.18/2.03, Rhino 7.5/2.47, Serpent 6.87/2.1, Sparrow 7.9/1.29, Scarab 15/0, Manta 9/0; Stoat unchanged.",
+  "why": "Garrett's Regatta flywheel. Shipped Regatta course, alone, seeds 11-12: Dolphin 151/132 -> 68/75 s, Scarab DNF/43 -> 42/42, Sparrow 92/90 -> 90/85, Manta and Rhino even, Serpent 115/104 -> 119/128 (slower).",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "b9d7828c0",
+  "paths": [
+    "Assets/Resources/RaceLines/Dolphin_Regatta.asset",
+    "Tools/Build/author_race_lines.py"
+  ],
+  "loop": {
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

@@ -35,8 +35,13 @@ COMMON = {"RiskSpread": 0.15, "CarefulLookaheadSeconds": 0.35, "BoldLookaheadSec
 # (Garrett, for testing): Rhino / Stoat / Scarab 2.5, Dolphin 2.5 then 1.0 (2026-11-16: at 2.5 it circled and never
 # finished in the real-game judge, Docs/Reports/REGATTA_JUDGE.md), Sparrow 2.0, Serpent 1.0 (single stick, #1832); the Manta
 # stays off (its fix is a faster nose, #1780/#1829). Lead-on round: Docs/Reports/NOSE_LEAD_ROLL.md.
-OPTIONAL = ["NoseLeadGain", "NoseLeadMaxExtraDegrees"]
-RANGES = {"NoseLeadGain": (0, 6), "NoseLeadMaxExtraDegrees": (0, 120), "LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
+# NoseFollowPerSecond (2026-11-17, RaceLineStyleSO, #2084): the AI nose's follow rate in Regatta, 0 = the fleet lag
+# (1.5/s). Each hull's is the rate trained in its OWN Time game (time_ai_search.py; the home-game PRs #2087 Scarab, #2088
+# Serpent, #2092 Dolphin, #2093 Rhino, #2094 Manta, #2095 Sparrow), where the fleet lag was each AI's biggest handicap. The Manta takes
+# Redline's I3-I4 rate (9), not I1-I2's 15: with Soar lit 15 overshot the mouths. Each hull's NoseLeadGain is the lead
+# trained WITH that rate (a pair: Rhino 2.47, Dolphin 2.03, Serpent 2.1, Sparrow 1.29, Scarab 0, Manta 0). Not yet judged in Regatta.
+OPTIONAL = ["NoseLeadGain", "NoseLeadMaxExtraDegrees", "NoseFollowPerSecond"]
+RANGES = {"NoseLeadGain": (0, 6), "NoseFollowPerSecond": (0, 30), "NoseLeadMaxExtraDegrees": (0, 120), "LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
           "CarefulLookaheadSeconds": (0, 3), "BoldLookaheadSeconds": (0, 3), "MinLookahead": (1, 400),
           "MaxLookahead": (1, 2000)}
 # The starting values, per hull (why, in a word): big and fast flies far out and plays safer; agile flies closer and bolder.
@@ -45,18 +50,19 @@ HULLS = {
     # once the ramp fires on the line it reaches 450-585 u/s and missed I3/I4 mouths chasing a 0.35-0.8 s point
     # (rhino_line_sim.py, lag on: 447.7 s I1-I4, 12 misses; 0.8 / 1.4 s: 405.4 s, none). REGATTA.md section 6.4.1.
     "Rhino":   {"LaneShare": 0.80, "HullClearance": 18, "Risk": 0.40,
-                "CarefulLookaheadSeconds": 0.8, "BoldLookaheadSeconds": 1.4, "NoseLeadGain": 2.5},
+                "CarefulLookaheadSeconds": 0.8, "BoldLookaheadSeconds": 1.4, "NoseLeadGain": 2.47,
+                "NoseFollowPerSecond": 7.5},
     # wide wings, 720 u/s Soar. A longer look-ahead (2026-10-25): an AI hull's nose follows its command at 1.5/s
     # (VesselTransformer.LERP_AMOUNT), and chasing a point 0.35-0.8 s ahead through that lag pinned the Manta's stick,
     # which drops its Soar (Tools/Build/manta_line_sim.py, nose="nose": I1-I4 697 s, I4 unfinished; 0.6 / 1.0 s: 280 s,
     # no miss, fewer rail rams). REGATTA.md section 6.4.1.
     "Manta":   {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.50,
-                "CarefulLookaheadSeconds": 0.6, "BoldLookaheadSeconds": 1.0},
-    "Dolphin": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 1.0},   # a drift locks its course: room to slide; 2.5 circled (judge, 2026-11-16)
+                "CarefulLookaheadSeconds": 0.6, "BoldLookaheadSeconds": 1.0, "NoseFollowPerSecond": 9},
+    "Dolphin": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 2.03, "NoseFollowPerSecond": 11.18},   # a drift locks its course: room to slide; 2.5 circled (judge, 2026-11-16)
     "Stoat":   {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.60, "NoseLeadGain": 2.5},   # a 72 u turning circle at any warp
-    "Serpent": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 1.0},   # single stick: 2.5 corkscrews it (#1832)
-    "Sparrow": {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseLeadGain": 2.0},
-    "Scarab":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.45, "NoseLeadGain": 2.5},   # cannot slow quickly: a little more care
+    "Serpent": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 2.1, "NoseFollowPerSecond": 6.87},   # single stick: 2.5 corkscrews it (#1832)
+    "Sparrow": {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseLeadGain": 1.29, "NoseFollowPerSecond": 7.9},
+    "Scarab":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.45, "NoseLeadGain": 0, "NoseFollowPerSecond": 15},   # cannot slow quickly: a little more care
 }
 
 

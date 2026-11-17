@@ -53,9 +53,9 @@ namespace CosmicShore.Gameplay
 
         [Header("Heft (Mass)")]
         [Tooltip("MASS (Heft): how much further a heavier plough throws - world units added to every throw, at any speed, on top of " +
-                 "the speed-driven throw above. 0 at rest (the plough as it shipped), 60 at Mass 10, floored at 0 " +
+                 "the speed-driven throw above. 20 at rest (so Heft is there from the start; 0 until 2026-11-16), 60 at Mass 10, floored at 10 " +
                  "in the deficit band (Space until 2026-11-12: a heavier hull pushes further). Read at the Rhino's replicated level, so every peer lands the prism alike.")]
-        [SerializeField] ElementalFloat furrowDistance = ElementalFloat.Multiplier(0f, 60f, Element.Mass, 0f);   // tripled 2026-11-09, moved to Mass 2026-11-12 (Garrett)
+        [SerializeField] ElementalFloat furrowDistance = ElementalFloat.Multiplier(20f, 60f, Element.Mass, 10f);   // tripled 2026-11-09, moved to Mass 2026-11-12 (Garrett), rest 20 by the fleet floor rule 2026-11-16
 
         [Tooltip("SPACE level-5 'Unstoppable' (the fleet's Space shield-breaker slot): with this element's upgrade active the plough moves SUPER-shielded " +
                  "mass too (without it super-shielded prisms are the immovable tier and only jiggle). None = never.")]
@@ -63,10 +63,10 @@ namespace CosmicShore.Gameplay
 
         [Header("Carry (Charge)")]
         [Tooltip("CHARGE: how far past its landing point a thrown prism still flies on to strike another (a thrown " +
-                 "prism that hits one destroys both, PrismMotion). 0 at rest (it strikes only what is in its way), " +
-                 "40 u at Charge 10, floored at 0. Only the strike reaches further: a prism that strikes nothing " +
+                 "prism that hits one destroys both, PrismMotion). 10 u at rest (0 until 2026-11-16, so Carry did nothing at rest), " +
+                 "40 u at Charge 10, floored at 5. Only the strike reaches further: a prism that strikes nothing " +
                  "still lands where the furrow puts it.")]
-        [SerializeField] ElementalFloat carryDistance = ElementalFloat.Multiplier(0f, 40f, Element.Charge, 0f);
+        [SerializeField] ElementalFloat carryDistance = ElementalFloat.Multiplier(10f, 40f, Element.Charge, 5f);
 
         [Tooltip("'Avalanche' (retired as Charge's level-5 on 2026-11-12, when Gore Steal took the slot; the asset authors None): with this element's upgrade active a strike carries on - the next " +
                  "prism down the line within the carry is thrown on too, and its own strike can throw the next. " +

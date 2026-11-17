@@ -68,11 +68,27 @@ def _switchback_nose(p):
 
 
 # SwitchbackController's AI knobs (Scarab Rally inherits them): the Legendary nose follow rate (every intensity's row,
-# shipped 5/s at I1-I2 and 6/s at I3-I4, and the I4 gauntlet's) and how near a ring the AI stops dodging.
+# shipped 11.18/s at I1-I2 and 13.41/s at I3-I4 since Dolphin run2, and the I4 gauntlet's) and how near a ring the AI stops dodging.
 SWITCHBACK_NOSE = {
     "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
-    "ctrl_defaults": {"noseLegendary": 5.0, "aiNoDodgeNearRing": 200.0},
+    "ctrl_defaults": {"noseLegendary": 11.18, "aiNoDodgeNearRing": 177.0},   # Dolphin run2 (2026-11-17)
     "ctrl": _switchback_nose,
+}
+
+def _scarab_nose(p):
+    return {
+        "aiScarabNoseFollowByIntensity": [
+            {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"]) * k}
+            for e, m, h, k in ((1.9, 2.2, 3, 1.0), (2, 2.4, 3, 1.0), (2.1, 2.2, 2.8, 1.2), (1.8, 2.2, 3.5, 1.2))],
+        "aiScarabNoDodgeNearRing": float(p["aiNoDodgeNearRing"])}
+
+
+# ScarabRallyController's own copies of those knobs (2026-11-17: the Scarab no longer flies the Dolphin's table), shipped
+# from Scarab run3: Legendary 15/s at I1-I2 (x1.2 at I3-I4), no dodge within 224 u of a ring.
+SCARAB_NOSE = {
+    "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
+    "ctrl_defaults": {"noseLegendary": 15.0, "aiNoDodgeNearRing": 224.0},
+    "ctrl": _scarab_nose,
 }
 
 # Per vessel: its Time game, the drive assets per intensity (AIBoostPolicySO.ForMode: <name>_<Mode>_I<n>, else the mode
@@ -88,7 +104,7 @@ GAMES = {
                    "spendAtCharge01": (0.05, 1.0), "peakMarginUnits": (0.0, 30.0), "minDischargeSeconds": (0.0, 2.0),
                    "minPulseGainUnits": (0.0, 120.0), "maxHoldOffSeconds": (0.5, 8.0)},
         **SWITCHBACK_NOSE,
-        "lead": 2.5, "rows": [],                       # SwitchbackController.aiNoseLead: Dolphin 2.5
+        "lead": 2.03, "rows": [],                      # SwitchbackController.aiNoseLead: Dolphin 2.03 (run2)
     },
     "Serpent": {
         "mode": "SerpentTime",
@@ -97,7 +113,7 @@ GAMES = {
                    "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 6.0), "releaseRunwaySeconds": (0.0, 3.0),
                    "maxConcurrentBurns": (1, 6), "minSecondsBetweenPellets": (0.0, 4.0), "reservePellets": (0, 4)},
         "ints": ("maxConcurrentBurns", "reservePellets"),
-        "lead": 1.0, "rows": [], "nose_gene": 1.5,     # SerpentTimeController.aiNoseLead: Serpent 1.0; fleet nose lag
+        "lead": 2.1, "rows": [], "nose_gene": 6.87,    # SerpentTimeController.aiNoseLead: Serpent 2.1 at 6.87/s (run3b)
     },
     "Sparrow": {
         "mode": "Breakwater",
@@ -105,7 +121,7 @@ GAMES = {
         "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
                    "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
                    "minHoldSeconds": (0.0, 3.0), "minRestSeconds": (0.0, 3.0)},
-        "lead": 1.0, "rows": [], "nose_gene": 1.5,     # BreakwaterController.aiNoseLead: Sparrow 1.0 (#2054); fleet nose lag
+        "lead": 1.29, "rows": [], "nose_gene": 7.9,    # BreakwaterController.aiNoseLead: Sparrow 1.29 at 7.9/s (run3)
     },
     "Scarab": {
         "mode": "ScarabRally",
@@ -116,8 +132,20 @@ GAMES = {
                    "dashCooldownSeconds": (0.2, 6.0)},
         # Scarab Rally inherits Switchback's table, which has only the Dolphin's row: the Scarab flies with NO lead
         # there and 2.5 in Regatta (RaceLines/Scarab_Regatta). The search gives it a row.
-        **SWITCHBACK_NOSE,                             # Switchback's nose knobs: the Scarab flies them in the Rally
+        **SCARAB_NOSE,                                 # Scarab Rally's own nose knobs (ScarabRallyController)
         "lead": 0.0, "rows": [{"Hull": "Dolphin", "Gain": 2.5, "MaxExtraDegrees": 40}],
+    },
+    "Rhino": {
+        "mode": "Headlong",
+        # RampBoostAIPolicySO: the ramp boost's engage/release bands and the corner braking that keeps it.
+        "assets": {i: POL + "RhinoAIBoostPolicy_Headlong.asset" for i in (1, 2, 3, 4)},
+        "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
+                   "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
+                   "cornerSpeed": (60.0, 900.0), "minCornerSpeed": (30.0, 600.0), "brakeMarginUnits": (0.0, 300.0),
+                   "brakeLeadSeconds": (0.0, 2.0), "brakeSteerFloor": (0.0, 1.0), "cornerReleaseDegrees": (0.0, 90.0)},
+        # HeadlongController.aiNoseLead: Rhino 2.5. At 2.5 the AI orbits in place (~70 s a lap at 33 u/s, 2026-11-17);
+        # 1.0 halved I1 and I2. Headlong has no nose knob: the fleet lag.
+        "lead": 2.47, "rows": [], "nose_gene": 7.5,    # Rhino run1 (2026-11-17)
     },
     "Manta": {
         "mode": "Redline",
@@ -127,10 +155,14 @@ GAMES = {
         "assets": {i: POL + "MantaSoarAITuning_Redline.asset" for i in (1, 2, 3, 4)},
         "fields": {"BoostStickBand": (0.0, 1.0), "YawsteryStickBand": (0.0, 1.0)},
         "ctrl_fields": {"noseLegendary": (2.0, 24.0)},
-        "ctrl_defaults": {"noseLegendary": 9.0},
+        "ctrl_defaults": {"noseLegendary": 15.0, "noseLegendaryI34": 9.0},   # shipped since the split confirms
+        # noseLegendaryI34 (optional, not searched): I3-I4's own Legendary rate. The Manta split confirm (2026-11-17) found
+        # nose 15 wins I1-I2 by 12-21% and loses I4 from Time 5 and 10 by 13-19% (Soar overshoot), so a confirm can race
+        # a split table.
         "ctrl": lambda p: {"aiNoseFollowByIntensity": [
-            {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"])}
-            for e, m, h in ((2, 3, 6), (2, 3, 6), (2.5, 3, 6), (4, 5, 6))]},
+            {"easy": e, "medium": m, "hard": h,
+             "legendary": float(p["noseLegendary"] if i < 2 else p.get("noseLegendaryI34", p["noseLegendary"]))}
+            for i, (e, m, h) in enumerate(((2, 3, 6), (2, 3, 6), (2.5, 3, 6), (4, 5, 6)))]},
         "crystal_field": "aiTimeCrystalSlack",
         "lead": 0.0, "rows": [],                       # RedlineController.aiNoseLead: Manta 0
     },
@@ -390,6 +422,10 @@ def main():
     a.fast = [int(s) for s in a.fast.split(",") if s]
     a.rest = [int(s) for s in a.rest.split(",") if s]
     a.l5 = [int(s) for s in a.l5.split(",") if s]
+    # A confirm always races I4 from Time 5: at level-5 speed a fleet-lag nose orbits a gate and never clears it
+    # (the Rhino in Headlong, FINDINGS row 21), and a drive that only won from rest must not ship that back.
+    if a.confirm and 4 not in a.l5:
+        a.l5.append(4)
     g = GAMES[a.hull]
     seeds = [int(s) for s in a.seeds.split(",") if s]
     conds = conditions_for(a)

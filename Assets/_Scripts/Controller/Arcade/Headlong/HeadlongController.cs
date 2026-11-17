@@ -32,9 +32,11 @@ namespace CosmicShore.Gameplay
     public partial class HeadlongController : GateRaceController
     {
         [Header("AI nose lead")]
-        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
-                 "the lead off. Rhino 2.5: the fleet lead.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Rhino, 2.5f) };
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain) and nose follow rate (0 = the fleet lag), set as it is " +
+                 "armed. A hull with no row flies with the lead off. Rhino: lead 2.47 with its nose at 7.5/s, trained in this " +
+                 "race (time_ai_search.py, Rhino run1, 2026-11-17); at the fleet lag of 1.5/s it orbited a gate and at I4 " +
+                 "(Time 5) cleared none.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Rhino, 2.47f, noseFollow: 7.5f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
