@@ -23,7 +23,7 @@ rail's foot, as in Froglet Analytics:
 |---|---|
 | Mission | the six launch stages and the current gate, go/no-go per platform, the next checklist and runbook steps, Start a release |
 | Pipeline | Bleeding Edge, Development, Master, Release: vessels, cadence, guard; the promotions and the scheduled workflows; trunk checks |
-| Builds | one platform at a time: channels and last runs, its actions, its open blockers, a Claude chat for it; live ops |
+| Builds | this phase's four builds from bleeding-edge, one tab each: Windows to Discord (link dropped by hand), iOS to TestFlight, Android to Play internal testing, WebGL to the Toybox page. A tab lists what is left (automatic checks plus shared prep ticks), a Copy prompt for Claude Code on the PC with Unity, and the upload button, enabled only when nothing is left: iOS and WebGL start a cloud chat that runs `ios-testflight.yml` / `toybox-publish.yml`; Android opens Play Console with a chat (no Play upload automation yet); Windows copies the Discord post. The round strip pins the version numbers; Live ops is the fifth tab |
 | Release | the five steps: what goes out, checks (the whole checklist), notes, who gets it, launch (the release runbook, launch day, rollback) |
 | Signals | who is playing in this stage, the gate's measure, after-launch metrics (not connected), changelog, Ask |
 
@@ -35,7 +35,8 @@ What it holds, in its own store (ArtifactData):
 |---|---|---|
 | `status/board` | the pipelines' merged `status.json` from the `launch-status` branch | a Claude session: `console_sync.py board` (admin only) |
 | `status/quality` | QA backlog, EditMode, verification counts, with source and date | a Claude session (admin only) |
-| `checklist/*` | the launch checklist, seeded from `READINESS.md` §10 | the team on the page (status, taken by, due, evidence) |
+| `status/versions` | bleeding-edge's `bundleVersion`, iOS build number, `AndroidBundleVersionCode` and `NetworkConfig.ProtocolVersion`, with the commit: the round every build is checked against so cross-platform builds play together | a Claude session: `console_sync.py board` (admin only) |
+| `checklist/*` | the launch checklist, seeded from `READINESS.md` §10; also `prep-<platform>-<step>` rows (`kind: 'prep'`), the Builds tabs' ticks, which count only for the commit they were ticked on | the team on the page (status, taken by, due, evidence) |
 | `runbook/*` | the T-7 … T+7 timeline | the team on the page (step status) |
 | `changelog/*` | each release's generated notes | a Claude session, from the release workflow's draft releases |
 

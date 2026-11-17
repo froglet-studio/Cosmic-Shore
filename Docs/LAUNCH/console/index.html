@@ -199,6 +199,13 @@ svg.i.s { width: 16px; height: 16px; }
 .cell .l1 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .cell[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--sel), 0 0 30px color-mix(in srgb, var(--sel) 18%, transparent); background: color-mix(in srgb, var(--sel) 9%, var(--g)); }
 .cell.none { background: transparent; }
+.round { display: flex; flex-wrap: wrap; gap: 18px 40px; align-items: flex-end; padding: 22px 28px; }
+.round .rv { display: grid; gap: 4px; }
+.tabs { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.tab { display: flex; align-items: center; gap: 14px; padding: 16px 18px; background: color-mix(in srgb, var(--g) 90%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ln) 70%, transparent); transition: box-shadow .2s, background-color .2s, transform .25s; }
+.tab > span:nth-child(2) { flex: 1; min-width: 0; }
+.tab:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 1px var(--ts); }
+.tab[aria-selected="true"] { box-shadow: inset 0 0 0 2px var(--sel), 0 0 30px color-mix(in srgb, var(--sel) 18%, transparent); background: color-mix(in srgb, var(--sel) 9%, var(--g)); }
 .kv3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; }
 .steps li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 14px; align-items: center; min-height: 44px; }
@@ -223,7 +230,7 @@ svg.i.s { width: 16px; height: 16px; }
 input.big-in { height: 56px; padding: 0 16px; font-size: 22px; background: var(--gd); border: 0; box-shadow: inset 0 0 0 1px var(--ts); width: 100%; max-width: 260px; }
 input.big-in:focus { box-shadow: inset 0 0 0 2px var(--sel); outline: none; }
 .vrow { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; }
-@media (max-width: 760px) { .vrow { grid-template-columns: minmax(0, 1fr); } .stepper .t2 { display: none; } }
+@media (max-width: 760px) { .vrow { grid-template-columns: minmax(0, 1fr); } .stepper .t2 { display: none; } .stepfoot > span, .stepfoot .btn { min-width: 0; max-width: 100%; white-space: normal; } .stepfoot [data-go] { width: 100%; justify-content: center; } }
 .platpick { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 .platpick .chip { height: 54px; justify-content: flex-start; padding: 0 16px; }
 .clist { list-style: none; margin: 0; padding: 0; }
@@ -395,7 +402,7 @@ code { background: var(--gd); padding: 3px 8px; overflow-wrap: anywhere; }
   const CCR = 'Claude Code Remote';
   const skillFor = (key) => `/launch-flow-${key === 'launch' ? 'launch-wide' : key}`;
   const PAGES = [['mission', 'Mission', 'Where the launch stands, and the one thing to do next'], ['pipeline', 'Pipeline', 'Bleeding Edge to Development to Master to Release, and what each branch feeds'],
-    ['builds', 'Builds', 'Every platform, where each build goes to be tested, and what blocks it'], ['release', 'Release', 'Perform a release, any time: five steps from a branch to the people playing it'],
+    ['builds', 'Builds', 'This phase builds from Bleeding Edge: four builds, one version, each to where it is tested'], ['release', 'Release', 'Perform a release, any time: five steps from a branch to the people playing it'],
     ['signals', 'Signals', 'Who is playing, what they say, and how close the next gate is']];
   const I = {
     mission: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/>',
@@ -435,7 +442,7 @@ code { background: var(--gd); padding: 3px 8px; overflow-wrap: anywhere; }
 
   let board = null, items = [], runbook = [], changelog = [], quality = null;
   let db = null, user = null, me = null, names = {}, mcp = null;
-  let page = null, viewStage = CURRENT_STAGE, bFilter = 'all', bSel = { p: 'ios', col: 'build' }, rStep = 0;
+  let page = null, viewStage = CURRENT_STAGE, rStep = 0;
   const chats = {}; let envs = null, envId = '';
   let draft = { version: '', from: 'development', plats: ['android', 'ios', 'windows', 'web'], notes: '', team: '' };
   try { Object.assign(draft, JSON.parse(store.get('lc-release-draft') || '{}')); } catch (e) {}
@@ -639,7 +646,7 @@ code { background: var(--gd); padding: 3px 8px; overflow-wrap: anywhere; }
         </section>
       </div></div>`;
     $$('.stop', el).forEach((b) => b.addEventListener('click', () => { viewStage = b.dataset.st; render(false); }));
-    $$('.plat', el).forEach((b) => b.addEventListener('click', () => { bSel = { p: b.dataset.p, col: 'build' }; location.hash = '#builds'; }));
+    $$('.plat', el).forEach((b) => b.addEventListener('click', () => { bTab = ROUND.some((x) => x.key === b.dataset.p) ? b.dataset.p : 'liveops'; location.hash = '#builds'; }));
     $$('[data-rb]', el).forEach((b) => b.addEventListener('click', () => { const r = runbook.find((x) => x.id === b.dataset.rb); if (r) writeStep(r, r.status === 'done' ? 'todo' : 'done'); }));
   }
   function activity() {
@@ -699,52 +706,116 @@ code { background: var(--gd); padding: 3px 8px; overflow-wrap: anywhere; }
   }
 
   // ---------------------------------------------------------------- Builds
-  const COLS = [['build', 'Last build'], ['pre', 'Testers'], ['prod', 'Players']];
-  const compFor = (p, col) => col === 'build' ? p.build : col === 'pre' ? p.channels[0] : p.channels[1];
+  // Beta Phase 1 builds from Bleeding Edge, four at a time (Shombith, 2026-11-17): Windows to Discord (no Steam yet; he
+  // drops the link himself), iOS to TestFlight, Android to Play internal testing, WebGL to the Toybox page. All four of a
+  // round come from ONE commit and carry ONE version and protocol, or they cannot play together.
+  const ROUND = [
+    { key: 'windows', tab: 'Windows', to: 'Discord', icon: 'monitor', build: 'build-windows', pre: 'windows-prerelease', num: null,
+      prep: [['made', 'Windows player built from the round’s commit', 'Release, Development Build off, carrying the round’s version'], ['link', 'Zipped and on the shared Drive', 'Paste the share link: it goes into the Discord post', 'link']],
+      buildPrompt: (r) => `/launch-flow-windows Build the Windows player for Discord from bleeding-edge commit ${r.commit}: version ${r.version}, protocol ${r.protocol}, Release with Development Build off. Zip it, put it in the shared Drive folder and give me the share link. Do not post it anywhere; I drop it on Discord myself.`,
+      go: { label: 'Drop it on Discord', copy: true } },
+    { key: 'ios', tab: 'iOS', to: 'TestFlight', icon: 'phone', build: 'build-ios', pre: 'ios-prerelease', num: ['ios_build', 'iOS build number'],
+      prep: [['export', 'Xcode project exported from the round’s commit', 'Release, Development Build off, on a PC with Unity'], ['secret', 'IOS_RELEASE_EXPORT_URL points at that export', 'In the testflight environment on GitHub'], ['compliance', 'Export compliance answered in App Store Connect', 'Without it TestFlight refuses the build']],
+      buildPrompt: (r) => `/launch-flow-ios Export the iOS Xcode project from bleeding-edge commit ${r.commit}: version ${r.version}, build number ${r.ios_build}, protocol ${r.protocol}, Release with Development Build off. Zip it, share the link, and ask me before setting it as IOS_RELEASE_EXPORT_URL in the testflight environment. Then tell me it is ready for Upload to TestFlight.`,
+      upPrompt: (r) => `/launch-flow-ios Upload iOS ${r.version} (build ${r.ios_build}) to TestFlight: confirm IOS_RELEASE_EXPORT_URL is the export of bleeding-edge ${r.commit}, run the "iOS TestFlight" workflow (ios-testflight.yml) on bleeding-edge, watch it, and tell me when the build is processing in App Store Connect.`,
+      go: { label: 'Upload to TestFlight', wf: 'ios-testflight.yml' } },
+    { key: 'android', tab: 'Android', to: 'Play internal testing', icon: 'phone', build: 'build-android', pre: 'android-prerelease', num: ['android_code', 'Android version code'],
+      prep: [['aab', 'Signed release AAB built from the round’s commit', 'Signed with the upload key'], ['testers', 'The internal testing track has its testers', 'Play Console > Testing > Internal testing']],
+      buildPrompt: (r) => `/launch-flow-android Build a signed release AAB from bleeding-edge commit ${r.commit}: version ${r.version}, version code ${r.android_code}, protocol ${r.protocol}, signed with the upload key. Tell me where the file is.`,
+      upPrompt: (r) => `/launch-flow-android Put Android ${r.version} (version code ${r.android_code}), built from bleeding-edge ${r.commit}, on the Play internal testing track and confirm a tester can install it. Ask me before anything goes past internal testing.`,
+      go: { label: 'Upload to internal testing', url: 'https://play.google.com/console' } },
+    { key: 'web', tab: 'WebGL', to: 'the Toybox page', icon: 'globe', build: 'build-web', pre: 'web-staging', num: null,
+      prep: [['uba', 'Unity Build Automation has the Toybox target', 'UBA_TOYBOX_TARGET on the toybox environment']],
+      buildPrompt: (r) => `/launch-flow-web Check the WebGL Toybox build of bleeding-edge commit ${r.commit} (version ${r.version}, protocol ${r.protocol}) in Unity Build Automation and fix what stops it.`,
+      upPrompt: (r) => `/launch-flow-web Stage WebGL ${r.version} from bleeding-edge ${r.commit}: run "Publish browser Toybox" (toybox-publish.yml) with action=stage and commit=${r.commit}, watch it, then wait for my go before promote to /play.`,
+      go: { label: 'Publish to the Toybox', wf: 'toybox-publish.yml' } },
+  ];
+  let bTab = 'ios', prep = {}, versions = null;
+  const prepOf = (b, id) => { const d = prep[`prep-${b.key}-${id}`]; return d && versions && d.round === versions.commit ? d : null; };
+  async function tick(b, id, patch) {
+    if (!db || !versions) return;
+    const doc = { kind: 'prep', platform: b.key, step: id, round: versions.commit, by: me && me.id || null, at: new Date().toISOString(), ...patch };
+    const ref = db.collection('checklist').doc(`prep-${b.key}-${id}`);
+    try { await (ref.set ? ref.set(doc) : ref.update(doc)); } catch (e) { try { await ref.update(doc); } catch (e2) { prep[`prep-${b.key}-${id}`] = doc; refresh(); } }
+  }
+  function roundChecks(b) {
+    const c = comps(); const v = versions; const rows = [];
+    rows.push(v ? { ok: true, n: 'The round is pinned', sub: `bleeding-edge ${v.commit}, synced ${agoLong(v.synced_at)}` } : { ok: false, n: 'The round is pinned', sub: 'No version numbers synced yet: ask a session for a console sync', fix: true });
+    const g = c['trunk-static']; rows.push({ ok: !!g && g.result === 'success', n: 'Bleeding Edge guard is green', sub: g ? `${g.result}, ${agoLong(g.updated_at)}` : 'No guard run synced yet' });
+    if (v) {
+      const mism = ROUND.map((x) => c[x.build]).filter((r) => r && r.commit && r.commit.startsWith(v.commit.slice(0, 7)) && r.version && r.version !== v.version);
+      rows.push({ ok: !!v.version && !mism.length, n: `Every build carries ${v.version || '?'}, protocol ${v.protocol || '?'}`, sub: mism.length ? `${mism.length} build of this round carries another version` : 'The same on Windows, iOS, Android and WebGL, so they play together' });
+    }
+    if (b.num && v) { const last = c[b.pre]; const lastN = last && Number(last.build); const now = Number(v[b.num[0]]);
+      rows.push({ ok: !!now && (!lastN || now > lastN), n: `${b.num[1]} is ${now || '?'}`, sub: lastN ? (now > lastN ? `Above the last upload (${lastN})` : `Must be above the last upload (${lastN}): bump it first`) : 'No earlier upload recorded' }); }
+    const bl = openBlockers(b.key); rows.push({ ok: !bl.length, n: 'No open launch blockers', sub: bl.length ? bl.map((i) => `#${i.rank} ${i.title}`).join('; ') : `Nothing on the checklist blocks ${b.tab}` });
+    return rows;
+  }
   function pageBuilds(el) {
-    const c = comps(); const rows = PLATFORMS.filter((p) => p.channels.length || p.build).filter((p) => bFilter === 'all' || p.group === bFilter);
-    const cell = (p, col) => { const id = compFor(p, col); const r = id && c[id]; const pressed = bSel.p === p.key && bSel.col === col;
-      if (!id) return `<div class="cell none sls hatch"><span class="xs off">Not a channel here</span></div>`;
-      if (!r) return `<button class="pick cell none sls" data-p="${p.key}" data-c="${col}" aria-pressed="${pressed}"><span class="l1"><span class="sm off">No run yet</span>${chip('none', 'None')}</span><span class="xs off mono">${esc(id)}</span></button>`;
-      const run = r.result === 'running';
-      return `<button class="pick cell sls lift" data-p="${p.key}" data-c="${col}" aria-pressed="${pressed}"><span class="l1"><span class="sm num">${esc([r.version, r.build && `(${r.build})`].filter(Boolean).join(' ') || r.source || id)}</span>${resultChip(r.result)}</span>
-        <span class="xs soft">${esc(r.summary || r.source || '')}${r.updated_at ? `, ${esc(agoLong(r.updated_at))}` : ''}</span>${run ? '<span class="meter" style="height:3px"><span class="fade" style="position:absolute;inset:0 70% 0 0;background:var(--sel)"></span></span>' : ''}</button>`; };
-    el.innerHTML = `<div class="g row2r" style="display:grid">
-      <div class="g" style="align-content:start">
-        <div class="filters rise d1">${[['all', 'All'], ['mobile', 'Mobile'], ['desktop', 'Desktop'], ['web', 'Web'], ['backend', 'Live ops']].map(([k, n]) => `<button class="chip" data-f="${k}" aria-pressed="${bFilter === k}">${n}</button>`).join('')}<span class="xs soft" style="margin-left:auto">${esc(board ? `Synced ${agoLong(board.synced_at || board.generated_at)}` : 'No pipeline status synced yet')}</span></div>
-        <section class="pn sl rise d2" aria-label="Builds by platform"><div class="scroll"><div class="mx">
-          <span></span>${COLS.map(([, n]) => `<span class="lab colh">${n}</span>`).join('')}
-          ${rows.map((p) => `<span class="rowh">${svg(p.icon)}<span class="cap sm">${esc(p.name)}</span></span>${COLS.map(([k]) => cell(p, k)).join('')}`).join('')}
-        </div></div></section>
-        <section class="pn sl rise d3" aria-label="Open blockers" id="b-block"></section>
-      </div>
-      <aside class="pn sl raised rise d3" aria-label="Detail" id="b-detail"></aside></div>`;
-    $$('[data-f]', el).forEach((b) => b.addEventListener('click', () => { bFilter = b.dataset.f; render(false); }));
-    $$('[data-p][data-c]', el).forEach((b) => b.addEventListener('click', () => { bSel = { p: b.dataset.p, col: b.dataset.c }; render(false); }));
-    const p = PLATFORMS.find((x) => x.key === bSel.p) || PLATFORMS[0]; const id = compFor(p, bSel.col); const r = id && c[id];
-    const det = $('#b-detail', el);
-    const ok = r && r.result === 'success', bad = r && r.result === 'failure';
-    const runUrl = r && (safeUrl(r.run_url) || safeUrl(r.link));
-    det.innerHTML = `<div style="display:grid;gap:18px">
-      <div><span class="lab">${esc((COLS.find((x) => x[0] === bSel.col) || [0, ''])[1])}</span><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px"><h2 class="h1">${esc(p.name)}</h2>${r ? resultChip(r.result) : chip('none', 'No run')}</div>
-        <p class="sm soft num" style="margin-top:6px">${r ? esc([r.version, r.build && `(${r.build})`, r.commit && r.commit.slice(0, 7)].filter(Boolean).join(' · ') || r.source) : esc(id || '')}</p></div>
-      <div class="kv3"><div><div class="lab">When</div><div class="sm">${r ? esc(agoLong(r.updated_at)) : '—'}</div></div><div><div class="lab">Source</div><div class="sm">${r ? esc(r.source || '—') : '—'}</div></div><div><div class="lab">Goes to</div><div class="sm">${esc(bSel.col === 'pre' ? p.tester || 'testers' : bSel.col === 'prod' ? 'players' : 'testers next')}</div></div></div>
-      <div class="hr"></div>
-      <div><div class="lab" style="margin-bottom:10px">Steps</div><ul class="steps">
-        ${[['Built', !!c[p.build], c[p.build] && c[p.build].result], ['To testers', !!c[p.channels[0]], c[p.channels[0]] && c[p.channels[0]].result], ['To players', !!c[p.channels[1]], c[p.channels[1]] && c[p.channels[1]].result]].map(([n, has, res]) => `<li><span class="sq ${res === 'success' ? 'ok' : res === 'failure' ? 'bad' : res === 'running' ? 'run' : ''}">${res === 'success' ? svg('check', 'i s') : res === 'failure' ? svg('x', 'i s') : res === 'running' ? `<svg class="i s spin" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 1 9 9"/></svg>` : ''}</span><span class="sm ${has ? '' : 'off'}">${n}</span><span class="xs soft">${has ? esc(res) : 'no run'}</span></li>`).join('')}
-      </ul></div>
-      ${r && r.summary ? `<p class="sm ${bad ? 'bad' : ''}">${esc(r.summary)}</p>` : ''}
-      <div class="hr"></div>
-      <div><div class="lab" style="margin-bottom:10px">Start here</div><div style="display:flex;flex-wrap:wrap;gap:10px">${runUrl ? `<a class="btn def s" href="${esc(runUrl)}" target="_blank" rel="noopener">${svg('link', 'i s')}The run</a>` : ''}${p.actions.map((a) => actionBtn(a)).join('')}</div>
-        <p class="xs off" style="margin-top:10px">Each button opens the workflow or dashboard where the action runs; production steps wait for a reviewer there. Greyed ones are workflows not in the repository yet.</p></div>
-      ${p.rollback ? `<div><div class="lab" style="margin-bottom:6px">If it breaks</div><p class="sm soft">${esc(p.rollback)}</p></div>` : ''}
-      <div class="hr"></div><div id="b-claude"></div></div>`;
-    claudeBox($('#b-claude', det), { key: p.key, title: `Launch flow: ${p.name}`, cmd: skillFor(p.key), blurb: `A chat of its own for ${p.name}: it lists the open blockers, says where the platform stands and plans the fix, then works the item you pick.` });
-    const bl = openBlockers(p.key).sort((a, b) => (a.rank || 99) - (b.rank || 99)); const bb = $('#b-block', el);
-    bb.innerHTML = `<div class="head"><span class="lab">${esc(p.name)}: open blockers${bl.length ? ` (${bl.length})` : ''}</span>${p.key === 'liveops' ? '' : ''}</div><div class="items"></div>`;
-    if (!bl.length) $('.items', bb).append(h(`<div class="empty sls">${items.length ? 'None open for this platform.' : 'The checklist has not loaded.'}</div>`));
-    bl.forEach((i) => $('.items', bb).append(itemCard(i, true)));
-    if (p.key === 'liveops') { const f = c['ugs-production'] && c['ugs-production'].details; bb.append(h(`<p class="sm soft" style="margin-top:14px">${f && (f.minimum_version || f.kill_switches) ? `Minimum client version: ${esc(f.minimum_version || 'none set')}. Kill switches on: ${esc(f.kill_switches || 'none')}.` : 'Launch flags (minimum version, kill switches) appear here once a production deploy records them.'}</p>`)); }
+    const v = versions; const c = comps();
+    const b = ROUND.find((x) => x.key === bTab);
+    const tabState = (x) => { const auto = roundChecks(x); const left = auto.filter((r) => !r.ok).length + x.prep.filter(([id]) => !prepOf(x, id)).length; return left; };
+    el.innerHTML = `<div class="g">
+      <section class="pn sl rise d1 round" aria-label="This round">
+        <div class="rv"><span class="lab">This round, from Bleeding Edge</span><span class="h3 mono">${v ? esc(v.commit) : '—'}</span></div>
+        ${[['Version', v && v.version], ['Protocol', v && v.protocol], ['iOS build', v && v.ios_build], ['Android code', v && v.android_code]].map(([k, x]) => `<div class="rv"><span class="lab">${k}</span><span class="h2 num">${esc(x || '—')}</span></div>`).join('')}
+        <div class="rv" style="margin-left:auto;align-self:center"><button class="btn def s" data-copy="bump">${svg('tag', 'i s')}Copy the bump prompt</button><span class="xs soft">${v ? `Synced ${esc(agoLong(v.synced_at))}` : 'Not synced yet'}</span></div>
+      </section>
+      <nav class="tabs rise d2" role="tablist" aria-label="Builds">${ROUND.map((x) => { const left = tabState(x); return `<button class="pick tab sl" role="tab" data-tab="${x.key}" aria-selected="${x.key === bTab}">${svg(x.icon)}<span><span class="cap">${x.tab}</span><span class="xs soft" style="display:block">to ${esc(x.to)}</span></span>${left ? `<span class="st risk"><i></i>${left} left</span>` : '<span class="st go"><i></i>Ready</span>'}</button>`; }).join('')}
+        <button class="pick tab sl" role="tab" data-tab="liveops" aria-selected="${bTab === 'liveops'}">${svg('cloud')}<span><span class="cap">Live ops</span><span class="xs soft" style="display:block">UGS and flags</span></span></button></nav>
+      <div id="b-body"></div></div>`;
+    $$('[data-tab]', el).forEach((t) => t.addEventListener('click', () => { bTab = t.dataset.tab; render(false); }));
+    const bump = `/launch-flow-launch-wide Start a new build round on bleeding-edge: set bundleVersion to the next version${v ? ` after ${v.version}` : ''}, raise the iOS build number${v ? ` above ${v.ios_build}` : ''} and AndroidBundleVersionCode${v ? ` above ${v.android_code}` : ''}, and keep NetworkConfig.ProtocolVersion${v ? ` (${v.protocol})` : ''} unless the wire format changed. One commit; show me the numbers before pushing. Then sync the Launch Console.`;
+    $('[data-copy="bump"]', el).addEventListener('click', (e) => copy(bump, e.currentTarget));
+    const body = $('#b-body', el);
+    if (!b) return liveops(body);
+    const auto = roundChecks(b); const r = v || {}; const left = auto.filter((x) => !x.ok).length + b.prep.filter(([id]) => !prepOf(b, id)).length;
+    const runs = [[b.build, 'Last build'], [b.pre, b.key === 'web' ? 'Staged' : 'Last upload']].map(([id, n]) => { const x = c[id]; return `<div class="ln"><span class="sm">${n}</span><span class="xs soft num">${x ? esc([x.version, x.build && `(${x.build})`, x.commit && x.commit.slice(0, 7)].filter(Boolean).join(' ')) + ', ' + esc(agoLong(x.updated_at)) : 'none yet'}</span>${x ? resultChip(x.result) : chip('none', 'None')}</div>`; }).join('');
+    const linkVal = (prepOf(b, 'link') || {}).value || '';
+    body.innerHTML = `<div class="g row2r" style="display:grid">
+      <section class="pn sl rise d3" aria-label="${b.tab}: what is left">
+        <div class="head"><h2 class="h1">${esc(b.tab)} <span class="soft">to ${esc(b.to)}</span></h2>${left ? chip('risk', `${left} left`) : chip('go', 'All green')}</div>
+        <ul class="clist">${auto.map((x, i) => `<li class="fade" style="animation-delay:${i * .06}s"><span class="sq ${x.ok ? 'ok' : 'bad'}">${x.ok ? svg('check', 'i s') : svg('x', 'i s')}</span><span><span class="sm" style="display:block">${esc(x.n)}</span><span class="xs ${x.ok ? 'soft' : 'bad'}">${esc(x.sub)}</span></span>${chip(x.ok ? 'go' : 'nogo', x.ok ? 'Green' : 'Not yet')}</li>`).join('')}
+          ${b.prep.map(([id, n, sub, kind], i) => { const d = prepOf(b, id); return `<li class="fade" style="animation-delay:${(auto.length + i) * .06}s"><button class="box" role="checkbox" aria-checked="${!!d}" data-prep="${id}" aria-label="${esc(n)}">${d ? svg('check', 'i s') : ''}</button>
+            <span><span class="sm" style="display:block">${esc(n)}</span><span class="xs soft">${d ? `Done${d.by && names[d.by] ? ` by ${esc(names[d.by])}` : ''}, ${esc(agoLong(d.at))}` : esc(sub)}</span>${kind === 'link' ? `<input type="url" data-link="${id}" placeholder="https://drive.google.com/…" value="${esc(linkVal)}" style="width:100%;margin-top:8px">` : ''}</span>${d ? chip('go', 'Done') : chip('none', 'To do')}</li>`; }).join('')}</ul>
+        <p class="xs off" style="margin-top:12px">Ticks are shared and belong to this round: a new bleeding-edge commit in the sync starts the list again.</p>
+        <div class="stepfoot" style="margin-top:22px"><button class="btn def" data-copy="build">${svg('claude')}Copy prompt</button>
+          <span style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">${left ? `<span class="sm soft">${left} thing${left === 1 ? '' : 's'} left before ${esc(b.go.label.toLowerCase())}</span>` : ''}<button class="btn cta ${left ? '' : 'glow'}" data-go ${left ? 'disabled' : ''}>${svg('release')}${esc(b.go.label)}</button></span></div>
+        <div id="b-up" style="margin-top:18px"></div>
+      </section>
+      <aside class="pn sl raised side rise d4" aria-label="${b.tab} runs">
+        <div><span class="lab">Will carry</span><div class="big num" style="font-size:52px;margin-top:6px">${esc(r.version || '—')}</div><p class="sm soft">protocol ${esc(r.protocol || '—')}${b.num ? `, ${esc(b.num[1].toLowerCase())} ${esc(r[b.num[0]] || '—')}` : ''}</p></div><div class="hr"></div>
+        <div><span class="lab">Runs</span>${runs}</div><div class="hr"></div>
+        <div><span class="lab">The four this round</span>${ROUND.map((x) => { const bx = c[x.build]; const same = bx && v && bx.commit && bx.commit.startsWith(v.commit.slice(0, 7)); return `<div class="ln"><span class="sm">${x.tab}</span><span class="xs ${same && bx.version !== v.version ? 'bad' : 'soft'} num">${same ? esc(bx.version || '') : 'not built yet'}</span></div>`; }).join('')}</div>
+        <div style="margin-top:auto"><span class="lab">The copy prompt</span><p class="sm soft" style="margin-top:8px;line-height:1.55">Paste it into Claude Code on your PC: Windows, iOS and Android builds need Unity there. ${b.go.wf ? `The upload button starts a cloud chat that runs ${esc(b.go.wf)} and watches it.` : b.go.copy ? 'The Discord button copies the post with the link, for you to drop in.' : 'Play uploads are not automated yet: the button opens Play Console and a chat to walk it.'}</p></div>
+      </aside></div>`;
+    $$('[data-prep]', body).forEach((x) => x.addEventListener('click', () => { const id = x.dataset.prep; const d = prepOf(b, id); if (d) tick(b, id, { done: false, round: '' }); else tick(b, id, { done: true, value: ($(`[data-link="${id}"]`, body) || {}).value || null }); }));
+    $$('[data-link]', body).forEach((x) => x.addEventListener('change', () => { const val = x.value.trim(); if (val && !safeUrl(val)) { x.setCustomValidity('Use an https:// link'); return; } tick(b, x.dataset.link, { done: !!val, value: val || null }); }));
+    $('[data-copy="build"]', body).addEventListener('click', (e) => copy(b.buildPrompt(r), e.currentTarget));
+    const up = $('#b-up', body);
+    $('[data-go]', body).addEventListener('click', (e) => {
+      if (b.go.copy) { const link = (prepOf(b, 'link') || {}).value || ''; copy(`Cosmic Shore ${r.version} for Windows (protocol ${r.protocol}, bleeding-edge ${r.commit}). Plays with iOS, Android and the Toybox on the same version.\n${link}`, e.currentTarget); return; }
+      if (b.go.url) window.open(b.go.url, '_blank', 'noopener');
+      const st = chats[`up-${b.key}`] || (chats[`up-${b.key}`] = { open: false, state: '', note: '', link: null, busy: false }); st.open = !!mcp;
+      upBox(); if (mcp) loadEnvs(upBox);
+    });
+    const upBox = () => claudeBox(up, { key: `up-${b.key}`, title: `${b.go.label}: ${r.version || ''}`.trim(), cmd: b.upPrompt(r), blurb: `${b.go.wf ? `Starts a cloud chat that runs ${b.go.wf} on bleeding-edge and watches it.` : 'Starts a cloud chat that walks the upload with you.'} It asks before anything leaves internal testing.` });
+    if (chats[`up-${b.key}`] && (chats[`up-${b.key}`].open || chats[`up-${b.key}`].link)) upBox();
+    if (b.go.wf) up.insertAdjacentHTML('beforebegin', '');
+  }
+  async function copy(text, btn) {
+    let ok = true; try { await navigator.clipboard.writeText(text); } catch (e) { ok = false; }
+    const old = btn.innerHTML; btn.innerHTML = `${svg(ok ? 'check' : 'x', 'i s')}${ok ? 'Copied' : 'Copy failed'}`; setTimeout(() => { btn.innerHTML = old; }, 1600);
+    if (!ok) window.prompt('Copy this', text);
+  }
+  function liveops(body) {
+    const p = PLATFORMS.find((x) => x.key === 'liveops'); const c = comps(); const f = c['ugs-production'] && c['ugs-production'].details;
+    body.innerHTML = `<div class="g row2r" style="display:grid"><section class="pn sl rise d3" aria-label="Live ops"><div class="head"><h2 class="h1">Live ops</h2>${stateChip(p)}</div>
+      ${['ugs-development', 'ugs-production'].map((id) => { const x = c[id]; return `<div class="ln"><span class="sm">${id === 'ugs-production' ? 'UGS production' : 'UGS development'}</span><span class="xs soft">${x ? esc([x.version, x.summary].filter(Boolean).join(' · ')) + ', ' + esc(agoLong(x.updated_at)) : 'no deploy recorded'}</span>${x ? resultChip(x.result) : chip('none', 'None')}</div>`; }).join('')}
+      <p class="sm soft" style="margin:16px 0">${f && (f.minimum_version || f.kill_switches) ? `Minimum client version: ${esc(f.minimum_version || 'none set')}. Kill switches on: ${esc(f.kill_switches || 'none')}.` : 'Launch flags (minimum version, kill switches) appear here once a production deploy records them.'}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">${p.actions.map((a) => actionBtn(a)).join('')}</div><p class="sm soft" style="margin-top:14px">If it breaks: ${esc(p.rollback)}</p></section>
+      <aside class="pn sl raised rise d4" id="lo-claude"></aside></div>`;
+    claudeBox($('#lo-claude', body), { key: 'liveops', title: 'Launch flow: Live ops', cmd: skillFor('liveops'), blurb: 'A chat of its own for live ops: the UGS environments, launch flags and kill switches.' });
   }
 
   // ---------------------------------------------------------------- Release
@@ -932,7 +1003,8 @@ code { background: var(--gd); padding: 3px 8px; overflow-wrap: anywhere; }
     if (!db) return;
     db.doc('status/board').onSnapshot((s) => { board = s.exists ? s.data() : null; refresh(); }, () => {});
     db.doc('status/quality').onSnapshot((s) => { quality = s.exists ? s.data() : null; refresh(); }, () => {});
-    db.collection('checklist').onSnapshot((q) => { items = q.docs.map((d) => ({ id: d.id, ...d.data() })); refresh(); resolveNames(); }, () => {});
+    db.collection('checklist').onSnapshot((q) => { const all = q.docs.map((d) => ({ id: d.id, ...d.data() })); items = all.filter((d) => d.kind !== 'prep'); prep = {}; all.filter((d) => d.kind === 'prep' && d.done).forEach((d) => { prep[d.id] = d; }); refresh(); resolveNames(); }, () => {});
+    db.doc('status/versions').onSnapshot((s) => { versions = s.exists ? s.data() : null; refresh(); }, () => {});
     db.collection('runbook').onSnapshot((q) => { runbook = q.docs.map((d) => ({ id: d.id, ...d.data() })); refresh(); }, () => {});
     db.collection('changelog').onSnapshot((q) => { changelog = q.docs.map((d) => ({ id: d.id, ...d.data() })); refresh(); }, () => {});
   })();

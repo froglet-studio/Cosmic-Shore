@@ -6,11 +6,13 @@ The console (https://claude.ai/artifact/XwF8FQrHhUTvNv1gE8kws2, source Docs/LAUN
 GitHub itself, so a Claude session copies the data in with the ArtifactData tool. This script prepares that data as
 one JSON file per document plus a `writes.json` listing them, and the session sends `writes.json` as one batch:
 
-    python3 Tools/Launch/console_sync.py board   --out <dir>   # status/board from the launch-status branch
+    python3 Tools/Launch/console_sync.py board   --out <dir>   # status/board + status/versions (launch-status, bleeding-edge)
     python3 Tools/Launch/console_sync.py seed    --out <dir>   # checklist/* and runbook/* (first fill only)
     python3 Tools/Launch/console_sync.py self-test
 
-`board` is safe to run any time: it writes only `status/board` (admin-only in the page's rules). `seed` writes the
+`board` is safe to run any time: it writes only `status/board` and `status/versions` (admin-only in the page's rules).
+`status/versions` is what the Builds tabs check every build against: bleeding-edge's version, the iOS build number,
+the Android version code and the multiplayer protocol version, so the four builds of a round play together. `seed` writes the
 checklist and runbook rows the team then edits on the page; run it once. Re-running it would overwrite the team's
 status and "taken by" fields, so it refuses unless `--force` is given, and a later re-seed should send only new rows.
 
@@ -23,6 +25,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -199,7 +202,31 @@ def board(out: Path, remote: str) -> list:
     data["branch_commit"] = sha[:12]
     writes: list = []
     write_doc(out, "status", "board", data, writes)
+    write_doc(out, "status", "versions", versions(remote), writes)
     return writes
+
+
+def _field(text: str, key: str) -> str:
+    """The value after `key:` on its own line in a Unity YAML asset ('' when absent)."""
+    m = re.search(r"^\s*" + re.escape(key) + r":\s*(\S*)\s*$", text, re.M)
+    return m.group(1) if m else ""
+
+
+def versions(remote: str, branch: str = "bleeding-edge") -> dict:
+    """The numbers every build of a round must agree on, read from the branch the builds come from."""
+    subprocess.run(["git", "fetch", "-q", remote, branch], check=True)
+    sha = subprocess.run(["git", "rev-parse", "FETCH_HEAD"], check=True, text=True, capture_output=True).stdout.strip()
+    show = lambda path: subprocess.run(["git", "show", f"FETCH_HEAD:{path}"], check=True, text=True,
+                                       capture_output=True).stdout
+    return parse_versions(show("ProjectSettings/ProjectSettings.asset"),
+                          show("Assets/_Prefabs/CORE/NetworkManager.prefab"), branch, sha)
+
+
+def parse_versions(settings: str, network: str, branch: str, sha: str) -> dict:
+    ios = re.search(r"^\s*buildNumber:\s*\n(?:\s+\w+: .*\n)*?\s+iPhone:\s*(\S+)", settings, re.M)
+    return {"version": _field(settings, "bundleVersion"), "ios_build": ios.group(1) if ios else "",
+            "android_code": _field(settings, "AndroidBundleVersionCode"), "protocol": _field(network, "ProtocolVersion"),
+            "branch": branch, "commit": sha[:12], "synced_at": now()}
 
 
 def self_test() -> int:
@@ -223,6 +250,10 @@ def self_test() -> int:
         assert bad == ["x"]
     finally:
         CHECKLIST = saved
+    v = parse_versions("  bundleVersion: 0.2.0\n  buildNumber:\n    Standalone: 0\n    iPhone: 14\n"
+                       "  AndroidBundleVersionCode: 11\n", "    ProtocolVersion: 34\n", "bleeding-edge", "abcdef1234567")
+    assert (v["version"], v["ios_build"], v["android_code"], v["protocol"]) == ("0.2.0", "14", "11", "34"), v
+    assert parse_versions("", "", "b", "x")["version"] == "", "a missing field must read as empty, not crash"
     print(f"self-test OK: {len(CHECKLIST)} checklist rows, {len(RUNBOOK)} runbook steps, negative control caught")
     return 0
 
