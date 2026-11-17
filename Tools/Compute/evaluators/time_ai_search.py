@@ -75,6 +75,22 @@ SWITCHBACK_NOSE = {
     "ctrl": _switchback_nose,
 }
 
+def _scarab_nose(p):
+    return {
+        "aiScarabNoseFollowByIntensity": [
+            {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"]) * k}
+            for e, m, h, k in ((1.9, 2.2, 3, 1.0), (2, 2.4, 3, 1.0), (2.1, 2.2, 2.8, 1.2), (1.8, 2.2, 3.5, 1.2))],
+        "aiScarabNoDodgeNearRing": float(p["aiNoDodgeNearRing"])}
+
+
+# ScarabRallyController's own copies of those knobs (2026-11-17: the Scarab no longer flies the Dolphin's table), shipped
+# from Scarab run3: Legendary 15/s at I1-I2 (x1.2 at I3-I4), no dodge within 224 u of a ring.
+SCARAB_NOSE = {
+    "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
+    "ctrl_defaults": {"noseLegendary": 15.0, "aiNoDodgeNearRing": 224.0},
+    "ctrl": _scarab_nose,
+}
+
 # Per vessel: its Time game, the drive assets per intensity (AIBoostPolicySO.ForMode: <name>_<Mode>_I<n>, else the mode
 # file, else the hull's own), the searched drive fields with the asset's limits, and the nose lead: the mode's
 # aiNoseLead table with this hull's row ("rows" are the other hulls' rows, kept as they ship).
@@ -116,7 +132,7 @@ GAMES = {
                    "dashCooldownSeconds": (0.2, 6.0)},
         # Scarab Rally inherits Switchback's table, which has only the Dolphin's row: the Scarab flies with NO lead
         # there and 2.5 in Regatta (RaceLines/Scarab_Regatta). The search gives it a row.
-        **SWITCHBACK_NOSE,                             # Switchback's nose knobs: the Scarab flies them in the Rally
+        **SCARAB_NOSE,                                 # Scarab Rally's own nose knobs (ScarabRallyController)
         "lead": 0.0, "rows": [{"Hull": "Dolphin", "Gain": 2.5, "MaxExtraDegrees": 40}],
     },
     "Rhino": {

@@ -40,6 +40,25 @@ namespace CosmicShore.Gameplay
         /// keys; a Scarab has no key blast, and a crystal it touches becomes a ball in its own path.</summary>
         protected override bool AIDetoursForCrystals => false;
 
+        [Header("AI nose")]
+        [Tooltip("The Scarab AI's nose follow rate per second, one row per intensity (I1..I4), by difficulty: Scarab Rally's own " +
+                 "table, read instead of Switchback's (which is tuned for the Dolphin). 1.5 = the fleet lag, higher = faster. " +
+                 "Legendary trained in the Scarab's own race (time_ai_search.py, Scarab run3, 2026-11-17): 15/s at I1-I2 and " +
+                 "18/s at I3-I4; on 32 fresh flights I4 went 164 to 120 s and I1 from Time 10 103 to 87 s, no DNF.")]
+        [SerializeField] SwitchbackNoseFollow[] aiScarabNoseFollowByIntensity =
+        {
+            new(1.9f, 2.2f, 3f, 15f),    // I1
+            new(2f, 2.4f, 3f, 15f),      // I2
+            new(2.1f, 2.2f, 2.8f, 18f),  // I3
+            new(1.8f, 2.2f, 3.5f, 18f),  // I4 (no gauntlet in Scarab Rally)
+        };
+        [Tooltip("u from the ring inside which the Scarab AI stops dodging (Switchback's aiNoDodgeNearRing, Scarab Rally's own " +
+                 "value). Trained with the nose table above: 224.")]
+        [SerializeField, Min(0f)] float aiScarabNoDodgeNearRing = 224f;
+
+        protected override SwitchbackNoseFollow[] AINoseFollowTable => aiScarabNoseFollowByIntensity;
+        protected override float AINoDodgeNearRing => aiScarabNoDodgeNearRing;
+
         [Header("AI juke")]
         [Tooltip("The AI jukes when, flying on as it is, it would cross the next mouth's plane outside the mouth by no " +
                  "more than one juke (~40 u), and that crossing is at least this many seconds away (the dash takes 0.5 s).")]
