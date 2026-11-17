@@ -85,6 +85,18 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
 .metrics { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 .metric { border: 1px dashed var(--line); padding: 10px 12px; display: grid; gap: 2px; }
 .metric .v { font-family: var(--font-head); font-size: 24px; color: var(--off); }
+/* Launch stages (Shombith's phase diagram, 2026-11-17): six stages, four gates */
+.stages { display: grid; gap: 10px; grid-template-columns: 1fr; }
+@media (min-width: 700px) { .stages { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1100px) { .stages { grid-template-columns: repeat(3, 1fr); } }
+.stage { border: 1px solid var(--line); background: var(--ground); padding: 10px 12px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.stage.now { border: 2px solid var(--jade); background: var(--raised); }
+.stage .sh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.stage .tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--jade); }
+.stage dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; font-size: 13px; }
+.stage dt { color: var(--soft); } .stage dd { margin: 0; min-width: 0; }
+.gate { border-left: 3px solid var(--ruby); padding: 4px 0 4px 8px; font-size: 13px; }
+.gate strong { color: var(--ruby); font-weight: 500; }
 .ask { display: grid; gap: 8px; } .ask textarea { min-height: 64px; width: 100%; box-sizing: border-box; }
 .answer { white-space: pre-wrap; font-size: 14px; border-left: 2px solid var(--jade); padding-left: 10px; }
 @media (prefers-reduced-motion: no-preference) { .pill, .btn { transition: border-color .15s, background .15s; } }
@@ -99,6 +111,12 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     </div>
     <div class="pills" id="pills" role="group" aria-label="Status per platform"></div>
     <div class="src" id="boardsrc">Status comes from the launch-status branch, synced into this page.</div>
+  </section>
+
+  <section class="panel cut" id="stagesp" aria-labelledby="st-title">
+    <header><h2 id="st-title">Launch stages</h2><span class="src">Shombith's phase diagram, 2026-11-17 · every stage runs Bleeding Edge → Development → Master → Release</span></header>
+    <div class="stages" id="stages"></div>
+    <div class="src">A gate passes when its number is measured from its data and Shombith calls it. X, Y and the X% thresholds are not set yet. The Release branch does not exist yet; it is first needed in Beta Phase 2.</div>
   </section>
 
   <section class="panel cut" id="platform" aria-labelledby="p-title">
@@ -165,6 +183,32 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
   const WF = (f) => `${REPO}/actions/workflows/${f}`;
   const MILESTONE_DATE = '2027-03-01'; // Steam keys by March 2027, before GDC (Shombith, 2026-11-06). The mobile release has no date: it waits on activation.
   const STALE_HOURS = 48;
+  // The launch stages, from Shombith's phase diagram (2026-11-17); the same table as
+  // .claude/skills/launch-flow/references/STAGES.md. Move CURRENT_STAGE only when Shombith says a gate passed.
+  const CURRENT_STAGE = 'beta1';
+  const STAGES = [
+    { key: 'beta1', name: 'Beta Phase 1', branches: 'Bleeding Edge 21 vessels · Development 6 · Master 6 · no Release',
+      internal: 'Drive builds, prototype feedback in Unity, bug testing, instrumented data',
+      master: 'Alpha access → Friends, Family and Tadpoles feedback', release: '—', data: 'Instrumented data',
+      gate: ['Gate 1', 'Co-op repeat retention over weeks with the same experience'] },
+    { key: 'beta2', name: 'Beta Phase 2', branches: 'Bleeding Edge X vessels · Development, Master, Release Y',
+      internal: 'Drive builds, prototype feedback, bug testing, instrumented data',
+      master: 'Pre-release access → FFT feedback', release: 'Beta access: limited Beta keys, one at a time, from the FFT feedback', data: 'Activation data',
+      gate: ['Gate 2', 'X% of new users play again after 1 week'] },
+    { key: 'beta3', name: 'Beta Phase 3', branches: 'Bleeding Edge X vessels · Development, Master, Release Y',
+      internal: 'Drive builds, prototype feedback, bug testing, instrumented data',
+      master: 'Alpha access → Tadpole feedback', release: 'Beta access: limited Beta keys, one at a time, from the Tadpole feedback', data: 'Activation, retention, referral data',
+      gate: ['Gate 3', 'X% of users say they would give a 5-star review when surveyed'] },
+    { key: 'early', name: 'Early access', branches: 'Bleeding Edge X vessels · Development, Master, Release Y',
+      internal: 'Drive builds, prototype feedback, bug testing, instrumented data',
+      master: 'Alpha access → Tadpole feedback', release: '$15 early access', data: 'Activation, retention, referral data',
+      gate: ['Gate 4', 'Feature complete: only content is added from here'] },
+    { key: 'full', name: 'Full release', branches: 'Bleeding Edge X vessels · Development, Master, Release Y',
+      internal: 'Drive builds, prototype feedback, bug testing, instrumented data',
+      master: 'Alpha access → Tadpole feedback', release: 'Free to play', data: 'Activation, retention, referral data', gate: null },
+    { key: 'game2', name: 'Game 2 and beyond', branches: '', internal: '', master: '', release: '', data: '',
+      note: 'Game 2 design; everlasting content releases, bug fixing and balance updates', gate: null },
+  ];
   // Each platform: the component ids it shows (Docs/LAUNCH/STATUS_CONTRACT.md), its actions and its rollback.
   const PLATFORMS = [
     { key: 'windows', name: 'Windows / Steam', channels: ['windows-prerelease', 'windows-production'], build: 'build-windows',
@@ -511,9 +555,29 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     });
   }
 
+  function renderStages() {
+    const box = $('#stages'); box.replaceChildren();
+    const nowIdx = STAGES.findIndex((s) => s.key === CURRENT_STAGE);
+    STAGES.forEach((st, idx) => {
+      const card = el('div', `stage cut${st.key === CURRENT_STAGE ? ' now' : ''}`);
+      const h = el('div', 'sh'); h.append(el('h3', '', st.name));
+      h.append(el('span', 'tag', idx < nowIdx ? 'passed' : idx === nowIdx ? 'now' : 'later'));
+      card.append(h);
+      if (st.note) card.append(el('div', 'small', st.note));
+      else {
+        const dl = el('dl');
+        [['Branches', st.branches], ['BE + Dev', st.internal], ['Master', st.master], ['Release', st.release], ['Gate reads', st.data]]
+          .forEach(([k, v]) => { dl.append(el('dt', '', k), el('dd', '', v)); });
+        card.append(dl);
+      }
+      if (st.gate) { const g = el('div', 'gate'); g.append(el('strong', '', `${st.gate[0]}: `), document.createTextNode(st.gate[1])); card.append(g); }
+      box.append(card);
+    });
+  }
+
   function renderAll() { renderPills(); renderPlatform(); renderChecklist(); renderLiveops(); renderGates(); renderRunbook(); renderChangelog(); }
   ['#f-plat', '#f-status', '#f-human'].forEach((s) => $(s).addEventListener('change', renderChecklist));
-  renderMetrics(); renderAll();
+  renderMetrics(); renderStages(); renderAll();
 
   async function resolveNames() {
     if (!user) return;
@@ -548,7 +612,7 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
       const q = $('#q').value.trim(); if (!q) return;
       if (ctl) ctl.abort(); ctl = new AbortController();
       const out = $('#answer'); out.hidden = false; out.textContent = ''; $('#askstate').textContent = 'Thinking…';
-      const ctx = { milestones: 'Mobile release (iOS, Android) when activation is ready, no date set; Steam keys by March 2027, before GDC', steamCountdownTo: MILESTONE_DATE, components: comps(),
+      const ctx = { milestones: 'Mobile release (iOS, Android) when activation is ready, no date set; Steam keys by March 2027, before GDC', steamCountdownTo: MILESTONE_DATE, currentStage: CURRENT_STAGE, stages: STAGES, components: comps(),
         checklist: items.map(({ rank, title, platform, owner, status, needsHuman, risk, size, steps }) => ({ rank, title, platform, owner, status, needsHuman, risk, size, steps })) };
       const prompt = `You help the Cosmic Shore team read their launch console. Answer the question using ONLY the JSON below (pipeline status and the launch checklist). Say plainly when the data does not answer it. Be brief; name the checklist rank (#n) and who decides. Never invent numbers or dates.\n\nJSON:\n${JSON.stringify(ctx)}\n\nQuestion: ${q}`;
       try { const r = await sample(prompt, { signal: ctl.signal, onText: ({ text }) => { out.textContent = text; $('#askstate').textContent = ''; } }); out.textContent = r.text; $('#askstate').textContent = ''; }

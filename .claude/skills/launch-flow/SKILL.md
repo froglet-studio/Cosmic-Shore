@@ -1,6 +1,6 @@
 ---
 name: launch-flow
-description: The shared procedure behind /launch-flow-android, /launch-flow-ios, /launch-flow-windows, /launch-flow-web, /launch-flow-liveops, /launch-flow-backend and /launch-flow-launch-wide - one chat per platform that reads that platform's open launch blockers from the Launch Console (its live checklist and the launch-status pipeline board), READINESS.md and the launch PRs, says where the platform stands, and builds a plan to clear the blockers, then works the one the person picks. Use on "/launch-flow <platform>", "launch flow for <platform>", "what blocks the <platform> launch", "work on the <platform> launch", or when a session was started from the Launch Console's "Work on this in Claude" button. Prefer the per-platform skill names; this one takes the platform as its argument.
+description: The shared procedure behind /launch-flow-android, /launch-flow-ios, /launch-flow-windows, /launch-flow-web, /launch-flow-liveops, /launch-flow-backend and /launch-flow-launch-wide - one chat per platform that reads that platform's open launch blockers from the Launch Console (its live checklist and the launch-status pipeline board), READINESS.md and the launch PRs, says where the platform stands, places the platform in the current launch stage (Beta Phase 1-3, Early access, Full release, Game 2 and beyond) and the gate it moves toward, and builds a plan to clear the blockers, then works the one the person picks. Use on "/launch-flow <platform>", "launch flow for <platform>", "what blocks the <platform> launch", "work on the <platform> launch", or when a session was started from the Launch Console's "Work on this in Claude" button. Prefer the per-platform skill names; this one takes the platform as its argument.
 ---
 
 # /launch-flow - one platform's launch, in its own chat
@@ -11,6 +11,13 @@ the **Launch Console** (https://claude.ai/artifact/XwF8FQrHhUTvNv1gE8kws2; sourc
 holds the live checklist (its store) and the pipelines' records (the `launch-status` branch). This skill gives one
 platform its own chat: read its blockers, say where it stands, plan, then work the item the person picks.
 
+**Every platform works inside the launch phase plan** (Shombith, 2026-11-17; `references/STAGES.md`, picture
+`Docs/LAUNCH/launch_stages.png`): Beta Phase 1, 2 and 3, Early access ($15), Full release (free to play), then Game 2
+and beyond, each closed by a stage gate read from data, and each running the same branches, Bleeding Edge ->
+Development -> Master -> Release, with Drive builds, prototype feedback, bug testing and instrumented data off the
+first two and an access tier with its feedback and data off the last two. Read `references/STAGES.md` before §1; it
+is the stage table every plan below is ranked against.
+
 **The argument is the platform** (the per-platform skills pass it): `android`, `ios`, `windows`, `web`, `liveops`,
 `backend`, `launch` (launch-wide). Its row in `references/PLATFORMS.md` says which checklist keys, pipeline components,
 READINESS sections, PRs, docs and owners belong to it. Read that row first. No platform given: ask with
@@ -18,6 +25,9 @@ READINESS sections, PRs, docs and owners belong to it. Read that row first. No p
 
 ## 1. Bring the platform up (read-only, in parallel)
 
+0. **The stage**: `references/STAGES.md` § Current stage, and that stage's row and gate. The stage says which
+   branches exist (no Release branch in Beta Phase 1), which access tier this platform's builds go to, and which
+   data the next gate is read from.
 1. `git fetch origin` (retry network failures 4x with 2/4/8/16 s backoff).
 2. **The live checklist**: `ArtifactData` `list` on the console's `url`, `collection: "checklist"`, `query.limit: 100`.
    Keep the rows whose `platform` is one of this platform's checklist keys (`references/PLATFORMS.md`). Rows are
@@ -34,6 +44,8 @@ READINESS sections, PRs, docs and owners belong to it. Read that row first. No p
 
 ## 2. Say where it stands (one screen)
 
+- **The stage and its gate** in one line: "Beta Phase 1, working toward Gate 1 (co-op repeat retention over weeks
+  with the same experience)", and whether anything measures that gate yet on this platform.
 - **The verdict** in one line, the same rule as the console: a failed run or an open blocker nobody has started is
   **No-go**; only started blockers, or a run older than 48 h / not successful, is **At risk**; otherwise **Go**.
 - **Open blockers**, rank order: rank, item, status, taken by (a person, or "nobody"), "needs a human" or not, its PR
@@ -43,7 +55,11 @@ READINESS sections, PRs, docs and owners belong to it. Read that row first. No p
 
 ## 3. Plan
 
-For each open blocker, in rank order, classify and plan it:
+For each open blocker, in rank order, classify and plan it. **Rank by stage first**: a blocker the current stage
+or its gate needs (a branch the stage runs, its access tier, its feedback channel, the data its gate reads) comes
+before one that only a later stage needs, and the plan says which stage that is. From Gate 4 on (Early access and
+after) a new feature is not launch work: content, bug fixes and balance only, and a feature is a decision for
+Shombith.
 
 | Kind | What the plan says |
 |---|---|
@@ -62,7 +78,8 @@ recommended first). Do not start editing before the person picks.
   "in-progress"` and `evidence` (the branch or PR link), pinned with `if_version` from the read in §1. Never set
   `takenBy`: a person takes an item on the page. Never assign anyone.
 - Follow the project rules every launch PR followed (`CLAUDE.md`):
-  - **Outward-facing actions are the person's, each time**: a store submission, an external TestFlight release, a
+  - **Outward-facing actions are the person's, each time**: handing out an access tier (Alpha, Pre-release or Beta
+    access, a limited Beta key), opening $15 early access or Free to play, a store submission, an external TestFlight release, a
     Steam branch going live, a publish to `/play`, a UGS production deploy, a Play track promotion, any repo setting,
     secret or Environment. Prepare up to the button, then stop and ask.
   - **Secrets** never in code, docs, workflows, logs, artifacts or a status record; name a secret and where it lives.
@@ -82,7 +99,10 @@ recommended first). Do not start editing before the person picks.
   record, a store form submitted by the person): name that check in the row's `evidence`.
 - A pipeline ran: refresh the console's board - `python3 Tools/Launch/console_sync.py board --out <scratch>` then
   `ArtifactData` `set` `status/board` from the file it wrote.
-- Tell the person: the verdict now, what moved, what is left and who decides it.
+- **The gate**: if the work produced a measurement for the stage's gate, report the number and where it came from.
+  Never mark a gate passed or move § Current stage in `references/STAGES.md` on a session's own call: a gate passes
+  when Shombith calls it, and the line is updated with the date and his words.
+- Tell the person: the stage and the verdict now, what moved, what is left and who decides it.
 
 ## Traps (measured while building the launch, 2026-11-05/06)
 

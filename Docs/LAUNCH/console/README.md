@@ -4,6 +4,11 @@
 `index.html` here; publish it with the Artifact tool to that URL. The FrogletTools editor window reads the same
 `launch-status` branch directly (`Docs/LAUNCH/STATUS_CONTRACT.md`).
 
+**Launch stages** (the panel under the header): Shombith's phase diagram of 2026-11-17, six stages and four gates,
+with the current stage marked. It is written into the page (`STAGES`, `CURRENT_STAGE` in `index.html`), not the
+store, and must match `.claude/skills/launch-flow/references/STAGES.md`; move `CURRENT_STAGE` only when Shombith says
+a gate passed, in the same commit as that file's § Current stage.
+
 What it holds, in its own store (ArtifactData):
 
 | Store path | What | Who writes |
