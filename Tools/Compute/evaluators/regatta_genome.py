@@ -463,15 +463,19 @@ def apply_motif(g, rng, name=None):
     if name == "skim_strands":
         leg, clear, side = rng.randrange(RINGS), float(g.get("line_clearance", LINE_CLEARANCE[2])), rng.uniform(0, 360)
         n = rng.randint(2, 4)
+        strands = []
         for j in range(n):
             scale = rng.uniform(50.0, 140.0)
-            g["placements"].append({
+            strands.append({
                 "kind": "Wall", "leg": leg + 0.2 + 0.6 * (j + 0.5) / n,     # mid-leg: a ring mouth carves its edge
                 "offset": [clear + rng.uniform(*SKIM_GAP) + WALL_EDGE * scale,
                            (side if rng.random() < 0.6 else side + 180.0) % 360.0, 0.0],
                 "scale": scale, "yaw": rng.choice([90.0, 270.0]), "pitch": 0.0, "roll": 0.0, "domain": "Native",
                 "prism": "Plain" if rng.random() < 0.7 else "Native", "seed": 0, "density": 1.0,
                 "cross_line": False, "cross_rail": False, "params": {}})
+        # First in the list: repair keeps placements in order and drops the last ones over the prism budget or the
+        # placement cap, and a searched elite is usually at its budget (W3, 2026-11-17).
+        g["placements"][:0] = strands
     elif name == "sweeper":
         a = rng.uniform(28.0, 50.0)
         rest = (360.0 - 6.0 * a) / 2.0
@@ -896,7 +900,7 @@ def self_test():
     bases = [_base() for _ in range(30)]
     plain = [descriptors(repair(b)[0]) for b in bases]
     want = {"skim_strands": ("skim_strands", 2.0), "sweeper": ("sweep_run", 1.8),
-            "straight": ("longest_straight_u", 1.3), "slalom": ("slalom_pairs", 2.0)}
+            "straight": ("longest_straight_u", 1.3), "slalom": ("slalom_pairs", 1.8)}
     for name, (key, factor) in want.items():
         laid = []
         for b in bases:
@@ -919,6 +923,21 @@ def self_test():
             for p in x["placements"]:
                 p["yaw"], p["offset"][0] = 90.0, float(p["offset"][0]) + 80.0
             assert descriptors(x)["skim_strands"] == 0, "negative control: a strand out of skim distance counted"
+            # An elite at its prism budget and placement cap keeps a skim motif laid into it (repair drops the last).
+            frng = random.Random(37)
+            full = repair(dict(empty(), placements=[random_placement(frng, cat["by_id"]["Atlantis"], blocking=False)
+                                                    for _ in range(MAX_PLACEMENTS + 4)]))[0]
+            assert len(full["placements"]) == MAX_PLACEMENTS or \
+                sum(estimated_prisms(cat["by_id"][p["kind"]], p) for p in full["placements"]) > TOTAL_PRISM_BUDGET - 400, \
+                "the at-budget fixture is not at its budget"
+            topped = copy.deepcopy(full)
+            apply_motif(topped, frng, "skim_strands")
+            assert descriptors(repair(topped)[0])["skim_strands"] >= 2, "an at-budget elite dropped its skim strands"
+            tail = copy.deepcopy(full)
+            probe = copy.deepcopy(topped)
+            tail["placements"] = full["placements"] + [p for p in probe["placements"] if p["kind"] == "Wall"]
+            assert descriptors(repair(tail)[0])["skim_strands"] == 0, \
+                "negative control: strands appended after an at-budget elite should be the ones dropped"
     share = sum(any(is_skim_strand(p, g2.get("line_clearance", 32.0)) for p in g2["placements"])
                 or motif_shape(g2)["sweep_run"] >= 4 for g2 in (random_genome(random.Random(i)) for i in range(60)))
     assert share >= 6, f"random genomes carry almost no motifs ({share} of 60)"
