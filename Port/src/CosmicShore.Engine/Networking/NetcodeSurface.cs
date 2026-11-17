@@ -244,6 +244,9 @@ namespace CosmicShore.Engine.Networking
         public void WriteValueSafe(in ulong value) => (_bytes ??= new()).AddRange(BitConverter.GetBytes(value));
         public void WriteValueSafe(in float value) => (_bytes ??= new()).AddRange(BitConverter.GetBytes(value));
         public void WriteValueSafe(in bool value) => (_bytes ??= new()).Add(value ? (byte)1 : (byte)0);
+        public void WriteValueSafe(in double value) => (_bytes ??= new()).AddRange(BitConverter.GetBytes(value));
+        public void WriteValueSafe(in Vector3 value) { WriteValueSafe(value.x); WriteValueSafe(value.y); WriteValueSafe(value.z); }
+        public void WriteValueSafe(in Quaternion value) { WriteValueSafe(value.x); WriteValueSafe(value.y); WriteValueSafe(value.z); WriteValueSafe(value.w); }
         public void WriteValueSafe(string value, bool oneByteChars = false)
         {
             var b = System.Text.Encoding.UTF8.GetBytes(value ?? string.Empty);
@@ -267,6 +270,13 @@ namespace CosmicShore.Engine.Networking
         public void ReadValueSafe(out ulong value) { value = BitConverter.ToUInt64(_bytes, _pos); _pos += 8; }
         public void ReadValueSafe(out float value) { value = BitConverter.ToSingle(_bytes, _pos); _pos += 4; }
         public void ReadValueSafe(out bool value) { value = _bytes[_pos] != 0; _pos += 1; }
+        public void ReadValueSafe(out double value) { value = BitConverter.ToDouble(_bytes, _pos); _pos += 8; }
+        public void ReadValueSafe(out Vector3 value) { ReadValueSafe(out float x); ReadValueSafe(out float y); ReadValueSafe(out float z); value = new Vector3(x, y, z); }
+        public void ReadValueSafe(out Quaternion value)
+        {
+            ReadValueSafe(out float x); ReadValueSafe(out float y); ReadValueSafe(out float z); ReadValueSafe(out float w);
+            value = new Quaternion(x, y, z, w);
+        }
         public void ReadValueSafe(out string value, bool oneByteChars = false)
         {
             ReadValueSafe(out int len);
