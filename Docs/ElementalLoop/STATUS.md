@@ -9,35 +9,35 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Vessel | Time 1 2 3 | Charge 1 2 3 | Mass 1 2 3 | Space 1 2 3 | Kit missing | Arenas |
 |---|---|---|---|---|---|---|
 | Angler | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
-| BrittleStar | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| BrittleStar | `b b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Goby | `b ~ .` | `b b .` | `b b .` | `b b .` | - | - |
-| Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | Regatta |
+| Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Jacks | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
-| Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Meerkat | `b b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
+| Manta | `~ b ~` | `b b .` | `x x x` | `b b .` | - | Regatta, Broadside, BroodRush |
+| Meerkat | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Orca | `b ~ .` | `b b .` | `b b .` | `b b .` | - | - |
 | Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
 | Serpent | `b b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
 | Shrike | `b b b` | `b b .` | `b b .` | `b b .` | - | - |
-| Sparrow | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Squirrel | `b b b` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside, BroodRush |
+| Sparrow | `b b b` | `b b .` | `x x x` | `b b .` | - | Regatta, Broadside, BroodRush |
+| Squirrel | `b b b` | `b b .` | `x x x` | `- - -` | Mass | Regatta, Broadside, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Stoat | `b b b` | `b b .` | `- - -` | `b b .` | - | Regatta |
 | Swordfish | `b b .` | `b b .` | `b b .` | `b b .` | - | Broadside, BroodRush |
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | TigerMoth | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 | Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside |
-| Wrasse | `b b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
+| Wrasse | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
 
 ## 2. Arena games
 
 | Element | Arena game | Vessels seated | Their steps 1-3 complete | Step 4 environment creator | Step 5 vessel imbalance |
 |---|---|---|---|---|---|
-| Time | Regatta | Dolphin, Grizzly, Manta, Meerkat, Rhino, Scarab, Serpent, Sparrow, Squirrel, Stoat, Thresher, Urchin, Wrasse | no | doing: the course-pool search is the first environment creator: best pool 1.104x against the 1.10x bar in the model (#1825); live in bleeding-edge, waits on Garrett's playtest and on step 3 for every Regatta hull (Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md) | todo |
+| Time | Regatta | BrittleStar, Dolphin, Manta, Rhino, Scarab, Serpent, Sparrow, Squirrel, Stoat, Thresher, Urchin | no | doing: the course-pool search is the first environment creator: best pool 1.104x against the 1.10x bar in the model (#1825); live in bleeding-edge, waits on Garrett's playtest and on step 3 for every Regatta hull (Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md) | todo |
 | Charge | Broadside | Dolphin, Manta, Scarab, Sparrow, Squirrel, Swordfish, Urchin | no | todo | todo |
 | Mass + Space | BroodRush | Dolphin, Manta, Rhino, Serpent, Sparrow, Squirrel, Swordfish | no | todo | todo |
 
@@ -55,15 +55,15 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Honeyguide | Slip Line | Flitstrike | Honeycomb | Woodpecker |
 | Jacks | Decoy Run | Stingherd | excused | Trawl |
 | JewelWasp | - | Marionette | - | Gorge |
-| Manta | Redline | Corona | Scurry (shared) | Bloomrush |
+| Manta | Redline | Corona | - | Bloomrush |
 | Meerkat | Burrow Run, Warpline | Sentry | Warren | Cave-in |
 | Orca | Breach | Pod Hunt | Ice Shelf | Depth Charge |
 | Rhino | Headlong | Bullrush | Windrow | Landslide |
-| Scarab | Scarab Rally | Undertow | Scarab Scramble, Tollway | Wrecking Ball |
+| Scarab | Scarab Rally | Undertow | Tollway | Wrecking Ball |
 | Serpent | Serpentine | Hood | Hedgerow, Longshot | - |
 | Shrike | Thornline | Larder | Thornbush | Lancefall |
-| Sparrow | Breakwater | Dog Fight | Scurry (shared) | Salvo, Wildlife Liberation |
-| Squirrel | Skim Race | Joust | Scurry (shared) | excused |
+| Sparrow | Breakwater | Dog Fight | - | Salvo, Wildlife Liberation |
+| Squirrel | Skim Race | Joust | - | excused |
 | Starling | - | - | - | - |
 | Stoat | Slingshot | Shockfront | excused | Fulmen |
 | Swordfish | Spearline | Riposte | Palisade | Cleave |
@@ -111,18 +111,18 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 
 | # | Who can do it | Vessel | Element | Step | State | Action |
 |---:|---|---|---|---|---|---|
-| 1 | session, a person signs off | Grizzly | Time | 1 | built | Fun pass on Grizzly Time: score the Grizzly's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 1 | session, a person signs off | BrittleStar | Time | 1 | built | Fun pass on Brittle Star Time: score the BrittleStar's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
 | 2 | session, a person signs off | Manta | Time | 1 | doing | Fun pass on Redline: score the Manta's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it) (now: Redline round 5 (Yash, 2026-11-11) brought onto bleeding-edge: Soar was dark in Redline since 2026-11-07 (Time level-5 upgrade, card started at Time 0); now Time 6 start, 8 laps, AI race line and throttle floors, the heat. Waiting on one human's fun card at I2 (REDLINE.md section 0.2)). |
-| 3 | session, a person signs off | Meerkat | Time | 1 | built | Fun pass on Burrow Run, Warpline: score the Meerkat's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
-| 4 | session, a person signs off | Rhino | Time | 1 | built | Fun pass on Headlong: score the Rhino's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
-| 5 | session, a person signs off | Scarab | Time | 1 | doing | Fun pass on Scarab Rally: score the Scarab's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it) (now: Rally I1-I3 off Blast Run, AI no crystal detours (SCARABRALLY.md 2026-11-13); awaiting Garrett's fun card at I2). |
-| 6 | session, a person signs off | Serpent | Time | 1 | built | Fun pass on Serpentine: score the Serpent's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
-| 7 | session, a person signs off | Sparrow | Time | 1 | built | Fun pass on Breakwater: score the Sparrow's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
-| 8 | session, a person signs off | Squirrel | Time | 1 | built | Fun pass on Skim Race: score the Squirrel's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
-| 9 | session, a person signs off | Stoat | Time | 1 | built | Fun pass on Slingshot: score the Stoat's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
-| 10 | session, a person signs off | Thresher | Time | 1 | built | Fun pass on Thresher Time: score the Thresher's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
-| 11 | session, a person signs off | Urchin | Time | 1 | built | Fun pass on Skein: score the Urchin's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it) (now: fun call: I2 is the fun rung (AI 125-150 s, headless judge, 3 courses); the AI flies at cruise for half the race, 13 rail-seek variants swept, shipped numbers best; nothing changed at I2 (SKEIN.md 18)). |
-| 12 | session, a person signs off | Wrasse | Time | 1 | built | Fun pass on Wrasse Run: score the Wrasse's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
-| 13 | session, a person signs off | Dolphin | Time | 2 | built | Intensity pass on Switchback: check I1-I4 serve intro, fun, challenging and very hard and each shows what the Dolphin can do (PLAYBOOK step 2; rung_bars.py checks the rungs from the flights), fix the worst rung, then ask a person to fly I1-I4 and answer the fun card on each (now: Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed I3 flat over I2 (1.02x) and I4 1.7x; proposed I3 field + hairpins measure 1.16-1.21x over I2, I4 ~1.5x; HELD as a patch (Yash's occupied Switchback lane), DOLPHIN_TIME_LADDER.md). |
-| 14 | session, a person signs off | Angler | Time | 1 | built | Fun pass on Lantern Run: score the Angler's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
-| 15 | session, a person signs off | BrittleStar | Time | 1 | built | Fun pass on Brittle Star Time: score the BrittleStar's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 3 | session, a person signs off | Rhino | Time | 1 | built | Fun pass on Headlong: score the Rhino's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 4 | session, a person signs off | Scarab | Time | 1 | doing | Fun pass on Scarab Rally: score the Scarab's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it) (now: Rally I1-I3 off Blast Run, AI no crystal detours (SCARABRALLY.md 2026-11-13); awaiting Garrett's fun card at I2). |
+| 5 | session, a person signs off | Serpent | Time | 1 | built | Fun pass on Serpentine: score the Serpent's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 6 | session, a person signs off | Sparrow | Time | 1 | built | Fun pass on Breakwater: score the Sparrow's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 7 | session, a person signs off | Squirrel | Time | 1 | built | Fun pass on Skim Race: score the Squirrel's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 8 | session, a person signs off | Stoat | Time | 1 | built | Fun pass on Slingshot: score the Stoat's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 9 | session, a person signs off | Thresher | Time | 1 | built | Fun pass on Thresher Time: score the Thresher's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 10 | session, a person signs off | Urchin | Time | 1 | built | Fun pass on Skein: score the Urchin's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it) (now: fun call: I2 is the fun rung (AI 125-150 s, headless judge, 3 courses); the AI flies at cruise for half the race, 13 rail-seek variants swept, shipped numbers best; nothing changed at I2 (SKEIN.md 18)). |
+| 11 | session, a person signs off | Dolphin | Time | 2 | built | Intensity pass on Switchback: check I1-I4 serve intro, fun, challenging and very hard and each shows what the Dolphin can do (PLAYBOOK step 2; rung_bars.py checks the rungs from the flights), fix the worst rung, then ask a person to fly I1-I4 and answer the fun card on each (now: Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed I3 flat over I2 (1.02x) and I4 1.7x; proposed I3 field + hairpins measure 1.16-1.21x over I2, I4 ~1.5x; HELD as a patch (Yash's occupied Switchback lane), DOLPHIN_TIME_LADDER.md). |
+| 12 | session, a person signs off | Angler | Time | 1 | built | Fun pass on Lantern Run: score the Angler's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 13 | session, a person signs off | Goby | Time | 1 | built | Fun pass on Perch Run: score the Goby's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 14 | session, a person signs off | Grizzly | Time | 1 | built | Fun pass on Grizzly Time: score the Grizzly's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 15 | session, a person signs off | Honeyguide | Time | 1 | built | Fun pass on Slip Line: score the Honeyguide's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |

@@ -1,5 +1,8 @@
 # The game kit roster: every missing elemental arcade game (2026-11-15)
 
+> **2026-11-17 (Garrett):** each vessel's Mass and Space games are being merged into one Mass-Space game
+> ([`../ArcadeRestructure/PLAN.md`](../ArcadeRestructure/PLAN.md)). The ids below stay reserved; no new Mass or Space game is built.
+
 Garrett, 2026-11-15, after the vessel polish pass (#1994): *"Ok now build any missing games. it is ok if we have a
 game like the dolphin mass game missing because with its kit a mass game doesn't make sence. but it has a space game
 so that is fine. similarly if a vessel has a great mass game then it is ok if we decide that we don't need to struggle

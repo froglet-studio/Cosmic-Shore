@@ -182,6 +182,12 @@ def elements_for(mode, metric, mode_rows, metric_rows):
     return None
 
 
+def parse_party(text):
+    """The modes ModeGenre.IsParty names: the arcade's Party category (Garrett, 2026-11-17). Their genre is kept."""
+    body = _method_body(_strip_comments(text), "IsParty")
+    return sorted(set(re.findall(r"case\s+GameModes\.(\w+)\s*:", body)))
+
+
 def build():
     game_modes = parse_enum(_read(PATHS["game_modes"]), "GameModes")
     metrics = parse_enum(_read(PATHS["scoring_metric"]), "ScoringMetric")
@@ -194,6 +200,9 @@ def build():
     unknown = [m for m in mode_rows if m not in game_modes] + [m for m in metric_rows if m not in metrics]
     if unknown:
         raise ValueError(f"ModeGenre.cs names members the enums do not have: {unknown}")
+    party = parse_party(_read(PATHS["mode_genre"]))
+    if [m for m in party if m not in game_modes]:
+        raise ValueError(f"ModeGenre.IsParty names members GameModes does not have: {party}")
     renames = parse_renames(_read(PATHS["renames"]))
     bad = [f"{old} -> {new}" for old, new in renames.items() if new not in game_modes or old in game_modes]
     if bad:
@@ -216,6 +225,7 @@ def build():
         "no_element": sorted(none),
         "metric": dict(sorted(metric_of.items())),
         "mode_rows": sorted(mode_rows),
+        "party": party,
         "cards": card_modes(game_modes),
         "renames": dict(sorted(renames.items())),
     }
