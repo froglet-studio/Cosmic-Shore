@@ -309,6 +309,19 @@ namespace CosmicShore.ScriptableObjects
                                  "Finish instead of Venture further. Off: the haul is owed as on a success.")]
         bool raidMissForfeits = true;
 
+        [Header("Voyage - AI wingmates in a Crystal Run (a light nudge, Shombith 2026-11-17; his own AI plan comes later)")]
+        [SerializeField, Min(0), Tooltip("An AI wingmate carrying this many crystals flies to the Ark to bank them before it " +
+                                         "goes back to its escort role. 0 turns the bank run off.")]
+        int wingmateBankAt = 3;
+
+        [SerializeField, Min(0f), Tooltip("Seconds of every Wingmate Seek Period an AI wingmate leaves its escort role to " +
+                                          "hunt crystals with its own pilot, while no creature threatens the Ark. 0 turns " +
+                                          "it off. Seats take turns, so the Ark is never left with nobody.")]
+        float wingmateSeekSeconds = 8f;
+
+        [SerializeField, Min(1f), Tooltip("The cycle a wingmate's crystal hunt repeats on, seconds.")]
+        float wingmateSeekPeriod = 25f;
+
         [Header("Voyage - the galaxy map (the Voyage window's cards)")]
         [SerializeField, Tooltip("The course a card's job sails, drawn over the map.")]
         Color routeColor = new(0.70f, 1f, 0.35f, 1f);
@@ -437,6 +450,9 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>A phone or tablet build: the voyage takes its mobile numbers there.</summary>
         static bool OnMobile => Application.isMobilePlatform;
         public bool RaidMissForfeits => raidMissForfeits;
+        public int WingmateBankAt => wingmateBankAt;
+        public float WingmateSeekSeconds => wingmateSeekSeconds;
+        public float WingmateSeekPeriod => wingmateSeekPeriod;
         public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);
         public Color VaultColor => ColorTrace.Retrace(ColorTrace.Ui, vaultColor);
         public Color CoreColor => ColorTrace.Retrace(ColorTrace.Ui, coreColor);

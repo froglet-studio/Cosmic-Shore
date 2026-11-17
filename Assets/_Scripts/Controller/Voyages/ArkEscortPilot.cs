@@ -12,6 +12,16 @@ namespace CosmicShore.Gameplay
     /// <see cref="ArkEscortContext"/> the run keeps: the threats ranked, seat claims, the lane-clear test.
     /// A hull without a role of its own chases hearts as before (<see cref="HeartChaserRole"/>).
     /// </summary>
+    /// <summary>What a run asks of an escort seat over its role (<see cref="ArkEscortPilot.Errand"/>).</summary>
+    public enum ArkEscortErrand
+    {
+        None = 0,
+        /// <summary>Fly to the Ark (a Crystal Run banks what a seat carries there).</summary>
+        Bank = 1,
+        /// <summary>Let the hull's own pilot hunt crystals.</summary>
+        Seek = 2,
+    }
+
     public sealed class ArkEscortPilot : MonoBehaviour
     {
         /// <summary>How far from the Ark a creature counts as a threat to hunt (<c>ai.escort.guardRadius</c>).</summary>
@@ -23,6 +33,12 @@ namespace CosmicShore.Gameplay
         int _seat;
         IArkEscortRole _role;
         bool _steering;
+        ArkEscortErrand _errand;
+
+        /// <summary>A run's errand for this seat that outranks its role for a while (a Crystal Run's bank run or crystal
+        /// hunt, <c>VoyageRun.Wingmates</c>), asked every frame; null, or <see cref="ArkEscortErrand.None"/>, leaves the
+        /// role in charge. The role still ticks (presses its abilities) either way.</summary>
+        public Func<ArkEscortPilot, ArkEscortErrand> Errand;
         CellRuntimeDataSO _homeCell;
         bool _retargeted;
 
@@ -113,6 +129,7 @@ namespace CosmicShore.Gameplay
         {
             var ctx = _run != null ? _run.Context : null;
             if (ctx == null || !ctx.Ark || _role == null) return transform.position + transform.forward * 100f;
+            if (_errand == ArkEscortErrand.Bank) return ctx.AvoidHull(transform.position, ctx.Ark.Position);
             return ctx.AvoidHull(transform.position, _role.Steer(ctx));
         }
 
@@ -125,7 +142,13 @@ namespace CosmicShore.Gameplay
             // A swap moved the hook off this hull (it flies on another hull, steering by this one): take it back, and
             // give it to this hull's pilot again if the role still wants to steer.
             if (HookTaken()) { _steering = false; ReleaseHook(sweep: true); }
-            SetSteering(_role.WantsSteering(ctx));
+            _errand = Errand?.Invoke(this) ?? ArkEscortErrand.None;
+            SetSteering(_errand switch
+            {
+                ArkEscortErrand.Bank => true,      // fly the crystals home to the Ark
+                ArkEscortErrand.Seek => false,     // the hull's own pilot hunts crystals
+                _ => _role.WantsSteering(ctx),
+            });
         }
 
         void OnDestroy() => Disarm();

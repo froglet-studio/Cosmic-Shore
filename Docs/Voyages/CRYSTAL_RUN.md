@@ -357,3 +357,14 @@ if the player does not come inside the threshold during that timer they lose all
   instead of only closing the board.
 - **Not run in Unity.** To check: a missed goal shows Venture further and Finish, a lost Ark shows Try again and Back to
   Voyages, and each button (and A / B on the pad) does what it says.
+
+## 14. AI wingmates steal and bank a little more (Shombith, 2026-11-17)
+
+"The AI doesnt try to collect crystals and bank to the ark that much dont tune it much just a little bit I have a plan
+for that." A light nudge over the escort roles, on `Voyage.asset` ("Voyage - AI wingmates in a Crystal Run"), each off
+at 0, and only in a Crystal Run (`VoyageRun.Wingmates.cs`, through the new `ArkEscortPilot.Errand` hook):
+
+- **Bank run:** a wingmate carrying `wingmateBankAt` (3) crystals flies to the Ark until it banks them.
+- **Crystal hunt:** for `wingmateSeekSeconds` (8) of every `wingmateSeekPeriod` (25 s), while no creature threatens the
+  Ark, a wingmate lets its hull's own pilot hunt crystals. Seats are a third of the period apart, so two never hunt at once.
+- The roles are untouched and still press their abilities. Queued for Garrett's `/approve` (escort AI). Not run in Unity.
