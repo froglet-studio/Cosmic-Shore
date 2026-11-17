@@ -86,6 +86,14 @@ against the best fixed habit; a human reader (one factor fitted to the recorded 
   `ISwordfishSwordCoach`) inside 500 u of a sealed ring: triggers at rest while closing (so the hand never stands the
   bill up to energize in front of a pane - its crowd rule fires on any seal), the read's trigger from 0.35 s before the
   plane until 30 u past it. The hand writes the trigger mirrors as a pilot's fingers do: input only.
+- **The ramp** (2026-11-17). Spearline had no ramp tuning of its own, so `AIBoostPolicySO.ForMode` gave the
+  Swordfish the Rhino's untuned default (`RhinoAIBoostPolicy`: align 12 degrees, stick 0.35, corner speed 600). Under
+  it the AI seldom pressed the ramp, coasted back to the hull's 50 u/s floor after every ring and crawled 300-500 u
+  to the next one: 247-384 s a race in the real game (race judge, Medium and Legendary, seeds 1-2), one I4 timeout,
+  against the model's 31-40 s. `Resources/AIBoostPolicies/RhinoAIBoostPolicy_Spearline` is Headlong's trained ramp
+  (the same airframe on the same circuit): 141 / 150 / 155 / 191 s Legendary and 174 / 182 / 174 / 212 s Medium at
+  I1-I4, every race finished. Still open: I1-I3 barely climb (0.95-1.06x a rung), and a 650 u leg never lets the
+  ramp reach 840 u/s (it peaks near 500).
 - **By difficulty** (Easy / Medium / Hard / Legendary): the chance it does not read a seal and crosses the centre with
   a right-hand stroke 30 / 15 / 5 / 0%, and a fixed lane error up to 10 / 7 / 4 / 2 u.
 - **A closed pass** is the gate race's own: the AI comes round to the same approach. The worn seal and its own cut

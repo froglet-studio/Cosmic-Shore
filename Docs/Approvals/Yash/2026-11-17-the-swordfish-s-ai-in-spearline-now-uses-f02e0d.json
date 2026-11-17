@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-17-the-swordfish-s-ai-in-spearline-now-uses-f02e0d",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T19:32:11+00:00",
+  "area": "vessel AI (Spearline boost policy)",
+  "summary": "The Swordfish's AI in Spearline now uses its own ramp policy, a copy of Headlong's trained Rhino ramp, instead of the untuned Rhino default",
+  "why": "Under the default the AI crawled at 50 u/s between rings: 247-384 s a race and an I4 timeout. Now 141-212 s, every race finishes (race judge)",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Spearline.asset"
+  ],
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}
