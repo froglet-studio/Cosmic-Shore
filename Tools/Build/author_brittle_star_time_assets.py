@@ -99,8 +99,8 @@ def shift_line_errors() -> "list[str]":
     errors = []
     course = htr.read_or_empty(f"{MODE_DIR}/BrittleStarTimeCourse.cs")
     m = re.search(r"LapsByIntensity = \{ (\d+), (\d+), (\d+), (\d+) \};", course)
-    if not m or [int(x) for x in m.groups()] != [2, 3, 3, 4]:
-        errors.append("BrittleStarTimeCourse.LapsByIntensity is not { 2, 3, 3, 4 } (BRITTLESTARTIME.md section 0)")
+    if not m or [int(x) for x in m.groups()] != [2, 3, 6, 6]:
+        errors.append("BrittleStarTimeCourse.LapsByIntensity is not { 2, 3, 6, 6 } (BRITTLESTARTIME.md section 0, the climbing ladder of 2026-11-17)")
     toasts = htr.read_or_empty("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
     for sid, _, _ in TOASTS:
         hits = re.findall(rf"\b(\w+) = {sid},", toasts)
