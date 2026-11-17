@@ -61,7 +61,7 @@ MonoBehaviour:
     Enabled: 1
     Value: 2.5
     Min: 2.5
-    Max: 4.5
+    Max: 4
     element: 4
     UseFloor: 1
     Floor: 1.25
