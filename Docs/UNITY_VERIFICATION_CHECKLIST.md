@@ -25010,3 +25010,14 @@ I2 118 -> 96, I4 139 -> 101, I1 from Time 10 104 -> 90, I4 from Time 0 152 -> 11
 I1 at rest is now the slowest rung after I4 from rest, so the ladder still runs flat.
 Not run in Unity: the reference compile shows 0 errors in the changed files.
 - [ ] Fly Burrow Run against a Legendary Meerkat AI: it should commit late, tunnel down each leg and finish faster than before.
+
+## Spearline AI ramps between rings (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+Not run in the Unity editor. The change is one asset, `Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Spearline.asset`
+(a copy of `RhinoAIBoostPolicy_Headlong`), which the Swordfish's AI loads in Spearline only. Measured in the race
+judge (Amoebius headless, the real game code): Legendary 260-355 s -> 141-191 s, Medium 247-384 s -> 174-212 s, the
+I4 timeout gone.
+
+- [ ] Fly Spearline I1 and I4 against a Legendary Swordfish: between rings it presses the ramp (engage sound, the
+      speed climbs past 300 u/s) instead of coasting at about 50 u/s.
+- [ ] It still strokes through the seals and does not overshoot a ring into a long loop back.
