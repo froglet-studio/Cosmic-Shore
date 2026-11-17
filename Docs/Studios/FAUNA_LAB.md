@@ -24,6 +24,27 @@ give me a vessel, ark, and prism cluster to attack."
 - **Retire condition for a new creature:** a "cut it" in the feedback log, or a second round in which it still wins
   no column and nobody says it feels good.
 
+## Round 6 (2026-11-17): the Ray in Unity, step one
+
+Garrett: "yes start the unity port with the ray".
+
+- **`Tools/Build/fauna_kit/unity_port.py`** writes a grown creature's Unity assets from its spec, and `--check`
+  holds them to it. For the Ray: `RayBody.asset` (one native mesh, 2,408 vertices, drawn double-sided),
+  `Ray.prefab`, `RayFaunaDataSO.asset`, four `Ray Fauna <Element>.asset` configs, and its entry in the network list.
+- **How it is built:** the QuadFish's prefab re-fitted (its components, network wiring and heart kept; its mesh,
+  material, scale, fins and swim driver replaced), so the Ray is the shape of body the game already runs: one mesh
+  under one Spindle, nine prisms as that Spindle's direct children, the heart at the root.
+- **Checked without the editor:** the mesh asset reads back at the spec's counts; every prism reads back at its spec
+  position under the Spindle; every guid has an owner; the network identity is unique; the heart-collection and
+  colour-trace gates pass; a sheet drawn from the Unity assets themselves shows the Ray (wing, lobes, whip, sting).
+  `unity_port.py --self-test` plants a wrong vertex count and an unowned mesh guid; both are caught.
+- **NOT checked: anything in the Unity editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the eight hand tests.
+  The first is whether Unity accepts a mesh asset written as text.
+- **What the Ray is not yet in Unity:** it spawns nowhere (no cell lists it); its wings do not ripple (the per-vertex
+  wave is not in the spindle shader: the body shears as one); it will lunge, not whip (one mesh has no limbs); it
+  steers with world up; its glide and feeding on the wing are not written. Each needs C# and is the next step.
+- The dossier now reads native mesh assets, so a ported creature can be measured like a shipped one.
+
 ## Round 5 (2026-11-17): the method as skills
 
 Garrett, answering round 4's questions: "1. all five. 2. accept them. 3. we need you to turn all of this into skills

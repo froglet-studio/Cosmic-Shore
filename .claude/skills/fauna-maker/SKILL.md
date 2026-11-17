@@ -140,11 +140,30 @@ python3 Tools/Build/fauna_kit/fauna.py check <name> --silhouette     # about fou
 | the body looks like sticks | each limb needs 4+ points with the middle ones OFF the straight line; add a membrane or barbs |
 | the lab page errors after export | run `verify_lab.cjs` and read the first error; a limb listed before its parent is the usual cause |
 
-## Into Unity (decided 2026-11-17, not started)
+## Into Unity (decided 2026-11-17: all five; the Ray's first step is done)
 
-Garrett: all five grown creatures (Ray, Nettle, Plume, Lantern, Ammon) go to Unity. That is a separate job and needs
-`/fauna`, `/ecology`, `/asset-surgery` and `/spindle` section 5. In order: (1) limb meshes written as model assets
-with `.meta` files; (2) a prefab builder for grown limbs (today `build.py` writes braid limbs only); (3) the spindle
-shader reading a per-vertex wave; (4) element configs, the behaviour class and each creature's own move; (5) every
-list a species joins (`/fauna-creation` section 3, item 8); (6) the verify rule and the hand tests. Do not start it
-from this skill.
+Garrett: all five grown creatures (Ray, Nettle, Plume, Lantern, Ammon) go to Unity. Only do this when a person asks.
+
+**Step A, the body in Unity (a tool does it; done for the Ray on 2026-11-17):**
+
+```bash
+python3 Tools/Build/fauna_kit/unity_port.py <name>           # writes the assets
+python3 Tools/Build/fauna_kit/unity_port.py <name> --check   # the assets are still what the spec makes
+python3 Tools/Build/check_network_prefab_hashes.py
+python3 Tools/Build/author_lifeform_heart_collection.py --check
+python3 Tools/Build/colour_trace.py --check
+python3 Tools/Build/fauna_kit/prefab_read.py Assets/_Prefabs/FloraAndFauna/<Species>.prefab --root   # read it: prisms under Body, a crystal at the root
+```
+
+It writes one body mesh, the prefab (the QuadFish's re-fitted: one mesh under one Spindle, the prisms its direct
+children, the heart at the root), a data asset, four element configs and the network list entry. It adds the
+creature to NO cell, so nothing spawns it. Then add an entry to `Docs/UNITY_VERIFICATION_CHECKLIST.md` (copy the
+Ray's: it lists what a person must check in the editor), because nothing here opens Unity.
+
+A creature whose body is over 65,535 vertices or whose spec fails `fauna.py check` is refused.
+
+**What Step A does not give the creature** (each is later work, with `/fauna`, `/ecology` and `/asset-surgery`
+loaded, and each needs C# and the verify rule): the per-vertex wave and travelling light (it sways by the game's one
+shear); limbs the attack can whip (one mesh has none, so it lunges); a carried up; its own ride from the spec's
+`possession` block; a place in a cell's spawn profile, the Codex and the Spawn Matrix (`/ecology` first: that
+changes the collider budget).

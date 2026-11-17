@@ -116,8 +116,26 @@ def _fbx(path):
     return _FBX_CACHE[path]
 
 
+def _native_mesh(path):
+    """(verts, tris, source) of a native Unity Mesh asset: positions are the first three floats of each vertex, the
+    index buffer is 16-bit triangles. Unity's own space already (no handedness flip: it is not an imported model)."""
+    import struct
+    t = _asset(path)
+    if "\nMesh:" not in t:
+        return None
+    nv = int(re.search(r"m_VertexCount: (\d+)", t).group(1))
+    blob = bytes.fromhex(re.search(r"_typelessdata: ([0-9a-f]*)", t).group(1))
+    stride = len(blob) // max(nv, 1)
+    verts = [list(struct.unpack_from("<3f", blob, i * stride)) for i in range(nv)]
+    ib = bytes.fromhex(re.search(r"m_IndexBuffer: ([0-9a-f]*)", t).group(1))
+    idx = struct.unpack("<%dH" % (len(ib) // 2), ib)
+    return verts, [tuple(idx[i:i + 3]) for i in range(0, len(idx), 3)], path + "#mesh"
+
+
 def _mesh_of(n):
     """The mesh a node draws, when it comes from a model file: (verts, tris, source) in the node's local space."""
+    if n.mesh and str(n.mesh[0]).lower().endswith(".asset"):      # a native Mesh asset (unity_port.py writes these)
+        return _native_mesh(n.mesh[0])
     if not n.mesh or not str(n.mesh[0]).lower().endswith(".fbx"):
         return None
     model = _fbx(n.mesh[0])
