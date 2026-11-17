@@ -24814,17 +24814,19 @@ flights a side against run3b had every condition faster, loss 2.40 -> 2.25, no D
 3. Race Serpentine I4 against a Legendary AI Serpent: it finishes near 85-100 s, and when its pellets run low it cloaks
    and lays a wall.
 
-## Squirrel run1: Skim Race AI trained in the real game, with a nose rate per tuning file (2026-11-17, Regatta flywheel)
+## Squirrel Skim Race AI: run1 at I1, nose 18 at I3-I4, a nose rate per tuning file (2026-11-17, Regatta flywheel)
 
-Verified: Amoebius raced the genome headless through `time_ai_search.py` (search on seeds 11-14, confirm on seeds
-101-104, 28 flights a side, no DNF: I1 71 -> 61 s, I3 98 -> 80, I4 98 -> 59, I1@T10 58 -> 54, I4@T10 91 -> 74; I2 was
-slower, 86 -> 94, so the I2 file keeps its own drive and the fleet lag), then raced the shipped files after the write
-(the nose now comes from the file: I1 58 / 60 s, I2 78 / 90 s exactly as before, I4 70 / 59 s on seeds 101-102),
-`author_skimrace_ai_config.py --check` OK, `unity_refcompile` (see the PR). Not verified: a real Unity editor.
+Verified: Amoebius raced both candidates headless on seeds 101-104 with no DNF. Squirrel run1 (time_ai_search.py, 21
+drive numbers at nose 20.5) took I1 71 -> 61 s and I1@T10 58 -> 54, and goes on the I1 file. The shipped drive with only
+the nose at 18/s beat run1 at I3-I4 (I3 98 -> 77, I4 109 -> 67, I4@T10 95 -> 55, I4@T5 109 -> 56), and goes on the
+general (I3) and I4 files. Any nose quicker than the fleet lag loses I2 (86 -> 95-155 s), so the I2 file is unchanged.
+A first build (run1 on every file but I2) was raced after the write with the nose read from the file (I1 58 / 60 s, I2
+78 / 90 s unchanged, I4 70 / 59 s on seeds 101-102). `author_skimrace_ai_config.py --check` OK, `unity_refcompile` (see
+the PR). Not verified: this final build raced after the write, a real Unity editor.
 
-1. Open `Resources/SkimRaceAIConfig_I1`, `_I4` and `SkimRaceAIConfig`: Nose > AI Nose Follow Per Second 20.455;
+1. Open `Resources/SkimRaceAIConfig_I1`: Nose > AI Nose Follow Per Second 20.455; `SkimRaceAIConfig` and `_I4`: 18;
    `_I2` and `_Regatta`: 0.
-2. Race Skim Race I4 against a Legendary AI Squirrel: it finishes near 60 s (it took about 95 s before).
+2. Race Skim Race I4 against a Legendary AI Squirrel: it finishes near 55-70 s (it took about 95-110 s before).
 3. Race Skim Race I2: the AI Squirrel flies as before (about 86 s).
 
 ## Urchin run1: Skein AI trained in the real game (2026-11-17, Regatta flywheel)
