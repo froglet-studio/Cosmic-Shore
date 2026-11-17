@@ -56,6 +56,67 @@ girth and the path are the limb's, never the design's.
 section / barbs / glow, add it to `DESIGNS` with an `about` line, run `--designs` for its cost and put it on one limb
 in the lab before using it widely. A design that only changes a number of an existing one is an override, not a design.
 
+## 2.5 Shaping a spindle: the cookbook
+
+A spindle's shape is its PATH (the points), its GIRTH (root, tip) and its design. Copy a recipe, then move points.
+`P(radius, z)` is `K.polar(radius, a, z)` at this copy's angle; z runs negative toward the tail.
+
+**How to shape a path**
+- 4 to 6 points. The curve passes through every one.
+- Never put the middle points on the straight line between the ends: push them 10 to 30% of the limb's length to
+  one side. That is the difference between a limb and a stick.
+- One bend reads as a sweep, two as an S (a tendril), a turn back toward the axis at the end reads as a curl.
+- Spacing sets speed of curvature: points close together make a tight bend.
+- The first point sits ON the parent (`K.along(parent, t)[0]`), or within 3.2 of the crystal for a root limb.
+
+**How to shape a girth**
+- `(root, tip)`. A living limb tapers: tip is a third of root or less.
+- Thick and few strands reads as bone; thin and many as lace. A shell widens instead: `(3.2, 0.5)` from the mouth in.
+
+**Recipes**
+
+```python
+# a sweeping arm or leading edge: out, then back
+K.grown(f"Arm{k}", "Core", [P(1.0, -4), P(9, -3), P(18, -8), P(23, -18)], girth=(0.6, 0.15), design="spar",
+        sway={"dir": "radial", "amp": 4.0, "waves": 0.6})
+
+# a tendril: an S, long and thin, a wave running down it
+K.grown(f"Line{k}", parent, [P(10, -11), P(12, -21), P(9, -33), P(12, -46), P(10, -60)], girth=(0.2, 0.05), design="tendril",
+        sway={"dir": "tangent", "amp": 4.5, "waves": 2.0, "phase": 0.8 * k})
+
+# a feathered arm: the rachis design brings the barbs
+K.grown(f"Plume{k}", "Cup", [P(1, -4.6), P(9, -3.2), P(18, -8), P(23, -18), P(21, -30), P(15, -38)], girth=(0.45, 0.1), design="rachis")
+
+# a bell or cage rib: starts beside the crystal, arcs over it (SPEC needs "lead": 3.2), comes down to a rim
+K.grown(f"Rib{k}", None, [P(0.35, 3.0), P(7, 2.8), P(14, 1.2), P(18.5, -2.5), P(19.5, -6.5), P(18, -9.5)], girth=(0.3, 0.16),
+        design="rib", sway={"dir": "radial", "amp": 2.6, "waves": 0.3, "pow": 1.2})
+
+# a coiled shell: a spiral in the plane at angle a, widest at its mouth
+K.grown(f"Shell{k}", "Core", K.spiral(a, (11.0, -6.0), 10.0, 2.4, 0.17), girth=(3.2, 0.5), design="shell")
+
+# a whip on the axis
+K.grown("Whip", "Core", [[0, 0, -30], [0, 0, -45], [0, 0, -60]], girth=(0.4, 0.07), design="whip",
+        sway={"dir": [0, 1, 0], "amp": 4.0, "waves": 1.3})
+
+# a wing: two edges that meet at the tip, and a membrane between them
+lead  = K.grown(f"Lead{k}",  "Core", [P(1.2, -2.2), P(12, -1), P(24, -5), P(32, -13), P(34, -17)], girth=(0.8, 0.18), design="spar", sway=beat)
+trail = K.grown(f"Trail{k}", "Core", [P(1.0, -21), P(10, -22.5), P(22, -20.5), P(30, -18), P(34, -17)], girth=(0.45, 0.12), design="vein", sway=dict(beat, phase=0.9))
+membranes.append({"name": f"Web{k}", "a": f"Lead{k}", "b": f"Trail{k}", "across": 9})
+```
+
+**Sway** (`sway=`): `dir` is the way the limb moves (`"radial"` in and out from the axis: a pulse; `"tangent"` round
+the axis: a sweep; a vector like `[0, 1, 0]`: a flap); `amp` is how far the TIP moves in world units (5 to 15% of
+the limb's length); `waves` is how many wavelengths fit along the limb (under 1: the whole limb swings; 2: it
+snakes); `phase` shifts it in time (give neighbours different phases; `3.1416 * (k % 2)` makes alternate limbs
+oppose). A membrane's two edges half a beat apart make it ripple.
+
+**Glow** (`glow=`): `bright: [root, tip]`, `waves`: pulses along the limb, `phase`: `0.8 * k` makes the light go
+round the body one limb after another.
+
+**Barbs** (`barbs=`, replaces the design's): `count`, `length: [at root, at tip]`, `angle` from the limb (60 leans
+toward the tip, 90 stands out), `sides` (1, 2 or more), `dir: "tangent"` lays them round the body, `flutter`.
+Barbs are the costliest part: 16 a limb is lush, 30 is heavy.
+
 ## 3. Motion and light belong to the limb, and are carried by every vertex
 
 `organic.py` gives each vertex its limb's SWAY as a sine part and a cosine part (so a limb's own wave ADDS to what the
@@ -93,6 +154,8 @@ python3 Tools/Build/fauna_kit/lab_export.py && node .claude/skills/labmaker/veri
 
 ## 7. Round log
 
+- **2026-11-17.** Section 2.5 (the shaping cookbook). `/fauna-maker` is the step-by-step path that uses this skill.
+  Garrett accepted the Plume's and the Nettle's outlines and decided all five grown creatures go to Unity (not started).
 - **2026-11-16, round 1.** The deconstruction, eleven designs, the mesh builder and budget, inherited sway and glow,
   bloom in the lab. Bodies remade with designs: Ray, Nettle. New: Plume (rachis), Lantern (comb), Ammon (shell).
   Open: the Plume (0.36) and the Nettle (0.40) are under the silhouette bar (0.41); prisms on grown bodies still read

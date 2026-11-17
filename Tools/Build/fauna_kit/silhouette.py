@@ -45,6 +45,9 @@ HULLS = {"Angler": "Angler.fbx", "Ark": "ArkReverse.fbx", "Brittle Star": "Britt
 # every vessel, every shipped creature and every other new species than three in four shipped bodies stand from
 # theirs (the upper quartile, 0.41). Archived proposals are listed and count for nobody. No constant to tune: add a
 # hull and the bar moves with the fleet. ALIKE is only the self-test's line between its two planted shapes.
+# Outlines a person has looked at and accepted under the bar. The gate still prints them; they no longer fail it.
+ACCEPTED = {"Plume": "Garrett, 2026-11-17: \"accept them\" (0.36, nearest the Urchin hull)",
+            "Nettle": "Garrett, 2026-11-17: \"accept them\" (0.40, nearest the Rhino hull)"}
 ALIKE = 0.30
 MIN_DISTANCE = ALIKE
 
@@ -236,8 +239,8 @@ def main(argv):
         j = int(np.argmin(row))
         flag = ""
         if kind == "new" and d[i, j] < bar:
-            flag = "  TOO ALIKE"
-            bad += 1
+            flag = "  under the bar, ACCEPTED" if name in ACCEPTED else "  TOO ALIKE"
+            bad += name not in ACCEPTED
         print(f"{name:<26} {kind:<7} {names[j]:<26} {d[i, j]:>8.2f}{flag}")
     pairs = sorted((d[i, j], names[i], names[j]) for i in range(len(items)) for j in range(i + 1, len(items)) if live[i] and live[j])
     print("closest pairs:", "; ".join(f"{a} / {b} {v:.2f}" for v, a, b in pairs[:8]))

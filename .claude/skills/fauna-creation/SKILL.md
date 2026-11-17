@@ -5,6 +5,11 @@ description: Design and build a NEW Cosmic Shore creature (or redesign one) as w
 
 # Fauna creation: celestial lifeforms
 
+**Making a creature? Start with `/fauna-maker`** (2026-11-17): the seven steps, the working template
+(`fauna.py new`), the placement numbers for the crystal, spindles and prisms, and one check that prints a fix for
+every failure (`fauna.py check`). `/spindle` is how a limb's wire is made and shaped. This skill is the reference
+beneath them: why each law exists, what was relaxed and when, and the record of every round.
+
 **Read this before designing any creature's body.** `/fauna` holds the contract a creature must meet to be ALIVE
 (behaviour class, cell data, field parity, heart seat, body prisms) and the repairs; `/ecology` holds the system and its
 LOCKED invariants. This skill holds what neither says: **what a creature in this world IS, and how to design one that

@@ -24,6 +24,28 @@ give me a vessel, ark, and prism cluster to attack."
 - **Retire condition for a new creature:** a "cut it" in the feedback log, or a second round in which it still wins
   no column and nobody says it feels good.
 
+## Round 5 (2026-11-17): the method as skills
+
+Garrett, answering round 4's questions: "1. all five. 2. accept them. 3. we need you to turn all of this into skills
+so more efficient models can create more fauna. part of that skill is learning how to place prisms, spindles, and
+crystals. it needs to be how to make and shape those spindles."
+
+- **Decided: all five grown creatures go to Unity** (Ray, Nettle, Plume, Lantern, Ammon). NOT started: the order of
+  work is at the end of `/fauna-maker`.
+- **Decided: the Plume's and the Nettle's outlines are accepted.** `silhouette.ACCEPTED` records it, and
+  `silhouette.py --check` now exits 0.
+- **`/fauna-maker`** (new skill): seven steps from an animal's name to a creature in the lab, with the numbers for
+  placing the crystal, the spindles and the prisms, and a table of what to do when something goes wrong.
+- **`fauna.py`** (new): `new <name>` writes a working creature from `specs/_template.py`; `check <name>` runs the
+  laws, prints where every prism sits against the numbers it must meet, measures the mesh, and prints a FIX for each
+  failure; `sheet <name> <png>` draws it.
+- **`/spindle` section 2.5**: how to shape a path and a girth, and copyable recipes (an arm, a tendril, a feather, a
+  bell rib, a shell, a whip, a wing), with what each sway, glow and barb setting does.
+- Checked: the template passes `fauna.py check` as written (955 vertices); a plate planted ahead of the crystal is
+  caught with its FIX line (L1 and L3); every kit gate.
+- Not checked: the skills have not been followed by another model yet. The first creature made from them by a
+  smaller model is the real test, and what it trips on goes into `/fauna-maker`'s last table.
+
 ## Round 4 (2026-11-16): further, and spindles from scratch
 
 Garrett: "yes this is a far better direction. now go far in this direction with a few more that really stretch what
