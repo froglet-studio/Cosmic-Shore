@@ -8762,9 +8762,9 @@ Not seen in Unity: a render of both screens still needs to sit beside the board.
 on that for sure. I need new mockups lets say 6 of each in game screen including toasts, the toasts should come in the
 designated toast spot as it comes in many arcade games."
 
-**On the canvas**: the Voyages playtest tab, section `sec-rev116`. One board per option, `R116A` to `R116F` (5920 x 2978), each holding that option's six full 1920 x 1080 screens and nothing else, so an option is judged on its own. First published the other way round (one board per screen with all six options on it); Shombith asked the same day to have each option separate ("116A, 116B like this"). One board per option AND screen (36 files) did not fit: the canvas refused the publish at its 512-file limit. Copies: `Docs/MenuRedesignB/board/R116?.dc.html`; generator `Docs/MenuRedesignB/rounds/r116_voyage_hud.py <root> 116 options`.
+**On the canvas**: the Voyages playtest tab, section `sec-rev116`. Every screen of every option is its own board, `R116<option>_<screen>.dc.html` (36 boards, 1920 x 1080; the toast spot boards 1920 x 1330 with the other toast kinds under the screen), one row per option in its group (116A Marquee ... 116F Blocks), the screens in the same order on every row. First published as one board per screen with all six options on it, then as one board per option; Shombith asked twice the same day for each to be separate. To fit 36 boards under the canvas's 512-file limit, on Shombith's word (2026-11-17) 32 superseded voyage boards came off the canvas, their repo copies kept: Rev 113 (all nine), Rev 114 (C2, F1, IAB, O1, TAB, TCD), Rev 115 B-E and the Rev 14-17 voyage windows (VoyageA-L and R14Notes). Generator: `Docs/MenuRedesignB/rounds/r116_voyage_hud.py <root> 116 singles`.
 
-Every option board shows the same six screens:
+Each option has the same six screens:
 - **In flight**: flying in a raided cell: 23 of 50 banked, 7 carried, the Ark's hull 64% (on the left in every
   option that has room), cell 3 of 6, the Ark sails in 0:18.
 - **The Ark under attack**: a kaiju-sized raider on the hull, the hull at 27% (under the 30% leak line, near the 10%

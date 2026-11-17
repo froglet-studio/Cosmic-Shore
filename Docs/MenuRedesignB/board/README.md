@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-17 from canvas version `1794923640-b4a9` of **Frogma**: Rev 3 to Rev 116, 511 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-17 from canvas version `1794923793-4923` of **Frogma**: Rev 3 to Rev 116, 509 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -246,31 +246,6 @@ Copied on 2026-11-17 from canvas version `1794923640-b4a9` of **Frogma**: Rev 3 
 - [`R18CardsBArena.dc.html`](R18CardsBArena.dc.html) - Rev 18 - B, Arena and Toy Box in the same treatment
 - [`R18CardsCArcade.dc.html`](R18CardsCArcade.dc.html) - Rev 18 - C, Arcade: the hull lit on a hex plate sitting on the seam
 - [`R18CardsCArena.dc.html`](R18CardsCArena.dc.html) - Rev 18 - C, Arena and Toy Box in the same treatment
-
-#### Rev 17 - Episodes back, voyages grow
-
-- [`R17VoyageJ.dc.html`](R17VoyageJ.dc.html) - Rev 17 - J, Episodes stacked: Episode 1 open with its quest tracker, Episode 2 a locked bar under it; Voyages a column t
-- [`R17VoyageK.dc.html`](R17VoyageK.dc.html) - Rev 17 - K, Episode spine: Episode 1 open, Episode 2 a locked spine beside it; Voyages a column that scrolls
-- [`R17VoyageL.dc.html`](R17VoyageL.dc.html) - Rev 17 - L, Voyages row on top: Tandava and the next voyages in a row that scrolls sideways; Episodes under it, Episode
-
-#### Rev 16 - Episodes apart from voyages
-
-- [`R16VoyageG.dc.html`](R16VoyageG.dc.html) - Rev 16 - G, Side by side: Episodes (Episode 1 tab, Episode 2 locked, the smaller quest tracker) in a glass panel; Tandav
-- [`R16VoyageH.dc.html`](R16VoyageH.dc.html) - Rev 16 - H, Voyage banner on top: Tandava full-bleed across the width, the Episodes panel under it with shorter quest ca
-- [`R16VoyageI.dc.html`](R16VoyageI.dc.html) - Rev 16 - I, Current quest open: as G, but only the quest in progress opens up and the locked ones fold to art, number an
-
-#### Rev 15 - Voyage, old quest tracker
-
-- [`R15VoyageD.dc.html`](R15VoyageD.dc.html) - Rev 15 - D, Track into the voyages: a slim Episode 1 strip, the old quest cards, and the track carrying on into Tandava
-- [`R15VoyageE.dc.html`](R15VoyageE.dc.html) - Rev 15 - E, Voyages at the side: Episode 1 as a chip beside the title, the old full-height quest cards, Tandava and Epis
-- [`R15VoyageF.dc.html`](R15VoyageF.dc.html) - Rev 15 - F, Tracker first: the Episode 1 strip, the old quest cards across the width, the voyages as a band underneath
-
-#### Rev 14 - Voyage + quest tracker
-
-- [`R14VoyageA.dc.html`](R14VoyageA.dc.html) - Rev 14 - A, Track on top: a slim Episode 1 strip, the old quest tracker (five cards on a track) across the width, Tandav
-- [`R14VoyageB.dc.html`](R14VoyageB.dc.html) - Rev 14 - B, Voyages first: Tandava and Episode 2 as one band on top, then the Episode 1 strip and the old quest tracker
-- [`R14VoyageC.dc.html`](R14VoyageC.dc.html) - Rev 14 - C, Episode chip: Episode 1 as a chip beside the title, the old full-height quest tracker on the left, Tandava t
-- [`R14Notes.dc.html`](R14Notes.dc.html) - Rev 14 - what changes from Rev 13
 
 #### Rev 13 - Voyage + profile
 
@@ -749,17 +724,7 @@ Copied on 2026-11-17 from canvas version `1794923640-b4a9` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
-#### Rev 113 - Milestone 1: Escort the Ark and Crystal Run, end to end - lobby first, crew popup by faction, the voyage HUD, the scoreboard
-
-- [`R113Compare.dc.html`](R113Compare.dc.html) - Rev 113 - the toasts across one voyage, each beside the moment that raises it
-- [`R113Lobby.dc.html`](R113Lobby.dc.html) - Rev 113 Lobby - Your Ark, lobby only: what you pick is what you fly, read back beside Set sail (recommended)
-- [`R113Picker.dc.html`](R113Picker.dc.html) - Rev 113 Picker - The seat popup on Vessel: one press saves your seat for this voyage, and says so
-- [`R113Crew.dc.html`](R113Crew.dc.html) - Rev 113 Crew - Crew recommends as a popup: Escort the Ark and Crystal Run open, the rest by faction, locked
-- [`R113Hud.dc.html`](R113Hud.dc.html) - Rev 113 Hud - Escort the Ark HUD: the objective box (goal, five worlds, hull and breach line, your job) and a threat toast
-- [`R113Run.dc.html`](R113Run.dc.html) - Rev 113 Run - Crystal Run HUD: the crystal counter leads, calm and hostile cells on the route
-- [`R113Score.dc.html`](R113Score.dc.html) - Rev 113 Score - The end: the Ark's hull, a row per seat, rewards, Finish and Venture further
-- [`R113Sea.dc.html`](R113Sea.dc.html) - Rev 113 Sea - the HyperSea page with the popup closed: two open voyages and one Crew recommends button where the list was - interactive
-- [`R113Notes.dc.html`](R113Notes.dc.html) - Rev 113 - notes: what each board fixes from Shombith's Milestone 1 list
+No boards yet.
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 
@@ -808,28 +773,45 @@ Copied on 2026-11-17 from canvas version `1794923640-b4a9` of **Frogma**: Rev 3 
 
 #### Rev 116 - The in-game voyage UI, six ways: flight HUD, the Ark under attack, the toast spot, the raid countdown, pause, the scoreboard
 
-- [`R116A.dc.html`](R116A.dc.html) - Rev 116 A - Marquee (recommended): its six in-game screens
-- [`R116B.dc.html`](R116B.dc.html) - Rev 116 B - Rail: its six in-game screens
-- [`R116C.dc.html`](R116C.dc.html) - Rev 116 C - Console: its six in-game screens
-- [`R116D.dc.html`](R116D.dc.html) - Rev 116 D - Corners: its six in-game screens
-- [`R116E.dc.html`](R116E.dc.html) - Rev 116 E - Edges: its six in-game screens
-- [`R116F.dc.html`](R116F.dc.html) - Rev 116 F - Blocks: its six in-game screens
+- [`R116A_Hud.dc.html`](R116A_Hud.dc.html) - 116A Marquee (recommended) - In flight
+- [`R116A_Attack.dc.html`](R116A_Attack.dc.html) - 116A Marquee (recommended) - The Ark under attack
+- [`R116A_Toasts.dc.html`](R116A_Toasts.dc.html) - 116A Marquee (recommended) - The toast spot
+- [`R116A_Sail.dc.html`](R116A_Sail.dc.html) - 116A Marquee (recommended) - The raid countdown
+- [`R116A_Pause.dc.html`](R116A_Pause.dc.html) - 116A Marquee (recommended) - Pause, goal met
+- [`R116A_Score.dc.html`](R116A_Score.dc.html) - 116A Marquee (recommended) - The end scoreboard
+- [`R116B_Hud.dc.html`](R116B_Hud.dc.html) - 116B Rail - In flight
+- [`R116B_Attack.dc.html`](R116B_Attack.dc.html) - 116B Rail - The Ark under attack
+- [`R116B_Toasts.dc.html`](R116B_Toasts.dc.html) - 116B Rail - The toast spot
+- [`R116B_Sail.dc.html`](R116B_Sail.dc.html) - 116B Rail - The raid countdown
+- [`R116B_Pause.dc.html`](R116B_Pause.dc.html) - 116B Rail - Pause, goal met
+- [`R116B_Score.dc.html`](R116B_Score.dc.html) - 116B Rail - The end scoreboard
+- [`R116C_Hud.dc.html`](R116C_Hud.dc.html) - 116C Console - In flight
+- [`R116C_Attack.dc.html`](R116C_Attack.dc.html) - 116C Console - The Ark under attack
+- [`R116C_Toasts.dc.html`](R116C_Toasts.dc.html) - 116C Console - The toast spot
+- [`R116C_Sail.dc.html`](R116C_Sail.dc.html) - 116C Console - The raid countdown
+- [`R116C_Pause.dc.html`](R116C_Pause.dc.html) - 116C Console - Pause, goal met
+- [`R116C_Score.dc.html`](R116C_Score.dc.html) - 116C Console - The end scoreboard
+- [`R116D_Hud.dc.html`](R116D_Hud.dc.html) - 116D Corners - In flight
+- [`R116D_Attack.dc.html`](R116D_Attack.dc.html) - 116D Corners - The Ark under attack
+- [`R116D_Toasts.dc.html`](R116D_Toasts.dc.html) - 116D Corners - The toast spot
+- [`R116D_Sail.dc.html`](R116D_Sail.dc.html) - 116D Corners - The raid countdown
+- [`R116D_Pause.dc.html`](R116D_Pause.dc.html) - 116D Corners - Pause, goal met
+- [`R116D_Score.dc.html`](R116D_Score.dc.html) - 116D Corners - The end scoreboard
+- [`R116E_Hud.dc.html`](R116E_Hud.dc.html) - 116E Edges - In flight
+- [`R116E_Attack.dc.html`](R116E_Attack.dc.html) - 116E Edges - The Ark under attack
+- [`R116E_Toasts.dc.html`](R116E_Toasts.dc.html) - 116E Edges - The toast spot
+- [`R116E_Sail.dc.html`](R116E_Sail.dc.html) - 116E Edges - The raid countdown
+- [`R116E_Pause.dc.html`](R116E_Pause.dc.html) - 116E Edges - Pause, goal met
+- [`R116E_Score.dc.html`](R116E_Score.dc.html) - 116E Edges - The end scoreboard
+- [`R116F_Hud.dc.html`](R116F_Hud.dc.html) - 116F Blocks - In flight
+- [`R116F_Attack.dc.html`](R116F_Attack.dc.html) - 116F Blocks - The Ark under attack
+- [`R116F_Toasts.dc.html`](R116F_Toasts.dc.html) - 116F Blocks - The toast spot
+- [`R116F_Sail.dc.html`](R116F_Sail.dc.html) - 116F Blocks - The raid countdown
+- [`R116F_Pause.dc.html`](R116F_Pause.dc.html) - 116F Blocks - Pause, goal met
+- [`R116F_Score.dc.html`](R116F_Score.dc.html) - 116F Blocks - The end scoreboard
 
 #### Rev 115 - Your Ark and the seat picker, five ways: hangar line-up, your seat first, pilot cards, formation, garage list
 
 - [`R115A.dc.html`](R115A.dc.html) - Rev 115 A - Ark A: Hangar line-up; the picker slides in from the right (recommended)
-- [`R115B.dc.html`](R115B.dc.html) - Rev 115 B - Ark B: Your seat first; a bottom-sheet picker
-- [`R115C.dc.html`](R115C.dc.html) - Rev 115 C - Ark C: Pilot cards; a loadout in four columns
-- [`R115D.dc.html`](R115D.dc.html) - Rev 115 D - Ark D: Formation around the Ark; a step-by-step picker
-- [`R115E.dc.html`](R115E.dc.html) - Rev 115 E - Ark E: Garage list; a vessel-by-element grid
-
-#### Rev 114 - Voyages playtest: four of each - crew screen, intro, a smaller objective, toasts, the feel in flight
-
-- [`R114C2.dc.html`](R114C2.dc.html) - Rev 114 C2 - Crew B: pilot first; your crew's faces, each with the job they bring
-- [`R114O1.dc.html`](R114O1.dc.html) - Rev 114 O1 - Objective A: a strip, 420 px; goal, hull and breach, next world
-- [`R114F1.dc.html`](R114F1.dc.html) - Rev 114 F1 - Feel A: Chase; close behind you, the Ark the landmark ahead
-- [`R114IAB.dc.html`](R114IAB.dc.html) - Rev 114 IAB - Intro A: Departure (recommended), and B: From the map
-- [`R114TAB.dc.html`](R114TAB.dc.html) - Rev 114 TAB - Toasts A: the Rev 113 band, smaller, and B: the crew speaks
-- [`R114TCD.dc.html`](R114TCD.dc.html) - Rev 114 TCD - Toasts C: a feed under the objective, and D: two sizes (recommended)
 
 <!-- frogma.py readme: end -->
