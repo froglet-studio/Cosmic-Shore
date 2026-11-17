@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-fauna-now-attack-the-ark-in-announced-as-f0803a",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T18:03:29+00:00",
+  "area": "Ark escort tuning and the ecology lure carve-out (ECOSYSTEM.md 0.z)",
+  "summary": "Fauna now attack the Ark in announced assaults: the escort's lure on the Ark's world rises to a new tier AssaultLureShare (0.45 d1 to 0.95 d9) until the squad kills N attackers near the Ark or it times out. Breach lines back at d1-d3 (0.25), since below armour-bite tiers the Ark could not be lost. Job voyages' hostile cells (new per-job hostileCells) now use the same lure, assaults and armour-as-food at the escort's tier: a second caller of SetFeedingLure, widening the 0.z carve-out. Not sim-tuned; the chaos ladder was fitted without assaults, so d4+ is harder now. Milestone 1, Shombith 2026-11-16.",
+  "branch": "claude/project-thread-dlzvop",
+  "commit": "89bfa4956"
+}

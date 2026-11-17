@@ -160,60 +160,60 @@ MonoBehaviour:
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   missileLaunchSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1870893843
+      Data2: 1090302803
+      Data3: -531107708
+      Data4: -1787684942
+    Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
   missileBurstSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -159591309
+      Data2: 1318821736
+      Data3: -1568531009
+      Data4: 870809827
+    Path: event:/SFX/Oneshots/Gameplay sfx/Mine Explode
   shieldRaiseSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -922617308
+      Data2: 1092038894
+      Data3: -167764571
+      Data4: -698904471
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Activate
   omniRefillSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
   emptyMagazineSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1646059356
+      Data2: 1119933905
+      Data3: 176281535
+      Data4: 614675135
+    Path: event:/SFX/Oneshots/Menu/Denied
   sniperShotSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1870893843
+      Data2: 1090302803
+      Data3: -531107708
+      Data4: -1787684942
+    Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
   bombThrowSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   bombBurstSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -159591309
+      Data2: 1318821736
+      Data3: -1568531009
+      Data4: 870809827
+    Path: event:/SFX/Oneshots/Gameplay sfx/Mine Explode
   fireButtonIcon: {fileID: 21300000, guid: 191541c7648260cd1a1207a1a287eedf, type: 3}
   missileButtonIcon: {fileID: 21300000, guid: 77e8ca07a5f9255848e2a102857f9d0b, type: 3}
   fireButtonLabel: 

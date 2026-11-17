@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-16-the-arkway-banner-arkwayvoyagehud-is-now-e1ad13",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T18:33:36+00:00",
+  "area": "the Ark escort and the Arkway banner",
+  "summary": "The Arkway banner (ArkwayVoyageHud) is now the voyage's toast: Rev 113 band, a mood (event/threat/good), a line under it, one at a time. The escort's banners carry moods (fallen and overrun red, through green), its assaults' lines too, it feeds the objective box (ArkEscortRun.Hud.cs), and its end shows the scoreboard with Venture further / Finish / Try again.",
+  "why": "Milestone 1 in-voyage HUD and scoreboard (Shombith, 2026-11-16); Prompt 1 said reuse the banner path rather than add a second toast system.",
+  "branch": "claude/project-thread-i45oov",
+  "commit": "84f868aba",
+  "paths": [
+    "Assets/_Scripts/Controller/Toys/ArkwayRun.cs",
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs",
+    "Assets/_Scripts/Controller/Voyages/ArkAssaultDriver.cs",
+    "Assets/_Scripts/Controller/Voyages/ArkEscortRun.Hud.cs",
+    "Assets/_Scripts/Controller/Voyages/ArkEscortRun.cs"
+  ]
+}

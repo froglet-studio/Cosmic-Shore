@@ -258,6 +258,16 @@ The fence:
 
 This is an exception, not a precedent: the next one needs its own sign-off.
 
+**Widened 2026-11-16 (Shombith, Voyages Milestone 1: "the cell faunas should attack the ark"), awaiting Garrett's
+sign-off through `/approve`:**
+- Assaults: the escort turns the lure on the Ark's own world up to the tier's `AssaultLureShare` (0.45 at d1 to 0.95 at
+  d9) for an announced assault, until the squad kills `AssaultRepelKills` attackers near the Ark or `AssaultSeconds` run
+  out (`ArkAssaultClock`, `ArkAssaultDriver`, `ArkEscortRun.Assault.cs`). Between assaults the steady `LureShare` holds.
+- A second caller, `VoyageRun.Assault.cs`: a job voyage's hostile cells (`VoyageJob.HostileCells`, per cell of the leg)
+  get the same lure, the same assaults and `ArmourIsFood`, at the escort's tier for the job's difficulty. Calm cells are
+  never lured, and everything is cleared when the leg changes and when the voyage ends.
+- The fence above still holds: steering only, never a cull, a diet or a population.
+
 ## 1. The spine: everything keys off **prism count**
 
 One state variable drives the whole system: the cell's live prism count

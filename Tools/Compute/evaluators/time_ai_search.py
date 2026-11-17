@@ -29,6 +29,9 @@ reference(condition) is the shipped AI's mean on the same courses, so 1.0 = toda
     python3 Tools/Compute/evaluators/time_ai_search.py --hull Scarab --search --generations 4 --pareto 4
     python3 Tools/Compute/evaluators/time_ai_search.py --hull Scarab --confirm best.json --seeds 101,102,103
 
+Resume: every finished race set goes to <out>/races.jsonl. Run the SAME command again after a restart (put --out on
+/mnt/project-files so it survives the container) and it replays to where it stopped; --confirm resumes the same way.
+
 A player killed for memory is raced again, never scored as a DNF. One player process takes ~2.5 GB: --workers 4 at
 most on a 16 GB machine. Confirm a winner on fresh courses (24+ flights, Port/docs/AI_TRAINING.md) before promoting.
 """
@@ -40,6 +43,7 @@ import random
 import re
 import sys
 import tempfile
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +58,39 @@ SO = "Assets/_SO_Assets/AI Boost Policies/"
 CRYSTAL = "crystal"            # the RaceAICrystalGenesSO gene: detour budget, world units
 CRYSTAL_RANGE = (0.0, 300.0)
 
+def _switchback_nose(p):
+    return {
+        "aiNoseFollowByIntensity": [
+            {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"]) * k}
+            for e, m, h, k in ((1.9, 2.2, 3, 1.0), (2, 2.4, 3, 1.0), (2.1, 2.2, 2.8, 1.2), (1.8, 2.2, 3.5, 1.2))],
+        "aiNoseFollowGauntlet.legendary": float(p["noseLegendary"]) * 1.2,
+        "aiNoDodgeNearRing": float(p["aiNoDodgeNearRing"])}
+
+
+# SwitchbackController's AI knobs (Scarab Rally inherits them): the Legendary nose follow rate (every intensity's row,
+# shipped 5/s at I1-I2 and 6/s at I3-I4, and the I4 gauntlet's) and how near a ring the AI stops dodging.
+SWITCHBACK_NOSE = {
+    "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
+    "ctrl_defaults": {"noseLegendary": 5.0, "aiNoDodgeNearRing": 200.0},
+    "ctrl": _switchback_nose,
+}
+
+def _scarab_nose(p):
+    return {
+        "aiScarabNoseFollowByIntensity": [
+            {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"]) * k}
+            for e, m, h, k in ((1.9, 2.2, 3, 1.0), (2, 2.4, 3, 1.0), (2.1, 2.2, 2.8, 1.2), (1.8, 2.2, 3.5, 1.2))],
+        "aiScarabNoDodgeNearRing": float(p["aiNoDodgeNearRing"])}
+
+
+# ScarabRallyController's own copies of those knobs (2026-11-17: the Scarab no longer flies the Dolphin's table), shipped
+# from Scarab run3: Legendary 15/s at I1-I2 (x1.2 at I3-I4), no dodge within 224 u of a ring.
+SCARAB_NOSE = {
+    "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
+    "ctrl_defaults": {"noseLegendary": 15.0, "aiNoDodgeNearRing": 224.0},
+    "ctrl": _scarab_nose,
+}
+
 # Per vessel: its Time game, the drive assets per intensity (AIBoostPolicySO.ForMode: <name>_<Mode>_I<n>, else the mode
 # file, else the hull's own), the searched drive fields with the asset's limits, and the nose lead: the mode's
 # aiNoseLead table with this hull's row ("rows" are the other hulls' rows, kept as they ship).
@@ -66,6 +103,7 @@ GAMES = {
         "fields": {"alignDegrees": (0.0, 90.0), "stickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0),
                    "spendAtCharge01": (0.05, 1.0), "peakMarginUnits": (0.0, 30.0), "minDischargeSeconds": (0.0, 2.0),
                    "minPulseGainUnits": (0.0, 120.0), "maxHoldOffSeconds": (0.5, 8.0)},
+        **SWITCHBACK_NOSE,
         "lead": 2.5, "rows": [],                       # SwitchbackController.aiNoseLead: Dolphin 2.5
     },
     "Serpent": {
@@ -75,7 +113,7 @@ GAMES = {
                    "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 6.0), "releaseRunwaySeconds": (0.0, 3.0),
                    "maxConcurrentBurns": (1, 6), "minSecondsBetweenPellets": (0.0, 4.0), "reservePellets": (0, 4)},
         "ints": ("maxConcurrentBurns", "reservePellets"),
-        "lead": 1.0, "rows": [],                       # SerpentTimeController.aiNoseLead: Serpent 1.0
+        "lead": 2.1, "rows": [], "nose_gene": 6.87,    # SerpentTimeController.aiNoseLead: Serpent 2.1 at 6.87/s (run3b)
     },
     "Sparrow": {
         "mode": "Breakwater",
@@ -83,7 +121,7 @@ GAMES = {
         "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
                    "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
                    "minHoldSeconds": (0.0, 3.0), "minRestSeconds": (0.0, 3.0)},
-        "lead": 1.0, "rows": [],                       # BreakwaterController.aiNoseLead: Sparrow 1.0 (#2054)
+        "lead": 1.0, "rows": [], "nose_gene": 1.5,     # BreakwaterController.aiNoseLead: Sparrow 1.0 (#2054); fleet nose lag
     },
     "Scarab": {
         "mode": "ScarabRally",
@@ -94,10 +132,41 @@ GAMES = {
                    "dashCooldownSeconds": (0.2, 6.0)},
         # Scarab Rally inherits Switchback's table, which has only the Dolphin's row: the Scarab flies with NO lead
         # there and 2.5 in Regatta (RaceLines/Scarab_Regatta). The search gives it a row.
+        **SCARAB_NOSE,                                 # Scarab Rally's own nose knobs (ScarabRallyController)
         "lead": 0.0, "rows": [{"Hull": "Dolphin", "Gain": 2.5, "MaxExtraDegrees": 40}],
+    },
+    "Rhino": {
+        "mode": "Headlong",
+        # RampBoostAIPolicySO: the ramp boost's engage/release bands and the corner braking that keeps it.
+        "assets": {i: POL + "RhinoAIBoostPolicy_Headlong.asset" for i in (1, 2, 3, 4)},
+        "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
+                   "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
+                   "cornerSpeed": (60.0, 900.0), "minCornerSpeed": (30.0, 600.0), "brakeMarginUnits": (0.0, 300.0),
+                   "brakeLeadSeconds": (0.0, 2.0), "brakeSteerFloor": (0.0, 1.0), "cornerReleaseDegrees": (0.0, 90.0)},
+        # HeadlongController.aiNoseLead: Rhino 2.5. At 2.5 the AI orbits in place (~70 s a lap at 33 u/s, 2026-11-17);
+        # 1.0 halved I1 and I2. Headlong has no nose knob: the fleet lag.
+        "lead": 2.5, "rows": [], "nose_gene": 1.5,
+    },
+    "Manta": {
+        "mode": "Redline",
+        # The Soar autopilot's bands (MantaSoarAITuning_Redline, written at the executor's own 0.35 / 0.75 so the shipped
+        # AI is unchanged) and RedlineController's AI knobs: the Legendary nose follow rate (every intensity's row) and
+        # its own crystal gene, aiTimeCrystalSlack. The card starts Time 10, so Soar (Time's level-5 upgrade) is lit.
+        "assets": {i: POL + "MantaSoarAITuning_Redline.asset" for i in (1, 2, 3, 4)},
+        "fields": {"BoostStickBand": (0.0, 1.0), "YawsteryStickBand": (0.0, 1.0)},
+        "ctrl_fields": {"noseLegendary": (2.0, 24.0)},
+        "ctrl_defaults": {"noseLegendary": 9.0},
+        "ctrl": lambda p: {"aiNoseFollowByIntensity": [
+            {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"])}
+            for e, m, h in ((2, 3, 6), (2, 3, 6), (2.5, 3, 6), (4, 5, 6))]},
+        "crystal_field": "aiTimeCrystalSlack",
+        "lead": 0.0, "rows": [],                       # RedlineController.aiNoseLead: Manta 0
     },
 }
 LEAD_RANGE = (0.0, 3.0)
+# The AI nose follow rate (VesselTransformer.AINoseFollowPerSecond). Games with no knob of their own fly the fleet lag,
+# 1.5/s (LERP_AMOUNT); the judge sets the searched rate on the AI's transformer ("nose_gene": the shipped rate).
+NOSE_RANGE = (1.5, 24.0)
 LEAD = "noseLead"
 
 
@@ -115,6 +184,7 @@ def conditions_for(a):
     the --rest rungs; and --wide courses (W2's curriculum, I2) so the drive does not overfit the game's own track."""
     out = [(f"I{i}", i, None, None) for i in a.intensities]
     out += [(f"I{i}@T10", i, {a.hull: {"Time": 10}}, None) for i in a.fast]
+    out += [(f"I{i}@T5", i, {a.hull: {"Time": 5}}, None) for i in a.l5]
     out += [(f"I{i}@T0", i, "rest", None) for i in a.rest]
     out += [(f"W{k}@I2", 2, None, wide_genome(a.hull, a.wide_w, 900 + k)) for k in range(a.wide)]
     return out
@@ -128,6 +198,9 @@ def read_fields(rel, names):
 def dims_for(g):
     ints = g.get("ints", ())
     dims = [{"name": k, "lo": lo, "hi": hi, **({"type": "int"} if k in ints else {})} for k, (lo, hi) in g["fields"].items()]
+    dims += [{"name": k, "lo": lo, "hi": hi} for k, (lo, hi) in g.get("ctrl_fields", {}).items()]
+    if "nose_gene" in g:
+        dims.append({"name": "noseFollow", "lo": NOSE_RANGE[0], "hi": NOSE_RANGE[1]})
     dims.append({"name": LEAD, "lo": LEAD_RANGE[0], "hi": LEAD_RANGE[1]})
     return dims
 
@@ -138,6 +211,9 @@ def shipped_genomes(g):
     for rel in sorted(set(g["assets"].values())):
         p = read_fields(rel, g["fields"])
         p.update({k: int(v) for k, v in p.items() if k in g.get("ints", ())})
+        p.update(g.get("ctrl_defaults", {}))
+        if "nose_gene" in g:
+            p["noseFollow"] = g["nose_gene"]
         p[LEAD] = g["lead"]
         p[CRYSTAL] = 0.0
         p["_from"] = os.path.basename(rel)
@@ -153,9 +229,20 @@ def spec_for(hull, g, params):
     fields = {k: params[k] for k in g["fields"] if k in params}
     ov = [{"asset": rel, "fields": fields} for rel in sorted(set(g["assets"].values()))]
     rows = list(g["rows"]) + [{"Hull": hull, "Gain": float(params.get(LEAD, g["lead"])), "MaxExtraDegrees": 40}]
-    out = {"overrides": ov, "controller_overrides": {"aiNoseLead": rows}}
+    # No mode knob: the judge sets the rate on the AI's transformer (left alone at the shipped fleet lag).
+    nose = float(params.get("noseFollow", g.get("nose_gene", 0)))
+    out_nose = {hull: nose} if "nose_gene" in g and nose != g["nose_gene"] else None
+    ctrl = {"aiNoseLead": rows}
+    if "ctrl" in g:
+        ctrl.update(g["ctrl"](dict(g.get("ctrl_defaults", {}), **params)))
+    out = {"overrides": ov, "controller_overrides": ctrl}
+    if out_nose:
+        out["ai_nose_follow"] = out_nose
     if params.get(CRYSTAL, 0) > 0:
-        out["crystal_genes"] = {hull: float(params[CRYSTAL])}
+        if "crystal_field" in g:                       # the mode's own crystal knob (Redline's aiTimeCrystalSlack)
+            ctrl[g["crystal_field"]] = float(params[CRYSTAL])
+        else:
+            out["crystal_genes"] = {hull: float(params[CRYSTAL])}
     return out
 
 
@@ -195,14 +282,68 @@ def loss(per_cond, ref):
     return sum(lis) / len(lis) + 0.5 * max(lis), lis
 
 
+class RaceCache:
+    """Resume after a restart (cloud containers restart without warning): every finished (candidate, condition) race
+    set is appended to <out>/races.jsonl, and an identical one asked again is answered from it. The search is
+    deterministic (seeded sep-CMA-ES and Pareto rng), so a restarted run asks the same candidates in the same order and
+    replays straight to the first race it never finished."""
+
+    def __init__(self, path):
+        self.path, self.mem, self.lock = path, {}, threading.Lock()
+        if path and os.path.exists(path):
+            for line in open(path, encoding="utf-8"):
+                try:
+                    rec = json.loads(line)
+                    self.mem[rec["key"]] = rec["result"]
+                except (ValueError, KeyError):
+                    pass                                # a line cut off by the restart
+        self.hits = 0
+
+    @staticmethod
+    def key(hull, g, params, cond, seeds, limit_s):
+        name, intensity, start, genome = cond
+        return json.dumps([hull, g["mode"], params, name, intensity, start, genome, list(seeds), limit_s], sort_keys=True)
+
+    def get(self, k):
+        r = self.mem.get(k)
+        if r is not None:
+            self.hits += 1
+        return r
+
+    def put(self, k, result):
+        with self.lock:
+            self.mem[k] = result
+            if self.path:
+                with open(self.path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"key": k, "result": result}) + "\n")
+
+
+CACHE = RaceCache(None)
+
+
 def evaluate_many(hull, g, cands, conds, seeds, limit_s, pool):
-    """cands: [params|None]; every (candidate, condition) is one process, all in one pool."""
-    jobs = [(c, k) for c in range(len(cands)) for k in range(len(conds))]
-    futs = {pool.submit(race_one, hull, g, cands[c], conds[k], seeds, limit_s): (c, k) for c, k in jobs}
+    """cands: [params|None]; every (candidate, condition) is one process, all in one pool; races already in the
+    cache are not raced again."""
     out = [[None] * len(conds) for _ in cands]
+    pending = {}                                       # key -> [(c, k)]: identical candidates (the shipped seeds) race once
+    for c in range(len(cands)):
+        for k in range(len(conds)):
+            key = RaceCache.key(hull, g, cands[c], conds[k], seeds, limit_s)
+            hit = CACHE.get(key)
+            if hit is not None:
+                out[c][k] = hit
+            else:
+                pending.setdefault(key, []).append((c, k))
+    futs = {pool.submit(race_one, hull, g, cands[ck[0][0]], conds[ck[0][1]], seeds, limit_s): key
+            for key, ck in pending.items()}
     for f in concurrent.futures.as_completed(futs):
-        c, k = futs[f]
-        out[c][k] = f.result()
+        key = futs[f]
+        res = f.result()
+        # A broken build or a dead player is not the candidate's result: never cache it, so a resume races it again.
+        if not any("judge failed" in n or "exited" in n or "build" in n.lower() for n in res["notes"]):
+            CACHE.put(key, res)
+        for c, k in pending[key]:
+            out[c][k] = res
     return out
 
 
@@ -264,9 +405,11 @@ def main():
     ap.add_argument("--seeds", default="11,12")
     ap.add_argument("--intensities", default="1,2,3,4")
     ap.add_argument("--fast", default="1,4", help="rungs also raced at Time 10 (empty: none)")
+    ap.add_argument("--l5", default="", help="rungs also raced from Time 5, the level-5 upgrade's threshold (empty: none)")
     ap.add_argument("--rest", default="", help="rungs also raced from Time 0 (empty: none)")
     ap.add_argument("--wide", type=int, default=0, help="how many W2 curriculum courses (raced at I2)")
     ap.add_argument("--wide-w", type=float, default=0.5, help="curriculum weight of the wide courses (0-1)")
+    ap.add_argument("--seed-from", action="append", default=[], help="a best.json (or list) to seed phase 1 with; repeatable")
     ap.add_argument("--limit", type=float, default=400)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out", default=None)
@@ -274,12 +417,21 @@ def main():
     a.intensities = [int(s) for s in a.intensities.split(",") if s]
     a.fast = [int(s) for s in a.fast.split(",") if s]
     a.rest = [int(s) for s in a.rest.split(",") if s]
+    a.l5 = [int(s) for s in a.l5.split(",") if s]
+    # A confirm always races I4 from Time 5: at level-5 speed a fleet-lag nose orbits a gate and never clears it
+    # (the Rhino in Headlong, FINDINGS row 21), and a drive that only won from rest must not ship that back.
+    if a.confirm and 4 not in a.l5:
+        a.l5.append(4)
     g = GAMES[a.hull]
     seeds = [int(s) for s in a.seeds.split(",") if s]
     conds = conditions_for(a)
     out = a.out or tempfile.mkdtemp(prefix=f"time-ai-{a.hull}-")
     os.makedirs(out, exist_ok=True)
     log = open(os.path.join(out, "log.jsonl"), "a")
+    global CACHE
+    CACHE = RaceCache(os.path.join(out, "races.jsonl"))
+    if CACHE.mem:
+        print(f"resume: {len(CACHE.mem)} finished race sets in {out}/races.jsonl", flush=True)
     RJ.build()
     pool = concurrent.futures.ThreadPoolExecutor(a.workers)
     t0 = time.time()
@@ -325,6 +477,12 @@ def main():
     space = Space(dims)
     es = SepCMAES(space, seed=1, popsize=a.popsize, sigma0=0.2)
     shipped = shipped_genomes(g)
+    # --seed-from: earlier searches' best genomes join the shipped ones ("a new round grows from every genome that
+    # exists", AI_PLAN.md); genes they lack (a gene added since) take the shipped value.
+    for path in a.seed_from:
+        extra = json.load(open(path))
+        for e in (extra if isinstance(extra, list) else [extra]):
+            shipped.append(dict(shipped[0], **{k: v for k, v in e.items() if not k.startswith("_")}))
     es.seed([space.encode(p) for p in shipped])
     archive = []
     for gen in range(a.generations):

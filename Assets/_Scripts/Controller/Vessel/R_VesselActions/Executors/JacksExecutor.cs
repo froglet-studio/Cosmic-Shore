@@ -203,8 +203,10 @@ namespace CosmicShore.Gameplay
         public bool Herding => _herding;
         /// <summary>The share of the herd that is danger at the current Charge.</summary>
         public float DangerShare => config ? config.DangerShareFor(_status) : JacksMath.DangerShare(0f);
-        /// <summary>Every herder's ring now (u).</summary>
-        public float Ring => config ? config.RingFor(_status) : 0f;
+        /// <summary>Every herder's ring now (u): the Space ring, opened up to <c>wideRingScale</c> times while Wide (eased).</summary>
+        public float Ring => config ? config.RingFor(_status) * Mathf.Lerp(1f, config.WideRingScale, _wideBlend) : 0f;
+        /// <summary>0 tight, 1 Wide: the ring's ease between the two (so the herd scatters and gathers, never jumps).</summary>
+        float _wideBlend;
         internal JacksConfigSO Config => config;
         internal IVesselStatus Status => _status;
         /// <summary>The hull's impactor: the net hands it every prism it touches, and the jacks every crystal they collect.</summary>
@@ -361,7 +363,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>THE SPACE ABILITY, WIDE (Garrett, 2026-10-25: "Space be the zoomed out view in herding mode"): herding,
-        /// the view eases out to the whole cell and back. Nothing while netting ("remove the space ability in net mode").</summary>
+        /// the view eases out to the whole cell and back, AND every ring opens to <c>wideRingScale</c> times its Space size
+        /// (2026-11-16, the weakest-abilities pass: Wide was only a camera), so the herd fans out across a wide field to graze
+        /// and bunches again when Wide closes. Nothing while netting ("remove the space ability in net mode").</summary>
         public void ToggleWide()
         {
             if (!_herding || Time.unscaledTime < _wideToggleReadyAt) return;
@@ -517,6 +521,8 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (_status == null || !config || !_status.Transform) return;
+            // WIDE opens every ring (the herd fans out to graze a wide field); off, the rings close and the herd bunches.
+            _wideBlend = Mathf.MoveTowards(_wideBlend, _wide && _herding ? 1f : 0f, Time.deltaTime / Mathf.Max(0.05f, config.WideRingSeconds));
             if (IsLocalHuman)
             {
                 _view ??= new JacksView(this);

@@ -583,11 +583,11 @@ MonoBehaviour:
   jukeController: {fileID: 7423918465920174631}
   jukeWhooshEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   flareGain: 2.5
 --- !u!114 &838706159439259027
 MonoBehaviour:
@@ -980,11 +980,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.Audio.ShipAudioController
   engineEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1809053689
+      Data2: 1230251534
+      Data3: 566434957
+      Data4: -1286293035
+    Path: event:/Engine stuff/space ship engine main
   additionalEngineLayers: []
   speedParameterName: Speed
   tiltParameterName: Tilt Acel

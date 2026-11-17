@@ -196,11 +196,18 @@ namespace CosmicShore.Gameplay
                                           int intensity, int level) =>
             SwitchbackBlastRun.HasGauntlet(intensity, gauntletOn) ? gauntlet.For(level) : NoseFollowFor(byIntensity, intensity, level);
 
+        /// <summary>The per-intensity nose follow table this mode's AI flies (<see cref="aiNoseFollowByIntensity"/>). A mode
+        /// that reuses Switchback's course for another hull serves that hull's own trained table (Scarab Rally).</summary>
+        protected virtual SwitchbackNoseFollow[] AINoseFollowTable => aiNoseFollowByIntensity;
+
+        /// <summary>u from the ring inside which the AI stops dodging (<see cref="aiNoDodgeNearRing"/>); overridable as above.</summary>
+        protected virtual float AINoDodgeNearRing => aiNoDodgeNearRing;
+
         protected override void OnRacerArmed(IPlayer pilot)
         {
             var transformer = pilot?.Vessel?.VesselStatus?.VesselTransformer;
             if (transformer == null) return;
-            transformer.AINoseFollowPerSecond = NoseFollowFor(aiNoseFollowByIntensity, aiNoseFollowGauntlet, BlastRunGauntlet,
+            transformer.AINoseFollowPerSecond = NoseFollowFor(AINoseFollowTable, aiNoseFollowGauntlet, BlastRunGauntlet,
                                                               Intensity, (int)gameData.AIDifficultyFor(pilot));
         }
 
@@ -396,7 +403,7 @@ namespace CosmicShore.Gameplay
                                         p => (int)gameData.AIDifficultyFor(p))
                 {
                     DodgeDangerOnly = aiDodgeDangerOnly,
-                    NoDodgeNearRing = aiNoDodgeNearRing,
+                    NoDodgeNearRing = AINoDodgeNearRing,
                     StrikeSetupLeg = aiStrikeSetupLeg,
                 }
                 : null;

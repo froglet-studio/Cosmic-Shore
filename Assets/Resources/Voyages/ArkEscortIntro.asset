@@ -1,0 +1,133 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7a2538b9cd2416d93837046b0ae6caf, type: 3}
+  m_Name: ArkEscortIntro
+  m_EditorClassIdentifier:
+  shots:
+  - Subject: 0
+    Seconds: 2
+    HardCut: 0
+    Sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    FromAzimuth: 40
+    ToAzimuth: 70
+    Elevation: 18
+    FromDistance: 9
+    ToDistance: 7
+    LookAhead: 0
+    Title: ""
+    Line: ""
+  - Subject: 0
+    Seconds: 2
+    HardCut: 0
+    Sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    FromAzimuth: 160
+    ToAzimuth: 120
+    Elevation: 6
+    FromDistance: 1.6
+    ToDistance: 1.1
+    LookAhead: 0
+    Title: "THE ARK \xB7 hull {hull}%"
+    Line: ""
+  - Subject: 3
+    Seconds: 1
+    HardCut: 1
+    Sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    FromAzimuth: 120
+    ToAzimuth: 100
+    Elevation: 10
+    FromDistance: 3
+    ToDistance: 2.4
+    LookAhead: 0
+    Title: "{vessel}"
+    Line: ""
+  - Subject: 4
+    Seconds: 0.5
+    HardCut: 1
+    Sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    FromAzimuth: 100
+    ToAzimuth: 80
+    Elevation: 10
+    FromDistance: 3
+    ToDistance: 2.6
+    LookAhead: 0
+    Title: "{vessel}"
+    Line: ""
+  - Subject: 2
+    Seconds: 2
+    HardCut: 0
+    Sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    FromAzimuth: 200
+    ToAzimuth: 180
+    Elevation: 22
+    FromDistance: 3.5
+    ToDistance: 4.5
+    LookAhead: 6
+    Title: "ESCORT THE ARK"
+    Line: "{objective}"
+  vessels: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
+  worldSeparator: " \xB7 "
+  cardLine: "{pilot} \xB7 {element}"
+  openingSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  goSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  goWord: GO
+  skipHint: Hold B to skip
+  skippableAfterFirstRun: 1
+  holdToSkipSeconds: 0.6
+  skipGraceSeconds: 0.5
+  letterboxShare: 0.11
+  fadeSeconds: 0.3
+  cutSeconds: 0.4
+  handOverSeconds: 1
+  chaseDistance: 3
+  chaseHeight: 0.6

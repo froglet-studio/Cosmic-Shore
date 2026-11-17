@@ -541,7 +541,7 @@ class Generator:
             full = os.path.join(ROOT, rel)
             os.makedirs(os.path.dirname(full), exist_ok=True)
             with open(full, "w", encoding="utf-8", newline="\n") as fh:
-                fh.write(content)
+                fh.write(placeholder_sounds(rel, content))
         for rel in self.stale:
             full = os.path.join(ROOT, rel)
             if os.path.exists(full):
@@ -556,6 +556,33 @@ def _meta_lines(text: str) -> "list[str]":
     return [ln.rstrip() for ln in text.splitlines()]
 
 
+def placeholder_sounds(rel: str, content: str) -> str:
+    """`content` with every FMOD slot the placeholder ledger lists holding what the tree holds (a recycled
+    placeholder, or its real event once promoted): Docs/AudioSystem/sound_placeholders.json, Garrett 2026-11-16.
+    Without it a generator re-emits those slots empty and wipes the sounds; with it, write and --check agree with
+    the tree. Unlisted files come back unchanged."""
+    try:
+        import sound_placeholders
+    except ImportError:
+        return content
+    return sound_placeholders.fill_text(rel, content, root=ROOT)
+
+
+def event_yaml(rel: str, field: str, indent: str = "    ") -> str:
+    """The `Guid:` / `Data1..4` / `Path:` lines of an FMOD slot a generator authors, holding what the placeholder
+    ledger says the slot holds (empty when the ledger does not list it). Use it wherever a generator spells an
+    EventReference out as text, instead of a literal empty block: the literal makes re-running the generator
+    duplicate or empty the slot."""
+    try:
+        import sound_placeholders
+        items = [it for it in sound_placeholders._lock(ROOT).get(rel.replace(os.sep, "/"), []) if it["field"] == field]
+    except ImportError:
+        items = []
+    data, path = (items[0]["data"], items[0]["path"]) if items else ([0, 0, 0, 0], "")
+    return (f"{indent}Guid:\n" + "".join(f"{indent}  Data{k + 1}: {data[k]}\n" for k in range(4))
+            + f"{indent}Path: {path}\n")
+
+
 def drift(files: "dict[str, str]", stale=()) -> "list[str]":
     """Every queued file that differs from disk, as "<rel> (<where>)" - the `--check` half of a
     generator, shared so the standalone generators diff the same way Generator.finish does.
@@ -566,6 +593,7 @@ def drift(files: "dict[str, str]", stale=()) -> "list[str]":
     makes a gate red for nothing. Every other file is compared byte for byte."""
     changed = []
     for rel, content in files.items():
+        content = placeholder_sounds(rel, content)
         full = os.path.join(ROOT, rel)
         if not os.path.exists(full):
             changed.append(f"{rel} (missing on disk)")

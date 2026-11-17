@@ -1,4 +1,6 @@
+using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Unity.Netcode;
 using UnityEngine;
@@ -73,6 +75,12 @@ namespace CosmicShore.Gameplay
         public static bool Begin(VoyageLaunchRequest request, GameDataSO gameData = null)
         {
             if (request == null || request.Kind == VoyageLaunchKind.Job && request.Job == null) return false;
+            // Milestone 1 locks the crew's jobs but the listed few (VoyageToyDefinitionSO.IsJobOpen); every way in asks here.
+            if (request.Kind == VoyageLaunchKind.Job && !VoyageToyDefinitionSO.JobSails(request.Job))
+            {
+                CSDebug.LogWarning($"[Voyage] {request.Job.TemplateId} is locked for now - only the open voyages sail.");
+                return false;
+            }
             gameData ??= ResolveGameData();
             if (!gameData)
             {
@@ -86,8 +94,10 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
+            // The squad that sails is fixed here, as the Voyage window shows it, and the scene sails exactly this one.
+            request.Squad ??= VoyageRun.ActiveSquad(gameData);
             s_pending = request;
-            KeepFlownHull(gameData);
+            SeatLocal(gameData, request.Squad);
             CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[Voyage] Set sail: {request} - loading {SceneName}.");
             gameData.SceneName = SceneName;
             gameData.InvokeGameLaunch();
@@ -103,18 +113,84 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The pilot sails in the hull they were flying: the voyage scene spawns the vessel from the player's
-        /// <c>NetDefaultVesselType</c>, and the menu writes its own attract hull there. No swap on arrival (a seat's hull
-        /// swapped in mid-hand-off once left the player in a Manta they could not fly, 2026-10-31).
+        /// The pilot sails in the vessel their seat names (the Voyage window's seat picker, the squad's card): the voyage
+        /// scene spawns the local vessel from the player's <c>NetDefaultVesselType</c>, so the seat's hull is written there
+        /// BEFORE the scene loads and the pilot spawns in it at the berth. Nothing is swapped on arrival (a seat's hull
+        /// swapped in mid-hand-off once left the player in a Manta they could not fly, 2026-10-31). The seat's pilot and
+        /// artifact go to that hull's loadout, as the Ark's Take into does. A seat with no hull, or a hull with no vessel
+        /// prefab, keeps the hull the pilot was flying.
+        /// <para>A friend in the host's lobby calls this from their own Ark page each time they change their seat
+        /// (<see cref="VoyageSeatRecord.PartyKey"/>): <c>NetDefaultVesselType</c> is owner-written and replicated, so the
+        /// host's page shows the friend's hull and the voyage scene spawns the friend in it, as it does the host.</para>
         /// </summary>
-        static void KeepFlownHull(GameDataSO gameData)
+        public static void SeatLocal(GameDataSO gameData, SavedSquad squad)
         {
-            var vessel = gameData.LocalPlayer?.Vessel;
-            if (vessel == null || vessel is Object uo && !uo || vessel.VesselStatus == null) return;
+            if (!gameData || squad == null) return;
             if (gameData.LocalPlayer is not Player player || !player.IsSpawned || !player.IsOwner) return;
-            var hull = vessel.VesselStatus.VesselType;
-            if (VesselRequirement.IsConcrete(hull) && player.NetDefaultVesselType.Value != hull)
-                player.NetDefaultVesselType.Value = hull;
+            var seat = SeatHull(squad);
+            var hull = HullThatSails(gameData, squad);
+            if (hull != seat)
+            {
+                if (VesselRequirement.IsConcrete(seat))
+                    CSDebug.LogWarning($"[Voyage] The seat names {seat}, which has no vessel prefab - the pilot sails the hull they flew.");
+                if (!VesselRequirement.IsConcrete(hull)) return;
+            }
+            else
+            {
+                var slot = squad.GetSlot(LocalSeat(squad));
+                if (!slot.UsesDefaultPilot() && PilotLoadoutStore.TryGetPilot(slot.PilotId, out _))
+                    PilotLoadoutStore.SetPilot(hull, slot.PilotId);
+                PilotLoadoutStore.SetSlottedArtifact(hull, slot.ArtifactId);
+            }
+            if (player.NetDefaultVesselType.Value != hull) player.NetDefaultVesselType.Value = hull;
+            if (gameData.selectedVesselClass) gameData.selectedVesselClass.Value = hull;
+        }
+
+        /// <summary>True on a friend's machine in someone else's party: the host picks the voyage and sets sail, and this
+        /// machine only picks its own seat.</summary>
+        public static bool IsPartyGuest
+        {
+            get
+            {
+                var nm = NetworkManager.Singleton;
+                return nm != null && nm.IsListening && !nm.IsServer;
+            }
+        }
+
+        /// <summary>The seat the local pilot flies in <paramref name="squad"/>, as the voyage deploys it
+        /// (<c>VoyageRun.Deploy</c>).</summary>
+        public static int LocalSeat(SavedSquad squad) =>
+            squad == null ? 0 : Mathf.Clamp(squad.MySeat, 0, SavedSquad.SlotCount - 1);
+
+        /// <summary>The hull the local pilot's seat names, or the default (no class) when there is no squad.</summary>
+        public static VesselClassType SeatHull(SavedSquad squad) =>
+            squad == null ? default : squad.GetSlot(LocalSeat(squad)).Vessel;
+
+        /// <summary>
+        /// The hull the local pilot spawns in when <paramref name="squad"/> sails: their seat's, or the hull they were
+        /// flying when the seat's has no vessel prefab. The Voyage window's "You sail as" reads this, so it names what
+        /// <see cref="Begin"/> spawns.
+        /// </summary>
+        public static VesselClassType HullThatSails(GameDataSO gameData, SavedSquad squad)
+        {
+            var hull = SeatHull(squad);
+            return CanSpawn(hull) ? hull : FlownHull(gameData);
+        }
+
+        static VesselClassType FlownHull(GameDataSO gameData)
+        {
+            if (!gameData) return default;
+            var vessel = gameData.LocalPlayer?.Vessel;
+            if (vessel == null || vessel is Object uo && !uo || vessel.VesselStatus == null) return default;
+            return vessel.VesselStatus.VesselType;
+        }
+
+        static bool CanSpawn(VesselClassType hull)
+        {
+            if (!VesselRequirement.IsConcrete(hull)) return false;
+            var initializer = Object.FindFirstObjectByType<MenuServerPlayerVesselInitializer>();
+            var prefabs = initializer ? initializer.VesselPrefabContainer : null;
+            return !prefabs || prefabs.TryGetShipPrefab(hull, out _, reportMissing: false);
         }
 
         /// <summary>The loaded <see cref="GameDataSO"/> (one per app), for callers that are not injected.</summary>

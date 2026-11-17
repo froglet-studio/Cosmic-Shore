@@ -208,8 +208,54 @@ namespace CosmicShore.UI
         {
             var book = Book;
             var active = book?.GetActive();
-            if (active == null || !VoyageOpenCard.CanEdit(active, seat)) return false;
-            var squad = SquadMembership.Copy(active);
+            var squad = Apply(active, seat, kind, option);
+            if (squad == null) return false;
+            int index = book.ActiveIndex;
+            if (index < 0 || index >= book.Squads.Count) return false;
+            book.Squads[index] = squad;
+            SaveBook();
+            Changed?.Invoke();
+            return true;
+        }
+
+        /// <summary>The open voyage's own seats changed (<see cref="VoyageSeatRecord"/>).</summary>
+        public event Action VoyageChanged;
+
+        /// <summary>
+        /// The voyage's own <paramref name="seat"/> (<see cref="VoyageSeatRecord"/>, not a saved squad) takes
+        /// <paramref name="option"/> for <paramref name="kind"/>, under the same rules as <see cref="Pick"/>; Set sail
+        /// sails it. False when there is no record for <paramref name="key"/> or the seat is not the player's to change.
+        /// </summary>
+        public bool PickVoyage(string key, int seat, int kind, Option option)
+        {
+            var squad = Apply(VoyageSeatRecord.Get(key), seat, kind, option);
+            if (squad == null) return false;
+            VoyageSeatRecord.Set(key, squad);
+            VoyageChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>
+        /// "Fill the AI seats from a saved squad": the AI seats of <paramref name="key"/>'s voyage take
+        /// <paramref name="preset"/>'s wingmates (<see cref="VoyageSeatRecord.FillAiSeats"/>); your seat and your friends'
+        /// are left alone, and every vessel keeps a pilot. False when there is nothing to fill.
+        /// </summary>
+        public bool FillFromPreset(string key, SavedSquad preset, int friends)
+        {
+            var filled = VoyageSeatRecord.FillAiSeats(VoyageSeatRecord.Get(key), preset, friends);
+            if (filled == null) return false;
+            FillCrew(filled);
+            VoyageSeatRecord.Set(key, filled);
+            VoyageChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>A copy of <paramref name="from"/> with <paramref name="seat"/> taking <paramref name="option"/>, the
+        /// pilot swap and crew fill run; null when the seat is not the player's to change.</summary>
+        SavedSquad Apply(SavedSquad from, int seat, int kind, Option option)
+        {
+            if (from == null || !VoyageOpenCard.CanEdit(from, seat)) return null;
+            var squad = SquadMembership.Copy(from);
             var slot = squad.GetSlot(seat);
             string previousPilot = slot.PilotId;
             switch (kind)
@@ -231,16 +277,16 @@ namespace CosmicShore.UI
             }
             squad.SetSlot(seat, slot);
             squad.KeepCardsOwn(seat, previousPilot);
+            FillCrew(squad);
+            return squad;
+        }
+
+        void FillCrew(SavedSquad squad)
+        {
             PilotLoadoutStore.GetCrew(_crew);
             _ids.Clear();
             foreach (var p in _crew) if (!string.IsNullOrEmpty(p.Id)) _ids.Add(p.Id);
             squad.FillPilots(_ids);
-            int index = book.ActiveIndex;
-            if (index < 0 || index >= book.Squads.Count) return false;
-            book.Squads[index] = squad;
-            SaveBook();
-            Changed?.Invoke();
-            return true;
         }
 
         /// <summary>Make squad <paramref name="index"/> the one that sails. False when it already is, or there is none.</summary>

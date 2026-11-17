@@ -163,3 +163,38 @@ MonoBehaviour:
   moteLifetime: 1.1
   moteSize: {x: 2.5, y: 6}
   fallSpeed: 6
+  dustBlightEvent:
+    Guid:
+      Data1: 521565762
+      Data2: 1177340277
+      Data3: 1735452291
+      Data4: -857705457
+    Path: event:/SFX/Oneshots/Gameplay sfx/Creature colide
+  dustTendEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  heartNourishEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  heartWitherEvent:
+    Guid:
+      Data1: -1103610945
+      Data2: 1108376032
+      Data3: -1187393100
+      Data4: -416318210
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
+  scaleDustBiteEvent:
+    Guid:
+      Data1: 521565762
+      Data2: 1177340277
+      Data3: 1735452291
+      Data4: -857705457
+    Path: event:/SFX/Oneshots/Gameplay sfx/Creature colide

@@ -17,6 +17,14 @@ MonoBehaviour:
   dartChargeSeconds: 0.8
   dartSeconds: 1
   dartCooldown: 1.2
+  dartPace:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.2
+    element: 4
+    UseFloor: 1
+    Floor: 0.5
   hullRadius: 3
   queryReach: 6
   ownPerchBlocks: 5
@@ -56,13 +64,13 @@ MonoBehaviour:
   pLaunchSpeed: 30
   pLaunchCharges: 1
   jumpCooldown:
-    Enabled: 1
-    Value: 9
-    Min: 9
-    Max: 3
-    element: 4
-    UseFloor: 1
-    Floor: 1
+    Enabled: 0
+    Value: 6
+    Min: 6
+    Max: 6
+    element: 0
+    UseFloor: 0
+    Floor: 0
   pGhostTime: 2.5
   pGhostCd: 8
   pSlingPull: 0.22
@@ -163,3 +171,31 @@ MonoBehaviour:
   snapButtonLabel: 
   backButtonIcon: {fileID: 21300000, guid: ca1ac713c24158d9f2895b8311bac0cb, type: 3}
   backButtonLabel: 
+  growEvent:
+    Guid:
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
+  shieldEvent:
+    Guid:
+      Data1: -922617308
+      Data2: 1092038894
+      Data3: -167764571
+      Data4: -698904471
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Activate
+  restoreEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  fallThroughEvent:
+    Guid:
+      Data1: -1163572034
+      Data2: 1312051193
+      Data3: -1732454749
+      Data4: 1656763241
+    Path: event:/SFX/Oneshots/Gameplay sfx/Space Joust

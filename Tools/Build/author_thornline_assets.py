@@ -71,7 +71,6 @@ TOASTS = (                                # (field, GameToastSituation member, v
 )
 SOUNDS = ("snipeEvent", "crystalResetEvent", "crystalTakenEvent", "cleanDockEvent", "caughtShortEvent",
           "sightReadyEvent", "passedEvent", "overtakenEvent", "thornRegrowEvent")
-EMPTY_EVENT = "    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
 FEEDBACK_SCALARS = (("caughtShortToastsPerRace", 2), ("passToastSeconds", 1.5))
 SIGHT_SCALARS = (("sightReloadingScale", 0.35), ("rivalThornGlow", 0.35))
 
@@ -90,7 +89,7 @@ NEW_FIELD_LINES = (
     + f"  aiNoseLeadMaxExtraDegrees: {AI_NOSE_LEAD_MAX_EXTRA}\n"
     + "".join(f"  {field}: {value}\n" for field, _, value, _ in TOASTS)
     + "".join(f"  {k}: {_yaml_num(v)}\n" for k, v in FEEDBACK_SCALARS)
-    + "".join(f"  {k}:\n{EMPTY_EVENT}" for k in SOUNDS)
+    + "".join(f"  {k}:\n" + lib.event_yaml(f"{lib.SCENES_DIR}/MinigameThornline.unity", k) for k in SOUNDS)
     + "".join(f"  {k}: {_yaml_num(v)}\n" for k, v in SIGHT_SCALARS))
 
 
