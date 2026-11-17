@@ -77,7 +77,8 @@ HULLS = {
     "Meerkat": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
     "Grizzly": {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.45, "NoseFollowPerSecond": 10},   # a big hull: room
     "Angler":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
-    "BrittleStar": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
+    # The Brittle Star takes its Time game's trained Legendary I1-I2 nose (run1, #2141).
+    "BrittleStar": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 13.66},
 }
 
 
