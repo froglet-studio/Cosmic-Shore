@@ -434,6 +434,7 @@ namespace CosmicShore.Gameplay
             var pilot = c.GetComponent<ArkEscortPilot>();
             if (!pilot) pilot = c.gameObject.AddComponent<ArkEscortPilot>();
             pilot.Arm(this, seat);
+            pilot.Errand = WingmateErrand;
             if (!_pilots.Contains(pilot)) _pilots.Add(pilot);
         }
 
@@ -1121,7 +1122,11 @@ namespace CosmicShore.Gameplay
             ClearStop();
             SquadDeployment.Recall();
             foreach (var p in _pilots)
-                if (p) p.Disarm();
+                if (p)
+                {
+                    p.Errand = null;
+                    p.Disarm();
+                }
             _pilots.Clear();
             _escort?.Uninstall();
             var swapper = _context?.VesselInitializer;
