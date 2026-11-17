@@ -202,3 +202,9 @@
 2026-11-16T22:19:46.734Z editor load: play=False capture=True minPlay=15s issues=35
 2026-11-16T22:19:55.350Z E-0de9ec6c70: fix 93765d6aa taken (EditMode); needs 2 clean run(s)
 2026-11-16T22:58:54.255Z PlayMode session ended (2203s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-c8e2f49696 E-0f0eb8a59f
+2026-11-17T01:19:47.716Z EditMode session ended (180min editor span, script reload): 1 fix(es) waiting; counted: E-0de9ec6c70 1/2; fired: E-c8e2f49696 E-0f0eb8a59f
+2026-11-17T01:19:56.157Z editor load: play=False capture=True minPlay=15s issues=36
+2026-11-17T01:20:56.792Z EditMode session ended (1min editor session): not counted (capture=True, long enough=False)
+2026-11-17T18:18:00.132Z editor load: play=False capture=True minPlay=15s issues=36
+2026-11-17T20:35:54.883Z editor load: play=False capture=True minPlay=15s issues=36
+2026-11-17T21:13:36.715Z PlayMode session ended (2095s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-c8e2f49696 E-0f0eb8a59f
