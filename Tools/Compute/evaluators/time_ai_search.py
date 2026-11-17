@@ -58,6 +58,23 @@ SO = "Assets/_SO_Assets/AI Boost Policies/"
 CRYSTAL = "crystal"            # the RaceAICrystalGenesSO gene: detour budget, world units
 CRYSTAL_RANGE = (0.0, 300.0)
 
+def _switchback_nose(p):
+    return {
+        "aiNoseFollowByIntensity": [
+            {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"]) * k}
+            for e, m, h, k in ((1.9, 2.2, 3, 1.0), (2, 2.4, 3, 1.0), (2.1, 2.2, 2.8, 1.2), (1.8, 2.2, 3.5, 1.2))],
+        "aiNoseFollowGauntlet.legendary": float(p["noseLegendary"]) * 1.2,
+        "aiNoDodgeNearRing": float(p["aiNoDodgeNearRing"])}
+
+
+# SwitchbackController's AI knobs (Scarab Rally inherits them): the Legendary nose follow rate (every intensity's row,
+# shipped 5/s at I1-I2 and 6/s at I3-I4, and the I4 gauntlet's) and how near a ring the AI stops dodging.
+SWITCHBACK_NOSE = {
+    "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
+    "ctrl_defaults": {"noseLegendary": 5.0, "aiNoDodgeNearRing": 200.0},
+    "ctrl": _switchback_nose,
+}
+
 # Per vessel: its Time game, the drive assets per intensity (AIBoostPolicySO.ForMode: <name>_<Mode>_I<n>, else the mode
 # file, else the hull's own), the searched drive fields with the asset's limits, and the nose lead: the mode's
 # aiNoseLead table with this hull's row ("rows" are the other hulls' rows, kept as they ship).
@@ -70,16 +87,7 @@ GAMES = {
         "fields": {"alignDegrees": (0.0, 90.0), "stickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0),
                    "spendAtCharge01": (0.05, 1.0), "peakMarginUnits": (0.0, 30.0), "minDischargeSeconds": (0.0, 2.0),
                    "minPulseGainUnits": (0.0, 120.0), "maxHoldOffSeconds": (0.5, 8.0)},
-        # SwitchbackController's AI knobs: the Legendary nose follow rate (every intensity's row and the I4 gauntlet's)
-        # and how near a ring the AI stops dodging.
-        "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
-        "ctrl_defaults": {"noseLegendary": 5.0, "aiNoDodgeNearRing": 200.0},
-        "ctrl": lambda p: {
-            "aiNoseFollowByIntensity": [
-                {"easy": e, "medium": m, "hard": h, "legendary": float(p["noseLegendary"]) * k}
-                for e, m, h, k in ((1.9, 2.2, 3, 1.0), (2, 2.4, 3, 1.0), (2.1, 2.2, 2.8, 1.2), (1.8, 2.2, 3.5, 1.2))],
-            "aiNoseFollowGauntlet.legendary": float(p["noseLegendary"]) * 1.2,
-            "aiNoDodgeNearRing": float(p["aiNoDodgeNearRing"])},
+        **SWITCHBACK_NOSE,
         "lead": 2.5, "rows": [],                       # SwitchbackController.aiNoseLead: Dolphin 2.5
     },
     "Serpent": {
@@ -108,7 +116,8 @@ GAMES = {
                    "dashCooldownSeconds": (0.2, 6.0)},
         # Scarab Rally inherits Switchback's table, which has only the Dolphin's row: the Scarab flies with NO lead
         # there and 2.5 in Regatta (RaceLines/Scarab_Regatta). The search gives it a row.
-        "lead": 0.0, "rows": [{"Hull": "Dolphin", "Gain": 2.5, "MaxExtraDegrees": 40}], "nose_gene": 1.5,
+        **SWITCHBACK_NOSE,                             # Switchback's nose knobs: the Scarab flies them in the Rally
+        "lead": 0.0, "rows": [{"Hull": "Dolphin", "Gain": 2.5, "MaxExtraDegrees": 40}],
     },
     "Manta": {
         "mode": "Redline",
