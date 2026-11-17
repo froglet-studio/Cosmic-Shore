@@ -561,6 +561,25 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ShippedVoyage_StrayingPastTheArkCountsDownThenRecalls()
+        {
+            var settings = VoyageToyDefinitionSO.Load();
+            Assert.IsNotNull(settings, "Resources/Voyages/Voyage.asset");
+            var cfg = settings.BuildArkConfig(null);
+            // The voyage's leash is its own: within reach of a whole voyage cell (the Ark anchors at the core), well short
+            // of the Arkway's three cell radii, which a pilot never reached.
+            Assert.GreaterOrEqual(cfg.LeashRadiusFactor, 1f, "a pilot can raid the whole cell the Ark anchors in");
+            Assert.Less(cfg.LeashRadiusFactor, 2f, "straying is reached in a voyage, not three cell radii out");
+            Assert.AreEqual(settings.StrayRadiusCells, cfg.LeashRadiusFactor, 1e-4f);
+            Assert.AreEqual(5f, cfg.LeashGraceSeconds, 1e-4f, "the warning counts 5, 4, 3, 2, 1");
+            var lines = VoyageContentSO.Load().Lines;
+            StringAssert.Contains("{seconds}", lines.ToastStray, "the countdown shows the seconds left");
+            StringAssert.Contains("{carried}", lines.ToastStrayCarrySub, "the warning names the crystals at stake");
+            StringAssert.Contains("{count}", lines.ToastRecalledLostSub);
+            Assert.IsFalse(string.IsNullOrEmpty(lines.ToastRecalled));
+        }
+
+        [Test]
         public void ShippedVoyage_PhonesTakeLighterLifeAndKaiju()
         {
             var settings = VoyageToyDefinitionSO.Load();

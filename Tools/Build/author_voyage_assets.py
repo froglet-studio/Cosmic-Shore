@@ -106,7 +106,7 @@ LINES_FIELDS += [
     "ToastCellHostileSub", "ToastCellCalmSub", "ToastSetOff", "ToastSetOffSub", "ToastHome",
     "ToastHomeSub", "ObjectiveDestinationTag", "ObjectiveCalmTag", "ObjectiveHostileTag", "ObjectiveCellName",
     "ToastArkUnderAttack", "ToastArkUnderAttackSub", "ToastBreachClose", "ToastBreachCloseSub", "ObjectiveEscortKicker", "ObjectiveEscortGoal", "ObjectiveEscortGoalNoBreach", "ObjectiveArkBound", "ObjectiveArkInside", "ObjectiveActionAssault", "ObjectiveActionIncoming", "ObjectiveActionUnderAttack", "ObjectiveActionHealing", "ObjectiveEscortHostile", "ObjectiveEscortCalm", "ObjectiveStripEscort", "ObjectiveStripHull", "ObjectiveStripPlace", "ObjectiveStripHostile", "ObjectiveStripCalm", "ObjectiveStripElement", "ScoreColGuarded", "ScoreColScore", "ScoreTryAgain", "ScoreTryAgainLine",
-    "ToastAnchored", "ToastAnchoredSub", "ToastAnchorClosing", "ToastAnchorClosingSub", "ToastWeighed", "ToastBanked", "ToastBankedSub", "ToastCrystal", "ToastCrystalCarrySub", "ToastSpilled", "ToastSpilledSub", "ObjectiveStripAnchor", "ObjectiveStripCarried", "ToastGoalReachedSub", "PauseCompleteAndSail", "ObjectiveStripComplete", "ObjectiveStripArkHull", "ObjectiveRailLabel", "ObjectiveStripLeaking", "ToastHullLeaking", "ToastHullLeakingSub", "ToastRaiders", "ToastRaidersSub", "ToastKaiju", "ToastKaijuSub", "ToastGoalMissed", "ToastGoalMissedSub", "ScoreRetryRaid",
+    "ToastAnchored", "ToastAnchoredSub", "ToastAnchorClosing", "ToastAnchorClosingSub", "ToastWeighed", "ToastBanked", "ToastBankedSub", "ToastCrystal", "ToastCrystalCarrySub", "ToastSpilled", "ToastSpilledSub", "ObjectiveStripAnchor", "ObjectiveStripCarried", "ToastGoalReachedSub", "PauseCompleteAndSail", "ObjectiveStripComplete", "ObjectiveStripArkHull", "ObjectiveRailLabel", "ObjectiveStripLeaking", "ToastHullLeaking", "ToastHullLeakingSub", "ToastRaiders", "ToastRaidersSub", "ToastKaiju", "ToastKaijuSub", "ToastGoalMissed", "ToastGoalMissedSub", "ScoreRetryRaid", "ToastStray", "ToastStraySub", "ToastStrayCarrySub", "ToastRecalled", "ToastRecalledSub", "ToastRecalledLostSub",
 ]
 
 # Crystal Run's job keys (JobTemplate in VoyageContent.cs): an always-offered job counted from the moment the Ark sails.
@@ -718,6 +718,8 @@ def emit_toy(spec):
             f"  content: {{fileID: 11400000, guid: {guid_for('VoyageContent.asset')}, type: 2}}\n")
     out += current_ark_escort()
     out += f"  seedElementLevel: {fnum(t['seedElementLevel'])}\n  wingmateLeash: {fnum(t['wingmateLeash'])}\n"
+    out += (f"  strayRadiusCells: {fnum(t.get('strayRadiusCells', 1.25))}\n"
+            f"  strayCountdownSeconds: {fnum(t.get('strayCountdownSeconds', 5))}\n")
     out += f"  findDistance: {fnum(t['findDistance'])}\n  vaultRadius: {fnum(t['vaultRadius'])}\n"
     out += f"  vaultPrisms: {int(t['vaultPrisms'])}\n  vaultPrismScale: {vec3(t['vaultPrismScale'])}\n"
     out += f"  vaultOpenShare: {fnum(t['vaultOpenShare'])}\n  holdRadius: {fnum(t['holdRadius'])}\n"

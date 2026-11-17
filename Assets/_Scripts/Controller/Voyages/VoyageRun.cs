@@ -1189,6 +1189,8 @@ namespace CosmicShore.Gameplay
             _sea.AnchorSeconds = RaidAnchorSeconds;
             _sea.Anchored += OnRaidAnchored;
             _sea.Weighed += OnRaidWeighed;
+            // A pilot who strays past the stray radius is warned 5-4-3-2-1, then recalled to their seat (VoyageRun.Stray.cs).
+            HookStray(true);
         }
 
         /// <summary>How many worlds a route's indices count into: the corridor's own list, read from the cell it will
@@ -1259,6 +1261,7 @@ namespace CosmicShore.Gameplay
                 _sea.Anchored -= OnRaidAnchored;
                 _sea.Weighed -= OnRaidWeighed;
                 _sea.AnchorSeconds = null;
+                HookStray(false);
             }
             if (_active) SquadDeployment.Recall();
             // Destroyed while out: the escort context's static hooks (the crystal placement resolver) leave with it.

@@ -8,7 +8,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Arkway voyage's one screen-space surface, with two channels — a persistent COUNTDOWN
-    /// ("RETURN TO THE ARK — 3", held while the leash is breached) and timed BANNERS, the voyage's
+    /// ("RETURN TO THE ARK — 3", held while the leash is breached: a threat toast in the toast's own spot, the banners
+    /// waiting behind it until it clears) and timed BANNERS, the voyage's
     /// toasts ("STAY WITH THE ARK", "THE ARK HAS FALLEN"; Frogma Rev 113, Compare: a band top
     /// centre, a bold line and an optional line under it, an event, a threat or something good,
     /// one at a time).
@@ -44,12 +45,12 @@ namespace CosmicShore.Gameplay
 
         // Frogma Rev 116 A (Marquee): in a voyage the toast has ONE spot, just under the marquee the objective box
         // draws top centre, like an arcade cabinet's call-out line. Elsewhere (the Arkway toy) it keeps the top spot.
-        const float TopY = 40f, UnderMarqueeGap = 10f, CountdownGap = 110f;
+        const float TopY = 40f, UnderMarqueeGap = 10f;
 
         CanvasGroup _bannerGroup, _countdownGroup;
-        ArkwayToastBand _band;
+        ArkwayToastBand _band, _countdownBand;
         RectTransform _countdownRect;
-        TMP_Text _head, _under, _countdown;
+        TMP_Text _head, _under, _countdown, _countdownUnder;
         bool _countdownShown;
         float _bannerFrom = -1f, _bannerUntil = -1f;
         bool _upIsRunning;
@@ -83,12 +84,19 @@ namespace CosmicShore.Gameplay
             _under.color = ColorTrace.Retrace(ColorTrace.Ui, UnderInk);
             _bannerGroup.alpha = 0f;
 
-            // The countdown: the leash, held while it is breached, below the banner.
-            var cd = Child("Countdown", transform, new Vector2(0f, -(TopY + CountdownGap)), new Vector2(900f, 60f));
+            // The countdown: the leash, held while it is breached, as a threat toast in the toast's spot (Shombith
+            // 2026-11-17: "a warning 5 4 3 2 1"). The banners wait behind it.
+            var cd = Child("Countdown", transform, new Vector2(0f, -TopY), new Vector2(720f, 90f));
             _countdownRect = cd;
             _countdownGroup = cd.gameObject.AddComponent<CanvasGroup>();
-            _countdown = Line(cd, "Line", Vector2.zero, new Vector2(900f, 60f), 34f, FontStyles.Normal);
+            _countdownBand = cd.gameObject.AddComponent<ArkwayToastBand>();
+            _countdownBand.raycastTarget = false;
+            _countdownBand.color = ColorTrace.Retrace(ColorTrace.Ui, ThreatBand);
+            _countdown = Line(cd, "Line", new Vector2(0f, -10f), new Vector2(680f, 40f), 30f, FontStyles.Bold);
             _countdown.color = ColorTrace.Retrace(ColorTrace.Ui, CountdownInk);
+            _countdownBand.Accent = ColorTrace.Retrace(ColorTrace.Ui, ThreatInk);
+            _countdownUnder = Line(cd, "Under", new Vector2(0f, -52f), new Vector2(680f, 28f), 19f, FontStyles.Normal);
+            _countdownUnder.color = ColorTrace.Retrace(ColorTrace.Ui, UnderInk);
             _countdownGroup.alpha = 0f;
         }
 
@@ -118,10 +126,23 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Hold a countdown line on screen until <see cref="HideCountdown"/>.</summary>
-        public void ShowCountdown(string line)
+        public void ShowCountdown(string line) => ShowCountdown(line, null);
+
+        /// <summary>Hold a countdown toast on screen until <see cref="HideCountdown"/>: a bold line and a line under it
+        /// (may be empty). An empty line shows nothing.</summary>
+        public void ShowCountdown(string line, string under)
         {
+            if (string.IsNullOrEmpty(line))
+            {
+                _countdownShown = false;
+                return;
+            }
             _countdownShown = true;
             _countdown.text = line;
+            bool hasUnder = !string.IsNullOrEmpty(under);
+            _countdownUnder.text = hasUnder ? under : string.Empty;
+            _countdownUnder.gameObject.SetActive(hasUnder);
+            _countdownRect.sizeDelta = new Vector2(_countdownRect.sizeDelta.x, hasUnder ? 90f : 58f);
         }
 
         public void HideCountdown() => _countdownShown = false;
@@ -173,16 +194,18 @@ namespace CosmicShore.Gameplay
             Place();
             float now = Time.unscaledTime;
             float step = Time.unscaledDeltaTime / FadeSeconds;
-            if (Hold != null && Hold())
+            bool held = Hold != null && Hold();
+            if (held || _countdownShown)
             {
-                // The banner up keeps its time: it comes back when the hold lifts, then goes on as it would have.
+                // The banner up keeps its time: it comes back when the hold (or the countdown, which takes the toast's
+                // spot) lifts, then goes on as it would have.
                 if (_bannerUntil >= 0f)
                 {
                     _bannerFrom += Time.unscaledDeltaTime;
                     _bannerUntil += Time.unscaledDeltaTime;
                 }
                 _bannerGroup.alpha = Mathf.MoveTowards(_bannerGroup.alpha, 0f, step);
-                _countdownGroup.alpha = Mathf.MoveTowards(_countdownGroup.alpha, 0f, step);
+                _countdownGroup.alpha = Mathf.MoveTowards(_countdownGroup.alpha, held ? 0f : 1f, step);
                 return;
             }
             bool showing = _bannerUntil >= 0f && now < _bannerUntil;
@@ -203,7 +226,7 @@ namespace CosmicShore.Gameplay
             if (!Mathf.Approximately(band.anchoredPosition.y, -y))
             {
                 band.anchoredPosition = new Vector2(0f, -y);
-                _countdownRect.anchoredPosition = new Vector2(0f, -(y + CountdownGap));
+                _countdownRect.anchoredPosition = new Vector2(0f, -y);
             }
         }
 

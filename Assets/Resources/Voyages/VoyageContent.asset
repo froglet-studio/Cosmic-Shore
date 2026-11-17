@@ -3383,3 +3383,9 @@ MonoBehaviour:
     ToastGoalMissed: 'GOAL MISSED: {done} / {goal}'
     ToastGoalMissedSub: Venture further to keep this run's haul, or sail home without it.
     ScoreRetryRaid: 'Same goal: {goal} crystals in {cells} cells'
+    ToastStray: 'RETURN TO THE ARK: {seconds}'
+    ToastStraySub: Too far out. Turn back or the Ark recalls you.
+    ToastStrayCarrySub: 'Turn back or lose the {carried} crystals you carry.'
+    ToastRecalled: RECALLED TO THE ARK
+    ToastRecalledSub: Back in your seat beside the Ark.
+    ToastRecalledLostSub: '{count} carried crystals lost.'
