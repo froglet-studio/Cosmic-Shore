@@ -33,6 +33,9 @@ namespace CosmicShore.Player
     /// "seeds": [1,2,3], "limit_s": 400, "difficulty": "Legendary"}</c>. The genome sets intensity (default 1), the course
     /// seed (default the shipped one) and "features" (RegattaCourseFeatures JSON; absent = the arena's own, {} = none).
     /// When the game has <c>RegattaCourseGenome</c> (the expressive genome), the whole genome is handed to its Override.
+    ///
+    /// <c>"mode": "SkimRace"</c> races the Squirrel's Skim Race the same way: no gates, so a seat's progress is its
+    /// crystals and it finishes at the mode's crystal count; its track is forced to the race seed like any other game's.
     /// </summary>
     internal sealed class RaceJudge
     {
@@ -50,6 +53,10 @@ namespace CosmicShore.Player
         readonly string _mode;
         readonly Collider[] _near = new Collider[256];
         bool IsRegatta => _mode == "Regatta";
+        /// <summary>Skim Race: no gates; a seat's progress is its crystals (RoundStats.CrystalsCollected) and it finishes at
+        /// the mode's crystal count (GameDataSO.CrystalTargetCount, EndConditionOverrides). "gates" and "gate_s" then
+        /// count crystals; "crystals" and "crystals_total" say so.</summary>
+        bool IsSkim => _mode == "SkimRace";
         readonly float _limit;
         readonly AIDifficulty _difficulty = AIDifficulty.Legendary;
         readonly JsonArray _races = new();
@@ -159,16 +166,16 @@ namespace CosmicShore.Player
             {
                 int seed = _seeds[r];
                 double raceWall = _wall.Elapsed.TotalSeconds;
-                GateRaceController controller = null;
+                MiniGameControllerBase controller = null;
                 List<IPlayer> ais = null;
                 deadline = Now + 180;
                 while (Now < deadline)
                 {
                     if (SceneManager.GetActiveScene()?.name == gameData.SceneName)
                     {
-                        controller = CosmicShore.Engine.Object.FindAnyObjectByType<GateRaceController>();
+                        controller = FindController();
                         ais = gameData.Players.Where(p => p != null && p.IsInitializedAsAI && p.Vessel != null).ToList();
-                        if (controller != null && ais.Count >= _hulls.Count && controller.AuthoritativeGateCount > 0) break;
+                        if (controller != null && ais.Count >= _hulls.Count && CourseReady(controller)) break;
                     }
                     yield return 0.25f;
                 }
@@ -200,12 +207,27 @@ namespace CosmicShore.Player
                 // so a seed set before launch is spent by then. Seeding again as the turn starts makes the race's own
                 // draws (AI risk rolls, mistakes, spawns) follow this race's seed.
                 CosmicShore.Engine.Random.InitState(unchecked(seed * 7919 + 17));
-                int total = controller.AuthoritativeGateCount;
+                int total = controller is GateRaceController gates ? gates.AuthoritativeGateCount : 0;
+                if (IsSkim)
+                {
+                    // The turn monitor publishes the crystal count as the turn starts.
+                    double targetBy = Now + 5;
+                    while (gameData.CrystalTargetCount <= 0 && Now < targetBy) yield return null;
+                    total = gameData.CrystalTargetCount;
+                    race["crystals_total"] = total;
+                }
+                if (total <= 0)
+                {
+                    race["outcome"] = "no-target";
+                    race["seats"] = new JsonArray(_hulls.Select(h => (JsonNode)Dnf(h.ToString(), "no-target")).ToArray());
+                    yield break;
+                }
                 race["gates_total"] = total;
                 if (!IsRegatta && TrainingCourseOverlay.Override != null)
                     race["training_prisms"] = TrainingCourseOverlay.LastReports.Sum(r => r.Laid);
                 if (IsRegatta) race["laps_total"] = total / RegattaCourse.RingsPerLap;
-                race["course_seed"] = IsRegatta && RegattaCourseSource.TryResolveLiveRails(out var rails, out _) ? rails.CourseSeed : controller.CourseSeed;
+                race["course_seed"] = IsRegatta && RegattaCourseSource.TryResolveLiveRails(out var rails, out _) ? rails.CourseSeed
+                    : controller is GateRaceController gc ? gc.CourseSeed : controller is SkimRaceController sc ? sc.TrackSeed : 0;
                 race["host_hull"] = hostHull.ToString();
                 // Each racer's element levels as the turn starts (what "start" and the card actually gave it).
                 var startLevels = ais.Select(p => p.Vessel?.VesselStatus?.ResourceSystem is { } rs
@@ -232,7 +254,7 @@ namespace CosmicShore.Player
                         }
                     for (int k = 0; k < ais.Count; k++)
                     {
-                        int now = ais[k].RoundStats?.SwitchesThreaded ?? 0;
+                        int now = IsSkim ? ais[k].RoundStats?.CrystalsCollected ?? 0 : ais[k].RoundStats?.SwitchesThreaded ?? 0;
                         while (gateTimes[k].Count < now) gateTimes[k].Add(Time.time - start);
                         if (now >= total) someoneFinished = true;
                     }
@@ -315,6 +337,7 @@ namespace CosmicShore.Player
                         ["lap_s"] = lapS,
                         ["gate_s"] = new JsonArray(g.Select(t => (JsonNode)Math.Round(t, 3)).ToArray()),
                         ["prism_hits"] = stats == null ? null : stats.FriendlyPrismsDestroyed + stats.HostilePrismsDestroyed,
+                        ["crystals"] = stats?.CrystalsCollected,
                         ["start_levels"] = startLevels[k],
                         ["dnf_reason"] = done ? null : outcome == "finished" ? "race-ended" : outcome,
                     });
@@ -334,7 +357,7 @@ namespace CosmicShore.Player
                 deadline = Now + 30;
                 while (gameData.IsTurnRunning && Now < deadline) yield return 0.25f;
                 yield return 2.5f;
-                controller = CosmicShore.Engine.Object.FindAnyObjectByType<GateRaceController>();
+                controller = FindController();
                 CosmicShore.Engine.Random.InitState(_seeds[r + 1]);
                 ForceCourse(r + 1);
                 if (controller != null) controller.RequestReplay();
@@ -367,7 +390,10 @@ namespace CosmicShore.Player
         /// <list type="bullet">
         /// <item><c>"card"</c> (default): the card's own table, as a player gets it.</item>
         /// <item><c>"rest"</c>: no table, every hull at level 0 in every element.</item>
-        /// <item><c>"L5"</c>: every hull at Time level 5 (normalized 0.5), so every Time level-5 upgrade is on.</item>
+        /// <item><c>"L5"</c>: every hull's Time at least level 5 (normalized 0.5), so every Time level-5 upgrade is on: the
+        /// card's own row at each intensity with Time raised to max(card, 0.5), never lowered (Garrett 2026-11-16: every
+        /// hull starts with its level-5 upgrades; Regatta's card starts the Scarab, Serpent, Sparrow and Stoat at level 10,
+        /// and a flat 0.5 had downgraded them). Its other elements stay the card's.</item>
         /// <item><c>{"Manta": {"Time": 5}, ...}</c>: those hulls at those LEVELS (5 = level 5), every intensity; others at rest.</item>
         /// </list>
         /// </summary>
@@ -380,7 +406,7 @@ namespace CosmicShore.Player
             if (start is JsonValue v)
             {
                 string mode = v.GetValue<string>();
-                if (mode == "L5") rows.AddRange(hulls.Select(h => new VesselStartingElements(h, 0, new ResourceCollection(0f, 0f, 0f, 0.5f))));
+                if (mode == "L5") AddLevel5(gameData, hulls, rows);
                 else if (mode != "rest") throw new InvalidOperationException($"start '{mode}': card, rest, L5 or a table");
             }
             else
@@ -392,6 +418,18 @@ namespace CosmicShore.Player
                 }
             gameData.PublishStartingElements(rows);
             _notes.Add("start: " + start.ToJsonString());
+        }
+
+        /// <summary>The "L5" start: per hull and intensity, the card's published row with Time raised to at least level 5.</summary>
+        static void AddLevel5(GameDataSO gameData, IEnumerable<VesselClassType> hulls, List<VesselStartingElements> rows)
+        {
+            foreach (var h in hulls)
+                for (int i = 1; i <= 4; i++)
+                {
+                    var lv = VesselStartingElements.TryResolve(gameData.StartingElements, h, i, out var card) ? card : default;
+                    lv.Time = Math.Max(lv.Time, 0.5f);
+                    rows.Add(new VesselStartingElements(h, i, lv));
+                }
         }
 
         /// <summary><c>"crystal_genes": {"Scarab": 150}</c>: each hull's learned crystal detour budget (world units) for this
@@ -409,6 +447,19 @@ namespace CosmicShore.Player
             _notes.Add("crystal_genes: " + genes.ToJsonString());
         }
 
+        /// <summary>The scene's race controller: a gate race's, or Skim Race's (the one MiniGameControllerBase a scene has).</summary>
+        MiniGameControllerBase FindController() => IsSkim
+            ? CosmicShore.Engine.Object.FindAnyObjectByType<SkimRaceController>()
+            : CosmicShore.Engine.Object.FindAnyObjectByType<GateRaceController>();
+
+        /// <summary>The course is laid: a gate race knows its gates; Skim Race has drawn its track seed.</summary>
+        static bool CourseReady(MiniGameControllerBase controller) => controller switch
+        {
+            GateRaceController g => g.AuthoritativeGateCount > 0,
+            SkimRaceController s => s.TrackSeed != 0,
+            _ => false,
+        };
+
         /// <summary>Every game but Regatta draws a fresh course per match (GateRaceController.PickCourseSeed), so the judge
         /// forces it: race r flies course <c>course_seeds[r]</c>, or its race seed when the spec names none. The same
         /// seeds then mean the same courses in every process, which a parameter search needs. (Regatta's course comes
@@ -423,7 +474,7 @@ namespace CosmicShore.Player
         /// <summary><c>"controller_overrides": {"aiNoseLead.0.Gain": 1.5, "aiApproachLead": 40}</c>: set fields of the race's
         /// controller (the scene's GateRaceController) before every Ready press, for numbers a mode keeps on its scene
         /// rather than in an asset. A number in the path indexes an array; structs are written back.</summary>
-        void ApplyControllerOverrides(GateRaceController controller)
+        void ApplyControllerOverrides(MiniGameControllerBase controller)
         {
             if (_spec["controller_overrides"] is not JsonObject fields) return;
             SetFields(controller, fields, controller.GetType().Name);

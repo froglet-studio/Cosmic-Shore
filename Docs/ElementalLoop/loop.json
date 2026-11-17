@@ -150,6 +150,18 @@
      "by": "Regatta plan threads",
      "date": "2026-11-08",
      "evidence": "Skein aim, rail seek and genome (#1845); not yet well trained: Docs/Reports/SKEIN_URCHIN_AI.md"
+    },
+    "1": {
+     "state": "built",
+     "by": "Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest",
+     "date": "2026-11-17",
+     "evidence": "fun call: I2 is the fun rung (AI 125-150 s, headless judge, 3 courses); the AI flies at cruise for half the race, 13 rail-seek variants swept, shipped numbers best; nothing changed at I2 (SKEIN.md 18)"
+    },
+    "2": {
+     "state": "built",
+     "by": "Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest",
+     "date": "2026-11-17",
+     "evidence": "ladder call: AI 85/141/209/361 s; I4 cut from 6 to 5 laps (AI 328 s), proofs pass (SKEIN.md 18); human flights: 1 at I3"
     }
    }
   },
