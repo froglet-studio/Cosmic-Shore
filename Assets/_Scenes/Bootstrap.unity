@@ -11695,7 +11695,7 @@ MonoBehaviour:
       m_Calls: []
   leanDegrees: 14
   sprite: {fileID: 21300000, guid: 8d9b91b5453e73337d19678bb0c6fa7a, type: 3}
-  focus: {x: 0.5, y: 0.82}
+  focus: {x: 0.5, y: 0.5}
 --- !u!1 &110751247903540434
 GameObject:
   m_ObjectHideFlags: 0
@@ -11884,7 +11884,7 @@ MonoBehaviour:
       m_Calls: []
   leanDegrees: 14
   sprite: {fileID: 21300000, guid: 4b60ff50f824eb42bd31ff527b108c65, type: 3}
-  focus: {x: 0.5, y: 0.82}
+  focus: {x: 0.5, y: 0.5}
 --- !u!1 &191684711686200077
 GameObject:
   m_ObjectHideFlags: 0
@@ -12073,7 +12073,7 @@ MonoBehaviour:
       m_Calls: []
   leanDegrees: 14
   sprite: {fileID: 21300000, guid: e6b83f4743f1d18a5126cef951a9a1a0, type: 3}
-  focus: {x: 0.5, y: 0.82}
+  focus: {x: 0.5, y: 0.5}
 --- !u!1 &917104920151226712
 GameObject:
   m_ObjectHideFlags: 0
@@ -12262,7 +12262,7 @@ MonoBehaviour:
       m_Calls: []
   leanDegrees: 14
   sprite: {fileID: 21300000, guid: 7cea26b01688d646366bd5e98de05a0a, type: 3}
-  focus: {x: 0.5, y: 0.82}
+  focus: {x: 0.5, y: 0.5}
 --- !u!1 &405492813148855093
 GameObject:
   m_ObjectHideFlags: 0
@@ -12451,7 +12451,7 @@ MonoBehaviour:
       m_Calls: []
   leanDegrees: 14
   sprite: {fileID: 21300000, guid: 41710efafddb5490e8d70361cfa4a8a0, type: 3}
-  focus: {x: 0.5, y: 0.82}
+  focus: {x: 0.5, y: 0.5}
 --- !u!1 &516960413541865118
 GameObject:
   m_ObjectHideFlags: 0
