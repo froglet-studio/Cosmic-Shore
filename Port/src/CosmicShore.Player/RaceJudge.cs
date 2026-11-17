@@ -367,7 +367,10 @@ namespace CosmicShore.Player
         /// <list type="bullet">
         /// <item><c>"card"</c> (default): the card's own table, as a player gets it.</item>
         /// <item><c>"rest"</c>: no table, every hull at level 0 in every element.</item>
-        /// <item><c>"L5"</c>: every hull at Time level 5 (normalized 0.5), so every Time level-5 upgrade is on.</item>
+        /// <item><c>"L5"</c>: every hull's Time at least level 5 (normalized 0.5), so every Time level-5 upgrade is on: the
+        /// card's own row at each intensity with Time raised to max(card, 0.5), never lowered (Garrett 2026-11-16: every
+        /// hull starts with its level-5 upgrades; Regatta's card starts the Scarab, Serpent, Sparrow and Stoat at level 10,
+        /// and a flat 0.5 had downgraded them). Its other elements stay the card's.</item>
         /// <item><c>{"Manta": {"Time": 5}, ...}</c>: those hulls at those LEVELS (5 = level 5), every intensity; others at rest.</item>
         /// </list>
         /// </summary>
@@ -380,7 +383,7 @@ namespace CosmicShore.Player
             if (start is JsonValue v)
             {
                 string mode = v.GetValue<string>();
-                if (mode == "L5") rows.AddRange(hulls.Select(h => new VesselStartingElements(h, 0, new ResourceCollection(0f, 0f, 0f, 0.5f))));
+                if (mode == "L5") AddLevel5(gameData, hulls, rows);
                 else if (mode != "rest") throw new InvalidOperationException($"start '{mode}': card, rest, L5 or a table");
             }
             else
@@ -392,6 +395,18 @@ namespace CosmicShore.Player
                 }
             gameData.PublishStartingElements(rows);
             _notes.Add("start: " + start.ToJsonString());
+        }
+
+        /// <summary>The "L5" start: per hull and intensity, the card's published row with Time raised to at least level 5.</summary>
+        static void AddLevel5(GameDataSO gameData, IEnumerable<VesselClassType> hulls, List<VesselStartingElements> rows)
+        {
+            foreach (var h in hulls)
+                for (int i = 1; i <= 4; i++)
+                {
+                    var lv = VesselStartingElements.TryResolve(gameData.StartingElements, h, i, out var card) ? card : default;
+                    lv.Time = Math.Max(lv.Time, 0.5f);
+                    rows.Add(new VesselStartingElements(h, i, lv));
+                }
         }
 
         /// <summary><c>"crystal_genes": {"Scarab": 150}</c>: each hull's learned crystal detour budget (world units) for this
