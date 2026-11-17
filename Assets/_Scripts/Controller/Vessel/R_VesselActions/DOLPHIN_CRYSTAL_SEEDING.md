@@ -1074,11 +1074,9 @@ prisms), swap to the Dolphin with the Vessel Changer and hold the Echo Sight acr
 the plain mass around it takes the pale cast. Fire through it and confirm the blast stops there.
 Let it drop (a Rhino sword break) and confirm it stops glowing red on the next sweep.
 
-## 2026-11-16: the seed lands ahead (the weakest-abilities pass)
+## 2026-11-16: a faster recharge (the weakest-abilities pass)
 
-A seed at a random point of the cytoplasm was a crystal the pilot never saw arrive and rarely found, so the ability
-read as nothing. `DeployTeamCrystalActionSO.seedAhead` (on for the Dolphin) plants it `leadDistance` (220 u) down the
-nose with `leadJitter` (35 u) of scatter, then clamps it into the same cytoplasm band along its own radial (never in
-the nucleus, never past the membrane). The base recharge moved 30 s -> 15 s so the loop (seed, line up, blast) comes
-round in play. Off, the old random-band seeding is unchanged. The Time card's label moved "Charge Fill Rate" ->
-"Drift Charge", and its fill multiplier at Time 10 from x1.5 to x2.5 (authored on the Dolphin's ChargeBoostAction).
+The seed stays at a random point of the cytoplasm (Garrett, 2026-11-16: "the dolphin's crystals are intended to be
+random with in the cytoplasm"; a seed-ahead variant was built and removed the same day). The base recharge moved
+30 s -> 15 s so seeds come often enough to matter. The Time card's label moved "Charge Fill Rate" -> "Drift Charge",
+and its fill multiplier at Time 10 from x1.5 to x2.5 (authored on the Dolphin's ChargeBoostAction).

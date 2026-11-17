@@ -24569,12 +24569,11 @@ changed files; `author.py grizzly|jacks --check`, `author_goby_assets.py`, `auth
    and flashes as the anchor bites.
 3. Grizzly Time (Rush): a ram devastates rival prisms in its path (host only); the Time card flashes on a ram and its
    veil shows the refill when the bank is empty; Time 10 refills in about 2.5 s.
-4. Dolphin: Drift Charge fills 2.5x faster at Time 10; a seeded crystal lands ahead of the nose, inside the cell, on a
-   15 s cooldown.
+4. Dolphin: Drift Charge fills 2.5x faster at Time 10; a seeded crystal still lands at a random point of the
+   cytoplasm, now on a 15 s cooldown.
 5. Goby Time (Dart): the Pistol's dart is longer and comes back sooner at Time 10. Run `GobyPistolTests`.
 6. Meerkat Time (Ride): the ride is up to 2x faster at Time 10.
 7. Jacks Space (Wide): the herd spreads out about 2.2x wider over 0.6 s when Wide is on and gathers again when off.
-8. Squirrel Time (Skimming): a run of skims less than 0.6 s apart builds boost faster each step, up to 2.5x; a gap resets it.
 ## 🔴 Voyage jobs come from the active squad only, and a starter squad (2026-11-16, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/project-thread-j3ua9b` (PR into `voyages`). The board offers one job per pilot in the active squad (no

@@ -5,7 +5,6 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 using CosmicShore.UI;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using UnityEngine.Serialization;
 namespace CosmicShore.Gameplay
 {
@@ -41,39 +40,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] ElementalFloat energyMultiplier =
             ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.5f);
 
-        [Header("Skim streak")]
-        [Tooltip("Skims landed within this many seconds of the last one build a streak, and each step of the streak " +
-                 "multiplies the energy of the next skim. A gap longer than this resets it. 0 turns the streak off.")]
-        [SerializeField, Min(0f)] float streakWindowSeconds;
-        [Tooltip("How much each step of the streak adds to the energy multiplier (0.25 = the fifth skim in a row pays x2).")]
-        [SerializeField, Min(0f)] float streakStep = 0.25f;
-        [Tooltip("The streak's ceiling, as an energy multiplier.")]
-        [SerializeField, Min(1f)] float streakCap = 2.5f;
-
-        /// <summary>Per-vessel streak, held weakly so a destroyed vessel takes its entry with it. Not serialized
-        /// and not shared across vessels: the SO stays a config, each hull keeps its own chain.</summary>
-        sealed class Streak { public float Last = float.NegativeInfinity; public int Steps; }
-        readonly ConditionalWeakTable<IVesselStatus, Streak> _streaks = new();
-
-        /// <summary>The streak multiplier this skim pays, advancing the vessel's chain (1 when the streak is off).</summary>
-        float AdvanceStreak(IVesselStatus status)
-        {
-            if (streakWindowSeconds <= 0f || status == null) return 1f;
-            var streak = _streaks.GetOrCreateValue(status);
-            float now = Time.time;
-            streak.Steps = now - streak.Last <= streakWindowSeconds ? streak.Steps + 1 : 0;
-            streak.Last = now;
-            return Mathf.Min(streakCap, 1f + streakStep * streak.Steps);
-        }
-
-        /// <summary>The vessel's current streak multiplier without advancing it (1 once the window has lapsed).</summary>
-        public float StreakMultiplier(IVesselStatus status)
-        {
-            if (streakWindowSeconds <= 0f || status == null || !_streaks.TryGetValue(status, out var streak)) return 1f;
-            if (Time.time - streak.Last > streakWindowSeconds) return 1f;
-            return Mathf.Min(streakCap, 1f + streakStep * streak.Steps);
-        }
-
         [Header("Shared Config (single source of truth)")]
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier; // initial/base
         [SerializeField] private ScriptableVariable<float> boostMaxMultiplier;  // max
@@ -98,10 +64,6 @@ namespace CosmicShore.Gameplay
             // live level in whichever element this asset's ElementalFloat names (1x at the resting
             // level, 1x for a vessel with no map entry for it). Per-hit snapshot; stateless SO.
             float add = addPerHit * energyMultiplier.EvaluateLive(status);
-
-            // The streak: skims chained inside the window pay more each step, so threading a wall of prisms is a
-            // rising surge rather than a flat trickle, and a pilot who breaks the line feels the reset.
-            add *= AdvanceStreak(status);
 
             // Level-5 'Live Wire': danger prisms grant the bonus energy multiplier only once the
             // skimming vessel's dangerBonusElement upgrade is active (below it, danger prisms pay

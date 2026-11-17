@@ -64,10 +64,8 @@ MonoBehaviour:
       instead of merely being stripped of it.
   - Element: 4
     AbilityLabel: Skimming
-    AbilityDescription: Skim prisms to build boost. Skims chained close together
-      build a streak, and each one in a row pays more, up to 2.5x, so threading a
-      wall is a rising surge; break the line and it resets. Time raises the energy
-      of every skim, up to 2x at level 10. At level 5 danger prisms pay 10x.
+    AbilityDescription: Skim prisms to build boost. Time raises the energy of
+      every skim, up to 2x at level 10. At level 5 danger prisms pay 10x.
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

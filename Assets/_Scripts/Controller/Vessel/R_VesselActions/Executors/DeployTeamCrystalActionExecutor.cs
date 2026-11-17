@@ -200,9 +200,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Where the next seed goes: ahead of the nose kept in the cytoplasm band
-        /// (<see cref="DeployTeamCrystalActionSO.SeedAhead"/>), or else a random point in the
-        /// containing cell's CYTOPLASM — the shell between the nucleus surface and the membrane.
+        /// A random point in the containing cell's CYTOPLASM — the shell between the nucleus
+        /// surface and the membrane.
         ///
         /// The radius is drawn <b>volume-uniformly</b> across the band (cube-root of a uniform
         /// draw between the cubed radii), not uniformly in radius. A shell's available space grows
@@ -222,18 +221,10 @@ namespace CosmicShore.Gameplay
 
             var cell = Cell.FindCellContaining(origin) ?? Cell.FindNearestActiveCell(origin);
 
-            // Seed AHEAD: down the nose, a little scatter. With no cell to measure against it is
-            // used as it is; in a cell it is pushed into the cytoplasm band below.
-            bool ahead = so.SeedAhead && _status.Vessel != null && _status.Vessel.Transform;
-            Vector3 lead = ahead
-                ? origin + _status.Vessel.Transform.forward * so.LeadDistance
-                  + UnityEngine.Random.insideUnitSphere * so.LeadJitter
-                : origin;
-
             // No cell to measure against (freestyle transit, tool scenes): seed in a ball around
             // the vessel so the ability still does something rather than silently stopping.
             if (cell == null)
-                return ahead ? lead : origin + UnityEngine.Random.insideUnitSphere * so.CellessSeedRadius;
+                return origin + UnityEngine.Random.insideUnitSphere * so.CellessSeedRadius;
 
             Vector3 centre = cell.transform.position;
             float nucleus = Mathf.Max(0f, cell.ExpectedNucleusWorldRadius);
@@ -250,16 +241,6 @@ namespace CosmicShore.Gameplay
             // Never inside the nucleus, whatever the fractions say.
             inner = Mathf.Max(inner, nucleus);
             if (outer <= inner) outer = Mathf.Min(membrane, inner + Mathf.Max(1f, span * 0.05f));
-
-            if (ahead)
-            {
-                // The lead point, kept in the band: inside the nucleus it is pushed out to the band's
-                // inner edge, past the membrane it is pulled in to the outer edge, along its own radial.
-                Vector3 radial = lead - centre;
-                float r = radial.magnitude;
-                Vector3 dir = r > 0.001f ? radial / r : UnityEngine.Random.onUnitSphere;
-                return centre + dir * Mathf.Clamp(r, inner, outer);
-            }
 
             float u = UnityEngine.Random.value;
             float i3 = inner * inner * inner;

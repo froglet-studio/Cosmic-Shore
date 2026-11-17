@@ -36,8 +36,8 @@ MonoBehaviour:
   - Element: 2
     AbilityLabel: Crystal Seeding
     AbilityDescription: PASSIVE - no input. Every recharge the Dolphin seeds one
-      crystal AHEAD of its nose, about 220 u down its line, so the seed is ammunition
-      you fly straight into - seed, line up, blast. The recharge is 15 s at rest and
+      crystal at a random point in the cell's cytoplasm, ammunition to find and blast
+      through. The recharge is 15 s at rest and
       half that at level 10. Below level 5 the seed is an ordinary OMNI crystal that
       any pilot who reaches it first may take; at level 5 it lands TEAM-locked and
       only your domain can collect it.

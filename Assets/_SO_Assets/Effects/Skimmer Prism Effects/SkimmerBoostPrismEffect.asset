@@ -27,6 +27,3 @@ MonoBehaviour:
   boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   dangerBonusElement: 4
   dangerEnergyMultiplier: 10
-  streakWindowSeconds: 0.6
-  streakStep: 0.25
-  streakCap: 2.5
