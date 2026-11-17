@@ -25042,3 +25042,14 @@ Branch `claude/youthful-hawking-jxrvj0` (`/frogma-to-unity`'s first build). Spec
    the label stays readable (white on it). Note any set where it is not.
 5. **Look at it at phone and iPad size** (Device Simulator, landscape): the button scales with the canvas, the label
    stays inside it.
+
+## Waystation AI drops through the tower rings (2026-11-17, elemental loop step 3, Regatta ten)
+
+Not run in the Unity editor. `WaystationController` now judges the AI's tower drop at the spot where the fall will
+cross the ring, and its miss recovery fits the hull's turning circle (`aiHopBellyDegrees` 8 -> 20 as a cap,
+`aiHopLineShare` 0.45 -> 0.7, `aiHopMissMargin` 60 -> 400). Race judge (Amoebius headless): 0/16 -> 16/16 rungs finish.
+The reference compile shows no errors in the changed file (it has 29 elsewhere, all Cinemachine).
+
+- [ ] Fly Waystation I1 and I3 against a Legendary TigerMoth: on a tower, it flies over the ring and drops through it,
+      instead of circling above it until the clock runs out.
+- [ ] A drop lands inside the ring (not grazing its rim), and a bot that overshoots flies out, turns and comes back level.

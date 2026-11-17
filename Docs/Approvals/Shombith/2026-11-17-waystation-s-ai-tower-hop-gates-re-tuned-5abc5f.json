@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-17-waystation-s-ai-tower-hop-gates-re-tuned-5abc5f",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T22:13:59+00:00",
+  "area": "Waystation (Drop Tower merge, #1669)",
+  "summary": "Waystation's AI tower-hop gates re-tuned and the press judged at the fall's crossing",
+  "why": "The AI never finished a rung",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "502fa3f51",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/WAYSTATION.md",
+    "Assets/_Scripts/Controller/Arcade/Waystation/WaystationController.cs"
+  ]
+}
