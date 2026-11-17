@@ -74,6 +74,24 @@ namespace CosmicShore.ScriptableObjects
             return _byMode.TryGetValue(mode, out var def) ? def : null;
         }
 
+        static ModePreviewLibrarySO s_loaded;
+
+        /// <summary>
+        /// A mode's genre elements (<see cref="ModeGenre.TryElementsFor"/>, with the metric read from this library's
+        /// definition for the mode) - the one answer the card's flower, the grid's element filter and the standard
+        /// element ladder (<see cref="ElementLadder"/>) share. Loads the library from Resources on first use.
+        /// </summary>
+        public static bool TryGenres(GameModes mode, out Element primary, out Element secondary) =>
+            ModeGenre.TryElementsFor(mode, ObjectiveMetricOf(mode), out primary, out secondary);
+
+        /// <summary>The metric a mode is scored on, from its preview definition; null when the library has none.</summary>
+        public static ScoringMetric? ObjectiveMetricOf(GameModes mode)
+        {
+            if (!s_loaded) s_loaded = Resources.Load<ModePreviewLibrarySO>(ResourcePath);
+            var definition = s_loaded ? s_loaded.Resolve(mode) : null;
+            return definition ? definition.ObjectiveMetric : (ScoringMetric?)null;
+        }
+
         void EnsureIndex()
         {
             if (_byMode != null) return;

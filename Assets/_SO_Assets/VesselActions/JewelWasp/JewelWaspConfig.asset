@@ -1,0 +1,154 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0106e03d83364bc6b49281b8a9090f84, type: 3}
+  m_Name: JewelWaspConfig
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.JewelWaspConfigSO
+  aimConeDegrees: 14
+  stingRangeOutsideCell: 3000
+  stingSpeed: 1400
+  stingSeconds: 0.35
+  stingCooldown: 0.6
+  stingMaxSeconds: 4
+  hullScale: 0.45
+  nestedScale: 0.22
+  stingCurlDegrees: 72
+  nestedCurlDegrees: 34
+  nestOffset: 1.3
+  fallbackHeartRadius: 2
+  hostTurnDegrees: 120
+  hostRollDegrees: 110
+  hostSpeedScale:
+    Enabled: 1
+    Value: 1.5
+    Min: 1.5
+    Max: 3
+    element: 4
+    UseFloor: 1
+    Floor: 1
+  hostSlowShare: 0.45
+  burstMultiplier: 2.2
+  burstSeconds: 1.2
+  burstCooldown: 3
+  suctionReachScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 3
+    element: 3
+    UseFloor: 1
+    Floor: 0.5
+  suctionBites: 8
+  suctionInterval: 0.45
+  attackCooldown:
+    Enabled: 1
+    Value: 3
+    Min: 3
+    Max: 0.8
+    element: 1
+    UseFloor: 1
+    Floor: 0.4
+  attackSeconds: 0.6
+  attackReach: 22
+  attackAimReaches: 3
+  attackHitClass: 5
+  leaveSpeed: 90
+  leaveGraceSeconds: 0.6
+  burstRadius: 60
+  burstHitClass: 3
+  floraGrowth:
+    Enabled: 1
+    Value: 3.5
+    Min: 3.5
+    Max: 7
+    element: 2
+    UseFloor: 1
+    Floor: 2.2
+  overgrowthRadius: 200
+  floraCameraDistance: 650
+  floraMinDistance: 18
+  floraFitRadii: 3.2
+  floraZoomRange: {x: 0.3, y: 4}
+  floraZoomRate: 1.4
+  floraOrbitDegrees: 100
+  floraRollDegrees: 110
+  floraFollowEase: 3
+  selectPulseSeconds: 0.35
+  selectPulseGlow: 4
+  floraAimAssistDegrees: 35
+  nestedTailWidth: 0.3
+  nestedGlow: 0.35
+  abilityFlashGlow: 1
+  abilityFlashSeconds: 0.6
+  hostCameraBodies: 6
+  hostCameraBase: 30
+  cameraEase: 4
+  omniPredators:
+  - {fileID: 11400000, guid: 58835b82ea284255855af2649ef185a5, type: 2}
+  - {fileID: 11400000, guid: a690f25bf21e486ba0e500563b90f1ea, type: 2}
+  - {fileID: 11400000, guid: eaf56c14345740849f35fc84467059e9, type: 2}
+  - {fileID: 11400000, guid: 78ce842bb8554d748af1e96abf430137, type: 2}
+  - {fileID: 11400000, guid: c1a7e2b45f0d4c1e8a6b9d3f2e7c5a10, type: 2}
+  - {fileID: 11400000, guid: a3d59c8e71b24f6a9c0e4d8b5f172c33, type: 2}
+  - {fileID: 11400000, guid: e7f1b3a2c9d84e5fb6a08c7d4e392b55, type: 2}
+  - {fileID: 11400000, guid: b9c4d7e2a1f34b8cd5e6f0a39b8d1c77, type: 2}
+  aiHostSeconds: 14
+  aiLookSeconds: 1.5
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  stingEvent:
+    Guid:
+      Data1: 521565762
+      Data2: 1177340277
+      Data3: 1735452291
+      Data4: -857705457
+    Path: event:/SFX/Oneshots/Gameplay sfx/Creature colide
+  nestEvent:
+    Guid:
+      Data1: -2144686006
+      Data2: 1203677490
+      Data3: 1188687745
+      Data4: -1802949205
+    Path: event:/SFX/Oneshots/Gameplay sfx/Massshark spawn
+  leaveEvent:
+    Guid:
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
+  attackEvent:
+    Guid:
+      Data1: 1870893843
+      Data2: 1090302803
+      Data3: -531107708
+      Data4: -1787684942
+    Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
+  suctionEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  burstEvent:
+    Guid:
+      Data1: 1232779908
+      Data2: 1241063617
+      Data3: 1702576795
+      Data4: -1248198021
+    Path: event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip
+  selectEvent:
+    Guid:
+      Data1: 724249746
+      Data2: 1213064519
+      Data3: 1634220168
+      Data4: -897979471
+    Path: event:/SFX/Oneshots/Menu/Option Click

@@ -13,6 +13,9 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class BoidManager : Fauna
     {
+        /// <summary>A rider cannot steer this body (the Jewel Wasp, <see cref="IFaunaPossession"/>): no possession yet.</summary>
+        protected override bool CanBePossessed => false;
+
         [Header("Boid Settings")]
         public Boid boidPrefab;
         public int numberOfBoids = 100;

@@ -146,99 +146,99 @@ MonoBehaviour:
   aiTriggerMinSeconds: 0.4
   speedModeEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1254976528
+      Data2: 1275513386
+      Data3: -981470078
+      Data4: 286922241
+    Path: event:/SFX/Oneshots/Gameplay sfx/Time Joust
   creationModeEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1935444665
+      Data2: 1209967654
+      Data3: -86979705
+      Data4: 855951193
+    Path: event:/SFX/Oneshots/Gameplay sfx/Mass joust
   destructionModeEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1163572034
+      Data2: 1312051193
+      Data3: -1732454749
+      Data4: 1656763241
+    Path: event:/SFX/Oneshots/Gameplay sfx/Space Joust
   chargeModeEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1333840280
+      Data2: 1330870228
+      Data3: 856184972
+      Data4: -1867009068
+    Path: event:/SFX/Oneshots/Gameplay sfx/Charge Joust
   modeOffEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1103610945
+      Data2: 1108376032
+      Data3: -1187393100
+      Data4: -416318210
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
   fireEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1870893843
+      Data2: 1090302803
+      Data3: -531107708
+      Data4: -1787684942
+    Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
   cordSliceEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1232779908
+      Data2: 1241063617
+      Data3: 1702576795
+      Data4: -1248198021
+    Path: event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip
   ringLaunchEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   ringBlastEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -159591309
+      Data2: 1318821736
+      Data3: -1568531009
+      Data4: 870809827
+    Path: event:/SFX/Oneshots/Gameplay sfx/Mine Explode
   ringRebuildEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
   chargeStoredEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
   overheatEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1646059356
+      Data2: 1119933905
+      Data3: 176281535
+      Data4: 614675135
+    Path: event:/SFX/Oneshots/Menu/Denied
   explosiveRoundEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -159591309
+      Data2: 1318821736
+      Data3: -1568531009
+      Data4: 870809827
+    Path: event:/SFX/Oneshots/Gameplay sfx/Mine Explode
   saberThrowEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1870893843
+      Data2: 1090302803
+      Data3: -531107708
+      Data4: -1787684942
+    Path: event:/SFX/Oneshots/Gameplay sfx/Projectile Launch

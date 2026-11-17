@@ -29,3 +29,6 @@ MonoBehaviour:
     - {fileID: 11400000, guid: a832d934d63484344adce8281a893989, type: 2}
     - {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
     - {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}
+  vesselLongestDrift: {fileID: 11400000, guid: c9ca3d6eff04d70468aa24ee5b1f561d, type: 2}
+  vesselMaxBoost: {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
+  vesselPrismsDamaged: {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}

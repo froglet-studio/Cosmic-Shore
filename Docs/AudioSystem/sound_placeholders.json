@@ -1,0 +1,3343 @@
+{
+ "about": "Recycled placeholder sounds (Garrett, 2026-11-16). Each entry is ONE sound the game owes: the banked event recycled into its slots until the target event is authored in FMOD Studio. Tools/Build/sound_placeholders.py applies, checks and promotes it; Docs/AudioSystem/PLACEHOLDERS.md is the list for Charles, generated from this file. Order is priority within a tier.",
+ "sounds": [
+  {
+   "sound": "Gun fire (every gun)",
+   "owner": "AudioSystem",
+   "tier": "P1",
+   "act": "Every gun shot in the game: the GunFire category (FireGunActionExecutor, both Grizzly guns).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Oneshots/Gameplay sfx/Gun Fire",
+   "brief": "REMAKE: `Gun Fire` exists and is banked but has no audio in it (no instrument in its metadata), so every gun has been silent. Fill that same event: the slot moves back to it on --promote. A short, punchy shot that repeats fast.",
+   "slots": [
+    "Assets/_Prefabs/CORE/AudioSystem.prefab:gunFireEvent"
+   ]
+  },
+  {
+   "sound": "Explosion (every blast)",
+   "owner": "AudioSystem",
+   "tier": "P1",
+   "act": "Every AOE blast in the game: the Explosion category (AOEExplosion on every blast prefab).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mine Explode",
+   "target": "event:/SFX/Oneshots/Gameplay sfx/Explosion",
+   "brief": "REMAKE: `Explosion` exists and is banked but is empty, so every blast has been silent. Fill that same event. A full-bodied blast with a sub thump and a tail; the Mine Explode placeholder is the END GAME crash and too long.",
+   "slots": [
+    "Assets/_Prefabs/CORE/AudioSystem.prefab:explosionEvent"
+   ]
+  },
+  {
+   "sound": "Manta engine",
+   "owner": "Manta",
+   "tier": "P1",
+   "act": "The hull's engine bed, the whole flight (local pilot only).",
+   "kind": "loop",
+   "placeholder": "event:/Engine stuff/space ship engine main",
+   "target": "event:/SFX/Vessels/Manta/Engine",
+   "brief": "A loop with the Speed (0-100), Energy (0-100) and Tilt Acel (-100..100) parameters the engine controller drives, like `space ship engine main`, but in this hull's own voice (Regatta, Broadside and Brood Rush hull; Redline fun pass under way). It is the only one of the fleet's engine slots that was empty; 14 hulls share the main engine today.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Manta.prefab:engineEvent"
+   ],
+   "group": "Engine beds for the six silent hulls",
+   "group_act": "Each hull's engine loop, the whole flight (Speed / Energy / Tilt Acel parameters)."
+  },
+  {
+   "sound": "Scarab engine",
+   "owner": "Scarab",
+   "tier": "P1",
+   "act": "The hull's engine bed, the whole flight (local pilot only).",
+   "kind": "loop",
+   "placeholder": "event:/Engine stuff/space ship engine main",
+   "target": "event:/SFX/Vessels/Scarab/Engine",
+   "brief": "A loop with the Speed (0-100), Energy (0-100) and Tilt Acel (-100..100) parameters the engine controller drives, like `space ship engine main`, but in this hull's own voice (Regatta and Broadside hull; Scarab Rally fun pass under way). It is the only one of the fleet's engine slots that was empty; 14 hulls share the main engine today.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Scarab.prefab:engineEvent"
+   ],
+   "group": "Engine beds for the six silent hulls",
+   "group_act": "Each hull's engine loop, the whole flight (Speed / Energy / Tilt Acel parameters)."
+  },
+  {
+   "sound": "Serpent engine",
+   "owner": "Serpent",
+   "tier": "P1",
+   "act": "The hull's engine bed, the whole flight (local pilot only).",
+   "kind": "loop",
+   "placeholder": "event:/Engine stuff/space ship engine main",
+   "target": "event:/SFX/Vessels/Serpent/Engine",
+   "brief": "A loop with the Speed (0-100), Energy (0-100) and Tilt Acel (-100..100) parameters the engine controller drives, like `space ship engine main`, but in this hull's own voice (Regatta and Brood Rush hull). It is the only one of the fleet's engine slots that was empty; 14 hulls share the main engine today.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Serpent.prefab:engineEvent"
+   ],
+   "group": "Engine beds for the six silent hulls",
+   "group_act": "Each hull's engine loop, the whole flight (Speed / Energy / Tilt Acel parameters)."
+  },
+  {
+   "sound": "Urchin engine",
+   "owner": "Urchin",
+   "tier": "P1",
+   "act": "The hull's engine bed, the whole flight (local pilot only).",
+   "kind": "loop",
+   "placeholder": "event:/Engine stuff/space ship engine main",
+   "target": "event:/SFX/Vessels/Urchin/Engine",
+   "brief": "A loop with the Speed (0-100), Energy (0-100) and Tilt Acel (-100..100) parameters the engine controller drives, like `space ship engine main`, but in this hull's own voice (Regatta and Broadside hull). It is the only one of the fleet's engine slots that was empty; 14 hulls share the main engine today.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Urchin.prefab:engineEvent"
+   ],
+   "group": "Engine beds for the six silent hulls",
+   "group_act": "Each hull's engine loop, the whole flight (Speed / Energy / Tilt Acel parameters)."
+  },
+  {
+   "sound": "TigerMoth engine",
+   "owner": "TigerMoth",
+   "tier": "P1",
+   "act": "The hull's engine bed, the whole flight (local pilot only).",
+   "kind": "loop",
+   "placeholder": "event:/Engine stuff/space ship engine main",
+   "target": "event:/SFX/Vessels/TigerMoth/Engine",
+   "brief": "A loop with the Speed (0-100), Energy (0-100) and Tilt Acel (-100..100) parameters the engine controller drives, like `space ship engine main`, but in this hull's own voice (the Butterfly). It is the only one of the fleet's engine slots that was empty; 14 hulls share the main engine today.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab:engineEvent"
+   ],
+   "group": "Engine beds for the six silent hulls",
+   "group_act": "Each hull's engine loop, the whole flight (Speed / Energy / Tilt Acel parameters)."
+  },
+  {
+   "sound": "JewelWasp engine",
+   "owner": "JewelWasp",
+   "tier": "P1",
+   "act": "The hull's engine bed, the whole flight (local pilot only).",
+   "kind": "loop",
+   "placeholder": "event:/Engine stuff/space ship engine main",
+   "target": "event:/SFX/Vessels/JewelWasp/Engine",
+   "brief": "A loop with the Speed (0-100), Energy (0-100) and Tilt Acel (-100..100) parameters the engine controller drives, like `space ship engine main`, but in this hull's own voice. It is the only one of the fleet's engine slots that was empty; 14 hulls share the main engine today.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/JewelWasp.prefab:engineEvent"
+   ],
+   "group": "Engine beds for the six silent hulls",
+   "group_act": "Each hull's engine loop, the whole flight (Speed / Energy / Tilt Acel parameters)."
+  },
+  {
+   "sound": "Gate threaded",
+   "owner": "Modes",
+   "tier": "P1",
+   "act": "The local pilot threads a gate, in every gate-race mode (23 modes).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Modes/Gate threaded",
+   "brief": "A short, bright, airy pass-through: a gate going by at speed, a second or less, every few seconds of every race. It must stay pleasant on the hundredth repeat (several takes, a little pitch variation).",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBreach.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBreakwater.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBurrowRun.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameDecoyRun.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameGrizzlyTime.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameHeadlong.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameLanternRun.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigamePerchRun.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRegatta.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameScarabRally.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSerpentTime.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSkein.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSlingshot.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSlipLine.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSpearline.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThresherTime.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWarpline.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity:gateThreadedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWrasseRun.unity:gateThreadedEvent"
+   ]
+  },
+  {
+   "sound": "Course finished",
+   "owner": "Modes",
+   "tier": "P1",
+   "act": "The local pilot threads the last gate of the course.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/BigReward",
+   "target": "event:/SFX/Modes/Course finished",
+   "brief": "The finish line: the gate sound's big sibling, a resolving swell of 2-3 s. The match-end sounds follow it, so it should not be a fanfare of its own.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBreach.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBreakwater.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBurrowRun.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameDecoyRun.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameGrizzlyTime.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameHeadlong.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameLanternRun.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigamePerchRun.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRegatta.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameScarabRally.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSerpentTime.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSkein.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSlingshot.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSlipLine.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSpearline.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThresherTime.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWarpline.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity:courseFinishedEvent",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWrasseRun.unity:courseFinishedEvent"
+   ]
+  },
+  {
+   "sound": "Countdown beat",
+   "owner": "UI",
+   "tier": "P1",
+   "act": "One tick per countdown number (3, 2, 1, GO) at the start of every match.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Option Click",
+   "target": "event:/UI/Countdown beat",
+   "brief": "A clean, tuned tick with weight; ideally GO is a different pitch or a second take (CHARLES_TASKS C9).",
+   "slots": [
+    "Assets/_Prefabs/UI Elements/In Game/CountdownTimer.prefab:countdownBeepEvent"
+   ]
+  },
+  {
+   "sound": "Serpent sniper shot",
+   "owner": "Serpent",
+   "tier": "P1",
+   "act": "The Serpent's sniper fires.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/Serpent/Sniper shot",
+   "brief": "A long, thin, high-energy crack with a tail: the fleet's one precision weapon.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Serpent.prefab:fireEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star guns",
+   "owner": "BrittleStar",
+   "tier": "P1",
+   "act": "The Brittle Star's five guns fire.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/BrittleStar/Fire",
+   "brief": "Five guns at once, rapid: a short, punchy shot that can repeat several times a second without fatigue.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:fireEvent"
+   ]
+  },
+  {
+   "sound": "Scarab juke",
+   "owner": "Scarab",
+   "tier": "P1",
+   "act": "The Scarab's dash: the whoosh at the start of the visual roll, every peer.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Scarab/Juke",
+   "brief": "A fast lateral whoosh with a roll in it, under half a second.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Scarab.prefab:jukeWhooshEvent"
+   ]
+  },
+  {
+   "sound": "Manta skim charge",
+   "owner": "Manta",
+   "tier": "P1",
+   "act": "A skim paid the Manta energy (local pilot only, on every skim).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Vessels/Manta/Skim charge",
+   "brief": "A small rising fill tick, very short; it fires on every skim, so it must sit under the skim itself.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset:skimChargeEvent"
+   ]
+  },
+  {
+   "sound": "Rhino drift release",
+   "owner": "Rhino",
+   "tier": "P1",
+   "act": "Letting go of the drift (the Dolphin's release is `trigger off`, the Squirrel's `Squirel boost`).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/trigger off",
+   "target": "event:/SFX/Vessels/Rhino/Drift release",
+   "brief": "The drift's let-go: the grip snapping back into thrust, matching the shared `Drift` loop it ends.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Rhino.prefab:releaseEvent"
+   ],
+   "group": "Drift release for Rhino, Jacks, Swordfish",
+   "group_act": "Letting go of the drift; the drift loop already plays, only its release is silent."
+  },
+  {
+   "sound": "Jacks drift release",
+   "owner": "Jacks",
+   "tier": "P1",
+   "act": "Letting go of the drift (the Dolphin's release is `trigger off`, the Squirrel's `Squirel boost`).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/trigger off",
+   "target": "event:/SFX/Vessels/Jacks/Drift release",
+   "brief": "The drift's let-go: the grip snapping back into thrust, matching the shared `Drift` loop it ends.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Jacks.prefab:releaseEvent"
+   ],
+   "group": "Drift release for Rhino, Jacks, Swordfish",
+   "group_act": "Letting go of the drift; the drift loop already plays, only its release is silent."
+  },
+  {
+   "sound": "Swordfish drift release",
+   "owner": "Swordfish",
+   "tier": "P1",
+   "act": "Letting go of the drift (the Dolphin's release is `trigger off`, the Squirrel's `Squirel boost`).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/trigger off",
+   "target": "event:/SFX/Vessels/Swordfish/Drift release",
+   "brief": "The drift's let-go: the grip snapping back into thrust, matching the shared `Drift` loop it ends.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Swordfish.prefab:releaseEvent"
+   ],
+   "group": "Drift release for Rhino, Jacks, Swordfish",
+   "group_act": "Letting go of the drift; the drift loop already plays, only its release is silent."
+  },
+  {
+   "sound": "Thresher smash",
+   "owner": "Thresher",
+   "tier": "P1",
+   "act": "The ball smashes into something at smash speed.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Vessel impact",
+   "target": "event:/SFX/Vessels/Thresher/Smash",
+   "brief": "A heavy, low thud with debris: the ball's top-speed hit. The Morningstar loop and the trigger voices are Charles's already (Charles-Land).",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Thresher.prefab:smashEvent"
+   ],
+   "group": "Thresher ball and chain hits",
+   "group_act": "The Morning Star's six contact acts: smash, crush, bounce, slice, plant, yank."
+  },
+  {
+   "sound": "Thresher crush",
+   "owner": "Thresher",
+   "tier": "P1",
+   "act": "A slow ball crushes a rival prism.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip",
+   "target": "event:/SFX/Vessels/Thresher/Crush",
+   "brief": "A grinding crunch, slower and more tactile than the smash. The Morningstar loop and the trigger voices are Charles's already (Charles-Land).",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Thresher.prefab:crushEvent"
+   ],
+   "group": "Thresher ball and chain hits",
+   "group_act": "The Morning Star's six contact acts: smash, crush, bounce, slice, plant, yank."
+  },
+  {
+   "sound": "Thresher bounce",
+   "owner": "Thresher",
+   "tier": "P1",
+   "act": "The ball bounces off a prism of its own domain.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Thresher/Bounce",
+   "brief": "A soft, springy knock: no damage done. The Morningstar loop and the trigger voices are Charles's already (Charles-Land).",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Thresher.prefab:bounceEvent"
+   ],
+   "group": "Thresher ball and chain hits",
+   "group_act": "The Morning Star's six contact acts: smash, crush, bounce, slice, plant, yank."
+  },
+  {
+   "sound": "Thresher slice",
+   "owner": "Thresher",
+   "tier": "P1",
+   "act": "The chain slices a prism.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Vessels/Thresher/Slice",
+   "brief": "A quick cutting zip with a shatter. The Morningstar loop and the trigger voices are Charles's already (Charles-Land).",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Thresher.prefab:sliceEvent"
+   ],
+   "group": "Thresher ball and chain hits",
+   "group_act": "The Morning Star's six contact acts: smash, crush, bounce, slice, plant, yank."
+  },
+  {
+   "sound": "Thresher plant",
+   "owner": "Thresher",
+   "tier": "P1",
+   "act": "The ball plants and becomes the pivot.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Thresher/Plant",
+   "brief": "A solid clunk, an anchor biting. The Morningstar loop and the trigger voices are Charles's already (Charles-Land).",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Thresher.prefab:plantEvent"
+   ],
+   "group": "Thresher ball and chain hits",
+   "group_act": "The Morning Star's six contact acts: smash, crush, bounce, slice, plant, yank."
+  },
+  {
+   "sound": "Thresher yank",
+   "owner": "Thresher",
+   "tier": "P1",
+   "act": "LT releases the pivot and the ball is dragged after the ship.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Thresher/Yank",
+   "brief": "A chain whip and a pull. The Morningstar loop and the trigger voices are Charles's already (Charles-Land).",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Thresher.prefab:yankEvent"
+   ],
+   "group": "Thresher ball and chain hits",
+   "group_act": "The Morning Star's six contact acts: smash, crush, bounce, slice, plant, yank."
+  },
+  {
+   "sound": "Manta bomb planted",
+   "owner": "Manta",
+   "tier": "P2",
+   "act": "A bomb goes onto a target (the shared fuse resets).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Manta/Bomb planted",
+   "brief": "A sticky clamp with a primed hum starting.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset:bombPlantedEvent"
+   ]
+  },
+  {
+   "sound": "Manta kabloom",
+   "owner": "Manta",
+   "tier": "P2",
+   "act": "The omni crystal cashes the board: once for the whole cascade, at the ship.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mine Explode",
+   "target": "event:/SFX/Vessels/Manta/Kabloom",
+   "brief": "The payoff: a big rolling multi-stage blast, 2-4 s.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset:kabloomEvent"
+   ]
+  },
+  {
+   "sound": "Manta cascade bloom",
+   "owner": "Manta",
+   "tier": "P2",
+   "act": "One bomb in a cascade blooms (per bomb, at the bomb).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip",
+   "target": "event:/SFX/Vessels/Manta/Cascade bloom",
+   "brief": "A short pop that stacks well when ten fire in a second.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset:cascadeBloomEvent"
+   ]
+  },
+  {
+   "sound": "Manta bomb armed",
+   "owner": "Manta",
+   "tier": "P2",
+   "act": "The energy crosses a whole bomb: the 'you may plant' beat.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Option Click",
+   "target": "event:/SFX/Vessels/Manta/Bomb armed",
+   "brief": "A small ready chirp, clear but quiet.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset:bombArmedEvent"
+   ]
+  },
+  {
+   "sound": "Urchin charge start",
+   "owner": "Urchin",
+   "tier": "P2",
+   "act": "The trigger starts charging the spikes.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Vessels/Urchin/Charge start",
+   "brief": "A rising charge-up, held short.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Urchin.prefab:chargeStartEvent"
+   ]
+  },
+  {
+   "sound": "Urchin charged release",
+   "owner": "Urchin",
+   "tier": "P2",
+   "act": "A charged spike burst is released.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Urchin/Charged release",
+   "brief": "A radial burst: spikes thrown out all around.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Urchin.prefab:chargedReleaseEvent"
+   ]
+  },
+  {
+   "sound": "Urchin track deploy",
+   "owner": "Urchin",
+   "tier": "P2",
+   "act": "A track is projected.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Urchin/Track deploy",
+   "brief": "A projected rail locking into place.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Urchin.prefab:deployEvent"
+   ]
+  },
+  {
+   "sound": "Stoat skip",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The Stoat skips off the surface.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Stoat/Skip",
+   "brief": "A light skipping-stone slap.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:skipEvent"
+   ]
+  },
+  {
+   "sound": "Stoat graze",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The Stoat grazes the line.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Stoat/Graze",
+   "brief": "A softer, longer brush than the skip.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:grazeEvent"
+   ]
+  },
+  {
+   "sound": "Stoat plunk",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The Stoat plunks in (a bad skip).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Stoat/Plunk",
+   "brief": "A dull, dropped stone.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:plunkEvent"
+   ]
+  },
+  {
+   "sound": "Stoat capture",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The Stoat captures a Skimline.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Vessels/Stoat/Capture",
+   "brief": "A latch: the line is yours.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:captureEvent"
+   ]
+  },
+  {
+   "sound": "Stoat launch",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The Stoat launches off its line.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Stoat/Launch",
+   "brief": "A springing launch.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:launchEvent"
+   ]
+  },
+  {
+   "sound": "Stoat chain break",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The skip chain breaks.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Vessels/Stoat/Chain break",
+   "brief": "A deflating stop.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:chainBreakEvent"
+   ]
+  },
+  {
+   "sound": "Stoat skim sweet spot",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "A skim lands in the sweet spot.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
+   "target": "event:/SFX/Vessels/Stoat/Skim sweet spot",
+   "brief": "A small, satisfying chime.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset:sweetSpotEvent"
+   ]
+  },
+  {
+   "sound": "Stoat sling wind-up",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "A squeeze begins (the wind-up).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Vessels/Stoat/Sling wind-up",
+   "brief": "A tightening stretch. (Also fills the three AI-policy copies of the sling config.)",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:holdStartEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:holdStartEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:holdStartEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:holdStartEvent"
+   ]
+  },
+  {
+   "sound": "Stoat sling",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The pair is slung.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Stoat/Sling",
+   "brief": "The release of the wind-up: a slingshot snap. (Also fills the three AI-policy copies of the sling config.)",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:slingEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:slingEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:slingEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:slingEvent"
+   ]
+  },
+  {
+   "sound": "Stoat sling sweet spot",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "A release lands inside the full window (every peer).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
+   "target": "event:/SFX/Vessels/Stoat/Sling sweet spot",
+   "brief": "A clear reward ping layered on the sling. (Also fills the three AI-policy copies of the sling config.)",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:sweetSpotEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:sweetSpotEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:sweetSpotEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:sweetSpotEvent"
+   ]
+  },
+  {
+   "sound": "Stoat trampoline touch",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The hull touches the shell.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Stoat/Trampoline touch",
+   "brief": "A soft membrane press. (Also fills the three AI-policy copies of the sling config.)",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:trampolineTouchEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:trampolineTouchEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:trampolineTouchEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:trampolineTouchEvent"
+   ]
+  },
+  {
+   "sound": "Stoat trampoline bounce",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The shell throws the hull off.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Vessel impact",
+   "target": "event:/SFX/Vessels/Stoat/Trampoline bounce",
+   "brief": "A deep, elastic boing without the cartoon. (Also fills the three AI-policy copies of the sling config.)",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:trampolineBounceEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:trampolineBounceEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:trampolineBounceEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:trampolineBounceEvent"
+   ]
+  },
+  {
+   "sound": "Stoat dipole open",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "A squeeze opens the pair of poles.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Vessels/Stoat/Dipole open",
+   "brief": "Two charges pulling apart. (Also fills the two AI-policy copies of the dipole config.)",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset:openEvent",
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset:openEvent",
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset:openEvent"
+   ]
+  },
+  {
+   "sound": "Stoat dipole annihilate",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The poles meet and annihilate.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip",
+   "target": "event:/SFX/Vessels/Stoat/Dipole annihilate",
+   "brief": "A bright, short cancellation. (Also fills the two AI-policy copies of the dipole config.)",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset:annihilateEvent",
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset:annihilateEvent",
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset:annihilateEvent"
+   ]
+  },
+  {
+   "sound": "Stoat warp",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The path turns and the boost comes on.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Stoat/Warp",
+   "brief": "A warp-in rush. (Also fills the two AI-policy copies of the dipole config.)",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset:warpEvent",
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset:warpEvent",
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset:warpEvent"
+   ]
+  },
+  {
+   "sound": "Stoat ripple",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "A ripple is born at the meeting point.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Space Joust",
+   "target": "event:/SFX/Vessels/Stoat/Ripple",
+   "brief": "An expanding ring through space.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatRippleConfig.asset:rippleEvent"
+   ]
+  },
+  {
+   "sound": "Stoat ripple strip",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "The ripple's front strips a rival.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Creature colide",
+   "target": "event:/SFX/Vessels/Stoat/Ripple strip",
+   "brief": "A tearing hit as petals come off.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatRippleConfig.asset:stripEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star speed mode",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "Speed Mode (Time) comes on.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Time Joust",
+   "target": "event:/SFX/Vessels/BrittleStar/Speed mode",
+   "brief": "Time's signature: an accelerating, stretched shimmer.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:speedModeEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star creation mode",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "Creation Mode (Mass) comes on.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mass joust",
+   "target": "event:/SFX/Vessels/BrittleStar/Creation mode",
+   "brief": "Mass's signature: weight settling, building.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:creationModeEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star destruction mode",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "Destruction Mode (Space) comes on.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Space Joust",
+   "target": "event:/SFX/Vessels/BrittleStar/Destruction mode",
+   "brief": "Space's signature: open, cold, armed.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:destructionModeEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star charge mode",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "Charge Mode comes on.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Charge Joust",
+   "target": "event:/SFX/Vessels/BrittleStar/Charge mode",
+   "brief": "Charge's signature: crackling, gathering.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:chargeModeEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star mode off",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "A mode switches off.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Vessels/BrittleStar/Mode off",
+   "brief": "A neutral power-down, the same for every mode.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:modeOffEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star cord slice",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "A cord cuts a prism (one per cut).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip",
+   "target": "event:/SFX/Vessels/BrittleStar/Cord slice",
+   "brief": "A whip-cut through crystal.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:cordSliceEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star ring launch",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "A ring is launched.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/BrittleStar/Ring launch",
+   "brief": "A spinning throw.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:ringLaunchEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star ring blast",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "A ring blasts.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mine Explode",
+   "target": "event:/SFX/Vessels/BrittleStar/Ring blast",
+   "brief": "A ring-shaped burst.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:ringBlastEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star ring rebuild",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "A ring rebuilds.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Vessels/BrittleStar/Ring rebuild",
+   "brief": "A reassembling shimmer.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:ringRebuildEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star charge stored",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "A crystal adds a spare ring.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Vessels/BrittleStar/Charge stored",
+   "brief": "A small store-up click.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:chargeStoredEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star overheat",
+   "owner": "BrittleStar",
+   "tier": "P2",
+   "act": "The guns overheat.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Denied",
+   "target": "event:/SFX/Vessels/BrittleStar/Overheat",
+   "brief": "A hiss and a lockout.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:overheatEvent"
+   ]
+  },
+  {
+   "sound": "Shrike lance",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "The Shrike's lance fires.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/Shrike/Lance",
+   "brief": "A piercing thrust.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:lanceEvent"
+   ]
+  },
+  {
+   "sound": "Shrike missile launch",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "A missile launches.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/Shrike/Missile launch",
+   "brief": "A rocket ignition and departure.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:missileLaunchEvent"
+   ]
+  },
+  {
+   "sound": "Shrike missile blast",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "A missile explodes.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mine Explode",
+   "target": "event:/SFX/Vessels/Shrike/Missile blast",
+   "brief": "A sharp, mid-sized blast.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:missileBlastEvent"
+   ]
+  },
+  {
+   "sound": "Shrike lock",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "A target lock.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Option Click",
+   "target": "event:/SFX/Vessels/Shrike/Lock",
+   "brief": "A clean lock-on tone.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:lockEvent"
+   ]
+  },
+  {
+   "sound": "Shrike tether",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "A tether attaches.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Shrike/Tether",
+   "brief": "A line snapping taut.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:tetherEvent"
+   ]
+  },
+  {
+   "sound": "Shrike sling",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "The Shrike slings off its tether.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Shrike/Sling",
+   "brief": "A swing release.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:slingEvent"
+   ]
+  },
+  {
+   "sound": "Shrike dock",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "The Shrike docks.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Vessel impact",
+   "target": "event:/SFX/Vessels/Shrike/Dock",
+   "brief": "A heavy mechanical latch.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:dockEvent"
+   ]
+  },
+  {
+   "sound": "Shrike undock",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "The Shrike undocks.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Vessels/Shrike/Undock",
+   "brief": "The latch letting go.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:undockEvent"
+   ]
+  },
+  {
+   "sound": "Shrike nest",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "The Shrike nests.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Massshark spawn",
+   "target": "event:/SFX/Vessels/Shrike/Nest",
+   "brief": "Settling in.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:nestEvent"
+   ]
+  },
+  {
+   "sound": "Shrike mode",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "The Shrike switches mode.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Vessels/Shrike/Mode",
+   "brief": "A short mode-change cue.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:modeEvent"
+   ]
+  },
+  {
+   "sound": "Shrike crystal",
+   "owner": "Shrike",
+   "tier": "P2",
+   "act": "A crystal is taken.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Vessels/Shrike/Crystal",
+   "brief": "A pickup in the Shrike's voice.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset:crystalEvent"
+   ]
+  },
+  {
+   "sound": "Meerkat tunnel form",
+   "owner": "Meerkat",
+   "tier": "P2",
+   "act": "RT forms a tunnel (at the hull).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Space Joust",
+   "target": "event:/SFX/Vessels/Meerkat/Tunnel form",
+   "brief": "A soliton opening: space folding into a tube. Yash tests the Meerkat's sounds one by one.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset:formEvent"
+   ]
+  },
+  {
+   "sound": "Meerkat tunnel collapse",
+   "owner": "Meerkat",
+   "tier": "P2",
+   "act": "A tunnel collapses (at its centre).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Vessels/Meerkat/Tunnel collapse",
+   "brief": "The tube folding shut. Yash tests the Meerkat's sounds one by one.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset:collapseEvent"
+   ]
+  },
+  {
+   "sound": "Meerkat network",
+   "owner": "Meerkat",
+   "tier": "P2",
+   "act": "An omnicrystal grows a Soliton Network (at the hull).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Space Joust friend",
+   "target": "event:/SFX/Vessels/Meerkat/Network",
+   "brief": "A bigger, branching version of the form. Yash tests the Meerkat's sounds one by one.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset:networkEvent"
+   ]
+  },
+  {
+   "sound": "Meerkat portal",
+   "owner": "Meerkat",
+   "tier": "P2",
+   "act": "A new soliton sets down its exit portal.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/space comeback",
+   "target": "event:/SFX/Vessels/Meerkat/Portal",
+   "brief": "A portal settling. Yash tests the Meerkat's sounds one by one.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset:portalEvent"
+   ]
+  },
+  {
+   "sound": "Meerkat prism fired",
+   "owner": "Meerkat",
+   "tier": "P2",
+   "act": "A soliton fires a prism out of its way out.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/Meerkat/Prism fired",
+   "brief": "A prism shot out of a tube. Yash tests the Meerkat's sounds one by one.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset:prismFiredEvent"
+   ]
+  },
+  {
+   "sound": "Meerkat sentinel placed",
+   "owner": "Meerkat",
+   "tier": "P2",
+   "act": "A sentinel stands up at a soliton's way in.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Meerkat/Sentinel placed",
+   "brief": "A guard planting itself. Yash tests the Meerkat's sounds one by one.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset:sentinelPlacedEvent"
+   ]
+  },
+  {
+   "sound": "Meerkat sentinel lost",
+   "owner": "Meerkat",
+   "tier": "P2",
+   "act": "A sentinel is lost or retires, and its soliton with it.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Creature Death",
+   "target": "event:/SFX/Vessels/Meerkat/Sentinel lost",
+   "brief": "A small loss. Yash tests the Meerkat's sounds one by one.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset:sentinelLostEvent"
+   ]
+  },
+  {
+   "sound": "Meerkat zap",
+   "owner": "Meerkat",
+   "tier": "P2",
+   "act": "A sentinel zaps a rival (at the rival).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/Meerkat/Zap",
+   "brief": "A short electric zap. Yash tests the Meerkat's sounds one by one.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset:zapEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly drop engage",
+   "owner": "TigerMoth",
+   "tier": "P2",
+   "act": "The drop starts: the wings shut and the hull falls.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Vessels/TigerMoth/Drop engage",
+   "brief": "Wings snapping shut, a fall beginning.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab:dropEngageEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly drop land",
+   "owner": "TigerMoth",
+   "tier": "P2",
+   "act": "The hull lands and flies on along the drop line.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Vessel impact",
+   "target": "event:/SFX/Vessels/TigerMoth/Drop land",
+   "brief": "A landing thump that becomes flight.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab:dropLandEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly gates open",
+   "owner": "TigerMoth",
+   "tier": "P2",
+   "act": "A full drop's wormhole opens (once, at the landing mouth).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Space Joust",
+   "target": "event:/SFX/Vessels/TigerMoth/Gates open",
+   "brief": "A wormhole opening.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab:gatesOpenEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly gate thread",
+   "owner": "TigerMoth",
+   "tier": "P2",
+   "act": "A pilot flies into one of this Tiger Moth's mouths and out of the other.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/TigerMoth/Gate thread",
+   "brief": "A transit rush.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab:gateThreadEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly dust mode",
+   "owner": "TigerMoth",
+   "tier": "P2",
+   "act": "The right trigger switches into Dust mode (wings shut).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Vessels/TigerMoth/Dust mode",
+   "brief": "Wings closing, dust rising.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab:dustModeEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly mass mode",
+   "owner": "TigerMoth",
+   "tier": "P2",
+   "act": "The right trigger switches into Mass mode (wings open).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Vessels/TigerMoth/Mass mode",
+   "brief": "Wings opening wide.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab:massModeEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly wingbeat",
+   "owner": "TigerMoth",
+   "tier": "P2",
+   "act": "One wingbeat (one per wing cycle, silent when the wings barely move).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/TigerMoth/Wingbeat",
+   "brief": "A soft, papery wing push; very light, it repeats constantly.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab:wingbeatEvent"
+   ]
+  },
+  {
+   "sound": "Jewel Wasp wingbeat",
+   "owner": "JewelWasp",
+   "tier": "P2",
+   "act": "One wingbeat (one per wing cycle).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/JewelWasp/Wingbeat",
+   "brief": "A faster, buzzier wing than the Butterfly's.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/JewelWasp.prefab:wingbeatEvent"
+   ]
+  },
+  {
+   "sound": "Jewel Wasp sting",
+   "owner": "JewelWasp",
+   "tier": "P2",
+   "act": "The wasp stings.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Creature colide",
+   "target": "event:/SFX/Vessels/JewelWasp/Sting",
+   "brief": "A sharp jab.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspConfig.asset:stingEvent"
+   ]
+  },
+  {
+   "sound": "Jewel Wasp attack",
+   "owner": "JewelWasp",
+   "tier": "P2",
+   "act": "The wasp attacks.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/JewelWasp/Attack",
+   "brief": "A diving strike.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspConfig.asset:attackEvent"
+   ]
+  },
+  {
+   "sound": "Jewel Wasp nest",
+   "owner": "JewelWasp",
+   "tier": "P2",
+   "act": "The wasp nests.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Massshark spawn",
+   "target": "event:/SFX/Vessels/JewelWasp/Nest",
+   "brief": "Settling into a host.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspConfig.asset:nestEvent"
+   ]
+  },
+  {
+   "sound": "Jewel Wasp leave",
+   "owner": "JewelWasp",
+   "tier": "P2",
+   "act": "The wasp leaves its host.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/JewelWasp/Leave",
+   "brief": "A quick departure.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspConfig.asset:leaveEvent"
+   ]
+  },
+  {
+   "sound": "Jewel Wasp suction",
+   "owner": "JewelWasp",
+   "tier": "P2",
+   "act": "The wasp draws in.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Vessels/JewelWasp/Suction",
+   "brief": "A drawing-in pull.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspConfig.asset:suctionEvent"
+   ]
+  },
+  {
+   "sound": "Jewel Wasp burst",
+   "owner": "JewelWasp",
+   "tier": "P2",
+   "act": "A burst.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip",
+   "target": "event:/SFX/Vessels/JewelWasp/Burst",
+   "brief": "A brood bursting out.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspConfig.asset:burstEvent"
+   ]
+  },
+  {
+   "sound": "Jewel Wasp select",
+   "owner": "JewelWasp",
+   "tier": "P2",
+   "act": "A held trigger chooses a new creature or plant.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Option Click",
+   "target": "event:/SFX/Vessels/JewelWasp/Select",
+   "brief": "A small selection tick.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspConfig.asset:selectEvent"
+   ]
+  },
+  {
+   "sound": "Orca missile launch",
+   "owner": "Orca",
+   "tier": "P2",
+   "act": "An Orca crew missile launches.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/Orca/Missile launch",
+   "brief": "A rocket launch.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset:missileLaunchSound"
+   ]
+  },
+  {
+   "sound": "Orca missile burst",
+   "owner": "Orca",
+   "tier": "P2",
+   "act": "A missile bursts.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mine Explode",
+   "target": "event:/SFX/Vessels/Orca/Missile burst",
+   "brief": "A mid-sized blast.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset:missileBurstSound"
+   ]
+  },
+  {
+   "sound": "Orca sniper shot",
+   "owner": "Orca",
+   "tier": "P2",
+   "act": "The crew's sniper fires (a scored strip).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/Orca/Sniper shot",
+   "brief": "A long crack, a sibling of the Serpent's.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset:sniperShotSound"
+   ]
+  },
+  {
+   "sound": "Orca bomb throw",
+   "owner": "Orca",
+   "tier": "P2",
+   "act": "A bomb is thrown.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Orca/Bomb throw",
+   "brief": "A lob.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset:bombThrowSound"
+   ]
+  },
+  {
+   "sound": "Orca bomb burst",
+   "owner": "Orca",
+   "tier": "P2",
+   "act": "A bomb bursts.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mine Explode",
+   "target": "event:/SFX/Vessels/Orca/Bomb burst",
+   "brief": "A heavy blast.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset:bombBurstSound"
+   ]
+  },
+  {
+   "sound": "Orca shield raise",
+   "owner": "Orca",
+   "tier": "P2",
+   "act": "The crew raises a shield.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Vessels/Orca/Shield raise",
+   "brief": "A shield coming up.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset:shieldRaiseSound"
+   ]
+  },
+  {
+   "sound": "Orca omni refill",
+   "owner": "Orca",
+   "tier": "P2",
+   "act": "An omni crystal refills the magazines.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Vessels/Orca/Omni refill",
+   "brief": "A full reload.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset:omniRefillSound"
+   ]
+  },
+  {
+   "sound": "Orca empty magazine",
+   "owner": "Orca",
+   "tier": "P2",
+   "act": "A press with an empty magazine.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Denied",
+   "target": "event:/SFX/Vessels/Orca/Empty magazine",
+   "brief": "A dry click.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset:emptyMagazineSound"
+   ]
+  },
+  {
+   "sound": "Wrasse kite charge",
+   "owner": "KiteNavigator",
+   "tier": "P2",
+   "act": "A Charge loop powers the kite.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Charge Joust",
+   "target": "event:/SFX/Vessels/KiteNavigator/Charge",
+   "brief": "Charge's signature.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset:chargeSfx"
+   ]
+  },
+  {
+   "sound": "Wrasse kite mass cluster",
+   "owner": "KiteNavigator",
+   "tier": "P2",
+   "act": "A Mass loop lays its cluster.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mass joust",
+   "target": "event:/SFX/Vessels/KiteNavigator/Mass cluster",
+   "brief": "Mass's signature.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset:massClusterSfx"
+   ]
+  },
+  {
+   "sound": "Wrasse kite time boost",
+   "owner": "KiteNavigator",
+   "tier": "P2",
+   "act": "A Time loop hands the pilot boost.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Time Joust",
+   "target": "event:/SFX/Vessels/KiteNavigator/Time boost",
+   "brief": "Time's signature.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset:timeBoostSfx"
+   ]
+  },
+  {
+   "sound": "Wrasse kite loop closed",
+   "owner": "KiteNavigator",
+   "tier": "P2",
+   "act": "A loop closes with motes inside (any element).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
+   "target": "event:/SFX/Vessels/KiteNavigator/Loop closed",
+   "brief": "A closing chime.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset:loopClosedSfx"
+   ]
+  },
+  {
+   "sound": "Wrasse kite loop fizzled",
+   "owner": "KiteNavigator",
+   "tier": "P2",
+   "act": "A mixed loop fizzles.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Denied",
+   "target": "event:/SFX/Vessels/KiteNavigator/Loop fizzled",
+   "brief": "A fizzle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset:loopFizzledSfx"
+   ]
+  },
+  {
+   "sound": "Wrasse kite prism popped",
+   "owner": "KiteNavigator",
+   "tier": "P2",
+   "act": "The kite's head pops a hostile prism.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Vessels/KiteNavigator/Prism popped",
+   "brief": "A pop.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset:prismPoppedSfx"
+   ]
+  },
+  {
+   "sound": "Wrasse kite steal",
+   "owner": "KiteNavigator",
+   "tier": "P2",
+   "act": "A charged ram knocks out (or, at Charge L5, steals) petals.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Charge comeback",
+   "target": "event:/SFX/Vessels/KiteNavigator/Steal",
+   "brief": "A petal take.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset:stealSfx"
+   ]
+  },
+  {
+   "sound": "Wrasse kite fauna struck",
+   "owner": "KiteNavigator",
+   "tier": "P2",
+   "act": "A charged ram kills a creature.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Creature Death",
+   "target": "event:/SFX/Vessels/KiteNavigator/Fauna struck",
+   "brief": "A creature struck down.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset:faunaStruckSfx"
+   ]
+  },
+  {
+   "sound": "Manta fuse expired",
+   "owner": "Manta",
+   "tier": "P3",
+   "act": "The shared fuse runs out (the board the pilot did not cash in).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Vessels/Manta/Fuse expired",
+   "brief": "A disappointed fizzle-out.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset:fuseExpiredEvent"
+   ]
+  },
+  {
+   "sound": "Manta prism impact detonation",
+   "owner": "Manta",
+   "tier": "P3",
+   "act": "The Manta hits a prism: the board goes off early and the energy is lost.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Vessel impact",
+   "target": "event:/SFX/Vessels/Manta/Prism impact detonation",
+   "brief": "A penalty blast: a thud plus a premature pop.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset:prismImpactDetonationEvent"
+   ]
+  },
+  {
+   "sound": "Manta decoy sprung",
+   "owner": "Manta",
+   "tier": "P3",
+   "act": "A rival takes a Manta decoy and it morphs into danger prisms.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Massshark spawn",
+   "target": "event:/SFX/Vessels/Manta/Decoy sprung",
+   "brief": "A trap snapping shut.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset:decoySprungEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star explosive round",
+   "owner": "BrittleStar",
+   "tier": "P3",
+   "act": "SPACE L5: an explosive round bursts (one per burst).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mine Explode",
+   "target": "event:/SFX/Vessels/BrittleStar/Explosive round",
+   "brief": "A small, crisp blast.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:explosiveRoundEvent"
+   ]
+  },
+  {
+   "sound": "Brittle Star saber throw",
+   "owner": "BrittleStar",
+   "tier": "P3",
+   "act": "CHARGE L5: the five sabers are cut off and thrown.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/BrittleStar/Saber throw",
+   "brief": "Five blades released at once.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset:saberThrowEvent"
+   ]
+  },
+  {
+   "sound": "Grizzly bomb fire",
+   "owner": "Grizzly",
+   "tier": "P3",
+   "act": "A trigger bomb is fired.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/Grizzly/Bomb fire",
+   "brief": "A heavy launcher thump.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyTriggerBombConfig.asset:fireEvent"
+   ]
+  },
+  {
+   "sound": "Grizzly bomb detonate",
+   "owner": "Grizzly",
+   "tier": "P3",
+   "act": "A trigger bomb detonates.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mine Explode",
+   "target": "event:/SFX/Vessels/Grizzly/Bomb detonate",
+   "brief": "A big blast, the Grizzly's weight.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyTriggerBombConfig.asset:detonateEvent"
+   ]
+  },
+  {
+   "sound": "Jacks call",
+   "owner": "Jacks",
+   "tier": "P3",
+   "act": "The jacks call the herd.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Massshark spawn",
+   "target": "event:/SFX/Vessels/Jacks/Call",
+   "brief": "A herd call.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset:callSfx"
+   ]
+  },
+  {
+   "sound": "Jacks decoy",
+   "owner": "Jacks",
+   "tier": "P3",
+   "act": "A decoy is dropped.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Jacks/Decoy",
+   "brief": "A drop.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset:decoySfx"
+   ]
+  },
+  {
+   "sound": "Jacks teleport",
+   "owner": "Jacks",
+   "tier": "P3",
+   "act": "The flying jacks jump to the decoy.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Space Joust",
+   "target": "event:/SFX/Vessels/Jacks/Teleport",
+   "brief": "A blink-jump.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset:teleportSfx"
+   ]
+  },
+  {
+   "sound": "Goby grow",
+   "owner": "Goby",
+   "tier": "P3",
+   "act": "A block grown by a jump (at most once per juice spacing).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Vessels/Goby/Grow",
+   "brief": "A quick growth tick.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset:growEvent"
+   ]
+  },
+  {
+   "sound": "Goby shield",
+   "owner": "Goby",
+   "tier": "P3",
+   "act": "A block shielded by a jump.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Vessels/Goby/Shield",
+   "brief": "A shield tick.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset:shieldEvent"
+   ]
+  },
+  {
+   "sound": "Goby restore",
+   "owner": "Goby",
+   "tier": "P3",
+   "act": "A destroyed block restored.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Vessels/Goby/Restore",
+   "brief": "A restoring shimmer.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset:restoreEvent"
+   ]
+  },
+  {
+   "sound": "Goby fall through",
+   "owner": "Goby",
+   "tier": "P3",
+   "act": "The Pistol falls through a gap and out of the portal beyond it.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Space Joust",
+   "target": "event:/SFX/Vessels/Goby/Fall through",
+   "brief": "A portal fall.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset:fallThroughEvent"
+   ]
+  },
+  {
+   "sound": "Honeyguide flit",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The Honeyguide flits.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Honeyguide/Flit",
+   "brief": "A tiny wing flit.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:flitSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide jump",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The Honeyguide jumps.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Honeyguide/Jump",
+   "brief": "A hop.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:jumpSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide slip",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The Honeyguide slips.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Honeyguide/Slip",
+   "brief": "A slide.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:slipSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide spin",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The Honeyguide spins.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Honeyguide/Spin",
+   "brief": "A spin.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:spinSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide pattern made",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "A card's pattern is made.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
+   "target": "event:/SFX/Vessels/Honeyguide/Pattern made",
+   "brief": "A pattern-complete chime.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:patternMadeSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide reveal",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "A card is revealed.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/OpenView",
+   "target": "event:/SFX/Vessels/Honeyguide/Reveal",
+   "brief": "A reveal.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:revealSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide upgrade",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "An upgrade is gained.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Upgrade",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade",
+   "brief": "An upgrade.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgradeSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide hive enter",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The Honeyguide enters a hive.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Honeyguide/Hive enter",
+   "brief": "Entering.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:hiveEnterSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide hive leave",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The Honeyguide leaves a hive.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Honeyguide/Hive leave",
+   "brief": "Leaving.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:hiveLeaveSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide hive sting",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The hive stings.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Creature colide",
+   "target": "event:/SFX/Vessels/Honeyguide/Hive sting",
+   "brief": "A sting.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:hiveStingSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide hive chain",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "A hive chain links.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Vessels/Honeyguide/Hive chain",
+   "brief": "A chain link.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:hiveChainSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide hive colour",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "A hive changes colour.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Option Click",
+   "target": "event:/SFX/Vessels/Honeyguide/Hive colour",
+   "brief": "A small colour tick.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:hiveColourSfx"
+   ]
+  },
+  {
+   "sound": "Honeyguide upgrade: Lance",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Lance' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Lance",
+   "brief": "The Lance effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[0].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Little Bang",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Little Bang' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mine Explode",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Little Bang",
+   "brief": "The Little Bang effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[1].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Harmonizer",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Harmonizer' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Harmonizer",
+   "brief": "The Harmonizer effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[2].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Fugacity",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Fugacity' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Fugacity",
+   "brief": "The Fugacity effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[3].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Sepia",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Sepia' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Creature colide",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Sepia",
+   "brief": "The Sepia effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[4].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Thruster",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Thruster' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Thruster",
+   "brief": "The Thruster effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[5].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Eyelet",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Eyelet' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Eyelet",
+   "brief": "The Eyelet effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[6].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Lasso",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Lasso' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Lasso",
+   "brief": "The Lasso effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[7].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Blink",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Blink' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Space Joust",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Blink",
+   "brief": "The Blink effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[8].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Portals",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Portals' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/space comeback",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Portals",
+   "brief": "The Portals effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[9].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Rosen",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Rosen' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Space Joust friend",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Rosen",
+   "brief": "The Rosen effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[10].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Ftl",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Ftl' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Time Joust",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Ftl",
+   "brief": "The Ftl effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[11].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Honeyguide upgrade: Monte",
+   "owner": "Honeyguide",
+   "tier": "P3",
+   "act": "The 'Monte' upgrade card is used.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Charge Joust",
+   "target": "event:/SFX/Vessels/Honeyguide/Upgrade Monte",
+   "brief": "The Monte effect in action.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset:upgrades[12].sfx"
+   ],
+   "group": "Honeyguide upgrade cards",
+   "group_act": "Each of the 13 upgrade cards, on use (one event per card)."
+  },
+  {
+   "sound": "Sword combo: Twin Fang",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Twin Fang' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Twin Fang",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[0].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Rising Crescent",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Rising Crescent' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Rising Crescent",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[1].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Scissor",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Scissor' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Scissor",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[2].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Hook and Draw",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Hook and Draw' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Hook and Draw",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[3].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Cyclone",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Cyclone' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Cyclone",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[4].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Windmill",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Windmill' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Windmill",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[5].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Figure Eight",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Figure Eight' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Figure Eight",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[6].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Serpent Weave",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Serpent Weave' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Serpent Weave",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[7].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Rising Reversal",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Rising Reversal' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Rising Reversal",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[8].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Low Sweep Uppercut",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Low Sweep Uppercut' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Low Sweep Uppercut",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[9].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Crosscut Spiral",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Crosscut Spiral' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Crosscut Spiral",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[10].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Lunge",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Lunge' sword combo.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Skim",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Lunge",
+   "brief": "A sword swipe (or sequence of swipes) through water.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[11].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Thunder Fang",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Thunder Fang' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Thunder Fang",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[12].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Eclipse Crescent",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Eclipse Crescent' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Eclipse Crescent",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[13].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Shear Storm",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Shear Storm' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Shear Storm",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[14].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Hook Lance",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Hook Lance' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Hook Lance",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[15].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Tempest",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Tempest' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Tempest",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[16].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Hurricane Wheel",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Hurricane Wheel' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Hurricane Wheel",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[17].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Infinity Blade",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Infinity Blade' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Infinity Blade",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[18].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Hydra Weave",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Hydra Weave' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Hydra Weave",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[19].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Meteor Reversal",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Meteor Reversal' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Meteor Reversal",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[20].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Skyfall Uppercut",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Skyfall Uppercut' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Skyfall Uppercut",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[21].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Vortex Spiral",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Vortex Spiral' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Vortex Spiral",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[22].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Sword combo: Piercing Charge",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The 'Piercing Charge' sword combo (energized).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Swordfish/Combo Piercing Charge",
+   "brief": "An energized sword combo: the swipe plus an energy crackle.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset:combos[23].sound"
+   ],
+   "group": "Swordfish sword combos (12 plain, 12 energized)",
+   "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
+  },
+  {
+   "sound": "Redline clean thread",
+   "owner": "Mode Redline",
+   "tier": "P3",
+   "act": "A thread through the heart of the mouth.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Modes/Redline/Clean thread",
+   "brief": "A sweeter gate sound.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:cleanThreadEvent"
+   ]
+  },
+  {
+   "sound": "Redline red-hot thread",
+   "owner": "Mode Redline",
+   "tier": "P3",
+   "act": "A clean thread at near-full Soar.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Time Joust",
+   "target": "event:/SFX/Modes/Redline/Redhot thread",
+   "brief": "The clean thread with Time's heat on it.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:redhotThreadEvent"
+   ]
+  },
+  {
+   "sound": "Redline streak called",
+   "owner": "Mode Redline",
+   "tier": "P3",
+   "act": "A streak of clean threads is called (3, 8, 16, then every 16).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
+   "target": "event:/SFX/Modes/Redline/Streak called",
+   "brief": "A streak stinger.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:streakCalledEvent"
+   ]
+  },
+  {
+   "sound": "Redline lap complete",
+   "owner": "Mode Redline",
+   "tier": "P3",
+   "act": "A lap completed.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/SmallReward",
+   "target": "event:/SFX/Modes/Redline/Lap complete",
+   "brief": "A lap marker.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:lapCompleteEvent"
+   ]
+  },
+  {
+   "sound": "Redline best lap",
+   "owner": "Mode Redline",
+   "tier": "P3",
+   "act": "A lap that beats this race's best.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Upgrade",
+   "target": "event:/SFX/Modes/Redline/Best lap",
+   "brief": "The lap marker, brighter.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:bestLapEvent"
+   ]
+  },
+  {
+   "sound": "Redline clean lap",
+   "owner": "Mode Redline",
+   "tier": "P3",
+   "act": "A lap threaded clean end to end.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Score Reveal",
+   "target": "event:/SFX/Modes/Redline/Clean lap",
+   "brief": "A clean-lap flourish.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:cleanLapEvent"
+   ]
+  },
+  {
+   "sound": "Redline missed mouth",
+   "owner": "Mode Redline",
+   "tier": "P3",
+   "act": "A mouth is missed.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Denied",
+   "target": "event:/SFX/Modes/Redline/Missed mouth",
+   "brief": "A miss.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:missedMouthEvent"
+   ]
+  },
+  {
+   "sound": "Redline Soar dark",
+   "owner": "Mode Redline",
+   "tier": "P3",
+   "act": "Soar goes dark (Time falls below 4).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Modes/Redline/Soar dark",
+   "brief": "Power draining out.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:soarDarkEvent"
+   ]
+  },
+  {
+   "sound": "Redline reached",
+   "owner": "Mode Redline",
+   "tier": "P3",
+   "act": "The redline is reached, once a race.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/time comeback",
+   "target": "event:/SFX/Modes/Redline/Redline",
+   "brief": "The race's peak moment.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity:redlineEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly dust blight",
+   "owner": "TigerMoth",
+   "tier": "P3",
+   "act": "The dust blights opposing mass.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Creature colide",
+   "target": "event:/SFX/Vessels/TigerMoth/Dust blight",
+   "brief": "A corroding hiss.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab:dustBlightEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly dust tend",
+   "owner": "TigerMoth",
+   "tier": "P3",
+   "act": "The dust tends the pilot's own mass.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Vessels/TigerMoth/Dust tend",
+   "brief": "A nurturing shimmer.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab:dustTendEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly heart nourish",
+   "owner": "TigerMoth",
+   "tier": "P3",
+   "act": "A heart is nourished (throttled).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Vessels/TigerMoth/Heart nourish",
+   "brief": "A warm pulse.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab:heartNourishEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly heart wither",
+   "owner": "TigerMoth",
+   "tier": "P3",
+   "act": "A heart withers (throttled).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Vessels/TigerMoth/Heart wither",
+   "brief": "A dying pulse.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab:heartWitherEvent"
+   ]
+  },
+  {
+   "sound": "Butterfly scale dust bite",
+   "owner": "TigerMoth",
+   "tier": "P3",
+   "act": "Scale dust bites.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Creature colide",
+   "target": "event:/SFX/Vessels/TigerMoth/Scale dust bite",
+   "brief": "A small bite.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab:scaleDustBiteEvent"
+   ]
+  },
+  {
+   "sound": "Stoat swing start",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "A swing starts.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Vessels/Stoat/Swing start",
+   "brief": "A tether catching and the arc beginning. (Also fills the three AI-policy copies of the sling config.)",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:swingStartEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:swingStartEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:swingStartEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:swingStartEvent"
+   ]
+  },
+  {
+   "sound": "Stoat swing fling",
+   "owner": "Stoat",
+   "tier": "P2",
+   "act": "A swing throws the hull off (the kick).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Vessels/Stoat/Swing fling",
+   "brief": "The kick at the end of the arc. (Also fills the three AI-policy copies of the sling config.)",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset:swingFlingEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset:swingFlingEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset:swingFlingEvent",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset:swingFlingEvent"
+   ]
+  },
+  {
+   "sound": "BrittleStarTime flat-out thread",
+   "owner": "Mode BrittleStarTime",
+   "tier": "P3",
+   "act": "A flat-out thread: through the heart at full Speed.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Time Joust",
+   "target": "event:/SFX/Modes/BrittleStarTime/Flat-out thread",
+   "brief": "The gate sound with Time's heat on it.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity:flatOutThreadEvent"
+   ]
+  },
+  {
+   "sound": "BrittleStarTime clean shift",
+   "owner": "Mode BrittleStarTime",
+   "tier": "P3",
+   "act": "A clean shift: a let-go ring taken at its corner's speed.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Modes/BrittleStarTime/Clean shift",
+   "brief": "A crisp shift click.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity:cleanShiftEvent"
+   ]
+  },
+  {
+   "sound": "BrittleStarTime streak called",
+   "owner": "Mode BrittleStarTime",
+   "tier": "P3",
+   "act": "A streak of clean threads is called.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
+   "target": "event:/SFX/Modes/BrittleStarTime/Streak called",
+   "brief": "A streak stinger.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity:streakCalledEvent"
+   ]
+  },
+  {
+   "sound": "BrittleStarTime lap complete",
+   "owner": "Mode BrittleStarTime",
+   "tier": "P3",
+   "act": "A lap completed.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/SmallReward",
+   "target": "event:/SFX/Modes/BrittleStarTime/Lap complete",
+   "brief": "A lap marker.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity:lapCompleteEvent"
+   ]
+  },
+  {
+   "sound": "BrittleStarTime best lap",
+   "owner": "Mode BrittleStarTime",
+   "tier": "P3",
+   "act": "A lap that beats this race's best.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Upgrade",
+   "target": "event:/SFX/Modes/BrittleStarTime/Best lap",
+   "brief": "The lap marker, brighter.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity:bestLapEvent"
+   ]
+  },
+  {
+   "sound": "BrittleStarTime clean lap",
+   "owner": "Mode BrittleStarTime",
+   "tier": "P3",
+   "act": "A lap threaded clean end to end.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Score Reveal",
+   "target": "event:/SFX/Modes/BrittleStarTime/Clean lap",
+   "brief": "A clean-lap flourish.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity:cleanLapEvent"
+   ]
+  },
+  {
+   "sound": "BrittleStarTime missed mouth",
+   "owner": "Mode BrittleStarTime",
+   "tier": "P3",
+   "act": "A mouth is missed.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Denied",
+   "target": "event:/SFX/Modes/BrittleStarTime/Missed mouth",
+   "brief": "A miss.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity:missedMouthEvent"
+   ]
+  },
+  {
+   "sound": "BrittleStarTime speed dark",
+   "owner": "Mode BrittleStarTime",
+   "tier": "P3",
+   "act": "A dark start: Speed Mode never lit, no ring yet.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Modes/BrittleStarTime/Speed dark",
+   "brief": "Power not there.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity:speedDarkEvent"
+   ]
+  },
+  {
+   "sound": "GrizzlyTime bank shot",
+   "owner": "Mode GrizzlyTime",
+   "tier": "P3",
+   "act": "The local pilot's bank shot.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Modes/GrizzlyTime/Bank shot",
+   "brief": "A ricochet shot.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameGrizzlyTime.unity:bankShotEvent"
+   ]
+  },
+  {
+   "sound": "GrizzlyTime crown burst",
+   "owner": "Mode GrizzlyTime",
+   "tier": "P3",
+   "act": "The crown bursts off a ring the local pilot just cleared.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip",
+   "target": "event:/SFX/Modes/GrizzlyTime/Crown burst",
+   "brief": "A crown shattering off.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameGrizzlyTime.unity:crownBurstEvent"
+   ]
+  },
+  {
+   "sound": "GrizzlyTime keg burst",
+   "owner": "Mode GrizzlyTime",
+   "tier": "P3",
+   "act": "A keg bursts.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Mine Explode",
+   "target": "event:/SFX/Modes/GrizzlyTime/Keg burst",
+   "brief": "A barrel blast.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameGrizzlyTime.unity:kegBurstEvent"
+   ]
+  },
+  {
+   "sound": "GrizzlyTime keg stripped",
+   "owner": "Mode GrizzlyTime",
+   "tier": "P3",
+   "act": "A shielded keg core loses its shield (I3-I4).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Modes/GrizzlyTime/Keg stripped",
+   "brief": "A shield breaking off.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameGrizzlyTime.unity:kegStrippedEvent"
+   ]
+  },
+  {
+   "sound": "Spearline seal opened",
+   "owner": "Mode Spearline",
+   "tier": "P3",
+   "act": "The local pilot threads a seal through a hole.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Modes/Spearline/Seal opened",
+   "brief": "A seal popping open.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSpearline.unity:sealOpenedEvent"
+   ]
+  },
+  {
+   "sound": "Spearline seal held",
+   "owner": "Mode Spearline",
+   "tier": "P3",
+   "act": "The local pilot crosses a sealed ring that held (come round).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Denied",
+   "target": "event:/SFX/Modes/Spearline/Seal held",
+   "brief": "A closed door.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSpearline.unity:sealHeldEvent"
+   ]
+  },
+  {
+   "sound": "Spearline clean streak",
+   "owner": "Mode Spearline",
+   "tier": "P3",
+   "act": "A run of first-pass seals is called.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
+   "target": "event:/SFX/Modes/Spearline/Clean streak",
+   "brief": "A streak stinger.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSpearline.unity:cleanStreakEvent"
+   ]
+  },
+  {
+   "sound": "Thornline clean dock",
+   "owner": "Mode Thornline",
+   "tier": "P3",
+   "act": "A dock on the thorn that was aimed at.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
+   "target": "event:/SFX/Modes/Thornline/Clean dock",
+   "brief": "A clean catch.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:cleanDockEvent"
+   ]
+  },
+  {
+   "sound": "Thornline caught short",
+   "owner": "Mode Thornline",
+   "tier": "P3",
+   "act": "A dock caught short on a trail or a nest, off any thorn.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Denied",
+   "target": "event:/SFX/Modes/Thornline/Caught short",
+   "brief": "A short catch.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:caughtShortEvent"
+   ]
+  },
+  {
+   "sound": "Thornline sling ready",
+   "owner": "Mode Thornline",
+   "tier": "P3",
+   "act": "The local pilot takes a Time crystal: the sling is ready.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Modes/Thornline/Sling ready",
+   "brief": "A reload.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:crystalResetEvent"
+   ]
+  },
+  {
+   "sound": "Thornline crystal taken",
+   "owner": "Mode Thornline",
+   "tier": "P3",
+   "act": "A rival takes the crystal on the local pilot's leg first.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Modes/Thornline/Crystal taken",
+   "brief": "Missed it.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:crystalTakenEvent"
+   ]
+  },
+  {
+   "sound": "Thornline passed",
+   "owner": "Mode Thornline",
+   "tier": "P3",
+   "act": "The local pilot passes a rival.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Modes/Thornline/Passed",
+   "brief": "A pass.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:passedEvent"
+   ]
+  },
+  {
+   "sound": "Thornline overtaken",
+   "owner": "Mode Thornline",
+   "tier": "P3",
+   "act": "A rival passes the local pilot.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Modes/Thornline/Overtaken",
+   "brief": "Being passed.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:overtakenEvent"
+   ]
+  },
+  {
+   "sound": "Thornline sight ready",
+   "owner": "Mode Thornline",
+   "tier": "P3",
+   "act": "The sight turns ready (the sling reloaded).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Option Click",
+   "target": "event:/SFX/Modes/Thornline/Sight ready",
+   "brief": "A ready tick.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:sightReadyEvent"
+   ]
+  },
+  {
+   "sound": "Thornline snipe",
+   "owner": "Mode Thornline",
+   "tier": "P3",
+   "act": "A sling threads two rings at once.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Projectile Launch",
+   "target": "event:/SFX/Modes/Thornline/Snipe",
+   "brief": "A long shot rewarded.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:snipeEvent"
+   ]
+  },
+  {
+   "sound": "Thornline thorn regrow",
+   "owner": "Mode Thornline",
+   "tier": "P3",
+   "act": "A broken thorn grows back (3D, at the thorn).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Modes/Thornline/Thorn regrow",
+   "brief": "Something regrowing.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity:thornRegrowEvent"
+   ]
+  },
+  {
+   "sound": "Waystation hop clean",
+   "owner": "Mode Waystation",
+   "tier": "P3",
+   "act": "A landing inside the lanterns, above the deep band.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
+   "target": "event:/SFX/Modes/Waystation/Hop clean",
+   "brief": "A clean landing.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity:hopCleanEvent"
+   ]
+  },
+  {
+   "sound": "Waystation hop deep",
+   "owner": "Mode Waystation",
+   "tier": "P3",
+   "act": "A landing in the deep band.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Modes/Waystation/Hop deep",
+   "brief": "A deep landing.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity:hopDeepEvent"
+   ]
+  },
+  {
+   "sound": "Waystation hop short",
+   "owner": "Mode Waystation",
+   "tier": "P3",
+   "act": "A landing short of the window.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Denied",
+   "target": "event:/SFX/Modes/Waystation/Hop short",
+   "brief": "Short.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity:hopShortEvent"
+   ]
+  },
+  {
+   "sound": "Waystation hop past",
+   "owner": "Mode Waystation",
+   "tier": "P3",
+   "act": "A landing past the hop's far edge.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Denied",
+   "target": "event:/SFX/Modes/Waystation/Hop past",
+   "brief": "Long.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity:hopPastEvent"
+   ]
+  },
+  {
+   "sound": "Waystation streak broken",
+   "owner": "Mode Waystation",
+   "tier": "P3",
+   "act": "A streak of at least one tier broken.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate",
+   "target": "event:/SFX/Modes/Waystation/Streak broken",
+   "brief": "A streak ending.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity:streakBrokenEvent"
+   ]
+  },
+  {
+   "sound": "Waystation crown gem",
+   "owner": "Mode Waystation",
+   "tier": "P3",
+   "act": "A crown gem collected by the local pilot.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Modes/Waystation/Crown gem",
+   "brief": "A gem pickup.",
+   "slots": [
+    "Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity:crownGemEvent"
+   ]
+  },
+  {
+   "sound": "Typing tick",
+   "owner": "UI",
+   "tier": "P4",
+   "act": "One tick per character while a random display name types itself in (~13 a second).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Option Click",
+   "target": "event:/UI/Typing tick",
+   "brief": "Very short and cheap, with Max Instances set (C9).",
+   "slots": [
+    "Assets/_Prefabs/UI Elements/Profile.prefab:typingAudioEvent",
+    "Assets/_Prefabs/UI Elements/ModalWindows.prefab:typingAudioEvent",
+    "Assets/_Scenes/Menu_Main.unity:typingAudioEvent"
+   ]
+  },
+  {
+   "sound": "Currency burst fired",
+   "owner": "UI",
+   "tier": "P4",
+   "act": "A currency burst launches toward the balance.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/RedeemTicket",
+   "target": "event:/UI/Currency burst fired",
+   "brief": "A scatter of coins leaving. Author at full level: each emitter trims it (C9).",
+   "slots": [
+    "Assets/_Scenes/Menu_Main.unity:onTriggerEvent@*"
+   ]
+  },
+  {
+   "sound": "Currency burst landed",
+   "owner": "UI",
+   "tier": "P4",
+   "act": "The last currency icon lands on the balance.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/SmallReward",
+   "target": "event:/UI/Currency burst landed",
+   "brief": "A settled tally.",
+   "slots": [
+    "Assets/_Scenes/Menu_Main.unity:targetReachedEvent@*"
+   ]
+  },
+  {
+   "sound": "Creature block hit",
+   "owner": "AudioSystem",
+   "tier": "P4",
+   "act": "A creature eats a non-flora prism.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip",
+   "target": "event:/SFX/Creatures/Block hit",
+   "brief": "A bite through crystal, distinct from a vessel breaking a block (C3).",
+   "slots": [
+    "Assets/_Prefabs/CORE/AudioSystem.prefab:creatureBlockHitEvent"
+   ]
+  },
+  {
+   "sound": "Payload grab",
+   "owner": "Payload",
+   "tier": "P4",
+   "act": "A payload is grabbed.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Track collide",
+   "target": "event:/SFX/Payload/Grab",
+   "brief": "A payload is grabbed.",
+   "slots": [
+    "Assets/Resources/PayloadConfig.asset:grabSound"
+   ]
+  },
+  {
+   "sound": "Payload release",
+   "owner": "Payload",
+   "tier": "P4",
+   "act": "A payload is released.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Payload/Release",
+   "brief": "A payload is released.",
+   "slots": [
+    "Assets/Resources/PayloadConfig.asset:releaseSound"
+   ]
+  },
+  {
+   "sound": "Payload refused",
+   "owner": "Payload",
+   "tier": "P4",
+   "act": "A grab is refused.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Denied",
+   "target": "event:/SFX/Payload/Refused",
+   "brief": "A grab is refused.",
+   "slots": [
+    "Assets/Resources/PayloadConfig.asset:refusedSound"
+   ]
+  },
+  {
+   "sound": "Payload artifact taken",
+   "owner": "Payload",
+   "tier": "P4",
+   "act": "An artifact is taken.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Payload/Artifact taken",
+   "brief": "An artifact is taken.",
+   "slots": [
+    "Assets/Resources/PayloadConfig.asset:artifactTakenSound"
+   ]
+  },
+  {
+   "sound": "Payload artifact stowed",
+   "owner": "Payload",
+   "tier": "P4",
+   "act": "An artifact is stowed.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Menu/Confirmed",
+   "target": "event:/SFX/Payload/Artifact stowed",
+   "brief": "An artifact is stowed.",
+   "slots": [
+    "Assets/Resources/PayloadConfig.asset:artifactStowedSound"
+   ]
+  },
+  {
+   "sound": "Aegis load",
+   "owner": "Artifacts",
+   "tier": "P4",
+   "act": "A payload is taken loaded with the Aegis.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Artifacts/Aegis load",
+   "brief": "The Aegis arming.",
+   "slots": [
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Aegis.asset:loadSound"
+   ],
+   "group": "Artifact load and release",
+   "group_act": "Each artifact's load (taken) and release."
+  },
+  {
+   "sound": "Aegis release",
+   "owner": "Artifacts",
+   "tier": "P4",
+   "act": "A payload loaded with the Aegis is released.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Artifacts/Aegis release",
+   "brief": "The Aegis going off.",
+   "slots": [
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Aegis.asset:releaseSound"
+   ],
+   "group": "Artifact load and release"
+  },
+  {
+   "sound": "Aftershock load",
+   "owner": "Artifacts",
+   "tier": "P4",
+   "act": "A payload is taken loaded with the Aftershock.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Artifacts/Aftershock load",
+   "brief": "The Aftershock arming.",
+   "slots": [
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Aftershock.asset:loadSound"
+   ],
+   "group": "Artifact load and release",
+   "group_act": "Each artifact's load (taken) and release."
+  },
+  {
+   "sound": "Aftershock release",
+   "owner": "Artifacts",
+   "tier": "P4",
+   "act": "A payload loaded with the Aftershock is released.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Artifacts/Aftershock release",
+   "brief": "The Aftershock going off.",
+   "slots": [
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Aftershock.asset:releaseSound"
+   ],
+   "group": "Artifact load and release"
+  },
+  {
+   "sound": "Hydra load",
+   "owner": "Artifacts",
+   "tier": "P4",
+   "act": "A payload is taken loaded with the Hydra.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Artifacts/Hydra load",
+   "brief": "The Hydra arming.",
+   "slots": [
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Hydra.asset:loadSound"
+   ],
+   "group": "Artifact load and release",
+   "group_act": "Each artifact's load (taken) and release."
+  },
+  {
+   "sound": "Hydra release",
+   "owner": "Artifacts",
+   "tier": "P4",
+   "act": "A payload loaded with the Hydra is released.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Artifacts/Hydra release",
+   "brief": "The Hydra going off.",
+   "slots": [
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Hydra.asset:releaseSound"
+   ],
+   "group": "Artifact load and release"
+  },
+  {
+   "sound": "Javelin load",
+   "owner": "Artifacts",
+   "tier": "P4",
+   "act": "A payload is taken loaded with the Javelin.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Shield Activate",
+   "target": "event:/SFX/Artifacts/Javelin load",
+   "brief": "The Javelin arming.",
+   "slots": [
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Javelin.asset:loadSound"
+   ],
+   "group": "Artifact load and release",
+   "group_act": "Each artifact's load (taken) and release."
+  },
+  {
+   "sound": "Javelin release",
+   "owner": "Artifacts",
+   "tier": "P4",
+   "act": "A payload loaded with the Javelin is released.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Speed burst",
+   "target": "event:/SFX/Artifacts/Javelin release",
+   "brief": "The Javelin going off.",
+   "slots": [
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Javelin.asset:releaseSound"
+   ],
+   "group": "Artifact load and release"
+  },
+  {
+   "sound": "Ark hull regrow",
+   "owner": "Toys",
+   "tier": "P4",
+   "act": "One hull prism regrows into its socket.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Energy Gain",
+   "target": "event:/SFX/Toys/Ark regrow",
+   "brief": "A small socketing click with growth in it.",
+   "slots": [
+    "Assets/_SO_Assets/Toys/ArkReactor.asset:regrowSound"
+   ]
+  },
+  {
+   "sound": "Bee hive grow",
+   "owner": "Flora",
+   "tier": "P4",
+   "act": "A comb cell is built from brought-home mass.",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Crystal Collect",
+   "target": "event:/SFX/Creatures/Hive grow",
+   "brief": "A waxy cell forming.",
+   "slots": [
+    "Assets/_Prefabs/FloraAndFauna/Bees/BeeHive.prefab:hiveGrowSfx"
+   ]
+  },
+  {
+   "sound": "Swarm morph",
+   "owner": "Fauna",
+   "tier": "P4",
+   "act": "A swarm commits to a new body plan (rare, at the swarm).",
+   "kind": "one-shot",
+   "placeholder": "event:/SFX/Oneshots/Gameplay sfx/Massshark spawn",
+   "target": "event:/SFX/Creatures/Swarm morph",
+   "brief": "Hundreds of bodies rearranging at once: a rushing, chittering reshuffle, 1-2 s.",
+   "slots": [
+    "Assets/_SO_Assets/Swarm Fauna/SwarmEvoFateFaunaConfig.asset:MorphEvent",
+    "Assets/_SO_Assets/Swarm Fauna/SwarmFaunaConfig.asset:MorphEvent",
+    "Assets/_SO_Assets/Swarm Fauna/SwarmGridFaunaConfig.asset:MorphEvent",
+    "Assets/_SO_Assets/Swarm Fauna/SwarmSortFaunaConfig.asset:MorphEvent",
+    "Assets/_SO_Assets/Swarm Fauna/Tandava/TandavaSwarmFaunaConfig.asset:MorphEvent",
+    "Assets/_SO_Assets/Swarm Fauna/TandavaSevering/TandavaSeveringSwarmFaunaConfig.asset:MorphEvent"
+   ]
+  },
+  {
+   "sound": "Proximity boost loop",
+   "owner": "Squirrel",
+   "tier": "P1",
+   "act": "The speed-surge bed while skim boost is up (Squirrel, Goby, Thresher).",
+   "kind": "loop",
+   "placeholder": null,
+   "target": "event:/SFX/Vessels/Shared/Proximity boost",
+   "brief": "A loop with a 0..1 `Boost Amount` parameter the code drives from the boost multiplier (a surge that swells with it). These three slots held the one-shot `Skim` (C4: it played once and drove nothing); they are cleared until this exists, and the skim tick in the same component keeps playing. No banked loop takes `Boost Amount`, so nothing is recycled here.",
+   "slots": [
+    "Assets/_Prefabs/Spacevessels/Squirrel.prefab:boostLoopEvent",
+    "Assets/_Prefabs/Spacevessels/Goby.prefab:boostLoopEvent",
+    "Assets/_Prefabs/Spacevessels/Thresher.prefab:boostLoopEvent"
+   ],
+   "clear": true
+  }
+ ],
+ "not_filled": [
+  {
+   "what": "Thresher LT hold, LT release, RT release (3 slots)",
+   "why": "Charles authored these on `Charles-Land` (\"Thresher ability audio\", 2026-11-06, not merged yet): merge that branch rather than recycle over it."
+  },
+  {
+   "what": "Creature loops: 35 fauna-config `AudioLoopEvent`s, 6 swarm loops, the bee's pollinate and sting",
+   "why": "One voice per creature, and Wildlife Liberation runs 500-1,200 creatures: these wait for per-event Max Instances and max distances (CHARLES_TASKS C5) before anything is recycled into them."
+  },
+  {
+   "what": "Callsign open sounds (18, `CallsignSet.asset`)",
+   "why": "Each is a pilot's identity sound; one recycled sting in all 18 says nothing the profile page's own open sound does not already."
+  },
+  {
+   "what": "Soundtrack per-track events (9, `Soundtrack.asset`)",
+   "why": "Filling them switches the playlist out of its legacy mode; the music already plays through `Music/Music`."
+  },
+  {
+   "what": "`AudioSystem` drift start / drift end",
+   "why": "Deliberately empty (C3): the four drifting hulls own their drift voice through `DriftAudioController`."
+  },
+  {
+   "what": "Serpent pellet ignite",
+   "why": "Not silent: an empty slot falls back to the shared Boost Activate bed."
+  },
+  {
+   "what": "`MorningStar.prefab`'s emitter",
+   "why": "It has no play trigger, so nothing would sound; the Thresher's ball voice is `ThresherAudioController.morningStarLoop`."
+  },
+  {
+   "what": "The IconEmitters in `MIgration_Prefabs (DELETE LATER)/`",
+   "why": "Prefabs being retired; the live emitters in Menu_Main are filled."
+  }
+ ]
+}

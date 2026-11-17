@@ -358,7 +358,19 @@ namespace CosmicShore.Gameplay
         /// Serpent Time answers per pilot, because there a crystal is a sniper round and only a pilot short of rounds
         /// should go out of its way for one.
         /// </summary>
-        protected virtual float AICrystalDetourSlackFor(IPlayer pilot) => AICrystalDetourSlack;
+        protected virtual float AICrystalDetourSlackFor(IPlayer pilot) =>
+            Mathf.Max(AICrystalDetourSlack, LearnedCrystalDetourSlack(pilot));
+
+        /// <summary>
+        /// The pilot's hull's LEARNED crystal detour budget (<see cref="RaceAICrystalGenesSO"/>, Garrett 2026-11-16): a
+        /// gene of the hull's Time genome, 0 until a search finds that taking crystals on the way wins. Relaxes Yash's
+        /// waypoints-only rule only as far as the training proves it pays.
+        /// </summary>
+        protected static float LearnedCrystalDetourSlack(IPlayer pilot)
+        {
+            var status = pilot?.Vessel?.VesselStatus;
+            return status != null ? RaceAICrystalGenesSO.LearnedDetourSlack(status.VesselType) : 0f;
+        }
 
         /// <summary>
         /// Did <paramref name="prev"/> to <paramref name="cur"/> thread course ring <paramref name="ringIndex"/>? The ring's
@@ -859,6 +871,20 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError($"[{ModeName}] OnCourseRaised threw - the course is up but the " +
                                  $"mode's own geometry is missing. {e}");
+            }
+
+            // Training only: a course genome's placements round this mode's own gates (null in shipped play).
+            if (TrainingCourseOverlay.Override != null)
+            {
+                try
+                {
+                    ResolveShell(out float nucleus, out float membrane);
+                    TrainingCourseOverlay.Lay(course, root, ResolveCellCentre(), nucleus, membrane, ModeName);
+                }
+                catch (System.Exception e)
+                {
+                    CSDebug.LogError($"[{ModeName}] The training course overlay threw; the course is up without it. {e}");
+                }
             }
 
             // The geometry exists: release the connecting panel.
@@ -1444,8 +1470,9 @@ namespace CosmicShore.Gameplay
                     return seekAim;
                 }
 
-                // A crystal ON THE WAY, only in a mode whose race needs crystals (AIDetoursForCrystals; none
-                // today): a racing AI flies the waypoints, never a crystal (Yash, 2026-10-26).
+                // A crystal ON THE WAY: in a mode whose race needs crystals (AIDetoursForCrystals), or as far as the
+                // hull's learned gene allows (RaceAICrystalGenesSO, 0 until training finds it pays; Garrett 2026-11-16
+                // relaxed Yash's 2026-10-26 waypoints-only rule into this gene).
                 float detourSlack = AICrystalDetourSlackFor(captured);
                 if (detourSlack > 0f)
                 {
@@ -1531,7 +1558,9 @@ namespace CosmicShore.Gameplay
             for (int i = 0, n = crystals.Count; i < n; i++)
             {
                 var crystal = crystals[i];
-                if (crystal == null || crystal.CrystalManager == null) continue;
+                // A manager-less crystal is a heart, a preview or a toy's - except the element ladder's I3 crystals.
+                if (crystal == null || (crystal.CrystalManager == null && !ElementLadderCrystals.IsLadderCrystal(crystal)))
+                    continue;
                 if (!crystal.CanBeCollected(domain)) continue;
 
                 Vector3 c = crystal.transform.position;
@@ -1543,6 +1572,26 @@ namespace CosmicShore.Gameplay
             }
 
             return best;
+        }
+
+        /// <summary>
+        /// A race lays its I3 ladder crystals BESIDE its rings (<see cref="ElementLadderCrystals"/>): a random gate each,
+        /// pushed off the ring's axis by 1.5-3 ring radii so taking one is a detour the racing AI's learned gene
+        /// decides (<see cref="RaceAICrystalGenesSO"/>), never a crystal threaded for free. Falls back to the cell
+        /// scatter before the course is built.
+        /// </summary>
+        public override void CollectLadderCrystalPoints(Domains team, int count, System.Random rng, List<Vector3> into)
+        {
+            if (_course.Count == 0) { base.CollectLadderCrystalPoints(team, count, rng, into); return; }
+            for (int i = 0; i < count; i++)
+            {
+                var gate = _course[rng.Next(_course.Count)];
+                Vector3 axis = gate.Axis.sqrMagnitude > 1e-6f ? gate.Axis.normalized : Vector3.forward;
+                Vector3 side = Vector3.Cross(axis, Mathf.Abs(axis.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+                side = Quaternion.AngleAxis((float)(rng.NextDouble() * 360.0), axis) * side;
+                float reach = Mathf.Max(gate.Radius, 20f) * (1.5f + 1.5f * (float)rng.NextDouble());
+                into.Add(gate.Position + side * reach);
+            }
         }
 
         protected Vector3 ResolveCellCentre()

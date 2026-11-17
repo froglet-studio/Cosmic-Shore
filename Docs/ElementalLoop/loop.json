@@ -19,7 +19,19 @@
   "Dolphin": [
    "Mass"
   ],
+  "Grizzly": [
+   "Mass"
+  ],
+  "Jacks": [
+   "Mass"
+  ],
   "Squirrel": [
+   "Space"
+  ],
+  "Stoat": [
+   "Mass"
+  ],
+  "Urchin": [
    "Space"
   ]
  },

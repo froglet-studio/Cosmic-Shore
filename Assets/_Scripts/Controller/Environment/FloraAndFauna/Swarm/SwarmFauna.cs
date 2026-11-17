@@ -410,6 +410,38 @@ namespace CosmicShore.Gameplay
 
         public override float CurrentSpeed => config ? config.Cruise * _cruiseScale * config.UnitScale * config.TickHz : 0f;
 
+        // --- Possession (Fauna.Possession): a rider that stings any member takes the whole murmuration -----------------
+
+        /// <summary>The rider nests at the body's centre, inside the murmuration.</summary>
+        public override Vector3 PossessionNestPoint => AnchorWorld;
+        public override Vector3 PossessionForward => BodyForward;
+        public override float PossessionTopSpeed => Mathf.Max(1f, CurrentSpeed);
+        public override float PossessionMouthReach => config ? Mathf.Max(6f, config.UnitScale * 8f) : base.PossessionMouthReach;
+        public override float PossessionBodyRadius =>
+            config ? Mathf.Max(4f, Mathf.Pow(Mathf.Max(1, MemberCount), 1f / 3f) * config.UnitScale * 2f) : base.PossessionBodyRadius;
+
+        static readonly List<Vector3> s_possessionMouths = new(8);
+
+        /// <summary>A murmuration's mouthful: every one of a few members spread over the body takes its own bite.</summary>
+        public override int PossessedSuction(float reachScale, int maxBites, bool allSides)
+        {
+            var rider = Possessor;
+            if (rider == null || !IsSimAuthority || maxBites <= 0) return 0;
+            var index = PrismSpatialIndex.EnsureInstance();
+            if (index == null || !index.IsAvailable) return 0;
+            s_possessionMouths.Clear();
+            int mouths = SampleMemberPositions(s_possessionMouths, Mathf.Clamp(maxBites, 1, 6));
+            float reach = PossessionMouthReach * Mathf.Max(0.1f, reachScale);
+            int bites = 0, each = Mathf.Max(1, maxBites / Mathf.Max(1, mouths));
+            for (int m = 0; m < mouths && bites < maxBites; m++)
+            {
+                int found = index.QuerySphere(s_possessionMouths[m], reach, PossessionScratch);
+                bites += EatNearest(s_possessionMouths[m], found, Mathf.Min(each, maxBites - bites), rider, transform);
+            }
+            s_possessionMouths.Clear();
+            return bites;
+        }
+
         /// <summary>A member's swim speed in world units/s - what a jouster has to outrun.</summary>
         public float MemberSpeed(int i) => _job != null && i >= 0 && i < _cap ? _job.Speed[i] : 0f;
 
@@ -920,8 +952,16 @@ namespace CosmicShore.Gameplay
         void Kick()
         {
             using (s_mSense.Auto()) SenseVessels();
+            // POSSESSED (Fauna.Possession): the whole murmuration swims where its rider steers, as fast as its rider's Time
+            float possessedCruise = 1f, possessedTurn = 1f;
+            if (Leash is IFaunaPossession rider && Leash.TrySteer(this, out var riderGoal, out _, out _))
+            {
+                Goal = riderGoal;
+                possessedCruise = Mathf.Max(0.1f, rider.CruiseScale(this));
+                possessedTurn = 2f;
+            }
             _job.SwimTarget = ToSim(Goal);
-            _job.CruiseScale = _cruiseScale; _job.TurnScale = _turnScale; _job.HoldLaying = _holdRegrowth;
+            _job.CruiseScale = _cruiseScale * possessedCruise; _job.TurnScale = _turnScale * possessedTurn; _job.HoldLaying = _holdRegrowth;
             if (!_inline)
             {
                 using (s_mKick.Auto()) _job.Kick(false);

@@ -11,7 +11,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The QUESTS WINDOW (Shombith, 2026-11-13: "Quest should be a seperate screen with its own interactive UI not inside
-    /// this itself"; picked Frogma Rev 107 D on 2026-11-13, Docs/MENU_REDESIGN_B.md sections 187, 188 and 200). Its own window
+    /// this itself"; picked Frogma Rev 107 D on 2026-11-13, Docs/MENU_REDESIGN_B.md sections 207, 208 and 200). Its own window
     /// over Home, opened from Home's quest card (<see cref="ScreenSwitcher.OnClickQuests"/>); the Voyage window no
     /// longer has a Quests tab (<see cref="VoyageWindowTabs.Drop{T}"/>).
     ///

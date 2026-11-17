@@ -529,7 +529,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("On the locked Saga table's front face.")]
         public string SlabSagaLockedFace = "The saga opens here";
 
-        // The Quests window (Docs/MENU_REDESIGN_B.md sections 188 and 200, Rev 107 D).
+        // The Quests window (Docs/MENU_REDESIGN_B.md sections 208 and 200, Rev 107 D).
         [Tooltip("The Quests window's title, top left.")]
         public string QuestsTitle = "Quests";
         [Tooltip("The Quests window's way back to Home.")]

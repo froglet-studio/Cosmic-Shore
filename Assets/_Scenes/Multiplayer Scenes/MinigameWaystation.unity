@@ -832,6 +832,62 @@ MonoBehaviour:
   maxPlausibleSpeed: 1000
   reportResyncSeconds: 3
   wallPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
+  gateThreadedEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  courseFinishedEvent:
+    Guid:
+      Data1: 2069810760
+      Data2: 1198659685
+      Data3: -604450419
+      Data4: -805011495
+    Path: event:/SFX/Oneshots/Menu/BigReward
+  hopCleanEvent:
+    Guid:
+      Data1: 413717435
+      Data2: 1238803703
+      Data3: 1704894129
+      Data4: 1814326255
+    Path: event:/SFX/Oneshots/Menu/Confirmed
+  hopDeepEvent:
+    Guid:
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
+  hopShortEvent:
+    Guid:
+      Data1: 1646059356
+      Data2: 1119933905
+      Data3: 176281535
+      Data4: 614675135
+    Path: event:/SFX/Oneshots/Menu/Denied
+  hopPastEvent:
+    Guid:
+      Data1: 1646059356
+      Data2: 1119933905
+      Data3: 176281535
+      Data4: 614675135
+    Path: event:/SFX/Oneshots/Menu/Denied
+  streakBrokenEvent:
+    Guid:
+      Data1: -1103610945
+      Data2: 1108376032
+      Data3: -1187393100
+      Data4: -416318210
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
+  crownGemEvent:
+    Guid:
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

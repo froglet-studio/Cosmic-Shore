@@ -6,7 +6,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The arithmetic of the Quests window (<see cref="QuestsModal"/>, Frogma Rev 107 D, Docs/MENU_REDESIGN_B.md
-    /// sections 188 and 200): where each quest stands on the route, which of a quest's goals are done, and the colour a
+    /// sections 208 and 200): where each quest stands on the route, which of a quest's goals are done, and the colour a
     /// reward's prism is drawn in. Pure, so it is tested without a scene (QuestsRulesTests).
     /// </summary>
     public static class QuestsRules

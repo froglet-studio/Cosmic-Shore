@@ -41,6 +41,9 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class NcaCreatureFauna : Fauna, IVirtualPrismOwner, IVirtualPrismBudget
     {
+        /// <summary>A rider cannot steer this body (the Jewel Wasp, <see cref="IFaunaPossession"/>): no possession yet.</summary>
+        protected override bool CanBePossessed => false;
+
         const string AttributionName = "nca creature";
 
         [Header("NCA creature")]

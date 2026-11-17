@@ -13,7 +13,8 @@ namespace CosmicShore.Gameplay
     /// <c>R_VesselActions/STOAT_DIPOLE.md</c> §1c). Whenever this hull's pair annihilates — the field dipole let go
     /// (<see cref="StoatDipoleExecutor"/>), the orbit's pair closing after a slingshot (<see cref="StoatSlingExecutor"/>)
     /// — the meeting point throws out a space-time ripple, and as its FRONT sweeps outward it strips every rival vessel
-    /// and kills every creature it passes. Nothing else: it touches no prism.
+    /// and kills every creature it passes. Nothing else: it touches no prism. Every rival it strips is a scored
+    /// Debuff-class combat hit (<see cref="ReportHit"/>), which silences that rival and which a mode may pay.
     ///
     /// <para><b>Where it runs.</b> On every peer, from that peer's own copy of the pair: the dipole's copies all collapse
     /// (<c>StepCollapses</c>), the orbit's pair is laid on every peer from the replicated press and closes there. The
@@ -157,8 +158,12 @@ namespace CosmicShore.Gameplay
             bool known = victim.Player != null && _status.Player != null;
             if (!StoatRippleMath.Strips(isOwner, known, known ? victim.Domain : Domains.Blue, known ? _status.Domain : Domains.Blue))
                 return;
+            // A silenced Stoat takes nothing (SILENCE.md §3: a silenced pilot can neither score on nor take from anybody).
+            // Silence is published to every peer, so every peer's copy of this ripple refuses the same strips.
+            if (VesselSilence.IsSilenced(_status)) return;
             var resources = victim.ResourceSystem;
             if (!resources || config.PetalsPerElement <= 0) return;
+            ReportHit(victim);
             bool siphon = config.Siphons(_status);
             var mine = _status.ResourceSystem;
             var at = victimComponent.transform.position;
@@ -175,6 +180,30 @@ namespace CosmicShore.Gameplay
                     victim.PlayerName);
             }
             if (total > 0) PlayOneShot(config.StripEvent, at);
+        }
+
+        /// <summary>
+        /// The strip as a SCORED HIT (2026-11-15, for Shockfront; SILENCE.md: a scored hit and a petal theft are one
+        /// event). Decided on exactly one machine, the one that owns this Stoat: admitted through
+        /// <see cref="CombatHitDrain.TryAdmitPetals"/> as a <see cref="CombatHitClass.Debuff"/> priced in the petals the
+        /// ripple takes (one per element, so a ripple silences its rival for four seconds), then raised on the channel
+        /// StatsManager scores. A warded rival is neither scored on nor (by <c>AccrueElementalLoss</c>) robbed. The take
+        /// itself stays the ripple's own per-peer strip below, unchanged; a mode's rule decides whether the hit pays.
+        /// </summary>
+        void ReportHit(IVesselStatus victim)
+        {
+            if (!ElementalTransfer.IsDecidedHere(_status)) return;
+            if (_status.Player is { IsNetworkOwner: false }) return;
+            float petals = config.PetalsPerElement * StripElements.Length;
+            if (!CombatHitDrain.TryAdmitPetals(victim, _status, CombatHitClass.Debuff, config.HitCooldownSeconds,
+                    ElementalDebuffSources.Explosion, petals))
+                return;
+            config.OnCombatHitLanded.Raise(new CombatHitStats
+            {
+                ShooterName = _status.PlayerName,
+                VictimName = victim.PlayerName,
+                HitClass = CombatHitClass.Debuff,
+            });
         }
 
         /// <summary>The owner domain's LIGHT colour (the dipole's source core wears it), white without a palette.</summary>

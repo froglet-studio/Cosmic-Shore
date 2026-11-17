@@ -23,6 +23,41 @@ namespace CosmicShore.Gameplay
         protected virtual int InitDelayMs => 1000;
         private bool _isResetting;
 
+        [Header("Element ladder (I3 team crystals)")]
+        [Tooltip("Crystals of the game's element each team gets from I3 up (the standard element ladder, " +
+                 "ElementLadderCrystals; Garrett 2026-11-16). Each is taken only by its team and regrows. 0 turns the " +
+                 "rung off for this mode.")]
+        [SerializeField, Min(0)] int ladderCrystalsPerTeam = 4;
+
+        [Tooltip("Seconds after a team's ladder crystal is taken before it grows back in the same place.")]
+        [SerializeField, Min(0.5f)] float ladderCrystalRegrowSeconds = 12f;
+
+        /// <summary>The I3 rung's crystals per team (<see cref="ElementLadderCrystals"/>).</summary>
+        public int LadderCrystalsPerTeam => ladderCrystalsPerTeam;
+
+        /// <summary>The I3 rung's regrow delay (<see cref="ElementLadderCrystals"/>).</summary>
+        public float LadderCrystalRegrowSeconds => ladderCrystalRegrowSeconds;
+
+        /// <summary>
+        /// True for a mode that lays its own team crystals at I3 (Harvest, Shatterplane), so the platform's
+        /// <see cref="ElementLadderCrystals"/> stands down.
+        /// </summary>
+        public virtual bool LaysOwnLadderCrystals => false;
+
+        /// <summary>
+        /// Where the I3 rung puts <paramref name="team"/>'s <paramref name="count"/> crystals, drawn from
+        /// <paramref name="rng"/> (the same stream on every peer). Default: scattered through the cell between the
+        /// nucleus and the membrane. A mode with a better answer (a race: beside its rings) overrides it.
+        /// </summary>
+        public virtual void CollectLadderCrystalPoints(Domains team, int count, System.Random rng, List<Vector3> into)
+        {
+            var cell = FindAnyObjectByType<Cell>();
+            if (!cell) return;
+            float outer = cell.MembraneRadius * 0.8f;
+            float inner = Mathf.Min(outer * 0.5f, cell.NucleusWorldRadius * 1.5f);
+            ElementLadderCrystals.ScatterInShell(cell.transform.position, inner, outer, count, rng, into);
+        }
+
         /// <summary>
         /// When true, Play Again performs a full network scene reload instead of an in-place reset.
         /// Override to true in game modes where the environment doesn't fully reset in-place
@@ -316,6 +351,11 @@ namespace CosmicShore.Gameplay
             // OnValueChanged when the value actually changes, so it cannot fix a client that
             // drifted on its own.
             ZeroStatsForGameStartOnce();
+
+            // The standard element ladder's I3 rung: each team's own crystals of the game's element, laid locally and
+            // identically on every peer (ElementLadderCrystals; nothing below I3, on an arena card or in a mode that
+            // lays its own).
+            ElementLadderCrystals.EnsureOn(this, gameData).Lay();
 
             gameData.SetPlayersActive();
             gameData.StartTurn();
@@ -619,6 +659,9 @@ namespace CosmicShore.Gameplay
 
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsListening) return;
+
+            // A running turn has no gate to pass: it opened before the countdown and closes at the next turn.
+            if (gameData.IsTurnRunning) return;
 
             // Departed clients are pruned rather than trusted: the set is keyed on client id and a
             // stale entry would let the gate pass on behalf of somebody who is gone.

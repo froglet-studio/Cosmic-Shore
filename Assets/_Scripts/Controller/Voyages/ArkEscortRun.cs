@@ -143,8 +143,6 @@ namespace CosmicShore.Gameplay
             _context = context;
             _root = toyboxRoot;
             _onEnded = onEnded;
-            // Voyages fly the chase camera while the escort is out (Rev 114 F1); the sim (every seat AI) has no camera to frame.
-            VoyageChaseCamera.Attach(gameObject, () => _active && !_aiLocal, LocalVessel);
         }
 
         // ── Set sail ─────────────────────────────────────────────────────────
@@ -409,6 +407,11 @@ namespace CosmicShore.Gameplay
             {
                 _nextSample = Time.time + SampleSeconds;
                 Sample();
+            }
+            if (Time.time >= _nextStrikeScan)
+            {
+                _nextStrikeScan = Time.time + StrikeScanSeconds;
+                TickWildStrikes();
             }
             if (Time.unscaledTime >= _nextLeash)
             {

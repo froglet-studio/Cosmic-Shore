@@ -155,3 +155,81 @@ that instruction, and every commit says so.
   as the record of the clusters, under a note saying so.
 - **Still open:** `waystation_course.py --target` defaults to 24, and so do its harness and `WaystationCourseTests`.
   They exercise Garrett's cluster generator alone, which a ring target still sizes.
+
+## 6. Round 3: Lantern Towers (2026-11-11)
+
+Yash: make the Tiger Moth's Time game super fun, with everything learned from the other Time games (rounds 3 and 4 of
+`Docs/AI_SYSTEM/TIME_GAME_FUN_SCORES.md`). Waystation was upgraded in place; no new mode, no new id.
+
+**How it was decided.** Five readers (the kit today, the round 3-4 upgrades, the fun bar, the `/arcadegame` recipe, what
+a course can be built from), then three designs from three angles (verb-first, spectacle-first, rivals-first), judged by
+a player, an engineer and a rules/AI judge, then one spec. The spec (in the session notes, summarised here) took the
+verb-first design's **shelf** (the one feature that turns the hold into a decision), grafted on the spectacle design's
+**lanterns, in-world grading and crown gem**, and the rivals design's **AI fixes and proof hygiene**.
+
+**What it is.** WAYSTATION.md "Lantern Towers" has the whole of it. In one line: every hop stands between two lantern
+posts that end at the deepest landing that still recharges and rolls by the next press point; from I2 some hops are
+tight and their lanterns short; a deep landing lights its lanterns in your colour and a run of them the whole tower;
+at I4 a Time crystal on each plunge trades depth for +1 Time; the AI reads the same lanterns with a per-seat error.
+
+### What the measurement changed
+
+The spec put the lanterns at the depth the course was laid for, which keeps the 0.35 s reaction. Measured, that was
+worth almost nothing: a reading pilot saved 1.2 / 1.0 / -0.7 % of tower time at I2-I4 against the best fixed depth,
+because a fixed pilot simply spends the reaction margin (an "expert" landing at the hard edge saved 4-5 %, so the
+course carried the signal and the lanterns hid it). Moving the lanterns' foot to the shelf proper (recharged exactly at
+the next press) and widening I4's cut (0.75 share, 40-90 u) gave the numbers below. The judges had flagged exactly this
+risk ("if the strict saving falls, tune the share and cuts before adding any feature").
+
+`waystation_tower_course.py --sweep --seeds 200` (release on the nearest 60 fps frame, +-8 u carry; a miss costs one
+8 s turning circle). "Strict" is against the BEST fixed plan per rung (the best constant depth, or deep sideways and
+a constant down), not against today's AI:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Reading the lanterns saves (tower time, strict) | -0.5 % | **3.4 %** | **3.8 %** | **3.2 %** |
+| ... of the whole race (strict) | -0.2 % | 1.2 % | 1.1 % | 0.9 % |
+| ... of tower time against today's AI (the window's centre) | 18.1 % | 14.5 % | 12.8 % | 10.5 % |
+| An expert at the hard edge saves (strict, tower time) | 0.3 % | 4.8 % | 5.1 % | 5.3 % |
+| Best fixed depth on a down-hop | 250 u | 171 u | 180 u | 167 u |
+| A lantern reader's race (median, modelled) | 59.5 s | 85.5 s | 105.2 s | 126.5 s |
+| Today's AI on the OLD towers (median, modelled) | 61.9 s | 85.0 s | 110.4 s | 128.7 s |
+| The new AI: misses a race, deep landings | 0, 35 % | 0, 55 % | 0, 59 % | 0, 72 % |
+| Crown gems a race, new AI / reader | - | - | - | 2.8 / 0.0 |
+| Drop every (centre hops) | 5.1 s | 3.8 s | 3.7 s | 3.2 s |
+| Lantern segments / wall tiles a course (max) | 96 / 960 | 80 / 960 | 112 / 1,472 | 130 / 1,984 |
+
+I1 is every hop loose, so there is nothing to read (a fixed deep pilot is as good), as the ladder intends. A pilot who
+IGNORES the lanterns gets 1-2 more rings and up to 2.7 s more tower time at I2-I4 from the tight hops; one who reads
+them finishes as fast as or faster than today's pilot did on the old towers. The race clock is a model: cluster legs
+at cruise with a turn allowance, towers flown hop by hop; whole-race medians over the ~90 s target at I3/I4 were
+already there before this round.
+
+### Fun score
+
+| Vessel | Game | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun | Floor |
+|---|---|---|---|---|---|---|---|---|---|
+| Tiger Moth | Waystation, the Drop Tower course (before) | 9 | 7 | 7 | 5 | 3 | 4 | **5.8** | 3 Rivals |
+| Tiger Moth | **Waystation, Lantern Towers** (est. 2026-11-11) | 9 | 8 | 8 | 6 | 4 | 4 | **6.5** | 4 Rivals/Fairness |
+
+- **Verb 9 -> 9.** The kit is unchanged; the hold is now a depth you choose per hop, priced by the next ring.
+- **Flow 7 -> 8.** The lanterns show where to let go before you press, so the next decision is always in front of you;
+  tight hops pack the towers (a Drop every 3.2-3.8 s at I2-I4, from 3.9-4.5). The clusters and the bare gaps are unchanged.
+- **Ladder 7 -> 8.** One demand per rung: hold into the lanterns (I1), read their length (I2), roll gates (I3, existing),
+  the gem (I4). Reading pays from I2 and is measured.
+- **Feedback 5 -> 6.** Every graded hop lights in the world; streaks light the tower. Capped at 6: the seven sound slots
+  ship empty, and the clusters gained nothing.
+- **Rivals 3 -> 4.** The AI reads the lanterns, holds at its live speed, releases on the nearest frame, turns round after
+  an overshoot instead of flying away, and four seats differ; its landing budget is a tested invariant. Never flown.
+- **Fairness 4 -> 4.** A dust-stolen tile no longer gets a Blue tile stacked on it, and the grade allows a frame; but
+  tight hops add a way to miss from I2, and a miss still costs a loop (about 8 s). Unplayed.
+
+### Still open after this round
+
+- **Never compiled by Unity or flown** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Waystation's Lantern Towers").
+- **Race length.** The model's whole-race medians (table above) are over the ~90 s target at I3 and I4, as they were
+  before this round (the Drop Tower doc estimated 92 s and 105 s, "optimistic"). Tight hops cost a pilot who ignores the lanterns up to 2.7 s of tower time; a reader gains it back.
+  If people's I3/I4 races run long, the lever is the cluster count per rung (`waystationClusterTarget`), Garrett's call.
+- **The wormhole rule's wording.** `TIGER_MOTH.md` and the Drop SO's tooltip say only a drop paying the FULL recharge
+  leaves a pair; the code measures press-to-landed distance, so a pair appears from a fall of about 779 u. Noted in
+  `TIGER_MOTH.md` §1 for the vessel's owner; the code is not changed.

@@ -65,21 +65,21 @@ namespace CosmicShore.Gameplay
         {
             if (!IsTracking || Vessel?.PlayerName != playerName) return;
             PrismBlocksShot++;
-            prismBlocksShotStat?.Raise(PrismBlocksShot);
+            Publish(prismBlocksShotStat, PrismBlocksShot);
         }
 
         private void HandleSkyburstFired(string playerName)
         {
             if (!IsTracking || Vessel?.PlayerName != playerName) return;
             SkyburstMissilesShot++;
-            skyburstMissilesShotStat?.Raise(SkyburstMissilesShot);
+            Publish(skyburstMissilesShotStat, SkyburstMissilesShot);
         }
 
         private void HandleDangerBlockSpawned(string playerName)
         {
             if (!IsTracking || Vessel?.PlayerName != playerName) return;
             DangerBlocksSpawned++;
-            dangerBlocksSpawnedStat?.Raise(DangerBlocksSpawned);
+            Publish(dangerBlocksSpawnedStat, DangerBlocksSpawned);
         }
     }
 }

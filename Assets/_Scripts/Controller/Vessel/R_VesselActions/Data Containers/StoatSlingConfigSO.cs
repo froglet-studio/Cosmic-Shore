@@ -153,21 +153,67 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds past the full window over which the kick eases (smoothstep) down to missKickShare.")]
         [SerializeField, Range(0.05f, 3f)] float exitWindowFalloffSeconds = 0.4f;
 
+        [Header("Time mode - the SWING (Yash, 2026-11-11: a black hole again, the angle from the stick; replaces the rest while on)")]
+        [Tooltip("On: a press lays a lone, small BLACK HOLE ahead on the pressed side - no white hole, no orbit. Pass beside it " +
+                 "and it swings you round it, toward itself, until you have turned the angle the stick asks (toward the hole the " +
+                 "most, away the least, at rest the middle), then throws you off with the kick. Letting go of the trigger while it " +
+                 "swings you throws you at once. Off: the trampoline, the skim or the orbit below.")]
+        [SerializeField] bool swing = true;
+
+        [Tooltip("How far ahead of the hull the black hole is laid, world units.")]
+        [SerializeField, Range(40f, 400f)] float swingAhead = 150f;
+
+        [Tooltip("How far to the pressed side of your line the black hole is laid, world units: flying on, you pass it this close.")]
+        [SerializeField, Range(5f, 150f)] float swingSide = 35f;
+
+        [Tooltip("The black hole's horizon, world units: its size on screen (the orbit's poles are 1.6).")]
+        [SerializeField, Range(0.2f, 10f)] float swingHorizon = 0.8f;
+
+        [Tooltip("The swing starts once you are this close to the hole, world units (× Space's reach)...")]
+        [SerializeField, Range(10f, 300f)] float swingReach = 70f;
+
+        [Tooltip("...and the hole is at least this far off your nose, degrees (you are passing beside it, not flying into it).")]
+        [SerializeField, Range(0f, 90f)] float swingCatchDegrees = 40f;
+
+        [Tooltip("The least a swing turns you, degrees: the stick held away from the hole.")]
+        [SerializeField, Range(0f, 180f)] float swingMinDegrees = 15f;
+
+        [Tooltip("The most a swing turns you, degrees: the stick held toward the hole. At rest, the middle.")]
+        [SerializeField, Range(0f, 180f)] float swingMaxDegrees = 90f;
+
+        [Tooltip("The fastest a swing turns you, degrees a second (it turns at your speed over your distance from the hole, up " +
+                 "to this): slower is easier to aim with the stick.")]
+        [SerializeField, Range(30f, 720f)] float swingDegreesPerSecond = 200f;
+
+        [Tooltip("Seconds a black hole nobody swings round stays up.")]
+        [SerializeField, Range(0.5f, 15f)] float swingSeconds = 4f;
+
+        [Tooltip("The autopilot lets a swing throw it once it faces its target within this many degrees (after swingMinDegrees), " +
+                 "or at swingMaxDegrees: its stick picks the angle toward its target.")]
+        [SerializeField, Range(1f, 45f)] float aiSwingFaceDegrees = 8f;
+
+        [Tooltip("Played when a swing starts. Empty = silent.")]
+        [SerializeField] EventReference swingStartEvent;
+
+        [Tooltip("Played when a swing throws you off (the kick). Empty = silent.")]
+        [SerializeField] EventReference swingFlingEvent;
+
         [Header("Time mode - the TRAMPOLINE (Yash, 2026-11-04: replaces the orbit while on)")]
         [Tooltip("On: a press lays a lone WHITE HOLE ahead with a soft shell round it - no black hole, no orbit. Touch the shell " +
                  "and it gives like a trampoline and throws you off, the kick added. Where you touch it decides where you go: " +
                  "a graze turns you a little, deeper turns you more. RT bounces you right, LT left. Off: the orbit below.")]
-        [SerializeField] bool trampoline = true;
+        [SerializeField] bool trampoline = false;
 
         [Tooltip("How far ahead the white hole is laid, world units, along the line you are flying (your turn carried on).")]
         [SerializeField, Range(40f, 400f)] float trampolineAhead = 140f;
 
-        [Tooltip("The soft shell's radius, world units, × Space's reach (orbitReach).")]
-        [SerializeField, Range(10f, 200f)] float trampolineRadius = 60f;
+        [Tooltip("The soft shell's radius, world units, × Space's reach (orbitReach). 30 since 2026-11-07 (was 60: \"it moves " +
+                 "the vessel too much\"): a smaller shell is relatively softer, so it turns you less.")]
+        [SerializeField, Range(10f, 200f)] float trampolineRadius = 30f;
 
         [Tooltip("How far to the side, as a share of the radius, the shell is laid off your line (away from the bounce): flying " +
-                 "on, you graze it there. 0.75 turns you about 37-51 degrees at 120-190 u/s; less turns you more (0 = head-on, " +
-                 "straight back).")]
+                 "on, you graze it there. On the 30 u shell 0.75 turns you about 17-30 degrees at 120-190 u/s; less turns you " +
+                 "more (0 = head-on, straight back).")]
         [SerializeField, Range(0f, 0.95f)] float trampolineLine = 0.75f;
 
         [Tooltip("How soft the shell is: seconds a head-on bounce lasts (the spring is (pi / this)^2). More is softer and deeper.")]
@@ -180,8 +226,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 180f)] float trampolinePredictDegrees = 90f;
 
         [Tooltip("The autopilot grazes as deep as the turn it wants: share off the centre = 1 - turn / this (stoat_orbit_sim.py " +
-                 "--trampoline chose 100).")]
-        [SerializeField, Range(40f, 300f)] float trampolineAiTurnScale = 100f;
+                 "--trampoline chose 100 for the 60 u shell, 55 for the 30 u one).")]
+        [SerializeField, Range(40f, 300f)] float trampolineAiTurnScale = 55f;
 
         [Tooltip("Played when the hull touches the shell. Empty = silent.")]
         [SerializeField] EventReference trampolineTouchEvent;
@@ -385,6 +431,19 @@ namespace CosmicShore.ScriptableObjects
         public float ExitWindowFalloffSeconds => Mathf.Clamp(exitWindowFalloffSeconds, 0.05f, 3f);
         /// <summary>The last second of the aimed exit's full window: the AI lets go by then.</summary>
         public float ExitWindowEndSeconds => ExitWindowSeconds + ExitWindowHalfSeconds;
+        public bool Swing => swing;
+        public float SwingAhead => Mathf.Clamp(swingAhead, 40f, 400f);
+        public float SwingSide => Mathf.Clamp(swingSide, 5f, 150f);
+        public float SwingHorizon => Mathf.Clamp(swingHorizon, 0.2f, 10f);
+        public float SwingReach => Mathf.Clamp(swingReach, 10f, 300f);
+        public float SwingCatchDegrees => Mathf.Clamp(swingCatchDegrees, 0f, 90f);
+        public float SwingMinDegrees => Mathf.Clamp(Mathf.Min(swingMinDegrees, swingMaxDegrees), 0f, 180f);
+        public float SwingMaxDegrees => Mathf.Clamp(Mathf.Max(swingMinDegrees, swingMaxDegrees), 0f, 180f);
+        public float SwingDegreesPerSecond => Mathf.Clamp(swingDegreesPerSecond, 30f, 720f);
+        public float SwingSeconds => Mathf.Clamp(swingSeconds, 0.5f, 15f);
+        public float AiSwingFaceDegrees => Mathf.Clamp(aiSwingFaceDegrees, 1f, 45f);
+        public EventReference SwingStartEvent => swingStartEvent;
+        public EventReference SwingFlingEvent => swingFlingEvent;
         public bool Trampoline => trampoline;
         public float TrampolineAhead => Mathf.Clamp(trampolineAhead, 40f, 400f);
         public float TrampolineRadius => Mathf.Clamp(trampolineRadius, 10f, 200f);

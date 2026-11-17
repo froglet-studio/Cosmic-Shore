@@ -36,7 +36,7 @@ section here. The build that follows a pick is verified against the picked board
 | Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept) and on 2026-11-16 (Rev 100, 103, 108 and 111 taken off for room, copies kept; section 210); the board now holds Rev 113 (section 209); before that it held now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203; Rev 111 Full, P2A and P3A built in section 204), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
 | Voyages playtest | `voyages-playtest` | What the first Milestone 1 playtest asked for: four options each for the crew screen, the intro, the objective box, the toasts and the feel in flight (Rev 114), and your Ark with its seat picker five ways (Rev 115) | Shombith, 2026-11-16 (sections 210, 211) |
 | Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
-| Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 187) |
+| Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 207) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -4098,8 +4098,10 @@ menu"; (2026-11-12): "Lets get them into the game. update the avatars, and use t
 profile page in the ark."
 - **A fourth open tab, PILOTS**, between SQUADS and ARTIFACTS (`ArkPilotsPage`): the crew in the order they joined, one
   cell a pilot (a `SquadPickChip`, the Squads tab's own) with the close-up of their callsign's scene, their name and
-  their callsign. A crew holds at most one pilot a callsign (`Docs/Pilots/INVENTORY.md` 3.1), so the tab has one cell a
-  callsign (18, six by three), needs no scrolling and starts right of the friends orb. "Your crew" and "Pilots: {count}"
+  their callsign. The tab shows eighteen cells a page (six by three), starts right of the friends orb and needs no
+  scrolling; since 2026-11-16 the crew is all fifty painted pilots, callsigns shared ("lets get all 50 into the game"),
+  so "<" and ">" with "1 / 3" (`pageTemplate`) step through the pages on the caption row, shown only while the crew
+  fills more than one. The Hangar's PILOTS list has a card for every painted pilot and shows each person's close-up. "Your crew" and "Pilots: {count}"
   are the caption; an empty crew says so. Every word is on the component or the prefab.
 - **A press opens the pilot's PROFILE PAGE** (`PilotProfileModal`, `ModalWindows.PILOT_PROFILE = 21`,
   `ScreenSwitcher.OpenPilotProfile(pilotId)`): the pilot's 1536x864 scene across the whole screen (`PilotSceneImage`:
@@ -4116,8 +4118,8 @@ profile page in the ark."
   for a recruit, until each person has art, does the panel's last line say who is pictured (`picturedTemplate`,
   "Pictured: {painted}, the first {callsign}"; blank it to drop the line).
 - **One scene in memory.** A scene is loaded by name when its pilot is drawn and unloaded when the next is shown or the
-  closed page has faded. The eighteen scenes are in `Assets/Resources/Pilots/Scenes/` (`author_pilot_scene_assets.py`,
-  9.0 MB of JPG), 32 px stand-ins on WebGL.
+  closed page has faded. All fifty scenes are in `Assets/Resources/Pilots/Scenes/` (`author_pilot_scene_assets.py`), 32 px
+  stand-ins on WebGL.
 - **Measured, outside Unity.** The longest story `PilotGenerator` can compose is 14 lines of the story's 15.6, and the
   widest name fits the page's name row and a crew cell (360,000 rolls and the generator's tables, in the UI font). The
   page's cut (`PilotSceneImage.Frame`) was run under plain .NET on all eighteen scenes at 21:9, 19.5:9, 16:9, 16:10,
@@ -4129,7 +4131,10 @@ profile page in the ark."
   alpha 0.88, the Credits window's dim, and **the game blends in linear light** (`m_ActiveColorSpace: 1`): a plate at
   alpha a lets through (1 - a) of the picture's light, so a white sky under 0.88 is still sRGB 97 and the quiet lines
   (NeutralLightest) stood at 1.5:1. A web drawing blends in sRGB and had shown the same plate near black. The plates
-  are solid now, and the layout tool computes each plate's contrast over a white picture in linear light for both
+  were made solid; on 2026-11-16 the words panel's plate went to alpha 0.9 (Garrett: "the text story background doesn't
+  need to be black. a tiny bit of transparency would mean not throwing away the nice art behind it") with every row in
+  TextLight, which keeps 5.8:1 over a white picture in linear light (NeutralLightest would fall to 1.7:1); the stepper and
+  Close plates stay solid. Otherwise the plates are solid, and the layout tool computes each plate's contrast over a white picture in linear light for both
   colours words are drawn in (4.5:1 or it fails). The engine is not Unity: it does not draw the menu's sea material
   and sets a paragraph's lines closer (17.6 against the kit's 23.2 at Body).
 - **The pad stays on the page.** NEXT, PREVIOUS and CLOSE steer it themselves (explicit navigation, `WAYS` in the
@@ -8066,70 +8071,109 @@ gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; 
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 
-## 187. Rev 101 mockups: Quests as a screen of its own - star chart, quest log, route (2026-11-13; Shombith: mix B and C with a reward, section 188)
+## 187. Rev 112 mockups: colour sets for a growing catalog - a world preview, one scrolling list, Free and Premium apart (2026-11-14; Shombith picked D)
 
-**Asked (Shombith, 2026-11-13):** "Remove the quest from inside the voyages. Quest should be a seperate screen with its
-own interactive UI not inside this itself."
+**Asked (Shombith, 2026-11-14):** "Color sets we do need to change how they look, we will be making multiples of them so
+scrolling or clicking through each one is not an option. [...] We need a preview to show what the color set changes to
+depict the world of our game, We need a scrollable list with differentiation between free and the other type, lets use
+the whole place not leave a big empty space in the middle." Then, on the first draft's vessels tile: "Should look like
+actual vessel icons with actual prism trails with the supported color."
 
-**On the canvas:** a new tab **Quests** (`quests`), round "Rev 101 - Quests as a screen of its own" (canvas version
-`1794608105-c3b6`). Copies: `Docs/MenuRedesignB/board/R101*.dc.html`. Generator:
-`Docs/MenuRedesignB/rounds/r101_quests.py` (the kit is lifted from Rev 90's Quests board). All boards pass
-`frogma.py check --only R101`; they were rendered locally (the canvas art stood in by the repo's card backgrounds) at rest
-and after Claim and Play quest, and looked at before publishing.
+**On the canvas:** tab Menu Redesign A, section "Rev 112 - Colour sets for a growing catalog" (version
+`1794681676-3efd`). Copies in `Docs/MenuRedesignB/board/R112*.dc.html`, drawn by
+`Docs/MenuRedesignB/rounds/r112_colour_sets_catalog.py <root> 112`. All fourteen sets of `ColorSetCatalog.asset` (name,
+line, pigments, vision), every colour from its shipped `SO_ColorSet`. Every option shows the picked set's world (prisms
+in depth, three vessels with their prism trails, a crystal) and four tiles of what the set repaints: **Prisms** (four
+domains x three shields), **Vessels and trails** (the in-game vessel icons, each `SO_Class_<Hull>.IconActive` -
+Squirrel, Sparrow, Dolphin, Manta, one per domain - multiplied by the set's vessel colour, each leaving a line of
+rim-over-face prisms), **Crystals**, **Menus** (an approximation of `ColorSetUITheme`).
+- **R112Compare:** the four layouts as diagrams, a Free and a Premium row side by side, what each mark says, the four tiles.
+- **R112A Stage and list (recommended, interactive):** a scrolling list on the left (Free, Colour vision, Premium);
+  the world and the four tiles fill the right. Eight sets in view, every one a press away, nothing empty.
+- **R112B Wall (interactive):** the world and the tiles across the top; every set a tile in a scrolling wall below,
+  with All / Free / Premium. Scales furthest once the catalog passes thirty.
+- **R112C Two shelves (interactive):** Free down the left, Premium down the right, the world between.
+- **R112D The real cell (interactive):** the world is the whole screen (as the built Showroom); a docked list right
+  with All / Free / Premium; the tiles along the foot.
+- **R112Notes:** what was asked, the four, Free vs Premium, Unity, decisions.
 
-Every option is the whole window over Home (hub band, "Quests", Back), on the same content: Episode 1 The Hypersea, its
-five quests in order (Scurry, Skim Race, Joust, Maelstrom, Vessel Hangar), each one's two goals and the step each opens,
-and what its claim opens. Claim works, and on the board Play quest counts a goal done, so the whole chain can be clicked
-through. Ready to claim is Lime; the picked quest is the one Jade line. The one motion: on Claim the line to the next
-quest draws in (A and C). Episode 2 is one "Coming soon" line.
+**Free and Premium:** Free is Nocturne, Photic and the six colour-vision sets (under their own heading, never a reward,
+section 126.3): a plain "Free" and a quiet edge. Premium is the other six: a gold edge, "Owned" or the crystal and its
+price, and the action turns into the gold purchase button (Unlock). Lime stays the one call to action (Apply). Prices
+and Dart Frog owned are sample values.
 
-- **A Star chart (recommended):** the quests are stars on the HyperSea, joined by the current that opens them; the
-  picked star's art, goals as a ladder, what its claim opens and the button stand on the right. The most its own, and
-  the HyperSea theme without a second live map.
-- **B Quest log:** a calm list with the episode's meter on the left, the open quest's art and goals large in the middle,
-  what the claim opens in its own column.
-- **C Route:** the episode as one course across the screen, each quest's art over its station; the goals run as
-  checkpoints under it.
-- **Compare:** one quest's goals and claim in each option (Joust ready to claim; Maelstrom one goal of two).
-- **Notes.**
+**Differs from the build (section 126):** the Showroom's two three-tile rails with < > become one scrolling list (or a
+wall); the type is marked on every row; a set's preview adds the four "what it repaints" tiles beside the cell.
 
-**Open question:** whether Quests also gets a place on the top band; not drawn, the band is shared by every screen.
+**Gates:** `frogma.py check --only R112` OK. `check_mockup.py`: the CTA gate passes (one Lime action per board); colour,
+type and noise fail as the inherited Rev 51/54 kit and a fourteen-set list do (the set pigments are data, not tokens).
 
-**Differs from the build:** the quest track is the Voyage window's Quests tab (the Rev 90 tilted table, section 172).
-Any pick takes the Quests tab out of `VoyageWindowTabs` and opens a Quests window from Home's quest card (the shape
-section 151 built and section 159 reverted), drawing `QuestFrontier`'s states and `QuestTrackView`'s claim. The goals
-are the quest assets' `Intensity3GoalDescription` / `Intensity4GoalDescription`; "HEX RACE" is shown as Skim Race.
+**Decisions waiting:** which option; the word for the other type (Premium as drawn, Earned, or Store) and how it is
+unlocked (crystals, a quest as in Rev 107); whether the tiles animate (a prism shielding, a trail laid) or stay still.
 
+**Picked (Shombith, 2026-11-14):** "I like D, bring the sea lines in the card backgrounds and don't name it Free but Color
+Blind supported (Free) that's all." Then: "Make this into unity". R112D was changed in place on that word (canvas
+version `1794681928-7fe0`; A, B and C are as first published): the menu's sea lines behind every list card and every
+tile; the colour-vision group, its filter and the stage's type line read "Color Blind supported (Free)" (its filter
+shows only those six); Nocturne and Photic sit under "Yours from the start", shown under All; no row says a bare "Free".
 
-## 188. Rev 107 mockups: Quests - B and C mixed, a colour set as each quest's reward, no episode (2026-11-13; Shombith picked D, built in section 200)
+## 188. Built: Rev 112 D, the Colour sets list over the real cell (2026-11-14, NOT RUN IN EDITOR)
 
-**Asked (Shombith, 2026-11-14, on Rev 101):** "Maybe mix up B and C but also there should be a section showing the
-reward. We are thinking of color sets to be rewards for each quests. And dont name it Episode 1, its just quest."
+Shombith: "Make this into unity" (section 187). It replaces section 126's Showroom rails; the tabs, the cell preview,
+APPLY's veil and the Settings breadcrumb stay.
+- **One list that grows with the catalog.** `ProfileColorSetsPanel` clones the inactive template row
+  (`ColorSetRowView`) once per catalog entry under its group's heading: Yours from the start, Color Blind supported
+  (Free), Premium (`ColorSetCatalogSO.KindOf`). Filters All / Color Blind supported (Free) / Premium with counts. A new
+  set in the catalog needs no prefab change. The pad moving onto a row previews it and scrolls it into view
+  (`KitScrollIntoView`).
+- **Premium is real.** The catalog entry has a crystal `price` (the board's sample prices, seeded by
+  `author_colour_set_catalog.py`, edited in the inspector after). UNLOCK spends them through
+  `PlayerDataService.TryUnlockColorSet` and keeps the set as the reward `colorset:<id>`; `ColorSetCatalogSO.IsPickable`
+  asks it. Every set is still `unlocked` (2026-11-05), so today every Premium set reads Owned.
+- **What it repaints**, four tiles painted from the set shown: prisms in three shields; the Squirrel, Sparrow, Dolphin and
+  Manta icons (`SO_Class_*.IconActive`) tinted with the domain's vessel colour, each at the head of five prisms; crystals
+  in the set's call to action; a menu mock in the set's UI theme (`ColorSetUITheme.Build`).
+- **Sea lines in every card** (Sea_Panel.mat on each row and tile), and no bare "Free" anywhere (the generator's gate).
+- New prism and eye glyphs: `Tools/Build/author_colour_set_glyphs.py` (white, tinted at run time).
+- Gates: `author_menu_profile.py` validates the page whole, with five new negative controls. Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not seen in Unity: no editor in this session.
+- Open: a set bought before the profile loads could be dropped as the saved pick at boot (`ThemeManager` reads the pick in
+  `Awake`); harmless while every set is unlocked.
 
-**On the canvas:** tab **Quests**, round "Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no
-episode" (canvas version `1794608786-849b`). Copies `Docs/MenuRedesignB/board/R107*.dc.html`; generator
-`Docs/MenuRedesignB/rounds/r107_quests.py` (runs on Rev 101's kit and data). All pass `frogma.py check --only R107` and
-were rendered locally and looked at.
+## 189. Fix: Rev 112 D in the editor - the world behind the page, real vessel icons, the Codex's crystals (2026-11-14, NOT RUN IN EDITOR)
 
-- **D Route on top (recommended):** C's course across the top with each quest's art; below it, side by side, the
-  quest and its goals (B's ladder), the reward (the colour set's six domains as prisms in a row) and Claim.
-- **E Route as the list:** B's list made C's course, down the left, each station naming its reward; the quest large in
-  the middle with its goals as checkpoints; the reward as a tall column of prisms (three by two) beside Claim.
-- **Compare:** the reward drawn three ways (a row of prisms, three by two, six bands).
-- **Notes.**
+Shombith, on section 188 in Unity: "Vessel Icons dont show up", "Where is the whole background preview image?", "Show
+the actual 2D omnicrystal and elemental crystals from the ecology tab".
+- **Vessel icons.** The generator passed a whole sprite reference where `sprite_ref` takes a bare guid, so the four
+  `IconActive` sprites never resolved and drew as tinted squares. Fixed; `validate_colour_sets` now asserts every icon
+  and crystal sprite resolves, with a negative control.
+- **The world behind the page.** The real cell under a 55 % veil and a solid band read as an empty dark screen. The
+  board's world is now drawn in the UI behind the page (`ColourSets/World`, `world_layout()`, the board's seed): the
+  sea at 80 %, each domain's glow (`kit_ring_glow`), 46 prisms in depth, and the Squirrel, Sparrow and Dolphin flying
+  their prism trails, every colour painted from the browsed set (`ProfileColorSetsPanel.PaintWorld`). The real cell,
+  which wears the set too, still moves faintly behind it. About 400 UI images, drawn only while the page shows.
+- **Crystals.** The tile shows the Codex's own renders (`Assets/_Graphics/Codex/ethirion_*.png`, its Elements page): the
+  Omni crystal among Charge, Mass, Space and Time, as they are drawn (not tinted).
 
-**Rewards (a proposal):** Scurry Ukiyo-e, Skim Race Dusk, Joust Neon Noir, Maelstrom Blue-ringed Octopus, Vessel Hangar
-Nacre; swatches from `Docs/VesselModels/colour_sets.json`. Nocturne (the default) and the accessibility sets are kept free.
-A prism is drawn with the face colour as its body and the rim colour as its edge. No "Episode": the header is Quests
-with "2 of 5 claimed" and its meter. Claim's step reads "Unlocks <set>"; the next quest it opens is a line by the button.
+## 190. Fix: Rev 112 D's tiles - hulls and prisms that read, on their trails (2026-11-14, NOT RUN IN EDITOR)
 
-**Differs from the build:** as section 187, plus a reward per quest: `SO_UnlockData` has no reward field, so a pick needs
-one (a colour set reference) and the claim to grant the set (Garrett's colour sets, `/colour-set`).
+Shombith, on section 189 in Unity: "Because of the card backgrounds the vessels and prisms do not show up and also pretty
+sure the vessel and prisms are not aligned".
+- **The turn was about the wrong point.** Every rotated prism and hull was laid out top-left-pivoted (`TL`), and a
+  RectTransform turns about its pivot, so each swung off its place around its corner: the trails missed their hulls,
+  the world's prisms and the row thumbnails drifted too. Rotated nodes now pivot at their centre (`centred`), and
+  `validate_colour_sets` fails on any turned node that does not (a new negative control).
+- **Each hull on its own line.** The icons are not all drawn at one angle: each one's nose and centre are measured from
+  its alpha (`ICON_POSE`: Squirrel 28, Sparrow 15, Dolphin 25 degrees; the Manta by eye, its blobs give no axis), so a
+  hull is turned onto its trail's heading and placed by its centre just past the newest prism.
+- **They read now.** The hulls draw with `Hull_Lit.mat` (the arcade cards' lift and white rim for the near-black renders),
+  times the domain's vessel colour, in the tile and the world; the tiles' sea lines sit at 35 % so the content leads.
+  The tile's trail is four prisms, larger (11 x 25), the hulls 60.
 
 ## 200. Built: the Quests window - Rev 107 D (2026-11-13, claude/project-thread-ytvai5, not seen in Unity)
 
-**Asked (Shombith, 2026-11-13):** "Lets go D we can build this in unity now", on section 188. Quests leaves the Voyage
-window for a window of its own (section 187: "Quest should be a seperate screen with its own interactive UI").
+**Asked (Shombith, 2026-11-13):** "Lets go D we can build this in unity now", on section 208. Quests leaves the Voyage
+window for a window of its own (section 207: "Quest should be a seperate screen with its own interactive UI").
 
 **Built:**
 - **The window:** `QuestsModal` (`Assets/_Scripts/UI/Modals/`), a `ModalWindowManager` built in code with the Voyage
@@ -8144,7 +8188,7 @@ window for a window of its own (section 187: "Quest should be a seperate screen 
   set's name, "Colour set", the catalog's line, a prism per domain with the face colour as the body and the rim colour as
   the edge, and its state), and what the claim also opens over the one button, Claim or Play quest (to the Arcade).
   Pressing a station picks it; every visit opens on the quest to play or claim next. No episode is named.
-- **The rewards:** `SO_UnlockData.RewardColorSet`, set on the five quests as proposed in section 188 (Scurry Ukiyo-e,
+- **The rewards:** `SO_UnlockData.RewardColorSet`, set on the five quests as proposed in section 208 (Scurry Ukiyo-e,
   Skim Race Dusk, Joust Neon Noir, Maelstrom Blue-ringed Octopus, Vessel Hangar Nacre).
 - **The Voyage window:** its Quests tab is gone (`VoyageWindowTabs.Drop<QuestTrackView>()`, generic so Saga and
   Episodes can leave the same way); the other tabs keep their indexes.
@@ -8419,6 +8463,65 @@ Shombith asked for three more fixes:
 - **The Ark's seats.** Each seat card has a blue (the worn set's cyan) glow along its edges (`VoyageEdgeGlow`), brighter on your own. No seat is "open" any more: you, then the friends in your lobby in the seats after yours, then an AI wingmate in every seat left (`VoyageRules.FriendAt`), each AI seat tagged "AI". A squad member who is not in your lobby reads "AI flies for {name} until they join". The way between your squad and no squad is always there ("Fly a squad instead" / "Fly without a squad").
 - **Friends fly their seats.** The voyage (and the Ark escort) releases AI wingmates only in seats no connected friend flies, by the same rule, so three friends in a lobby sail as three players, as in Arena. Queued for Garrett's `/approve` (his voyage runs).
 
+## 207. Rev 101 mockups: Quests as a screen of its own - star chart, quest log, route (2026-11-13; Shombith: mix B and C with a reward, section 208)
+
+**Asked (Shombith, 2026-11-13):** "Remove the quest from inside the voyages. Quest should be a seperate screen with its
+own interactive UI not inside this itself."
+
+**On the canvas:** a new tab **Quests** (`quests`), round "Rev 101 - Quests as a screen of its own" (canvas version
+`1794608105-c3b6`). Copies: `Docs/MenuRedesignB/board/R101*.dc.html`. Generator:
+`Docs/MenuRedesignB/rounds/r101_quests.py` (the kit is lifted from Rev 90's Quests board). All boards pass
+`frogma.py check --only R101`; they were rendered locally (the canvas art stood in by the repo's card backgrounds) at rest
+and after Claim and Play quest, and looked at before publishing.
+
+Every option is the whole window over Home (hub band, "Quests", Back), on the same content: Episode 1 The Hypersea, its
+five quests in order (Scurry, Skim Race, Joust, Maelstrom, Vessel Hangar), each one's two goals and the step each opens,
+and what its claim opens. Claim works, and on the board Play quest counts a goal done, so the whole chain can be clicked
+through. Ready to claim is Lime; the picked quest is the one Jade line. The one motion: on Claim the line to the next
+quest draws in (A and C). Episode 2 is one "Coming soon" line.
+
+- **A Star chart (recommended):** the quests are stars on the HyperSea, joined by the current that opens them; the
+  picked star's art, goals as a ladder, what its claim opens and the button stand on the right. The most its own, and
+  the HyperSea theme without a second live map.
+- **B Quest log:** a calm list with the episode's meter on the left, the open quest's art and goals large in the middle,
+  what the claim opens in its own column.
+- **C Route:** the episode as one course across the screen, each quest's art over its station; the goals run as
+  checkpoints under it.
+- **Compare:** one quest's goals and claim in each option (Joust ready to claim; Maelstrom one goal of two).
+- **Notes.**
+
+**Open question:** whether Quests also gets a place on the top band; not drawn, the band is shared by every screen.
+
+**Differs from the build:** the quest track is the Voyage window's Quests tab (the Rev 90 tilted table, section 172).
+Any pick takes the Quests tab out of `VoyageWindowTabs` and opens a Quests window from Home's quest card (the shape
+section 151 built and section 159 reverted), drawing `QuestFrontier`'s states and `QuestTrackView`'s claim. The goals
+are the quest assets' `Intensity3GoalDescription` / `Intensity4GoalDescription`; "HEX RACE" is shown as Skim Race.
+
+
+## 208. Rev 107 mockups: Quests - B and C mixed, a colour set as each quest's reward, no episode (2026-11-13; Shombith picked D, built in section 200)
+
+**Asked (Shombith, 2026-11-14, on Rev 101):** "Maybe mix up B and C but also there should be a section showing the
+reward. We are thinking of color sets to be rewards for each quests. And dont name it Episode 1, its just quest."
+
+**On the canvas:** tab **Quests**, round "Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no
+episode" (canvas version `1794608786-849b`). Copies `Docs/MenuRedesignB/board/R107*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r107_quests.py` (runs on Rev 101's kit and data). All pass `frogma.py check --only R107` and
+were rendered locally and looked at.
+
+- **D Route on top (recommended):** C's course across the top with each quest's art; below it, side by side, the
+  quest and its goals (B's ladder), the reward (the colour set's six domains as prisms in a row) and Claim.
+- **E Route as the list:** B's list made C's course, down the left, each station naming its reward; the quest large in
+  the middle with its goals as checkpoints; the reward as a tall column of prisms (three by two) beside Claim.
+- **Compare:** the reward drawn three ways (a row of prisms, three by two, six bands).
+- **Notes.**
+
+**Rewards (a proposal):** Scurry Ukiyo-e, Skim Race Dusk, Joust Neon Noir, Maelstrom Blue-ringed Octopus, Vessel Hangar
+Nacre; swatches from `Docs/VesselModels/colour_sets.json`. Nocturne (the default) and the accessibility sets are kept free.
+A prism is drawn with the face colour as its body and the rim colour as its edge. No "Episode": the header is Quests
+with "2 of 5 claimed" and its meter. Claim's step reads "Unlocks <set>"; the next quest it opens is a line by the button.
+
+**Differs from the build:** as section 207, plus a reward per quest: `SO_UnlockData` has no reward field, so a pick needs
+one (a colour set reference) and the claim to grant the set (Garrett's colour sets, `/colour-set`).
 ## 209. Rev 113 mockups: Voyages Milestone 1, Escort the Ark and Crystal Run end to end (2026-11-16; Lobby, Crew, the toasts and the in-flight HUDs liked)
 
 **Asked** (Shombith, 2026-11-16): "When I go to app shell I am confused as select your squad or use the lobby approach. For
@@ -8566,6 +8669,11 @@ finding why the intro and toasts did not show.
 them in the game". So: the crew screen B (C2, pilot first); the objective strip A (O1, 420 px); the intro Departure (the
 IAB board, read as its option A); the chase camera (F1). No toast option was picked: the Rev 113 band stays, in screen
 space. The HyperSea page stays as built. Build prompts: `/mnt/project-files/milestone1-mockups/rev114-build-prompts.md`.
+
+**F1 retired (Shombith, 2026-11-17)**: "It should be exactly like how the vessels have their camera in any other game.
+Please remove whatever camera setup you have added." The chase camera (`VoyageChaseCamera`, `VoyageCameraSO`,
+`Resources/Voyages/VoyageCamera.asset`, `CustomCameraController.Mode`) was removed; a voyage flies each vessel's own
+follow camera. The intro still hands over onto that camera.
 
 ### 210.1 Built: the crew screen, pilot first (Rev 114 C2; 2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
 
