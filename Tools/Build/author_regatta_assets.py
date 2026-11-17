@@ -351,7 +351,16 @@ g.emit_asset(POOL_ASSET, G_ASSET["RegattaCoursePool"],
 # one speed source a gate-following autopilot reaches by flying the racing line. Retire this when
 # the racing AI drives every hull (clear OpponentAIVessel and drop the assert below).
 OPPONENT_AI_HULL = "Squirrel"
-HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
+MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
+# Hulls seated on the REAL-GAME judge's word alone (2026-11-17, Garrett's "all 24 vessels racing Regatta"): each finished
+# the shipped course and archive courses in Amoebius headless (regatta_judge.py), alone and in a full field, with its own
+# trained Time-game AI nose pair in its race line (author_race_lines.py). regatta_balance.py has no model of them, so they
+# take no StartingElements row (rest at the card start; every hull is at Time 5 in the L5 start) until the real-game
+# search prices them.
+JUDGED_HULLS = ["Wrasse", "Thresher", "Meerkat", "Grizzly"]
+HULL_ORDER = MODEL_HULLS + JUDGED_HULLS
+for _h in JUDGED_HULLS:
+    EXISTING.setdefault(f"Vessel_{_h}", lib.existing_guid(f"Assets/_SO_Assets/Classes/SO_Class_{_h}.asset"))
 VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n" for h in HULL_ORDER)
 
 
@@ -360,7 +369,7 @@ def starting_element_rows() -> str:
     row (the platform default IS rest, and a row of zeros would say the card decided it)."""
     rows = []
     for i in range(1, 5):
-        for h in HULL_ORDER:
+        for h in MODEL_HULLS:
             lv = BALANCE[i]["levels"][h]
             if lv == 0:
                 continue

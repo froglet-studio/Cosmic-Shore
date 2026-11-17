@@ -535,6 +535,34 @@ with remote players, and Garrett's call (`VesselTransformer`).
 equal on every course, but the Manta and the Scarab still miss mouths at I2-I4 in the fixed-speed model; the Scarab is
 next to look at with its own model.
 
+### 6.6 Hulls seated on the real-game judge (2026-11-17)
+
+The card seated nine hulls; any other hull was swapped for a Squirrel. The Wrasse, Thresher, Meerkat and Grizzly now sit
+on it too (`author_regatta_assets.py` `JUDGED_HULLS`). Each finished the shipped course and three `archive3six` courses
+alone under both starts (card and every hull at Time 5) in Amoebius headless (`regatta_judge.py`, seed 11, 400 s limit),
+and kept threading gates in a twelve-hull field (the field race ends at the first finisher).
+
+| hull | alone, card start (s) | alone, L5 start (s) | race line |
+|---|---|---|---|
+| Thresher | 79 / 93 / 113 / 98 | 94 / 91 / 100 / 103 | nose follow 10/s |
+| Wrasse | 167 / 169 / 196 / 171 | 110 / 118 / 123 / 130 | nose follow 10/s; about 900 rail contacts a race |
+| Grizzly | 209 / 209 / 176 / 350 | 164 / 164 / 176 / 350 | nose follow 10/s (gate way at 1.5/s stalled on one archive course) |
+| Meerkat | 280 / 280 / 372 / 353 | 274 / 274 / 327 / 319 | nose follow 10/s |
+
+Courses in order: shipped, then archive3six card records 9, 6 and 0. None of these hulls trained a nose pair in its own
+Time game (they fly the fleet lag there), so the race lines take the rate the Regatta judge picked from 1.5 / 5 / 10.
+`regatta_balance.py` has no model of them, so they take no StartingElements row. They are slow beside the first nine
+(Thresher apart): that gap is step 5's to close, measured by the real-game search, which now races them
+(`regatta_qd.ENGINE_TRUSTED`).
+
+Not seated yet:
+- **Angler**: finishes the shipped course (313-385 s) but times out at 400 s on two archive courses.
+- **Honeyguide**: 21 of 24 gates in one run, 305 s in another; noisy.
+- **Brittle Star**: 20 of 24 gates at the fleet lag, 476 s at 10/s, with 800-1,300 prism hits.
+- **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
+  (Thornline's AI plan aims at thorns).
+- **Goby**: 0 gates. It wanders, and Perch Run's dart coach armed from RegattaController did not take hold in the judge.
+
 ## 6.5 Scoring — the team sum
 
 `RegattaScoringRuleSO` (a `GateRaceScoringRuleSO` subclass; the asset is points rules,
