@@ -124,6 +124,17 @@ namespace CosmicShore.Player
             }
         }
 
+        /// <summary>The idle host's hull: an original hull no seat flies when there is one, otherwise any seated hull.
+        /// Seats are read from the AI players, never by hull, so the host sharing a seat's hull changes no result.</summary>
+        internal static VesselClassType HostHull(IReadOnlyList<VesselClassType> seated)
+        {
+            var originals = new[] { "Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow" }
+                .Select(Enum.Parse<VesselClassType>);
+            foreach (var h in originals)
+                if (!seated.Contains(h)) return h;
+            return seated.Count > 0 ? seated[0] : throw new InvalidOperationException("the spec has no seats");
+        }
+
         IEnumerator Run()
         {
             var gameData = TrainingHost.FindFirstAsset(_runtime, "GameDataSO") as GameDataSO
@@ -145,9 +156,7 @@ namespace CosmicShore.Player
             if (IsRegatta) ApplyCourse(genome, intensity);
             else ApplyTrainingOverlay(genome);
 
-            var all = new[] { "Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow" }
-                .Select(Enum.Parse<VesselClassType>);
-            var hostHull = all.First(h => !_hulls.Contains(h));
+            var hostHull = HostHull(_hulls);
             gameData.SyncFromArcadeGame(card);
             ApplyStart(gameData);
             ApplyCrystalGenes();
