@@ -94,6 +94,12 @@
      "by": "Regatta plan threads",
      "date": "2026-11-08",
      "evidence": "SerpentAIBoostPolicy_SerpentTime from serpenttime-serpent-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846)"
+    },
+    "2": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-17",
+     "evidence": "Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py, seeds 1-3) Legendary 102/67/76/87 s, Medium 97/78/100/98: no cliff, I2 faster from the L5 start as ruled, I3/I4 +14-15%; left as it is. Note: Medium as fast as Legendary at I1"
     }
    }
   },
@@ -152,6 +158,12 @@
      "by": "Claude (Garrett's thread)",
      "date": "2026-11-13",
      "evidence": "Redline round 5 (Yash, 2026-11-11) brought onto bleeding-edge: Soar was dark in Redline since 2026-11-07 (Time level-5 upgrade, card started at Time 0); now Time 6 start, 8 laps, AI race line and throttle floors, the heat. Waiting on one human's fun card at I2 (REDLINE.md section 0.2)"
+    },
+    "2": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-17",
+     "evidence": "Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder Legendary 58/62/75/96 s (good); the default Medium rival stalled at mouths (152/298/226/214 s) and Easy DNF'd 7 of 12; AI noses now Easy 5 / Medium 7 / Hard 7-9, every race finishes (REDLINE.md 0.3)"
     }
    }
   },
