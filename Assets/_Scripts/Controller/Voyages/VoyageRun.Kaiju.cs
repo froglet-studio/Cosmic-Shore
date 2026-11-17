@@ -11,10 +11,10 @@ namespace CosmicShore.Gameplay
     /// Kaiju at the membrane, and the raiders' leash (Shombith, 2026-11-17: "more attacks outside the cell, big kaiju level
     /// fauna attacking the cell").
     ///
-    /// <para>While the Ark is inside a hostile cell of its leg (any cell on the way home, calm ones too when
-    /// <see cref="VoyageToyDefinitionSO.KaijuInCalmCells"/>), every <see cref="VoyageToyDefinitionSO.KaijuSeconds"/> a
-    /// KAIJU comes: a grazer of a leg cell held against the squad, born just outside the current cell's membrane on the
-    /// side the Ark is heading, in its home cell's controlling colour through the platform's one fauna spawn seam (the
+    /// <para>On every crossing between two cells of the leg (Shombith, 2026-11-17: "when the Ark is between cells, the kaiju
+    /// should be between cells, and it should be huge"; never during the 30 s stop), a KAIJU waits in the open water: a
+    /// grazer of a leg cell held against the squad, born in the gap a little off the Ark's line, in its home cell's
+    /// controlling colour through the platform's one fauna spawn seam (the
     /// colour rule holds), grown <see cref="VoyageToyDefinitionSO.KaijuScale"/> times by <see cref="Fauna.GrowBody"/> in
     /// the spawn frame, and put on the run's <see cref="ArkRaidLeash"/>. Its body prisms are its species' own (the same
     /// collider count, larger), it dies the ordinary way, and its heart drops as every heart does.</para>
@@ -30,56 +30,38 @@ namespace CosmicShore.Gameplay
     {
         readonly List<Fauna> _kaiju = new();
         Cell _kaijuCell;
-        float _nextKaiju = -1f;
-        bool _kaijuToasted;
+        int _kaijuThisCrossing;
         ArkRaidLeash _raidLeash;
 
         ArkRaidLeash RaidLeash => _raidLeash ??= new ArkRaidLeash();
 
-        /// <summary>Every assault tick (from <see cref="TickAssaults"/>): the next kaiju, when one is due.</summary>
-        void TickKaiju(Ark ark, Cell cell, bool inside, bool hostile, bool homeward)
+        /// <summary>
+        /// Every assault tick (from <see cref="TickAssaults"/>): a kaiju for each crossing. The crossing starts when the
+        /// Ark is within <see cref="VoyageToyDefinitionSO.KaijuLeadDistance"/> of leaving the cell behind it (or is already
+        /// in open water); the kaiju is born in the open water between that cell and the next, a little off the Ark's
+        /// line, and waits there for it. Never while the Ark is anchored or deep inside a cell.
+        /// </summary>
+        void TickKaiju(Ark ark, Cell bound)
         {
             _kaiju.RemoveAll(f => !f || f.IsDying);
             RaidLeash.Ark = ark;
-            if (!_def || _def.KaijuSeconds <= 0f || _def.KaijuMax <= 0 || _fallen || _docked
-                || _state is not { AtSea: true } || _state.Current == null)
-            {
-                _nextKaiju = -1f;
+            if (!_def || _def.KaijuMax <= 0 || _def.KaijuPerCrossing <= 0 || _fallen || _docked
+                || _state is not { AtSea: true } || _state.Current == null || AnchoredNow)
                 return;
-            }
 
-            // A new cell: its first kaiju comes a breath after the Ark crosses in.
-            if (cell != _kaijuCell)
+            // The crossing is keyed on the cell the Ark is bound for: one batch of kaiju per gap.
+            if (bound != _kaijuCell)
             {
-                _kaijuCell = cell;
-                _nextKaiju = -1f;
-                _kaijuToasted = false;
+                _kaijuCell = bound;
+                _kaijuThisCrossing = 0;
             }
-            bool due = cell && inside && (hostile || homeward || _def.KaijuInCalmCells);
-            if (!due)
-            {
-                _nextKaiju = -1f;
-                return;
-            }
-            if (_nextKaiju < 0f)
-            {
-                _nextKaiju = Time.time + _def.KaijuFirstSeconds;
-                return;
-            }
-            if (Time.time < _nextKaiju || _kaiju.Count >= _def.KaijuMax) return;
-            _nextKaiju = Time.time + _def.KaijuSeconds;
+            if (_kaijuThisCrossing >= _def.KaijuPerCrossing || _kaiju.Count >= _def.KaijuMax) return;
+            if (!CrossingOpen(ark, bound, out var behind)) return;
 
-            var host = GrazerCell(ark.Domain, cell, out var species);
+            var host = GrazerCell(ark.Domain, bound, out var species);
             if (!host) return;
 
-            // Outside the membrane, toward where the Ark is heading, a little to one side: it meets the Ark in the cell.
-            Vector3 centre = cell.transform.position;
-            Vector3 ahead = ark.Position + ark.Forward * 600f - centre;
-            Vector3 dir = ahead.sqrMagnitude > 1f ? ahead.normalized : ark.Forward;
-            dir = (dir + Random.insideUnitSphere * 0.5f).normalized;
-            float membrane = cell.MembraneRadius > 1f ? cell.MembraneRadius : CellConveyor.MembraneRadiusFloor;
-            Vector3 at = centre + dir * (membrane + _def.KaijuOutsideMembrane);
-
+            Vector3 at = GapPoint(ark, behind, bound);
             var cfg = species[Random.Range(0, species.Count)];
             var kaiju = CellLifeSpawnerBase.SpawnFaunaWithDomain(host, cfg.FaunaPrefab, ark.Position,
                 host.ControllingDomain, at, cfg);
@@ -87,10 +69,55 @@ namespace CosmicShore.Gameplay
             kaiju.GrowBody(_def.KaijuScale);
             RaidLeash.Hold(kaiju);
             _kaiju.Add(kaiju);
-            // One toast per cell: the first kaiju at its membrane.
-            if (_kaijuToasted || Lines == null) return;
-            _kaijuToasted = true;
+            if (_kaijuThisCrossing++ > 0 || Lines == null) return;   // one toast per crossing
             VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Threat, Lines.ToastKaiju, Lines.ToastKaijuSub);
+        }
+
+        /// <summary>True while the Ark anchors at a cell's core for a raid window.</summary>
+        bool AnchoredNow => _sea && _sea.IsAnchored;
+
+        /// <summary>Is the Ark between cells, or about to be? <paramref name="behind"/> is the leg cell it is leaving
+        /// (null in open water before the first).</summary>
+        bool CrossingOpen(Ark ark, Cell bound, out Cell behind)
+        {
+            behind = null;
+            if (bound && ArkEscortRun.ArkInsideWorld(bound, ark.Position)) return false;   // already in the next cell
+            foreach (var c in _legIndexOf.Keys)
+            {
+                if (!c || c == bound || !ArkEscortRun.ArkInsideWorld(c, ark.Position)) continue;
+                float membrane = c.MembraneRadius > 1f ? c.MembraneRadius : CellConveyor.MembraneRadiusFloor;
+                float left = membrane - Vector3.Distance(ark.Position, c.transform.position);
+                // Inside the cell behind: only its last stretch toward the membrane counts as the crossing.
+                if (left > _def.KaijuLeadDistance) return false;
+                behind = c;
+                return true;
+            }
+            return true;   // outside every cell: open water
+        }
+
+        /// <summary>A point in the open water between <paramref name="behind"/> and <paramref name="bound"/>, off the
+        /// Ark's line by <see cref="VoyageToyDefinitionSO.KaijuSideOffset"/>; ahead of the Ark when either is missing.</summary>
+        Vector3 GapPoint(Ark ark, Cell behind, Cell bound)
+        {
+            Vector3 mid;
+            Vector3 along;
+            if (behind && bound)
+            {
+                Vector3 a = behind.transform.position, b = bound.transform.position;
+                along = (b - a).sqrMagnitude > 1f ? (b - a).normalized : ark.Forward;
+                float ra = behind.MembraneRadius > 1f ? behind.MembraneRadius : CellConveyor.MembraneRadiusFloor;
+                float rb = bound.MembraneRadius > 1f ? bound.MembraneRadius : CellConveyor.MembraneRadiusFloor;
+                float gap = Mathf.Max(0f, Vector3.Distance(a, b) - ra - rb);
+                mid = a + along * (ra + gap * 0.5f);
+            }
+            else
+            {
+                along = ark.Forward;
+                mid = ark.Position + along * _def.KaijuSideOffset;
+            }
+            Vector3 side = Vector3.ProjectOnPlane(Random.onUnitSphere, along);
+            side = side.sqrMagnitude > 1e-4f ? side.normalized : Vector3.Cross(along, Vector3.up).normalized;
+            return mid + side * _def.KaijuSideOffset;
         }
 
         /// <summary>The kaiju and raider pens: forget them (from <see cref="EndAssaults"/>). Creatures already born live on
@@ -101,7 +128,7 @@ namespace CosmicShore.Gameplay
             RaidLeash.ReleaseAll();
             RaidLeash.Ark = null;
             _kaijuCell = null;
-            _nextKaiju = -1f;
+            _kaijuThisCrossing = 0;
         }
 
         static readonly List<FaunaConfigurationSO> s_grazerSpecies = new();

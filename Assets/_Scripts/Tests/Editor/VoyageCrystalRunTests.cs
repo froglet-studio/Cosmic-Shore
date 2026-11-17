@@ -469,7 +469,8 @@ namespace CosmicShore.Tests
             Assert.Greater(cfg.CellGap, 0f, "the corridor spaces voyage cells by their membranes");
             Assert.Less(cfg.CellGap, 1200f, "the open water between cells is shorter than at 1.5x (1200 u)");
             Assert.IsTrue(cfg.ScatterLifeSpawns, "a voyage cell's life is born all through its open water");
-            Assert.Greater(settings.KaijuSeconds, 0f);
+            Assert.Greater(settings.KaijuPerCrossing, 0);
+            Assert.GreaterOrEqual(settings.KaijuScale, 10f, "a kaiju is huge");
             Assert.Greater(settings.KaijuMax, 0);
             Assert.Greater(settings.KaijuScale, settings.HomewardRaiderScale, "a kaiju is bigger than a raider");
             Assert.IsTrue(settings.RaidersOutbound);

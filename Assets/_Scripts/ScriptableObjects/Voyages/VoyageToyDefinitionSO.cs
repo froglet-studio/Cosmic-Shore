@@ -214,27 +214,23 @@ namespace CosmicShore.ScriptableObjects
                                  "only on the way home (Shombith 2026-11-17: \"more attacks outside the cell\").")]
         bool raidersOutbound = true;
 
-        [Header("Voyage - kaiju at the membrane (Shombith 2026-11-17)")]
-        [SerializeField, Min(0f), Tooltip("Seconds between two kaiju while the Ark is inside a hostile cell (any cell on the " +
-                                          "way home): a giant creature born outside the membrane that swims in for the " +
-                                          "Ark's hull. 0 = no kaiju.")]
-        float kaijuSeconds = 30f;
-
-        [SerializeField, Min(0f), Tooltip("Seconds after the Ark enters a cell before its first kaiju comes.")]
-        float kaijuFirstSeconds = 8f;
+        [Header("Voyage - kaiju between the cells (Shombith 2026-11-17)")]
+        [SerializeField, Min(0), Tooltip("Kaiju waiting in the open water on each crossing between two cells: a huge grazer " +
+                                         "that comes for the Ark's hull. Never while the Ark is anchored. 0 = no kaiju.")]
+        int kaijuPerCrossing = 1;
 
         [SerializeField, Min(0), Tooltip("No new kaiju while this many are alive.")]
         int kaijuMax = 2;
 
-        [SerializeField, Min(1f), Tooltip("A kaiju's body is this many times its species' size.")]
-        float kaijuScale = 4.5f;
+        [SerializeField, Min(1f), Tooltip("A kaiju's body is this many times its species' size (\"pretty huge\").")]
+        float kaijuScale = 12f;
 
-        [SerializeField, Min(0f), Tooltip("How far outside the membrane, u, a kaiju is born.")]
-        float kaijuOutsideMembrane = 250f;
+        [SerializeField, Min(0f), Tooltip("The crossing (and its kaiju) starts this far, u, before the Ark leaves the cell " +
+                                          "behind it, so the kaiju is already waiting in the gap when the Ark comes out.")]
+        float kaijuLeadDistance = 900f;
 
-        [SerializeField, Tooltip("Kaiju come at the Ark in calm cells too (by default only hostile ones, and every cell on " +
-                                 "the way home).")]
-        bool kaijuInCalmCells;
+        [SerializeField, Min(0f), Tooltip("How far off the Ark's line, u, a kaiju waits in the gap.")]
+        float kaijuSideOffset = 300f;
 
         [Header("Voyage - the cells")]
         [SerializeField, Range(1f, 4f), Tooltip("A voyage cell's membrane and nucleus are this many times their authored " +
@@ -353,12 +349,11 @@ namespace CosmicShore.ScriptableObjects
         public float HomewardRaiderScale => homewardRaiderScale;
         public float HomewardRaiderDistance => homewardRaiderDistance;
         public bool RaidersOutbound => raidersOutbound;
-        public float KaijuSeconds => kaijuSeconds;
-        public float KaijuFirstSeconds => kaijuFirstSeconds;
+        public int KaijuPerCrossing => kaijuPerCrossing;
         public int KaijuMax => kaijuMax;
         public float KaijuScale => kaijuScale;
-        public float KaijuOutsideMembrane => kaijuOutsideMembrane;
-        public bool KaijuInCalmCells => kaijuInCalmCells;
+        public float KaijuLeadDistance => kaijuLeadDistance;
+        public float KaijuSideOffset => kaijuSideOffset;
         public float CellScale => cellScale;
         public float CellGap => cellGap;
         public bool ScatterLifeSpawns => scatterLifeSpawns;

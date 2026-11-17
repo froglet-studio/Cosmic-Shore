@@ -184,7 +184,7 @@ namespace CosmicShore.Gameplay
             }
 
             TickRaiders(ark, inside);
-            TickKaiju(ark, cell, inside, hostile, homeward);
+            TickKaiju(ark, cell);
             CheckBreachLine(ark);
         }
 

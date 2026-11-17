@@ -1102,7 +1102,7 @@ namespace CosmicShore.ScriptableObjects
         public string ToastHullLeakingSub = "The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.";
         public string ToastRaiders = "RAIDERS IN OPEN WATER";
         public string ToastRaidersSub = "Big creatures are coming for the Ark between the cells.";
-        public string ToastKaiju = "KAIJU AT THE MEMBRANE";
-        public string ToastKaijuSub = "A giant is breaking into the cell for the Ark's hull. Bring it down.";
+        public string ToastKaiju = "KAIJU IN OPEN WATER";
+        public string ToastKaijuSub = "A giant waits between the cells for the Ark's hull. Bring it down.";
     }
 }

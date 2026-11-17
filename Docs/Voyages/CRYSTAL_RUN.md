@@ -172,10 +172,12 @@ them smaller and more attacks outside the cell big kaiju level fauna attacking t
   own (they still seek mass and the Ark).
 - **Raiders on the way out too** (`raidersOutbound`): the open-water raider waves of §7 come between the cells of a
   Crystal Run's outbound leg as well, not only on the way home.
-- **Kaiju at the membrane** (`kaijuSeconds` 30, `kaijuFirstSeconds` 8, `kaijuMax` 2, `kaijuScale` 4.5,
-  `kaijuOutsideMembrane` 250, `kaijuInCalmCells` off). While the Ark is inside a hostile cell (any cell on the way
-  home), a grazer from a leg cell held against the squad is born just outside the membrane on the side the Ark is
-  heading, grown 4.5x, and comes in for the hull. One toast per cell (ToastKaiju). `VoyageRun.Kaiju.cs`.
+- **Kaiju between the cells** (`kaijuPerCrossing` 1, `kaijuMax` 2, `kaijuScale` 12, `kaijuLeadDistance` 900,
+  `kaijuSideOffset` 300). Shombith, same day: "the kaiju shouldn't reach when the Ark is in the 30-second stop time ...
+  when the Ark is between cells, the kaiju should be between cells, and it should be huge." On every crossing, once the
+  Ark is within 900 u of leaving the cell behind it (or in open water), one grazer from a leg cell held against the squad
+  is born in the middle of the gap, 300 u off the Ark's line, grown 12x, and waits there for the hull. Never while the
+  Ark is anchored. One toast per crossing (ToastKaiju). `VoyageRun.Kaiju.cs`.
 - **The raid leash.** Kaiju and raiders wear the run's `IFaunaLeash` (the Angler's contract): steer at the Ark, eat its
   nearest plate, re-checked by the creature's own diet. Before this a raider was only lured through its home cell, which
   could be far behind, so it could swim home instead. Only grazers a leash can hold become kaiju; a predator raider
@@ -184,5 +186,5 @@ them smaller and more attacks outside the cell big kaiju level fauna attacking t
   unchanged.
 - **Not run in Unity.** To check by hand: the 2.5x membrane against the environment, whether the scattered crystals
   read as spread, how long a crossing takes now (the core-to-core leg is 6400 u, the Ark crawls inside the bigger
-  cell), whether a kaiju reaches the anchored Ark within its 30 s and how its 4.5x body looks, and whether leashed
+  cell), whether a 12x kaiju reads as huge and still bites (its mouth reach may not grow with its body), and whether leashed
   raiders now reach the Ark.
