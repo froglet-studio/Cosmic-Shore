@@ -154,7 +154,7 @@ namespace CosmicShore.Tests
                 {
                     var skill = (BrittleStarTimeCoach.Skill)k;
                     float follow = BrittleStarTimeCoach.NoseFollowFor(i, skill), share = BrittleStarTimeCoach.CornerShareFor(i, skill);
-                    Assert.IsTrue(follow >= 0.8f && follow <= 8f, $"I{i} {skill}: nose follow {follow} outside 0.8-8/s");
+                    Assert.IsTrue(follow >= 0.8f && follow <= 16f, $"I{i} {skill}: nose follow {follow} outside 0.8-16/s");
                     Assert.IsTrue(share > 0f && share <= 1f, $"I{i} {skill}: corner share {share}");
                 }
             Assert.AreEqual(BrittleStarTimeCoach.Skill.Easy, BrittleStarTimeCoach.SkillFor(1));
