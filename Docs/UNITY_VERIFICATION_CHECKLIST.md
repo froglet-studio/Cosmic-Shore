@@ -24674,3 +24674,14 @@ tests in `VoyageIntroTests`, `VoyageCrystalRunTests` and `VoyageChaseCameraTests
 8. Not built: the FOV opening on boost (the speed tunnel is a platform law that narrows FOV with speed and no mode may
    change it), dust streaks on boost, the Ark's engines lighting one by one. The Ark at a third of the frame is a
    framing tendency (the side shift), not a lock.
+
+## AI nose follow knobs, neutral at 0 (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: `unity_refcompile` (0 errors in the changed files; the 29 errors it reports are the known Cinemachine
+stubs) and the Amoebius live compile and judge. Not verified: a real Unity editor compile and EditMode run.
+
+1. Open MinigameSwitchback, MinigameBreakwater and MinigameSerpentTime: each controller's AI Nose Lead rows show a new
+   "Nose Follow" field at 0, and the races fly exactly as before (0 leaves the AI nose rate alone).
+2. Open any `Resources/RaceLines/<Hull>_Regatta` asset: a "Nose follow (fleet lag at 0)" header with Nose Follow Per
+   Second 0. Regatta's AIs fly as before.
+3. Set one row to 9 (e.g. Sparrow in Breakwater) and race: the AI Sparrow's nose turns visibly quicker. Put it back.
