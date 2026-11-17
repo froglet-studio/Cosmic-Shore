@@ -8754,3 +8754,50 @@ Built in code (`VoyageArkPage`, `VoyageSeatPicker`; no prefab or scene change), 
   that card's hull-only drawing as it was.
 
 Not seen in Unity: a render of both screens still needs to sit beside the board.
+
+
+## 212. Rev 116 mockups: the in-game voyage UI, six ways (2026-11-17, awaiting a pick)
+
+**Asked** (Shombith, after playing the round-3 build): "the In game UI is too stupid and old like we need to work more
+on that for sure. I need new mockups lets say 6 of each in game screen including toasts, the toasts should come in the
+designated toast spot as it comes in many arcade games."
+
+**On the canvas**: the Voyages playtest tab, section `sec-rev116`. One board per in-game screen, each holding six full
+1920 x 1080 screens lettered A-F (5920 x 2978 a board, so the round costs six files). A letter is one design family on
+every board, so a pick can be a whole family or a mix. Copies: `Docs/MenuRedesignB/board/R116*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r116_voyage_hud.py`.
+- **Hud** (`R116Hud`): flying in a raided cell: 23 of 50 banked, 7 carried, the Ark's hull 64% (on the left in every
+  option that has room), cell 3 of 6, the Ark sails in 0:18.
+- **Attack** (`R116Attack`): a kaiju-sized raider on the hull, the hull at 27% (under the 30% leak line, near the 10%
+  breach line), THE HOLD IS LEAKING in the toast spot. The raider is lit red in the world; no rings or arrows on the screen.
+- **Toasts** (`R116Toasts`): each option's one fixed toast spot, outlined in cyan, with ARK UNDER ATTACK landing in it;
+  under each screen the same spot holding an event, the goal and a small BANKED toast. One toast at a time; a threat
+  jumps the queue.
+- **Sail** (`R116Sail`): the last five seconds at anchor (ToastAnchorClosing), bank what you carry or lose it.
+- **Pause** (`R116Pause`): the goal met, Resume, Complete and set sail (the one Lime call to action), Settings,
+  Leave voyage.
+- **Score** (`R116Score`): docked at Home, a row per seat, rewards, Finish and Venture further (goal 60). The rewards
+  (crew trust, pilot XP, colour shards) are placeholders: there is no voyage XP or trust system yet.
+
+The families:
+- **A Marquee** (recommended): arcade top centre. The banked count is the score at the top, the route a line under it;
+  the toast spot is a slanted band right under the score, where the eye already goes; the hull a tall bar on the left
+  edge with the breach and leak lines on it. Recommended because the toast spot and the number that matters share one
+  place, like an arcade game's score and combo callouts, and the middle of the screen stays the game's.
+- **B Rail**: one column on the left, the hull first, then the goal, the timer and the route. Toasts slide out of the rail.
+- **C Console**: a racing game's console at bottom centre (hull gauge, count, timer); the route across the top; toasts in
+  the lower third above the console.
+- **D Corners**: a shooter's corners, hull top left and crystals top right; toasts are a feed of up to three under the
+  crystals, newest on top.
+- **E Edges**: two arcs on the screen's sides, hull left and goal right; toasts are big spaced words at top centre with
+  no box.
+- **F Blocks**: a fighting game's top bar in segments with the timer boxed between; toasts are a slanted banner that slams
+  in at mid left. Busiest of the six (its segments fail `check_mockup.py`'s noise budget).
+
+Every word is the authored voyage text already in the assets (ToastArkUnderAttack, ObjectiveStripAnchor, PauseCompleteAndSail,
+...); the vessel's own HUD keeps its corner (bottom right); nothing moves at rest except a toast's entry. `check_mockup.py`
+still flags the large display numbers as off the type scale and a few threat reds inherited from the Rev 113/114 kit.
+
+**Differs from the build**: the build is `ArkwayVoyageHud`'s Rev 114 O1 strip (420 px, top left) with toasts on the
+Rev 113 band at top centre, and the pause button is a copy of Resume made in code. Any pick replaces the strip and gives
+the toasts one fixed spot of their own.

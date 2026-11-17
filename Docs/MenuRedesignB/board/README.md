@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-16 from canvas version `1794866653-6261` of **Frogma**: Rev 3 to Rev 115, 505 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-17 from canvas version `1794914700-ff45` of **Frogma**: Rev 3 to Rev 116, 511 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -805,6 +805,15 @@ Copied on 2026-11-16 from canvas version `1794866653-6261` of **Frogma**: Rev 3 
 - [`R101Notes.dc.html`](R101Notes.dc.html) - Rev 101 - notes: where the screen opens from, what each option changes, what is real data
 
 ### Tab: Voyages playtest  (`voyages-playtest`)
+
+#### Rev 116 - The in-game voyage UI, six ways: flight HUD, the Ark under attack, the toast spot, the raid countdown, pause, the scoreboard
+
+- [`R116Hud.dc.html`](R116Hud.dc.html) - Rev 116 Hud - In flight: the goal count, the Ark's hull on the left, the cell and the anchor timer
+- [`R116Attack.dc.html`](R116Attack.dc.html) - Rev 116 Attack - The Ark under attack: a kaiju-sized raider on the hull, the hull under 30%, the hold leaking
+- [`R116Toasts.dc.html`](R116Toasts.dc.html) - Rev 116 Toasts - The toast spot: one fixed place per option, every kind of toast drawn in it
+- [`R116Sail.dc.html`](R116Sail.dc.html) - Rev 116 Sail - The raid countdown: the Ark sails in 5, bank what you carry
+- [`R116Pause.dc.html`](R116Pause.dc.html) - Rev 116 Pause - The pause menu with the goal met: Resume, Complete and set sail, Settings, Leave voyage
+- [`R116Score.dc.html`](R116Score.dc.html) - Rev 116 Score - The end scoreboard: the Ark docked, a row per seat, rewards, Finish and Venture further
 
 #### Rev 115 - Your Ark and the seat picker, five ways: hangar line-up, your seat first, pilot cards, formation, garage list
 
