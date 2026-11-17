@@ -24698,3 +24698,14 @@ search's confirm (32 fresh flights a side, no DNF). Not verified: a real Unity e
 2. Race Scarab Rally I4 against a Legendary AI Scarab: it threads the rings without wide loops, near 105-120 s.
 3. Race Regatta with an AI Scarab: its drive changed too (`ScarabAIBoostPolicy`), so it should race at least as well
    as before.
+
+## Serpent racing AI trained in Serpentine (2026-11-17, W1 race judge, Regatta flywheel)
+
+Verified: the Amoebius judge on the shipped files (Serpentine I1 121.0 / 120.9 s, I4 141.1 / 94.7 s on seeds 101-102;
+the race is not deterministic run to run, the confirm's same seeds gave I4 89 / 121) and the search's confirm (32 fresh
+flights a side, no DNF, every condition faster) and `unity_refcompile` (0 errors in the changed files; 29 known
+Cinemachine stubs elsewhere). Not verified: a real Unity editor.
+
+1. Open MinigameSerpentTime: the AI Nose Lead row for the Serpent reads Gain 2.1, Nose Follow 6.87.
+2. Race Serpentine I4 against a Legendary AI Serpent: it threads the rings without corkscrewing, near 85-120 s
+   (it took 160-190 s before).

@@ -33,13 +33,15 @@ R = "/mnt/project-files/regatta-training/results/"   # where each search's JSON 
 # variant -> (base asset path, the genome file its untouched fields come from, {field: value}, source)
 # "start": the asset whose text the variant starts from when it is not the variant itself (copy_with's fallback).
 ROWS = {
-    # Serpent, Serpentine: trained C (job serpenttime-serpent-time, PR #1788; fresh composite 15.85 vs 17.66 today).
-    # Trained lead-off; Serpentine's lead is 1.0, under which C scores 15.24 (PR #1832).
+    # Serpent, Serpentine: run3b in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
+    # SerpentTimeController's Serpent row at lead 2.1 and nose 6.87/s. Confirm on 32 fresh flights a side, no DNF: every
+    # condition faster, I4 176 -> 94 s, I2 118 -> 92, I1 123 -> 120. Replaced C (job serpenttime-serpent-time, PR #1788).
     "SerpentAIBoostPolicy_SerpentTime": dict(
         base=L.POLICY_DIR + "/SerpentAIBoostPolicy.asset",
-        fields={"alignDegrees": 13.106, "stickBand": 0.162, "engageRunwaySeconds": 4.456, "maxConcurrentBurns": 3,
-                "minSecondsBetweenPellets": 2.423, "reservePellets": 0},
-        source=R + "serpent-time/serpenttime-serpent-time__C.json"),
+        fields={"alignDegrees": 68.568, "releaseAlignDegrees": 72.845, "stickBand": 0.372, "releaseStickBand": 0.497,
+                "engageRunwaySeconds": 3.14, "releaseRunwaySeconds": 0.646, "maxConcurrentBurns": 3,
+                "minSecondsBetweenPellets": 0.351, "reservePellets": 0},
+        source="/mnt/project-files/regatta-flywheel/train/Serpent/run3b/best.json"),
     # Thresher, Thresher Time: lead-on B at 1,503 evaluations (job threshertime-thresher-time-lead, PR #1830). Needs the
     # Time-mode nose lead at 2.5: without it this genome DNFs 4-17 of 48 fresh courses.
     "ThresherAIBoostPolicy_ThresherTime": dict(
@@ -87,7 +89,8 @@ for _n in ("DolphinAIBoostPolicy_Switchback", "DolphinAIBoostPolicy_Switchback_I
 # Every value each row overwrote, as it shipped on bleeding-edge 8197bd92 (2026-11-07). --revert writes these back.
 OLD = {
     "SerpentAIBoostPolicy_SerpentTime": {"alignDegrees": 34.29, "stickBand": 0.198, "engageRunwaySeconds": 0.985,
-                                         "maxConcurrentBurns": 3, "minSecondsBetweenPellets": 0.675, "reservePellets": 0},
+                                         "maxConcurrentBurns": 3, "minSecondsBetweenPellets": 0.675, "reservePellets": 0,
+                                         "releaseAlignDegrees": 25, "releaseStickBand": 0.6, "releaseRunwaySeconds": 0.5},
     "ThresherAIBoostPolicy_ThresherTime": {"plantMinTurnDegrees": 6.691, "plantMinDistance": 115.249,
                                            "slingIntervalSeconds": 2.866, "releaseConeDegrees": 15, "maxPlantSeconds": 3.156,
                                            "aimedHoldSeconds": 1.54, "aimToleranceDegrees": 3},
