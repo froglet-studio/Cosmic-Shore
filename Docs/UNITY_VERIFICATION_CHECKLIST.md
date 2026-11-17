@@ -24779,3 +24779,15 @@ confirm (32 fresh flights a side). Not verified: a real Unity editor.
 
 1. Open MinigameBreakwater: the Sparrow's AI Nose Lead row reads Gain 1.29, Nose Follow 7.9.
 2. Race Breakwater I4 against a Legendary AI Sparrow: it finishes, near 80-86 s, without circling a station.
+
+## Serpent AI refuel action and pacing genes (2026-11-17, Regatta flywheel, FINDINGS 23)
+
+Verified: Amoebius compiled the change and raced it (SerpentTime I2 at Regatta length, 24 gates, seed 11: refuel off
+167 s with the tank at 0 from about a third of the race; refuel on at 1.5 pellets with a 3 s coast 126 s, the tank
+refilled by the walls) and `unity_refcompile` (0 errors in the changed files; 29 known errors elsewhere). Not verified:
+a real Unity editor. The new fields ship OFF (`refuelBelowPellets -1`), so no AI changes until a genome is promoted.
+
+1. Open `SerpentAIBoostPolicy_SerpentTime`: the Refuel (the wall) header shows Refuel Below Pellets -1, Refuel Coast
+   Seconds 0, Low Tank Seconds Between Pellets 0.
+2. Set Refuel Below Pellets to 1.5 and Refuel Coast Seconds to 3, race Serpentine with an AI Serpent: when its pellets
+   run low it cloaks, lays a wall and its pellet pips refill; with -1 it behaves as before.
