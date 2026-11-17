@@ -1166,3 +1166,14 @@ Not changed, and why: the scorecard's other idea, pinning every third ring at in
 apart, under the 1,650 u transfer, and break intensity 1's no-hunting promise. Intensity 4's 190 s is the shipped
 arena kept on purpose; 5 laps would still clear the transfer (1,745 u against 1,650) if a shorter top rung is ever
 wanted, at 95 u of margin.
+
+## 18. Intensity 4 at five laps (2026-11-17)
+
+Elemental loop step 2, Claude on Garrett's "do your best on fun" (pending his playtest). The headless judge (the real
+game, the shipped Urchin AI at Legendary, alone, 3 courses a rung) rode the ladder in 85 / 141 / 209 / 361 s: every
+rung about 2.2x §15.4's riding time, because the AI flies at cruise for half the race (the rail-seek numbers were swept,
+13 variants, and the shipped ones are already the best). A six-minute top rung is a slog, so intensity 4 now spreads
+its rings over **5 laps** of the spine instead of 6, the margin §17 already named: rings 1,745 u apart against the
+1,650 u transfer a pinned ring needs. `skein_budget.py`: ALL PROOFS PASSED on the shipped seed and 4 swept seeds. The
+AI now takes 305-342 s (mean 328 s). Intensities 1-3 are unchanged.
+
