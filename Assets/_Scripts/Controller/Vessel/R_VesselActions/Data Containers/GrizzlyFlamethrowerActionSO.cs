@@ -19,16 +19,16 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName = "GrizzlyFlamethrowerAction", menuName = "ScriptableObjects/Vessel Actions/Grizzly Flamethrower")]
     public class GrizzlyFlamethrowerActionSO : ShipActionSO
     {
-        [Header("Cone (Mass)")]
-        [SerializeField, Tooltip("Mass: the claw's reach ahead of the vessel, u (60 at rest -> 120 at level 10, half " +
-                                 "strength at level -5).")]
-        ElementalFloat reach = ElementalFloat.Multiplier(60f, 120f, Element.Mass, 30f);
+        [Header("Cone")]
+        [SerializeField, Tooltip("The claw's reach ahead of the vessel, u. Fixed: Mass only grows what helps the team " +
+                                 "(Garrett, 2026-11-16), and the Grizzly's Mass grows its trail.")]
+        ElementalFloat reach = new(60f);
         [SerializeField, Tooltip("Half-angle of the ignite cone, degrees.")]
         float coneHalfAngle = 25f;
         [SerializeField, Tooltip("Ignites per second while held.")]
         float igniteTicksPerSecond = 4f;
-        [SerializeField, Tooltip("Mass: the most prisms one tick lights (3 at rest -> 8 at level 10, half strength at -5).")]
-        ElementalFloat bite = ElementalFloat.Multiplier(3f, 8f, Element.Mass, 1.5f);
+        [SerializeField, Tooltip("The most prisms one tick lights. Fixed, like the reach.")]
+        ElementalFloat bite = new(3f);
 
         /// <summary>The claw's reach for this vessel's live Mass level.</summary>
         public float RangeFor(IVesselStatus status) => Mathf.Max(1f, reach.EvaluateLive(status));

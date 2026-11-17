@@ -766,7 +766,7 @@ MonoBehaviour:
   waitTillOutsideSkimmer: 1
   shielded: 1
   trailVolume:
-    Enabled: 0
+    Enabled: 1
     Value: 1
     Min: 1
     Max: 2.5

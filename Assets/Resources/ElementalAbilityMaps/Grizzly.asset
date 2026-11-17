@@ -29,8 +29,7 @@ MonoBehaviour:
   - Element: 2
     AbilityLabel: Weapon Systems
     AbilityDescription: Cycle your three weapons - explosives, sniper and the
-      plasma claw. Mass is the claw's weight - its flame reaches 60 u at rest
-      and 120 u at level 10, and lights 3 prisms a tick at rest, 8 at level 10.
+      plasma claw. Mass grows the prisms of your trail, up to 2.5x at level 10.
       At level 5 the claw stops destroying what it burns and STEALS it for your
       team instead.
     Input: 14

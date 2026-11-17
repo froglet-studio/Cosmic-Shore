@@ -24563,8 +24563,8 @@ Garrett, 2026-11-16: "fix all of these" (the ten least polished abilities). `uni
 changed files; `author.py grizzly|jacks --check`, `author_goby_assets.py`, `author_meerkat_assets.py --check` and
 `author_jacks_assets.py --check` passed; the Unity editor and the `unity` CLI did not run. Owed:
 
-1. Grizzly Mass (Plasma Claw): at Mass 10 the cone reaches about twice as far and ignites more prisms a tick than at
-   rest; the trail no longer grows with Mass. A weapon cycle flashes the Mass card.
+1. Grizzly Mass (Weapon Systems): Mass still grows the trail's prisms; the claw's reach is fixed. A weapon cycle
+   flashes the Mass card.
 2. Grizzly Charge (Dig In): dug in, the cannon charges 2x at rest and up to 5x at Charge 10; the Charge card stays lit
    and flashes as the anchor bites.
 3. Grizzly Time (Rush): a ram devastates rival prisms in its path (host only); the Time card flashes on a ram and its

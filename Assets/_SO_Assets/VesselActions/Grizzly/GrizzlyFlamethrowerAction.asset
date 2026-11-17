@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GrizzlyFlamethrowerAction
   m_EditorClassIdentifier: 
   reach:
-    Enabled: 1
+    Enabled: 0
     Value: 60
     Min: 60
     Max: 120
@@ -23,7 +23,7 @@ MonoBehaviour:
   coneHalfAngle: 25
   igniteTicksPerSecond: 4
   bite:
-    Enabled: 1
+    Enabled: 0
     Value: 3
     Min: 3
     Max: 8
