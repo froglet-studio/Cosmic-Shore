@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-time-ai-search-py-can-train-the-squirrel-70b1db",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T05:17:26+00:00",
+  "area": "Time AIs and AI learning",
+  "summary": "time_ai_search.py can train the Squirrel's Skim Race pilot (SkimRaceAIConfig_I1/I2/I4 and the general file) in the real game, and the Serpent's SerpentTime policy carries the two corner refuel genes at 0 so its search reads them.",
+  "why": "Garrett's Regatta flywheel: the Squirrel was the polish-six hull with no home-game AI trainer.",
+  "branch": "port-work",
+  "commit": "f4b46264d",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/SerpentAIBoostPolicy_SerpentTime.asset",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Squirrel"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}
