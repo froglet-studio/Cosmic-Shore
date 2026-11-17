@@ -42,8 +42,9 @@ namespace CosmicShore.Gameplay
     {
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
-                 "the lead off. Urchin 0: off, the lead-off Urchin was faster in the model.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Urchin, 0.0f) };
+                 "the lead off. Urchin 1.39 at a nose rate of 14.41/s: the pair Urchin run1 trained in the real game with its " +
+                 "autopilot genes (time_ai_search.py, 2026-11-17); the lead off at the fleet nose lag before it.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Urchin, 1.39f, noseFollow: 14.41f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 

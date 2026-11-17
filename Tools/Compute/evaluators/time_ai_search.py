@@ -189,8 +189,8 @@ GAMES = {
                    "ParkedSpeed": (0.5, 40.0), "ParkedSeconds": (0.5, 12.0), "MinSlipIntervalSeconds": (0.25, 6.0),
                    "SpikeIntervalSeconds": (0.1, 6.0), "SpikeMinAmmo": (0.0, 1.0), "TrackAimDegrees": (1.0, 45.0),
                    "TrackMinRangeInLengths": (1.0, 10.0), "TrackAxisAlignment": (0.0, 1.0)},
-        # SkeinController.aiNoseLead: Urchin 0. Skein has no nose rate of its own: the fleet lag (a row's NoseFollow 0).
-        "lead": 0.0, "rows": [], "nose_gene": 1.5,
+        # SkeinController.aiNoseLead: Urchin 1.39 at 14.41/s (run1, 2026-11-17).
+        "lead": 1.39, "rows": [], "nose_gene": 14.41,
     },
     "Stoat": {
         "mode": "Slingshot",
