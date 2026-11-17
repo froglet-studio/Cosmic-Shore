@@ -1126,6 +1126,31 @@ def shard_files(root):
                   if d.startswith("shard_") and os.path.isfile(os.path.join(root, d, "records.jsonl")))
 
 
+SEED_FROM = tuple(p for p in os.environ.get("REGATTA_SEED_FROM", "").split(",") if p)
+SEED_N = int(os.environ.get("REGATTA_SEED_N", "24"))
+
+
+def seed_genomes(own, k, n):
+    """The best SEED_N courses of other archives (REGATTA_SEED_FROM: roots or records files, any start or roster), by
+    their spread over the hulls this run scores, raced first so a new archive or start grows from courses already
+    known to be tight. Split across shards (every n-th to shard k); courses this shard already raced are skipped."""
+    recs = []
+    for p in SEED_FROM:
+        for f in ([p] if p.endswith(".jsonl") else shard_files(p)):
+            recs += [r for r in read_jsonl(f) if r.get("valid") and r.get("genome")]
+    def spread(r):
+        t = [r["seconds"].get(h) for h in SCORED]
+        return max(t) / min(t) if all(t) else None
+    ranked, keys = [], set()
+    for r in sorted((r for r in recs if spread(r)), key=spread):
+        key = genome_key(r["genome"])
+        if key not in keys:
+            keys.add(key)
+            ranked.append(r["genome"])
+    done = {genome_key(r["genome"]) for r in own if r.get("genome")}
+    return [g for i, g in enumerate(ranked[:SEED_N]) if i % n == k and genome_key(g) not in done]
+
+
 def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=10, log=print):
     """One search runner. Writes ONLY out/records.jsonl (append-only, one line per judged course; it resumes from that
     file). Reads every sibling shard_* (read-only) so the elites, the surrogate and the gate are the whole team's.
@@ -1144,7 +1169,8 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
     # with the same K) never replays courses already raced.
     rng = random.Random(f"{k}/{n}/{START}/{len(own)}")
     peers, s, t0 = [], None, time.time()
-    log(f"[shard {k}/{n}] {len(own)} courses already in {mine}")
+    seed_q = seed_genomes(own, k, n)
+    log(f"[shard {k}/{n}] {len(own)} courses already in {mine}, {len(seed_q)} seed courses to race first")
     while len(own) < budget:
         if len(own) % peers_every == 0:
             peers = [r for f in shard_files(root) if os.path.abspath(f) != os.path.abspath(mine) for r in read_jsonl(f)
@@ -1157,7 +1183,9 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
             s = fit_trusted(every, seed=len(every))
         full = sorted(r["loss"]["spread_x"] for r in every if r.get("valid") and r["loss"].get("spread_x"))
         gate = full[len(full) // 2] if len(full) >= 10 and backend != "model" else None
-        if k == 0 and not every:
+        if seed_q:
+            g = seed_q.pop(0)
+        elif k == 0 and not every:
             g = today()
         elif len(archive) < 12 or rng.random() < 0.15:
             g = rand_g(rng)

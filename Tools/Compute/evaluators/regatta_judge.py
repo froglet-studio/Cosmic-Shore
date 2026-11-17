@@ -124,7 +124,7 @@ def _run_one(spec, timeout_s, workdir, tag):
 
 def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, workers=None, workdir=None,
           mode="Regatta", intensity=None, overrides=None, controller_overrides=None, start=None, crystal_genes=None,
-          ai_nose_follow=None, trace=False):
+          ai_nose_follow=None, trace=False, difficulty=None, course_seeds=None):
     """Score one course. seats: [{"hull": "Urchin", "ai": "shipped"}] or ["Urchin", ...].
 
     mode       any gate-race Time game by its card name (Switchback, Redline, Breakwater, SerpentTime, ScarabRally ...);
@@ -157,6 +157,10 @@ def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, work
         base["crystal_genes"] = crystal_genes
     if ai_nose_follow:
         base["ai_nose_follow"] = ai_nose_follow        # {hull: AI nose follow rate/s}, every frame (RaceJudge)
+    if difficulty:
+        base["difficulty"] = difficulty                # AIDifficulty name (Easy, Medium, Hard, Legendary); default Legendary
+    if course_seeds:
+        base["course_seeds"] = list(course_seeds)      # race r flies course course_seeds[r] (non-Regatta games)
     if trace:
         base["trace"] = True                           # per-seat rows every 0.25 s (RaceJudge's trace columns)
     # Each process boots once (~20 s) and races its seeds through Play Again (~5-20 s a race).

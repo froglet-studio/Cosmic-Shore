@@ -24813,3 +24813,38 @@ flights a side against run3b had every condition faster, loss 2.40 -> 2.25, no D
    0.291, Low Tank Seconds Between Pellets 0.175.
 3. Race Serpentine I4 against a Legendary AI Serpent: it finishes near 85-100 s, and when its pellets run low it cloaks
    and lays a wall.
+
+## Stoat run1: Slingshot AI trained in the real game, its nose pair carried into Regatta (2026-11-17, Regatta flywheel)
+
+Verified: Amoebius raced the genome headless through `time_ai_search.py` (search on seeds 11-14, confirm on seeds
+101-104, 8 conditions, 32 flights a side, no DNF either side: every rung 18-40% faster, I1 68 -> 51 s, I2 51 -> 36,
+I4 62 -> 42, I1@T10 39 -> 26, I4@T0 95 -> 56), `promote_trained_drives.py` wrote the file, `author_race_lines.py --check`
+OK, `unity_refcompile` (see the PR). Not verified: the shipped files raced again after the write (the box's four game
+slots were training the Squirrel), and a real Unity editor.
+
+1. Open MinigameSlingshot: the Stoat's AI Nose Lead row reads Gain 2.62, Nose Follow 10.43.
+2. Open `Resources/AIBoostPolicies/StoatSlingConfig_Slingshot`: AI Sling Min Turn Degrees 154.471, AI Warp Min
+   Distance 11.523, AI Hold For Window Degrees 58.721, Trampoline AI Turn Scale 67.159.
+3. Race Slingshot I1 against a Legendary AI Stoat: it finishes near 50 s, warping on most legs.
+
+## Breakwater AI pace by difficulty (2026-11-17, elemental loop step 2, overnight run)
+
+Verified: Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py`): Breakwater's four levels race
+about 125 / 110 / 85-109 / 80-97 s at every rung on fresh seeds 4-6, every race finished. `unity_refcompile` 0 errors
+in the changed files. Not verified: a real Unity editor.
+
+1. Arcade > Breakwater, Sparrow, I3 with Medium rivals: they finish in about 110 s, slower than Legendary rivals (about
+   82 s); select MinigameBreakwater's controller and see AI Nose Follow By Difficulty 1.8 / 2 / 3.5 / -1.
+
+## Scarab Rally and Skein AI pace by difficulty (2026-11-17, elemental loop step 2, overnight run)
+
+Verified: Amoebius raced the shipped C# headless (the AI alone, real game). Scarab Rally on fresh seeds 4-6: Easy
+74-85 s at I1 and 178-213 s at I4, Medium 69-75 s at I2 and 162-172 s at I4 (Medium and Easy never finished I4 before).
+Skein on seeds 4-6: I2 / I4 Easy 172 / 384 s, Medium 173 / 360, Hard 162 / 343, Legendary 139 / 334. `unity_refcompile`
+0 errors in the changed files. Not verified: a real Unity editor.
+
+1. Arcade > Scarab Rally, I4 with Medium rivals: they finish (about 160-170 s), behind Legendary rivals (about 120 s).
+   MinigameScarabRally's controller shows AI Scarab Nose Follow By Intensity rows 3.5 / 5 / 8 / 15 (I1-I2), 3.5 / 5 / 8
+   / 18 (I3-I4).
+2. Arcade > Skein, I2 with Medium rivals: about 165-175 s against Legendary's 135-145 s. MinigameSkein's controller
+   shows AI Seek Gain By Difficulty 0.5 / 0.5 / 0.7 / -1.

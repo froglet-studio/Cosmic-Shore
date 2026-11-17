@@ -41,6 +41,22 @@ namespace CosmicShore.Gameplay
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
+        [Tooltip("The AI nose's follow rate per second by the lobby's AI difficulty (Easy / Medium / Hard / Legendary), set as " +
+                 "each AI is armed, over the row above; a negative entry keeps the row's rate. Before 2026-11-17 every level " +
+                 "flew the trained 7.9/s, and from I2 up (the Time level-5 start) Medium raced as fast as Legendary (89 / 78 / " +
+                 "83 s against 82 / 82 / 81 at I2-I4, the real game). Measured in the real game on course seeds 1-3, the AI " +
+                 "alone (Tools/Build/time_ladder_judge.py): Easy 1.8 about 126-133 s at every rung, Medium 2.0 about 110-120, " +
+                 "Hard 3.5 about 84-109, Legendary 7.9 about 80-99 (elemental loop step 2, BREAKWATER.md \"AI: pace by difficulty\").")]
+        [SerializeField] SwitchbackNoseFollow aiNoseFollowByDifficulty = new(1.8f, 2f, 3.5f, -1f);
+
+        protected override void OnRacerArmed(IPlayer pilot)
+        {
+            var transformer = pilot?.Vessel?.VesselStatus?.VesselTransformer;
+            if (transformer == null) return;
+            float rate = aiNoseFollowByDifficulty.For((int)gameData.AIDifficultyFor(pilot));
+            if (rate >= 0f) transformer.AINoseFollowPerSecond = rate;
+        }
+
         [Header("Breakwater")]
         [Tooltip("The station geometry — dishes, collars, danger plugs and the shoals strung " +
                  "along the legs. INSTANTIATED rather than spawned off the asset, because this " +

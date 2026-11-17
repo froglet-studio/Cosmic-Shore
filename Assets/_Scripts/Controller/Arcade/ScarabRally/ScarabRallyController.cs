@@ -44,13 +44,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("The Scarab AI's nose follow rate per second, one row per intensity (I1..I4), by difficulty: Scarab Rally's own " +
                  "table, read instead of Switchback's (which is tuned for the Dolphin). 1.5 = the fleet lag, higher = faster. " +
                  "Legendary trained in the Scarab's own race (time_ai_search.py, Scarab run3, 2026-11-17): 15/s at I1-I2 and " +
-                 "18/s at I3-I4; on 32 fresh flights I4 went 164 to 120 s and I1 from Time 10 103 to 87 s, no DNF.")]
+                 "18/s at I3-I4; on 32 fresh flights I4 went 164 to 120 s and I1 from Time 10 103 to 87 s, no DNF. Easy 3.5, " +
+                 "Medium 5 and Hard 8 (2026-11-17, real game, alone, 3 courses a rung): at the old 1.8-3.5/s Medium took 4x " +
+                 "Legendary's time and Easy never finished I4; now Easy 85/102/108/189 s, Medium 74/73/72/161, Hard " +
+                 "66/64/64/144 against Legendary's 63/57/57/121 at I1-I4, every race finished.")]
         [SerializeField] SwitchbackNoseFollow[] aiScarabNoseFollowByIntensity =
         {
-            new(1.9f, 2.2f, 3f, 15f),    // I1
-            new(2f, 2.4f, 3f, 15f),      // I2
-            new(2.1f, 2.2f, 2.8f, 18f),  // I3
-            new(1.8f, 2.2f, 3.5f, 18f),  // I4 (no gauntlet in Scarab Rally)
+            new(3.5f, 5f, 8f, 15f),      // I1
+            new(3.5f, 5f, 8f, 15f),      // I2
+            new(3.5f, 5f, 8f, 18f),      // I3
+            new(3.5f, 5f, 8f, 18f),      // I4 (no gauntlet in Scarab Rally)
         };
         [Tooltip("u from the ring inside which the Scarab AI stops dodging (Switchback's aiNoDodgeNearRing, Scarab Rally's own " +
                  "value). Trained with the nose table above: 224.")]

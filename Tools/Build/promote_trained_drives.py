@@ -53,14 +53,17 @@ ROWS = {
                 "releaseConeDegrees": 7.346, "maxPlantSeconds": 1.738, "aimedHoldSeconds": 1.279,
                 "aimToleranceDegrees": 9.485},
         source=R + "thresher-lead/lead_B_1503.json"),
-    # Stoat, Slingshot: the parent's trained B (job slingshot-stoat-time, PR #1792), the lead-on round's pick (best with
-    # the lead at 2.5, PR #1831: fresh composite 1.108 vs 2.749 shipped). trampolineAiTurnScale is not in the variant's
-    # text yet (the variant was copied before the trampoline): it is added, the base asset has it.
+    # Stoat, Slingshot: Stoat run1 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
+    # SlingshotController's Stoat row at lead 2.62 and nose 10.43/s. Confirm on seeds 101-104, 32 flights a side, no DNF:
+    # every rung 18-40% faster (I1 68 -> 51 s, I2 51 -> 36, I4 62 -> 42, I1@T10 39 -> 26, I4@T0 95 -> 56). It presses for
+    # the warp on almost any leg (11.5 u) and holds for a 59 deg window. autopilotHold01 was not searched and keeps B's.
+    # Replaced the parent's trained B (job slingshot-stoat-time, PR #1792 and #1831).
     "StoatSlingConfig_Slingshot": dict(
         base=L.STOAT_DIR + "/StoatSlingConfig.asset",
-        fields={"aiSlingMinTurnDegrees": 147.951, "aiSlingIntervalSeconds": 2.896, "aiSlingMinDistance": 13.329,
-                "trampolineAiTurnScale": 96.362, "autopilotHold01": 0.012, "aiWarpMinDistance": 310.106},
-        source=R + "stoat-slingshot/rows.json (trained B)"),
+        fields={"aiSlingMinTurnDegrees": 154.471, "aiReleaseConeDegrees": 63.666, "aiCatchGiveUpSeconds": 5.181,
+                "aiSlingIntervalSeconds": 1.594, "aiSlingMinDistance": 115.742, "aiWarpMinDistance": 11.523,
+                "aiHoldForWindowDegrees": 58.721, "trampolineAiTurnScale": 67.159, "autopilotHold01": 0.012},
+        source="/mnt/project-files/regatta-flywheel/train/Stoat/run1/best.json"),
     # Sparrow, Breakwater: Sparrow run3 in the real game (time_ai_search.py with the nose genes, 2026-11-17), flown with
     # BreakwaterController's Sparrow row at lead 1.29 and nose 7.9/s. Confirm on 32 fresh flights a side: shipped timed
     # out on all 8 I4 races, trained finished every race (I4 82 s, I1 99, I2 85). Replaced D (PR #1793).
@@ -106,9 +109,11 @@ OLD = {
     "ThresherAIBoostPolicy_ThresherTime": {"plantMinTurnDegrees": 6.691, "plantMinDistance": 115.249,
                                            "slingIntervalSeconds": 2.866, "releaseConeDegrees": 15, "maxPlantSeconds": 3.156,
                                            "aimedHoldSeconds": 1.54, "aimToleranceDegrees": 3},
-    "StoatSlingConfig_Slingshot": {"aiSlingMinTurnDegrees": 35, "aiSlingIntervalSeconds": 0.941,
-                                   "aiSlingMinDistance": 123.282, "trampolineAiTurnScale": 100, "autopilotHold01": 1.0,
-                                   "aiWarpMinDistance": 0},
+    # trained B, as it shipped before Stoat run1 (2026-11-17; #1792, #1831)
+    "StoatSlingConfig_Slingshot": {"aiSlingMinTurnDegrees": 147.951, "aiReleaseConeDegrees": 15.999,
+                                   "aiCatchGiveUpSeconds": 4, "aiSlingIntervalSeconds": 2.896, "aiSlingMinDistance": 13.329,
+                                   "aiWarpMinDistance": 310.106, "aiHoldForWindowDegrees": 120,
+                                   "trampolineAiTurnScale": 96.362, "autopilotHold01": 0.012},
     "SparrowAIBoostPolicy_Breakwater": {"alignDegrees": 45, "releaseAlignDegrees": 60, "stickBand": 1,
                                         "releaseStickBand": 1, "engageRunwaySeconds": 2, "releaseRunwaySeconds": 1.25, "minHoldSeconds": 0.6, "minRestSeconds": 0.4},
     # lead-on B, as it shipped before Rhino run1 (2026-11-17); before #1828 Headlong flew the hull's own policy

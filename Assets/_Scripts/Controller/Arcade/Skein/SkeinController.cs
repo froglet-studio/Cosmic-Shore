@@ -80,6 +80,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("The seek must beat this fraction of the straight flight's time to the ring.")]
         [SerializeField, Range(0.1f, 1f)] float aiSeekGain = 0.9f;
 
+        [Tooltip("The seek gain by the lobby's AI difficulty (Easy / Medium / Hard / Legendary), over the gain above; a " +
+                 "negative entry keeps it. A lower gain takes fewer rails, so the rival rides less well and flies more. Before " +
+                 "2026-11-17 every level sought rails alike and Medium raced as fast as Legendary; now I2 / I4 run Easy " +
+                 "172 / 384 s, Medium 173 / 360, Hard 162 / 343, Legendary 139 / 334 (real game, SKEIN.md section 19).")]
+        [SerializeField] SwitchbackNoseFollow aiSeekGainByDifficulty = new(0.5f, 0.5f, 0.7f, -1f);
+
         [Tooltip("Rail arc (units) a seek candidate may ride to the ring.")]
         [SerializeField, Min(50f)] float aiSeekArc = 1600f;
 
@@ -308,8 +314,9 @@ namespace CosmicShore.Gameplay
                         gate.Radius * aiSeekCaptureFraction, aiSeekArc, 2, _candidates);
                 }
                 int exclude = now < state.ReattachUntil ? state.LeftRail : -1;
+                float gain = aiSeekGainByDifficulty.For((int)gameData.AIDifficultyFor(pilot));
                 state.HasAim = SkeinRailSeek.TryPick(_candidates, _seekRails, self, gate.Position,
-                    Mathf.Max(aiSeekCruiseSpeed, status.Speed), aiSeekRideSpeed, aiSeekGain, aiSeekApproachCos,
+                    Mathf.Max(aiSeekCruiseSpeed, status.Speed), aiSeekRideSpeed, gain >= 0f ? gain : aiSeekGain, aiSeekApproachCos,
                     aiSeekAheadPrisms, exclude, out state.Aim);
             }
 

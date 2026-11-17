@@ -201,8 +201,29 @@ GAMES = {
                    "aiCatchGiveUpSeconds": (0.5, 10.0), "aiSlingIntervalSeconds": (0.5, 20.0),
                    "aiSlingMinDistance": (0.0, 400.0), "aiWarpMinDistance": (0.0, 1200.0),
                    "aiHoldForWindowDegrees": (0.0, 360.0), "trampolineAiTurnScale": (40.0, 300.0)},
-        # SlingshotController.aiNoseLead: Stoat 2.5. No nose rate of its own: the fleet lag.
-        "lead": 2.5, "rows": [], "nose_gene": 1.5,
+        # SlingshotController.aiNoseLead: Stoat 2.62 at 10.43/s (run1, 2026-11-17).
+        "lead": 2.62, "rows": [], "nose_gene": 10.43,
+    },
+    "Squirrel": {
+        "mode": "SkimRace",
+        # SkimRaceAIConfigSO (the Skim Race pilot, Docs/SKIM_RACE_AI.md): each intensity's own tuning file
+        # (SkimRaceAIDeployment.PolicyFor: SkimRaceAIConfig_I<n>, the general SkimRaceAIConfig when there is none or its
+        # map fingerprint does not fit). ONE genome is written on all four, so the pilot flies it whichever file it
+        # resolves. Its steering look-ahead, skim height, boost spending, crossing pace, lead and recovery. The race needs
+        # the judge's Skim Race path (a seat's progress is its crystals; it finishes at the mode's crystal count).
+        "assets": {1: "Assets/Resources/SkimRaceAIConfig_I1.asset", 2: "Assets/Resources/SkimRaceAIConfig_I2.asset",
+                   3: "Assets/Resources/SkimRaceAIConfig.asset", 4: "Assets/Resources/SkimRaceAIConfig_I4.asset"},
+        "fields": {"LookaheadSeconds": (0.1, 3.0), "LookaheadMin": (5.0, 300.0), "LookaheadMax": (60.0, 1200.0),
+                   "SkimHeight": (1.0, 20.0), "CrystalBumpHalfWidth": (10.0, 600.0),
+                   "LowBoostApproachScale": (0.05, 1.0), "LowBoostFull": (1.01, 8.0), "DirectBoost": (0.0, 8.0),
+                   "DirectBoostHysteresis": (0.0, 2.0), "TrackGuardMargin": (0.0, 10.0), "PassMargin": (0.0, 30.0),
+                   "CrossingThrottle": (0.1, 1.0), "CrossingSlowDistance": (0.0, 600.0),
+                   "CrystalDirectDistance": (0.0, 600.0), "LeadGain": (0.0, 6.0), "MaxLeadDegrees": (0.0, 90.0),
+                   "StickGainPerDegree": (0.01, 0.5), "MinThrottle": (0.0, 1.0), "ReachabilityMargin": (0.0, 5.0),
+                   "StallSeconds": (0.5, 10.0), "RecoveryThrottle": (0.0, 1.0)},
+        # SkimRaceController has no aiNoseLead table (the pilot leads its own nose: LeadGain, MaxLeadDegrees): no lead
+        # gene. No nose rate of its own either: the fleet lag, searched through the judge.
+        "lead": None, "rows": [], "nose_gene": 1.5,
     },
 }
 LEAD_RANGE = (0.0, 3.0)
@@ -249,7 +270,8 @@ def dims_for(g):
     dims += [{"name": k, "lo": lo, "hi": hi} for k, (lo, hi) in g.get("ctrl_fields", {}).items()]
     if "nose_gene" in g:
         dims.append({"name": "noseFollow", "lo": NOSE_RANGE[0], "hi": NOSE_RANGE[1]})
-    dims.append({"name": LEAD, "lo": LEAD_RANGE[0], "hi": LEAD_RANGE[1]})
+    if g["lead"] is not None:                          # None: the game has no aiNoseLead table (Skim Race)
+        dims.append({"name": LEAD, "lo": LEAD_RANGE[0], "hi": LEAD_RANGE[1]})
     return dims
 
 
@@ -262,7 +284,8 @@ def shipped_genomes(g):
         p.update(g.get("ctrl_defaults", {}))
         if "nose_gene" in g:
             p["noseFollow"] = g["nose_gene"]
-        p[LEAD] = g["lead"]
+        if g["lead"] is not None:
+            p[LEAD] = g["lead"]
         p[CRYSTAL] = 0.0
         p["_from"] = os.path.basename(rel)
         out.append(p)
@@ -276,14 +299,17 @@ def spec_for(hull, g, params):
         return {}
     fields = {k: params[k] for k in g["fields"] if k in params}
     ov = [{"asset": rel, "fields": fields} for rel in sorted(set(g["assets"].values()))]
-    rows = list(g["rows"]) + [{"Hull": hull, "Gain": float(params.get(LEAD, g["lead"])), "MaxExtraDegrees": 40}]
     # No mode knob: the judge sets the rate on the AI's transformer (left alone at the shipped fleet lag).
     nose = float(params.get("noseFollow", g.get("nose_gene", 0)))
     out_nose = {hull: nose} if "nose_gene" in g and nose != g["nose_gene"] else None
-    ctrl = {"aiNoseLead": rows}
+    ctrl = {}
+    if g["lead"] is not None:
+        ctrl["aiNoseLead"] = list(g["rows"]) + [{"Hull": hull, "Gain": float(params.get(LEAD, g["lead"])), "MaxExtraDegrees": 40}]
     if "ctrl" in g:
         ctrl.update(g["ctrl"](dict(g.get("ctrl_defaults", {}), **params)))
-    out = {"overrides": ov, "controller_overrides": ctrl}
+    out = {"overrides": ov}
+    if ctrl:
+        out["controller_overrides"] = ctrl
     if out_nose:
         out["ai_nose_follow"] = out_nose
     if params.get(CRYSTAL, 0) > 0:
@@ -478,7 +504,10 @@ def self_test():
                     extra = set(ov["fields"]) - set(g["fields"])
                     if extra:
                         out.append(f"{hull}: spec writes foreign fields {sorted(extra)}")
-                if not any(r["Hull"] == hull for r in spec["controller_overrides"]["aiNoseLead"]):
+                lead_rows = spec.get("controller_overrides", {}).get("aiNoseLead")
+                if g["lead"] is None and lead_rows is not None:
+                    out.append(f"{hull}: spec writes an aiNoseLead table the game does not have")
+                elif g["lead"] is not None and not any(r["Hull"] == hull for r in lead_rows or []):
                     out.append(f"{hull}: spec has no nose lead row")
                 if "ai_nose_follow" in spec:
                     out.append(f"{hull}: the shipped genome changes the nose rate")
