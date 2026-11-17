@@ -312,11 +312,11 @@ GAMES = {
         # The mode stands the hull's boost policy down (BrittleStarAIBoostPolicy_BrittleStarTime, engage runway 999 s):
         # BrittleStarTimeCoach is the only Speed Mode writer, and its corner-share and nose tables are static C#, not
         # serialized, so no drive field is searched here. The genes are the AI nose rate in two bands (I1-I2, I3-I4),
-        # set through the judge over the coach's own per-intensity Legendary row (4.13, 8, 1.83, 8), and the crystal gene.
+        # set through the judge over the coach's own per-intensity Legendary row (13.66, 13.66, 15.04, 15.04 since run1, 2026-11-17), and the crystal gene.
         "assets": {i: POL + "BrittleStarAIBoostPolicy_BrittleStarTime.asset" for i in (1, 2, 3, 4)},
         "fields": {},
         "lead": None, "rows": [],                      # BrittleStarTimeController has no nose lead table
-        "nose_gene": 8.0, "nose_split": 8.0,           # seeds: the coach's Legendary I2 / I4 rate
+        "nose_gene": 13.66, "nose_split": 15.04,       # seeds: the coach's Legendary I2 / I4 rate (run1)
         "nose_mode_sets": True,                        # the shipped AI (params None) keeps the coach's table
     },
 }

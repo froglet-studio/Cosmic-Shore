@@ -24916,3 +24916,49 @@ writer until that is looked at.
 
 1. Arcade > Thornline, Shrike, I1 with a Legendary rival: it finishes in about 49 s, aiming crisply with no wobble.
    MinigameThornline's controller shows AI Nose Lead By Difficulty 2.5 / 3 / 8 / 9.2 and Follow -1 / -1 / -1 / 1.6.
+
+## Honeyguide and Spearline AI stalls fixed (2026-11-17, elemental loop step 3, overnight run)
+
+Verified:
+- Honeyguide: the race judge's trace showed the hull frozen in place, with its transformer off and no ride under way.
+  A ride that began on top of another (a trigger's dart, then a slip in the same frame) read the transformer as already
+  off and never turned it back on. On the Slip Line confirm (seeds 101-104, 96 races) the timeouts went from 8 to 0.
+- Spearline: the trace showed the AI circling 11 u wide, 630 u from its ring, for up to 185 s, its nose lead commanding
+  up to 40 degrees past the aim. With the lead capped at 10 degrees: seeds 1-2 at Legendary I3-I4 went from 4 timeouts to
+  4 finishes, and on seeds 3-5 at I1-I4 (12 races a side) every race finished on both, with a total time within 1%.
+- No frozen or long slowed span in 12 traced races of the polish six's Time games.
+- `unity_refcompile` found 0 errors in the changed files.
+
+Not verified: a real Unity editor.
+
+1. Arcade > Slip Line, Honeyguide AI rival, I2: watch a few races. The rival never stops dead mid-course after a slip or
+   a dart, and finishes in about 2 minutes.
+2. Arcade > Spearline, Swordfish AI rival at Legendary, I3: the rival never spins in a tight circle away from the ring.
+
+## AI spin escape (2026-11-17, elemental loop step 3, overnight run)
+
+Verified (race judge, Amoebius headless):
+- AIPilot now lets the nose lead go for 3 s when the hull turns a full circle in place (inside 3 s, net travel under
+  35% of its path) while its objective is at least 4 turn radii away. The orbit detector cannot see that stall, because
+  the bearing to a far objective barely turns.
+- Positive test: Spearline with the nose lead's old 40-degree cap (the stall #2138 fixed by capping) finished 4 of 4
+  Legendary I3-I4 races, where it timed out 4 of 4 before. The escape fired 11 times.
+- Negative control: it never fired in 12 home races of the polish six's Time games (Scarab, Serpent, Dolphin, Rhino,
+  Manta, Sparrow at I4) or in 16 Regatta races of 8 hulls on the calibration course.
+- `unity_refcompile` found 0 errors in the changed files, and `check_console_logging.py` reported 0 problems.
+
+Not verified: a real Unity editor.
+
+1. Any Time race with AI rivals: no rival spins in a tight circle away from its ring. The new Spin escape fields are on
+   the AIPilot component, under its own header.
+
+## Brittle Star Time Legendary AI nose trained (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+`BrittleStarTimeCoach.NoseFollowByIntensity` Legendary column changes from 4.13 / 8 / 1.83 / 8 to 13.66 / 13.66 / 15.04 / 15.04
+(I1..I4). This is BrittleStar run1, searched in the real game through the Amoebius judge (`time_ai_search.py`, seeds 11-14) and
+confirmed on fresh seeds 101-104: 32 flights a side, 0 DNF, loss 2.36 -> 2.06. Mean times went I1 51.4 -> 49.5 s,
+I2 53.7 -> 54.2 s, I3 84.8 -> 32.6 s, I4 73.2 -> 56.3 s. Easy, Medium and Hard are unchanged. The crystal gene stays at 0,
+because its effect was within noise. The coach table test now allows up to 16/s. Not run in Unity (the reference compile shows 0
+errors in the changed files).
+- [ ] Fly Brittle Star Time I1-I4 against a Legendary AI. It should race clean and finish ahead of the old times, most of all at I3
+  (about 33 s, against 54 s at I2: the I3 team crystals make that rung faster rather than harder, a ladder question for step 2).

@@ -158,6 +158,23 @@ namespace CosmicShore.Gameplay
                  "instead; if it is the only one, the pilot keeps it and just re-attacks.")]
         [SerializeField, Min(0f)] float orbitAbandonSeconds = 5f;
 
+        [Header("Spin escape (a tight circle far from the objective)")]
+        [Tooltip("Seconds of flight each spin check looks back over. A spin is the hull turning a full circle in place, far " +
+                 "from what it chases: the bearing to the objective barely turns, so the orbit detector never sees it. The " +
+                 "nose lead caused the one measured (2026-11-17 race judge: Spearline's Swordfish circled 11 u wide, 630 u " +
+                 "from its ring, for up to 185 s).")]
+        [SerializeField, Min(0.5f)] float spinWindowSeconds = 3f;
+        [Tooltip("Degrees the heading must turn inside one window to count as a spin. 360 is a full circle.")]
+        [SerializeField, Min(180f)] float spinSweepDegrees = 360f;
+        [Tooltip("The most the hull may have got anywhere in that window, as a share of the distance its speed flew: a " +
+                 "turn that goes somewhere (a ring's U-turn, a weave) is never a spin.")]
+        [SerializeField, Range(0.05f, 0.9f)] float spinMaxProgressFraction = 0.35f;
+        [Tooltip("A spin counts only while the objective is at least this many of the hull's minimum turn radii away, so " +
+                 "the turning-circle break-off keeps everything near the objective.")]
+        [SerializeField, Min(1f)] float spinFarTurnRadii = 4f;
+        [Tooltip("Seconds the nose lead is let go after a spin: the pilot judges from the nose and flies out of the circle.")]
+        [SerializeField, Min(0.5f)] float spinLeadOffSeconds = 3f;
+
         /// <summary>The mode this pilot races in, once its game data is known (a hull's drive reads its mode's tuning).</summary>
         public bool TryGetGameMode(out GameModes mode)
         {
@@ -419,7 +436,7 @@ namespace CosmicShore.Gameplay
         {
             gain = 0f;
             commandedForward = default;
-            if (NoseLeadGain <= 0f || VesselStatus.IsDrifting) return false;
+            if (NoseLeadGain <= 0f || VesselStatus.IsDrifting || Time.time < _spinLeadOffUntil) return false;
             var transformer = VesselStatus.VesselTransformer;
             if (!transformer) return false;
             gain = EffectiveNoseLeadGain(NoseLeadGain, transformer.NoseFollowRate);
@@ -1138,6 +1155,7 @@ namespace CosmicShore.Gameplay
             // says to break off the steering below flies an escape point rather than the objective.
             Vector3 toObjective = _targetPosition - transform.position;
             UpdateOrbitBreak(toObjective);
+            UpdateSpinEscape(toObjective);
 
             Vector3 steerTarget = _extending
                 ? transform.position + PursuitReachability.EscapeDirection(
@@ -1501,6 +1519,52 @@ namespace CosmicShore.Gameplay
             // crystal straight back.
             _objectiveItem = null;
             UpdateCellContent();
+        }
+
+        float _spinSweep, _spinElapsed, _spinPath, _spinLeadOffUntil = -1f;
+        Vector3 _spinStart, _spinLastHeading, _spinLastPos;
+        bool _spinArmed;
+
+        /// <summary>True while the nose lead is let go after a spin (<see cref="UpdateSpinEscape"/>).</summary>
+        public bool IsEscapingSpin => Time.time < _spinLeadOffUntil;
+
+        /// <summary>
+        /// The SPIN escape: the hull has turned a full circle in place, far from its objective. The orbit detector cannot
+        /// see this (the bearing to an objective hundreds of units off barely turns) and the turning-circle test does not
+        /// apply (the objective is nowhere near the circle). Measured cause: the nose lead (<see cref="NoseLeadGain"/>),
+        /// whose command, up to <see cref="NoseLeadMaxExtraDegrees"/> past the aim, kept the nose turning (2026-11-17,
+        /// Spearline). The pilot lets the lead go for <see cref="spinLeadOffSeconds"/> and judges from the nose, which
+        /// flies it out; nothing else changes, so a pilot that never spins flies exactly as before.
+        /// </summary>
+        void UpdateSpinEscape(Vector3 toObjective)
+        {
+            Vector3 heading = HeadingDirection();
+            Vector3 pos = transform.position;
+            if (!_spinArmed || VesselStatus.IsDrifting || VesselStatus.IsAttached || _aimIsPathLead || NoseLeadGain <= 0f ||
+                heading.sqrMagnitude < 1e-6f)
+            {
+                _spinArmed = heading.sqrMagnitude >= 1e-6f;
+                _spinSweep = _spinElapsed = _spinPath = 0f;
+                _spinStart = _spinLastPos = pos;
+                _spinLastHeading = heading;
+                return;
+            }
+
+            _spinSweep += Vector3.Angle(_spinLastHeading, heading);
+            _spinPath += Vector3.Distance(_spinLastPos, pos);
+            _spinElapsed += Time.deltaTime;
+            _spinLastHeading = heading;
+            _spinLastPos = pos;
+            if (_spinElapsed < spinWindowSeconds) return;
+
+            float radius = VesselStatus.VesselTransformer != null ? VesselStatus.VesselTransformer.MinTurnRadius : 0f;
+            bool far = toObjective.magnitude > Mathf.Max(radius * spinFarTurnRadii, objectiveCaptureRadius);
+            bool inPlace = _spinPath > 1f && Vector3.Distance(_spinStart, pos) < _spinPath * spinMaxProgressFraction;
+            if (far && inPlace && _spinSweep >= spinSweepDegrees)
+                _spinLeadOffUntil = Time.time + spinLeadOffSeconds;
+
+            _spinSweep = _spinElapsed = _spinPath = 0f;
+            _spinStart = pos;
         }
 
         /// <summary>The roll stick that turns the belly onto <see cref="_bellyTarget"/> about the nose: the signed angle,
