@@ -31,7 +31,7 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(t, "voyage_slice.json has no " + RaidId);
             Assert.IsTrue(t.Always);
             Assert.IsTrue(t.CountsUnderway);
-            Assert.AreEqual(90f, t.Goal);
+            Assert.AreEqual(50f, t.Goal);
             Assert.AreEqual(4, t.Cells);
             CollectionAssert.AreEqual(new[] { false, true, true, true }, t.HostileCells);
             // Below the leak line (30%) the hold leaks before the Ark falls, so the breach sits under it.
@@ -94,7 +94,7 @@ namespace CosmicShore.Tests
             var state = VoyageRules.NewGalaxy(content, Domains.Jade);
             var job = Raid(state, content);
             Assert.IsNotNull(job, "the board offers no Crystal Run");
-            Assert.AreEqual(90f, job.Goal);
+            Assert.AreEqual(50f, job.Goal);
             Assert.AreEqual(4, job.Cells);
             Assert.AreEqual(0, job.Venture);
             Assert.IsTrue(job.CountsUnderway);
@@ -221,7 +221,7 @@ namespace CosmicShore.Tests
             var next = VoyageRaid.Venture(state, content, job);
             Assert.IsNotNull(next, "nowhere further to venture");
             Assert.AreEqual(1, next.Venture);
-            Assert.AreEqual(100f, next.Goal);
+            Assert.AreEqual(60f, next.Goal);
             Assert.AreEqual(5, next.Cells);
             Assert.AreEqual(state.At, next.From);
         }

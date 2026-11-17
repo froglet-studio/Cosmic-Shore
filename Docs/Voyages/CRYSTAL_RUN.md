@@ -7,7 +7,7 @@ R113Compare, R113Score). Not yet run in the Unity editor: `Docs/UNITY_VERIFICATI
 ## 1. The rules (Shombith's answers, 2026-11-16)
 
 - "Steal these many elemental crystals during the voyage; a few cells attack you, a few don't."
-- The goal is **90 crystals** (20 until round 3, 2026-11-16; 50 until the storyboard, §12), between the whole squad. Any elemental crystal counts (Space, Time, Charge, Mass); an
+- The goal is **50 crystals** (20 until round 3, 2026-11-16; 90 for an hour after the storyboard, §12, then back to 50), between the whole squad. Any elemental crystal counts (Space, Time, Charge, Mass); an
   omni crystal does not.
 - The leg is **4 cells: 1 calm, then 3 hostile** (`hostileCells` [false, true, true, true]). The breach line is
   **10%** (40% until round 3, so the hold can leak below 30% before the Ark falls).
@@ -342,3 +342,18 @@ if the player does not come inside the threshold during that timer they lose all
   `ArkwayVoyageHud.ShowCountdown(line, under)`, the voyage's side in `VoyageRun.Stray.cs`. Each machine leashes its own
   pilot (a party friend's carried crystals are their own). AI wingmates keep their own leash (`BringWingmates`).
 - Not run in Unity.
+
+## 13. Goal back to 50, and the scoreboard's missing buttons (Shombith, 2026-11-17)
+
+"Bring the score back to 50, also still the scoreboard when i lost there was no button to sail home or quit."
+
+- **Goal 50** again (voyage_slice.json); Venture further adds 10 (60, 70, ...).
+- **Why no board had buttons.** The seats table gave your own row a second `Image` on the same object
+  (`VoyageKit.Block` twice). Unity's `AddComponent<Image>` returns null when the object already has one, so
+  `img.color` threw a NullReferenceException (Bug Ledger E-6b08617cca, from `ArriveRaid`) and the board stopped building
+  before the reward tiles and the buttons. Every board with your row in it (missed, met, lost, docked) came up without a
+  way out. Your row is now one fill, lifted toward the light.
+- **Lost Ark: Back to Voyages ends the voyage** (`ShowLost` sets `Close` to `GiveUp`), so the scene returns to the menu
+  instead of only closing the board.
+- **Not run in Unity.** To check: a missed goal shows Venture further and Finish, a lost Ark shows Try again and Back to
+  Voyages, and each button (and A / B on the pad) does what it says.
