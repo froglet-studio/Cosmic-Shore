@@ -56,13 +56,14 @@ namespace CosmicShore.Gameplay
         /// course - Easy 2x, Medium 1.5x, Hard 1.25x, Legendary 1.05x the model's reader - on EVERY rung, rather than
         /// growing softer as the rungs grow harder. The search pairs it with <see cref="CornerShareByIntensity"/>, so a
         /// row need not rise with skill: a Hard I3 seat trusts the hairpin more and needs less nose. I4's Legendary
-        /// tops out at 1.23x (the coil, unrolled, at 8/s); I1's Easy and Medium fly slower than the fleet's 1.5/s.</summary>
+        /// tops out at 1.23x (the coil, unrolled, at 8/s); I1's Easy and Medium fly slower than the fleet's 1.5/s. The Legendary column (13.66 at I1-I2, 15.04 at
+        /// I3-I4) is BrittleStar run1, searched in the real game (Amoebius judge, time_ai_search.py, 2026-11-17).</summary>
         public static readonly float[][] NoseFollowByIntensity =
         {
-            new[] { 0.90f, 1.10f, 4.51f, 4.13f },
-            new[] { 1.59f, 4.44f, 2.71f, 8.00f },
-            new[] { 2.16f, 8.00f, 1.44f, 1.83f },
-            new[] { 4.39f, 8.00f, 8.00f, 8.00f },
+            new[] { 0.90f, 1.10f, 4.51f, 13.66f },
+            new[] { 1.59f, 4.44f, 2.71f, 13.66f },
+            new[] { 2.16f, 8.00f, 1.44f, 15.04f },
+            new[] { 4.39f, 8.00f, 8.00f, 15.04f },
         };
 
         public static float NoseFollowFor(int intensity, Skill skill) =>

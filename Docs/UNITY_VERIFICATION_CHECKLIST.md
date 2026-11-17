@@ -24951,3 +24951,14 @@ Not verified: a real Unity editor.
 
 1. Any Time race with AI rivals: no rival spins in a tight circle away from its ring. The new Spin escape fields are on
    the AIPilot component, under its own header.
+
+## Brittle Star Time Legendary AI nose trained (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+`BrittleStarTimeCoach.NoseFollowByIntensity` Legendary column changes from 4.13 / 8 / 1.83 / 8 to 13.66 / 13.66 / 15.04 / 15.04
+(I1..I4). This is BrittleStar run1, searched in the real game through the Amoebius judge (`time_ai_search.py`, seeds 11-14) and
+confirmed on fresh seeds 101-104: 32 flights a side, 0 DNF, loss 2.36 -> 2.06. Mean times went I1 51.4 -> 49.5 s,
+I2 53.7 -> 54.2 s, I3 84.8 -> 32.6 s, I4 73.2 -> 56.3 s. Easy, Medium and Hard are unchanged. The crystal gene stays at 0,
+because its effect was within noise. The coach table test now allows up to 16/s. Not run in Unity (the reference compile shows 0
+errors in the changed files).
+- [ ] Fly Brittle Star Time I1-I4 against a Legendary AI. It should race clean and finish ahead of the old times, most of all at I3
+  (about 33 s, against 54 s at I2: the I3 team crystals make that rung faster rather than harder, a ladder question for step 2).
