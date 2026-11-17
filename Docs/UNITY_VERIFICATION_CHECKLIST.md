@@ -24813,3 +24813,17 @@ flights a side against run3b had every condition faster, loss 2.40 -> 2.25, no D
    0.291, Low Tank Seconds Between Pellets 0.175.
 3. Race Serpentine I4 against a Legendary AI Serpent: it finishes near 85-100 s, and when its pellets run low it cloaks
    and lays a wall.
+
+## Switchback I3 rung and Breakwater AI pace by difficulty (2026-11-17, elemental loop step 2, overnight run)
+
+Verified: Amoebius raced the shipped C# headless (`Tools/Build/time_ladder_judge.py`): Switchback I3 is 1.16x (Medium)
+and 1.21x (Legendary) over I2 on 6 course seeds, every race finished; Breakwater's four levels race about 125 / 110 /
+85-109 / 80-97 s at every rung on fresh seeds 4-6, every race finished. `switchback_sim_harness/run.sh tests` 127/127,
+`unity_refcompile` 0 errors in the changed files. Not verified: a real Unity editor, and the I3 prism budget (3800 laid,
+460 near a pilot) in the real renderer.
+
+1. Arcade > Switchback, Dolphin, I3, default AI: the leg fields look denser than I2 and every second corner is a hairpin
+   you drift through; the frame rate holds near the I2 one.
+2. Arcade > Scarab Rally, I3: unchanged (its field is the one of before).
+3. Arcade > Breakwater, Sparrow, I3 with Medium rivals: they finish in about 110 s, slower than Legendary rivals (about
+   82 s); select MinigameBreakwater's controller and see AI Nose Follow By Difficulty 1.8 / 2 / 3.5 / -1.
