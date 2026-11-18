@@ -45,13 +45,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 BIN = os.environ.get("REGATTA_JUDGE_BIN", "/tmp/regatta-judge-bin")
 DLL = os.path.join(BIN, "CosmicShore.dll")
 
-# The editor's Regatta Hull Benchmark, 2026-11-03: each AI alone, Legendary, I1, three laps, the course that is
-# today's pool entry 0 with no features (regatta_measured_roster.MEASURED_ON, seed 20268834).
+# The editor's Regatta Hull Benchmark, 2026-11-03: each AI alone, Legendary, I1, three laps, on the circuit that was
+# then pool entry 0 with no features (regatta_measured_roster.MEASURED_ON, seed 20268834). That circuit was deleted
+# (#2212), so these are a historical sanity scale, not a reference for the calibration course below: on Ref1 the
+# Urchin runs ~63 s after the step-5 levers.
 EDITOR_I1 = {"Urchin": 51.0, "Manta": 67.0, "Stoat": 70.0, "Squirrel": 75.0, "Rhino": 95.0, "Dolphin": 97.5,
              "Serpent": 100.0, "Sparrow": 133.0}
-# The calibration course is the circuit an EMPTY genome lays (RegattaCourse.ForIntensity row 1, the deleted "Wide"
-# asset's circuit): a fixed course that does not move when the shuffle does. It is not the shipped level any more.
-CALIBRATION_GENOME = {"version": 1, "intensity": 1, "features": {}}
 SHUFFLE_JSON = os.path.join(ROOT, "Tools/Build/regatta_shuffle_pool.json")
 
 
@@ -71,6 +70,12 @@ def shipped_courses(which="shuffle"):
         if not picked:
             raise ValueError(f"no shipped Regatta course {which!r}: {[n for n, _ in named]}")
     return [(n, e["genome"]) for n, e in picked]
+
+
+# The calibration course is the shipped level's reference course Ref1 (pool entry 0, what a race at intensity 1
+# without a genome lays), so --calibrate and the self-test race what players race. The circuit an EMPTY genome lays
+# ({"version":1,"intensity":1,"features":{}}, RegattaCourse.ForIntensity row 1) is the code's fallback, not shipped.
+CALIBRATION_GENOME = shipped_courses("Ref1")[0][1]
 REGATTA_HULLS = ["Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Scarab", "Serpent", "Sparrow",
                  "Thresher", "BrittleStar"]   # the last two seated 2026-11-17 (author_regatta_assets.JUDGED_HULLS);
 # the Stoat came off the card the same day (Garrett: it will be reworked a lot) and is judge-only now
@@ -242,8 +247,8 @@ def calibrate(seeds, hulls=None, start=None):
 
 
 def self_test():
-    """The judge's contract, cheaply: one Urchin race on the calibration course finishes near the editor's 51 s, and a
-    negative control (a 10 s limit) reports a DNF instead of a time."""
+    """The judge's contract, cheaply: one Urchin race on the calibration course (Ref1) finishes within 40% of the
+    editor's 51 s, and a negative control (a 10 s limit) reports a DNF instead of a time."""
     res = judge(CALIBRATION_GENOME, ["Urchin"], [1], limit_s=400)
     t = mean_finish(res).get("Urchin", (None,))[0]
     assert t is not None, f"the Urchin did not finish: {res['notes']}"
