@@ -25218,3 +25218,16 @@ Unity reference compile: 0 errors in changed files.
 
 - [ ] Dolphin at Mass 10: two crystals appear each cycle; the field holds up to 16 seeded crystals.
 - [ ] Squirrel at Mass 0 and 10: the Boost Ring's prisms are visibly larger at Mass 10, and the ring is back in 20 s at both.
+
+## Time tempo dials on Sparrow, Scarab and Manta (2026-11-18)
+
+Not run in the Unity editor. Each card's Time kept its speed and gained a tempo dial on its own mechanic:
+- Sparrow Afterburner: `BarrelRollController.rollTimeScale` (x1 -> x0.5 at Time 10): the strafing roll takes half the time
+  and the sideways nudge is twice as fast, so the dodge covers the same distance.
+- Scarab Throttle: `ScarabVesselTransformer.accelerationScale` (x1 -> x2 at Time 10): the throttle reaches its ceiling in half the time.
+- Manta Yawstery: `YawsteryActionSO.turnRateMultiplier` enabled on both assets (Time, x1 -> x1.5): faster flat turns.
+Unity reference compile: 0 errors in changed files.
+
+- [ ] Sparrow at Time 0 and 10: the strafing roll is visibly quicker at Time 10 and lands about as far to the side.
+- [ ] Scarab at Time 0 and 10: full throttle from a stop reaches top speed in about 2.4 s at Time 0, about half at Time 10.
+- [ ] Manta at Time 0 and 10: a held Yawstery turns about 1.5x as fast at Time 10; check the Redline and Regatta AI still hold their lines.

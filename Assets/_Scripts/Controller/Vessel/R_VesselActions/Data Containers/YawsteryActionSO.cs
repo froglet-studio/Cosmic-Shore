@@ -30,12 +30,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float maxTurnDegrees = 45f;
 
         [Header("Elemental")]
-        [Tooltip("Optional element scaling on the turn rate. DISABLED by default, and disabled on " +
-                 "both shipped Yawstery assets: the Manta's spec re-cut moved Space from this turn " +
-                 "rate to Kabloom's blast radius, and Yawstery's element (Mass) scales the TRAIL it " +
-                 "throws rather than the turn. Kept as the authoring hook for a future design, now " +
-                 "in the fleet's one scaling idiom (it was an element PICKER read through the " +
-                 "retired generic map multiplier).")]
+        [Tooltip("Element scaling on the turn rate. On the Manta's two Yawstery assets it is TIME, x1 at rest -> x1.5 at " +
+                 "Time 10 (floor x0.5): a Time-heavy Manta whips its flat turns round faster, a tempo dial beside the cruise " +
+                 "and soar speed Time already raises (2026-11-18, the element-placeholder pass). Disabled = a fixed rate.")]
         [SerializeField] ElementalFloat turnRateMultiplier = new(1f);
 
         [Header("Trail")]
