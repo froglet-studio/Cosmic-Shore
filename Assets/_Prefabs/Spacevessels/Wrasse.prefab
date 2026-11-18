@@ -568,7 +568,7 @@ MonoBehaviour:
     Max: 0
     element: 0
   BoostSpeedMultiplier:
-    Enabled: 1
+    Enabled: 0
     Value: 1
     Min: 1
     Max: 1.5
@@ -1099,6 +1099,8 @@ MonoBehaviour:
     Min: 20
     Max: 40
     element: 3
+    UseFloor: 1
+    Floor: 10
   elongateYOnly: 0
   nudgeShardPoolManager: {fileID: 0}
   markerDistance: 70

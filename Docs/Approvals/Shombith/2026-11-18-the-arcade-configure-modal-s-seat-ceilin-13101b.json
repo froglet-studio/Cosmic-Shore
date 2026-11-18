@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-18-the-arcade-configure-modal-s-seat-ceilin-13101b",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-18T00:45:55+00:00",
+  "area": "arcade launch modal and the mode generators",
+  "summary": "The arcade configure modal's seat ceiling went from 4 (6 arena) to 9, capped at 3 a team, and 86 arcade cards plus their author_*_assets.py generators now say MaxPlayersAllowed 9 (fixed-spawn scenes and Maelstrom unchanged).",
+  "why": "Garrett 2026-11-17: every game opens to 9 vessels, max 3 per team.",
+  "branch": "claude/project-thread-e9yath",
+  "commit": "0e4d695fd",
+  "paths": [
+    "Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.ConfigChangeHandlers.cs",
+    "Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.cs",
+    "Tools/Build"
+  ]
+}

@@ -322,6 +322,7 @@ namespace CosmicShore.Gameplay
             roundStats.PrismsRemaining++;
             roundStats.VolumeCreated += prismStats.Volume;
             roundStats.VolumeRemaining += prismStats.Volume;
+            gameData.VolumeLedger.AddCreated(roundStats.Name, prismStats.Volume);
         }
 
         /// <summary>
@@ -367,6 +368,13 @@ namespace CosmicShore.Gameplay
             if (!hasVictim) return;
             victimPlayerStats.PrismsRemaining--;
             victimPlayerStats.VolumeRemaining -= prismStats.Volume;
+
+            // The books (VolumeLedger): the victim loses the prism and its shell; an attacker on another team gains it
+            // as VD. A pilot's own prisms are on every peer, so this server-side path sees every one of them.
+            gameData.VolumeLedger.BookLoss(victimPlayerStats.Name, victimPlayerStats.Domain,
+                hasAttacker ? attackerPlayerStats.Name : null,
+                hasAttacker ? attackerPlayerStats.Domain : Domains.Blue,
+                prismStats.Volume + prismStats.ShieldVolume, prismStats.WasSuperShielded);
         }
 
         /// <summary>
@@ -477,6 +485,7 @@ namespace CosmicShore.Gameplay
             roundStats.PrismsRemaining++;
             roundStats.VolumeRestored += prismStats.Volume;
             roundStats.VolumeRemaining += prismStats.Volume;
+            gameData.VolumeLedger.AddCreated(roundStats.Name, prismStats.Volume);
         }
 
         public void PrismVolumeModified(PrismStats prismStats)
@@ -490,6 +499,10 @@ namespace CosmicShore.Gameplay
 
             roundStats.VolumeCreated += prismStats.Volume;
             roundStats.VolumeRemaining += prismStats.Volume;
+
+            // The books split the change by sign (Garrett, 2026-11-18): growing is created, shrinking destroyed, and a
+            // shield's shell going up or coming off rides ShieldVolume. VolumeCreated keeps its legacy signed sum.
+            gameData.VolumeLedger.AddDelta(roundStats.Name, prismStats.Volume + prismStats.ShieldVolume);
         }
 
         /// <summary>
@@ -498,13 +511,17 @@ namespace CosmicShore.Gameplay
         /// (<c>Player.ReportPrismStolen_ServerRpc</c>) and the server's own local detection
         /// share one accounting rule instead of two copies that drift.
         /// </summary>
-        internal static void CreditPrismSteal(IRoundStats thief, float volume)
+        /// <para>A steal counts as both in the volume books (Garrett, 2026-11-18): CREATED for the thief here,
+        /// DESTROYED for the victim in <see cref="DebitPrismSteal"/>. <paramref name="ledgerVolume"/> adds the shell a
+        /// super-steal carries off.</para>
+        internal static void CreditPrismSteal(IRoundStats thief, float volume, VolumeLedger ledger = null, float ledgerVolume = -1f)
         {
             if (thief == null) return;
             thief.PrismStolen++;
             thief.PrismsRemaining++;
             thief.VolumeStolen += volume;
             thief.VolumeRemaining += volume;
+            ledger?.AddCreated(thief.Name, ledgerVolume >= 0f ? ledgerVolume : volume);
         }
 
         /// <summary>
@@ -514,11 +531,16 @@ namespace CosmicShore.Gameplay
         /// the thief's half, so a remote client's steal inflated the victim's
         /// PrismsRemaining/VolumeRemaining (URCHIN_BACKLOG U2, Docs/ScoringSystem/BUGS.md B19).
         /// </summary>
-        internal static void DebitPrismSteal(IRoundStats victim, float volume)
+        /// <para>In the volume books the victim loses it, and a <paramref name="thief"/> on another team gains it as VD
+        /// as well as the VC <see cref="CreditPrismSteal"/> gave: a steal counts as both.</para>
+        internal static void DebitPrismSteal(IRoundStats victim, float volume, VolumeLedger ledger = null, float ledgerVolume = -1f,
+            IRoundStats thief = null)
         {
             if (victim == null) return;
             victim.PrismsRemaining--;
             victim.VolumeRemaining -= volume;
+            ledger?.BookLoss(victim.Name, victim.Domain, thief?.Name, thief?.Domain ?? Domains.Blue,
+                ledgerVolume >= 0f ? ledgerVolume : volume);
         }
 
         public void PrismStolen(PrismStats prismStats)
@@ -542,7 +564,8 @@ namespace CosmicShore.Gameplay
             if (!gameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
                 return;
 
-            CreditPrismSteal(stealingPlayerStats, prismStats.Volume);
+            float ledgerVolume = prismStats.Volume + prismStats.ShieldVolume;
+            CreditPrismSteal(stealingPlayerStats, prismStats.Volume, gameData.VolumeLedger, ledgerVolume);
 
             // A REMOTE player's steal returned at the OwnsAttacker gate above, so its victim is
             // debited where the credit lands: Player.ReportPrismStolen_ServerRpc, which carries
@@ -551,7 +574,7 @@ namespace CosmicShore.Gameplay
             if (!gameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats))
                 return;
 
-            DebitPrismSteal(victimPlayerStats, prismStats.Volume);
+            DebitPrismSteal(victimPlayerStats, prismStats.Volume, gameData.VolumeLedger, ledgerVolume, stealingPlayerStats);
         }
 
         public void RegisterAbilityExecuted(AbilityStats abilityStats)

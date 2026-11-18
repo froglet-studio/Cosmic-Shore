@@ -52,7 +52,8 @@ if [ "${1:-}" = "tests" ]; then
     "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackBlastRunTests.cs" \
     "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackBlastPlannerTests.cs" \
     "$A/Switchback/SwitchbackPrismAvoidance.cs" \
-    "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackSpeedOverBreakingTests.cs" > "$OUT/tests.rsp"
+    "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackSpeedOverBreakingTests.cs" \
+    "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackCourseTests.cs" > "$OUT/tests.rsp"
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
     -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0108,CS1587,CS0219 \
     -target:exe -main:TestRunner -out:"$OUT/tests.dll" "@$OUT/tests.rsp" >&2

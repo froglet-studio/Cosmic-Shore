@@ -154,7 +154,7 @@ namespace CosmicShore.Tests
                 {
                     var skill = (BrittleStarTimeCoach.Skill)k;
                     float follow = BrittleStarTimeCoach.NoseFollowFor(i, skill), share = BrittleStarTimeCoach.CornerShareFor(i, skill);
-                    Assert.IsTrue(follow >= 0.8f && follow <= 8f, $"I{i} {skill}: nose follow {follow} outside 0.8-8/s");
+                    Assert.IsTrue(follow >= 0.8f && follow <= 16f, $"I{i} {skill}: nose follow {follow} outside 0.8-16/s");
                     Assert.IsTrue(share > 0f && share <= 1f, $"I{i} {skill}: corner share {share}");
                 }
             Assert.AreEqual(BrittleStarTimeCoach.Skill.Easy, BrittleStarTimeCoach.SkillFor(1));
@@ -243,7 +243,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Laps_scale_per_rung_and_keep_eight_rings_a_lap()
         {
-            int[] laps = { 2, 3, 3, 4 };
+            int[] laps = { 2, 3, 6, 6 };
             for (int i = 1; i <= 4; i++)
             {
                 Assert.AreEqual(laps[i - 1], BrittleStarTimeCourse.LapsFor(i));

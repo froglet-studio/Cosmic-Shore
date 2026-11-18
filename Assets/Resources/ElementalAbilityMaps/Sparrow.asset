@@ -31,7 +31,8 @@ MonoBehaviour:
     AbilityLabel: Afterburner
     AbilityDescription: Hold to boost indefinitely - there is no heat and no meter.
       Boosting at full stick deflection performs one strafing roll per press (base,
-      no unlock). Time raises the boost speed; at level 5 boosting also makes you
+      no unlock). Time raises the boost speed and snaps the roll (half the time at
+      level 10); at level 5 boosting also makes you
       immune to elemental debuffs.
     Input: 7
     UnlockLevel: 5

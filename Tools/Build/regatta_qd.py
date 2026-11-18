@@ -60,7 +60,8 @@ import regatta_judge_model as jm   # noqa: E402
 import regatta_loss as L           # noqa: E402
 
 HULLS = list(jm.HULLS)
-REPORT_ONLY = ("Scarab",)           # races and is reported, not scored (it stalls in half its engine races, W1 2026-11-16)
+REPORT_ONLY = ()                    # hulls raced and reported but not scored. The Scarab was one until its trained AI
+                                    # (#2087) finished every race in the #2096 re-judge (33 courses, no DNF); W3 2026-11-17.
 SCORED = [h for h in HULLS if h not in REPORT_ONLY]
 
 
@@ -383,7 +384,7 @@ def course_features(g, course):
         for p in g.get("placements") or ():
             k = "kind:" + str(p.get("kind"))
             x[k] = x.get(k, 0.0) + 1.0
-    return x
+    return add_families(x)
 
 
 def kinds_used(g, x):
@@ -423,27 +424,69 @@ def _ref_mean(backend):
         g = today()
         r = _judge(g, jm.lay(g), backend)
         times = L.alone_times(r, SCORED)
-        _REF[backend] = sum(sum(v) / len(v) for v in times.values()) / len(times)
+        # A hull that DNFs the reference course (a None time) is left out of the scale, not a crash: the ten field's
+        # first card run (2026-11-18) lost its runner to one. If every hull DNFs, the scale is the old 60 s.
+        means = [sum(v) / len(v) for v in times.values() if v and all(t is not None for t in v)]
+        dnf = [h for h, v in times.items() if not v or any(t is None for t in v)]
+        if dnf:
+            print(f"regatta_qd: reference course DNF for {', '.join(dnf)}; scale from {len(means)} hulls", flush=True)
+        _REF[backend] = sum(means) / len(means) if means else 60.0
     return _REF[backend]
 
 
 # The hulls the engine judge flies reliably (W1's baseline 2026-11-16, after the Stoat and Dolphin AI fixes #2037 / #2038,
 # #2042; alone, I1, 4 seeds): Rhino 35.4, Stoat 46.1, Urchin 51.0, Squirrel 80.1, Manta 82.3, Sparrow 90.5, Serpent 107.0,
-# Dolphin 131.0 - a 3.7x field. The Scarab stalls in half its races and waits. "mixed" races these in the engine and
+# Dolphin 131.0 - a 3.7x field. The Scarab stalled in half its races until its trained AI (#2087); since 2026-11-17 it is
+# trusted too. The Thresher (79-113 s) and the Brittle Star (73-89 s) joined the card 2026-11-17 after finishing the
+# shipped course and three archive3six courses alone under both starts. The Wrasse, Meerkat, Grizzly and Angler finish
+# too but at 2-5x, so they are off the card (author_regatta_assets.JUDGE_ONLY_HULLS) and out of this pool; set
+# REGATTA_ENGINE_HULLS to race them.
+# "mixed" races these in the engine and
 # prices any other hull with the model; every seat carries the backend that timed it.
 ENGINE_TRUSTED = tuple(h for h in os.environ.get(
-    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Stoat,Urchin").split(",") if h)
-# The judge seeds each race at turn start, so (seed, race) is deterministic; the search races one seed per course (8
-# hulls x 2 seeds is ~4.5 min a course on 4 cores) and the pool's candidates are re-raced on more seeds for the noise.
+    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Urchin,Scarab,Thresher,BrittleStar,Swordfish,TigerMoth").split(",") if h)
+# The judge seeds each race at turn start, so (seed, race) is deterministic. The search races TWO seeds per course by
+# default (2026-11-18): on one seed, the ten field's courses that screened at 1.05-1.10x came out at 1.15-1.48x on three
+# seeds (w3/ten/PICK.md), so one-seed elites were mostly luck. Two seeds cost about 1.6x a course (stage 1 still stops a
+# wide one early); the pool's candidates are still re-raced on three seeds before a pick. REGATTA_ENGINE_SEEDS=1 restores
+# the old screen.
 # The start condition every hull races under: "card" (the arcade card's own starting elements, today) or "L5" (every
 # hull at Time level 5). Garrett, 2026-11-16: search and balance Regatta under both. One condition per shard, so each
 # condition is its own archive; merge reports each.
 START = os.environ.get("REGATTA_START", "card")
 
-# Stage 1 of a gated engine course: the hulls most often fastest (Rhino, Stoat) and slowest (Serpent, Dolphin) on the
+# Stage 1 of a gated engine course: the hulls most often fastest (Rhino; the Scarab since the Stoat left the card,
+# 2026-11-17) and slowest (Serpent, Dolphin) on the
 # first engine courses; four is one round on four cores, so a course stopped here costs half.
-STAGE1 = tuple(h for h in os.environ.get("REGATTA_STAGE1", "Rhino,Stoat,Serpent,Dolphin").split(",") if h)
-ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1").split(","))
+STAGE1 = tuple(h for h in os.environ.get("REGATTA_STAGE1", "Rhino,Scarab,Serpent,Dolphin").split(",") if h)
+
+# Named fields (--field or REGATTA_FIELD): the hulls a run races, which of them the loss SCORES (the rest are raced and
+# reported only: a sanity check and a DNF veto at the pool pick), and the stage-1 hulls (the fastest and slowest scored
+# hulls on the shuffle's judged times, so a too-wide course stops early; REGATTA_STAGE1 still wins).
+# "five" is the polished five the shuffle was picked on (#2211). "ten" (hub, 2026-11-18) races the five plus Thresher,
+# Serpent, Brittle Star, Swordfish and TigerMoth, and Rhino and Manta too, but scores only the five: after step 5
+# round 7 (#2217, #2218) the hub kept the five-hull imbalance as the score while Rhino, Swordfish and Manta wait on
+# Garrett's off-card decision; the others are judged so a course that breaks one of them is seen.
+FIVE = ("Urchin", "Scarab", "Sparrow", "Dolphin", "Squirrel")
+FIELDS = {
+    "five": FIVE,
+    "ten": FIVE + ("Thresher", "Serpent", "BrittleStar", "Swordfish", "TigerMoth", "Rhino", "Manta"),
+}
+FIELD_SCORED = {"five": FIVE, "ten": FIVE}
+FIELD_STAGE1 = {"five": ("Scarab", "Dolphin"), "ten": ("Scarab", "Dolphin", "Urchin", "Squirrel")}
+
+
+def use_field(name):
+    """Race field `name`, score its scored hulls; its stage-1 hulls apply unless REGATTA_STAGE1 is set."""
+    global STAGE1, REPORT_ONLY
+    if name not in FIELDS:
+        raise SystemExit(f"regatta_qd: no field {name!r} (fields: {', '.join(FIELDS)})")
+    REPORT_ONLY = tuple(h for h in FIELDS[name] if h not in FIELD_SCORED[name])
+    set_hulls(list(FIELDS[name]))
+    if "REGATTA_STAGE1" not in os.environ:
+        STAGE1 = FIELD_STAGE1[name]
+GATE_Q = float(os.environ.get("REGATTA_GATE_Q", "0.5"))
+ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1,2").split(","))
 
 
 def _rj():
@@ -531,7 +574,8 @@ def evaluate(job):
             tb = {st["hull"]: st.get("backend", backend) for race in r1["races"] for st in race["seats"]}
             return {"genome": g, "game_genome": gg, "valid": False, "partial": True, "x": x,
                     "seconds": {h: done.get(h) for h in t1}, "timed_by": tb, "stage1_spread": round(lb, 4),
-                    "kinds": kinds_used(gg, x), "error": f"stage 1 spread {lb:.2f}x > gate {gate:.2f}x: stopped",
+                    "kinds": kinds_used(gg, x), "error": (f"stage 1: {', '.join(h for h in stage1 if h not in done)} did not finish: stopped"
+                              if len(done) < len(stage1) else f"stage 1 spread {lb:.2f}x > gate {gate:.2f}x: stopped"),
                     "backend": backend, "engine_commit": r1.get("engine_commit")}
         r2 = _judge(gg, course, backend, seeds, hulls=[h for h in HULLS if h not in stage1])
         r = dict(r2, races=r1["races"] + r2["races"])
@@ -683,28 +727,113 @@ def engine_only(records):
     return out
 
 
-def feature_names(records):
-    extra = sorted({k for r in records if usable(r) for k in r["x"] if k not in FEATURES})
-    return list(FEATURES) + extra
+PER_KIND = ("w2:count_by_kind:", "w2:mean_scale_by_kind:", "kind:")
+
+# W2's 52 placement kinds pooled by what a pilot meets (W3's grouping, 2026-11-16): the surrogate learns one input per
+# family until there are enough courses for one per kind. The rail features (neutral, gaps, plain, shielded, detours)
+# are their own family already: FEATURES.
+FAMILIES = {
+    "walls": ("Wall", "Panes", "Shatterplane", "Flatline", "Breakwater", "Standoff", "DartBoard", "ShapeSign"),
+    "surfaces": ("Gyroid", "SchwarzPSurface", "Spherene", "Helicoid", "Ellipsoid", "Geode", "Caldera", "Pumpkin", "Swell"),
+    "rings": ("FiveRings", "LinkedRings", "CliffordTorus", "HopfFibration", "TorusKnot", "Ourobor", "Orrery", "Corona",
+              "Garland", "Twistbands"),
+    "strands": ("Helix", "Skein", "Jackstraw", "SingleTrailBlock", "Comet", "Zephyr", "Harvest", "RaceTrack",
+                "WaypointTrack", "RegattaRails", "SwitchbackFeatures", "Switchyard"),
+    "growth": ("LSystem", "Yggdra", "Kelpwood", "Hesperides", "Ribcage", "Boneyard", "Flora"),
+    "structures": ("Atlantis", "Batman", "Daedala", "WildlifeCage", "ShapeBase", "Crystal"),
+}
+_FAMILY_OF = {k: f for f, ks in FAMILIES.items() for k in ks}
 
 
-def fit_trusted(records, seed=0, min_n=30):
-    """Fit on 80% of the judged records, score on the 20% it never saw, then refit on all (the held-out score stays the
-    one reported). None with too few records."""
+def add_families(x):
+    """x with one count per placement family ("fam:<family>"), from its per-kind counts. Idempotent, so records judged
+    before the families existed are featurised the same way."""
+    fam = {f"fam:{f}": 0.0 for f in FAMILIES}
+    fam["fam:other"] = 0.0
+    for k, v in x.items():
+        for pre in ("w2:count_by_kind:", "kind:"):
+            if k.startswith(pre):
+                fam["fam:" + _FAMILY_OF.get(k[len(pre):], "other")] += float(v)
+    x.update(fam)
+    return x
+
+
+def feature_names(records, per_kind=None):
+    """The surrogate's inputs: FEATURES plus W2's aggregate descriptors. One input per placement kind (about 60 of them)
+    is only added once there are 10 courses per input, or ridge fits the noise (held-out R^2 -0.64 on 22 courses,
+    2026-11-16). Inputs that never vary are dropped."""
+    rs = [r for r in records if usable(r)]
+    for r in rs:
+        add_families(r["x"])
+    extra = sorted({k for r in rs for k in r["x"] if k not in FEATURES})
+    agg = [k for k in extra if not k.startswith(PER_KIND)]
+    kinds = [k for k in extra if k.startswith(PER_KIND)]
+    names = list(FEATURES) + agg
+    if per_kind or (per_kind is None and len(rs) >= 10 * (len(names) + len(kinds))):
+        names += kinds
+    return [n for n in names if len({float(r["x"].get(n, 0.0)) for r in rs}) > 1]
+
+
+def fit_trusted(records, seed=0, min_n=30, folds=5):
+    """Held-out accuracy by K-fold cross-validation (every course is predicted once by a fit that never saw it, so a
+    few dozen courses still give a stable score), then one fit on all of them. Two scores: each hull's ln time, and its
+    STANDING (ln time minus the field's mean ln time on that course), which is what a pool cancels. None with too few
+    records."""
     valid = [r for r in records if usable(r)]
     if len(valid) < min_n:
         return None
+    np = _np()
     rng = random.Random(seed)
     idx = list(range(len(valid)))
     rng.shuffle(idx)
-    cut = int(0.8 * len(idx))
-    train, test = [valid[i] for i in idx[:cut]], [valid[i] for i in idx[cut:]]
     names = feature_names(valid)
     hulls = [h for h in HULLS if sum(1 for r in valid if r["seconds"].get(h)) >= 3]
-    s = Surrogate(names).fit(train, hulls=hulls)
-    held = s.score(test, hulls=[h for h in SCORED if h in hulls])
-    full = Surrogate(names).fit(valid, hulls=hulls, alpha=s.alpha)
-    full.held_out = held
+    scored = [h for h in SCORED if h in hulls]
+    full = Surrogate(names).fit(valid, hulls=hulls)
+    pred = {}                                    # record index -> {hull: predicted seconds}, out of fold
+    for k in range(folds):
+        te = [i for j, i in enumerate(idx) if j % folds == k]
+        tr = [i for j, i in enumerate(idx) if j % folds != k]
+        if not te or len(tr) < 3:
+            continue
+        sk = Surrogate(names).fit([valid[i] for i in tr], hulls=hulls, alpha=full.alpha)
+        for i in te:
+            pred[i] = sk.predict(valid[i]["x"])
+    per = {}
+    for h in scored:
+        rows = [(math.log(pred[i][h]), math.log(valid[i]["seconds"][h])) for i in pred
+                if valid[i]["seconds"].get(h) and h in pred[i]]
+        if len(rows) < 3:
+            continue
+        p, y = np.array([a for a, _ in rows]), np.array([b for _, b in rows])
+        ss = float(((y - y.mean()) ** 2).sum())
+        per[h] = {"r2": round(1.0 - float(((p - y) ** 2).sum()) / ss, 3) if ss > 1e-12 else None,
+                  "mae_s": round(float(np.abs(np.exp(p) - np.exp(y)).mean()), 2), "n": len(rows)}
+    fulls = [i for i in pred if all(valid[i]["seconds"].get(h) for h in scored) and all(h in pred[i] for h in scored)]
+    stand, sp, so, right = {h: ([], []) for h in scored}, [], [], 0
+    for i in fulls:
+        lp = {h: math.log(pred[i][h]) for h in scored}
+        ly = {h: math.log(valid[i]["seconds"][h]) for h in scored}
+        mp, my = sum(lp.values()) / len(lp), sum(ly.values()) / len(ly)
+        for h in scored:
+            stand[h][0].append(lp[h] - mp)
+            stand[h][1].append(ly[h] - my)
+        sp.append(max(lp.values()) - min(lp.values()))
+        so.append(max(ly.values()) - min(ly.values()))
+        right += min(lp, key=lp.get) == min(ly, key=ly.get)
+
+    def r2(p, y):
+        p, y = np.array(p), np.array(y)
+        ss = float(((y - y.mean()) ** 2).sum()) if len(y) >= 3 else 0.0
+        return round(1.0 - float(((p - y) ** 2).sum()) / ss, 3) if ss > 1e-12 else None
+
+    standing = {h: r2(*stand[h]) for h in scored}
+    r2s = [v["r2"] for v in per.values() if v["r2"] is not None]
+    st2 = [v for v in standing.values() if v is not None]
+    full.held_out = {"per_hull": per, "mean_r2": round(sum(r2s) / len(r2s), 3) if r2s else None,
+                     "standing_r2": standing, "mean_standing_r2": round(sum(st2) / len(st2), 3) if st2 else None,
+                     "spread_r2": r2(sp, so), "leader_right": round(right / len(fulls), 3) if fulls else None,
+                     "n": len(fulls), "folds": folds, "courses": len(valid)}
     return full
 
 
@@ -719,7 +848,19 @@ STEPS = {"lap_u": (500.0, "500 u more lap"), "lane_over_spine": (0.05, "lanes 5%
          "shielded": (0.1, "a tenth of the lap as shielded (not super-shielded) rail"), "gap_count": (1.0, "one more rail gap"),
          "free_stretches": (1.0, "one more stretch off the rail"), "detour_u": (100.0, "100 u more rail detour"),
          "alternates": (1.0, "one more alternate ring"), "alt_offset": (100.0, "alternate rings 100 u further out"),
-         "crystals": (1.0, "one more crystal on the line")}
+         "crystals": (1.0, "one more crystal on the line"),
+         **{f"fam:{f}": (1.0, f"one more placement from the {f} family") for f in list(FAMILIES) + ["other"]}}
+
+
+def reference_seconds(recs):
+    """Each hull's median time over the courses it finished: the reference the equations' seconds are read at. (A
+    stage-1 record has no time for the hulls it never raced, so no single record is the reference.)"""
+    ref = {}
+    for h in HULLS:
+        ts = sorted(r["seconds"][h] for r in recs if r.get("valid") and r["seconds"].get(h) is not None)
+        if ts:
+            ref[h] = ts[len(ts) // 2]
+    return ref
 
 
 def effects(s, ref_seconds):
@@ -760,9 +901,13 @@ def equations_md(s, ref_seconds, records, backend):
              f"Mean R^2 of ln(time) over the scored hulls: **{ho.get('mean_r2')}** (it may screen the search at >= "
              f"{TRUST_R2}); R^2 of the course's ln(spread): **{ho.get('spread_r2')}**; it names the right fastest hull on "
              f"**{ho.get('leader_right')}** of {ho.get('n')} held-out courses.", "",
-             "| hull | held-out R^2 | mean error (s) |", "|---|---|---|"]
+             f"Each course is predicted by a fit that never saw it ({ho.get('folds', 1)}-fold cross-validation over "
+             f"{ho.get('courses', n)} courses). STANDING is a hull's ln time minus the field's mean on that course: the "
+             f"quantity a pool cancels, so its R^2 is the one that says whether the equations can steer a pool (mean "
+             f"**{ho.get('mean_standing_r2')}**).", "",
+             "| hull | held-out R^2, time | R^2, standing | mean error (s) |", "|---|---|---|---|"]
     for h, v in sorted(ho.get("per_hull", {}).items()):
-        lines.append(f"| {h} | {v['r2']} | {v['mae_s']} |")
+        lines.append(f"| {h} | {v['r2']} | {(ho.get('standing_r2') or {}).get(h)} | {v['mae_s']} |")
     lines += ["", "## What each feature does to each hull (seconds, against today's course)", "",
               "| change | " + " | ".join(hulls) + " |", "|---|" + "---|" * len(hulls)]
     order = sorted(eff, key=lambda k: -max([abs(v) for v in eff[k].values()] or [0]))
@@ -993,12 +1138,60 @@ def read_jsonl(path):
     return out
 
 
+def genome_key(g):
+    """One string per distinct course (the genome without its free-text notes)."""
+    return json.dumps({k: v for k, v in g.items() if k != "notes"}, sort_keys=True)
+
+
+def dedupe(recs):
+    """Each distinct course once: the race of a course judged twice (a restarted runner, two runners drawing the same
+    seed course) is the same deterministic race, so the first full record wins."""
+    out, at = [], {}
+    for r in recs:
+        key = genome_key(r["genome"]) if r.get("genome") else None
+        if key is None:
+            out.append(r)
+        elif key not in at:
+            at[key] = len(out)
+            out.append(r)
+        elif not out[at[key]].get("valid") and r.get("valid"):
+            out[at[key]] = r
+    return out
+
+
 def shard_files(root):
     """Every shard's records file under `root` (root/shard_K/records.jsonl)."""
     if not os.path.isdir(root):
         return []
     return sorted(os.path.join(root, d, "records.jsonl") for d in os.listdir(root)
                   if d.startswith("shard_") and os.path.isfile(os.path.join(root, d, "records.jsonl")))
+
+
+SEED_FROM = tuple(p for p in os.environ.get("REGATTA_SEED_FROM", "").split(",") if p)
+SEED_N = int(os.environ.get("REGATTA_SEED_N", "24"))
+
+
+def seed_genomes(own, k, n):
+    """The best SEED_N courses of other archives (REGATTA_SEED_FROM: roots or records files, any start or roster), by
+    their spread over the hulls this run scores, raced first so a new archive or start grows from courses already
+    known to be tight. Split across shards (every n-th to shard k); courses this shard already raced are skipped."""
+    recs = []
+    for p in SEED_FROM:
+        for f in ([p] if p.endswith(".jsonl") else shard_files(p)):
+            recs += [r for r in read_jsonl(f) if r.get("valid") and r.get("genome")]
+    def spread(r):
+        # Over the scored hulls the record timed: an older archive never raced a hull a new field adds (the ten's
+        # Swordfish, TigerMoth), so it seeds on the ones it has, if that is at least five (or the whole field).
+        t = [r["seconds"][h] for h in SCORED if r["seconds"].get(h)]
+        return max(t) / min(t) if len(t) >= min(5, len(SCORED)) else None
+    ranked, keys = [], set()
+    for r in sorted((r for r in recs if spread(r)), key=spread):
+        key = genome_key(r["genome"])
+        if key not in keys:
+            keys.add(key)
+            ranked.append(r["genome"])
+    done = {genome_key(r["genome"]) for r in own if r.get("genome")}
+    return [g for i, g in enumerate(ranked[:SEED_N]) if i % n == k and genome_key(g) not in done]
 
 
 def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=10, log=print):
@@ -1012,12 +1205,15 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
     os.makedirs(out, exist_ok=True)
     root = os.path.dirname(os.path.abspath(out.rstrip("/")))
     mine = os.path.join(out, "records.jsonl")
-    rng = random.Random(1_000_003 * (k + 1) + n)
     rand_g, mut, cross, _ = ops()
     seeds = (0,) if backend == "model" else ENGINE_SEEDS
     own = read_jsonl(mine)
+    # The stream depends on how far this shard got and on its start condition, so a restarted runner (or an L5 runner
+    # with the same K) never replays courses already raced.
+    rng = random.Random(f"{k}/{n}/{START}/{len(own)}")
     peers, s, t0 = [], None, time.time()
-    log(f"[shard {k}/{n}] {len(own)} courses already in {mine}")
+    seed_q = seed_genomes(own, k, n)
+    log(f"[shard {k}/{n}] {len(own)} courses already in {mine}, {len(seed_q)} seed courses to race first")
     while len(own) < budget:
         if len(own) % peers_every == 0:
             peers = [r for f in shard_files(root) if os.path.abspath(f) != os.path.abspath(mine) for r in read_jsonl(f)
@@ -1029,8 +1225,14 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
         if len([r for r in every if usable(r)]) >= 60 and (s is None or len(own) % refit_every == 0):
             s = fit_trusted(every, seed=len(every))
         full = sorted(r["loss"]["spread_x"] for r in every if r.get("valid") and r["loss"].get("spread_x"))
-        gate = full[len(full) // 2] if len(full) >= 10 and backend != "model" else None
-        if k == 0 and not every:
+        # REGATTA_GATE_Q: the quantile of the full spreads a stage-1 spread must beat to race on (0.5, the median).
+        # The ten field's L5 shard stopped 139 of 153 courses at stage 1 on the median (2026-11-18), so its archive
+        # barely grew; a looser quantile races more of them in full.
+        gate = (full[min(len(full) - 1, int(len(full) * GATE_Q))]
+                if len(full) >= 10 and backend != "model" else None)
+        if seed_q:
+            g = seed_q.pop(0)
+        elif k == 0 and not every:
             g = today()
         elif len(archive) < 12 or rng.random() < 0.15:
             g = rand_g(rng)
@@ -1054,6 +1256,11 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
                 g = best[1] if best else child()
             else:
                 g = child()
+        seen = {genome_key(r["genome"]) for r in every if r.get("genome")}
+        for _ in range(8):                       # a course already raced is mutated until it is new
+            if genome_key(g) not in seen:
+                break
+            g = mut(g, rng)
         r = evaluate((g, backend, seeds, gate))
         r.update(start=START, shard=k, at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
         with open(mine, "a", encoding="utf-8") as fh:
@@ -1084,6 +1291,10 @@ def merge_records(recs, out, root, log=print):
     os.makedirs(out, exist_ok=True)
     if not recs:
         return {"courses": 0}
+    n_raw = len(recs)
+    recs = dedupe(recs)
+    if len(recs) < n_raw:
+        log(f"[merge] {n_raw - len(recs)} repeated courses folded ({len(recs)} distinct)")
     set_hulls(sorted({h for r in recs if r.get("valid") for h in r["seconds"]}) or HULLS)
     backend = next((r.get("backend") for r in recs if r.get("valid")), "engine")
     archive = {}
@@ -1095,7 +1306,7 @@ def merge_records(recs, out, root, log=print):
     open(os.path.join(out, "SEARCH.md"), "w").write(search_report(recs, backend, s))
     if s:
         json.dump(s.to_json(), open(os.path.join(out, "surrogate.json"), "w"), indent=1)
-        ref = next(r for r in recs if r.get("valid"))["seconds"]
+        ref = reference_seconds(recs)
         open(os.path.join(out, "EQUATIONS.md"), "w").write(equations_md(s, ref, recs, backend))
     rep = pick_pool(list(archive.values()) + top_passing(recs, 60), out, backend)
     summary = {"courses": len(recs), "raced_full": sum(1 for r in recs if r.get("valid")),
@@ -1121,10 +1332,17 @@ def search_report(records, backend, surrogate=None):
     ok = [r for r in records if r.get("valid") and r["loss"].get("spread_x")]
     if not ok:
         return "# Regatta search\n\nNo course finished.\n"
-    hulls = [h for h in SCORED if all(r["seconds"].get(h) for r in ok[:1])]
-    full = [r for r in ok if all(r["seconds"].get(h) for h in hulls)]
+    # Every scored hull that finished on most raced courses (a stage-1 record carries only four of them).
+    hulls = [h for h in SCORED if sum(1 for r in ok if r["seconds"].get(h)) >= 0.5 * len(ok)]
+    full = [r for r in ok if all(r["seconds"].get(h) for h in hulls)] or ok
+    ok = [r for r in ok if all(r["seconds"].get(h) for h in hulls)] or ok
     spreads = [r["loss"]["spread_x"] for r in ok]
-    today = ok[0]
+    def plain(r):     # today's course: no placements, flora, features or circuit overrides
+        g = r.get("genome") or {}
+        f = g.get("features") or {}
+        return not (g.get("placements") or g.get("flora") or f.get("Sections") or f.get("AlternateGates")
+                    or (f.get("Crystals") or {}).get("PerLap") or g.get("circuit")) and int(g.get("intensity", 1)) == 1
+    today = next((r for r in ok if plain(r)), ok[0])
     lines = [f"# Regatta course search ({time.strftime('%Y-%m-%d')}, backend `{backend}`)", "",
              f"{len(records)} genomes judged, {len(ok)} raced to a result, {len(records) - len(ok)} not raced or not "
              f"finished (guard fails, DNFs). Hulls scored: {', '.join(hulls)}.", "",
@@ -1297,6 +1515,17 @@ def compare(budget, out, backend="model", seed=1, log=print):
 
 def self_test():
     bad = []
+    if "REGATTA_ENGINE_SEEDS" not in os.environ and len(ENGINE_SEEDS) < 2:
+        bad.append("regatta_qd: the engine search screens on one seed (PICK.md 2026-11-18: one seed is mostly luck)")
+    # Every named field races in the engine (ENGINE_TRUSTED) and its stage-1 hulls are in it, two at least.
+    for name, hulls in FIELDS.items():
+        if [h for h in hulls if h not in ENGINE_TRUSTED]:
+            bad.append(f"regatta_qd: field {name} has hulls the engine does not trust")
+        st, sc = FIELD_STAGE1.get(name, ()), FIELD_SCORED.get(name, ())
+        if len(st) < 2 or [h for h in st if h not in sc]:
+            bad.append(f"regatta_qd: field {name}'s stage-1 hulls are not two or more of its scored hulls")
+        if len(sc) < 2 or [h for h in sc if h not in hulls]:
+            bad.append(f"regatta_qd: field {name} scores hulls it does not race")
     rng = random.Random(7)
     # Operators: today's genome survives repair unchanged; random and mutated genomes stay in range; crossover by leg.
     today = jm.today_genome()
@@ -1350,7 +1579,7 @@ def main():
                                               "shard", "merge"))
     ap.add_argument("--shard", type=int, default=0, help="shard: this runner's index K (0-based)")
     ap.add_argument("--of", type=int, default=1, help="shard: how many runners N")
-    ap.add_argument("--start", default=None, choices=("card", "L5"),
+    ap.add_argument("--start", default=None, choices=("card", "rest", "L5"),
                     help="the start condition every hull races under (default card, or REGATTA_START)")
     ap.add_argument("dirs", nargs="*")
     ap.add_argument("--budget", type=int, default=1500)
@@ -1364,10 +1593,14 @@ def main():
     ap.add_argument("--hulls", default=None, help="comma list raced and scored (default: every hull on the model, the "
                     "trusted engine roster ENGINE_TRUSTED on engine / mixed)")
     ap.add_argument("--init", type=int, default=64)
+    ap.add_argument("--field", default=os.environ.get("REGATTA_FIELD"), choices=tuple(FIELDS),
+                    help="a named field raced and scored (FIELDS; default REGATTA_FIELD); --hulls wins over it")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
     if a.hulls:
         set_hulls([h for h in a.hulls.split(",") if h])
+    elif a.field:
+        use_field(a.field)
     elif a.backend == "engine":
         set_hulls(list(ENGINE_TRUSTED))
     if a.workers is None and a.backend != "model":
@@ -1404,7 +1637,7 @@ def main():
         open(os.path.join(a.out, "SEARCH.md"), "w").write(md)
         s = fit_trusted([r for r in recs if r.get("valid")], min_n=20)
         if s:
-            ref = next(r for r in recs if r.get("valid"))["seconds"]
+            ref = reference_seconds(recs)
             open(os.path.join(a.out, "EQUATIONS.md"), "w").write(equations_md(s, ref, recs, backend))
         print(md)
     elif a.cmd == "engine-report":
@@ -1416,7 +1649,7 @@ def main():
     else:
         recs = [json.loads(l) for d in a.dirs for l in open(os.path.join(d, "records.jsonl"), encoding="utf-8")]
         s = fit_trusted(recs)
-        ref = next(r for r in recs if r.get("valid"))["seconds"]
+        ref = reference_seconds(recs)
         backend = next(r for r in recs if r.get("valid")).get("backend", "model")
         md = equations_md(s, ref, recs, backend)
         open(os.path.join(a.out, "EQUATIONS.md") if a.out else "EQUATIONS.md", "w").write(md)

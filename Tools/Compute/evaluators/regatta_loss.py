@@ -46,7 +46,7 @@ GUARD_WEIGHT = 0.5
 FIELD_WEIGHT = 0.5
 PERF_WEIGHT = 0.5         # a course that lays more prisms than the budget pays ln(prisms / budget) x this
 PRISM_BUDGET = 6000.0     # rails (~1,800-2,000) + placements, with headroom under the cell's phase limits for player
-#                           trails (Regatta Cell Config 1: Restless 2,512 / Frenzy 5,412 prisms, being raised by W2)
+#                           trails (the old Regatta Cell Config 1, deleted 2026-11-18: Restless 2,512 / Frenzy 5,412 prisms)
 LEAN_WEIGHT = 0.02        # and a small cost per budget's worth laid, so the search prefers the leaner of two equals
 PASS_SPREAD = 1.25
 PASS_CHAOS = 0.06

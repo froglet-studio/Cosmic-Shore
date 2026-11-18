@@ -15,6 +15,13 @@ namespace CosmicShore.Gameplay
         public enum AssemblerKind { Wall = 0, Gyroid = 1, SerpentLattice = 2 }
         public enum ShieldMode   { None = 0, Shield = 1, SuperShield = 2 }
 
+        /// <summary>Which plane the Serpent lattice is laid in, relative to the seed's pose (the heading it
+        /// was laid on). <see cref="Across"/> is the original wall, standing across the heading, so the trail
+        /// fed it only after a 90 degree turn. <see cref="Keel"/> stands along the heading on the hull's own up
+        /// (a pure pitch turn stays in it), <see cref="Wings"/> lies along the heading on the hull's right
+        /// (a flat turn stays in it). Either of the last two is fed by flying straight on.</summary>
+        public enum WallPlane { Across = 0, Keel = 1, Wings = 2 }
+
         [Header("Resource")]
         [Tooltip("Which resource pool to consume when seeding.")]
         [SerializeField] private int resourceIndex = 0;
@@ -35,6 +42,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Legacy Wall / Gyroid assemblers only: how many bricks the wall may claim, the seed " +
                  "excluded. The Serpent lattice ignores it (it has no brick limit).")]
         [SerializeField] private int bondingDepth = 50;
+        [Tooltip("Serpent lattice: the plane the wall is laid in, for the stance and the cloak alike (they must " +
+                 "look the same). Keel (Garrett, 2026-11-18): the wall stands along the heading on the hull's up, so " +
+                 "flying straight on, or pulling up or down, keeps the trail feeding it - no 90 degree turn. " +
+                 "Across is the original wall, square to the heading.")]
+        [SerializeField] private WallPlane wallPlane = WallPlane.Keel;
 
         [Header("Serpent lattice - bricks (MASS scales size AND spacing)")]
         [Tooltip("Short side of a wall brick at the resting Mass level, in world units. The long " +
@@ -113,6 +125,7 @@ namespace CosmicShore.Gameplay
             ? ShieldMode.Shield
             : stanceShieldOnSeed;
         public int BondingDepth => bondingDepth;
+        public WallPlane Plane => wallPlane;
 
         public float BrickShortSide => brickShortSide;
         public float BrickDepth => brickDepth;

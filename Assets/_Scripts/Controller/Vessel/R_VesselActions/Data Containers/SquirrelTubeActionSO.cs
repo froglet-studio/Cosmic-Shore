@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -62,14 +63,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float cooldown = 20f;
 
         [Header("Elemental (Mass)")]
-        [Tooltip("MASS -> cooldown: multiplier on Cooldown at Mass level 10 (1 at resting level, " +
-                 "extrapolates into the deficit band so debuffed Mass LENGTHENS the cooldown). " +
-                 "The ring is this hull's mass-CREATION ability, so Mass owns how often it lays.")]
-        [FormerlySerializedAs("cooldownMultiplierAtFullTime")]
-        [SerializeField] private float cooldownMultiplierAtFullMass = 0.5f;
-
-        [Tooltip("Floor for the Mass cooldown multiplier so overcharge can never zero the cooldown.")]
-        [SerializeField] private float minCooldownMultiplier = 0.35f;
+        [Tooltip("MASS -> ring size: multiplier on prismScale, x1 at rest -> x1.5 at Mass 10 (floor x0.5), read per deploy. " +
+                 "A heavy Squirrel lays a ring of bigger prisms: more mass to skim for boost. The cooldown is fixed: making it come " +
+                 "back SOONER is Time's job, not Mass's (2026-11-18, the element-placeholder pass; it was a Mass cooldown).")]
+        [SerializeField] ElementalFloat prismScaleMultiplier = ElementalFloat.Multiplier(1f, 1.5f, Element.Mass, 0.5f);
 
         [Tooltip("MASS level-5 'Twin Rings': extra rings added to the tube while the Mass " +
                  "elemental upgrade is active (per-deploy snapshot).")]
@@ -85,8 +82,8 @@ namespace CosmicShore.Gameplay
         public float ForwardOffset => forwardOffset;
         public int SpawnPerFrame => Mathf.Max(1, spawnPerFrame);
         public float Cooldown => Mathf.Max(0f, cooldown);
-        public float CooldownMultiplierAtFullMass => cooldownMultiplierAtFullMass;
-        public float MinCooldownMultiplier => Mathf.Max(0.01f, minCooldownMultiplier);
+        /// <summary>The ring prisms' uniform scale at this vessel's live Mass level.</summary>
+        public float PrismScaleFor(IVesselStatus status) => PrismScale * Mathf.Max(0.05f, prismScaleMultiplier.EvaluateLive(status));
         public int UpgradeExtraRings => Mathf.Max(0, upgradeExtraRings);
 
         /// <summary>Total axial length the tube spans, from the first ring to the last.</summary>

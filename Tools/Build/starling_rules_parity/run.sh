@@ -22,6 +22,7 @@ RULES="$S/Controller/Vessel/StarlingRules.cs"
 DECK="$S/Controller/Vessel/R_VesselActions/Data Containers/StarlingCardDeckSO.cs"
 CONFIG="$S/Controller/Vessel/R_VesselActions/Data Containers/StarlingConfigSO.cs"
 ELEMENT="$S/Data/Enums/Element.cs"
+EFLOAT="$S/Controller/Vessel/ElementalFloat.cs"
 TEST="$S/Tests/Editor/StarlingRulesTests.cs"
 OUT="${TMPDIR:-/tmp}/starling_rules_parity"
 mkdir -p "$OUT"
@@ -29,7 +30,7 @@ mkdir -p "$OUT"
 build_and_run() {   # $1 = rules source, $2 = deck source, $3 = expected (pass|fail), $4 = label
   ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
   printf '%s\n' "$HERE/Stubs.cs" "$HERE/../brittlestar_harness/NUnitShim.cs" "$HERE/../angler_command_parity/Runner.cs" \
-    "$1" "$2" "$CONFIG" "$ELEMENT" "$TEST" | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
+    "$1" "$2" "$CONFIG" "$ELEMENT" "$EFLOAT" "$TEST" | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig "@$OUT/refs.rsp" \
     -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632 \
     -target:exe -main:Runner -out:"$OUT/krp.exe" "@$OUT/files.rsp" 1>&2

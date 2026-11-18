@@ -21,7 +21,7 @@ reads its "intensity" (default 1), "seed" (the course seed; default the shipped 
 absent = the arena's own, {} = none); anything else is listed in RESULT["notes"] as ignored.
 
 Command line:
-    python3 Tools/Compute/evaluators/regatta_judge.py --calibrate [--seeds 1,2,3]   every hull alone on the editor
+    python3 Tools/Compute/evaluators/regatta_judge.py --calibrate [--seeds 1,2,3]  (default 1-15)   every hull alone on the editor
                                                          benchmark's course, against its 2026-11-03 times
     python3 Tools/Compute/evaluators/regatta_judge.py --genome g.json --hulls Urchin,Manta [--field]
     python3 Tools/Compute/evaluators/regatta_judge.py --self-test
@@ -37,6 +37,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -44,12 +45,42 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 BIN = os.environ.get("REGATTA_JUDGE_BIN", "/tmp/regatta-judge-bin")
 DLL = os.path.join(BIN, "CosmicShore.dll")
 
-# The editor's Regatta Hull Benchmark, 2026-11-03: each AI alone, Legendary, I1, three laps, the course that is
-# today's pool entry 0 with no features (regatta_measured_roster.MEASURED_ON, seed 20268834).
+# The editor's Regatta Hull Benchmark, 2026-11-03: each AI alone, Legendary, I1, three laps, on the circuit that was
+# then pool entry 0 with no features (regatta_measured_roster.MEASURED_ON, seed 20268834). That circuit was deleted
+# (#2212), so these are a historical sanity scale, not a reference for the calibration course below: on Ref1 the
+# Urchin runs ~63 s after the step-5 levers.
 EDITOR_I1 = {"Urchin": 51.0, "Manta": 67.0, "Stoat": 70.0, "Squirrel": 75.0, "Rhino": 95.0, "Dolphin": 97.5,
              "Serpent": 100.0, "Sparrow": 133.0}
-CALIBRATION_GENOME = {"version": 1, "intensity": 1, "features": {}}
-REGATTA_HULLS = ["Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow"]
+SHUFFLE_JSON = os.path.join(ROOT, "Tools/Build/regatta_shuffle_pool.json")
+
+
+def shipped_courses(which="shuffle"):
+    """The shipped Regatta level's courses (Tools/Build/regatta_shuffle_pool.json, what the pool deals), as
+    [(name, game genome)]: "shuffle" every course, "refs" the reference courses Ref1-Ref4 (pool entries 0-3, the ones a
+    race at intensity 1-4 without a genome lays), or one name ("Ref2", "Course5")."""
+    with open(SHUFFLE_JSON) as f:
+        entries = json.load(f)["entries"]
+    named = [(e.get("ref") or e["label"], e) for e in entries]
+    if which == "refs":
+        picked = sorted(((n, e) for n, e in named if e.get("ref")), key=lambda ne: ne[0])
+    elif which == "shuffle":
+        picked = sorted(named, key=lambda ne: (not ne[1].get("ref"), ne[0]))
+    else:
+        picked = [(n, e) for n, e in named if which in (n, e["label"])]
+        if not picked:
+            raise ValueError(f"no shipped Regatta course {which!r}: {[n for n, _ in named]}")
+    return [(n, e["genome"]) for n, e in picked]
+
+
+# The calibration course is the shipped level's reference course Ref1 (pool entry 0, what a race at intensity 1
+# without a genome lays), so --calibrate and the self-test race what players race. The circuit an EMPTY genome lays
+# ({"version":1,"intensity":1,"features":{}}, RegattaCourse.ForIntensity row 1) is the code's fallback, not shipped.
+CALIBRATION_GENOME = shipped_courses("Ref1")[0][1]
+REGATTA_HULLS = ["Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Scarab", "Serpent", "Sparrow",
+                 "Thresher", "BrittleStar"]   # the last two seated 2026-11-17 (author_regatta_assets.JUDGED_HULLS);
+# the Stoat came off the card the same day (Garrett: it will be reworked a lot) and is judge-only now
+# Any other hull is seated by name too: RaceJudge adds a requested hull the card does not list to the card in memory, for
+# that run only (author_regatta_assets.JUDGE_ONLY_HULLS: Wrasse, Meerkat, Grizzly, Angler, Stoat).
 
 
 def _commit():
@@ -60,9 +91,31 @@ def _commit():
         return ""
 
 
+def _stale():
+    """True when any C# under Assets/_Scripts or Port/src is newer than the built player: the game is compiled INTO
+    the player (CosmicShore.Live), so a judge on an old build races yesterday's AI."""
+    built = os.path.getmtime(DLL)
+    for top in ("Assets/_Scripts", "Port/src"):
+        for d, dirs, files in os.walk(os.path.join(ROOT, top)):
+            dirs[:] = [x for x in dirs if x not in ("bin", "obj")]
+            for f in files:
+                if f.endswith(".cs") and os.path.getmtime(os.path.join(d, f)) > built:
+                    return True
+    return False
+
+
+_BUILD_LOCK = threading.Lock()
+
+
 def build(force=False):
-    """Build the player once (about 50 s). Returns the dll path."""
-    if os.path.exists(DLL) and not force:
+    """Build the player (about 50 s) when it is missing or older than the checkout's C#. Returns the dll path.
+    One build at a time: concurrent judge() calls wait for it rather than writing the same folder."""
+    with _BUILD_LOCK:
+        return _build(force)
+
+
+def _build(force):
+    if os.path.exists(DLL) and not force and not _stale():
         return DLL
     if not shutil.which("dotnet"):
         raise RuntimeError("dotnet not found: apt-get install -y dotnet-sdk-10.0")
@@ -80,8 +133,8 @@ def _run_one(spec, timeout_s, workdir, tag):
         json.dump(spec, f)
     env = dict(os.environ, COSMIC_SHORE_PROJECT=ROOT, COSMIC_SHORE_NET="off", COSMIC_SHORE_AUDIO="off",
                COSMIC_SHORE_COMMIT=_commit(),
-               # Each process its own profile, so parallel runs never share a save slot.
-               COSMIC_SHORE_PROFILE=f"judge-{os.getpid()}-{tag}")
+               # Each process its own profile (per workdir too, for concurrent judge() calls), so runs never share a save slot.
+               COSMIC_SHORE_PROFILE=f"judge-{os.getpid()}-{os.path.basename(workdir)}-{tag}")
     cmd = ["dotnet", DLL, "--headless", "--quiet", "--race-judge", spec_path, "--race-out", out_path]
     with open(os.path.join(workdir, f"{tag}.log"), "w") as log:
         try:
@@ -99,8 +152,21 @@ def _run_one(spec, timeout_s, workdir, tag):
     return res
 
 
-def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, workers=None, workdir=None):
-    """Score one course. seats: [{"hull": "Urchin", "ai": "shipped"}] or ["Urchin", ...]."""
+def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, workers=None, workdir=None,
+          mode="Regatta", intensity=None, overrides=None, controller_overrides=None, start=None, crystal_genes=None,
+          ai_nose_follow=None, trace=False, difficulty=None, course_seeds=None):
+    """Score one course. seats: [{"hull": "Urchin", "ai": "shipped"}] or ["Urchin", ...].
+
+    mode       any gate-race Time game by its card name (Switchback, Redline, Breakwater, SerpentTime, ScarabRally ...);
+               only Regatta reads the genome, the others lay their own course at `intensity` (default the genome's, 1).
+    overrides  [{"asset": "Assets/...asset", "fields": {"field.sub": value}}]: in-memory edits to loaded assets for this
+               run only (nothing is written), so a parameter search can score candidates in parallel. A prefab's
+               component is edited with {"asset": "Assets/...prefab", "component": <its fileID>, "fields": {...}}
+               (a vessel's VesselStatus throttle, a TrailFollower's ride speed): every spawn of that prefab reads it.
+    controller_overrides  {"aiNoseLead.0.Gain": 1.5}: fields of the scene's race controller, set before each Ready.
+    start      the element levels each hull starts at: "card" (default, the card's StartingElements), "rest" (all 0),
+               "L5" (every hull at Time 5: every Time level-5 upgrade on) or {"Manta": {"Time": 5}} in levels.
+    crystal_genes  {"Scarab": 150}: each hull's crystal detour budget (RaceAICrystalGenesSO) for this run, in memory."""
     seats = [s if isinstance(s, dict) else {"hull": s, "ai": "shipped"} for s in seats]
     if backend == "model":
         import regatta_judge_model  # W3's module: the Python model priced in the same RESULT shape
@@ -110,14 +176,42 @@ def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, work
     build()
     t0 = time.time()
     workdir = workdir or tempfile.mkdtemp(prefix="regatta-judge-")
-    base = {"genome": genome, "seeds": list(seeds), "limit_s": limit_s}
+    base = {"genome": genome, "seeds": list(seeds), "limit_s": limit_s, "mode": mode}
+    if intensity is not None:
+        base["intensity"] = int(intensity)
+    if overrides:
+        base["overrides"] = overrides
+    if controller_overrides:
+        base["controller_overrides"] = controller_overrides
+    if start is not None:
+        base["start"] = start
+    if crystal_genes:
+        base["crystal_genes"] = crystal_genes
+    if ai_nose_follow:
+        base["ai_nose_follow"] = ai_nose_follow        # {hull: AI nose follow rate/s}, every frame (RaceJudge)
+    if difficulty:
+        base["difficulty"] = difficulty                # AIDifficulty name (Easy, Medium, Hard, Legendary); default Legendary
+    if course_seeds:
+        base["course_seeds"] = list(course_seeds)      # race r flies course course_seeds[r] (non-Regatta games)
+    if trace:
+        base["trace"] = True                           # per-seat rows every 0.25 s (RaceJudge's trace columns)
     # Each process boots once (~20 s) and races its seeds through Play Again (~5-20 s a race).
     jobs = [("field", dict(base, seats=seats, field=True))] if field else \
         [(f"{i}_{s['hull']}", dict(base, seats=[s], field=False)) for i, s in enumerate(seats)]
     timeout_s = 120 + len(seeds) * (limit_s / 4 + 60)
-    workers = workers or max(1, min(len(jobs), os.cpu_count() or 1))
+    # REGATTA_JUDGE_WORKERS caps the game processes one judge runs at once: two search shards on one box each at
+    # cpu_count ran eight on four cores and the kernel OOM-killed races into false DNFs (2026-11-18). Max 4 a box.
+    workers = workers or int(os.environ.get("REGATTA_JUDGE_WORKERS", 0)) or max(1, min(len(jobs), os.cpu_count() or 1))
     with concurrent.futures.ThreadPoolExecutor(workers) as ex:
         results = list(ex.map(lambda j: _run_one(j[1], timeout_s, workdir, j[0]), jobs))
+    # A seat must fly the hull it asked for: the game re-draws a seat whose hull is off the card or already flown
+    # (arena seating), and a judge that reports the re-drawn hull's time under the asked name poisons every search.
+    for (_, spec), res in zip(jobs, results):
+        asked = sorted(s["hull"] for s in spec["seats"] if s["hull"] != "Random")
+        for race in res.get("races", []):
+            flown = sorted(st["hull"] for st in race.get("seats", []))
+            if asked and flown and flown != asked:
+                raise RuntimeError(f"seat hull mismatch: asked {asked}, the game flew {flown} (seed {race.get('seed')})")
     races, notes = [], []
     for res in results:
         races.extend(res.get("races", []))
@@ -139,9 +233,26 @@ def mean_finish(result):
     return {h: (sum(v[0]) / len(v[0]) if v[0] else None, len(v[0]), v[1]) for h, v in acc.items()}
 
 
-def calibrate(seeds, hulls=None):
+# How many seeds a balance number needs (measured 2026-11-18 after the fixed-frame launch, #2231; the polished five on
+# the shipped shuffle, seeds 1-9, regatta-flywheel/step5/noise/NOISE.md). One seed's course-mean score varies by
+# 0.1-2.4% for most hulls but 6-7% for the Dolphin, whose races split between two lines (47 s or 64 s on one course).
+# Over N seeds a hull-vs-hull ratio's standard error is about sqrt((cv_a^2 + cv_b^2) / N): 3 seeds left the 1.10x bar
+# with about 4% error at L5, 15 seeds bring it to about 1.7%. A per-course MEDIAN of two-line outcomes jumps between
+# the lines, so balance_score averages instead.
+BALANCE_SEEDS = list(range(1, 16))
+
+
+def balance_score(times_by_course):
+    """One hull's balance number: the geometric mean over courses of the MEAN finish over seeds. `times_by_course` is
+    {course: [finish_s or None, ...]}; a DNF counts as the race limit (400 s). None when no course has a time."""
+    import math
+    means = [sum(t if t else 400.0 for t in ts) / len(ts) for ts in times_by_course.values() if ts]
+    return math.exp(sum(math.log(m) for m in means) / len(means)) if means else None
+
+
+def calibrate(seeds, hulls=None, start=None):
     hulls = hulls or REGATTA_HULLS
-    res = judge(CALIBRATION_GENOME, hulls, seeds)
+    res = judge(CALIBRATION_GENOME, hulls, seeds, start=start)
     rows = []
     for h, (m, n, total) in sorted(mean_finish(res).items(), key=lambda kv: (kv[1][0] is None, kv[1][0] or 0)):
         times = [s["finish_s"] for r in res["races"] for s in r["seats"] if s["hull"] == h and s["finish_s"] is not None]
@@ -155,16 +266,20 @@ def calibrate(seeds, hulls=None):
 
 
 def self_test():
-    """The judge's contract, cheaply: one Urchin race on the calibration course finishes near the editor's 51 s, and a
-    negative control (a 10 s limit) reports a DNF instead of a time."""
+    """The judge's contract, cheaply: one Urchin race on the calibration course (Ref1) finishes within 40% of the
+    editor's 51 s, and a negative control (a 10 s limit) reports a DNF instead of a time."""
     res = judge(CALIBRATION_GENOME, ["Urchin"], [1], limit_s=400)
     t = mean_finish(res).get("Urchin", (None,))[0]
     assert t is not None, f"the Urchin did not finish: {res['notes']}"
-    assert abs(t / EDITOR_I1["Urchin"] - 1) < 0.15, f"Urchin {t:.1f} s is not within 15% of the editor's 51 s"
+    # 15% held until the step-5 levers (2026-11-17) slowed the Urchin to ~67 s here; the bound only proves a sane race.
+    assert abs(t / EDITOR_I1["Urchin"] - 1) < 0.40, f"Urchin {t:.1f} s is not within 40% of the editor's 51 s"
     neg = judge(CALIBRATION_GENOME, ["Urchin"], [1], limit_s=10)
     seat = neg["races"][0]["seats"][0]
     assert seat["finish_s"] is None and seat["dnf_reason"] == "timeout", f"negative control finished: {seat}"
-    print(f"self-test ok: Urchin {t:.1f} s (editor 51.0), a 10 s limit is a timeout DNF")
+    # The idle host's profile hull is the Squirrel: a Squirrel seat must still fly a Squirrel (the judge would raise).
+    sq = judge(CALIBRATION_GENOME, ["Squirrel"], [1], limit_s=400)
+    assert sq["races"][0]["seats"][0]["hull"] == "Squirrel", sq["races"][0]["seats"]
+    print(f"self-test ok: Urchin {t:.1f} s (editor 51.0), a 10 s limit is a timeout DNF, a Squirrel seat flies a Squirrel")
 
 
 def main():
@@ -172,29 +287,45 @@ def main():
     ap.add_argument("--calibrate", action="store_true")
     ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--genome", help="genome JSON file (default: the calibration course)")
+    ap.add_argument("--course", help="race the shipped level instead: shuffle (every course), refs (Ref1-Ref4) or one "
+                                     "name (Ref2, Course5)")
     ap.add_argument("--hulls", default=",".join(REGATTA_HULLS))
-    ap.add_argument("--seeds", default="1,2,3")
+    ap.add_argument("--seeds", default=",".join(map(str, BALANCE_SEEDS)), help="default BALANCE_SEEDS (1-15)")
     ap.add_argument("--limit", type=float, default=400)
     ap.add_argument("--field", action="store_true")
     ap.add_argument("--backend", default="engine")
     ap.add_argument("--out", help="write the RESULT JSON here")
+    ap.add_argument("--mode", default="Regatta", help="the game's card name (Switchback, Redline, Breakwater, ...)")
+    ap.add_argument("--intensity", type=int)
+    ap.add_argument("--overrides", help="JSON file: [{asset, fields}] in-memory asset edits for this run")
+    ap.add_argument("--start", help='starting element levels: card (default), rest, L5, or a JSON table {"Manta": {"Time": 5}}')
     a = ap.parse_args()
     seeds = [int(s) for s in a.seeds.split(",") if s]
     hulls = [h.strip() for h in a.hulls.split(",") if h.strip()]
     if a.self_test:
         self_test()
         return
+    start = None if not a.start else json.loads(a.start) if a.start.startswith("{") else a.start
     if a.calibrate:
-        cal = calibrate(seeds, hulls)
+        cal = calibrate(seeds, hulls, start=start)
         print(f"{'hull':10} {'port s':>8} {'sd':>6} {'fin':>5} {'editor':>7} {'ratio':>6}")
         for r in cal["rows"]:
             print(f"{r['hull']:10} {r['port_s'] if r['port_s'] is not None else 'DNF':>8} {r['sd_s']:>6} "
                   f"{r['finished']:>5} {r['editor_s'] or '-':>7} {r['ratio'] or '-':>6}")
         print(f"{cal['races']} races in {cal['wall_s']} s wall on {cal['cores']} cores, engine {cal['engine_commit']}")
         out = cal
+    elif a.course:
+        overrides = json.load(open(a.overrides)) if a.overrides else None
+        out = {}
+        for name, genome in shipped_courses(a.course):
+            out[name] = judge(genome, hulls, seeds, limit_s=a.limit, backend=a.backend, field=a.field,
+                              overrides=overrides, start=start)
+            print(name, json.dumps({h: v for h, v in mean_finish(out[name]).items()}))
     else:
         genome = json.load(open(a.genome)) if a.genome else CALIBRATION_GENOME
-        out = judge(genome, hulls, seeds, limit_s=a.limit, backend=a.backend, field=a.field)
+        overrides = json.load(open(a.overrides)) if a.overrides else None
+        out = judge(genome, hulls, seeds, limit_s=a.limit, backend=a.backend, field=a.field, mode=a.mode,
+                    intensity=a.intensity, overrides=overrides, start=start)
         print(json.dumps({h: v for h, v in mean_finish(out).items()}, indent=1))
     if a.out:
         with open(a.out, "w") as f:

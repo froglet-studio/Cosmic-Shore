@@ -378,6 +378,13 @@ namespace CosmicShore.Utility
         [NonSerialized] public List<ScoreResult> Results = new();
 
         /// <summary>
+        /// The match's volume books (created / destroyed per pilot, Garrett 2026-11-18). The server writes them as
+        /// prisms change hands; a mode that shows them sends the lines to its clients at the end. Cleared with the
+        /// round stats.
+        /// </summary>
+        [NonSerialized] public readonly VolumeLedger VolumeLedger = new();
+
+        /// <summary>
         /// Sets <see cref="Results"/> (reusing the same list instance so existing references
         /// stay valid) and derives <see cref="WinnerName"/>/<see cref="WinnerDomain"/> from
         /// the top row ONLY when the mode has not already written them. The domain modes set
@@ -541,7 +548,10 @@ namespace CosmicShore.Utility
             // hull list and shipped to every client by the config sync RPC: element levels are
             // simulated on the machine that OWNS a vessel and never replicate, so the guest's own
             // vessel has to be seeded from the same table the host seeds its replica from.
-            PublishStartingElements(game.StartingElements);
+            // A card that authors no table gets the standard element ladder's (ElementLadder): I1 at rest, I2-I4
+            // at level 5 in the game's element. Resolved HERE, on the launching machine, so it rides the same
+            // config-sync arrays and a guest can never derive a different answer.
+            PublishStartingElements(ResolveStartingElements(game));
 
             ClampSelectedVesselToGame(game);
         }
@@ -550,12 +560,30 @@ namespace CosmicShore.Utility
         /// The CURRENT card's per-hull starting element levels
         /// (<see cref="SO_ArcadeGame.StartingElements"/>), published by
         /// <see cref="SyncFromArcadeGame"/> on the host and by the config sync RPC on a client.
-        /// Empty means every hull starts at rest, which is every single-hull card and the menu.
+        /// Empty means every hull starts at rest (the menu, an arena card with no table, a card at I1). A card that
+        /// authors no table publishes the standard element ladder's (<see cref="ElementLadder"/>).
         /// Pre-launch config like <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by
         /// ResetRuntimeData(), because it has to survive the scene load into the game scene where
         /// the vessels that read it spawn.
         /// </summary>
         public readonly List<VesselStartingElements> StartingElements = new();
+
+        readonly List<VesselStartingElements> _ladderScratch = new();
+
+        /// <summary>
+        /// The table this card launches with: its own when it authors any row (it then owns every hull and rung),
+        /// none for an arena card (Regatta and Broadside solve their handicaps from balance models, and arena cards
+        /// play at one intensity), and otherwise the standard element ladder's default
+        /// (<see cref="ElementLadder.AppendDefaultStartingElements"/>) over the card's hulls.
+        /// </summary>
+        IList<VesselStartingElements> ResolveStartingElements(SO_ArcadeGame game)
+        {
+            if (game.StartingElements is { Count: > 0 } || game.ArenaRules) return game.StartingElements;
+            _ladderScratch.Clear();
+            if (ModePreviewLibrarySO.TryGenres(game.Mode, out var primary, out var secondary))
+                ElementLadder.AppendDefaultStartingElements(AllowedVesselClasses, primary, secondary, _ladderScratch);
+            return _ladderScratch;
+        }
 
         /// <summary>Replace the published starting-element table. Single writers: the card sync
         /// on the host, the config RPC on a client, the menu's reset.</summary>
@@ -1066,6 +1094,7 @@ namespace CosmicShore.Utility
 
         void CleanupAllRoundStats()
         {
+            VolumeLedger.Clear();
             if (RoundStatsList == null) return;
 
             for (int i = 0, count = RoundStatsList.Count; i < count; i++)

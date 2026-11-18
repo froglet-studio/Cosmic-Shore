@@ -142,7 +142,24 @@ def goby_container(squirrel_text: str, drop) -> str:
             continue
         out.append(line)
     text = "".join(out).replace("m_Name: Squirrel", "m_Name: Goby", 1)
-    return re.sub(r"^(  \w+):\n(?=  [a-zA-Z_])", r"\1: []\n", text, flags=re.M)   # an emptied list prints as []
+    text = re.sub(r"^(  \w+):\n(?=  [a-zA-Z_])", r"\1: []\n", text, flags=re.M)   # an emptied list prints as []
+    for field, name in GOBY_ADDS.get(drop_key(drop), ()):
+        ref = f"  - {{fileID: 11400000, guid: {asset_guid(name)}, type: 2}}\n"
+        m = re.search(rf"^  {field}:(?: \[\])?\n((?:  - [^\n]*\n)*)", text, flags=re.M)
+        text = text[:m.start()] + f"  {field}:\n{m.group(1)}{ref}" + text[m.end():]
+    return text
+
+
+def drop_key(drop) -> str:
+    return drop[0] if drop else ""
+
+
+# Effects the Goby's container ADDS to what it keeps of the Squirrel's (keyed by the first effect its row drops).
+GOBY_ADDS = {
+    # the pair's omnicrystal ability, "restocks the pair" (2026-11-17, #2194): GobyPistolDuo.OnOmniCrystal
+    "SquirrelVesselHapticsByPrismEffect": [("vesselCrystalEffects", "GobyOmniCrystalEffect")],
+}
+GOBY_OMNI_LABEL = "restocks the pair"
 
 
 def swap_containers(text: str) -> str:
@@ -191,8 +208,9 @@ GOBY_KIT = [
     (3, "Undertow", "Mass either side of the Pistol's plane is pulled into it, from further with Space (pullReach, 40 u at rest -> "
         "200 u at level 10). Danger, super-shielded and the pair's own prisms never move.", "Deep Undertow",
         "Shielded prisms are pulled in too."),
-    (4, "Quick Jump", "Time shortens the cooldown of the Pistol's jump, the burst of speed that flings it off its ground "
-        "(jumpCooldown, 9 s at rest -> 3 s at level 10).", "Phase Dart",
+    (4, "Dart", "Time is the Goby's dart: how fast it flies and how soon the next is ready (dartPace, x1 at rest -> x2.2 at "
+        "level 10 - a full dart takes 1 s at rest, under half a second at level 10). Darts lay the Pistol's ground, so a "
+        "quick Goby keeps the Pistol fed.", "Phase Dart",
         "The Goby's darts pass through prisms."),
 ]
 
@@ -211,7 +229,8 @@ def goby_map() -> str:
     return head + "".join(
         f"  - Element: {e}\n    AbilityLabel: {yaml_quote(label)}\n    AbilityDescription: {yaml_quote(desc)}\n    Input: 0\n"
         f"    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n    UpgradeLabel: {yaml_quote(ul)}\n"
-        f"    UpgradeDescription: {yaml_quote(ud)}\n" for e, label, desc, ul, ud in GOBY_KIT)
+        f"    UpgradeDescription: {yaml_quote(ud)}\n" for e, label, desc, ul, ud in GOBY_KIT) + \
+        f"  omniAbilityLabel: {GOBY_OMNI_LABEL}\n"
 
 
 def guid_of(meta_path: str) -> str:

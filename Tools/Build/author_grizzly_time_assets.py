@@ -151,13 +151,12 @@ KEG_SCALARS = (
 KEG_TOAST_SCALARS = (("hintToast", TOAST_HINT), ("bankShotToast", TOAST_BANK_SHOT), ("bankShotEveryN", 4),
                      ("bankShotMaxDegrees", 30))
 KEG_SOUNDS = ("kegBurstEvent", "kegStrippedEvent", "bankShotEvent", "crownBurstEvent")
-EMPTY_EVENT = "    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
 KEG_FIELDS = (
     f"  kegsAtGates: {KEGS_AT_GATES}\n"
     f"  kegPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
     + "".join(f"  {k}: {v}\n" for k, v in KEG_SCALARS)
     + "".join(f"  {k}: {v}\n" for k, v in KEG_TOAST_SCALARS)
-    + "".join(f"  {k}:\n{EMPTY_EVENT}" for k in KEG_SOUNDS))
+    + "".join(f"  {k}:\n" + lib.event_yaml(SCENE, k) for k in KEG_SOUNDS))
 
 # Fresh Netcode ids for the clone's in-scene NetworkObjects (rule 4 above).
 HASH_SALT = "MinigameGrizzlyTime"
@@ -199,7 +198,7 @@ g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameGrizzlyT
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Grizzly']}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
@@ -304,7 +303,8 @@ def with_keg_fields(text: str) -> str:
     end_key = text.find(f"  {KEG_SOUNDS[-1]}:\n", start)
     if end_key < 0:
         return text   # reported below
-    end = end_key + len(f"  {KEG_SOUNDS[-1]}:\n") + len(EMPTY_EVENT)
+    path_at = text.find("    Path:", end_key)  # the last sound's block ends with its Path line, whatever it holds
+    end = text.find("\n", path_at) + 1 if path_at >= 0 else end_key
     return text[:start] + KEG_FIELDS + text[end:]
 
 

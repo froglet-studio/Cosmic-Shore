@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-17-stoat-run1-trained-in-the-real-game-with-9c4cae",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T06:29:26+00:00",
+  "area": "Stoat Slingshot AI (StoatSlingConfig_Slingshot, SlingshotController nose row)",
+  "summary": "Stoat run1, trained in the real game with time_ai_search.py, replaced the 2026-11-08 sling rows (warp press from 11.5 u instead of 310, hold window 59 deg instead of 120) and the nose pair (2.62 at 10.43/s instead of 2.5 at the fleet lag); every Slingshot rung 18-40% faster on 32 fresh flights a side. The same nose pair goes into Stoat_Regatta. promote_trained_drives.py --revert StoatSlingConfig_Slingshot puts the sling rows back.",
+  "branch": "stoat-promote",
+  "commit": "56eeefaeb"
+}

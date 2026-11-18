@@ -1,0 +1,56 @@
+{
+  "id": "2026-11-16-risky-merge-pr-2071-feat-audio-recycled-320dd4",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-16T23:30:56+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2071 (feat(audio): recycled placeholder in every empty vessel sound slot, ranked list for Charles) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab, Assets/_Prefabs/Spacevessels/Goby.prefab, Assets/_Prefabs/Spacevessels/Jacks.prefab, Assets/_Prefabs/Spacevessels/JewelWasp.prefab and 25 more",
+  "branch": "cece/zealous-davinci-wnqfli",
+  "pr": 2071,
+  "commit": "99f19068c",
+  "paths": [
+    ".claude/skills/sound-brief/SKILL.md",
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset",
+    "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset",
+    "Assets/Resources/PayloadConfig.asset",
+    "Assets/_Prefabs/CORE/AudioSystem.prefab",
+    "Assets/_Prefabs/FloraAndFauna/Bees/BeeHive.prefab",
+    "Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab",
+    "Assets/_Prefabs/Spacevessels/Goby.prefab",
+    "Assets/_Prefabs/Spacevessels/Jacks.prefab",
+    "Assets/_Prefabs/Spacevessels/JewelWasp.prefab",
+    "Assets/_Prefabs/Spacevessels/Manta.prefab",
+    "Assets/_Prefabs/Spacevessels/Rhino.prefab",
+    "Assets/_Prefabs/Spacevessels/Scarab.prefab",
+    "Assets/_Prefabs/Spacevessels/Serpent.prefab",
+    "Assets/_Prefabs/Spacevessels/Squirrel.prefab",
+    "Assets/_Prefabs/Spacevessels/Swordfish.prefab",
+    "Assets/_Prefabs/Spacevessels/Thresher.prefab",
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab",
+    "Assets/_Prefabs/Spacevessels/Urchin.prefab",
+    "Assets/_Prefabs/UI Elements/In Game/CountdownTimer.prefab",
+    "Assets/_Prefabs/UI Elements/ModalWindows.prefab",
+    "Assets/_Prefabs/UI Elements/Profile.prefab",
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Aegis.asset",
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Aftershock.asset",
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Hydra.asset",
+    "Assets/_SO_Assets/Pilots/Artifacts/Artifact_Javelin.asset",
+    "Assets/_SO_Assets/Swarm Fauna/SwarmEvoFateFaunaConfig.asset"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab, Assets/_Prefabs/Spacevessels/Goby.prefab, Assets/_Prefabs/Spacevessels/Jacks.prefab, Assets/_Prefabs/Spacevessels/JewelWasp.prefab and 25 more"
+    }
+  ]
+}

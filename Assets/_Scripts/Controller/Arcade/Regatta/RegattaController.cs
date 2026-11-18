@@ -11,9 +11,9 @@ namespace CosmicShore.Gameplay
     /// with three super-shielded rails (one per domain) braided along the racing line. Every
     /// pilot flies LAPS of it in order. The race ends when the first pilot threads the last gate
     /// of the last lap, and the TEAM with the most gates threaded - every pilot's gates, summed
-    /// (<see cref="RegattaScoringRuleSO"/>) - wins. Opponent AI fly the card's pinned
-    /// <c>OpponentAIVessel</c> (the Squirrel) until the racing AI can drive every hull; ally AI
-    /// fly what their teammates pick on the launch panel.
+    /// (<see cref="RegattaScoringRuleSO"/>) - wins. Every AI, ally or opponent, draws its hull from
+    /// the card unless someone picks it on the launch panel (the opponent Squirrel pin retired
+    /// 2026-11-17).
     ///
     /// <para><b>The mode is a question about what your hull is FOR.</b> A Rhino ramps to 1200 u/s
     /// on a straight and pays five seconds for every corner it cannot hold; a Manta trades Soar
@@ -256,7 +256,38 @@ namespace CosmicShore.Gameplay
             // two times in three a rival's, ridden at 20 u/s or slipped and re-latched (2026-10-14 Regatta audit).
             if (hasGate && status.VesselType == VesselClassType.Urchin && TryOwnLaneAhead(pilot, tf.position, out target))
                 return true;
+            // The Tiger Moth: line the belly up for a Drop to the next ring (RegattaTigerMothDrop, Waystation's coach).
+            if (TryGetNextGate(pilot, out var ring) && ring && aiTigerMothDrop.TryAim(pilot, status, ring.position, out target))
+                return true;
             return false;
+        }
+
+        [Header("AI Tiger Moth Drop")]
+        [Tooltip("The Tiger Moth's Drop for an autopilot: Waystation's belly-aim coach on Regatta's rings. Only a hull that " +
+                 "binds a TigerMothDropActionSO is touched.")]
+        [SerializeField] RegattaTigerMothDrop aiTigerMothDrop = new();
+
+        protected override bool OverrideAimIsLead(IPlayer pilot) => aiTigerMothDrop.IsAiming(pilot);
+
+        protected override bool OverrideBellyTarget(IPlayer pilot, out Vector3 worldDirection)
+        {
+            worldDirection = default;
+            return TryGetNextGate(pilot, out var ring) && ring &&
+                   aiTigerMothDrop.TryBelly(pilot, pilot?.Vessel?.VesselStatus, ring.position, out worldDirection);
+        }
+
+        /// <summary>The server tick (never a <c>void Update()</c> here: it would hide the platform's crossing detection).
+        /// Presses and releases the Tiger Moth's Drop for every autopilot that flies one.</summary>
+        protected override void OnServerTick()
+        {
+            base.OnServerTick();
+            if (gameData == null) return;
+            if (!gameData.IsTurnRunning)
+            {
+                aiTigerMothDrop.ReleaseAll();
+                return;
+            }
+            aiTigerMothDrop.Tick(gameData.Players, p => TryGetNextGate(p, out var g) ? g : null);
         }
 
         [Tooltip("A free AI Urchin aims this many lane prisms ahead of the nearest point of its own-domain lane, so it " +
@@ -386,6 +417,9 @@ namespace CosmicShore.Gameplay
             var style = LineStyleFor(pilot.Vessel.VesselStatus.VesselType);
             autopilot.NoseLeadGain = style ? style.NoseLeadGain : 0f;
             autopilot.NoseLeadMaxExtraDegrees = style ? style.NoseLeadMaxExtraDegrees : AIPilot.DefaultNoseLeadMaxExtraDegrees;
+            // The hull's learned nose rate; 0 (or no style) leaves the fleet lag.
+            var transformer = pilot.Vessel.VesselStatus.VesselTransformer;
+            if (style && style.NoseFollowPerSecond > 0f && transformer) transformer.AINoseFollowPerSecond = style.NoseFollowPerSecond;
         }
 
         /// <summary>
@@ -633,6 +667,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            aiTigerMothDrop.ReleaseAll();
             _urchinAI?.Clear();
             _pilotLines.Clear();
             _gapLines.Clear();

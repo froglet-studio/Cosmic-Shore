@@ -32,9 +32,10 @@ namespace CosmicShore.Gameplay
     public class ThresherTimeController : GateRaceController
     {
         [Header("AI nose lead")]
-        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
-                 "the lead off. Thresher 2.5: best in the model, 2.953 vs 3.195 lead off.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Thresher, 2.5f) };
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain) and nose follow rate (0 = the fleet lag), set as it is " +
+                 "armed. A hull with no row flies with the lead off. Thresher: lead 2.77 with its nose at 6.4/s, trained in " +
+                 "this race (time_ai_search.py, Thresher run1, 2026-11-17); at the fleet lag of 1.5/s it missed I4 nests.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Thresher, 2.77f, noseFollow: 6.37f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 

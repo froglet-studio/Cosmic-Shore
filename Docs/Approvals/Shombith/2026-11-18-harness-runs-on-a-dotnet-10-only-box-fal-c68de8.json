@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-18-harness-runs-on-a-dotnet-10-only-box-fal-c68de8",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-18T04:05:41+00:00",
+  "area": "card-art harness (Tools/Build/card_art_harness, render_card_backgrounds.py)",
+  "summary": "Harness runs on a dotnet-10-only box (falls back to the system dotnet and its newest ref pack), shim gains SpawnableBase.GetTrailData (RegattaPlacementBuilder needs it), fields() reads single-quoted strings so a Regatta course genome reaches the rails; recipes added for BurrowRun, Spearline, Palisade. Tandava.png is still orphaned by the archived Tandava cards (author --strict fails on it, pre-existing).",
+  "branch": "claude/project-thread-27v0r5",
+  "commit": "4696dacbb"
+}

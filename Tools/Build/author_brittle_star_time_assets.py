@@ -49,7 +49,6 @@ FIELDS = """  rule: {{fileID: 11400000, guid: {rule}, type: 2}}
 # The environment prism Waystation's walls and Grizzly Time's kegs are laid from (SpawnablePrism.prefab).
 SPAWNABLE_PRISM = "ed9defc56162b4b4588e61c20984b6d9"
 SPAWNABLE_PRISM_FILE_ID = 4563009547826722997
-EMPTY_EVENT = "    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
 HEAT_SOUNDS = ("flatOutThreadEvent", "cleanShiftEvent", "streakCalledEvent", "lapCompleteEvent", "bestLapEvent",
                "cleanLapEvent", "missedMouthEvent", "speedDarkEvent")
 SHIFT_LINE_FIELDS = (
@@ -60,7 +59,7 @@ SHIFT_LINE_FIELDS = (
     "  flareSeconds: 0.45\n"
     "  chaseStagger: 0.06\n"
     "  maxFlares: 24\n"
-    + "".join(f"  {k}:\n{EMPTY_EVENT}" for k in HEAT_SOUNDS)
+    + "".join(f"  {k}:\n" + lib.event_yaml(f"{lib.SCENES_DIR}/MinigameBrittleStarTime.unity", k) for k in HEAT_SOUNDS)
     + f"  postPrefab: {{fileID: {SPAWNABLE_PRISM_FILE_ID}, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
     "  postRegrowSeconds: 1.5\n"
     "  gateLightSeconds: 1.2\n")
@@ -100,8 +99,8 @@ def shift_line_errors() -> "list[str]":
     errors = []
     course = htr.read_or_empty(f"{MODE_DIR}/BrittleStarTimeCourse.cs")
     m = re.search(r"LapsByIntensity = \{ (\d+), (\d+), (\d+), (\d+) \};", course)
-    if not m or [int(x) for x in m.groups()] != [2, 3, 3, 4]:
-        errors.append("BrittleStarTimeCourse.LapsByIntensity is not { 2, 3, 3, 4 } (BRITTLESTARTIME.md section 0)")
+    if not m or [int(x) for x in m.groups()] != [2, 3, 6, 6]:
+        errors.append("BrittleStarTimeCourse.LapsByIntensity is not { 2, 3, 6, 6 } (BRITTLESTARTIME.md section 0, the climbing ladder of 2026-11-17)")
     toasts = htr.read_or_empty("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
     for sid, _, _ in TOASTS:
         hits = re.findall(rf"\b(\w+) = {sid},", toasts)

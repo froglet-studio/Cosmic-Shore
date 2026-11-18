@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5260000000000301
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5260000000000302}
+  - component: {fileID: 5260000000000303}
+  m_Layer: 0
+  m_Name: RegattaShuffleRailsCourse3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5260000000000302
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5260000000000301}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5260000000000303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5260000000000301}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24b34d8d18afe497d8873ce631a6c7d5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  seed: 0
+  domain: 3
+  children: []
+  leafPrefab: {fileID: 0}
+  layAcrossFrames: 1
+  layBudgetMsPerFrame: 8
+  intensityLevel: 2
+  prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
+  density: 1
+  spawnClearRadius: 0
+  spawnClearPoints: []
+  courseIntensity: 2
+  courseSeed: 0
+  prismScale: {x: 6, y: 6, z: 8}
+  laneOffset: 22
+  laneTwistTurnsPerLap: 1
+  prismSpacing: 8
+  lifeforms:
+    sitesPerLeg: []
+    offsetMin: 90
+    offsetMax: 160
+    sideDegrees: 0
+    sideSpreadDegrees: 180
+    legWindowStart: 0.2
+    legWindowEnd: 0.8
+    ringClearance: 60
+    faunaCorridorRadius: 0
+    faunaCorridorStandoff: 50
+  courseGenome: '{"circuit":{"AngularSpread":4.2941628532959095,"AxisJitterDegrees":3.998778968984654,"BaseRadius":751.8265561005898,"CornerFloorRadius":194.80909907437825,"CornerProfile":[77.91599617819772,77.91599617819772,34.028001273934095,34.028001273934095,34.028001273934095,34.028001273934095,34.028001273934095,34.028001273934095],"LateralPerturbation":50.91382542732968,"RadialSwing":0.043573117776335886},"features":{"AlternateGates":[],"Crystals":{"PerLap":0,"Phase":0.0},"Sections":[{"Detour":0.0,"DetourBearing":110.94787670409079,"From":0.21012674438810144,"Kind":3,"Leg":7,"Neutral":true,"To":0.7481450517907201},{"Detour":0.0,"DetourBearing":357.81514218579224,"From":0.22234065699961966,"Kind":1,"Leg":0,"Neutral":false,"To":0.5303437878893945}]},"flora":{"faunaCorridorRadius":0.0,"faunaCorridorStandoff":50.0,"legWindowEnd":0.8,"legWindowStart":0.2,"offsetMax":160.0,"offsetMin":90.0,"preset":"thicket","ringClearance":60.0,"sideDegrees":0.0,"sideSpreadDegrees":180.0,"sitesPerLeg":[6,0,1,2,3,1,6,1]},"intensity":2,"line_clearance":19.923015781102436,"placements":[{"cross_line":true,"cross_rail":false,"density":0.5010807964928288,"domain":"Native","kind":"Flatline","leg":2.680592362801927,"offset":[195.60976314684427,263.43586626284065,-28.305406330447397],"params":{"crystalCount":12.0,"dangerRoomEvery":1.0,"holeShare":0.6752895112716738,"outerRadius":653.6469898860137,"paneHalfMax":3.0,"paneHalfMin":1.0,"roomHalf":2.0,"tunnelCount":2.0},"pitch":161.82818024840614,"prism":"Danger","roll":108.40505473772407,"scale":183.52621132908635,"seed":0,"yaw":341.27561702356576},{"cross_line":false,"cross_rail":false,"density":1.136273195236953,"domain":"Native","kind":"Ribcage","leg":7.486934420721756,"offset":[80.40850887928919,92.38719951579985,-15.698533664976374],"params":{"shellCount":1.0},"pitch":164.13612118118252,"prism":"Danger","roll":343.2646541374912,"scale":126.55655761619771,"seed":1983441054,"yaw":236.39609976468648}],"seed":0,"version":1}'

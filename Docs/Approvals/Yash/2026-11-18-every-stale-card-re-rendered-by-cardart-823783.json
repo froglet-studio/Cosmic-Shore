@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-18-every-stale-card-re-rendered-by-cardart-823783",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T04:05:41+00:00",
+  "area": "arcade card backgrounds",
+  "summary": "Every stale card re-rendered by /cardart from its mode's shipped generators (20 cards moved by upstream course edits or had no render: Switchback, Headlong, Redline, Waystation, GrizzlyTime, SerpentTime, Longshot, Riposte, Flitstrike, Honeycomb, Woodpecker, Stingherd, Trawl, IceShelf, CleanerRam, Reefbuild, BurrowRun, Spearline, Palisade, Maelstrom) plus Regatta from its shuffle. A pure re-render; look at your card in the grid.",
+  "branch": "claude/project-thread-27v0r5",
+  "commit": "4696dacbb"
+}

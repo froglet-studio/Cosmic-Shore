@@ -1,0 +1,107 @@
+# Vessels flagged for redesign (elemental loop step 5)
+
+Garrett, 2026-11-18 13:58 UTC: "don't cheat. our goal is to get our vessels balanced, not give them handicaps or
+cheats so they can compete. if the tuning levers aren't working then flag the vessel for a redesign." And at 13:59:
+"this applies to vessels that are too fast or too slow. either can be flagged for redesign."
+
+A hull is listed here when its own vessel levers (its element parameters, using the knee method of step 5) cannot bring
+it within the Regatta bar (1.10x of the polished five) without gutting the kit. A listed hull goes back to loop step 1
+for Time on the board (`elemental_loop.py set <Vessel> Time 1 redo`). No course, per-mode or starting-Time handicap
+props it up meanwhile.
+
+How it was measured: the shipped Regatta shuffle (8 courses, `w3/shuffle/SET.md`, #2211), each hull racing solo in the
+real game headless (`regatta_judge.py`), 3 seeds, geometric mean of the per-course medians. The card start is rest
+(Time 0) for every hull, and the L5 start is Time 5, with no StartingElements rows since this change. The polished
+five run 68.5-74.3 s on the card and 63.5-66.9 s at L5. Sweeps: `/mnt/project-files/regatta-flywheel/step5/r6/` and
+`r8norows/`.
+
+| Vessel | Card s | L5 s | vs the five | Mechanism | Levers tried (best result) |
+|---|---|---|---|---|---|
+| Serpent | 178.6 | 115.7 | 2.6x / 1.8x slower | Solid Fuel Pellets: pace comes from pellet burns, which last 1x at rest and 2.8x at Time 10; it raced Regatta at Time 10 only through its starting row | Pellet duration (Time): reaches the field only when it starts at 2.8 and peaks at 3.0 (card 78.7 s, L5 69.5 s), so Time no longer scales the ability. That is the row moved inside the kit, so it is flagged instead |
+| Manta (L5) | 86.1 (card, in the field without its -5 row) | 27.9 | 0.42x at L5 | Soar, its Time level-5 upgrade: a held boost that turns 60 s laps into ~20-30 s | Soar's BoostSpeedMultiplier (Time, acts only once Soar unlocks) at x0.375: L5 43.5 s, about 0.66x |
+| TigerMoth | 152.4 | 122.0 | 2.1x / 1.8x slower | One Drop per ring, each after a 90-degree line-up (heading square to the ring, belly rolled onto it), at a 67 u/s cruise between drops. Not the recharge: from 2x cheaper on, the Drop is back before the next line-up ends | Drop recharge (the Drop's own parameter; Garrett's 2026-11-18 pick, cruise kept): 2x / 2.5x / 3x / 4x / 5x cheaper than design all run card 152.4 s and L5 122 s, so 2x (shipped, #2207) is the knee and nothing past it moves. Time throttle slot, knee x2.0: card 104 s, L5 84 s (1.55x / 1.27x), and Waystation breaks (I4 2 of 3 DNF). Patch held: `step5/tigermoth/time-throttle-x1.9-2.1.patch` |
+
+## Serpent
+
+Garrett's direction (2026-11-18), verbatim: "serpent will probably need a way to turn its wall 90 degrees so it can
+easily drop a wall and keep flying without having to do the 90 degree turn like the tiger moth. being constrained to a
+plane in order to grow its boost charges is already challenge enough. we will still need a way to keep stop and seed
+indistinguishable to an opponent. so we will need to reorient both, but that is hard because the decoy becomes the
+supershielded prism at the center of the wall, so its current orientation made sense."
+
+Garrett is doing the Serpent redesign in another project. Its kit changes land on bleeding-edge from there; re-judge it
+on the shuffle set when they do.
+
+## Redesigned: Rhino and Swordfish, the ramp runs on ploughing and slicing (2026-11-18)
+
+Garrett, 2026-11-18, verbatim: "so the rhino and sword fish have natural levers for their design changes. they like to
+slice and plow. make their boosting resource tied to their slicing and plowing. that will slow them down over longer
+time scales, while letting them keep their speed and reward them for their fun. win-win while keeping the identity and
+feel of the speed"
+
+Before: card 33.5 / 32.1 s (Rhino) and 38.6 / 37.5 s (Swordfish), about 0.5x of the five, on a free ramp that spools
+to 16.8x (840 u/s) on any straight. The best lever (half the ramp top) reached only about 0.6x / 0.68x.
+
+The kit change (every mode, `RHINO_RAMP_BOOST.md` § "Fuel"): the ramp burns a tank (0.1 a second at full power), each
+prism the Rhino ploughs adds 0.0018 and each prism the Swordfish's bill slices adds 0.004 x Time (x1 at rest, x4.5 at
+level 10). A full tank still reaches the 840 u/s top; an empty one tops out at 2.5x (125 u/s). The tank starts empty.
+
+| Vessel | Card s | L5 s | vs the five (card 68.5-74.3, L5 63.5-66.9) |
+|---|---|---|---|
+| Rhino | 70.0 | 66.9 | inside at both starts |
+| Swordfish | 70.8 | 65.8 | inside at both starts |
+
+Measured like the table above (shuffle set, real-game judge, 3 seeds, geometric mean of per-course medians), on the
+branch that ships it. What the search showed: without the empty-tank ramp the pace was bistable (27 s or 160-190 s per
+course); a full starting tank left the short courses unchanged; the Swordfish's Time element had no pace term, so its
+L5 start was slower than rest until Time scaled the slice fuel (decision card to Garrett). Sweeps:
+`/mnt/project-files/regatta-flywheel/step5/fuel/`.
+
+Back to loop step 1 for Time: the fun sign-off of the new ramp is a person's (Headlong for the Rhino, Spearline for the
+Swordfish), and both AIs still fly the ramp as if it were free (they do not seek prisms to refuel).
+
+## TigerMoth
+
+Flagged 2026-11-18 after the Drop recharge curve. Garrett asked for a cheaper Drop with the cruise kept ("do b but try to
+keep its cruise speed where it is and decrease the cooldown on the drop more"). Measured on the shuffle set, solo, 3
+seeds, against the polished five (card mean 71.2 s, L5 66.8 s):
+
+| Drop recharge vs design | Card s | L5 s | Card / five | L5 / five |
+|---|---|---|---|---|
+| 2x cheaper (10 s, shipped #2207) | 152.4 | 122.1 | 2.14 | 1.83 |
+| 2.5x (8 s) | 152.5 | 121.9 | 2.14 | 1.82 |
+| 3x (6.7 s) | 152.4 | 121.9 | 2.14 | 1.82 |
+| 4x (5 s) | 152.4 | 121.9 | 2.14 | 1.82 |
+| 5x (4 s) | 152.4 | 122.1 | 2.14 | 1.83 |
+
+The curve is flat past 2x, so the knee is the shipped 2x and nothing is pushed further. What limits the hull is the
+Drop's geometry. It falls along the belly, so every drop costs a 90-degree turn to put the ring abeam and a roll to put
+the belly on it. A pilot (the autopilot's `RegattaTigerMothDrop`) gets one drop per ring that way, and flies the rest at
+67 u/s. That is the same 90-degree constraint Garrett names for the Serpent's wall. Raw races:
+`/mnt/project-files/regatta-flywheel/step5/tigermoth/drop-knee/`.
+
+## Not flagged (levered into the field instead)
+
+- Scarab: Time throttle curve x0.625 -> x0.9375 reshaped to x0.95 -> x1.0 (card 111.2 -> 73.5 s, L5 78.5 -> 64.0 s).
+- Sparrow: afterburner (Time BoostSpeedMultiplier) x1 -> x2.25 reshaped to x2 -> x2.75 (card 121.5 -> 74.3 s, L5
+  85.2 -> 66.9 s).
+
+## Which AI each hull flies in Regatta (audit, 2026-11-18)
+
+A hull can look like a balance outlier because Regatta flies an AI that was never trained. The Dolphin's two-line racing
+(single-seed spread 6-10%) came from exactly that: Regatta resolved `DolphinAIBoostPolicy` (the untrained defaults), not
+the drive trained in Switchback. `AIBoostPolicySO.ForMode` loads `Resources/AIBoostPolicies/<asset>_Regatta` when it
+exists, otherwise the base asset the prefab wires.
+
+| Hull | Regatta flies | Trained in its Time game | Verdict |
+|---|---|---|---|
+| Dolphin | `_Regatta` = the Switchback drive (from this change) | Switchback | Fixed; Drift Charge re-fit to x1.25 -> x2.76 |
+| Sparrow | base, defaults | Breakwater (#1846, model-only search) | Untrained: next to fix, then re-fit its afterburner |
+| Rhino | `_Regatta` = base + cornerSpeed 333 | Headlong | Partly trained; the Headlong genes predate the #2233 fuel tank |
+| Swordfish | the Rhino's `_Regatta` (shared asset) | Spearline flies the Rhino's Headlong genes | Never trained for the Swordfish |
+| Scarab | base, trained (#2087 wrote it) | Scarab Rally | OK |
+| Thresher | `_Regatta` = the Thornline drive | Thornline | OK |
+| Squirrel | base, defaults | none (Skim Race trains `SkimRaceAIConfig`) | No trained boost policy (loop step 3) |
+| BrittleStar | `_Regatta` = its Speed Mode policy trained in Brittle Star Time with the coach off (2026-11-18) | Brittle Star Time (`time_ai_search.py --hull BrittleStarDrive`) | Fixed; Speed Mode back to x6 -> x8 (card 71.3 s, L5 63.0 s, 15 seeds) |
+| Urchin | rail autopilot | Skein genome is Skein-only | Not a boost policy; check separately |
+| Manta, Serpent, TigerMoth | - | - | Flagged above; revisit with the redesigns |

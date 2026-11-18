@@ -37,9 +37,8 @@ MonoBehaviour:
     AbilityLabel: Boost Ring
     AbilityDescription: Deploy a ring of conserved prism mass ahead of the vessel -
       the Squirrel's mass-creation ability, which is why it sits on Mass. Mass
-      shortens the deploy cooldown (SquirrelTubeActionSO.cooldownMultiplierAtFullMass,
-      x1 at rest -> x0.5 at level 10, floored), so a heavier pilot lays rings more
-      often. At level 5 each deploy lays a second ring.
+      grows the ring's prisms (SquirrelTubeActionSO.prismScaleMultiplier, x1 at
+      rest -> x1.5 at level 10, floored), so a heavier pilot lays more mass to skim. At level 5 each deploy lays a second ring.
     Input: 11
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -64,12 +63,9 @@ MonoBehaviour:
       instead of merely being stripped of it.
   - Element: 4
     AbilityLabel: Skimming
-    AbilityDescription: Time raises the boost energy gained per prism-skimmer
-      collision (SkimmerBoostPrismEffectSO.energyMultiplier, x1 -> x2 at level 10
-      floored at x0.25, read live per hit). Skim energy is the Squirrel's speed, so
-      the element that makes the pilot faster owns it. At level 5 danger prisms
-      grant the 10x energy bonus (below it they pay base energy - the bonus is
-      earned, no longer always on).
+    AbilityDescription: Skim prisms to build boost. Time raises the energy of
+      every skim, up to 2x at level 10, and your cruise speed, a fifth faster by
+      level 10. At level 5 danger prisms pay 10x.
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

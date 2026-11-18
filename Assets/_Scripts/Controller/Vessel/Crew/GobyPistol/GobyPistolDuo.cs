@@ -213,10 +213,27 @@ namespace CosmicShore.Gameplay
         public float Energy01 => Config ? Mathf.Clamp01(_energy / Mathf.Max(1f, Config.EnergyMax)) : 0f;
         // what each seat's four cards read (GobyPistolHUDController): 1 the instant a move is spent, 0 when it is ready
         public bool LockHeld => _lockHeld && _human == Half.Goby;
-        public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldown));
+        public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldownFor(_status)));
         public float SnapCooldown01 => _p == null || _t >= _p.vortexAt ? 0f : Mathf.Clamp01((_p.vortexAt - _t) / Mathf.Max(0.01f, _body.pVortexCd));
         public float GhostCooldown01 => _p == null || _t >= _p.ghostAt ? 0f : Mathf.Clamp01((_p.ghostAt - _t) / Mathf.Max(0.01f, _body.pGhostCd));
         public bool SnapHeld => _p != null && _p.prevVortex;
+
+        /// <summary>
+        /// The pair's OMNI-CRYSTAL ability, the <b>restock</b> (2026-11-17, the design brief's "crystals restock both halves
+        /// fully" plus the Pistol's "ability cooldowns reset"): the Pistol's energy fills to the most it holds, and the
+        /// Goby's dart, the Pistol's snap and ghost, and every jump charge are ready at once. Called by <see cref="GobyOmniCrystalEffectSO"/>
+        /// on the machine that decides this hull (the same rule <see cref="CollectCrystal"/> takes the omni crystal by).
+        /// </summary>
+        public void OnOmniCrystal()
+        {
+            if (!Config) return;
+            _energy = Config.EnergyMax;
+            _dartReadyAt = Mathf.Min(_dartReadyAt, _t);
+            if (_p == null) return;
+            _p.vortexAt = Mathf.Min(_p.vortexAt, _t);
+            _p.ghostAt = Mathf.Min(_p.ghostAt, _t);
+            _p.launch = Mathf.Max(_p.launch, Mathf.FloorToInt(_body.pLaunchCharges));
+        }
         public bool Ghosting => _p != null && _t < _p.ghostUntil;
         public bool Diving => _dive > 0.5f;
         /// <summary>The Pistol's speed as a share of its top speed (pMaxSpeed), 0..1.</summary>
@@ -457,7 +474,7 @@ namespace CosmicShore.Gameplay
             if (!_dartPhase && FirstOnLine(o, f, dist, out float along)) go = Mathf.Max(0f, along);
             if (go < 6f) return;
             _darting = true; _dartDir = f; _dartUp = _gt.up; _dartDist = go; _dartWent = 0f;
-            _dartSpeed = go / Mathf.Max(0.05f, Config.DartSeconds);
+            _dartSpeed = go / Mathf.Max(0.05f, Config.DartSecondsFor(_status));   // Time: the dart's pace
             _perched = false; Pin(true);
         }
 
@@ -491,7 +508,7 @@ namespace CosmicShore.Gameplay
             _dartWent += move;
             if (_dartWent < _dartDist - 0.01f) return;
             _darting = false;
-            _dartReadyAt = _t + Config.DartCooldown;
+            _dartReadyAt = _t + Config.DartCooldownFor(_status);
             Vector3 at = _gt.position;
             var prev = _perches[_perches.Count - 1];
             // a dash, not a perch: too close to the last perch for an island, or the Pistol already has its islands ahead
@@ -1707,7 +1724,7 @@ namespace CosmicShore.Gameplay
             for (int i = _rings.Count - 1; i >= 0; i--)
             {
                 var run = _rings[i]; var ring = run.Ring;
-                if (run.Target != null && UnityLiveness.Alive(run.Target.Transform)) ring.Steer(run.Target.Transform.position, Config.HomingTurnRate * Mathf.Deg2Rad * dt);
+                if (run.Target != null && UnityLiveness.Alive(run.Target.Transform)) ring.Steer(run.Target.Transform.position, Config.HomingTurnRate * Mathf.Max(0f, Config.RingHomingScale.EvaluateReplicated(_status)) * Mathf.Deg2Rad * dt);
                 bool alive = ring.Advance(dt, _vs);
                 if (index && index.IsAvailable && !ring.Full(_vs))
                 {

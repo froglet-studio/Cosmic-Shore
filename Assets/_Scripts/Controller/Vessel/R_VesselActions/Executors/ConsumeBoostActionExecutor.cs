@@ -197,6 +197,14 @@ namespace CosmicShore.Gameplay
             _lastTrailEatenAt = now;
 
             if (!config || !TryGetFuel(out _)) return;
+            // The refill is the reward for FLYING in the wall's plane. A stopped Serpent's stance wall stands along
+            // its heading and eats the straight trail behind it; that pays nothing, and the stretch restarts when
+            // it flies again (ConsumeBoostActionSO.RefillWhileStopped).
+            if (!config.RefillWhileStopped && _status is { IsTranslationRestricted: true })
+            {
+                _lastTrailEatenAt = float.NegativeInfinity;
+                return;
+            }
 
             float fuel = WallBuildingFuel(gap, config.WallBuildingGapSeconds,
                                           config.SecondsOfWallBuildingPerPellet, PelletCost);

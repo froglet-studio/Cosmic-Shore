@@ -23,13 +23,13 @@ MonoBehaviour:
     team colours and add danger spokes and creatures. First team to the target wins.'
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
-  CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  CardBackground: {fileID: 21300000, guid: 1a512c5da67d43bca888bf2e02eecf21, type: 3}
   GolfScoring: 1
   SceneName: MinigameTrawl
   Vessels:
   - {fileID: 11400000, guid: 8a41c6e2f0d94b7c9e35a1d7c4b8e2f6, type: 2}
   MinPlayersAllowed: 1
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 1
   MaxDomainsAllowed: 3
   MinIntensity: 1

@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -59,14 +60,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0)] private int maxLiveSeeded = 8;
 
         [Header("Elemental (Mass)")]
-        [Tooltip("MASS -> cooldown: multiplier on Cooldown at Mass level 10 (1 at the resting " +
-                 "level, extrapolating into the deficit band so debuffed Mass LENGTHENS the " +
-                 "recharge). Authored HERE rather than through the map's generic multiplier, so the " +
-                 "recharge is driven by exactly one number that lives beside the ability it tunes.")]
-        [FormerlySerializedAs("cooldownMultiplierAtFullCharge")]
-        [SerializeField] private float cooldownMultiplierAtFullMass = 0.5f;
-        [Tooltip("Floor for the Mass cooldown multiplier so overcharge can never zero the recharge.")]
-        [SerializeField] private float minCooldownMultiplier = 0.35f;
+        [Tooltip("MASS -> yield: how many crystals one seeding plants and how many may be alive at once, as a " +
+                 "multiplier on 1 and on maxLiveSeeded. x1 at rest -> x2 at Mass 10 (floor x0.5), so a heavy Dolphin " +
+                 "seeds two crystals a cycle and keeps twice the field. The recharge is fixed: making it come back SOONER " +
+                 "is Time's job, not Mass's (2026-11-18, the element-placeholder pass; it was a Mass cooldown before).")]
+        [SerializeField] ElementalFloat yieldScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
 
         public float Cooldown => cooldown;
         public float MinCooldown => minCooldown;
@@ -74,8 +72,13 @@ namespace CosmicShore.Gameplay
         public float BandOuterFraction => Mathf.Max(bandInnerFraction, bandOuterFraction);
         public float CellessSeedRadius => cellessSeedRadius;
         public int MaxLiveSeeded => maxLiveSeeded;
-        public float CooldownMultiplierAtFullMass => cooldownMultiplierAtFullMass;
-        public float MinCooldownMultiplier => Mathf.Max(0.01f, minCooldownMultiplier);
+        /// <summary>The Mass yield multiplier at this vessel's live Mass level.</summary>
+        public float YieldFor(IVesselStatus status) => Mathf.Max(0f, yieldScale.EvaluateLive(status));
+        /// <summary>Crystals one seeding plants (at least one).</summary>
+        public int SeedsPerCycleFor(IVesselStatus status) => Mathf.Max(1, Mathf.RoundToInt(YieldFor(status)));
+        /// <summary>The live cap on this Dolphin's seeded crystals (0 = uncapped).</summary>
+        public int MaxLiveSeededFor(IVesselStatus status) =>
+            maxLiveSeeded <= 0 ? 0 : Mathf.Max(1, Mathf.RoundToInt(maxLiveSeeded * YieldFor(status)));
 
         // Passive: the ability is bound to no input, so neither hook ever fires. They stay
         // overridden (and empty) rather than absent so the asset remains a legal ShipActionSO and

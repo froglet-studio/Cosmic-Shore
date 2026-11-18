@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-17-ai-nose-follow-set-by-lobby-difficulty-e-fcf59e",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T05:36:43+00:00",
+  "area": "Breakwater's AI rivals",
+  "summary": "AI nose follow set by lobby difficulty (Easy 1.8, Medium 2.0, Hard 3.5; Legendary keeps the trained 7.9 row)",
+  "why": "Real-game judge: every level flew 7.9/s and Medium raced as fast as Legendary at I2-I4 (89/78/83 vs 82/82/81 s); now Medium ~110 s on every rung. Mode-side AI, no vessel change. Garrett's overnight 'do your best on fun'",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "02318b309",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterController.cs"
+  ]
+}

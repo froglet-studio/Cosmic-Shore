@@ -1,5 +1,8 @@
 # Mass and Space games for the vessels that have none
 
+> **Superseded 2026-11-17 (Garrett):** Mass and Space games merge into one Mass-Space game per vessel, and Scurry
+> moves to Party. See [`../ArcadeRestructure/PLAN.md`](../ArcadeRestructure/PLAN.md). This page is kept as the record of the games built.
+
 Asked by Shombith, 2026-11-10: give every vessel that has no **Mass game** one, the way the Squirrel has Scurry and the
 Scarab has Scarab Scramble. The exceptions are hulls without a real mass-making ability, which get a **Space game**
 instead. The Dolphin is the model for that, and the Thresher and the Brittle Star join it.

@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-17-garrett-2026-11-17-the-arcade-s-element-695cb1",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T21:56:05+00:00",
+  "area": "Arcade grid filter (UI) and mode_elements analytics",
+  "summary": "Garrett 2026-11-17: the arcade's Element dropdown became a category dropdown (All, Time, Charge, Mass-Space, Party; ArcadeCategory / ModeGenre.CategoryFor). Scurry, Scarab Scramble and Maelstrom are Party (no petal, PARTY RULES line in the description) but keep their genre for ladders and analytics; mode_elements.json gains a 'party' list. Tab labels are longer (MASS-SPACE): check the row's layout in the editor. Docs/ArcadeRestructure/PLAN.md",
+  "branch": "claude/project-thread-e9yath",
+  "commit": "c64d7cfff"
+}
