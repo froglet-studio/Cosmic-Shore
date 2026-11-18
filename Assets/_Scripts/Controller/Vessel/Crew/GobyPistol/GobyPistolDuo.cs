@@ -1724,7 +1724,7 @@ namespace CosmicShore.Gameplay
             for (int i = _rings.Count - 1; i >= 0; i--)
             {
                 var run = _rings[i]; var ring = run.Ring;
-                if (run.Target != null && UnityLiveness.Alive(run.Target.Transform)) ring.Steer(run.Target.Transform.position, Config.HomingTurnRate * Mathf.Deg2Rad * dt);
+                if (run.Target != null && UnityLiveness.Alive(run.Target.Transform)) ring.Steer(run.Target.Transform.position, Config.HomingTurnRate * Mathf.Max(0f, Config.RingHomingScale.EvaluateReplicated(_status)) * Mathf.Deg2Rad * dt);
                 bool alive = ring.Advance(dt, _vs);
                 if (index && index.IsAvailable && !ring.Full(_vs))
                 {

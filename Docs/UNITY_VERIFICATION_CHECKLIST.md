@@ -25192,3 +25192,16 @@ new float. Unity reference compile: 0 errors in changed files.
 
 - [ ] Run the EditMode `WrasseFundamentalsTests`: all pass.
 - [ ] Fly the Wrasse at Time 0 and Time 10: a one-mote Time loop saves 1 boost at Time 0 and 2 at Time 10; the Time card counts them.
+
+## Thresher and Goby Charge off petals-per-hit (2026-11-18)
+
+Not run in the Unity editor. Petals per hit was the Charge placeholder on both; each hit now takes a fixed 1 petal.
+- Thresher: `ThresherConfigSO.smashSpeedScale` (x1 at rest, x0.6 at Charge 10, floor 0.4) scales the smash and white-hot
+  speeds every frame (`ApplyElementScaling`, replicated level), so a charged ball turns red on a lazier swing.
+- Goby & Pistol: `GobyPistolConfigSO.ringHomingScale` (x1 at rest, x2.5 at Charge 10) multiplies the vortex ring's homing
+  turn rate onto the locked rival.
+Unity reference compile: 0 errors in changed files.
+
+- [ ] Thresher at Charge 0 and 10: the ball goes red at a visibly slower swing at Charge 10; the HUD gauge fills sooner.
+- [ ] Goby & Pistol at Charge 0 and 10 with a lock: the Snap's ring bends onto the rival much harder at Charge 10.
+- [ ] Both: a hull hit takes one petal per element at any Charge.
