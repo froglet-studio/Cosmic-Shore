@@ -199,7 +199,9 @@ def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, work
     jobs = [("field", dict(base, seats=seats, field=True))] if field else \
         [(f"{i}_{s['hull']}", dict(base, seats=[s], field=False)) for i, s in enumerate(seats)]
     timeout_s = 120 + len(seeds) * (limit_s / 4 + 60)
-    workers = workers or max(1, min(len(jobs), os.cpu_count() or 1))
+    # REGATTA_JUDGE_WORKERS caps the game processes one judge runs at once: two search shards on one box each at
+    # cpu_count ran eight on four cores and the kernel OOM-killed races into false DNFs (2026-11-18). Max 4 a box.
+    workers = workers or int(os.environ.get("REGATTA_JUDGE_WORKERS", 0)) or max(1, min(len(jobs), os.cpu_count() or 1))
     with concurrent.futures.ThreadPoolExecutor(workers) as ex:
         results = list(ex.map(lambda j: _run_one(j[1], timeout_s, workdir, j[0]), jobs))
     # A seat must fly the hull it asked for: the game re-draws a seat whose hull is off the card or already flown
