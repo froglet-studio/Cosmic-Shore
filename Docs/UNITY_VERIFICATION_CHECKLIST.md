@@ -25073,3 +25073,13 @@ Medium 174 / 182 / 185 / 220 s; Swordfish in Regatta 31-47 s, level with the Rhi
 
 - [ ] Fly Spearline I3 and I4: four and five sealed rings a lap, and each still opens with a stroke into the plain face.
 - [ ] Regatta: a Swordfish appears among the AI hulls, takes the line like the Rhino and threads the rings.
+
+## Waystation's trained TigerMoth AI (2026-11-17, elemental loop step 3, Regatta ten)
+
+Not run in the Unity editor. `WaystationController`'s AI hop and drop defaults are now the trained values
+(`aiHopLineShare` 0.85, `aiHopMissMargin` 600, `aiHopLookahead` 155, `aiDropAimDegrees` 6.6), and a new `aiNoseLead`
+table gives the TigerMoth's AI a 6.41/s nose (no lead). Race judge (Amoebius headless), fresh seeds 3-4: I1-I4 take
+29% less time, every rung finishes.
+
+- [ ] Fly Waystation I3 against a Legendary TigerMoth: it finishes in about 3-4 minutes and its turns look like a pilot's
+      (not twitchy) with the quicker nose.

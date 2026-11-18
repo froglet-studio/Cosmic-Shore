@@ -125,8 +125,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.5f, 20f)] float aiBellyNoseDegrees = 3f;
 
         [Tooltip("How closely the BELLY must be on the ring for the autopilot to drop. Wider than a fold's line-up: the " +
-                 "drop is travel, so it lands short of the ring (by twice the miss it carries) and flies the rest.")]
-        [SerializeField, Range(1f, 30f)] float aiDropAimDegrees = 10f;
+                 "drop is travel, so it lands short of the ring (by twice the miss it carries) and flies the rest. 10 until " +
+                 "2026-11-17; 6.6 trained with the hop gates below (time_ai_search.py, TigerMoth run1).")]
+        [SerializeField, Range(1f, 30f)] float aiDropAimDegrees = 6.6f;
 
         [Tooltip("A ring further round than the pitch entry but within this many degrees of the nose is ABEAM - where " +
                  "every exit gate leaves the next cluster, since the gate faces square to it. There the autopilot holds " +
@@ -161,20 +162,29 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far off the ring's centre (as a share of its radius) the FALL may cross the ring's plane when the " +
                  "autopilot presses - the line the belly points along, from where the hull is. The pilot cruises over " +
                  "the ring, so this is the press's timing window. 0.45 until 2026-11-17: with the fall judged where it " +
-                 "crosses, 0.7 still lands inside the ring and the judge's I1 race finished in 143 s (0.45: never).")]
-        [SerializeField, Range(0.1f, 0.9f)] float aiHopLineShare = 0.7f;
+                 "crosses, 0.7 still lands inside the ring and the judge's I1 race finished in 143 s (0.45: never). 0.85 " +
+                 "trained later that day (time_ai_search.py, TigerMoth run1).")]
+        [SerializeField, Range(0.1f, 0.9f)] float aiHopLineShare = 0.85f;
 
         [Tooltip("How far ahead of the press point the autopilot steers along the line it arrives on (u): it flies the " +
                  "cruise line over the ring rather than at the ring, which sits under a plate.")]
-        [SerializeField, Min(10f)] float aiHopLookahead = 150f;
+        [SerializeField, Min(10f)] float aiHopLookahead = 155f;
 
         [Tooltip("How far past a tower ring's press point (u, beyond the ring's radius) an autopilot that has not dropped " +
                  "turns round and flies the cruise line back over it. It drops from either direction: the fall follows the " +
                  "belly, not the nose. Before 2026-11-11 a bot that overshot flew on along the line for good. 60 until " +
                  "2026-11-17: shorter than the hull's turning circle, so the bot turned back before it was round and " +
                  "looped over the ring without ever flying the line level (race judge: I2 timed out at 16 of 27 rings; " +
-                 "at 400 it finished in 188 s).")]
-        [SerializeField, Min(10f)] float aiHopMissMargin = 400f;
+                 "at 400 it finished in 188 s). 600 trained later that day (time_ai_search.py, TigerMoth run1).")]
+        [SerializeField, Min(10f)] float aiHopMissMargin = 600f;
+
+        [Header("AI nose")]
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain, 0 = off) and nose follow rate (0 = the fleet lag, " +
+                 "1.5/s), set as it is armed. TigerMoth: no lead, nose at 6.4/s, trained with the hop gates above " +
+                 "(time_ai_search.py, TigerMoth run1, 2026-11-17).")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.TigerMoth, 0f, noseFollow: 6.41f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
         const string WallOwnerId = "WaystationTowerWall";
 
