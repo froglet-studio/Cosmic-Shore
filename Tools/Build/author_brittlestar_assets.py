@@ -503,7 +503,7 @@ CONFIG_EVENTS = ("speedModeEvent", "creationModeEvent", "destructionModeEvent", 
 
 CONFIG_BODY = (
     "  modeBlendSeconds: 0.35\n"
-    "  speedModeMultiplier:\n" + ef(6, 6, 8, 4, 4) +
+    "  speedModeMultiplier:\n" + ef(6, 6.5, 8, 4, 4) +
     "  speedModeSpacingFollow: 1\n"
     "  speedModeStretch: 1\n"
     "  prismWidthScale:\n" + ef(1, 1, 2, 2, 1) +
@@ -707,9 +707,9 @@ MAP_ENTRIES = (
      "every gun's range x1 -> x2 at level 10 (BrittleStarConfigSO.rangeMultiplier), and the heat the guns hold x1 -> "
      "x3.33, so a full five-gun burst runs ~6 s at level 0 and ~20 s at level 10 (BrittleStarConfigSO.heatCapacity)."),
     (4, "Speed Mode", 6,
-     "A. Ignite every thruster: the hull's cruise speed x6, the base trail's spacing stretched by the same ratio so "
+     "A. Ignite every thruster: the hull's cruise speed x6.5, the base trail's spacing stretched by the same ratio so "
      "production per second does not rise, and every prism stretched with it so the trail still joins up. Time is rate - "
-     "one dial: Speed Mode's multiplier x6 -> x8 at level 10 (BrittleStarConfigSO.speedModeMultiplier)."),
+     "one dial: Speed Mode's multiplier x6.5 -> x8 at level 10 (BrittleStarConfigSO.speedModeMultiplier)."),
 )
 
 
