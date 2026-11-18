@@ -97,6 +97,23 @@ ROWS = {
                 "stickBand": 0.398, "releaseStickBand": 0.372, "brakeSteerFloor": 0.694, "minSpeedGain": 17.571,
                 "throttleSlewPerSecond": 7.366},
         source="/mnt/project-files/regatta-flywheel/train/Rhino/run1/best.json"),
+    # Swordfish, Spearline: fuel1 in the real game (time_ai_search.py --hull Swordfish, 2026-11-18), the ramp on slice
+    # fuel (#2233), the refuel gene searched and left off (slack 0.3), the crystal gene at 168.7 (RaceAICrystalGenes),
+    # flown with SpearlineController's Swordfish row at lead 2.82 and nose 8.28/s. Confirm, seeds 101-103 at I1-I4 and
+    # I1/I4 from Time 5, every race finished: loss 2.28 -> 1.94; I1 174 -> 147 s, I2 170 -> 147, I3 167 -> 154,
+    # I4 215 -> 152. The Swordfish flew the Rhino's policy (Headlong's drive) before 2026-11-18.
+    "SwordfishAIBoostPolicy_Spearline": dict(
+        base=L.POLICY_DIR + "/SwordfishAIBoostPolicy.asset",
+        fields={"alignDegrees": 79.555, "releaseAlignDegrees": 76.602, "stickBand": 0.411, "releaseStickBand": 0.219, "engageRunwaySeconds": 1.337, "releaseRunwaySeconds": 0.102, "cornerSpeed": 102.44, "minCornerSpeed": 159.358, "brakeMarginUnits": 37.533, "brakeLeadSeconds": 0.996, "brakeSteerFloor": 0.803, "cornerReleaseDegrees": 15.574},
+        source="/mnt/project-files/regatta-flywheel/train/Swordfish/fuel1/best.json"),
+    # Swordfish, Regatta: its own asset since 2026-11-18, holding what it flew there before (the Rhino's Regatta variant:
+    # the base policy with cornerSpeed 333). Its Spearline drive raced Regatta at 75.1 / 69.8 s card / L5 against
+    # 71.7 / 65.4 for this one (fixed-frame judge, shuffle, seeds 1-5); the Rhino's Headlong drive in Regatta was worse
+    # still (70.8 -> 90.6 s card), so neither hull's Regatta variant copies its home game's drive.
+    "SwordfishAIBoostPolicy_Regatta": dict(
+        base=L.POLICY_DIR + "/SwordfishAIBoostPolicy.asset",
+        fields={"cornerSpeed": 333},
+        source="Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta (as shipped 2026-11-18)"),
 }
 
 # Dolphin, Switchback: lead-on C (job switchback-dolphin-time-lead, PR #1833), ONE drive raced at every intensity over

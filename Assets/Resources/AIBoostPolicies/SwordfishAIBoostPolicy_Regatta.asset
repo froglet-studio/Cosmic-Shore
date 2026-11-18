@@ -10,26 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f0d84783a08d4582a1882cc260dce84e, type: 3}
-  m_Name: RhinoAIBoostPolicy_Spearline
+  m_Name: SwordfishAIBoostPolicy_Regatta
   m_EditorClassIdentifier: 
-  alignDegrees: 56.368
-  releaseAlignDegrees: 41.815
-  stickBand: 0.398
-  releaseStickBand: 0.372
-  engageRunwaySeconds: 2.211
-  releaseRunwaySeconds: 0.083
+  alignDegrees: 12
+  releaseAlignDegrees: 25
+  stickBand: 0.35
+  releaseStickBand: 0.6
+  engageRunwaySeconds: 1.5
+  releaseRunwaySeconds: 0.5
   disabledInModes: []
   requireAIPlayer: 0
   steeringShareOfPlateau: 0.9
   minHoldSeconds: 0.5
   minRestSeconds: 0.3
   minRearmSeconds: 0.5
-  minSpeedGain: 17.571
-  cornerSpeed: 274.153
-  minCornerSpeed: 64.441
-  brakeMarginUnits: 25.574
-  brakeLeadSeconds: 0.943
+  minSpeedGain: 50
+  cornerSpeed: 333
+  minCornerSpeed: 160
+  brakeMarginUnits: 120
+  brakeLeadSeconds: 0.25
   graceShare: 0.9
-  brakeSteerFloor: 0.694
-  throttleSlewPerSecond: 7.366
-  cornerReleaseDegrees: 0.877
+  brakeSteerFloor: 0.3
+  throttleSlewPerSecond: 4
+  cornerReleaseDegrees: 30

@@ -57,6 +57,10 @@ POL = "Assets/Resources/AIBoostPolicies/"
 SO = "Assets/_SO_Assets/AI Boost Policies/"
 CRYSTAL = "crystal"            # the RaceAICrystalGenesSO gene: detour budget, world units
 CRYSTAL_RANGE = (0.0, 300.0)
+# RaceAIRefuelGenesSO (a ramp that burns fuel earned by ploughing or slicing, #2233): turn toward a prism ahead when the
+# tank is under refuelBelow, if the detour costs at most refuelSlack units. Searched with the drive ("refuel_row").
+REFUEL = "Assets/Resources/RaceAIRefuelGenes.asset"
+REFUEL_FIELDS = {"refuelSlack": ("PrismDetourSlack", (0.0, 300.0)), "refuelBelow": ("RefuelBelow", (0.0, 1.0))}
 
 def _switchback_nose(p):
     return {
@@ -157,6 +161,19 @@ GAMES = {
         # HeadlongController.aiNoseLead: Rhino 2.5. At 2.5 the AI orbits in place (~70 s a lap at 33 u/s, 2026-11-17);
         # 1.0 halved I1 and I2. Headlong has no nose knob: the fleet lag.
         "lead": 2.47, "rows": [], "nose_gene": 7.5,    # Rhino run1 (2026-11-17)
+        "refuel_row": 0,                               # RaceAIRefuelGenes row: the ramp runs on plough fuel (#2233)
+    },
+    "Swordfish": {
+        "mode": "Spearline",
+        # Its own RampBoostAIPolicySO (it shared the Rhino's until 2026-11-18): the same ramp, run on slice fuel.
+        "assets": {i: POL + "SwordfishAIBoostPolicy_Spearline.asset" for i in (1, 2, 3, 4)},
+        "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
+                   "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
+                   "cornerSpeed": (60.0, 900.0), "minCornerSpeed": (30.0, 600.0), "brakeMarginUnits": (0.0, 300.0),
+                   "brakeLeadSeconds": (0.0, 2.0), "brakeSteerFloor": (0.0, 1.0), "cornerReleaseDegrees": (0.0, 90.0)},
+        # SpearlineController.aiNoseLead: Swordfish 2.5, at most 10 extra degrees. Spearline has no nose knob.
+        "lead": 2.5, "lead_max": 10.0, "rows": [], "nose_gene": 1.5,
+        "refuel_row": 1,
     },
     "Manta": {
         "mode": "Redline",
@@ -396,10 +413,20 @@ def read_fields(rel, names):
     return {k: float(v) for k, v in re.findall(r"^  (\w+): (-?[0-9.]+(?:e-?\d+)?)\s*$", body, re.M) if k in names}
 
 
+def read_refuel(row):
+    """{refuelSlack, refuelBelow} as RaceAIRefuelGenes.asset ships them for this row."""
+    rows = re.findall(r"PrismDetourSlack: (-?[0-9.]+)\s+RefuelBelow: (-?[0-9.]+)",
+                      open(os.path.join(ROOT, REFUEL), encoding="utf-8").read())
+    slack, below = rows[row]
+    return {"refuelSlack": float(slack), "refuelBelow": float(below)}
+
+
 def dims_for(g):
     ints = g.get("ints", ())
     dims = [{"name": k, "lo": lo, "hi": hi, **({"type": "int"} if k in ints else {})} for k, (lo, hi) in g["fields"].items()]
     dims += [{"name": k, "lo": lo, "hi": hi} for k, (lo, hi) in g.get("ctrl_fields", {}).items()]
+    if "refuel_row" in g:
+        dims += [{"name": k, "lo": lo, "hi": hi} for k, (_, (lo, hi)) in REFUEL_FIELDS.items()]
     if "nose_gene" in g:
         dims.append({"name": "noseFollow", "lo": NOSE_RANGE[0], "hi": NOSE_RANGE[1]})
     if "nose_split" in g:
@@ -417,6 +444,8 @@ def shipped_genomes(g):
         p = read_fields(rel, g["fields"]) if rel else {}
         p.update({k: int(v) for k, v in p.items() if k in g.get("ints", ())})
         p.update(g.get("ctrl_defaults", {}))
+        if "refuel_row" in g:
+            p.update(read_refuel(g["refuel_row"]))
         if "nose_gene" in g:
             p["noseFollow"] = g["nose_gene"]
         if "nose_split" in g:
@@ -436,6 +465,9 @@ def spec_for(hull, g, params, intensity=None):
         return {}
     fields = {k: params[k] for k in g["fields"] if k in params}
     ov = [{"asset": rel, "fields": fields} for rel in sorted(set(g["assets"].values()))]
+    if "refuel_row" in g:
+        ov.append({"asset": REFUEL, "fields": {f"Rows.{g['refuel_row']}.{f}": float(params[k])
+                                               for k, (f, _) in REFUEL_FIELDS.items() if k in params}})
     # No mode knob: the judge sets the rate on the AI's transformer (left alone at the shipped fleet lag).
     nose = float(params.get("noseFollow", g.get("nose_gene", 0)))
     if "nose_split" in g and intensity is not None and intensity >= 3:   # I3-I4's own band
@@ -445,7 +477,8 @@ def spec_for(hull, g, params, intensity=None):
     out_nose = {hull: nose} if "nose_gene" in g and (g.get("nose_mode_sets") or nose != g["nose_gene"]) else None
     ctrl = {}
     if g["lead"] is not None:
-        ctrl["aiNoseLead"] = list(g["rows"]) + [{"Hull": hull, "Gain": float(params.get(LEAD, g["lead"])), "MaxExtraDegrees": 40}]
+        ctrl["aiNoseLead"] = list(g["rows"]) + [{"Hull": hull, "Gain": float(params.get(LEAD, g["lead"])),
+                                                     "MaxExtraDegrees": g.get("lead_max", 40)}]
     if "ctrl" in g:
         ctrl.update(g["ctrl"](dict(g.get("ctrl_defaults", {}), **params)))
     out = {"overrides": ov}
@@ -645,7 +678,9 @@ def self_test():
                         out.append(f"{hull}: {d['name']} does not round-trip ({p[d['name']]} -> {q[d['name']]})")
                 spec = spec_for(hull, g, p)
                 for ov in spec["overrides"]:
-                    extra = set(ov["fields"]) - set(g["fields"])
+                    own = ({f"Rows.{g['refuel_row']}.{f}" for f, _ in REFUEL_FIELDS.values()}
+                           if ov["asset"] == REFUEL and "refuel_row" in g else set(g["fields"]))
+                    extra = set(ov["fields"]) - own
                     if extra:
                         out.append(f"{hull}: spec writes foreign fields {sorted(extra)}")
                 lead_rows = spec.get("controller_overrides", {}).get("aiNoseLead")
