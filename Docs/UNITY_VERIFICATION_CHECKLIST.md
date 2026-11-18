@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Every game seats up to 9 vessels, at most 3 a team (`claude/project-thread-e9yath`, 2026-11-18, Garrett) — NOT EDITOR-VERIFIED
+
+`ArcadeConfigSyncManager.LobbySnapshot` carries 8 AI seats (was 6; `ProtocolVersion` 34 -> 35). The configure modal's
+seat ceiling is 9 (was 4, 6 on arena cards), capped at `SO_ArcadeGame.TeamSeatCap(domains)` = 3 a team; `MaxSeats`
+applies the same cap. 86 arcade cards (and their generators) say `MaxPlayersAllowed: 9`; the six scenes with authored
+spawn points (2v2 CoOp, Joust, Skim Race, Astro League, both Tandavas) and Maelstrom keep their caps. Brood Rush opens
+to three teams (`MaxDomainsAllowed 3`, first to 3 broods). Arena hulls stay unique in the whole match (Garrett,
+2026-11-18), so an arena card seats at most its hull count (Brood Rush 7, Regatta 9). `unity_refcompile`: 0 errors
+in the changed files; every `author_*_assets.py --check` passes. Never run in the editor.
+
+1. Arcade, any cell-ring card (Bends, Tollway): three teams, 9 seats; the player-count row offers up to 9 and no more
+   than 6 with two teams. Launch with 1 human + 8 AI: nine vessels spawn round the cell, none inside another.
+2. The end scoreboard and the in-game roster show all nine without clipping (rows past four are new ground).
+3. Two machines (MPPM): host 9 seats with 2 humans; the guest sees the same 7 AI names, hulls and difficulties.
+   A guest on protocol 34 is refused, not desynced.
+4. Brood Rush, three teams: each team's wave scores its own brood; the first team to 3 wins. Seven pilots at most.
+5. Regatta and Broadside: 9 seats, no hull twice in the match.
+6. Performance with nine vessels laying trails in a dense cell (Bloomrush, Kelpwood): frame time on a phone.
+
 ### 🔴 The Serpent AI presses its refuel cloak only when it is ready, and can pick a corner for the wall (`claude/project-thread-qaz3ia`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
 
 `PelletBoostAIPolicySO`'s refuel used to re-press on a `cooldown + 0.1 s` timer, but the wall runs about 17 s, so every

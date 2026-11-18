@@ -374,7 +374,7 @@ def arcade_card(icon_active, icon_inactive, card_bg) -> str:
             + f"  CardBackground: {{fileID: 21300000, guid: {card_bg}, type: 3}}\n"
             + "  GolfScoring: 1\n  SceneName: MinigameSkein\n"
             + f"  Vessels:\n  - {{fileID: 11400000, guid: {EXISTING['SO_Class_Urchin']}, type: 2}}\n"
-            + "  MinPlayersAllowed: 2\n  MaxPlayersAllowed: 4\n"
+            + "  MinPlayersAllowed: 2\n  MaxPlayersAllowed: 9\n"
             + "  MinDomainsAllowed: 2\n  MaxDomainsAllowed: 3\n"
             + "  MinIntensity: 1\n  MaxIntensity: 4\n"
             + "  ViewUserAction: 0\n  PlayUserAction: 0\n"
