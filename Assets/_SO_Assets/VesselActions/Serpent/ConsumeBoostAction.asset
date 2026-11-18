@@ -20,10 +20,11 @@ MonoBehaviour:
     element: 4
     UseFloor: 1
     Floor: 0.5
-  boostMultiplier: 3
+  boostMultiplier: 2.7
   boostDuration: 6
   resourceIndex: 1
   resourceCost: 0.25
   upgradeResourceCost: 0.2
-  secondsOfWallBuildingPerPellet: 2
+  secondsOfWallBuildingPerPellet: 1.5
   wallBuildingGapSeconds: 0.4
+  refillWhileStopped: 0
