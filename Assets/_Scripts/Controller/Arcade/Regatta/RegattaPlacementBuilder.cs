@@ -176,6 +176,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The native layout's centre (the per-axis median of its prism centres) and bounding radius (the
         /// <see cref="BoundsShare"/> quantile of each prism's distance from it plus that prism's own half-length).</summary>
+        static bool Finite(Vector3 v) => float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
+
         public static void Bounds(List<PrismLay> native, out Vector3 centre, out float radius)
         {
             centre = Vector3.zero;
@@ -227,13 +229,19 @@ namespace CosmicShore.Gameplay
                 var lay = native[i];
                 Vector3 pos = centre + rotation * ((lay.Point.Position - c0) * k);
                 Vector3 scale = lay.Point.Scale * k;
+                if (!Finite(pos) || !Finite(scale))
+                {
+                    // A spawner that lays a prism at infinity has a bug of its own; the course never takes it.
+                    report.Carved[(int)RegattaPlacementCarve.Verdict.Shell]++;
+                    continue;
+                }
                 if (Mathf.Min(Mathf.Abs(scale.x), Mathf.Min(Mathf.Abs(scale.y), Mathf.Abs(scale.z))) < MinPrismAxis)
                 {
                     report.Carved[(int)RegattaPlacementCarve.Verdict.Fine]++;
                     continue;
                 }
                 float r = RegattaPlacementCarve.RadiusOf(scale);
-                var verdict = carve?.Test(pos, r, p.CrossLine) ?? RegattaPlacementCarve.Verdict.Laid;
+                var verdict = carve?.Test(pos, r, p.CrossLine, p.CrossRail) ?? RegattaPlacementCarve.Verdict.Laid;
                 if (verdict != RegattaPlacementCarve.Verdict.Laid) { report.Carved[(int)verdict]++; continue; }
                 output.Add(new PrismLay(new SpawnPoint(pos, rotation * lay.Point.Rotation, scale),
                                         domain ?? lay.Domain, kind ?? lay.Kind));

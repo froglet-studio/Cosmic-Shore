@@ -71,7 +71,17 @@ that day) - no wire change of its own: the build that carries both 27 (the Vesse
 possession decision: mode, nest pose, recharges, stand-back; `R_VesselActions/JEWEL_WASP.md` §6.1). **31** (2026-11-15,
 `claude/jewel-wasp-flora-camera`; free on bleeding-edge and the in-flight branches that day) - `JewelWaspNetworkRelay`
 gains `n_ownerAutoPilot`, the owner's autopilot flag, so the server runs the wasp's AI for a client hull on autopilot. **32** (2026-11-16, the merge of `bleeding-edge` into `Ys-bleeding-edge` by the Spearline fun pass; free on every origin branch that day) - both lines' protocol changes in one build: `Ys-bleeding-edge`'s 30 (`RoundStats.n_VesselStats`) and `bleeding-edge`'s 30-31 (the Jewel Wasp).
+**32** (2026-11-16, `voyages` via `claude/project-thread-6jgeji`; bleeding-edge is at 31, 30 and 31 are its Jewel Wasp and
+the build after it, so 32 is above both) - the voyage party's named messages (`VoyageCourseLink`, Docs/Voyages/PARTY.md):
+`cosmicshore.voyage.course` gains the escort's sail and end, the party's Crystal Run tally, the seed, home pose, seat list
+and leg serial, and the end's outcome; new `cosmicshore.voyage.arkpose` (the host's Ark pose, unreliable) and
+`cosmicshore.voyage.report` (a friend's lobby seat, crystals and kills, to the host). When `voyages` merges into
+bleeding-edge, keep the higher number.
 **33** (2026-11-17, `Ys-bleeding-edge`, the merge of `fix/android-startup-logs`; 33 was free on every origin branch pushed since 2026-11-08, checked that day) - `QuadFish.prefab` and `MassBrittlestarFauna.prefab` left the network prefab list: neither species is opted in to replication. The branch had claimed 25 for this on 2026-11-02; 25 was since used on bleeding-edge.
+**34** (2026-11-16, the merge of `bleeding-edge` into `voyages` for its ship; every origin branch checked that day,
+33 is taken on `Ys-bleeding-edge`) - both sides had claimed 32 for different wire changes (`Ys-bleeding-edge`'s merge
+above and the voyage party's messages), so the build that carries both is 34: a 32 build from either line cannot join it.
+**37** (2026-11-19, the merge of `bleeding-edge` into `Ys-bleeding-edge`; 36 was the highest on every origin branch pushed since 2026-11-10, checked that day) - no wire change of its own: the build that carries both bleeding-edge's 36 and `Ys-bleeding-edge`'s 33 (the two fauna prefabs off the network prefab list).
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

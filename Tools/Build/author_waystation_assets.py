@@ -139,7 +139,7 @@ g.emit_asset(
       "  Vessels:\n"
       f"  - {{fileID: 11400000, guid: {EXISTING['Butterfly']}, type: 2}}\n"
       "  MinPlayersAllowed: 2\n"
-      "  MaxPlayersAllowed: 4\n"
+      "  MaxPlayersAllowed: 9\n"
       "  MinDomainsAllowed: 2\n"
       "  MaxDomainsAllowed: 3\n"
       "  MinIntensity: 1\n"

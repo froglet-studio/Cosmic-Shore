@@ -49,6 +49,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far past the aim the nose lead may place the command, degrees (AIPilot.NoseLeadMaxExtraDegrees).")]
         [Range(0f, 120f)] public float NoseLeadMaxExtraDegrees = AIPilot.DefaultNoseLeadMaxExtraDegrees;
 
+        [Header("Nose follow (fleet lag at 0)")]
+        [Tooltip("The AI nose's follow rate per second in this mode (VesselTransformer.AINoseFollowPerSecond): 0 = the fleet " +
+                 "lag (1.5/s), higher = a quicker nose. Fed from the hull's rate learned in its own Time game (2026-11-17: " +
+                 "the nose lag, not the boost drive, held the slow AIs back). A mode setting on the AI's skill, never a " +
+                 "vessel change.")]
+        [Range(0f, 30f)] public float NoseFollowPerSecond = 0f;
+
         /// <summary>This hull's style in this mode, or null (the mode's shipped steering then applies).</summary>
         public static RaceLineStyleSO Load(VesselClassType hull, GameModes mode) =>
             Resources.Load<RaceLineStyleSO>($"{ResourceFolder}/{hull}_{mode}");

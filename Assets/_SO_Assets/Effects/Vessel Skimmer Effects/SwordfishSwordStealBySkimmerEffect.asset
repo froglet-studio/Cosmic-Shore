@@ -22,7 +22,7 @@ MonoBehaviour:
     Max: 2.5
     element: 1
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   stealUpgradeElement: 1
   requireOvertake: 0
   hapticAmplitude: 0.8

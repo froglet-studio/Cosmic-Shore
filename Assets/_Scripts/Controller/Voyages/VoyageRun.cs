@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
     /// <para>Friends: each machine runs its own voyage today; the host's course reaching the party is SLICE.md §4
     /// step 5.</para>
     /// </summary>
-    public sealed class VoyageRun : MonoBehaviour, IArkEscortHost
+    public sealed partial class VoyageRun : MonoBehaviour, IArkEscortHost, IArkStatusSource
     {
         const float BannerSeconds = 5f;
         const float LeashCheckSeconds = 2f;
@@ -59,6 +59,9 @@ namespace CosmicShore.Gameplay
         CellConveyor _corridor;
         ArkwayConfig _arkCfg;
         int _worlds;
+        /// <summary>The corridor's worlds by name, in route-index order (<see cref="CellConveyor.TraversalWorlds"/>), so a
+        /// job can name the world each cell stands.</summary>
+        readonly List<string> _worldNames = new();
 
         VoyageState _state;
         SavedSquad _squad;
@@ -157,14 +160,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Deploy the squad and sail for <paramref name="job"/> (picked in the Voyage window from
         /// <see cref="VoyageHarbour.Board"/>).</summary>
-        public void SetSail(IVesselStatus local, VoyageJob job)
+        public void SetSail(IVesselStatus local, VoyageJob job, SavedSquad squad = null)
         {
             if (job == null || _active && _following) return;
-            if (!_active) Embark(local, following: false);
+            if (!_active) Embark(local, following: false, squad);
             if (_active) TakeJob(job);
         }
 
-        void Embark(IVesselStatus local, bool following)
+        void Embark(IVesselStatus local, bool following, SavedSquad squad = null, VoyageCourse course = null)
         {
             if (_active || local?.Transform == null) return;
             if (!_def || Content == null)
@@ -174,7 +177,10 @@ namespace CosmicShore.Gameplay
             }
 
             var domain = LiveDomain(_context);
-            _squad = ActiveSquad(_context);
+            // A friend sails the seat they picked in the host's lobby (VoyageSeatRecord.PartyKey), else their active squad,
+            // moved into the seat the host gave them (Docs/Voyages/PARTY.md §1).
+            _squad = squad ?? (following ? VoyageSeatRecord.Get(VoyageSeatRecord.PartyKey) : null) ?? ActiveSquad(_context);
+            if (following) _squad = VoyageRules.WithSeat(_squad, SeatIn(course));
             _state = LoadOrBegin(Content, domain);
             _following = following;
             _pendingLeg = null;
@@ -183,6 +189,7 @@ namespace CosmicShore.Gameplay
             _active = true;
             _underway = _fallen = _fallTaken = _docked = false;
             _seeded.Clear();
+            _voyageRaid.Clear();
             EnsureSea();
             // The escort's roles, at their defaults (an escort sim's overrides never leak into a voyage).
             EscortGeneRegistry.ResetAll();
@@ -192,8 +199,13 @@ namespace CosmicShore.Gameplay
             _arkCfg = _def.BuildArkConfig(_content);
             _sea.Configure(_arkCfg, _context, _context?.Container, _corridor, OnSeaEnded);
             _worlds = CountWorlds(local.Transform.position);
+            BeginParty(course);
 
             Deploy(local, domain);
+            VoyageObjective.Source = this;
+            PauseMenuAction.Current = this;
+            (_alarms ??= new ArkAlarmToasts(this, () => _sea)).Hook();
+            if (!_attackerMarks) _attackerMarks = ArkAttackerMarks.Create(transform, this, () => Ark);
 
             ArkFall.Settled -= OnFallSettled;
             ArkFall.Settled += OnFallSettled;
@@ -208,7 +220,7 @@ namespace CosmicShore.Gameplay
                 Banner(Lines.Following);
                 return;
             }
-            VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.Embark });
+            VoyageCourseLink.Send(Course(VoyageCourseKind.Embark));
         }
 
         // ── Friends: following the host's course (SLICE.md §4 step 5) ────────
@@ -224,18 +236,26 @@ namespace CosmicShore.Gameplay
             switch (course.Kind)
             {
                 case VoyageCourseKind.Embark:
-                    if (!_active) Embark(LocalVessel(), following: true);
+                    if (!_active) Embark(LocalVessel(), following: true, course: course);
                     break;
                 case VoyageCourseKind.Leg:
-                    if (!_active) Embark(LocalVessel(), following: true);
+                    if (!_active) Embark(LocalVessel(), following: true, course: course);
                     if (!_active) return;
-                    // Still sailing the last leg: take this one on arriving, so the stop is seen first.
-                    if (_sea.IsRunning && !_sea.IsHoldingAtRouteEnd) _pendingLeg = course;
+                    // Still sailing the last leg: the host has moved on (it reached its stop, or took "Complete and set
+                    // sail"), so this leg ends where the friend's Ark is too. RouteEnded shows the stop and sails the
+                    // pending leg, as on the host; otherwise the friend would trail by every remaining anchor window.
+                    if (_sea.IsRunning && !_sea.IsHoldingAtRouteEnd)
+                    {
+                        _pendingLeg = course;
+                        if (course.LegSerial > _legSerial) _sea.EndRouteHere();
+                    }
                     else SailLeg(course);
                     break;
+                case VoyageCourseKind.Tally:
+                    TakeHostTally(course);
+                    break;
                 case VoyageCourseKind.End:
-                    // A friend already sailing home docks on their own; anywhere else the voyage ends with the host's.
-                    if (_active && _state.Current is not { IsReturn: true }) GiveUp("the host's voyage ended");
+                    EndWithHost(course);
                     break;
             }
         }
@@ -256,14 +276,20 @@ namespace CosmicShore.Gameplay
             _state.Owed = owed ?? new List<int>();
 
             ClearStop();
+            CloseStopBoard();
+            _legSerial = course.LegSerial;
             PrepareLeg(course.Job);
+            ArmIntro(course.Job, firstLeg: !_sea.IsRunning);
             if (_sea.IsRunning) _sea.ContinueRoute(course.Route);
             else
             {
+                PlaceCorridor(local, course);
                 _sea.SetRoute(course.Route);
                 _sea.Begin(local);
             }
-            Banner(Line(Lines.Depart, course.Job.To));
+            // The same opening as the host's: a Crystal Run and the way home with their toast, other work its banner.
+            if (course.Job.CountsUnderway || course.Job.IsReturn) ToastSetOff(course.Job);
+            else Banner(Line(Lines.Depart, course.Job.To));
         }
 
         void SaveState()
@@ -274,18 +300,57 @@ namespace CosmicShore.Gameplay
             VoyageStore.Save(_state);
         }
 
-        /// <summary>The squad that sails: the one a party launch named, else the player's active squad, else the hull
-        /// they are flying in every seat (a player who has never built a squad can still voyage).</summary>
+        /// <summary>The squad that sails: the player's active squad, else the one a party launch named, else the starter
+        /// squad (Shombith, 2026-11-16): a player with no squad is given one, saved into their squad book so the Ark's
+        /// Squads tab shows the same three pilots the board's jobs come from.</summary>
         public static SavedSquad ActiveSquad(ToyContext context) => ActiveSquad(context?.GameData);
 
         /// <inheritdoc cref="ActiveSquad(ToyContext)"/>
         public static SavedSquad ActiveSquad(GameDataSO gameData)
         {
-            var squad = SquadLaunchIntent.Squad ?? UGSDataService.Instance?.SquadRepo?.Data?.Book?.GetActive();
-            if (squad != null) return squad;
-            var hull = Alive(gameData ? gameData.LocalPlayer?.Vessel : null)?.VesselType ?? default;
-            return new SavedSquad(string.Empty, new SquadSlot(hull, Element.None), new SquadSlot(hull, Element.None),
-                new SquadSlot(hull, Element.None));
+            var repo = UGSDataService.Instance?.SquadRepo;
+            var book = repo?.Data?.Book;
+            var active = book?.GetActive();
+            // The squad the Voyage window shows and edits is the book's active one, so that is the one that sails (a seat's
+            // vessel picked there is the one flown). The Ark's Take into makes its squad active too, and holds only a COPY
+            // (SquadLaunchIntent) that a later seat change does not reach, so the intent is read only with no book.
+            if (active != null) return active;
+            if (SquadLaunchIntent.Squad != null) return SquadLaunchIntent.Squad;
+
+            var starter = StarterSquad(VoyageToyDefinitionSO.Load(), SquadDirectory.LocalPlayerId);
+            if (starter == null)
+            {
+                // No starter authored: the hull the player is flying, in every seat.
+                var hull = Alive(gameData ? gameData.LocalPlayer?.Vessel : null)?.VesselType ?? default;
+                return new SavedSquad(string.Empty, new SquadSlot(hull, Element.None), new SquadSlot(hull, Element.None),
+                    new SquadSlot(hull, Element.None));
+            }
+            // Before the squad record has loaded the starter sails unsaved; once it has, it is the book's first squad.
+            if (book == null) return starter;
+            var added = AddStarter(book, starter);
+            if (added != null) repo.MarkDirty();
+            return added ?? starter;
+        }
+
+        /// <summary>The starter squad from <paramref name="settings"/>' three seats, its leader held by
+        /// <paramref name="memberId"/> (the local player) and the two rogues on AI; null when none is authored.</summary>
+        public static SavedSquad StarterSquad(VoyageToyDefinitionSO settings, string memberId)
+        {
+            var seats = settings ? settings.StarterSeats : null;
+            if (seats == null || seats.Count < SavedSquad.SlotCount) return null;
+            var leader = string.IsNullOrEmpty(memberId) ? seats[0] : seats[0].WithMember(memberId, null);
+            return new SavedSquad(settings.StarterSquadName, leader, seats[1].WithSeat(SquadSeat.Ai),
+                seats[2].WithSeat(SquadSeat.Ai));
+        }
+
+        /// <summary>Puts <paramref name="starter"/> into an EMPTY <paramref name="book"/> as its active squad and returns it;
+        /// null (and the book untouched) when the book already holds a squad.</summary>
+        public static SavedSquad AddStarter(SquadBook book, SavedSquad starter)
+        {
+            if (book == null || starter == null || book.Squads is { Count: > 0 }) return null;
+            var added = book.Add(starter);
+            book.TrySetActive(0);
+            return added;
         }
 
         /// <summary>The pilots seated in <paramref name="squad"/>, in seat order: they lead the board. Each is
@@ -306,18 +371,6 @@ namespace CosmicShore.Gameplay
                     : PilotLoadoutStore.TryGetPilot(pilot.Id, out person) ? person.Id : pilot.Id);
             }
             return pilots;
-        }
-
-        /// <summary>Every pilot of the player's crew (the Ark's people, Docs/Pilots/INVENTORY.md §3): the rest of the board
-        /// is their work (DEPTH.md §4). Empty before the account has loaded.</summary>
-        public static List<string> CrewPilots()
-        {
-            var crew = new List<string>();
-            var inventory = AccountInventoryStore.Current;
-            if (inventory?.Pilots == null) return crew;
-            foreach (var p in inventory.Pilots)
-                if (p != null && !string.IsNullOrEmpty(p.Id)) crew.Add(p.Id);
-            return crew;
         }
 
         /// <summary>The saved galaxy, ready to set out from where the last voyage left the Ark, the days away ticked
@@ -368,6 +421,8 @@ namespace CosmicShore.Gameplay
                     _wingmates.Add(vessel);
                     SquadDeployment.Seat(vessel.VesselStatus, seated);
                     Escort(vessel, seated);
+                    // Released after the voyage opened: beside the Ark with the squad (or in the hangar, mid-intro).
+                    FormUpLate(vessel.VesselStatus, seated);
                 });
             }
         }
@@ -379,6 +434,7 @@ namespace CosmicShore.Gameplay
             var pilot = c.GetComponent<ArkEscortPilot>();
             if (!pilot) pilot = c.gameObject.AddComponent<ArkEscortPilot>();
             pilot.Arm(this, seat);
+            pilot.Errand = WingmateErrand;
             if (!_pilots.Contains(pilot)) _pilots.Add(pilot);
         }
 
@@ -395,7 +451,7 @@ namespace CosmicShore.Gameplay
                 Resolve(VoyageRules.WorkDone(_state.Current, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
 
             if (!VoyageRules.Take(_state, Content, job)) return;
-            var route = VoyageRules.Corridor(Content, job.From, job.To, _state.Day, _worlds, _state);
+            var route = FitLeg(job, VoyageRules.Corridor(Content, job.From, job.To, _state.Day, _worlds, _state));
             if (route.Count == 0)
             {
                 CSDebug.LogWarning($"[Voyage] No course from {job.From} to {job.To} ({_worlds} worlds to sail) - the job stays on the board.");
@@ -405,10 +461,17 @@ namespace CosmicShore.Gameplay
             }
 
             ClearStop();
+            _legSerial++;
             PrepareLeg(job);
             SaveState();
-            VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.Leg, State = _state, Job = job, Route = route });
+            PlaceCorridor(local, null);
+            var course = Course(VoyageCourseKind.Leg);
+            course.State = _state;
+            course.Job = job;
+            course.Route = route;
+            VoyageCourseLink.Send(course);
 
+            ArmIntro(job, firstLeg: !_sea.IsRunning);
             if (_sea.IsRunning)
             {
                 if (!_sea.ContinueRoute(route))
@@ -419,7 +482,9 @@ namespace CosmicShore.Gameplay
                 _sea.SetRoute(route);
                 _sea.Begin(local);
             }
-            Banner(Line(Lines.Depart, job.To));
+            // A Crystal Run and the way home open with their toast (Rev 113); other work keeps its banner.
+            if (job.CountsUnderway || job.IsReturn) ToastSetOff(job);
+            else Banner(Line(Lines.Depart, job.To));
             if (job.HullFloor > 0f && !string.IsNullOrEmpty(Lines.Convoy))
                 Banner(TemplateText.Fill(Lines.Convoy, "percent", Mathf.RoundToInt(job.HullFloor * 100f).ToString()));
             VoyageHarbour.RaiseChanged();
@@ -431,6 +496,8 @@ namespace CosmicShore.Gameplay
         {
             _profile = VoyageRules.CorridorProfile(_state, Content, job.From, job.To);
             _hostileWorld = VoyageRules.HostileWorld(_state, Content, job.To);
+            BeginLegAssaults();
+            BeginLegCount(job);
         }
 
         /// <summary>The corridor stands a cell of the route: it takes the lane's pacing, and the destination its hostility
@@ -438,8 +505,18 @@ namespace CosmicShore.Gameplay
         void OnPrepareCell(Cell cell, int routeIndex)
         {
             if (!cell || !_active || routeIndex < 0 || _profile == null || routeIndex >= _profile.Count) return;
-            cell.RuntimePopulationScale = Mathf.Max(0.1f, _profile[routeIndex]);
-            if (routeIndex == _profile.Count - 1 && _hostileWorld)
+            NoteLegCell(cell, routeIndex);
+            // The leg's pacing, times the voyage's own life scale (its cells are big: Shombith 2026-11-17, more fauna and
+            // more crystals).
+            float life = _def ? Mathf.Max(0.1f, _def.CellLifeScale) : 1f;
+            float creatures = Mathf.Max(0.1f, _profile[routeIndex]) * life;
+            if (_def) creatures = Mathf.Min(creatures, Mathf.Max(0.1f, _def.CellLifeMax));   // Cell Life Max
+            cell.RuntimePopulationScale = creatures;
+            // Plants at their own scale (Cell Flora Scale, with the leg's per-cell pacing): the cell's prism mass grows
+            // with them.
+            cell.RuntimeFloraShare = _def ? Mathf.Max(0.1f, _profile[routeIndex]) * Mathf.Max(0.1f, _def.CellFloraScale) / creatures : 1f;
+            // The job's hostile cells (VoyageRun.Assault.cs); without a pattern, the destination when its place is hostile.
+            if (PrepareAssaultCell(cell, routeIndex))
                 cell.SetReplicatedStartingController(CellControlRules.Opposing(LiveDomain(_context)));
         }
 
@@ -460,7 +537,11 @@ namespace CosmicShore.Gameplay
                 }
             _holdKnown = hold ? hold.Artifacts.Count : 0;
             _underway = true;
-            BringWingmates(force: true);
+            // Every seat beside the Ark, side by side with it (VoyageRun.Formation.cs); the intro may stow them in the
+            // hangar next, to launch them there.
+            FormUp();
+            OnAssaultUnderway();
+            BeginIntro();
         }
 
         void OnRouteEnded()
@@ -474,6 +555,8 @@ namespace CosmicShore.Gameplay
 
             if (_arrival.Extracts)
             {
+                // A Crystal Run that ends at home: what it stole is owed, and docking banks it with everything else.
+                if (job.CountsUnderway) VoyageRaid.Owe(_state, _raid);
                 if (!job.IsReturn) Resolve(VoyageRules.WorkDone(job, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
                 else VoyageRules.Resolve(_state, Content, JobOutcome.Succeeded);
                 Dock();
@@ -482,8 +565,10 @@ namespace CosmicShore.Gameplay
 
             StandStop(ark ? ark.Position : transform.position);
             MarkSeats();
+            // A Crystal Run counted its work on the way: it resolves now, and the scoreboard asks what next.
+            if (job.CountsUnderway) ArriveRaid(job);
             // Work decided by arriving (a courier, a convoy's hull floor) is decided now.
-            if (job.Verb == WorkVerb.Arrive) Resolve(VoyageRules.WorkDone(job, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
+            else if (job.Verb == WorkVerb.Arrive) Resolve(VoyageRules.WorkDone(job, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
             else if (job.Verb == WorkVerb.Meet) CheckWork();
             SaveState();
             VoyageHarbour.RaiseChanged();
@@ -499,10 +584,15 @@ namespace CosmicShore.Gameplay
         {
             if (!_active) return;
             _fallen = true;
+            StopIntro();
             string where = _state.AtSea && _state.Current != null ? _state.Current.To : _state.At;
+            var stake = StakeByElement();
+            var lost = _state.Current;
             var r = VoyageRules.ArkLost(_state, Content, where, _fallTaken || HostileRivalStands(), _holdMirror);
             SaveState();
-            Banner(Join(Lines.ArkLost, r.StoryLine, Join(r.StoryLines)));
+            // A friend's own Ark fell in their own world: the host's sails on, and they rejoin it on its next leg.
+            Banner(_following ? Join(Lines.ArkLost, Lines.FollowerArkLost) : Join(Lines.ArkLost, r.StoryLine, Join(r.StoryLines)));
+            if (!_following) ShowLost(stake, lost);
         }
 
         /// <summary>A hostile crew standing at the stop is credited with a fall there (DEPTH.md §3): their hulls are
@@ -670,7 +760,13 @@ namespace CosmicShore.Gameplay
                 return;
             }
             SeedSeats();
+            TickParty();
             TickEscort();
+            TickAssaults();
+            if (!_active) return;
+            TickLegToasts();
+            TickRaidWindow();
+            TickHullLeak();
             WatchHold();
             TickHold();
             TickObserve();
@@ -841,6 +937,8 @@ namespace CosmicShore.Gameplay
                     tally.Laid += Mathf.Max(0, stats.BlocksCreated - kv.Value.Blocks);
                     tally.Razed += Mathf.Max(0f, stats.HostileVolumeDestroyed - kv.Value.Hostile);
                 }
+            // A Crystal Run counts what was stolen since the Ark set sail, not since it arrived.
+            if (Raiding) tally.Gathered = _raid.Total;
             return tally;
         }
 
@@ -960,9 +1058,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Home: everything aboard and every crystal owed is the player's now, a relic with its authored name and
         /// lore, and the voyage ends at the dock.</summary>
-        void Dock()
+        /// <summary>Docked home: everything owed is banked. <paramref name="here"/> banks at the stop the Ark holds at
+        /// instead (a Crystal Run finished where it met its goal) and ends the voyage there.</summary>
+        void Dock(bool here = false)
         {
-            var x = VoyageRules.Extract(_state, Content);
+            var x = VoyageRules.Extract(_state, Content, anywhere: here);
             if (x != null)
             {
                 foreach (var id in x.Artifacts)
@@ -981,7 +1081,15 @@ namespace CosmicShore.Gameplay
                 Banner(TemplateText.Fill(Line(Lines.Extracted, _state.At), "count", x.Artifacts.Count.ToString()));
             }
             SaveState();
+            ShowDocked(x);
             _docked = true;
+            // Home: every friend sailing home with this Ark docks with it (each banks what they carry).
+            if (!_following)
+            {
+                var end = Course(VoyageCourseKind.End);
+                end.Outcome = VoyageCourseEnd.Docked;
+                VoyageCourseLink.Send(end);
+            }
             _sea.End(returnToCell: true, "the voyage docked at home");
         }
 
@@ -1001,18 +1109,29 @@ namespace CosmicShore.Gameplay
 
         void Finish()
         {
-            if (!_following && !_docked) VoyageCourseLink.Send(new VoyageCourse { Kind = VoyageCourseKind.End });
+            if (!_following && !_docked)
+            {
+                var end = Course(VoyageCourseKind.End);
+                end.Outcome = _fallen ? VoyageCourseEnd.Fallen : VoyageCourseEnd.Ended;
+                VoyageCourseLink.Send(end);
+            }
+            EndParty();
             _active = false;
             _following = false;
             _pendingLeg = null;
             _underway = false;
+            StopIntro();
             ArkFall.Settled -= OnFallSettled;
             if (_killHooked) Fauna.Killed -= OnFaunaKilled;
             _killHooked = false;
             ClearStop();
             SquadDeployment.Recall();
             foreach (var p in _pilots)
-                if (p) p.Disarm();
+                if (p)
+                {
+                    p.Errand = null;
+                    p.Disarm();
+                }
             _pilots.Clear();
             _escort?.Uninstall();
             var swapper = _context?.VesselInitializer;
@@ -1021,6 +1140,10 @@ namespace CosmicShore.Gameplay
             _wingmates.Clear();
             _seeded.Clear();
             _holdMirror.Clear();
+            EndAssaults();
+            EndRaid();
+            // A stop's choice cannot be made once the voyage is over; the last board (docked, lost) stays up.
+            if (VoyageScoreboard.Current is { Board: VoyageScoreboard.Kind.CrystalRun }) VoyageScoreboard.Hide();
             _onEnded?.Invoke();
         }
 
@@ -1031,7 +1154,7 @@ namespace CosmicShore.Gameplay
         void BringWingmates(bool force)
         {
             var ark = _sea ? _sea.Ark : null;
-            if (!ark) return;
+            if (!ark || _sortie && _sortie.IsHolding) return;
             float leash = Mathf.Min(_def.WingmateLeash, ArkEscortPilot.GuardRadius * EscortGeneRegistry.LeashFactor);
             for (int i = 0; i < _wingmates.Count; i++)
             {
@@ -1042,8 +1165,13 @@ namespace CosmicShore.Gameplay
                 if (status is Component sc && sc && sc.TryGetComponent(out ArkEscortPilot escortPilot))
                     seatLeash = escortPilot.Leash(leash);
                 if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= seatLeash * seatLeash) continue;
+                // Back to its seat's slot beside the Ark (clear of the hull: a vessel set down in the plating destroys plates).
+                if (TryWingmateSlot(status, out var slot))
+                {
+                    w.SetPose(slot);
+                    continue;
+                }
                 var side = i % 2 == 0 ? -1f : 1f;
-                // Abeam of the hull, never inside it: a vessel set down in the plating destroys plates.
                 float abeam = Mathf.Max(WingmateAbeam * 2f, (_escort?.HullRadius ?? HullHalfLength) + EscortGeneRegistry.ArkLaneMargin + 60f);
                 var at = ark.Position + ark.transform.right * (side * abeam) - ark.Forward * (WingmateAbeam * (1 + i));
                 w.SetPose(new Pose(at, Quaternion.LookRotation(ark.Forward, Vector3.up)));
@@ -1062,9 +1190,17 @@ namespace CosmicShore.Gameplay
             var sea = new GameObject("VoyageArkwayRun");
             sea.transform.SetParent(_root, false);
             _sea = sea.AddComponent<ArkwayRun>();
+            // A toast never plays under the intro: it waits, and is read when the pilot has the stick.
+            _sea.HoldBanners = () => VoyageIntro.IsPlaying;
             _sea.Underway += OnUnderway;
             _sea.RouteEnded += OnRouteEnded;
             _sea.ArkFallen += OnArkFallen;
+            // A Crystal Run's Ark anchors at each cell for the squad to raid it (VoyageRun.Raid.cs).
+            _sea.AnchorSeconds = RaidAnchorSeconds;
+            _sea.Anchored += OnRaidAnchored;
+            _sea.Weighed += OnRaidWeighed;
+            // A pilot who strays past the stray radius is warned 5-4-3-2-1, then recalled to their seat (VoyageRun.Stray.cs).
+            HookStray(true);
         }
 
         /// <summary>How many worlds a route's indices count into: the corridor's own list, read from the cell it will
@@ -1075,6 +1211,8 @@ namespace CosmicShore.Gameplay
             if (!cell) cell = Cell.FindNearestActiveCell(at, sceneCellsOnly: true);
             var worlds = new List<CellConfigDataSO>();
             CellConveyor.TraversalWorlds(_arkCfg?.Cells, cell, worlds);
+            _worldNames.Clear();
+            foreach (var w in worlds) _worldNames.Add(w ? w.CellName : string.Empty);
             if (worlds.Count == 0)
                 CSDebug.LogWarning("[Voyage] No worlds to sail through (no cell pool and no host cell configs) - no leg can be set.");
             return worlds.Count;
@@ -1121,6 +1259,7 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            StopIntro();
             ArkFall.Settled -= OnFallSettled;
             if (_killHooked) Fauna.Killed -= OnFaunaKilled;
             _killHooked = false;
@@ -1129,8 +1268,16 @@ namespace CosmicShore.Gameplay
                 _sea.Underway -= OnUnderway;
                 _sea.RouteEnded -= OnRouteEnded;
                 _sea.ArkFallen -= OnArkFallen;
+                _sea.Anchored -= OnRaidAnchored;
+                _sea.Weighed -= OnRaidWeighed;
+                _sea.AnchorSeconds = null;
+                HookStray(false);
             }
             if (_active) SquadDeployment.Recall();
+            // Destroyed while out: the escort context's static hooks (the crystal placement resolver) leave with it.
+            _escort?.Uninstall();
+            EndRaid();
+            EndParty();
             _onEnded = null;
         }
     }

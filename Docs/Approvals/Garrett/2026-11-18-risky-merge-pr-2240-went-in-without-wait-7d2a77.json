@@ -1,0 +1,50 @@
+{
+  "id": "2026-11-18-risky-merge-pr-2240-went-in-without-wait-7d2a77",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-18T22:48:28+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2240 went in without waiting for you.",
+  "why": "shared AI code every AI hull runs: Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs; vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Swordfish.prefab",
+  "branch": "claude/project-thread-gb9qjt",
+  "pr": 2240,
+  "commit": "14ca28d3c",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/SwordfishAIBoostPolicy_Regatta.asset",
+    "Assets/Resources/AIBoostPolicies/SwordfishAIBoostPolicy_Regatta.asset.meta",
+    "Assets/Resources/AIBoostPolicies/SwordfishAIBoostPolicy_Spearline.asset",
+    "Assets/Resources/AIBoostPolicies/SwordfishAIBoostPolicy_Spearline.asset.meta",
+    "Assets/Resources/RaceAICrystalGenes.asset",
+    "Assets/Resources/RaceAICrystalGenes.asset.meta",
+    "Assets/Resources/RaceAIRefuelGenes.asset",
+    "Assets/Resources/RaceAIRefuelGenes.asset.meta",
+    "Assets/_Prefabs/Spacevessels/Swordfish.prefab",
+    "Assets/_SO_Assets/AI",
+    "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+    "Assets/_Scripts/Controller/Arcade/SPEARLINE.md",
+    "Assets/_Scripts/Controller/Arcade/Spearline/SpearlineController.cs",
+    "Assets/_Scripts/ScriptableObjects/RaceAIRefuelGenesSO.cs",
+    "Assets/_Scripts/ScriptableObjects/RaceAIRefuelGenesSO.cs.meta",
+    "Assets/_Scripts/Tests/Editor/RampFuelTests.cs",
+    "Boost",
+    "Docs/Approvals/Yash/2026-11-18-the-swordfish-has-its-own-boost-policy-i-54378f.json",
+    "Docs/ElementalLoop/REDESIGN.md",
+    "Docs/Reports/TRAINED_DRIVES_PROMOTED.md",
+    "Policies/SwordfishAIBoostPolicy.asset",
+    "Policies/SwordfishAIBoostPolicy.asset.meta",
+    "Tools/Build/promote_trained_drives.py",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "risky": [
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "detail": "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs"
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Swordfish.prefab"
+    }
+  ]
+}

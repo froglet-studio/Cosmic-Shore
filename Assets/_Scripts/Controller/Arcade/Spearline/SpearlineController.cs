@@ -24,8 +24,11 @@ namespace CosmicShore.Gameplay
     {
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. The Rhino's 2.5 on Headlong's " +
-                 "circuit: the same airframe.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Swordfish, 2.5f) };
+                 "circuit: the same airframe. The lead may put the command at most 10 degrees past the aim (Thornline's cap): at " +
+                 "the default 40 the AI locked into an 11 u circle hundreds of units from its ring for up to 185 s, which the " +
+                 "orbit break never sees (the bearing to the ring barely turns), and timed out at I3-I4 (race judge, 2026-11-17). " +
+                 "Lead 2.82 at nose 8.28/s: the Swordfish's own Spearline search with the slice-fuelled ramp (fuel1, 2026-11-18).")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Swordfish, 2.82f, 10f, noseFollow: 8.28f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 

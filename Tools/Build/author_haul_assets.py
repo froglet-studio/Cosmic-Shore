@@ -216,7 +216,7 @@ g.emit_asset(CARD_REL, G_ASSET["ArcadeGameHaul"],
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Thresher']}, type: 2}}
   MinPlayersAllowed: 1
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 1
   MaxDomainsAllowed: 3
   MinIntensity: 1
@@ -434,7 +434,7 @@ for needle in ("prism.Steal(_status.PlayerName, _status.Domain);", "else prism.A
     if needle not in executor:
         errors.append(f"ThresherExecutor no longer has '{needle}' - Haul's whole economy is the Mass Mode ball stealing "
                       f"the neutral bales and shielding its own; re-check THRESHER.md 2b")
-if "internal static void CreditPrismSteal(IRoundStats thief, float volume)" not in g.read(
+if "internal static void CreditPrismSteal(IRoundStats thief, float volume" not in g.read(
         "Assets/_Scripts/Controller/Managers/StatsManager.cs"):
     errors.append("StatsManager.CreditPrismSteal is gone - Haul relies on the platform crediting every steal")
 controller = g.read(SCRIPT_PATHS["HaulController"])

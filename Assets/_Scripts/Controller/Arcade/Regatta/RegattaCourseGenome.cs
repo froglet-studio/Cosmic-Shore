@@ -42,6 +42,10 @@ namespace CosmicShore.Gameplay
         /// placement is an obstacle ON the line: only the ring mouths, the rails and the shell stay carved, so it is
         /// what makes a pilot (and an AI) steer, break through or bounce.</summary>
         public bool CrossLine;
+        /// <summary>May this placement's prisms stand on or across the rails? Off (the default), every rail prism keeps
+        /// <see cref="RegattaPlacementCarve.RailRadius"/> clear and a pilot riding a rail (the Urchin) never meets the
+        /// placement. On, it can block a rail, so a rider must leave the rail or go round. Ring mouths stay carved.</summary>
+        public bool CrossRail;
         /// <summary>The spawner's own fields, by serialized name (catalogue <c>params</c>).</summary>
         public SortedDictionary<string, double> Params = new(StringComparer.Ordinal);
 
@@ -73,7 +77,7 @@ namespace CosmicShore.Gameplay
     /// <para>JSON (the flywheel's shared contract): <c>{"version", "intensity", "seed", "circuit": {HeadlongCircuitSettings
     /// field: value, "CornerProfile": [8]}, "rails": {"LaneOffset", "TwistTurnsPerLap", "PrismSpacing"}, "features":
     /// {RegattaCourseFeatures, PascalCase}, "line_clearance", "placements": [{"kind", "leg", "offset": [radius,
-    /// bearing_deg, along_u], "scale", "yaw", "pitch", "roll", "domain", "prism", "seed", "density", "cross_line", "params": {}}],
+    /// bearing_deg, along_u], "scale", "yaw", "pitch", "roll", "domain", "prism", "seed", "density", "cross_line", "cross_rail", "params": {}}],
     /// "flora": {"preset", RegattaLifeformSiteSettings fields}}</c>. "crystals": {"PerLap", "Phase"} at the top level
     /// is read into <c>features.Crystals</c>.</para>
     /// </summary>
@@ -86,8 +90,12 @@ namespace CosmicShore.Gameplay
         public const int MaxPlacements = 24;
         /// <summary>Most prisms one placement lays; a spawner that lays more is thinned by an even stride.</summary>
         public const int PerPlacementCap = 3000;
-        /// <summary>Most prisms all placements lay together (the rails are ~2,000 more).</summary>
-        public const int TotalPrismBudget = 12000;
+        /// <summary>Most prisms all placements lay together (the rails are 1,812 more). Garrett, 2026-11-16: a course
+        /// may need more than the cell was measured for, so the cell's phase ladder is raised by what the placements lay
+        /// (<see cref="ICellPhaseBaseline"/>), but a crowded course is also a flag: players lay trails on top and fauna
+        /// must still do their job. 6,000 keeps a course within about three rail sets, and the prisms the measured
+        /// ladder leaves for trails (Frenzy at 5,412 against 1,812 rails) stay theirs.</summary>
+        public const int TotalPrismBudget = 6000;
         /// <summary>No placement prism nearer the cell centre than this (the nucleus, 391.9 u, with 10%).</summary>
         public const float NucleusCarve = RegattaCourse.NucleusWorldRadius * 1.1f;
         /// <summary>No placement prism farther from the cell centre than this (inside the 1,200 u membrane).</summary>
@@ -452,6 +460,7 @@ namespace CosmicShore.Gameplay
                     Seed = (int)RegattaJson.Num(pd, "seed", 0),
                     Density = (float)RegattaJson.Num(pd, "density", 1),
                     CrossLine = RegattaJson.Bool(pd, "cross_line", false),
+                    CrossRail = RegattaJson.Bool(pd, "cross_rail", false),
                 };
                 var prm = RegattaJson.Obj(RegattaJson.Get(pd, "params"));
                 if (prm != null)
@@ -576,7 +585,8 @@ namespace CosmicShore.Gameplay
                         ["offset"] = new List<object> { (double)p.Radius, (double)p.Bearing, (double)p.Along },
                         ["scale"] = (double)p.Scale, ["yaw"] = (double)p.Yaw, ["pitch"] = (double)p.Pitch,
                         ["roll"] = (double)p.Roll, ["domain"] = p.Domain, ["prism"] = p.Prism, ["seed"] = p.Seed,
-                        ["density"] = (double)p.Density, ["cross_line"] = p.CrossLine, ["params"] = prm,
+                        ["density"] = (double)p.Density, ["cross_line"] = p.CrossLine,
+                        ["cross_rail"] = p.CrossRail, ["params"] = prm,
                     });
                 }
             root["placements"] = placements;

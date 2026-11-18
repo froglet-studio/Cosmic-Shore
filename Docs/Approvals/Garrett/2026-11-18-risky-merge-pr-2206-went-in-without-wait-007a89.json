@@ -1,0 +1,46 @@
+{
+  "id": "2026-11-18-risky-merge-pr-2206-went-in-without-wait-007a89",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-18T01:08:46+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2206 went in without waiting for you.",
+  "why": "multiplayer wire format (NetworkConfig.ProtocolVersion): Assets/_Prefabs/CORE/NetworkManager.prefab",
+  "branch": "claude/project-thread-e9yath",
+  "pr": 2206,
+  "commit": "2e3bdef26",
+  "paths": [
+    "Assets/_Prefabs/CORE/NetworkManager.prefab",
+    "Assets/_Scripts/Controller/Arcade/BROODRUSH.md",
+    "Assets/_Scripts/Controller/Arcade/BroodRushController.cs",
+    "Assets/_Scripts/Controller/Arcade/Scoring/BroodRushScoringRuleSO.cs",
+    "Assets/_Scripts/Controller/Arcade/Scoring/ScoringRuleSO.cs",
+    "Assets/_Scripts/Controller/Environment/Prisms/PrismScaleAnimator.cs",
+    "Assets/_Scripts/Controller/Managers/PrismStateManager.cs",
+    "Assets/_Scripts/Controller/Managers/PrismTeamManager.cs",
+    "Assets/_Scripts/Controller/Managers/StatsManager.cs",
+    "Assets/_Scripts/Controller/Managers/VolumeLedger.cs",
+    "Assets/_Scripts/Controller/Managers/VolumeLedger.cs.meta",
+    "Assets/_Scripts/Controller/Player/Player.cs",
+    "Assets/_Scripts/Controller/Vessel/Prism.cs",
+    "Assets/_Scripts/Data/Structs/PrismStats.cs",
+    "Assets/_Scripts/Tests/Editor/VolumeLedgerTests.cs",
+    "Assets/_Scripts/Tests/Editor/VolumeLedgerTests.cs.meta",
+    "Assets/_Scripts/UI/Scoreboard.cs",
+    "Assets/_Scripts/UI/ScoreboardVersusView.cs",
+    "Assets/_Scripts/Utility/DataContainers/GameDataSO.cs",
+    "Docs/Approvals/Shombith/2026-11-18-scoreboard-and-its-versus-view-show-a-sc-e34588.json",
+    "Docs/Approvals/Yash/2026-11-18-brood-rush-s-final-scores-clientrpc-carr-28c59f.json",
+    "Docs/ArcadeRestructure/PLAN.md",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+    "Tools/Build/author_haul_assets.py",
+    "Tools/Build/author_hedgerow_assets.py"
+  ],
+  "risky": [
+    {
+      "key": "protocol",
+      "name": "multiplayer wire format (NetworkConfig.ProtocolVersion)",
+      "detail": "Assets/_Prefabs/CORE/NetworkManager.prefab"
+    }
+  ]
+}

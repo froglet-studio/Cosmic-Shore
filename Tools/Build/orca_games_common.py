@@ -74,7 +74,7 @@ def card_yaml(existing, name, mode_id, display, description, card_rel, scene, go
   Vessels:
   - {{fileID: 11400000, guid: {VESSEL_ORCA}, type: 2}}
   MinPlayersAllowed: {min_players}
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: {min_domains}
   MaxDomainsAllowed: 3
   MinIntensity: 1

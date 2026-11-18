@@ -59,12 +59,20 @@ measured it and did not invent a use (a kit proposal is in §6).
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
 | Mouth (u; Headlong's was 96 / 72 / 58 / 46) | 96 | 84 | 74 | 66 |
-| Sealed rings a lap (the gentlest) | 2 | 3 | 3 | 4 |
+| Sealed rings a lap (the gentlest) | 2 | 3 | 4 | 5 |
 | Armour on every seal | none | 120 deg | 180 deg | 240 deg |
 | Hole needed / wear per closed pass | 8 / 2 | 8 / 2 | 8 / 2 | 8 / 2 |
 | A cut prism (or cracked shield) grows back after | 4 s | 3.5 s | 3 s | 2.5 s |
-| Seal prisms a lap | 734 | 813 | 633 | 652 |
-| The question | swing into the pane | read the armour | a smaller face | a third of the pane, a small mouth |
+| Seal prisms a lap | 734 | 813 | about 844 | about 815 |
+| The question | swing into the pane | read the armour | a smaller face, one more seal | a third of the pane, a small mouth, one more seal |
+
+**One more seal at I3 and I4 (2026-11-17).** With the AI's ramp fixed (#2173), the race judge found I1-I3 nearly
+level: 141 / 150 / 155 s at Legendary. The AI's pace is a ramp-and-coast cycle per ring that barely depends on the
+corners (Spearline's own gentler and sharper corner rows left I1 at 141 s and I3 at 157 s, so they were dropped).
+What does climb is the work at the seals, so I3 and I4 each seal one more ring a lap: 2 / 3 / 4 / 5. Legendary now
+runs 141 / 150 / 159 / 208 s and Medium 174 / 182 / 185 / 220 s (seeds 1-2). Every rung climbs, but I2 to I3 only by
+1-6%. The bigger I2-I3 demand is reading the armour, which a perfect-reading Legendary AI does not pay and a person
+does. Garrett's playtest is the judge of that step.
 
 **Regrowth.** A cut seal prism grows back once its time is up AND the field has passed: no hull is within the ring's
 radius + 60 u of it, and no pilot's next ring is this one. So the leader cuts, and the pack close behind flies through
@@ -86,6 +94,18 @@ against the best fixed habit; a human reader (one factor fitted to the recorded 
   `ISwordfishSwordCoach`) inside 500 u of a sealed ring: triggers at rest while closing (so the hand never stands the
   bill up to energize in front of a pane - its crowd rule fires on any seal), the read's trigger from 0.35 s before the
   plane until 30 u past it. The hand writes the trigger mirrors as a pilot's fingers do: input only.
+- **The ramp** (2026-11-17). Spearline had no ramp tuning of its own, so `AIBoostPolicySO.ForMode` gave the
+  Swordfish the Rhino's untuned default (`RhinoAIBoostPolicy`: align 12 degrees, stick 0.35, corner speed 600). Under
+  it the AI seldom pressed the ramp, coasted back to the hull's 50 u/s floor after every ring and crawled 300-500 u
+  to the next one: 247-384 s a race in the real game (race judge, Medium and Legendary, seeds 1-2), one I4 timeout,
+  against the model's 31-40 s. `Resources/AIBoostPolicies/RhinoAIBoostPolicy_Spearline` is Headlong's trained ramp
+  (the same airframe on the same circuit): 141 / 150 / 155 / 191 s Legendary and 174 / 182 / 174 / 212 s Medium at
+  I1-I4, every race finished. Still open: I1-I3 barely climb (0.95-1.06x a rung), and a 650 u leg never lets the
+  ramp reach 840 u/s (it peaks near 500).
+  **2026-11-18:** the Swordfish has its own policy, `SwordfishAIBoostPolicy` (the prefab named the Rhino's), with its own
+  `SwordfishAIBoostPolicy_Spearline` and `_Regatta` variants; `RhinoAIBoostPolicy_Spearline` is gone. The Spearline
+  variant is trained here by `time_ai_search.py --hull Swordfish` with the ramp's slice fuel (#2233) and the refuel gene
+  (`RaceAIRefuelGenes`, row 1), and promoted by `promote_trained_drives.py`.
 - **By difficulty** (Easy / Medium / Hard / Legendary): the chance it does not read a seal and crosses the centre with
   a right-hand stroke 30 / 15 / 5 / 0%, and a fixed lane error up to 10 / 7 / 4 / 2 u.
 - **A closed pass** is the gate race's own: the AI comes round to the same approach. The worn seal and its own cut

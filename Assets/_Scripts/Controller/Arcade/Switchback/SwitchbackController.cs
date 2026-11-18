@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
                  "the lead off. Dolphin 2.5: the fleet lead.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Dolphin, 2.5f) };
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Dolphin, 2.15f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool aiDodgeDangerOnly = true;
         [Tooltip("u from the ring inside which the AI does not dodge at all: the line to the mouth (a blocked gate's eye, ringed " +
                  "by Danger rakes) is the line. 0 = dodge up to the ring. 200 measured best offline (switchback_sim_harness).")]
-        [SerializeField, Min(0f)] float aiNoDodgeNearRing = 200f;
+        [SerializeField, Min(0f)] float aiNoDodgeNearRing = 277.67f;
         [Tooltip("Before a blast the AI first flies to a point behind the key and turns onto the fire line (the old strike). " +
                  "Off: it flies straight at the key and the drift swings the nose onto the obstacle; offline the setup turn " +
                  "cost about as much as the blast saved (SWITCHBACK.md \"Step 2\").")]
@@ -92,15 +92,18 @@ namespace CosmicShore.Gameplay
                  "aiNoseFollowGauntlet. A negative entry leaves that level on the fleet lag.")]
         [SerializeField] SwitchbackNoseFollow[] aiNoseFollowByIntensity =
         {
-            new(1.9f, 2.2f, 3f, 5f),     // I1
-            new(2f, 2.4f, 3f, 5f),       // I2
-            new(2.1f, 2.2f, 2.8f, 6f),   // I3
-            new(1.8f, 2.2f, 3.5f, 6f),   // I4 without the gauntlet
+            // Legendary trained in the Dolphin's own race (time_ai_search.py, Dolphin step-5 run, 2026-11-18, at the #2196
+            // Drift Charge): 10.57/s at I1-I2, 12.69 at I3-I4 and in the gauntlet (run2 had 11.18 / 13.41); with the drive,
+            // lead 2.15 and no-dodge 278 u, I1 went 106 to 87 s on fresh seeds.
+            new(1.9f, 2.2f, 3f, 10.57f),    // I1
+            new(2f, 2.4f, 3f, 10.57f),      // I2
+            new(2.1f, 2.2f, 2.8f, 12.69f),  // I3
+            new(1.8f, 2.2f, 3.5f, 12.69f),  // I4 without the gauntlet
         };
         [Tooltip("The AI nose's follow rates at I4 WITH the gauntlet (SWITCHBACK.md \"The I4 gauntlet\"), Easy/Medium/Hard/" +
                  "Legendary. Retuned 2026-11-13 when the seals' Danger hearts became plain (elemental loop step 2): offline " +
                  "Easy ~176 s, Medium ~167, Hard ~155, Legendary ~141, about 10 s apart as in Yash's gauntlet bands of 2026-11-03.")]
-        [SerializeField] SwitchbackNoseFollow aiNoseFollowGauntlet = new(1.5f, 2.2f, 3.5f, 6f);
+        [SerializeField] SwitchbackNoseFollow aiNoseFollowGauntlet = new(1.5f, 2.2f, 3.5f, 12.69f);
         [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
         [SerializeField] bool aiPlanGizmos = true;
         [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +
@@ -201,11 +204,18 @@ namespace CosmicShore.Gameplay
                                           int intensity, int level) =>
             SwitchbackBlastRun.HasGauntlet(intensity, gauntletOn) ? gauntlet.For(level) : NoseFollowFor(byIntensity, intensity, level);
 
+        /// <summary>The per-intensity nose follow table this mode's AI flies (<see cref="aiNoseFollowByIntensity"/>). A mode
+        /// that reuses Switchback's course for another hull serves that hull's own trained table (Scarab Rally).</summary>
+        protected virtual SwitchbackNoseFollow[] AINoseFollowTable => aiNoseFollowByIntensity;
+
+        /// <summary>u from the ring inside which the AI stops dodging (<see cref="aiNoDodgeNearRing"/>); overridable as above.</summary>
+        protected virtual float AINoDodgeNearRing => aiNoDodgeNearRing;
+
         protected override void OnRacerArmed(IPlayer pilot)
         {
             var transformer = pilot?.Vessel?.VesselStatus?.VesselTransformer;
             if (transformer == null) return;
-            transformer.AINoseFollowPerSecond = NoseFollowFor(aiNoseFollowByIntensity, aiNoseFollowGauntlet, BlastRunGauntlet,
+            transformer.AINoseFollowPerSecond = NoseFollowFor(AINoseFollowTable, aiNoseFollowGauntlet, BlastRunGauntlet,
                                                               Intensity, (int)gameData.AIDifficultyFor(pilot));
         }
 
@@ -402,7 +412,7 @@ namespace CosmicShore.Gameplay
                                         p => (int)gameData.AIDifficultyFor(p))
                 {
                     DodgeDangerOnly = aiDodgeDangerOnly,
-                    NoDodgeNearRing = aiNoDodgeNearRing,
+                    NoDodgeNearRing = AINoDodgeNearRing,
                     StrikeSetupLeg = aiStrikeSetupLeg,
                     SpeedOverBreaking = aiSpeedOverBreaking,
                 }

@@ -65,6 +65,11 @@ What the element of a game is comes from the game itself (`ModeGenre.TryElements
 
 ## 2. Step 0: the game kit
 
+**2026-11-17 (Garrett): Mass and Space are one arcade category, and each vessel's Mass and Space games become one
+Mass-Space game** (Brood Rush's rule in the vessel's own environment, in teams; `../ArcadeRestructure/PLAN.md`). Games
+that teach no element are **Party** (Scurry, Scarab Scramble, Maelstrom) and count for no vessel's kit. Until every
+vessel's games are merged, the board below still shows Mass and Space as two columns; one Mass-Space game fills either.
+
 **Rule.** Every vessel has at least three arcade games: a Time game, a Charge game, and a Mass or a Space game. A
 vessel whose kit has no real mass-making is excused from Mass (the Dolphin); one with no destroyer verb is excused from
 Space (the Squirrel, which may get a stealing game, and stealing scores as Mass). Excuses are in `loop.json`
@@ -121,6 +126,25 @@ model number (standing rule).
   finish rate and median time band start from `rung_bars.json`'s defaults (I1 90%, I2 75%, I3 50%, I4 25% of human
   races that run to the end), a game may override them there, and once three runs of a rung were rated "right" on the
   card its bar is what those runs showed. A higher rung finished more often than the one below fails the ladder.
+- **The standard element ladder** (Garrett, 2026-11-16). Every arcade card's four rungs are coupled to the game's
+  element (`ModeGenre`) the same way, each rung adding one thing to the rung below:
+
+  | Rung | Adds | Where it lives |
+  |---|---|---|
+  | I1 | nothing: every hull starts at rest | no row (`ElementLadder`) |
+  | I2 | every hull starts at level 5 in the game's element | `GameDataSO.SyncFromArcadeGame` publishes `ElementLadder`'s rows for a card that authors no `StartingElements` |
+  | I3 | team crystals of the game's element on the map, each taken only by its team | `ElementLadderCrystals` (4 a team, regrow 12 s, on the mode controller's inspector): beside the rings in a gate race, through the cell otherwise; Harvest and Shatterplane lay their own; a mode scored on crystals stands down |
+  | I4 | fauna of the game's element, in the cell's colour | `Cell.FaunaRoster`: a cell whose I4 profile has no fauna gets `Resources/ElementLadderFauna` (Harvest's I4 four: shark, piranha, brittle star, tadpole, 23 live at most), each cloned at runtime with its element pinned; a cell that authors fauna keeps its species, pinned to the element the same way |
+
+  Garrett's three rulings: (1) the harder I1 is right: "it is less intense at level I1. winning is relative to other
+  players, and they will be slower too. faster is not easier. it is harder to control which is harder." (2) Racing AIs
+  may now take crystals: the detour is a learned gene (below, step 3). (3) I4 fauna wear the cell's colour, not all
+  three domains: "it is more consistent. it might affect urchin's in ways that they don't have a lot of agency over,
+  but we'll see". A card that authors ANY starting-element row owns its whole table (Redline, Headlong, Decoy Run,
+  Brittle Star Time, Stingherd, Chum, Warren, Starweave today) and is reconciled to the ladder by its owner; arena cards
+  are never defaulted (they play at one intensity and solve their own handicaps). Ladders shaped before 2026-11-16
+  without the I2-I4 level-5 start (Switchback, Scarab Rally and every other untabled card) need their rungs and bars
+  re-checked, and their AI seeds re-run in step 3.
 - **Tools:** `/arcadegame` (the per-mode intensity ladder: four `CellConfigDataSO`s), the End Game Conditions window
   (`/EndGameConditions`), `/ecology` for spawn profiles, `rung_bars.py`, the fun card's rung answer.
 
@@ -130,7 +154,12 @@ model number (standing rule).
   ladder is signed off.)
 - **Work.** [`AI_PLAN.md`](../AI_SYSTEM/AI_PLAN.md) rules 1-7, unchanged: one universal genome per vessel per
   element, scored on I1-I4 at once (mean plus half the worst), grown from every genome that exists, never trained
-  inside an arena game. Racing AIs never detour for crystals (Yash's rule). Every commit says `Plan step: <id>`.
+  inside an arena game. A racing AI's crystal detour is a GENE of its Time genome (`RaceAICrystalGenesSO`, 0 until a
+  search finds that taking crystals on the way wins; Garrett, 2026-11-16, relaxing Yash's 2026-10-26 never-a-crystal
+  rule): "the rule was handy when we were trying to seed the genome with effective racers. now we can relax some of
+  those earlier to get more interesting behaviors." The general process: constrain the space to find a good seed
+  quickly, then switch to a Pareto scheme that expands and contracts complexity to search for better solutions.
+  Every commit says `Plan step: <id>`.
   While Froglet Compute is paused, searches run in cloud sessions, never on someone's own PC.
 - **Exit (done).** The genome passes the four-part "well trained" test (`REGATTA_BALANCE_PLAN.md`), is written by the
   area's writer, and an editor check confirms it within ~10% of the model (a line in
@@ -243,7 +272,8 @@ model number (standing rule).
 - A game mode never changes the vessel; ability tuning is done on the vessel (CLAUDE.md, LOCKED).
 - PvP is petals only (LOCKED). Every colour comes from the colour set (LOCKED).
 - No AI is trained inside an arena game; nothing is balanced against an AI that has not converged (`AI_PLAN.md`).
-- Racing AIs never go for crystals (Yash). Garrett's playtests win over the model.
+- A racing AI's crystal detour is learned, not forbidden (Garrett 2026-11-16, relaxing Yash's rule). Garrett's
+  playtests win over the model.
 - Compute in the cloud, never on Garrett's PC.
 
 ## 9. Decisions for Garrett
@@ -258,10 +288,15 @@ model number (standing rule).
 5. **Vessels with no arena seat** (Angler, Brittle Star, Goby, Grizzly, Honeyguide, Jacks, Meerkat, Orca, Shrike,
    Starling, Thresher, Tiger Moth, Wrasse): they still run steps 0-3 for the Toybox, the arcade and voyages; which arena games seat them is yours.
 
+Step 5's redesign flags (Garrett, 2026-11-18: "if the tuning levers aren't working then flag the vessel for a
+redesign", too fast or too slow alike) are in [`REDESIGN.md`](REDESIGN.md), each with its measured gap and mechanism;
+a flagged vessel's Time step 1 reads `redo` on the board.
+
 ## 10. Log
 
 | Date | What moved |
 |---|---|
+| 2026-11-17 | **Garrett**: Mass and Space games merge into one Mass-Space category, team games of up to 9 vessels (3 per team); Party is everything else (Scurry, Scarab Scramble, Maelstrom), with no rules but every exception told to the player. Categories landed; plan in `../ArcadeRestructure/PLAN.md` |
 | 2026-11-16 | **Honeyguide Time step 1**, driven by the first fun card (Garrett, Slip Line I1, "almost", weakest Rivals): the recorded race showed the rival's ring uncounted after a ride and a 65 s far-side circle; the mode's AI now flies a rail-safe race line with the Regatta steering and a throttle floor, and `VesselTransformer.SetPose` no longer counts a zero-length pose as a teleport (`SLIP_LINE.md` section 10, `slip_line_ai_sim.py`). I1 unchanged; waits on Garrett's next flight and card |
 | 2026-11-15 | **Garrett**: "make all the missing games you can" (one per element is ideal). Step 0 rostered for the whole fleet in `GAME_KIT_ROSTER.md`: 35 games with reserved `GameModes` ids 91-125 (126-127 for the Jewel Wasp) and hint toasts 166-202; Grizzly, Jacks and Stoat Mass and Urchin Space excused in `no_game_ok` (kits make nothing to score); Starling waits for its kit |
 | 2026-11-12 | **Garrett**: the loop dominates `/swimlanes` and `/approve`. The swim lanes board now opens with every unoccupied vessel as its own loop lane (progress and next step, `elemental_loop.vessel_lanes`); the approval queues rank entries by loop impact, the rework a late "against the vessel's spirit" catch would cause (`elemental_loop.rework`) |

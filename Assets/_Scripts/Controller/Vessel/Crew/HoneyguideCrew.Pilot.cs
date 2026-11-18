@@ -83,7 +83,7 @@ namespace CosmicShore.Gameplay
             bool riding = StepZip(dt);
             StepTriggers(dt, riding);   // the triggers are read on the rail too (a pull previews; a release ends the ride)
             StepMassHive(dt);
-            if (riding) return;   // on the rail: no contacts until it lands
+            if (riding || _zipping) return;   // on the rail (or a dart a trigger just began): no contacts until it lands
             StepWatt();
             Contacts(dt);
         }

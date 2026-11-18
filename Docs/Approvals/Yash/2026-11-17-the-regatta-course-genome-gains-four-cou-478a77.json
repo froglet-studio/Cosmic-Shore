@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-17-the-regatta-course-genome-gains-four-cou-478a77",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T09:05:18+00:00",
+  "area": "the Regatta course genome doc (Docs/AI_SYSTEM)",
+  "summary": "The Regatta course genome gains four course motifs (skim strands, sweepers, straights, slaloms), a hard-corner mutation, and their descriptors; a section in REGATTA_COURSE_GENOME.md documents them.",
+  "why": "W3's group fit found no gene that moved the slow trio (Sparrow, Dolphin, Squirrel) against the fast trio (Urchin, Scarab, Stoat). Docs-only overlap with your ai-system lane, gone ahead under Garrett's 2026-11-08 word not to gate on you.",
+  "branch": "claude/project-thread-cwavhz",
+  "lane": "ai-system",
+  "commit": "433607e47",
+  "paths": [
+    "Docs/AI_SYSTEM/REGATTA_COURSE_GENOME.md",
+    "Tools/Compute/evaluators/regatta_genome.py"
+  ]
+}

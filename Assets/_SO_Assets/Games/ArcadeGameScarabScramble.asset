@@ -15,10 +15,7 @@ MonoBehaviour:
   Mode: 43
   IsMultiplayer: 1
   DisplayName: Scarab Scramble
-  Description: Every bright crystal you fly through becomes YOUR ball. Roll it, bat
-    it, bank it off the walls and through any glowing ring - first team to ten. Bumping
-    enemy balls is always safe defense, and a juke dash steals one outright. Scarab
-    only. Easy to start, hard to stop.
+  Description: 'Every bright crystal you fly through becomes YOUR ball. Roll it, bat it, bank it off the walls and through any glowing ring - first team to ten. Bumping enemy balls is always safe defense, and a juke dash steals one outright. Scarab only. Easy to start, hard to stop. PARTY RULES: crystals turn into balls, and goals score instead of control of the cell.'
   IconActive: {fileID: 0}
   IconInactive: {fileID: 0}
   CardBackground: {fileID: 21300000, guid: edcf46026ccb4aaba1d10cd975000d23, type: 3}
@@ -27,7 +24,7 @@ MonoBehaviour:
   Vessels:
   - {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
   MinPlayersAllowed: 1
-  MaxPlayersAllowed: 6
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1

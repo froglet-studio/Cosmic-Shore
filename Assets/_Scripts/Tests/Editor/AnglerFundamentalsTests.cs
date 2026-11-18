@@ -39,7 +39,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(element, f.ScaledElement, field);
             Assert.AreEqual(1f, f.EvaluateAtNormalizedLevel(0f), 1e-5f, field + " at rest");
             Assert.AreEqual(atFull, f.EvaluateAtNormalizedLevel(1f), 1e-5f, field + " at level 10");
-            Assert.AreEqual(1f, f.EvaluateAtNormalizedLevel(-0.5f), 1e-5f, field + " never shrinks below its authored number");
+            Assert.AreEqual(0.5f, f.EvaluateAtNormalizedLevel(-0.5f), 1e-5f, field + " keeps half its authored number at the deficit floor (fleet floor rule)");
         }
 
         [Test]

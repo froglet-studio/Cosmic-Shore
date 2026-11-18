@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: 'Vortex Sting'
-    AbilityDescription: 'A vortex ring from the Pistol''s Snap that hits a rival hull takes petals from each of its elements; Charge raises how many (GobyPistolConfig ringPetals, 1 at rest -> 3 at level 10). While the Goby holds a lock on a rival that is on the Pistol''s screen, the ring flies at it.'
+    AbilityDescription: 'A vortex ring from the Pistol''s Snap that hits a rival hull takes a petal from each of its elements. While the Goby holds a lock on a rival that is on the Pistol''s screen, the ring flies at it, and Charge sets how hard it homes (GobyPistolConfig ringHomingScale, x1 at rest -> x2.5 at level 10).'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -42,11 +42,12 @@ MonoBehaviour:
     UpgradeLabel: 'Deep Undertow'
     UpgradeDescription: 'Shielded prisms are pulled in too.'
   - Element: 4
-    AbilityLabel: 'Quick Jump'
-    AbilityDescription: 'Time shortens the cooldown of the Pistol''s jump, the burst of speed that flings it off its ground (jumpCooldown, 9 s at rest -> 3 s at level 10).'
+    AbilityLabel: 'Dart'
+    AbilityDescription: 'Time is the Goby''s dart: how fast it flies and how soon the next is ready (dartPace, x1 at rest -> x2.2 at level 10 - a full dart takes 1 s at rest, under half a second at level 10). Darts lay the Pistol''s ground, so a quick Goby keeps the Pistol fed.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 'Phase Dart'
     UpgradeDescription: 'The Goby''s darts pass through prisms.'
+  omniAbilityLabel: restocks the pair

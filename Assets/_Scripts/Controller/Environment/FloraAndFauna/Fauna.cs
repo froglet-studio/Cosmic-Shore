@@ -1064,6 +1064,21 @@ namespace CosmicShore.Gameplay
 
         HealthPrism[] _bodyPrisms;
 
+        /// <summary>
+        /// A creature grown at birth beyond its species' size (a voyage's raiders, Shombith 2026-11-16: "bigger faunas ...
+        /// attack the ark"): its root scale times <paramref name="factor"/>, its rig re-bound and its heart re-sized, as a
+        /// variant's body scale does. Call in the spawn frame, right after <c>SpawnFaunaWithDomain</c>, so the body blooms
+        /// in at its grown size (continuity holds). A variant applied later re-sizes from the authored scale.
+        /// </summary>
+        public void GrowBody(float factor)
+        {
+            if (factor <= 0f || Mathf.Approximately(factor, 1f)) return;
+            if (_authoredRootScale.x < 0f) _authoredRootScale = transform.localScale;
+            transform.localScale *= factor;
+            RebuildRig();
+            ApplyHeartSize();
+        }
+
         /// <summary>The body's rig, re-bound at its current scale: the Animator back to its default pose, then every
         /// RigBuilder rebuilt so its constraints record their offsets at this size.</summary>
         void RebuildRig()
@@ -1524,8 +1539,15 @@ namespace CosmicShore.Gameplay
         // FarBodySyncDistance from the view camera a creature's index entry, shell and render matrix are refreshed every
         // FarBodySyncEvery frames, staggered by instance; at that range a frame or two of lag is under a pixel and the
         // senses that read the index tick slower than that anyway. Near ones, and any with no camera, sync every frame.
+        //
+        // The skip never lets a body's prisms fall more than FarBodySyncMaxDrift (radians as seen from the camera, about two
+        // pixels) behind the body, and never applies to a leashed creature (a voyage's kaiju and raiders, a herd): voyage
+        // cells are thousands of units across, so nearly every creature there was "far" and its prisms stepped at a third
+        // of the frame rate, which read as choppy fauna (Shombith, 2026-11-17). A still or slow creature still skips.
         const float FarBodySyncDistance = 250f;
         const int FarBodySyncEvery = 3;
+        const float FarBodySyncMaxDrift = 0.002f;
+        Vector3 _lastBodySyncPos;
         static int s_farCheckFrame = -1;
         static Vector3 s_viewPos;
         static bool s_hasView;
@@ -1540,8 +1562,11 @@ namespace CosmicShore.Gameplay
                 s_hasView = cam;
                 if (s_hasView) s_viewPos = cam.transform.position;
             }
-            if (!s_hasView) return false;
-            if ((transform.position - s_viewPos).sqrMagnitude < FarBodySyncDistance * FarBodySyncDistance) return false;
+            if (!s_hasView || Leash != null) return false;
+            Vector3 at = transform.position;
+            float viewSq = (at - s_viewPos).sqrMagnitude;
+            if (viewSq < FarBodySyncDistance * FarBodySyncDistance) return false;
+            if ((at - _lastBodySyncPos).sqrMagnitude > viewSq * (FarBodySyncMaxDrift * FarBodySyncMaxDrift)) return false;
             return (frame + GetInstanceID()) % FarBodySyncEvery != 0;
         }
 
@@ -1550,6 +1575,7 @@ namespace CosmicShore.Gameplay
             var prisms = _bodyPrisms;
             if (prisms == null) return;
             if (SkipFarBodySyncThisFrame()) return;
+            _lastBodySyncPos = transform.position;
             using (s_BodySyncMarker.Auto())
             {
                 for (int i = 0; i < prisms.Length; i++)

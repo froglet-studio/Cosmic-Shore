@@ -33,6 +33,7 @@ on every run, --check included.
 
 import argparse
 import hashlib
+import json
 import importlib.util
 import math
 import os
@@ -388,8 +389,11 @@ RAIL_LEAN, RAIL_KNEE, RAIL_STUB = 56, 0.46, 0.62
 RAIL_Y, RAIL_CHAMFER, RAIL_START = 64, 34, 0.70
 LINE_W = 1.5
 GAME_TILES = 6
-PILOT_CARDS = 18                            # one per callsign (author_callsign_assets.CALLSIGNS); the page hides unused cards
-assert PILOT_CARDS == len(_load("author_callsign_assets").CALLSIGNS), "PILOT_CARDS must be one card per callsign"
+# One card per painted pilot (Docs/Pilots/art/scenes/people.json): the crew holds each at most once, and several may
+# share a callsign (Garrett, 2026-11-16), so a hull can be offered every one of them. The page hides unused cards.
+PILOT_CARDS = len(json.load(open(os.path.join(REPO, "Docs/Pilots/art/scenes/people.json"), encoding="utf-8"))["people"])
+assert PILOT_CARDS >= len(_load("author_callsign_assets").CALLSIGNS), "PILOT_CARDS must hold at least one card per callsign"
+SCENE_CATALOG = K.meta_guid("Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset")     # author_pilot_scene_assets.py
 EMPTY_CALLS = "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls: []\n"
 
 
@@ -800,8 +804,8 @@ PILOT_CARD_H = 76
 
 
 def pilots_page(panel):
-    """Docs/Pilots/CALLSIGNS.md (Garrett, 2026-10-27: one pilot per callsign, any vessel): a scrolled list of PILOT_CARDS
-    compact cards, one per callsign - portrait, name, the callsign's line (what holding LB lights) and its state (in the
+    """Docs/Pilots/CALLSIGNS.md (Garrett, 2026-10-27: any pilot, any vessel): a scrolled list of PILOT_CARDS compact
+    cards, one per painted pilot the crew may hold - the person's close-up, name, the callsign's line (what holding LB lights) and its state (in the
     seat, stand-in art). A press seats the pilot, pressing the seated one empties the seat; the header above the vessel
     names the focused one (HangarPilotsPage is an IHangarHeader)."""
     page = page_node(panel, "Pilots", False, top=PAGE_TOP)
@@ -835,6 +839,7 @@ def pilots_page(panel):
                        f"    stateText: {ref(ctx.c(f'{k}/State', 'tmp'))}\n    underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n")
         return K.mono(go, PILOTS_SCRIPT,
                       f"  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n"
+                      f"  scenes: {K.ref(11400000, SCENE_CATALOG, 2)}\n"
                       f"  emptyGroup: {ref(ctx.c('Tabs/Pilots/Empty', 'cg'))}\n  cards:\n{cards_}"
                       "  lineTemplate: '{sight}'\n  seatedWord: IN THE SEAT\n  standInWord: STAND-IN ART\n"
                       "  noArtWord: \n"

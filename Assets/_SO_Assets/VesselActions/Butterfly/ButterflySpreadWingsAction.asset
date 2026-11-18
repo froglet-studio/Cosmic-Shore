@@ -20,7 +20,7 @@ MonoBehaviour:
     Max: 15
     element: 2
     UseFloor: 1
-    Floor: 1
+    Floor: 2.5
   widthBlendSeconds: 1.5
   massUpgradeShieldsInMassMode: 1
   massModeCameraHeight: 0

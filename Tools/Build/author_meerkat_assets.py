@@ -182,7 +182,7 @@ CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax",
 # 2026-11-13 roster audit (it was a raw pair the executor lerped on GetLevel); config_retrofit carries the asset's numbers over.
 KIT_KEYS = ["boostOut", "sentinelPool", "sentinelPoolL5", "guardShare", "aiZapRate", "portalShare"]
 KIT_UNITY = {"zapCooldownSeconds": "0"}
-KIT_FLOATS = [("rush", "rushL0", "rushL10", 4, "0.05"),
+KIT_FLOATS = [("rush", "rushL0", "rushL10", 4, "0.5"),
               ("zapPetals", "zapPetalsL0", "zapPetalsL10", 1, "0"), ("portalSize", "portalSizeL0", "portalSizeL10", 2, "0.05"),
               ("surfaceArea", "areaL0", "areaL10", 3, "3000")]
 KIT_EVENTS = ["zapEvent", "sentinelPlacedEvent", "sentinelLostEvent", "portalEvent", "prismFiredEvent"]
@@ -560,8 +560,9 @@ DESIGNED = [
      "prism destroys both, scored to you; a shielded one bounces. Garrett's design, approved by Yash 2026-10-28.",
      RIGHT_STICK_ACTION, "Steal", "Every prism your soliton swallows is stolen into your domain as its run starts, so it "
      "leaves the way out already yours."),
-    (4, "Faster Ride", "Passive: you ride every soliton faster, your own or anyone's (the throat's rush grows with Time). "
-     "Garrett's design, approved by Yash 2026-10-28.",
+    (4, "Ride", "Fly into any soliton, your own or anyone's, and it carries you: the throat's rush is your Time, x1 at "
+     "rest and x2 at level 10, and the Rift's void run is as fast. A high-Time Meerkat crosses the cell through its "
+     "tunnels in a blink. Garrett's design, approved by Yash 2026-10-28; x2 since 2026-11-16.",
      0, "Boost Out", "You leave every soliton with a boost (1.5 x the exit speed)."),
     (2, "Exit Portal", "Passive: when your soliton forms it sets down six small prisms of your domain on a hexagon round its "
      "way out, at 1.5 x the exit's radius. Mass sets their size. Garrett's design, approved by Yash 2026-10-28.",

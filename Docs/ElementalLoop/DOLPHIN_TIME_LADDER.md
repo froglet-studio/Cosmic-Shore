@@ -108,3 +108,47 @@ seconds) after it:
 
 Every race finishes, the four AI levels keep their order on every rung, and I4's dead stops stay at 3-6 a race. The
 ladder's shape is unchanged (I3 still flat in time against I2), so the playtest above stands as written.
+
+## I3 made a rung, measured in the real game (2026-11-17, overnight run)
+
+The ladder above was shaped before the standard element ladder (#2055/#2059/#2060: I2-I4 start at Time 5, I3 adds the
+team's Time crystals, I4 the cell's Time fauna) and before the Dolphin's trained AI (#2092). So it was raced again, this
+time in the real game: Amoebius headless, the shipped Dolphin AI alone, course seeds 1-3, through
+`Tools/Build/time_ladder_judge.py --mode Switchback --hull Dolphin` (new; it reports each rung's finish, median, step
+from the rung below, prism hits and slowest gate, and the start levels: I1 T0, I2-I4 T5 as the ladder says).
+
+| Rung | Medium s | step | hits | Legendary s | step | hits |
+|---|---|---|---|---|---|---|
+| I1 | 116 | | 8 | 85 | | 37 |
+| I2 | 150 | 1.28x | 15 | 118 | 1.38x | 56 |
+| I3 | 152 | **1.02x** | 34 | 125 | **1.06x** | 101 |
+| I4 | 249 | 1.64x | 227 | 221 | 1.77x | 538 |
+
+Real races run about 1.4x the model's seconds, and the shape is the model's: I3 adds no time over I2 (it was the open
+point above), and the gauntlet is a step of 1.6-1.8x on top. **The proposed change (I3 only, Switchback only), HELD:**
+Switchback is Yash's occupied lane tonight (Ys-bleeding-edge, the AI), so the change is not merged: it is the patch
+`/mnt/project-files/regatta-flywheel/fun/switchback-i3-rung.patch` (applies on bleeding-edge of 2026-11-17, 127 harness
+tests pass), for Garrett or Yash to take or leave. I3's field takes
+the step between I2 and the gauntlet (bore 22 to 18 u, 7 to 9 cells deep, fill 50 to 60 %, caps 3000 to 3800 prisms, 190
+to 240 a station, 370 to 460 colliders) and I3 carves a hairpin every second corner up to 150 deg, as I2 and I4 do (it
+was every third, up to 130). I3's long legs stay. Scarab Rally is unchanged: it lays no Blast Run at I3 and has its
+own course settings. Measured on 6 course seeds:
+
+| Rung | Medium s | step | Legendary s | step |
+|---|---|---|---|---|
+| I2 | 141 | | 116 | |
+| I3 | 164 | **1.16x** | 141 | **1.21x** |
+| I4 (unchanged) | ~240 | ~1.5x | 221 | 1.57x |
+
+The field alone (first variant, without the hairpins) moved I3 only 4-6 %: the AI's time on this course is set by
+its corners, not its prisms. The gauntlet is Yash's and was left as it is; with I3 in between it is no longer the only
+step. Medium races vary about 10 % between processes on the same seed (Legendary is exact), so small Medium
+differences are noise. The 127 Switchback layout, planner and course tests pass headless
+(`switchback_sim_harness/run.sh tests`, which now includes `SwitchbackCourseTests`). Not run in the Unity editor; the
+I3 prism budget (3800 laid, 460 near a pilot) is below the gauntlet's, which is the budget the real-game soak must
+confirm.
+
+**Still open, for the playtest:** I1 against the Medium AI. The Medium AI flies I1 in about 116 s; the one recent human
+Blast Run I1 at Medium (Yash, 2026-11-15, with the AI toggle) was 21 of 26 gates when it won, a pace near 145 s. If a
+first-time pilot cannot beat Medium at I1, the intro rung's rival pace (`aiNoseFollowByIntensity` I1, Yash's time
+bands) is the next thing to move. Garrett's playtest above stands, with I3 now the rung to judge as "challenging".

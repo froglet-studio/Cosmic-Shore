@@ -1212,11 +1212,11 @@ MonoBehaviour:
   BoostSpeedMultiplier:
     Enabled: 1
     Value: 1
-    Min: 1
-    Max: 1.5
+    Min: 2
+    Max: 2.75
     element: 4
     UseFloor: 1
-    Floor: 0.5
+    Floor: 1
   PitchScaler: 80
   YawScaler: 80
   RollScaler: 30
@@ -1612,6 +1612,14 @@ MonoBehaviour:
   rollDurationSeconds: 0.6
   rootRollDegrees: 15
   nudgeSpeed: 60
+  rollTimeScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 0.5
+    element: 4
+    UseFloor: 1
+    Floor: 0.25
   rollVisualTarget: {fileID: 0}
 --- !u!114 &5511220033445566778
 MonoBehaviour:
@@ -1871,6 +1879,8 @@ MonoBehaviour:
     Min: 20
     Max: 40
     element: 3
+    UseFloor: 1
+    Floor: 10
   elongateYOnly: 0
   nudgeShardPoolManager: {fileID: 0}
   markerDistance: 70

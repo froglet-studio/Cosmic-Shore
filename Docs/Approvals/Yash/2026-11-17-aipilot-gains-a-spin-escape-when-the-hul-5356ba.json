@@ -1,0 +1,20 @@
+{
+  "id": "2026-11-17-aipilot-gains-a-spin-escape-when-the-hul-5356ba",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T09:56:51+00:00",
+  "area": "the shared AI pilot (AIPilot)",
+  "summary": "AIPilot gains a spin escape: when the hull turns a full circle in place in 3 s while its objective is far (4+ turn radii), it lets the nose lead go for 3 s. The orbit detector cannot see this stall. It fixed Spearline at the old 40-degree lead cap (4 of 4 timeouts to finishes) and fired 0 times in 12 home races of the polish six and 16 Regatta races.",
+  "why": "Overnight stall trace for the Regatta flywheel (FINDINGS row 30).",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "57289383d",
+  "paths": [
+    "Assets/_Scripts/Controller/AI/AIPilot.cs"
+  ],
+  "loop": {
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

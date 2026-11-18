@@ -57,8 +57,8 @@ THORN_FIELDS = """  thornPrefab: {{fileID: 4563009547826722997, guid: {prism}, t
 """
 
 # ── The 2026-11-17 upgrade's fields, in ThornlineController.cs declaration order (all in that one file). ──
-AI_NOSE_LEAD = (2.5, 3, 8, 16)            # ThornlineAIPlan.NoseLeadByDifficulty (run.sh --ai measured)
-AI_NOSE_FOLLOW = (-1, -1, -1, -1)         # ThornlineAIPlan.NoseFollowByDifficulty (the fleet lag)
+AI_NOSE_LEAD = (2.5, 3, 8, 9.2)           # ThornlineAIPlan.NoseLeadByDifficulty (run.sh --ai measured)
+AI_NOSE_FOLLOW = (-1, -1, -1, 1.6)        # ThornlineAIPlan.NoseFollowByDifficulty (the fleet lag)
 AI_NOSE_LEAD_MAX_EXTRA = 10               # ThornlineAIPlan.NoseLeadMaxExtraDegrees
 TOASTS = (                                # (field, GameToastSituation member, value, template)
     ("hintToast", "ThornlineHint", 420, "Sling into the lit sight on the next thorn"),
@@ -71,7 +71,6 @@ TOASTS = (                                # (field, GameToastSituation member, v
 )
 SOUNDS = ("snipeEvent", "crystalResetEvent", "crystalTakenEvent", "cleanDockEvent", "caughtShortEvent",
           "sightReadyEvent", "passedEvent", "overtakenEvent", "thornRegrowEvent")
-EMPTY_EVENT = "    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
 FEEDBACK_SCALARS = (("caughtShortToastsPerRace", 2), ("passToastSeconds", 1.5))
 SIGHT_SCALARS = (("sightReloadingScale", 0.35), ("rivalThornGlow", 0.35))
 
@@ -90,7 +89,7 @@ NEW_FIELD_LINES = (
     + f"  aiNoseLeadMaxExtraDegrees: {AI_NOSE_LEAD_MAX_EXTRA}\n"
     + "".join(f"  {field}: {value}\n" for field, _, value, _ in TOASTS)
     + "".join(f"  {k}: {_yaml_num(v)}\n" for k, v in FEEDBACK_SCALARS)
-    + "".join(f"  {k}:\n{EMPTY_EVENT}" for k in SOUNDS)
+    + "".join(f"  {k}:\n" + lib.event_yaml(f"{lib.SCENES_DIR}/MinigameThornline.unity", k) for k in SOUNDS)
     + "".join(f"  {k}: {_yaml_num(v)}\n" for k, v in SIGHT_SCALARS))
 
 

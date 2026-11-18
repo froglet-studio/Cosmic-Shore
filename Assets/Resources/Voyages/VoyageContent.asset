@@ -804,6 +804,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.courier.dispatch
       Kind: 0
       Faction: 1
@@ -836,6 +841,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Carried a dispatch to {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.convoy.contract
       Kind: 17
       Faction: 1
@@ -867,6 +877,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Ran a convoy through to {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.hunt.sighting
       Kind: 1
       Faction: 2
@@ -899,6 +914,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Opened the vaults at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.hunt.rumour
       Kind: 1
       Faction: 2
@@ -930,6 +950,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Followed a rumour to {to} and came back with an artifact.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.hunt.lair
       Kind: 18
       Faction: 2
@@ -961,6 +986,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Thinned the predators at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.hunt.kaiju
       Kind: 18
       Faction: 2
@@ -990,6 +1020,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 0
       ChronicleLine: 'Felled the Leviathan at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.defence.aid
       Kind: 3
       Faction: 3
@@ -1021,6 +1056,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Held {to} when it called for aid.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.defence.patrol
       Kind: 3
       Faction: 3
@@ -1051,6 +1091,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Patrolled {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.defence.retake
       Kind: 3
       Faction: 3
@@ -1080,6 +1125,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Retook {to} from the domain that held it.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.salvage.wreck
       Kind: 2
       Faction: 4
@@ -1110,6 +1160,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Stripped the wreck at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.raid.hoard
       Kind: 14
       Faction: 4
@@ -1140,6 +1195,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Raided the thieves'' hoard at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.bounty.crew
       Kind: 11
       Faction: 5
@@ -1169,6 +1229,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Brought in {rival} at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.bounty.writ
       Kind: 11
       Faction: 5
@@ -1198,6 +1263,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Posted the warrants at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.survey.uncharted
       Kind: 4
       Faction: 6
@@ -1228,6 +1298,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Charted {to}, where no lane ran before.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.survey.fragment
       Kind: 4
       Faction: 6
@@ -1257,6 +1332,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Followed a chart fragment to {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.survey.sound
       Kind: 4
       Faction: 6
@@ -1286,6 +1366,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Sounded the lanes to {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.liberate.pen
       Kind: 8
       Faction: 7
@@ -1316,6 +1401,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Opened the pens at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.lift.dispatch
       Kind: 10
       Faction: 8
@@ -1345,6 +1435,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 1
       RivalsMayTake: 1
       ChronicleLine: 'Lifted a dispatch from {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.harvest.bloom
       Kind: 5
       Faction: 9
@@ -1375,6 +1470,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Harvested the bloom at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.harvest.glean
       Kind: 5
       Faction: 9
@@ -1404,6 +1504,67 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Gleaned the shallows at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
+    - Id: job.raid.crystals
+      Kind: 14
+      Faction: 0
+      Needs: 0
+      Goes: 1
+      Title: 'Crystal Run to {to}'
+      Summary: 'Steal crystals between the three of you while the Ark sails to {to}. Hostile cells are rich in crystals, but their fauna go for the Ark. Bring the crystals home and they are yours; lose the Ark and you lose them.'
+      SuccessLine: 'The squad stole its crystals on the way to {to}.'
+      FailLine: 'The Crystal Run to {to} came up short.'
+      SuccessLines:
+      - 'The squad stole its crystals on the way to {to}.'
+      - 'The hold is heavy with stolen crystal. {to} never saw them coming.'
+      FailLines:
+      - 'The Crystal Run to {to} came up short.'
+      Reward: 10
+      RewardElement: 5
+      OnSuccess: 
+      OnFail: 
+      Verb: 3
+      Goal: 50
+      HullFloor: 0
+      NoKill: 0
+      Role: 3
+      Tier: 0
+      StandingDelta: 0
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Ran crystals to {to}.'
+      HostileCells:
+      - 0
+      - 1
+      - 1
+      - 1
+      BreachHull: 0.1
+      CellWorlds:
+      - Caldera
+      - Orrery
+      - Garland
+      - Geode
+      CellAnchorSeconds:
+      - 20
+      - 30
+      - 30
+      - 40
+      CellLife:
+      - 0.8
+      - 1.3
+      - 0.9
+      - 1.4
+      Always: 1
+      CountsUnderway: 1
+      Cells: 4
+      VentureGoal: 10
+      VentureCells: 1
     - Id: job.build.breach
       Kind: 9
       Faction: 10
@@ -1433,6 +1594,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Shored the breach at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.build.shore
       Kind: 9
       Faction: 10
@@ -1462,6 +1628,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Laid shoring at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.exhibition.run
       Kind: 16
       Faction: 11
@@ -1491,6 +1662,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Ran an exhibition to {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.study.creature
       Kind: 6
       Faction: 12
@@ -1521,6 +1697,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Studied the predators at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.study.bloom
       Kind: 6
       Faction: 12
@@ -1550,6 +1731,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Studied the bloom at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.tend.nursery
       Kind: 15
       Faction: 13
@@ -1579,6 +1765,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Tended the nursery at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.rescue.derelict
       Kind: 7
       Faction: 14
@@ -1609,6 +1800,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Rescued the stranded crew at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.vigil.shrine
       Kind: 12
       Faction: 15
@@ -1639,6 +1835,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Kept a vigil at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.parley.accord
       Kind: 13
       Faction: 16
@@ -1668,6 +1869,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Carried an accord to {rival}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     - Id: job.parley.envoy
       Kind: 13
       Faction: 16
@@ -1697,6 +1903,11 @@ MonoBehaviour:
       AvoidsOwnDomain: 0
       RivalsMayTake: 1
       ChronicleLine: 'Spoke for the accord at {to}.'
+      Always: 0
+      CountsUnderway: 0
+      Cells: 0
+      VentureGoal: 0
+      VentureCells: 0
     Events:
     - Id: ev.courier.delivered
       Writes:
@@ -2630,6 +2841,10 @@ MonoBehaviour:
     ArkLost: THE ARK IS LOST
     NoWork: No pilot has work here. Seat other pilots, or sail on.
     Following: 'SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB'
+    FollowerArkLost: 'YOUR ARK FELL. FLY WITH YOUR HOST: YOU REJOIN THEIR NEXT LEG'
+    EscortHoldFallen: 'YOUR ARK IS DOWN: YOUR HOST''S ARK DECIDES THE ESCORT'
+    EscortHoldThrough: 'THROUGH: WAITING FOR YOUR HOST''S ARK'
+    GuestStays: 'YOUR HOST LEADS THE VOYAGE: YOU RETURN WITH THEM'
     ChooseNext: LEAVE THE VOYAGE TO CHOOSE YOUR NEXT ONE
     Lair: 'A LAIR: THE PREDATORS HERE WEAR ANOTHER COLOUR'
     Hoard: 'THE THIEVES'' HOARD: CRACK A SHELL, GRAB WHAT THEY STOLE, STOW IT'
@@ -2938,7 +3153,7 @@ MonoBehaviour:
     ArkYou: You
     ArkWingmate: AI wingmate
     ArkInLobby: IN YOUR LOBBY
-    ArkFriendLine: Picks their own vessel
+    ArkFriendLine: '{name} picks their own seat.'
     ArkArtifact: 'Artifact - {artifact}'
     ArkFlySquad: FLY A SQUAD INSTEAD
     ArkFlySquadKey: X
@@ -2964,8 +3179,69 @@ MonoBehaviour:
     PickSeesPaths: Paths
     PickCount: '{shown} of {total}'
     PickForVoyage: FOR THIS VOYAGE
-    PickNote: One press takes it. Your seat behind updates as you pick.
+    PickNote: One press saves it to your seat for this voyage, the same seat Set sail reads.
     PickClose: X
+    SeaOpenNow: OPEN NOW
+    SeaCrewButton: 'CREW RECOMMENDS - {count}'
+    SeaCrewKey: Y
+    SeaLockedLine: '{count} crew voyages, locked for Milestone 1'
+    CrewTitle: Your crew, and the work they bring
+    CrewLine: 'Pick a pilot to hear their job. The open voyages sail now; the others open after Milestone 1.'
+    CrewAll: All
+    CrewLeftOut: Factions with no work from your crew are left out.
+    CrewOpenNow: OPEN NOW
+    CrewVoyages: CREW VOYAGES
+    CrewLocked: Locked for Milestone 1
+    CrewOpen: OPEN
+    CrewStops: '{stops} stops'
+    CrewLockedPress: '{title} opens after Milestone 1.'
+    CrewArk: The Ark
+    CrewArkAsks: The Ark asks
+    CrewAsks: '{pilot}, {faction}, asks'
+    CrewQuote: '"{quote}"'
+    CrewWorlds: '{worlds} worlds'
+    CrewRewards: 'Rewards: {pay} crystals'
+    CrewTake: TAKE THE JOB
+    CrewInstead: '{title} instead'
+    CrewInsteadKey: Y
+    FactionNone: Crew
+    FactionMerchant: Merchants
+    FactionHunter: Hunters
+    FactionAristocrat: Aristocrats
+    FactionPirate: Pirates
+    FactionBountyHunter: Bounty hunters
+    FactionExplorer: Explorers
+    FactionActivist: Activists
+    FactionThief: Thieves
+    FactionGatherer: Gatherers
+    FactionContractor: Contractors
+    FactionSport: Sport
+    FactionResearcher: Researchers
+    FactionPreservationist: Preservationists
+    FactionFirstResponder: First responders
+    FactionPriest: Priests
+    FactionDiplomat: Diplomats
+    ArkLobbyLine: Pick your seat. Friends who join pick their own. Empty seats fly with AI wingmates.
+    ArkFlies: FLIES THIS VOYAGE
+    ArkInvite: INVITE A FRIEND
+    ArkChangeWingmate: CHANGE WINGMATE
+    ArkFillSquad: FILL THE AI SEATS FROM A SAVED SQUAD
+    ArkFillKey: Y
+    ArkFillNone: No saved squad yet. Make one in the Ark.
+    ArkSailAs: 'You sail as {vessel} - {element}'
+    ArkLobbyLineGuest: Pick your own seat. The host picks the voyage, fills the AI seats and sets sail.
+    ArkHostSails: THE HOST SETS SAIL
+    ArkChangeSeat: CHANGE YOUR SEAT
+    ArkChangeSeatKey: X
+    PickSavedHere: Saved to your seat for this voyage.
+    PickSeatNow: YOUR SEAT NOW
+    PickSeatLine: '{vessel} - {pilot} - {element} - {artifact}'
+    PickSaved: '{choice} is your {setting} for {voyage}. Your seat card behind has changed.'
+    PickSavedSeat: '{choice} is the {setting} for {seat} on {voyage}.'
+    PickWordVessel: vessel
+    PickWordPilot: pilot
+    PickWordElement: element
+    PickWordArtifact: artifact
     KindCourier: Courier
     KindHunt: Vault hunt
     KindSalvage: Salvage
@@ -2987,3 +3263,134 @@ MonoBehaviour:
     KindCull: Hunt
     KindHome: Home
     KindEscort: Ark escort
+    ObjectiveRaidKicker: CRYSTAL RUN
+    ObjectiveRaidGoal: 'Steal {goal} crystals before the Ark reaches {to}'
+    ObjectiveCrystals: CRYSTALS
+    ObjectiveCount: '{done} / {goal}'
+    ObjectiveElement: '{element} {count}'
+    ObjectiveElementSeparator: '   '
+    ObjectiveHull: 'ARK HULL {hull}%'
+    ObjectiveBreach: 'FAILS BELOW {breach}%'
+    ObjectiveCell: 'CELL {cell} / {cells}'
+    ObjectiveCalm: 'Calm cell: few crystals, nothing hunts the Ark'
+    ObjectiveHostile: 'Hostile cell: rich in crystals, but its fauna go for the Ark'
+    ObjectiveGoalMet: Goal met. Every crystal more is yours too.
+    ObjectiveHomeKicker: SAILING HOME
+    ObjectiveHomeGoal: 'Escort the Ark home to {to}. Docking banks everything.'
+    ObjectiveAtStake: '{count} crystals aboard and at stake'
+    ToastCellCalm: 'ENTERING CELL {cell}. CALM.'
+    ToastCellHostile: 'ENTERING CELL {cell}. HOSTILE.'
+    ToastFinalCell: 'FINAL CELL: THE DESTINATION'
+    ToastGoalReached: '{goal} CRYSTALS. BRING THEM HOME.'
+    ScoreKickerDone: VOYAGE COMPLETE
+    ScoreKickerFailed: GOAL MISSED
+    ScoreKickerLost: THE ARK IS LOST
+    ScoreKickerDocked: HOME
+    ScoreRaidTitle: '{done} of {goal} crystals stolen'
+    ScoreRaidStats: 'Crystal Run to {to} - {cells} cells - {time}'
+    ScoreEscortTitle: 'The Ark reached {to}'
+    ScoreEscortStats: 'Escort the Ark - difficulty {difficulty} - {worlds} of {legs} worlds - {time}'
+    ScoreLostTitle: Everything aboard went down with it
+    ScoreDockedTitle: 'Docked at {to}'
+    ScoreDockedStats: Everything aboard is yours now
+    ScoreHull: ARK HULL
+    ScoreHullValue: '{hull}%'
+    ScoreColSeat: Seat
+    ScoreColCrystals: Crystals
+    ScoreColKills: Kills
+    ScoreRowSeat: '{name} - {vessel}'
+    ScoreRowYou: You
+    ScoreRewards: REWARDS
+    ScoreStolen: Crystals stolen
+    ScoreStolenBy: '{element} {count}'
+    ScoreStolenSeparator: '   '
+    ScorePay: Job pay
+    ScoreEscortPay: 'Crystals for difficulty {difficulty}'
+    ScoreRewardValue: '+ {count}'
+    ScoreAtStake: At stake until the Ark docks home
+    ScoreBanked: 'Banked: every crystal is yours'
+    ScoreFinish: FINISH
+    ScoreFinishLine: Sail the Ark home and bank it all
+    ScoreVenture: VENTURE FURTHER
+    ScoreVentureRaid: 'Next run: {goal} crystals, {cells} cells'
+    ScoreVentureEscort: 'Same escort, difficulty {difficulty}'
+    ScoreDone: BACK TO VOYAGES
+    ScoreDoneLine: Return to the Voyages page
+    ScoreHostChooses: Your host chooses what comes next
+    ScoreKeepFlying: KEEP FLYING
+    ScoreFinishKey: B
+    ScoreVentureKey: A
+    ToastCellHostileSub: More crystals here. Its fauna are hunting the Ark.
+    ToastCellCalmSub: Fewer crystals. Nothing here hunts the Ark.
+    ToastSetOff: 'STEAL {goal} CRYSTALS'
+    ToastSetOffSub: 'Before the Ark reaches {to}. Keep its hull above {breach}%.'
+    ToastHome: SAIL THE ARK HOME
+    ToastHomeSub: 'Docking at {to} banks everything aboard.'
+    ObjectiveDestinationTag: Destination
+    ObjectiveCalmTag: Calm
+    ObjectiveHostileTag: Hostile
+    ObjectiveCellName: 'Cell {cell}'
+    ToastArkUnderAttack: ARK UNDER ATTACK
+    ToastArkUnderAttackSub: '{threats} near the hull. Hunt what is biting it.'
+    ToastBreachClose: BREACH CLOSE
+    ToastBreachCloseSub: 'Hull {hull}%. Below {breach}% the Ark is lost.'
+    ObjectiveEscortKicker: 'ESCORT THE ARK - DIFFICULTY {difficulty}'
+    ObjectiveEscortGoal: 'Keep the Ark''s hull above {breach}% to {to}''s core'
+    ObjectiveEscortGoalNoBreach: 'Bring the Ark to {to}''s core'
+    ObjectiveArkBound: 'Ark bound for {world}'
+    ObjectiveArkInside: 'Ark inside {world}'
+    ObjectiveActionAssault: 'Drive the assault off: {kills} / {needed} attackers near the Ark'
+    ObjectiveActionIncoming: 'Fauna turn on the Ark in {seconds}s. Get close to it.'
+    ObjectiveActionUnderAttack: The Ark is losing plates. Hunt what is biting it.
+    ObjectiveActionHealing: The Ark is healing in the nucleus.
+    ObjectiveEscortHostile: 'Hostile world: its fauna go for the Ark until you pacify it'
+    ObjectiveEscortCalm: 'A world you hold: gather crystals and stay with the Ark'
+    ObjectiveStripEscort: ESCORT THE ARK
+    ObjectiveStripHull: '{hull}%'
+    ObjectiveStripPlace: '{place} - {state}'
+    ObjectiveStripHostile: hostile
+    ObjectiveStripCalm: calm
+    ObjectiveStripElement: '{count}'
+    ScoreColGuarded: Off the Ark
+    ScoreColScore: Score
+    ScoreTryAgain: TRY AGAIN
+    ScoreTryAgainLine: Same voyage, a fresh Ark
+    ToastAnchored: THE ARK DROPS ANCHOR
+    ToastAnchoredSub: '{seconds}s to raid this cell. Bank crystals at the Ark.'
+    ToastAnchorClosing: 'THE ARK SAILS IN {seconds}'
+    ToastAnchorClosingSub: Bank what you carry or lose it.
+    ToastWeighed: THE ARK SAILS ON
+    ToastBanked: 'BANKED {count}'
+    ToastBankedSub: '{done} of {goal} aboard.'
+    ToastCrystal: '+1 {element}'
+    ToastCrystalCarrySub: 'Carrying {carried}. Bank them at the Ark.'
+    ToastSpilled: CRYSTALS SPILLED
+    ToastSpilledSub: '{count} lost. Grab them back before the Ark sails.'
+    ObjectiveStripAnchor: 'Raid: the Ark sails in {time}'
+    ObjectiveStripCarried: 'Carrying {count}. Bank them at the Ark.'
+    ToastGoalReachedSub: Pause and choose Complete and set sail, or keep raiding for more.
+    PauseCompleteAndSail: Complete and set sail
+    ObjectiveStripComplete: Goal met. Pause to complete and set sail.
+    ObjectiveStripArkHull: 'Ark hull {hull}%'
+    ObjectiveRailLabel: Ark hull
+    ObjectiveStripLeaking: 'Hull below {line}%: the hold is losing crystals.'
+    ToastHullLeaking: THE HOLD IS LEAKING
+    ToastHullLeakingSub: 'The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.'
+    ToastRaiders: RAIDERS IN OPEN WATER
+    ToastRaidersSub: Big creatures are coming for the Ark between the cells.
+    ToastKaiju: KAIJU IN OPEN WATER
+    ToastKaijuSub: A giant waits between the cells for the Ark's hull. Bring it down.
+    ToastGoalMissed: 'GOAL MISSED: {done} / {goal}'
+    ToastGoalMissedSub: Venture further to keep this run's haul, or sail home without it.
+    ScoreRetryRaid: 'Same goal: {goal} crystals in {cells} cells'
+    ToastStray: 'RETURN TO THE ARK: {seconds}'
+    ToastStraySub: Too far out. Turn back or the Ark recalls you.
+    ToastStrayCarrySub: 'Turn back or lose the {carried} crystals you carry.'
+    ToastRecalled: RECALLED TO THE ARK
+    ToastRecalledSub: Back in your seat beside the Ark.
+    ToastRecalledLostSub: '{count} carried crystals lost.'
+    ScoreFinishHere: FINISH HERE
+    ScoreFinishHereLine: Bank it all now and end the voyage
+    ScoreFinishHereKey: X
+    ScoreSailHome: SAIL HOME
+    ScoreSailHomeLine: 'Escort the Ark home for {scale}x the crystals'

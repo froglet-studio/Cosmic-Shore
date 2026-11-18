@@ -753,9 +753,9 @@ namespace CosmicShore.Tests
                          "trampolineSoftSeconds: 0.35\n", "trampolineSeconds: 4\n", "trampolinePredictDegrees: 90\n",
                          "trampolineAiTurnScale: 55\n" })
                 StringAssert.Contains("  " + row, text);
-            // Slingshot's own AI rows are the trained ones (2026-11-08, Tools/Build/promote_trained_drives.py): it hardly
-            // presses to turn (148 deg) and presses for the warp on long legs instead.
-            StringAssert.Contains("  aiSlingMinTurnDegrees: 147.951\n", Read("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset"));
+            // Slingshot's own AI rows are the trained ones (Stoat run1 in the real game, 2026-11-17,
+            // Tools/Build/promote_trained_drives.py): it hardly presses to turn (154 deg) and presses for the warp instead.
+            StringAssert.Contains("  aiSlingMinTurnDegrees: 154.471\n", Read("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset"));
             var cfg = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
             try
             {
@@ -889,14 +889,15 @@ namespace CosmicShore.Tests
         {
             // Since 2026-11-02 speed is earned by timed launches: an AI that pressed for the warp alone spammed ~20-28 presses a
             // minute and timed almost none (Tools/Build/stoat_orbit_sim.py --earned); holding for the window it times most.
-            foreach (var path in new[] { "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
-                         "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset" })
-                StringAssert.Contains("  aiHoldForWindowDegrees: 120\n", Read(path), path);
+            StringAssert.Contains("  aiHoldForWindowDegrees: 120\n", Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset"));
             StringAssert.Contains("  aiWarpMinDistance: 0\n", Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset"));
-            // The one exception, Slingshot's TRAMPOLINE AI (2026-11-08, PR #1792's trained rows, promote_trained_drives.py):
-            // there a warp press on a leg of 310 u or more is the speed (slingshot_fit, bleeding-edge's 60 u kit: 61-70 s a
-            // race against 150-225 s for the old rows that never pressed for it). The orbit-era rule above is the hull's.
-            StringAssert.Contains("  aiWarpMinDistance: 310.106\n", Read("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset"));
+            // The one exception, Slingshot's own AI (Stoat run1, raced in the real game, 2026-11-17, promote_trained_drives.py):
+            // there a warp press on almost any leg (11.5 u or more), held for a 59 deg window, is the speed - every rung
+            // 18-40% faster than the 2026-11-08 rows (310 u, 120 deg) on 32 fresh flights a side. The orbit-era rule
+            // above is the hull's.
+            var slingshot = Read("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset");
+            StringAssert.Contains("  aiWarpMinDistance: 11.523\n", slingshot);
+            StringAssert.Contains("  aiHoldForWindowDegrees: 58.721\n", slingshot);
         }
     }
 }

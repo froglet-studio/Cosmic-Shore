@@ -66,7 +66,7 @@ namespace CosmicShore.Gameplay
 
         // The ladder's rows, I1..I4 (SPEARLINE.md §2). Static, so ForIntensity allocates nothing (it is read every frame).
         static readonly float[] MouthByRung = { 96f, 84f, 74f, 66f };
-        static readonly int[] SealedByRung = { 2, 3, 3, 4 };
+        static readonly int[] SealedByRung = { 2, 3, 4, 5 };
         static readonly float[] ArmourByRung = { 0f, 120f, 180f, 240f };
         static readonly int[] ArmourEveryByRung = { 0, 1, 1, 1 };
         static readonly float[] RegrowByRung = { 4f, 3.5f, 3f, 2.5f };

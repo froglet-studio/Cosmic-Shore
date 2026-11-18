@@ -108,11 +108,16 @@ namespace CosmicShore.Gameplay
             _activeSO = so;
             _lastSO = so;
             _restingMultiplier = status.BoostMultiplier;
-            status.IsBoosting = true;
             status.IsStationary = false;
 
             Straightness01 = 1f;
-            status.BoostMultiplier = so.MaxBoostMultiplier;
+            // An empty tank arms the ramp STARVED: the gesture is held, the ramp climbs only to its empty-tank top, and
+            // fuel brings the full top in.
+            bool starved = TryFuelSlot(so, status, out var fuelRs, out int fuelIndex) &&
+                           fuelRs.Resources[fuelIndex].CurrentAmount <= 0f;
+            float armed = starved ? so.EmptyTankMaxBoostMultiplier : so.MaxBoostMultiplier;
+            status.IsBoosting = armed > 1f;
+            status.BoostMultiplier = armed;
             var transformer = status.VesselTransformer;
             if (transformer != null)
                 transformer.SetSpeedTrackingRate(ClimbRate(so));
@@ -177,7 +182,15 @@ namespace CosmicShore.Gameplay
             if (deviation >= so.StraightnessGraceBand) { End(); return; }
 
             Straightness01 = so.Straightness01(deviation);
-            status.BoostMultiplier = so.MultiplierFor(deviation);
+            float graded = so.MultiplierFor(deviation);
+
+            // FUEL (Garrett, 2026-11-18): a fuelled ramp burns what ploughing or slicing earned. An empty tank does not
+            // end the ramp - the pilot is still holding the line - it starves it to the empty-tank top, and the next prism
+            // the hull ploughs or the bill slices brings the full ramp back without a new gesture.
+            bool starved = BurnFuel(so, status, graded, Time.deltaTime);
+            float multiplier = starved ? so.EmptyTankMultiplierFor(deviation) : graded;
+            status.BoostMultiplier = multiplier;
+            status.IsBoosting = multiplier > 1f;
 
             var transformer = status.VesselTransformer;
             if (transformer == null) return;
@@ -191,7 +204,47 @@ namespace CosmicShore.Gameplay
             // them it disagreed with the number StepTowardTarget actually steps and chose the climb
             // rate for a bleed (or the reverse).
             bool climbing = transformer.CurrentThrottleTarget >= transformer.TrackedSpeed;
-            transformer.SetSpeedTrackingRate(climbing ? ClimbRate(so) : so.BleedPerSecond);
+            // A starved ramp coasts down at the return rate, as a released one does: running dry is spending the
+            // speed you banked, not braking.
+            transformer.SetSpeedTrackingRate(climbing ? ClimbRate(so) : starved ? so.ReturnPerSecond : so.BleedPerSecond);
+        }
+
+        /// <summary>
+        /// The ramp's tank, 0..1 of its slot's max: 1 for a free ramp (no fuel slot, or a hull without the slot).
+        /// HUD-facing.
+        /// </summary>
+        public float Fuel01
+        {
+            get
+            {
+                var so = _activeSO ? _activeSO : _lastSO ? _lastSO : topSpeedAsset;
+                if (!TryFuelSlot(so, _status, out var rs, out int index)) return 1f;
+                var r = rs.Resources[index];
+                return r.MaxAmount > 0f ? Mathf.Clamp01(r.CurrentAmount / r.MaxAmount) : 0f;
+            }
+        }
+
+        /// <summary>
+        /// Burns this frame's fuel for a ramp at <paramref name="multiplier"/>. Returns true when the tank is empty (the
+        /// ramp is starved to its empty-tank top). A free ramp, or a hull whose ResourceSystem lacks the slot, never starves.
+        /// </summary>
+        static bool BurnFuel(RampBoostActionSO so, IVesselStatus status, float multiplier, float dt)
+        {
+            if (!TryFuelSlot(so, status, out var rs, out int index)) return false;
+            if (rs.Resources[index].CurrentAmount <= 0f) return true;
+            float burn = so.FuelBurn(multiplier, dt);
+            if (burn > 0f) rs.ChangeResourceAmount(index, -burn);
+            return false;
+        }
+
+        static bool TryFuelSlot(RampBoostActionSO so, IVesselStatus status, out ResourceSystem rs, out int index)
+        {
+            rs = null;
+            index = -1;
+            if (!so || !so.UsesFuel || status == null) return false;
+            rs = status.ResourceSystem;
+            index = so.FuelResourceIndex;
+            return rs && rs.Resources != null && index < rs.Resources.Count;
         }
 
         /// <summary>

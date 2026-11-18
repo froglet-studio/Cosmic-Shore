@@ -1,0 +1,45 @@
+{
+  "id": "2026-11-16-risky-merge-pr-2055-feat-arcade-standard-f5331c",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-16T22:17:41+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2055 (feat(arcade): standard element ladder I2 rung + learned crystal-detour gene for racing AIs) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; shared AI code every AI hull runs: Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+  "branch": "claude/project-thread-31ri4q",
+  "pr": 2055,
+  "commit": "99f19068c",
+  "paths": [
+    ".claude/skills/arcadegame/SKILL.md",
+    "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+    "Assets/_Scripts/Data/ElementLadder.cs",
+    "Assets/_Scripts/Data/ElementLadder.cs.meta",
+    "Assets/_Scripts/Data/Structs/VesselStartingElements.cs",
+    "Assets/_Scripts/ScriptableObjects/ModePreviewLibrarySO.cs",
+    "Assets/_Scripts/ScriptableObjects/RaceAICrystalGenesSO.cs",
+    "Assets/_Scripts/ScriptableObjects/RaceAICrystalGenesSO.cs.meta",
+    "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs",
+    "Assets/_Scripts/Tests/Editor/ElementLadderTests.cs",
+    "Assets/_Scripts/Tests/Editor/ElementLadderTests.cs.meta",
+    "Assets/_Scripts/Tests/Editor/RaceAIWaypointsOnlyTests.cs",
+    "Assets/_Scripts/UI/Views/ArcadeGridOrder.cs",
+    "Assets/_Scripts/Utility/DataContainers/GameDataSO.cs",
+    "Docs/AI_SYSTEM/AI_PLAN.md",
+    "Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md",
+    "Docs/Approvals/Shombith/2026-11-16-standard-element-ladder-i1-nothing-i2-ev-12e762.json",
+    "Docs/Approvals/Yash/2026-11-16-garrett-relaxed-a-racing-ai-never-goes-f-83ccb7.json",
+    "Docs/ElementalLoop/PLAYBOOK.md"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "detail": "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs"
+    }
+  ]
+}

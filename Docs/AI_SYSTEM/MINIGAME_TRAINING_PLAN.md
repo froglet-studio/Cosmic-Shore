@@ -269,7 +269,11 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 | Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
 | Scarab / Scramble, Tollway | Snap Dash | dashes on straights (`SnapDashAIPolicySO`) |
 
-### 6.1 A racing AI flies the waypoints, never a crystal (Yash, 2026-10-26)
+### 6.1 A racing AI flies the waypoints, never a crystal (Yash, 2026-10-26; RELAXED 2026-11-16)
+
+**Relaxed by Garrett, 2026-11-16:** the detour is now a learned gene of each hull's Time genome
+(`RaceAICrystalGenesSO`, read by `GateRaceController.AICrystalDetourSlackFor`; 0 until a search writes a row, which
+is the rule below). `AI_PLAN.md` rule 9. The history:
 
 > "While playing any racing game mode, AI should not go for crystals. It should only focus on waypoints. If the
 > crystals are the waypoints, then go for crystals. [...] I figured out the AI dolphins were collecting crystals more

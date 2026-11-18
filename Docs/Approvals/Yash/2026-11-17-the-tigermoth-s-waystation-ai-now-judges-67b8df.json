@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-17-the-tigermoth-s-waystation-ai-now-judges-67b8df",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T22:13:59+00:00",
+  "area": "vessel AI (Waystation hop autopilot)",
+  "summary": "The TigerMoth's Waystation AI now judges its tower drop at where the fall will cross the ring, and its miss recovery fits the turning circle (aiHopBellyDegrees 8 to 20, aiHopLineShare 0.45 to 0.7, aiHopMissMargin 60 to 400)",
+  "why": "The AI finished 0 of 16 rungs; now 16 of 16 (race judge)",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "502fa3f51",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Waystation/WaystationController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "TigerMoth"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

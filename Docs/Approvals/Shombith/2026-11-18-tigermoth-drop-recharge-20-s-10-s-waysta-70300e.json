@@ -1,0 +1,22 @@
+{
+  "id": "2026-11-18-tigermoth-drop-recharge-20-s-10-s-waysta-70300e",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-18T01:11:30+00:00",
+  "area": "Waystation Drop Towers and the TigerMoth Drop (#1661/#1669)",
+  "summary": "TigerMoth Drop recharge 20 s -> 10 s; Waystation tower model takes FAR_EDGE_GIVE 40 u and a far-edge negative control (towers laid off the new recharge)",
+  "branch": "HEAD",
+  "commit": "0e4d695fd",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Waystation/WaystationTower.cs",
+    "Tools/Build/waystation_tower_course.py"
+  ],
+  "loop": {
+    "vessels": [
+      "TigerMoth"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

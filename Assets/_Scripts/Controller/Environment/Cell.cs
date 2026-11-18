@@ -5,6 +5,7 @@ using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Game;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
@@ -78,6 +79,91 @@ namespace CosmicShore.Gameplay
 
         CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
         public CellConfigDataSO Config => cellConfigData;
+
+        // ── The fauna roster (authored species + the element ladder's I4 rung) ──
+
+        readonly List<FaunaConfigurationSO> _ladderFauna = new();
+        readonly List<FaunaConfigurationSO> _faunaRoster = new();
+        CellConfigDataSO _rosterBuiltFor;
+
+        /// <summary>
+        /// The fauna species this cell spawns and the fauna sync indexes: its spawn profile's
+        /// <c>SupportedFaunas</c>, except at I4+ of an arcade match (the standard element ladder, Garrett 2026-11-16),
+        /// where every species is a clone pinned to the game's element - the profile's own species when it authors
+        /// any, else <see cref="ElementLadderFaunaSO"/>'s. Every reader that used to walk <c>SpawnProfile.SupportedFaunas</c> for SPAWNING or SYNC
+        /// walks this, so both spawners, reproduction and the sync agree. Built once per config and identical on every
+        /// peer: the inputs (mode, intensity, arena flag) are the synced game config, and the clones follow the
+        /// ladder asset's list order. Fauna wear the cell's controlling colour as always.
+        /// </summary>
+        public IReadOnlyList<FaunaConfigurationSO> FaunaRoster
+        {
+            get
+            {
+                var config = cellConfigData;
+                if (config != _rosterBuiltFor) RebuildFaunaRoster(config);
+                return _faunaRoster;
+            }
+        }
+
+        void RebuildFaunaRoster(CellConfigDataSO config)
+        {
+            _rosterBuiltFor = config;
+            _faunaRoster.Clear();
+            DestroyLadderFauna();
+
+            var authored = config && config.SpawnProfile ? config.SpawnProfile.SupportedFaunas : null;
+            Element element = default;
+            bool ladder = config && LadderFaunaApplies(out element);
+            if (!ladder)
+            {
+                if (authored != null) _faunaRoster.AddRange(authored);
+                return;
+            }
+
+            // The ladder's I4: a profile that authors fauna keeps its species, every one born in the game's element
+            // (Garrett's card, 2026-11-16: "arenas with fauna keep theirs, recoloured to the element"); a profile with
+            // none gets the ladder's species. Either way the roster is pinned clones in list order on every peer.
+            IReadOnlyList<FaunaConfigurationSO> source = authored;
+            if (source is not { Count: > 0 })
+            {
+                var asset = ElementLadderFaunaSO.Load();
+                source = asset ? asset.Species : null;
+            }
+            if (source == null) return;
+            for (int i = 0; i < source.Count; i++)
+            {
+                var species = source[i];
+                if (!species || !species.FaunaPrefab)
+                {
+                    // Keep the slot so the sync's config index still lines up with the authored list.
+                    _faunaRoster.Add(species);
+                    continue;
+                }
+                var pinned = ElementLadderFaunaSO.PinnedTo(species, element);
+                _ladderFauna.Add(pinned);
+                _faunaRoster.Add(pinned);
+            }
+        }
+
+        /// <summary>The I4 rung's gate: an arcade match (a mode controller in the scene), not an arena card, at I4 or
+        /// above, whose game names exactly one element.</summary>
+        bool LadderFaunaApplies(out Element element)
+        {
+            element = Element.None;
+            if (gameData == null || gameData.IsArenaMatch || gameData.SelectedIntensity == null) return false;
+            if (!ElementLadder.HasFauna(gameData.SelectedIntensity.Value)) return false;
+            if (!FindAnyObjectByType<MultiplayerMiniGameControllerBase>()) return false;
+            if (!ModePreviewLibrarySO.TryGenres(gameData.GameMode, out element, out var secondary)) return false;
+            return secondary == Element.None &&
+                   element is Element.Mass or Element.Charge or Element.Space or Element.Time;
+        }
+
+        void DestroyLadderFauna()
+        {
+            for (int i = 0; i < _ladderFauna.Count; i++)
+                if (_ladderFauna[i]) Destroy(_ladderFauna[i]);
+            _ladderFauna.Clear();
+        }
         GameObject membrane;
         GameObject nucleus;
 
@@ -1514,7 +1600,13 @@ namespace CosmicShore.Gameplay
             // moment the first prism is added. Assets authored before volume became
             // the spine derive their volume ladder from the count fields (×16).
             var t = cfg.PhaseThresholds;
-            return t.IsAllZero ? CellPhaseThresholds.Default : t.WithDerivedVolumeScale();
+            t = t.IsAllZero ? CellPhaseThresholds.Default : t.WithDerivedVolumeScale();
+            // An environment that laid more than its config was measured on (a Regatta course genome's placements)
+            // raises the ladder by what it added, so the course opens in the phase the measured one does.
+            if (cfg.EnvironmentPrefab is ICellPhaseBaseline baseline
+                && (baseline.PhaseBaselineVolume > 0f || baseline.PhaseBaselinePrisms > 0))
+                t = t.Raised(baseline.PhaseBaselineVolume, baseline.PhaseBaselinePrisms);
+            return t;
         }
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
@@ -1631,6 +1723,7 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            DestroyLadderFauna();
             if (_volumeSumPending)
             {
                 _volumeSumHandle.Complete();
@@ -1914,7 +2007,8 @@ namespace CosmicShore.Gameplay
         public int ResolveFloraPopulation(int authored)
         {
             var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
-            return ApplyRuntimePopulationScale(profile ? profile.ScaleFloraPopulation(authored) : authored);
+            return ApplyRuntimePopulationScale(profile ? profile.ScaleFloraPopulation(authored) : authored,
+                RuntimePopulationScale * RuntimeFloraShare);
         }
 
         /// <summary>
@@ -1923,10 +2017,11 @@ namespace CosmicShore.Gameplay
         /// keeps meaning exactly that), a non-zero number never rounds below 1, and scale 1 is
         /// exactly the identity so every cell that never sets the scale is bit-for-bit unchanged.
         /// </summary>
-        int ApplyRuntimePopulationScale(int resolved)
+        int ApplyRuntimePopulationScale(int resolved) => ApplyRuntimePopulationScale(resolved, RuntimePopulationScale);
+
+        static int ApplyRuntimePopulationScale(int resolved, float scale)
         {
             if (resolved <= 0) return resolved;
-            float scale = RuntimePopulationScale;
             if (scale <= 0f || Mathf.Approximately(scale, 1f)) return resolved;
             return Mathf.Max(1, Mathf.FloorToInt(resolved * scale + 0.5f));
         }
@@ -2309,6 +2404,15 @@ namespace CosmicShore.Gameplay
             countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue, cellCenter, worldDiameter);
         }
 
+        /// <summary>The membrane at <paramref name="factor"/> times its authored size: a capsule membrane through its own
+        /// runtime scale (its baked wobble kept), any other membrane by its transform (its radius is its scale).</summary>
+        void GrowMembrane(float factor)
+        {
+            if (!membrane) return;
+            if (membrane.TryGetComponent<CapsuleMembrane>(out var cm)) cm.SetRuntimeScale(factor);
+            else membrane.transform.localScale *= factor;
+        }
+
         /// <summary>
         /// Spawn the config's membrane, environment, and nucleus.
         /// </summary>
@@ -2330,7 +2434,10 @@ namespace CosmicShore.Gameplay
             // rendering on top of the real one that nothing can ever collect. Same reason a
             // duplicated 70k-prism environment would double the cell's mass.
             if (cellConfigData.MembranePrefab != null && membrane == null)
+            {
                 membrane = Instantiate(cellConfigData.MembranePrefab, transform.position, Quaternion.identity);
+                if (IsSatellite && SatelliteSizeScale > 1f) GrowMembrane(SatelliteSizeScale);
+            }
 
             if (spawnEnvironment && cellConfigData.EnvironmentPrefab != null && environment == null)
                 SpawnEnvironment();
@@ -2343,6 +2450,7 @@ namespace CosmicShore.Gameplay
             if (cellConfigData.NucleusPrefab == null || nucleus != null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
+            if (IsSatellite && SatelliteSizeScale > 1f) nucleus.transform.localScale *= SatelliteSizeScale;
             ApplyNucleusWorldRadius(); // honor any radius a mode requested before the nucleus existed
             ApplyNucleusMesh();        // ...or a replacement boundary mesh (non-spherical court)
             RefreshNucleusControlRadius();
@@ -2722,6 +2830,27 @@ namespace CosmicShore.Gameplay
         public int SatellitePrismStride { get; set; } = 1;
 
         /// <summary>
+        /// A SATELLITE's membrane and nucleus at this many times their authored size (the voyages' cells, Shombith
+        /// 2026-11-16: "make the cell big by 50%"). The membrane's radius grows with it, so everything that reads
+        /// <see cref="MembraneRadius"/> or <see cref="SenseRadius"/> (the density grids, spawn points, the Ark's
+        /// approach, the leash) sees the bigger world; the config's environment mass keeps its authored size. Set
+        /// BEFORE <see cref="InitializeSatellite"/>. Honoured only while <see cref="IsSatellite"/>; 1 = as authored.
+        /// </summary>
+        public float SatelliteSizeScale { get; set; } = 1f;
+
+        /// <summary>
+        /// A SATELLITE whose life is born all through its open water (the voyages' cells, Shombith 2026-11-17: "the cell
+        /// is not big and all crystals and everything come in the same spot"): every fauna birth that has no band and no
+        /// pen of its own, and every flora planting, lands at a fresh volume-uniform point between the nucleus and the
+        /// membrane (<see cref="CellLifeSpawnerBase.RandomPointInCytoplasm"/>) instead of the wave's one feeding ground,
+        /// the densest mass (the environment at the core, or the Ark under a lure) or an authored planting site. Placement
+        /// only: diets, steering, populations and every creature's own goal picks are untouched, so the hearts (the
+        /// elemental crystals) start spread across the bigger cell. Set BEFORE <see cref="InitializeSatellite"/>. Honoured
+        /// only while <see cref="IsSatellite"/>; false = as authored.
+        /// </summary>
+        public bool ScatterLifeSpawns { get; set; }
+
+        /// <summary>
         /// Opt a SATELLITE into running its life spawner. Default false - the mode preview's
         /// satellites are structure-only, because a seeded ecology is most of a second world's
         /// frame cost beside a menu that is still running (see <see cref="StartSpawnerForMode"/>).
@@ -2761,6 +2890,15 @@ namespace CosmicShore.Gameplay
         /// lighter than its profile says.
         /// </summary>
         public float RuntimePopulationScale { get; set; } = 1f;
+
+        /// <summary>
+        /// The FLORA's share of <see cref="RuntimePopulationScale"/>: flora populations resolve at
+        /// RuntimePopulationScale x this, fauna at RuntimePopulationScale alone. Default 1 (both alike). A voyage doubles
+        /// its cells' creatures but keeps their plants near authored (a plant is the cell's growing prism mass, which
+        /// every sense, sweep and draw pays for; 2026-11-17). Production gating only, like the scale it shares; set by
+        /// code, never serialized.
+        /// </summary>
+        public float RuntimeFloraShare { get; set; } = 1f;
 
         /// <summary>
         /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still
