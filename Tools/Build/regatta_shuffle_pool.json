@@ -141,7 +141,8 @@
           "BrittleStar": 76.92,
           "Swordfish": 27.12
         }
-      }
+      },
+      "ref": "Ref3"
     },
     {
       "label": "Course2",
@@ -438,7 +439,8 @@
           "BrittleStar": 61.12,
           "Swordfish": 32.07
         }
-      }
+      },
+      "ref": "Ref1"
     },
     {
       "label": "Course4",
@@ -951,7 +953,8 @@
           "BrittleStar": 58.48,
           "Swordfish": 30.67
         }
-      }
+      },
+      "ref": "Ref2"
     },
     {
       "label": "Course8",
@@ -1171,7 +1174,9 @@
           "BrittleStar": 66.8,
           "Swordfish": 47.47
         }
-      }
+      },
+      "ref": "Ref4"
     }
-  ]
+  ],
+  "refs_by": "Ref1-Ref4: the four courses with the tightest five-hull spread (worse of card and L5), ordered by the five's card lap time (61-76 s); Garrett 2026-11-18: a fixed, named subset of the eight for anything that needs stable reference courses."
 }

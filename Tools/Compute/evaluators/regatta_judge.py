@@ -49,7 +49,28 @@ DLL = os.path.join(BIN, "CosmicShore.dll")
 # today's pool entry 0 with no features (regatta_measured_roster.MEASURED_ON, seed 20268834).
 EDITOR_I1 = {"Urchin": 51.0, "Manta": 67.0, "Stoat": 70.0, "Squirrel": 75.0, "Rhino": 95.0, "Dolphin": 97.5,
              "Serpent": 100.0, "Sparrow": 133.0}
+# The calibration course is the circuit an EMPTY genome lays (RegattaCourse.ForIntensity row 1, the deleted "Wide"
+# asset's circuit): a fixed course that does not move when the shuffle does. It is not the shipped level any more.
 CALIBRATION_GENOME = {"version": 1, "intensity": 1, "features": {}}
+SHUFFLE_JSON = os.path.join(ROOT, "Tools/Build/regatta_shuffle_pool.json")
+
+
+def shipped_courses(which="shuffle"):
+    """The shipped Regatta level's courses (Tools/Build/regatta_shuffle_pool.json, what the pool deals), as
+    [(name, game genome)]: "shuffle" every course, "refs" the reference courses Ref1-Ref4 (pool entries 0-3, the ones a
+    race at intensity 1-4 without a genome lays), or one name ("Ref2", "Course5")."""
+    with open(SHUFFLE_JSON) as f:
+        entries = json.load(f)["entries"]
+    named = [(e.get("ref") or e["label"], e) for e in entries]
+    if which == "refs":
+        picked = sorted(((n, e) for n, e in named if e.get("ref")), key=lambda ne: ne[0])
+    elif which == "shuffle":
+        picked = sorted(named, key=lambda ne: (not ne[1].get("ref"), ne[0]))
+    else:
+        picked = [(n, e) for n, e in named if which in (n, e["label"])]
+        if not picked:
+            raise ValueError(f"no shipped Regatta course {which!r}: {[n for n, _ in named]}")
+    return [(n, e["genome"]) for n, e in picked]
 REGATTA_HULLS = ["Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Scarab", "Serpent", "Sparrow",
                  "Thresher", "BrittleStar"]   # the last two seated 2026-11-17 (author_regatta_assets.JUDGED_HULLS);
 # the Stoat came off the card the same day (Garrett: it will be reworked a lot) and is judge-only now
@@ -242,6 +263,8 @@ def main():
     ap.add_argument("--calibrate", action="store_true")
     ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--genome", help="genome JSON file (default: the calibration course)")
+    ap.add_argument("--course", help="race the shipped level instead: shuffle (every course), refs (Ref1-Ref4) or one "
+                                     "name (Ref2, Course5)")
     ap.add_argument("--hulls", default=",".join(REGATTA_HULLS))
     ap.add_argument("--seeds", default="1,2,3")
     ap.add_argument("--limit", type=float, default=400)
@@ -267,6 +290,13 @@ def main():
                   f"{r['finished']:>5} {r['editor_s'] or '-':>7} {r['ratio'] or '-':>6}")
         print(f"{cal['races']} races in {cal['wall_s']} s wall on {cal['cores']} cores, engine {cal['engine_commit']}")
         out = cal
+    elif a.course:
+        overrides = json.load(open(a.overrides)) if a.overrides else None
+        out = {}
+        for name, genome in shipped_courses(a.course):
+            out[name] = judge(genome, hulls, seeds, limit_s=a.limit, backend=a.backend, field=a.field,
+                              overrides=overrides, start=start)
+            print(name, json.dumps({h: v for h, v in mean_finish(out[name]).items()}))
     else:
         genome = json.load(open(a.genome)) if a.genome else CALIBRATION_GENOME
         overrides = json.load(open(a.overrides)) if a.overrides else None

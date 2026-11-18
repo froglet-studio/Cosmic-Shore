@@ -142,8 +142,8 @@
    "triangles": 9148
   },
   "Regatta": {
-   "cell": "Regatta Cell Config 2",
-   "environment": "SpawnableRegattaRails2",
+   "cell": "Regatta Shuffle Cell Config Course3",
+   "environment": "RegattaShuffleRailsCourse3",
    "prisms": 2038,
    "tier": "RUN",
    "track": null,
