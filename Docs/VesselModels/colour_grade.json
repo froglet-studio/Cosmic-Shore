@@ -180,10 +180,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/Resources/Pilots/Scenes/MANGER.jpg": {
-   "coloured": 0.2629,
+   "coloured": 0.3073,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "4f8d9e57e3a0edf8",
+   "sha": "68ee1e8e33ed59ee",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/Resources/Pilots/Scenes/Maestro.jpg": {
@@ -6547,10 +6547,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_MANGER.png": {
-   "coloured": 0.3625,
+   "coloured": 0.446,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "768fd6ab9ce570e3",
+   "sha": "8529454230310747",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Maestro.png": {
