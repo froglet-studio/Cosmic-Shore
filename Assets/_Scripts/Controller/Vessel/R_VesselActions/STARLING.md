@@ -69,10 +69,10 @@ take. An AI Starling picks a random card 2 s after a hand arrives, then draws it
 The swarm collects elemental crystals through its own skimmer, so its element levels rise and fall like any hull's.
 They now reach the card play, the same way in all four elements, because the four abilities are one shape:
 
-- **Scaling: card level.** A drawn card of an element arrives at `lvX × arrivalLevelX`, rounded down and held to
-  1..15. `arrivalLevelX` is an `ElementalFloat` on `StarlingConfig` (1 at rest, 3 at level 10, floored at 0.5), so with
-  the lab's `lvX` = 1 a card arrives at level 2 from element level 5 and at 3 at level 10. A pilot strong in an element
-  digs into its cards two to three times as fast. At rest nothing changes.
+- **Scaling: card level** (Garrett, 2026-11-18: "+3 at L9 and +5 at L15"). A drawn card of an element gains one level
+  per three levels of that element, rounded down and never clamped at 10: +1 at L3, +2 at L6, +3 at L9, +4 at L12,
+  +5 at L15, held to 1..15 overall. The parameter is `arrivalLevelX`, an `ElementalFloat` on `StarlingConfig` read as
+  one plus the gain (1 at rest, 1 + 10/3 at level 10, extrapolated past it, floored at 0.5). At rest nothing changes.
 - **Level-5 upgrade: Encore.** While an element's upgrade is active (`IsUpgradeActive`, level 5, relocks below 4),
   picking a card of that element leaves the rest of the hand up for one more pick, once per hand. A spread hand keeps
   its slots (the taken one is empty); an element hand closes up. The AI takes the second pick the same way it takes
@@ -80,7 +80,7 @@ They now reach the card play, the same way in all four elements, because the fou
 - **Omnicrystal ability:** an omnicrystal deals a hand (it ends the Omnicrystal phase early, or deals one in any other).
 
 Pure rules in `StarlingRules` (`ArrivalLevel`, `EncoreActive`), wired by `StarlingSwarmExecutor`; tests in
-`StarlingRulesTests`. The choice of Encore and of the 3x scaling went to Garrett on 2026-11-18
+`StarlingRulesTests`. Garrett chose Encore and the +1 per 3 levels scaling on 2026-11-18
 (`/mnt/project-files/regatta-flywheel/step5/STARLING_ELEMENTS.md`).
 
 ## 3. What the swarm does (the game's own things)
