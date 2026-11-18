@@ -100,8 +100,11 @@ namespace CosmicShore.Gameplay
             SpawnTube(so, status, new Pose(origin, vessel.rotation));
             ReportDiagnostic(status, $"laid {offset:F0}u ahead");
 
-            // The recharge is fixed; Mass sets the ring prisms' size (PrismScaleFor, in SpawnTube).
-            float cooldown = so.Cooldown;
+            // MASS -> cooldown: the boost-ring recharge shortens as the vessel's live Mass level
+            // rises (atFull authored on the SO). Deficit Mass lengthens it. The ring is the
+            // Squirrel's mass-CREATION ability, which is why Mass owns how often it can be laid.
+            float cooldown = so.Cooldown * ElementalScaling.Multiplier(
+                status, Element.Mass, so.CooldownMultiplierAtFullMass, so.MinCooldownMultiplier);
             _activeCooldown = cooldown;
             _cooldownEndTime = Time.time + cooldown;
         }
@@ -148,7 +151,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         async UniTaskVoid SpawnTubeAsync(SquirrelTubeActionSO so, IVesselStatus status, Pose pose, CancellationToken ct)
         {
-            var spec = new BoostRingSpec(so.Segments, so.Radius, Vector3.one * so.PrismScaleFor(status),   // MASS: bigger ring prisms
+            var spec = new BoostRingSpec(so.Segments, so.Radius, Vector3.one * so.PrismScale,
                 so.Danger ? PrismKind.Danger : PrismKind.Plain);
             string playerName = status.PlayerName;
             Domains domain = status.Domain;

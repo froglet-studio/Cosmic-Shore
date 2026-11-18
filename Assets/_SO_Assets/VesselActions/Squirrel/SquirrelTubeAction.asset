@@ -22,12 +22,6 @@ MonoBehaviour:
   forwardOffset: 100
   spawnPerFrame: 24
   cooldown: 20
-  prismScaleMultiplier:
-    Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 1.5
-    element: 2
-    UseFloor: 1
-    Floor: 0.5
+  cooldownMultiplierAtFullTime: 0.5
+  minCooldownMultiplier: 0.35
   upgradeExtraRings: 1

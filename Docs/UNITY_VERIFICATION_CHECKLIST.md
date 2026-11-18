@@ -25223,18 +25223,7 @@ Unity reference compile: 0 errors in changed files.
 - [ ] Goby & Pistol at Charge 0 and 10 with a lock: the Snap's ring bends onto the rival much harder at Charge 10.
 - [ ] Both: a hull hit takes one petal per element at any Charge.
 
-## Dolphin and Squirrel Mass: more, not sooner (2026-11-18)
-
-Not run in the Unity editor. Mass shortened a cooldown on both, and making something come back sooner is Time's job. The
-cooldowns are now fixed.
-- Dolphin Crystal Seeding: `DeployTeamCrystalActionSO.yieldScale` (x1 at rest, x2 at Mass 10, floor x0.5) sets crystals per
-  cycle (1 at rest, 2 at Mass 10) and scales the live cap (8 at rest, 16 at Mass 10). Recharge: 15 s fixed.
-- Squirrel Boost Ring: `SquirrelTubeActionSO.prismScaleMultiplier` (x1 at rest, x1.5 at Mass 10) grows the ring prisms.
-  Cooldown: 20 s fixed.
-Unity reference compile: 0 errors in changed files.
-
-- [ ] Dolphin at Mass 10: two crystals appear each cycle; the field holds up to 16 seeded crystals.
-- [ ] Squirrel at Mass 0 and 10: the Boost Ring's prisms are visibly larger at Mass 10, and the ring is back in 20 s at both.
+## Dolphin and Squirrel Mass: more, not sooner (2026-11-18) - REVERTED, see the cooldown-restore entry below
 
 ## Time tempo dials on Sparrow, Scarab and Manta (2026-11-18)
 
@@ -25248,3 +25237,10 @@ Unity reference compile: 0 errors in changed files.
 - [ ] Sparrow at Time 0 and 10: the strafing roll is visibly quicker at Time 10 and lands about as far to the side.
 - [ ] Scarab at Time 0 and 10: full throttle from a stop reaches top speed in about 2.4 s at Time 0, about half at Time 10.
 - [ ] Manta at Time 0 and 10: a held Yawstery turns about 1.5x as fast at Time 10; check the Redline and Regatta AI still hold their lines.
+
+## Dolphin and Squirrel Mass back on the cooldown (2026-11-18, revert of #2227)
+
+Garrett: the cooldown is felt more granularly on the Dolphin's seeding and combos better with the Squirrel's other abilities, so it beats the cleaner theming.
+- [ ] Dolphin: at Mass 0 vs Mass 10 the team crystal seeding cycle visibly shortens; one crystal per cycle, as before #2227.
+- [ ] Squirrel: at Mass 0 vs Mass 10 the Boost Ring comes back sooner; prism size unchanged by Mass.
+- Not run in Unity. unity_refcompile result in the PR.
