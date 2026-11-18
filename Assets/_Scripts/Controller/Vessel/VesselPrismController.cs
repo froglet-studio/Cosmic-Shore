@@ -54,6 +54,13 @@ namespace CosmicShore.Gameplay
         [FormerlySerializedAs("massUpgradeShieldsTrail")]
         [SerializeField] bool driftShieldsTrail = false;
 
+        [Tooltip("While DRIFTING, lay each prism along the path the hull is travelling (its Course), not along " +
+                 "its nose, and never longer than Max Length Of Spacing of the gap to the next one. Off, a drift " +
+                 "lays prisms along the nose: with the drift trail's longer, closer prisms (SetDotProduct) that " +
+                 "is a stack of long bars across the path, and the ones that reach ahead of the nose are flown " +
+                 "into when the drift ends (the Dolphin, Caleb 2026-11-18).")]
+        [SerializeField] bool driftLaysAlongCourse = false;
+
         [Tooltip("MASS level-5 'Shielded Turn Trails' (the Manta's Yawstery): prisms laid while " +
                  "a hard TURN is held arrive shielded once the Mass upgrade is live (regular " +
                  "shield, never SuperShield). The turn window is whatever drives SetTurnTrail " +
@@ -570,6 +577,12 @@ namespace CosmicShore.Gameplay
                 && turnFlareMaxScale > 1f)
                 scale.x *= Mathf.Lerp(1f, turnFlareMaxScale, _turnFlare01);
 
+            // A drift line laid along the path: never longer than the gap to the next prism.
+            bool alongCourse = driftLaysAlongCourse && vesselStatus.IsDrifting;
+            if (alongCourse)
+                scale.z = Mathf.Min(scale.z,
+                    stretch.MaxLengthOfSpacing * (_laySpacing > 0f ? _laySpacing : wavelength));
+
             // Warp field (Docs/WARP_FIELD.md): every length of the lay — the prism, the lane gap,
             // the offset behind the hull — shrinks with the vessel, so a shrunken vessel lays a
             // trail that looks exactly like its own to itself. Exactly 1 with no field.
@@ -582,10 +595,17 @@ namespace CosmicShore.Gameplay
             }
 
             // --- Position & Rotation ---
+            Quaternion rot = vesselStatus.blockRotation;
+            Vector3 railRight = vesselStatus.ShipTransform.right;
+            if (alongCourse && SafeLookRotation.TryGet(vesselStatus.Course, vesselStatus.ShipTransform.up,
+                    out var courseRot, this, logError: false))
+            {
+                rot = courseRot;
+                railRight = courseRot * Vector3.right;
+            }
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
             Vector3 pos = transform.position - vesselStatus.Course * (offset * warp + _layBack)
-                        + vesselStatus.ShipTransform.right * xShift;
-            Quaternion rot = vesselStatus.blockRotation;
+                        + railRight * xShift;
 
             // --- Ask factory to spawn Interactive prism (pooled) ---
             var ret = _onPrismSpawnedEventChannel.RaiseEvent(new PrismEventData

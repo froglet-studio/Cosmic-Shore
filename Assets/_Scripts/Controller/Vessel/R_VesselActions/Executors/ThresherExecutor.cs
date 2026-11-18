@@ -121,6 +121,7 @@ namespace CosmicShore.Gameplay
         // A phone: both thumbs off a planted spin read as both triggers full (the aimed launch, ThresherTouchLaunch).
         ThresherTouchLaunch _touchLaunch;
         bool _massMode;
+        Vector3 _ballTrailUp;   // the ball trail's carried up (BallTrailUp); zero = seed afresh
         float _energy;
         /// <summary>The launch direction the AIM camera chose for the pending plant release, taken
         /// by the transformer on the release edge (<see cref="TryConsumeReleaseDirection"/>).</summary>
@@ -279,6 +280,7 @@ namespace CosmicShore.Gameplay
             _energy = 0f;
             _releaseDirection = null;
             _trailOwed = 0f;
+            _ballTrailUp = Vector3.zero;
             _combo = 0;
             _touching.Clear();
             _touchingNext.Clear();
@@ -473,6 +475,8 @@ namespace CosmicShore.Gameplay
         {
             _massMode = !_massMode;
             _trailOwed = 0f;
+            _ballTrailUp = Vector3.zero;
+            HoldTrailPen(LaunchViewUp || _massMode);
         }
 
         /// <summary>An omni crystal: the ball windmills round the ship (<c>windmillSeconds</c>).
@@ -694,7 +698,7 @@ namespace CosmicShore.Gameplay
                 else _launchViewDropTime = 0f;
             }
             LaunchViewUp = up;
-            HoldTrailPen(up);
+            HoldTrailPen(up || _massMode);
         }
 
         /// <summary>Drop the launch view and hand the trail pen back (disable, re-init).</summary>
@@ -708,7 +712,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The hull lays no trail while the launch view is up: a spin that circles in front of the
-        /// crosshair would otherwise wall its own launch path in prisms. Pen-up
+        /// crosshair would otherwise wall its own launch path in prisms. Nor in Mass Mode, where the
+        /// BALL lays the trail (the kit: "the ball steals rival prisms, shields yours and lays your
+        /// trail"); the hull laid its twin rails beside the ball's line as well (Caleb, 2026-11-18). Pen-up
         /// (<see cref="VesselPrismController.SetSpawnerPaused"/>, the Fold's lever) only gates block
         /// creation, never the spawn loop an ability owns. It is one last-writer flag shared with the
         /// cell's spawner pause and the painting toys, so it is written on EDGES only, never per frame.
@@ -929,9 +935,9 @@ namespace CosmicShore.Gameplay
             if (lays <= 0) return;
             _trailOwed = Mathf.Min(_trailOwed - lays * spacing, spacing);
 
-            Vector3 up = Vector3.ProjectOnPlane(shipPosition - to, dir);
-            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.up, dir);
-            if (!SafeLookRotation.TryGet(dir, up.normalized, out var rot, this, logError: false)) return;
+            Vector3 up = BallTrailUp(_ballTrailUp, dir, shipPosition - to);
+            _ballTrailUp = up;
+            if (!SafeLookRotation.TryGet(dir, up, out var rot, this, logError: false)) return;
 
             for (int i = 0; i < lays; i++)
             {
@@ -939,6 +945,23 @@ namespace CosmicShore.Gameplay
                 Vector3 pos = Vector3.Lerp(from, to, (i + 1f) / lays);
                 LayTrailPrism(channel, spawner.SpawnPrismType, pos, rot);
             }
+        }
+
+        /// <summary>
+        /// The ball trail's up: the last lay's up carried onto this lay's direction (parallel
+        /// transport), so the flat 8 u tiles stay one ribbon as the ball swings. It used to aim each
+        /// tile's up at the ship, which spins with every orbit of the ball, so neighbouring tiles
+        /// were laid at unrelated roll angles (Caleb's fly test, 2026-11-18). The first lay, or one
+        /// whose path runs along the old up, seeds from the direction to the ship.
+        /// </summary>
+        public static Vector3 BallTrailUp(Vector3 previousUp, Vector3 dir, Vector3 towardShip)
+        {
+            Vector3 up = Vector3.ProjectOnPlane(previousUp, dir);
+            if (up.sqrMagnitude > 0.04f) return up.normalized;
+            up = Vector3.ProjectOnPlane(towardShip, dir);
+            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.up, dir);
+            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.forward, dir);
+            return up.normalized;
         }
 
         /// <summary>One ball-trail prism. MASS sizes it (<c>massTrailScale</c>, every axis, read at

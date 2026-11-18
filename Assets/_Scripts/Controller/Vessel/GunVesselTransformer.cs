@@ -103,6 +103,18 @@ namespace CosmicShore.Gameplay
                  "as sitting ON the trail rather than sunk into it.")]
         [SerializeField] float rideSurfaceClearance = 1.5f;
 
+        [Tooltip("How quickly the ride follows a CHANGE in the surface offset (1/s, exponential): a new " +
+                 "block of another size or angle, or a roll walking the hull around the prism. Every " +
+                 "block used to set the offset outright, so a ribbon of mixed prisms (a drift line's " +
+                 "yawed blocks, another hull's trail) threw the hull and camera metres in one frame " +
+                 "(Caleb, 2026-11-18).")]
+        [SerializeField, Min(0.1f)] float surfaceSettleRate = 10f;
+
+        [Tooltip("Farthest the hull may sit from the trail's centre line, world units, whatever the " +
+                 "prism. A long prism yawed off the ribbon (a 48 u drift block) has a support of " +
+                 "half its length; riding that envelope flung the hull 24 u to the side.")]
+        [SerializeField, Min(0f)] float maxRideSurfaceOffset = 8f;
+
         [Tooltip("What a REVERSE command in free flight is worth against the same pull forward. " +
                  "1 = exactly symmetric, which is what the RAIL already does (the grind feeds " +
                  "TrailFollower Abs(throttle), so backing up a ribbon is as fast as running it " +
@@ -167,6 +179,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The hull's offset from the rail at the moment of contact, decayed to zero
         /// so the ride settles ON the trail without a snap.</summary>
         Vector3 _railOffset;
+
+        /// <summary>The offset from the centre line out to the ridden surface, eased toward
+        /// <see cref="RideSurfaceOffset"/> by <see cref="surfaceSettleRate"/>.</summary>
+        Vector3 _surfaceOffset;
 
         /// <summary>+1 when the nose agrees with <see cref="TrailFollower.IndexOrderHeading"/>.
         /// Flips only past <see cref="facingFlipThreshold"/> the other way - hysteresis, so aiming near
@@ -410,7 +426,8 @@ namespace CosmicShore.Gameplay
             int noseVsTravel = Vector3.Dot(transform.forward, VesselStatus.Course) < 0f ? -1 : 1;
             _facingSign = (int)trailFollower.Direction * noseVsTravel;
             _grindThrottle = ReadThrottle();
-            _railOffset = transform.position - (trailFollower.CenterlinePoint + RideSurfaceOffset());
+            _surfaceOffset = RideSurfaceOffset();
+            _railOffset = transform.position - (trailFollower.CenterlinePoint + _surfaceOffset);
         }
 
         /// <summary>
@@ -470,11 +487,22 @@ namespace CosmicShore.Gameplay
             // trail - and the answer would change with that choice. The support needs no such
             // choice, and reduces to exactly the box half-extent for a prism square to the
             // ribbon (the Sparrow case is unchanged).
-            float surface = half.x * Mathf.Abs(Vector3.Dot(radial, t.right))
-                          + half.y * Mathf.Abs(Vector3.Dot(radial, t.up))
-                          + half.z * Mathf.Abs(Vector3.Dot(radial, t.forward));
+            return radial * RideSurfaceDistance(half, radial, t.right, t.up, t.forward,
+                                                rideSurfaceClearance, maxRideSurfaceOffset);
+        }
 
-            return radial * (surface + rideSurfaceClearance);
+        /// <summary>
+        /// How far out from the trail axis the hull rides: the box's support along
+        /// <paramref name="radial"/> plus the clearance, never more than <paramref name="max"/>.
+        /// Pure, so the cap is testable.
+        /// </summary>
+        public static float RideSurfaceDistance(Vector3 half, Vector3 radial, Vector3 right, Vector3 up,
+            Vector3 forward, float clearance, float max)
+        {
+            float surface = half.x * Mathf.Abs(Vector3.Dot(radial, right))
+                          + half.y * Mathf.Abs(Vector3.Dot(radial, up))
+                          + half.z * Mathf.Abs(Vector3.Dot(radial, forward));
+            return Mathf.Min(surface + clearance, Mathf.Max(clearance, max));
         }
 
         /// <summary>
@@ -758,7 +786,9 @@ namespace CosmicShore.Gameplay
                 // of contact, decayed away - so the ride settles onto the trail rather than
                 // snapping onto it.
                 _railOffset = Vector3.Lerp(_railOffset, Vector3.zero, 1f - Mathf.Exp(-railSettleRate * dt));
-                transform.position = trailFollower.CenterlinePoint + RideSurfaceOffset() + _railOffset;
+                _surfaceOffset = Vector3.Lerp(_surfaceOffset, RideSurfaceOffset(),
+                                              1f - Mathf.Exp(-surfaceSettleRate * dt));
+                transform.position = trailFollower.CenterlinePoint + _surfaceOffset + _railOffset;
             }
             else
             {

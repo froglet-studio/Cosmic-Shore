@@ -304,3 +304,41 @@ loop steps 2-5.
 - Rhino at its top speed: the first half of the stretch.
 - Thresher's sling: stretched, never touching.
 - Any hull on a 30 fps phone: the same trail as on PC.
+
+## Round: fleet fly test of the distance lay (2026-11-18)
+
+Caleb flew the fleet on `claude/fervent-pascal-o28ftt`.
+
+**Dolphin: drift trail packs, then the hull hits it; long overlapping bars (pre-existing).** Lifting a thumb is the
+Dolphin's drift, so "cruising, thumbs off" is a drift. `DriftTrailActionExecutor` drives `SetDotProduct(dot(Course,
+nose))`: as the nose wanders off the locked course the wavelength falls to `minWavelength` 6 and `ZScaler` rises to
+`maxBlockScale` 6, so the prisms are 48 u long and 6 u apart. They were laid along the NOSE (`blockRotation`) while
+the hull travels along the course. That gives a stack of long bars across the path, half of each reaching ahead of the
+nose; when the drift ends the hull flies along its nose into them, breaks them and loses blast energy. **Fixed:** a
+new `VesselPrismController.driftLaysAlongCourse` (on for the Dolphin only). While drifting, each prism is laid along
+the course and is never longer than 0.9 of the gap to the next one. The drift line is now a dense dashed line on the
+path. The Squirrel's drift (the same executor) is unchanged.
+
+**Urchin: hull and camera flung while riding, worst near other trails.** The ride puts the hull at the centre line
+plus the offset to the ridden prism's surface. That offset was recomputed outright every frame from the block under
+the rider, and it includes each prism's length when the prism is yawed off the ribbon. A 48 u drift block reads as a
+25.5 u surface, and a block of another size or angle moves the hull metres in one frame. **Fixed:** the surface offset
+eases toward its target (`surfaceSettleRate` 10/s) and is capped (`maxRideSurfaceOffset` 8 u). The Dolphin fix also
+removes the worst prisms from the cell. This is the most likely cause from the code, not a reproduction: if the fling
+is still there, a clip of one, with the trail it happened on, is the next step.
+
+**Rhino: a top-speed straight looks like every other trail.** That is the intended result. The distance lay keeps the
+spacing at the wavelength (5 u) at every speed, where the timer used to spread prisms out with the frame, and the
+stretch only starts at 600 u/s. The Rhino cruises at 50 u/s and reaches the 600s only at the end of a long ramp,
+where the stretch is just beginning.
+
+**Thresher: a messy middle trail.** In Mass Mode the ball lays the trail (the kit: "the ball steals rival prisms,
+shields yours and lays your trail"), but the hull laid its twin rails as well. Each ball tile's roll aimed at the
+ship, which spins as the ball swings, so neighbouring 8 u tiles sat at unrelated angles. **Fixed:**
+- The hull's pen is up in Mass Mode (`HoldTrailPen(LaunchViewUp || _massMode)`), so the ball's line is the only trail.
+  In the breaking-ball mode the twin rails come back.
+- The ball trail's up is carried from tile to tile (`ThresherExecutor.BallTrailUp`, parallel transport), so the
+  tiles form one ribbon.
+- One consequence: in Mass Mode a planted pivot (where the ball lays nothing) now leaves no trail at all.
+
+Tests: `TrailFlyTestFixesTests`. Not verified in Unity: fly each of the four again.

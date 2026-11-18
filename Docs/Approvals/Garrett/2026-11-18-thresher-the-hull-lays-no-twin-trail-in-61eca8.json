@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-18-thresher-the-hull-lays-no-twin-trail-in-61eca8",
+  "to": "Garrett",
+  "by": "Caleb",
+  "date": "2026-11-18T01:00:31+00:00",
+  "area": "Thresher Mass Mode, Dolphin drift line, Urchin trail ride",
+  "summary": "Thresher: the hull lays no twin trail in Mass Mode (the ball lays it, per the kit) and the ball tiles keep one roll; Dolphin: drift prisms are laid along the course, capped under the gap; Urchin: the ride's surface offset is eased and capped at 8 u.",
+  "why": "Caleb's fleet fly test 2026-11-18: messy middle trail on the Thresher, packed and overlapping Dolphin drift prisms the hull then hits, Urchin flung off trails.",
+  "branch": "claude/fervent-pascal-o28ftt",
+  "commit": "3d37130f3",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Dolphin.prefab",
+    "Assets/_Scripts/Controller/Vessel/GunVesselTransformer.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ThresherExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/VesselPrismController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Thresher",
+      "Dolphin",
+      "Urchin"
+    ]
+  }
+}
