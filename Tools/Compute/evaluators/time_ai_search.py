@@ -694,6 +694,10 @@ def main():
     g = GAMES[a.hull]
     hold = [s for s in a.hold.split(",") if s]
     if hold:
+        # "noseFollow" holds the searched nose rate at the game's own (a mode with no nose knob to ship it on).
+        if "noseFollow" in hold:
+            g = {k: v for k, v in g.items() if k not in ("nose_gene", "nose_split")}
+            hold = [k for k in hold if k != "noseFollow"]
         unknown = [k for k in hold if k not in g["fields"]]
         if unknown:
             ap.error(f"--hold: {unknown} are not {a.hull}'s drive fields {sorted(g['fields'])}")

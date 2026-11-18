@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-18-skimraceaiconfig-i2-v4-21-drive-genes-se-d6d543",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T02:24:20+00:00",
+  "area": "Skim Race AI (I2 tuning file)",
+  "summary": "SkimRaceAIConfig_I2 v4: 21 drive genes searched again in the real game at the Squirrel's #2209 throttle (x1.5->x1.8). Fresh seeds 101-104: I2 194 -> 86 s mean, no DNF; I1/I3/I4 files untouched. Written through author_skimrace_ai_config.py. Your Ys-bleeding-edge co-op ring work touches the pilot code, not these files.",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "f58438a78"
+}
