@@ -359,7 +359,10 @@ MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sp
 # The Swordfish joined 2026-11-17 (Garrett: "the regatta 10"): the Rhino's airframe, ramp and line, and level with the
 # Rhino on every judged course (alone: shipped 32 s vs 36, L5 31 vs 31, three archive courses 31-47 vs 35-40). It is the
 # fastest hull on the card with the Rhino, at the edge of the 1.5x rule against the Stoat (49 s).
-JUDGED_HULLS = ["Thresher", "BrittleStar", "Swordfish"]
+# The Tiger Moth joined 2026-11-18 on Garrett's word ("he wants it in the ten"), with its Drop recharge halved (his pick)
+# and Regatta's Drop drive for its autopilot (RegattaTigerMothDrop). Judged alone, seeds 1-3: card start 131 s, about
+# 1.6x the slowest hull seated before it (Manta 82 s), so past the 1.5x rule on the card start; L5 start 87 s (1.25x).
+JUDGED_HULLS = ["Thresher", "BrittleStar", "Swordfish", "TigerMoth"]
 # Finish every course but at 2-5x the pace, so they are NOT on the card (#2123/#2127 seated them; taken off the same
 # night): the judge still seats them by name (RaceJudge adds a requested hull to the card in memory) and their race lines
 # stay, for step 5 and their own AI training to bring them within reach. REGATTA.md 6.6. The Stoat joined them
