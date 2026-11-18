@@ -448,7 +448,10 @@ namespace CosmicShore.Gameplay
             if (!_launched && lobby.Ticket.IsArmed && secs <= 0)
             {
                 _launched = true;
-                previewHost?.Hide();
+                // Hides the preview, then hands the arena it showed to the prism pool so the round
+                // re-issues those prisms instead of cloning the arena again (every peer lays its own;
+                // the host's lobby makes the same call and waits on it - see MaelstromLobby).
+                if (previewHost) previewHost.ParkArenaForRound();
                 MaelstromTransitions.LaunchFlourish(_configureGroup, launchFlashSheet);
             }
         }

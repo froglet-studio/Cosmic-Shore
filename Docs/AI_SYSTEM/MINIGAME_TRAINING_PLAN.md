@@ -306,6 +306,96 @@ lead-in shifted every ring after the first lap and no Breakwater race measured. 
 them 56-73% of a race, which is what the timer already gives. The same loop then gives each vessel above its own
 ability rule in its own minigame.
 
+### 6.2 Speed over breaking: an AI breaks only what it cannot pass (Yash, 2026-11-17)
+
+**The rule, for every AI in every Time game mode** (a mode whose genre petal is Time: the gate races and the crystal
+races, `ModeGenre.cs`). It is what a Time AI is trained toward and judged on:
+
+1. **Speed comes before breaking.** A Time game is won on the clock. Breaking something (a blast, a rocket, a ram, a
+   pickup that clears the way) is only ever a way to get through sooner.
+2. **It breaks only what it cannot pass.** If the hull can fly through from where it is, it flies through. A gap wide
+   enough for the hull counts however it got there: laid by the course, opened by its own earlier blast, by a rival's,
+   by a ram.
+3. **It passes as soon as it can.** The moment the way opens, the pilot commits to the ring and does not turn away
+   again for more breaking, even with a crystal close by.
+4. **When it must break, it takes what is on its way.** A pickup ahead on its line is preferred over one beside or
+   behind it. A pickup that costs no time to fly through (it is on the line anyway) may always be taken.
+5. **"Passable" is measured, not guessed**: from the game's own data (the prisms' real boxes against the hull's size,
+   movers where they will be when the pilot arrives), cheaply (at the AI's replan rate, never per frame, no allocation).
+
+Yash, after watching a Switchback race:
+
+> "While going towards a target ring which was obstructed with prisms, the AI use a crystal in front to break them,
+> succeeded a bit, but then again went back to another crystal that was somehow nearby to it. I should always pass
+> through the ring if that's possible. In this case, it already blew little bit of the ring through which it could
+> pass through then it should pass through, rather than searching for another crystal to break again, we should always
+> prioritize speed over breaking as it is time game. This is the general rule for AI training in Time Game Modes."
+
+The rule is about what the AI chooses. It changes nothing a vessel's ability does, and a mode never rations or alters
+an ability to enforce it (CLAUDE.md, LOCKED: a game mode never changes the vessel). It serves `AI_PLAN.md` step
+`time-arcade`; `AI_PLAN.md` itself is unchanged.
+
+It sits beside Garrett's learned crystal detour (2026-11-16, on `bleeding-edge`: how far a racing AI leaves its line
+for a crystal is a gene of the hull's Time genome, `RaceAICrystalGenesSO`, 0 until a search writes it). That gene is
+for a crystal that buys speed, and the clock sets it. This rule bounds a pickup that BREAKS: never while the way is
+open, whatever a gene says.
+
+**Switchback (the Dolphin), built 2026-11-17.** The Dolphin's AI was the one that broke it: its planner chose
+"take the key crystal" by cost alone, and its any-prism sense blasted any sensed obstacle whenever the dodge was poor.
+Now (`SWITCHBACK.md` "AI: speed over breaking"):
+
+- `SwitchbackBlastPlanner.Passable` answers "can the hull fly from here through the ring and past its doors?" with a
+  hull-wide straight line (the 6 u hull and 2 u of air each side, 5 u off a Danger prism) against every standing
+  prism's real box, through the mouth's centre and twelve points round it. `KeyOnTheWay` answers "does this key cost
+  under 0.15 s to fly through?".
+- `Decide` refuses a key that is off the way while the ring is passable (`why=passable`), at every difficulty. A pilot
+  that turned for the ring keeps it (`why=committed`), and flies through the point in the mouth the clear line runs
+  through.
+- A pilot flying for a key it chose because its ring was NOT passable keeps looking at the ring (at its replan rate)
+  and lets the key go if the ring opens while the key is still off its way and more than a second off.
+- The sense blasts a stray obstacle only when no corridor lets the hull by AND the ring is not passable; of several
+  crystals that would do, it takes the one most on its way.
+- `SwitchbackController.aiSpeedOverBreaking` (on) is the switch; off is the AI of before, for an A/B.
+
+Offline (`switchback_sim_harness`, one AI alone, 24 courses a cell, 26 gates; `speedOverBreaking=0` is before).
+Turn-aways are runs at a crystal that was off the way while the ring could be flown; passes are blocked gates where the
+rule kept the pilot on its ring:
+
+| | Turn-aways before (24 races) | after | Passes after | Median s before -> after |
+|---|---|---|---|---|
+| I1 Easy / Medium / Hard / Legendary | 0 / 0 / 11 / 2 | 0 | 0 / 2 / 26 / 8 | 85.1 -> 85.1, 80.6 -> 80.6, 70.2 -> 64.3, 60.8 -> 60.8 |
+| I2 | 0 / 1 / 5 / 0 | 0 | 3 / 15 / 91 / 15 | 129.6 -> 129.6, 119.6 -> 119.5, 111.6 -> 111.6, 98.2 -> 98.2 |
+| I3 | 0 / 8 / 41 / 2 | 0 | 33 / 150 / 203 / 30 | 127.5 -> 128.7, 120.6 -> 120.5, 107.5 -> 109.8, 102.3 -> 101.7 |
+| I4 (gauntlet) | 0 / 19 / 21 / 23 | 0 | 0 / 37 / 90 / 124 | 187.5 -> 187.5, 168.7 -> 166.4, 158.6 -> 157.3, 147.2 -> 144.4 |
+
+Every race finishes on both sides. Where it happened: the I4 gauntlet at every level that blasts (about one turn-away
+a race: the zig-zag's next key, 40-60 u off the line, after a blast had already opened the way), and Hard at I1 and I3
+(a pilot threading the bore whose next look re-rolled its choice and swung it out to the key beside it). Easy never
+blasts, so it never did it. The rule removes every one; in the model the clock is unchanged to within its noise (about
+2 s) at I1-I3 and 1-3 s faster at I4. Passes outnumber turn-aways because a pass is also counted where the old AI
+would have threaded anyway. It is a model, one AI alone, and it flies a line more exactly than the game's AI does.
+
+**In the editor** (2026-11-17: the I4 gauntlet, fixed seed 45_504, three Medium AI Dolphins, six races a side in
+swapped order): turn-aways 17 -> 0, every race finished, and the winner's time was 194.2 s before (184-215 s) and
+198.8 s after (189-209 s). That 4.6 s is inside the spread: the races show the rule holding and do not show the clock
+moving either way. Details, and a wider-lane variant that was tried, are in `SWITCHBACK.md`.
+
+**The other Time-mode pilots, read 2026-11-17.** None of them leaves an open way for a breaking pickup today:
+
+| Pilot / mode | What it breaks | The same fault? |
+|---|---|---|
+| Sparrow / Breakwater | the rocket at each station, once, on its own line (`HoldBoostAIPolicySO` "clear the way") | No turn-away: it never leaves its line. It does fire at a station whose eye it could thread; that costs ammunition, not time |
+| Grizzly / Grizzly Time | passes beside a keg within `AIKegAimRange`, then threads the mouth | Not a breaking pickup (a keg is the mode's own speed mechanic), but it is the one other pilot that leaves the mouth's line for something: check it against rule 1 when its AI is next worked on |
+| Thresher / Thresher Time | rams the Belfry's prisms it does not time | No detour; rule 2 says it should thread what it can, which is its known gap (`AI_PLAN.md` section 8, 2026-11-07) |
+| Rhino / Headlong | swerves to a hedge's plain window instead of ploughing | The opposite choice, and model-backed: it already avoids breaking where breaking costs more |
+| Manta / Redline | Time crystals on its way, off as shipped (`aiTimeCrystalSlack` 0) | A speed pickup bounded by a slack, not breaking |
+| Squirrel / Skim Race, Urchin / Skein, Stoat / Slingshot and Warpline, Scarab Rally, Waystation | nothing | No |
+
+Every other gate race keeps `GateRaceController.AIDetoursForCrystals` false (section 6.1), so no AI there steers at a
+crystal at all. A new Time-mode AI that can break things names how it holds this rule in its doc, and tests the
+decision as a pure function (`SwitchbackSpeedOverBreakingTests` is the model: blocked ring and a crystal ahead takes
+the crystal; a ring partly opened and passable is flown even with another crystal nearby; an open ring is never left).
+
 ## 5. What is done, what is next
 
 - **Done (2026-10-26):** the learner reads any mode (`--mode`). The plan is recorded here. Then, on Yash's yes, all

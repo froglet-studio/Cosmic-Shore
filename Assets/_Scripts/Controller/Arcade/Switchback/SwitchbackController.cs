@@ -80,6 +80,11 @@ namespace CosmicShore.Gameplay
                  "Off: it flies straight at the key and the drift swings the nose onto the obstacle; offline the setup turn " +
                  "cost about as much as the blast saved (SWITCHBACK.md \"Step 2\").")]
         [SerializeField] bool aiStrikeSetupLeg;
+        [Tooltip("Speed over breaking (Yash, 2026-11-17; MINIGAME_TRAINING_PLAN.md 6.2): an AI whose ring can be flown " +
+                 "through from where it is - a gap wide enough for the hull, however it got there - flies through it and never " +
+                 "leaves its line for a crystal; it takes a key only when the ring is not passable, or the key is on its way. " +
+                 "Off = the cost model alone decides, as before 2026-11-17 (an A/B switch).")]
+        [SerializeField] bool aiSpeedOverBreaking = true;
         [Tooltip("The AI nose's follow rate per second, one row per intensity (I1..I4), by difficulty: 1.5 = the fleet lag every " +
                  "AI flies with elsewhere, higher = faster, 0 = no lag (as a human). The lag is the AI's biggest handicap in " +
                  "Switchback, so these rows set each level's race time (SWITCHBACK.md \"Lag by difficulty\"). The I4 row is for a " +
@@ -313,13 +318,14 @@ namespace CosmicShore.Gameplay
                 // no human's hull can be handed to the AI, so the AI flag alone is the whole answer.
                 if (!ai && p is Player human) ai = PilotControl.IsHeldByAI(human);
 #endif
-                int avoids = 0, blasts = 0, emerg = 0;
+                int avoids = 0, blasts = 0, emerg = 0, passes = 0, turnAways = 0;
                 _blastAI?.TryCounts(p, out avoids, out blasts, out emerg);
+                _blastAI?.TryPassCounts(p, out passes, out turnAways);
                 int threaded = 0;
                 foreach (var st in gameData.RoundStatsList)
                     if (st != null && st.Name == p.Name) { threaded = st.SwitchesThreaded; break; }
                 float finish = threaded >= length && length > 0 ? _hits.Elapsed : -1f;
-                _hits.Note(p, ai, ai ? (int)gameData.AIDifficultyFor(p) : 0, avoids, blasts, emerg, threaded, finish);
+                _hits.Note(p, ai, ai ? (int)gameData.AIDifficultyFor(p) : 0, avoids, blasts, emerg, threaded, finish, passes, turnAways);
             }
         }
 
@@ -408,6 +414,7 @@ namespace CosmicShore.Gameplay
                     DodgeDangerOnly = aiDodgeDangerOnly,
                     NoDodgeNearRing = AINoDodgeNearRing,
                     StrikeSetupLeg = aiStrikeSetupLeg,
+                    SpeedOverBreaking = aiSpeedOverBreaking,
                 }
                 : null;
             if (_blastAI != null)

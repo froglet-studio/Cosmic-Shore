@@ -71,6 +71,13 @@ Third MPPM run of 2026-11-15 (`8b6d91b909`; buttons pressed as pointer clicks on
   REJOIN gave the seat back with the turn running and no READY, the hull was no longer AI-flown on either machine, and
   the race ended by itself (checklist "A leaver's hull flies the gates", step 3).
 
+Retest of 2026-11-17 (`8c8aa5eae5`, editor "Lion" + MPPM Player 2 "Tiger"; checklist "A leaver's hull flies the gates",
+retest block): the sign-in fix, the FunCard fix, the leaver's AI in Switchback (10 gates threaded under AI), the
+missing-stat zero and the "host left" close in a game scene all PASSED. One new fault found and fixed: the host's
+scoreboard carried its last match's drift and boost into the next match (`EventDrivenStatsProvider` now seeds 0);
+replayed, both machines agree. Seen, not followed up: a stale REJOIN offer stays on the menu after the player has
+rejoined that party; FMOD `Event not found` errors on both players (not multiplayer code).
+
 ## Not bugs, missing features (tracked in [`TODO.md`](TODO.md))
 
 Ping on the party panel and scoreboard; party-wide Relay region; `ServerScoreGate` / Cloud Code deploy; host migration; a party-level reconnection grace period.

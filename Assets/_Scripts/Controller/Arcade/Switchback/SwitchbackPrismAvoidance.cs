@@ -128,10 +128,28 @@ namespace CosmicShore.Gameplay
             return count > 0 ? sum / count : self + dir * range;
         }
 
+        /// <summary>u of air beside the hull's line that lets the hull by: its half-width and 1 u.</summary>
+        public const float PassClearance = ShipRadius + 1f;
+
         /// <summary>
-        /// Can a crystal blow the blocker away? The best crystal ahead (within the skill's range, not behind, and closer
+        /// Speed over breaking (Yash, 2026-11-17; MINIGAME_TRAINING_PLAN.md 6.2): whether a sensed blocker is worth a
+        /// crystal. Only when the hull cannot get by it - the best corridor keeps less than <see cref="PassClearance"/> -
+        /// and never while the pilot's ring can be flown through (<paramref name="ringPassable"/>: an open ring, a cleared
+        /// one, or a pass the planner found). A corridor that needs a turn is still a way past: it is flown, not blasted.
+        /// <paramref name="speedOverBreaking"/> off is the rule before 2026-11-17 (blast whenever the dodge is poor: less
+        /// air than the skill wants, or a turn over 25 deg), kept for an A/B.
+        /// </summary>
+        public static bool BlastsBlocker(float corridorClearance, float turnDegrees, float wantedClearance, bool ringPassable,
+                                         bool speedOverBreaking = true) =>
+            speedOverBreaking ? !ringPassable && corridorClearance < PassClearance
+                              : corridorClearance < wantedClearance || turnDegrees > 25f;
+
+        /// <summary>
+        /// Can a crystal blow the blocker away? The crystal ahead (within the skill's range, not behind, and closer
         /// than the blocker) whose slot - fired from the crystal at the blocker, its gape along the blocker's widest
-        /// spread - covers at least <see cref="SwitchbackAvoidSkill.BlastMinCoverage"/> of the blocking prisms.
+        /// spread - covers at least <see cref="SwitchbackAvoidSkill.BlastMinCoverage"/> of the blocking prisms. Of several
+        /// that do, the one most ON THE WAY wins (the least extra flying from the pilot through the crystal to the
+        /// blocker; within 1 u, the better cover): a pilot does not go sideways for a slightly better blast.
         /// </summary>
         public static bool TryBlast(Vector3 self, Vector3 heading, Vector3 blocker, float band, Vector3[] pts, int n,
                                     Vector3[] crystals, int nc, in SwitchbackBlastSlot slot, in SwitchbackAvoidSkill skill,
@@ -141,6 +159,7 @@ namespace CosmicShore.Gameplay
             if (skill.BlastMinCoverage > 1f || skill.BlastCrystalRange <= 0f || nc <= 0) return false;
             float toBlocker = Vector3.Distance(self, blocker);
             bool found = false;
+            float bestExtra = float.PositiveInfinity;
             for (int j = 0; j < nc; j++)
             {
                 Vector3 c = crystals[j];
@@ -160,10 +179,11 @@ namespace CosmicShore.Gameplay
                     if (slot.Covers(c, f, u, pts[i], 2f)) hit++;
                 }
                 float cov = tot > 0 ? hit / (float)tot : 0f;
-                if (cov >= skill.BlastMinCoverage && cov > coverage)
-                {
-                    coverage = cov; crystal = c; fireForward = f; fireUp = u; found = true;
-                }
+                if (cov < skill.BlastMinCoverage) continue;
+                float extra = dc + df - toBlocker;   // u of extra flying this crystal costs
+                if (found && (extra > bestExtra + 1f || (extra >= bestExtra - 1f && cov <= coverage))) continue;
+                coverage = cov; crystal = c; fireForward = f; fireUp = u; found = true;
+                bestExtra = Mathf.Min(bestExtra, extra);
             }
             return found;
         }

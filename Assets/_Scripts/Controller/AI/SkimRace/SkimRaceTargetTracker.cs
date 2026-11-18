@@ -24,7 +24,9 @@ namespace CosmicShore.Gameplay
     /// </list>
     /// That is the whole rule for a LONE AI on its team. Several AI on one team are first given
     /// different crystals by <see cref="SkimRaceTeamPlan"/> (same validity rules, the same
-    /// <see cref="Hysteresis"/>); this rule is their fallback when the plan has nothing for them.
+    /// <see cref="Hysteresis"/>), and a pilot that shares its domain with pilots that plan does not
+    /// cover flies its own ring (<see cref="SkimRaceCoopShare"/>); this rule is what is left: a pilot
+    /// alone on its domain.
     /// A missing target is a normal, transient state (between collection and respawn); callers
     /// handle it by following the track.
     /// </summary>
@@ -41,6 +43,9 @@ namespace CosmicShore.Gameplay
             public bool Exploding;
             public Domains Domain;
             public Vector3 Position;
+            /// <summary>The crystal's id, the same on every machine. Read only by the co-op share
+            /// (<see cref="SkimRaceCoopShare"/>); the nearest rule below never looks at it.</summary>
+            public int Id;
         }
 
         public static bool IsValid(in Candidate c, Domains domain, Vector3 pilotPosition)

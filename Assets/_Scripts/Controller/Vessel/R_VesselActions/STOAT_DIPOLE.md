@@ -275,6 +275,15 @@ lets it go on the release. The catch and the orbit fly on the simulating machine
     you are FLUNG: the kick along your new heading (`slingBoostMin`..`slingBoostMax` of the engine by the hold's deepest
     squeeze, × Mass's `launchPower`, under `speedCapShare` and `warpKickCapCruise`) and the warp kept as momentum. Every
     fling is timed: no window. Letting go of the trigger while it swings you flings you at once; before it, nothing.
+  - **One slingshot (Yash, 2026-11-19: "there are two slingshots happening when a stoat orbits the blackhole, one that
+    time, one after that, I want only one slingshot, the first one, then player should be able to reach their target
+    destinations more accurately and comfortably").** The swing gave two pushes: the flight clock leaping to the orbit's
+    full warp (about x3.1) the moment the swing starts, then a KICK at the exit (the hold's squeeze x Mass, up to 0.6 x
+    the speed, fading over 1.5 s) that overshot the target. The kick is now `swingKickShare` of itself, shipped 0: the
+    swing's own speed-up is the one slingshot, kept as momentum (fading over `momentumSeconds` 6 s), and you leave on the
+    dotted line's heading with nothing more added. Model (`stoat_orbit_sim.py --swing`): Slingshot's trained AI 62 / 71 /
+    74 / 76 s with no rings missed (61 / 71 / 72 / 76 with the kick); the hull's rows 106 / 104 / 101 / 98 s. Mass's
+    `launchPower` scaled that kick, so on the swing Mass now scales nothing (a follow-up for the element map).
   - **Drawn** (world dots, `StoatPathfinderExecutor.AddSwingRings`): a faint ring at the reach round the hole, and the EXIT
     LINE from your nose along the heading the swing would fling you on right now, so moving the stick moves the line;
     lime while it swings you. A lime ripple grows out of the hole at each fling. The Time card fills through the swing.
