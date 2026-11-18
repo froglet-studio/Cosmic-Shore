@@ -206,11 +206,12 @@
     });
     var segV = el('div', 'la-seg'); segV.setAttribute('role', 'group'); segV.setAttribute('aria-label', 'View'); bar.appendChild(segV);
     var viewBtns = {};
-    [['map', 'Map'], ['ladder', 'Timescales'], ['drivers', 'Drivers'], ['holes', 'Holes']].forEach(function (v) {
+    [['map', 'Map'], ['ladder', 'Timescales'], ['drivers', 'Drivers'], ['holes', 'Holes'], ['notes', 'Notes']].forEach(function (v) {
       var b = el('button', 'la-btn', v[1]); b.type = 'button';
       b.addEventListener('click', function () { setView(v[0]); });
       viewBtns[v[0]] = b; segV.appendChild(b);
     });
+    viewBtns.notes.hidden = true;
     var vz = el('div', 'la-vessel'); bar.appendChild(vz);
     var vPrev = el('button', 'la-btn la-ico', '‹'); vPrev.type = 'button'; vPrev.setAttribute('aria-label', 'Previous vessel');
     var vSel = el('select', 'la-select'); vSel.setAttribute('aria-label', 'Vessel shown in every kit');
@@ -255,6 +256,7 @@
     hudBtn('↑', 'Step up to the loop above', function () { var n = cur(); if (n && n.parent) select(n.parent.id, true); });
     hudBtn('⌂', 'The whole map', function () { select('era', true); });
     var readBtn = hudBtn('Read', 'Zoom into this loop’s card', function () { focusInfo(cur(), true); }); readBtn.classList.remove('la-ico');
+    var noteBtn = hudBtn('Note', 'Add a note or a suggestion to this loop', function () { openComposer(cur(), 'note'); }); noteBtn.classList.remove('la-ico'); noteBtn.hidden = true;
     var fSel = el('select', 'la-select la-filter'); fSel.setAttribute('aria-label', 'Show only loops with this driver');
     var o0 = el('option', null, 'All drivers'); o0.value = ''; fSel.appendChild(o0);
     M.drivers.forEach(function (d) { var o = el('option', null, d.name); o.value = d.id; fSel.appendChild(o); });
@@ -267,6 +269,119 @@
 
     var ctx = cv.getContext('2d');
 
+    // ---------- notes and suggestions ----------
+    // Kept in the artifact's shared store (the db capability), so they outlive a republish and a Claude session can
+    // read them back and fold the accepted ones into loop_model.json. Only the full-page map has the store; in the
+    // Design System card and in a saved copy of the page this whole part stays dark.
+    var N = { db: null, user: null, me: null, list: [], verdicts: {}, names: {}, rev: 0, state: 'off' };
+    function noteKey(n) {
+      if (n.kind === 'verb') return 'kit:' + n.vessel + '/verb/' + n.element;
+      if (n.kind === 'combo') return 'kit:' + n.vessel + '/combo/' + n.name;
+      if (n.kind === 'pulse') return 'kit:' + n.vessel + '/pulse';
+      if (n.kind === 'kit' || n.kind === 'vessel') return 'kit:' + n.vessel;
+      if (n.kind === 'role') return 'role:' + n.roleKind;
+      return n.id;
+    }
+    function notesFor(n) { var k = noteKey(n); return N.list.filter(function (x) { return x.loop === k; }); }
+    function countNotes() {
+      var by = {}; N.list.forEach(function (x) { by[x.loop] = (by[x.loop] || 0) + 1; });
+      (function walk(n) {
+        n.noteOwn = by[noteKey(n)] || 0; n.noteSum = n.noteOwn;
+        n.children.forEach(function (c) { walk(c); n.noteSum += c.kind === 'role' ? c.noteOwn : c.noteSum; });
+      })(S.tree.root);
+    }
+    function who(id) { var p = N.names[id]; return (p && p.name) || 'Someone'; }
+    function day(iso) { return String(iso || '').slice(0, 10); }
+    function verdictWords(v) { return v === 'accepted' ? 'Accepted' : v === 'declined' ? 'Declined' : v === 'done' ? 'In the model' : ''; }
+    function notesChanged() {
+      N.rev++; countNotes(); if (S.view === 'notes') renderTable(); draw();
+      if (!N.user) return;
+      var ids = {}; N.list.forEach(function (x) { if (x.by) ids[x.by] = 1; });
+      var arr = Object.keys(ids); if (!arr.length) return;
+      N.user.profiles(arr).then(function (ps) {
+        var changed = false;
+        arr.forEach(function (id) { var nm = ps[id] && ps[id].name; if (nm && (!N.names[id] || N.names[id].name !== nm)) { N.names[id] = { name: nm }; changed = true; } });
+        if (changed) { N.rev++; if (S.view === 'notes') renderTable(); draw(); }
+      });
+    }
+    function connectNotes() {
+      if (opts.notes === false || !window.claude || !window.claude.use) return;
+      N.state = 'loading';
+      Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function (r) {
+        N.db = r[0]; N.user = r[1];
+        if (!N.db) { N.state = 'off'; return; }
+        N.state = 'on'; noteBtn.hidden = false; viewBtns.notes.hidden = false; renderLegend();
+        if (N.user) N.user.me().then(function (m) { N.me = m; if (S.view === 'notes') renderTable(); });
+        function dead() { N.state = 'off'; N.db = null; noteBtn.hidden = true; comp.hidden = true; notesChanged(); }
+        N.db.collection('notes').onSnapshot(function (snap) {
+          N.list = snap.docs.map(function (d) {
+            var b = d.data() || {};
+            return { id: d.id, loop: String(b.loop || ''), name: String(b.name || ''), layer: String(b.layer || ''), kind: b.kind === 'suggest' ? 'suggest' : 'note',
+              text: String(b.text || '').slice(0, 2000), by: typeof b.by === 'string' ? b.by : null, at: String(b.at || '') };
+          }).sort(function (a, b) { return a.at < b.at ? -1 : a.at > b.at ? 1 : 0; });
+          notesChanged();
+        }, dead);
+        N.db.collection('verdicts').onSnapshot(function (snap) {
+          N.verdicts = {}; snap.docs.forEach(function (d) { var b = d.data() || {}; N.verdicts[d.id] = String(b.s || ''); });
+          notesChanged();
+        }, function () {});
+        notesChanged();
+      });
+    }
+    // the composer: the one place text is typed, a small form over the map
+    var comp = el('form', 'la-compose'); comp.hidden = true; wrap.appendChild(comp);
+    var cTitle = el('p', 'la-ctitle'); comp.appendChild(cTitle);
+    var cSeg = el('div', 'la-seg'); cSeg.setAttribute('role', 'group'); cSeg.setAttribute('aria-label', 'Kind'); comp.appendChild(cSeg);
+    var cKind = 'note', cBtns = {}, cTarget = null;
+    [['note', 'Note'], ['suggest', 'Suggestion']].forEach(function (k) {
+      var b = el('button', 'la-btn', k[1]); b.type = 'button'; b.addEventListener('click', function () { setKind(k[0]); cText.focus(); });
+      cBtns[k[0]] = b; cSeg.appendChild(b);
+    });
+    var cLab = el('label', 'la-sr', 'Your note or suggestion'); cLab.htmlFor = 'la-note-text'; comp.appendChild(cLab);
+    var cText = el('textarea', 'la-ctext'); cText.id = 'la-note-text'; cText.rows = 4; cText.maxLength = 2000; comp.appendChild(cText);
+    var cRow = el('div', 'la-crow'); comp.appendChild(cRow);
+    var cSave = el('button', 'la-btn la-cta', 'Save'); cSave.type = 'submit'; cRow.appendChild(cSave);
+    var cCancel = el('button', 'la-btn', 'Cancel'); cCancel.type = 'button'; cRow.appendChild(cCancel);
+    var cErr = el('span', 'la-cerr'); cErr.setAttribute('role', 'status'); cRow.appendChild(cErr);
+    function setKind(k) {
+      cKind = k; cBtns.note.setAttribute('aria-pressed', k === 'note' ? 'true' : 'false'); cBtns.suggest.setAttribute('aria-pressed', k === 'suggest' ? 'true' : 'false');
+      cText.placeholder = k === 'suggest' ? 'What should change here, and to what?' : 'What should a reader of this loop know?';
+    }
+    function openComposer(n, kind) {
+      if (!N.db || !n) return;
+      cTarget = n; setKind(kind || 'note'); cErr.textContent = '';
+      var lname = ''; M.layers.forEach(function (l) { if (l.id === S.layer) lname = l.name; });
+      cTitle.textContent = 'On ' + n.name + ' · ' + termOf(n) + ' · written on the ' + lname + ' layer';
+      comp.hidden = false; cText.focus();
+    }
+    function closeComposer() { comp.hidden = true; cv.focus(); }
+    cCancel.addEventListener('click', closeComposer);
+    comp.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeComposer(); });
+    comp.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var t = cText.value.trim();
+      if (!t || !cTarget || !N.db) { cErr.textContent = 'Write something first.'; return; }
+      cSave.disabled = true;
+      N.db.collection('notes').add({ loop: noteKey(cTarget), name: cTarget.name, layer: S.layer, kind: cKind, text: t.slice(0, 2000), by: (N.me && N.me.id) || null, at: new Date().toISOString() })
+        .then(function () { cSave.disabled = false; cText.value = ''; closeComposer(); },
+          function (err) { cSave.disabled = false; cErr.textContent = err && err.code === 'quota_exceeded' ? 'The note store is full. Delete old notes first.' : 'Not saved. Try again.'; });
+    });
+    function setVerdict(id, v) {
+      if (!N.db) return;
+      var ref = N.db.doc('verdicts/' + id);
+      (v ? ref.set({ s: v, by: (N.me && N.me.id) || null, at: new Date().toISOString() }) : ref.delete()).catch(function () {});
+    }
+    function deleteNote(id) { if (!N.db) return; N.db.doc('notes/' + id).delete().catch(function () {}); if (N.me && N.me.canEdit) N.db.doc('verdicts/' + id).delete().catch(function () {}); }
+    // open the loop a note is about; a kit note may belong to another vessel than the one shown
+    function goNote(x) {
+      var m = /^kit:([^\/]+)/.exec(x.loop);
+      if (m && M.fleet[m[1]] && m[1] !== S.vessel) { S.vessel = m[1]; rebuild(); countNotes(); }
+      var hit = null;
+      Object.keys(S.tree.all).some(function (id) { if (noteKey(S.tree.all[id]) === x.loop) { hit = S.tree.all[id]; return true; } return false; });
+      if (!hit) return;
+      S.view = 'map'; syncBar(); renderAll(); resize(); S.sel = hit.id; renderCrumbs(); renderScale(); renderSr(); focusInfo(hit, false);
+    }
+
     // ---------- state changes ----------
     function cur() { return S.tree.all[S.sel] || S.tree.root; }
     function rebuild() {
@@ -276,6 +391,7 @@
         var id = old; while (id && !S.tree.all[id]) { var k = id.lastIndexOf('/'); id = k > 0 ? id.slice(0, k) : null; }
         S.sel = id || 'era';
       }
+      countNotes();
       dl.innerHTML = '';
       var seen = {};
       Object.keys(S.tree.all).forEach(function (id) { var n = S.tree.all[id]; if (!seen[n.name]) { seen[n.name] = 1; var o = el('option'); o.value = n.name; dl.appendChild(o); } });
@@ -415,6 +531,18 @@
         var mine = M.proposals.filter(function (p) { return p.touches.indexOf(n.id) >= 0; });
         if (mine.length) { var pr = sec('Proposals that touch this'); mine.forEach(function (p) { pr.rows.push({ lead: p.id + ' ' + p.title + '.', t: p.what, leadSt: 'prop' }); }); }
       }
+      if (N.state === 'on') {
+        var ns = sec('Notes and suggestions'), nlist = notesFor(n);
+        nlist.forEach(function (x) {
+          var v = verdictWords(N.verdicts[x.id]);
+          ns.rows.push({ lead: (x.kind === 'suggest' ? 'Suggestion' : 'Note') + ' · ' + who(x.by) + ' · ' + day(x.at), t: '', leadSt: x.kind === 'suggest' ? 'prop' : null });
+          ns.rows.push({ t: x.text, ind: 1 });
+          if (v) ns.rows.push({ t: v + '.', st: N.verdicts[x.id] === 'declined' ? 'soft' : 'prop', ind: 1 });
+        });
+        if (!nlist.length) ns.rows.push({ t: 'None yet.', st: 'soft' });
+        ns.rows.push({ t: '+ Add a note', act: function () { openComposer(n, 'note'); } });
+        ns.rows.push({ t: '+ Suggest a change', act: function () { openComposer(n, 'suggest'); } });
+      }
       sec('At this tier, ask').rows.push({ t: T.ask });
       if (n.src && n.src.length) { var ss = sec('Sources'); n.src.forEach(function (s) { ss.rows.push({ t: s, st: 'soft', brk: 1 }); }); }
       return d;
@@ -456,7 +584,7 @@
     }
     function infoLayout(n) {
       var cols = S.w >= 1000 ? 3 : S.w >= 620 ? 2 : 1;
-      if (n._lay && n._lay.cols === cols && n._lay.filter === S.filter) return n._lay;
+      if (n._lay && n._lay.cols === cols && n._lay.filter === S.filter && n._lay.rev === N.rev) return n._lay;
       var d = infoDoc(n), VW = U.PAD * 2 + cols * U.CW + (cols - 1) * U.GAP, y = U.PAD, head = [], inner = VW - U.PAD * 2;
       head.push({ k: 'kick', t: d.kicker, y: y + 12 }); y += 26;
       wrapPlain(d.name, F.name, inner).forEach(function (t) { head.push({ k: 'name', t: t, y: y + 30 }); y += 40; });
@@ -480,7 +608,7 @@
         secs.push({ title: sec.title, x: x0, y: y0, w: U.CW, h: hgt, rows: rows }); colY[ci] = y0 + hgt + U.GAP;
       });
       var VH = Math.max.apply(null, colY) - U.GAP + U.PAD;
-      n._lay = { cols: cols, filter: S.filter, VW: VW, VH: VH, head: head, secs: secs, headH: y };
+      n._lay = { cols: cols, filter: S.filter, rev: N.rev, VW: VW, VH: VH, head: head, secs: secs, headH: y };
       return n._lay;
     }
     // the card's rectangle in world units: the largest of its shape that fits its slot
@@ -536,7 +664,7 @@
         ctx.font = F.sec; ctx.fillStyle = S.colors['text-soft']; ctx.fillText(sec.title.toUpperCase(), sec.x + 12, sec.y + 21);
         sec.rows.forEach(function (row) {
           var ry = top + row.y * s; if (ry > S.h + 10 || ry + row.h * s < -10) return;
-          var r = row.r, link = !!r.go;
+          var r = row.r, link = !!(r.go || r.act);
           row.lines.forEach(function (ln, li) {
             ln.forEach(function (run) {
               ctx.font = run.b ? F.b : F.p;
@@ -545,7 +673,7 @@
               if (link && !run.b) ctx.fillRect(row.x + run.x, row.y + 18 + li * 20, ctx.measureText(run.t).width, 1);
             });
           });
-          if (link) entry.regions.push({ x: left + row.x * s, y: ry, w: row.w * s, h: row.h * s, go: r.go });
+          if (link) entry.regions.push({ x: left + row.x * s, y: ry, w: row.w * s, h: row.h * s, go: r.go, act: r.act });
         });
       });
       ctx.restore();
@@ -665,6 +793,8 @@
       if (R > 16 && !huge) {
         var cnt = showKids || !ch.length ? openHoles(n, S.L) : n.holeSum;
         if (cnt > 0) badge(X + Math.cos(-0.82) * R, Y + Math.sin(-0.82) * R, String(cnt), S.colors.hole, R > 30);
+        var nc = N.state === 'on' ? (showKids || !ch.length ? n.noteOwn : n.noteSum) : 0;
+        if (nc > 0) noteBadge(X + Math.cos(2.3) * R, Y + Math.sin(2.3) * R, String(nc), R > 30);
         if (n.parent && n.reps && R > 34) tag(X + Math.cos(0.82) * R, Y + Math.sin(0.82) * R, '×' + n.reps.replace('-', '–'), S.colors.text);
         var ps = S.L === 'x' ? (n.propS || (n.prop && n.prop.s)) : null, tx1 = X + Math.cos(-2.3) * R, ty1 = Y + Math.sin(-2.3) * R;
         if (ps === 'add' && R > 26) tag(tx1, ty1, 'NEW', S.colors.proposed);
@@ -682,6 +812,11 @@
       ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4);
       var s = withText ? 8 : 4; ctx.fillStyle = color; ctx.fillRect(-s, -s, s * 2, s * 2);
       ctx.strokeStyle = S.colors.ground; ctx.lineWidth = 1.5; ctx.strokeRect(-s, -s, s * 2, s * 2); ctx.restore();
+      if (withText) { ctx.font = font(10, 'label'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = S.colors.ground; ctx.fillText(t, x, y + 0.5); }
+    }
+    function noteBadge(x, y, t, withText) {
+      var s = withText ? 8 : 4; ctx.fillStyle = S.colors.selection; ctx.fillRect(x - s, y - s, s * 2, s * 2);
+      ctx.strokeStyle = S.colors.ground; ctx.lineWidth = 1.5; ctx.strokeRect(x - s, y - s, s * 2, s * 2);
       if (withText) { ctx.font = font(10, 'label'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = S.colors.ground; ctx.fillText(t, x, y + 0.5); }
     }
     function tag(x, y, t, color) {
@@ -810,6 +945,7 @@
         select(p.children[(i + (e.key === 'ArrowRight' ? 1 : k - 1)) % k].id, true);
       }
       else if (e.key === 'i' || e.key === ' ') focusInfo(n, true);
+      else if (e.key === 'n' && N.db) openComposer(n, 'note');
       else if (e.key === '+' || e.key === '=') zoomBy(1.5);
       else if (e.key === '-') zoomBy(1 / 1.5);
       else if (e.key === 'Home' || e.key === '0') select('era', true);
@@ -857,6 +993,7 @@
       item('lg-card', 'its card: zoom in to read');
       item('lg-bead', 'a step');
       item('lg-hole', 'holes');
+      if (N.state === 'on') item('lg-note', 'notes');
       if (S.layer === 'now') item('lg-ghost', 'planned, not in the game');
       if (S.layer !== 'now') item('lg-plan', 'new in the plan');
       if (S.layer === 'prop') item('lg-prop', 'proposed');
@@ -887,7 +1024,36 @@
     function goBtn(n) { var b = rowBtn(n, 'la-link', true); b.className = 'la-link'; b.textContent = n.name; return b; }
     function renderTable() {
       table.innerHTML = '';
-      if (S.view === 'ladder') renderLadder(); else if (S.view === 'drivers') renderDrivers(); else if (S.view === 'holes') renderHoles();
+      if (S.view === 'ladder') renderLadder(); else if (S.view === 'drivers') renderDrivers(); else if (S.view === 'holes') renderHoles(); else if (S.view === 'notes') renderNotes();
+    }
+    function renderNotes() {
+      if (N.state !== 'on') { table.appendChild(el('p', 'la-lede', N.state === 'loading' ? 'Loading notes.' : 'Notes are kept on the full-page map.')); return; }
+      var canEdit = !!(N.me && N.me.canEdit), myId = N.me && N.me.id;
+      table.appendChild(el('p', 'la-lede', 'Everything the team has written on the map. A note is something a reader should know; a suggestion asks for a change to the model. ' +
+        (canEdit ? 'You can accept or decline a suggestion. Accepted ones are folded into the model by a Claude session, which then marks them as in the model.' : 'People who can edit this page accept or decline suggestions.') +
+        ' To write one, open a loop’s card on the map, or pick the loop and press Note.'));
+      if (!N.list.length) { table.appendChild(el('p', 'la-empty', 'Nothing has been written yet.')); return; }
+      var groups = [['Suggestions waiting for an answer', function (x) { return x.kind === 'suggest' && !N.verdicts[x.id]; }],
+        ['Accepted, not yet in the model', function (x) { return N.verdicts[x.id] === 'accepted'; }],
+        ['Notes', function (x) { return x.kind === 'note' && !N.verdicts[x.id]; }],
+        ['Settled', function (x) { return N.verdicts[x.id] === 'declined' || N.verdicts[x.id] === 'done'; }]];
+      groups.forEach(function (g) {
+        var mine = N.list.filter(g[1]); if (!mine.length) return;
+        table.appendChild(el('h4', 'la-h', g[0] + ' (' + mine.length + ')'));
+        mine.slice().reverse().forEach(function (x) {
+          var d = el('div', 'la-note' + (x.kind === 'suggest' ? ' sug' : '')), v = N.verdicts[x.id];
+          var head = el('p', 'la-nhead'); d.appendChild(head);
+          var go = el('button', 'la-link', x.name || x.loop); go.type = 'button'; go.addEventListener('click', function () { goNote(x); }); head.appendChild(go);
+          head.appendChild(el('span', 'la-nmeta', (x.kind === 'suggest' ? 'Suggestion' : 'Note') + ' · ' + who(x.by) + ' · ' + day(x.at) + (v ? ' · ' + verdictWords(v) : '')));
+          d.appendChild(el('p', 'la-ntext', x.text));
+          var acts = el('div', 'la-nacts'); d.appendChild(acts);
+          function act(label, fn) { var b = el('button', 'la-btn', label); b.type = 'button'; b.addEventListener('click', fn); acts.appendChild(b); }
+          if (canEdit && x.kind === 'suggest' && !v) { act('Accept', function () { setVerdict(x.id, 'accepted'); }); act('Decline', function () { setVerdict(x.id, 'declined'); }); }
+          if (canEdit && v) act('Reopen', function () { setVerdict(x.id, null); });
+          if (canEdit || (myId && x.by === myId)) act('Delete', function () { deleteNote(x.id); });
+          table.appendChild(d);
+        });
+      });
     }
     function renderLadder() {
       var nodes = flat();
@@ -993,7 +1159,7 @@
     if (window.MutationObserver) new MutationObserver(function () { readColors(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
     if (window.matchMedia) { var mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', function () { readColors(); draw(); }); }
 
-    rebuild(); readColors(); syncBar(); renderAll(); resize();
+    rebuild(); readColors(); syncBar(); renderAll(); resize(); connectNotes();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { Object.keys(S.tree.all).forEach(function (id) { S.tree.all[id]._lay = null; }); readColors(); draw(); });
     return { select: select, focusInfo: function (id) { var n = S.tree.all[id]; if (n) { S.sel = id; renderCrumbs(); renderScale(); focusInfo(n, false); } }, setLayer: setLayer, setVessel: setVessel, setView: setView, state: S };
   }

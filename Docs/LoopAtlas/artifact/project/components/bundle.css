@@ -8,6 +8,7 @@
   font-family: var(--font-read); font-size: 14px; line-height: 1.45;
 }
 .la button, .la select, .la input { font: inherit; color: inherit; }
+.la [hidden] { display: none !important; }
 .la :focus-visible { outline: 2px solid var(--selection); outline-offset: 2px; }
 
 /* top bar */
@@ -70,7 +71,7 @@
 
 /* list views replace the canvas */
 .la-table { display: none; flex: 1; min-height: 0; overflow: auto; padding: var(--space-12) var(--space-16) var(--space-24); }
-.la[data-view="ladder"] .la-table, .la[data-view="drivers"] .la-table, .la[data-view="holes"] .la-table { display: block; }
+.la[data-view="ladder"] .la-table, .la[data-view="drivers"] .la-table, .la[data-view="holes"] .la-table, .la[data-view="notes"] .la-table { display: block; }
 .la:not([data-view="map"]) .la-canvas { display: none; }
 .la-lede { margin: 0 0 var(--space-12); color: var(--text-soft); max-width: 70ch; }
 .la-h { margin: var(--space-24) 0 var(--space-8); font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--text); }
@@ -116,6 +117,25 @@
 .la-link { background: none; border: 0; padding: 0; cursor: pointer; color: var(--selection); font-family: var(--font-label); font-weight: 600; font-size: 13px; text-decoration: underline; text-underline-offset: 2px; }
 
 .la-chip { display: inline-block; font-family: var(--font-label); font-weight: 600; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border: 1px solid var(--line); color: var(--text); white-space: nowrap; }
+
+/* notes and suggestions */
+.lg-note { width: 10px !important; height: 10px !important; background: var(--selection); }
+.la-compose { position: absolute; left: 50%; bottom: var(--space-16); transform: translateX(-50%); width: min(520px, calc(100% - 32px)); display: grid; gap: var(--space-8); padding: var(--space-16); background: var(--ground-deep); border: 1px solid var(--selection); }
+.la-ctitle { margin: 0; font-family: var(--font-label); font-weight: 600; font-size: 13px; }
+.la-ctext { width: 100%; min-height: 96px; resize: vertical; background: var(--ground); color: var(--text); border: 1px solid var(--line); border-radius: 0; padding: var(--space-8); font-family: var(--font-read); font-size: 15px; line-height: 1.45; }
+.la-ctext::placeholder { color: var(--text-soft); }
+.la-crow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-8); }
+.la-crow .la-cta { margin-top: 0; }
+.la-cerr { font-size: 13px; color: var(--hole); }
+.la-empty { margin: var(--space-24) 0; padding: var(--space-16); border: 1px dashed var(--line); color: var(--text-soft); max-width: 70ch; }
+.la-note { max-width: 78ch; padding: var(--space-8) 0 var(--space-8) var(--space-12); border-left: 3px solid var(--line); margin: 0 0 var(--space-12); }
+.la-note.sug { border-left-color: var(--proposed); }
+.la-nhead { margin: 0 0 4px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--space-12); }
+.la-nmeta { font-size: 12px; color: var(--text-soft); }
+.la-ntext { margin: 0 0 var(--space-8); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.la-nacts { display: flex; flex-wrap: wrap; gap: 2px; }
+.la-nacts .la-btn { font-size: 12px; min-height: 28px; padding: 5px 10px; }
+.la-btn:disabled { opacity: .5; cursor: default; }
 
 /* narrow */
 .la-narrow .la-vessel { margin-left: 0; }

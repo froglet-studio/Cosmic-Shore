@@ -418,14 +418,14 @@ def files(model):
     out["components/bundle.css"] = (SRC / "atlas.css").read_text(encoding="utf-8")
     out["components/index.d.ts"] = (
         "/** Options for LoopAtlas.mount(host, options). */\n"
-        "export interface LoopAtlasProps { layer?: 'now' | 'plan' | 'prop'; view?: 'map' | 'ladder' | 'drivers' | 'holes'; vessel?: string; select?: string; chrome?: boolean; card?: boolean }\n"
+        "export interface LoopAtlasProps { layer?: 'now' | 'plan' | 'prop'; view?: 'map' | 'ladder' | 'drivers' | 'holes'; vessel?: string; select?: string; chrome?: boolean; card?: boolean; notes?: boolean }\n"
         "export interface TimescaleLadderProps {}\nexport interface LoopRingProps { layer?: 'now' | 'plan' | 'prop'; vessel?: string; select?: string }\nexport interface DriverChipsProps {}\n"
         "declare global { interface Window { LoopAtlas: { model: object; mount(host: HTMLElement, options?: LoopAtlasProps): object; buildTree(layer: string, vessel: string): object } } }\n")
     out["tokens.json"] = json.dumps(tokens_json(), indent=1, ensure_ascii=False) + "\n"
 
     out["components/LoopAtlas/preview.html"] = preview(
         "Atlas", 900, "The whole product, zoomable", "Loop Atlas",
-        "LoopAtlas.mount(document.getElementById('root'), {});", "#root { height: 100vh; min-height: 640px; }")
+        "LoopAtlas.mount(document.getElementById('root'), { notes: false });", "#root { height: 100vh; min-height: 640px; }")
     out["components/LoopAtlas/README.md"] = (
         "# LoopAtlas\n\nThe whole product as one zoomable map of loops, on three layers. Use it to place a problem before discussing it: "
         "find the loop, read its tier, and ask that tier's question.\n\n"
@@ -449,7 +449,7 @@ def files(model):
         "Quote a tier by its term (Pulse, Verb, Combo, Role, Round, Session, Arc, Era) in any doc, ticket or review. Draw a tier in its `tier-N` token and nothing else.\n")
     out["components/LoopRing/preview.html"] = preview(
         "Vocabulary", 560, "How one loop is drawn", "Loop ring",
-        "LoopAtlas.LoopRing(document.getElementById('root'), { layer: 'plan', select: 'voy.cell' });", "#root { height: 560px; }")
+        "LoopAtlas.LoopRing(document.getElementById('root'), { layer: 'plan', select: 'voy.cell', notes: false });", "#root { height: 560px; }")
     out["components/LoopRing/README.md"] = (
         "# LoopRing\n\nOne loop, the way every diagram of ours should draw it: a ring, its steps as diamonds clockwise from the top, the faster loops it is made of inside it, "
         "a spoke from a step to the loop that step opens, a tag for the count of passes, and the loop's own card at the top of the ring. The preview shows a voyage's cell on the Planned layer. "
