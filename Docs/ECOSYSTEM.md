@@ -9102,6 +9102,14 @@ vectors, and `SpindleGrownSway.hlsl` adds them in the vertex stage, after `Spind
   holds for the mesh.
 - **Pieces of a cut body keep the body's own space** (`unity_port.joints_of`): `SpindleSway` is a function of a
   vertex's own z, so a piece with its origin at its hinge sheared about a different point than its neighbour.
+- **The body answers its own turning (2026-11-18).** The same function takes six more floats, all 0 by default
+  (`_GrownBendX/Y/Z`, `_GrownStrokeX/Y`, `_GrownTwist`): the far parts of the body LAG its rotation
+  (`cross(Bend, p) * |p|`), the outside of a turn beats harder than the inside (the wave scaled by
+  `1 + dot(Stroke, p.xy)`), and in a roll the hind edges deflect like ailerons (`cross((Twist * p.x, 0, 0), p)`).
+  `GrownLimbDriver.AnswerTheTurn` measures the root's angular velocity, springs the lag, banks the body under the
+  root, and hands the numbers to the creature's own renderers in a `MaterialPropertyBlock`. That is the one place a
+  spindle renderer carries a per-renderer block outside a fade (`Spindle.cs` avoids them to stay SRP-batchable): it is
+  ten renderers a Ray, and it is deliberate, because the numbers are per creature and change every frame.
 - Not measured: the cost of two more vertex channels on every spindle draw (read, multiplied by 0). Not seen in the
   editor: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, the Ray's entry, check 0.
 

@@ -2036,3 +2036,11 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: after a headless port, spawn the thing with the engine's real spawn order and read back the BEHAVIOUR the design promises (counts of shielded and danger prisms, a scale, a position over time). When it fails, run the same probe on a shipped sibling first: it tells you whether the fault is yours or the game's.
 - Evidence: `Docs/ECOSYSTEM.md` 65.4 (the added paragraph); `Docs/Studios/FAUNA_LAB.md` round 9; `Fauna.AssignLineage`.
 - Promoted: `/fauna-maker` Into Unity step A; `.claude/skills/fauna-maker/references/RAY.md`
+
+### L-STU-193 — A body that only rotates is a model on a stick: derive its motion from its own angular velocity, mirrored
+
+- Lab: Fauna Possession Lab, `stepTurn` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-18
+- What happened: the Ray's ripple was right flying straight, and Garrett's first words after turning it were "its rotations just happen and the fauna movement doesn't match it ... i want the wings to take on chiral movements that match their rotations". A clock-driven wave is the same in a turn as on a straight line, so nothing in the body said it was turning. No check could have found this: every number was right.
+- Do instead: for any body a person steers or watches turn, measure its angular velocity in its own frame and give it at least: a lag of the far parts (a spring, so it overshoots and settles), an asymmetry of the cycle between the inside and outside of the turn, and a bank. State each as a function of position so one formula serves the shader, the CPU riders and the lab, and expose multipliers in the lab so the person tunes feel, not code.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 10; `elements.TURN`; `SpindleGrownSway.hlsl`; `GrownLimbDriver.AnswerTheTurn`.
+- Promoted: `/spindle` section 3

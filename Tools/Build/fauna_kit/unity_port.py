@@ -204,7 +204,7 @@ STRIDE = 72      # bytes a vertex: position 12, normal 12, tangent 16, uv0 8, uv
 CHANNEL = "    - stream: 0\n      offset: %d\n      format: 0\n      dimension: %d\n"
 
 
-def mesh_asset(name, mesh):
+def mesh_asset(name, mesh, turn=None):
     """A native Unity Mesh, in the format of Assets/_Models/Testing/Prism.asset with two more channels: position,
     normal, tangent, uv0 (where SpindleGraph's lace lands: u along the strand, v round it), and uv1 / uv2, the sine
     and cosine parts of each vertex's WAVE (SpindleGrownSway.hlsl adds SwaySin sin t + SwayCos cos t). 16-bit
@@ -221,6 +221,11 @@ def mesh_asset(name, mesh):
     lo = [min(v[i] for v in V) for i in range(3)]
     hi = [max(v[i] for v in V) for i in range(3)]
     reach = [max(abs(sw[i]) + abs(sw[3 + i]) for sw in S) for i in range(3)]
+    if turn:      # and by the furthest the body's answer to a turn can carry a vertex (GrownLimbDriver's clamps)
+        r = turn["reach"]
+        far = max((1.0 + turn["max_stroke"]) * max(abs(c) for c in sw) + 1.5 * turn["max_lag"] * C.norm(v) ** 2 / r
+                  + turn["max_twist"] * abs(v[0]) * C.norm(v) / r for v, sw in zip(V, S))
+        reach = [max(c, far) for c in reach]
     data = bytearray()
     for v, n, sw, uv in zip(V, normals, S, U):
         n = C.unit(n) if C.norm(n) > 1e-12 else [0.0, 1.0, 0.0]
@@ -342,8 +347,8 @@ def prefab(key, spec, made):
                               jid[j["name"]][1] if j else BODY_TR, j["origin"] if j else (0.0, 0.0, 0.0))
         blocks += doc
         (under[j["name"]] if j else kids).append(tr)
-        if gpu and p.get("sway") and any(abs(v) > 1e-6 for v in p["sway"]):
-            riders.append((tr, p["sway"]))      # a prism rides its limb's wave where it sits (GrownLimbDriver)
+        if gpu:      # a prism rides its limb's wave, and the turn, where it sits in the body (GrownLimbDriver)
+            riders.append((tr, p.get("sway") or [0.0] * 6, p["at"]))
     def once(pattern, repl, what):
         nonlocal t
         t, n = re.subn(pattern, repl, t, count=1)
@@ -415,10 +420,21 @@ def prefab(key, spec, made):
              + rows("phases", [num(j["phase"]) for j in beat])
              + f"  idleHz: {num(unity.get('idle_hz', spec['sway_hz']))}\n  fastHz: {num(unity.get('fast_hz', spec['sway_hz']))}\n  idleSweepShare: 0.6\n"
              + f"  speedForFullBeat: {num(spec['possession']['top_speed'] * 1.2)}\n"
-             + rows("riders", [f"{{fileID: {tr}}}" for tr, _sw in riders])
-             + rows("riderSin", [vec(sw[0:3]) for _tr, sw in riders])
-             + rows("riderCos", [vec(sw[3:6]) for _tr, sw in riders])
-             + f"  waveHz: {num(spec['sway_hz'] if gpu else 0.0)}\n")
+             + rows("riders", [f"{{fileID: {tr}}}" for tr, _sw, _at in riders])
+             + rows("riderSin", [vec(sw[0:3]) for _tr, sw, _at in riders])
+             + rows("riderCos", [vec(sw[3:6]) for _tr, sw, _at in riders])
+             + f"  waveHz: {num(spec['sway_hz'] if gpu else 0.0)}\n"
+             + rows("riderHome", [vec(at) for _tr, _sw, at in riders]))
+    if gpu:      # the turn (elements.TURN): the skins it is handed to, the body that banks, and the form's numbers
+        turn = spec.get("turn") or EL_turn(spec)
+        body_mr = int(re.match(r"--- !u!23 &(\d+)", mr).group(1))
+        reach = BODY.reach(made)
+        docs += (rows("skins", [f"{{fileID: {k}}}" for k in [body_mr] + skins])
+                 + f"  bankRoot: {{fileID: {BODY_TR}}}\n  reach: {num(reach)}\n"
+                 + f"  lagSeconds: {num(turn['lag'])}\n  maxLag: {num(turn['max_lag'])}\n  springHz: {num(turn['spring_hz'])}\n"
+                 + f"  damping: {num(turn['damping'])}\n  strokeSeconds: {num(turn['stroke'])}\n  maxStroke: {num(turn['max_stroke'])}\n"
+                 + f"  twistSeconds: {num(turn['twist'])}\n  maxTwist: {num(turn['max_twist'])}\n  bankSeconds: {num(turn['bank'])}\n"
+                 + f"  maxBankDegrees: {num(turn['max_bank'])}\n")
     if unity.get("klass"):      # the species' own class: the script guid is swapped in place, the component keeps its fileID
         light = re.search(r"guid: (\w+)", read(SCRIPTS + "LightFauna.cs.meta")).group(1)
         once(r"(m_Script: \{fileID: 11500000, guid: )%s" % light, r"\g<1>" + script_guid(unity["klass"]), "LightFauna's script")
@@ -429,6 +445,11 @@ def prefab(key, spec, made):
     if spec.get("eroded") == "authored":      # the Space form: grown at the law's girth, its prisms the law's needles (elements.py)
         once(r"(  data: \{fileID: 11400000, guid: \w+, type: 2\}\n)", r"\g<1>  spindleAuthoredEroded: 1\n", "LightFauna.data (for spindleAuthoredEroded)")
     return t + blocks + docs
+
+
+def EL_turn(spec):
+    import elements as EL
+    return EL.turn_of(spec)
 
 
 def sway_mode(spec):
@@ -506,12 +527,13 @@ def emit(key):
         made = BODY.from_spec(spec)
         V, T = body_mesh(made)
         core, joints, _home = joints_of(fk, spec, made)
+        turn = dict(spec.get("turn") or EL_turn(spec), reach=BODY.reach(made)) if sway_mode(spec) == "gpu" else None
         out = {}
         for j in joints:
             if j["T"]:
-                out[f"Assets/_Models/Fauna/{sp}{j['name']}.asset"] = mesh_asset(sp + j["name"], j)
+                out[f"Assets/_Models/Fauna/{sp}{j['name']}.asset"] = mesh_asset(sp + j["name"], j, turn)
                 out[f"Assets/_Models/Fauna/{sp}{j['name']}.asset.meta"] = mesh_meta(guid("mesh:" + fk + ":" + j["name"]))
-        out[f"Assets/_Models/Fauna/{sp}Body.asset"] = mesh_asset(sp + "Body", core)
+        out[f"Assets/_Models/Fauna/{sp}Body.asset"] = mesh_asset(sp + "Body", core, turn)
         out[f"Assets/_Models/Fauna/{sp}Body.asset.meta"] = mesh_meta(guid("mesh:" + fk))
         if sway_mode(spec) == "gpu":
             out[GROWN_MATERIAL.format(sp=sp)] = material(spec)
@@ -609,6 +631,14 @@ def verify(key, spec, made, mesh, out):
                 problems.append(f"{g} has no grown sway wired: run Tools/Shaders/wire_spindle_grown_sway.py, then wire_spindle_lod.py")
         if pf.count("  riders:") != 1 or "waveHz: 0\n" in pf:
             problems.append("the limb driver carries no riders or no tempo")
+        homes = re.search(r"  riderHome:\n((?:  - \{[^}]*\}\n)+)", pf)
+        seated = len(re.findall(r"  - ", homes.group(1))) if homes else 0
+        if seated != len(made["prisms"]) or pf.count("  skins:") != 1 or f"bankRoot: {{fileID: {BODY_TR}}}" not in pf or "lagSeconds:" not in pf:
+            problems.append(f"the limb driver cannot answer a turn: {seated} rider homes for {len(made['prisms'])} prisms, or no skins, bank root or turn numbers")
+        n_skins = 1 + sum(1 for j in cut if j["T"])
+        listed = re.search(r"  skins:\n((?:  - \{fileID: -?\d+\}\n)+)", pf)
+        if not listed or listed.group(1).count("fileID") != n_skins:
+            problems.append(f"the limb driver is handed {listed.group(1).count('fileID') if listed else 0} skins; the body draws with {n_skins}")
     # Space: the config says ErodeSpindle as every species' does; a jointed body is authored eroded and its prefab says so
     flagged = "spindleAuthoredEroded: 1" in pf
     if flagged != (spec.get("eroded") == "authored"):

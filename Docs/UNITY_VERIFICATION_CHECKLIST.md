@@ -160,6 +160,31 @@ Headless: `unity_port.py ray --check` and `--self-test`, `elements.py --check`, 
     more vertex channels on every spindle draw (they are read and multiplied by 0): run a frame-time A/B in a lattice
     cell before believing it is free.
 
+**The turn (2026-11-18; Garrett: "its rotations just happen ... i want the wings to take on chiral movements that
+match their rotations").** The body now answers its own rotation; the two wings do mirrored things. All of it is the
+same formula as the lab (Body tab there has four multipliers), driven by `GrownLimbDriver.AnswerTheTurn`, and all of
+it is zero when the Ray flies straight.
+
+13. **Turn (yaw).** Steer a possessed Ray into a steady turn, and watch a free one turn. The OUTER wing beats visibly
+    harder than the inner one; the body banks into the turn (about 25 to 35 degrees in a hard turn) and levels out
+    over a second when the turn stops; the wingtips, streamers and tail trail behind the turn and swing back past
+    centre once before settling.
+14. **Roll.** Roll the wasp (one stick up, one down). The hind edges deflect opposite ways, like ailerons, and the
+    wingtips bend against the roll in an S across the span, then settle.
+15. **Pitch.** Pull up or push down: the tail and the wings' far parts lag, and the top and bottom of the wave beat
+    differently (hard to see on a flat body; it should at least not look wrong).
+16. **The prisms stay on the wire** through every one of those (they are carried by the same formula on the CPU).
+17. **Each element has its own weight:** Time answers quickest and snaps back; Mass lags most and settles slowly;
+    Space drifts.
+18. **Nothing else moved.** Every other spindle in the cell is as it was (the six new shader inputs are 0 on every
+    material and on every renderer without this driver).
+19. **Cost to know about:** a Ray's ten renderers each carry a MaterialPropertyBlock every frame, so they are not
+    SRP-batched (about 80 draws for eight Rays). Not measured.
+
+The numbers are on the prefab's `GrownLimbDriver` (Lag, Stroke, Twist, Bank, each with its cap, and the spring); they
+come from the `turn` block of the form (`elements.TURN`, with an element's weight). Tune them in the lab's Body tab
+first, then tell the session the multipliers.
+
 **If the shader's wave is wrong and cannot be fixed quickly:** `"sway": "joints"` in the `unity` block of
 `specs/ray.py`, then `python3 Tools/Build/fauna_kit/unity_port.py ray`: the body returns to the shared SpindleMaterial
 and beats at its joints on the CPU.

@@ -18,7 +18,7 @@ Mesh:
     vertexCount: 1363
     localAABB:
       m_Center: {x: -0.016287, y: 0, z: -12.278443}
-      m_Extent: {x: 6.897616, y: 2.463787, z: 20.354148}
+      m_Extent: {x: 23.398153, y: 19.446075, z: 37.84138}
   m_Shapes:
     vertices: []
     shapes: []
@@ -152,7 +152,7 @@ Mesh:
     m_UVInfo: 0
   m_LocalAABB:
     m_Center: {x: -0.016287, y: 0, z: -12.278443}
-    m_Extent: {x: 6.897616, y: 2.463787, z: 20.354148}
+    m_Extent: {x: 23.398153, y: 19.446075, z: 37.84138}
   m_MeshUsageFlags: 0
   m_CookingOptions: 30
   m_BakedConvexCollisionMesh: 

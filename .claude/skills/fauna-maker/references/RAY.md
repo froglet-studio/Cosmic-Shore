@@ -87,6 +87,7 @@ What each piece is for, so you can explain it:
 | the form's material | SpindleMaterial with `_GrownSway` 1, the form's tempo, and the old shear sway off |
 | `GrownLimbDriver` riders | each prism is carried along the wave of the limb it sits on, from the same clock, because a prism is a collider |
 | the joints | only what the attack whips. They do not make the wave |
+| the turn (`GrownLimbDriver.AnswerTheTurn`, six more shader floats) | the body answers its own rotation: the outer wing beats harder, the hind edges deflect in a roll, the tips and tail lag and settle, the body banks. Automatic for every grown creature; numbers in `elements.TURN` |
 | `RayFauna` | feeds on the wing; glides under a rider (turn x 0.3, speed ease 0.9); rolls with its rider's frame |
 | `spindleAuthoredEroded` on the Space prefab | the Space body is already thinned by the law; the game must not thin it again (it would tear the wing 8 u at its hinges: `erosion.py Ray`) |
 
@@ -98,6 +99,7 @@ What went wrong on the way:
 | the wave only at the joints | the lab rippled and Unity would have folded at three hinges | the wave went into the shader |
 | the game's Space erosion left on | `erosion.py` (the game's erosion ported, pinned to its C# tests) drew a crumpled wing | the Space form is authored eroded |
 | Mass at x 0.58 | the kit took the SMALLEST body that clears the shields | Mass is never under the base body (law L8) |
+| the body only rotated ("its rotations just happen") | Garrett flew it | the body reads its own angular velocity and answers it, mirrored left to right (the lab's Body tab tunes it) |
 | Mass unshielded, Charge not dangerous | running the game's spawn order in Amoebius: 0 of 8 shielded. The shipped QuadFish was the same | the game armed a body before it rolled its element; `Fauna.AssignLineage` arms it after (a fix for every light fauna) |
 
 ## 6. What is proven, and what only a person can judge

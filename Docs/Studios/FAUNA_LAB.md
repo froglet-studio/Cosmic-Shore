@@ -24,6 +24,39 @@ give me a vessel, ark, and prism cluster to attack."
 - **Retire condition for a new creature:** a "cut it" in the feedback log, or a second round in which it still wins
   no column and nobody says it feels good.
 
+## Round 10 (2026-11-18): the body answers its own turning
+
+Garrett, after flying the Ray: "the ripples look good when the ray is moving forward. but its rotations just happen
+and the fauna movement doesn't match it ... i want the wings to take on chiral movements that match their rotations".
+
+A body that only rotates is a model on a stick. Every grown creature now reads its own angular velocity, in its own
+frame, and answers it four ways. The two sides of the body always do mirrored things, and a body flying straight does
+none of them.
+
+| answer | what you see | from |
+|---|---|---|
+| **Stroke** | the OUTSIDE of a turn beats harder, the inside quieter: the body rows itself round | yaw and pitch rate |
+| **Twist** | in a roll the hind edges deflect like ailerons, one side up and the other down | roll rate |
+| **Lag** | wingtips, sleeves, streamers and tail trail the rotation, swing past once and settle (a spring) | all three |
+| **Bank** | the whole body rolls into the turn and levels out when it ends | yaw rate, and speed |
+
+**One formula, three places.** `SpindleGrownSway.hlsl` in the game's shader (compiled and proved:
+`verify_spindle_grown_sway.py` T6 to T9), `GrownLimbDriver.AnswerTheTurn` on the CPU (measures the rotation, runs the
+spring, hands the numbers to the body's renderers and carries the prisms by the same formula), and this page
+(`stepTurn`, and the same terms in its vertex stage). The numbers are `elements.TURN`; an element scales the lag and
+the spring (Time quick, Mass heavy, Space drifting); a spec may state its own `"turn"`.
+
+**Tune it here.** The **Body** tab has four multipliers: Lag, Stroke, Twist, Bank. Fly, set them where the Ray feels
+alive in a turn, and say the numbers; they become the creature's own.
+
+**Measured on this page** (the Ray, Time form, sticks hard over): a steady yaw of 1.8 rad/s gives a bank of 34
+degrees, the inside wing beating 0.45 x and the outside 1.55 x, the tips trailing 0.20 rad; 1.5 s after release
+everything is back within 0.03. A roll of 1.9 rad/s deflects the hind edges 0.23 rad at the tip.
+
+**Not modelled:** the turn does not change how the creature FLIES (its path, its turn rate): it is how the body
+looks while it does. In the game a Ray's renderers carry a per-renderer property block for this, so they are not
+SRP-batched.
+
 ## Round 9 (2026-11-17): the Ray taken to completion, and the skill proved on the other four
 
 Garrett: "fix everything and take it all to their natural conclusion so the skill can get the best possible flagship

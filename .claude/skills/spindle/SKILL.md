@@ -156,6 +156,14 @@ with no `sway` is still in Unity, and a wave you see in the lab is the wave the 
 the game the light on a spindle is the shader's own lace, laid along each strand by the mesh's UV0 (`spindle.mesh_data`:
 one lap every `LACE_SPAN` units).
 
+**A body also answers its own TURNING, and you write nothing for it.** When a grown creature rotates, the outside of
+the turn beats harder than the inside, the hind edges deflect like ailerons in a roll, everything far from the heart
+trails the rotation and springs back, and the body banks. It is automatic for every grown creature, in the lab and in
+the game, and it is zero when the creature flies straight. It works through the `sway` you give the limbs (a limb with
+no sway has no stroke to change) and through how far a limb is from the heart (a long tail lags most). The numbers
+are `elements.TURN`; only when a person asks, a spec may state its own, for example a stiffer body:
+`"turn": {"lag": 0.08, "bank": 0.3}`. A person tunes them by feel in the lab's Body tab.
+
 ```python
 sway={"dir": [0, 1, 0],   # the way it waves: a vector, "radial" (out from the axis), "tangent" (round it) or "normal"
       "amp": 7.5,         # how far the TIP moves, in units
@@ -201,6 +209,10 @@ python3 Tools/Build/fauna_kit/lab_export.py && node .claude/skills/labmaker/veri
 ```
 
 ## 7. Round log
+
+- **2026-11-18, the turn.** A body answers its own rotation (section 3): stroke, twist, lag and bank from its
+  angular velocity, mirrored left to right (`elements.TURN`, `SpindleGrownSway.hlsl`, `GrownLimbDriver.AnswerTheTurn`,
+  the lab's `stepTurn`).
 
 - **2026-11-17, the wave in the shader.** `SpindleGrownSway` (section 3): the per-vertex sway reaches the game.
   `mesh_data` returns what rides each mesh vertex and a lace mapping along its strand. A form over the bar lightens

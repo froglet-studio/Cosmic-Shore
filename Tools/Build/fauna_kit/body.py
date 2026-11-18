@@ -108,6 +108,13 @@ def _beat(s):
     return {"axis": [round(v, 6) for v in axis], "deg": float(b["deg"]), "hz": float(b["hz"]), "phase": float(b.get("phase", 0.0))}
 
 
+def reach(made):
+    """A body's REACH: how far most of it lies from the heart (the distance 85% of its wire is inside). The turn's
+    angles (elements.TURN) are stated AT this distance: a wingtip there lags by the whole angle, a long tail by more."""
+    r = sorted(C.norm(v) for w in made["wires"] for v in w["verts"])
+    return round(r[int(len(r) * 0.85)], 3) if r else 1.0
+
+
 def from_spec(spec):
     if spec.get("shipped"):
         return _from_shipped(spec)

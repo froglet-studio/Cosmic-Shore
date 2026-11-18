@@ -76,10 +76,20 @@ SLOTS = [
     (4, "Phase",      "v1", False),
     (5, "Strength",   "v1", False),
     (6, "Frequency",  "v1", False),
-    (7, "Out",        "v3", True),
+    (7, "BendX",      "v1", False),
+    (8, "BendY",      "v1", False),
+    (9, "BendZ",      "v1", False),
+    (10, "StrokeX",   "v1", False),
+    (11, "StrokeY",   "v1", False),
+    (12, "Twist",     "v1", False),
+    (13, "Out",       "v3", True),
 ]
-OUT = 7
-NEW_PROPS = [("GrownSway", "_GrownSway", 0.0), ("GrownFrequency", "_GrownFrequency", 0.0)]
+OUT = 13
+# The turn inputs (2026-11-18) are plain floats like the rest: GrownLimbDriver sets them per creature with a
+# MaterialPropertyBlock, and a renderer nobody drives keeps the material's 0, which is the wave alone.
+TURN_PROPS = ["GrownBendX", "GrownBendY", "GrownBendZ", "GrownStrokeX", "GrownStrokeY", "GrownTwist"]
+NEW_PROPS = [("GrownSway", "_GrownSway", 0.0), ("GrownFrequency", "_GrownFrequency", 0.0)] + [(n, "_" + n, 0.0) for n in TURN_PROPS]
+PROP_SLOTS = [(3, "PrismClock"), (4, "Phase"), (5, "GrownSway"), (6, "GrownFrequency")] + [(7 + i, n) for i, n in enumerate(TURN_PROPS)]
 
 
 def _oid(seed):
@@ -135,7 +145,7 @@ def validate(docs, expect_wired):
         src = idx.get(feeder.get(slot_id, {}).get("m_Node", {}).get("m_Id"))
         if not src or "UVNode" not in src.get("m_Type", "") or src.get("m_OutputChannel") != channel:
             errs.append(f"{FUNCTION} slot {slot_id} must read TEXCOORD{channel}")
-    for slot_id, prop in ((3, "PrismClock"), (4, "Phase"), (5, "GrownSway"), (6, "GrownFrequency")):
+    for slot_id, prop in PROP_SLOTS:
         src = idx.get(feeder.get(slot_id, {}).get("m_Node", {}).get("m_Id"))
         p = idx.get((src or {}).get("m_Property", {}).get("m_Id")) if src else None
         if not p or p.get("m_Name") != prop:
@@ -222,9 +232,9 @@ def splice(docs):
     uv1, uv1_out = uv_node(1, by)
     uv2, uv2_out = uv_node(2, by + 140.0)
     feeds = [(uv1, uv1_out, 1), (uv2, uv2_out, 2)]
-    for i, (oid, label, slot_id) in enumerate(((clock["m_ObjectId"], "PrismClock", 3), (phase["m_ObjectId"], "Phase", 4),
-                                               (prop_oid["GrownSway"], "GrownSway", 5), (prop_oid["GrownFrequency"], "GrownFrequency", 6))):
-        feeds.append((prop_node(oid, label, f"v/{label}", by + 300.0 + i * 80.0), 0, slot_id))
+    own = {"PrismClock": clock["m_ObjectId"], "Phase": phase["m_ObjectId"], **prop_oid}
+    for i, (slot_id, label) in enumerate(PROP_SLOTS):
+        feeds.append((prop_node(own[label], label, f"v/{label}", by + 300.0 + i * 80.0), 0, slot_id))
 
     cf = copy.deepcopy(sway)
     cf["m_ObjectId"] = _oid("cf")
@@ -252,12 +262,53 @@ def splice(docs):
     return docs
 
 
+def unsplice(docs):
+    """SpindleGraph's docs with this splice taken OUT again, whatever version of it they carry: the function node, the
+    nodes that feed only it (its UV and property nodes), the properties it added, and SpindleSway.Out back on the vertex
+    block. What an upgrade of the function's signature runs before splicing the new one."""
+    graph, idx = find_graph(docs), index(docs)
+    cf = find_cf(docs, FUNCTION)
+    if cf is None:
+        return docs
+    sway = find_cf(docs, SWAY)
+    block, block_slot, _into = _block_feeders(docs)
+    gone = {cf["m_ObjectId"]} | {s["m_Id"] for s in cf["m_Slots"]}
+    for e in graph["m_Edges"]:
+        src = e["m_OutputSlot"]["m_Node"]["m_Id"]
+        if e["m_InputSlot"]["m_Node"]["m_Id"] == cf["m_ObjectId"] and src != sway["m_ObjectId"]:
+            feeds_others = any(o["m_OutputSlot"]["m_Node"]["m_Id"] == src and o["m_InputSlot"]["m_Node"]["m_Id"] != cf["m_ObjectId"]
+                               for o in graph["m_Edges"])
+            assert not feeds_others, "a node feeding SpindleGrownSway also feeds something else: this splice did not make it"
+            gone |= {src} | {s["m_Id"] for s in idx[src]["m_Slots"]}
+    props = {d["m_ObjectId"] for d in docs if "ShaderProperty" in d.get("m_Type", "") and d.get("m_Name", "").startswith("Grown")}
+    gone |= props
+    graph["m_Edges"] = [e for e in graph["m_Edges"] if e["m_OutputSlot"]["m_Node"]["m_Id"] not in gone and e["m_InputSlot"]["m_Node"]["m_Id"] not in gone]
+    graph["m_Edges"].append(edge(sway["m_ObjectId"], SWAY_OUT, block["m_ObjectId"], block_slot))
+    graph["m_Nodes"] = [r for r in graph["m_Nodes"] if r["m_Id"] not in gone]
+    graph["m_Properties"] = [r for r in graph["m_Properties"] if r["m_Id"] not in gone]
+    for c in graph["m_CategoryData"]:
+        idx[c["m_Id"]]["m_ChildObjectList"] = [ch for ch in idx[c["m_Id"]]["m_ChildObjectList"] if ch["m_Id"] not in gone]
+    docs[:] = [d for d in docs if d.get("m_ObjectId") not in gone]
+    return docs
+
+
 def self_test():
     """The splice on a copy of the graph as it stands (or un-spliced), and four planted defects the validator must name."""
     fails = []
     docs = load_docs(os.path.join(REPO, GRAPH))
     if find_cf(docs, FUNCTION) is None:
         docs = splice(docs)
+    # taking the splice out and putting it back gives the same graph, byte for byte (what an upgrade relies on)
+    again = splice(unsplice(copy.deepcopy(docs)))
+    if dump_docs(sorted(again, key=lambda d: d.get("m_ObjectId", ""))) != dump_docs(sorted(docs, key=lambda d: d.get("m_ObjectId", ""))):
+        fails.append("unsplice then splice did not reproduce the graph")
+    bare = unsplice(copy.deepcopy(docs))
+    if find_cf(bare, FUNCTION) is not None or any(d.get("m_Name", "").startswith("Grown") for d in bare if "ShaderProperty" in d.get("m_Type", "")):
+        fails.append("unsplice left part of the splice behind")
+    try:
+        validate_graph(bare, expect_wired=True)      # wire_spindle_sway's own contract: SpindleSway feeds the block again
+    except AssertionError as e:
+        fails.append(f"the un-spliced graph is not the SpindleSway graph: {e}")
     if validate(docs, True):
         fails.append("the shipped construction does not validate: " + validate(docs, True)[0])
     graph, idx = find_graph(docs), index(docs)
@@ -301,10 +352,13 @@ def main(argv):
     docs = load_docs(full)
     if find_cf(docs, FUNCTION) is not None:
         errs = validate(docs, True)
-        for e in errs:
-            print("FAIL:", e)
-        print(f"  {os.path.basename(GRAPH)}: " + ("already wired" if not errs else "wired WRONG"))
-        return 1 if errs else 0
+        if not errs or "--check" in argv:
+            for e in errs:
+                print("FAIL:", e)
+            print(f"  {os.path.basename(GRAPH)}: " + ("already wired" if not errs else "wired WRONG, or an older version: run without --check to re-wire"))
+            return 1 if errs else 0
+        print(f"  {os.path.basename(GRAPH)}: an older {FUNCTION} is wired; taking it out and wiring this one")
+        docs = unsplice(docs)
     if "--check" in argv:
         print(f"  {os.path.basename(GRAPH)}: NOT wired", file=sys.stderr)
         return 1

@@ -53,14 +53,34 @@ import erosion as E  # noqa: E402
 import spindle as SP  # noqa: E402
 
 ELEMENTS = ("Time", "Charge", "Mass", "Space")
+# HOW A BODY ANSWERS ITS OWN TURNING (Garrett, 2026-11-18: "its rotations just happen ... i want the wings to take on
+# chiral movements that match their rotations"). Four answers to the body's angular velocity, the same in the lab
+# (FaunaLab.html stepTurn) and the game (GrownLimbDriver + SpindleGrownSway.hlsl); the two sides of a body always do
+# mirrored things. A spec's own "turn" block overrides any of these; an element scales lag and spring (RULES).
+#   lag     seconds of turning the tips trail behind the rotation (a spring: it trails, overshoots a little, settles)
+#   stroke  how much harder the OUTSIDE of a turn beats than the inside, per radian a second
+#   twist   the hind edges deflect like ailerons in a roll: radians at the tip per radian a second
+#   bank    the body rolls into a turn: seconds of turning (0.45 = 26 degrees at one radian a second)
+TURN = {"lag": 0.14, "max_lag": 0.32, "spring_hz": 1.3, "damping": 0.45, "stroke": 0.3, "max_stroke": 0.75,
+        "twist": 0.12, "max_twist": 0.35, "bank": 0.45, "max_bank": 38.0}
+
+
+def turn_of(spec, element=None):
+    """The turn's numbers for a body (or one of its element forms): the defaults, the spec's own, the element's weight."""
+    t = dict(TURN, **(spec.get("turn") or {}))
+    if element:
+        r = RULES[element]
+        t["lag"], t["spring_hz"] = t["lag"] * r["turn_lag"], t["spring_hz"] * r["turn_hz"]
+    return {k: round(v, 4) for k, v in t.items()}
+
 SPARKS = {"count": 9, "length": [1.3, 0.5], "angle": 80.0, "sides": 2, "flutter": 0.9}
 # strands: added (+) or removed (-); the rest multiply the design's own value. section None keeps the design's.
 # Space's girth is not here: it is the law's erosion (erosion.girth), limb by limb. Its wire is the law's 1/1.6477.
 RULES = {
-    "Time":   {"strands": 0,  "wire": 1.0, "girth": 1.0,  "twist": 1.0, "amp": 1.0,  "hz": 1.4,  "across": 1.0, "glow_waves": 1.5, "bright": 1.0,  "section": None, "sparks": False},
-    "Charge": {"strands": 0,  "wire": 0.9, "girth": 1.5,  "twist": 1.3, "amp": 1.1,  "hz": 1.15, "across": 1.0, "glow_waves": 2.5, "bright": 1.15, "section": None, "sparks": True},
-    "Mass":   {"strands": 1,  "wire": 1.7, "girth": 1.15, "twist": 0.7, "amp": 0.7,  "hz": 0.72, "across": 1.0, "glow_waves": 0.6, "bright": 1.0,  "section": 3,    "sparks": False},
-    "Space":  {"strands": -1, "wire": E.THICKEST_GIRTH, "girth": 1.0, "twist": 1.0, "amp": 1.35, "hz": 0.8, "across": 0.6, "glow_waves": 1.0, "bright": 0.8, "section": 2, "sparks": False},
+    "Time":   {"strands": 0,  "wire": 1.0, "girth": 1.0,  "twist": 1.0, "amp": 1.0,  "hz": 1.4,  "across": 1.0, "glow_waves": 1.5, "bright": 1.0,  "section": None, "sparks": False, "turn_lag": 0.8, "turn_hz": 1.3},
+    "Charge": {"strands": 0,  "wire": 0.9, "girth": 1.5,  "twist": 1.3, "amp": 1.1,  "hz": 1.15, "across": 1.0, "glow_waves": 2.5, "bright": 1.15, "section": None, "sparks": True,  "turn_lag": 0.9, "turn_hz": 1.5},
+    "Mass":   {"strands": 1,  "wire": 1.7, "girth": 1.15, "twist": 0.7, "amp": 0.7,  "hz": 0.72, "across": 1.0, "glow_waves": 0.6, "bright": 1.0,  "section": 3,    "sparks": False, "turn_lag": 1.3, "turn_hz": 0.75},
+    "Space":  {"strands": -1, "wire": E.THICKEST_GIRTH, "girth": 1.0, "twist": 1.0, "amp": 1.35, "hz": 0.8, "across": 0.6, "glow_waves": 1.0, "bright": 0.8, "section": 2, "sparks": False, "turn_lag": 1.5, "turn_hz": 0.7},
 }
 
 
@@ -149,6 +169,7 @@ def form(spec, element, refit=True):
     base_across = {m["name"]: m.get("across", 9) for m in out["membranes"]}
     out["membranes"] = [dict(m, across=max(4, int(round(base_across[m["name"]] * r["across"])))) for m in out["membranes"]]
     out["sway_hz"] = out.get("sway_hz", 0.5) * r["hz"]
+    out["turn"] = turn_of(spec, element)
     if out.get("unity"):
         u = out["unity"]
         u["idle_hz"], u["fast_hz"] = u.get("idle_hz", 0.38) * r["hz"], u.get("fast_hz", 0.9) * r["hz"]

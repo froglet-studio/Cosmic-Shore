@@ -75,7 +75,8 @@ def pack(body):
     if grown:
         extra = {"sw": base64.b64encode(struct.pack("<%df" % (len(sway) * 6), *[c for v in sway for c in v])).decode(),
                  "gw": base64.b64encode(struct.pack("<%df" % (len(glow) * 2), *[c for v in glow for c in v])).decode(),
-                 "t": base64.b64encode(struct.pack("<%d%s" % (len(tris) * 3, fmt), *[i for t in tris for i in t])).decode()}
+                 "t": base64.b64encode(struct.pack("<%d%s" % (len(tris) * 3, fmt), *[i for t in tris for i in t])).decode(),
+                 "reach": BODY.reach(body)}      # what the turn's angles are measured at
     return {"q": q, "nv": len(verts), "v": base64.b64encode(vb).decode(), "ne": len(edges), "e32": fmt == "I",
             "e": base64.b64encode(eb).decode(), **extra,
             "prisms": [{"n": p["name"], "k": p["kind"], "sh": bool(p.get("shielded")), "at": p["at"], "q": p["q"], "s": p["size"],
@@ -134,12 +135,16 @@ def new_creature(key, origin="new"):
                         for e, v in spec["elements"].items()}}
     if "sway_hz" in spec:
         out["sway_hz"] = spec["sway_hz"]
+    if any(s.get("mesh") == "grown" for s in spec["spindles"]):      # how a grown body answers its own turning (elements.TURN)
+        import elements as EL
+        out["turn"] = EL.turn_of(spec)
     if spec.get("forms"):      # a creature with its own element forms (elements.py): each is its own body in the lab
         import elements as EL
         fs = {e: EL.form(spec, e) for e in EL.ELEMENTS}
         out["forms"] = {e: dict(pack(BODY.from_spec(f)), ext=_extent(BODY.from_spec(f))) for e, f in fs.items()}
         out["form_hz"] = {e: f["sway_hz"] for e, f in fs.items()}
         out["form_feel"] = {e: f.get("feeling", "") for e, f in fs.items()}
+        out["form_turn"] = {e: f["turn"] for e, f in fs.items()}
     for k in ("turn_rate", "speed_ease", "suction", "motion", "charge", "latch", "body_radius", "aim_cone", "for", "feel"):
         if k in pos:
             out[k] = pos[k]
