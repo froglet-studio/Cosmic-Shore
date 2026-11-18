@@ -12,8 +12,10 @@ SCENE = dict(
     seen=("the brass pocket watch hangs on a short chain from the vest, and the visor is a band of rippled glass",),
     fused=("Cario is an axolotl grown into a platypus. The head is an axolotl's, soft pale-pink skin, small round "
            "lidless eyes set wide apart and three feathery crimson gill fronds fanning out from each side of the "
-           "head, and its rounded snout widens forward into a short broad soft platypus bill, the pink shading into "
-           "dark blue-grey leather toward the tip, with two nostril dots on top. From the back of the head down, the "
+           "head. Where the axolotl's wide lips are, the platypus's bill grows: the upper and lower lips lengthen "
+           "forward into a short broad soft bill in two halves, the pink shading into dark blue-grey leather toward "
+           "the tip, two nostril dots on top, and the mouth opens between the halves. From the back of the head "
+           "down, the "
            "pink gives way to the platypus's dense brown waterproof fur over the neck and the body, beaded with rain. "
            "The tail is the platypus's broad flat furry paddle, growing from the base of the spine under the coat's "
            "hem, held out level behind like a rudder."),
