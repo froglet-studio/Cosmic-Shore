@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken from a boat off the end of a jetty, a long telephoto lens that flattens the jetty and "
           "the far shore together, a fast shutter in a strong wind. The whole standing figure is in the frame, "
           "antennae to shoes, filling two thirds of its height."),
+    close=(320, 40, 640, 360),
     side="left",
     source="hobby: \"writes letters to a sibling who never writes back\" (the game's Quirks)",
     seen=("the treaty ribbon is jade teal folded in a neat loop, and the bell at the collar is very small",),

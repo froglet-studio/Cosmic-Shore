@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A street photograph panned with the runner at a slow shutter from the foot of the stair, a 28mm lens at "
           "waist height: the figure sharp, the rain and the stair's edges drawn into short streaks. The whole "
           "running figure is in the frame, gill fronds to boots, filling most of its height."),
+    close=(810, 0, 1200, 390),
     side="right",
     source="hobby: \"has never once arrived early\" (the game's Quirks)",
     seen=("the brass pocket watch hangs on a short chain from the vest, and the visor is a band of rippled glass",),

@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken in a dark pit garage from a step away, a fast 50mm lens wide open and the film pushed "
           "hard, so the grain is heavy and the only light is the pilot's own. The figure is seen from the knees up, "
           "side-on, filling most of the height of the frame."),
+    close=(1000, 20, 1370, 390),
     side="right",
     source="hobby: \"keeps score of everything, including naps\" (the game's Quirks)",
     seen=("the racing jacket is jade teal and black, and the vines over its shoulder are small-leaved ivy",),

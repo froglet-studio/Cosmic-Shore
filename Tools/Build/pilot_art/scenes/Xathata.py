@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken from across a small campfire, a 35mm lens on a tripod at sitting height, the shutter "
           "open for a long count so the stars above drag into short arcs while the seated figure, holding still, "
           "stays sharp. The whole seated figure is in the frame, antlers to boots, filling half its height."),
+    close=(160, 100, 520, 460),
     side="left",
     source="hobby: \"keeps a jar of every crystal they have ever missed\" (the game's Quirks)",
     seen=("the opal pendant hangs on a thin leather thong, and the map tubes are capped in worn brass",),
