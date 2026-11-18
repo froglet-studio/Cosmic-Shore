@@ -838,7 +838,9 @@ namespace CosmicShore.Tests
             var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
             foreach (var row in new[] { "swing: 1\n", "swingAhead: 150\n", "swingSide: 35\n", "swingHorizon: 0.8\n", "swingReach: 55\n",
                          "swingCatchDegrees: 40\n", "swingMinDegrees: 15\n", "swingMaxDegrees: 90\n", "swingDegreesPerSecond: 150\n",
-                         "swingSeconds: 4\n", "aiSwingFaceDegrees: 8\n" })
+                         "swingSeconds: 4\n", "aiSwingFaceDegrees: 8\n",
+                         // ONE slingshot (Yash, 2026-11-19): the swing's own speed-up; no second push at the exit.
+                         "swingKickShare: 0\n" })
                 StringAssert.Contains("  " + row, text);
             // The hull's own AI swings for a turn of 20 deg or more (stoat_orbit_sim.py --swing).
             StringAssert.Contains("  aiSlingMinTurnDegrees: 20\n", text);

@@ -24618,3 +24618,10 @@ guest's own row, and the editor-only `IdleGuestAutopilot` (FrogletTools > Multip
 - [ ] Maelstrom, several rounds: the guest hull is handed over again in each round.
 - [ ] The host's own hull is never handed over by idling; the menu toggle off stops it on the guest too.
 - [ ] Third Eye on the guest: the AI / You toggle works on its own row and stays disabled on every other row.
+
+## 🟡 Stoat: one slingshot - the swing's speed-up, no second push at the exit (2026-11-19, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "One slingshot". `StoatSlingConfig`: swingKickShare 0.
+- [ ] EditMode `StoatSlingTests`: all pass (`SlingConfig_ShipsTheSwing` reads swingKickShare 0).
+- [ ] Swing round the black hole: one surge of speed as it swings you, then you leave along the dotted line with no second shove.
+- [ ] Aim the dotted line at the next ring with the stick: you reach it without overshooting.
+- [ ] Slingshot I1-I4: AI Stoats finish (model: 62-76 s, no rings missed).

@@ -188,6 +188,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds a black hole nobody swings round stays up.")]
         [SerializeField, Range(0.5f, 15f)] float swingSeconds = 4f;
 
+        [Tooltip("The share of the old fling KICK paid when a swing lets you go (the hold's squeeze × Mass, under the caps). 0 " +
+                 "(Yash, 2026-11-19: \"I want only one slingshot, the first one\"): the swing's own speed-up is the one slingshot, " +
+                 "kept as momentum, and you leave on the dotted line's heading with no second push to overshoot your target.")]
+        [SerializeField, Range(0f, 1f)] float swingKickShare = 0f;
+
         [Tooltip("The autopilot lets a swing throw it once it faces its target within this many degrees (after swingMinDegrees), " +
                  "or at swingMaxDegrees: its stick picks the angle toward its target.")]
         [SerializeField, Range(1f, 45f)] float aiSwingFaceDegrees = 8f;
@@ -441,6 +446,7 @@ namespace CosmicShore.ScriptableObjects
         public float SwingMaxDegrees => Mathf.Clamp(Mathf.Max(swingMinDegrees, swingMaxDegrees), 0f, 180f);
         public float SwingDegreesPerSecond => Mathf.Clamp(swingDegreesPerSecond, 30f, 720f);
         public float SwingSeconds => Mathf.Clamp(swingSeconds, 0.5f, 15f);
+        public float SwingKickShare => Mathf.Clamp01(swingKickShare);
         public float AiSwingFaceDegrees => Mathf.Clamp(aiSwingFaceDegrees, 1f, 45f);
         public EventReference SwingStartEvent => swingStartEvent;
         public EventReference SwingFlingEvent => swingFlingEvent;
