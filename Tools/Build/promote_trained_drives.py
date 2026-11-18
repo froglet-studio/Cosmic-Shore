@@ -105,13 +105,18 @@ ROWS = {
 # Dolphin row at lead 2.03 and Legendary nose 11.18/s (13.41 at I3-I4 and the gauntlet). Confirm on 32 fresh flights a
 # side, no DNF: I1 110 -> 86 s, I1@T10 110 -> 97, wide courses 130 -> 119 and 117 -> 111, I2 119 -> 112, I4 even.
 # Replaced C (job dolphin-lead, switchback-dolphin-time-lead__C).
-_DOLPHIN_C = {"alignDegrees": 76.312, "stickBand": 0.023, "engageRunwaySeconds": 0.658, "spendAtCharge01": 0.724,
-              "peakMarginUnits": 9.768, "minDischargeSeconds": 0.047, "minPulseGainUnits": 41.811, "maxHoldOffSeconds": 0.65}
+# Dolphin step-5 run in the real game (2026-11-18), searched at the #2196 Drift Charge (charge rate x1.375 -> x3.4375),
+# flown at lead 2.15, Legendary nose 10.57/s (12.69 at I3-I4 and the gauntlet), no-dodge 278 u. Confirm on seeds
+# 101-103 against run2, no DNF: loss 2.34 -> 2.24; I1 106 -> 87 s, I3 141 -> 130, I4 240 -> 229, I2 126 -> 132.
+# Replaced run2 {"alignDegrees": 76.312, "stickBand": 0.023, "engageRunwaySeconds": 0.658, "spendAtCharge01": 0.724,
+# "peakMarginUnits": 9.768, "minDischargeSeconds": 0.047, "minPulseGainUnits": 41.811, "maxHoldOffSeconds": 0.65}.
+_DOLPHIN_C = {"alignDegrees": 59.861, "stickBand": 0.024, "engageRunwaySeconds": 0.606, "spendAtCharge01": 0.438,
+              "peakMarginUnits": 12.996, "minDischargeSeconds": 0.175, "minPulseGainUnits": 99.15, "maxHoldOffSeconds": 0.954}
 for _n in ("DolphinAIBoostPolicy_Switchback", "DolphinAIBoostPolicy_Switchback_I1", "DolphinAIBoostPolicy_Switchback_I2",
            "DolphinAIBoostPolicy_Switchback_I4"):
     ROWS[_n] = dict(base=L.POLICY_DIR + "/DolphinAIBoostPolicy.asset", start="DolphinAIBoostPolicy_Switchback_I1",
                     genome_fields=("releaseAlignDegrees", "releaseStickBand", "releaseRunwaySeconds"),
-                    fields=_DOLPHIN_C, source=R + "dolphin-lead/switchback-dolphin-time-lead__C.json")
+                    fields=_DOLPHIN_C, source="/mnt/project-files/regatta-flywheel/step5/dolphin-ai/best.json")
 
 # Every value each row overwrote, as it shipped on bleeding-edge 8197bd92 (2026-11-07). --revert writes these back.
 OLD = {

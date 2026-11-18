@@ -21,8 +21,8 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Encore
+    UpgradeDescription: 'Level 5: picking a Charge card leaves the rest of the hand up for one more pick, once per hand. R_VesselActions/STARLING.md §2.1.'
   - Element: 2
     AbilityLabel: Pick the Mass card
     AbilityDescription: 'A: pick the Mass card from the hand. A hand is dealt when the Omnicrystal phase ends, or when the swarm collects an omnicrystal in another phase; a pick adds the card''s level to what you hold of it (up to 15). R_VesselActions/STARLING.md.'
@@ -30,8 +30,8 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Encore
+    UpgradeDescription: 'Level 5: picking a Mass card leaves the rest of the hand up for one more pick, once per hand. R_VesselActions/STARLING.md §2.1.'
   - Element: 3
     AbilityLabel: Pick the Space card
     AbilityDescription: 'Y: pick the Space card from the hand. A hand is dealt when the Omnicrystal phase ends, or when the swarm collects an omnicrystal in another phase; a pick adds the card''s level to what you hold of it (up to 15). R_VesselActions/STARLING.md.'
@@ -39,8 +39,8 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Encore
+    UpgradeDescription: 'Level 5: picking a Space card leaves the rest of the hand up for one more pick, once per hand. R_VesselActions/STARLING.md §2.1.'
   - Element: 4
     AbilityLabel: Pick the Time card
     AbilityDescription: 'B: pick the Time card from the hand. A hand is dealt when the Omnicrystal phase ends, or when the swarm collects an omnicrystal in another phase; a pick adds the card''s level to what you hold of it (up to 15). R_VesselActions/STARLING.md.'
@@ -48,5 +48,5 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Encore
+    UpgradeDescription: 'Level 5: picking a Time card leaves the rest of the hand up for one more pick, once per hand. R_VesselActions/STARLING.md §2.1.'

@@ -25102,3 +25102,8 @@ table gives the TigerMoth's AI a 6.41/s nose (no lead). Race judge (Amoebius hea
 
 - [ ] Fly Waystation I3 against a Legendary TigerMoth: it finishes in about 3-4 minutes and its turns look like a pilot's
       (not twitchy) with the quicker nose.
+
+## #2203 Starling elements (2026-11-18)
+- [ ] Fly the Starling in the Toybox; collect Mass crystals to level 5+: the next Mass hand's cards read Lv 2 (Lv 3 at level 10).
+- [ ] At Mass level 5, pick a Mass card: the hand stays up for one more pick (Encore); the second pick closes it.
+- [ ] An AI Starling at level 5 takes both picks.
