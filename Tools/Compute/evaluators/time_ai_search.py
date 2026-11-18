@@ -68,10 +68,10 @@ def _switchback_nose(p):
 
 
 # SwitchbackController's AI knobs (Scarab Rally inherits them): the Legendary nose follow rate (every intensity's row,
-# shipped 11.18/s at I1-I2 and 13.41/s at I3-I4 since Dolphin run2, and the I4 gauntlet's) and how near a ring the AI stops dodging.
+# shipped 10.57/s at I1-I2 and 12.69/s at I3-I4 since the Dolphin step-5 run (2026-11-18), and the I4 gauntlet's) and how near a ring the AI stops dodging.
 SWITCHBACK_NOSE = {
     "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
-    "ctrl_defaults": {"noseLegendary": 11.18, "aiNoDodgeNearRing": 177.0},   # Dolphin run2 (2026-11-17)
+    "ctrl_defaults": {"noseLegendary": 10.57, "aiNoDodgeNearRing": 277.67},   # Dolphin step-5 run (2026-11-18)
     "ctrl": _switchback_nose,
 }
 
@@ -104,7 +104,7 @@ GAMES = {
                    "spendAtCharge01": (0.05, 1.0), "peakMarginUnits": (0.0, 30.0), "minDischargeSeconds": (0.0, 2.0),
                    "minPulseGainUnits": (0.0, 120.0), "maxHoldOffSeconds": (0.5, 8.0)},
         **SWITCHBACK_NOSE,
-        "lead": 2.03, "rows": [],                      # SwitchbackController.aiNoseLead: Dolphin 2.03 (run2)
+        "lead": 2.15, "rows": [],                      # SwitchbackController.aiNoseLead: Dolphin 2.15 (step-5 run)
     },
     "Serpent": {
         "mode": "SerpentTime",
