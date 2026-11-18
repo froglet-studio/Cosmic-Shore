@@ -451,24 +451,28 @@ START = os.environ.get("REGATTA_START", "card")
 # first engine courses; four is one round on four cores, so a course stopped here costs half.
 STAGE1 = tuple(h for h in os.environ.get("REGATTA_STAGE1", "Rhino,Scarab,Serpent,Dolphin").split(",") if h)
 
-# Named fields (--field or REGATTA_FIELD): the hulls a run races AND scores, so a shard config is one word. "five" is
-# the polished five the shuffle was picked on (#2211). "ten" is the five plus Thresher, Serpent, Brittle Star, Swordfish
-# and TigerMoth (hub, 2026-11-18): the next course search, run once step 5's Rhino, Swordfish and Manta levers land
-# (Swordfish ran ~0.5x the five's time on every shuffle course before them). Each field carries its own stage-1 hulls
-# (the fastest and slowest on the shuffle's judged times, so a too-wide course stops early); REGATTA_STAGE1 still wins.
+# Named fields (--field or REGATTA_FIELD): the hulls a run races, which of them the loss SCORES (the rest are raced and
+# reported only: a sanity check and a DNF veto at the pool pick), and the stage-1 hulls (the fastest and slowest scored
+# hulls on the shuffle's judged times, so a too-wide course stops early; REGATTA_STAGE1 still wins).
+# "five" is the polished five the shuffle was picked on (#2211). "ten" (hub, 2026-11-18) races the five plus Thresher,
+# Serpent, Brittle Star, Swordfish and TigerMoth, and Rhino and Manta too, but scores only the five: after step 5
+# round 7 (#2217, #2218) the hub kept the five-hull imbalance as the score while Rhino, Swordfish and Manta wait on
+# Garrett's off-card decision; the others are judged so a course that breaks one of them is seen.
+FIVE = ("Urchin", "Scarab", "Sparrow", "Dolphin", "Squirrel")
 FIELDS = {
-    "five": ("Urchin", "Scarab", "Sparrow", "Dolphin", "Squirrel"),
-    "ten": ("Urchin", "Scarab", "Sparrow", "Dolphin", "Squirrel", "Thresher", "Serpent", "BrittleStar", "Swordfish",
-            "TigerMoth"),
+    "five": FIVE,
+    "ten": FIVE + ("Thresher", "Serpent", "BrittleStar", "Swordfish", "TigerMoth", "Rhino", "Manta"),
 }
-FIELD_STAGE1 = {"five": ("Scarab", "Dolphin"), "ten": ("Swordfish", "Scarab", "Thresher", "TigerMoth")}
+FIELD_SCORED = {"five": FIVE, "ten": FIVE}
+FIELD_STAGE1 = {"five": ("Scarab", "Dolphin"), "ten": ("Scarab", "Dolphin", "Urchin", "Squirrel")}
 
 
 def use_field(name):
-    """Race and score field `name`; its stage-1 hulls apply unless REGATTA_STAGE1 is set."""
-    global STAGE1
+    """Race field `name`, score its scored hulls; its stage-1 hulls apply unless REGATTA_STAGE1 is set."""
+    global STAGE1, REPORT_ONLY
     if name not in FIELDS:
         raise SystemExit(f"regatta_qd: no field {name!r} (fields: {', '.join(FIELDS)})")
+    REPORT_ONLY = tuple(h for h in FIELDS[name] if h not in FIELD_SCORED[name])
     set_hulls(list(FIELDS[name]))
     if "REGATTA_STAGE1" not in os.environ:
         STAGE1 = FIELD_STAGE1[name]
@@ -1501,9 +1505,11 @@ def self_test():
     for name, hulls in FIELDS.items():
         if [h for h in hulls if h not in ENGINE_TRUSTED]:
             bad.append(f"regatta_qd: field {name} has hulls the engine does not trust")
-        st = FIELD_STAGE1.get(name, ())
-        if len(st) < 2 or [h for h in st if h not in hulls]:
-            bad.append(f"regatta_qd: field {name}'s stage-1 hulls are not two or more of its own")
+        st, sc = FIELD_STAGE1.get(name, ()), FIELD_SCORED.get(name, ())
+        if len(st) < 2 or [h for h in st if h not in sc]:
+            bad.append(f"regatta_qd: field {name}'s stage-1 hulls are not two or more of its scored hulls")
+        if len(sc) < 2 or [h for h in sc if h not in hulls]:
+            bad.append(f"regatta_qd: field {name} scores hulls it does not race")
     rng = random.Random(7)
     # Operators: today's genome survives repair unchanged; random and mutated genomes stay in range; crossover by leg.
     today = jm.today_genome()
