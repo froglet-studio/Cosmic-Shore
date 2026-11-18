@@ -25158,3 +25158,9 @@ headless, Urchin alone, seed 1: I1 63.3 s and I4 78.6 s, the judged Ref1 and Ref
 - [ ] Open the project: no missing-reference warnings on MinigameRegatta's Cell, the course pool or ModePreview_Regatta.
 - [ ] Run the EditMode `RegattaCoursePoolTests` (`ShippedPool_DealsOnlyDifferentRegattaCourses` checks Ref1-Ref4 first).
 - [ ] Open the Regatta card's preview: the scale model shows a shuffle course, not an empty cell.
+
+## Serpent: vestigial omnicrystal explosion removed (2026-11-18, PR #2223)
+
+- [ ] In the Toybox, fly the Serpent through a crystal: no blast cone spawns, nearby prisms are untouched, the crystal still ripples a shield through your growing walls and plays haptics.
+- [ ] No missing-reference warning from `SerpentImpactorDataContainer` on pickup.
+- Not run in Unity. No C# changed (asset list and one deleted effect asset), so `unity_refcompile` was not needed.
