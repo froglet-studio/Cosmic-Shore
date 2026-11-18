@@ -48,6 +48,17 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(1, 15)] int lvSpace = 1;
         [SerializeField, Range(1, 15)] int lvCharge = 1;
 
+        [Header("Element scaling (Garrett, 2026-11-17: every vessel scales with all four elements)")]
+        [Tooltip("Factor on the level a drawn Charge card arrives at, by the swarm's Charge level: 1 at rest, 3 at level 10 " +
+                 "(the level is rounded down, so a level-1 card arrives at 2 from level 5). STARLING.md §2.1.")]
+        [SerializeField] ElementalFloat arrivalLevelCharge = ElementalFloat.Multiplier(1f, 3f, Data.Element.Charge, 0.5f);
+        [Tooltip("Factor on the level a drawn Mass card arrives at, by the swarm's Mass level: 1 at rest, 3 at level 10.")]
+        [SerializeField] ElementalFloat arrivalLevelMass = ElementalFloat.Multiplier(1f, 3f, Data.Element.Mass, 0.5f);
+        [Tooltip("Factor on the level a drawn Space card arrives at, by the swarm's Space level: 1 at rest, 3 at level 10.")]
+        [SerializeField] ElementalFloat arrivalLevelSpace = ElementalFloat.Multiplier(1f, 3f, Data.Element.Space, 0.5f);
+        [Tooltip("Factor on the level a drawn Time card arrives at, by the swarm's Time level: 1 at rest, 3 at level 10.")]
+        [SerializeField] ElementalFloat arrivalLevelTime = ElementalFloat.Multiplier(1f, 3f, Data.Element.Time, 0.5f);
+
         [Header("View (the Starlings Lab's SHIPPED)")]
         [Tooltip("Half-thickness of the viewing plane's sharp slice (u): the Wrasse's 2.5D depth look (PrismDepthPlane).")]
         [SerializeField, Min(1f)] float slab = 260f;
@@ -144,6 +155,17 @@ namespace CosmicShore.Gameplay
             Data.Element.Space => lvSpace,
             Data.Element.Charge => lvCharge,
             _ => 1,
+        };
+
+        /// <summary>The element-scaled factor on the level a drawn card of <paramref name="element"/> arrives at (null for
+        /// an element that is not one of the four).</summary>
+        public ElementalFloat ArrivalLevel(Data.Element element) => element switch
+        {
+            Data.Element.Mass => arrivalLevelMass,
+            Data.Element.Time => arrivalLevelTime,
+            Data.Element.Space => arrivalLevelSpace,
+            Data.Element.Charge => arrivalLevelCharge,
+            _ => null,
         };
 
         /// <summary>The phase timer of <paramref name="phase"/>, before Hurry Up.</summary>

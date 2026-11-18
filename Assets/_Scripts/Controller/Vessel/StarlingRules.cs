@@ -124,6 +124,18 @@ namespace CosmicShore.Gameplay
         /// <summary>The card of an element hand the pilot has highlighted (0-based); 0 on every new hand.</summary>
         public int Focus { get; private set; }
 
+        /// <summary>The swarm's element scaling (STARLING.md §2.1): the factor on the level a drawn card of the element
+        /// arrives at, from the vessel's live element level (1 at rest, 3 at level 10). The level is rounded down; null is
+        /// a factor of 1 (tests and the lab's model).</summary>
+        public System.Func<Element, float> ArrivalLevel { get; set; }
+
+        /// <summary>The level-5 upgrade Encore (STARLING.md §2.1): true while the element's upgrade is active, so a pick of
+        /// a card of that element leaves the rest of the hand up for one more pick. Null = never.</summary>
+        public System.Func<Element, bool> EncoreActive { get; set; }
+
+        /// <summary>True once this hand's Encore pick has been granted (one per hand).</summary>
+        public bool EncoreSpent { get; private set; }
+
         /// <summary>Raised after the cycle moves on: (the phase that ended, whether it ended on its goal).</summary>
         public event System.Action<StarlingPhase, bool> PhaseEnded;
 
@@ -216,6 +228,7 @@ namespace CosmicShore.Gameplay
             HandsDealt++;
             HasHand = true;
             Focus = 0;
+            EncoreSpent = false;
             for (int i = 0; i < _hand.Length; i++) _hand[i] = default;
             if (DrawElement == Element.None)
             {
@@ -246,7 +259,11 @@ namespace CosmicShore.Gameplay
             if (HandSize == 0) ClearHand();   // nothing wired in the element: no hand rather than an empty one
         }
 
-        int LevelOf(Element element) => Mathf.Clamp(_config.LevelFor(element), 1, MaxLevel);
+        int LevelOf(Element element)
+        {
+            float factor = ArrivalLevel != null ? ArrivalLevel(element) : 1f;
+            return Mathf.Clamp(Mathf.FloorToInt(_config.LevelFor(element) * factor + 1e-4f), 1, MaxLevel);
+        }
 
         /// <summary>Pick the card of <paramref name="element"/> from a spread hand (the lab's <c>pick</c>). False when there
         /// is no spread hand or that slot is empty.</summary>
@@ -261,7 +278,31 @@ namespace CosmicShore.Gameplay
             var c = _hand[index];
             _held[c.Card.Id] = Mathf.Min(MaxLevel, Level(c.Card.Id) + c.Level);
             if (DrawElement == Element.None) DrawElement = c.Card.Element;
+            if (!EncoreSpent && EncoreActive != null && EncoreActive(c.Card.Element) && TakeFromHand(index))
+            {
+                EncoreSpent = true;
+                return true;
+            }
             ClearHand();
+            return true;
+        }
+
+        /// <summary>Encore: take card <paramref name="index"/> out of the hand and keep the rest up. A spread hand keeps its
+        /// slots (the taken one is left empty); an element hand closes up. False when no other card is left.</summary>
+        bool TakeFromHand(int index)
+        {
+            int left = 0;
+            for (int i = 0; i < HandSize; i++)
+                if (i != index && !_hand[i].IsEmpty) left++;
+            if (left == 0) return false;
+            if (!IsElementHand)
+            {
+                _hand[index] = default;
+                return true;
+            }
+            for (int i = index; i < HandSize - 1; i++) _hand[i] = _hand[i + 1];
+            _hand[--HandSize] = default;
+            Focus = Mathf.Min(Focus, HandSize - 1);
             return true;
         }
 
@@ -291,6 +332,7 @@ namespace CosmicShore.Gameplay
             HandElement = Element.None;
             HandSize = 0;
             Focus = 0;
+            EncoreSpent = false;
         }
 
         /// <summary>The level held of the hand slot's card's element, summed (what the HUD shows on a slot with no hand).</summary>
