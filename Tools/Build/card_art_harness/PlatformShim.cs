@@ -224,6 +224,14 @@ namespace CosmicShore.Gameplay
         public void InvalidateCache() { }
 
         public SpawnTrailData[] GenerateForHarness() => GenerateTrailData();
+
+        /// <summary>The shipped cached read, uncached (RegattaPlacementBuilder lays a placement's spawnable through it):
+        /// the same seeding, so the trails are the shipped ones.</summary>
+        public SpawnTrailData[] GetTrailData()
+        {
+            rng = seed != 0 ? new System.Random(seed) : new System.Random();
+            return GenerateTrailData();
+        }
     }
 
     /// <summary>The shipped bake switch (PrismLayoutBake.Bypass): the harness never loads a bake.</summary>
