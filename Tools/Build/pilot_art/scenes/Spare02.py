@@ -36,4 +36,23 @@ SCENE = dict(
           "the ankle; the decoys' paint is worn to bare wood at the bills; a twist of marsh weed has caught in "
           "the rope."),
     close=(340, 0, 700, 360),
+    patch=dict(   # Garrett 2026-11-18 on the review page: "what are these ducks? decoys? dead?"
+        what="the birds roped on the back and the one at the chest, which become carved wooden decoys",
+        ask=("THE DECOYS. Every bird {name} carries is a carved wooden decoy, plainly made by hand, and none is a "
+             "real bird. Each is one solid piece of carved wood: a smooth simplified body with no separate "
+             "feathers, the head and the long neck carved in one piece with it, the feather pattern only painted "
+             "on in a few flat strokes of dull brown, grey and cream, worn away to bare pale wood at the bill, the "
+             "crown of the head and every edge, with the grain of the wood showing through and fine cracks along "
+             "it. The eyes are small painted dots. The heads are all held at the same stiff upright angle, the "
+             "bills shut, because they are carved. A brass screw-eye is set in the breast of each, and the rope "
+             "runs through the screw-eyes from one decoy to the next. They are roped in the same places as the "
+             "birds now, as many and the same size, riding high on the back and shoulders behind the ears."
+             "\n\n"
+             "The one at the chest hangs upside down on its rope, so its underside faces the camera: a flat "
+             "wooden base with a dark lead keel weight screwed along it. Rain beads on the painted wood and runs off it, and the lightning "
+             "glints on the wet paint as it does now."),
+        edit=(   # the whole frame: the decoys sit round the figure (refs.WHOLE)
+            ((0, 0), (1536, 0), (1536, 864), (0, 864)),
+        ),
+    ),
 )
