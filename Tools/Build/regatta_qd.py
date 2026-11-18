@@ -445,8 +445,11 @@ def _ref_mean(backend):
 # prices any other hull with the model; every seat carries the backend that timed it.
 ENGINE_TRUSTED = tuple(h for h in os.environ.get(
     "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Urchin,Scarab,Thresher,BrittleStar,Swordfish,TigerMoth").split(",") if h)
-# The judge seeds each race at turn start, so (seed, race) is deterministic; the search races one seed per course (8
-# hulls x 2 seeds is ~4.5 min a course on 4 cores) and the pool's candidates are re-raced on more seeds for the noise.
+# The judge seeds each race at turn start, so (seed, race) is deterministic. The search races TWO seeds per course by
+# default (2026-11-18): on one seed, the ten field's courses that screened at 1.05-1.10x came out at 1.15-1.48x on three
+# seeds (w3/ten/PICK.md), so one-seed elites were mostly luck. Two seeds cost about 1.6x a course (stage 1 still stops a
+# wide one early); the pool's candidates are still re-raced on three seeds before a pick. REGATTA_ENGINE_SEEDS=1 restores
+# the old screen.
 # The start condition every hull races under: "card" (the arcade card's own starting elements, today) or "L5" (every
 # hull at Time level 5). Garrett, 2026-11-16: search and balance Regatta under both. One condition per shard, so each
 # condition is its own archive; merge reports each.
@@ -483,7 +486,7 @@ def use_field(name):
     if "REGATTA_STAGE1" not in os.environ:
         STAGE1 = FIELD_STAGE1[name]
 GATE_Q = float(os.environ.get("REGATTA_GATE_Q", "0.5"))
-ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1").split(","))
+ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1,2").split(","))
 
 
 def _rj():
@@ -1512,6 +1515,8 @@ def compare(budget, out, backend="model", seed=1, log=print):
 
 def self_test():
     bad = []
+    if "REGATTA_ENGINE_SEEDS" not in os.environ and len(ENGINE_SEEDS) < 2:
+        bad.append("regatta_qd: the engine search screens on one seed (PICK.md 2026-11-18: one seed is mostly luck)")
     # Every named field races in the engine (ENGINE_TRUSTED) and its stage-1 hulls are in it, two at least.
     for name, hulls in FIELDS.items():
         if [h for h in hulls if h not in ENGINE_TRUSTED]:
