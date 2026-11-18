@@ -38,3 +38,35 @@ No privacy label. The store page's **Anti-Cheat** section is required only for c
 kernel-level anti-cheat; the server-side checks need none. If Easy Anti-Cheat or similar is ever
 added, fill that section in the same release. Steam's privacy-policy URL field links the same
 policy as above.
+
+## Gameplay analytics (added 2026-11-17, Shombith: "Go ahead update")
+
+The game sends analytics only with consent, and only for players 13 or older. It goes to UGS
+Analytics and to **Froglet's own analytics server** (Oracle Cloud, `Tools/Analytics/server/`); PostHog
+left the game on 2026-11-06 (#1761) and its account closes on 23 Nov 2026. The server derives a
+two-letter country from the IP address and never stores the IP. Add these rows to the tables above
+in the same release as the fair-play rows, or alone if fair play has not shipped:
+
+**Apple App Store — App Privacy**
+
+| Data type | Collected for | Linked to the user | Used for tracking |
+|---|---|---|---|
+| Identifiers → **User ID** (UGS player id on every event) | Analytics | Yes | No |
+| Usage Data → **Product Interaction** (sessions, menus, settings, social actions) | Analytics | Yes | No |
+| Usage Data → **Gameplay Content** (modes, results, scores, flight time) | Analytics | Yes | No |
+| Location → **Coarse Location** (country only, from the IP; the IP is not stored) | Analytics | Yes | No |
+| Diagnostics → **Crash Data** and **Other Diagnostic Data** (`client_exception`, no message text; Unity Cloud Diagnostics) | App Functionality, Analytics | No (crash reports carry no player id) / Yes (`client_exception`) | No |
+| Other Data → device model and OS (`device_model`, `os`) | Analytics | Yes | No |
+
+**Google Play — Data safety**
+
+| Data type | Collected | Shared | Purpose | Optional |
+|---|---|---|---|---|
+| Personal info → User IDs (UGS player id) | Yes | No | Analytics | Yes (consent) |
+| App activity → App interactions, Other actions (sessions, matches, menus, settings, social) | Yes | No | Analytics | Yes (consent) |
+| Location → Approximate location (country, from the IP) | Yes | No | Analytics | Yes (consent) |
+| App info and performance → Crash logs, Diagnostics | Yes | No | Analytics, App functionality | Yes (consent) |
+| Device or other IDs → install id | Yes | No | Analytics | Yes (consent) |
+
+"Shared" is No because Unity and Oracle act as our processors. Have counsel confirm both tables,
+and check them against the shipping build.

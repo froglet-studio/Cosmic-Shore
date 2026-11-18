@@ -147,7 +147,7 @@ namespace CosmicShore.Gameplay
         public const float DropSpeed = 900f;
         public const float DropEaseSeconds = 0.12f;
         public const float LandSeconds = 0.25f;
-        public const float FullCooldownSeconds = 20f;
+        public const float FullCooldownSeconds = 10f;
         public const float FullCooldownDistance = 900f;
         public const float RollDegreesPerSecond = 70f;
         public const float HullRadius = 6f;

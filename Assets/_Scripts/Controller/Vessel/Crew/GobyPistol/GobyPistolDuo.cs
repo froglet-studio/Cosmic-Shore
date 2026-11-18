@@ -217,6 +217,23 @@ namespace CosmicShore.Gameplay
         public float SnapCooldown01 => _p == null || _t >= _p.vortexAt ? 0f : Mathf.Clamp01((_p.vortexAt - _t) / Mathf.Max(0.01f, _body.pVortexCd));
         public float GhostCooldown01 => _p == null || _t >= _p.ghostAt ? 0f : Mathf.Clamp01((_p.ghostAt - _t) / Mathf.Max(0.01f, _body.pGhostCd));
         public bool SnapHeld => _p != null && _p.prevVortex;
+
+        /// <summary>
+        /// The pair's OMNI-CRYSTAL ability, the <b>restock</b> (2026-11-17, the design brief's "crystals restock both halves
+        /// fully" plus the Pistol's "ability cooldowns reset"): the Pistol's energy fills to the most it holds, and the
+        /// Goby's dart, the Pistol's snap and ghost, and every jump charge are ready at once. Called by <see cref="GobyOmniCrystalEffectSO"/>
+        /// on the machine that decides this hull (the same rule <see cref="CollectCrystal"/> takes the omni crystal by).
+        /// </summary>
+        public void OnOmniCrystal()
+        {
+            if (!Config) return;
+            _energy = Config.EnergyMax;
+            _dartReadyAt = Mathf.Min(_dartReadyAt, _t);
+            if (_p == null) return;
+            _p.vortexAt = Mathf.Min(_p.vortexAt, _t);
+            _p.ghostAt = Mathf.Min(_p.ghostAt, _t);
+            _p.launch = Mathf.Max(_p.launch, Mathf.FloorToInt(_body.pLaunchCharges));
+        }
         public bool Ghosting => _p != null && _t < _p.ghostUntil;
         public bool Diving => _dive > 0.5f;
         /// <summary>The Pistol's speed as a share of its top speed (pMaxSpeed), 0..1.</summary>

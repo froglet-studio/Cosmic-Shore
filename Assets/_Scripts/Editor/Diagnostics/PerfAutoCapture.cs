@@ -31,6 +31,12 @@ namespace CosmicShore.Editor
     /// captured at <see cref="EarlySeconds"/> under its own label (<c>S2-4min</c>), so a shorter play test still sends
     /// something (Yash, 2026-10-18). The sweep keys baselines by scene and label, so the early capture never stands in for
     /// the record's.</para>
+    ///
+    /// <para><b>Slow captures</b> (Shombith, 2026-11-17: the voyage fell to 10 FPS by its fourth cell and 2 FPS on the
+    /// way home, and "I am not typing anything"): whenever a gameplay scene's frame rate stays under
+    /// <see cref="SlowFps"/> for <see cref="SlowHoldSeconds"/>, the same capture runs by itself under
+    /// <c>&lt;scene&gt;-slow</c>; if it then falls under half of that capture's rate it runs once more as
+    /// <c>&lt;scene&gt;-slower</c>. At most <see cref="MaxSlowCaptures"/> a scene per play session; sent the same way.</para>
     /// </summary>
     [InitializeOnLoad]
     public static class PerfAutoCapture
@@ -51,6 +57,15 @@ namespace CosmicShore.Editor
         static double s_nextCheck;
         static Scenario[] s_scenarios;
 
+        const float SlowFps = 20f;
+        const float SlowHoldSeconds = 6f;
+        const int MaxSlowCaptures = 2;
+        static int s_slowCaptures;
+        static float s_slowCeiling = SlowFps;
+        static double s_slowSince = -1;
+        static int s_lastFrame = -1;
+        static double s_lastFrameAt;
+
         /// <summary>One line for the badge: what the editor will capture next, or why it will not.</summary>
         public static string StatusLine { get; private set; } = "";
 
@@ -65,6 +80,7 @@ namespace CosmicShore.Editor
                 s_captured.Clear();
                 s_scene = null;
                 s_scenarios = ReadScenarios();
+                ResetSlow();
                 StatusLine = "";
             };
             EditorApplication.update += Tick;
@@ -80,8 +96,9 @@ namespace CosmicShore.Editor
             try
             {
                 string scene = SceneManager.GetActiveScene().name;
-                if (scene != s_scene) { s_scene = scene; s_sceneSince = now; }
+                if (scene != s_scene) { s_scene = scene; s_sceneSince = now; ResetSlow(); }
                 if (string.IsNullOrEmpty(scene) || SkippedScenes.Contains(scene)) { StatusLine = ""; return; }
+                if (TickSlow(scene, now)) return;
 
                 var (recordLabel, recordAfter) = Target(scene);
                 // The early capture first (when the record waits longer than it), then the record's own.
@@ -117,6 +134,51 @@ namespace CosmicShore.Editor
                 // A measurement must never break a play test.
                 StatusLine = $"Auto-capture failed: {e.GetType().Name}";
             }
+        }
+
+        static void ResetSlow()
+        {
+            s_slowCaptures = 0;
+            s_slowCeiling = SlowFps;
+            s_slowSince = -1;
+            s_lastFrame = -1;
+        }
+
+        /// <summary>The slow capture: frames counted over the last check (about a second of wall time), a capture once
+        /// the rate has held under the ceiling for <see cref="SlowHoldSeconds"/>. True when it started one.</summary>
+        static bool TickSlow(string scene, double now)
+        {
+            int frame = Time.frameCount;
+            if (s_lastFrame < 0 || EditorApplication.isPaused || DiagnosticsHUD.CaptureRunning)
+            {
+                s_lastFrame = frame;
+                s_lastFrameAt = now;
+                s_slowSince = -1;
+                return false;
+            }
+            double span = now - s_lastFrameAt;
+            if (span < 0.5) return false;
+            float fps = (float)((frame - s_lastFrame) / span);
+            s_lastFrame = frame;
+            s_lastFrameAt = now;
+            if (s_slowCaptures >= MaxSlowCaptures || now - s_sceneSince < 20.0 || fps >= s_slowCeiling)
+            {
+                s_slowSince = -1;
+                return false;
+            }
+            if (s_slowSince < 0) s_slowSince = now;
+            if (now - s_slowSince < SlowHoldSeconds) return false;
+            if (CompilationPipeline.codeOptimization == CodeOptimization.Debug) return false;
+
+            string label = scene + (s_slowCaptures == 0 ? "-slow" : "-slower");
+            string answer = DiagnosticsHUD.RunConsole($"{DiagnosticsHUD.CaptureCommand} {label} {CaptureSeconds}");
+            if (!DiagnosticsHUD.CaptureRunning && answer != null && answer.StartsWith("no DiagnosticsHUD", StringComparison.Ordinal))
+                return false;
+            s_slowCaptures++;
+            s_slowCeiling = Mathf.Max(1f, fps * 0.5f);
+            s_slowSince = -1;
+            StatusLine = $"Auto-capture: {label} running ({fps:0} FPS held under the line). Stop Play and it goes to Claude by itself.";
+            return true;
         }
 
         static (string label, float after) Target(string scene)

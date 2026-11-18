@@ -66,7 +66,9 @@ namespace CosmicShore.UI
             KitVisibility.SetShown(ladderGroup, !shown);
         }
 
-        public void BindSide(int index, string domain, Color color, bool won, string score)
+        /// <param name="teamLine">The scoring rule's line for this team (the Mass-Space volume books), shown under
+        /// the winner/loser word; null or empty shows the word alone.</param>
+        public void BindSide(int index, string domain, Color color, bool won, string score, string teamLine = null)
         {
             var side = sides[index];
             if (side.nameText)
@@ -74,7 +76,12 @@ namespace CosmicShore.UI
                 side.nameText.text = domain.ToUpperInvariant();
                 side.nameText.color = color;
             }
-            if (side.statusText) side.statusText.text = won ? winnerWord : loserWord;
+            if (side.statusText)
+            {
+                string word = won ? winnerWord : loserWord;
+                side.statusText.text = string.IsNullOrEmpty(teamLine) ? word
+                    : string.IsNullOrEmpty(word) ? teamLine : word + "\n" + teamLine;
+            }
             if (side.scoreText) side.scoreText.text = score ?? string.Empty;
             if (side.rule) side.rule.color = color;
             if (side.shareFill) side.shareFill.color = new Color(color.r, color.g, color.b, color.a * (won ? 1f : loserShareAlpha));

@@ -68,10 +68,10 @@ def _switchback_nose(p):
 
 
 # SwitchbackController's AI knobs (Scarab Rally inherits them): the Legendary nose follow rate (every intensity's row,
-# shipped 11.18/s at I1-I2 and 13.41/s at I3-I4 since Dolphin run2, and the I4 gauntlet's) and how near a ring the AI stops dodging.
+# shipped 10.57/s at I1-I2 and 12.69/s at I3-I4 since the Dolphin step-5 run (2026-11-18), and the I4 gauntlet's) and how near a ring the AI stops dodging.
 SWITCHBACK_NOSE = {
     "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
-    "ctrl_defaults": {"noseLegendary": 11.18, "aiNoDodgeNearRing": 177.0},   # Dolphin run2 (2026-11-17)
+    "ctrl_defaults": {"noseLegendary": 10.57, "aiNoDodgeNearRing": 277.67},   # Dolphin step-5 run (2026-11-18)
     "ctrl": _switchback_nose,
 }
 
@@ -104,7 +104,7 @@ GAMES = {
                    "spendAtCharge01": (0.05, 1.0), "peakMarginUnits": (0.0, 30.0), "minDischargeSeconds": (0.0, 2.0),
                    "minPulseGainUnits": (0.0, 120.0), "maxHoldOffSeconds": (0.5, 8.0)},
         **SWITCHBACK_NOSE,
-        "lead": 2.03, "rows": [],                      # SwitchbackController.aiNoseLead: Dolphin 2.03 (run2)
+        "lead": 2.15, "rows": [],                      # SwitchbackController.aiNoseLead: Dolphin 2.15 (step-5 run)
     },
     "Serpent": {
         "mode": "SerpentTime",
@@ -307,6 +307,22 @@ GAMES = {
         "ctrl_defaults": {"aiRailLead": 40.0, "aiRaceLineLead": 60.0},
         "ctrl": lambda p: {"aiRailLead": float(p["aiRailLead"]), "aiRaceLineLead": float(p["aiRaceLineLead"])},
         "lead": None, "rows": [], "nose_gene": 1.5,
+    },
+    "TigerMoth": {
+        "mode": "Waystation",
+        # Waystation drives the AI itself (WaystationController: the Fold toward far rings, the belly-aimed drop, and
+        # the tower hop over each ring under a plate). The genes are that controller's hop and drop gates, through
+        # controller_overrides, and the nose follow rate through the judge (shipped in WaystationController.aiNoseLead).
+        # TigerMothDropAction is listed for the shipped-genome read only: it is the vessel's, never searched.
+        "assets": {i: "Assets/_SO_Assets/VesselActions/TigerMoth/TigerMothDropAction.asset" for i in (1, 2, 3, 4)},
+        "fields": {},
+        "ctrl_fields": {"aiHopLineShare": (0.3, 0.9), "aiHopMissMargin": (120.0, 800.0),
+                        "aiHopLookahead": (60.0, 400.0), "aiDropAimDegrees": (3.0, 25.0)},
+        "ctrl_defaults": {"aiHopLineShare": 0.85, "aiHopMissMargin": 600.0, "aiHopLookahead": 155.0,
+                          "aiDropAimDegrees": 6.6},    # TigerMoth run1 (2026-11-17)
+        "ctrl": lambda p: {k: float(p[k]) for k in ("aiHopLineShare", "aiHopMissMargin", "aiHopLookahead",
+                                                    "aiDropAimDegrees")},
+        "lead": None, "rows": [], "nose_gene": 6.41,   # WaystationController.aiNoseLead: TigerMoth at 6.41/s (run1)
     },
     "BrittleStar": {
         "mode": "BrittleStarTime",

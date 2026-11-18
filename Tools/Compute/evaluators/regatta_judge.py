@@ -45,15 +45,42 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 BIN = os.environ.get("REGATTA_JUDGE_BIN", "/tmp/regatta-judge-bin")
 DLL = os.path.join(BIN, "CosmicShore.dll")
 
-# The editor's Regatta Hull Benchmark, 2026-11-03: each AI alone, Legendary, I1, three laps, the course that is
-# today's pool entry 0 with no features (regatta_measured_roster.MEASURED_ON, seed 20268834).
+# The editor's Regatta Hull Benchmark, 2026-11-03: each AI alone, Legendary, I1, three laps, on the circuit that was
+# then pool entry 0 with no features (regatta_measured_roster.MEASURED_ON, seed 20268834). That circuit was deleted
+# (#2212), so these are a historical sanity scale, not a reference for the calibration course below: on Ref1 the
+# Urchin runs ~63 s after the step-5 levers.
 EDITOR_I1 = {"Urchin": 51.0, "Manta": 67.0, "Stoat": 70.0, "Squirrel": 75.0, "Rhino": 95.0, "Dolphin": 97.5,
              "Serpent": 100.0, "Sparrow": 133.0}
-CALIBRATION_GENOME = {"version": 1, "intensity": 1, "features": {}}
-REGATTA_HULLS = ["Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow",
-                 "Thresher", "BrittleStar"]   # the last two seated 2026-11-17 (author_regatta_assets.JUDGED_HULLS)
+SHUFFLE_JSON = os.path.join(ROOT, "Tools/Build/regatta_shuffle_pool.json")
+
+
+def shipped_courses(which="shuffle"):
+    """The shipped Regatta level's courses (Tools/Build/regatta_shuffle_pool.json, what the pool deals), as
+    [(name, game genome)]: "shuffle" every course, "refs" the reference courses Ref1-Ref4 (pool entries 0-3, the ones a
+    race at intensity 1-4 without a genome lays), or one name ("Ref2", "Course5")."""
+    with open(SHUFFLE_JSON) as f:
+        entries = json.load(f)["entries"]
+    named = [(e.get("ref") or e["label"], e) for e in entries]
+    if which == "refs":
+        picked = sorted(((n, e) for n, e in named if e.get("ref")), key=lambda ne: ne[0])
+    elif which == "shuffle":
+        picked = sorted(named, key=lambda ne: (not ne[1].get("ref"), ne[0]))
+    else:
+        picked = [(n, e) for n, e in named if which in (n, e["label"])]
+        if not picked:
+            raise ValueError(f"no shipped Regatta course {which!r}: {[n for n, _ in named]}")
+    return [(n, e["genome"]) for n, e in picked]
+
+
+# The calibration course is the shipped level's reference course Ref1 (pool entry 0, what a race at intensity 1
+# without a genome lays), so --calibrate and the self-test race what players race. The circuit an EMPTY genome lays
+# ({"version":1,"intensity":1,"features":{}}, RegattaCourse.ForIntensity row 1) is the code's fallback, not shipped.
+CALIBRATION_GENOME = shipped_courses("Ref1")[0][1]
+REGATTA_HULLS = ["Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Scarab", "Serpent", "Sparrow",
+                 "Thresher", "BrittleStar"]   # the last two seated 2026-11-17 (author_regatta_assets.JUDGED_HULLS);
+# the Stoat came off the card the same day (Garrett: it will be reworked a lot) and is judge-only now
 # Any other hull is seated by name too: RaceJudge adds a requested hull the card does not list to the card in memory, for
-# that run only (author_regatta_assets.JUDGE_ONLY_HULLS: Wrasse, Meerkat, Grizzly, Angler).
+# that run only (author_regatta_assets.JUDGE_ONLY_HULLS: Wrasse, Meerkat, Grizzly, Angler, Stoat).
 
 
 def _commit():
@@ -172,9 +199,19 @@ def judge(genome, seats, seeds, limit_s=400, backend="engine", field=False, work
     jobs = [("field", dict(base, seats=seats, field=True))] if field else \
         [(f"{i}_{s['hull']}", dict(base, seats=[s], field=False)) for i, s in enumerate(seats)]
     timeout_s = 120 + len(seeds) * (limit_s / 4 + 60)
-    workers = workers or max(1, min(len(jobs), os.cpu_count() or 1))
+    # REGATTA_JUDGE_WORKERS caps the game processes one judge runs at once: two search shards on one box each at
+    # cpu_count ran eight on four cores and the kernel OOM-killed races into false DNFs (2026-11-18). Max 4 a box.
+    workers = workers or int(os.environ.get("REGATTA_JUDGE_WORKERS", 0)) or max(1, min(len(jobs), os.cpu_count() or 1))
     with concurrent.futures.ThreadPoolExecutor(workers) as ex:
         results = list(ex.map(lambda j: _run_one(j[1], timeout_s, workdir, j[0]), jobs))
+    # A seat must fly the hull it asked for: the game re-draws a seat whose hull is off the card or already flown
+    # (arena seating), and a judge that reports the re-drawn hull's time under the asked name poisons every search.
+    for (_, spec), res in zip(jobs, results):
+        asked = sorted(s["hull"] for s in spec["seats"] if s["hull"] != "Random")
+        for race in res.get("races", []):
+            flown = sorted(st["hull"] for st in race.get("seats", []))
+            if asked and flown and flown != asked:
+                raise RuntimeError(f"seat hull mismatch: asked {asked}, the game flew {flown} (seed {race.get('seed')})")
     races, notes = [], []
     for res in results:
         races.extend(res.get("races", []))
@@ -212,16 +249,20 @@ def calibrate(seeds, hulls=None, start=None):
 
 
 def self_test():
-    """The judge's contract, cheaply: one Urchin race on the calibration course finishes near the editor's 51 s, and a
-    negative control (a 10 s limit) reports a DNF instead of a time."""
+    """The judge's contract, cheaply: one Urchin race on the calibration course (Ref1) finishes within 40% of the
+    editor's 51 s, and a negative control (a 10 s limit) reports a DNF instead of a time."""
     res = judge(CALIBRATION_GENOME, ["Urchin"], [1], limit_s=400)
     t = mean_finish(res).get("Urchin", (None,))[0]
     assert t is not None, f"the Urchin did not finish: {res['notes']}"
-    assert abs(t / EDITOR_I1["Urchin"] - 1) < 0.15, f"Urchin {t:.1f} s is not within 15% of the editor's 51 s"
+    # 15% held until the step-5 levers (2026-11-17) slowed the Urchin to ~67 s here; the bound only proves a sane race.
+    assert abs(t / EDITOR_I1["Urchin"] - 1) < 0.40, f"Urchin {t:.1f} s is not within 40% of the editor's 51 s"
     neg = judge(CALIBRATION_GENOME, ["Urchin"], [1], limit_s=10)
     seat = neg["races"][0]["seats"][0]
     assert seat["finish_s"] is None and seat["dnf_reason"] == "timeout", f"negative control finished: {seat}"
-    print(f"self-test ok: Urchin {t:.1f} s (editor 51.0), a 10 s limit is a timeout DNF")
+    # The idle host's profile hull is the Squirrel: a Squirrel seat must still fly a Squirrel (the judge would raise).
+    sq = judge(CALIBRATION_GENOME, ["Squirrel"], [1], limit_s=400)
+    assert sq["races"][0]["seats"][0]["hull"] == "Squirrel", sq["races"][0]["seats"]
+    print(f"self-test ok: Urchin {t:.1f} s (editor 51.0), a 10 s limit is a timeout DNF, a Squirrel seat flies a Squirrel")
 
 
 def main():
@@ -229,6 +270,8 @@ def main():
     ap.add_argument("--calibrate", action="store_true")
     ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--genome", help="genome JSON file (default: the calibration course)")
+    ap.add_argument("--course", help="race the shipped level instead: shuffle (every course), refs (Ref1-Ref4) or one "
+                                     "name (Ref2, Course5)")
     ap.add_argument("--hulls", default=",".join(REGATTA_HULLS))
     ap.add_argument("--seeds", default="1,2,3")
     ap.add_argument("--limit", type=float, default=400)
@@ -254,6 +297,13 @@ def main():
                   f"{r['finished']:>5} {r['editor_s'] or '-':>7} {r['ratio'] or '-':>6}")
         print(f"{cal['races']} races in {cal['wall_s']} s wall on {cal['cores']} cores, engine {cal['engine_commit']}")
         out = cal
+    elif a.course:
+        overrides = json.load(open(a.overrides)) if a.overrides else None
+        out = {}
+        for name, genome in shipped_courses(a.course):
+            out[name] = judge(genome, hulls, seeds, limit_s=a.limit, backend=a.backend, field=a.field,
+                              overrides=overrides, start=start)
+            print(name, json.dumps({h: v for h, v in mean_finish(out[name]).items()}))
     else:
         genome = json.load(open(a.genome)) if a.genome else CALIBRATION_GENOME
         overrides = json.load(open(a.overrides)) if a.overrides else None

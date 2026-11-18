@@ -59,6 +59,9 @@ namespace CosmicShore.Gameplay
         CellConveyor _corridor;
         ArkwayConfig _arkCfg;
         int _worlds;
+        /// <summary>The corridor's worlds by name, in route-index order (<see cref="CellConveyor.TraversalWorlds"/>), so a
+        /// job can name the world each cell stands.</summary>
+        readonly List<string> _worldNames = new();
 
         VoyageState _state;
         SavedSquad _squad;
@@ -418,6 +421,8 @@ namespace CosmicShore.Gameplay
                     _wingmates.Add(vessel);
                     SquadDeployment.Seat(vessel.VesselStatus, seated);
                     Escort(vessel, seated);
+                    // Released after the voyage opened: beside the Ark with the squad (or in the hangar, mid-intro).
+                    FormUpLate(vessel.VesselStatus, seated);
                 });
             }
         }
@@ -429,6 +434,7 @@ namespace CosmicShore.Gameplay
             var pilot = c.GetComponent<ArkEscortPilot>();
             if (!pilot) pilot = c.gameObject.AddComponent<ArkEscortPilot>();
             pilot.Arm(this, seat);
+            pilot.Errand = WingmateErrand;
             if (!_pilots.Contains(pilot)) _pilots.Add(pilot);
         }
 
@@ -500,7 +506,15 @@ namespace CosmicShore.Gameplay
         {
             if (!cell || !_active || routeIndex < 0 || _profile == null || routeIndex >= _profile.Count) return;
             NoteLegCell(cell, routeIndex);
-            cell.RuntimePopulationScale = Mathf.Max(0.1f, _profile[routeIndex]);
+            // The leg's pacing, times the voyage's own life scale (its cells are big: Shombith 2026-11-17, more fauna and
+            // more crystals).
+            float life = _def ? Mathf.Max(0.1f, _def.CellLifeScale) : 1f;
+            float creatures = Mathf.Max(0.1f, _profile[routeIndex]) * life;
+            if (_def) creatures = Mathf.Min(creatures, Mathf.Max(0.1f, _def.CellLifeMax));   // Cell Life Max
+            cell.RuntimePopulationScale = creatures;
+            // Plants at their own scale (Cell Flora Scale, with the leg's per-cell pacing): the cell's prism mass grows
+            // with them.
+            cell.RuntimeFloraShare = _def ? Mathf.Max(0.1f, _profile[routeIndex]) * Mathf.Max(0.1f, _def.CellFloraScale) / creatures : 1f;
             // The job's hostile cells (VoyageRun.Assault.cs); without a pattern, the destination when its place is hostile.
             if (PrepareAssaultCell(cell, routeIndex))
                 cell.SetReplicatedStartingController(CellControlRules.Opposing(LiveDomain(_context)));
@@ -523,7 +537,9 @@ namespace CosmicShore.Gameplay
                 }
             _holdKnown = hold ? hold.Artifacts.Count : 0;
             _underway = true;
-            BringWingmates(force: true);
+            // Every seat beside the Ark, side by side with it (VoyageRun.Formation.cs); the intro may stow them in the
+            // hangar next, to launch them there.
+            FormUp();
             OnAssaultUnderway();
             BeginIntro();
         }
@@ -1042,9 +1058,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Home: everything aboard and every crystal owed is the player's now, a relic with its authored name and
         /// lore, and the voyage ends at the dock.</summary>
-        void Dock()
+        /// <summary>Docked home: everything owed is banked. <paramref name="here"/> banks at the stop the Ark holds at
+        /// instead (a Crystal Run finished where it met its goal) and ends the voyage there.</summary>
+        void Dock(bool here = false)
         {
-            var x = VoyageRules.Extract(_state, Content);
+            var x = VoyageRules.Extract(_state, Content, anywhere: here);
             if (x != null)
             {
                 foreach (var id in x.Artifacts)
@@ -1109,7 +1127,11 @@ namespace CosmicShore.Gameplay
             ClearStop();
             SquadDeployment.Recall();
             foreach (var p in _pilots)
-                if (p) p.Disarm();
+                if (p)
+                {
+                    p.Errand = null;
+                    p.Disarm();
+                }
             _pilots.Clear();
             _escort?.Uninstall();
             var swapper = _context?.VesselInitializer;
@@ -1132,7 +1154,7 @@ namespace CosmicShore.Gameplay
         void BringWingmates(bool force)
         {
             var ark = _sea ? _sea.Ark : null;
-            if (!ark) return;
+            if (!ark || _sortie && _sortie.IsHolding) return;
             float leash = Mathf.Min(_def.WingmateLeash, ArkEscortPilot.GuardRadius * EscortGeneRegistry.LeashFactor);
             for (int i = 0; i < _wingmates.Count; i++)
             {
@@ -1143,8 +1165,13 @@ namespace CosmicShore.Gameplay
                 if (status is Component sc && sc && sc.TryGetComponent(out ArkEscortPilot escortPilot))
                     seatLeash = escortPilot.Leash(leash);
                 if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= seatLeash * seatLeash) continue;
+                // Back to its seat's slot beside the Ark (clear of the hull: a vessel set down in the plating destroys plates).
+                if (TryWingmateSlot(status, out var slot))
+                {
+                    w.SetPose(slot);
+                    continue;
+                }
                 var side = i % 2 == 0 ? -1f : 1f;
-                // Abeam of the hull, never inside it: a vessel set down in the plating destroys plates.
                 float abeam = Mathf.Max(WingmateAbeam * 2f, (_escort?.HullRadius ?? HullHalfLength) + EscortGeneRegistry.ArkLaneMargin + 60f);
                 var at = ark.Position + ark.transform.right * (side * abeam) - ark.Forward * (WingmateAbeam * (1 + i));
                 w.SetPose(new Pose(at, Quaternion.LookRotation(ark.Forward, Vector3.up)));
@@ -1172,6 +1199,8 @@ namespace CosmicShore.Gameplay
             _sea.AnchorSeconds = RaidAnchorSeconds;
             _sea.Anchored += OnRaidAnchored;
             _sea.Weighed += OnRaidWeighed;
+            // A pilot who strays past the stray radius is warned 5-4-3-2-1, then recalled to their seat (VoyageRun.Stray.cs).
+            HookStray(true);
         }
 
         /// <summary>How many worlds a route's indices count into: the corridor's own list, read from the cell it will
@@ -1182,6 +1211,8 @@ namespace CosmicShore.Gameplay
             if (!cell) cell = Cell.FindNearestActiveCell(at, sceneCellsOnly: true);
             var worlds = new List<CellConfigDataSO>();
             CellConveyor.TraversalWorlds(_arkCfg?.Cells, cell, worlds);
+            _worldNames.Clear();
+            foreach (var w in worlds) _worldNames.Add(w ? w.CellName : string.Empty);
             if (worlds.Count == 0)
                 CSDebug.LogWarning("[Voyage] No worlds to sail through (no cell pool and no host cell configs) - no leg can be set.");
             return worlds.Count;
@@ -1240,6 +1271,7 @@ namespace CosmicShore.Gameplay
                 _sea.Anchored -= OnRaidAnchored;
                 _sea.Weighed -= OnRaidWeighed;
                 _sea.AnchorSeconds = null;
+                HookStray(false);
             }
             if (_active) SquadDeployment.Recall();
             // Destroyed while out: the escort context's static hooks (the crystal placement resolver) leave with it.

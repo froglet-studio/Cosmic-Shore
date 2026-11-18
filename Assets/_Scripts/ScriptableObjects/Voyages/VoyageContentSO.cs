@@ -1085,6 +1085,12 @@ namespace CosmicShore.ScriptableObjects
         public string ToastBanked = "BANKED {count}";
         [Tooltip("Toast: the line under the banked toast ({count}, {done}, {goal}).")]
         public string ToastBankedSub = "{done} of {goal} aboard.";
+        [Tooltip("Toast: the pilot picked up a crystal ({element}). A quick string of pickups is one toast that keeps " +
+                 "count; empty shows no pickup toast.")]
+        public string ToastCrystal = "+1 {element}";
+        [Tooltip("Toast: the line under the pickup toast while crystals are carried until banked ({carried}). When " +
+                 "crystals count at once, the banked toast's line ({done} of {goal}) is used instead.")]
+        public string ToastCrystalCarrySub = "Carrying {carried}. Bank them at the Ark.";
         [Tooltip("Toast: a hit spilled what the pilot carried ({count}).")]
         public string ToastSpilled = "CRYSTALS SPILLED";
         [Tooltip("Toast: the line under the spilled toast ({count}).")]
@@ -1097,10 +1103,39 @@ namespace CosmicShore.ScriptableObjects
         public string PauseCompleteAndSail = "Complete and set sail";
         public string ObjectiveStripComplete = "Goal met. Pause to complete and set sail.";
         public string ObjectiveStripArkHull = "Ark hull {hull}%";
+        /// <summary>The caption on the Ark's hull rail down the left edge (Frogma Rev 116 A).</summary>
+        public string ObjectiveRailLabel = "Ark hull";
         public string ObjectiveStripLeaking = "Hull below {line}%: the hold is losing crystals.";
         public string ToastHullLeaking = "THE HOLD IS LEAKING";
         public string ToastHullLeakingSub = "The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.";
         public string ToastRaiders = "RAIDERS IN OPEN WATER";
         public string ToastRaidersSub = "Big creatures are coming for the Ark between the cells.";
+        public string ToastGoalMissed = "GOAL MISSED: {done} / {goal}";
+        public string ToastGoalMissedSub = "This run's haul is lost. Try again, or sail home.";
+        public string ScoreRetryRaid = "Same goal: {goal} crystals in {cells} cells";
+        public string ToastKaiju = "KAIJU IN OPEN WATER";
+        public string ToastKaijuSub = "A giant waits between the cells for the Ark's hull. Bring it down.";
+        [Tooltip("Toast: the pilot is past the stray radius; held while the countdown runs ({seconds}: 5, 4, 3, 2, 1).")]
+        public string ToastStray = "RETURN TO THE ARK: {seconds}";
+        [Tooltip("Toast: the line under the stray countdown when the pilot carries nothing ({seconds}).")]
+        public string ToastStraySub = "Too far out. Turn back or the Ark recalls you.";
+        [Tooltip("Toast: the line under the stray countdown when the pilot carries crystals ({carried}, {seconds}).")]
+        public string ToastStrayCarrySub = "Turn back or lose the {carried} crystals you carry.";
+        [Tooltip("Toast: the countdown ran out and the pilot was set back in their formation seat.")]
+        public string ToastRecalled = "RECALLED TO THE ARK";
+        [Tooltip("Toast: the line under the recall when nothing was lost.")]
+        public string ToastRecalledSub = "Back in your seat beside the Ark.";
+        [Tooltip("Toast: the line under the recall when carried crystals were lost ({count}).")]
+        public string ToastRecalledLostSub = "{count} carried crystals lost.";
+        [Tooltip("Scoreboard: a met Crystal Run's button that banks everything at the stop and ends the voyage.")]
+        public string ScoreFinishHere = "FINISH HERE";
+        [Tooltip("Scoreboard: the line under Finish here.")]
+        public string ScoreFinishHereLine = "Bank it all now and end the voyage";
+        [Tooltip("Scoreboard: the key Finish here is on.")]
+        public string ScoreFinishHereKey = "X";
+        [Tooltip("Scoreboard: a met Crystal Run's escort-home button ({scale}: the reward multiplier).")]
+        public string ScoreSailHome = "SAIL HOME";
+        [Tooltip("Scoreboard: the line under Sail home ({scale}).")]
+        public string ScoreSailHomeLine = "Escort the Ark home for {scale}x the crystals";
     }
 }

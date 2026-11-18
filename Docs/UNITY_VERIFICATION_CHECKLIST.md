@@ -65,6 +65,42 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Mass-Space volume books on the Brood Rush scoreboard (`claude/project-thread-e9yath`, 2026-11-18, Garrett) — NOT EDITOR-VERIFIED
+
+New `VolumeLedger` on `GameDataSO`, fed by `StatsManager` (create, restore, grow/shrink, destroy, steal) and the
+`Player` report RPCs; shield shells are booked by `Prism.BookShieldVolume` on every shield transition
+(`PrismStateManager`) and growth (`PrismScaleAnimator`). Brood Rush counts the field at the end
+(`VolumeLedger.CountLive`), sends five numbers a pilot in its final-scores RPC (`ProtocolVersion` 35 -> 36), and the
+scoreboard shows each pilot's VC / VD / total and each team's sums and volume left (ladder header or versus head).
+No legacy stat changed. `unity_refcompile`: 0 errors in the changed files. Never run in the editor.
+
+1. Brood Rush, 1 human + AI, two teams: each row reads "N VC  N VD  N total"; each team head reads its sums and "left".
+2. With no fauna eating trails, the head shows no "Totals differ" line and the console shows no `[BroodRush] Volume books`
+   warning. Any warning names the pilot or the numbers: send it (it is the bug signal Garrett asked for).
+3. Shield a trail (Dolphin, Sparrow): the pilot's VC rises by 3.5 boxes a shielded prism, 12.5 a super-shielded one.
+4. Steal a prism (Urchin): the thief's VC and VD both rise; the victim's team "left" falls.
+5. Two machines: the guest's scoreboard shows the same numbers as the host's.
+6. Frame time with many shield transitions (a Dolphin shielding its trail): one extra event a transition.
+
+### 🔴 Every game seats up to 9 vessels, at most 3 a team (`claude/project-thread-e9yath`, 2026-11-18, Garrett) — NOT EDITOR-VERIFIED
+
+`ArcadeConfigSyncManager.LobbySnapshot` carries 8 AI seats (was 6; `ProtocolVersion` 34 -> 35). The configure modal's
+seat ceiling is 9 (was 4, 6 on arena cards), capped at `SO_ArcadeGame.TeamSeatCap(domains)` = 3 a team; `MaxSeats`
+applies the same cap. 86 arcade cards (and their generators) say `MaxPlayersAllowed: 9`; the six scenes with authored
+spawn points (2v2 CoOp, Joust, Skim Race, Astro League, both Tandavas) and Maelstrom keep their caps. Brood Rush opens
+to three teams (`MaxDomainsAllowed 3`, first to 3 broods). Arena hulls stay unique in the whole match (Garrett,
+2026-11-18), so an arena card seats at most its hull count (Brood Rush 7, Regatta 9). `unity_refcompile`: 0 errors
+in the changed files; every `author_*_assets.py --check` passes. Never run in the editor.
+
+1. Arcade, any cell-ring card (Bends, Tollway): three teams, 9 seats; the player-count row offers up to 9 and no more
+   than 6 with two teams. Launch with 1 human + 8 AI: nine vessels spawn round the cell, none inside another.
+2. The end scoreboard and the in-game roster show all nine without clipping (rows past four are new ground).
+3. Two machines (MPPM): host 9 seats with 2 humans; the guest sees the same 7 AI names, hulls and difficulties.
+   A guest on protocol 34 is refused, not desynced.
+4. Brood Rush, three teams: each team's wave scores its own brood; the first team to 3 wins. Seven pilots at most.
+5. Regatta and Broadside: 9 seats, no hull twice in the match.
+6. Performance with nine vessels laying trails in a dense cell (Bloomrush, Kelpwood): frame time on a phone.
+
 ### 🔴 The Serpent AI presses its refuel cloak only when it is ready, and can pick a corner for the wall (`claude/project-thread-qaz3ia`, 2026-11-17, Garrett) — NOT EDITOR-VERIFIED
 
 `PelletBoostAIPolicySO`'s refuel used to re-press on a `cooldown + 0.1 s` timer, but the wall runs about 17 s, so every
@@ -25069,3 +25105,115 @@ I2 118 -> 96, I4 139 -> 101, I1 from Time 10 104 -> 90, I4 from Time 0 152 -> 11
 I1 at rest is now the slowest rung after I4 from rest, so the ladder still runs flat.
 Not run in Unity: the reference compile shows 0 errors in the changed files.
 - [ ] Fly Burrow Run against a Legendary Meerkat AI: it should commit late, tunnel down each leg and finish faster than before.
+
+## Spearline AI ramps between rings (2026-11-17, elemental loop step 3, Regatta flywheel)
+
+Not run in the Unity editor. The change is one asset, `Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Spearline.asset`
+(a copy of `RhinoAIBoostPolicy_Headlong`), which the Swordfish's AI loads in Spearline only. Measured in the race
+judge (Amoebius headless, the real game code): Legendary 260-355 s -> 141-191 s, Medium 247-384 s -> 174-212 s, the
+I4 timeout gone.
+
+- [ ] Fly Spearline I1 and I4 against a Legendary Swordfish: between rings it presses the ramp (engage sound, the
+      speed climbs past 300 u/s) instead of coasting at about 50 u/s.
+- [ ] It still strokes through the seals and does not overshoot a ring into a long loop back.
+
+## 🔴 Play / Ready is the Ruby commit button: Maelstrom READY and PLAY AGAIN (2026-11-12, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/youthful-hawking-jxrvj0` (`/frogma-to-unity`'s first build). Spec: `Docs/UI/specs/sg5-play-ready.md`
+(Frogma, Style Guide tab, "Style Guide 5 - Buttons and their states", the Play / Ready row). Compiled with
+`unity_refcompile` only; no Unity editor and no look sheet ran. The offline proof sheet is
+`Docs/Look/sg5-play-ready_2026-11-12.jpg` (a simulation from the YAML, not the renderer).
+
+1. **Run `KitButtonCommitTests`** (EditMode): 5 tests, all green.
+2. **Open `Assets/_Scenes/Game_TestDesign/UIKitTestScene.unity`** and press Play: the button wall has a COMMIT row
+   (READY) under DANGER: the opaque one a flat Ruby (#A600FF) fill with a white label, no gradient; the transparent
+   one a Ruby border and label over a faint Ruby fill. The three vessel tiles moved down 60 to make room. Nothing in
+   the scene re-serializes on open (no dirty mark): the generator baked what `KitButton` computes.
+3. **Play Maelstrom** (Arcade > Maelstrom, any domain): the hub's **READY 4/4** button is flat Ruby with a white label;
+   hover it (one soft sheen, the fill lightens), press it (it darkens), let the pad focus it (the ring, still the old
+   sky-blue Selection: Q4 of the spec). **NEXT** between rounds stays the lime gradient (Q3). At the end, **PLAY AGAIN**
+   is Ruby; **STATS** and **MAIN MENU** unchanged.
+4. **Wear another colour set** (Profile > colour set, e.g. Dart Frog) and open the hub: READY takes the set's Ruby and
+   the label stays readable (white on it). Note any set where it is not.
+5. **Look at it at phone and iPad size** (Device Simulator, landscape): the button scales with the canvas, the label
+   stays inside it.
+
+## Waystation AI drops through the tower rings (2026-11-17, elemental loop step 3, Regatta ten)
+
+Not run in the Unity editor. `WaystationController` now judges the AI's tower drop at the spot where the fall will
+cross the ring, and its miss recovery fits the hull's turning circle (`aiHopBellyDegrees` 8 -> 20 as a cap,
+`aiHopLineShare` 0.45 -> 0.7, `aiHopMissMargin` 60 -> 400). Race judge (Amoebius headless): 0/16 -> 16/16 rungs finish.
+The reference compile shows no errors in the changed file (it has 29 elsewhere, all Cinemachine).
+
+- [ ] Fly Waystation I1 and I3 against a Legendary TigerMoth: on a tower, it flies over the ring and drops through it,
+      instead of circling above it until the clock runs out.
+- [ ] A drop lands inside the ring (not grazing its rim), and a bot that overshoots flies out, turns and comes back level.
+## Arcade categories: Time, Charge, Mass-Space, Party (2026-11-17, arcade restructure)
+
+Not run in the Unity editor; reference compile clean for the changed files. `Docs/ArcadeRestructure/PLAN.md`.
+
+- [ ] Menu_Main > Arcade: the dropdown reads "Games: All" and its tabs read ALL, TIME, CHARGE, MASS-SPACE, PARTY on
+      one row without clipping (MASS-SPACE is the longest label).
+- [ ] MASS-SPACE shows Rampage, Tollway, Hijack and the other Mass and Space cards; PARTY shows Scurry and Scarab
+      Scramble (Maelstrom stays off the grid as before); TIME and CHARGE are unchanged.
+- [ ] Scurry and Scarab Scramble cards draw no element petal, and their descriptions end in a PARTY RULES line.
+- [ ] Scurry at I2 still starts every hull at level 5 in Mass (party games keep their ladder).
+
+## Swordfish seated in Regatta; Spearline seals one more ring at I3 and I4 (2026-11-17, Regatta ten)
+
+Not run in the Unity editor. `SpearlineSeals` seals 2 / 3 / 4 / 5 rings a lap (was 2 / 3 / 3 / 4). The Regatta card adds
+the Swordfish (`author_regatta_assets.py` `JUDGED_HULLS`) with a race line (`Swordfish_Regatta`, the Rhino's line and nose
+pair). `TigerMoth_Regatta` is written for the judge only. Race judge: Spearline Legendary 141 / 150 / 159 / 208 s and
+Medium 174 / 182 / 185 / 220 s; Swordfish in Regatta 31-47 s, level with the Rhino. `spearline_harness --self-test` passes.
+
+- [ ] Fly Spearline I3 and I4: four and five sealed rings a lap, and each still opens with a stroke into the plain face.
+- [ ] Regatta: a Swordfish appears among the AI hulls, takes the line like the Rhino and threads the rings.
+
+## Waystation's trained TigerMoth AI (2026-11-17, elemental loop step 3, Regatta ten)
+
+Not run in the Unity editor. `WaystationController`'s AI hop and drop defaults are now the trained values
+(`aiHopLineShare` 0.85, `aiHopMissMargin` 600, `aiHopLookahead` 155, `aiDropAimDegrees` 6.6), and a new `aiNoseLead`
+table gives the TigerMoth's AI a 6.41/s nose (no lead). Race judge (Amoebius headless), fresh seeds 3-4: I1-I4 take
+29% less time, every rung finishes.
+
+- [ ] Fly Waystation I3 against a Legendary TigerMoth: it finishes in about 3-4 minutes and its turns look like a pilot's
+      (not twitchy) with the quicker nose.
+
+## Tiger Moth in Regatta: a cheaper Drop and the autopilot's Drop drive (2026-11-18, Regatta ten)
+
+Not run in the Unity editor. The Tiger Moth's Drop recharges in 10 s (was 20; Garrett's pick), and
+`RegattaController` presses the Drop for a Tiger Moth autopilot (`RegattaTigerMothDrop`: steer square to the ring,
+roll the belly onto it, drop short of its plane). The Tiger Moth is on the Regatta card. Race judge (Amoebius
+headless), shipped course alone, seeds 1-3: card start 131 s (was 214), L5 start 87 s.
+
+- [ ] Fly Regatta with a Tiger Moth AI on the card: before a long leg it turns side-on to the next ring, rolls its belly
+      onto it and drops, then flies through the ring (not drops past or short of it).
+- [ ] Fly the Tiger Moth yourself in Waystation and Regatta: the Drop's recharge veil sweeps in about half the time a
+      medium drop used to take, and Waystation's towers still read (a long hold past the lanterns still costs you).
+## #2203 Starling elements (2026-11-18)
+- [ ] Fly the Starling in the Toybox; collect Mass crystals to level 5+: the next Mass hand's cards read Lv 2 (Lv 3 at level 10).
+- [ ] At Mass level 5, pick a Mass card: the hand stays up for one more pick (Encore); the second pick closes it.
+- [ ] An AI Starling at level 5 takes both picks.
+
+## Regatta's shuffled level: eight genome courses from the balanced pool (2026-11-18)
+
+Not run in the Unity editor. Regatta's course pool now deals eight genome courses (`Tools/Build/regatta_shuffle_pool.json`,
+written by `author_regatta_assets.py`: one `RegattaShuffleRails<Label>` prefab carrying its `courseGenome` and one
+`Regatta Shuffle Cell Config <Label>` each) and the four old circuits sit disabled at pool entries 0-3. Race judge
+(Amoebius headless, trunk after #2208), 3 seeds, median: the polished five at 1.13x (card start) and 1.10x (L5 start).
+Unity reference compile clean on the changed test; `RegattaCoursePoolTests` not run.
+
+- [ ] Run the EditMode `RegattaCoursePoolTests`: all pass.
+- [ ] Play Regatta five times: each match lays a different course from the eight (none of the old Wide / Mixed / Hairpins /
+      Tight circuits), rings and rails appear, and the race finishes.
+
+## Regatta's four old circuits deleted; Ref1-Ref4 are the reference courses (2026-11-18)
+
+Not run in the Unity editor. `Regatta Cell Config 1-4` and `SpawnableRegattaRails1-4` are gone (Garrett). The pool
+and the scene Cell list only the eight shuffle courses, with Ref1-Ref4 (Course3, Course7, Course1, Course8) first;
+`ModePreview_Regatta` previews Ref1-Ref4. The race judge lays pool entry `intensity - 1` without a genome: Amoebius
+headless, Urchin alone, seed 1: I1 63.3 s and I4 78.6 s, the judged Ref1 and Ref4 times to the hundredth.
+
+- [ ] Open the project: no missing-reference warnings on MinigameRegatta's Cell, the course pool or ModePreview_Regatta.
+- [ ] Run the EditMode `RegattaCoursePoolTests` (`ShippedPool_DealsOnlyDifferentRegattaCourses` checks Ref1-Ref4 first).
+- [ ] Open the Regatta card's preview: the scale model shows a shuffle course, not an empty cell.

@@ -918,11 +918,13 @@ MonoBehaviour:
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler: 60
   ThrottleScalerMultiplier:
-    Enabled: 0
+    Enabled: 1
     Value: 1
-    Min: 1
-    Max: 2.5
+    Min: 1.5
+    Max: 1.8
     element: 4
+    UseFloor: 1
+    Floor: 0.75
   PitchScaler: 120
   YawScaler: 120
   RollScaler: 130

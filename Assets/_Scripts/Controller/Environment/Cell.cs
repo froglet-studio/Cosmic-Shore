@@ -2007,7 +2007,8 @@ namespace CosmicShore.Gameplay
         public int ResolveFloraPopulation(int authored)
         {
             var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
-            return ApplyRuntimePopulationScale(profile ? profile.ScaleFloraPopulation(authored) : authored);
+            return ApplyRuntimePopulationScale(profile ? profile.ScaleFloraPopulation(authored) : authored,
+                RuntimePopulationScale * RuntimeFloraShare);
         }
 
         /// <summary>
@@ -2016,10 +2017,11 @@ namespace CosmicShore.Gameplay
         /// keeps meaning exactly that), a non-zero number never rounds below 1, and scale 1 is
         /// exactly the identity so every cell that never sets the scale is bit-for-bit unchanged.
         /// </summary>
-        int ApplyRuntimePopulationScale(int resolved)
+        int ApplyRuntimePopulationScale(int resolved) => ApplyRuntimePopulationScale(resolved, RuntimePopulationScale);
+
+        static int ApplyRuntimePopulationScale(int resolved, float scale)
         {
             if (resolved <= 0) return resolved;
-            float scale = RuntimePopulationScale;
             if (scale <= 0f || Mathf.Approximately(scale, 1f)) return resolved;
             return Mathf.Max(1, Mathf.FloorToInt(resolved * scale + 0.5f));
         }
@@ -2837,6 +2839,18 @@ namespace CosmicShore.Gameplay
         public float SatelliteSizeScale { get; set; } = 1f;
 
         /// <summary>
+        /// A SATELLITE whose life is born all through its open water (the voyages' cells, Shombith 2026-11-17: "the cell
+        /// is not big and all crystals and everything come in the same spot"): every fauna birth that has no band and no
+        /// pen of its own, and every flora planting, lands at a fresh volume-uniform point between the nucleus and the
+        /// membrane (<see cref="CellLifeSpawnerBase.RandomPointInCytoplasm"/>) instead of the wave's one feeding ground,
+        /// the densest mass (the environment at the core, or the Ark under a lure) or an authored planting site. Placement
+        /// only: diets, steering, populations and every creature's own goal picks are untouched, so the hearts (the
+        /// elemental crystals) start spread across the bigger cell. Set BEFORE <see cref="InitializeSatellite"/>. Honoured
+        /// only while <see cref="IsSatellite"/>; false = as authored.
+        /// </summary>
+        public bool ScatterLifeSpawns { get; set; }
+
+        /// <summary>
         /// Opt a SATELLITE into running its life spawner. Default false - the mode preview's
         /// satellites are structure-only, because a seeded ecology is most of a second world's
         /// frame cost beside a menu that is still running (see <see cref="StartSpawnerForMode"/>).
@@ -2876,6 +2890,15 @@ namespace CosmicShore.Gameplay
         /// lighter than its profile says.
         /// </summary>
         public float RuntimePopulationScale { get; set; } = 1f;
+
+        /// <summary>
+        /// The FLORA's share of <see cref="RuntimePopulationScale"/>: flora populations resolve at
+        /// RuntimePopulationScale x this, fauna at RuntimePopulationScale alone. Default 1 (both alike). A voyage doubles
+        /// its cells' creatures but keeps their plants near authored (a plant is the cell's growing prism mass, which
+        /// every sense, sweep and draw pays for; 2026-11-17). Production gating only, like the scale it shares; set by
+        /// code, never serialized.
+        /// </summary>
+        public float RuntimeFloraShare { get; set; } = 1f;
 
         /// <summary>
         /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still

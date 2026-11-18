@@ -1545,6 +1545,21 @@ MonoBehaviour:
       - 1
       - 1
       BreachHull: 0.1
+      CellWorlds:
+      - Caldera
+      - Orrery
+      - Garland
+      - Geode
+      CellAnchorSeconds:
+      - 20
+      - 30
+      - 30
+      - 40
+      CellLife:
+      - 0.8
+      - 1.3
+      - 0.9
+      - 1.4
       Always: 1
       CountsUnderway: 1
       Cells: 4
@@ -3347,6 +3362,8 @@ MonoBehaviour:
     ToastWeighed: THE ARK SAILS ON
     ToastBanked: 'BANKED {count}'
     ToastBankedSub: '{done} of {goal} aboard.'
+    ToastCrystal: '+1 {element}'
+    ToastCrystalCarrySub: 'Carrying {carried}. Bank them at the Ark.'
     ToastSpilled: CRYSTALS SPILLED
     ToastSpilledSub: '{count} lost. Grab them back before the Ark sails.'
     ObjectiveStripAnchor: 'Raid: the Ark sails in {time}'
@@ -3355,8 +3372,25 @@ MonoBehaviour:
     PauseCompleteAndSail: Complete and set sail
     ObjectiveStripComplete: Goal met. Pause to complete and set sail.
     ObjectiveStripArkHull: 'Ark hull {hull}%'
+    ObjectiveRailLabel: Ark hull
     ObjectiveStripLeaking: 'Hull below {line}%: the hold is losing crystals.'
     ToastHullLeaking: THE HOLD IS LEAKING
     ToastHullLeakingSub: 'The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.'
     ToastRaiders: RAIDERS IN OPEN WATER
     ToastRaidersSub: Big creatures are coming for the Ark between the cells.
+    ToastKaiju: KAIJU IN OPEN WATER
+    ToastKaijuSub: A giant waits between the cells for the Ark's hull. Bring it down.
+    ToastGoalMissed: 'GOAL MISSED: {done} / {goal}'
+    ToastGoalMissedSub: Venture further to keep this run's haul, or sail home without it.
+    ScoreRetryRaid: 'Same goal: {goal} crystals in {cells} cells'
+    ToastStray: 'RETURN TO THE ARK: {seconds}'
+    ToastStraySub: Too far out. Turn back or the Ark recalls you.
+    ToastStrayCarrySub: 'Turn back or lose the {carried} crystals you carry.'
+    ToastRecalled: RECALLED TO THE ARK
+    ToastRecalledSub: Back in your seat beside the Ark.
+    ToastRecalledLostSub: '{count} carried crystals lost.'
+    ScoreFinishHere: FINISH HERE
+    ScoreFinishHereLine: Bank it all now and end the voyage
+    ScoreFinishHereKey: X
+    ScoreSailHome: SAIL HOME
+    ScoreSailHomeLine: 'Escort the Ark home for {scale}x the crystals'

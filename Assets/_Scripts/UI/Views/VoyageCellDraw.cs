@@ -232,5 +232,14 @@ namespace CosmicShore.UI
                 VoyageMapGraphic.Line(vh, p, q, w, pale, white);
             }
         }
+
+        /// <summary>One wall where two cells meet, in the far view's plain foam: the pair of membranes a wet wall draws
+        /// (<see cref="Walls"/>), as one line.</summary>
+        public static void Wall(VertexHelper vh, Vector2 a, Vector2 b, float cellPx, float alpha, Vector2 white)
+        {
+            if ((b - a).sqrMagnitude < .04f) return;
+            var pale = new Color(MemPale.r, MemPale.g, MemPale.b, .8f * alpha);
+            VoyageMapGraphic.Line(vh, a, b, Mathf.Max(1f, cellPx * .012f), pale, white);
+        }
     }
 }

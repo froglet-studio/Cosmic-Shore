@@ -268,6 +268,19 @@ sign-off through `/approve`:**
   never lured, and everything is cleared when the leg changes and when the voyage ends.
 - The fence above still holds: steering only, never a cull, a diet or a population.
 
+**Widened again 2026-11-17 (Shombith: "more attacks outside the cell, big kaiju level fauna attacking the cell"; "all
+crystals and everything come in the same spot"), awaiting Garrett's sign-off through `/approve`
+(`Docs/Voyages/CRYSTAL_RUN.md` §8):**
+- Kaiju and raiders: `VoyageRun.Kaiju.cs` holds an `IFaunaLeash` (the Angler's contract) on the grown creatures a Crystal
+  Run sends at the Ark: a kaiju born in the open water between two cells on each crossing, and the raiders. The leash
+  steers them at the Ark and orders its nearest plate; the creature re-checks it with its own diet, eats with its own
+  mouthful and keeps its starvation clock. No mark, nothing sustained. At most `kaijuMax` (2) kaiju alive; a kaiju is
+  one creature of its species grown 12x (same body-prism and collider count, larger).
+- Scattered births: a voyage's satellite cells set `Cell.ScatterLifeSpawns`, so an unbanded, unpenned creature and every
+  plant is born at its own volume-uniform point between the nucleus and the membrane (`RandomPointInCytoplasm`) instead
+  of the wave's feeding ground. Placement only: populations, diets, steering and every later goal are untouched. Off
+  everywhere else.
+
 ## 1. The spine: everything keys off **prism count**
 
 One state variable drives the whole system: the cell's live prism count

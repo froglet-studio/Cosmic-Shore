@@ -1,0 +1,26 @@
+{
+  "id": "2026-11-17-step-5-round-3-dolphin-drift-charge-rate-114ff6",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T22:49:19+00:00",
+  "area": "Dolphin and Scarab Time abilities",
+  "summary": "Step-5 round 3: Dolphin Drift Charge rate gets a resting value (chargeRateMultiplierAtRestTime 1.375, full 3.4375, floor 0.6875) so its lever works at the Time-0 card start; Scarab Time throttle curve scaled down to x0.625 -> x0.9375 (still rising with Time) instead of Max-only",
+  "why": "Knee at 37.5%: pool imbalance card 1.43 -> 1.14, L5 1.18 -> 1.11 (bar 1.10). Home rungs inside bars; Switchback I1 slower (83 -> 117 s), Scarab Rally I1 63 -> 100 s. Kit change, flagged risky.",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "6d1bd6419",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Scarab.prefab",
+    "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/ChargeBoostActionSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ChargeBoostActionExecutor.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Dolphin",
+      "Scarab"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

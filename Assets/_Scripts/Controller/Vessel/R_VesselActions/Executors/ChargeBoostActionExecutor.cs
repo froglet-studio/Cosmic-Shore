@@ -226,14 +226,14 @@ namespace CosmicShore.Gameplay
         }
 
         // Element → parameter (Time → charge rate): a high Time element fills the charge meter
-        // faster while drifting, so the dart threads gaps into a blast sooner. Anchored at exactly
-        // 1x at the resting level. Scaled from the SO's OWN authored multiplier because
+        // faster while drifting, so the dart threads gaps into a blast sooner. The resting endpoint
+        // is authored too (1x by default). Scaled from the SO's OWN authored multipliers because
         // VesselTransformer already consumes the map's generic Time multiplier for boost SPEED.
         float ChargePerSecond(ChargeBoostActionSO so)
         {
             float baseRate = (so.ChargeTimeToFull > 0f) ? (so.MaxNormalizedCharge / so.ChargeTimeToFull) : so.MaxNormalizedCharge;
-            return baseRate * ElementalScaling.Multiplier(_status, Element.Time,
-                so.ChargeRateMultiplierAtFullTime, so.MinChargeRateMultiplier);
+            return baseRate * ElementalScaling.MultiplierFromRest(_status, Element.Time,
+                so.ChargeRateMultiplierAtRestTime, so.ChargeRateMultiplierAtFullTime, so.MinChargeRateMultiplier);
         }
 
         float DischargePerSecond(ChargeBoostActionSO so)

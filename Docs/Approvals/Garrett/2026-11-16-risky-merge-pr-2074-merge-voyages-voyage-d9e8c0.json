@@ -1,0 +1,56 @@
+{
+  "id": "2026-11-16-risky-merge-pr-2074-merge-voyages-voyage-d9e8c0",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T23:54:25+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2074 (merge(voyages): Voyages Milestone 1 - Escort the Ark assaults, Crystal Run, voyage HUD and scoreboard, party voyages, Hangar line-up) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; multiplayer wire format (NetworkConfig.ProtocolVersion): Assets/_Prefabs/CORE/NetworkManager.prefab",
+  "branch": "claude/project-thread-mvdv4x",
+  "pr": 2074,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/Resources/VoyageBoardStyle.asset",
+    "Assets/Resources/Voyages/ArkEscortIntro.asset",
+    "Assets/Resources/Voyages/ArkEscortIntro.asset.meta",
+    "Assets/Resources/Voyages/CrystalRunIntro.asset",
+    "Assets/Resources/Voyages/CrystalRunIntro.asset.meta",
+    "Assets/Resources/Voyages/Voyage.asset",
+    "Assets/Resources/Voyages/VoyageCamera.asset",
+    "Assets/Resources/Voyages/VoyageCamera.asset.meta",
+    "Assets/Resources/Voyages/VoyageContent.asset",
+    "Assets/_Prefabs/CORE/NetworkManager.prefab",
+    "Assets/_SO_Assets/Color Palettes/AchromatopsiaColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/BlueRingedOctopusColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/ContrastColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/DartFrogColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/DeuteranopiaColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/DuskColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/LowVisionColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/NacreColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/NeonNoirColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/ProtanopiaColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/TritanopiaColorSetSO.asset",
+    "Assets/_SO_Assets/Color Palettes/UkiyoEColorSetSO.asset",
+    "Assets/_SO_Assets/Toys/ArkEscort.asset",
+    "Assets/_Scripts/Controller/Camera/CustomCameraController.cs",
+    "Assets/_Scripts/Controller/Environment/Ark.cs",
+    "Assets/_Scripts/Controller/Environment/Cell.cs",
+    "Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "protocol",
+      "name": "multiplayer wire format (NetworkConfig.ProtocolVersion)",
+      "detail": "Assets/_Prefabs/CORE/NetworkManager.prefab"
+    }
+  ]
+}

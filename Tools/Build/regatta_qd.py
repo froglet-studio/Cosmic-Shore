@@ -424,7 +424,13 @@ def _ref_mean(backend):
         g = today()
         r = _judge(g, jm.lay(g), backend)
         times = L.alone_times(r, SCORED)
-        _REF[backend] = sum(sum(v) / len(v) for v in times.values()) / len(times)
+        # A hull that DNFs the reference course (a None time) is left out of the scale, not a crash: the ten field's
+        # first card run (2026-11-18) lost its runner to one. If every hull DNFs, the scale is the old 60 s.
+        means = [sum(v) / len(v) for v in times.values() if v and all(t is not None for t in v)]
+        dnf = [h for h, v in times.items() if not v or any(t is None for t in v)]
+        if dnf:
+            print(f"regatta_qd: reference course DNF for {', '.join(dnf)}; scale from {len(means)} hulls", flush=True)
+        _REF[backend] = sum(means) / len(means) if means else 60.0
     return _REF[backend]
 
 
@@ -438,18 +444,49 @@ def _ref_mean(backend):
 # "mixed" races these in the engine and
 # prices any other hull with the model; every seat carries the backend that timed it.
 ENGINE_TRUSTED = tuple(h for h in os.environ.get(
-    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Stoat,Urchin,Scarab,Thresher,BrittleStar").split(",") if h)
-# The judge seeds each race at turn start, so (seed, race) is deterministic; the search races one seed per course (8
-# hulls x 2 seeds is ~4.5 min a course on 4 cores) and the pool's candidates are re-raced on more seeds for the noise.
+    "REGATTA_ENGINE_HULLS", "Dolphin,Manta,Rhino,Serpent,Sparrow,Squirrel,Urchin,Scarab,Thresher,BrittleStar,Swordfish,TigerMoth").split(",") if h)
+# The judge seeds each race at turn start, so (seed, race) is deterministic. The search races TWO seeds per course by
+# default (2026-11-18): on one seed, the ten field's courses that screened at 1.05-1.10x came out at 1.15-1.48x on three
+# seeds (w3/ten/PICK.md), so one-seed elites were mostly luck. Two seeds cost about 1.6x a course (stage 1 still stops a
+# wide one early); the pool's candidates are still re-raced on three seeds before a pick. REGATTA_ENGINE_SEEDS=1 restores
+# the old screen.
 # The start condition every hull races under: "card" (the arcade card's own starting elements, today) or "L5" (every
 # hull at Time level 5). Garrett, 2026-11-16: search and balance Regatta under both. One condition per shard, so each
 # condition is its own archive; merge reports each.
 START = os.environ.get("REGATTA_START", "card")
 
-# Stage 1 of a gated engine course: the hulls most often fastest (Rhino, Stoat) and slowest (Serpent, Dolphin) on the
+# Stage 1 of a gated engine course: the hulls most often fastest (Rhino; the Scarab since the Stoat left the card,
+# 2026-11-17) and slowest (Serpent, Dolphin) on the
 # first engine courses; four is one round on four cores, so a course stopped here costs half.
-STAGE1 = tuple(h for h in os.environ.get("REGATTA_STAGE1", "Rhino,Stoat,Serpent,Dolphin").split(",") if h)
-ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1").split(","))
+STAGE1 = tuple(h for h in os.environ.get("REGATTA_STAGE1", "Rhino,Scarab,Serpent,Dolphin").split(",") if h)
+
+# Named fields (--field or REGATTA_FIELD): the hulls a run races, which of them the loss SCORES (the rest are raced and
+# reported only: a sanity check and a DNF veto at the pool pick), and the stage-1 hulls (the fastest and slowest scored
+# hulls on the shuffle's judged times, so a too-wide course stops early; REGATTA_STAGE1 still wins).
+# "five" is the polished five the shuffle was picked on (#2211). "ten" (hub, 2026-11-18) races the five plus Thresher,
+# Serpent, Brittle Star, Swordfish and TigerMoth, and Rhino and Manta too, but scores only the five: after step 5
+# round 7 (#2217, #2218) the hub kept the five-hull imbalance as the score while Rhino, Swordfish and Manta wait on
+# Garrett's off-card decision; the others are judged so a course that breaks one of them is seen.
+FIVE = ("Urchin", "Scarab", "Sparrow", "Dolphin", "Squirrel")
+FIELDS = {
+    "five": FIVE,
+    "ten": FIVE + ("Thresher", "Serpent", "BrittleStar", "Swordfish", "TigerMoth", "Rhino", "Manta"),
+}
+FIELD_SCORED = {"five": FIVE, "ten": FIVE}
+FIELD_STAGE1 = {"five": ("Scarab", "Dolphin"), "ten": ("Scarab", "Dolphin", "Urchin", "Squirrel")}
+
+
+def use_field(name):
+    """Race field `name`, score its scored hulls; its stage-1 hulls apply unless REGATTA_STAGE1 is set."""
+    global STAGE1, REPORT_ONLY
+    if name not in FIELDS:
+        raise SystemExit(f"regatta_qd: no field {name!r} (fields: {', '.join(FIELDS)})")
+    REPORT_ONLY = tuple(h for h in FIELDS[name] if h not in FIELD_SCORED[name])
+    set_hulls(list(FIELDS[name]))
+    if "REGATTA_STAGE1" not in os.environ:
+        STAGE1 = FIELD_STAGE1[name]
+GATE_Q = float(os.environ.get("REGATTA_GATE_Q", "0.5"))
+ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1,2").split(","))
 
 
 def _rj():
@@ -1143,8 +1180,10 @@ def seed_genomes(own, k, n):
         for f in ([p] if p.endswith(".jsonl") else shard_files(p)):
             recs += [r for r in read_jsonl(f) if r.get("valid") and r.get("genome")]
     def spread(r):
-        t = [r["seconds"].get(h) for h in SCORED]
-        return max(t) / min(t) if all(t) else None
+        # Over the scored hulls the record timed: an older archive never raced a hull a new field adds (the ten's
+        # Swordfish, TigerMoth), so it seeds on the ones it has, if that is at least five (or the whole field).
+        t = [r["seconds"][h] for h in SCORED if r["seconds"].get(h)]
+        return max(t) / min(t) if len(t) >= min(5, len(SCORED)) else None
     ranked, keys = [], set()
     for r in sorted((r for r in recs if spread(r)), key=spread):
         key = genome_key(r["genome"])
@@ -1186,7 +1225,11 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
         if len([r for r in every if usable(r)]) >= 60 and (s is None or len(own) % refit_every == 0):
             s = fit_trusted(every, seed=len(every))
         full = sorted(r["loss"]["spread_x"] for r in every if r.get("valid") and r["loss"].get("spread_x"))
-        gate = full[len(full) // 2] if len(full) >= 10 and backend != "model" else None
+        # REGATTA_GATE_Q: the quantile of the full spreads a stage-1 spread must beat to race on (0.5, the median).
+        # The ten field's L5 shard stopped 139 of 153 courses at stage 1 on the median (2026-11-18), so its archive
+        # barely grew; a looser quantile races more of them in full.
+        gate = (full[min(len(full) - 1, int(len(full) * GATE_Q))]
+                if len(full) >= 10 and backend != "model" else None)
         if seed_q:
             g = seed_q.pop(0)
         elif k == 0 and not every:
@@ -1472,6 +1515,17 @@ def compare(budget, out, backend="model", seed=1, log=print):
 
 def self_test():
     bad = []
+    if "REGATTA_ENGINE_SEEDS" not in os.environ and len(ENGINE_SEEDS) < 2:
+        bad.append("regatta_qd: the engine search screens on one seed (PICK.md 2026-11-18: one seed is mostly luck)")
+    # Every named field races in the engine (ENGINE_TRUSTED) and its stage-1 hulls are in it, two at least.
+    for name, hulls in FIELDS.items():
+        if [h for h in hulls if h not in ENGINE_TRUSTED]:
+            bad.append(f"regatta_qd: field {name} has hulls the engine does not trust")
+        st, sc = FIELD_STAGE1.get(name, ()), FIELD_SCORED.get(name, ())
+        if len(st) < 2 or [h for h in st if h not in sc]:
+            bad.append(f"regatta_qd: field {name}'s stage-1 hulls are not two or more of its scored hulls")
+        if len(sc) < 2 or [h for h in sc if h not in hulls]:
+            bad.append(f"regatta_qd: field {name} scores hulls it does not race")
     rng = random.Random(7)
     # Operators: today's genome survives repair unchanged; random and mutated genomes stay in range; crossover by leg.
     today = jm.today_genome()
@@ -1539,10 +1593,14 @@ def main():
     ap.add_argument("--hulls", default=None, help="comma list raced and scored (default: every hull on the model, the "
                     "trusted engine roster ENGINE_TRUSTED on engine / mixed)")
     ap.add_argument("--init", type=int, default=64)
+    ap.add_argument("--field", default=os.environ.get("REGATTA_FIELD"), choices=tuple(FIELDS),
+                    help="a named field raced and scored (FIELDS; default REGATTA_FIELD); --hulls wins over it")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
     if a.hulls:
         set_hulls([h for h in a.hulls.split(",") if h])
+    elif a.field:
+        use_field(a.field)
     elif a.backend == "engine":
         set_hulls(list(ENGINE_TRUSTED))
     if a.workers is None and a.backend != "model":

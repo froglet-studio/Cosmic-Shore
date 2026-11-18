@@ -106,7 +106,7 @@ LINES_FIELDS += [
     "ToastCellHostileSub", "ToastCellCalmSub", "ToastSetOff", "ToastSetOffSub", "ToastHome",
     "ToastHomeSub", "ObjectiveDestinationTag", "ObjectiveCalmTag", "ObjectiveHostileTag", "ObjectiveCellName",
     "ToastArkUnderAttack", "ToastArkUnderAttackSub", "ToastBreachClose", "ToastBreachCloseSub", "ObjectiveEscortKicker", "ObjectiveEscortGoal", "ObjectiveEscortGoalNoBreach", "ObjectiveArkBound", "ObjectiveArkInside", "ObjectiveActionAssault", "ObjectiveActionIncoming", "ObjectiveActionUnderAttack", "ObjectiveActionHealing", "ObjectiveEscortHostile", "ObjectiveEscortCalm", "ObjectiveStripEscort", "ObjectiveStripHull", "ObjectiveStripPlace", "ObjectiveStripHostile", "ObjectiveStripCalm", "ObjectiveStripElement", "ScoreColGuarded", "ScoreColScore", "ScoreTryAgain", "ScoreTryAgainLine",
-    "ToastAnchored", "ToastAnchoredSub", "ToastAnchorClosing", "ToastAnchorClosingSub", "ToastWeighed", "ToastBanked", "ToastBankedSub", "ToastSpilled", "ToastSpilledSub", "ObjectiveStripAnchor", "ObjectiveStripCarried", "ToastGoalReachedSub", "PauseCompleteAndSail", "ObjectiveStripComplete", "ObjectiveStripArkHull", "ObjectiveStripLeaking", "ToastHullLeaking", "ToastHullLeakingSub", "ToastRaiders", "ToastRaidersSub",
+    "ToastAnchored", "ToastAnchoredSub", "ToastAnchorClosing", "ToastAnchorClosingSub", "ToastWeighed", "ToastBanked", "ToastBankedSub", "ToastCrystal", "ToastCrystalCarrySub", "ToastSpilled", "ToastSpilledSub", "ObjectiveStripAnchor", "ObjectiveStripCarried", "ToastGoalReachedSub", "PauseCompleteAndSail", "ObjectiveStripComplete", "ObjectiveStripArkHull", "ObjectiveRailLabel", "ObjectiveStripLeaking", "ToastHullLeaking", "ToastHullLeakingSub", "ToastRaiders", "ToastRaidersSub", "ToastKaiju", "ToastKaijuSub", "ToastGoalMissed", "ToastGoalMissedSub", "ScoreRetryRaid", "ToastStray", "ToastStraySub", "ToastStrayCarrySub", "ToastRecalled", "ToastRecalledSub", "ToastRecalledLostSub", "ScoreFinishHere", "ScoreFinishHereLine", "ScoreFinishHereKey", "ScoreSailHome", "ScoreSailHomeLine",
 ]
 
 # Crystal Run's job keys (JobTemplate in VoyageContent.cs): an always-offered job counted from the moment the Ark sails.
@@ -121,6 +121,12 @@ def crystal_run_errors(j):
         errors.append(f"{j['id']}: cells, ventureCells and ventureGoal are 0 or more")
     if j.get("countsUnderway") and j.get("verb", "Arrive") != "Gather":
         errors.append(f"{j['id']}: countsUnderway counts crystals, so its verb is Gather")
+    for key, kind in (("cellWorlds", str), ("cellAnchorSeconds", (int, float)), ("cellLife", (int, float))):
+        vals = j.get(key, [])
+        if not isinstance(vals, list) or any(isinstance(v, bool) or not isinstance(v, kind) for v in vals):
+            errors.append(f"{j['id']}: {key} must be a list, one entry per cell of the leg")
+        elif kind is not str and any(v < 0 for v in vals):
+            errors.append(f"{j['id']}: {key} entries are 0 or more")
     if j.get("always") and j["id"] == "job.return":
         errors.append("job.return is the way home, never an always-offered job")
     return errors
@@ -577,6 +583,13 @@ def to_model(spec):
             m["Jobs"][-1]["HostileCells"] = [1 if c else 0 for c in j["hostileCells"]]
         if float(j.get("breachHull", 0)) > 0:
             m["Jobs"][-1]["BreachHull"] = j["breachHull"]
+        # The leg cell by cell (Shombith's storyboard, 2026-11-17): written only when the job names them.
+        if j.get("cellWorlds"):
+            m["Jobs"][-1]["CellWorlds"] = list(j["cellWorlds"])
+        if j.get("cellAnchorSeconds"):
+            m["Jobs"][-1]["CellAnchorSeconds"] = list(j["cellAnchorSeconds"])
+        if j.get("cellLife"):
+            m["Jobs"][-1]["CellLife"] = list(j["cellLife"])
         m["Jobs"][-1].update(crystal_run_fields(j))
     for ev in spec["events"]:
         writes = []
@@ -705,6 +718,8 @@ def emit_toy(spec):
             f"  content: {{fileID: 11400000, guid: {guid_for('VoyageContent.asset')}, type: 2}}\n")
     out += current_ark_escort()
     out += f"  seedElementLevel: {fnum(t['seedElementLevel'])}\n  wingmateLeash: {fnum(t['wingmateLeash'])}\n"
+    out += (f"  strayRadiusCells: {fnum(t.get('strayRadiusCells', 1.25))}\n"
+            f"  strayCountdownSeconds: {fnum(t.get('strayCountdownSeconds', 5))}\n")
     out += f"  findDistance: {fnum(t['findDistance'])}\n  vaultRadius: {fnum(t['vaultRadius'])}\n"
     out += f"  vaultPrisms: {int(t['vaultPrisms'])}\n  vaultPrismScale: {vec3(t['vaultPrismScale'])}\n"
     out += f"  vaultOpenShare: {fnum(t['vaultOpenShare'])}\n  holdRadius: {fnum(t['holdRadius'])}\n"

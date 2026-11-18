@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   shots:
   - Subject: 0
-    Seconds: 2
+    Seconds: 1.5
     HardCut: 0
+    Launch: 0
     Sound:
       Guid:
         Data1: 0
@@ -31,63 +32,10 @@ MonoBehaviour:
     LookAhead: 0
     Title: ""
     Line: ""
-  - Subject: 0
-    Seconds: 2
-    HardCut: 0
-    Sound:
-      Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
-    FromAzimuth: 160
-    ToAzimuth: 120
-    Elevation: 6
-    FromDistance: 1.6
-    ToDistance: 1.1
-    LookAhead: 0
-    Title: "THE ARK \xB7 hull {hull}%"
-    Line: ""
-  - Subject: 3
-    Seconds: 1
-    HardCut: 1
-    Sound:
-      Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
-    FromAzimuth: 120
-    ToAzimuth: 100
-    Elevation: 10
-    FromDistance: 3
-    ToDistance: 2.4
-    LookAhead: 0
-    Title: "{vessel}"
-    Line: ""
-  - Subject: 4
-    Seconds: 0.5
-    HardCut: 1
-    Sound:
-      Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
-    FromAzimuth: 100
-    ToAzimuth: 80
-    Elevation: 10
-    FromDistance: 3
-    ToDistance: 2.6
-    LookAhead: 0
-    Title: "{vessel}"
-    Line: ""
   - Subject: 2
-    Seconds: 2
+    Seconds: 2.5
     HardCut: 0
+    Launch: 0
     Sound:
       Guid:
         Data1: 0
@@ -103,6 +51,44 @@ MonoBehaviour:
     LookAhead: 6
     Title: "CRYSTAL RUN"
     Line: "{objective}"
+  - Subject: 4
+    Seconds: 2.4
+    HardCut: 1
+    Launch: 1
+    Sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    FromAzimuth: 25
+    ToAzimuth: 160
+    Elevation: 10
+    FromDistance: 3.2
+    ToDistance: 2.6
+    LookAhead: 0
+    Title: "{vessel}"
+    Line: ""
+  - Subject: 3
+    Seconds: 2.6
+    HardCut: 1
+    Launch: 1
+    Sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    FromAzimuth: 25
+    ToAzimuth: 175
+    Elevation: 12
+    FromDistance: 3.2
+    ToDistance: 2.8
+    LookAhead: 0
+    Title: "{vessel}"
+    Line: ""
   vessels: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
   worldSeparator: " \xB7 "
   cardLine: "{pilot} \xB7 {element}"
