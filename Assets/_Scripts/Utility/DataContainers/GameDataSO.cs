@@ -378,6 +378,13 @@ namespace CosmicShore.Utility
         [NonSerialized] public List<ScoreResult> Results = new();
 
         /// <summary>
+        /// The match's volume books (created / destroyed per pilot, Garrett 2026-11-18). The server writes them as
+        /// prisms change hands; a mode that shows them sends the lines to its clients at the end. Cleared with the
+        /// round stats.
+        /// </summary>
+        [NonSerialized] public readonly VolumeLedger VolumeLedger = new();
+
+        /// <summary>
         /// Sets <see cref="Results"/> (reusing the same list instance so existing references
         /// stay valid) and derives <see cref="WinnerName"/>/<see cref="WinnerDomain"/> from
         /// the top row ONLY when the mode has not already written them. The domain modes set
@@ -1087,6 +1094,7 @@ namespace CosmicShore.Utility
 
         void CleanupAllRoundStats()
         {
+            VolumeLedger.Clear();
             if (RoundStatsList == null) return;
 
             for (int i = 0, count = RoundStatsList.Count; i < count; i++)

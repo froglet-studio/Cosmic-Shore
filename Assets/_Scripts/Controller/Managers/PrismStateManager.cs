@@ -369,6 +369,9 @@ namespace CosmicShore.Gameplay
             // grids on every shield transition. The cell no-ops when the classification
             // did not actually change, so re-applying an existing shield costs a compare.
             PrismSpatialIndex.Instance?.ForwardShieldChangeToCell(prism.SpatialIndexId);
+
+            // The shell's volume is the owner's (Garrett, 2026-11-18): book it as it goes up or comes off.
+            prism.BookShieldVolume();
         }
 
         private void OnDisable()

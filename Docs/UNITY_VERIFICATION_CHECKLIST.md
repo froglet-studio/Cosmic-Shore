@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Mass-Space volume books on the Brood Rush scoreboard (`claude/project-thread-e9yath`, 2026-11-18, Garrett) — NOT EDITOR-VERIFIED
+
+New `VolumeLedger` on `GameDataSO`, fed by `StatsManager` (create, restore, grow/shrink, destroy, steal) and the
+`Player` report RPCs; shield shells are booked by `Prism.BookShieldVolume` on every shield transition
+(`PrismStateManager`) and growth (`PrismScaleAnimator`). Brood Rush counts the field at the end
+(`VolumeLedger.CountLive`), sends five numbers a pilot in its final-scores RPC (`ProtocolVersion` 35 -> 36), and the
+scoreboard shows each pilot's VC / VD / total and each team's sums and volume left (ladder header or versus head).
+No legacy stat changed. `unity_refcompile`: 0 errors in the changed files. Never run in the editor.
+
+1. Brood Rush, 1 human + AI, two teams: each row reads "N VC  N VD  N total"; each team head reads its sums and "left".
+2. With no fauna eating trails, the head shows no "Totals differ" line and the console shows no `[BroodRush] Volume books`
+   warning. Any warning names the pilot or the numbers: send it (it is the bug signal Garrett asked for).
+3. Shield a trail (Dolphin, Sparrow): the pilot's VC rises by 3.5 boxes a shielded prism, 12.5 a super-shielded one.
+4. Steal a prism (Urchin): the thief's VC and VD both rise; the victim's team "left" falls.
+5. Two machines: the guest's scoreboard shows the same numbers as the host's.
+6. Frame time with many shield transitions (a Dolphin shielding its trail): one extra event a transition.
+
 ### 🔴 Every game seats up to 9 vessels, at most 3 a team (`claude/project-thread-e9yath`, 2026-11-18, Garrett) — NOT EDITOR-VERIFIED
 
 `ArcadeConfigSyncManager.LobbySnapshot` carries 8 AI seats (was 6; `ProtocolVersion` 34 -> 35). The configure modal's

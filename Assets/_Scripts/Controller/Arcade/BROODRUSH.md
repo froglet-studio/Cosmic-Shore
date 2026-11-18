@@ -40,6 +40,13 @@ fundamentals — the first mode where the **ecosystem itself is the scoreboard**
   Players 2-9, at most three a team (`SO_ArcadeGame.MaxPerTeam`), AI backfill; ARENA seating - each hull is flown once in
   the whole match (Garrett, 2026-11-18), so the card's hull count caps the lobby (seven hulls today: seven pilots). Spawns on the cell-relative ring, which seats any count.
   Docs/HomeHub/ARCHITECTURE.md §3.9, Docs/ArcadeRestructure/PLAN.md)
+- **Volume books** (Garrett, 2026-11-18; `VolumeLedger`): each pilot's row says VC (volume they increased in their own
+  domain: laid, grown, restored, stolen, shield shells), VD (volume they reduced from the opposing domains: destroyed or
+  stolen - a steal counts as both) and their total, plus super-shields broken. A personal measure, independent of the win.
+  Each team's head adds them up and says the volume it had left, counted from the live prisms at the end. With two teams
+  the difference of team totals must equal the difference of volume left; when it does not the head shows the gap and
+  the server logs a warning (`BroodRushController.ReportBooksGaps`), as it does for any pilot whose books (VC less what
+  they lost) are not what the field holds. The lines are authored on `BroodRushScoringRule.asset`.
 - **Config**: `_SO_Assets/Games/ArcadeGameBroodRush.asset` (registered in
   `GameLists/OrganicRematchGames.asset`)
 

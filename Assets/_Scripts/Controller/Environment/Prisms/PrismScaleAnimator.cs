@@ -394,6 +394,9 @@ namespace CosmicShore.Gameplay
 
             if (!prism) return;
 
+            // A shielded prism that grew carries a bigger shell: the books follow (VolumeLedger).
+            prism.BookShieldVolume();
+
             if (CheckIfIsLargest())
             {
                 prism.ActivateShield();
@@ -404,6 +407,21 @@ namespace CosmicShore.Gameplay
             {
                 prism.IsSmallest = true;
             }
+        }
+
+        /// <summary>
+        /// Reports a change in this prism's SHIELD volume (Prism.BookShieldVolume) on the volume-modified channel.
+        /// <see cref="PrismStats.Volume"/> stays 0 so every legacy VolumeCreated reader is unmoved; only the volume
+        /// books read <see cref="PrismStats.ShieldVolume"/>.
+        /// </summary>
+        internal void RaiseShieldVolumeDelta(float delta)
+        {
+            onPrismVolumeModified.Raise(new PrismStats
+            {
+                Volume = 0f,
+                ShieldVolume = delta,
+                OwnName = prism ? prism.PlayerName : null,
+            });
         }
 
         private bool CheckIfIsLargest() =>

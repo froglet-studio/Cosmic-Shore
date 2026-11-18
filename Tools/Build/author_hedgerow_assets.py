@@ -489,7 +489,7 @@ if f"  stealRadius: {int(STEAL_RADIUS)}\n" not in seed_wall:
 prefab = g.read(SERPENT_PREFAB)
 if "  BaseScale: {x: 3, y: 6, z: 0.5}\n" not in prefab:
     errors.append("Serpent.prefab's trail BaseScale is no longer 3 x 6 x 0.5 - HedgerowField.BrickScale copies it")
-if "internal static void CreditPrismSteal(IRoundStats thief, float volume)" not in g.read(
+if "internal static void CreditPrismSteal(IRoundStats thief, float volume" not in g.read(
         "Assets/_Scripts/Controller/Managers/StatsManager.cs"):
     errors.append("StatsManager.CreditPrismSteal is gone - Hedgerow relies on the platform crediting every steal")
 controller = g.read(SCRIPT_PATHS["HedgerowController"])

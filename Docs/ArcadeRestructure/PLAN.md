@@ -30,6 +30,7 @@ they are great at the other."
 | 9 | Standing rule: every vessel has a parameter and an L5 upgrade for all four elements, plus an omnicrystal ability. |
 | 10 | Three teams in a Mass-Space match: the first team to 3 broods wins (2026-11-18). |
 | 11 | With 9 vessels an arena hull is still flown once in the WHOLE match, not once per team (2026-11-18). |
+| 12 | The Mass-Space end scoreboard: VC (volume a pilot increased in their own domain) + VD (volume they reduced from the opposing domains; a steal counts as both, shield shells and growth are VC, shrinking is lost) = their score, a personal measure independent of the win; summed per team. With two teams the difference of team totals must equal the difference of volume left at the end: a check that results are reported right. Super-shields broken shown too (2026-11-18). |
 
 ## Landed
 
@@ -37,3 +38,4 @@ they are great at the other."
 |---|---|
 | 2026-11-17 | Categories: `ArcadeCategory`, `ModeGenre.IsParty` / `CategoryFor`, the arcade filter (All, Time, Charge, Mass-Space, Party), party cards draw no petal, party descriptions say their rules. Party games keep their genre for their intensity ladder and analytics. `elemental_loop.py` no longer counts a Party game in a vessel's kit. |
 | 2026-11-18 | Nine vessels, three a team: the lobby carries 8 AI seats (protocol 35), the launch panel caps 9 and 3 a team (`SO_ArcadeGame.MaxPerTeam`, `TeamSeatCap`), 86 cell-ring cards say 9 players, Brood Rush opens to three teams (first to 3 broods). Arena hulls stay unique in the whole match, so an arena card seats at most its hull count. Fixed-spawn scenes and Maelstrom keep their caps. |
+| 2026-11-18 | Volume books (`VolumeLedger`): every prism change books VC, VD and loss per pilot; the end count of the field is sent with Brood Rush's results; the scoreboard shows VC, VD and total per pilot, team sums and volume left, and the two-team check (gap shown and logged as a warning). Protocol 36. |
