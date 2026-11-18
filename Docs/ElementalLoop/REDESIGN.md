@@ -58,7 +58,34 @@ L5 start was slower than rest until Time scaled the slice fuel (decision card to
 `/mnt/project-files/regatta-flywheel/step5/fuel/`.
 
 Back to loop step 1 for Time: the fun sign-off of the new ramp is a person's (Headlong for the Rhino, Spearline for the
-Swordfish), and both AIs still fly the ramp as if it were free (they do not seek prisms to refuel).
+Swordfish). Garrett chose "Time multiplies slice fuel" on the card (2026-11-18 21:39 UTC), as built.
+
+### The AIs retrained with the tank (2026-11-18, Plan step: time-arcade)
+
+- **Refuel gene** (`RaceAIRefuelGenesSO`, `Resources/RaceAIRefuelGenes`; `GateRaceController.RefuelDetour`): under a fuel
+  threshold, turn toward the nearest live, unshielded prism between the vessel and its gate if the detour costs at most
+  a slack. Searched with each drive by `time_ai_search.py` (`refuel_row`). The search left it OFF for both hulls: the
+  shipped Rhino drive plus the gene at slack 30 / 47 / 120 was 50-60% slower on Headlong (confirm, seeds 11-12), and
+  the Swordfish's winner sits at slack 0.3. Both rows ship at 0. Fuel comes from flying the line, which already ploughs
+  or slices plenty.
+- **Rhino, Headlong**: 36 candidates (I1-I4 and I1/I4 from Time 5), none beat the shipped drive with the tank in place;
+  `RhinoAIBoostPolicy_Headlong` is unchanged.
+- **Swordfish, Spearline**: its own policy at last (`SwordfishAIBoostPolicy`; the prefab named the Rhino's), and its own
+  `_Spearline` drive from the search (crystal detour 168.7 in `Resources/RaceAICrystalGenes`, lead 2.82 at nose
+  8.28/s). Confirm on fresh courses (seeds 101-103), every race finished: I1 174 -> 147 s, I2 170 -> 147, I3 167 -> 154,
+  I4 215 -> 152. The ladder is now flat (I1-I4 within 5%); the I1-I4 fun sign-off should look at that.
+- **Regatta variants**: copying each hull's home drive into Regatta was measured and rejected. The Rhino with Headlong's
+  drive went 70.8 / 66.8 -> 90.6 / 84.6 s (card / L5), the Swordfish with its Spearline drive 75.1 / 69.8. So
+  `RhinoAIBoostPolicy_Regatta` is unchanged and `SwordfishAIBoostPolicy_Regatta` holds what the Swordfish flew there
+  before. Fixed-frame judge, shuffle set, solo, seeds 1-5, geo mean of per-course means:
+
+| Vessel | Card s | x five | L5 s | x five |
+|---|---|---|---|---|
+| Rhino (unchanged) | 70.8 | 0.96 | 66.8 | 1.03 |
+| Swordfish (own policy, crystal gene) | 72.2 | 0.98 | 65.5 | 1.01 |
+
+The tank numbers did not need a re-fit. Data: `/mnt/project-files/regatta-flywheel/step5/fuel/retrain/` and
+`/mnt/project-files/regatta-flywheel/train/{Rhino,Swordfish}/fuel1*/`.
 
 ## TigerMoth
 
