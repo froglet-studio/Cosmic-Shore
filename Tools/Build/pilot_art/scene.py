@@ -513,7 +513,7 @@ def recast(word):
     """Freeze today's words for a pilot whose animals changed after their bust was painted (creator.LEGACY, a spec's
     heritage): the bust's brief still says the old animal, so every later picture starts from this file instead.
     Returns its path. The record's `seen` and `swap` were written against the old words: read them again."""
-    w = next((w for w, *_ in creator.catalog() if w.lower() == word.lower()), None)
+    w = next((w for w, *_ in creator.cast_all() if w.lower() == word.lower()), None)
     if w is None:
         raise SystemExit(f"{word} is not in the catalog (creator.py list)")
     path = identity_brief_path(w)
@@ -526,7 +526,7 @@ def recast(word):
 def identity(word):
     """A cast pilot as their first picture was painted: dict(word, name, a, b, faction, callsign, look, face, part, coat,
     second, kind, eyes, hair, hand, outfit, accent, hex, motif), every text line verbatim from that brief (identity_text)."""
-    for w, person, (a, b), faction, callsign, look in creator.catalog():
+    for w, person, (a, b), faction, callsign, look in creator.cast_all():
         if w.lower() == word.lower():
             break
     else:
@@ -1325,8 +1325,9 @@ def self_test():
     # 3. Every record is a catalog pilot's, complete, names its source, composes, keeps the identity lines and
     #    passes the gates; no two share a treatment.
     recs = records()
+    roster_words = {w for w, *_ in creator.roster()}   # roster pilots (roster.py) have records but no avatar id
     for name in sorted(os.listdir(RECORDS)):
-        if name.endswith(".py") and name[:-3] not in words:
+        if name.endswith(".py") and name[:-3] not in words and name[:-3] not in roster_words:
             errors.append(f"scenes/{name} is no catalog pilot's record (creator.py list)")
     taken = collections.Counter(rec.get("treatment", "").strip().lower() for rec in recs.values())
     for w, rec in recs.items():
