@@ -16,11 +16,11 @@ MonoBehaviour:
   speedModeMultiplier:
     Enabled: 1
     Value: 6
-    Min: 6
+    Min: 6.5
     Max: 8
     element: 4
     UseFloor: 1
-    Floor: 3
+    Floor: 3.25
   speedModeSpacingFollow: 1
   speedModeStretch: 1
   prismWidthScale:
