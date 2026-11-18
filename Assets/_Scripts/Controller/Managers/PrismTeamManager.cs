@@ -111,7 +111,8 @@ namespace CosmicShore.Gameplay
             {
                 OwnName = playerName,
                 Volume = prism.Volume,
-                AttackerName = prism.PlayerName
+                AttackerName = prism.PlayerName,
+                ShieldVolume = prism.BookedShieldVolume, // a super-steal takes the shell with the prism
             };
 
             // The steal's DETAIL LEVEL (Docs/PRISM_ANIMATION.md §4.12): close to the viewer and within the
