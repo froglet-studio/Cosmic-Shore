@@ -14,7 +14,7 @@ namespace CosmicShore.ScriptableObjects
     ///
     /// <para><b>The pair's four elements</b> (one meter, both seats):</para>
     /// <list type="bullet">
-    /// <item><b>Charge</b>: petals a vortex ring takes from a rival hull it hits (<see cref="RingPetals"/>).</item>
+    /// <item><b>Charge</b>: how hard a vortex ring homes on the locked rival (<see cref="RingHomingScale"/>).</item>
     /// <item><b>Mass</b>: den prisms per rest (<see cref="DenMassScale"/>); level 5 adds danger and super-shielded prisms.</item>
     /// <item><b>Space</b>: how far either side of the Pistol's plane mass is pulled into it (<see cref="PullReach"/>); level
     /// 5 pulls shielded prisms too.</item>
@@ -254,8 +254,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float pVortexCollapse = 1f;
         [Tooltip("A ring fired at the Goby's locked rival turns toward it at this many degrees a second.")]
         [SerializeField, Min(0f)] float homingTurnRate = 240f;
-        [Tooltip("Charge: petals the ring takes from EACH element of a rival hull it hits (1 at rest -> 3 at level 10).")]
-        [SerializeField] ElementalFloat ringPetals = ElementalFloat.Multiplier(1f, 3f, Element.Charge, 0.5f);
+        [Tooltip("CHARGE: multiplier on homingTurnRate, x1 at rest -> x2.5 at Charge 10 (floor x0.5). A charged Pistol's " +
+                 "ring bends hard onto the locked rival instead of drifting past it. Read at the replicated level.")]
+        [SerializeField] ElementalFloat ringHomingScale = ElementalFloat.Multiplier(1f, 2.5f, Element.Charge, 0.5f);
+        [Tooltip("Petals the ring takes from EACH element of a rival hull it hits. Fixed at 1 since 2026-11-18: petals " +
+                 "per hit was the Charge placeholder; Charge now sharpens the ring's homing (ringHomingScale).")]
+        [SerializeField] ElementalFloat ringPetals = new(1f);
         [Tooltip("A ring hits a hull within its radius plus this, u.")]
         [SerializeField, Min(0f)] float ringHitPad = 4f;
         [Tooltip("The scored hit a ring lands (the PvP rule: a hit takes petals and nothing else).")]
@@ -478,6 +482,7 @@ namespace CosmicShore.ScriptableObjects
         public int PullMaxPerFrame => pullMaxPerFrame;
         public float HomingTurnRate => homingTurnRate;
         public ElementalFloat RingPetals => ringPetals;
+        public ElementalFloat RingHomingScale => ringHomingScale;
         public float RingHitPad => ringHitPad;
         public CombatHitClass RingHitClass => ringHitClass;
         public float HitCooldown => hitCooldown;

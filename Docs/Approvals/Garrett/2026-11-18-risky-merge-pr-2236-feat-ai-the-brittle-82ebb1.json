@@ -1,0 +1,30 @@
+{
+  "id": "2026-11-18-risky-merge-pr-2236-feat-ai-the-brittle-82ebb1",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-18T21:15:06+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2236 (feat(ai): the Brittle Star flies a Time-trained drive in Regatta; Speed Mode back to x6) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/Resources/ElementalAbilityMaps/BrittleStar.asset, Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+  "branch": "claude/project-thread-91zcss",
+  "pr": 2236,
+  "commit": "4f6709f14",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/BrittleStarAIBoostPolicy_Regatta.asset",
+    "Assets/Resources/AIBoostPolicies/BrittleStarAIBoostPolicy_Regatta.asset.meta",
+    "Assets/Resources/ElementalAbilityMaps/BrittleStar.asset",
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+    "Docs/Approvals/Yash/2026-11-18-regatta-now-flies-a-trained-brittle-star-c22995.json",
+    "Docs/ElementalLoop/REDESIGN.md",
+    "Tools/Build/author_brittlestar_assets.py",
+    "Tools/Build/promote_trained_drives.py",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/Resources/ElementalAbilityMaps/BrittleStar.asset, Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset"
+    }
+  ]
+}

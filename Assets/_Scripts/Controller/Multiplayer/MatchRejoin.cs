@@ -64,7 +64,19 @@ namespace CosmicShore.Gameplay
             if (!TryLoad(out var r)) return;
             r.droppedAtUtcTicks = DateTime.UtcNow.Ticks;
             Save(r);
+            DroppedThisRun = true;
         }
+
+        /// <summary>
+        /// True when the drop was seen in THIS run of the game. The record lives in PlayerPrefs, so a drop from an
+        /// earlier run (the app closed, or the editor's Play stopped, before the menu could say so) is still on file
+        /// at the next launch: it may be offered for rejoin, but "The host left" about it would be old news shown over
+        /// the next session (2026-11-17).
+        /// </summary>
+        public static bool DroppedThisRun { get; private set; }
+
+        /// <summary>Whether giving a remembered match up should say "The host left".</summary>
+        public static bool GiveUpSaysHostLeft(bool dropped, bool droppedThisRun) => dropped && droppedThisRun;
 
         /// <summary>The match ended, or the player left it on purpose: nothing to rejoin.</summary>
         public static void Forget()
@@ -164,6 +176,10 @@ namespace CosmicShore.Gameplay
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => ServerPending.Clear();
+        static void ResetStatics()
+        {
+            ServerPending.Clear();
+            DroppedThisRun = false;
+        }
     }
 }

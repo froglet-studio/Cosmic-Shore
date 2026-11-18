@@ -27,9 +27,15 @@ namespace CosmicShore.Gameplay
         [SerializeField] ThresherDials dials = new ThresherDials();
 
         [Header("Elements")]
-        [Tooltip("CHARGE: petals the ball or the chain takes from an ENEMY vessel per hit, on each element " +
-                 "(a scored Strike that STEALS them - the PvP-is-petals-only rule). 1 at rest -> 3 at full Charge.")]
-        [SerializeField] ElementalFloat vesselHitPetals = ElementalFloat.Multiplier(1f, 3f, Element.Charge, 0.5f);
+        [Tooltip("Petals the ball or the chain takes from an ENEMY vessel per hit, on each element (a scored Strike " +
+                 "that STEALS them - the PvP-is-petals-only rule). Fixed at 1 since 2026-11-18: petals per hit was the " +
+                 "Charge placeholder; Charge now sets the smash speed (smashSpeedScale).")]
+        [SerializeField] ElementalFloat vesselHitPetals = new(1f);
+        [Tooltip("CHARGE: multiplier on the speed the ball must reach to SMASH (turn red: destroy every prism, explode, " +
+                 "plough on) and on the white-hot speed above it. x1 at rest -> x0.6 at Charge 10, so a charged Thresher " +
+                 "turns its ball destructive with a lazier swing. Falling: the Floor guards the Charge 15 end. Read at " +
+                 "the replicated level every frame (ApplyElementScaling), so every peer flies the same ball.")]
+        [SerializeField] ElementalFloat smashSpeedScale = ElementalFloat.Multiplier(1f, 0.6f, Element.Charge, 0.4f);
         [Tooltip("MASS: size multiplier (every axis) on the prisms the ball lays in Mass Mode (massTrailPrismScale).")]
         [SerializeField] ElementalFloat massTrailScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
         [Tooltip("SPACE: the largest explosion-diameter multiplier the chain's banked energy can buy - the cap " +
@@ -318,6 +324,7 @@ namespace CosmicShore.Gameplay
 
         public ThresherDials Dials => dials;
         public ElementalFloat VesselHitPetals => vesselHitPetals;
+        public ElementalFloat SmashSpeedScale => smashSpeedScale;
         public ElementalFloat MassTrailScale => massTrailScale;
         public ElementalFloat EnergyMaxDiameterScale => energyMaxDiameterScale;
         public ElementalFloat SpinMultiplier => spinMultiplier;

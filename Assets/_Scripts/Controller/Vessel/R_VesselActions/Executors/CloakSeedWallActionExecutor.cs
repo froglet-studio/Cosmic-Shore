@@ -124,6 +124,14 @@ namespace CosmicShore.Gameplay
         /// (the AI) that want to press only when the press counts.</summary>
         public bool IsReady => !_isRunning && Time.time >= _cooldownEndTime;
 
+        // The trail prisms laid while the cloak now running runs. Tracked by identity, not by a creation time:
+        // a pooled trail prism keeps the TimeCreated of its first life.
+        private readonly HashSet<Prism> _laidUnderCloak = new();
+
+        /// <summary>This prism was laid under the cloak that is running now. A wall leaves such a prism alone until
+        /// the cloak ends (<c>SerpentWallAssembler.HiddenUnderCloak</c>).</summary>
+        public bool LaidUnderCloak(Prism prism) => _isRunning && prism && _laidUnderCloak.Contains(prism);
+
         public void Toggle(CloakSeedWallActionSO so, IVesselStatus status)
         {
             if (!so || status == null) return;
@@ -134,6 +142,7 @@ namespace CosmicShore.Gameplay
             if (!seedAssembler.StartSeed(so.SeedWallSo, status))
                 return;
 
+            _laidUnderCloak.Clear();
             _seed = seedAssembler.ActiveSeedBlock;
             seedAssembler.BeginBonding();
 
@@ -166,6 +175,7 @@ namespace CosmicShore.Gameplay
             _activeSo  = null;
             _seed      = null;
             _isRunning = false;
+            _laidUnderCloak.Clear();
         }
 
         // ---------------- Run ----------------
@@ -198,6 +208,7 @@ namespace CosmicShore.Gameplay
             }
 
             _isRunning = false;
+            _laidUnderCloak.Clear();
 
             DestroyRevealGlow();
             RestoreShipImmediate();
@@ -418,6 +429,7 @@ namespace CosmicShore.Gameplay
         private void HandleBlockSpawned(Prism block)
         {
             if (!_isRunning || !block) return;
+            _laidUnderCloak.Add(block);
 
             // Optional: keep these blocks alive for entire cooldown
             var remaining = _cooldownEndTime - Time.time;

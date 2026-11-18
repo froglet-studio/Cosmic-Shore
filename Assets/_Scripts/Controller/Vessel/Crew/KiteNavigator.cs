@@ -172,7 +172,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Time.time of the last Mass cluster laid (the HUD flashes the Mass icon).</summary>
         public float MassFlashAt => _massFlashAt;
         /// <summary>The most boosts the pilot can hold: timeBoostCap seconds of 1.5 s boosts.</summary>
-        int MaxSavedBoosts => Mathf.Max(1, Mathf.FloorToInt(_cfg.TimeBoostCap / Mathf.Max(0.05f, _cfg.TimeBoostSeconds)));
+        int MaxSavedBoosts => Mathf.Max(1, Mathf.FloorToInt(_cfg.TimeBoostCapFor(_status) / Mathf.Max(0.05f, _cfg.TimeBoostSeconds)));
         internal bool Down => _down;
         internal KiteVec Aim => _aim;
         /// <summary>The kite hangs on the rope this frame (Sling, held): the view draws the cord from <see cref="Aim"/>,
@@ -1400,11 +1400,11 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // TIME: boosts saved for the pilot. A loop of n motes saves growth^(n-1) boosts of timeBoostSeconds each - the lab's
+        // TIME: boosts saved for the pilot. A loop of n motes saves growth^(n-1) boosts (x the Time level's timeBankScale) of timeBoostSeconds each - the lab's
         // timeBoost x growth^(n-1) seconds, in whole boosts the pilot spends one at a time (the Time icon counts them)
         void FireTime(int n, Vector3 at)
         {
-            int boosts = Mathf.Max(1, Mathf.RoundToInt(KiteNavigatorCore.Grow(1f, n, _cfg.Growth, MaxSavedBoosts)));
+            int boosts = Mathf.Max(1, Mathf.RoundToInt(KiteNavigatorCore.Grow(_cfg.SavedBoostsFor(_status), n, _cfg.Growth, MaxSavedBoosts)));
             // a rider's loop banks its boosts on the hull's machine, where the pilot spends them; its count comes back
             if (_rider) CrewRelay.SendInput(this, 1, new[] { RelayBoosts, boosts });
             else BankBoosts(boosts);

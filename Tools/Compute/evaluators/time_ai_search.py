@@ -353,6 +353,25 @@ GAMES = {
         "nose_gene": 13.66, "nose_split": 15.04,       # seeds: the coach's Legendary I2 / I4 rate (run1)
         "nose_mode_sets": True,                        # the shipped AI (params None) keeps the coach's table
     },
+    # The Brittle Star's portable Time AI (loop step 3, 2026-11-18): the hull's OWN Speed Mode policy
+    # (BrittleStarSpeedModeAIPolicySO) trained in Brittle Star Time with the coach switched off (coachOn false: no
+    # coached wish, no coached line, the gate way), so what it learns is the policy every other race flies too -
+    # Regatta's BrittleStarAIBoostPolicy_Regatta copies it. The coach is static C# that reads this game's course and
+    # cannot leave it. The reference (params None) is the shipped game, coach on, so a loss under 1 beats the coach.
+    "BrittleStarDrive": {
+        "hull": "BrittleStar",
+        "mode": "BrittleStarTime",
+        "assets": {i: POL + "BrittleStarAIBoostPolicy_BrittleStarTime.asset" for i in (1, 2, 3, 4)},
+        # The mode file stands the policy down (engage runway 999 s), so seeds read the hull's own policy.
+        "seed_assets": [SO + "BrittleStarAIBoostPolicy.asset"],
+        "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
+                   "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
+                   "minHoldSeconds": (0.0, 4.0), "minRestSeconds": (0.0, 4.0)},
+        "ctrl": lambda p: {"coachOn": False},
+        "lead": None, "rows": [],
+        "nose_gene": 13.66, "nose_split": 15.04,       # the coach's trained Legendary rates (run1), as Regatta's line has
+        "nose_mode_sets": True,
+    },
 }
 LEAD_RANGE = (0.0, 3.0)
 # The AI nose follow rate (VesselTransformer.AINoseFollowPerSecond). Games with no knob of their own fly the fleet lag,
@@ -368,7 +387,8 @@ def wide_genome(hull, w, seed):
     import random
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import regatta_genome as RG
-    return RG.training_genome(random.Random(seed), w, for_mode=GAMES[hull]["mode"])
+    mode = next(g["mode"] for k, g in GAMES.items() if g.get("hull", k) == hull)
+    return RG.training_genome(random.Random(seed), w, for_mode=mode)
 
 
 def conditions_for(a):
@@ -420,7 +440,7 @@ def shipped_genomes(g):
     """Every drive the game ships for this vessel and game, with today's nose lead and no crystal detour."""
     out = []
     # A game with no drive asset (the Meerkat: the gate race's own steering) seeds from its controller knobs alone.
-    for rel in sorted(set(g["assets"].values())) or [None]:
+    for rel in sorted(set(g.get("seed_assets") or g["assets"].values())) or [None]:
         p = read_fields(rel, g["fields"]) if rel else {}
         p.update({k: int(v) for k, v in p.items() if k in g.get("ints", ())})
         p.update(g.get("ctrl_defaults", {}))
@@ -638,6 +658,9 @@ def self_test():
         for rel in sorted(set(g["assets"].values())):
             if not os.path.exists(os.path.join(ROOT, rel)):
                 out.append(f"{hull}: missing asset {rel}")
+        for rel in sorted(set(g.get("seed_assets") or g["assets"].values())):
+            if not os.path.exists(os.path.join(ROOT, rel)):
+                out.append(f"{hull}: missing asset {rel}")
                 continue
             got = read_fields(rel, g["fields"])
             for k, (lo, hi) in g["fields"].items():
@@ -675,7 +698,8 @@ def self_test():
                                    f"{hi.get('ai_nose_follow')})")
         return out
 
-    for hull, g in sorted(GAMES.items()):
+    for key, g in sorted(GAMES.items()):
+        hull = g.get("hull", key)
         e = check(hull, g)
         errs += e
         print(f"{hull:8s} {g['mode']:12s} {'ok' if not e else 'FAIL'}  {len(g['fields'])} fields")
@@ -727,6 +751,7 @@ def main():
     if a.confirm and 4 not in a.l5:
         a.l5.append(4)
     g = GAMES[a.hull]
+    a.hull = g.get("hull", a.hull)                     # a game entry may train another entry's hull (BrittleStarDrive)
     hold = [s for s in a.hold.split(",") if s]
     if hold:
         unknown = [k for k in hold if k not in g["fields"]]
