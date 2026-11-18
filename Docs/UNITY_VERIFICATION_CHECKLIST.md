@@ -25205,3 +25205,16 @@ Unity reference compile: 0 errors in changed files.
 - [ ] Thresher at Charge 0 and 10: the ball goes red at a visibly slower swing at Charge 10; the HUD gauge fills sooner.
 - [ ] Goby & Pistol at Charge 0 and 10 with a lock: the Snap's ring bends onto the rival much harder at Charge 10.
 - [ ] Both: a hull hit takes one petal per element at any Charge.
+
+## Dolphin and Squirrel Mass: more, not sooner (2026-11-18)
+
+Not run in the Unity editor. Mass shortened a cooldown on both, and making something come back sooner is Time's job. The
+cooldowns are now fixed.
+- Dolphin Crystal Seeding: `DeployTeamCrystalActionSO.yieldScale` (x1 at rest, x2 at Mass 10, floor x0.5) sets crystals per
+  cycle (1 at rest, 2 at Mass 10) and scales the live cap (8 at rest, 16 at Mass 10). Recharge: 15 s fixed.
+- Squirrel Boost Ring: `SquirrelTubeActionSO.prismScaleMultiplier` (x1 at rest, x1.5 at Mass 10) grows the ring prisms.
+  Cooldown: 20 s fixed.
+Unity reference compile: 0 errors in changed files.
+
+- [ ] Dolphin at Mass 10: two crystals appear each cycle; the field holds up to 16 seeded crystals.
+- [ ] Squirrel at Mass 0 and 10: the Boost Ring's prisms are visibly larger at Mass 10, and the ring is back in 20 s at both.

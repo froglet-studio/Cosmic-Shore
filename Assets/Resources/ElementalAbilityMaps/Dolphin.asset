@@ -35,10 +35,10 @@ MonoBehaviour:
       up in its own domain colour.
   - Element: 2
     AbilityLabel: Crystal Seeding
-    AbilityDescription: PASSIVE - no input. Every recharge the Dolphin seeds one
-      crystal at a random point in the cell's cytoplasm, ammunition to find and blast
-      through. The recharge is 15 s at rest and
-      half that at level 10. Below level 5 the seed is an ordinary OMNI crystal that
+    AbilityDescription: PASSIVE - no input. Every 15 s the Dolphin seeds crystals
+      at random points in the cell's cytoplasm, ammunition to find and blast
+      through. Mass is the yield: one crystal a cycle at rest, two at level 10, and
+      twice as many may stand at once. Below level 5 the seed is an ordinary OMNI crystal that
       any pilot who reaches it first may take; at level 5 it lands TEAM-locked and
       only your domain can collect it.
     Input: 0

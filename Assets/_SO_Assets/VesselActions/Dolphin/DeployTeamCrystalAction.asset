@@ -18,5 +18,11 @@ MonoBehaviour:
   bandOuterFraction: 0.9
   cellessSeedRadius: 600
   maxLiveSeeded: 8
-  cooldownMultiplierAtFullMass: 0.5
-  minCooldownMultiplier: 0.35
+  yieldScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 2
+    UseFloor: 1
+    Floor: 0.5
