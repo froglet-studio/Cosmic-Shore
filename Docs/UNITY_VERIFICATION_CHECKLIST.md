@@ -25083,3 +25083,15 @@ table gives the TigerMoth's AI a 6.41/s nose (no lead). Race judge (Amoebius hea
 
 - [ ] Fly Waystation I3 against a Legendary TigerMoth: it finishes in about 3-4 minutes and its turns look like a pilot's
       (not twitchy) with the quicker nose.
+
+## Tiger Moth in Regatta: a cheaper Drop and the autopilot's Drop drive (2026-11-18, Regatta ten)
+
+Not run in the Unity editor. The Tiger Moth's Drop recharges in 10 s (was 20; Garrett's pick), and
+`RegattaController` presses the Drop for a Tiger Moth autopilot (`RegattaTigerMothDrop`: steer square to the ring,
+roll the belly onto it, drop short of its plane). The Tiger Moth is on the Regatta card. Race judge (Amoebius
+headless), shipped course alone, seeds 1-3: card start 131 s (was 214), L5 start 87 s.
+
+- [ ] Fly Regatta with a Tiger Moth AI on the card: before a long leg it turns side-on to the next ring, rolls its belly
+      onto it and drops, then flies through the ring (not drops past or short of it).
+- [ ] Fly the Tiger Moth yourself in Waystation and Regatta: the Drop's recharge veil sweeps in about half the time a
+      medium drop used to take, and Waystation's towers still read (a long hold past the lanterns still costs you).

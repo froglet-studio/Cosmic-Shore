@@ -579,14 +579,29 @@ Not seated yet:
 - **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
   (Thornline's AI plan aims at thorns).
 - **Goby**: 0 gates. It wanders, and Perch Run's dart coach armed from RegattaController did not take hold in the judge.
-- **TigerMoth** (2026-11-17): 214 s on the shipped course, every gate, about 2.6x the slowest seated hull. Its speed is the
-  Fold and the drop, and only Waystation's controller presses them; in Regatta it flies the plain line at 67 u/s.
 
 **The Swordfish** joined the card on 2026-11-17, toward Garrett's "regatta 10". It flies the Rhino's airframe and ramp
 (`RhinoAIBoostPolicy_Regatta` by the base policy's name) on the Rhino's line and nose pair, with Spearline's 10 degree
 lead cap. Raced alone, it ran level with the Rhino: shipped course 32 vs 36 s, the L5 start 31 vs 31 s, three archive
 card courses 47 / 39 / 31 vs 40 / 35 / 38 s. It finishes in a full field too. With the Rhino it is the fastest hull on
-the card, at the edge of the 1.5x rule against the Stoat (49 s).
+the card. (The 1.5x read was against the Stoat, 49 s, which came off the card later that night; against the hulls on the
+card now it is about 2x the Manta on the shipped course.)
+
+**The Tiger Moth** joined the card on 2026-11-18, on Garrett's word ("he wants it in the ten"). On 2026-11-17 it ran
+214 s on the shipped course: its speed is the Drop, and only Waystation's controller pressed it. Two changes seat it:
+- `RegattaTigerMothDrop` (a field on `RegattaController`) is Waystation's long-drop coach on Regatta's rings, for the
+  autopilot only. Before a leg worth a drop, the pilot steers its heading square to the next ring, rolls its belly onto
+  it, presses when the belly is on, and lets go short of the ring's plane. It always lines up by roll: Waystation's
+  pitch-up line-up overshot on Regatta's open legs and never dropped. Alone, seeds 1-2, card start: 214 s to 143 s.
+- The Drop recharges in 10 s instead of 20 (`TigerMothDropAction.fullCooldownSeconds`), a vessel change and Garrett's
+  pick. The sweep over 1x / 1.5x / 2x / 3x / 4x cheaper ran 143 / 132 / 131 / 131 / 131 s at the card start and
+  108 / 91 / 87 / 87 / 87 s at L5. It is flat past 2x because by then the pilot drops once a ring, so 2x is the knee.
+  Waystation's I1-I4 stayed flat across the sweep, and its tower model still passes; the hard far edge of a hop moved
+  out by up to 35 u (`waystation_tower_course.py` `FAR_EDGE_GIVE`).
+
+Judged alone, seeds 1-3 on the shipped course, all 24 rings: **card start 131 s**, about **1.6x** the slowest hull
+seated before it (Manta 82 s), so past the 1.5x rule. **L5 start 87 s**, 1.25x the slowest (Serpent 70 s). Seated on
+Garrett's word with that gap stated. What closes the rest is its 67 u/s cruise between drops.
 
 ### 6.7 The Serpent's burn length, its step-5 Time lever (2026-11-17)
 
