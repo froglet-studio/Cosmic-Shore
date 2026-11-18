@@ -21,7 +21,7 @@ reads its "intensity" (default 1), "seed" (the course seed; default the shipped 
 absent = the arena's own, {} = none); anything else is listed in RESULT["notes"] as ignored.
 
 Command line:
-    python3 Tools/Compute/evaluators/regatta_judge.py --calibrate [--seeds 1,2,3]   every hull alone on the editor
+    python3 Tools/Compute/evaluators/regatta_judge.py --calibrate [--seeds 1,2,3]  (default 1-15)   every hull alone on the editor
                                                          benchmark's course, against its 2026-11-03 times
     python3 Tools/Compute/evaluators/regatta_judge.py --genome g.json --hulls Urchin,Manta [--field]
     python3 Tools/Compute/evaluators/regatta_judge.py --self-test
@@ -233,6 +233,23 @@ def mean_finish(result):
     return {h: (sum(v[0]) / len(v[0]) if v[0] else None, len(v[0]), v[1]) for h, v in acc.items()}
 
 
+# How many seeds a balance number needs (measured 2026-11-18 after the fixed-frame launch, #2231; the polished five on
+# the shipped shuffle, seeds 1-9, regatta-flywheel/step5/noise/NOISE.md). One seed's course-mean score varies by
+# 0.1-2.4% for most hulls but 6-7% for the Dolphin, whose races split between two lines (47 s or 64 s on one course).
+# Over N seeds a hull-vs-hull ratio's standard error is about sqrt((cv_a^2 + cv_b^2) / N): 3 seeds left the 1.10x bar
+# with about 4% error at L5, 15 seeds bring it to about 1.7%. A per-course MEDIAN of two-line outcomes jumps between
+# the lines, so balance_score averages instead.
+BALANCE_SEEDS = list(range(1, 16))
+
+
+def balance_score(times_by_course):
+    """One hull's balance number: the geometric mean over courses of the MEAN finish over seeds. `times_by_course` is
+    {course: [finish_s or None, ...]}; a DNF counts as the race limit (400 s). None when no course has a time."""
+    import math
+    means = [sum(t if t else 400.0 for t in ts) / len(ts) for ts in times_by_course.values() if ts]
+    return math.exp(sum(math.log(m) for m in means) / len(means)) if means else None
+
+
 def calibrate(seeds, hulls=None, start=None):
     hulls = hulls or REGATTA_HULLS
     res = judge(CALIBRATION_GENOME, hulls, seeds, start=start)
@@ -273,7 +290,7 @@ def main():
     ap.add_argument("--course", help="race the shipped level instead: shuffle (every course), refs (Ref1-Ref4) or one "
                                      "name (Ref2, Course5)")
     ap.add_argument("--hulls", default=",".join(REGATTA_HULLS))
-    ap.add_argument("--seeds", default="1,2,3")
+    ap.add_argument("--seeds", default=",".join(map(str, BALANCE_SEEDS)), help="default BALANCE_SEEDS (1-15)")
     ap.add_argument("--limit", type=float, default=400)
     ap.add_argument("--field", action="store_true")
     ap.add_argument("--backend", default="engine")
