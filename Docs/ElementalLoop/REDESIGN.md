@@ -18,8 +18,6 @@ five run 68.5-74.3 s on the card and 63.5-66.9 s at L5. Sweeps: `/mnt/project-fi
 | Vessel | Card s | L5 s | vs the five | Mechanism | Levers tried (best result) |
 |---|---|---|---|---|---|
 | Serpent | 178.6 | 115.7 | 2.6x / 1.8x slower | Solid Fuel Pellets: pace comes from pellet burns, which last 1x at rest and 2.8x at Time 10; it raced Regatta at Time 10 only through its starting row | Pellet duration (Time): reaches the field only when it starts at 2.8 and peaks at 3.0 (card 78.7 s, L5 69.5 s), so Time no longer scales the ability. That is the row moved inside the kit, so it is flagged instead |
-| Rhino | 33.5 | 32.1 | 0.48x (twice as fast) | Ramp boost spools to 16.8x on straights | Time spool x0.25: card 45.4 s. Ramp top halved (8.4x): card 41.9 s, L5 41.5 s. Still about 0.6x |
-| Swordfish | 38.6 | 37.5 | 0.56x | The Rhino's ramp (16.8x top); its Time element scales sword and swipe rate, not pace | Ramp top halved (8.4x): card 46.7 s, L5 46.5 s. About 0.68x |
 | Manta (L5) | 86.1 (card, in the field without its -5 row) | 27.9 | 0.42x at L5 | Soar, its Time level-5 upgrade: a held boost that turns 60 s laps into ~20-30 s | Soar's BoostSpeedMultiplier (Time, acts only once Soar unlocks) at x0.375: L5 43.5 s, about 0.66x |
 | TigerMoth | 152.4 | 122.0 | 2.1x / 1.8x slower | One Drop per ring, each after a 90-degree line-up (heading square to the ring, belly rolled onto it), at a 67 u/s cruise between drops. Not the recharge: from 2x cheaper on, the Drop is back before the next line-up ends | Drop recharge (the Drop's own parameter; Garrett's 2026-11-18 pick, cruise kept): 2x / 2.5x / 3x / 4x / 5x cheaper than design all run card 152.4 s and L5 122 s, so 2x (shipped, #2207) is the knee and nothing past it moves. Time throttle slot, knee x2.0: card 104 s, L5 84 s (1.55x / 1.27x), and Waystation breaks (I4 2 of 3 DNF). Patch held: `step5/tigermoth/time-throttle-x1.9-2.1.patch` |
 
@@ -33,6 +31,34 @@ supershielded prism at the center of the wall, so its current orientation made s
 
 Garrett is doing the Serpent redesign in another project. Its kit changes land on bleeding-edge from there; re-judge it
 on the shuffle set when they do.
+
+## Redesigned: Rhino and Swordfish, the ramp runs on ploughing and slicing (2026-11-18)
+
+Garrett, 2026-11-18, verbatim: "so the rhino and sword fish have natural levers for their design changes. they like to
+slice and plow. make their boosting resource tied to their slicing and plowing. that will slow them down over longer
+time scales, while letting them keep their speed and reward them for their fun. win-win while keeping the identity and
+feel of the speed"
+
+Before: card 33.5 / 32.1 s (Rhino) and 38.6 / 37.5 s (Swordfish), about 0.5x of the five, on a free ramp that spools
+to 16.8x (840 u/s) on any straight. The best lever (half the ramp top) reached only about 0.6x / 0.68x.
+
+The kit change (every mode, `RHINO_RAMP_BOOST.md` § "Fuel"): the ramp burns a tank (0.1 a second at full power), each
+prism the Rhino ploughs adds 0.0018 and each prism the Swordfish's bill slices adds 0.004 x Time (x1 at rest, x4.5 at
+level 10). A full tank still reaches the 840 u/s top; an empty one tops out at 2.5x (125 u/s). The tank starts empty.
+
+| Vessel | Card s | L5 s | vs the five (card 68.5-74.3, L5 63.5-66.9) |
+|---|---|---|---|
+| Rhino | 70.0 | 66.9 | inside at both starts |
+| Swordfish | 70.8 | 65.8 | inside at both starts |
+
+Measured like the table above (shuffle set, real-game judge, 3 seeds, geometric mean of per-course medians), on the
+branch that ships it. What the search showed: without the empty-tank ramp the pace was bistable (27 s or 160-190 s per
+course); a full starting tank left the short courses unchanged; the Swordfish's Time element had no pace term, so its
+L5 start was slower than rest until Time scaled the slice fuel (decision card to Garrett). Sweeps:
+`/mnt/project-files/regatta-flywheel/step5/fuel/`.
+
+Back to loop step 1 for Time: the fun sign-off of the new ramp is a person's (Headlong for the Rhino, Spearline for the
+Swordfish), and both AIs still fly the ramp as if it were free (they do not seek prisms to refuel).
 
 ## TigerMoth
 
