@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.RegularExpressions;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
 using UnityEngine;
@@ -81,11 +82,25 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Thresher_HullPenIsUpInMassMode()
+        public void BallTrailUp_ADeliberateRollStillTwistsTheRibbon()
+        {
+            // The hull rolls 30 degrees about the path between two lays: the carried up turns with it.
+            Vector3 dir = Vector3.forward;
+            Vector3 up = Vector3.up;
+            Quaternion roll = Quaternion.AngleAxis(30f, dir);
+            Vector3 next = ThresherExecutor.BallTrailUp(roll * up, dir, Vector3.up);
+            Assert.AreEqual(30f, Vector3.Angle(up, next), 1e-2f);
+        }
+
+        [Test]
+        public void Thresher_LaysNothingWithBothTriggersHeld_AndTheHullNothingInMassMode()
         {
             string src = File.ReadAllText("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ThresherExecutor.cs");
-            StringAssert.Contains("HoldTrailPen(up || _massMode);", src);
-            StringAssert.Contains("HoldTrailPen(LaunchViewUp || _massMode);", src);
+            StringAssert.Contains("bool TrailPenWanted(bool launchView) => launchView || _massMode || BothTriggersHeld;", src);
+            StringAssert.Contains("HoldTrailPen(TrailPenWanted(up));", src);
+            StringAssert.Contains("HoldTrailPen(TrailPenWanted(LaunchViewUp));", src);
+            Assert.AreEqual(2, Regex.Matches(src, @"if \(_massMode && !BothTriggersHeld\) LayBallTrail\(").Count,
+                "both ball-trail lays are gated");
         }
     }
 }

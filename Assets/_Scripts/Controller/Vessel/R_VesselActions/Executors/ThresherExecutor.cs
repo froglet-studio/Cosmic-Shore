@@ -122,6 +122,7 @@ namespace CosmicShore.Gameplay
         ThresherTouchLaunch _touchLaunch;
         bool _massMode;
         Vector3 _ballTrailUp;   // the ball trail's carried up (BallTrailUp); zero = seed afresh
+        Quaternion _ballTrailShipRot = Quaternion.identity;   // the hull's rotation at the last ball lay
         float _energy;
         /// <summary>The launch direction the AIM camera chose for the pending plant release, taken
         /// by the transformer on the release edge (<see cref="TryConsumeReleaseDirection"/>).</summary>
@@ -476,7 +477,7 @@ namespace CosmicShore.Gameplay
             _massMode = !_massMode;
             _trailOwed = 0f;
             _ballTrailUp = Vector3.zero;
-            HoldTrailPen(LaunchViewUp || _massMode);
+            HoldTrailPen(TrailPenWanted(LaunchViewUp));
         }
 
         /// <summary>An omni crystal: the ball windmills round the ship (<c>windmillSeconds</c>).
@@ -561,7 +562,7 @@ namespace CosmicShore.Gameplay
             if (_solver.Mode != ThresherMode.Pivot)
             {
                 SweepBall(result.BallFrom, _solver.BallPosition);
-                if (_massMode) LayBallTrail(result.BallFrom, _solver.BallPosition, shipPosition);
+                if (_massMode && !BothTriggersHeld) LayBallTrail(result.BallFrom, _solver.BallPosition, shipPosition);
             }
             HitVesselsAlong(result.BallFrom, _solver.BallPosition, _settings.BallRadius, _solver.BallVelocity);
 
@@ -593,7 +594,7 @@ namespace CosmicShore.Gameplay
             _lastShipPosition += delta;
             if (_solver.Mode == ThresherMode.Pivot) return;
             SweepBall(from, _solver.BallPosition);
-            if (_massMode) LayBallTrail(from, _solver.BallPosition, _lastShipPosition);
+            if (_massMode && !BothTriggersHeld) LayBallTrail(from, _solver.BallPosition, _lastShipPosition);
             HitVesselsAlong(from, _solver.BallPosition, _settings.BallRadius, _solver.BallVelocity);
         }
 
@@ -698,8 +699,17 @@ namespace CosmicShore.Gameplay
                 else _launchViewDropTime = 0f;
             }
             LaunchViewUp = up;
-            HoldTrailPen(up || _massMode);
+            HoldTrailPen(TrailPenWanted(up));
         }
+
+        /// <summary>Both triggers held: the spin that winds up a launch. Nothing lays prisms then, in
+        /// either mode: they only get in the way of the launch (Caleb, 2026-11-18).</summary>
+        public bool BothTriggersHeld => LeftTriggerDepth > TriggerEdges.Deadzone
+                                        && RightTriggerDepth > TriggerEdges.Deadzone;
+
+        /// <summary>The hull's pen is up in the launch view, in Mass Mode (the ball lays the trail), and
+        /// while both triggers are held.</summary>
+        bool TrailPenWanted(bool launchView) => launchView || _massMode || BothTriggersHeld;
 
         /// <summary>Drop the launch view and hand the trail pen back (disable, re-init).</summary>
         void ClearLaunchView()
@@ -935,7 +945,12 @@ namespace CosmicShore.Gameplay
             if (lays <= 0) return;
             _trailOwed = Mathf.Min(_trailOwed - lays * spacing, spacing);
 
-            Vector3 up = BallTrailUp(_ballTrailUp, dir, shipPosition - to);
+            // The hull's own turn since the last lay rides along, so a deliberate roll or twist still
+            // twists the ribbon; the ball swinging round the hull does not.
+            Quaternion shipRot = _status.Transform ? _status.Transform.rotation : Quaternion.identity;
+            Quaternion shipTurn = shipRot * Quaternion.Inverse(_ballTrailShipRot);
+            _ballTrailShipRot = shipRot;
+            Vector3 up = BallTrailUp(shipTurn * _ballTrailUp, dir, shipPosition - to);
             _ballTrailUp = up;
             if (!SafeLookRotation.TryGet(dir, up, out var rot, this, logError: false)) return;
 
@@ -948,7 +963,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The ball trail's up: the last lay's up carried onto this lay's direction (parallel
+        /// The ball trail's up: the last lay's up (already turned by the hull's own rotation since then,
+        /// so a deliberate roll twists the ribbon) carried onto this lay's direction (parallel
         /// transport), so the flat 8 u tiles stay one ribbon as the ball swings. It used to aim each
         /// tile's up at the ship, which spins with every orbit of the ball, so neighbouring tiles
         /// were laid at unrelated roll angles (Caleb's fly test, 2026-11-18). The first lay, or one

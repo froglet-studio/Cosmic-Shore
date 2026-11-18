@@ -309,8 +309,11 @@ loop steps 2-5.
 
 Caleb flew the fleet on `claude/fervent-pascal-o28ftt`.
 
-**Dolphin: drift trail packs, then the hull hits it; long overlapping bars (pre-existing).** Lifting a thumb is the
-Dolphin's drift, so "cruising, thumbs off" is a drift. `DriftTrailActionExecutor` drives `SetDotProduct(dot(Course,
+**Dolphin: drift trail packs, then the hull hits it; long overlapping bars (pre-existing).** CORRECTED the same day:
+lifting a thumb is the Dolphin's drift on TOUCH only. On a pad the drift is LT (`TriggerEdges`: LT raises
+LeftStickAction), and the device in use is detected (`InputController.SelectStrategy` follows the last-actuated
+family), so Caleb's thumbs-off cruise on a pad was NOT a drift. The cause below is real for an actual drift; the
+packing while cruising on a pad with no trigger held is still unexplained (see "Open" at the end of this round). `DriftTrailActionExecutor` drives `SetDotProduct(dot(Course,
 nose))`: as the nose wanders off the locked course the wavelength falls to `minWavelength` 6 and `ZScaler` rises to
 `maxBlockScale` 6, so the prisms are 48 u long and 6 u apart. They were laid along the NOSE (`blockRotation`) while
 the hull travels along the course. That gives a stack of long bars across the path, half of each reaching ahead of the
@@ -342,3 +345,14 @@ ship, which spins as the ball swings, so neighbouring 8 u tiles sat at unrelated
 - One consequence: in Mass Mode a planted pivot (where the ball lays nothing) now leaves no trail at all.
 
 Tests: `TrailFlyTestFixesTests`. Not verified in Unity: fly each of the four again.
+
+**Follow-up (Caleb, same day).**
+- **Thresher:** nothing lays prisms while both triggers are held, in either mode. That is the wind-up spin before a
+  launch, where prisms only get in the way (`BothTriggersHeld`, the hull's pen and both ball-trail lays). The ball
+  trail's carried up now also turns with the hull's own rotation since the last lay. A deliberate roll or twist still
+  twists the ribbon; the ball swinging round the hull does not.
+- **Open, Dolphin:** packing at cruise on a pad with no trigger held. On a pad, nothing in the Dolphin's kit changes
+  its trail without a trigger: `SetDotProduct` only runs inside an LT drift, its skimmer carries no trail-scaling
+  effect, and no element ability touches the lay. So the code read does not explain it. Next step: a short clip from
+  the moment the packing starts, with the LT state visible (or a note of whether LT was touched in that life), and
+  whether AI Dolphins were in the cell, since the AI drifts on a loop.
