@@ -29,8 +29,9 @@ MonoBehaviour:
   - Element: 2
     AbilityLabel: Weapon Systems
     AbilityDescription: Cycle your three weapons - explosives, sniper and the
-      plasma claw. Mass grows the prisms of your trail, up to 2.5x at level 10.
-      At level 5 the claw stops destroying what it burns and STEALS it for your
+      plasma claw. Every enemy prism the claw lights refills your energy, and Mass
+      sets how much (2.5x at level 10): burn rival mass to fuel the cannon and the
+      Rush. At level 5 the claw stops destroying what it burns and STEALS it for your
       team instead.
     Input: 14
     UnlockLevel: 5

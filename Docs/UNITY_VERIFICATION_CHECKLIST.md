@@ -25164,3 +25164,21 @@ headless, Urchin alone, seed 1: I1 63.3 s and I4 78.6 s, the judged Ref1 and Ref
 - [ ] In the Toybox, fly the Serpent through a crystal: no blast cone spawns, nearby prisms are untouched, the crystal still ripples a shield through your growing walls and plays haptics.
 - [ ] No missing-reference warning from `SerpentImpactorDataContainer` on pickup.
 - Not run in Unity. No C# changed (asset list and one deleted effect asset), so `unity_refcompile` was not needed.
+Not run in the Unity editor. Space used to scale only the Seed Wall's steal reach (the Mass ability's wall), so the Space
+card's own cloak and sniper did nothing with Space. `SniperShotActionSO.coneSpaceMultiplier` (x1 at rest, x2 at Space 10,
+floor x0.5, replicated level) now widens the round's cone: 1.5 degrees at rest to 3 at Space 10. The kill query, the
+pilot strip, the tracer and the scope reticle all read the widened cone. Unity reference compile: 0 errors in changed files.
+
+- [ ] Fly the Serpent at Space 0 and Space 10 (Toybox element cheats): the scope reticle and the tracer are visibly wider at
+      Space 10, and the shot destroys prisms out to the wider cone's edge.
+- [ ] Two-client match: a Space 10 sniper round destroys the same prisms on both machines.
+## Grizzly Mass: the plasma claw refills energy (2026-11-18)
+
+Not run in the Unity editor. Grizzly Mass grew the trail (`VesselPrismController.trailVolume`), a placeholder nothing on the
+Weapon Systems card was about. Now every enemy prism the claw lights refills energy:
+`GrizzlyFlamethrowerActionSO.energyPerIgnite`, 0.01 at rest to 0.025 at Mass 10 (floor 0.005), on energy index 0 (a Rush
+costs 0.25). The Grizzly's `trailVolume` is switched off. Unity reference compile: 0 errors in changed files.
+
+- [ ] Fly the Grizzly, spend energy on a Rush, then hold the claw on rival prisms: the energy bar climbs, faster at Mass 10.
+- [ ] Hold the claw on your own prisms or on super-shielded ones: no energy comes back.
+- [ ] The trail is the same size at Mass 0 and Mass 10.
