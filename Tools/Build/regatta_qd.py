@@ -424,7 +424,13 @@ def _ref_mean(backend):
         g = today()
         r = _judge(g, jm.lay(g), backend)
         times = L.alone_times(r, SCORED)
-        _REF[backend] = sum(sum(v) / len(v) for v in times.values()) / len(times)
+        # A hull that DNFs the reference course (a None time) is left out of the scale, not a crash: the ten field's
+        # first card run (2026-11-18) lost its runner to one. If every hull DNFs, the scale is the old 60 s.
+        means = [sum(v) / len(v) for v in times.values() if v and all(t is not None for t in v)]
+        dnf = [h for h, v in times.items() if not v or any(t is None for t in v)]
+        if dnf:
+            print(f"regatta_qd: reference course DNF for {', '.join(dnf)}; scale from {len(means)} hulls", flush=True)
+        _REF[backend] = sum(means) / len(means) if means else 60.0
     return _REF[backend]
 
 
