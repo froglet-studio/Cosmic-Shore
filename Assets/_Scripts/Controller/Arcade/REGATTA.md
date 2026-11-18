@@ -133,10 +133,19 @@ same circuit every match; the variety comes from the course pool below.
 ### 4.1 The shuffled course pool (2026-11-07)
 
 Garrett, 2026-11-06: one Regatta level, no intensities, several balanced course variants shuffled.
-**Intensity no longer picks the course.** The four circuits in the table above (the rows of
-`RegattaCourse.ForIntensity`, which used to be the intensity ladder) are the four entries of
-`Regatta Course Pool.asset` (`RegattaCoursePoolSO`, next to the cell configs): Wide, Mixed,
-Hairpins, Tight.
+**Intensity no longer picks the course.** `Regatta Course Pool.asset` (`RegattaCoursePoolSO`, next
+to the cell configs) holds the shuffle: eight genome courses picked from the balanced archive3six pool
+(2026-11-18, PR #2211; `Tools/Build/regatta_shuffle_pool.json`, written by the W3 course search). Each is
+a `RegattaShuffleRails<Label>` prefab whose `courseGenome` is the whole `RegattaCourseGenome` the
+real-game judge raced. Picked on five-hull imbalance (Urchin, Scarab, Sparrow, Dolphin, Squirrel),
+the worse of card and L5 starts, 3 seeds: 1.13x card, 1.08x L5.
+
+The four old circuits in the table above (Wide, Mixed, Hairpins, Tight) were deleted from the pool
+and the project on 2026-11-18 (Garrett). The rows of `RegattaCourse.ForIntensity` stay in code as
+the circuit an empty genome lays. **Ref1-Ref4** are four of the eight, chosen as the tightest by
+five-hull spread and ordered by lap time (61-76 s). They are pool entries 0-3: the reference courses
+anything that needs a stable course races. The race judge and the training harness lay entry
+`intensity - 1` when they race "Regatta I1-I4" without a genome.
 
 | step | where | what |
 |---|---|---|
@@ -150,8 +159,8 @@ setting the course search adds) and its phase thresholds ride that circuit's mea
 course data stays where the harness and the parity gates read it. The pool's entries must be the
 Cell's `CellConfigs` in the same order (`author_regatta_assets.py` checks it; the controller warns
 at runtime). An entry is taken out of the shuffle with its `Enabled` toggle. A searched course
-(the pool search, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) joins as a new rails prefab + cell
-config + `POOL_ENTRIES` row in the generator.
+(the pool search, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) joins as a new entry in
+`regatta_shuffle_pool.json`; the generator writes its rails prefab, cell config and pool row.
 
 **Not yet decided by this change:** the card's `StartingElements` rows are still keyed by
 intensity, though intensity no longer picks the circuit they were measured on; removing intensity

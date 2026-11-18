@@ -25147,3 +25147,14 @@ Unity reference compile clean on the changed test; `RegattaCoursePoolTests` not 
 - [ ] Run the EditMode `RegattaCoursePoolTests`: all pass.
 - [ ] Play Regatta five times: each match lays a different course from the eight (none of the old Wide / Mixed / Hairpins /
       Tight circuits), rings and rails appear, and the race finishes.
+
+## Regatta's four old circuits deleted; Ref1-Ref4 are the reference courses (2026-11-18)
+
+Not run in the Unity editor. `Regatta Cell Config 1-4` and `SpawnableRegattaRails1-4` are gone (Garrett). The pool
+and the scene Cell list only the eight shuffle courses, with Ref1-Ref4 (Course3, Course7, Course1, Course8) first;
+`ModePreview_Regatta` previews Ref1-Ref4. The race judge lays pool entry `intensity - 1` without a genome: Amoebius
+headless, Urchin alone, seed 1: I1 63.3 s and I4 78.6 s, the judged Ref1 and Ref4 times to the hundredth.
+
+- [ ] Open the project: no missing-reference warnings on MinigameRegatta's Cell, the course pool or ModePreview_Regatta.
+- [ ] Run the EditMode `RegattaCoursePoolTests` (`ShippedPool_DealsOnlyDifferentRegattaCourses` checks Ref1-Ref4 first).
+- [ ] Open the Regatta card's preview: the scale model shows a shuffle course, not an empty cell.

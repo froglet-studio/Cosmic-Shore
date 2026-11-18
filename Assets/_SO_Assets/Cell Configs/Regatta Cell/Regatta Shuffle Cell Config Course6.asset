@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Regatta Shuffle Cell Config Course6
   m_EditorClassIdentifier:
   CellName: Regatta
-  Description: 'Regatta course-pool entry 9, shuffle course Course6
+  Description: 'Regatta course-pool entry 7, shuffle course Course6
     (CellTypeChoiceOptions.CourseVariantWise, list order = Regatta Course Pool order - the
     host deals one enabled entry per match). A searched course: its rails prefab carries the
     whole RegattaCourseGenome (circuit, braid, features, placements), the one the real-game

@@ -84,12 +84,21 @@ G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
 # several balanced courses). Tools/Build/regatta_shuffle_pool.json is written by the course search's pick
 # (regatta-flywheel w3/shuffle): every entry is a game genome the real-game judge raced on 3 seeds at both starts, with
 # its measured prism count. Each becomes a rails prefab carrying the genome (SpawnableRegattaRails.courseGenome, the
-# same JSON the judge raced through RegattaCourseGenome.Override), a cell config and a pool entry. While the shuffle has
-# entries, the four old circuits stay in the pool and the Cell's list (entries 0-3, which the judge and the training
-# harness address by intensity) but are disabled, so a match is dealt only from the shuffle.
+# same JSON the judge raced through RegattaCourseGenome.Override), a cell config and a pool entry. The four old
+# circuits (Wide, Mixed, Hairpins, Tight) were deleted 2026-11-18 (Garrett). Four shuffle courses carry a fixed name,
+# "ref": Ref1-Ref4, ordered by lap time - the stable reference courses anything that needs one races (the judge and
+# the training harness address pool entries 0-3 by intensity 1-4). They come first in the pool, the rest follow.
 SHUFFLE_PATH = os.path.join(lib.ROOT, "Tools/Build/regatta_shuffle_pool.json")
 SHUFFLE = json.load(open(SHUFFLE_PATH))["entries"] if os.path.exists(SHUFFLE_PATH) else []
+REF_NAMES = ("Ref1", "Ref2", "Ref3", "Ref4")
+SHUFFLE = sorted(SHUFFLE, key=lambda e: (REF_NAMES.index(e["ref"]) if e.get("ref") in REF_NAMES else len(REF_NAMES),
+                                         e["label"]))
 SHUFFLE_LABELS = [e["label"] for e in SHUFFLE]
+REF_LABELS = [e["label"] for e in SHUFFLE if e.get("ref") in REF_NAMES]
+
+
+def pool_label(e) -> str:
+    return f"{e['ref']} ({e['label']})" if e.get("ref") else e["label"]
 
 # ── New asset GUIDs ──────────────────────────────────────────────────────────
 G_ASSET = {
@@ -100,10 +109,6 @@ G_ASSET = {
     "MinigameRegatta.unity":  guid("asset/MinigameRegatta.unity"),
     "RegattaCoursePool":      guid("asset/RegattaCoursePool"),
 }
-for _i in range(1, 5):
-    G_ASSET[f"CellConfig{_i}"] = guid(f"asset/Regatta Cell Config {_i}")
-    G_ASSET[f"SpawnableRegattaRails{_i}"] = guid(f"prefab/SpawnableRegattaRails{_i}")
-
 for _e in SHUFFLE:
     G_ASSET[f"ShuffleConfig{_e['label']}"] = guid(f"asset/Regatta Shuffle Cell Config {_e['label']}")
     G_ASSET[f"ShuffleRails{_e['label']}"] = guid(f"prefab/RegattaShuffleRails{_e['label']}")
@@ -211,7 +216,7 @@ g.emit_asset("Assets/_SO_Assets/Scoring Rules/RegattaScoringRule.asset", G_ASSET
              lib.header_for(G_SCRIPT["RegattaScoringRuleSO"], "RegattaScoringRule") +
              "  metric: 9\n  golfRules: 0\n")
 
-# ── 3. The arena: one SpawnableRegattaRails prefab per intensity ────────────
+# ── 3. The arena: the rails prefab every shuffle course is built on ───────────
 def spawnable_prefab(i: int) -> str:
     return f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -279,11 +284,6 @@ MonoBehaviour:
 {RL.prefab_fields(LIFEFORMS[i])}"""
 
 
-for _i in range(1, 5):
-    g.emit_prefab(f"{PREFAB_DIR}/SpawnableRegattaRails{_i}.prefab", G_ASSET[f"SpawnableRegattaRails{_i}"],
-                  spawnable_prefab(_i))
-
-
 def genome_json(e) -> str:
     """The genome as the prefab stores it: compact JSON, keys sorted, so the text is stable run to run."""
     return json.dumps(e["genome"], separators=(",", ":"), sort_keys=True)
@@ -305,54 +305,8 @@ for _e in SHUFFLE:
     g.emit_prefab(f"{SHUFFLE_PREFAB_DIR}/RegattaShuffleRails{_e['label']}.prefab", G_ASSET[f"ShuffleRails{_e['label']}"],
                   shuffle_prefab(_e))
 
-# ── 4. Cell configs, one per intensity ──────────────────────────────────────
-LIFEFORM_ASSETS = []
-for _i in range(1, 5):
-    c = COURSE["intensities"][str(_i)]
-    _life = LIFEFORMS[_i]
-    _band_prisms, _band_volume = RL.phase_band(_life)
-    t = phase_thresholds(prisms_at(_i) + _band_prisms, rail_volume_at(_i) + _band_volume)
-    _life_files, _life_profile = RL.own_assets(str(_i), _life, guid, lib.header_for, EXISTING["SpawnProfileSO"])
-    for _rel, _g, _text in _life_files:
-        g.emit_asset(_rel, _g, _text)
-        LIFEFORM_ASSETS.append(_g)
-    _profile_guid = _life_profile or EXISTING["BarrenSpawnProfile"]
-    _life_sentence = "" if _life.is_none else (
-        f" LIFEFORMS (regatta_lifeforms.py): {_life.plant_count} networked plants "
-        f"({', '.join(f'{n} {sp}' for sp, n in _life.plants)}) on {_life.site_count} sites "
-        f"{_life.offset_min:.0f}-{_life.offset_max:.0f}u off the spine"
-        + (f", {_life.creature_count} creatures" if _life.creatures else "")
-        + (f" kept {_life.fauna_corridor:.0f}u off the line" if _life.fauna_corridor > 0 else "")
-        + f"; the ladder carries the forest's {_band_volume:,} volume.")
-    desc = lib.wrap_yaml_scalar(
-        f"Regatta course-pool entry {_i - 1} (circuit row {_i}; CellTypeChoiceOptions.CourseVariantWise, list "
-        f"order = Regatta Course Pool order - the host deals one entry per match, intensity does not pick it): "
-        f"a closed circuit of {c['rings']} rings with three super-shielded rails - one "
-        f"per playable domain - braided along it, {c['prismCount']} (6,6,8) prisms (each length fitted "
-        f"flush to its neighbours, {c['railVolume']:,} volume) on a "
-        f"{c['spineLength']:.0f}u spine, mouths {c['ringRadius']:.0f}u, no corner under "
-        f"{c['cornerFloor']:.0f}u. The standard nucleus is the crystal respawn volume and the "
-        + ("inner shell; the spawn profile is the Barren cell's (no flora, no fauna - shielded mass "
-           "is never food, and a race whose obstacles differ per peer is not a race). "
-           if _life.is_none else f"inner shell; the spawn profile is this course's own.{_life_sentence} ")
-        + f"PhaseThresholds ride the rails' MEASURED volume (Tools/Build/regatta_course_measurements.json) "
-        f"plus a trail band - regenerate with Tools/Build/author_regatta_assets.py, never by hand; "
-        f"the count x 16 derivation is 18x low here because a (6,6,8) prism is 288 volume.")
-    g.emit_asset(f"{CELL_DIR}/Regatta Cell Config {_i}.asset", G_ASSET[f"CellConfig{_i}"],
-                 lib.header_for(EXISTING["CellConfigDataSO"], f"Regatta Cell Config {_i}") + f"""  CellName: Regatta
-  Description: {desc}
-  Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
-  Difficulty: {_i}
-  CellEndGameScore: 0
-  MembranePrefab: {{fileID: 346633111830028674, guid: {EXISTING['MembranePrefab']}, type: 3}}
-  NucleusPrefab: {{fileID: 7555898194514117247, guid: {EXISTING['NucleusPrefab']}, type: 3}}
-  CytoplasmPrefab: {{fileID: 639495419069806261, guid: {EXISTING['CytoplasmPrefab']}, type: 3}}
-  CellModifiers: []
-  SpawnProfile: {{fileID: 11400000, guid: {_profile_guid}, type: 2}}
-  EnvironmentPrefab: {{fileID: 5260000000000303, guid: {G_ASSET[f'SpawnableRegattaRails{_i}']}, type: 3}}
-  EnvironmentIntensity: {_i}
-  PhaseThresholds:
-""" + "".join(f"    {k}: {v}\n" for k, v in t.items()))
+# ── 4. Cell configs, one per shuffle course ───────────────────────────────
+LIFEFORM_ASSETS = []   # the deleted circuits' own lifeform assets; no shuffle course authors lifeforms
 
 
 def shuffle_volume(e) -> int:
@@ -366,7 +320,7 @@ for _k, _e in enumerate(SHUFFLE):
     _lab = _e["label"]
     t = phase_thresholds(int(_e["prisms"]), shuffle_volume(_e))
     desc = lib.wrap_yaml_scalar(
-        f"Regatta course-pool entry {4 + _k}, shuffle course {_lab} (CellTypeChoiceOptions.CourseVariantWise, list "
+        f"Regatta course-pool entry {_k}, shuffle course {pool_label(_e)} (CellTypeChoiceOptions.CourseVariantWise, list "
         f"order = Regatta Course Pool order - the host deals one enabled entry per match). A searched course: its rails "
         f"prefab carries the whole RegattaCourseGenome (circuit, braid, features, placements), the one the real-game "
         f"judge raced. {_e['notes']} {_e['prisms']} prisms measured; PhaseThresholds ride that count at the rail "
@@ -392,29 +346,13 @@ for _k, _e in enumerate(SHUFFLE):
 # Garrett, 2026-11-06: no intensities in an arena game, one Regatta level, several balanced course variants dealt in a
 # shuffle. An entry IS a cell config (its EnvironmentPrefab lays the circuit, its thresholds ride that circuit's
 # volume); the host deals one per match (RegattaCoursePoolSO.Draw, a shuffle bag) and the scene's Cell lays
-# CellConfigs[variant] - so the entries are listed in the Cell's order (NEW_CELL_BLOCK below, checked). Today's pool is
-# the four circuits that used to be the intensity ladder; a searched course joins as a new prefab + config + entry here.
-POOL_ENTRIES = [
-    # (label, circuit row, enabled, notes)
-    ("Wide", 1, True, "The old intensity-1 circuit - gentle corners (90 deg hardest), 110 u mouths, 200 u floor."),
-    ("Mixed", 2, True, "The old intensity-2 circuit - 118 deg hardest corner, 88 u mouths, 150 u floor."),
-    ("Hairpins", 3, True, "The old intensity-3 circuit - 135 deg hardest corner, 72 u mouths, 120 u floor."),
-    ("Tight", 4, True, "The old intensity-4 circuit - three hard corners (150 deg), 54 u mouths, 100 u floor."),
-]
-
-
+# CellConfigs[variant] - so the entries are listed in the Cell's order (NEW_CELL_BLOCK below, checked). The pool is the
+# shuffle (regatta_shuffle_pool.json), Ref1-Ref4 first; a searched course joins as a new prefab + config + entry there.
 def pool_rows() -> str:
     rows = []
-    for label, row, enabled, notes in POOL_ENTRIES:
-        # The shuffle replaces the old circuits as what a match is dealt; they stay listed (entries 0-3) for the judge.
-        on = enabled and not SHUFFLE
-        rows.append(f"  - Label: {label}\n"
-                    f"    CellConfig: {{fileID: 11400000, guid: {G_ASSET[f'CellConfig{row}']}, type: 2}}\n"
-                    f"    Enabled: {1 if on else 0}\n"
-                    f"    Notes: {notes}" + (" Off while the shuffle deals." if SHUFFLE else "") + "\n")
     for e in SHUFFLE:
         cfg = G_ASSET["ShuffleConfig" + e["label"]]
-        rows.append(f"  - Label: {e['label']}\n"
+        rows.append(f"  - Label: {pool_label(e)}\n"
                     f"    CellConfig: {{fileID: 11400000, guid: {cfg}, type: 2}}\n"
                     f"    Enabled: 1\n"
                     f"    Notes: {lib.wrap_yaml_scalar(e['notes'])}\n")
@@ -526,14 +464,14 @@ g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Regatta.asset", G_AS
 g.register_toast_config(G_ASSET["GameToastConfigRegatta"])
 
 # ── 7. Mode preview ──────────────────────────────────────────────────────────
-PREVIEW_CELLS = "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'CellConfig{i}']}, type: 2}}\n" for i in range(1, 5))
+PREVIEW_CELLS = "".join(f"  - {{fileID: 11400000, guid: {G_ASSET['ShuffleConfig' + l]}, type: 2}}\n" for l in REF_LABELS)
 g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Regatta.asset", G_ASSET["ModePreviewRegatta"],
              lib.header_for(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Regatta") + f"""  Mode: {MODE_ID}
   Notes: 'Every intensity is a different circuit (its own seed, mouth and corner floor), so the
     scale model rebuilds when the intensity row moves. An arena card: the flight preview
     flies whichever hull the pilot picked in the carousel. The rings are laid by the
     controller and are not in the scale model; the rails are.'
-  PreviewCell: {{fileID: 11400000, guid: {G_ASSET['CellConfig1']}, type: 2}}
+  PreviewCell: {{fileID: 11400000, guid: {G_ASSET['ShuffleConfig' + REF_LABELS[0]]}, type: 2}}
   PreviewCellsByIntensity:
 {PREVIEW_CELLS}  StructurePrefab: {{fileID: 0}}
   TrackSpawnablesByIntensity: []
@@ -606,11 +544,7 @@ CONTROLLER_SCRIPT_LINE = f"  m_Script: {{fileID: 11500000, guid: {G_SCRIPT['Rega
 # the rail arenas, in the course pool's order. It was IntensityWise (1) until 2026-11-07.
 OLD_CELL_BLOCK = (f"  CellConfigs:\n  - {{fileID: 11400000, guid: {EXISTING['SkimRaceCellConfig']}, type: 2}}\n"
                   "  cellTypeChoiceOptions: 0\n")
-CIRCUIT_CELL_BLOCK = ("  CellConfigs:\n"
-                      + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'CellConfig{i}']}, type: 2}}\n" for i in range(1, 5))
-                      + f"  cellTypeChoiceOptions: {COURSE_VARIANT_WISE}\n")
 NEW_CELL_BLOCK = ("  CellConfigs:\n"
-                  + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'CellConfig{i}']}, type: 2}}\n" for i in range(1, 5))
                   + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'ShuffleConfig{l}']}, type: 2}}\n" for l in SHUFFLE_LABELS)
                   + f"  cellTypeChoiceOptions: {COURSE_VARIANT_WISE}\n")
 
@@ -646,9 +580,10 @@ scene, _scene_errors = lib.committed_scene(
     authored_blocks=(CONTROLLER_SCRIPT_LINE, NEW_FIELDS) + AI_TEMPLATES)
 # The Cell's list is this script's block: when the shuffle changes, the committed scene's list is rewritten to match
 # (only that block; every other line of the scene is the Editor's). Any other list there is an edit to look at.
-for _old in sorted({CIRCUIT_CELL_BLOCK} | set(re.findall(r"  CellConfigs:\n(?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)+"
-                                                         + f"  cellTypeChoiceOptions: {COURSE_VARIANT_WISE}\n", scene))):
-    if _old != NEW_CELL_BLOCK and _old in scene and all(G_ASSET[f"CellConfig{i}"] in _old for i in range(1, 5)):
+# A list is this script's when it holds any shuffle course's config (the old circuits' list held them too).
+for _old in sorted(set(re.findall(r"  CellConfigs:\n(?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)+"
+                                  + f"  cellTypeChoiceOptions: {COURSE_VARIANT_WISE}\n", scene))):
+    if _old != NEW_CELL_BLOCK and any(G_ASSET[f"ShuffleConfig{l}"] in _old for l in SHUFFLE_LABELS):
         scene = scene.replace(_old, NEW_CELL_BLOCK)
 if NEW_CELL_BLOCK not in scene:
     _scene_errors.append(f"MinigameRegatta.unity: the Cell's CellConfigs list is not this script's:\n{NEW_CELL_BLOCK}")
@@ -729,14 +664,12 @@ if RL.LANE_OFFSET != LANE_OFFSET:
 for i in range(1, 5):
     for e in RL.validate(LIFEFORMS[i]):
         errors.append(f"intensity {i} lifeforms: {e}")
-    _pf = g.files[f"{PREFAB_DIR}/SpawnableRegattaRails{i}.prefab"]
+for _e in SHUFFLE:
+    _pf = g.files[f"{SHUFFLE_PREFAB_DIR}/RegattaShuffleRails{_e['label']}.prefab"]
     if _pf.count("  lifeforms:\n") != 1:
-        errors.append(f"SpawnableRegattaRails{i}.prefab does not carry exactly one lifeforms block")
-    _cc = g.files[f"{CELL_DIR}/Regatta Cell Config {i}.asset"]
-    if LIFEFORMS[i].is_none and EXISTING["BarrenSpawnProfile"] not in _cc:
-        errors.append(f"intensity {i} has no lifeforms but does not reference the Barren spawn profile")
-    if not LIFEFORMS[i].is_none and EXISTING["BarrenSpawnProfile"] in _cc:
-        errors.append(f"intensity {i} authors lifeforms but still references the Barren spawn profile")
+        errors.append(f"RegattaShuffleRails{_e['label']}.prefab does not carry exactly one lifeforms block")
+    if EXISTING["BarrenSpawnProfile"] not in g.files[f"{CELL_DIR}/Regatta Shuffle Cell Config {_e['label']}.asset"]:
+        errors.append(f"shuffle {_e['label']} does not reference the Barren spawn profile")
 
 # The balance the model reaches, asserted so a vessel retune that breaks it is caught here.
 _consts = RB.read_constants()
@@ -781,10 +714,11 @@ _pool_guids = re.findall(r"^    CellConfig: \{fileID: 11400000, guid: ([0-9a-f]{
 _cell_guids = re.findall(r"^  - \{fileID: 11400000, guid: ([0-9a-f]{32}), type: 2\}$", NEW_CELL_BLOCK, re.M)
 if _pool_guids != _cell_guids:
     errors.append(f"course pool entries {_pool_guids} are not the scene Cell's CellConfigs {_cell_guids} in order")
-if len(set(row for _, row, _, _ in POOL_ENTRIES)) != len(POOL_ENTRIES):
-    errors.append("two course pool entries lay the same circuit row - the shuffle would deal one course twice")
-if not any(enabled for _, _, enabled, _ in POOL_ENTRIES) and not SHUFFLE:
-    errors.append("no course pool entry is enabled - every match would fall back to entry 0")
+if not SHUFFLE:
+    errors.append("regatta_shuffle_pool.json has no entries - Regatta has no course to deal")
+if [e.get("ref") for e in SHUFFLE[:len(REF_NAMES)]] != list(REF_NAMES) or len(REF_LABELS) != len(REF_NAMES):
+    errors.append(f"the shuffle must name exactly one course each {REF_NAMES} (its 'ref'): pool entries 0-3 are the "
+                  "reference courses the judge and the training harness race by intensity")
 # The shuffle: distinct labels and genomes, each genome stored whole in its prefab, every course raced.
 if len(set(SHUFFLE_LABELS)) != len(SHUFFLE_LABELS) or not all(re.fullmatch(r"[A-Za-z0-9]+", l) for l in SHUFFLE_LABELS):
     errors.append(f"shuffle labels {SHUFFLE_LABELS} must be distinct and alphanumeric (they name assets)")
@@ -799,8 +733,8 @@ for _e in SHUFFLE:
         errors.append(f"shuffle {_e['label']}: no real-game judgement at both starts recorded")
     if int(_e.get("prisms", 0)) <= 0:
         errors.append(f"shuffle {_e['label']}: no measured prism count")
-if SHUFFLE and pool.count("    Enabled: 1\n") != len(SHUFFLE):
-    errors.append("while the shuffle deals, exactly its entries are enabled")
+if pool.count("    Enabled: 1\n") != len(SHUFFLE):
+    errors.append("every shuffle course is enabled")
 if f"  coursePool: {{fileID: 11400000, guid: {G_ASSET['RegattaCoursePool']}, type: 2}}\n" not in sc:
     errors.append("the scene's RegattaController does not carry the Regatta Course Pool")
 

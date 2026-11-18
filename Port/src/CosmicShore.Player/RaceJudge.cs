@@ -40,7 +40,9 @@ namespace CosmicShore.Player
     internal sealed class RaceJudge
     {
         const string CardPathFormat = "Assets/_SO_Assets/Games/ArcadeGame{0}.asset";
-        const string CellConfigPath = "Assets/_SO_Assets/Cell Configs/Regatta Cell/Regatta Cell Config {0}.asset";
+        /// <summary>Regatta's course pool: entries 0-3 are the reference courses Ref1-Ref4 (author_regatta_assets.py), which
+        /// a race at intensity 1-4 lays when its genome is not handed to RegattaCourseGenome.Override.</summary>
+        const string CoursePoolPath = "Assets/_SO_Assets/Cell Configs/Regatta Cell/Regatta Course Pool.asset";
         const BindingFlags Any = BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
         const double TickSeconds = 1.0 / 60.0;
 
@@ -606,14 +608,22 @@ namespace CosmicShore.Player
                 if (genome != null) _notes.Add($"course: {_mode}'s own (the genome has no placements)");
                 return;
             }
-            var config = TrainingHost.LoadAsset(_runtime, string.Format(CellConfigPath, 1)) as CellConfigDataSO;
-            var rails = config ? config.EnvironmentPrefab as SpawnableRegattaRails : null;
+            var rails = ReferenceRails(1);
             TrainingCourseOverlay.PrismPrefab = rails
                 ? typeof(CellEnvironmentSpawnableBase).GetField("prism", Any)?.GetValue(rails) as Prism
                 : null;
             if (!TrainingCourseOverlay.PrismPrefab)
-                throw new InvalidOperationException("Regatta Cell Config 1's rails carry no prism for the training overlay");
+                throw new InvalidOperationException("Regatta's Ref1 rails carry no prism for the training overlay");
             _notes.Add($"course: {_mode}'s own, with {g.Placements.Count} genome placements");
+        }
+
+        /// <summary>The rails of Regatta's reference course Ref<paramref name="intensity"/> (course pool entry intensity - 1).</summary>
+        SpawnableRegattaRails ReferenceRails(int intensity)
+        {
+            var pool = TrainingHost.LoadAsset(_runtime, CoursePoolPath) as RegattaCoursePoolSO
+                ?? throw new InvalidOperationException(CoursePoolPath + " not found");
+            int i = intensity - 1;
+            return i >= 0 && i < pool.Count ? pool.Entries[i]?.Rails : null;
         }
 
         /// <summary>Lay the genome's course: the expressive genome's own Override when the game has it, otherwise the
@@ -635,9 +645,8 @@ namespace CosmicShore.Player
                 }
             }
 
-            var config = TrainingHost.LoadAsset(_runtime, string.Format(CellConfigPath, intensity)) as CellConfigDataSO;
-            var rails = config ? config.EnvironmentPrefab as SpawnableRegattaRails : null;
-            if (rails == null) throw new InvalidOperationException($"Regatta Cell Config {intensity} has no SpawnableRegattaRails");
+            var rails = ReferenceRails(intensity)
+                ?? throw new InvalidOperationException($"Regatta's Ref{intensity} course has no SpawnableRegattaRails");
             if (genome?["seed"] is JsonNode seedNode)
                 typeof(SpawnableRegattaRails).GetField("courseSeed", Any)!.SetValue(rails, seedNode.GetValue<int>());
             if (genome?["features"] is JsonObject features)

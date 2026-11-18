@@ -14,7 +14,7 @@ namespace CosmicShore.Tests
     /// Regatta's shuffled course pool (Garrett, 2026-11-06: one Regatta level, several course variants shuffled, no
     /// intensities). The contract: the host deals every enabled circuit once before any repeats and never the same one
     /// twice running; a pinned variant (a replay, a benchmark) wins; the draw reaches clients in the game-config sync;
-    /// the scene's Cell lays CellConfigs[variant]; and the shipped pool is four DIFFERENT circuits, each a Regatta arena.
+    /// the scene's Cell lays CellConfigs[variant]; and the shipped pool is DIFFERENT courses, each a Regatta arena, Ref1-Ref4 first.
     /// </summary>
     public class RegattaCoursePoolTests
     {
@@ -182,9 +182,11 @@ namespace CosmicShore.Tests
         {
             var pool = AssetDatabase.LoadAssetAtPath<RegattaCoursePoolSO>(PoolPath);
             Assert.IsNotNull(pool, $"{PoolPath} is missing - run Tools/Build/author_regatta_assets.py");
-            // Entries 0-3 are the four old circuits (the race judge and the training harness address them by
-            // intensity); the shuffle's searched courses follow them (Tools/Build/regatta_shuffle_pool.json).
+            // Entries 0-3 are the reference courses Ref1-Ref4 (the race judge and the training harness address them by
+            // intensity); the rest of the shuffle's searched courses follow (Tools/Build/regatta_shuffle_pool.json).
             Assert.GreaterOrEqual(pool.Count, 4);
+            for (int i = 0; i < 4; i++)
+                StringAssert.StartsWith($"Ref{i + 1} ", pool.LabelOf(i), $"entry {i} is not reference course Ref{i + 1}");
 
             var firstGates = new List<Vector3>();
             int enabled = 0;
