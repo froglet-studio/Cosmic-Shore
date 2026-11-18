@@ -393,24 +393,14 @@ VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']},
 
 
 def starting_element_rows() -> str:
-    """One row per (hull, intensity) the model tunes off rest; a hull at rest everywhere gets no
-    row (the platform default IS rest, and a row of zeros would say the card decided it).
+    """No rows: every hull starts Regatta at rest (the card start) or at Time 5 (the L5 start).
 
-    KEPT AS IS, KNOWINGLY (2026-11-18): these rows are regatta_balance.py's answer over the four
-    circuits #2212 deleted, not over the shipped shuffle, so they do not track Ref1-Ref4. The
-    shuffle was picked by the real-game judge, which the Python model disagrees with, so re-keying
-    the model onto the refs would re-balance against the wrong numbers. Garrett's open card
-    recommends dropping the rows when step 5's next lever refit lands; until he answers they stay
-    unchanged (REGATTA.md section 4.1)."""
-    rows = []
-    for i in range(1, 5):
-        for h in MODEL_HULLS:
-            lv = BALANCE[i]["levels"][h]
-            if lv == 0:
-                continue
-            rows.append(f"  - Class: {lib.VESSEL_CLASS_ID[h]}\n    Intensity: {i}\n    Levels:\n"
-                        f"      Mass: 0\n      Charge: 0\n      Space: 0\n      Time: {lib.num(lv / 10.0)}\n")
-    return "".join(rows) if rows else " []\n"
+    Garrett, 2026-11-18 13:58 UTC: "don't cheat. our goal is to get our vessels balanced, not give them handicaps or
+    cheats so they can compete. if the tuning levers aren't working then flag the vessel for a redesign." The rows
+    regatta_balance.py had priced over the four deleted circuits (Serpent, Sparrow and Scarab at Time 10, the Manta at
+    -5) were per-hull starting handicaps, so they went; the Scarab's and Sparrow's own Time levers took their place
+    (step 5, Docs/ElementalLoop/REDESIGN.md) and the hulls those levers cannot reach are flagged there for redesign."""
+    return " []\n"
 
 
 STARTING = starting_element_rows()

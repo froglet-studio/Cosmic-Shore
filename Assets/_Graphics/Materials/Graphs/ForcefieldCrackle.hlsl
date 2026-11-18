@@ -131,14 +131,6 @@ void ForcefieldCrackle_float(
         float cosAngle = dot(fragDir, impactDir);
         float angle = acos(clamp(cosAngle, -1.0, 1.0));
 
-        // Build a local coordinate frame on the sphere around the impact point
-        float3 tangent = normalize(cross(impactDir, float3(0.123, 0.456, 0.789)));
-        float3 bitangent = cross(impactDir, tangent);
-
-        // Azimuthal angle around the impact point
-        float2 localUV = float2(dot(fragDir, tangent), dot(fragDir, bitangent));
-        float azimuth = atan2(localUV.y, localUV.x);
-
         // ── Expanding wavefront ──
         float expandedLife = saturate(lifeRatio * _RippleSpeed);
         float wavefrontAngle = angularRadius * 3.14159 * expandedLife;
@@ -159,16 +151,31 @@ void ForcefieldCrackle_float(
         float spatialEnvelope = max(waveBand, centerGlow);
         if (spatialEnvelope < 0.001) continue;
 
+        // Built only for fragments inside the envelope (exact early-out: the frame and atan2 feed only the arcs).
+        // Build a local coordinate frame on the sphere around the impact point
+        float3 tangent = normalize(cross(impactDir, float3(0.123, 0.456, 0.789)));
+        float3 bitangent = cross(impactDir, tangent);
+
+        // Azimuthal angle around the impact point
+        float2 localUV = float2(dot(fragDir, tangent), dot(fragDir, bitangent));
+        float azimuth = atan2(localUV.y, localUV.x);
+
         // ── Electrical arc pattern ──
         int arcCount = (int)_ArcDensity;
         float arcContrib = 0.0;
         float arcHeat = 0.0;
 
-        for (int a = 0; a < arcCount; a++)
+        // Exact early-out: evaluate only the 3 arcs whose base angle is nearest this fragment's azimuth. The others
+        // sit >= 1.5 arc spacings away, beyond reach of the wobble (<= 0.3*(angle+0.1) rad) and sub-branch for the
+        // shipped impact radius (0.25) and arc counts (<= 8) and widths (<= 0.06). The per-impact azimuth offset hash is hoisted out of the arc loop.
+        float arcOff = Hash1(float(i) * 7.3 + 0.5) * 6.28318;
+        float arcStep = 6.28318 / float(arcCount);
+        int aNear = (int)round((azimuth - arcOff) / arcStep);
+        int nEval = min(arcCount, 3);
+        for (int q = 0; q < nEval; q++)
         {
-            if (a >= (int)_ArcDensity) break;
-
-            float baseAngle = (float(a) / float(arcCount)) * 6.28318 + Hash1(float(i) * 7.3 + 0.5) * 6.28318;
+            int a = ((aNear + q - 1) % arcCount + arcCount) % arcCount;
+            float baseAngle = (float(a) / float(arcCount)) * 6.28318 + arcOff;
 
             float dAzimuth = azimuth - baseAngle;
             dAzimuth = dAzimuth - 6.28318 * round(dAzimuth / 6.28318);
@@ -333,11 +340,18 @@ void ForcefieldCrackleCapsule_float(
         float arcContrib = 0.0;
         float arcHeat = 0.0;
 
-        for (int a = 0; a < arcCount; a++)
+        // Exact early-out: evaluate only the 5 arcs whose base angle is nearest this fragment's azimuth. Here the
+        // wobble + sub-branch reach up to ~1.43 rad (ndAngle runs to ~PI at the wavefront, not the sphere's ~0.8), so
+        // nearest-3 would clip arcs; the others sit >= 2.5 spacings (>= 1.96 rad for <= 8 arcs) away, out of reach at
+        // the shipped arc counts (<= 8) and widths (<= 0.06). The per-impact azimuth offset hash is hoisted.
+        float arcOff = Hash1(float(i) * 7.3 + 0.5) * 6.28318;
+        float arcStep = 6.28318 / float(arcCount);
+        int aNear = (int)round((azimuth - arcOff) / arcStep);
+        int nEval = min(arcCount, 5);
+        for (int q = 0; q < nEval; q++)
         {
-            if (a >= (int)_ArcDensity) break;
-
-            float baseAngle = (float(a) / float(arcCount)) * 6.28318 + Hash1(float(i) * 7.3 + 0.5) * 6.28318;
+            int a = ((aNear + q - 2) % arcCount + arcCount) % arcCount;
+            float baseAngle = (float(a) / float(arcCount)) * 6.28318 + arcOff;
 
             float dAzimuth = azimuth - baseAngle;
             dAzimuth = dAzimuth - 6.28318 * round(dAzimuth / 6.28318);

@@ -140,7 +140,8 @@ namespace CosmicShore.Gameplay
 
             // At the cap the clock PAUSES rather than culling anything. Not creating mass is
             // allowed; aging it out is not.
-            if (so.MaxLiveSeeded > 0 && _live.Count >= so.MaxLiveSeeded)
+            int cap = so.MaxLiveSeededFor(_status);
+            if (cap > 0 && _live.Count >= cap)
             {
                 _activeCooldown = 0f;
                 _clockStarted = false;
@@ -155,9 +156,11 @@ namespace CosmicShore.Gameplay
 
             if (Time.time < _nextSeedTime) return;
 
-            // One crystal per cycle at every level. The Mass upgrade changes WHAT is planted, never
-            // how many - the yield is the recharge's job and the recharge alone.
-            SeedOne(so);
+            // MASS is the yield: a heavier Dolphin plants more crystals per cycle (and keeps a bigger
+            // field, the cap above). The recharge is fixed. The Mass upgrade changes WHAT is planted.
+            int seeds = so.SeedsPerCycleFor(_status);
+            for (int i = 0; i < seeds && (cap <= 0 || _live.Count < cap); i++)
+                SeedOne(so);
 
             SeedCount++;
             StartClock(so);
@@ -286,22 +289,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Seconds between seedings right now. Element → parameter (Mass → how soon the next
-        /// crystal arrives): anchored at exactly 1x at the resting level, so the authored cooldown
-        /// is what a fresh pilot feels, and floored by MinCooldown so it never becomes free.
-        ///
-        /// Scaled from the SO's OWN authored multiplier rather than the map's generic one, so the
-        /// recharge is driven by exactly one number and a future consumer of the map's generic Mass
-        /// multiplier cannot silently start moving it too.
+        /// Seconds between seedings right now: the authored cooldown, floored by MinCooldown. Fixed
+        /// since 2026-11-18; Mass sets the yield instead (<see cref="DeployTeamCrystalActionSO.SeedsPerCycleFor"/>).
         /// </summary>
         float CurrentCooldown()
         {
             var so = ResolveSo();
             if (!so) return 0f;
 
-            float mult = ElementalScaling.Multiplier(_status, Element.Mass,
-                so.CooldownMultiplierAtFullMass, so.MinCooldownMultiplier);
-            return Mathf.Max(so.MinCooldown, so.Cooldown * mult);
+            return Mathf.Max(so.MinCooldown, so.Cooldown);
         }
 
         /// <summary>

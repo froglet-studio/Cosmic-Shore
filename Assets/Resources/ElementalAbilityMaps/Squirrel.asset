@@ -37,9 +37,8 @@ MonoBehaviour:
     AbilityLabel: Boost Ring
     AbilityDescription: Deploy a ring of conserved prism mass ahead of the vessel -
       the Squirrel's mass-creation ability, which is why it sits on Mass. Mass
-      shortens the deploy cooldown (SquirrelTubeActionSO.cooldownMultiplierAtFullMass,
-      x1 at rest -> x0.5 at level 10, floored), so a heavier pilot lays rings more
-      often. At level 5 each deploy lays a second ring.
+      grows the ring's prisms (SquirrelTubeActionSO.prismScaleMultiplier, x1 at
+      rest -> x1.5 at level 10, floored), so a heavier pilot lays more mass to skim. At level 5 each deploy lays a second ring.
     Input: 11
     UnlockLevel: 5
     RelockBelowLevel: 4

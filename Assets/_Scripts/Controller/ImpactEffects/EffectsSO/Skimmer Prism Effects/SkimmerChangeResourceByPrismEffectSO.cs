@@ -21,6 +21,15 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] ResourceChangeSpec _change;
 
+        [Tooltip("Pay nothing for a SUPER-SHIELDED prism. Off (the default) pays for every skim, as before. On for the " +
+                 "Swordfish's slice fuel (2026-11-18): a blade bound in super-shielded mass has sliced nothing.")]
+        [SerializeField] bool _skipSuperShielded;
+
+        [Tooltip("Multiplies every gain by an element's live level. Off (the default: Value 1) pays the authored amount " +
+                 "at every level. The Swordfish's slice fuel scales with TIME (x1 at rest, x4.5 at level 10; 2026-11-18): " +
+                 "Time is the sword's rate (Quickdraw), and a faster sword refuels its ramp faster.")]
+        [SerializeField] ElementalFloat _gainMultiplier = new ElementalFloat(1f);
+
         [Header("Elemental — danger-prism bonus")]
         [Tooltip("The element whose LEVEL-5 upgrade unlocks the danger-prism bonus below. " +
                  "None (the default) disables the bonus entirely — danger prisms then pay the same " +
@@ -37,8 +46,9 @@ namespace CosmicShore.Gameplay
             var status = impactor.Skimmer.VesselStatus;
             var rs = status?.ResourceSystem;
             if (rs == null) return;
+            if (_skipSuperShielded && !VesselGainResourceByPrismEffectSO.PaysFor(prismImpactee, true)) return;
 
-            _change.ApplyTo(rs, this, ResolveDangerBonus(status, prismImpactee));
+            _change.ApplyTo(rs, this, ResolveDangerBonus(status, prismImpactee) * _gainMultiplier.EvaluateLive(status));
         }
 
         /// <summary>

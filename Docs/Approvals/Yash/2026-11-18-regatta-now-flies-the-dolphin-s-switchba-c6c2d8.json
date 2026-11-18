@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-18-regatta-now-flies-the-dolphin-s-switchba-c6c2d8",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T19:26:14+00:00",
+  "area": "the Dolphin's racing AI and Switchback",
+  "summary": "Regatta now flies the Dolphin's Switchback-trained boost drive (new DolphinAIBoostPolicy_Regatta, a copy of the trained values), and the Dolphin's Drift Charge rate is re-fit to x1.25 -> x2.76 to keep it in the Regatta field",
+  "why": "Regatta flew the untrained base policy, which split its races into two lines by seed; the trained drive cuts the seed spread 2.5-3x. Switchback rungs re-checked at the new charge: I1 82-91, I2 115-118, I3 109-136, I4 211-235 s",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "d623b7638",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Regatta.asset",
+    "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset"
+  ],
+  "loop": {
+    "vessels": [
+      "Dolphin"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

@@ -25175,3 +25175,76 @@ editor, `SerpentWallLatticeTests` in Unity (the four new plane tests), multiplay
 4. From the front, a stance wall and a cloak decoy wall look the same (both fins growing backward from a seed).
 5. Mass 5 Lockdown panels still seal the holes of a Keel wall; a crystal still ripples a shield through it.
 6. Pellet speed: 2.7x, 4.4x, 6.1x, 7.8x with one to four lit (was 3x-9x).
+
+## Serpent: vestigial omnicrystal explosion removed (2026-11-18, PR #2223)
+
+- [ ] In the Toybox, fly the Serpent through a crystal: no blast cone spawns, nearby prisms are untouched, the crystal still ripples a shield through your growing walls and plays haptics.
+- [ ] No missing-reference warning from `SerpentImpactorDataContainer` on pickup.
+- Not run in Unity. No C# changed (asset list and one deleted effect asset), so `unity_refcompile` was not needed.
+Not run in the Unity editor. Space used to scale only the Seed Wall's steal reach (the Mass ability's wall), so the Space
+card's own cloak and sniper did nothing with Space. `SniperShotActionSO.coneSpaceMultiplier` (x1 at rest, x2 at Space 10,
+floor x0.5, replicated level) now widens the round's cone: 1.5 degrees at rest to 3 at Space 10. The kill query, the
+pilot strip, the tracer and the scope reticle all read the widened cone. Unity reference compile: 0 errors in changed files.
+
+- [ ] Fly the Serpent at Space 0 and Space 10 (Toybox element cheats): the scope reticle and the tracer are visibly wider at
+      Space 10, and the shot destroys prisms out to the wider cone's edge.
+- [ ] Two-client match: a Space 10 sniper round destroys the same prisms on both machines.
+## Grizzly Mass: the plasma claw refills energy (2026-11-18)
+
+Not run in the Unity editor. Grizzly Mass grew the trail (`VesselPrismController.trailVolume`), a placeholder nothing on the
+Weapon Systems card was about. Now every enemy prism the claw lights refills energy:
+`GrizzlyFlamethrowerActionSO.energyPerIgnite`, 0.01 at rest to 0.025 at Mass 10 (floor 0.005), on energy index 0 (a Rush
+costs 0.25). The Grizzly's `trailVolume` is switched off. Unity reference compile: 0 errors in changed files.
+
+- [ ] Fly the Grizzly, spend energy on a Rush, then hold the claw on rival prisms: the energy bar climbs, faster at Mass 10.
+- [ ] Hold the claw on your own prisms or on super-shielded ones: no energy comes back.
+- [ ] The trail is the same size at Mass 0 and Mass 10.
+
+## Wrasse Time banks more saved boosts (2026-11-18)
+
+Not run in the Unity editor. Wrasse Time only raised the hull's boost top speed (`Wrasse.prefab` BoostSpeedMultiplier, a
+placeholder). `KiteNavigatorConfigSO.timeBankScale` (x1 at rest, x2 at Time 10, floor x0.5) now multiplies the boosts a
+Time loop saves and the cap on saved boost; the hull's BoostSpeedMultiplier is off. `WrasseFundamentalsTests` covers the
+new float. Unity reference compile: 0 errors in changed files.
+
+- [ ] Run the EditMode `WrasseFundamentalsTests`: all pass.
+- [ ] Fly the Wrasse at Time 0 and Time 10: a one-mote Time loop saves 1 boost at Time 0 and 2 at Time 10; the Time card counts them.
+
+## Thresher and Goby Charge off petals-per-hit (2026-11-18)
+
+Not run in the Unity editor. Petals per hit was the Charge placeholder on both; each hit now takes a fixed 1 petal.
+- Thresher: `ThresherConfigSO.smashSpeedScale` (x1 at rest, x0.6 at Charge 10, floor 0.4) scales the smash and white-hot
+  speeds every frame (`ApplyElementScaling`, replicated level), so a charged ball turns red on a lazier swing.
+- Goby & Pistol: `GobyPistolConfigSO.ringHomingScale` (x1 at rest, x2.5 at Charge 10) multiplies the vortex ring's homing
+  turn rate onto the locked rival.
+Unity reference compile: 0 errors in changed files.
+
+- [ ] Thresher at Charge 0 and 10: the ball goes red at a visibly slower swing at Charge 10; the HUD gauge fills sooner.
+- [ ] Goby & Pistol at Charge 0 and 10 with a lock: the Snap's ring bends onto the rival much harder at Charge 10.
+- [ ] Both: a hull hit takes one petal per element at any Charge.
+
+## Dolphin and Squirrel Mass: more, not sooner (2026-11-18)
+
+Not run in the Unity editor. Mass shortened a cooldown on both, and making something come back sooner is Time's job. The
+cooldowns are now fixed.
+- Dolphin Crystal Seeding: `DeployTeamCrystalActionSO.yieldScale` (x1 at rest, x2 at Mass 10, floor x0.5) sets crystals per
+  cycle (1 at rest, 2 at Mass 10) and scales the live cap (8 at rest, 16 at Mass 10). Recharge: 15 s fixed.
+- Squirrel Boost Ring: `SquirrelTubeActionSO.prismScaleMultiplier` (x1 at rest, x1.5 at Mass 10) grows the ring prisms.
+  Cooldown: 20 s fixed.
+Unity reference compile: 0 errors in changed files.
+
+- [ ] Dolphin at Mass 10: two crystals appear each cycle; the field holds up to 16 seeded crystals.
+- [ ] Squirrel at Mass 0 and 10: the Boost Ring's prisms are visibly larger at Mass 10, and the ring is back in 20 s at both.
+
+## Time tempo dials on Sparrow, Scarab and Manta (2026-11-18)
+
+Not run in the Unity editor. Each card's Time kept its speed and gained a tempo dial on its own mechanic:
+- Sparrow Afterburner: `BarrelRollController.rollTimeScale` (x1 -> x0.5 at Time 10): the strafing roll takes half the time
+  and the sideways nudge is twice as fast, so the dodge covers the same distance.
+- Scarab Throttle: `ScarabVesselTransformer.accelerationScale` (x1 -> x2 at Time 10): the throttle reaches its ceiling in half the time.
+- Manta Yawstery: `YawsteryActionSO.turnRateMultiplier` enabled on both assets (Time, x1 -> x1.5): faster flat turns.
+Unity reference compile: 0 errors in changed files.
+
+- [ ] Sparrow at Time 0 and 10: the strafing roll is visibly quicker at Time 10 and lands about as far to the side.
+- [ ] Scarab at Time 0 and 10: full throttle from a stop reaches top speed in about 2.4 s at Time 0, about half at Time 10.
+- [ ] Manta at Time 0 and 10: a held Yawstery turns about 1.5x as fast at Time 10; check the Redline and Regatta AI still hold their lines.
