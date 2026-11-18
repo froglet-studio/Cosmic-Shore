@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-18-scoreboard-and-its-versus-view-show-a-sc-e34588",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-18T01:07:57+00:00",
+  "area": "end scoreboard",
+  "summary": "Scoreboard and its versus view show a scoring rule's TeamLine under each team (Brood Rush's volume books); ScoringRuleSO gained a virtual TeamLine.",
+  "why": "Garrett 2026-11-18: Mass-Space scoreboard with VC, VD, totals per player and team, and a two-team check.",
+  "branch": "claude/project-thread-e9yath",
+  "commit": "bab7ed636",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Scoring/ScoringRuleSO.cs",
+    "Assets/_Scripts/UI/Scoreboard.cs",
+    "Assets/_Scripts/UI/ScoreboardVersusView.cs"
+  ]
+}
