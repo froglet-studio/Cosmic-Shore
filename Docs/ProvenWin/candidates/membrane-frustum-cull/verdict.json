@@ -1,0 +1,20 @@
+{
+ "verdict": "FAIL",
+ "reasons": [
+  "editor: 'GPU (FrameTimingManager)' not categorically lower (B lower in 87 % of frames)"
+ ],
+ "rows": {
+  "editor": {
+   "a": 1.851392,
+   "b": 1.6471040000000001,
+   "share": 0.8690248565965584,
+   "screen": 0
+  },
+  "editor state_centre": {
+   "a": 1.440768,
+   "b": 1.267712,
+   "share": 0.8723809523809524,
+   "screen": 0
+  }
+ }
+}
