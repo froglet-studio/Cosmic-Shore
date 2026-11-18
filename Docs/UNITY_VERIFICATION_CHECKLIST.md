@@ -24621,7 +24621,7 @@ guest's own row, and the editor-only `IdleGuestAutopilot` (FrogletTools > Multip
 
 ## 🟡 Stoat: one slingshot - the swing's speed-up, no second push at the exit (2026-11-19, Yash, NOT PLAYED)
 `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "One slingshot". `StoatSlingConfig`: swingKickShare 0.
-- [ ] EditMode `StoatSlingTests`: all pass (`SlingConfig_ShipsTheSwing` reads swingKickShare 0).
+- [x] EditMode `StoatSlingTests`: all pass (`SlingConfig_ShipsTheSwing` reads swingKickShare 0). 2026-11-19, real editor on B: at 08b67d4d76: filter `Stoat` 141/141, `Slingshot` 19/19.
 - [ ] Swing round the black hole: one surge of speed as it swings you, then you leave along the dotted line with no second shove.
 - [ ] Aim the dotted line at the next ring with the stick: you reach it without overshooting.
 - [ ] Slingshot I1-I4: AI Stoats finish (model: 62-76 s, no rings missed).
