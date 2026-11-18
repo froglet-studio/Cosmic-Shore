@@ -264,10 +264,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/Resources/Pilots/Scenes/Slingshot.jpg": {
-   "coloured": 0.7288,
+   "coloured": 0.925,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "fc98a1143c24c1db",
+   "sha": "10f92c7bdb1b48db",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/Resources/Pilots/Scenes/Spare01.jpg": {
@@ -278,10 +278,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/Resources/Pilots/Scenes/Spare02.jpg": {
-   "coloured": 0.6698,
+   "coloured": 0.6769,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "f968c11b8c8de2d0",
+   "sha": "d4bfbcb085da8cc9",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/Resources/Pilots/Scenes/Spare03.jpg": {
@@ -6631,10 +6631,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Slingshot.png": {
-   "coloured": 0.7528,
+   "coloured": 0.9272,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "132733a5c5fc8375",
+   "sha": "51dcad5528ab938d",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare01.png": {
@@ -6645,10 +6645,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare02.png": {
-   "coloured": 0.7048,
+   "coloured": 0.718,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "94c61dd492ba3c4c",
+   "sha": "c71752028538526c",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare03.png": {
