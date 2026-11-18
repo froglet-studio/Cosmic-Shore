@@ -25182,3 +25182,13 @@ costs 0.25). The Grizzly's `trailVolume` is switched off. Unity reference compil
 - [ ] Fly the Grizzly, spend energy on a Rush, then hold the claw on rival prisms: the energy bar climbs, faster at Mass 10.
 - [ ] Hold the claw on your own prisms or on super-shielded ones: no energy comes back.
 - [ ] The trail is the same size at Mass 0 and Mass 10.
+
+## Wrasse Time banks more saved boosts (2026-11-18)
+
+Not run in the Unity editor. Wrasse Time only raised the hull's boost top speed (`Wrasse.prefab` BoostSpeedMultiplier, a
+placeholder). `KiteNavigatorConfigSO.timeBankScale` (x1 at rest, x2 at Time 10, floor x0.5) now multiplies the boosts a
+Time loop saves and the cap on saved boost; the hull's BoostSpeedMultiplier is off. `WrasseFundamentalsTests` covers the
+new float. Unity reference compile: 0 errors in changed files.
+
+- [ ] Run the EditMode `WrasseFundamentalsTests`: all pass.
+- [ ] Fly the Wrasse at Time 0 and Time 10: a one-mote Time loop saves 1 boost at Time 0 and 2 at Time 10; the Time card counts them.
