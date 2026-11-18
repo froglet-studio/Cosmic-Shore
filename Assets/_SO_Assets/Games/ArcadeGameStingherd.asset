@@ -23,7 +23,7 @@ MonoBehaviour:
     on the hardest only a quarter, in the thickest kelp. First team to the target wins.'
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
-  CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  CardBackground: {fileID: 21300000, guid: 896fad3a44e44a58873599838fcc3863, type: 3}
   GolfScoring: 1
   SceneName: MinigameStingherd
   Vessels:

@@ -143,7 +143,9 @@ static class Program
                     "perchrun" => PerchRunCourse.Generate(seed, Apply(PerchRunCourse.ForIntensity(intensity), layer)),
                     "slipline" => SlipLineCourse.Generate(seed, Apply(SlipLineCourse.ForIntensity(intensity), layer)),
                     "breach" => BreachCourse.Generate(seed, Apply(BreachCourse.ForIntensity(intensity), layer)),
-                    _ => RegattaCourse.BuildGates(seed, intensity),
+                    _ => layer.TryGetProperty("genome", out var ge)
+                        ? RegattaCourseGenome.FromJson(ge.GetString()).BuildGates()
+                        : RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
                 var gm = GateMaterial(layer);

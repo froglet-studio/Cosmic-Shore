@@ -16,6 +16,14 @@
    "track": null,
    "triangles": 58112
   },
+  "Blastline": {
+   "cell": "Rampage Cell Config 2",
+   "environment": null,
+   "prisms": 4502,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 60656
+  },
   "Bloomrush": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
@@ -24,6 +32,14 @@
    "track": null,
    "triangles": 81168
   },
+  "Breach": {
+   "cell": "Thresher Time Cell Config 2",
+   "environment": null,
+   "prisms": 740,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 24752
+  },
   "Breakwater": {
    "cell": "Breakwater Cell Config 2",
    "environment": null,
@@ -31,6 +47,14 @@
    "tier": "COURSE",
    "track": null,
    "triangles": 47532
+  },
+  "BrittleStarTime": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 8344
   },
   "Broadside": {
    "cell": "Boneyard Cell Config 2",
@@ -48,6 +72,46 @@
    "track": null,
    "triangles": 8268
   },
+  "Bullrush": {
+   "cell": "Jackstraw Cell Config 2",
+   "environment": "SpawnableJackstraw2",
+   "prisms": 1122,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 14520
+  },
+  "BurrowRun": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 12408
+  },
+  "CaveIn": {
+   "cell": "Shatterplane Cell Config 2",
+   "environment": "SpawnableShatterplane2",
+   "prisms": 5310,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 105688
+  },
+  "Chum": {
+   "cell": "Chum Cell Config 2",
+   "environment": null,
+   "prisms": 814,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 41488
+  },
+  "CleanerRam": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 14,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 60088
+  },
   "Cleave": {
    "cell": "Cleave Cell Config 2",
    "environment": "SpawnableSwell",
@@ -55,6 +119,38 @@
    "tier": "RUN",
    "track": null,
    "triangles": 172488
+  },
+  "Corona": {
+   "cell": "Corona Cell Config 2",
+   "environment": "SpawnableCorona2",
+   "prisms": 1334,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 29592
+  },
+  "DecoyRun": {
+   "cell": "Thresher Time Cell Config 2",
+   "environment": null,
+   "prisms": 146,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 13656
+  },
+  "DenBuilder": {
+   "cell": "Glasshouse Cell Config 2",
+   "environment": null,
+   "prisms": 414,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 58640
+  },
+  "DepthCharge": {
+   "cell": "Rampage Cell Config 2",
+   "environment": null,
+   "prisms": 4493,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 61124
   },
   "DogFight": {
    "cell": "Boneyard Cell Config 2",
@@ -72,6 +168,46 @@
    "track": null,
    "triangles": 278200
   },
+  "Flatline": {
+   "cell": "Flatline Cell Config 2",
+   "environment": "SpawnableFlatline2",
+   "prisms": 2350,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 57384
+  },
+  "Flitstrike": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16101,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 215428
+  },
+  "Fulmen": {
+   "cell": "Rampage Cell Config 2",
+   "environment": null,
+   "prisms": 4478,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 1901116
+  },
+  "Glasshouse": {
+   "cell": "Glasshouse Cell Config 2",
+   "environment": null,
+   "prisms": 179,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 65228
+  },
+  "Gorge": {
+   "cell": "Chum Cell Config 2",
+   "environment": null,
+   "prisms": 797,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 35012
+  },
   "GrizzlyCharge": {
    "cell": "Boneyard Cell Config 2",
    "environment": "SpawnableBoneyard2",
@@ -88,13 +224,37 @@
    "track": null,
    "triangles": 8956
   },
+  "Harvest": {
+   "cell": "Harvest Cell Config 2",
+   "environment": "SpawnableHarvest2",
+   "prisms": 4149,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 65828
+  },
+  "Haul": {
+   "cell": "Haul Cell Config 2",
+   "environment": null,
+   "prisms": 896,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 58152
+  },
   "Headlong": {
    "cell": "Skim Race Cell Config",
    "environment": null,
    "prisms": 0,
    "tier": "COURSE",
    "track": null,
-   "triangles": 8908
+   "triangles": 6124
+  },
+  "Hedgerow": {
+   "cell": "Hedgerow Cell Config 2",
+   "environment": null,
+   "prisms": 839,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 26108
   },
   "Hijack": {
    "cell": "Switchyard Cell Config 2",
@@ -104,6 +264,30 @@
    "track": null,
    "triangles": 48888
   },
+  "Honeycomb": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 421,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 12452
+  },
+  "IceShelf": {
+   "cell": "Glasshouse Cell Config 2",
+   "environment": null,
+   "prisms": 376,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 36196
+  },
+  "Jackstraw": {
+   "cell": "Jackstraw Cell Config 2",
+   "environment": "SpawnableJackstraw2",
+   "prisms": 1140,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 39128
+  },
   "Joust": {
    "cell": "Barren Cell Config",
    "environment": null,
@@ -112,18 +296,106 @@
    "track": "SpawnableHopf",
    "triangles": 28080
   },
+  "Kelpwood": {
+   "cell": "Kelpwood Cell Config 2",
+   "environment": "SpawnableKelpwood2",
+   "prisms": 881,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 42292
+  },
+  "Lancefall": {
+   "cell": "Shatterplane Cell Config 2",
+   "environment": "SpawnableShatterplane2",
+   "prisms": 5292,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 64536
+  },
+  "Landslide": {
+   "cell": "Cleave Cell Config 2",
+   "environment": "SpawnableSwell",
+   "prisms": 14277,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 172524
+  },
+  "LanternRun": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 40332
+  },
+  "Larder": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16100,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 194208
+  },
+  "Longshot": {
+   "cell": "Longshot Cell Config 2",
+   "environment": null,
+   "prisms": 601,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 208276
+  },
   "Maelstrom": {
    "cell": null,
    "environment": null,
    "montage": [
-    "SkimRace",
     "Scurry",
-    "Salvo",
-    "Rampage",
-    "DogFight"
+    "ScarabScramble",
+    "Bloomrush",
+    "Waystation",
+    "Slingshot"
    ],
    "tier": "MONTAGE",
    "track": null
+  },
+  "Marionette": {
+   "cell": "Kelpwood Cell Config 2",
+   "environment": "SpawnableKelpwood2",
+   "prisms": 897,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 33076
+  },
+  "Palisade": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 159,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 2952
+  },
+  "PerchRun": {
+   "cell": "Thresher Time Cell Config 2",
+   "environment": null,
+   "prisms": 2,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 16592
+  },
+  "PodHunt": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16101,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 209264
+  },
+  "Railrush": {
+   "cell": "Switchyard Cell Config 2",
+   "environment": "SpawnableSwitchyard2",
+   "prisms": 3978,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 48756
   },
   "Rampage": {
    "cell": "Rampage Cell Config 2",
@@ -139,15 +411,39 @@
    "prisms": 0,
    "tier": "COURSE",
    "track": null,
-   "triangles": 9148
+   "triangles": 4572
+  },
+  "Reefbuild": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 216,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 53776
   },
   "Regatta": {
    "cell": "Regatta Shuffle Cell Config Course3",
    "environment": "RegattaShuffleRailsCourse3",
-   "prisms": 2038,
+   "prisms": 1637,
    "tier": "RUN",
    "track": null,
-   "triangles": 32884
+   "triangles": 28072
+  },
+  "Riposte": {
+   "cell": "Jackstraw Cell Config 2",
+   "environment": "SpawnableJackstraw2",
+   "prisms": 1122,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 14532
+  },
+  "Riptide": {
+   "cell": "Shatterplane Cell Config 2",
+   "environment": "SpawnableShatterplane2",
+   "prisms": 5383,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 99692
   },
   "Salvo": {
    "cell": "Boneyard Cell Config 2",
@@ -156,6 +452,14 @@
    "tier": "RUN",
    "track": null,
    "triangles": 216232
+  },
+  "ScarabRally": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 24540
   },
   "ScarabScramble": {
    "cell": "Scarab Scramble Cell Config",
@@ -172,6 +476,46 @@
    "tier": "RUN",
    "track": "SpawnableConcetricSpheres",
    "triangles": 332032
+  },
+  "Sentry": {
+   "cell": "Corona Cell Config 2",
+   "environment": "SpawnableCorona2",
+   "prisms": 1335,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 44580
+  },
+  "SerpentHood": {
+   "cell": "Serpent Hood Cell Config 2",
+   "environment": null,
+   "prisms": 2863,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 116216
+  },
+  "SerpentTime": {
+   "cell": "Serpentine Cell Config 2",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 8824
+  },
+  "Shatterplane": {
+   "cell": "Shatterplane Cell Config 2",
+   "environment": "SpawnableShatterplane2",
+   "prisms": 5293,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 98480
+  },
+  "Shockfront": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16100,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 917880
   },
   "Sirocco": {
    "cell": "Rampage Cell Config 2",
@@ -205,21 +549,61 @@
    "track": null,
    "triangles": 12228
   },
+  "SlipLine": {
+   "cell": "Thresher Time Cell Config 2",
+   "environment": null,
+   "prisms": 223,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 19268
+  },
+  "Snap": {
+   "cell": "Kelpwood Cell Config 2",
+   "environment": "SpawnableKelpwood2",
+   "prisms": 881,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 47988
+  },
+  "Spearline": {
+   "cell": "Thresher Time Cell Config 2",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 6304
+  },
+  "Standoff": {
+   "cell": "Standoff Cell Config 2",
+   "environment": "SpawnableStandoff2",
+   "prisms": 433,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 27496
+  },
+  "Starweave": {
+   "cell": "Starweave Cell Config 2",
+   "environment": null,
+   "prisms": 560,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 25860
+  },
+  "Stingherd": {
+   "cell": "Kelpwood Cell Config 2",
+   "environment": "SpawnableKelpwood2",
+   "prisms": 880,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 11544
+  },
   "Switchback": {
    "cell": "Skim Race Cell Config",
    "environment": null,
    "prisms": 0,
    "tier": "COURSE",
    "track": null,
-   "triangles": 20620
-  },
-  "Tandava": {
-   "cell": "Tandava Cell Config",
-   "environment": null,
-   "prisms": 1458,
-   "tier": "MODEL",
-   "track": null,
-   "triangles": 40420
+   "triangles": 26500
   },
   "Tapestry": {
    "cell": "Barren Cell Config",
@@ -229,8 +613,24 @@
    "track": null,
    "triangles": 80500
   },
+  "Thornbush": {
+   "cell": "Jackstraw Cell Config 2",
+   "environment": "SpawnableJackstraw2",
+   "prisms": 1122,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 14424
+  },
+  "Thornline": {
+   "cell": "Thresher Time Cell Config 2",
+   "environment": null,
+   "prisms": 17,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 17132
+  },
   "ThresherTime": {
-   "cell": "Skim Race Cell Config",
+   "cell": "Thresher Time Cell Config 2",
    "environment": null,
    "prisms": 0,
    "tier": "COURSE",
@@ -244,6 +644,14 @@
    "tier": "MODEL",
    "track": null,
    "triangles": 4980
+  },
+  "Trawl": {
+   "cell": "Harvest Cell Config 2",
+   "environment": "SpawnableHarvest2",
+   "prisms": 4129,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 50676
   },
   "Undertow": {
    "cell": "Wildlife Liberation Cell Config 2",
@@ -261,13 +669,21 @@
    "track": null,
    "triangles": 12120
   },
+  "Warren": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 1093,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 14124
+  },
   "Waystation": {
    "cell": "Skim Race Cell Config",
    "environment": null,
-   "prisms": 0,
+   "prisms": 960,
    "tier": "COURSE",
    "track": null,
-   "triangles": 204148
+   "triangles": 84084
   },
   "WildlifeLiberation": {
    "cell": "Wildlife Liberation Cell Config 2",
@@ -276,6 +692,22 @@
    "tier": "RUN",
    "track": null,
    "triangles": 301492
+  },
+  "Windrow": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 1277,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 16248
+  },
+  "Woodpecker": {
+   "cell": "Rampage Cell Config 2",
+   "environment": null,
+   "prisms": 4485,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 64152
   },
   "WrasseRun": {
    "cell": "Skim Race Cell Config",
@@ -299,5 +731,5 @@
   768,
   510
  ],
- "source_hash": "3739933571a53e1f0faea1cb9d69463ef071f7e18d568885270643ca739619f2"
+ "source_hash": "633a2653a249f3ed8f94e49aa0c87e4fdd84232fa99f68ccbab672d30cb72df1"
 }
