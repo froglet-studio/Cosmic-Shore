@@ -25135,3 +25135,15 @@ headless), shipped course alone, seeds 1-3: card start 131 s (was 214), L5 start
 - [ ] Fly the Starling in the Toybox; collect Mass crystals to level 5+: the next Mass hand's cards read Lv 2 (Lv 3 at level 10).
 - [ ] At Mass level 5, pick a Mass card: the hand stays up for one more pick (Encore); the second pick closes it.
 - [ ] An AI Starling at level 5 takes both picks.
+
+## Regatta's shuffled level: eight genome courses from the balanced pool (2026-11-18)
+
+Not run in the Unity editor. Regatta's course pool now deals eight genome courses (`Tools/Build/regatta_shuffle_pool.json`,
+written by `author_regatta_assets.py`: one `RegattaShuffleRails<Label>` prefab carrying its `courseGenome` and one
+`Regatta Shuffle Cell Config <Label>` each) and the four old circuits sit disabled at pool entries 0-3. Race judge
+(Amoebius headless, trunk after #2208), 3 seeds, median: the polished five at 1.13x (card start) and 1.10x (L5 start).
+Unity reference compile clean on the changed test; `RegattaCoursePoolTests` not run.
+
+- [ ] Run the EditMode `RegattaCoursePoolTests`: all pass.
+- [ ] Play Regatta five times: each match lays a different course from the eight (none of the old Wide / Mixed / Hairpins /
+      Tight circuits), rings and rails appear, and the race finishes.
