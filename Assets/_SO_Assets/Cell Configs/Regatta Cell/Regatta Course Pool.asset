@@ -15,17 +15,57 @@ MonoBehaviour:
   entries:
   - Label: Wide
     CellConfig: {fileID: 11400000, guid: 1272c806f122444f525a000ccbcb472b, type: 2}
-    Enabled: 1
-    Notes: The old intensity-1 circuit - gentle corners (90 deg hardest), 110 u mouths, 200 u floor.
+    Enabled: 0
+    Notes: The old intensity-1 circuit - gentle corners (90 deg hardest), 110 u mouths, 200 u floor. Off while the shuffle deals.
   - Label: Mixed
     CellConfig: {fileID: 11400000, guid: 6a8fdec94d8d7c1e55ce2b82f195fb2d, type: 2}
-    Enabled: 1
-    Notes: The old intensity-2 circuit - 118 deg hardest corner, 88 u mouths, 150 u floor.
+    Enabled: 0
+    Notes: The old intensity-2 circuit - 118 deg hardest corner, 88 u mouths, 150 u floor. Off while the shuffle deals.
   - Label: Hairpins
     CellConfig: {fileID: 11400000, guid: ff80f22ab0303ace7a1139de2f9f2222, type: 2}
-    Enabled: 1
-    Notes: The old intensity-3 circuit - 135 deg hardest corner, 72 u mouths, 120 u floor.
+    Enabled: 0
+    Notes: The old intensity-3 circuit - 135 deg hardest corner, 72 u mouths, 120 u floor. Off while the shuffle deals.
   - Label: Tight
     CellConfig: {fileID: 11400000, guid: 1fd418b9587960e42b0cbdb69f7cd2ec, type: 2}
+    Enabled: 0
+    Notes: The old intensity-4 circuit - three hard corners (150 deg), 54 u mouths, 100 u floor. Off while the shuffle deals.
+  - Label: Course1
+    CellConfig: {fileID: 11400000, guid: 65aff413873c2b50dccb97d0601b767c, type: 2}
     Enabled: 1
-    Notes: The old intensity-4 circuit - three hard corners (150 deg), 54 u mouths, 100 u floor.
+    Notes: 'Shuffle course 1: polished-five spread 1.14x card, 1.13x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course2
+    CellConfig: {fileID: 11400000, guid: 990476063f9591da21b377cc2a38dc88, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 2: polished-five spread 1.28x card, 1.21x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course3
+    CellConfig: {fileID: 11400000, guid: 7fc59ba89af24bd423392e54e1692688, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 3: polished-five spread 1.11x card, 1.19x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course4
+    CellConfig: {fileID: 11400000, guid: f7da5e947b36af11154512cb1b00d7e0, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 4: polished-five spread 1.13x card, 1.25x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course5
+    CellConfig: {fileID: 11400000, guid: 670f965a49bb827f9fc718ef447a2cb3, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 5: polished-five spread 1.12x card, 1.28x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course6
+    CellConfig: {fileID: 11400000, guid: b4a170db9d53cc110baac5465cd9bd4b, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 6: polished-five spread 1.34x card, 1.20x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course7
+    CellConfig: {fileID: 11400000, guid: b331d4a3860aff8cd93fb11cd0102ffc, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 7: polished-five spread 1.15x card, 1.12x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course8
+    CellConfig: {fileID: 11400000, guid: 89ec70ade92c6edcd61b9ebdbe27b96a, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 8: polished-five spread 1.23x card, 1.17x L5 (3 seeds, real-game
+    judge).'
