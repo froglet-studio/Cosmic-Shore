@@ -178,24 +178,29 @@ namespace CosmicShore.Tests
         // ── The shipped pool ───────────────────────────────────────────────────────────────
 
         [Test]
-        public void ShippedPool_IsFourDifferentRegattaCircuits()
+        public void ShippedPool_DealsOnlyDifferentRegattaCourses()
         {
             var pool = AssetDatabase.LoadAssetAtPath<RegattaCoursePoolSO>(PoolPath);
             Assert.IsNotNull(pool, $"{PoolPath} is missing - run Tools/Build/author_regatta_assets.py");
-            Assert.AreEqual(4, pool.Count);
+            // Entries 0-3 are the four old circuits (the race judge and the training harness address them by
+            // intensity); the shuffle's searched courses follow them (Tools/Build/regatta_shuffle_pool.json).
+            Assert.GreaterOrEqual(pool.Count, 4);
 
             var firstGates = new List<Vector3>();
+            int enabled = 0;
             for (int i = 0; i < pool.Count; i++)
             {
                 var rails = pool.Entries[i].Rails;
                 Assert.IsNotNull(rails, $"entry {i} lays no SpawnableRegattaRails");
-                Assert.IsTrue(pool.Entries[i].Enabled, $"entry {i} is disabled");
                 var gates = rails.BuildGatesNow();
                 Assert.AreEqual(RegattaCourse.RingsPerLap, gates.Count, $"entry {i}: ring count");
+                if (!pool.Entries[i].Enabled) continue;
+                enabled++;
                 foreach (var seen in firstGates)
-                    Assert.Greater((gates[1].Position - seen).magnitude, 1f, $"entry {i} lays a circuit already in the pool");
+                    Assert.Greater((gates[1].Position - seen).magnitude, 1f, $"entry {i} lays a course already dealt");
                 firstGates.Add(gates[1].Position);
             }
+            Assert.Greater(enabled, 0, "no entry is enabled: every match would fall back to entry 0");
         }
     }
 }
