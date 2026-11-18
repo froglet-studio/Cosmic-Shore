@@ -482,6 +482,7 @@ def use_field(name):
     set_hulls(list(FIELDS[name]))
     if "REGATTA_STAGE1" not in os.environ:
         STAGE1 = FIELD_STAGE1[name]
+GATE_Q = float(os.environ.get("REGATTA_GATE_Q", "0.5"))
 ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1").split(","))
 
 
@@ -1221,7 +1222,11 @@ def shard(k, n, out, backend="engine", budget=1000, peers_every=5, refit_every=1
         if len([r for r in every if usable(r)]) >= 60 and (s is None or len(own) % refit_every == 0):
             s = fit_trusted(every, seed=len(every))
         full = sorted(r["loss"]["spread_x"] for r in every if r.get("valid") and r["loss"].get("spread_x"))
-        gate = full[len(full) // 2] if len(full) >= 10 and backend != "model" else None
+        # REGATTA_GATE_Q: the quantile of the full spreads a stage-1 spread must beat to race on (0.5, the median).
+        # The ten field's L5 shard stopped 139 of 153 courses at stage 1 on the median (2026-11-18), so its archive
+        # barely grew; a looser quantile races more of them in full.
+        gate = (full[min(len(full) - 1, int(len(full) * GATE_Q))]
+                if len(full) >= 10 and backend != "model" else None)
         if seed_q:
             g = seed_q.pop(0)
         elif k == 0 and not every:
