@@ -85,3 +85,23 @@ the belly on it. A pilot (the autopilot's `RegattaTigerMothDrop`) gets one drop 
 - Scarab: Time throttle curve x0.625 -> x0.9375 reshaped to x0.95 -> x1.0 (card 111.2 -> 73.5 s, L5 78.5 -> 64.0 s).
 - Sparrow: afterburner (Time BoostSpeedMultiplier) x1 -> x2.25 reshaped to x2 -> x2.75 (card 121.5 -> 74.3 s, L5
   85.2 -> 66.9 s).
+
+## Which AI each hull flies in Regatta (audit, 2026-11-18)
+
+A hull can look like a balance outlier because Regatta flies an AI that was never trained. The Dolphin's two-line racing
+(single-seed spread 6-10%) came from exactly that: Regatta resolved `DolphinAIBoostPolicy` (the untrained defaults), not
+the drive trained in Switchback. `AIBoostPolicySO.ForMode` loads `Resources/AIBoostPolicies/<asset>_Regatta` when it
+exists, otherwise the base asset the prefab wires.
+
+| Hull | Regatta flies | Trained in its Time game | Verdict |
+|---|---|---|---|
+| Dolphin | `_Regatta` = the Switchback drive (from this change) | Switchback | Fixed; Drift Charge re-fit to x1.25 -> x2.76 |
+| Sparrow | base, defaults | Breakwater (#1846, model-only search) | Untrained: next to fix, then re-fit its afterburner |
+| Rhino | `_Regatta` = base + cornerSpeed 333 | Headlong | Partly trained; the Headlong genes predate the #2233 fuel tank |
+| Swordfish | the Rhino's `_Regatta` (shared asset) | Spearline flies the Rhino's Headlong genes | Never trained for the Swordfish |
+| Scarab | base, trained (#2087 wrote it) | Scarab Rally | OK |
+| Thresher | `_Regatta` = the Thornline drive | Thornline | OK |
+| Squirrel | base, defaults | none (Skim Race trains `SkimRaceAIConfig`) | No trained boost policy (loop step 3) |
+| BrittleStar | base, defaults | none (`_BrittleStarTime` is the coach) | No trained policy (loop step 3) |
+| Urchin | rail autopilot | Skein genome is Skein-only | Not a boost policy; check separately |
+| Manta, Serpent, TigerMoth | - | - | Flagged above; revisit with the redesigns |

@@ -117,9 +117,17 @@ for _n in ("DolphinAIBoostPolicy_Switchback", "DolphinAIBoostPolicy_Switchback_I
     ROWS[_n] = dict(base=L.POLICY_DIR + "/DolphinAIBoostPolicy.asset", start="DolphinAIBoostPolicy_Switchback_I1",
                     genome_fields=("releaseAlignDegrees", "releaseStickBand", "releaseRunwaySeconds"),
                     fields=_DOLPHIN_C, source="/mnt/project-files/regatta-flywheel/step5/dolphin-ai/best.json")
+# Dolphin, Regatta (2026-11-18): Regatta flew the hull's own DolphinAIBoostPolicy, which no search ever trained (align 12,
+# runway 2.5 s, spend at 0.95 charge): it spent full charges into 500-750 u/s bursts that overshot rings or hit prisms,
+# and its races split by seed between two lines (single-seed spread 6-10%). The Switchback-trained drive, copied over the
+# base: L5 course 1 mean 60.9 -> 50.1 s (SD 16 -> 6.7), course 9 77.9 -> 68.7 (SD 15.7 -> 5.1), 8 seeds. Shipped with
+# the Drift Charge re-fit to rest x1.25 (step5/noise/dolphin_knee.jsonl).
+ROWS["DolphinAIBoostPolicy_Regatta"] = dict(base=L.POLICY_DIR + "/DolphinAIBoostPolicy.asset", fields=dict(_DOLPHIN_C),
+                                            source="/mnt/project-files/regatta-flywheel/step5/dolphin-ai/best.json")
 
 # Every value each row overwrote, as it shipped on bleeding-edge 8197bd92 (2026-11-07). --revert writes these back.
 OLD = {
+    "DolphinAIBoostPolicy_Regatta": None,  # new 2026-11-18: --revert removes it
     # run3b, as it shipped before run4 (2026-11-17; #2088), refuel off
     "SerpentAIBoostPolicy_SerpentTime": {"alignDegrees": 68.568, "releaseAlignDegrees": 72.845, "stickBand": 0.372,
                                          "releaseStickBand": 0.497, "engageRunwaySeconds": 3.14, "releaseRunwaySeconds": 0.646,
