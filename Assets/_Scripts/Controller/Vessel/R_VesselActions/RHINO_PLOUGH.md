@@ -12,6 +12,11 @@
 > always on the landing point); the hull ignoring mass is now a recorded design statement (the
 > Time row), and the sword's new Mass afterimages are ploughed like any prism.
 
+> **2026-11-18: ploughing fuels the ramp.** Every prism the hull ploughs aside adds 0.0015 of a tank to the ramp's
+> fuel (`RhinoPloughFuelByPrismEffect`, first in `RhinoImpactorDataContainer`); a super-shielded prism the hull deflects
+> pays nothing. The ramp burns the tank, and an empty one tops out at 2.5x instead of 16.8x (`RHINO_RAMP_BOOST.md`
+> § "Fuel").
+
 Garrett, 2026-10-13: *"the rhino should not destroy prisms it collides with. those should be pushed
 to either side like the rhino is a plough."*
 

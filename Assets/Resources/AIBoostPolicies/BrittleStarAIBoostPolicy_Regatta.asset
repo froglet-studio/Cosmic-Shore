@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ec0e33171fe10f975b730cbc4c48493, type: 3}
+  m_Name: BrittleStarAIBoostPolicy_Regatta
+  m_EditorClassIdentifier: 
+  alignDegrees: 40.603
+  releaseAlignDegrees: 83.504
+  stickBand: 0.583
+  releaseStickBand: 1
+  engageRunwaySeconds: 0.386
+  releaseRunwaySeconds: 0.481
+  disabledInModes: []
+  requireAIPlayer: 0
+  minHoldSeconds: 1.104
+  minRestSeconds: 0.602

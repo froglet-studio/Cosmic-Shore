@@ -978,7 +978,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Resources:
-  - Name: Boost
+  - Name: Ramp Fuel
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1

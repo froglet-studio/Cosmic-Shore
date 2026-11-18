@@ -117,9 +117,30 @@ for _n in ("DolphinAIBoostPolicy_Switchback", "DolphinAIBoostPolicy_Switchback_I
     ROWS[_n] = dict(base=L.POLICY_DIR + "/DolphinAIBoostPolicy.asset", start="DolphinAIBoostPolicy_Switchback_I1",
                     genome_fields=("releaseAlignDegrees", "releaseStickBand", "releaseRunwaySeconds"),
                     fields=_DOLPHIN_C, source="/mnt/project-files/regatta-flywheel/step5/dolphin-ai/best.json")
+# Dolphin, Regatta (2026-11-18): Regatta flew the hull's own DolphinAIBoostPolicy, which no search ever trained (align 12,
+# runway 2.5 s, spend at 0.95 charge): it spent full charges into 500-750 u/s bursts that overshot rings or hit prisms,
+# and its races split by seed between two lines (single-seed spread 6-10%). The Switchback-trained drive, copied over the
+# base: L5 course 1 mean 60.9 -> 50.1 s (SD 16 -> 6.7), course 9 77.9 -> 68.7 (SD 15.7 -> 5.1), 8 seeds. Shipped with
+# the Drift Charge re-fit to rest x1.25 (step5/noise/dolphin_knee.jsonl).
+ROWS["DolphinAIBoostPolicy_Regatta"] = dict(base=L.POLICY_DIR + "/DolphinAIBoostPolicy.asset", fields=dict(_DOLPHIN_C),
+                                            source="/mnt/project-files/regatta-flywheel/step5/dolphin-ai/best.json")
+
+# Brittle Star, Regatta (2026-11-18, loop step 3): Regatta flew the hull's own BrittleStarAIBoostPolicy, which no search
+# ever trained (align 12, engage runway 1.5 s): in Brittle Star Time with the coach off it DNFs I1 and I4. Brittle Star
+# Time's coach cannot leave its course (static C# that reads that game's line), so the hull's own Speed Mode policy was
+# trained there with the coach switched off (time_ai_search.py --hull BrittleStarDrive, drive1: I1-I4, I1 at Time 5 and
+# a wide course, seeds 11-12, 4+3 generations): it finishes every rung, ~1.3x the coach's times. Copied here as the
+# Regatta drive. Regatta numbers: Docs/ElementalLoop/REDESIGN.md (the AI audit).
+ROWS["BrittleStarAIBoostPolicy_Regatta"] = dict(
+    base=L.POLICY_DIR + "/BrittleStarAIBoostPolicy.asset",
+    fields={"alignDegrees": 40.603, "releaseAlignDegrees": 83.504, "stickBand": 0.583, "releaseStickBand": 1,
+            "engageRunwaySeconds": 0.386, "releaseRunwaySeconds": 0.481, "minHoldSeconds": 1.104, "minRestSeconds": 0.602},
+    source="/mnt/project-files/regatta-flywheel/train/BrittleStar/drive1/best.json")
 
 # Every value each row overwrote, as it shipped on bleeding-edge 8197bd92 (2026-11-07). --revert writes these back.
 OLD = {
+    "DolphinAIBoostPolicy_Regatta": None,  # new 2026-11-18: --revert removes it
+    "BrittleStarAIBoostPolicy_Regatta": None,  # new 2026-11-18: --revert removes it
     # run3b, as it shipped before run4 (2026-11-17; #2088), refuel off
     "SerpentAIBoostPolicy_SerpentTime": {"alignDegrees": 68.568, "releaseAlignDegrees": 72.845, "stickBand": 0.372,
                                          "releaseStickBand": 0.497, "engageRunwaySeconds": 3.14, "releaseRunwaySeconds": 0.646,

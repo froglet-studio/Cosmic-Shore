@@ -420,11 +420,11 @@ MonoBehaviour:
   ThrottleScalerMultiplier:
     Enabled: 1
     Value: 1
-    Min: 0.625
-    Max: 0.9375
+    Min: 0.95
+    Max: 1
     element: 4
     UseFloor: 1
-    Floor: 0.3125
+    Floor: 0.475
   PitchScaler: 100
   YawScaler: 100
   RollScaler: 30
