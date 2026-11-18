@@ -185,6 +185,42 @@ controllers rather than by a cell config), and those rounds show the honest "pre
 with the mode's name and description still on screen. A scene with no vessel still gets the orbiting
 look at the arena; only the tap-in is lost, and it says so once with the fix attached.
 
+### 1.5.1 The hand-over — the round reuses the hub's prisms (2026-11-17)
+
+The hub previews exactly the arena the round then lays, and until 2026-11-17 a round paid for it twice: the hub's
+prisms died with the hub scene on the `Single` load, and the round cloned the same 13-15 thousand again ("Prisms
+reused from the environment pool 0" on both lays). Each lay is a long frame with Relay live; one froze a host for 72 s
+and ended the tournament (`Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md` finding 1, `Docs/PartySystem/BUGS.md` B45).
+
+At the countdown's zero, on **every peer** (each machine lays its own arena), `MaelstromSceneView.RefreshCountdown`
+calls `MaelstromPreviewHost.ParkArenaForRound()`: it hides the preview window, waits for a preview that is still
+being laid, then `Cell.RetireWorldIntoPoolForSceneExit` eases the world away (`parkSuctionSeconds`, 0.5 s) and hands it
+to `EnvironmentPrismPool` a time slice per frame (`parkSliceMs`, 24 ms) - the first half of a cell swap, with no
+rebuild. The pool outlives the scene load, so the round's lay re-issues those prisms instead of cloning them.
+
+- **The world eases away, it is not covered.** `launchFlashSheet` is not wired in `Maelstrom.unity`, so at launch the
+  panel fades and the hub's own camera can see the arena; a world that left in batches would be seen doing it.
+- **A preview still building is waited for.** Everyone readying at once snaps the countdown to 3 s, usually before the
+  preview is laid; a lay cut off by the scene load is paid for twice.
+- **Life retires with the world** (`LifeForm.RetireWithWorld`: no death, no crystal, no sound), and a lifeform that is
+  a spawned NetworkObject is left for the scene's own teardown (Netcode refuses a plain parent).
+- **Only arenas that are a cell environment** are handed over: 32 of the 83 pool modes author an `EnvironmentPrefab`,
+  the same config assets in the hub's preview and in the round's scene, all laying `SpawnablePrism.prefab`. The other
+  51 have nothing to hand over and launch with no delay.
+
+Only the host can hold the load for it: `MaelstromLobby` makes the same call (it is idempotent) and holds
+`MaelstromController.BeginNextRound` until the hand-over finishes, or `parkArenaMaxSeconds` (5 s) at the latest
+(`MaelstromLobby.ShouldLaunchNow`; a hold cut at the limit writes `arenaParkCutShort`). A guest's hand-over is cut
+short by the scene load if it is slower; what was not parked dies with the scene and is cloned, as before. Nothing
+crosses the wire. Each hand-over writes one `arenaParked <n> prisms in <s>s` mark in the test log; the round's load
+report shows the reuse.
+
+Known limit: the pool never trims. A launch that parks and then never lays (the host drops during the hold or the
+load, and the guest lands on the menu) leaves that arena parked until a later lay of `SpawnablePrism` pulls it.
+
+**Not run in Unity yet** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Maelstrom: the round reuses the hub preview's
+prisms"). Not covered: the round's world going back to the pool on the way to the hub.
+
 ### 1.6 The AI roster is dealt ONCE — and the FIELD is fixed at four
 
 **A Maelstrom seats `MaelstromDataSO.SeatCount` pilots every round — four by default — and the AI

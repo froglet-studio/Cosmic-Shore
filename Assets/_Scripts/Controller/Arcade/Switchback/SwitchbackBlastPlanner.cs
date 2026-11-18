@@ -93,6 +93,11 @@ namespace CosmicShore.Gameplay
         public float AimErrorDegrees, RollErrorDegrees;     // what the skill put on this blast
         public float Coverage;                // share of the standing lane prisms the (erred) slot covers, 0..1
         public int Standing, LaneHits;        // standing obstacle prisms; standing prisms in the thread lane
+        // Speed over breaking (MINIGAME_TRAINING_PLAN.md 6.2): the pilot is on a PASS at this gate - the hull can fly
+        // from where it is through the ring (SwitchbackBlastPlanner.Passable), or it committed to such a pass - and
+        // PassThrough is the point in the mouth the clear line runs through. KeyOnWay: this gate's key lies on that way.
+        public bool Pass, KeyOnWay;
+        public Vector3 PassThrough;
         public string Why;                    // a constant reason tag for the log (no allocation)
     }
 
@@ -134,6 +139,18 @@ namespace CosmicShore.Gameplay
         public const float ClearedShare = 0.05f;        // an obstacle with <= this share (or <= 2 prisms) standing is gone
         public const float FieldMargin = 40f;           // u past the field's half-width that still counts as the obstacle
 
+        // ── speed over breaking (Yash, 2026-11-17; MINIGAME_TRAINING_PLAN.md 6.2) ──
+        public const float HullRadius = 3f;             // u: the Dolphin's half-width (SwitchbackPrismAvoidance.ShipRadius)
+        public const float PassMargin = 2f;             // u of air round the hull a line needs to be CHOSEN as a pass
+        public const float PassHoldMargin = 0.5f;       // ...and to be KEPT once the pilot is on it (no flicker at the edge)
+        public const float DangerPassMargin = 5f;       // u of air a pass keeps off a Danger prism (a dead stop, not a 0.25 s hit)
+        public const float PassMinAxisCos = 0.5f;       // a pass crosses the ring's plane within 60 deg of its axis
+        public const float PassMouthShare = 0.6f;       // of the mouth's usable radius: how far off its centre a pass may run
+        public const float PassExit = 6f;               // u past the last door a pass must still be clear
+        public const float MoverPassWindow = 0.25f;     // s either side of the pilot's arrival a mover must stay off the pass
+        public const float OnTheWaySeconds = 0.15f;     // s: a key that costs no more than this to fly through is "on the way"
+        const int PassNearCap = 384;                    // prisms near one pass corridor; more than this is not a gap
+
         readonly SwitchbackFeatureLayout _layout;
         readonly SwitchbackBlastSlot _slot;
         readonly float _bore, _eye;
@@ -142,6 +159,17 @@ namespace CosmicShore.Gameplay
         readonly int[] _start;
         readonly int[] _moverOf;            // prism -> mover, -1 = static
         readonly float[] _pad;              // prism -> half its largest extent
+        readonly float[] _bound;            // prism -> its bounding sphere's radius (half its diagonal)
+        readonly float _maxBound;
+        readonly int[] _near = new int[PassNearCap];   // Passable's scratch: the prisms near the corridor (no allocation)
+
+        /// <summary>
+        /// Speed over breaking, on by default (Yash, 2026-11-17: "we should always prioritize speed over breaking as it
+        /// is time game"): a pilot whose ring can be flown through (<see cref="Passable"/>) never leaves its line for a
+        /// key crystal - only a key on its way is taken (<see cref="KeyOnTheWay"/>). Off = the cost model alone decides,
+        /// as before (an A/B switch; <see cref="SwitchbackAIDecision.Pass"/> is still filled so a race can count them).
+        /// </summary>
+        public bool SpeedOverBreaking { get; set; } = true;
 
         public SwitchbackFeatureLayout Layout => _layout;
         public SwitchbackBlastSlot Slot => _slot;
@@ -171,11 +199,14 @@ namespace CosmicShore.Gameplay
             int n = _layout.Prisms.Count;
             _moverOf = new int[n];
             _pad = new float[n];
+            _bound = new float[n];
             for (int k = 0; k < n; k++)
             {
                 _moverOf[k] = -1;
                 var sc = _layout.Prisms[k].Scale;
                 _pad[k] = 0.5f * Mathf.Max(sc.x, Mathf.Max(sc.y, sc.z));
+                _bound[k] = 0.5f * sc.magnitude;
+                if (_bound[k] > _maxBound) _maxBound = _bound[k];
             }
             for (int m = 0; m < _layout.Movers.Count; m++)
             {
@@ -366,6 +397,177 @@ namespace CosmicShore.Gameplay
             return pen;
         }
 
+        // ── speed over breaking: can the hull fly through the ring from here? ──
+
+        /// <summary>Layout prism <paramref name="k"/>'s pose at shared time <paramref name="t"/> (a mover's closed form).</summary>
+        void PoseAt(int k, float t, out Vector3 pos, out Quaternion rot)
+        {
+            var p = _layout.Prisms[k];
+            int m = _moverOf[k];
+            if (m < 0) { pos = p.Position; rot = p.Rotation; return; }
+            var mv = _layout.Movers[m];
+            mv.PoseAt(t, out Quaternion spin, out Vector3 offset);
+            mv.Apply(spin, offset, p.Position, p.Rotation, out pos, out rot);
+        }
+
+        /// <summary>Whether segment a-b touches the box at <paramref name="centre"/> / <paramref name="rot"/> with half
+        /// extents <paramref name="half"/> (already grown by the hull's radius: the box's corners are square, not round, so
+        /// this errs toward "touches"). The slab test in the box's own frame; no allocation.</summary>
+        public static bool SegmentTouchesBox(Vector3 a, Vector3 b, Vector3 centre, Quaternion rot, Vector3 half)
+        {
+            Quaternion inv = Quaternion.Inverse(rot);
+            Vector3 o = inv * (a - centre), d = inv * (b - a);
+            float t0 = 0f, t1 = 1f;
+            for (int i = 0; i < 3; i++)
+            {
+                float oi = o[i], di = d[i], h = half[i];
+                if (Mathf.Abs(di) < 1e-6f)
+                {
+                    if (oi < -h || oi > h) return false;
+                    continue;
+                }
+                float ta = (-h - oi) / di, tb = (h - oi) / di;
+                if (ta > tb) { float x = ta; ta = tb; tb = x; }
+                if (ta > t0) t0 = ta;
+                if (tb < t1) t1 = tb;
+                if (t0 > t1) return false;
+            }
+            return true;
+        }
+
+        /// <summary>Whether the hull flies a-b clear of every prism gathered in <see cref="_near"/>: static prisms as laid,
+        /// movers where they are when the pilot reaches them (and <see cref="MoverPassWindow"/> either side).</summary>
+        bool LineClear(int near, Vector3 a, Vector3 b, float margin, float clock, float speed)
+        {
+            Vector3 ab = b - a;
+            float len = ab.magnitude;
+            if (len < 1e-3f) return true;
+            Vector3 dir = ab / len;
+            for (int i = 0; i < near; i++)
+            {
+                int k = _near[i];
+                var p = _layout.Prisms[k];
+                float grow = HullRadius + (p.Kind == CosmicShore.Data.PrismKind.Danger ? Mathf.Max(DangerPassMargin, margin) : margin);
+                Vector3 half = p.Scale * 0.5f + Vector3.one * grow;
+                if (_moverOf[k] < 0)
+                {
+                    if (SegmentTouchesBox(a, b, p.Position, p.Rotation, half)) return false;
+                    continue;
+                }
+                float arrive = clock + Mathf.Clamp(Vector3.Dot(p.Position - a, dir), 0f, len) / speed;
+                for (int j = -1; j <= 1; j++)
+                {
+                    PoseAt(k, arrive + j * MoverPassWindow, out Vector3 pos, out Quaternion rot);
+                    if (SegmentTouchesBox(a, b, pos, rot, half)) return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Speed over breaking (Yash, 2026-11-17): can the hull fly from <paramref name="self"/> through gate
+        /// <paramref name="gate"/>'s ring at <paramref name="ring"/> and on past its doors WITHOUT touching a standing
+        /// prism - however the gap got there (the layout's bore and eye, a blast, a rival's blast, a ram)? Measured from
+        /// the game's own data: a straight tube of the hull's radius (<see cref="HullRadius"/> + <paramref name="holding"/>
+        /// ? <see cref="PassHoldMargin"/> : <see cref="PassMargin"/>; <see cref="DangerPassMargin"/> off a Danger prism)
+        /// against every standing layout prism's real box (movers at the pilot's arrival), tried through the mouth's centre
+        /// and twelve points round it, inside the ring's mouth (<paramref name="mouthRadius"/>) and the door's eye. <paramref name="through"/> is the point in the mouth the first
+        /// clear line runs through; a pilot already on a pass keeps its own (<paramref name="heldThrough"/>) while it stays
+        /// clear. An open gate is passable. False when the pilot is downstream of the ring or more than 60 deg off its
+        /// axis (the gate steering flies it round first), or the corridor is too crowded to be a gap. One box-culled pass
+        /// over the layout and at most 14 lines over the few prisms near the corridor; no allocation; never per frame.
+        /// </summary>
+        public bool Passable(int gate, ISwitchbackAIWorld world, Vector3 self, Vector3 ring, float mouthRadius, float clock,
+                             float speed, bool holding, Vector3 heldThrough, out Vector3 through)
+        {
+            through = ring;
+            int s = StationFor(gate);
+            if (s < 0) return true;
+            var st = _layout.Stations[s];
+            Vector3 axis = st.FlowAxis;
+            Vector3 toRing = ring - self;
+            float dist = toRing.magnitude;
+            if (dist < 1f) return true;
+            if (Vector3.Dot(toRing, axis) < PassMinAxisCos * dist) return false;
+            float back = (st.DoubleDoor ? SwitchbackBlastRun.SecondDoorSetback : SwitchbackBlastRun.DoorSetback) + PassExit;
+            float margin = holding ? PassHoldMargin : PassMargin;
+            // A pass point stays well inside the mouth (and the door's eye): a missed mouth costs a loop, a prism 0.25 s.
+            float usable = Mathf.Max(Mathf.Min(_eye, mouthRadius) - HullRadius - PassMargin, 0f) * PassMouthShare;
+            float v = Mathf.Max(speed, MinSpeed);
+
+            // The prisms near the corridor (the centre line to past the doors, as wide as the eye), gathered once.
+            Vector3 a = self, b = ring + toRing / dist * (back / PassMinAxisCos);
+            float tube = usable + HullRadius + Mathf.Max(DangerPassMargin, margin) + 2f;
+            float swing = _layout.Movers.Count > 0 ? SwitchbackBlastRun.CellPitch * 4f : 0f;
+            float reach = tube + _maxBound + swing;
+            Vector3 lo = Vector3.Min(a, b) - Vector3.one * reach, hi = Vector3.Max(a, b) + Vector3.one * reach;
+            int near = 0;
+            for (int k = 0, n = _layout.Prisms.Count; k < n; k++)
+            {
+                Vector3 p = _layout.Prisms[k].Position;
+                if (p.x < lo.x || p.y < lo.y || p.z < lo.z || p.x > hi.x || p.y > hi.y || p.z > hi.z) continue;
+                if (!world.PrismStanding(k)) continue;
+                if (SwitchbackFeatures.DistanceToSegment(p, a, b) > tube + _bound[k] + (_moverOf[k] >= 0 ? swing : 0f)) continue;
+                if (near >= PassNearCap) return false;
+                _near[near++] = k;
+            }
+
+            SwitchbackBlastRun.DoorBasis(axis, out Vector3 du, out Vector3 dv);
+            // The pass the pilot is already on first, then the centre, then two rings of six inside the eye.
+            for (int c = holding ? -1 : 0; c < 13; c++)
+            {
+                Vector3 q;
+                if (c < 0) q = heldThrough;
+                else if (c == 0) q = ring;
+                else
+                {
+                    bool outer = c > 6;
+                    float ang = ((c - 1) % 6) * (Mathf.PI / 3f) + (outer ? Mathf.PI / 6f : 0f);
+                    q = ring + (du * Mathf.Cos(ang) + dv * Mathf.Sin(ang)) * (usable * (outer ? 1f : 0.5f));
+                }
+                Vector3 line = q - self;
+                float len = line.magnitude;
+                if (len < 1f) { through = q; return true; }
+                line /= len;
+                float cos = Vector3.Dot(line, axis);
+                if (cos < PassMinAxisCos) continue;
+                if (!LineClear(near, self, q + line * (back / cos), margin, clock, v)) continue;
+                through = q;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Whether station <paramref name="station"/>'s key lies ON THE WAY from <paramref name="self"/> to the ring: there
+        /// to take, ahead of the pilot and short of the ring, and costing no more than <see cref="OnTheWaySeconds"/> to fly
+        /// through instead of straight at the ring (<see cref="KeyDetourSeconds"/>). A key beside or behind the pilot is
+        /// not on its way.
+        /// </summary>
+        public bool KeyOnTheWay(int station, ISwitchbackAIWorld world, Vector3 self, Vector3 ring, float speed)
+        {
+            if (station < 0 || station >= _layout.Stations.Count || !world.KeyAvailable(station)) return false;
+            return KeyDetourSeconds(_layout.Stations[station].Key, self, ring, speed) <= OnTheWaySeconds;
+        }
+
+        /// <summary>
+        /// Seconds it costs a pilot at <paramref name="self"/> to fly through <paramref name="key"/> on its way to
+        /// <paramref name="ring"/> instead of straight there: the extra distance at its speed, plus the bend at the key
+        /// beyond the free <see cref="DriftFreeDegrees"/> at the Dolphin's <see cref="DriftTurnRate"/>. Infinite for a key
+        /// that is not between the pilot and the ring (behind it, or past the ring).
+        /// </summary>
+        public static float KeyDetourSeconds(Vector3 key, Vector3 self, Vector3 ring, float speed)
+        {
+            Vector3 toRing = ring - self, toKey = key - self, on = ring - key;
+            float l = toRing.magnitude;
+            if (l < 1f) return float.PositiveInfinity;
+            float along = Vector3.Dot(toKey, toRing) / l;
+            if (along <= 0f || along > l) return float.PositiveInfinity;
+            float extra = Mathf.Max(toKey.magnitude + on.magnitude - l, 0f);
+            float bend = toKey.sqrMagnitude > 1e-4f && on.sqrMagnitude > 1e-4f ? Vector3.Angle(toKey, on) : 0f;
+            return extra / Mathf.Max(speed, MinSpeed) + Mathf.Max(0f, bend - DriftFreeDegrees) / DriftTurnRate;
+        }
+
         /// <summary>
         /// The slot that best covers station <paramref name="station"/>'s standing obstacle fired from its key: the nose on
         /// the door (down the leg, through the field's bore), the gape (up) along the obstacle's long axis across the
@@ -406,9 +608,16 @@ namespace CosmicShore.Gameplay
         /// <paramref name="seed"/> drives the skill's mistakes (decision, aim, roll): the same inputs always give the same
         /// decision. No allocation. At an I4 gauntlet the plan is for the key the pilot is working on
         /// (<see cref="StageFor"/>): a blast there is aimed at, and its lane runs to, the next key (the last at the door).
+        /// <para>Speed over breaking (<see cref="SpeedOverBreaking"/>): when the ring can be flown through from here
+        /// (<see cref="Passable"/>) the key is refused (<c>why=passable</c>) unless it lies on the pilot's way
+        /// (<see cref="KeyOnTheWay"/>), at every difficulty. <paramref name="held"/> is the pilot's last decision at this
+        /// gate while it is on a pass (<see cref="SwitchbackAIDecision.Pass"/>): it keeps that pass (<c>why=committed</c>)
+        /// even when a later look finds the line crossed, so a pilot that turned for the ring does not turn away again.
+        /// <paramref name="mouthRadius"/> is the ring's own radius (a pass point stays inside it; unset = the door's eye).</para>
         /// </summary>
         public SwitchbackAIDecision Decide(int gate, Vector3 self, float speed, Vector3 ring, float clock,
-                                          in SwitchbackAISkill skill, ISwitchbackAIWorld world, uint seed)
+                                          in SwitchbackAISkill skill, ISwitchbackAIWorld world, uint seed,
+                                          in SwitchbackAIDecision held = default, float mouthRadius = float.PositiveInfinity)
         {
             var d = new SwitchbackAIDecision
             {
@@ -421,18 +630,26 @@ namespace CosmicShore.Gameplay
             float eta = l / v;
             int s = d.Station;
 
+            d.PassThrough = ring;
             if (s < 0)
             {
-                d.CostDirect = eta; d.Plan = SwitchbackAIPlan.Direct; d.Why = "open";
+                d.CostDirect = eta; d.Plan = SwitchbackAIPlan.Direct; d.Why = "open"; d.Pass = true;
                 return d;
             }
             d.Standing = Standing(s, world);
             int size = ObstacleSize(s);
             if (d.Standing <= 2 || d.Standing <= ClearedShare * size)
             {
-                d.CostDirect = eta; d.Plan = SwitchbackAIPlan.Direct; d.Why = "cleared";
+                d.CostDirect = eta; d.Plan = SwitchbackAIPlan.Direct; d.Why = "cleared"; d.Pass = true;
                 return d;
             }
+
+            // Speed over breaking: is the ring flyable from here, and is the key on the way to it?
+            bool committed = SpeedOverBreaking && held.Pass && held.Gate == gate && held.Plan != SwitchbackAIPlan.Blast;
+            bool passable = Passable(gate, world, self, ring, mouthRadius, clock, v, committed, held.PassThrough, out Vector3 through);
+            d.Pass = passable || committed;
+            d.PassThrough = passable ? through : committed ? held.PassThrough : ring;
+            d.KeyOnWay = KeyOnTheWay(s, world, self, ring, v);
 
             var st = _layout.Stations[s];
             uint rng = Hash(seed ^ (uint)(gate * 7919) ^ (uint)(st.Stage * 104729));
@@ -462,6 +679,8 @@ namespace CosmicShore.Gameplay
             else if (!ahead) why = "key-behind";
             else if (toKey > skill.CrystalSearchRadius) why = "key-far";
             else if (!gauntlet && PathHits(world, self, st.Key, BlockedLane, clock) >= BlockedHits) why = "key-blocked";
+            // Speed over breaking: the ring can be flown, and this key would take the pilot off its way to it.
+            else if (SpeedOverBreaking && d.Pass && !d.KeyOnWay) why = passable ? "passable" : "committed";
 
             if (why == null)
             {

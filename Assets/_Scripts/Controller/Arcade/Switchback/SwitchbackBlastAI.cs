@@ -51,7 +51,21 @@ namespace CosmicShore.Gameplay
             public Vector3 SenseFrom, SenseTo, SweepFrom, SweepTo, SweepHit;
             public float SenseRadius, SweepRadius;
             public bool SenseBlocked, SweepHitAny;
+            // Speed over breaking (MINIGAME_TRAINING_PLAN.md 6.2): the blocked gate this pilot is on a pass at (-1 =
+            // none), how close it has come to that ring, and the race's tallies.
+            public int PassGate = -1, PassCountedGate = -1, Passes, TurnAways;
+            public float PassMinDist;
         }
+
+        /// <summary>A pilot on a pass that has flown this far back out from its closest point to the ring has missed or
+        /// looped: the pass is over and the gate is planned afresh.</summary>
+        const float PassReleaseDistance = 80f;
+        /// <summary>s: a pilot this close (at its speed) to the key it is striking keeps the strike even if its ring opens.</summary>
+        const float StrikeKeepSeconds = 1f;
+
+        /// <summary>The soak's "before" switch (<see cref="SwitchbackSoakRunner.Settings.BreakFirst"/>): every AI built
+        /// while it is set flies WITHOUT speed over breaking, whatever the controller says, and counts its turn-aways.</summary>
+        public static bool BreakFirstForSoak;
 
         /// <summary>Debug view on (the controller's aiSenseDebug): lines for every sense and sweep, Info-level dodge logs.</summary>
         public static bool DebugSense;
@@ -129,6 +143,24 @@ namespace CosmicShore.Gameplay
 
         /// <summary>u from the ring inside which nothing is dodged (<see cref="SwitchbackPrismAvoidance.Dodges"/>).</summary>
         public float NoDodgeNearRing { get; set; }
+
+        /// <summary>Speed over breaking (<see cref="SwitchbackBlastPlanner.SpeedOverBreaking"/>; Yash, 2026-11-17): a pilot
+        /// whose ring can be flown through flies through it and takes no crystal that is off its way. Set by the controller.</summary>
+        public bool SpeedOverBreaking
+        {
+            get => _planner.SpeedOverBreaking;
+            set => _planner.SpeedOverBreaking = value && !BreakFirstForSoak;
+        }
+
+        /// <summary>This pilot's speed-over-breaking tallies so far: blocked gates passed without a crystal run, and
+        /// crystal runs taken while the ring could be flown (only with the rule off). False before its first plan.</summary>
+        public bool TryPassCounts(IPlayer p, out int passes, out int turnAways)
+        {
+            passes = turnAways = 0;
+            if (p == null || !_pilots.TryGetValue(p, out var st)) return false;
+            passes = st.Passes; turnAways = st.TurnAways;
+            return true;
+        }
 
         /// <summary>Whether the pilot is inside the no-dodge stretch before ring <paramref name="ring"/>.</summary>
         bool NearRing(Vector3 self, int ring) =>
@@ -209,15 +241,22 @@ namespace CosmicShore.Gameplay
                 if (st.Threaded >= 0) LogResult(p, st);
                 st.Threaded = threaded;
                 st.Plans = 0;
+                st.PassGate = -1;
                 Plan(p, st, self, in skill);
             }
             else
             {
+                TrackPass(st, self);
                 bool keyGone = st.D.Plan == SwitchbackAIPlan.Blast && st.Phase != Phase.Done && !KeyAvailable(st.D.Station);
                 if (keyGone && Vector3.Distance(self, st.D.Key) < 30f) { st.KeyTaken = true; st.Phase = Phase.Done; }
                 else if (keyGone || (skill.ReplanSeconds > 0f && Time.time >= st.NextPlan && st.Phase != Phase.Done && st.Phase != Phase.Strike)) Plan(p, st, self, in skill);
                 // An I4 gauntlet: past this key, the next one is the plan (SWITCHBACK.md "The I4 gauntlet").
                 else if (st.D.Station >= 0 && _planner.StageFor(st.D.Gate, self) != st.D.Station) Plan(p, st, self, in skill);
+                // Speed over breaking: on its way to a key the pilot keeps looking at its ring (at the replan rate). The
+                // moment the ring can be flown from where it is - a rival's blast, a ram - and the key is off its way,
+                // it lets the key go and flies the ring.
+                else if (st.Phase == Phase.Strike && skill.ReplanSeconds > 0f && Time.time >= st.NextPlan && RingOpenedOnTheStrike(p, st, self))
+                    Plan(p, st, self, in skill);
             }
 
             bool gateAim = GateBlastAim(st, self, out aim);
@@ -229,6 +268,35 @@ namespace CosmicShore.Gameplay
                 : ring >= 0 && ring < _course.Count ? _course[ring].Position + LaneOffset(p, ring, _course[ring]) : self + tf.forward * 100f;
             if (Sense(p, st, tf, self, goal, ring, out Vector3 avoidAim)) { aim = avoidAim; return true; }
             return gateAim;
+        }
+
+        /// <summary>A pilot on a pass keeps it while it closes on the ring; flown <see cref="PassReleaseDistance"/> back
+        /// out (a missed mouth, a loop), the pass is over.</summary>
+        void TrackPass(Pilot st, Vector3 self)
+        {
+            if (st.PassGate < 0 || st.PassGate >= _course.Count) return;
+            float dist = Vector3.Distance(self, _course[st.PassGate].Position);
+            if (dist < st.PassMinDist) st.PassMinDist = dist;
+            else if (dist > st.PassMinDist + PassReleaseDistance) st.PassGate = -1;
+        }
+
+        /// <summary>Whether, on a strike at a key chosen because the ring was NOT flyable, the ring has since become
+        /// flyable from here while the key is still off the way and more than <see cref="StrikeKeepSeconds"/> off (the
+        /// strike is then replanned, and the planner refuses the key). Pushes the next look out by the replan time either way.</summary>
+        bool RingOpenedOnTheStrike(IPlayer p, Pilot st, Vector3 self)
+        {
+            st.NextPlan = Time.time + Mathf.Max(_skillFor(p).ReplanSeconds, 0.25f);
+            if (!_planner.SpeedOverBreaking || st.D.Plan != SwitchbackAIPlan.Blast) return false;
+            // The ring was already flyable when this key was chosen (the key was on the way then): the strike stands.
+            if (st.D.Pass) return false;
+            int ring = st.D.Gate;
+            if (ring < 0 || ring >= _course.Count) return false;
+            Vector3 at = _course[ring].Position;
+            float speed = p.Vessel?.VesselStatus?.Speed ?? 0f;
+            // A key the hull reaches inside StrikeKeepSeconds is taken: letting go that late only wastes the run at it.
+            if (Vector3.Distance(self, st.D.Key) < Mathf.Max(speed, SwitchbackBlastPlanner.MinSpeed) * StrikeKeepSeconds) return false;
+            if (_planner.KeyOnTheWay(st.D.Station, this, self, at, speed)) return false;
+            return _planner.Passable(ring, this, self, at, _course[ring].Radius, Clock(), speed, false, default, out _);
         }
 
         bool GateBlastAim(Pilot st, Vector3 self, out Vector3 aim)
@@ -261,11 +329,16 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// This pilot's own lane through ring <paramref name="ring"/> (<see cref="SwitchbackPrismAvoidance.LaneOffset"/>).
-        /// Zero at a blocked gate: there the line is the door's eye or the blast lane, which the planner chose.
+        /// Zero at a blocked gate: there the line is the door's eye or the blast lane, which the planner chose - unless
+        /// the pilot is on a pass there (speed over breaking), when it is the point the clear line runs through.
         /// </summary>
         public Vector3 LaneOffset(IPlayer p, int ring, in RaceGate gate)
         {
-            if (p == null || _planner.StationFor(ring) >= 0) return Vector3.zero;
+            if (p == null) return Vector3.zero;
+            if (_planner.StationFor(ring) >= 0)
+                return _pilots.TryGetValue(p, out var on) && on.PassGate == ring && on.D.Gate == ring && on.D.Pass &&
+                       on.D.Plan != SwitchbackAIPlan.Blast
+                    ? on.D.PassThrough - gate.Position : Vector3.zero;
             var st = StateFor(p);
             return SwitchbackPrismAvoidance.LaneOffset(st.Seed ^ (uint)(ring * 7919), gate.Axis, gate.Radius, _avoidFor(p).LaneShare);
         }
@@ -347,16 +420,27 @@ namespace CosmicShore.Gameplay
             Vector3 heading = tf.forward;
             Vector3 blocker = SwitchbackPrismAvoidance.BlockerCentroid(self, dir, range, skill.Clearance * 2f, s_pts, n, out int blocking);
             int nc = ManagedCrystals();
-            if ((clear < skill.Clearance || turn > 25f) &&
+            // Speed over breaking: a crystal only for what the hull cannot get by, and never while its ring can be flown
+            // (the ring is looked at only once a crystal would otherwise be taken, so this costs nothing on a normal look).
+            bool rule = _planner.SpeedOverBreaking;
+            if (SwitchbackPrismAvoidance.BlastsBlocker(clear, turn, skill.Clearance, false, rule) &&
                 SwitchbackPrismAvoidance.TryBlast(self, heading, blocker, skill.Clearance * 2f, s_pts, n, s_crystals, nc,
                                                   _planner.Slot, in skill, out Vector3 crystal, out _, out _, out float cov))
             {
-                st.Avoid = SwitchbackAvoidAction.Blast;
-                st.BlastCrystal = crystal; st.BlastLook = blocker; st.Blasts++;
-                if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
-                    Log(p, st, ring, SwitchbackAvoidAction.Blast, $"crystal={Vector3.Distance(self, crystal):F0}u cover={cov:P0}", along, blocking);
-                aim = crystal + (blocker - crystal).normalized * StrikeThrough;
-                return true;
+                bool ringOpen = ring >= 0 && ring < _course.Count &&
+                                _planner.Passable(ring, this, self, _course[ring].Position, _course[ring].Radius, Clock(), speed, false, default, out _);
+                // A ring that can be flown from here takes no crystal: the corridor below is the way.
+                if (SwitchbackPrismAvoidance.BlastsBlocker(clear, turn, skill.Clearance, ringOpen, rule))
+                {
+                    // With the rule off (a "before" soak) this is the turn-away the rule removes.
+                    if (!rule && (ringOpen || clear >= SwitchbackPrismAvoidance.PassClearance)) st.TurnAways++;
+                    st.Avoid = SwitchbackAvoidAction.Blast;
+                    st.BlastCrystal = crystal; st.BlastLook = blocker; st.Blasts++;
+                    if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                        Log(p, st, ring, SwitchbackAvoidAction.Blast, $"crystal={Vector3.Distance(self, crystal):F0}u cover={cov:P0}", along, blocking);
+                    aim = crystal + (blocker - crystal).normalized * StrikeThrough;
+                    return true;
+                }
             }
             st.Avoid = SwitchbackAvoidAction.Avoid;
             st.AvoidAim = corridor * range;
@@ -631,12 +715,25 @@ namespace CosmicShore.Gameplay
             if (ring < 0 || ring >= _course.Count) return;
             var prev = st.D;
             float speed = p.Vessel?.VesselStatus?.Speed ?? 0f;
+            // The pass this pilot is on at this gate, if any: the planner keeps it (speed over breaking).
+            var held = st.PassGate == ring && prev.Gate == ring ? prev : default;
             st.D = _planner.Decide(ring, self, speed, _course[ring].Position, Clock(), in skill, this,
-                                   st.Seed ^ (uint)(st.Threaded * 92821) ^ (uint)(st.Plans * 68917));
+                                   st.Seed ^ (uint)(st.Threaded * 92821) ^ (uint)(st.Plans * 68917), in held, _course[ring].Radius);
             st.Plans++;
             st.NextPlan = Time.time + Mathf.Max(skill.ReplanSeconds, 0.25f);
+            bool newBlast = st.D.Plan == SwitchbackAIPlan.Blast &&
+                            (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != st.D.Gate || prev.Station != st.D.Station);
             if (st.D.Plan != SwitchbackAIPlan.Blast) st.Phase = Phase.None;
-            else if (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != st.D.Gate || prev.Station != st.D.Station) st.Phase = Phase.None;
+            else if (newBlast) st.Phase = Phase.None;
+            // Speed over breaking, tallied: a key refused because the ring is flyable puts the pilot on a pass at this gate
+            // (counted once a gate); with the rule off, a run at a key that is off the way while the ring is flyable is a
+            // turn-away (the planner never makes one with the rule on).
+            if (st.D.Why == "passable" || st.D.Why == "committed")
+            {
+                if (st.PassGate != ring) { st.PassGate = ring; st.PassMinDist = Vector3.Distance(self, _course[ring].Position); }
+                if (st.PassCountedGate != st.Threaded) { st.PassCountedGate = st.Threaded; st.Passes++; }
+            }
+            else if (newBlast && st.D.Pass && !st.D.KeyOnWay) st.TurnAways++;
             if (st.Plans == 1) { st.StandingAtPlan = st.D.Standing; st.KeyTaken = false; }
             if ((st.Plans == 1 || prev.Plan != st.D.Plan) && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
                 CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,

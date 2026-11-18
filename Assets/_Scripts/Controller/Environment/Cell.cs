@@ -3076,6 +3076,150 @@ namespace CosmicShore.Gameplay
             return retiring;
         }
 
+        /// <summary>The swap drain's frame slice (see <see cref="ReleaseRetiredWorld"/>).</summary>
+        const double DefaultReleaseSliceMs = 12.0;
+
+        bool _retiringForSceneExit;
+        int _lastReleaseParkedCount;
+
+        /// <summary>True while <see cref="RetireWorldIntoPoolForSceneExit"/> is draining this cell's world.</summary>
+        public bool IsRetiringForSceneExit => _retiringForSceneExit;
+
+        /// <summary>
+        /// True once <see cref="RetireWorldIntoPoolForSceneExit"/> has emptied this cell and nothing has stood a
+        /// world in it since. <see cref="Config"/> still names the retired world, so a caller that wants it back
+        /// asks <see cref="RequestCellSwap"/> for the same config (the reset) rather than trusting the name.
+        /// </summary>
+        public bool WorldRetiredForSceneExit { get; private set; }
+
+        /// <summary>Environment prisms the last scene-exit retire handed to <see cref="EnvironmentPrismPool"/>.</summary>
+        public int LastSceneExitParkedCount { get; private set; }
+
+        /// <summary>
+        /// Hand this cell's world to the prism pool because its SCENE is about to be replaced, so the next scene's
+        /// lay re-issues the same prisms instead of cloning them again.
+        ///
+        /// <para><b>Why:</b> a scene unload destroys every prism in it, and the next scene clones its arena from
+        /// nothing. The Maelstrom hub previews exactly the arena the round then lays, so a round cost two full lays
+        /// of 13-15 thousand prisms with "Prisms reused from the environment pool 0" both times, each lay a long
+        /// frame with Relay live (Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md finding 1; Docs/PartySystem/BUGS.md
+        /// B45). <see cref="EnvironmentPrismPool"/> outlives a scene load, so what is parked here is what the round
+        /// pulls.</para>
+        ///
+        /// <para><b>What it does:</b> the first half of <see cref="RequestCellSwap"/> and nothing else: stop the
+        /// spawner, detach every vessel's trail, gather the world under a retiring root, return the pooled trail to
+        /// its pool, release the environment prisms to <see cref="EnvironmentPrismPool"/> a time slice per frame,
+        /// reset the books. No rebuild. Lifeforms retire WITH the world (no death, no crystal, no sound), and a
+        /// lifeform that is a spawned NetworkObject is left for the scene's own teardown. Pass
+        /// <paramref name="suctionSeconds"/> whenever a camera may still draw the world: it then eases away first,
+        /// as a swap's does (continuity of existence); zero is for a world already out of sight, the clause
+        /// <see cref="StrikeSatelliteWorld"/> rides. Mass conservation holds: this is the scene load's own ending
+        /// of the cell's mass, done a moment early (Docs/ECOSYSTEM.md §19).</para>
+        ///
+        /// <para>The drain runs on this cell, so it stops when the scene unloads; prisms not yet parked are
+        /// destroyed with the scene exactly as before. A caller that wants the whole world parked waits on
+        /// <see cref="IsRetiringForSceneExit"/> before it starts the load.</para>
+        /// </summary>
+        /// <param name="releaseSliceMs">Milliseconds of release work per frame. The world is already gone from
+        /// sight when the release runs, and nobody is flying, so it can be longer than the swap's 12 ms.</param>
+        /// <param name="suctionSeconds">Seconds the world takes to ease away before it is parked; 0 for none.</param>
+        /// <returns>False when nothing was started: not playing, a satellite, a swap or an exit retire already
+        /// running, or no world standing.</returns>
+        public bool RetireWorldIntoPoolForSceneExit(double releaseSliceMs = 24.0, float suctionSeconds = 0f)
+        {
+            if (!Application.isPlaying) return false;
+            if (IsSatellite) return false;          // a satellite's world is struck by its owner
+            if (_swapping || _retiringForSceneExit) return false;
+            // `environment == gameObject` is SpawnEnvironment's "a build is pending" sentinel.
+            if (!environment || environment == gameObject) return false;
+
+            StartCoroutine(RetireForSceneExitRoutine(releaseSliceMs, suctionSeconds));
+            return true;
+        }
+
+        IEnumerator RetireForSceneExitRoutine(double releaseSliceMs, float suctionSeconds)
+        {
+            _retiringForSceneExit = true;
+            LastSceneExitParkedCount = 0;
+            // The flag is what a caller waits on, and what refuses a swap: a step that throws must not latch it.
+            try
+            {
+                if (_deferredEnvironmentBuild != null)
+                {
+                    StopCoroutine(_deferredEnvironmentBuild);
+                    _deferredEnvironmentBuild = null;
+                }
+
+                StopSpawner();
+                // Left detached and paused: the scene is ending, nobody lays trail into it again.
+                SetVesselTrailsDetached(pauseSpawners: true);
+
+                // The world goes as a whole, so nothing in it DIES and nothing grows: stopped BEFORE the gather
+                // clears the list. Without this each plant ran its full death path (sound, crystal) when the
+                // root was destroyed with the scene still loaded, and growth coroutines went on pulling the
+                // prisms this drain had just parked (LifeForm.RetireWithWorld; the Arkway strike's own remedy).
+                for (int i = 0; i < spawnedLifeForms.Count; i++)
+                {
+                    if (!spawnedLifeForms[i]) continue;
+                    foreach (var lifeForm in spawnedLifeForms[i].GetComponentsInChildren<LifeForm>(true))
+                        if (lifeForm) lifeForm.RetireWithWorld();
+                }
+
+                var retiring = RetireWorldIntoSuctionRoot(clearLooseTrailMass: true, out var pooledRetiring,
+                    leaveSpawnedNetworkLifeForms: true);
+
+                // Continuity of existence: a world a camera may still draw eases away before it is parked.
+                if (suctionSeconds > 0.01f)
+                    yield return SuctionRetiringWorld(retiring, suctionSeconds);
+
+                yield return ReturnRetiredTrailToPool(pooledRetiring);
+                yield return ReleaseRetiredWorld(retiring, releaseSliceMs);
+                LastSceneExitParkedCount = _lastReleaseParkedCount;
+
+                ResetBooksAfterRetire();
+
+                WorldRetiredForSceneExit = true;
+                if (CSDebug.IsVerbose(CSLogChannel.Ecology))
+                    CSDebug.LogVerbose(CSLogChannel.Ecology,
+                        $"[Cell {ID}] World retired for the scene exit: {LastSceneExitParkedCount} prisms parked in the pool.");
+            }
+            finally
+            {
+                _retiringForSceneExit = false;
+            }
+        }
+
+        /// <summary>
+        /// The bookkeeping a retired world leaves behind (the same set ResetCell clears). Run AFTER the drain:
+        /// every destroyed prism's OnDestroy routes through RemoveBlock, so clearing first would be undone.
+        /// </summary>
+        void ResetBooksAfterRetire()
+        {
+            trackedBlocks.Clear();
+            domainBlockCounts.Clear();
+            PrismSpatialIndex.Instance?.ClearAllCellBindings(_volumeCellId);
+            gridTracked.Clear();
+            _replicatedDominantDomain = null;
+            ResetVolumeAccounting();
+            liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
+            liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
+            phase = CellPhase.Calm;
+            SyncShieldFoodFiling();
+            _nucleusControlRadiusSqr = 0f;
+        }
+
         bool _swapping;
 
         /// <summary>
@@ -3116,7 +3260,7 @@ namespace CosmicShore.Gameplay
                 return false;
             }
             if (!Application.isPlaying) return false;
-            if (_swapping) return false;
+            if (_swapping || _retiringForSceneExit) return false;
             if (!runtime)
             {
                 CSDebug.LogWarning($"[Cell {ID}] RequestCellSwap needs a CellRuntimeDataSO - ignored.");
@@ -3130,6 +3274,7 @@ namespace CosmicShore.Gameplay
         IEnumerator SwapCellConfigRoutine(CellConfigDataSO config, bool clearLooseTrailMass)
         {
             _swapping = true;
+            WorldRetiredForSceneExit = false;   // the swap stands a new world
             // A world swap is a load the player waits through behind the veil, so with Record
             // Insight Mode armed (FrogletTools > Performance > Performance Benchmark > Load Time
             // Insights) it records like a game launch: the suction and release below, then the
@@ -3160,24 +3305,10 @@ namespace CosmicShore.Gameplay
             var retiring = RetireWorldIntoSuctionRoot(clearLooseTrailMass, out var pooledRetiring);
 
             // ── Suction (continuity law) ──────────────────────────────────────
-            float elapsed = 0f;
             float duration = retireSuctionSeconds > 0.01f ? retireSuctionSeconds : DefaultRetireSuctionSeconds;
             int suctionSpan = LoadInsights.Begin(LoadInsightCategory.ScriptedDelay,
                 $"Cell swap: the retiring world suctions away ({duration:F1}s)", isWait: true);
-            StampRetiredWorldSuction(retiring, duration);
-            while (elapsed < duration && retiring)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                // Smoothstep out, so the world eases away rather than snapping small.
-                // Instanced prism companions ignore parent scale (Docs/PRISM_ANIMATION.md
-                // §3.8 #1 / §5 C9) — those converge on the GPU stamp above. This remaining
-                // write is for the NON-PRISM riders on the same root (membrane / nucleus /
-                // cytoplasm / lifeform spindles).
-                float eased = 1f - (t * t * (3f - 2f * t));
-                retiring.transform.localScale = Vector3.one * Mathf.Max(SuctionFloorScale, eased);
-                yield return null;
-            }
+            yield return SuctionRetiringWorld(retiring, duration);
             LoadInsights.End(suctionSpan);
             int trailSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
                 $"Cell swap: {pooledRetiring.Count} pooled trail prisms return to their pool");
@@ -3190,32 +3321,9 @@ namespace CosmicShore.Gameplay
             yield return ReleaseRetiredWorld(retiring);
             LoadInsights.End(releaseSpan);
 
-            // ── Bookkeeping reset (the same set ResetCell clears) ─────────────
             // After the drain: every prism's OnDestroy routes through RemoveBlock, so
             // clearing first would just be undone (and would mutate mid-iteration).
-            trackedBlocks.Clear();
-            domainBlockCounts.Clear();
-            PrismSpatialIndex.Instance?.ClearAllCellBindings(_volumeCellId);
-            gridTracked.Clear();
-            _replicatedDominantDomain = null;
-            ResetVolumeAccounting();
-            liveFaunaCounts.Clear();
-            liveFloraCounts.Clear();
-            liveFauna.Clear();
-            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
-            // outlives any individual plant by design - which means only the cell can retire it.
-            // Left behind, the next world grown here inherits the dead one's sites and plants
-            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
-            // the very scene this colony ships in). Keyed by cell, so this touches no other.
-            GyroidColonyFrontier.Clear(this);
-            NestedGyroidColony.Clear(this);
-            SchwarzPColonyFrontier.Clear(this);
-            SchwarzPTileRegistry.Clear(this);
-            QuasicrystalColonyFrontier.Clear(this);
-            QuasicrystalHeartRegistry.Clear(this);
-            phase = CellPhase.Calm;
-            SyncShieldFoodFiling();
-            _nucleusControlRadiusSqr = 0f;
+            ResetBooksAfterRetire();
 
             // ── Become the new config ────────────────────────────────────────
             // Direct write: AssignConfig is deliberately sticky (it must never re-roll under
@@ -3311,21 +3419,24 @@ namespace CosmicShore.Gameplay
         /// waiting to see the new world. The root is already suctioned to a point, so nothing
         /// is visible while it drains.
         /// </summary>
-        IEnumerator ReleaseRetiredWorld(GameObject retiring)
+        IEnumerator ReleaseRetiredWorld(GameObject retiring, double releaseSliceMs = DefaultReleaseSliceMs)
         {
+            _lastReleaseParkedCount = 0;
             if (!retiring) yield break;
 
             // A time slice, not a count: 500 a frame took 1.1-1.4 s for 4,259 Garland prisms in the Orrery swap
             // captures because the frames were slow, not the work (T-20261021-a743, handed over by Garrett).
             // Destroy is deferred to the end of the frame, where the slice cannot see its cost (every
             // Prism.OnDestroy unregisters), so deferred destroys keep the old per-frame cap.
-            const double ReleaseSliceMs = 12.0;
+            double sliceMs = releaseSliceMs > 0.0 ? releaseSliceMs : DefaultReleaseSliceMs;
             const int MaxDeferredDestroysPerFrame = 500;
             double msPerTick = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             var prisms = retiring.GetComponentsInChildren<Prism>(true);
             long sliceStart = System.Diagnostics.Stopwatch.GetTimestamp();
             int destroysThisFrame = 0;
-            for (int i = 0; i < prisms.Length; i++)
+            // Newest first, as ReturnRetiredTrailToPool does: the environment is one container of thousands of
+            // prisms, and detaching from the front of a parent shifts every later sibling (the square of the count).
+            for (int i = prisms.Length - 1; i >= 0; i--)
             {
                 var p = prisms[i];
                 if (!p) continue;
@@ -3334,8 +3445,12 @@ namespace CosmicShore.Gameplay
                     Destroy(p.gameObject);
                     destroysThisFrame++;
                 }
+                else
+                {
+                    _lastReleaseParkedCount++;
+                }
                 if (destroysThisFrame >= MaxDeferredDestroysPerFrame
-                    || (System.Diagnostics.Stopwatch.GetTimestamp() - sliceStart) * msPerTick >= ReleaseSliceMs)
+                    || (System.Diagnostics.Stopwatch.GetTimestamp() - sliceStart) * msPerTick >= sliceMs)
                 {
                     yield return null;
                     sliceStart = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -3347,6 +3462,29 @@ namespace CosmicShore.Gameplay
             // with the root.
             if (retiring) Destroy(retiring);
             yield return null; // let the deferred destroys land before the bookkeeping reset
+        }
+
+        /// <summary>
+        /// The retiring world eases away to a point over <paramref name="duration"/> (continuity law): the prisms
+        /// converge on their GPU stamp, everything else rides the root's scale.
+        /// </summary>
+        IEnumerator SuctionRetiringWorld(GameObject retiring, float duration)
+        {
+            float elapsed = 0f;
+            StampRetiredWorldSuction(retiring, duration);
+            while (elapsed < duration && retiring)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                // Smoothstep out, so the world eases away rather than snapping small.
+                // Instanced prism companions ignore parent scale (Docs/PRISM_ANIMATION.md
+                // §3.8 #1 / §5 C9) — those converge on the GPU stamp above. This remaining
+                // write is for the NON-PRISM riders on the same root (membrane / nucleus /
+                // cytoplasm / lifeform spindles).
+                float eased = 1f - (t * t * (3f - 2f * t));
+                retiring.transform.localScale = Vector3.one * Mathf.Max(SuctionFloorScale, eased);
+                yield return null;
+            }
         }
 
         /// <summary>Never exactly zero - a zero-scale parent makes every child's lossyScale degenerate.</summary>
@@ -3379,7 +3517,11 @@ namespace CosmicShore.Gameplay
         /// container of tens of thousands of prisms, so the expensive case costs one re-parent;
         /// lifeforms and (optionally) pooled trail prisms are re-parented individually.
         /// </summary>
-        GameObject RetireWorldIntoSuctionRoot(bool clearLooseTrailMass, out List<Prism> pooledRetiring)
+        /// <param name="leaveSpawnedNetworkLifeForms">Do not re-parent a lifeform that is a spawned NetworkObject:
+        /// Netcode refuses a parent that is not one and logs an exception per creature. The scene-exit retire sets
+        /// it (the scene's own teardown takes those creatures); the swap keeps its behaviour.</param>
+        GameObject RetireWorldIntoSuctionRoot(bool clearLooseTrailMass, out List<Prism> pooledRetiring,
+            bool leaveSpawnedNetworkLifeForms = false)
         {
             var root = new GameObject($"Cell{ID}_RetiringWorld");
             root.transform.SetPositionAndRotation(transform.position, Quaternion.identity);
@@ -3394,7 +3536,11 @@ namespace CosmicShore.Gameplay
             for (int i = spawnedLifeForms.Count - 1; i >= 0; i--)
             {
                 var lifeForm = spawnedLifeForms[i];
-                if (lifeForm) lifeForm.transform.SetParent(rootT, true);
+                if (!lifeForm) continue;
+                if (leaveSpawnedNetworkLifeForms
+                    && lifeForm.TryGetComponent(out NetworkObject netObject) && netObject.IsSpawned)
+                    continue;
+                lifeForm.transform.SetParent(rootT, true);
             }
             spawnedLifeForms.Clear();
 

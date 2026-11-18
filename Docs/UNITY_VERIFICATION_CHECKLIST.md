@@ -134,6 +134,55 @@ object on all 9; no `already signing in`, no Friends warning; the online boots r
 2. Menu online/offline toggle (ReconnectService): go offline, go online, confirm sign-in and the party come back.
 3. A player build (the shared instance is reset by `RuntimeInitializeOnLoadMethod`; a build starts with none).
 4. `unity_refcompile` and `gates.sh` did not run (Windows).
+### 🔴 Maelstrom: the round reuses the hub preview's prisms (`claude/maelstrom-preview-reuse`, 2026-11-17) — NOT EDITOR-VERIFIED
+
+**What landed:** at the Maelstrom hub's countdown zero, every machine hides the preview, waits for a preview still
+being laid, eases the arena away (0.5 s) and hands it to `EnvironmentPrismPool`
+(`Cell.RetireWorldIntoPoolForSceneExit`, 24 ms a frame, through `MaelstromPreviewHost.ParkArenaForRound`); the host
+holds the round's scene load until its own hand-over finishes, 5 s at most (`MaelstromLobby.parkArenaMaxSeconds`,
+`ShouldLaunchNow`). `Cell`, shared with the cell swap: the bookkeeping reset moved into `ResetBooksAfterRetire` and
+the suction loop into `SuctionRetiringWorld` (no behaviour change intended), and `ReleaseRetiredWorld` now drains
+newest first and takes its slice (the swap's drain order changes with it). Design:
+`Docs/MaelstromSystem/ARCHITECTURE.md` §1.5.1.
+
+**Proven without the editor:** `unity_refcompile` player config 0 errors in project code; editor config compiles
+these files (its 3 errors are `ThresherBelfryAITests.cs`, on `Ys-bleeding-edge` already). `check_console_logging`
+and `check_conditional_compilation` pass. The source-reading tests in `MaelstromArenaHandOverTests` were checked
+against the tree with a script.
+
+**Not run:** the EditMode tests, any Play, any two-player run. Ship gates: three fail, all identically on a clean
+`Ys-bleeding-edge` (`doc_summaries`, `colour_grade`, `refcompile editor`).
+
+**Needs the editor:**
+1. EditMode: `MaelstromArenaHandOverTests` (11), `EnvironmentPrismPoolTests`, `PrismCellSwapSuctionTests`,
+   `MaelstromStateMachineTests`, `MaelstromDataSOTests` pass.
+2. Solo Maelstrom with Load Time Insights recording, on a round whose arena is a cell environment (Cleave, Wildlife
+   Liberation, Dog Fight; Skim Race, Joust and Scurry have none and launch exactly as before). Let the hub's preview
+   finish, ready up. Expect: the 3-2-1, the panel fades and the arena eases away to a point (it must not vanish in
+   chunks), a launch at most about 5 s later than before, the round loads and plays normally.
+   In the test log: one `arenaParked <n> prisms in <s>s` mark, `n` near the preview's prism count. In the ROUND's load
+   report: "Prisms reused from the environment pool" near the arena's size and "Prisms cloned by InstantiateAsync" far
+   below it (it was the whole arena before), and a shorter worst frame than the same mode's earlier report.
+3. Play three rounds. Expect: every hub shows its preview (never an empty arena), every launch writes `arenaParked`,
+   the arena looks right in every round (colours, shields, dangerous prisms: a re-issued prism must not carry the
+   hub's state), no red errors about prisms, trails or the spatial index.
+4. In the hub, tap into the preview and fly, lay some trail, then let the countdown end while flying. Expect: the
+   stick is released, the launch goes as in 2, no error from the trail or the camera.
+5. Two players (MPPM or two machines), three rounds. Expect: `arenaParked` on BOTH players at each launch, the same
+   arena on both, the guest follows the load, no bounce. Compare the host's longest freeze with the runs in
+   `Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md`.
+6. Ready up at once so the countdown snaps to 3 s while the preview is still building. Expect: the launch waits for
+   the preview (the mark reads `... after waiting <s>s for the preview`), then hands it over. If the build outlasts
+   the 5 s limit: an `arenaParkCutShort` mark, the round still loads and lays its full arena, no error.
+6b. A hub previewing a mode with life in it (Wildlife Liberation). Expect at launch: no burst of creature-death
+   sounds, no crystals dropped, and no red Netcode parenting exception for the sharks.
+7. A round whose mode has no preview (Salvo, Switchback, Headlong, Breakwater, Hijack, Skein). Expect: launch exactly
+   as before, with no delay.
+8. Regression: the Cell Selector toy in freestyle still swaps worlds (suction, veil, new world), twice in a row, and
+   the swap's release is no slower than before (it now drains newest first).
+9. Measure once: the hand-over's time on the host for a 15,000-prism arena (the `arenaParked` seconds). If it reaches
+   the 5 s limit, say so: the slice or the limit needs tuning.
+
 ### 🔴 The Stoat's Charge and Space games: Shockfront (119) and Fulmen (120), and the Ripple as a scored hit (`claude/stoat-arcade-games`, 2026-11-15, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Arcade/SHOCKFRONT.md`, `Arcade/FULMEN.md`. Shockfront is a Stoat-only Charge duel in Dog Fight's
@@ -1629,6 +1678,23 @@ eval. NOT run: `SwitchbackBlastPlannerTests` in Unity.
 **Verify in editor:**
 1. Run `SwitchbackBlastPlannerTests` (EditMode): all 24 pass (the difficulty ladder and "Legendary never suboptimal"
    use the cost model).
+
+### 🔴 Boot: one set of DI singletons, not two; live SceneTransitionManager; startup log fixes (`fix/android-startup-logs`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `AppManager.InstallBindings` runs only for the prefab asset (the root scope). The Bootstrap scene's instance
+also installed, so every lazy singleton had a second copy in the Bootstrap scene's container: the second
+`ApplicationStateMachine` reset the state to None (`Invalid transition: None → MainMenu`), the second
+`AuthenticationServiceFacade` cleared the sign-in mirror, and party services in Bootstrap used different objects from later
+scenes. The root's `SceneTransitionManager` now resolves to the live object, not the prefab asset's component. Also:
+`VolumeDisplayShader` has `_MainTex`, `NetworkSceneObjectGuard` reports a prefab once, a doubled host spawn event is not a
+`[FLOW-5]` warning, a missing `Boost Amount` is reported once per event, and the prism managers' lazy creation is verbose.
+
+**Test (editor and phone):**
+1. Boot from Bootstrap to the menu. Expected: no `[AppState] Invalid transition`, and the fade into the menu still plays.
+2. Play a match and return to the menu, with a fade each way. Then open Maelstrom and play a round: it advances once per game.
+3. Finish a replay-recording mode, then open the replay browser. Expected: the match is listed.
+4. MPPM: 3-player party invite, accept, leave and rejoin, offline and reconnect. Expected: same as before this change or better.
+5. Open Friends. Expected: no `[FriendsInitializer] Friends service did not come up` once signed in.
 
 ### 🔴 Switchback AI step 2: the strike without a setup leg (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
@@ -24238,6 +24304,23 @@ Not compiled: the editor was in use by the multiplayer testing session. Files: `
 - Step 5: the host's hull took 2:46 this time, not 6 minutes, so the slow run went with Player 2's wandering hull.
 - `1167a0a2f9` (FunCard): compiled, and no `get_isBatchMode` error in a full Play and stop afterwards (82 before).
 
+**Retest of 2026-11-17** (`8c8aa5eae5`, recompiled in the open editor; editor "Lion" + MPPM Player 2 "Tiger", driven by a
+session; nobody flew a hull by hand):
+- Step 2 **PASSED, gate count read**: Player 2's link was shut down in a two-player Switchback; on the host its hull
+  went `NetIsAI` true with the autopilot on and reached `SwitchesThreaded` 10 before the rejoin.
+- Step 3 **PASSED as a state check** again: REJOIN gave the seat back (turn running, not AI-flown, input not paused on
+  both machines). Step 4 **PASSED** again (the refusal text).
+- Sign-in (`3ae828d03b`): no `already signing in` and no `Friends service did not come up` on either player at boot.
+- FunCard (`1167a0a2f9`): no error after a recompile.
+- Missing stat (`a1942abe89`): Bloomrush, both scoreboards read `Tiger 0.00s` / `Tiger 0`, no dash.
+- "The host left" (`efb09adaec`, `8c8aa5eae5`): Player 2 carried a stale REJOIN offer into a new party and match; the
+  notice was closed in the game scene. It was still offered on the menu after Player 2 had rejoined that same party.
+- **Found and fixed in this run:** the host's scoreboard showed the LAST match's Longest Drift and Max Boost for its
+  own pilot in a new match (Switchback then Bloomrush: host `Lion 3.05s`, guest `Lion 0.00s`).
+  `EventDrivenStatsProvider.SubscribeToStats` seeded its cache from `VesselStatEventSO.CurrentValue`, which outlives
+  the scene. It now seeds 0. Replayed (Switchback, Main Menu, Bloomrush): both machines read `Lion 0.00s`. EditMode
+  tests not run for this change (the editor was handed to another session).
+
 ## 🔴 Thornline upgrade: the honest line (2026-11-17, `claude/shrike-time-upgrade-5c12f0`, NOT COMPILED BY UNITY, NOT RUN IN EDITOR)
 
 Docs/Thornline/UPGRADE_SPEC.md; Assets/_Scripts/Controller/Arcade/THORNLINE.md §7 is the full list. Affects: Garrett's
@@ -24556,6 +24639,39 @@ nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed
 2. Paste a laid genome (any `Tools/Compute/evaluators/regatta_genome.py --random 1` output) into a Regatta rails
    prefab's `courseGenome` field, play, and fly the line: the placed spawners stand clear of the line and the rings,
    and the lap still counts.
+3. Watch the frame time on that course: up to 12,000 extra prisms can be laid.
+
+## 🔴 "The host left" is not shown for a drop from an earlier run (2026-11-17, Yash, NOT COMPILED, NOT RUN IN EDITOR)
+
+`MatchRejoin.DroppedThisRun` / `GiveUpSaysHostLeft`; `DisconnectNotice.CheckRejoin` uses it. The Unity editor was in Play for
+another test when this was written, so nothing was compiled or run.
+
+- [ ] The project compiles; `MatchRejoinTests` pass (the new `GiveUp_SaysHostLeftOnlyForADropSeenInThisRun` among them).
+- [ ] MPPM, Player 2 a guest in a match: stop Play, press Play again. Player 2 sits on the menu 30 s: no "The host left".
+- [ ] A guest whose host quits while the guest keeps running still gets "The host left" on its menu after about 20 s.
+- [ ] A guest that restarts while the match is still running is still offered the rejoin.
+
+## 🔴 A guest hands its own hull to the AI, and an idle guest in the editor is handed over by itself (2026-11-17, Yash, COMPILED in the open editor, NOT PLAYED)
+
+`PilotControl.CanSetAIFlies`, `GateRaceController.ArmAIPilot` (the hull's own machine may arm it), the Third Eye's AI toggle on a
+guest's own row, and the editor-only `IdleGuestAutopilot` (FrogletTools > Multiplayer > Idle Guest Flies On AI, on by default).
+`unity recompile`: 0 errors. No match was played with it.
+
+- [ ] Two players, any gate race (Switchback, Skim Race, Redline): leave Player 2 alone. About 4 s after the turn starts its
+      hull flies the rings and finishes; the host sees it move.
+- [ ] Touch Player 2's pad or keyboard: control comes back at once; leave it again and the AI takes over after 4 s.
+- [ ] A mode that is not a gate race (Joust, Cleave, Bloomrush): the idle guest hull flies the platform autopilot.
+- [ ] Maelstrom, several rounds: the guest hull is handed over again in each round.
+- [ ] The host's own hull is never handed over by idling; the menu toggle off stops it on the guest too.
+- [ ] Third Eye on the guest: the AI / You toggle works on its own row and stays disabled on every other row.
+
+## 🟡 Stoat: one slingshot - the swing's speed-up, no second push at the exit (2026-11-19, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "One slingshot". `StoatSlingConfig`: swingKickShare 0.
+- [ ] EditMode `StoatSlingTests`: all pass (`SlingConfig_ShipsTheSwing` reads swingKickShare 0).
+- [ ] Swing round the black hole: one surge of speed as it swings you, then you leave along the dotted line with no second shove.
+- [ ] Aim the dotted line at the next ring with the stick: you reach it without overshooting.
+- [ ] Slingshot I1-I4: AI Stoats finish (model: 62-76 s, no rings missed).
+
 3. Watch the frame time on that course: up to 6,000 extra prisms can be laid (the cap was 12,000 until round 3).
 4. Round 3 (`cross_rail`, the cell's phase ladder): on a genome with placements, the cell opens in the same phase as
    the plain course (`Cell.ResolveThresholds` raises every boundary by what the placements laid), and a `cross_rail`
