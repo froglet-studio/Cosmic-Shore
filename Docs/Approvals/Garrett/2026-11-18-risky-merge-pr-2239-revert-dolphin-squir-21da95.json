@@ -1,0 +1,33 @@
+{
+  "id": "2026-11-18-risky-merge-pr-2239-revert-dolphin-squir-21da95",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-18T22:10:23+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2239 (revert(dolphin,squirrel): Mass back on the production cooldown) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/Resources/ElementalAbilityMaps/Dolphin.asset, Assets/Resources/ElementalAbilityMaps/Squirrel.asset, Assets/_SO_Assets/VesselActions/Dolphin/DeployTeamCrystalAction.asset, Assets/_SO_Assets/VesselActions/Squirrel/SquirrelTubeAction.asset",
+  "branch": "claude/mass-cooldown-restore",
+  "pr": 2239,
+  "commit": "168b91337",
+  "paths": [
+    "Assets/Resources/ElementalAbilityMaps/Dolphin.asset",
+    "Assets/Resources/ElementalAbilityMaps/Squirrel.asset",
+    "Assets/_SO_Assets/VesselActions/Dolphin/DeployTeamCrystalAction.asset",
+    "Assets/_SO_Assets/VesselActions/Squirrel/SquirrelTubeAction.asset",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/DeployTeamCrystalActionExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/SquirrelTubeActionExecutor.cs",
+    "Containers/DeployTeamCrystalActionSO.cs",
+    "Containers/SquirrelTubeActionSO.cs",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+    "Tools/Build/author_goby_assets.py",
+    "Tools/Build/author_manta_kit_assets.py"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/Resources/ElementalAbilityMaps/Dolphin.asset, Assets/Resources/ElementalAbilityMaps/Squirrel.asset, Assets/_SO_Assets/VesselActions/Dolphin/DeployTeamCrystalAction.asset, Assets/_SO_Assets/VesselActions/Squirrel/SquirrelTubeAction.asset"
+    }
+  ]
+}
