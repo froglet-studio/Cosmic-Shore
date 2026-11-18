@@ -53,6 +53,12 @@ alive in a turn, and say the numbers; they become the creature's own.
 degrees, the inside wing beating 0.45 x and the outside 1.55 x, the tips trailing 0.20 rad; 1.5 s after release
 everything is back within 0.03. A roll of 1.9 rad/s deflects the hind edges 0.23 rad at the tip.
 
+**Run in Amoebius** (the game's own code on the prefabs; it does not draw the spindle shader): 600 frames a creature,
+0 errors, 0 exceptions; the driver carries 10 skins and 9 rider homes; the six numbers read back from a skin's
+property block; a free-swimming Ray's own turns reach 1.0 to 1.4 rad/s and bank it 18 degrees (Time) and 24 (Mass),
+the body's roll equal to the driver's bank; held still, all five answers are exactly 0 and the riders sit on the wave
+alone; Mass still shields 8 of 8.
+
 **Not modelled:** the turn does not change how the creature FLIES (its path, its turn rate): it is how the body
 looks while it does. In the game a Ray's renderers carry a per-renderer property block for this, so they are not
 SRP-batched.
