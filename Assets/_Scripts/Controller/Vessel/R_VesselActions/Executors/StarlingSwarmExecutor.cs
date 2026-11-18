@@ -153,10 +153,36 @@ namespace CosmicShore.Gameplay
                                    "will not follow the swarm.");
             if (_transformer) _transformer.Configure(config);
             _rules ??= new StarlingRules(config);
+            _rules.ArrivalLevel = ArrivalLevel;
+            _rules.EncoreActive = EncoreActive;
             _vesselImpactor = _status?.Transform ? _status.Transform.GetComponentInChildren<VesselImpactor>(true) : null;
             var skimmer = _status?.NearFieldSkimmer;
             _skimmerImpactor = skimmer ? skimmer.GetComponentInChildren<SkimmerImpactor>(true) : null;
             StopSwarm();
+        }
+
+        /// <summary>The element scaling (STARLING.md §2.1): the factor on the level a drawn card of <paramref name="element"/>
+        /// arrives at, from the swarm's live level of that element.</summary>
+        float ArrivalLevel(Element element)
+        {
+            var factor = config ? config.ArrivalLevel(element) : null;
+            return factor != null ? factor.EvaluateLive(_status) : 1f;
+        }
+
+        /// <summary>The level-5 upgrade Encore (STARLING.md §2.1), one gate per element: while it is active, picking a card
+        /// of that element leaves the rest of the hand up for one more pick.</summary>
+        bool EncoreActive(Element element)
+        {
+            var handler = _status?.ElementalAbilityHandler;
+            if (!handler) return false;
+            return element switch
+            {
+                Element.Charge => handler.IsUpgradeActive(Element.Charge),
+                Element.Mass => handler.IsUpgradeActive(Element.Mass),
+                Element.Space => handler.IsUpgradeActive(Element.Space),
+                Element.Time => handler.IsUpgradeActive(Element.Time),
+                _ => false,
+            };
         }
 
         void OnEnable() => OnMiniGameTurnEnd.OnRaised += OnTurnEnd;
@@ -1012,7 +1038,18 @@ namespace CosmicShore.Gameplay
             if (now < _aiPickAt) return;
             _aiPickAt = 0f;
             if (_rules.IsElementHand) PickAt((int)(Rnd() * _rules.HandSize) % _rules.HandSize);
-            else Pick(StarlingRules.HandOrder[(int)(Rnd() * 4f) % 4]);
+            else
+            {
+                // A random slot that still holds a card (an Encore leaves the taken slot empty).
+                int start = (int)(Rnd() * 4f) % 4;
+                for (int i = 0; i < 4; i++)
+                {
+                    var element = StarlingRules.HandOrder[(start + i) % 4];
+                    if (_rules.HandCard(StarlingRules.SlotOf(element)).IsEmpty) continue;
+                    Pick(element);
+                    break;
+                }
+            }
             ChooseDrawElement(StarlingRules.HandOrder[(int)(Rnd() * 4f) % 4]);
         }
 

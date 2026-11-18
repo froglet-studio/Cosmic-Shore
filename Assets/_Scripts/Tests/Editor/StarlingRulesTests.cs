@@ -338,6 +338,107 @@ namespace CosmicShore.Tests
             Assert.IsTrue(rules.PickAt(0));
         }
 
+        // ---- the four elements (Garrett, 2026-11-17: every vessel scales with every element and has its L5 upgrades) ----
+
+        [Test]
+        public void AnElementsLevel_ScalesTheLevelItsDrawnCardsArriveAt()
+        {
+            var config = Config();
+            var rules = new StarlingRules(config);
+            float massFactor = 1f;
+            rules.ArrivalLevel = e => e == Element.Mass ? massFactor : 1f;
+            rules.DealHand();
+            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "at rest a card arrives at lvMass");
+
+            massFactor = 2f;
+            rules.DealHand();
+            Assert.AreEqual(2, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "Mass level 5 doubles it");
+            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Time)).Level, "and moves no other element");
+
+            massFactor = 2.9f;
+            rules.DealHand();
+            Assert.AreEqual(2, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "the level is rounded down");
+            massFactor = 0.5f;
+            rules.DealHand();
+            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "a deficit never deals below level 1");
+            massFactor = 40f;
+            rules.DealHand();
+            Assert.AreEqual(StarlingRules.MaxLevel, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "nor above 15");
+        }
+
+        [Test]
+        public void TheShippedScaling_RestsAtOne_AndIsThreeAtLevelTen_OnEveryElement()
+        {
+            var config = Config();
+            foreach (var e in StarlingRules.HandOrder)
+            {
+                var factor = config.ArrivalLevel(e);
+                Assert.IsNotNull(factor, e.ToString());
+                Assert.AreEqual(1f, ElementalFloatAt(factor, 0f), 1e-5f, $"{e} at rest");
+                Assert.AreEqual(2f, ElementalFloatAt(factor, 0.5f), 1e-5f, $"{e} at level 5");
+                Assert.AreEqual(3f, ElementalFloatAt(factor, 1f), 1e-5f, $"{e} at level 10");
+                Assert.AreEqual(0.5f, ElementalFloatAt(factor, -0.5f), 1e-5f, $"{e} floored at half its rest at level -5");
+            }
+        }
+
+        static float ElementalFloatAt(ElementalFloat f, float normalized) => f.EvaluateAtNormalizedLevel(normalized);
+
+        [Test]
+        public void Encore_APickOfAnUpgradedElement_LeavesTheRestOfTheSpreadHandUp_OncePerHand()
+        {
+            var rules = new StarlingRules(Config());
+            rules.EncoreActive = e => e == Element.Mass;
+            rules.DealHand();
+            Assert.IsTrue(rules.Pick(Element.Mass));
+            Assert.IsTrue(rules.HasHand, "Encore: the hand stays up");
+            Assert.IsTrue(rules.EncoreSpent);
+            Assert.IsTrue(rules.HandCard(StarlingRules.SlotOf(Element.Mass)).IsEmpty, "the taken card leaves its slot");
+            Assert.IsFalse(rules.Pick(Element.Mass), "and cannot be taken twice");
+            Assert.IsFalse(rules.HandCard(StarlingRules.SlotOf(Element.Time)).IsEmpty, "the other slots keep their cards");
+            Assert.IsTrue(rules.Pick(Element.Time));
+            Assert.IsFalse(rules.HasHand, "the second pick spends the hand");
+            Assert.AreEqual(1, rules.Level(StarlingCardIds.BigFamily));
+            Assert.AreEqual(1, rules.Level(StarlingCardIds.HurryUp));
+
+            rules.DealHand();
+            Assert.IsFalse(rules.EncoreSpent, "every hand has its own Encore");
+        }
+
+        [Test]
+        public void Encore_IsKeyedOnThePickedCardsElement_AndNothingWithoutTheUpgrade()
+        {
+            var rules = new StarlingRules(Config());
+            rules.DealHand();
+            Assert.IsTrue(rules.Pick(Element.Mass));
+            Assert.IsFalse(rules.HasHand, "no upgrade, one pick");
+
+            rules.EncoreActive = e => e == Element.Mass;
+            rules.ChooseDrawElement(Element.Time);
+            rules.DealHand();
+            Assert.IsTrue(rules.PickAt(0));
+            Assert.IsFalse(rules.HasHand, "a Time card with only Mass upgraded is one pick");
+        }
+
+        [Test]
+        public void Encore_InAnElementHand_ClosesTheRowUp()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            rules.EncoreActive = e => e == Element.Time;
+            Assert.IsTrue(rules.ChooseDrawElement(Element.Time));
+            rules.DealHand();
+            int size = rules.HandSize;
+            Assert.Greater(size, 1);
+            var second = rules.HandCard(1).Card.Id;
+            rules.MoveFocus(size - 1);
+            Assert.IsTrue(rules.PickAt(0));
+            Assert.IsTrue(rules.HasHand);
+            Assert.AreEqual(size - 1, rules.HandSize, "the row closes up");
+            Assert.AreEqual(second, rules.HandCard(0).Card.Id);
+            Assert.Less(rules.Focus, rules.HandSize, "the highlight stays on a card");
+            Assert.IsTrue(rules.PickFocus());
+            Assert.IsFalse(rules.HasHand);
+        }
+
         // ---- the draw element (Garrett, 2026-11-01) ----
 
         /// <summary>A deck with six wired Time cards and one of each other element (the shipped deck wires six per element).</summary>
