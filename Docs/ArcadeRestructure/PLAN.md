@@ -28,9 +28,12 @@ they are great at the other."
 
 | 8 | I4 in a Mass-Space game: the brood hatches as fierce Mass and Space creatures that graze the exterior and hunt, in the controller's one colour (option A). |
 | 9 | Standing rule: every vessel has a parameter and an L5 upgrade for all four elements, plus an omnicrystal ability. |
+| 10 | Three teams in a Mass-Space match: the first team to 3 broods wins (2026-11-18). |
+| 11 | With 9 vessels an arena hull is still flown once in the WHOLE match, not once per team (2026-11-18). |
 
 ## Landed
 
 | Date | What |
 |---|---|
 | 2026-11-17 | Categories: `ArcadeCategory`, `ModeGenre.IsParty` / `CategoryFor`, the arcade filter (All, Time, Charge, Mass-Space, Party), party cards draw no petal, party descriptions say their rules. Party games keep their genre for their intensity ladder and analytics. `elemental_loop.py` no longer counts a Party game in a vessel's kit. |
+| 2026-11-18 | Nine vessels, three a team: the lobby carries 8 AI seats (protocol 35), the launch panel caps 9 and 3 a team (`SO_ArcadeGame.MaxPerTeam`, `TeamSeatCap`), 86 cell-ring cards say 9 players, Brood Rush opens to three teams (first to 3 broods). Arena hulls stay unique in the whole match, so an arena card seats at most its hull count. Fixed-spawn scenes and Maelstrom keep their caps. |

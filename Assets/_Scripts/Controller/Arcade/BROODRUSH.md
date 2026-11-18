@@ -35,8 +35,11 @@ fundamentals — the first mode where the **ecosystem itself is the scoreboard**
   `EndConditionOverridesSO` at StartMonitor (never a per-scene field), syncs it via
   NetworkVariable → `GameDataSO.GoalTargetCount`, ends the turn via
   `rule.IsObjectiveReached`
-- **Domains**: exactly two (`SO_ArcadeGame.MinDomainsAllowed = MaxDomainsAllowed = 2`);
-  players 2–6 (1v1, 2v2 or 3v3, AI backfill; ARENA seating - one pilot per hull, and the card lists six - so a full lobby is every hull once. Spawns on the cell-relative ring since the six-seat change: four authored points cannot seat six. Docs/HomeHub/ARCHITECTURE.md §3.9)
+- **Domains**: two or three teams (`MinDomainsAllowed = 2`, `MaxDomainsAllowed = 3`; Garrett, 2026-11-17: team games, not duels).
+  The first team to `GoalTargetCount` broods (3) wins, also with three teams (Garrett's decision card, 2026-11-18).
+  Players 2-9, at most three a team (`SO_ArcadeGame.MaxPerTeam`), AI backfill; ARENA seating - each hull is flown once in
+  the whole match (Garrett, 2026-11-18), so the card's hull count caps the lobby (seven hulls today: seven pilots). Spawns on the cell-relative ring, which seats any count.
+  Docs/HomeHub/ARCHITECTURE.md §3.9, Docs/ArcadeRestructure/PLAN.md)
 - **Config**: `_SO_Assets/Games/ArcadeGameBroodRush.asset` (registered in
   `GameLists/OrganicRematchGames.asset`)
 
