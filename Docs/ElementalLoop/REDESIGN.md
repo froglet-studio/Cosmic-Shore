@@ -19,7 +19,7 @@ five run 68.5-74.3 s on the card and 63.5-66.9 s at L5. Sweeps: `/mnt/project-fi
 |---|---|---|---|---|---|
 | Serpent | 178.6 | 115.7 | 2.6x / 1.8x slower | Solid Fuel Pellets: pace comes from pellet burns, which last 1x at rest and 2.8x at Time 10; it raced Regatta at Time 10 only through its starting row | Pellet duration (Time): reaches the field only when it starts at 2.8 and peaks at 3.0 (card 78.7 s, L5 69.5 s), so Time no longer scales the ability. That is the row moved inside the kit, so it is flagged instead |
 | Manta (L5) | 86.1 (card, in the field without its -5 row) | 27.9 | 0.42x at L5 | Soar, its Time level-5 upgrade: a held boost that turns 60 s laps into ~20-30 s | Soar's BoostSpeedMultiplier (Time, acts only once Soar unlocks) at x0.375: L5 43.5 s, about 0.66x |
-| TigerMoth | 151.9 | 120.8 | 2.2x / 1.8x slower | Pace is bounded by the Drop recharge cadence, not cruise speed | Time throttle slot, knee x2.0: card 104 s, L5 84 s (1.55x / 1.27x), and Waystation breaks (I4 2 of 3 DNF: it reaches tower rings before the Drop is back). Patch held: `step5/tigermoth/time-throttle-x1.9-2.1.patch` |
+| TigerMoth | 152.4 | 122.0 | 2.1x / 1.8x slower | One Drop per ring, each after a 90-degree line-up (heading square to the ring, belly rolled onto it), at a 67 u/s cruise between drops. Not the recharge: from 2x cheaper on, the Drop is back before the next line-up ends | Drop recharge (the Drop's own parameter; Garrett's 2026-11-18 pick, cruise kept): 2x / 2.5x / 3x / 4x / 5x cheaper than design all run card 152.4 s and L5 122 s, so 2x (shipped, #2207) is the knee and nothing past it moves. Time throttle slot, knee x2.0: card 104 s, L5 84 s (1.55x / 1.27x), and Waystation breaks (I4 2 of 3 DNF). Patch held: `step5/tigermoth/time-throttle-x1.9-2.1.patch` |
 
 ## Serpent
 
@@ -59,6 +59,26 @@ L5 start was slower than rest until Time scaled the slice fuel (decision card to
 
 Back to loop step 1 for Time: the fun sign-off of the new ramp is a person's (Headlong for the Rhino, Spearline for the
 Swordfish), and both AIs still fly the ramp as if it were free (they do not seek prisms to refuel).
+
+## TigerMoth
+
+Flagged 2026-11-18 after the Drop recharge curve. Garrett asked for a cheaper Drop with the cruise kept ("do b but try to
+keep its cruise speed where it is and decrease the cooldown on the drop more"). Measured on the shuffle set, solo, 3
+seeds, against the polished five (card mean 71.2 s, L5 66.8 s):
+
+| Drop recharge vs design | Card s | L5 s | Card / five | L5 / five |
+|---|---|---|---|---|
+| 2x cheaper (10 s, shipped #2207) | 152.4 | 122.1 | 2.14 | 1.83 |
+| 2.5x (8 s) | 152.5 | 121.9 | 2.14 | 1.82 |
+| 3x (6.7 s) | 152.4 | 121.9 | 2.14 | 1.82 |
+| 4x (5 s) | 152.4 | 121.9 | 2.14 | 1.82 |
+| 5x (4 s) | 152.4 | 122.1 | 2.14 | 1.83 |
+
+The curve is flat past 2x, so the knee is the shipped 2x and nothing is pushed further. What limits the hull is the
+Drop's geometry. It falls along the belly, so every drop costs a 90-degree turn to put the ring abeam and a roll to put
+the belly on it. A pilot (the autopilot's `RegattaTigerMothDrop`) gets one drop per ring that way, and flies the rest at
+67 u/s. That is the same 90-degree constraint Garrett names for the Serpent's wall. Raw races:
+`/mnt/project-files/regatta-flywheel/step5/tigermoth/drop-knee/`.
 
 ## Not flagged (levered into the field instead)
 
