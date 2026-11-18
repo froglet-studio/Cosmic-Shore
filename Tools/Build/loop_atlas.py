@@ -30,6 +30,8 @@ DOC = ROOT / "Docs" / "LoopAtlas"
 MODEL = DOC / "loop_model.json"
 SRC = DOC / "src"
 OUT = DOC / "artifact" / "project"
+STANDALONE = DOC / "artifact" / "standalone" / "loop-atlas-map.html"
+MAP_ARTIFACT = "https://claude.ai/artifact/8XkvFKuTFeEpRoLfp8QQpw"  # the same map as one full page (a plain artifact)
 ABILITIES = ROOT / "Docs" / "FleetCodex" / "abilities.json"
 STATUS = ROOT / "Docs" / "ElementalLoop" / "STATUS.md"
 TOKENS = ROOT / "Docs" / "UI" / "froglet-tokens.json"
@@ -416,7 +418,7 @@ def files(model):
     out["components/bundle.css"] = (SRC / "atlas.css").read_text(encoding="utf-8")
     out["components/index.d.ts"] = (
         "/** Options for LoopAtlas.mount(host, options). */\n"
-        "export interface LoopAtlasProps { layer?: 'now' | 'plan' | 'prop'; view?: 'map' | 'ladder' | 'drivers' | 'holes'; vessel?: string; select?: string; chrome?: boolean }\n"
+        "export interface LoopAtlasProps { layer?: 'now' | 'plan' | 'prop'; view?: 'map' | 'ladder' | 'drivers' | 'holes'; vessel?: string; select?: string; chrome?: boolean; card?: boolean }\n"
         "export interface TimescaleLadderProps {}\nexport interface LoopRingProps { layer?: 'now' | 'plan' | 'prop'; vessel?: string; select?: string }\nexport interface DriverChipsProps {}\n"
         "declare global { interface Window { LoopAtlas: { model: object; mount(host: HTMLElement, options?: LoopAtlasProps): object; buildTree(layer: string, vessel: string): object } } }\n")
     out["tokens.json"] = json.dumps(tokens_json(), indent=1, ensure_ascii=False) + "\n"
@@ -428,25 +430,29 @@ def files(model):
         "# LoopAtlas\n\nThe whole product as one zoomable map of loops, on three layers. Use it to place a problem before discussing it: "
         "find the loop, read its tier, and ask that tier's question.\n\n"
         "- **Layer** (Now, Planned, Proposed): what the game has, what the team decided, and the plan with every hole filled by an invention.\n"
-        "- **Map**: a ring is a loop. Inside it are the faster loops it is made of. Click a ring to step into it; the up arrow or Backspace steps out. "
-        "Diamonds on a ring are its steps; a red diamond with a number counts its holes. Dashed arrows are crossings between places, dotted arrows are what feeds what.\n"
+        "- **Map**: a ring is a loop. Inside it are the faster loops it is made of, and one card. Click a ring to step into it; the up arrow or Backspace steps out. "
+        "Diamonds on a ring are its steps; a red diamond with a number counts its holes; a tag such as x3-6 is how many passes before the loop above takes its next step. "
+        "Dashed arrows are crossings between places, dotted arrows are what feeds what.\n"
+        "- **The card**: everything about a loop is inside its ring. The card sits at the top of the ring, where the name is; a loop with nothing inside it is all card. "
+        "Click the card, or press Read, to zoom into it: what the loop is on each layer, its steps, its drivers, where it leads, its holes and its sources. "
+        "A card with more to say is smaller print, so you zoom further; click a box to bring it to reading size, and drag to read on. Underlined lines go to that loop.\n"
         "- **Vessel**: every Round holds the picked vessel's role and kit. Change the vessel in the bar, or open *The fleet* > *The fleet's kits* and pick one there.\n"
-        "- **Timescales**: every loop on one clock, with how many passes it takes before the loop above takes its next step.\n"
-        "- **Drivers**: which driver works at which tier, and every hand-off from one loop to another.\n"
-        "- **Holes**: what is missing on this layer. On Proposed, each hole has a fill and the twelve proposals are listed.\n\n"
-        "The consumer provides nothing: `LoopAtlas.mount(element, {layer, view, vessel, select})`. The model is `LoopAtlas.model`. "
-        "Keys: arrows move between sibling loops, Enter steps in, Backspace steps out, + and - zoom.\n")
+        "- **Timescales**, **Drivers**, **Holes**: the same loops as lists. A row opens that loop on the map.\n\n"
+        "This card cannot go full screen: the frame it runs in does not allow it. The same map as a full page is the Loop Atlas Map artifact"
+        + (f" ({MAP_ARTIFACT})" if MAP_ARTIFACT else "") + ".\n\n"
+        "The consumer provides nothing: `LoopAtlas.mount(element, {layer, view, vessel, select, card})`. The model is `LoopAtlas.model`. "
+        "Keys: arrows move between sibling loops, Enter steps in, Backspace steps out, I or Space reads the card, + and - zoom.\n")
     out["components/TimescaleLadder/preview.html"] = preview(
         "Vocabulary", 420, "The eight tiers", "Timescale ladder", "LoopAtlas.TimescaleLadder(document.getElementById('root'));")
     out["components/TimescaleLadder/README.md"] = (
         "# TimescaleLadder\n\nThe eight tiers of loop, slowest at the top, each with its span on one clock and the question to ask of a problem at that tier. "
         "Quote a tier by its term (Pulse, Verb, Combo, Role, Round, Session, Arc, Era) in any doc, ticket or review. Draw a tier in its `tier-N` token and nothing else.\n")
     out["components/LoopRing/preview.html"] = preview(
-        "Vocabulary", 520, "How one loop is drawn", "Loop ring",
-        "LoopAtlas.LoopRing(document.getElementById('root'), { layer: 'plan', select: 'voy.cell' });", "#root { height: 520px; }")
+        "Vocabulary", 560, "How one loop is drawn", "Loop ring",
+        "LoopAtlas.LoopRing(document.getElementById('root'), { layer: 'plan', select: 'voy.cell' });", "#root { height: 560px; }")
     out["components/LoopRing/README.md"] = (
         "# LoopRing\n\nOne loop, the way every diagram of ours should draw it: a ring, its steps as diamonds clockwise from the top, the faster loops it is made of inside it, "
-        "a spoke from a step to the loop that step opens, and the count of passes under it. The card shows a voyage's cell on the Planned layer. "
+        "a spoke from a step to the loop that step opens, a tag for the count of passes, and the loop's own card at the top of the ring. The preview shows a voyage's cell on the Planned layer. "
         "Ring colour is the tier (`tier-N`); `planned` and `proposed` replace it for loops that are not in the game; `selection` marks the picked ring; `hole` is the diamond count. "
         "Do not colour a loop by element: elements have no colour.\n")
     out["components/DriverChips/preview.html"] = preview(
@@ -469,6 +475,8 @@ def files(model):
         "- Open **Components > LoopAtlas**. That card is the atlas. The other cards are its vocabulary.",
         "- Pick a layer. **Now** is the game today. **Planned** is the stabilised version the team has decided on. **Proposed** is the plan with changes and with every hole filled by an invention.",
         "- A ring is a loop. The rings inside it are the faster loops it is made of. Click to step in.",
+        "- A loop's details are on the card inside its ring, at the top where its name is. Click the card and zoom in to read; nothing about a loop is outside the map.",
+        "- For a full page, open the Loop Atlas Map artifact" + (f" ({MAP_ARTIFACT})" if MAP_ARTIFACT else "") + ": the card here cannot go full screen.",
         "- Pick a vessel. Every Round holds that vessel's role and kit: its four elemental verbs, its omni crystal, its combos and its feel.",
         "",
         "## Say it",
@@ -533,6 +541,40 @@ def files(model):
     return out
 
 
+def standalone(model, built):
+    """The atlas as one full page (a plain artifact): the same bundle and tokens, the map as the whole viewport."""
+    tk = tokens_json()
+
+    def block(theme):
+        return " ".join(f"--{c['name']}: {c['value'][theme]};" for c in tk["color"]["tokens"])
+
+    fixed = " ".join(f"--{c['name']}: {c['value']};" for fam in ("spacing", "radius", "stroke") for c in tk[fam]["tokens"])
+    fixed += " " + " ".join(f"--font-{k}: {v};" for k, v in tk["type"]["families"].items())
+    js, css = built["components/bundle.js"], built["components/bundle.css"]
+    assert "</script" not in js.lower() and "<!--" not in js, "the bundle would end its own script tag"
+    assert "</style" not in css.lower()
+    return f"""<title>Loop Atlas Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="{FONTS}">
+<style>
+/* One screen: the bar, the map, the clock. Froglet tokens (Shore in light, Deep Sea in dark); Aldrich to read, Chakra Petch to press. */
+:root {{ {block("shore")} {fixed} }}
+@media (prefers-color-scheme: dark) {{ :root:not([data-theme="light"]) {{ {block("deep-sea")} color-scheme: dark }} }}
+:root[data-theme="dark"] {{ {block("deep-sea")} color-scheme: dark }}
+html, body {{ height: 100%; }}
+body {{ background: var(--ground); color: var(--text); }}
+#root {{ height: 100%; min-height: 420px; }}
+#root .la-bar, #root .la-crumbs, #root .la-scale, #root .la-table {{ padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }}
+{css}</style>
+<div id="root"></div>
+<script>
+{js}</script>
+<script>
+LoopAtlas.mount(document.getElementById('root'), {{}});
+</script>
+"""
+
+
 # ---------------------------------------------------------------- commands
 def self_test():
     base = json.loads(MODEL.read_text(encoding="utf-8"))
@@ -590,8 +632,11 @@ def main():
               f"{sum(len(v['combos']) for v in model['fleet'].values())} combos, {len(raw['proposals'])} proposals")
         return 0
     want = files(model)
+    page = standalone(model, want)
     if a.check:
         stale = [p for p, text in want.items() if not (OUT / p).exists() or (OUT / p).read_text(encoding="utf-8") != text]
+        if not STANDALONE.exists() or STANDALONE.read_text(encoding="utf-8") != page:
+            stale.append(str(STANDALONE.relative_to(DOC)))
         if stale:
             print("loop_atlas --check: stale, run python3 Tools/Build/loop_atlas.py and republish:\n  " + "\n  ".join(stale))
             return 1
@@ -601,7 +646,9 @@ def main():
         f = OUT / p
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(text, encoding="utf-8")
-    print(f"loop_atlas: wrote {len(want)} files under {OUT.relative_to(ROOT)}")
+    STANDALONE.parent.mkdir(parents=True, exist_ok=True)
+    STANDALONE.write_text(page, encoding="utf-8")
+    print(f"loop_atlas: wrote {len(want)} files under {OUT.relative_to(ROOT)} and {STANDALONE.relative_to(ROOT)}")
     return 0
 
 

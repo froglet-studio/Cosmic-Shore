@@ -5,6 +5,8 @@ The Loop Atlas is the shared picture of Cosmic Shore as loops inside loops: what
 - Open **Components > LoopAtlas**. That card is the atlas. The other cards are its vocabulary.
 - Pick a layer. **Now** is the game today. **Planned** is the stabilised version the team has decided on. **Proposed** is the plan with changes and with every hole filled by an invention.
 - A ring is a loop. The rings inside it are the faster loops it is made of. Click to step in.
+- A loop's details are on the card inside its ring, at the top where its name is. Click the card and zoom in to read; nothing about a loop is outside the map.
+- For a full page, open the Loop Atlas Map artifact (https://claude.ai/artifact/8XkvFKuTFeEpRoLfp8QQpw): the card here cannot go full screen.
 - Pick a vessel. Every Round holds that vessel's role and kit: its four elemental verbs, its omni crystal, its combos and its feel.
 
 ## Say it
