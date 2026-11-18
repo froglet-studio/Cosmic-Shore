@@ -185,6 +185,11 @@ namespace CosmicShore.Player
             ApplyCrystalGenes();
             gameData.IsTraining = false;
             if (gameData.selectedVesselClass != null) gameData.selectedVesselClass.Value = hostHull;
+            // The host's player wrote its hull from the menu's selection before this run set one, and the spawn reads that
+            // variable, not the selection (VoyageLaunch does the same). Left alone, the host keeps the profile's default
+            // hull (the Squirrel), and under arena seating a seat that asks for that hull is re-drawn as another one.
+            if (gameData.LocalPlayer is CosmicShore.Gameplay.Player host && host.NetDefaultVesselType.Value != hostHull)
+                host.NetDefaultVesselType.Value = hostHull;
             if (gameData.SelectedIntensity != null) gameData.SelectedIntensity.Value = intensity;
             gameData.ConfigurePlayerCounts(1 + _hulls.Count, 1);
             gameData.RequestedDomainCount = 2;
