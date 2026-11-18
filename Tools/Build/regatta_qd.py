@@ -450,6 +450,28 @@ START = os.environ.get("REGATTA_START", "card")
 # 2026-11-17) and slowest (Serpent, Dolphin) on the
 # first engine courses; four is one round on four cores, so a course stopped here costs half.
 STAGE1 = tuple(h for h in os.environ.get("REGATTA_STAGE1", "Rhino,Scarab,Serpent,Dolphin").split(",") if h)
+
+# Named fields (--field or REGATTA_FIELD): the hulls a run races AND scores, so a shard config is one word. "five" is
+# the polished five the shuffle was picked on (#2211). "ten" is the five plus Thresher, Serpent, Brittle Star, Swordfish
+# and TigerMoth (hub, 2026-11-18): the next course search, run once step 5's Rhino, Swordfish and Manta levers land
+# (Swordfish ran ~0.5x the five's time on every shuffle course before them). Each field carries its own stage-1 hulls
+# (the fastest and slowest on the shuffle's judged times, so a too-wide course stops early); REGATTA_STAGE1 still wins.
+FIELDS = {
+    "five": ("Urchin", "Scarab", "Sparrow", "Dolphin", "Squirrel"),
+    "ten": ("Urchin", "Scarab", "Sparrow", "Dolphin", "Squirrel", "Thresher", "Serpent", "BrittleStar", "Swordfish",
+            "TigerMoth"),
+}
+FIELD_STAGE1 = {"five": ("Scarab", "Dolphin"), "ten": ("Swordfish", "Scarab", "Thresher", "TigerMoth")}
+
+
+def use_field(name):
+    """Race and score field `name`; its stage-1 hulls apply unless REGATTA_STAGE1 is set."""
+    global STAGE1
+    if name not in FIELDS:
+        raise SystemExit(f"regatta_qd: no field {name!r} (fields: {', '.join(FIELDS)})")
+    set_hulls(list(FIELDS[name]))
+    if "REGATTA_STAGE1" not in os.environ:
+        STAGE1 = FIELD_STAGE1[name]
 ENGINE_SEEDS = tuple(int(x) for x in os.environ.get("REGATTA_ENGINE_SEEDS", "1").split(","))
 
 
@@ -1144,8 +1166,10 @@ def seed_genomes(own, k, n):
         for f in ([p] if p.endswith(".jsonl") else shard_files(p)):
             recs += [r for r in read_jsonl(f) if r.get("valid") and r.get("genome")]
     def spread(r):
-        t = [r["seconds"].get(h) for h in SCORED]
-        return max(t) / min(t) if all(t) else None
+        # Over the scored hulls the record timed: an older archive never raced a hull a new field adds (the ten's
+        # Swordfish, TigerMoth), so it seeds on the ones it has, if that is at least five (or the whole field).
+        t = [r["seconds"][h] for h in SCORED if r["seconds"].get(h)]
+        return max(t) / min(t) if len(t) >= min(5, len(SCORED)) else None
     ranked, keys = [], set()
     for r in sorted((r for r in recs if spread(r)), key=spread):
         key = genome_key(r["genome"])
@@ -1473,6 +1497,13 @@ def compare(budget, out, backend="model", seed=1, log=print):
 
 def self_test():
     bad = []
+    # Every named field races in the engine (ENGINE_TRUSTED) and its stage-1 hulls are in it, two at least.
+    for name, hulls in FIELDS.items():
+        if [h for h in hulls if h not in ENGINE_TRUSTED]:
+            bad.append(f"regatta_qd: field {name} has hulls the engine does not trust")
+        st = FIELD_STAGE1.get(name, ())
+        if len(st) < 2 or [h for h in st if h not in hulls]:
+            bad.append(f"regatta_qd: field {name}'s stage-1 hulls are not two or more of its own")
     rng = random.Random(7)
     # Operators: today's genome survives repair unchanged; random and mutated genomes stay in range; crossover by leg.
     today = jm.today_genome()
@@ -1540,10 +1571,14 @@ def main():
     ap.add_argument("--hulls", default=None, help="comma list raced and scored (default: every hull on the model, the "
                     "trusted engine roster ENGINE_TRUSTED on engine / mixed)")
     ap.add_argument("--init", type=int, default=64)
+    ap.add_argument("--field", default=os.environ.get("REGATTA_FIELD"), choices=tuple(FIELDS),
+                    help="a named field raced and scored (FIELDS; default REGATTA_FIELD); --hulls wins over it")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
     if a.hulls:
         set_hulls([h for h in a.hulls.split(",") if h])
+    elif a.field:
+        use_field(a.field)
     elif a.backend == "engine":
         set_hulls(list(ENGINE_TRUSTED))
     if a.workers is None and a.backend != "model":
