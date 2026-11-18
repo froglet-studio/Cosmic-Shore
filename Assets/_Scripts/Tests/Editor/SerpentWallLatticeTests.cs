@@ -230,5 +230,57 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(Mathf.Sin(rad), local.y, 1e-4f, $"angle {angle}");
             }
         }
+    
+        static void AssertDir(Vector3 expected, Vector3 actual, string what)
+        {
+            Assert.Less((expected - actual).magnitude, 1e-4f, $"{what}: expected {expected}, got {actual}");
+        }
+
+        [Test]
+        public void KeelWallStandsAlongTheHeadingOnTheHullsUp()
+        {
+            // Garrett, 2026-11-18: the wall turns a quarter so flying straight on feeds it. In a Keel wall the
+            // heading (the seed's forward) runs along wall x, the hull's up stays wall y, and the normal is the
+            // hull's side, so a pure pitch turn stays in the plane.
+            Quaternion seed = Quaternion.Euler(-10f, 70f, 25f);
+            Quaternion f = SerpentWallLattice.WallFrame(seed, SeedWallActionSO.WallPlane.Keel);
+            AssertDir(seed * Vector3.forward, f * Vector3.right, "wall x is the heading");
+            AssertDir(seed * Vector3.up, f * Vector3.up, "wall y is the hull's up");
+            Assert.AreEqual(1f, Mathf.Abs(Vector3.Dot(f * Vector3.forward, seed * Vector3.right)), 1e-4f, "normal is the side");
+        }
+
+        [Test]
+        public void WingsWallLiesAlongTheHeadingOnTheHullsRight()
+        {
+            Quaternion seed = Quaternion.Euler(30f, -40f, 5f);
+            Quaternion f = SerpentWallLattice.WallFrame(seed, SeedWallActionSO.WallPlane.Wings);
+            AssertDir(seed * Vector3.right, f * Vector3.right, "wall x is the hull's right");
+            AssertDir(seed * Vector3.forward, f * Vector3.up, "wall y is the heading");
+            Assert.AreEqual(1f, Mathf.Abs(Vector3.Dot(f * Vector3.forward, seed * Vector3.up)), 1e-4f, "normal is up");
+        }
+
+        [Test]
+        public void AcrossWallIsTheSeedsOwnFrame()
+        {
+            Quaternion seed = Quaternion.Euler(12f, 3f, -60f);
+            Quaternion f = SerpentWallLattice.WallFrame(seed, SeedWallActionSO.WallPlane.Across);
+            Assert.Less(Quaternion.Angle(seed, f), 1e-3f);
+        }
+
+        [Test]
+        public void AStraightTrailLiesInTheKeelAndWingsPlanesButNotAcross()
+        {
+            // The point of the turn: trail laid behind the seed (along -forward) and ahead of it is at wall z = 0
+            // for Keel and Wings, and runs straight down the normal of the Across wall.
+            Quaternion seed = Quaternion.Euler(-25f, 110f, 40f);
+            Vector3 trail = seed * new Vector3(0f, 0f, -120f);
+            foreach (var plane in new[] { SeedWallActionSO.WallPlane.Keel, SeedWallActionSO.WallPlane.Wings })
+            {
+                Vector3 local = Quaternion.Inverse(SerpentWallLattice.WallFrame(seed, plane)) * trail;
+                Assert.AreEqual(0f, local.z, 1e-3f, plane.ToString());
+            }
+            Vector3 across = Quaternion.Inverse(SerpentWallLattice.WallFrame(seed, SeedWallActionSO.WallPlane.Across)) * trail;
+            Assert.AreEqual(120f, Mathf.Abs(across.z), 1e-3f);
+        }
     }
 }

@@ -25158,3 +25158,20 @@ headless, Urchin alone, seed 1: I1 63.3 s and I4 78.6 s, the judged Ref1 and Ref
 - [ ] Open the project: no missing-reference warnings on MinigameRegatta's Cell, the course pool or ModePreview_Regatta.
 - [ ] Run the EditMode `RegattaCoursePoolTests` (`ShippedPool_DealsOnlyDifferentRegattaCourses` checks Ref1-Ref4 first).
 - [ ] Open the Regatta card's preview: the scale model shows a shuffle course, not an empty cell.
+
+## 🔴 Serpent Keel wall: the wall turned along the heading for Regatta pace (`claude/serpent-keel-wall`, 2026-11-18) — NOT EDITOR-VERIFIED
+
+Ran: the real-game Regatta judge in Amoebius (8 shipped courses × 3 seeds, rest and Time L5 starts) and Serpentine
+(`--mode SerpentTime`, I1-I4), the reference compile (0 errors in changed files), the engine build. Not run: the Unity
+editor, `SerpentWallLatticeTests` in Unity (the four new plane tests), multiplayer. Design and numbers:
+`SERPENT_SEED_WALL.md` "The wall's plane", `SERPENT_FUEL_PELLETS.md` "Regatta pace".
+
+1. Freestyle Serpent, fly straight, press RT (cloak) and keep flying straight: the wall grows BEHIND the illusion along
+   the old trail, standing upright along the heading (a fin), and not ahead toward you while the cloak runs. When the
+   cloak ends the illusion collapses into the centre brick edge-on, and the wall then eats the trail you laid under it.
+2. Pellet pips refill while you fly on straight or pull up/down after a cloak; yawing away refills nothing.
+3. Stop (stance) after a long straight: the stance wall eats the trail behind you as an upright fin; the pips do NOT
+   refill while stopped. Fly on: the wall stands.
+4. From the front, a stance wall and a cloak decoy wall look the same (both fins growing backward from a seed).
+5. Mass 5 Lockdown panels still seal the holes of a Keel wall; a crystal still ripples a shield through it.
+6. Pellet speed: 2.7x, 4.4x, 6.1x, 7.8x with one to four lit (was 3x-9x).
