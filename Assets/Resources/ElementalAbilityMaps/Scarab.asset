@@ -43,7 +43,7 @@ MonoBehaviour:
     UpgradeDescription: 'Your balls DESTROY super-shielded prisms and fly on, where a ball is otherwise spent on one (AstroLeagueBall''s replicated breaks-super-shielded stamp, read off your Space upgrade when the ball is minted, seeded or forged).'
   - Element: 4
     AbilityLabel: Throttle
-    AbilityDescription: 'Time raises the top speed of the throttle ramp (authored on the transformer''s ThrottleScalerMultiplier ElementalFloat, x0.95 -> x1 at level 10). The throttle is analog on the right trigger, thrust always along the nose, and releasing it is the only brake.'
+    AbilityDescription: 'Time raises the top speed of the throttle ramp (authored on the transformer''s ThrottleScalerMultiplier ElementalFloat, x0.95 -> x1 at level 10) and how hard it pushes there (ScarabVesselTransformer.accelerationScale, x2 at level 10). The throttle is analog on the right trigger, thrust always along the nose, and releasing it is the only brake.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
