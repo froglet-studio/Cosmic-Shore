@@ -45,6 +45,9 @@ namespace CosmicShore.Player
         const string CoursePoolPath = "Assets/_SO_Assets/Cell Configs/Regatta Cell/Regatta Course Pool.asset";
         const BindingFlags Any = BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
         const double TickSeconds = 1.0 / 60.0;
+        /// <summary>The sim time every judge launches its game at, whatever frame the boot reached the menu on, so a run
+        /// repeats exactly (the menu came at 0.2-1.3 s in every measured boot).</summary>
+        const double LaunchAtSeconds = 5.0;
 
         readonly string _outPath;
         readonly JsonObject _spec;
@@ -173,7 +176,14 @@ namespace CosmicShore.Player
             if (!IsMenu()) throw new InvalidOperationException($"never reached the menu (stuck in '{SceneManager.GetActiveScene()?.name}')");
             _menuReached = true;
             Console.WriteLine($"[race-judge] menu at {Now:0.0} s sim, {_wall.Elapsed.TotalSeconds:0.0} s wall");
-            yield return 1.5f;
+            // Launch on a fixed frame. The boot reaches the menu on a frame that depends on the wall clock (frame 14-49
+            // measured under four concurrent judges), and a launch 1.5 s after it then started the race at one of
+            // several absolute times, each a different race: the same build and seeds gave Dolphin 47.3, 59.2, 59.7 or
+            // 79.9 s on one course, decided only by that frame. Every launch on the same frame gave the same times.
+            double launchAt = Math.Max(LaunchAtSeconds, Now + 1.5);
+            if (launchAt > LaunchAtSeconds)
+                _notes.Add($"menu reached late ({Now:0.0} s sim): launched at {launchAt:0.00} s, not the fixed {LaunchAtSeconds} s, so this run may not repeat");
+            while (Now < launchAt) yield return null;
 
             var genome = _spec["genome"] as JsonObject;
             int intensity = Math.Clamp(_spec["intensity"]?.GetValue<int>() ?? genome?["intensity"]?.GetValue<int>() ?? 1, 1, 4);
