@@ -1,0 +1,22 @@
+{
+ "id": "vessel-hull-offscreen-skinning",
+ "title": "VIABILITY PROBE: what an off-screen vessel hull costs to keep skinning (Angler.fbx, 8 behind the camera)",
+ "owner": "Garrett",
+ "lane": "vessels",
+ "kind": "scene",
+ "metricCounter": "MeshSkinning.Update",
+ "runtimeWriters": "AnglerAnimation.Initialize sets SkinnedMeshRenderer.updateWhenOffscreen = true (AnglerAnimation.cs:82); 14 more vessel animation scripts do the same (grep 'updateWhenOffscreen = true'). Nothing sets localBounds.",
+ "exposure": "Every rigged hull in every match; about half the seats are off screen at any moment.",
+ "scene": {
+  "common": {
+   "prefab": "Assets/_Models/Vessel Models/Angler.fbx",
+   "spawnBehind": 8,
+   "spawnInView": 4,
+   "setupMethod": "none",
+   "offscreenAOn": "true"
+  },
+  "change": {"offscreenBoundsSize": 20},
+  "neg": {"offscreenBoundsSize": 1e-05}
+ },
+ "note": "Probe only: the bounds here are not proven to hold every pose. It answers whether the saving is worth the per-vessel bound proof."
+}

@@ -336,13 +336,15 @@
    "gain": "tens to low hundreds of microseconds of CPU per match frame; unmeasured. The bound proof per vessel is the work.",
    "confidence": "medium",
    "lens": "unseen-work",
-   "status": "queued",
+   "status": "rejected",
    "added": "2026-11-12",
    "baseCommit": "1811b470d4",
    "fileHashes": {
     "Assets/_Scripts/Controller/Animation/AnglerAnimation.cs": "722d48d37a09b21f5ac02fbb503dc17414ed1dcd",
     "Assets/_Scripts/Controller/Animation/StoatAnimation.cs": "e147fa98f7f7682fa4436cd1993782f1f31f5199"
-   }
+   },
+   "outcomeReason": "viability probe (Angler.fbx, 8 hulls behind the camera, 4 in view): MeshSkinning.Update 0.075 -> 0.050 ms, about 3 us per off-screen hull, GPU unchanged (2.09 vs 2.11 ms); not worth a per-vessel bound proof for 15 vessels",
+   "finished": "2026-11-18"
   }
  ]
 }

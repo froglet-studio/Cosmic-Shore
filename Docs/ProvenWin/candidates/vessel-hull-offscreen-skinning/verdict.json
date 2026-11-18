@@ -1,0 +1,14 @@
+{
+ "verdict": "FAIL",
+ "reasons": [
+  "editor: 'MeshSkinning.Update' not categorically lower (B lower in 89 % of frames)"
+ ],
+ "rows": {
+  "editor": {
+   "a": 0.0747,
+   "b": 0.0495,
+   "share": 0.8861111111111111,
+   "screen": 0
+  }
+ }
+}
