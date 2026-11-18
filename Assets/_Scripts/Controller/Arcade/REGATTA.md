@@ -167,6 +167,16 @@ intensity, though intensity no longer picks the circuit they were measured on; r
 from the arena launch and its per-intensity rows is the "Replace arena intensities with vessel
 selection modes" work.
 
+**The `StartingElements` rows are kept as they were, on purpose (2026-11-18).** They are still
+`regatta_balance.py`'s answer over the four circuits #2212 deleted (Manta Time -5 levels; Serpent,
+Sparrow and Scarab +10, at every intensity), and they do NOT track the shipped shuffle. Re-keying the
+lap-time model onto Ref1-Ref4 was not done: the shuffle was picked by the real-game judge, which the
+Python model disagrees with, so model rows over the refs would re-balance against the wrong numbers.
+Garrett's open card recommends dropping the rows when step 5's next lever refit lands (the refit
+balances the hulls on the vessels themselves). Until he answers, the rows stay, and
+`author_regatta_assets.py` says so where it writes them. The real-game judge's calibration course is
+Ref1 (`regatta_judge.CALIBRATION_GENOME`), so it tracks the shipped level.
+
 **Laps are derived, not authored twice.** The arena lays exactly `RingsPerLap` (8) rings, the
 end-condition target is authored once (24), and `LapsPerRace = target / 8`. A target that is not
 a multiple of eight races to the course's honest length and warns.

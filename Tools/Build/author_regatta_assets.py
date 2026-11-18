@@ -394,7 +394,14 @@ VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']},
 
 def starting_element_rows() -> str:
     """One row per (hull, intensity) the model tunes off rest; a hull at rest everywhere gets no
-    row (the platform default IS rest, and a row of zeros would say the card decided it)."""
+    row (the platform default IS rest, and a row of zeros would say the card decided it).
+
+    KEPT AS IS, KNOWINGLY (2026-11-18): these rows are regatta_balance.py's answer over the four
+    circuits #2212 deleted, not over the shipped shuffle, so they do not track Ref1-Ref4. The
+    shuffle was picked by the real-game judge, which the Python model disagrees with, so re-keying
+    the model onto the refs would re-balance against the wrong numbers. Garrett's open card
+    recommends dropping the rows when step 5's next lever refit lands; until he answers they stay
+    unchanged (REGATTA.md section 4.1)."""
     rows = []
     for i in range(1, 5):
         for h in MODEL_HULLS:
