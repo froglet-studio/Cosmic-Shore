@@ -161,8 +161,8 @@ namespace CosmicShore.Gameplay
             StopSwarm();
         }
 
-        /// <summary>The element scaling (STARLING.md §2.1): the factor on the level a drawn card of <paramref name="element"/>
-        /// arrives at, from the swarm's live level of that element.</summary>
+        /// <summary>The element scaling (STARLING.md §2.1): one plus the levels a drawn card of <paramref name="element"/>
+        /// gains from the swarm's live level of that element.</summary>
         float ArrivalLevel(Element element)
         {
             var factor = config ? config.ArrivalLevel(element) : null;

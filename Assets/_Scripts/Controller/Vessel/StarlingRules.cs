@@ -124,9 +124,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The card of an element hand the pilot has highlighted (0-based); 0 on every new hand.</summary>
         public int Focus { get; private set; }
 
-        /// <summary>The swarm's element scaling (STARLING.md §2.1): the factor on the level a drawn card of the element
-        /// arrives at, from the vessel's live element level (1 at rest, 3 at level 10). The level is rounded down; null is
-        /// a factor of 1 (tests and the lab's model).</summary>
+        /// <summary>The swarm's element scaling (STARLING.md §2.1): one plus the levels a drawn card of the element gains
+        /// from the vessel's live element level (1 at rest, +1 per 3 element levels: +3 at L9, +5 at L15). The gain is
+        /// rounded down; null adds nothing (tests and the lab's model).</summary>
         public System.Func<Element, float> ArrivalLevel { get; set; }
 
         /// <summary>The level-5 upgrade Encore (STARLING.md §2.1): true while the element's upgrade is active, so a pick of
@@ -261,8 +261,8 @@ namespace CosmicShore.Gameplay
 
         int LevelOf(Element element)
         {
-            float factor = ArrivalLevel != null ? ArrivalLevel(element) : 1f;
-            return Mathf.Clamp(Mathf.FloorToInt(_config.LevelFor(element) * factor + 1e-4f), 1, MaxLevel);
+            int gain = ArrivalLevel != null ? Mathf.FloorToInt(ArrivalLevel(element) - 1f + 1e-4f) : 0;
+            return Mathf.Clamp(_config.LevelFor(element) + gain, 1, MaxLevel);
         }
 
         /// <summary>Pick the card of <paramref name="element"/> from a spread hand (the lab's <c>pick</c>). False when there

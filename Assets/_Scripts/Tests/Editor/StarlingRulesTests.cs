@@ -341,7 +341,7 @@ namespace CosmicShore.Tests
         // ---- the four elements (Garrett, 2026-11-17: every vessel scales with every element and has its L5 upgrades) ----
 
         [Test]
-        public void AnElementsLevel_ScalesTheLevelItsDrawnCardsArriveAt()
+        public void AnElementsLevel_AddsLevelsToItsDrawnCards()
         {
             var config = Config();
             var rules = new StarlingRules(config);
@@ -352,12 +352,12 @@ namespace CosmicShore.Tests
 
             massFactor = 2f;
             rules.DealHand();
-            Assert.AreEqual(2, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "Mass level 5 doubles it");
-            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Time)).Level, "and moves no other element");
+            Assert.AreEqual(2, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "one level gained");
+            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Time)).Level, "and no other element moves");
 
             massFactor = 2.9f;
             rules.DealHand();
-            Assert.AreEqual(2, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "the level is rounded down");
+            Assert.AreEqual(2, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "the gain is rounded down");
             massFactor = 0.5f;
             rules.DealHand();
             Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "a deficit never deals below level 1");
@@ -367,16 +367,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheShippedScaling_RestsAtOne_AndIsThreeAtLevelTen_OnEveryElement()
+        public void TheShippedScaling_AddsOneLevelPerThreeElementLevels_PastLevelTen()
         {
+            // Garrett, 2026-11-18: "+3 at L9 and +5 at L15".
             var config = Config();
+            var rules = new StarlingRules(config);
+            int[] elementLevel = { 0, 2, 3, 5, 6, 8, 9, 10, 12, 14, 15 };
+            int[] gain = { 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5 };
             foreach (var e in StarlingRules.HandOrder)
             {
                 var factor = config.ArrivalLevel(e);
                 Assert.IsNotNull(factor, e.ToString());
-                Assert.AreEqual(1f, ElementalFloatAt(factor, 0f), 1e-5f, $"{e} at rest");
-                Assert.AreEqual(2f, ElementalFloatAt(factor, 0.5f), 1e-5f, $"{e} at level 5");
-                Assert.AreEqual(3f, ElementalFloatAt(factor, 1f), 1e-5f, $"{e} at level 10");
+                for (int k = 0; k < elementLevel.Length; k++)
+                {
+                    float level = elementLevel[k];
+                    rules.ArrivalLevel = x => ElementalFloatAt(config.ArrivalLevel(x), level / 10f);
+                    rules.DealHand();
+                    Assert.AreEqual(1 + gain[k], rules.HandCard(StarlingRules.SlotOf(e)).Level, $"{e} at element level {level}");
+                }
                 Assert.AreEqual(0.5f, ElementalFloatAt(factor, -0.5f), 1e-5f, $"{e} floored at half its rest at level -5");
             }
         }
