@@ -1,0 +1,22 @@
+<!-- @dsCard group="Vocabulary" height=520 subtitle="How one loop is drawn" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loop ring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--ground); }
+  #root { height: 520px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  LoopAtlas.LoopRing(document.getElementById('root'), { layer: 'plan', select: 'voy.cell' });
+</script>
+</body>
+</html>

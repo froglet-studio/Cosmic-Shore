@@ -1,0 +1,51 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cosmic Shore Loop Atlas</title>
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--ground); color: var(--text); font-family: var(--font-read); overflow: hidden; }
+  .cover { position: relative; width: 960px; height: 288px; overflow: hidden; }
+  .band { position: absolute; left: 0; top: 0; }
+  .b-deep { fill: var(--tier-2); }
+  .b-sel { fill: var(--selection); }
+  .b-pale { fill: var(--tier-6); }
+  .b-prop { fill: var(--proposed); }
+  .b-hole { fill: var(--hole); }
+  .ring { fill: none; stroke: var(--ground); stroke-width: 2px; }
+  .words { position: absolute; left: 32px; right: 32px; bottom: 24px; }
+  .name { margin: 0; font-size: 56px; line-height: .95; font-weight: 400; color: var(--text); white-space: nowrap; }
+  .tag { margin: 12px 0 0; font-size: 14px; line-height: 20px; color: var(--text-soft); }
+</style>
+</head>
+<body>
+<div class="cover">
+<svg class="band" viewBox="0 0 960 112" width="960" height="112" aria-hidden="true">
+<!--
+  blocks      tier-2 352x112 (the map's working blue, largest) . selection 240x112 (the picked loop) . tier-6 208x112 (the slow tiers) . proposed 96x64 (a state: kept small) . hole 32x32 (a state: smallest)
+  arrangement the top-band skeleton, because the name is too wide for the left zone: a strip of unequal bands flush across the top, space-16 gutters cut by the sliver, the two state colours hanging off the right
+  pattern     the literal motif, a loop inside a loop: rings cut out of the blocks in ground, radii on the spacing scale (16, 32, 48, 64, 96), each block's rings sharing a centre like a loop and the faster loops it is made of
+  scales      band 112 tall; block sides in space-16 multiples; corners cut by sliver-large (14); ring stroke = emphasis (2)
+-->
+<polygon class="b-deep" points="14,0 352,0 352,98 338,112 0,112 0,14"/>
+<polygon class="b-sel" points="382,0 608,0 608,98 594,112 368,112 368,14"/>
+<polygon class="b-pale" points="638,0 832,0 832,98 818,112 624,112 624,14"/>
+<polygon class="b-prop" points="862,0 944,0 944,50 930,64 848,64 848,14"/>
+<polygon class="b-hole" points="858,80 880,80 880,102 870,112 848,112 848,90"/>
+<g class="ring">
+<circle cx="176" cy="56" r="96"/><circle cx="176" cy="56" r="64"/><circle cx="208" cy="56" r="32"/><circle cx="220" cy="56" r="16"/>
+<circle cx="488" cy="56" r="48"/><circle cx="504" cy="56" r="32"/><circle cx="512" cy="56" r="16"/>
+<circle cx="728" cy="56" r="64"/><circle cx="752" cy="56" r="32"/>
+<circle cx="896" cy="32" r="16"/>
+</g>
+</svg>
+<div class="words">
+<p class="name">Cosmic Shore Loop Atlas</p>
+<p class="tag">Every loop the game offers, from one input to the long game: what it is now, what is planned, what is proposed.</p>
+</div>
+</div>
+</body>
+</html>
