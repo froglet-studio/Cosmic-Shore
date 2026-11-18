@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-18-dolphin-chargeboostaction-charge-rate-re-84a602",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T04:45:15+00:00",
+  "area": "Dolphin Drift Charge rate (Regatta step 5)",
+  "summary": "Dolphin ChargeBoostAction charge rate reshaped: rest 1.375->1.5, full 3.4375->3.3125, min 0.6875->0.75 (Time-5 midpoint unchanged). Shuffle-set five-hull card 1.13->1.07x, L5 holds 1.08x. Switchback rungs inside bars (I1 80-97, I2 122-132, I3 112-128, I4 224-232 s).",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "591a5bf09"
+}
