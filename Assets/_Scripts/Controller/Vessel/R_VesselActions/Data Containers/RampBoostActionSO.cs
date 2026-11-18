@@ -87,6 +87,25 @@ namespace CosmicShore.Gameplay
                  "a turn would cost nothing inside one.")]
         [SerializeField] float bleedPerSecond = 300f;
 
+        [Header("Fuel (earned by the signature action)")]
+        [Tooltip("ResourceSystem slot that FUELS the ramp, or -1 for a free ramp (the old behaviour). Garrett, " +
+                 "2026-11-18: the Rhino's and the Swordfish's boost resource is tied to their ploughing and slicing, " +
+                 "so the ramp keeps its top speed and feel but runs on what the hull earns: ploughing a prism " +
+                 "(Rhino) or slicing one (Swordfish) refills the slot, and the ramp drains it. An empty tank holds " +
+                 "the ramp at plain cruise until the next prism refuels it.")]
+        [SerializeField] int fuelResourceIndex = -1;
+
+        [Tooltip("Tank fraction a FULL ramp burns per second (1 = a full tank lasts one second at top power). The " +
+                 "burn is proportional to how much of the ramp the line is using, (multiplier - 1) / (max - 1), so " +
+                 "a bent line burns less and plain cruise burns nothing.")]
+        [SerializeField, Min(0f)] float fuelBurnPerSecond = 0.1f;
+
+        [Tooltip("The ramp's top multiplier on an EMPTY tank - running on fumes. 1 starves it to plain cruise; above 1 " +
+                 "an empty ramp still climbs, to this, and only a fuelled one reaches MaxBoostMultiplier. Measured " +
+                 "2026-11-18: starving the Rhino to its 50 u/s cruise made the pace bistable (a race either never ran " +
+                 "dry or crawled 6x slower once it did), so the empty tank keeps a smaller ramp and fuel pays the top.")]
+        [SerializeField, Min(1f)] float emptyTankMaxBoostMultiplier = 1f;
+
         [Header("Feel")]
         [Tooltip("SFX held while the ramp is engaged, stopped when it ends (Boost Activate is a " +
                  "looping bed). A non-looping category simply plays once on engage.")]
@@ -131,6 +150,28 @@ namespace CosmicShore.Gameplay
         public float MultiplierFor(float deviation) =>
             Mathf.Lerp(1f, maxBoostMultiplier, Straightness01(deviation));
         public GameplaySFXCategory EngageSFX => engageSFX;
+
+        /// <summary>The fuel slot, or -1 for a free ramp.</summary>
+        public int FuelResourceIndex => fuelResourceIndex;
+        public bool UsesFuel => fuelResourceIndex >= 0;
+        public float FuelBurnPerSecond => fuelBurnPerSecond;
+        public float EmptyTankMaxBoostMultiplier => Mathf.Min(emptyTankMaxBoostMultiplier, maxBoostMultiplier);
+
+        /// <summary>The multiplier an EMPTY tank allows at <paramref name="deviation"/>: the same grading as
+        /// <see cref="MultiplierFor"/>, toward <see cref="EmptyTankMaxBoostMultiplier"/> instead of the full top.</summary>
+        public float EmptyTankMultiplierFor(float deviation) =>
+            Mathf.Lerp(1f, EmptyTankMaxBoostMultiplier, Straightness01(deviation));
+
+        /// <summary>
+        /// Fuel a ramp at <paramref name="multiplier"/> burns over <paramref name="dt"/> seconds: the full burn rate at
+        /// <see cref="MaxBoostMultiplier"/>, nothing at plain cruise (1). Pure, for <c>RampFuelTests</c>.
+        /// </summary>
+        public float FuelBurn(float multiplier, float dt)
+        {
+            if (!UsesFuel || dt <= 0f || maxBoostMultiplier <= 1f) return 0f;
+            float share = Mathf.Clamp01((multiplier - 1f) / (maxBoostMultiplier - 1f));
+            return fuelBurnPerSecond * share * dt;
+        }
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<RampBoostActionExecutor>()?.Begin(this, vesselStatus);

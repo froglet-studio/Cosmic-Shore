@@ -25,4 +25,7 @@ MonoBehaviour:
   returnPerSecond: 120
   straightnessGraceBand: 1
   bleedPerSecond: 300
+  fuelResourceIndex: 0
+  fuelBurnPerSecond: 0.1
+  emptyTankMaxBoostMultiplier: 2.5
   engageSFX: 13

@@ -22,6 +22,15 @@ energize, the two keys), `RHINO_SHIELD_SWIPE.md` (the pose rig), `RHINO_SWORD_AF
 `RHINO_RAMP_BOOST.md`. Read "the Rhino" there as "the Swordfish" for anything about the sword. The code keeps its
 `RhinoSword*` names: the classes are the sword's, and renaming them is a separate change.
 
+## The ramp runs on slices (2026-11-18)
+
+Garrett, 2026-11-18: "the rhino and sword fish have natural levers for their design changes. they like to slice and
+plow. make their boosting resource tied to their slicing and plowing." The ramp burns a fuel tank and every prism the
+bill slices refills it; an empty tank keeps a 2.5x ramp instead of the 16.8x top (`RHINO_RAMP_BOOST.md` § "Fuel").
+**Quickdraw also refuels faster**: Time multiplies the fuel a slice pays, x1 at rest to x4.5 at level 10, because Time
+is the sword's rate and nothing else in the kit gave Time any pace (Regatta at L5 was slower than at rest). The hull
+ram earns nothing: slicing is the bill's job.
+
 ## Fundamentals pass (2026-11-12)
 
 Garrett, 2026-11-12: "lets also get the sword fish polished out as well", the way the Rhino was reworked (#1927): each
