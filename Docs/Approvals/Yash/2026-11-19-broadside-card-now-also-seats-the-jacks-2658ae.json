@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-19-broadside-card-now-also-seats-the-jacks-2658ae",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-19T10:08:35+00:00",
+  "area": "Broadside card",
+  "summary": "Broadside card now also seats the Jacks (Charge dangerShare 0.25 -> 0.06, measured 0.93 pooled over 120 matches); Angler lockBiteCooldown 4.5 -> 5.25 s. Real-game judge, both starts. Your claude/dreamy-goldberg-enztvh touches the same files.",
+  "branch": "HEAD",
+  "commit": "7d40cf2ab"
+}

@@ -48,7 +48,7 @@ MonoBehaviour:
     element: 4
     UseFloor: 1
     Floor: 0.5
-  lockBiteCooldown: 4.5
+  lockBiteCooldown: 5.25
   biteRate:
     Enabled: 1
     Value: 1

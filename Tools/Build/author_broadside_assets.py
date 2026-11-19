@@ -70,7 +70,7 @@ EXISTING.update(lib.CARD_ART)
 # The card's roster: the hulls the real-game judge measured as a balanced brawl
 # (Tools/Compute/evaluators/broadside_judge.py; regatta-flywheel/night3/broadside/RESULT.md, 2026-11-19).
 # Every other Charge hull is judged too and is listed there with what it needs to join.
-CARD_HULLS = ("Scarab", "Stoat", "BrittleStar", "Meerkat", "Angler")
+CARD_HULLS = ("Scarab", "Stoat", "BrittleStar", "Meerkat", "Angler", "Jacks")
 for hull in CARD_HULLS:
     EXISTING[f"Vessel_{hull}"] = lib.existing_guid(f"Assets/_SO_Assets/Classes/SO_Class_{hull}.asset")
 
@@ -255,7 +255,7 @@ def starting_elements():
 _BROADSIDE_DESC = lib.wrap_yaml_scalar(
     "Every hull that can fight, loose in the Boneyard, each with the weapon it "
     "actually has - a Scarab's plate, a Stoat's joust, a Brittle Star's cord, a Meerkat's "
-    "zap, an Angler's bite. A hit is worth "
+    "zap, an Angler's bite, the Jacks' herd. A hit is worth "
     "what it cost you to land, not what you flew: a round is 1, a contact strike 8, a debuff "
     "12, a rocket up to 30. First team to the target wins. Pick the hull you fight best.")
 g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameBroadside.asset", G_ASSET["ArcadeGameBroadside"],

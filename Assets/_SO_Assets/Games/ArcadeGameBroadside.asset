@@ -17,9 +17,9 @@ MonoBehaviour:
   DisplayName: Broadside
   Description: 'Every hull that can fight, loose in the Boneyard, each with the weapon it actually has
     - a Scarab''s plate, a Stoat''s joust, a Brittle Star''s cord, a Meerkat''s zap, an
-    Angler''s bite. A hit is worth what it cost you to land, not what you flew: a round is
-    1, a contact strike 8, a debuff 12, a rocket up to 30. First team to the target wins.
-    Pick the hull you fight best.'
+    Angler''s bite, the Jacks'' herd. A hit is worth what it cost you to land, not what you
+    flew: a round is 1, a contact strike 8, a debuff 12, a rocket up to 30. First team to
+    the target wins. Pick the hull you fight best.'
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: cc3a5100dbcb4b11adebaf1bc3563dad, type: 3}
@@ -31,6 +31,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d8ebb29f2d63ad7eb488fdcb97145cfe, type: 2}
   - {fileID: 11400000, guid: 8d3f1a2b4c5e4d6f9a7b8c9d0e1f2a3b, type: 2}
   - {fileID: 11400000, guid: ea422bbe0d1aef61993692999cee50ea, type: 2}
+  - {fileID: 11400000, guid: 8a41c6e2f0d94b7c9e35a1d7c4b8e2f6, type: 2}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 9
   MinDomainsAllowed: 2

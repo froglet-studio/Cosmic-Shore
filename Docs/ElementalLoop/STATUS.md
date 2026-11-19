@@ -14,7 +14,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Goby | `b ~ b` | `b b .` | `b b b` | `b b b` | - | Regatta |
 | Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `R b ~` | `b b .` | `b b .` | `b b .` | - | - |
-| Jacks | `R b b` | `b b .` | `- - -` | `b b .` | - | - |
+| Jacks | `R b b` | `b b .` | `- - -` | `b b .` | - | Broadside |
 | JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
 | Manta | `R b ~` | `b b .` | `x x x` | `b b .` | - | Regatta, BroodRush |
 | Meerkat | `R b b` | `b b .` | `b b .` | `b b .` | - | Broadside |
@@ -38,7 +38,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Element | Arena game | Vessels seated | Their steps 1-3 complete | Step 4 environment creator | Step 5 vessel imbalance |
 |---|---|---|---|---|---|
 | Time | Regatta | BrittleStar, Dolphin, Goby, Manta, Rhino, Scarab, Serpent, Shrike, Sparrow, Squirrel, Swordfish, Thresher, TigerMoth, Urchin | no | doing: the course-pool search is the first environment creator: best pool 1.104x against the 1.10x bar in the model (#1825); live in bleeding-edge, waits on Garrett's playtest and on step 3 for every Regatta hull (Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md) | todo |
-| Charge | Broadside | Angler, BrittleStar, Meerkat, Scarab, Stoat | no | todo | todo |
+| Charge | Broadside | Angler, BrittleStar, Jacks, Meerkat, Scarab, Stoat | no | todo | todo |
 | Mass + Space | BroodRush | Dolphin, Manta, Rhino, Serpent, Sparrow, Squirrel, Swordfish | no | todo | todo |
 
 ## 3. Each vessel's arcade games (measured from the cards)
