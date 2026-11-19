@@ -165,10 +165,20 @@ _ANGLER_RUN1 = {"throwAlignDegrees": 13.57, "minThrowDistance": 326.413, "holdSe
 for _mode in ("LanternRun", "Regatta"):
     ROWS[f"AnglerAIBoostPolicy_{_mode}"] = dict(base=L.POLICY_DIR + "/AnglerAIBoostPolicy.asset", fields=dict(_ANGLER_RUN1),
                                                  source="/mnt/project-files/regatta-flywheel/train/Angler/run1/best.json")
+# Sparrow, Regatta (2026-11-19): Regatta flew the hull's own SparrowAIBoostPolicy, never trained (the 2026-11-18 audit,
+# Docs/ElementalLoop/REDESIGN.md). The Breakwater drive held up in the real game (shuffle set, 5 seeds: card 74.2 -> 63.6 s,
+# L5 66.3 -> 54.3 at the shipped afterburner), so it ships with the afterburner re-fit to x1.75 -> x2.15
+# (step5/noise/sparrow_knee.jsonl): card 71.2 s (0.97x of the five), L5 65.0 s (1.00x).
+ROWS["SparrowAIBoostPolicy_Regatta"] = dict(base=L.POLICY_DIR + "/SparrowAIBoostPolicy.asset",
+    fields={"alignDegrees": 79.394, "releaseAlignDegrees": 89.527, "stickBand": 0.73, "releaseStickBand": 0.993,
+            "engageRunwaySeconds": 0.192, "releaseRunwaySeconds": 1.674, "minHoldSeconds": 1.631, "minRestSeconds": 0.183,
+            "rocketMaxRange": 651.421, "rocketMinRange": 55.448, "rocketAimDegrees": 16.727},
+    source="Assets/Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset (#1846)")
 
 # Every value each row overwrote, as it shipped on bleeding-edge 8197bd92 (2026-11-07). --revert writes these back.
 OLD = {
     "DolphinAIBoostPolicy_Regatta": None,  # new 2026-11-18: --revert removes it
+    "SparrowAIBoostPolicy_Regatta": None,  # new 2026-11-19: --revert removes it
     "BrittleStarAIBoostPolicy_Regatta": None,  # new 2026-11-18: --revert removes it
     "AnglerAIBoostPolicy_LanternRun": None,  # new 2026-11-19: --revert removes it
     "AnglerAIBoostPolicy_Regatta": None,  # new 2026-11-19
