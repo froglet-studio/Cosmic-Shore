@@ -1,4 +1,5 @@
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -69,6 +70,17 @@ namespace CosmicShore.Tests
         {
             var so = Ramp(0, 0.1f);
             Assert.AreEqual(0f, so.FuelBurn(16.8f, 0f));
+        }
+
+        [Test]
+        public void The_refuel_gene_seeks_only_below_its_threshold_and_never_with_no_slack()
+        {
+            var row = new RaceAIRefuelGenesSO.Row { PrismDetourSlack = 60f, RefuelBelow = 0.3f };
+            Assert.IsTrue(RaceAIRefuelGenesSO.WantsFuel(row, 0f));
+            Assert.IsTrue(RaceAIRefuelGenesSO.WantsFuel(row, 0.29f));
+            Assert.IsFalse(RaceAIRefuelGenesSO.WantsFuel(row, 0.3f));
+            row.PrismDetourSlack = 0f;
+            Assert.IsFalse(RaceAIRefuelGenesSO.WantsFuel(row, 0f), "no slack = the behaviour before the gene");
         }
     }
 }

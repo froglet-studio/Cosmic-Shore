@@ -1,0 +1,26 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2248-chore-loop-the-meerk-9aa72a",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T04:36:48+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2248 (chore(loop): the Meerkat's Regatta judge and AI search; flagged for redesign at 4.0x) went in without waiting for you.",
+  "why": "a swim lane someone else occupies (approvals.py check exit 2): The elemental vessel loop (process, board, sign-offs)",
+  "branch": "wip/meerkat",
+  "pr": 2248,
+  "commit": "22324f436",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/REGATTA.md",
+    "Docs/ElementalLoop/REDESIGN.md",
+    "Docs/ElementalLoop/STATUS.md",
+    "Docs/ElementalLoop/loop.json",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "risky": [
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "The elemental vessel loop (process, board, sign-offs)"
+    }
+  ]
+}

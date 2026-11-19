@@ -1472,7 +1472,7 @@ MonoBehaviour:
   shielded: 0
   trailVolume:
     Enabled: 0
-    Value: 1
+    Value: 1.871
     Min: 1
     Max: 1
     element: 0
@@ -1552,6 +1552,8 @@ MonoBehaviour:
   playerSeekUpdateInterval: 0.5
   playerReacquireInterval: 0.1
   massClusterRetargetInterval: 1.5
+  attackFiredByCrystal: 1
+  rivalAimMaxRange: 900
   breakOrbits: 1
   orbitBreakAwayBias: 0.35
   approachRunSeconds: 2.5
