@@ -101,7 +101,11 @@ This run puts all of it into the model and keeps proposing. Map = https://claude
    part` in the same branch, and open it as a **draft** PR. A build that needs the Unity editor to judge stops at a
    draft with a Froglet Tasks suggestion, never a merge. Skip this step when nothing is queued.
 7. Republish (section 6) when the model on `bleeding-edge` differs from the published page (build `--html` from
-   `bleeding-edge` and compare with an Artifact `read`). Republish with the capabilities in `PROCESS.md`'s table:
+   `bleeding-edge` and compare with an Artifact `read`). Other sessions publish the map too: if the live page's
+   template part is not what your base builds (it carries a newer feature, such as the inspection window of
+   `claude/code-atlas-inspect`), build from the newest branch that has it, or put only the new model into the live
+   page; never publish an older template over a newer one. Pass no `files` unless you rebuilt them: files left out are
+   kept (`code/index.json`, `code/views/`, the shards). Republish with the capabilities in `PROCESS.md`'s table:
    `{db: {rules: [notes, requests: write interact; verdicts, decisions, applied: write admin; all read view]},
    user: {scopes: ["profile"]}}`.
 8. Finish with a short summary: what was applied, proposed, started, and the PR links.
