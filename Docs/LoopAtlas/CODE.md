@@ -92,8 +92,8 @@ How it reads each part, and what it does not do yet:
 ## Loading: nothing until you look at it
 
 `index.json` (a few KB: shard count, root, each loop's pictures, which loops have code) loads with the page. Records are
-in 138 gzipped shards by `fnv1a(id) % shards`; a shard loads the first time a ring inside it is big enough to draw (the
-page inflates it with `DecompressionStream`, or reads it plain when the server already did). A thumbnail sheet loads
+in 140 shards by `fnv1a(id) % shards`; a shard loads the first time a ring inside it is big enough to draw (gzip as
+base64 text, since claude.ai serves no `.gz`; the page decodes and inflates it with `DecompressionStream`). A thumbnail sheet loads
 the first time a picture on it is drawn. Zooming one path from a loop down to a value touches a handful of shards.
 
 ## The camera: no floor

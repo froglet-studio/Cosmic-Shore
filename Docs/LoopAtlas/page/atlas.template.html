@@ -310,8 +310,14 @@ body { background: var(--ground); color: var(--text); }
     return h >>> 0;
   }
   function recIdOf(id) { if (id.slice(0, 2) === 'v:') { var k = id.indexOf('|'); return 'o:' + id.slice(2, k); } return id; }
+  // A shard is gzip, or gzip as base64 text (claude.ai serves no .gz), or plain JSON when a server already inflated it.
   function inflate(buf) {
     var u = new Uint8Array(buf);
+    if (u[0] === 0x48 && u[1] === 0x34 && u[2] === 0x73) { // "H4s": base64 of the gzip magic
+      var bin = atob(new TextDecoder().decode(u).replace(/\s+/g, '')), b = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+      u = b;
+    }
     if (u[0] !== 0x1f || u[1] !== 0x8b || !window.DecompressionStream) return Promise.resolve(new TextDecoder().decode(u));
     return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
   }
@@ -319,7 +325,8 @@ body { background: var(--ground); color: var(--text); }
     if (CODE.shards[n]) return;
     CODE.shards[n] = 'loading';
     var name = ('00' + n).slice(-3);
-    fetch(CODE.base + 'shards/' + name + '.json.gz').then(function (r) { if (!r.ok) throw r.status; return r.arrayBuffer(); })
+    var file = (CODE.idx.shardFile || '{n}.json.gz').replace('{n}', name);
+    fetch(CODE.base + 'shards/' + file).then(function (r) { if (!r.ok) throw r.status; return r.arrayBuffer(); })
       .then(inflate).then(function (t) {
         var d = JSON.parse(t); for (var k in d) CODE.recs[k] = d[k];
         CODE.shards[n] = 'on'; ping();

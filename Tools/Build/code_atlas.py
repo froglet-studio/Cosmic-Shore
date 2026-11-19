@@ -21,7 +21,7 @@ Node ids are canonical and readable; the prefix is the kind:
   s:<file>#<heading slug>  L:<loop key>  code (the root)
 A v: record lives inside its o: record (the client splits on '|'), so values cost no record of their own.
 
-Output: index.json (shard count, root, stats, each loop's pictures), names.json (search), shards/NNN.json.gz (records
+Output: index.json (shard count, root, stats, each loop's pictures), names.json (search), shards/NNN.gz.txt (base64 gzip records
 by fnv1a(id) % count, gzipped), img/sheetNN.webp (128 px thumbnails of every picture, 256 a sheet). The page loads
 index.json once, a shard the first time a ring inside it is big enough to draw, and a sheet the first time it shows a
 picture from it. Needs PyYAML and Pillow (pip install pyyaml pillow); uses PyYAML's C loader when present.
@@ -29,6 +29,7 @@ picture from it. Needs PyYAML and Pillow (pip install pyyaml pillow); uses PyYAM
 from __future__ import annotations
 
 import argparse
+import base64
 import fnmatch
 import gzip
 import json
@@ -1193,19 +1194,21 @@ class Builder:
         for i, b in blobs.items():
             shards[fnv1a(i) % count][i] = b
         (out / "shards").mkdir(parents=True, exist_ok=True)
-        for old in (out / "shards").glob("*.json*"):
+        for old in [*(out / "shards").glob("*.json*"), *(out / "shards").glob("*.gz.txt")]:
             old.unlink()
         for s, recs in shards.items():
             body = "{" + ",".join(json.dumps(i, ensure_ascii=False) + ":" + b for i, b in sorted(recs.items())) + "}"
-            # gzip: the page inflates with DecompressionStream; mtime 0 keeps a rebuild byte-identical
-            (out / "shards" / f"{s:03d}.json.gz").write_bytes(gzip.compress(body.encode("utf-8"), 9, mtime=0))
+            # gzip, then base64 in a .txt: claude.ai artifacts serve no .gz, so the page decodes and inflates it with
+            # DecompressionStream. mtime 0 keeps a rebuild byte-identical.
+            gz = gzip.compress(body.encode("utf-8"), 9, mtime=0)
+            (out / "shards" / f"{s:03d}.gz.txt").write_bytes(base64.b64encode(gz))
         kinds = defaultdict(int)
         for r in g.recs.values():
             kinds[r["k"]] += 1
         values = sum(len(r.get("f", [])) for r in g.recs.values())
         loop_im = {r["lid"]: r["im"] for r in g.recs.values() if r["k"] == "loop" and "lid" in r and "im" in r}
         loop_im.update({"verb/" + i[len("L:verb/"):]: r["im"] for i, r in g.recs.items() if i.startswith("L:verb/") and "im" in r})
-        index = {"schema": 1, "shards": count, "hash": "fnv1a32", "root": "code", "nodes": len(g.recs),
+        index = {"schema": 1, "shards": count, "shardFile": "{n}.gz.txt", "hash": "fnv1a32", "root": "code", "nodes": len(g.recs),
                  "images": len(self.images), "thumb": THUMB, "sheet": SHEET, "loopImages": loop_im,
                  "loopCode": {**{r["lid"]: len(r.get("r", {}).get("code", [])) for r in g.recs.values() if r["k"] == "loop" and "lid" in r},
                               **{"verb/" + i[len("L:verb/"):]: len(r.get("r", {}).get("code", [])) for i, r in g.recs.items() if i.startswith("L:verb/")}},

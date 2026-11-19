@@ -64,9 +64,9 @@ it may have been edited). The page keeps its notes database. Never publish a sec
 
 The map's **Code** rings read the Code Atlas files next to the page (`Docs/LoopAtlas/CODE.md`). To refresh them:
 `python3 Tools/Build/code_atlas.py build --strict` (about three minutes; or take the nightly `code-atlas` workflow
-artifact), then publish with `files` mapping `code/index.json`, `code/names.json`, every `code/shards/NNN.json.gz`
-(contentType `application/gzip`) and every `code/img/sheetNN.webp` from `Docs/LoopAtlas/code-out/`. One publish
-carries them all (about 150 files, 24 MB). Without the files the map still works; it just has no Code rings.
+artifact), then publish with `files` mapping `code/index.json`, `code/names.json`, every `code/shards/NNN.gz.txt`
+(gzip as base64 text, because artifacts serve no `.gz`) and every `code/img/sheetNN.webp` from `Docs/LoopAtlas/code-out/`. One publish
+carries them all (about 150 files, 32 MB). Without the files the map still works; it just has no Code rings.
 
 ## 7. Link a loop to its code
 
