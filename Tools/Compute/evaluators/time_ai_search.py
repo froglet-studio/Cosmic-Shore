@@ -337,6 +337,20 @@ GAMES = {
         "ctrl": lambda p: {"aiRailLead": float(p["aiRailLead"]), "aiRaceLineLead": float(p["aiRaceLineLead"])},
         "lead": None, "rows": [], "nose_gene": 1.5,
     },
+    "Angler": {
+        "mode": "LanternRun",
+        # AnglerLeapfrogAIPolicySO (the hull's own drive, AnglerAIBoostPolicy): when it paints and throws a group (lined up
+        # within throwAlignDegrees, objective at least minThrowDistance away, trigger held holdSeconds, throwIntervalSeconds
+        # between throws) and when it dashes to a group (at least minDashDistance, within dashAheadDegrees of the
+        # objective). Every other mode reads the same policy, so a winner ships as <name>_LanternRun / _Regatta variants.
+        # Lantern Run is a plain gate race (no aiNoseLead table) at the fleet lag, 1.5/s; the rate is searched through the
+        # judge and reaches Regatta through Resources/RaceLines/Angler_Regatta. Shipped from run1 (2026-11-19):
+        # AnglerAIBoostPolicy_LanternRun and LanternRunController.aiNoseLead (no lead, 8.25/s).
+        "assets": {i: POL + "AnglerAIBoostPolicy_LanternRun.asset" for i in (1, 2, 3, 4)},
+        "fields": {"throwAlignDegrees": (0.5, 30.0), "minThrowDistance": (0.0, 600.0), "holdSeconds": (0.05, 2.0),
+                   "throwIntervalSeconds": (0.0, 3.0), "minDashDistance": (1.0, 300.0), "dashAheadDegrees": (0.0, 120.0)},
+        "lead": None, "rows": [], "nose_gene": 8.25,
+    },
     "TigerMoth": {
         "mode": "Waystation",
         # Waystation drives the AI itself (WaystationController: the Fold toward far rings, the belly-aimed drop, and
