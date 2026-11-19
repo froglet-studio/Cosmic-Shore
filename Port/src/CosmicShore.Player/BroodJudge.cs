@@ -54,6 +54,15 @@ namespace CosmicShore.Player
             throw new InvalidOperationException("no hull is left for the host");
         }
 
+        /// <summary>The live vessel's trail volume multiplier as its prism controller evaluates it now (proves an override reached the spawn).</summary>
+        static double? TrailVolumeOf(IPlayer p)
+        {
+            var pc = p.Vessel?.VesselStatus?.VesselPrismController;
+            if (pc == null) return null;
+            var f = typeof(VesselPrismController).GetField("trailVolume", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            return f?.GetValue(pc) is ElementalFloat ef ? Math.Round(ef.EvaluateLive(p.Vessel.VesselStatus), 3) : null;
+        }
+
         static BroodRushController FindBrood() => CosmicShore.Engine.Object.FindAnyObjectByType<BroodRushController>();
 
         IEnumerator BroodMatches(GameDataSO gameData, VesselClassType hostHull, int intensity)
@@ -105,6 +114,8 @@ namespace CosmicShore.Player
                     ? $"M{rs.GetLevel(Element.Mass)} C{rs.GetLevel(Element.Charge)} S{rs.GetLevel(Element.Space)} T{rs.GetLevel(Element.Time)}"
                     : "?").ToArray();
                 var insideS = new float[ais.Count];
+                var speedSum = new float[ais.Count];
+                int samples = 0;
                 var claimS = new Dictionary<string, float>();
                 var timeline = new JsonArray();
                 var broodAt = new JsonArray();
@@ -119,8 +130,12 @@ namespace CosmicShore.Player
                     if (t >= nextSample)
                     {
                         nextSample = t + SampleEvery;
+                        samples++;
                         for (int k = 0; k < ais.Count; k++)
+                        {
+                            speedSum[k] += ais[k].Vessel?.VesselStatus?.Speed ?? 0f;
                             if (ais[k].Vessel?.Transform is { } tr && cell.IsInsideNucleus(tr.position)) insideS[k] += SampleEvery;
+                        }
                         string claim = cell.TryGetNucleusClaim(out var c) ? c.ToString() : "none";
                         claimS[claim] = (claimS.TryGetValue(claim, out var s0) ? s0 : 0f) + SampleEvery;
                         if (Math.Abs(t % 5f) < SampleEvery) timeline.Add(new JsonArray(Math.Round(t, 1), claim));
@@ -162,6 +177,17 @@ namespace CosmicShore.Player
                         ["super_shields"] = line.SuperShieldsBroken,
                         ["nucleus_s"] = Math.Round(insideS[k], 1),
                         ["start_levels"] = startLevels[k],
+                        // Where the books came from: the trail and abilities as the round stats count them, and how fast it flew.
+                        ["speed"] = Math.Round(samples > 0 ? speedSum[k] / samples : 0f, 1),
+                        ["blocks"] = p.RoundStats?.BlocksCreated,
+                        ["volume_created"] = p.RoundStats is { } rs0 ? Math.Round(rs0.VolumeCreated, 1) : null,
+                        ["stolen"] = p.RoundStats is { } rs1 ? Math.Round(rs1.VolumeStolen, 1) : null,
+                        ["destroyed"] = p.RoundStats is { } rs2 ? Math.Round(rs2.HostileVolumeDestroyed, 1) : null,
+                        ["crystals"] = p.RoundStats?.CrystalsCollected,
+                        ["trail_volume"] = TrailVolumeOf(p),
+                        ["ability_s"] = p.RoundStats is { } rs3 ? new JsonArray(Math.Round(rs3.Button1AbilityActiveTime, 1), Math.Round(rs3.Button2AbilityActiveTime, 1),
+                            Math.Round(rs3.Button3AbilityActiveTime, 1), Math.Round(rs3.LeftStickAbilityActiveTime, 1), Math.Round(rs3.RightStickAbilityActiveTime, 1),
+                            Math.Round(rs3.FullSpeedStraightAbilityActiveTime, 1)) : null,
                     });
                 }
                 var hostLine = host != null ? books.Get(host.Name) : default;
