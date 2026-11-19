@@ -262,7 +262,7 @@ exists, otherwise the base asset the prefab wires.
 
 | Hull | Regatta flies | Trained in its Time game | Verdict |
 |---|---|---|---|
-| Dolphin | `_Regatta` = the Switchback drive (from this change) | Switchback | Fixed; Drift Charge re-fit to x1.25 -> x2.76 |
+| Dolphin | `_Regatta` = the Switchback drive (from this change) | Switchback | Fixed; Drift Charge re-fit to x1.25 -> x2.76, then rest x1.375 (2026-11-19 card 77.3 -> 74.6 s, L5 65.0 s, 15 seeds) |
 | Sparrow | `_Regatta` = the Breakwater drive (2026-11-19) | Breakwater (#1846; holds up in the real game) | Fixed; afterburner re-fit to x1.75 -> x2.15 |
 | Rhino | `_Regatta` = base + cornerSpeed 333 | Headlong | Partly trained; the Headlong genes predate the #2233 fuel tank |
 | Swordfish | the Rhino's `_Regatta` (shared asset) | Spearline flies the Rhino's Headlong genes | Never trained for the Swordfish |
