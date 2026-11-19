@@ -9,7 +9,7 @@ SCENE = dict(
           " the frame."),
     side='right',
     source='profession: activist',
-    seen=('the poncho is painted in clashing stripes and zigzags', 'the winged badge is plain brass',),
+    seen=('the denim jacket is covered in small round pins', 'the knotted cloth on one sleeve is bright',),
     fused=("Dellorin is an axolotl grown into a puffin. The head is an axolotl's, broad and smooth with soft wet "
            "pale-pink skin and a wide gentle face, three feathery pink-red gills fanned out on each side behind the "
            "jaw, and the axolotl's lips grow forward and harden into the puffin's deep striped bill, red, orange and"
@@ -22,6 +22,6 @@ SCENE = dict(
            "glowing streamers of light. No one else is there."),
     light=("Warm dusk light from the left, low and gold, the gills glowing translucent; the water reflecting the "
            "sky; the marker's fresh paint bright."),
-    wear=("Paint is spattered on the poncho and the pink hands; the dinghy's gunwale is chipped; the gills are flecked "
-          "with white paint."),
+    wear=("Paint is spattered on the jacket and the pink hands; the dinghy's gunwale is chipped; the gills are "
+          "flecked with white paint."),
 )

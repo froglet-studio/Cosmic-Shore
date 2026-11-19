@@ -10,12 +10,12 @@ SCENE = dict(
           "hips up, filling most of the height of the frame."),
     side='left',
     source='history: "was raised in a lighthouse" (the game\'s Upbringings)',
-    seen=('the smock is canvas, trimmed in ruby magenta', 'the brass spyglass is dented at the rim',),
+    seen=('the expedition jacket is sun-bleached khaki', 'the brass spyglass is dented at the rim',),
     fused=("Lulaane is a badger grown into a koi. The head is a badger's, broad and low, the white face split by two"
            " black stripes that run back over the crown, and from the corners of the mouth hang the koi's two soft "
            "whiskery barbels. Down the neck the coarse grey fur grows shorter and flatter until it is large glossy "
            "koi scales, white patched with orange and black, and the koi's long veiled tail with its trailing fin "
-           "grows from the base of the spine and hangs below the smock's hem, swaying in the wind."),
+           "grows from the base of the spine and hangs below the jacket's hem, swaying in the wind."),
     doing=("Lulaane leans out over the gallery rail with a brass spyglass to one eye, the other hand gripping the "
            "rail, following the beam out to where it lights a line of reef nobody has charted. The barbels lift in "
            "the wind. The visible eye is narrowed and the mouth just open: absorbed, hungry to know."),
@@ -24,6 +24,6 @@ SCENE = dict(
            "swell. Two small moons hang low in a thin green haze. No one else is there."),
     light=("The lighthouse beam is the key light, a hard white blade from behind the figure that rims the stripes "
            "and the scales and lights the reef far off; the lamp room behind glows warm; the rest is blue-black."),
-    wear=("Salt has dried white on the smock's shoulders; the spyglass's leather is rubbed through at the grip; one "
-          "scale on the neck is chipped."),
+    wear=("Salt has dried white on the jacket's shoulders; the spyglass's leather is rubbed through at the grip; one"
+          " scale on the neck is chipped."),
 )

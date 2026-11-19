@@ -13,7 +13,7 @@ SCENE = dict(
         'a short swept-back undercut of dark human hair, leaving the antennae clear',
         'none, no human hair anywhere on the head',
     ),),
-    seen=('the wrap tunic is ink-blue', 'the lockpicks are lined along the lapel', 'the half-mask hangs on its cord',),
+    seen=('the jacket is close-fitting charcoal, the hood pushed back',),
     fused=("Ithax is an armadillo grown into a mantis. The head is an armadillo's, long-snouted and narrow, with the"
            " armadillo's banded leathery shell plates over the crown and the small upright ears, the bands running "
            "on down the back of the neck; and from under the last band at the shoulders the mantis's long narrow "
@@ -25,5 +25,5 @@ SCENE = dict(
            "lamps turning; beyond the door, the bright blur of the room being left. No one else is there."),
     light=("A hard flash from the camera freezing the figure; red turning warning lamps streaking behind; the "
            "corridor otherwise dark."),
-    wear='The tunic is torn at the elbow; the shell bands are scraped bright; one wing is nicked at the edge.',
+    wear='The jacket is torn at the elbow; the shell bands are scraped bright; one wing is nicked at the edge.',
 )

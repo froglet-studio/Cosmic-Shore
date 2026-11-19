@@ -13,7 +13,7 @@ SCENE = dict(
         'a cropped sandy-blond human crew cut, leaving the antlers clear',
         'none, no human hair anywhere on the head',
     ),),
-    seen=("the tracker's vest is quilted grey", 'the collar has black-and-yellow hazard bands',),
+    seen=('the stalking cape is moss-green oilskin', 'the coil of line hangs across the chest',),
     fused=("Olone is a heron grown into a moose. The head is a heron's, slate-grey and white with a long yellow "
            "dagger bill and a black stripe over the eye, and from the head above the eyes, where antlers grow, rise "
            "the moose's two broad flat palmate antlers. Down the long neck the grey feathers coarsen into the "
@@ -26,6 +26,6 @@ SCENE = dict(
            "faint moons in the paling sky. No one else is there."),
     light=("Cold blue dawn light from a sky still dark at the top; the first warm line on the mountain peaks; the "
            "door under the ice faintly lit from beneath by a glow of its own."),
-    wear=("Frost is thick on the antlers and the bell; the vest's quilting is torn at one shoulder; the bill's tip "
-          "is chipped from the ice."),
+    wear=("Frost is thick on the antlers and the bell; the cape is torn at one shoulder; the bill's tip is chipped "
+          "from the ice."),
 )

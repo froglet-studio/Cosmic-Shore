@@ -9,7 +9,7 @@ SCENE = dict(
     side='left',
     source=("hobby: \"name every vessel they fly, and apologise to it after a hard landing\" (the game's Quirks; put "
             "it in the third person)"),
-    seen=('the patchwork jacket is faded reds and greens', 'the pack frame is wicker',),
+    seen=("the fisherman's sweater is ochre knit under oilcloth braces",),
     fused=("Mamaola is a puffin grown into a moose. The head is a puffin's, round, white-faced and black-capped, "
            "with the puffin's bright striped red-orange-and-grey bill, and from the head above the eyes, where "
            "antlers grow, rise the moose's two short young antlers still in soft brown velvet, a vine of small "
@@ -23,6 +23,6 @@ SCENE = dict(
            " sky. No one else is there."),
     light=("Soft even overcast light, no shadows; the glass flowers catching it in small bright points and faint "
            "colours; the velvet antlers soft."),
-    wear=("Broken glass petals are caught in the jacket; the vessel's nose is dented and scratched; the pack frame "
-          "has lost a strap."),
+    wear=("Broken glass petals are caught in the sweater; the vessel's nose is dented and scratched; one brace has "
+          "lost its button."),
 )

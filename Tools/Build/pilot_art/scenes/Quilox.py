@@ -9,7 +9,7 @@ SCENE = dict(
           "crouching, filling half the height of the frame."),
     side='right',
     source='profession: hunter',
-    seen=("the trapper's jacket is russet leather", 'the sundial brooch is small brass',),
+    seen=("the tracker's vest is quilted grey", 'the bone toggle hangs on a cord',),
     fused=("Quilox is a pelican grown into an axolotl. The head is a pelican's, with the long flat bill and the "
            "great soft throat pouch beneath it, but the white feathers of the head give way at the cheeks to the "
            "axolotl's smooth wet pink skin, and the pouch and the bare skin round the eyes are the same soft pink. "
@@ -23,6 +23,6 @@ SCENE = dict(
            "it. No one else is there."),
     light=("The small lantern on the ground, warm and low, lighting the face and the tracks from below; the faint "
            "blue-green glow of the mud; the cave beyond falls to black."),
-    wear=("The jacket's knees are caked with glowing mud; the pouch is beaded with water; the gills are dusted with "
-          "pollen."),
+    wear=("The breeches' knees are caked with glowing mud; the pouch is beaded with water; the gills are dusted with"
+          " pollen."),
 )

@@ -10,7 +10,7 @@ SCENE = dict(
           "height of the frame."),
     side='right',
     source='profession: diplomat',
-    seen=('the stole is in two colours over a dove-grey jacket', 'the treaty ribbon is folded and plain',),
+    seen=('the long coat is charcoal', 'the treaty seal hangs on a plain chain',),
     fused=("Belrenro is a cuttlefish grown into a gecko. The head is a cuttlefish's, smooth and rounded, its skin "
            "rippling with slow bands of colour, and the short soft cuttlefish arms ring the mouth where the lips "
            "are. Down the neck the shimmering skin settles into fine bead-like gecko scales of sand and olive, the "
@@ -25,6 +25,6 @@ SCENE = dict(
            "is there."),
     light=("Soft level first light from the left, long thin shadows across the salt, the sky pale; the skin's colour"
            " shimmer catches it like oil on water."),
-    wear=("The stole's hem is grey with salt dust; one chair leg has sunk into the crust; the jacket's sleeve is "
+    wear=("The coat's hem is grey with salt dust; one chair leg has sunk into the crust; the coat's sleeve is "
           "creased from a long ride."),
 )

@@ -8,7 +8,7 @@ SCENE = dict(
           "behind. The figure is seen from the knees up, sitting on a rock, filling most of the height of the frame."),
     side='right',
     source='history: "was apprenticed to a cartographer" (the game\'s Upbringings)',
-    seen=('the expedition jacket is sun-bleached khaki', 'the epaulettes are braided',),
+    seen=('the smock is canvas with rolled sleeves',),
     fused=("Cakoola is a yak growing into a jellyfish. The head is a yak's, broad with a deep muzzle and two long "
            "smooth dark horns sweeping out and up, and the yak's long black-brown hair hangs from the brow, the "
            "nape, the throat and the shoulders, growing finer and clearer toward its ends by degrees until the last "
@@ -21,6 +21,6 @@ SCENE = dict(
            " else is there."),
     light=("The hair's own soft blue glow lighting the map, the hands and the face from below; starlight on the "
            "canyon rim; the rest deep blue-black."),
-    wear=("Ink is smudged on the gloves; the jacket's pockets bulge and fray; dust is caught in the hair's dark "
+    wear=("Ink is smudged on the gloves; the smock's pockets bulge and fray; dust is caught in the hair's dark "
           "roots."),
 )

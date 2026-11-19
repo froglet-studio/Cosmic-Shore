@@ -9,7 +9,7 @@ SCENE = dict(
           "thirds of the height of the frame."),
     side='right',
     source='hobby: "refuse to fly on an empty stomach" (the game\'s Quirks; put it in the third person)',
-    seen=('the work vest is heavy tan canvas', 'the welding goggles hang on the chest', 'the lunch tin is battered',),
+    seen=('the coverall is rust-orange', 'the lunch tin is battered',),
     fused=("Fenx is a hedgehog grown into a wolf. The face is a hedgehog's, small and pointed with a black button "
            "nose, the cream fur of the face fringed by a crown of short brown-and-cream spines that run back over "
            "the head and lengthen down the neck, where the spines soften row by row into the wolf's thick grey ruff,"
@@ -22,5 +22,5 @@ SCENE = dict(
            "one else is there."),
     light=("High clear midday light from above and behind, rimming the spines; the city far below soft in haze; the "
            "steel warm and bright."),
-    wear='The vest is spattered with grey weld spatter; crumbs are caught in the ruff; one goggle lens is cracked.',
+    wear='The coverall is spattered with grey weld spatter; crumbs are caught in the ruff; the rivet gauge is bent.',
 )

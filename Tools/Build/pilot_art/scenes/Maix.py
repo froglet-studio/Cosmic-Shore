@@ -9,7 +9,7 @@ SCENE = dict(
           " of the height of the frame."),
     side='right',
     source='history: "grew up sorting crystals in a market stall" (the game\'s Upbringings)',
-    seen=('the baldric is scuffed black leather', 'the brass eyepiece is etched with fine lines',),
+    seen=('the sea coat is faded blue', 'the brass eyepiece is etched with fine lines',),
     fused=("Maix is a lynx grown into a mantis. The face is a lynx's, broad with a short muzzle and tall "
            "black-tufted ears, the tawny coat spotted dark, and from the brow above the eyes rise the mantis's two "
            "long fine antennae. Down the neck the fur gives way to smooth leaf-green mantis armour in neat "
@@ -23,5 +23,5 @@ SCENE = dict(
            "spires glowing red. No one else is there."),
     light=("One bare bulb hanging low over the table, hard and warm, the crystals glowing from below in their own "
            "colours; deep shadow everywhere else."),
-    wear="The shirt's sleeves are grey with crystal dust; the baldric is cracked; one antenna is bent at the tip.",
+    wear="The coat's sleeves are grey with crystal dust; the scarf is frayed; one antenna is bent at the tip.",
 )
