@@ -308,6 +308,13 @@ namespace CosmicShore.Gameplay
                     CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
                         $"[FLOW-5] [ServerVesselInit] Spawn event for {ownerClientId} " +
                         "resolved to an already-claimed server-owned player - nothing to do.");
+                else if (IsOwnersPlayerAlreadyProcessed(ownerClientId))
+                    // ProcessPreExistingPlayers can raise the same human twice: stage 1 from
+                    // gameData.Players, stage 2 from ConnectedClients, both before the delay above
+                    // lets the first one mark the player processed. The first did the work.
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                        $"[FLOW-5] [ServerVesselInit] Spawn event for {ownerClientId} " +
+                        "resolved to a player already processed - nothing to do.");
                 else
                     CSDebug.LogWarning($"[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL");
                 return;
@@ -897,6 +904,7 @@ namespace CosmicShore.Gameplay
                 vc.NetworkObject.ChangeOwnership(NetworkManager.ServerClientId);
 
             ConfigureDepartedPilotAI(vessel);
+            ArmModeSteering(player);
             vessel.ToggleAIPilot(true);
 
             // Say it out loud. A ship that keeps flying under new management is LESS confusing than
@@ -904,6 +912,20 @@ namespace CosmicShore.Gameplay
             // differently reads as a cheat or a bug. Fired on the server; the toast feed is
             // per-peer, so this announces on the host and the ClientRpc below covers the rest.
             AnnouncePilotHandedToAI(player.NetName.Value.ToString(), player.Domain);
+        }
+
+        /// <summary>
+        /// Give an adopted hull the mode's own AI steering (<see cref="IAIPilotArming"/>: every gate race), as
+        /// <c>PilotControl</c> does for a hull handed over by hand. A gate race arms its AI seats once, when the
+        /// countdown ends, so a pilot who left after that flew the platform autopilot's own seeking: in Switchback it
+        /// circled through the cell centre and never threaded a gate (two-player test, 2026-11-15). A mode without
+        /// the interface keeps the platform autopilot.
+        /// </summary>
+        static void ArmModeSteering(IPlayer player)
+        {
+            foreach (var controller in FindObjectsByType<MiniGameControllerBase>(FindObjectsSortMode.None))
+                if (controller is IAIPilotArming arming && arming.ArmAIPilot(player))
+                    return;
         }
 
         void HandleClientConnectedForRejoin(ulong clientId)
@@ -948,9 +970,14 @@ namespace CosmicShore.Gameplay
             }
 
             // Tell the returning client which pair is now its own (it may have paired it as someone else's), then
-            // send the roster so every other pair resolves too.
+            // send the roster so every other pair resolves too. The turn state rides along: the client loaded the
+            // scene after the countdown's StartTurn went out, so without it the client would start the match over
+            // (cinematic, Ready) while everyone else is racing.
+            bool turnRunning = gameData.IsTurnRunning;
+            float turnElapsed = turnRunning ? Time.time - gameData.TurnStartTime : 0f;
             if (clientPlayerVesselInitializer != null && clientPlayerVesselInitializer.IsSpawned)
-                clientPlayerVesselInitializer.SeatReclaimed_ClientRpc(player.NetworkObjectId, new ClientRpcParams
+                clientPlayerVesselInitializer.SeatReclaimed_ClientRpc(player.NetworkObjectId, turnRunning, turnElapsed,
+                    gameData.RoundsPlayed, gameData.TurnsTakenThisRound, new ClientRpcParams
                 {
                     Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
                 });
@@ -1096,6 +1123,15 @@ namespace CosmicShore.Gameplay
                 return null;
 
             return player;
+        }
+
+        bool IsOwnersPlayerAlreadyProcessed(ulong ownerClientId)
+        {
+            var nm = NetworkManager.Singleton;
+            return nm != null
+                   && nm.ConnectedClients.TryGetValue(ownerClientId, out var client)
+                   && client.PlayerObject != null
+                   && _processedPlayers.Contains(client.PlayerObject.NetworkObjectId);
         }
 
         /// <summary>

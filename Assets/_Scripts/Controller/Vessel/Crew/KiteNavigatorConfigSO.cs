@@ -169,13 +169,18 @@ namespace CosmicShore.Gameplay
         [Header("Element scaling and level-5 upgrades (the vessel pass, Garrett, 2026-11-13)")]
         [Tooltip("CHARGE: kite power per Charge loop (vessel contract: Charge = threat). Multiplies chargePetals and chargeCap: " +
                  "x1 at Charge 0 to x2 at Charge 10, so a charged Wrasse's rams take twice the petals.")]
-        [SerializeField] ElementalFloat chargePetalScale = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 1f);
+        [SerializeField] ElementalFloat chargePetalScale = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.5f);
         [Tooltip("MASS: the cluster's size (vessel contract: Mass = size). Multiplies massPrisms and massPrismCap: x1 at Mass 0 " +
                  "to x2 at Mass 10.")]
-        [SerializeField] ElementalFloat massClusterScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 1f);
+        [SerializeField] ElementalFloat massClusterScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
         [Tooltip("SPACE: the blast's reach (vessel contract: Space = reach). Multiplies spaceMaxScale and spaceMaxScaleCap: x1 at " +
                  "Space 0 to x2 at Space 10.")]
-        [SerializeField] ElementalFloat spaceReachScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 1f);
+        [SerializeField] ElementalFloat spaceReachScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 0.5f);
+        [Tooltip("TIME: the boost time a Time loop banks (vessel contract: Time = tempo). Multiplies the saved boosts per loop " +
+                 "and timeBoostCap: x1 at Time 0 to x2 at Time 10, so a Time-heavy Wrasse banks twice the boost for the pilot. " +
+                 "Replaced the hull's BoostSpeedMultiplier, a top-speed placeholder nothing on the Saved Boosts card was about " +
+                 "(2026-11-18).")]
+        [SerializeField] ElementalFloat timeBankScale = ElementalFloat.Multiplier(1f, 2f, Element.Time, 0.5f);
         [Tooltip("CHARGE level-5 'Crystal Steal': a ram steals the rival's petals instead of knocking them loose. None = never.")]
         [SerializeField] Element crystalStealUpgradeElement = Element.Charge;
         [Tooltip("MASS level-5 'Shielded Clusters': Mass clusters are laid shielded. None = never.")]
@@ -412,6 +417,7 @@ namespace CosmicShore.Gameplay
         public ElementalFloat ChargePetalScale => chargePetalScale;
         public ElementalFloat MassClusterScale => massClusterScale;
         public ElementalFloat SpaceReachScale => spaceReachScale;
+        public ElementalFloat TimeBankScale => timeBankScale;
         public float TailwindBoostScale => tailwindBoostScale;
 
         static float Live(ElementalFloat f, IVesselStatus status) => f != null ? Mathf.Max(0f, f.EvaluateLive(status)) : 1f;
@@ -428,6 +434,10 @@ namespace CosmicShore.Gameplay
         public float SpaceMaxScaleFor(IVesselStatus status) => spaceMaxScale * Live(spaceReachScale, status);
         /// <summary>The largest blast for <paramref name="status"/> (spaceMaxScaleCap x Space).</summary>
         public float SpaceMaxScaleCapFor(IVesselStatus status) => spaceMaxScaleCap * Live(spaceReachScale, status);
+        /// <summary>Saved boosts a one-mote Time loop banks for <paramref name="status"/> (1 x Time); a loop of n grows it by growth^(n-1).</summary>
+        public float SavedBoostsFor(IVesselStatus status) => Live(timeBankScale, status);
+        /// <summary>The most boost (s) <paramref name="status"/>'s pilot can hold from the navigator (timeBoostCap x Time).</summary>
+        public float TimeBoostCapFor(IVesselStatus status) => timeBoostCap * Live(timeBankScale, status);
         /// <summary>How long one saved boost runs for <paramref name="status"/>: longer under Tailwind.</summary>
         public float BoostSecondsFor(IVesselStatus status) =>
             timeBoostSeconds * (TailwindActive(status) ? tailwindBoostScale : 1f);

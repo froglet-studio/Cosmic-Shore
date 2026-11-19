@@ -320,8 +320,29 @@ def cast_errors(cast=None):
     return errors
 
 
+ROSTER_PLAN = "Docs/Pilots/art/roster/plan.json"
+
+
+def roster():
+    """The new pilots Tools/Build/pilot_art/roster.py planned so every player can own a unique crew (Garrett,
+    2026-11-18), in catalog() shape. They are not catalog pilots (no avatar id): a crew holds them."""
+    path = os.path.join(ROOT, ROSTER_PLAN)
+    if not os.path.exists(path):
+        return []
+    import json
+    with open(path, encoding="utf-8") as fh:
+        plan = json.load(fh)
+    return [(p["word"], p["person"], tuple(p["heritage"]), p["faction"], p["callsign"], dict(p.get("look", {})))
+            for p in plan["pilots"]]
+
+
+def cast_all():
+    """catalog() and the roster's pilots: every pilot a scene can be written for."""
+    return catalog() + roster()
+
+
 def brief_of(word):
-    for w, person, animals, faction, callsign, look in catalog():
+    for w, person, animals, faction, callsign, look in cast_all():
         if w.lower() == word.lower():
             return bust.compose(animals, faction, person, callsign, **look)
     raise SystemExit(f"{word} is not in the catalog (creator.py list)")
@@ -461,7 +482,7 @@ def roll(callsign, seed):
         names.pick(cs_array(text, "GivenEnds"))
     given = given[:1].upper() + given[1:].lower()
     family = names.pick(cs_array(text, "FamilyFronts")) + names.pick(cs_array(text, "FamilyBacks"))
-    pool = [a for a in brief.enum_members(brief.ANIMAL_SPECIES_CS, "AnimalSpecies") if a != "None"]
+    pool = brief.rollable_animals()
     her = SeededRandom.for_(seed, "pilot.species")
     first = her.next(len(pool))
     second = her.next(len(pool) - 1)

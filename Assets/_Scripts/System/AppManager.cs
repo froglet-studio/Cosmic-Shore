@@ -384,7 +384,10 @@ namespace CosmicShore.Core
 
         void TryResolveManager<T>(ref T field) where T : Component
         {
-            if (field == null)
+            // The root container installs from the prefab ASSET, where a reference to one of the
+            // prefab's own components (SceneTransitionManager) is the asset's copy: never awake,
+            // and unable to run a coroutine. Only a live object is a usable manager.
+            if (field == null || !field.gameObject.scene.IsValid())
             {
                 field = FindAnyObjectByType<T>();
             }
@@ -393,8 +396,34 @@ namespace CosmicShore.Core
                 EnsurePersistent(field);
         }
 
+        /// <summary>
+        /// Binds the authentication facade. These bindings are installed into more than one container (the root
+        /// scope from the prefab asset, the Bootstrap scene's scope from its instance), and a Singleton factory
+        /// is single per container only, so the factory hands out <see cref="AuthenticationServiceFacade.Shared"/>:
+        /// two facades meant two competing UGS sign-ins at boot (Docs/Multiplayer/BUGS.md, "already signing in").
+        /// </summary>
+        internal static void RegisterAuthenticationFacade(ContainerBuilder builder,
+            AuthenticationDataVariable authenticationDataVariable, bool allowLog)
+        {
+            builder.RegisterFactory(
+                _ => AuthenticationServiceFacade.Shared(authenticationDataVariable, allowLog),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+        }
+
         public void InstallBindings(ContainerBuilder builder)
         {
+            // Bindings belong to the ROOT container only, which Reflex builds from the prefab asset
+            // (ReflexSettings.RootScopes). The instance in the Bootstrap scene sits under the same
+            // prefab's ContainerScope, so it is asked to install too. Installing there gave every
+            // lazy singleton a second copy in the Bootstrap scene's container: this AppManager and
+            // PartyServices used one set and every later scene the other, the second
+            // ApplicationStateMachine's constructor put the app state back to None, the second
+            // AuthenticationServiceFacade's cleared the sign-in mirror, and a disposable service
+            // eagerly resolved here was disposed with the Bootstrap scene.
+            if (gameObject.scene.IsValid()) return;
+
             // Best-effort early resolution. Reflex may call InstallBindings
             // before Awake, so we cannot rely on Awake alone.
             TryResolveManagersEarly();
@@ -438,11 +467,7 @@ namespace CosmicShore.Core
             // ── Pure C# service singletons ───────────────────────────────
             // Created by factory, no scene object needed. Lazy so they are
             // only instantiated when first injected.
-            builder.RegisterFactory(
-                _ => new AuthenticationServiceFacade(authenticationDataVariable, authenticationWithLog),
-                lifetime: Lifetime.Singleton,
-                resolution: Resolution.Lazy
-            );
+            RegisterAuthenticationFacade(builder, authenticationDataVariable, authenticationWithLog);
 
             builder.RegisterFactory(
                 _ => new NetworkMonitor(networkMonitorDataVariable),
@@ -575,9 +600,8 @@ namespace CosmicShore.Core
             );
 
             // Reconnect (Docs/OFFLINE_MODE.md §7): re-runs the boot chain in place so an
-            // offline session can come back online with no app restart. Captures the
-            // serialized SceneTransitionManager directly - like ApplicationStateMachine
-            // above - so an un-wired reference degrades to a plain scene load.
+            // offline session can come back online with no app restart. A missing
+            // SceneTransitionManager resolves to null, which degrades to a plain scene load.
             builder.RegisterFactory(
                 c => new ReconnectService(
                     c.Resolve<GameDataSO>(),
@@ -585,7 +609,7 @@ namespace CosmicShore.Core
                     c.Resolve<AuthenticationServiceFacade>(),
                     c.Resolve<INetworkTransitionService>(),
                     c.Resolve<ApplicationStateMachine>(),
-                    sceneTransitionManager,
+                    c.Resolve<SceneTransitionManager>(),
                     c.Resolve<OfflineModeService>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy

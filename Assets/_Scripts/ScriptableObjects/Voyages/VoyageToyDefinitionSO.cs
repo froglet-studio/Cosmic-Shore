@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
@@ -59,6 +60,60 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(200f), Tooltip("An AI wingmate further than this from the Ark is brought back to its flank.")]
         float wingmateLeash = 1600f;
 
+        [Header("Voyage - straying from the Ark")]
+        [SerializeField, Range(1f, 3f), Tooltip("How far the pilot may range from the Ark, in radii of the cell it is at " +
+                                                "(Shombith 2026-11-17). The Ark anchors at a cell's core, so 1 is that " +
+                                                "cell's membrane; 1.25 at 2.5x cells is about 3750 u. Past it a 5-4-3-2-1 " +
+                                                "warning runs; still out when it ends, the pilot is set back in their " +
+                                                "formation seat and loses every crystal they carry unbanked.")]
+        float strayRadiusCells = 1.25f;
+
+        [SerializeField, Range(1f, 15f), Tooltip("Seconds of warning before a pilot past the stray radius is recalled.")]
+        float strayCountdownSeconds = 5f;
+
+        [SerializeField, Tooltip("Where the squad sails beside the Ark - one seat off each side, one over its back - and how " +
+                                 "the intro launches them there from the hangar (Shombith 2026-11-17).")]
+        ArkFormationSettings arkFormation = new();
+
+        [Header("Voyage - the starter squad")]
+        [SerializeField, Tooltip("The name of the squad a player with no squad is given (Shombith, 2026-11-16: the board's " +
+                                 "jobs come from the active squad's three pilots only, so every player needs one). Empty " +
+                                 "= the squad book's default name.")]
+        string starterSquadName = "Starter Squad";
+
+        [SerializeField, Tooltip("The starter squad's three seats, leader first: vessel, element and pilot id (one pilot " +
+                                 "per seat, each of a different callsign, so the board offers three different jobs). The " +
+                                 "defaults are Garrett's three archetypes (Docs/Voyages/HANDOFF.md section 8.4): a Guardian " +
+                                 "in Charge with TALON, a Cultivator Squirrel in Mass with ANVIL, a Destroyer Dolphin in " +
+                                 "Space with CITADEL.")]
+        SquadSlot[] starterSeats =
+        {
+            new(VesselClassType.Sparrow, Element.Charge, "pilot.callsign.talon"),
+            new(VesselClassType.Squirrel, Element.Mass, "pilot.callsign.anvil"),
+            new(VesselClassType.Dolphin, Element.Space, "pilot.callsign.citadel"),
+        };
+
+        [Header("Voyage - the Ark's first line-up")]
+        [SerializeField, Tooltip("The vessels the Ark page seats on a player's first voyage, before they have picked any: " +
+                                 "yours first (the port seat), then the AI wingmates (starboard, then on top). After the " +
+                                 "first pick the Ark opens on the player's last line-up instead (VoyageSeatRecord.Remember). " +
+                                 "Shombith, 2026-11-17: you in the Sparrow, AI in the Butterfly (the Tiger Moth flies its " +
+                                 "airframe) and AI in the Serpent.")]
+        VesselClassType[] firstLineUp = { VesselClassType.Sparrow, VesselClassType.TigerMoth, VesselClassType.Serpent };
+
+        [Header("Voyage - which voyages can sail (Milestone 1)")]
+        [SerializeField, Tooltip("Lock the crew's job voyages, except the ones listed below (Shombith, 2026-11-16: make one " +
+                                 "voyage good before the others open). The Ark escort is never locked. Off = every job sails.")]
+        bool lockJobs = true;
+
+        [SerializeField, Tooltip("The job templates that still sail while jobs are locked (VoyageJob.TemplateId). Milestone 1 " +
+                                 "keeps Sail home (job.return) and the crew's Crystal Run (job.raid.crystals, authored in " +
+                                 "voyage_slice.json). Add a template id here to open that job.")]
+        string[] openJobs = { VoyageRules.ReturnJobId, CrystalRunJobId };
+
+        /// <summary>The Milestone 1 crew voyage, Crystal Run (Shombith, 2026-11-16: steal elemental crystals on the way).</summary>
+        public const string CrystalRunJobId = "job.raid.crystals";
+
         [Header("Voyage - arrivals")]
         [SerializeField, Min(80f), Tooltip("How far from the Ark a vault shell or a wreck stands.")]
         float findDistance = 520f;
@@ -86,6 +141,208 @@ namespace CosmicShore.ScriptableObjects
 
         [SerializeField, Min(100f), Tooltip("How far abeam of the Ark a rival crew's hulls stand at a stop.")]
         float rivalAbeam = 420f;
+
+        [Header("Voyage - the escort's pay (Docs/Voyages/CRYSTAL_RUN.md section 5)")]
+        [SerializeField, Min(0), Tooltip("Crystals an Ark escort that came through pays per difficulty step: owed at the last " +
+                                         "world, banked when the Ark docks home.")]
+        int escortCrystalsPerDifficulty = 30;
+
+        [SerializeField, Tooltip("The element the escort's pay is in.")]
+        Element escortRewardElement = Element.Omni;
+
+        [Header("Voyage - the scoreboard's score (a seat's score is the sum of these)")]
+        [SerializeField, Min(0), Tooltip("Score per crystal a seat stole.")]
+        int scorePerCrystal = 10;
+
+        [SerializeField, Min(0), Tooltip("Score per creature a seat felled.")]
+        int scorePerKill = 5;
+
+        [SerializeField, Min(0), Tooltip("Extra score per creature felled near the Ark (hull the seat saved).")]
+        int scorePerGuard = 15;
+
+        [Header("Voyage - HUD sounds (shipped empty: an unwired slot is a visible TODO)")]
+        [SerializeField, Tooltip("A toast that marks an event (setting off, a calm cell, the final cell).")]
+        FMODUnity.EventReference toastEventSound;
+
+        [SerializeField, Tooltip("A toast that marks a threat (a hostile cell, an assault, the breach line close).")]
+        FMODUnity.EventReference toastThreatSound;
+
+        [SerializeField, Tooltip("A toast that marks something good (the goal reached, an assault repelled).")]
+        FMODUnity.EventReference toastGoodSound;
+
+        [SerializeField, Tooltip("The end-of-voyage scoreboard coming up.")]
+        FMODUnity.EventReference scoreboardSound;
+
+        [SerializeField, Tooltip("The Ark's horn: it weighs anchor soon (the raid window is closing).")]
+        FMODUnity.EventReference arkHornSound;
+
+        [Header("Voyage - Crystal Run raid windows (P1, Shombith 2026-11-16)")]
+        [SerializeField, Min(0f), Tooltip("Seconds the Ark anchors in a HOSTILE cell of a Crystal Run before it sails on. " +
+                                          "0 = it does not stop.")]
+        float raidAnchorHostileSeconds = 30f;
+
+        [SerializeField, Min(0f), Tooltip("Seconds the Ark anchors in a CALM cell of a Crystal Run before it sails on. " +
+                                          "0 = it does not stop.")]
+        float raidAnchorCalmSeconds = 30f;
+
+        [SerializeField, Min(0), Tooltip("The Ark anchors at a cell only when it holds at least this many lifeforms (every " +
+                                         "lifeform carries one crystal); a cell with less is sailed through (Shombith " +
+                                         "2026-11-17: \"the ark stops at cells where there is literally nothing to " +
+                                         "collect\"). 0 = anchor at every cell.")]
+        int raidAnchorMinLife = 6;
+
+        [SerializeField, Min(0f), Tooltip("Seconds before the Ark sails that its horn sounds and the window-closing toast shows.")]
+        float raidAnchorWarnSeconds = 10f;
+
+        [Header("Voyage - Crystal Run carried crystals (P6, Shombith 2026-11-16)")]
+        [SerializeField, Tooltip("On: a crystal a seat takes is CARRIED until that seat flies within the bank radius of the " +
+                                 "Ark, and a hit from a hostile danger prism spills everything it carries back into the " +
+                                 "sea. Off: a crystal counts the moment it is taken.")]
+        bool raidCrystalsAtRisk = true;
+
+        [SerializeField, Min(10f), Tooltip("How close to the Ark's centre, u, a seat banks what it carries.")]
+        float raidBankRadius = 180f;
+
+        [SerializeField, Min(0f), Tooltip("After a spill, seconds before the same seat can spill again.")]
+        float raidSpillCooldownSeconds = 1.5f;
+
+        [Header("Voyage - Crystal Run hull raids and the way home (Shombith 2026-11-16, round 3)")]
+        [SerializeField, Range(0f, 1f), Tooltip("Share of a CALM cell's fauna goal picks that go for the Ark in a Crystal " +
+                                                "Run (hostile cells use the Ark escort tier's share). 0 = calm cells leave " +
+                                                "the Ark alone.")]
+        float raidCalmLureShare = 0.2f;
+
+        [SerializeField, Range(0f, 1f), Tooltip("Below this share of its hull, the Ark loses banked crystals one by one. " +
+                                                "0 = it never does.")]
+        float raidHullLeakBelow = 0.3f;
+
+        [SerializeField, Min(0.1f), Tooltip("Seconds between two lost crystals while the hull is below the leak line.")]
+        float raidHullLeakSeconds = 1.5f;
+
+        [SerializeField, Min(1f), Tooltip("On the way home, every cell's lure share is multiplied by this (calm cells " +
+                                          "start from the calm share), and the fauna's assaults may come in any cell. 2 drew most " +
+                                          "of a cell onto the Ark, beside the camera, on the way home: 2 FPS in the editor " +
+                                          "(Shombith 2026-11-17), so 1.25.")]
+        float homewardLureFactor = 1.25f;
+
+        [SerializeField, Min(0f), Tooltip("On the way home, seconds between two waves of raiders in the open water " +
+                                          "between cells. 0 = no raiders.")]
+        float homewardRaiderSeconds = 12f;
+
+        [SerializeField, Min(0), Tooltip("Raiders in one wave.")]
+        int homewardRaiderCount = 2;
+
+        [SerializeField, Min(0), Tooltip("No new wave while this many raiders are alive.")]
+        int homewardRaiderMax = 6;
+
+        [SerializeField, Min(1f), Tooltip("A raider's body is this many times its species' size.")]
+        float homewardRaiderScale = 1.8f;
+
+        [SerializeField, Min(50f), Tooltip("How far from the Ark, u, a raider comes in (ahead and to the side).")]
+        float homewardRaiderDistance = 260f;
+
+        [SerializeField, Tooltip("Raiders come in the open water between cells on the way OUT of a Crystal Run too, not " +
+                                 "only on the way home (Shombith 2026-11-17: \"more attacks outside the cell\").")]
+        bool raidersOutbound = true;
+
+        [Header("Voyage - kaiju between the cells (Shombith 2026-11-17)")]
+        [SerializeField, Min(0), Tooltip("Kaiju waiting in the open water on each crossing between two cells: a huge grazer " +
+                                         "that comes for the Ark's hull. Never while the Ark is anchored. 0 = no kaiju.")]
+        int kaijuPerCrossing = 1;
+
+        [SerializeField, Min(0), Tooltip("No new kaiju while this many are alive (one per crossing, so a second only " +
+                                         "lingered from the gap before; 2026-11-17 perf pass: 1).")]
+        int kaijuMax = 1;
+
+        [SerializeField, Min(1f), Tooltip("A kaiju's body is this many times its species' size (\"pretty huge\").")]
+        float kaijuScale = 14f;
+
+        [SerializeField, Min(0f), Tooltip("The crossing (and its kaiju) starts this far, u, before the Ark leaves the cell " +
+                                          "behind it, so the kaiju is already waiting in the gap when the Ark comes out.")]
+        float kaijuLeadDistance = 900f;
+
+        [SerializeField, Min(0f), Tooltip("How far off the Ark's line, u, a kaiju waits in the gap.")]
+        float kaijuSideOffset = 300f;
+
+        [Header("Voyage - the cells")]
+        [SerializeField, Range(1f, 4f), Tooltip("A voyage cell's membrane and nucleus are this many times their authored " +
+                                                "size (Shombith 2026-11-16: 50% bigger; 2026-11-17: still not big enough, " +
+                                                "2.5). The cell's own environment mass keeps its authored size.")]
+        float cellScale = 2.5f;
+
+        [SerializeField, Min(0f), Tooltip("Open water between two neighbouring voyage cells' membranes, u (Shombith " +
+                                          "2026-11-17: \"the distances between them smaller\"). 0 = the corridor's " +
+                                          "authored spacing grown with the cells, which left 1200 u at 1.5x.")]
+        float cellGap = 500f;
+
+        [SerializeField, Tooltip("A voyage cell's life (and so its crystals, the hearts) is born all through its open " +
+                                 "water instead of on one feeding ground near the core (Cell.ScatterLifeSpawns).")]
+        bool scatterLifeSpawns = true;
+
+        [SerializeField, Range(0.5f, 4f), Tooltip("Every voyage cell's fauna and flora populations (seed floors and caps " +
+                                                  "together) times this, on top of the leg's pacing (Shombith 2026-11-17: " +
+                                                  "\"more fauna inside the cells and more crystals\"; every lifeform carries " +
+                                                  "one crystal). Production gating only: nothing is culled.")]
+        float cellLifeScale = 2.5f;
+
+        [SerializeField, Range(0.25f, 4f), Tooltip("A voyage cell's PLANT populations (seed floors and caps) times this, " +
+                                                   "in place of Cell Life Scale (on a phone, never more than Mobile Cell " +
+                                                   "Life Scale). Plants are a cell's growing prism mass, which every sense, " +
+                                                   "sweep and draw pays for: at 2x one Hesperides grew 222 plants and 36,656 " +
+                                                   "prisms (2026-11-17 capture).")]
+        float cellFloraScale = 1f;
+
+        [SerializeField, Range(0.5f, 6f), Tooltip("The most any one voyage cell's creatures are scaled, after the leg's " +
+                                                  "per-cell life and Cell Life Scale multiply (the storyboard's Geode, 1.4 " +
+                                                  "x 2.5 = 3.5x, held 10 FPS in the editor; Shombith 2026-11-17).")]
+        float cellLifeMax = 2.5f;
+
+        [SerializeField, Range(0.5f, 6f), Tooltip("Cell Life Max on a phone or tablet.")]
+        float mobileCellLifeMax = 1.25f;
+
+        [Header("Voyage - phones (Shombith 2026-11-17: \"keep in mind we are also designing it for the mobile too\")")]
+        [SerializeField, Range(0.5f, 4f), Tooltip("Cell Life Scale on a phone or tablet (Application.isMobilePlatform): " +
+                                                  "a voyage cell's fauna and flora there. Every creature is a skinned, " +
+                                                  "rigged body with its own prisms, so a phone holds the authored floor.")]
+        float mobileCellLifeScale = 1f;
+
+        [SerializeField, Min(1f), Tooltip("Kaiju Scale on a phone or tablet. A bigger body is a bigger collider in the " +
+                                          "physics broadphase and more screen to shade; still several raiders tall.")]
+        float mobileKaijuScale = 8f;
+
+        [SerializeField, Min(0), Tooltip("Homeward Raider Max on a phone or tablet.")]
+        int mobileRaiderMax = 3;
+
+        [Header("Voyage - Crystal Run goal missed (Shombith 2026-11-17)")]
+        [SerializeField, Tooltip("A Crystal Run that reaches its stop short of its goal loses this run's haul (crystals " +
+                                 "earlier legs owe are kept), and the board offers Try again (the same goal from here) or " +
+                                 "Finish instead of Venture further. Off: the haul is owed as on a success.")]
+        bool raidMissForfeits = true;
+
+        [Header("Voyage - finishing a met Crystal Run (Shombith 2026-11-17)")]
+        [SerializeField, Min(1f), Tooltip("A met Crystal Run's board offers Finish here (bank now, as it is) and Sail home: " +
+                                          "escorting the Ark home multiplies every crystal owed by this when it docks. " +
+                                          "1 turns Finish here off and Sail home pays as it is.")]
+        float homeEscortRewardScale = 2f;
+
+        [Header("Voyage - the Ark's speed")]
+        [SerializeField, Range(0.5f, 4f), Tooltip("The Ark's speed in a voyage (crawling through a cell and cruising between " +
+                                                  "them) times this, over the Arkway's own (Wander_WithArk). Shombith " +
+                                                  "2026-11-17: \"make the ark fly faster\".")]
+        float arkSpeedScale = 1.5f;
+
+        [Header("Voyage - AI wingmates in a Crystal Run (a light nudge, Shombith 2026-11-17; his own AI plan comes later)")]
+        [SerializeField, Min(0), Tooltip("An AI wingmate carrying this many crystals flies to the Ark to bank them before it " +
+                                         "goes back to its escort role. 0 turns the bank run off.")]
+        int wingmateBankAt = 3;
+
+        [SerializeField, Min(0f), Tooltip("Seconds of every Wingmate Seek Period an AI wingmate leaves its escort role to " +
+                                          "hunt crystals with its own pilot, while no creature threatens the Ark. 0 turns " +
+                                          "it off. Seats take turns, so the Ark is never left with nobody.")]
+        float wingmateSeekSeconds = 8f;
+
+        [SerializeField, Min(1f), Tooltip("The cycle a wingmate's crystal hunt repeats on, seconds.")]
+        float wingmateSeekPeriod = 25f;
 
         [Header("Voyage - the galaxy map (the Voyage window's cards)")]
         [SerializeField, Tooltip("The course a card's job sails, drawn over the map.")]
@@ -129,7 +386,35 @@ namespace CosmicShore.ScriptableObjects
         public Color RouteColor => ColorTrace.Retrace(ColorTrace.Ui, routeColor);
         public Color HereColor => ColorTrace.Retrace(ColorTrace.Ui, hereColor);
         public float SeedElementLevel => seedElementLevel;
+        public string StarterSquadName => starterSquadName;
+        public IReadOnlyList<SquadSlot> StarterSeats => starterSeats;
+        public IReadOnlyList<VesselClassType> FirstLineUp => firstLineUp;
+
+        /// <summary>
+        /// True when <paramref name="job"/> may set sail: jobs are not locked, or its template is one of
+        /// <see cref="openJobs"/>. False for no job.
+        /// </summary>
+        public bool IsJobOpen(VoyageJob job)
+        {
+            if (job == null) return false;
+            if (!lockJobs) return true;
+            if (openJobs == null) return false;
+            foreach (var id in openJobs)
+                if (!string.IsNullOrEmpty(id) && id == job.TemplateId) return true;
+            return false;
+        }
+
+        /// <summary><see cref="IsJobOpen"/> on the shipped settings; with no settings asset every job is open.</summary>
+        public static bool JobSails(VoyageJob job)
+        {
+            var settings = Load();
+            return job != null && (!settings || settings.IsJobOpen(job));
+        }
+
         public float WingmateLeash => wingmateLeash;
+        public float StrayRadiusCells => strayRadiusCells;
+        public float StrayCountdownSeconds => strayCountdownSeconds;
+        public ArkFormationSettings ArkFormation => arkFormation ??= new ArkFormationSettings();
         public float FindDistance => findDistance;
         public float VaultRadius => vaultRadius;
         public int VaultPrisms => vaultPrisms;
@@ -139,6 +424,60 @@ namespace CosmicShore.ScriptableObjects
         public float CullRadius => cullRadius;
         public float ObserveRadius => observeRadius;
         public float RivalAbeam => rivalAbeam;
+        public int EscortCrystalsPerDifficulty => escortCrystalsPerDifficulty;
+        public Element EscortRewardElement => escortRewardElement;
+        public int ScorePerCrystal => scorePerCrystal;
+        public int ScorePerKill => scorePerKill;
+        public int ScorePerGuard => scorePerGuard;
+        public FMODUnity.EventReference ToastEventSound => toastEventSound;
+        public FMODUnity.EventReference ToastThreatSound => toastThreatSound;
+        public FMODUnity.EventReference ToastGoodSound => toastGoodSound;
+        public FMODUnity.EventReference ScoreboardSound => scoreboardSound;
+        public FMODUnity.EventReference ArkHornSound => arkHornSound;
+        public float RaidAnchorHostileSeconds => raidAnchorHostileSeconds;
+        public float RaidAnchorCalmSeconds => raidAnchorCalmSeconds;
+        public int RaidAnchorMinLife => raidAnchorMinLife;
+        public float RaidAnchorWarnSeconds => raidAnchorWarnSeconds;
+        public bool RaidCrystalsAtRisk => raidCrystalsAtRisk;
+        public float RaidBankRadius => raidBankRadius;
+        public float RaidSpillCooldownSeconds => raidSpillCooldownSeconds;
+        public float RaidCalmLureShare => raidCalmLureShare;
+        public float RaidHullLeakBelow => raidHullLeakBelow;
+        public float RaidHullLeakSeconds => raidHullLeakSeconds;
+        public float HomewardLureFactor => homewardLureFactor;
+        public float HomewardRaiderSeconds => homewardRaiderSeconds;
+        public int HomewardRaiderCount => homewardRaiderCount;
+        public int HomewardRaiderMax => OnMobile ? Mathf.Min(homewardRaiderMax, mobileRaiderMax) : homewardRaiderMax;
+        public float HomewardRaiderScale => homewardRaiderScale;
+        public float HomewardRaiderDistance => homewardRaiderDistance;
+        public bool RaidersOutbound => raidersOutbound;
+        public int KaijuPerCrossing => kaijuPerCrossing;
+        public int KaijuMax => kaijuMax;
+        public float KaijuScale => OnMobile ? Mathf.Min(kaijuScale, mobileKaijuScale) : kaijuScale;
+        public float KaijuLeadDistance => kaijuLeadDistance;
+        public float KaijuSideOffset => kaijuSideOffset;
+        public float CellScale => cellScale;
+        public float CellGap => cellGap;
+        public bool ScatterLifeSpawns => scatterLifeSpawns;
+        public float CellLifeScale => OnMobile ? Mathf.Min(cellLifeScale, mobileCellLifeScale) : cellLifeScale;
+        public float CellLifeMax => OnMobile ? Mathf.Min(cellLifeMax, mobileCellLifeMax) : cellLifeMax;
+        public float CellFloraScale => OnMobile ? Mathf.Min(cellFloraScale, mobileCellLifeScale) : cellFloraScale;
+
+        /// <summary>The desktop numbers, whatever the platform (tests and the kaiju page read these).</summary>
+        public float DesktopKaijuScale => kaijuScale;
+        public float DesktopCellLifeScale => cellLifeScale;
+        public float MobileKaijuScale => mobileKaijuScale;
+        public float MobileCellLifeScale => mobileCellLifeScale;
+        public int MobileRaiderMax => mobileRaiderMax;
+
+        /// <summary>A phone or tablet build: the voyage takes its mobile numbers there.</summary>
+        static bool OnMobile => Application.isMobilePlatform;
+        public bool RaidMissForfeits => raidMissForfeits;
+        public int WingmateBankAt => wingmateBankAt;
+        public float HomeEscortRewardScale => homeEscortRewardScale;
+        public float ArkSpeedScale => arkSpeedScale;
+        public float WingmateSeekSeconds => wingmateSeekSeconds;
+        public float WingmateSeekPeriod => wingmateSeekPeriod;
         public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);
         public Color VaultColor => ColorTrace.Retrace(ColorTrace.Ui, vaultColor);
         public Color CoreColor => ColorTrace.Retrace(ColorTrace.Ui, coreColor);
@@ -155,6 +494,21 @@ namespace CosmicShore.ScriptableObjects
             string label = voyage ? voyage.Lines.VoyageName : DisplayName;
             var cfg = withArk ? withArk.BuildConfig(label) : new ArkwayConfig { DisplayName = label };
             if (voyage && voyage.CellPool is { Count: > 0 }) cfg.Cells = voyage.CellPool;
+            cfg.CellScale = Mathf.Max(1f, cellScale);
+            cfg.CellGap = Mathf.Max(0f, cellGap);
+            cfg.ScatterLifeSpawns = scatterLifeSpawns;
+            float speed = Mathf.Max(0.1f, arkSpeedScale);
+            cfg.ArkSpeed *= speed;
+            if (cfg.ArkPacing is { } pacing)
+            {
+                pacing.Cruise *= speed;
+                pacing.Entry *= speed;
+                pacing.Crawl *= speed;
+                cfg.ArkPacing = pacing;
+            }
+            // The voyage's own leash (the Arkway's is three cell radii, which a pilot never reaches in a voyage cell).
+            cfg.LeashRadiusFactor = Mathf.Max(1f, strayRadiusCells);
+            cfg.LeashGraceSeconds = Mathf.Max(1f, strayCountdownSeconds);
             return cfg;
         }
     }

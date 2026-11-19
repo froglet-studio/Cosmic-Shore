@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
@@ -180,6 +181,13 @@ namespace CosmicShore.Gameplay.Audio
 
         [Header("Debug")]
         [SerializeField] bool debugLog = false;
+
+        // Events already reported as missing the amount parameter: the fault is in the event, so one
+        // line says it, not one per hull that starts the loop.
+        static readonly HashSet<string> s_ReportedMissingParameter = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => s_ReportedMissingParameter.Clear();
 
         // Runtime state
         IVesselStatus _status;
@@ -416,7 +424,7 @@ namespace CosmicShore.Gameplay.Audio
                 _amountParamIsGlobal = (amountDesc.flags & PARAMETER_FLAGS.GLOBAL) != 0;
                 _hasAmountParam = true;
             }
-            else
+            else if (s_ReportedMissingParameter.Add(boostLoopEvent.ToString()))
             {
                 CSDebug.LogWarning(
                     $"[ProximityBoostAudio] Event '{boostLoopEvent}' has no parameter " +

@@ -32,5 +32,16 @@ namespace CosmicShore.Gameplay
         /// Sparrow's tank fills from its guns and from nothing its rockets do.</para>
         /// </summary>
         public bool DestroyedByGunfire;
+
+        /// <summary>
+        /// The shield's share of the prism's volume (Garrett, 2026-11-18: "the extra volume of shielding gets added to
+        /// creation"). On a destroyed or stolen prism it is the shell volume the prism carried on top of its box; on a
+        /// volume-modified event it is the change in that shell volume, with <see cref="Volume"/> 0. Read only by
+        /// <c>VolumeLedger</c>; every legacy stat keeps reading <see cref="Volume"/>, so no mode's scoring moves.
+        /// </summary>
+        public float ShieldVolume;
+
+        /// <summary>True when the destroyed prism was super-shielded: a specialist's breach (VolumeLedger).</summary>
+        public bool WasSuperShielded;
     }
 }

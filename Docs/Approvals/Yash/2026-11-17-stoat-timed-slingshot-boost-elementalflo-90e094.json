@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-stoat-timed-slingshot-boost-elementalflo-90e094",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T05:46:08+00:00",
+  "area": "the Stoat's Time slingshot boost",
+  "summary": "Stoat Timed Slingshot boost ElementalFloat Max 5 -> 4.5 (-10%; Min 2.5 unchanged), step 5 of the elemental loop for Regatta.",
+  "why": "Six-vessel Regatta pool (Dolphin, Sparrow, Squirrel, Stoat, Urchin, Scarab) on the real-game judge: Stoat card pool time 54 -> 63 s, L5 52 -> 54 s; with Scarab and Sparrow tunings the pool goes 2.14x/2.00x -> 1.92x/1.87x. Slingshot I1-I4 stays inside its rung bars (I1 65 s unchanged; I2 48 -> 62, I3 65 -> 63, I4 71 -> 76 s).",
+  "branch": "claude/project-thread-cwavhz",
+  "lane": "stoat",
+  "commit": "43e8bd208",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset"
+  ],
+  "loop": {
+    "vessels": [
+      "Stoat"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "1"
+  }
+}

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using Unity.Services.Authentication;
+using Unity.Services.Core;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -62,6 +64,14 @@ namespace CosmicShore.Core
             }
         }
 
+        /// <summary>Raised after the cloud inventory is prepared and after a crew is claimed: the account's crew is known.
+        /// The avatar follows it (PlayerDataService).</summary>
+        public static event Action CrewReady;
+
+        /// <summary>True once the account's cloud inventory has loaded: its crew is the account's own, not this
+        /// device's stand-in.</summary>
+        public static bool IsCloudLoaded => Repo != null;
+
         /// <summary>The account's inventory, prepared (starter, device import, squads). Never null.</summary>
         public static AccountInventory Current
         {
@@ -88,6 +98,7 @@ namespace CosmicShore.Core
                 {
                     _prepared = inventory;
                     Prepare(inventory);
+                    if (repo != null) CrewReady?.Invoke();
                 }
                 return inventory;
             }
@@ -118,13 +129,11 @@ namespace CosmicShore.Core
                 changed = true;
             }
 
-            // The starter crew are the painted pilots (PaintedCrewSO): repainted on every read, so a crew saved
-            // before 2026-11-12 (rolled people under the painted pictures) and an edited story both catch up.
+            // The crew is the painted pilots this account is dealt (PaintedCrewSO): a dealt crew it claimed, else a random
+            // set its player id picks, granted once and painted again on every read, so a crew saved before crews
+            // (2026-11-16..19: every painted pilot) slims to its own eighteen and an edited story catches up.
             var painted = PaintedCrewSO.Load();
-            if (painted && inventory.Pilots != null)
-                foreach (var pilot in inventory.Pilots)
-                    if (PaintedCrewSO.IsPaintable(pilot) && painted.Paint(pilot))
-                        changed = true;
+            if (painted && painted.Grant(inventory, now, CrewSeed())) changed = true;
 
             if (!inventory.DeviceImportDone)
             {
@@ -147,13 +156,59 @@ namespace CosmicShore.Core
             }
         }
 
-        /// <summary>One pilot per callsign and one artifact of every free kind: everything the game offered before
-        /// pilots and artifacts were unique stays playable.</summary>
+        /// <summary>What picks an account's random crew: the signed-in player's id, else this device's id (an offline
+        /// first run; the cloud inventory deals its own crew from the player id once it loads).</summary>
+        static string CrewSeed()
+        {
+            try
+            {
+                if (UnityServices.State == ServicesInitializationState.Initialized && AuthenticationService.Instance.IsSignedIn
+                    && !string.IsNullOrEmpty(AuthenticationService.Instance.PlayerId))
+                    return AuthenticationService.Instance.PlayerId;
+            }
+            catch (Exception)
+            {
+                // Services not set up (an editor test, a stripped build): fall through to the device.
+            }
+            return "device:" + SystemInfo.deviceUniqueIdentifier;
+        }
+
+        /// <summary>Claims the dealt crew <paramref name="index"/> (from 0) for this account and saves. False when there
+        /// is no such crew.</summary>
+        public static bool ClaimCrew(int index)
+        {
+            var painted = PaintedCrewSO.Load();
+            if (!painted || !painted.Claim(Current, index, UniqueId.NowMs())) return false;
+            Save();
+            CrewReady?.Invoke();
+            return true;
+        }
+
+        /// <summary>The dealt crew whose private claim code is <paramref name="typed"/> (from 0), else -1. Asks only; claims
+        /// nothing.</summary>
+        public static int CrewForCode(string typed)
+        {
+            var painted = PaintedCrewSO.Load();
+            return painted ? painted.CrewForCode(typed) : -1;
+        }
+
+        /// <summary>Claims the dealt crew whose claim code is <paramref name="typed"/> (Garrett, 2026-11-19: each tester
+        /// types theirs once and keeps their crew). False when no crew has that code.</summary>
+        public static bool ClaimCrewByCode(string typed)
+        {
+            int index = CrewForCode(typed);
+            return index >= 0 && ClaimCrew(index);
+        }
+
+        /// <summary>The starter crew and one artifact of every free kind: everything the game offered before pilots and
+        /// artifacts were unique stays playable. The crew is the painted pilots (<see cref="PaintedCrewSO.Grant"/>, run
+        /// by every read); a build without them gets one rolled pilot a callsign.</summary>
         public static void GrantStarter(AccountInventory inventory, PilotArtifactCatalogSO catalog, long now)
         {
-            foreach (var vision in Callsigns.All)
-                if (!inventory.HasCallsign(vision))
-                    inventory.MintPilot(vision, FactionType.None, PaintedCrewSO.StarterOrigin, now);
+            if (!PaintedCrewSO.Load())
+                foreach (var vision in Callsigns.All)
+                    if (!inventory.HasCallsign(vision))
+                        inventory.MintPilot(vision, FactionType.None, PaintedCrewSO.StarterOrigin, now);
 
             if (!catalog) return;
             foreach (var kind in catalog.Artifacts)

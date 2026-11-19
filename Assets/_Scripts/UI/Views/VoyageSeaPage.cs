@@ -22,8 +22,10 @@ namespace CosmicShore.UI
     /// <item><b>Full screen</b>: the table lies flat and grows to a borderless full-screen map in 0.9 s; the zoom row rides
     /// into its top-left corner and gains Neighbourhood and Cell, the crew stays on the right, the picked voyage moves to
     /// the foot, and Back from full screen takes it home.</item>
-    /// <item><b>The crew</b>: a 100 x 150 face per voyage with its difficulty, down the right; Crew slides out the
-    /// drawer of what they recommend beside the faces, Hide slides it away.</item>
+    /// <item><b>Open now</b> (Frogma Rev 113 Sea, Milestone 1): the voyages that sail now as cards down the right, the
+    /// picked one marked by one thin cyan line; under them "Crew recommends · N", which opens the crew popup
+    /// (<see cref="VoyageCrewPopup"/>), and a line saying how many crew voyages are locked. It replaced Rev 111's column of
+    /// crew faces and their sliding drawer.</item>
     /// <item><b>The picked voyage</b>: its kind and pilot, its name, its difficulty pips and pay, and Open voyage.</item>
     /// </list>
     /// Every number is the board's: the page is laid out in a frame of the board's own units (1840 x 748 in the window,
@@ -31,13 +33,14 @@ namespace CosmicShore.UI
     /// </summary>
     public sealed class VoyageSeaPage
     {
-        const float FullSeconds = 0.9f, SlideSeconds = 0.5f;
+        const float FullSeconds = 0.9f;
         // Frogma Rev 111 Full, in its own units: the page in the window (x 40-1880, y 172-920 of the 1920 x 1080 board) and
         // the full screen.
         static readonly Vector2 WindowSize = new(1840f, 748f), ScreenSize = new(1920f, 1080f);
         const float RowHeight = 44f, BandHeight = 40f, StepSize = 44f, TierWidth = 178f, DeepTierWidth = 236f;
-        const float CrewWidth = 100f, CrewRow = 150f, CrewGap = 14f, CrewX = 1740f, CrewTop = 64f;
-        const float DrawerWidth = 500f, DrawerRow = 112f, DrawerPad = 18f, DrawerGap = 8f, DrawerLabel = 20f;
+        // Rev 113 Sea's "Open now" column: x 1400, y 176 of the board (1360, 4 here), 480 wide; cards 140 tall, 14 apart.
+        const float SideX = 1360f, SideY = 4f, SideWidth = 480f, SideLabel = 20f, SideGap = 14f, OpenCardHeight = 140f,
+            ButtonHeight = 56f, ButtonLift = 10f, LockedLine = 20f;
         const float TableX = 112f, TableY = 64f, TableWidth = 1216f, TableHeight = 540f, EdgeHeight = 96f;
         const float FullButtonX = 988f, FullButtonWidth = 220f, BackFullWidth = 320f, Margin = 40f;
         const float CardX = 860f, CardY = 628f, CardWidth = 860f, CardFullWidth = 1180f, CardHeight = 108f;
@@ -46,6 +49,12 @@ namespace CosmicShore.UI
         const int DeepTiers = 2;
         // Pins: names show from Sector inwards; past Region they stand down (only the picked one stays at Region).
         const int NamedFrom = 2, PinsTo = 3;
+        // The table (tilted) stays in Region: down to Region's narrowest view (550 ly), not its button's width (1,200 ly),
+        // so the table can frame a short course the way the voyage card does; the 2 fps were the closer tiers. The flat
+        // full screen goes on to the row's closest tier, Cell, which is why the row shows its two deep tiers only there
+        // (Shombith, 2026-11-17: "in full screen I cannot zoom past 1200 ly", and the table "not zoomed in" on a course).
+        static float TableFloorLy => (float)HyperSeaSky.Tiers[PinsTo].min;
+        static float FullFloorLy => (float)HyperSeaSky.Tiers[RowTiers[0]].width;
 
         readonly VoyageBoard _board;
         readonly VoyageKit _kit;
@@ -54,28 +63,27 @@ namespace CosmicShore.UI
         public RectTransform Root { get; }
         readonly RectTransform _slot;
         readonly RectTransform _frame;
-        RectTransform _table, _column, _mapHost, _edgeHost, _controls, _band, _crewColumn, _drawer, _card, _fullButton, _backFull,
-            _crewToggle, _message, _pins;
-        CanvasGroup _edgeGroup, _drawerGroup, _fullGroup, _backGroup;
+        RectTransform _table, _column, _mapHost, _edgeHost, _controls, _band, _side, _card, _fullButton, _backFull,
+            _crewButton, _lockedRow, _message, _pins;
+        CanvasGroup _edgeGroup, _fullGroup, _backGroup;
         VoyageTableTilt _tilt;
         VoyageTableRim _rim;
         VoyageMapGraphic _map;
-        TMP_Text _messageText, _crewToggleText;
+        TMP_Text _messageText, _crewButtonText, _lockedText;
+        Image _lockedLock;
 
         // The full-screen layer, made on the first full screen: its own canvas over everything in the root canvas.
         RectTransform _overlay;
         Image _overlayFill;
         bool _full;
         float _fullT;
-        bool _crewOpen;
-        float _slideT;
         Vector2 _laidFor = new(-1f, -1f);
-        float _laidFull = -1f, _laidSlide = -1f;
+        float _laidFull = -1f;
         float _e;
 
         readonly List<TierView> _tiers = new();
-        readonly List<CrewView> _crew = new();
-        readonly List<DrawerView> _rows = new();
+        readonly List<OpenView> _cards = new();
+        readonly List<int> _openNow = new();
         readonly List<PinView> _pinViews = new();
         readonly List<VoyageBoard.Offer> _offers = new();
         int _open = -1;
@@ -97,22 +105,14 @@ namespace CosmicShore.UI
             public Image Bar;
         }
 
-        sealed class CrewView
+        sealed class OpenView
         {
             public RectTransform Root;
-            public CanvasGroup Group;
-            public Image Face, Edge;
-            public TMP_Text Name, Difficulty;
-        }
-
-        sealed class DrawerView
-        {
-            public RectTransform Root;
-            public CanvasGroup Group;
-            public Image Ground, Edge, Face;
-            public TMP_Text Kind, Title, Difficulty, Pay;
+            public Image Ground, Line, Picture;
+            public VoyageOutline Edge;
+            public TMP_Text Kind, Title, Difficulty, Meta;
             public VoyagePips Pips;
-            public RectTransform Flower;
+            public Button Button;
         }
 
         sealed class PinView
@@ -148,7 +148,7 @@ namespace CosmicShore.UI
             BuildHome();
             BuildControls();
             BuildCard();
-            BuildCrew();
+            BuildSide();
         }
 
         RectTransform Node(string name)
@@ -212,16 +212,6 @@ namespace CosmicShore.UI
             _kit.Quiet(_backFull, _lines?.PageBackKey, _lines?.SeaFullScreenBack, () => SetFull(false), out var backWords);
             if (backWords) backWords.fontSize = 14f;
 
-            // The crew toggle: a dark box with its outline (rgba(0,4,31,.86), 1 unit #434C89), its word in caps 14.
-            _crewToggle = Node("CrewToggle");
-            var (fill, _) = _kit.Box(_crewToggle, VoyageKit.Fade(_kit.Popup, 0.86f), _kit.Outline, hit: true);
-            var toggle = _crewToggle.gameObject.AddComponent<Button>();
-            toggle.targetGraphic = fill;
-            toggle.onClick.AddListener(() => SetCrew(!_crewOpen));
-            _crewToggleText = _kit.Label(_crewToggle, 14, _kit.Light, TextAlignmentOptions.Center);
-            VoyageKit.Stretch(_crewToggleText.rectTransform);
-            _crewToggleText.characterSpacing = 10f;
-            VoyageKit.Set(_crewToggleText, _lines?.SeaCrew);
         }
 
         void Step(string mark, float factor, string name)
@@ -231,17 +221,69 @@ namespace CosmicShore.UI
             _kit.Square(rt, mark, () => { if (_map) _map.ZoomStep(factor); });
         }
 
-        void BuildCrew()
+        void BuildSide()
         {
-            _crewColumn = Node("Crew");
-            VoyageKit.Column(_crewColumn, CrewGap, TextAnchor.UpperLeft);
-            // The drawer: one dark panel (rgba(0,4,31,.94), outline #434C89), 18 in, its label, then a row per voyage.
-            _drawer = Node("CrewRecommends");
-            _drawerGroup = Group(_drawer);
-            _kit.Box(_drawer, VoyageKit.Fade(_kit.Popup, 0.94f), _kit.Outline);
-            var label = _kit.Label(_drawer, 14, _kit.Sub);
-            VoyageKit.At(label.rectTransform, DrawerPad, DrawerPad, DrawerWidth - 2f * DrawerPad, DrawerLabel);
-            VoyageKit.Set(label, _lines?.SeaCrewDrawer);
+            // "OPEN NOW" (caps 14, Sub) over the cards; the crew button and the locked line under them.
+            _side = Node("OpenNow");
+            var label = _kit.Label(_side, 14, _kit.Sub);
+            VoyageKit.At(label.rectTransform, 0f, 0f, SideWidth, SideLabel);
+            VoyageKit.Set(label, _lines?.SeaOpenNow);
+            _crewButton = VoyageKit.Node("CrewRecommends", _side);
+            _kit.Quiet(_crewButton, _lines?.SeaCrewKey, null, () => _board.OpenCrew(), out _crewButtonText);
+            _lockedRow = VoyageKit.Node("Locked", _side);
+            VoyageKit.Row(_lockedRow, 8f);
+            var lockBox = VoyageKit.Node("Lock", _lockedRow);
+            var le = VoyageKit.Le(lockBox);
+            le.preferredWidth = le.minWidth = le.preferredHeight = 14f;
+            _lockedLock = lockBox.gameObject.AddComponent<Image>();
+            _lockedLock.preserveAspect = true;
+            _lockedLock.raycastTarget = false;
+            _lockedText = _kit.Text(_lockedRow, 14, _kit.Sub, TextAlignmentOptions.Left);
+            VoyageKit.Le(_lockedText).flexibleWidth = 1f;
+        }
+
+        OpenView CardFor(int index)
+        {
+            while (_cards.Count <= index)
+            {
+                // A card 480 x 140, 18 in: its picture (110 x 80), its kind (caps 14, Light), its name (18) and its
+                // difficulty and length (14, Sub). Picked: a faint cyan ground and one 2 unit cyan line at its left;
+                // otherwise rgba(0,4,31,.6) inside a 1 unit outline at .5.
+                var view = new OpenView { Root = VoyageKit.Node("Voyage" + _cards.Count, _side) };
+                view.Ground = VoyageKit.Block(view.Root, VoyageKit.Fade(_kit.Popup, 0.6f), hit: true);
+                var edge = VoyageKit.Node("Edge", view.Root);
+                VoyageKit.Stretch(edge);
+                view.Edge = edge.gameObject.AddComponent<VoyageOutline>();
+                var line = VoyageKit.Node("Line", view.Root);
+                line.anchorMin = Vector2.zero;
+                line.anchorMax = new Vector2(0f, 1f);
+                line.pivot = new Vector2(0f, 0.5f);
+                line.sizeDelta = new Vector2(2f, 0f);
+                view.Line = VoyageKit.Block(line, _kit.Cyan);
+                view.Button = view.Root.gameObject.AddComponent<Button>();
+                view.Button.targetGraphic = view.Ground;
+                view.Button.transition = Selectable.Transition.None;
+                var pic = VoyageKit.Node("Picture", view.Root);
+                VoyageKit.At(pic, 18f, 30f, 110f, 80f);
+                view.Picture = VoyageKit.CoverBox(pic);
+                var words = VoyageKit.Node("Words", view.Root);
+                VoyageKit.Stretch(words);
+                words.offsetMin = new Vector2(18f + 110f + 20f, 14f);
+                words.offsetMax = new Vector2(-18f, -14f);
+                VoyageKit.Column(words, 10f, TextAnchor.MiddleLeft);
+                view.Kind = _kit.Label(words, 14, _kit.Light);
+                view.Title = _kit.Text(words, 18, _kit.Light, TextAlignmentOptions.Left);
+                var meta = VoyageKit.Node("Meta", words);
+                VoyageKit.Row(meta, 14f);
+                VoyageKit.Le(meta).preferredHeight = 18f;
+                view.Pips = _kit.Pips(meta);
+                view.Difficulty = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
+                VoyageKit.Le(view.Difficulty).minWidth = VoyageKit.Le(view.Difficulty).preferredWidth = 16f;
+                view.Meta = _kit.Text(meta, 14, _kit.Sub, TextAlignmentOptions.Left);
+                VoyageKit.Le(view.Meta).flexibleWidth = 1f;
+                _cards.Add(view);
+            }
+            return _cards[index];
         }
 
         void BuildCard()
@@ -337,8 +379,9 @@ namespace CosmicShore.UI
             map.Tilt = _tilt;
             map.Plain = true;
             map.Unnamed = true;
-            // The table zooms no closer than Region: the closer tiers cost the frame rate (2 fps, Shombith 2026-11-14).
-            map.NarrowestLy = (float)HyperSeaSky.Tiers[PinsTo].width;
+            // The table zooms no closer than Region's narrowest view: the closer tiers cost the frame rate (2 fps, Shombith
+            // 2026-11-14).
+            map.NarrowestLy = TableFloorLy;
             // The table's rim, drawn over the map at the same tilt.
             var rim = VoyageKit.Node("Rim", map.transform);
             VoyageKit.Stretch(rim);
@@ -365,7 +408,7 @@ namespace CosmicShore.UI
             Uncaption();
             VoyageKit.Set(_messageText, _offers.Count == 0 ? message : null);
             _message.gameObject.SetActive(_offers.Count == 0 && !string.IsNullOrEmpty(message));
-            DrawCrew();
+            DrawSide();
             _laidFor = new Vector2(-1f, -1f);
             Redraw();
         }
@@ -382,8 +425,13 @@ namespace CosmicShore.UI
             VoyageKit.Set(_cardTitle, offer.Title);
             ShowMeta(offer, d, _cardPips, _cardDifficulty, _cardFlower, _cardPay);
             _openButton.interactable = true;
-            for (int i = 0; i < _crew.Count && i < _offers.Count; i++)
-                _crew[i].Difficulty.text = (i == _open ? d : _offers[i].Recommended).ToString(CultureInfo.InvariantCulture);
+            for (int i = 0; i < _openNow.Count && i < _cards.Count; i++)
+            {
+                int index = _openNow[i];
+                int shown = index == _open ? d : _offers[index].Recommended;
+                _cards[i].Pips.Lit = shown;
+                VoyageKit.Set(_cards[i].Difficulty, shown.ToString(CultureInfo.InvariantCulture));
+            }
         }
 
         void ShowMeta(VoyageBoard.Offer offer, int d, VoyagePips pips, TMP_Text difficulty, RectTransform flower, TMP_Text pay)
@@ -410,119 +458,72 @@ namespace CosmicShore.UI
             }
         }
 
-        void DrawCrew()
+        /// <summary>The "Open now" cards (the voyages that sail now), the crew button with how many the crew recommends,
+        /// and the locked line (Rev 113 Sea).</summary>
+        void DrawSide()
         {
-            var rowFace = new Vector2(96f, 84f);
-            for (int i = 0; i < _offers.Count; i++)
+            VoyageCrewRules.OpenNow(_offers, _openNow);
+            for (int i = 0; i < _openNow.Count; i++)
             {
-                var offer = _offers[i];
-                bool on = i == _open;
-                var crew = CrewFor(i);
-                crew.Root.gameObject.SetActive(true);
-                float h = VoyageKit.Le(crew.Root).preferredHeight;
-                VoyageKit.ShowCover(crew.Face, offer.Portrait, new Vector2(CrewWidth, h > 0f ? h : CrewRow), VoyageKit.FaceFocus);
-                VoyageKit.Set(crew.Name, offer.Portrait ? null : string.IsNullOrEmpty(offer.Pilot) ? offer.Kind : offer.Pilot);
-                crew.Difficulty.text = offer.Recommended.ToString(CultureInfo.InvariantCulture);
-                Mark(crew.Edge, on);
-                crew.Group.alpha = on ? 1f : 0.72f;
-
-                var row = RowFor(i);
-                row.Root.gameObject.SetActive(true);
-                VoyageKit.ShowCover(row.Face, offer.Portrait, rowFace, VoyageKit.FaceFocus);
-                VoyageKit.Set(row.Kind, offer.Kind);
-                VoyageKit.Set(row.Title, offer.Title);
-                ShowMeta(offer, offer.Recommended, row.Pips, row.Difficulty, row.Flower, row.Pay);
-                row.Ground.color = VoyageKit.Fade(_kit.Popup, on ? 0.9f : 0.55f);
-                Mark(row.Edge, on);
-                row.Group.alpha = on ? 1f : 0.72f;
+                int index = _openNow[i];
+                var offer = _offers[index];
+                var view = CardFor(i);
+                view.Root.gameObject.SetActive(true);
+                bool on = index == _open;
+                var picture = offer.Portrait ? offer.Portrait : offer.Picture;
+                VoyageKit.ShowCover(view.Picture, picture, new Vector2(110f, 80f),
+                    offer.Portrait ? VoyageKit.FaceFocus : new Vector2(0.5f, 0.5f));
+                VoyageKit.Set(view.Kind, offer.Kind);
+                VoyageKit.Set(view.Title, offer.Title);
+                view.Pips.Lit = offer.Recommended;
+                VoyageKit.Set(view.Difficulty, offer.Recommended.ToString(CultureInfo.InvariantCulture));
+                VoyageKit.Set(view.Meta, offer.Stops.Count > 0
+                    ? TemplateText.Fill(_lines?.CrewStops, "stops", offer.Stops.Count.ToString(CultureInfo.InvariantCulture))
+                    : null);
+                view.Ground.color = on ? VoyageKit.Fade(_kit.Cyan, 0.06f) : VoyageKit.Fade(_kit.Popup, 0.6f);
+                view.Line.enabled = on;
+                view.Edge.enabled = !on;
+                view.Edge.Solid(VoyageKit.Fade(_kit.Outline, 0.5f));
+                view.Button.onClick.RemoveAllListeners();
+                view.Button.onClick.AddListener(() => _board.Pick(index));
             }
-            for (int i = _offers.Count; i < _crew.Count; i++) _crew[i].Root.gameObject.SetActive(false);
-            for (int i = _offers.Count; i < _rows.Count; i++) _rows[i].Root.gameObject.SetActive(false);
+            for (int i = _openNow.Count; i < _cards.Count; i++) _cards[i].Root.gameObject.SetActive(false);
+
+            VoyageKit.Set(_crewButtonText, TemplateText.Fill(_lines?.SeaCrewButton, "count",
+                _offers.Count.ToString(CultureInfo.InvariantCulture)));
+            _crewButton.gameObject.SetActive(_offers.Count > 0);
+            int locked = VoyageCrewRules.LockedCount(_offers);
+            string lockedLine = locked > 0
+                ? TemplateText.Fill(_lines?.SeaLockedLine, "count", locked.ToString(CultureInfo.InvariantCulture))
+                : null;
+            VoyageKit.Set(_lockedText, lockedLine);
+            _lockedLock.sprite = _board.LockSprite;
+            _lockedLock.enabled = _board.LockSprite;
+            _lockedLock.color = _kit.Sub;
+            _lockedRow.gameObject.SetActive(!string.IsNullOrEmpty(lockedLine));
+            LayoutSide();
             DrawPins();
         }
 
-        // The picked one's foot is a 2 unit cyan line; the others a 1 unit outline at .6.
-        void Mark(Image edge, bool on)
+        // The column's cards, then the button 10 lower, then the locked line, 14 apart.
+        void LayoutSide()
         {
-            edge.color = on ? _kit.Cyan : VoyageKit.Fade(_kit.Outline, 0.6f);
-            edge.rectTransform.sizeDelta = new Vector2(0f, on ? 2f : 1f);
-        }
-
-        Image FootLine(RectTransform parent)
-        {
-            var foot = VoyageKit.Node("Foot", parent);
-            VoyageKit.Le(foot).ignoreLayout = true;
-            VoyageKit.Foot(foot, 0f, 1f);
-            return VoyageKit.Block(foot, _kit.Outline);
-        }
-
-        CrewView CrewFor(int index)
-        {
-            while (_crew.Count <= index)
+            float y = SideLabel + SideGap;
+            for (int i = 0; i < _openNow.Count && i < _cards.Count; i++)
             {
-                int i = _crew.Count;
-                var view = new CrewView { Root = VoyageKit.Node("Pilot" + i, _crewColumn) };
-                var le = VoyageKit.Le(view.Root);
-                le.preferredHeight = le.minHeight = CrewRow;
-                le.preferredWidth = CrewWidth;
-                view.Group = Group(view.Root);
-                var hit = VoyageKit.Block(view.Root, VoyageKit.Clear, hit: true);
-                var button = view.Root.gameObject.AddComponent<Button>();
-                button.targetGraphic = hit;
-                button.transition = Selectable.Transition.None;
-                button.onClick.AddListener(() => _board.Pick(i));
-                var box = VoyageKit.Node("Face", view.Root);
-                VoyageKit.Stretch(box);
-                view.Face = VoyageKit.CoverBox(box);
-                view.Name = _kit.Text(box, 14, _kit.Light, TextAlignmentOptions.TopLeft);
-                VoyageKit.Stretch(view.Name.rectTransform);
-                view.Name.textWrappingMode = TextWrappingModes.Normal;
-                view.Difficulty = _kit.Text(view.Root, 14, _kit.Light, TextAlignmentOptions.BottomLeft);
-                var d = view.Difficulty.rectTransform;
-                VoyageKit.Stretch(d);
-                d.offsetMin = new Vector2(8f, 6f);
-                view.Edge = FootLine(view.Root);
-                _crew.Add(view);
+                VoyageKit.At(_cards[i].Root, 0f, y, SideWidth, OpenCardHeight);
+                y += OpenCardHeight + SideGap;
             }
-            return _crew[index];
+            y += ButtonLift;
+            VoyageKit.At(_crewButton, 0f, y, SideWidth, ButtonHeight);
+            y += ButtonHeight + SideGap;
+            VoyageKit.At(_lockedRow, 0f, y, SideWidth, LockedLine);
         }
 
-        DrawerView RowFor(int index)
+        float SideHeight()
         {
-            while (_rows.Count <= index)
-            {
-                int i = _rows.Count;
-                var view = new DrawerView { Root = VoyageKit.Node("Voyage" + i, _drawer) };
-                VoyageKit.At(view.Root, DrawerPad, DrawerPad + DrawerLabel + DrawerGap + i * (DrawerRow + DrawerGap),
-                    DrawerWidth - 2f * DrawerPad, DrawerRow);
-                view.Group = Group(view.Root);
-                view.Ground = VoyageKit.Block(view.Root, VoyageKit.Fade(_kit.Popup, 0.55f), hit: true);
-                var button = view.Root.gameObject.AddComponent<Button>();
-                button.targetGraphic = view.Ground;
-                button.transition = Selectable.Transition.None;
-                button.onClick.AddListener(() => PickFromDrawer(i));
-                var face = VoyageKit.Node("Face", view.Root);
-                VoyageKit.At(face, 18f, 14f, 96f, 84f);
-                view.Face = VoyageKit.CoverBox(face);
-                var words = VoyageKit.Node("Words", view.Root);
-                VoyageKit.Stretch(words);
-                words.offsetMin = new Vector2(18f + 96f + 20f, 10f);
-                words.offsetMax = new Vector2(-18f, -10f);
-                VoyageKit.Column(words, 10f, TextAnchor.MiddleLeft);
-                view.Kind = _kit.Label(words, 14, _kit.Light);
-                view.Title = _kit.Text(words, 18, _kit.Light, TextAlignmentOptions.Left);
-                (view.Pips, view.Difficulty, view.Flower, view.Pay) = Meta(words);
-                view.Edge = FootLine(view.Root);
-                _rows.Add(view);
-            }
-            return _rows[index];
-        }
-
-        // A row in the drawer picks its voyage and brings the map in to Sector (the board's "z: 2"), where the names show.
-        void PickFromDrawer(int index)
-        {
-            _board.Pick(index);
-            if (_map && _map.Tier < NamedFrom) _map.ZoomToTier(NamedFrom);
+            int n = _openNow.Count;
+            return SideLabel + SideGap + n * (OpenCardHeight + SideGap) + ButtonLift + ButtonHeight + SideGap + LockedLine;
         }
 
         // ── The pins ─────────────────────────────────────────────────────────
@@ -654,12 +655,6 @@ namespace CosmicShore.UI
 
         // ── Full screen and the crew slide ───────────────────────────────────
 
-        void SetCrew(bool open)
-        {
-            _crewOpen = open;
-            VoyageKit.Set(_crewToggleText, open ? _lines?.SeaCrewHide : _lines?.SeaCrew);
-        }
-
         /// <summary>Open the full-screen map, or take it back to the table.</summary>
         public void SetFull(bool full)
         {
@@ -672,10 +667,12 @@ namespace CosmicShore.UI
                 Root.SetParent(_overlay, true);
                 _overlay.gameObject.SetActive(true);
                 _overlay.SetAsLastSibling();
+                if (_map) _map.NarrowestLy = FullFloorLy;
             }
-            else if (_map && _map.Tier >= 4)
+            else if (_map && _map.ViewLy >= 0f && _map.ViewLy < TableFloorLy)
             {
-                // Out of the foam: back to Sector on the way home.
+                // Out of the foam: back to Sector on the way home. The table's floor comes back once the flight lands
+                // (Tick), so the flight is not cut short at Region.
                 _map.ZoomToTier(2);
             }
             _laidFull = -1f;
@@ -733,11 +730,17 @@ namespace CosmicShore.UI
                 _fullT = Mathf.MoveTowards(_fullT, goalFull, dt / FullSeconds);
                 if (_fullT <= 0f && !_full) Home();
             }
-            float goalSlide = _crewOpen ? 1f : 0f;
-            if (!Mathf.Approximately(_slideT, goalSlide)) _slideT = Mathf.MoveTowards(_slideT, goalSlide, dt / SlideSeconds);
             Layout();
+            RestoreTableFloor();
             MarkTier();
             PlacePins();
+        }
+
+        /// <summary>Back on the table, the map zooms no closer than Region again, once any flight out of the foam lands.</summary>
+        void RestoreTableFloor()
+        {
+            if (_full || !_map || _map.Flying || Mathf.Approximately(_map.NarrowestLy, TableFloorLy)) return;
+            _map.NarrowestLy = TableFloorLy;
         }
 
         void MarkTier()
@@ -765,7 +768,7 @@ namespace CosmicShore.UI
         /// </summary>
         void Layout()
         {
-            float e = Ease(_fullT), s = VoyageKit.Rise(_slideT);
+            float e = Ease(_fullT);
             _e = e;
             Rect slot = SlotRect();
             if (_fullT > 0f && _overlay)
@@ -778,10 +781,9 @@ namespace CosmicShore.UI
                 if (_overlayFill) _overlayFill.color = VoyageKit.Fade(_kit.Popup, e);
             }
             var size = Root.rect.size;
-            if (size == _laidFor && Mathf.Approximately(e, _laidFull) && Mathf.Approximately(s, _laidSlide)) return;
+            if (size == _laidFor && Mathf.Approximately(e, _laidFull)) return;
             _laidFor = size;
             _laidFull = e;
-            _laidSlide = s;
 
             var far = _overlay ? _overlay.rect.size : slot.size;
             float k = Mathf.Lerp(FitScale(slot.size, WindowSize), FitScale(far, ScreenSize), e);
@@ -809,18 +811,9 @@ namespace CosmicShore.UI
             _backGroup.blocksRaycasts = e >= 0.5f;
             _backFull.gameObject.SetActive(e > 0f);
 
-            // The crew down the right, its toggle on top; the drawer slides out beside it, 30 to its left.
-            Place(_crewToggle, At(Win(CrewX, 2f, CrewWidth, BandHeight), Full(F.x - Margin - CrewWidth, 100f, CrewWidth, BandHeight)));
-            var column = At(Win(CrewX, CrewTop, CrewWidth, WindowSize.y - CrewTop),
-                Full(F.x - Margin - CrewWidth, 150f, CrewWidth, F.y - 150f - Margin));
-            Place(_crewColumn, column);
-            FitRows(column.height);
-            int n = Mathf.Max(1, _offers.Count);
-            float drawerH = 2f * DrawerPad + DrawerLabel + n * (DrawerRow + DrawerGap);
-            Place(_drawer, new Rect(column.xMin - 30f - DrawerWidth + (1f - s) * 60f, column.yMax - drawerH, DrawerWidth, drawerH));
-            _drawerGroup.alpha = s;
-            _drawerGroup.blocksRaycasts = s > 0.5f;
-            _drawer.gameObject.SetActive(s > 0f);
+            // Open now down the right (Rev 113 Sea), then in the full screen's right margin under Back from full screen.
+            float sideH = SideHeight();
+            Place(_side, At(Win(SideX, SideY, SideWidth, sideH), Full(F.x - Margin - SideWidth, 100f, SideWidth, sideH)));
 
             // The picked voyage: under the table's right half, then at the full screen's foot.
             Place(_card, At(Win(CardX, CardY, CardWidth, CardHeight),
@@ -833,26 +826,9 @@ namespace CosmicShore.UI
             Place(_message, table);
             LayoutTable(table.size, e);
 
-            // Back to front: the table, its pins, then the rest; the drawer over them all.
+            // Back to front: the table, its pins, then the rest.
             _table.SetAsFirstSibling();
             _pins.SetSiblingIndex(1);
-            _drawer.SetAsLastSibling();
-        }
-
-        // Every face shares the column: 150 tall as the board draws them, shorter when more voyages are offered.
-        void FitRows(float height)
-        {
-            int n = Mathf.Max(1, _offers.Count);
-            float row = Mathf.Clamp((height - CrewGap * (n - 1)) / n, 72f, CrewRow);
-            for (int i = 0; i < _crew.Count; i++)
-            {
-                var c = _crew[i];
-                var le = VoyageKit.Le(c.Root);
-                if (Mathf.Approximately(le.preferredHeight, row)) continue;
-                le.preferredHeight = le.minHeight = row;
-                if (i < _offers.Count)
-                    VoyageKit.ShowCover(c.Face, _offers[i].Portrait, new Vector2(CrewWidth, row), VoyageKit.FaceFocus);
-            }
         }
 
         float ControlsWidth(float full)

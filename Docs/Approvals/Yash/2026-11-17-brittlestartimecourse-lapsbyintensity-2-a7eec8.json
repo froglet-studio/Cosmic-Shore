@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-17-brittlestartimecourse-lapsbyintensity-2-a7eec8",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T22:51:23+00:00",
+  "area": "Brittle Star Time ladder",
+  "summary": "BrittleStarTimeCourse.LapsByIntensity 2/3/3/4 -> 2/3/6/6 so the ladder climbs (Legendary AI 49/54/36/57 s -> 49/54/65/90 s); I3 keeps its team crystals, no kit change.",
+  "branch": "claude/project-thread-iqvkw9",
+  "commit": "d828664bd"
+}

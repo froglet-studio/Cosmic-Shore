@@ -28,6 +28,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sound_placeholders  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK = "--check" in sys.argv
 
@@ -389,7 +392,7 @@ MAP_BODY = """  vesselClass: 1
     AbilityLabel: Yawstery
     AbilityDescription: 'Hard flat turns on the turn pair. Time makes the Manta faster:
       cruise speed (VesselTransformer.ThrottleScalerMultiplier, x1.5 at level 10) and the
-      soaring speed (BoostSpeedMultiplier, x1.3 at level 10). Speed shapes the trail, never
+      soaring speed (BoostSpeedMultiplier, x1.3 at level 10). Time also whips the flat turns round faster (YawsteryActionSO.turnRateMultiplier, x1.5 at level 10). Speed shapes the trail, never
       an element: tall at a crawl, long and thin at Soar, and a Yawstery bends both rails.'
     Input: 12
     UnlockLevel: 5
@@ -435,6 +438,7 @@ def main() -> int:
         if meta is not None:
             targets.append((path + ".meta", meta))
         for p, want in targets:
+            want = sound_placeholders.fill_file(p, want)  # listed placeholder sounds survive a re-run
             have = open(p).read() if os.path.exists(p) else None
             if have != want:
                 drift.append(p)

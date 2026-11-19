@@ -920,12 +920,12 @@ namespace CosmicShore.Gameplay
             if (!IsCreditableVolume(volume)) return;
             if (!PassesHitReportGuard(ref volume)) return;
 
-            StatsManager.CreditPrismSteal(RoundStats, volume);
+            StatsManager.CreditPrismSteal(RoundStats, volume, gameData ? gameData.VolumeLedger : null);
 
             var victim = victimName.ToString();
             if (string.IsNullOrEmpty(victim) || gameData == null) return;
             if (gameData.TryGetRoundStats(victim, out IRoundStats victimStats))
-                StatsManager.DebitPrismSteal(victimStats, volume);
+                StatsManager.DebitPrismSteal(victimStats, volume, gameData.VolumeLedger, -1f, RoundStats);
         }
 
         /// <summary>
@@ -1100,7 +1100,7 @@ namespace CosmicShore.Gameplay
 
             IsInitializedAsAI = NetIsAI.Value;
             Domain = NetDomain.Value;
-            Name = DisplayNameValidator.ForDisplay(NetName.Value.ToString()); // fair play T7
+            Name = ResolveRosterName(); // fair play T7, and unique in the match (RosterNames)
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
@@ -1122,6 +1122,11 @@ namespace CosmicShore.Gameplay
         {
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-4] [Player] OnNetworkSpawn - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}");
             base.OnNetworkSpawn();
+
+            if (!s_spawnedPlayers.Contains(this))
+                s_spawnedPlayers.Add(this);
+            // A client receives the players in any order, so a namesake with a higher id may have resolved first.
+            RefreshNamesakeRosterNames(this);
 
             // Add to game data early so ServerPlayerVesselInitializer can find us.
             gameData.Players.Add(this);
@@ -1238,6 +1243,7 @@ namespace CosmicShore.Gameplay
         {
             // NetworkBehaviour.OnDestroy is virtual and does Netcode's own teardown; a plain
             // `void OnDestroy()` here would HIDE it and skip that cleanup.
+            s_spawnedPlayers.Remove(this);
             if (gameData)
             {
                 gameData.Players.Remove(this);
@@ -1265,6 +1271,12 @@ namespace CosmicShore.Gameplay
             _spawnEventRaised = false;
             _localStation = null;
             gameData.Players.Remove(this);
+
+            // A pilot leaving frees its place among its namesakes. Not while the whole session is going down:
+            // every player despawns then and there is no roster left to keep unique.
+            s_spawnedPlayers.Remove(this);
+            if (NetworkManager != null && !NetworkManager.ShutdownInProgress)
+                RefreshNamesakeRosterNames(this);
 
             NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetIsAI.OnValueChanged -= OnNetIsAIChanged;
@@ -1394,7 +1406,7 @@ namespace CosmicShore.Gameplay
             // if a value happens to be the same, the local property
             // would remain stale without this explicit sync.
             Domain = NetDomain.Value;
-            Name = DisplayNameValidator.ForDisplay(NetName.Value.ToString()); // fair play T7
+            Name = ResolveRosterName(); // fair play T7, and unique in the match (RosterNames)
             AvatarId = NetAvatarId.Value;
 
             // Re-register with gameData (cleared by ResetRuntimeData during scene transition)
@@ -1500,9 +1512,55 @@ namespace CosmicShore.Gameplay
                 ShipHelper.SetShipProperties(_vesselThemeManagerData, Vessel);
         }
         
+        // Every Player spawned on this machine, for the namesake check. GameDataSO.Players is not used: it is
+        // cleared on scene transitions and refilled one player at a time, so it can miss a namesake.
+        static readonly List<Player> s_spawnedPlayers = new();
+        static readonly List<(ulong networkObjectId, string displayName)> s_namesakeScratch = new();
+
+        /// <summary>
+        /// This pilot's name for the roster: the display name, made unique among the spawned players by
+        /// <see cref="RosterNames"/>. Every machine reaches the same answer from the replicated names and ids.
+        /// </summary>
+        string ResolveRosterName()
+        {
+            string display = DisplayNameValidator.ForDisplay(NetName.Value.ToString());
+            if (!IsSpawned || string.IsNullOrEmpty(display)) return display;
+
+            s_namesakeScratch.Clear();
+            for (int i = s_spawnedPlayers.Count - 1; i >= 0; i--)
+            {
+                var other = s_spawnedPlayers[i];
+                if (!other) { s_spawnedPlayers.RemoveAt(i); continue; }
+                if (ReferenceEquals(other, this) || !other.IsSpawned) continue;
+                s_namesakeScratch.Add((other.NetworkObjectId,
+                    DisplayNameValidator.ForDisplay(other.NetName.Value.ToString())));
+            }
+
+            return RosterNames.Compose(display,
+                RosterNames.NamesakesBefore(NetworkObjectId, display, s_namesakeScratch),
+                gameData ? gameData.DuplicatePlayerNameTemplate : null);
+        }
+
+        /// <summary>Re-resolve every other spawned pilot's roster name after <paramref name="changed"/> arrived, renamed or left.</summary>
+        static void RefreshNamesakeRosterNames(Player changed)
+        {
+            for (int i = s_spawnedPlayers.Count - 1; i >= 0; i--)
+            {
+                var other = s_spawnedPlayers[i];
+                if (!other || ReferenceEquals(other, changed) || !other.IsSpawned) continue;
+
+                string resolved = other.ResolveRosterName();
+                if (resolved == other.Name) continue;
+
+                other.Name = resolved;
+                if (other.TryGetComponent<RoundStats>(out var otherStats))
+                    otherStats.Name = resolved;
+            }
+        }
+
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
         {
-            Name = DisplayNameValidator.ForDisplay(newValue.ToString()); // fair play T7
+            Name = ResolveRosterName(); // fair play T7, and unique in the match (RosterNames)
 
             // Keep the RoundStats identity mirror live. A mid-session rename
             // (menu profile edit -> HandleProfileLoadedAfterSpawn on the owner)
@@ -1515,6 +1573,9 @@ namespace CosmicShore.Gameplay
             // an already-spawned NetworkObject.
             if (TryGetComponent<RoundStats>(out var stats))
                 stats.Name = Name;
+
+            // This name arriving or changing can move a same-named pilot's place among its namesakes.
+            RefreshNamesakeRosterNames(this);
 
             TryRaiseDeferredSpawnEvent();
         }

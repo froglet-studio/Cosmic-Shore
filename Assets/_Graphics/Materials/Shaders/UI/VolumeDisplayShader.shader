@@ -2,6 +2,9 @@ Shader"Custom/VolumeDisplayShader"
 {
     Properties
     {
+        // Unused by the pass, but a UI Image with no sprite reads material.mainTexture, which logs
+        // an error on every Image built with this material when the property is missing.
+        [HideInInspector] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color1 ("Color1", Color) = (1, 0, 0, 1)
         _Color2 ("Color2", Color) = (0, 1, 0, 1)
         _Color3 ("Color3", Color) = (0, 0, 1, 1)

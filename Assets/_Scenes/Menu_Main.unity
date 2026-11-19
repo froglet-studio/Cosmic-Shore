@@ -30276,18 +30276,18 @@ MonoBehaviour:
   TargetAlpha: 0
   targetReachedEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 247230621
+      Data2: 1075866072
+      Data3: -1989636704
+      Data4: 427111795
+    Path: event:/SFX/Oneshots/Menu/SmallReward
   onTriggerEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -2063081162
+      Data2: 1129384062
+      Data3: -2054690132
+      Data4: -1127245577
+    Path: event:/SFX/Oneshots/Menu/RedeemTicket
   AudioVolume: 0.1
   TargetPulseMultiplier: {x: 1.25, y: 1.25}
   PulseDuration: 0.25
@@ -37021,11 +37021,11 @@ MonoBehaviour:
   displayNameDefaultText: 
   typingAudioEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 724249746
+      Data2: 1213064519
+      Data3: 1634220168
+      Data4: -897979471
+    Path: event:/SFX/Oneshots/Menu/Option Click
   FocusDisplayNameInputFieldEnabled: 0
   ShowEmailLogin: 0
   emailLoginResultMessage: {fileID: 0}
@@ -61897,18 +61897,18 @@ MonoBehaviour:
   TargetAlpha: 0
   targetReachedEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 247230621
+      Data2: 1075866072
+      Data3: -1989636704
+      Data4: 427111795
+    Path: event:/SFX/Oneshots/Menu/SmallReward
   onTriggerEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -2063081162
+      Data2: 1129384062
+      Data3: -2054690132
+      Data4: -1127245577
+    Path: event:/SFX/Oneshots/Menu/RedeemTicket
   AudioVolume: 0.1
   TargetPulseMultiplier: {x: 1.25, y: 1.25}
   PulseDuration: 0.25
@@ -74763,7 +74763,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.23921569, g: 0.69803923, b: 1, a: 0}
+  m_Color: {r: 0, g: 0.83137256, b: 1, a: 0}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -75184,7 +75184,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.23921569, g: 0.69803923, b: 1, a: 0}
+  m_Color: {r: 0, g: 0.83137256, b: 1, a: 0}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -75605,7 +75605,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.23921569, g: 0.69803923, b: 1, a: 0}
+  m_Color: {r: 0, g: 0.83137256, b: 1, a: 0}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -76026,7 +76026,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.23921569, g: 0.69803923, b: 1, a: 0}
+  m_Color: {r: 0, g: 0.83137256, b: 1, a: 0}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -76105,10 +76105,10 @@ MonoBehaviour:
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
-    m_NormalColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
+    m_NormalColor: {r: 0, g: 0.83137256, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
     m_PressedColor: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
-    m_SelectedColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
+    m_SelectedColor: {r: 0, g: 0.83137256, b: 1, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
@@ -76594,10 +76594,10 @@ MonoBehaviour:
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
-    m_NormalColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
+    m_NormalColor: {r: 0, g: 0.83137256, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
     m_PressedColor: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
-    m_SelectedColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
+    m_SelectedColor: {r: 0, g: 0.83137256, b: 1, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
@@ -86446,18 +86446,18 @@ MonoBehaviour:
   TargetAlpha: 0
   targetReachedEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 247230621
+      Data2: 1075866072
+      Data3: -1989636704
+      Data4: 427111795
+    Path: event:/SFX/Oneshots/Menu/SmallReward
   onTriggerEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -2063081162
+      Data2: 1129384062
+      Data3: -2054690132
+      Data4: -1127245577
+    Path: event:/SFX/Oneshots/Menu/RedeemTicket
   AudioVolume: 0.1
   TargetPulseMultiplier: {x: 1.25, y: 1.25}
   PulseDuration: 0.25

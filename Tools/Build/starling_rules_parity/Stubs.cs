@@ -23,6 +23,8 @@ namespace UnityEngine
         public static float Pow(float a, float b) => (float)Math.Pow(a, b);
         // Unity rounds half to even (Math.Round's default), the same as RoundToInt.
         public static int RoundToInt(float v) => (int)Math.Round(v);
+        public static int FloorToInt(float v) => (int)Math.Floor(v);
+        public static float LerpUnclamped(float a, float b, float t) => a + (b - a) * t;
     }
 
     [AttributeUsage(AttributeTargets.Field)] public class TooltipAttribute : Attribute { public TooltipAttribute(string s) { } }
@@ -32,4 +34,33 @@ namespace UnityEngine
     [AttributeUsage(AttributeTargets.Field)] public class MinAttribute : Attribute { public MinAttribute(float m) { } }
     [AttributeUsage(AttributeTargets.Field)] public class RangeAttribute : Attribute { public RangeAttribute(float a, float b) { } }
     [AttributeUsage(AttributeTargets.Class)] public class CreateAssetMenuAttribute : Attribute { public string fileName, menuName; }
+}
+
+// What ElementalFloat (the element scaling channel StarlingConfigSO's arrival levels ride) names off-vessel. The tests call
+// only its pure EvaluateAtNormalizedLevel; these exist so the SHIPPED source compiles.
+namespace CosmicShore.Gameplay
+{
+    public class ResourceSystem : UnityEngine.Object
+    {
+        public event Action<CosmicShore.Data.Element, int> OnElementLevelChange;
+        public float GetNormalizedLevel(CosmicShore.Data.Element element) => 0f;
+        void Quiet() => OnElementLevelChange?.Invoke(default, 0);
+    }
+
+    public class R_VesselElementalAbilityHandler : UnityEngine.Object
+    {
+        public int ReplicatedLevel(CosmicShore.Data.Element element) => 0;
+    }
+
+    public interface IVesselStatus
+    {
+        ResourceSystem ResourceSystem { get; }
+        R_VesselElementalAbilityHandler ElementalAbilityHandler { get; }
+    }
+
+    public interface IVessel
+    {
+        IVesselStatus VesselStatus { get; }
+        void BindElementalFloat(string name, CosmicShore.Data.Element element);
+    }
 }

@@ -1,5 +1,8 @@
 # The game kit roster: every missing elemental arcade game (2026-11-15)
 
+> **2026-11-17 (Garrett):** each vessel's Mass and Space games are being merged into one Mass-Space game
+> ([`../ArcadeRestructure/PLAN.md`](../ArcadeRestructure/PLAN.md)). The ids below stay reserved; no new Mass or Space game is built.
+
 Garrett, 2026-11-15, after the vessel polish pass (#1994): *"Ok now build any missing games. it is ok if we have a
 game like the dolphin mass game missing because with its kit a mass game doesn't make sence. but it has a space game
 so that is fine. similarly if a vessel has a great mass game then it is ok if we decide that we don't need to struggle
@@ -67,8 +70,9 @@ freely before it lands (the generator mints guids from the name), but keep the i
 | 32 | Rhino | Mass | Windrow | 122 | 197 | Blade and Berm: shove the field's prisms into your zone and hold them |
 | 33 | Rhino | Space | Avalanche | 123 | 198 | Carry: a thrown prism smashes the next one; chain the field apart |
 | 34 | Urchin | Charge | Railrush | 124 | 199 | Chain-spike hits off the rail (PR #1997) |
-| 35 | Grizzly | Charge | Standoff | 125 | 200 | Weapon Systems and the Charged Cannon on rival hulls, Dig In to hold a post |
-| 36-37 | Jewel Wasp | Time, Charge, Mass or Space | (after PR #1993 lands) | 126-127 | 201-202 | its reworked kit; designed last |
+| 35 | Grizzly | Charge | Standoff | 125 | 200 | Weapon Systems and the Charged Cannon on rival hulls, Dig In to hold a post (PR #1998, merged; built headless) |
+| 36 | Jewel Wasp | Charge | Marionette | 126 | 201 | Ride a creature and land its attack (Strike) on rival hulls; Charge 5 Burst (built headless, `MARIONETTE.md`) |
+| 37 | Jewel Wasp | Space | Gorge | 127 | 202 | Ride a creature and suck Chum's reef in through the host's suction; Space 5 Maw (built headless, `GORGE.md`) |
 
 ## 3. Skipped, and why
 
@@ -98,6 +102,8 @@ Unity is claimed: every one of these is authored headless until a person flies i
 | # | Game | Branch / PR | State |
 |---|---|---|---|
 | 1 | Chum (Angler Space) | `claude/angler-space-chum` | built headless, not run in Unity (2026-11-15) |
+| 35 | Standoff (Grizzly Charge) | PR #1998, merged | built headless, not run in Unity (2026-11-15) |
+| 36-37 | Marionette, Gorge (Jewel Wasp Charge, Space) | `claude/jewel-wasp-games` | built headless, not run in Unity (2026-11-15). The wasp has no Time or Mass game yet: a Time game would take id 128+ after a collision check, and its Mass verb (the plant host) is left for its own pass |
 | 2 | Starweave (Brittle Star Mass) | `claude/brittlestar-mass` | built headless, not run in Unity (2026-11-15) |
 | 3 | Haul (Thresher Mass) | `claude/thresher-mass-haul` | built headless, not run in Unity (2026-11-15) |
 | 4 | Hedgerow (Serpent Mass) | `claude/serpent-mass-hedgerow` | built headless, not run in Unity (2026-11-15) |

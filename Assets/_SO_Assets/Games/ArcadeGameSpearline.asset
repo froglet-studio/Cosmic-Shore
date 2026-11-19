@@ -15,19 +15,20 @@ MonoBehaviour:
   Mode: 96
   IsMultiplayer: 1
   DisplayName: Spearline
-  Description: Swordfish only. Three laps of the circuit, and the rings are sealed with
-    panes of prisms. A sealed ring counts only through a hole - your hull alone punches too
-    small a one, so swing the bill as you go through. The hard levels shield the seals and want
-    more strokes. Time swings the sword faster. First team to put a pilot over the line wins.
+  Description: Swordfish only. Five laps of the circuit, and the gentle rings are sealed
+    with panes of prisms. A sealed ring counts only through a hole - your hull alone punches
+    too small a one, so swing the bill into the pane as you go through. From level two part
+    of every pane is shielded and only cracks - cross the bright face and swing into it.
+    First team to put a pilot over the line wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
-  CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  CardBackground: {fileID: 21300000, guid: 0152b36b95194acfa57d97ce7935f167, type: 3}
   GolfScoring: 1
   SceneName: MinigameSpearline
   Vessels:
   - {fileID: 11400000, guid: a7e14c2b9d3f4a6c8b5e0d1f2c3a4b96, type: 2}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1

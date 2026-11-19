@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Engine.Events;
 
 namespace CosmicShore.Engine.UI
@@ -12,7 +13,10 @@ namespace CosmicShore.Engine.UI
     /// </summary>
     public class Button : Selectable, IPointerClickHandler, ISubmitHandler
     {
-        public UnityEvent onClick = new();
+        /// <summary>Original contract: the onClick event's own type, so game code can replace the event wholesale.</summary>
+        [Serializable] public class ButtonClickedEvent : UnityEvent { }
+
+        public ButtonClickedEvent onClick = new();
 
         void Press()
         {

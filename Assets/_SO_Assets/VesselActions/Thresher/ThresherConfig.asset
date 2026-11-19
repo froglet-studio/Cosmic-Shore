@@ -56,21 +56,29 @@ MonoBehaviour:
     spinEase: 0.4
     windmillSpeed: 1000
   vesselHitPetals:
-    Enabled: 1
+    Enabled: 0
     Value: 1
     Min: 1
     Max: 3
     element: 1
     UseFloor: 1
     Floor: 0.5
-  massTrailScale:
+  smashSpeedScale:
     Enabled: 1
     Value: 1
     Min: 1
-    Max: 2
+    Max: 0.6
+    element: 1
+    UseFloor: 1
+    Floor: 0.4
+  massTrailScale:
+    Enabled: 1
+    Value: 0.45
+    Min: 0.45
+    Max: 0.9
     element: 2
     UseFloor: 1
-    Floor: 0.5
+    Floor: 0.25
   energyMaxDiameterScale:
     Enabled: 1
     Value: 4

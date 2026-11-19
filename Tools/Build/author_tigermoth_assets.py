@@ -173,7 +173,7 @@ def action_asset() -> str:
             f"  m_Script: {{fileID: 11500000, guid: {guid_of(ACTION_SO_META)}, type: 3}}\n"
             "  m_Name: TigerMothDropAction\n"
             "  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.TigerMothDropActionSO\n"
-            "  fullCooldownSeconds: 20\n  fullCooldownDistance: 900\n"
+            "  fullCooldownSeconds: 10\n  fullCooldownDistance: 900\n"
             "  cooldownMultiplierAtFullTime: 0.5\n  maxCooldownMultiplier: 2\n  dropSpeed: 900\n  dropEaseSeconds: 0.12\n"
             "  landSeconds: 0.25\n  afterburnSeconds: 3\n  afterburnThrottle: 2\n  cameraEnterSeconds: 0.35\n  gateRadius: 33\n  portalWindowRange: 2500\n"
             "  portalWindowFadeBand: 600\n  portalWindowRenderScale: 0.75\n  panoramaFaceSize: 256\n"

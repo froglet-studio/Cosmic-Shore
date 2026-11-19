@@ -243,7 +243,9 @@ CROWN = {
     "Armadillo": ("bands", "other", True, "an armadillo's grey head shield, a smooth cap of small flat bony plates fitted edge to edge like a mosaic over the top of the head, like the cap of a helmet"),
     "Koi": ("fins", "other", False, "long flowing translucent koi fins, white splashed with orange, sweeping back from the temples and from behind the jaw, and two koi barbels at the corners of the mouth"),
     "Hyena": ("mane", "ears", True, "a coarse upright hyena mane running from the crown down the nape, and two large rounded hyena ears"),
-    "Platypus": ("bill shield", "other", True, "a broad flat platypus bill shield lying over the brow like the peak of a cap, soft dark blue-grey leathery skin rounded at the front with two nostril dots, and sleek dense brown platypus fur over the rest of the head"),
+    # Platypus: the bill is the lips grown long, never a plate on the brow (Garrett 2026-11-18: "a platypus bill is
+    # homologous to other mammals' lips. we want to try and respect homology").
+    "Platypus": ("bill", "other", True, "a platypus bill that grows where the lips are and is the mouth: the upper and lower lips lengthen forward into a broad flat soft bill in two halves, dark blue-grey leathery skin rounded at the front with two nostril dots on top, and sleek dense brown platypus fur over the rest of the head"),
     "Crane": ("crown", "other", True, "a crane's bare red crown patch on top of a white-feathered head, with a black stripe running back from each eye"),
     "Beetle": ("carapace", "other", True, "a glossy black-brown beetle carapace over the top and back of the head like a helm, split down the middle by the wing-case seam, with a pair of short clubbed antennae at the brow"),
     "Bison": ("wool", "horns", True, "a bison's huge shaggy forelock, a mound of dark curly wool covering the crown and brow, with two short curved black horns just showing through it at the sides and a long dark beard under the chin"),
@@ -1048,7 +1050,7 @@ def world_name_in(text):
 
 
 def self_test():
-    species = [a for a in brief.enum_members(brief.ANIMAL_SPECIES_CS, "AnimalSpecies") if a != "None"]
+    species = brief.rollable_animals()
     errors = []
     for s in species:
         for table, n in ((FACE, "FACE"), (CROWN, "CROWN"), (MARK, "MARK")):

@@ -57,7 +57,7 @@ ELEMENT_CS = "Assets/_Scripts/Data/Enums/Element.cs"
 # Every line the voyage HUD and the Voyage window show (VoyageLines in VoyageContentSO.cs). A missing key is a typo.
 LINES_FIELDS = [
     "VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "HoldProgress", "Done", "Failed", "Stowed", "Extracted",
-    "ArkLost", "NoWork", "Following", "ChooseNext",
+    "ArkLost", "NoWork", "Following", "FollowerArkLost", "EscortHoldFallen", "EscortHoldThrough", "GuestStays", "ChooseNext",
     "Lair", "Hoard", "Nursery", "Derelict", "Pen", "Shrine", "KaijuHere", "HostileWater", "RivalHere", "RivalOpened",
     "Charted", "Relic", "Delivered", "Convoy", "ProgressStow", "ProgressHold", "ProgressGather", "ProgressCull",
     "ProgressLay", "ProgressRaze", "ProgressObserve", "ProgressMeet",
@@ -88,8 +88,49 @@ LINES_FIELDS = [
     "BoardKicker", "BoardKickerAlone", "BoardStats", "BoardStepBack", "BoardStepOn", "BoardZoomIn", "BoardZoomOut", "BoardConfigure", "BoardConfigureKey", "BoardBack", "BoardBackKey", "BoardSavePreset", "BoardSavePresetKey", "BoardHangarNote", "BoardPresetWho", "BoardSwapsWith", "SlabChip", "SlabSagaPart", "SlabSagaKicker", "SlabSagaForm", "SlabQuestsKicker", "SlabQuestsName", "SlabQuestsProgress", "SlabQuestKicker", "SlabQuestClaimed", "SlabQuestReady", "SlabQuestNext", "SlabQuestLocked", "SlabQuestClaim", "SlabQuestPlay", "SlabEpisodesKicker", "SlabEpisodesName", "SlabEpisodesSoon", "SlabEpisodesLine", "SlabEpisodesFace", "SlabEpisodesBack", "SlabEpisodesBackKey", "SlabSagaLockedKicker", "SlabSagaLockedLine", "SlabSagaLockedFace",
     "QuestsTitle", "QuestsBack", "QuestsBackKey", "QuestsReady", "QuestsOpen", "QuestsTier3", "QuestsTier4", "QuestsTierFeature", "QuestsGoalDone", "QuestsGoalNext", "QuestsClaimStep", "QuestsClaimUnlocks", "QuestsClaimReady", "QuestsRewardKicker", "QuestsRewardKickerYours", "QuestsRewardKind", "QuestsRewardYours", "QuestsRewardReady", "QuestsRewardLater", "QuestsDomainJade", "QuestsDomainRuby", "QuestsDomainGold", "QuestsDomainBlue", "QuestsAlsoOpens", "QuestsOpened", "QuestsPlayNote",
     "StripSagaKicker", "StripSagaName", "StripEpisodesKicker", "StripEpisodesName", "StripSoon", "StripNotOpen",
-    "StepSea", "StepVoyage", "StepArk", "PageBack", "PageBackKey", "SeaFullScreen", "SeaFullScreenBack", "SeaCrew", "SeaCrewHide", "SeaTierWidth", "SeaOpenVoyage", "SeaOfferKicker", "SeaOfferPay", "SeaCrewRecommends", "SeaCrewDrawer", "BriefKicker", "BriefStats", "BriefDifficulty", "BriefRecommended", "BriefRewards", "BriefCrystals", "BriefCrystalsBy", "BriefStanding", "BriefStandingBy", "BriefRole", "BriefStop", "BriefReady", "ArkLobby", "ArkLobbyWith", "ArkSquadHead", "ArkSquadLine", "ArkSquadLineLobby", "ArkYou", "ArkWingmate", "ArkInLobby", "ArkFriendLine", "ArkArtifact", "ArkFlySquad", "ArkFlySquadKey", "ArkBackToLobby", "ArkVoyageLine", "ArkSeatAiShort", "ArkSquadSeparator", "ArkNoSquad", "ArkAiFor", "ArkAiLine", "PickTitle", "PickTitleSeat", "PickKits", "PickKitVoyage", "PickKitLast", "PickKitWho", "PickSees", "PickSeesAll", "PickSeesCrystals", "PickSeesPrisms", "PickSeesLife", "PickSeesVessels", "PickSeesPaths", "PickCount", "PickForVoyage", "PickNote", "PickClose", "KindCourier", "KindHunt", "KindSalvage", "KindDefence", "KindSurvey", "KindHarvest", "KindStudy", "KindRescue", "KindLiberate", "KindBuild", "KindLift", "KindBounty", "KindRite", "KindParley", "KindRaid", "KindTend", "KindExhibition", "KindConvoy", "KindCull", "KindHome", "KindEscort",
+    "StepSea", "StepVoyage", "StepArk", "PageBack", "PageBackKey", "SeaFullScreen", "SeaFullScreenBack", "SeaCrew", "SeaCrewHide", "SeaTierWidth", "SeaOpenVoyage", "SeaOfferKicker", "SeaOfferPay", "SeaCrewRecommends", "SeaCrewDrawer", "BriefKicker", "BriefStats", "BriefDifficulty", "BriefRecommended", "BriefRewards", "BriefCrystals", "BriefCrystalsBy", "BriefStanding", "BriefStandingBy", "BriefRole", "BriefStop", "BriefReady", "ArkLobby", "ArkLobbyWith", "ArkSquadHead", "ArkSquadLine", "ArkSquadLineLobby", "ArkYou", "ArkWingmate", "ArkInLobby", "ArkFriendLine", "ArkArtifact", "ArkFlySquad", "ArkFlySquadKey", "ArkBackToLobby", "ArkVoyageLine", "ArkSeatAiShort", "ArkSquadSeparator", "ArkNoSquad", "ArkAiFor", "ArkAiLine", "PickTitle", "PickTitleSeat", "PickKits", "PickKitVoyage", "PickKitLast", "PickKitWho", "PickSees", "PickSeesAll", "PickSeesCrystals", "PickSeesPrisms", "PickSeesLife", "PickSeesVessels", "PickSeesPaths", "PickCount", "PickForVoyage", "PickNote", "PickClose", "SeaOpenNow", "SeaCrewButton", "SeaCrewKey", "SeaLockedLine", "CrewTitle", "CrewLine", "CrewAll", "CrewLeftOut", "CrewOpenNow", "CrewVoyages", "CrewLocked", "CrewOpen", "CrewStops", "CrewLockedPress", "CrewArk", "CrewArkAsks", "CrewAsks", "CrewQuote", "CrewWorlds", "CrewRewards", "CrewTake", "CrewInstead", "CrewInsteadKey", "FactionNone", "FactionMerchant", "FactionHunter", "FactionAristocrat", "FactionPirate", "FactionBountyHunter", "FactionExplorer", "FactionActivist", "FactionThief", "FactionGatherer", "FactionContractor", "FactionSport", "FactionResearcher", "FactionPreservationist", "FactionFirstResponder", "FactionPriest", "FactionDiplomat", "ArkLobbyLine", "ArkFlies", "ArkInvite", "ArkChangeWingmate", "ArkFillSquad", "ArkFillKey", "ArkFillNone", "ArkSailAs", "ArkLobbyLineGuest", "ArkHostSails", "ArkChangeSeat", "ArkChangeSeatKey", "PickSavedHere", "PickSeatNow", "PickSeatLine", "PickSaved", "PickSavedSeat", "PickWordVessel", "PickWordPilot", "PickWordElement", "PickWordArtifact", "KindCourier", "KindHunt", "KindSalvage", "KindDefence", "KindSurvey", "KindHarvest", "KindStudy", "KindRescue", "KindLiberate", "KindBuild", "KindLift", "KindBounty", "KindRite", "KindParley", "KindRaid", "KindTend", "KindExhibition", "KindConvoy", "KindCull", "KindHome", "KindEscort",
 ]
+
+# Crystal Run (Docs/Voyages/CRYSTAL_RUN.md): the objective box, the toasts and the end-of-voyage scoreboard.
+LINES_FIELDS += [
+    "ObjectiveRaidKicker", "ObjectiveRaidGoal", "ObjectiveCrystals", "ObjectiveCount", "ObjectiveElement",
+    "ObjectiveElementSeparator", "ObjectiveHull", "ObjectiveBreach", "ObjectiveCell", "ObjectiveCalm", "ObjectiveHostile",
+    "ObjectiveGoalMet", "ObjectiveHomeKicker", "ObjectiveHomeGoal", "ObjectiveAtStake",
+    "ToastCellCalm", "ToastCellHostile", "ToastFinalCell", "ToastGoalReached",
+    "ScoreKickerDone", "ScoreKickerFailed", "ScoreKickerLost", "ScoreKickerDocked", "ScoreRaidTitle", "ScoreRaidStats",
+    "ScoreEscortTitle", "ScoreEscortStats", "ScoreLostTitle", "ScoreDockedTitle", "ScoreDockedStats", "ScoreHull",
+    "ScoreHullValue", "ScoreColSeat", "ScoreColCrystals", "ScoreColKills", "ScoreRowSeat", "ScoreRowYou", "ScoreRewards",
+    "ScoreStolen", "ScoreStolenBy", "ScoreStolenSeparator", "ScorePay", "ScoreEscortPay", "ScoreRewardValue",
+    "ScoreAtStake", "ScoreBanked", "ScoreFinish", "ScoreFinishLine", "ScoreVenture", "ScoreVentureRaid",
+    "ScoreVentureEscort", "ScoreDone", "ScoreDoneLine", "ScoreHostChooses", "ScoreKeepFlying", "ScoreFinishKey", "ScoreVentureKey",
+    "ToastCellHostileSub", "ToastCellCalmSub", "ToastSetOff", "ToastSetOffSub", "ToastHome",
+    "ToastHomeSub", "ObjectiveDestinationTag", "ObjectiveCalmTag", "ObjectiveHostileTag", "ObjectiveCellName",
+    "ToastArkUnderAttack", "ToastArkUnderAttackSub", "ToastBreachClose", "ToastBreachCloseSub", "ObjectiveEscortKicker", "ObjectiveEscortGoal", "ObjectiveEscortGoalNoBreach", "ObjectiveArkBound", "ObjectiveArkInside", "ObjectiveActionAssault", "ObjectiveActionIncoming", "ObjectiveActionUnderAttack", "ObjectiveActionHealing", "ObjectiveEscortHostile", "ObjectiveEscortCalm", "ObjectiveStripEscort", "ObjectiveStripHull", "ObjectiveStripPlace", "ObjectiveStripHostile", "ObjectiveStripCalm", "ObjectiveStripElement", "ScoreColGuarded", "ScoreColScore", "ScoreTryAgain", "ScoreTryAgainLine",
+    "ToastAnchored", "ToastAnchoredSub", "ToastAnchorClosing", "ToastAnchorClosingSub", "ToastWeighed", "ToastBanked", "ToastBankedSub", "ToastCrystal", "ToastCrystalCarrySub", "ToastSpilled", "ToastSpilledSub", "ObjectiveStripAnchor", "ObjectiveStripCarried", "ToastGoalReachedSub", "PauseCompleteAndSail", "ObjectiveStripComplete", "ObjectiveStripArkHull", "ObjectiveRailLabel", "ObjectiveStripLeaking", "ToastHullLeaking", "ToastHullLeakingSub", "ToastRaiders", "ToastRaidersSub", "ToastKaiju", "ToastKaijuSub", "ToastGoalMissed", "ToastGoalMissedSub", "ScoreRetryRaid", "ToastStray", "ToastStraySub", "ToastStrayCarrySub", "ToastRecalled", "ToastRecalledSub", "ToastRecalledLostSub", "ScoreFinishHere", "ScoreFinishHereLine", "ScoreFinishHereKey", "ScoreSailHome", "ScoreSailHomeLine",
+]
+
+# Crystal Run's job keys (JobTemplate in VoyageContent.cs): an always-offered job counted from the moment the Ark sails.
+def crystal_run_fields(j):
+    return {"Always": bool(j.get("always", False)), "CountsUnderway": bool(j.get("countsUnderway", False)),
+            "Cells": int(j.get("cells", 0)), "VentureGoal": j.get("ventureGoal", 0), "VentureCells": int(j.get("ventureCells", 0))}
+
+
+def crystal_run_errors(j):
+    errors = []
+    if int(j.get("cells", 0)) < 0 or int(j.get("ventureCells", 0)) < 0 or float(j.get("ventureGoal", 0)) < 0:
+        errors.append(f"{j['id']}: cells, ventureCells and ventureGoal are 0 or more")
+    if j.get("countsUnderway") and j.get("verb", "Arrive") != "Gather":
+        errors.append(f"{j['id']}: countsUnderway counts crystals, so its verb is Gather")
+    for key, kind in (("cellWorlds", str), ("cellAnchorSeconds", (int, float)), ("cellLife", (int, float))):
+        vals = j.get(key, [])
+        if not isinstance(vals, list) or any(isinstance(v, bool) or not isinstance(v, kind) for v in vals):
+            errors.append(f"{j['id']}: {key} must be a list, one entry per cell of the leg")
+        elif kind is not str and any(v < 0 for v in vals):
+            errors.append(f"{j['id']}: {key} entries are 0 or more")
+    if j.get("always") and j["id"] == "job.return":
+        errors.append("job.return is the way home, never an always-offered job")
+    return errors
+
 
 # The world's rates (VoyageWorldRules in VoyageContent.cs): spec key -> (C# field, kind). Every one is written.
 WORLD_FIELDS = [
@@ -305,7 +346,7 @@ def validate(spec):
         jobs[j["id"]] = j
         if j["kind"] not in e["kinds"]:
             errors.append(f"{j['id']}: unknown kind {j['kind']}")
-        if j["faction"] not in e["fac"] or (j["faction"] == "None" and j["id"] != "job.return"):
+        if j["faction"] not in e["fac"] or (j["faction"] == "None" and j["id"] != "job.return" and not j.get("always")):
             errors.append(f"{j['id']}: unknown faction type {j['faction']}")
         if j["needs"] not in e["tags"]:
             errors.append(f"{j['id']}: unknown news tag {j['needs']}")
@@ -322,8 +363,14 @@ def validate(spec):
             errors.append(f"{j['id']}: {verb} needs a goal above 0")
         if not 0 <= float(j.get("hullFloor", 0)) <= 1:
             errors.append(f"{j['id']}: hullFloor must be 0 to 1")
+        if not 0 <= float(j.get("breachHull", 0)) <= 0.95:
+            errors.append(f"{j['id']}: breachHull must be 0 to 0.95")
+        cells = j.get("hostileCells", [])
+        if not isinstance(cells, list) or any(not isinstance(c, bool) for c in cells):
+            errors.append(f"{j['id']}: hostileCells must be a list of true/false, one per cell of the leg")
         if not 0 <= int(j.get("tier", 0)) <= 2:
             errors.append(f"{j['id']}: tier must be 0 to 2")
+        errors.extend(crystal_run_errors(j))
         for k in ("onSuccess", "onFail"):
             if j[k] and j[k] not in events:
                 errors.append(f"{j['id']}: {k} names unknown event {j[k]}")
@@ -530,6 +577,20 @@ def to_model(spec):
             "AvoidsOwnDomain": bool(j.get("avoidsOwnDomain", False)), "RivalsMayTake": bool(j.get("rivalsMayTake", True)),
             "ChronicleLine": j.get("chronicle", ""),
         })
+        # The leg's hostile cells and breach line (Milestone 1): written only when the job names them, so the jobs that
+        # do not keep their serialized shape (Unity reads an absent field as its default: no pattern, no breach line).
+        if j.get("hostileCells"):
+            m["Jobs"][-1]["HostileCells"] = [1 if c else 0 for c in j["hostileCells"]]
+        if float(j.get("breachHull", 0)) > 0:
+            m["Jobs"][-1]["BreachHull"] = j["breachHull"]
+        # The leg cell by cell (Shombith's storyboard, 2026-11-17): written only when the job names them.
+        if j.get("cellWorlds"):
+            m["Jobs"][-1]["CellWorlds"] = list(j["cellWorlds"])
+        if j.get("cellAnchorSeconds"):
+            m["Jobs"][-1]["CellAnchorSeconds"] = list(j["cellAnchorSeconds"])
+        if j.get("cellLife"):
+            m["Jobs"][-1]["CellLife"] = list(j["cellLife"])
+        m["Jobs"][-1].update(crystal_run_fields(j))
     for ev in spec["events"]:
         writes = []
         for w in ev["writes"]:
@@ -657,10 +718,14 @@ def emit_toy(spec):
             f"  content: {{fileID: 11400000, guid: {guid_for('VoyageContent.asset')}, type: 2}}\n")
     out += current_ark_escort()
     out += f"  seedElementLevel: {fnum(t['seedElementLevel'])}\n  wingmateLeash: {fnum(t['wingmateLeash'])}\n"
+    out += (f"  strayRadiusCells: {fnum(t.get('strayRadiusCells', 1.25))}\n"
+            f"  strayCountdownSeconds: {fnum(t.get('strayCountdownSeconds', 5))}\n")
     out += f"  findDistance: {fnum(t['findDistance'])}\n  vaultRadius: {fnum(t['vaultRadius'])}\n"
     out += f"  vaultPrisms: {int(t['vaultPrisms'])}\n  vaultPrismScale: {vec3(t['vaultPrismScale'])}\n"
     out += f"  vaultOpenShare: {fnum(t['vaultOpenShare'])}\n  holdRadius: {fnum(t['holdRadius'])}\n"
     out += f"  cullRadius: {fnum(t['cullRadius'])}\n  observeRadius: {fnum(t['observeRadius'])}\n  rivalAbeam: {fnum(t['rivalAbeam'])}\n"
+    out += (f"  escortCrystalsPerDifficulty: {int(t.get('escortCrystalsPerDifficulty', 30))}\n"
+            f"  escortRewardElement: {enums()['elements'][t.get('escortRewardElement', 'Omni')]}\n")
     for k in TOY_COLORS:
         out += f"  {k}: {color(t[k])}\n"
     return out
@@ -712,6 +777,10 @@ def drift(files):
             if not os.path.exists(os.path.join(ROOT, rel)) or read(rel) != text]
 
 
+def crystal_run(spec):
+    return next(j for j in spec["jobs"] if j.get("countsUnderway"))
+
+
 def self_test():
     failures = []
     spec = load(SPEC)
@@ -750,6 +819,9 @@ def self_test():
         "a verb with no goal": lambda s: next(j for j in s["jobs"] if j.get("verb") == "Gather").update(goal=0),
         "a hull floor past 1": lambda s: s["jobs"][2].update(hullFloor=2),
         "a tier past 2": lambda s: s["jobs"][2].update(tier=5),
+        "a crystal run that counts a verb other than Gather": lambda s: crystal_run(s).update(verb="Hold"),
+        "a crystal run of negative cells": lambda s: crystal_run(s).update(cells=-1),
+        "a factionless job that is not always offered": lambda s: crystal_run(s).update(always=False),
         "a crew type with no work": lambda s: [s["jobs"].remove(j) for j in list(s["jobs"]) if j["faction"] == "Sport"],
         "a news write with no line": lambda s: s["events"][0]["writes"][0].update(line=""),
         "a rival at an unknown home": lambda s: s["rivals"][0].update(home="loc.nowhere"),

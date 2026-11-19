@@ -28,6 +28,22 @@ Nothing about the pair changes. The scene is Glasshouse's, cloned through `lib.c
 swapped for Den Builder's (same block shape), the controller and rule swapped, the donor's settings and arena-cell
 fields replaced by the lead fields, the four AI templates turned from Anglers into Gobies.
 
+## AI, trained (2026-11-19, elemental loop step 3)
+
+The Goby AI cruised a 4,000 u leash round where it started (`GobyPistolConfig.aiHomeRadius`), so its islands spread
+thin and the Pistol built far apart. Raced on the Brood Rush volume books (each pilot's VC + VD, `brood_judge.py --mode
+DenBuilder` / `Riptide`, Amoebius headless, Goby against Goby), its own AI numbers were searched in Den Builder and
+Riptide together: `aiHomeRadius` 4000 -> 600 (`aiDartLength` 500 and `aiRethinkSeconds` 1.2 also tried; neither helped
+both games).
+
+| Mean seat VC + VD (2 seeds, 4 seats) | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Den Builder shipped -> trained | 12.6k -> 19.7k | 30.6k -> 36.7k | 26.1k -> 46.5k | 23.0k -> 44.4k |
+| Riptide shipped -> trained | 17.4k -> 22.7k | 14.1k -> 16.5k | 12.6k -> 21.1k | 11.9k -> 14.8k |
+
+I2 on fresh seeds 11-12, the other rungs on seeds 21-22. Knee (seeds 1-2, I2, Den Builder / Riptide): 1500 +43% / 0,
+1000 +78% / +34%, 600 +73% / +100%, 400 +57% / +97%. Raw: `/mnt/project-files/regatta-flywheel/mass/`.
+
 ## Verification status
 
 Authored headless: the generator's `--check`, the reference compile and the static gates. **Not run in Unity.** What

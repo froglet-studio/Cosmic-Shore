@@ -210,6 +210,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameKelpwood.unity
     guid: 750b1dc75ea9084b39ab73f51caa180b
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameMarionette.unity
+    guid: 4c3a828541d5559e7927c595ab052d9a
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSnap.unity
     guid: f97c43ab08a5c73ec87579c4e1ed568c
   - enabled: 1
@@ -233,6 +236,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameChum.unity
     guid: 88e45b8e8325f38bf7fa3f20142387d1
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameGorge.unity
+    guid: 8949e9504f4baa5608592ce5bc8e85d9
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameStarweave.unity
     guid: 6bf643e375a710f2479f932104e05fed

@@ -12,16 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c18a3610832457791f2b201b0c29ffb, type: 3}
   m_Name: ScarabAIBoostPolicy
   m_EditorClassIdentifier: 
-  alignDegrees: 12
-  releaseAlignDegrees: 25
-  stickBand: 0.35
-  releaseStickBand: 0.6
-  engageRunwaySeconds: 1.5
-  releaseRunwaySeconds: 0.5
+  alignDegrees: 21.836
+  releaseAlignDegrees: 3.065
+  stickBand: 0.351
+  releaseStickBand: 0.587
+  engageRunwaySeconds: 0.295
+  releaseRunwaySeconds: 0.823
   disabledInModes:
   - 37
   - 43
   - 48
   requireAIPlayer: 0
-  dashCooldownSeconds: 2
+  dashCooldownSeconds: 2.372
   refusedRetrySeconds: 0.5

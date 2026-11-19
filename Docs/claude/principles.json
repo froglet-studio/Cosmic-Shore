@@ -64,7 +64,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does the balance change rest on plateaued AIs scored on petals taken, in mirror matches first and Broadside second? If it is tuned by feel, it is off the plan.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-05",
@@ -215,32 +215,16 @@
    "owner": "Garrett",
    "date": "2026-11-02",
    "words": "AI training serves one plan (LOCKED rule, Garrett, 2026-11-02) ... one universal AI per vessel per element, trained on that element's arcade game and scored on I1-I4 together ... No AI is trained inside an arena game.",
-   "rule": "Every AI effort serves the one AI plan: one universal AI per vessel per element, trained on that element's arcade game and scored on I1-I4 together, with the pilot only biasing its choices; the ladder is arcade intensities, then the arena balanced against those fixed AIs, then voyages; no AI is trained inside an arena game.",
+   "rule": "Every AI effort serves one plan: one universal AI per vessel per element, trained in that element's arcade game over I1-I4 with the pilot only biasing its choices; then the element's arena balanced against those fixed AIs; then voyages, where the squad seat's cards (vessel, element, pilot) choose the AI. No AI is trained inside an arena game.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 211
+    "line": 275
    },
    "kind": "LOCKED",
    "area": "ai",
    "retired": "",
    "test": "Name the ai_plan.json step the work serves and check the AI is per vessel per element, trained in that element's arcade game; a per-mode or arena-trained AI fails.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-ai-15",
-   "owner": "Garrett",
-   "date": "2026-11-02",
-   "words": "We need our planning and learning to be working towards an AI training system that produces all the AI capabilities we need. The culminating experience is voyages. The AI you are playing against or with will be determined by the choices during squad configuration: vessel, element, pilot, artifact.",
-   "rule": "Every AI effort serves one plan: one universal AI per vessel per element, trained in that element's arcade game over I1-I4, then the element's arena balanced against those fixed AIs, then voyages, where the squad seat's cards (vessel, element, pilot) choose the AI.",
-   "source": {
-    "file": "Docs/AI_SYSTEM/AI_PLAN.md",
-    "line": 14
-   },
-   "kind": "LOCKED",
-   "area": "ai",
-   "retired": "the three drive searches trained inside Regatta and the two one-intensity Squirrel searches (ai_plan.json retired_jobs)",
-   "test": "Does the AI work name the plan step it serves (ai_plan.json), train in the element's arcade game and not in an arena, and produce one genome scored over all four intensities?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-16",
@@ -256,7 +240,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does the pilot or mode design alter a vessel's abilities, numbers or kit? If yes it is a vessel change for the vessel's owner, not a pilot or mode feature.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-17",
@@ -272,7 +256,7 @@
    "area": "ai",
    "retired": "the two one-intensity Squirrel searches",
    "test": "Does the AI work produce or promote a per-intensity or per-mode file as the answer? If yes it is a seed, not the deliverable.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-18",
@@ -288,7 +272,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does the design train, tune or learn an AI inside an arena game, or balance an arena against a still-moving AI? Either is out.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-19",
@@ -304,7 +288,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does a balance change touch a vessel's elemental baseline before the arena's course and features were searched? If yes it is out of order.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-20",
@@ -775,7 +759,7 @@
    "owner": "the designer (unnamed in the source)",
    "date": "2026-10-28",
    "words": "\"the omnicrystal on board the ark powers the prism creation. arks are the only vessel that can contain and harvest the power of an omnicrystal instead of morphing it into something else\", \"regeneration should just be fixed rate\", and \"the omnicrystal is always just one size\"",
-   "rule": "Mass may be made in one place only: an Ark's reactor regrows the Ark's own empty hull slots, one prism a beat at a fixed rate, never past its full hull; every other vessel morphs an omni crystal into its own effect; the omni crystal is always one size; a fallen Ark never regrows.",
+   "rule": "Mass may be made in one place only: an Ark's reactor regrowing its own hull (the Ark rule, P-vessel-23); every other vessel morphs an omni crystal into its own effect.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
     "line": 142
@@ -1303,7 +1287,7 @@
    "owner": "Garrett",
    "date": "2026-10-17",
    "words": "direct abilities should only steal or strip (for recollection), but if a player produces danger prisms that is a way for them to remove crystals from the environment.",
-   "rule": "A direct ability only steals or strips petals, which stay recollectable in the world; only a danger prism burns crystals out of the match, and control theft is never an economy form.",
+   "rule": "A direct ability only steals or strips petals, which stay recollectable in the world; only a danger prism burns crystals out of the match.",
    "source": {
     "file": "Docs/ELEMENTAL_ECONOMY.md",
     "line": 555
@@ -1312,7 +1296,7 @@
    "area": "economy",
    "retired": "the danger-prism control mute on the Sparrow and Grizzly (EventOnVesselSlowedByRhinoDangerPrism, deleted 2026-10-17)",
    "test": "Does the ability's hit do anything to a rival other than steal or strip petals, or burn them through a danger prism? If yes it is out.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-02",
@@ -1322,13 +1306,13 @@
    "rule": "Every elemental crystal is one size (the Ark converter's) and grants exactly one petal; the omni crystal is one size too.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12227
+    "line": 12263
    },
    "kind": "quote",
    "area": "economy",
    "retired": "variable crystal sizes and multi-petal crystals",
    "test": "Does the design spawn a crystal of another size or worth? If yes it breaks one size, one petal.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-03",
@@ -1344,7 +1328,7 @@
    "area": "economy",
    "retired": "",
    "test": "Is every buff/debuff in the design an element level change (petals)? A stat modifier outside the elementals fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-04",
@@ -1360,7 +1344,7 @@
    "area": "economy",
    "retired": "",
    "test": "For every petal the design moves, say where it came from and where it goes; a permanent buff or a petal from nowhere fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-05",
@@ -1552,7 +1536,7 @@
    "area": "modes",
    "retired": "",
    "test": "Does a Regatta balance change come from the course search against trained AIs before any elemental tuning, and is the tuning the smallest that closes the gap?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-modes-02",
@@ -1568,7 +1552,7 @@
    "area": "modes",
    "retired": "",
    "test": "Does the mode's target (score, laps, gates) put an experienced run near 90 s at intensity 1?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-modes-03",
@@ -1584,23 +1568,7 @@
    "area": "modes",
    "retired": "",
    "test": "Score the Time game on the six dimensions: is its floor the thing the design raises, and is the hull's own speed verb the way to win?",
-   "status": "drafted"
-  },
-  {
-   "id": "P-modes-04",
-   "owner": "Garrett",
-   "date": "2026-10-27",
-   "words": "go ahead and fix tandava etc.",
-   "rule": "A mode's world is scaled round the fleet-law creature body (Tandava inherits the Swarm's scaled body; its reef, cell and meals grow to fit), never the creature pinned back to fit the mode.",
-   "source": {
-    "file": "Docs/ECOSYSTEM.md",
-    "line": 12339
-   },
-   "kind": "quote",
-   "area": "modes",
-   "retired": "Tandava's pinned research body",
-   "test": "Does the mode override a lifeform's body, heart gap or element scale to fit its arena? If yes, scale the arena instead.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-modes-05",
@@ -2048,22 +2016,6 @@
    "area": "other",
    "retired": "",
    "test": "Does the replay draw the real scene with every object, or a stand-in?",
-   "status": "drafted"
-  },
-  {
-   "id": "P-other-07",
-   "owner": "Yash",
-   "date": "2026-10-29",
-   "words": "the Meerkat's wormhole is now a Soliton Tunnel, an environmental fundamental any vessel or scene can use",
-   "rule": "The soliton tunnel is an environmental fundamental any vessel or scene can use, not a Meerkat-only ability effect.",
-   "source": {
-    "file": "Docs/Shaders/WORMHOLE_SHADERS.md",
-    "line": 926
-   },
-   "kind": "decision",
-   "area": "other",
-   "retired": "",
-   "test": "Does a new tunnel, portal or ride reuse the Soliton Tunnel rather than a bespoke one?",
    "status": "drafted"
   },
   {
@@ -3504,7 +3456,7 @@
    "area": "vessel",
    "retired": "a response curve on stick position and a 4-6 stage smoothing chain (flown and rejected on the pad)",
    "test": "Does any hull author its own nose lag or stick curve? It fails; only the device's dial applies.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-20",
@@ -3536,14 +3488,14 @@
    "area": "vessel",
    "retired": "the pilot as a kit side-grade (PILOTS_AND_ARTIFACTS.md sections 0, 2, 4 and 6)",
    "test": "Does the pilot design change an ability, a number or a control on the vessel? If yes it is a kit change, not a pilot.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-22",
    "owner": "Garrett",
    "date": "2026-10-27",
-   "words": "an artifact transforms the payload, a parcel of the Ark's hull that any vessel grabs and fires to crack super-shielded mass. An artifact no longer turns a \"fifth knob\"",
-   "rule": "An artifact transforms the Ark payload any vessel grabs and fires to crack super-shielded mass; it never turns a fifth knob on the vessel itself.",
+   "words": "an artifact transforms the payload**, a parcel of the Ark's hull that any vessel of the Ark's own domain grabs and fires",
+   "rule": "An artifact transforms the Ark payload a vessel of the Ark's own domain grabs and fires to crack super-shielded mass; it never turns a fifth knob on the vessel itself.",
    "source": {
     "file": "Docs/PILOTS_AND_ARTIFACTS.md",
     "line": 32
@@ -3552,23 +3504,23 @@
    "area": "vessel",
    "retired": "the artifact as a fifth knob (PILOTS_AND_ARTIFACTS.md section 3)",
    "test": "Does the artifact design tune the vessel rather than transform the payload? If yes it is a kit change.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-23",
    "owner": "Garrett",
-   "date": "2026-10-27",
-   "words": "it should feel big ... like its own level ... a kaiju protected by three vessels and its own regeneration",
-   "rule": "The Ark feels big, like its own level: a kaiju protected by three escorts and its own regeneration, with engines that animate, octahedral shielded prisms placed to protect the rest, danger prisms where it wants to be dangerous, and a hangar the escorts launch from.",
+   "date": "2026-11-16",
+   "words": "the ark should only regenerate inside a cell nucleus under control of the ark's domain",
+   "rule": "The Ark is its own level: a kaiju guarded by three escorts that launch from its hangar, with engines that animate, octahedral shielded prisms placed to protect the rest, super-shielded prisms, danger prisms where it wants to be dangerous, and a payload (a parcel of its hull that only a vessel of its own domain grabs and fires to crack super-shielded mass: an Ark never arms the ones who would kill it). Its omni-crystal reactor regrows its own empty hull slots at a fixed rate, one prism a beat, never past full, and only while it sits inside a cell nucleus its domain controls; a fallen Ark never regrows.",
    "source": {
     "file": "Docs/VesselModels/ArkReverse.md",
-    "line": 7
+    "line": 139
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
-   "test": "Does the Ark design read as a level-sized kaiju with escorts, regeneration and a hangar, not merely a big vessel?",
-   "status": "drafted"
+   "test": "Does the Ark read as a level-sized kaiju with escorts, a hangar, super-shielded prisms and a payload, and does its hull regrow only inside a nucleus its domain controls?",
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-24",
@@ -3605,25 +3557,57 @@
   {
    "id": "P-vessel-26",
    "owner": "Garrett",
-   "date": "2026-10-27",
-   "words": "\"the meerkat should be producing a new fundamental (solitons)\"",
-   "rule": "A soliton is a standing tunnel through space that keeps its shape, carries whatever enters one mouth out of the other, and is seen only by the way it bends the world (no grid, no surface); anyone may ride one, what it fires is a moving prism scored to its maker, and it never deletes mass.",
+   "date": "2026-11-16",
+   "words": "solitons should be enterable from outside, but in a one-way fashion. so the exit is the only source and the entrance is the only sink, but the tube wall can be entered and not exited",
+   "rule": "A tubular soliton is a standing, one-way tunnel through space that keeps its shape and is seen only by the way it bends the world (no grid, no surface): anything may enter through its entrance mouth or its wall, nothing leaves except through its exit mouth, so the entrance is its only sink and the exit its only source. Any vessel or scene may make use of one (it is a fundamental, not a Meerkat-only effect), anyone may ride one, what it fires is a moving prism scored to its maker, and it never deletes mass.",
    "source": {
     "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
-    "line": 353
+    "line": 358
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
-   "test": "Does the tunnel design keep its shape, carry riders and prisms through, conserve mass and show itself only as bent space?",
-   "status": "drafted"
+   "test": "Can things enter the tunnel through its wall and entrance but leave only by its exit, with mass conserved and nothing drawn but bent space?",
+   "status": "confirmed"
+  },
+  {
+   "id": "P-vessel-39",
+   "owner": "Garrett",
+   "date": "2026-11-16",
+   "words": "also solitons should feel like a waterslide where there is a sense of \"down\" and sliding up and down the walls like a skater in a halfpipe. down should be defined by their entering orientation and controlling the vessel should feel like a fun sense of control over riding up and down the walls of the water slide. some mix of going with the flow and deciding how to roll with it.",
+   "rule": "Riding a tubular soliton feels like a waterslide: the rider's orientation as it enters sets the tunnel's \"down\", the flow carries it along, and steering rolls it up and down the walls like a skater in a halfpipe; the fun is a mix of going with the flow and choosing how to ride it.",
+   "source": {
+    "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
+    "line": 359
+   },
+   "kind": "quote",
+   "area": "vessel",
+   "retired": "",
+   "test": "Does a rider feel a down set by how it entered, get carried by the flow, and choose how high up the walls to carve?",
+   "status": "confirmed"
+  },
+  {
+   "id": "P-vessel-40",
+   "owner": "Garrett",
+   "date": "2026-11-16",
+   "words": "we can generalize solitons to structured vector fields. Thus what we just detailed are tubular solitons, but the pistol's vortex ring should be a moving ring soliton. the stoats source and sink should be point solitons.",
+   "rule": "A soliton is a structured vector field that keeps its shape, in three shapes so far: tubular (the Meerkat's tunnel), a moving ring (the Pistol's vortex ring) and a point (the Stoat's source and sink); every shape is one fundamental and follows the soliton's rules, and a new shape of field joins this family rather than becoming a new system.",
+   "source": {
+    "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
+    "line": 357
+   },
+   "kind": "quote",
+   "area": "vessel",
+   "retired": "",
+   "test": "Is this field one of the soliton shapes (tube, moving ring, point), built on the soliton fundamental rather than as its own system?",
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-27",
    "owner": "Garrett",
    "date": "2026-10-28",
    "words": "lock in the elemental definition so yash builds upon them.",
-   "rule": "The Meerkat's element definition is locked: Space the Soliton (surface area by level, L5 Steal), Time faster through every soliton (L5 Boost Out), Charge Sentinel mode (L5 Six Sentinels), Mass the Exit Portal (L5 Danger Portal); how each is built stays Yash's.",
+   "rule": "The Meerkat's element definition is locked: Space the Soliton (surface area by level, L5 Steal), Time faster through every soliton (L5 Boost Out), Charge Sentinel mode (L5 Six Sentinels), Mass the Exit Portal (L5 Danger Portal). A design may extend these but never redefine them; how each is built stays Yash's.",
    "source": {
     "file": "Docs/ElementalAbilitySystem/FLEET_MAPS.md",
     "line": 658
@@ -3632,38 +3616,6 @@
    "area": "vessel",
    "retired": "Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) and the round-18 Mix's L5 swaps",
    "test": "Does a Meerkat change move an ability to another element or alter a row's meaning? If yes it reopens a locked definition.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-vessel-28",
-   "owner": "Garrett",
-   "date": "2026-10-28",
-   "words": "The omni crystal is always one size (Garrett, 2026-10-28). Nothing resizes it: not the reactor, and not the Charge shape",
-   "rule": "The omni crystal is always one size; no reactor, element shape or effect resizes it.",
-   "source": {
-    "file": "Docs/VesselModels/ArkReverse.md",
-    "line": 139
-   },
-   "kind": "decision",
-   "area": "vessel",
-   "retired": "",
-   "test": "Does anything scale the omni crystal? If yes it is wrong.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-vessel-29",
-   "owner": "Garrett",
-   "date": "2026-10-28",
-   "words": "the rest is design, Docs/Studios/MEERKAT.md § Garrett's direction, whose element definition is LOCKED (Garrett, 2026-10-28)",
-   "rule": "The Meerkat soliton's element definition (what each of its elements does, per Garrett's direction in MEERKAT.md) is fixed; a design may extend the soliton but not redefine its elements.",
-   "source": {
-    "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
-    "line": 356
-   },
-   "kind": "LOCKED",
-   "area": "vessel",
-   "retired": "",
-   "test": "Check each element's role in the brief against MEERKAT.md § Garrett's direction; any change needs Garrett.",
    "status": "drafted"
   },
   {

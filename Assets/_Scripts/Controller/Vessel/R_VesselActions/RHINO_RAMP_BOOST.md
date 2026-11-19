@@ -1,5 +1,10 @@
 # Rhino Ramp Boost + Speed-Tunnel Quasi Dolly Zoom
 
+> **2026-11-18: the ramp runs on FUEL that ploughing and slicing earn** (Garrett: "make their boosting resource tied
+> to their slicing and plowing. that will slow them down over longer time scales, while letting them keep their speed
+> and reward them for their fun"). See § "Fuel" below. Both hulls ran Regatta about 2x faster than the polished five
+> on a free ramp (`Docs/ElementalLoop/REDESIGN.md`).
+
 > **2026-11-07: both the Rhino and the Swordfish fly this ramp.** The Rhino split in two (`SWORDFISH.md`): the Swordfish took the sword, the Rhino kept the plough, and both kept the same `RhinoRampBoostAction` asset, Ramp Spool and Momentum.
 
 > **2026-10-16:** every peer now grades the ramp from `InputStatus`' replicated sticks (replicas
@@ -230,6 +235,32 @@ and the same `0.3` across every input strategy, which was survivable while nothi
 and stopped being survivable the moment the ability's full-power plateau had to end exactly
 where the gesture begins. `StraightLineGesture` (`_Scripts/Controller/IO/`) is that home; all six
 strategies now call it.
+
+## Fuel (2026-11-18)
+
+The ramp burns a tank, `ResourceSystem` slot 0 ("Ramp Fuel", max 1) on `Rhino.prefab` and `Swordfish.prefab`, named by
+`RampBoostActionSO.fuelResourceIndex` (-1 = the old free ramp, still the default for any other asset).
+
+| | Rhino | Swordfish |
+|---|---|---|
+| Earned by | ploughing: each hull contact with a prism, `RhinoPloughFuelByPrismEffect` (a `VesselGainResourceByPrismEffectSO`, first in `RhinoImpactorDataContainer`), 0.0015 a prism | slicing: each bill contact, `SwordfishSliceFuelByPrismEffect` (a `SkimmerChangeResourceByPrismEffectSO`, first in the sword's skimmer container), 0.004 a prism x TIME (x1 at rest, x4.5 at level 10, `_gainMultiplier`) |
+| Not earned by | super-shielded prisms (deflected, nothing ploughed), contacts while riding a trail | super-shielded prisms (the blade binds); the hull ram |
+| Burn | `fuelBurnPerSecond` 0.1 at full ramp (a full tank is 10 s of top power), proportional to the share of the ramp the line uses, nothing at cruise | the same |
+| Empty tank | the ramp still climbs, to `emptyTankMaxBoostMultiplier` 2.5x (125 u/s) instead of 16.8x (840 u/s), graded the same way; the next prism brings the full top back without a new gesture | the same |
+| Start | empty (`initialAmount` 0): the first plough fuels the first big ramp | the same |
+
+Why an empty tank keeps a small ramp: starving to the 50 u/s cruise made the pace bistable (measured 2026-11-18 in the
+real-game judge: a race either never ran dry, 27 s, or crawled at cruise once it did, 160-190 s, because a slow hull
+ploughs too few prisms to recover). With a 2.5x fumes ramp the pace is a smooth function of how much the hull ploughs.
+
+Why the start is empty: a full starting tank alone carried the short Regatta courses (10 s of top power) and left the
+pace unchanged there.
+
+Prism contact is simulated per peer, so each peer fills and burns its own copy of the tank, as the plough and the
+grading already run per peer. A replica can disagree briefly on whether the tank is dry.
+
+Regatta, shuffle set, card and all-L5 starts, measured by the real-game judge: see `Docs/ElementalLoop/REDESIGN.md`.
+Tests: `RampFuelTests`.
 
 ## Visual model — the speed-tunnel PLATFORM LAW
 

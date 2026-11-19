@@ -1041,6 +1041,7 @@ namespace CosmicShore.Gameplay
             _lodCulled = false; // pool reuse: Initialize owns the collider again
             _carried = false;   // (and no parcel holds a pooled prism)
             CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
+            BookedShieldVolume = 0f; // the shell volume the books hold for this prism (VolumeLedger)
             IsSmallest = false;
             IsLargest = false;
 
@@ -1570,6 +1571,29 @@ namespace CosmicShore.Gameplay
         internal float CachedVolume { get; private set; }
 
         /// <summary>
+        /// The shield shell volume the volume books hold for this prism (<see cref="VolumeLedger.ShieldExtra"/>):
+        /// booked as CREATED when a shield goes up and DESTROYED when it comes off, re-booked when the prism grows,
+        /// and carried away by a steal or a destruction (<see cref="PrismStats.ShieldVolume"/>).
+        /// </summary>
+        public float BookedShieldVolume { get; private set; }
+
+        /// <summary>
+        /// Brings <see cref="BookedShieldVolume"/> up to this prism's shield state and box, and reports the change
+        /// on the volume-modified channel so the owner's books move by it. Called on every shield transition
+        /// (<see cref="PrismStateManager"/>) and when a growth settles (<see cref="PrismScaleAnimator"/>).
+        /// </summary>
+        internal void BookShieldVolume()
+        {
+            if (destroyed || prismProperties == null) return;
+            float extra = VolumeLedger.ShieldExtra(Mathf.Max(prismProperties.volume, 0f),
+                prismProperties.IsShielded, prismProperties.IsSuperShielded);
+            float delta = extra - BookedShieldVolume;
+            if (Mathf.Abs(delta) < 1e-5f) return;
+            BookedShieldVolume = extra;
+            if (scaleAnimator) scaleAnimator.RaiseShieldVolumeDelta(delta);
+        }
+
+        /// <summary>
         /// Recompute <see cref="CachedVolume"/> from the live transform. Mirrors
         /// <see cref="CurrentVolume"/> exactly. Cheap per call — the whole point is to
         /// call it O(growing) times per frame instead of O(all prisms) per volume
@@ -1733,8 +1757,11 @@ namespace CosmicShore.Gameplay
                     AttackerName = attackerPlayerName,
                     OwnDomain = Domain,
                     DestroyedByGunfire = _destroyedByGunfire,
+                    ShieldVolume = BookedShieldVolume,
+                    WasSuperShielded = prismProperties.IsSuperShielded,
                 });
             }
+            BookedShieldVolume = 0f; // destroyed with the prism; a Restore books its shell again
 
             _lastDestructionScale = destructionScale;
 

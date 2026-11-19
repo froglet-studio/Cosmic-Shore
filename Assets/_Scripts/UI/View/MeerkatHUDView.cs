@@ -6,7 +6,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The Meerkat's HUD readouts (<c>R_VesselActions/MEERKAT.md</c> §10, Garrett's kit approved by Yash 2026-10-28). The row
-    /// order IS the element map: <b>Sentinel Mode (charge) · Exit Portal (mass) · Soliton (space) · Faster Ride (time)</b>.
+    /// order IS the element map: <b>Sentinel Mode (charge) · Exit Portal (mass) · Soliton (space) · Ride (time)</b>.
     ///
     /// <para>One plate gauge per card, each answering the one question its element poses:</para>
     /// <list type="number">

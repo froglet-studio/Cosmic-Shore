@@ -832,6 +832,86 @@ MonoBehaviour:
   aiCrystalScanSeconds: 0.5
   maxPlausibleSpeed: 1000
   reportResyncSeconds: 3
+  coachOn: 1
+  heatOn: 1
+  flatOutFlarePunch: 2.4
+  cleanShiftFlarePunch: 1.8
+  flareSeconds: 0.45
+  chaseStagger: 0.06
+  maxFlares: 24
+  flatOutThreadEvent:
+    Guid:
+      Data1: -1254976528
+      Data2: 1275513386
+      Data3: -981470078
+      Data4: 286922241
+    Path: event:/SFX/Oneshots/Gameplay sfx/Time Joust
+  cleanShiftEvent:
+    Guid:
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
+  streakCalledEvent:
+    Guid:
+      Data1: 413717435
+      Data2: 1238803703
+      Data3: 1704894129
+      Data4: 1814326255
+    Path: event:/SFX/Oneshots/Menu/Confirmed
+  lapCompleteEvent:
+    Guid:
+      Data1: 247230621
+      Data2: 1075866072
+      Data3: -1989636704
+      Data4: 427111795
+    Path: event:/SFX/Oneshots/Menu/SmallReward
+  bestLapEvent:
+    Guid:
+      Data1: -141012430
+      Data2: 1095164995
+      Data3: -224516441
+      Data4: 533331164
+    Path: event:/SFX/Oneshots/Menu/Upgrade
+  cleanLapEvent:
+    Guid:
+      Data1: 1677016032
+      Data2: 1210299525
+      Data3: -213529971
+      Data4: 468927093
+    Path: event:/SFX/Oneshots/Gameplay sfx/Score Reveal
+  missedMouthEvent:
+    Guid:
+      Data1: 1646059356
+      Data2: 1119933905
+      Data3: 176281535
+      Data4: 614675135
+    Path: event:/SFX/Oneshots/Menu/Denied
+  speedDarkEvent:
+    Guid:
+      Data1: -1103610945
+      Data2: 1108376032
+      Data3: -1187393100
+      Data4: -416318210
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
+  postPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
+  postRegrowSeconds: 1.5
+  gateLightSeconds: 1.2
+  gateThreadedEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  courseFinishedEvent:
+    Guid:
+      Data1: 2069810760
+      Data2: 1198659685
+      Data3: -604450419
+      Data4: -805011495
+    Path: event:/SFX/Oneshots/Menu/BigReward
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

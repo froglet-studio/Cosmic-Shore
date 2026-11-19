@@ -17,16 +17,16 @@ namespace CosmicShore.UI
     /// </summary>
     public class ArcadeGridOptions : MonoBehaviour
     {
-        [Header("Element")]
+        [Header("Category")]
         [SerializeField] private KitButton elementButton;
-        [Tooltip("The element button's word. {choice} is the picked element's name.")]
+        [Tooltip("The category button's word. {choice} is the picked category's name.")]
         [SerializeField] private TMP_Text elementLabel;
-        [SerializeField] private string elementCaption = "Element: {choice}";
-        [Tooltip("One name per choice: All, then Charge to Time.")]
-        [SerializeField] private string[] elementNames = { "All", "Charge", "Mass", "Space", "Time" };
-        [Tooltip("The list of element choices (hidden until the button is pressed).")]
+        [SerializeField] private string elementCaption = "Games: {choice}";
+        [Tooltip("One name per choice: All, Time, Charge, Mass-Space, Party (the ArcadeCategory order).")]
+        [SerializeField] private string[] elementNames = { "All", "Time", "Charge", "Mass-Space", "Party" };
+        [Tooltip("The list of category choices (hidden until the button is pressed).")]
         [SerializeField] private CanvasGroup elementRow;
-        [Tooltip("One tab per choice: All, then Charge to Time.")]
+        [Tooltip("One tab per choice: All, Time, Charge, Mass-Space, Party.")]
         [SerializeField] private KitTextTab[] elementTabs = { };
 
         [Header("Vessel")]
@@ -43,8 +43,9 @@ namespace CosmicShore.UI
         // The session's choice: the window is opened and closed many times, and the player's filter should stay.
         static int s_element, s_vessel;
 
-        /// <summary>The picked element; <see cref="Data.Element.None"/> is All.</summary>
-        public Element Element => s_element <= 0 ? Element.None : Element.Charge + (s_element - 1);
+        /// <summary>The picked category; <see cref="ArcadeCategory.None"/> is All. Tab i is ArcadeCategory i.</summary>
+        public ArcadeCategory Category =>
+            s_element > 0 && s_element <= (int)ArcadeCategory.Party ? (ArcadeCategory)s_element : ArcadeCategory.None;
 
         /// <summary>The picked vessel class; <see cref="VesselClassType.Any"/> is All.</summary>
         public VesselClassType Vessel =>

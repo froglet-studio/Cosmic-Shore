@@ -22,7 +22,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(120f, StoatRippleMath.Radius(200f, 0.6f, 30f, 160f, 1f), 1e-4f, "a wide pair throws a wide ripple");
             Assert.AreEqual(160f, StoatRippleMath.Radius(1000f, 0.6f, 30f, 160f, 1f), 1e-4f, "clamped before Charge");
             Assert.AreEqual(320f, StoatRippleMath.Radius(1000f, 0.6f, 30f, 160f, 2f), 1e-4f, "Charge 10 doubles the reach");
-            Assert.AreEqual(120f, StoatRippleMath.Radius(200f, 0.6f, 30f, 160f, 0.3f), 1e-4f, "Charge never shrinks it (floored at 1)");
+            Assert.AreEqual(60f, StoatRippleMath.Radius(200f, 0.6f, 30f, 160f, 0.5f), 1e-4f, "a Charge deficit shrinks it, to half at the fleet floor");
         }
 
         [Test]
@@ -83,7 +83,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(54f, StoatSlingMath.TimedKick(54f, 1f, 0.2f, 1f), 1e-4f, "timed: the whole kick");
             Assert.AreEqual(54f * 0.2f, StoatSlingMath.TimedKick(54f, 0f, 0.2f, 1f), 1e-4f, "missed: the miss share");
             Assert.AreEqual(108f, StoatSlingMath.TimedKick(54f, 1f, 0.2f, 2f), 1e-4f, "Time 10 doubles it");
-            Assert.AreEqual(54f, StoatSlingMath.TimedKick(54f, 1f, 0.2f, 0.5f), 1e-4f, "Time never cuts it (floored at 1)");
+            Assert.AreEqual(27f, StoatSlingMath.TimedKick(54f, 1f, 0.2f, 0.5f), 1e-4f, "a deficit halves it at the fleet floor");
         }
     }
 }

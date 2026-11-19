@@ -978,7 +978,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Resources:
-  - Name: Boost
+  - Name: Ramp Fuel
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
@@ -1024,6 +1024,7 @@ MonoBehaviour:
   playerSeekUpdateInterval: 0.5
   playerReacquireInterval: 0.1
   massClusterRetargetInterval: 1.5
+  rivalRunOvershoot: 140
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 5397651131628914846}
@@ -1324,11 +1325,11 @@ MonoBehaviour:
   driftAmountParameterName: Drift Amount
   releaseEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1579691313
+      Data2: 1086872641
+      Data3: 763564937
+      Data4: -488243266
+    Path: event:/SFX/Oneshots/Gameplay sfx/trigger off
   attachReleaseEventToShip: 1
   driveParamToOneOnRelease: 0
   triggerDeadzone: 0.05
@@ -13128,7 +13129,7 @@ MonoBehaviour:
     Max: 40
     element: 3
     UseFloor: 1
-    Floor: 10
+    Floor: 7
 --- !u!114 &7740000000000001700
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -43,19 +43,29 @@ namespace CosmicShore.ScriptableObjects
                  "leaves it off.")]
         public bool ArenaRules;
 
+        /// <summary>The most vessels one team fields (Garrett, 2026-11-17: nine vessels, at most three a team).
+        /// Multi-seat vessels raise the player count later without raising this.</summary>
+        public const int MaxPerTeam = 3;
+
+        /// <summary>The most vessels a match seats: three a team, <see cref="MaxPerTeam"/>.</summary>
+        public static int TeamSeatCap(int teams) => MaxPerTeam * Mathf.Max(1, teams);
+
         /// <summary>
         /// The most pilots (human + AI) this card can seat. <see cref="MaxPlayersAllowed"/> for
-        /// every card except an <see cref="ArenaRules"/> card, where every hull is flown by one
-        /// pilot and a card listing N distinct hulls therefore seats at most N - a seventh pilot
-        /// on a six-hull card would have no hull left to fly.
+        /// every card except an <see cref="ArenaRules"/> card, where every hull is flown by ONE
+        /// pilot in the whole match (Garrett, 2026-11-18), so a card listing N distinct hulls seats
+        /// at most N. No card seats more than <see cref="MaxPerTeam"/> a team (Garrett, 2026-11-17).
         /// </summary>
         public int MaxSeats
         {
             get
             {
-                if (!ArenaRules) return MaxPlayersAllowed;
+                int teams = Mathf.Max(1, MaxDomainsAllowed);
+                int seats = Mathf.Min(MaxPlayersAllowed, MaxPerTeam * teams);
+                if (!ArenaRules) return seats;
                 int hulls = DistinctHullCount;
-                return hulls > 0 ? Mathf.Min(MaxPlayersAllowed, hulls) : MaxPlayersAllowed;
+                // Unique in the whole match (Garrett, 2026-11-18): every hull is flown once.
+                return hulls > 0 ? Mathf.Min(seats, hulls) : seats;
             }
         }
 
@@ -93,8 +103,10 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Element levels each HULL starts this card's match at - the platform's " +
                  "handicap dial for a card that seats several vessels. One row per hull " +
                  "(Intensity 0 = every intensity; 1-4 = that intensity only, winning over the 0 " +
-                 "row). A hull with no row starts at rest (every element level 0), which is " +
-                 "also what every single-hull card gets by leaving this empty. Published to " +
+                 "row). A card that authors ANY row owns the whole table: a hull or rung it does not " +
+                 "name starts at rest. A non-arena card that leaves this EMPTY gets the standard " +
+                 "element ladder (ElementLadder: I1 at rest, I2-I4 every hull at level 5 in the " +
+                 "game's element). Published to " +
                  "every peer by the config sync and applied in VesselController.Initialize, so " +
                  "a guest's own vessel is seeded exactly as the host's replica of it. Authored " +
                  "by the card's generator from its balance model, never by hand.")]

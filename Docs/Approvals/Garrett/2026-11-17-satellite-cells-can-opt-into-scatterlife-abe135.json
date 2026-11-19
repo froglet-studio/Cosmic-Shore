@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-17-satellite-cells-can-opt-into-scatterlife-abe135",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-17T16:39:39+00:00",
+  "area": "the cell ecology spawner",
+  "summary": "Satellite cells can opt into ScatterLifeSpawns (fauna and flora born at random points in the cytoplasm instead of the feeding ground), and satellite fauna seeding instantiates 2 per frame instead of 6. Only voyage cells opt in; core cells unchanged.",
+  "why": "Voyage cells were bigger and every crystal spawned in one spot; a 41 ms spawn frame was profiled in a voyage.",
+  "branch": "claude/project-thread-ptliz8",
+  "lane": "ecology",
+  "commit": "95499ce40",
+  "paths": [
+    "Assets/_Scripts/Controller/Environment/Cell.cs",
+    "Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs",
+    "Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs"
+  ]
+}

@@ -476,13 +476,13 @@ MonoBehaviour:
   DefaultMinimumSpeed: 15
   DefaultThrottleScaler: 110
   ThrottleScalerMultiplier:
-    Enabled: 0
+    Enabled: 1
     Value: 1
-    Min: 1
-    Max: 2.5
+    Min: 1.08
+    Max: 1.296
     element: 4
-    UseFloor: 0
-    Floor: 0
+    UseFloor: 1
+    Floor: 0.54
   BoostSpeedMultiplier:
     Enabled: 0
     Value: 1
@@ -524,7 +524,7 @@ MonoBehaviour:
   shielded: 0
   trailVolume:
     Enabled: 0
-    Value: 1.35
+    Value: 1.1475
     Min: 1
     Max: 2.5
     element: 0
@@ -988,11 +988,11 @@ MonoBehaviour:
   attachTickEventToShip: 1
   boostLoopEvent:
     Guid:
-      Data1: 175162526
-      Data2: 1078581788
-      Data3: 1171656846
-      Data4: 200696093
-    Path: event:/SFX/Oneshots/Gameplay sfx/Skim
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   boostAmountParameterName: Boost Amount
   boostBaseMultiplier: {fileID: 0}
   boostMaxMultiplier: {fileID: 0}
@@ -1137,46 +1137,46 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: eac07f21c20843268f90cc10fd1f6e8a, type: 2}
   smashEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1058858236
+      Data2: 1166390557
+      Data3: -939827049
+      Data4: 1519737688
+    Path: event:/SFX/Oneshots/Gameplay sfx/Vessel impact
   crushEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1232779908
+      Data2: 1241063617
+      Data3: 1702576795
+      Data4: -1248198021
+    Path: event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip
   bounceEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 310883003
+      Data2: 1266496358
+      Data3: -193662310
+      Data4: -709421328
+    Path: event:/SFX/Oneshots/Gameplay sfx/Track collide
   sliceEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1401307610
+      Data2: 1312586406
+      Data3: 1271773619
+      Data4: -1226988235
+    Path: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
   plantEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 310883003
+      Data2: 1266496358
+      Data3: -193662310
+      Data4: -709421328
+    Path: event:/SFX/Oneshots/Gameplay sfx/Track collide
   yankEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   ballMaterial: {fileID: 2100000, guid: 92d94825f0264e4eb25f79f37523b4e7, type: 2}
   lineMaterial: {fileID: 0}
   chainMaterial: {fileID: 2100000, guid: 02033cc2904f4f25bf3b6888ce3c98f9, type: 2}
@@ -2111,6 +2111,16 @@ PrefabInstance:
         type: 3}
       propertyPath: Scale.Min
       value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.UseFloor
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Floor
+      value: 7.5
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

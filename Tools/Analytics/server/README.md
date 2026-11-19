@@ -549,3 +549,14 @@ FROGLET_ANALYTICS_CONFIG=/tmp/fa.json python3 Tools/Analytics/server/analytics_s
 - Dashboard email: a dashboard's schedule ("mondays 09:00") is stored only; sending it was left out (Shombith,
   2026-11-07: "Leave emails").
 - A last `import-posthog` run, once the builds that still send to PostHog are gone; then PostHog can be shut down.
+
+## Funnels and Release compare (Rev 66 A, Shombith 2026-11-17)
+
+`analytics_compare.py`, worked out per player over `events.db` when asked; only counts come back, so any reader key may
+ask. Tests: `test_analytics_compare.py` (run with `--self-test`).
+
+| Route | What |
+|---|---|
+| `POST /v1/funnel` | `{"steps": [event \| {"event", "step_id"?, "label"?}, ...], "within_days": 1\|7\|30, "order": "strict"\|"any", "since"?, "until"?, "by": "platform"\|"device"\|"country"\|"none", "build"?, "device"?}`: players who made the first step in since..until (default the last 30 days), how many reached each step, split, time between steps, and where the ones at the biggest drop went next. `second_day` is a step: any event on a later day. 2 to 8 steps. |
+| `GET /v1/funnel/steps` | the events and FTUE nodes a step can be, with players in the last 90 days |
+| `GET /v1/releases[?a=&b=&span=first7\|calendar]` | the app_versions (newest first, new players each) and who is on which now; with `a` and `b`, B read against A per measure (too early under 30 in either base), D1 by platform, finished by mode, exceptions by day, the launch histogram (first menu of each app run only), the return curve and B's top exceptions |

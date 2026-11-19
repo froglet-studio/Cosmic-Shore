@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-18-thresher-vesseltransformer-throttlescale-2c9fcd",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T06:00:30+00:00",
+  "area": "Thresher Time throttle (Regatta step 5)",
+  "summary": "Thresher VesselTransformer ThrottleScalerMultiplier (Time) switched on at x1.08 -> x1.296, floor 0.54. Its Time spin lever moved Regatta pace by 0. Shuffle set 3 seeds: card 75.4 -> 71.2 s, L5 74.6 -> 65.5 s, both inside the five's range. Thresher Time rungs I1 80-102, I2 93-179, I3 151-172, I4 147-187 s.",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "56298f570"
+}

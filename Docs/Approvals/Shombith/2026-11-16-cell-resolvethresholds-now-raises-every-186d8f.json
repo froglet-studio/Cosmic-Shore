@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-16-cell-resolvethresholds-now-raises-every-186d8f",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T22:15:53+00:00",
+  "area": "Ecology: cells (Cell phase thresholds)",
+  "summary": "Cell.ResolveThresholds now raises every phase boundary by what a course's placements laid (new ICellPhaseBaseline, CellPhaseThresholds.Raised), so a Regatta course crowded by genome placements opens in the same phase as the plain course; Garrett asked for it on 2026-11-16",
+  "why": "Garrett: 'For crowded courses use your cell parameters. if you make more then set a higher limit.'",
+  "branch": "claude/project-thread-cwavhz",
+  "commit": "8247a82ac",
+  "paths": [
+    "Assets/_Scripts/Controller/Environment/Cell.cs",
+    "Assets/_Scripts/Controller/Environment/Spawning/ICellPhaseBaseline.cs",
+    "Assets/_Scripts/Utility/DataContainers/CellPhaseThresholds.cs"
+  ]
+}

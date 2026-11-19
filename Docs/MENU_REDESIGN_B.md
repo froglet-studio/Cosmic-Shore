@@ -33,7 +33,8 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept); now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203; Rev 111 Full, P2A and P3A built in section 204), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
+| Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept) and on 2026-11-16 (Rev 100, 103, 108 and 111 taken off for room, copies kept; section 210); the board now holds Rev 113 (section 209); before that it held now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203; Rev 111 Full, P2A and P3A built in section 204), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
+| Voyages playtest | `voyages-playtest` | What the first Milestone 1 playtest asked for: four options each for the crew screen, the intro, the objective box, the toasts and the feel in flight (Rev 114), and your Ark with its seat picker five ways (Rev 115) | Shombith, 2026-11-16 (sections 210, 211) |
 | Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
 | Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 207) |
 
@@ -4097,8 +4098,10 @@ menu"; (2026-11-12): "Lets get them into the game. update the avatars, and use t
 profile page in the ark."
 - **A fourth open tab, PILOTS**, between SQUADS and ARTIFACTS (`ArkPilotsPage`): the crew in the order they joined, one
   cell a pilot (a `SquadPickChip`, the Squads tab's own) with the close-up of their callsign's scene, their name and
-  their callsign. A crew holds at most one pilot a callsign (`Docs/Pilots/INVENTORY.md` 3.1), so the tab has one cell a
-  callsign (18, six by three), needs no scrolling and starts right of the friends orb. "Your crew" and "Pilots: {count}"
+  their callsign. The tab shows eighteen cells a page (six by three), starts right of the friends orb and needs no
+  scrolling; since 2026-11-16 the crew is all fifty painted pilots, callsigns shared ("lets get all 50 into the game"),
+  so "<" and ">" with "1 / 3" (`pageTemplate`) step through the pages on the caption row, shown only while the crew
+  fills more than one. The Hangar's PILOTS list has a card for every painted pilot and shows each person's close-up. "Your crew" and "Pilots: {count}"
   are the caption; an empty crew says so. Every word is on the component or the prefab.
 - **A press opens the pilot's PROFILE PAGE** (`PilotProfileModal`, `ModalWindows.PILOT_PROFILE = 21`,
   `ScreenSwitcher.OpenPilotProfile(pilotId)`): the pilot's 1536x864 scene across the whole screen (`PilotSceneImage`:
@@ -4115,8 +4118,8 @@ profile page in the ark."
   for a recruit, until each person has art, does the panel's last line say who is pictured (`picturedTemplate`,
   "Pictured: {painted}, the first {callsign}"; blank it to drop the line).
 - **One scene in memory.** A scene is loaded by name when its pilot is drawn and unloaded when the next is shown or the
-  closed page has faded. The eighteen scenes are in `Assets/Resources/Pilots/Scenes/` (`author_pilot_scene_assets.py`,
-  9.0 MB of JPG), 32 px stand-ins on WebGL.
+  closed page has faded. All fifty scenes are in `Assets/Resources/Pilots/Scenes/` (`author_pilot_scene_assets.py`), 32 px
+  stand-ins on WebGL.
 - **Measured, outside Unity.** The longest story `PilotGenerator` can compose is 14 lines of the story's 15.6, and the
   widest name fits the page's name row and a crew cell (360,000 rolls and the generator's tables, in the UI font). The
   page's cut (`PilotSceneImage.Frame`) was run under plain .NET on all eighteen scenes at 21:9, 19.5:9, 16:9, 16:10,
@@ -4128,7 +4131,10 @@ profile page in the ark."
   alpha 0.88, the Credits window's dim, and **the game blends in linear light** (`m_ActiveColorSpace: 1`): a plate at
   alpha a lets through (1 - a) of the picture's light, so a white sky under 0.88 is still sRGB 97 and the quiet lines
   (NeutralLightest) stood at 1.5:1. A web drawing blends in sRGB and had shown the same plate near black. The plates
-  are solid now, and the layout tool computes each plate's contrast over a white picture in linear light for both
+  were made solid; on 2026-11-16 the words panel's plate went to alpha 0.9 (Garrett: "the text story background doesn't
+  need to be black. a tiny bit of transparency would mean not throwing away the nice art behind it") with every row in
+  TextLight, which keeps 5.8:1 over a white picture in linear light (NeutralLightest would fall to 1.7:1); the stepper and
+  Close plates stay solid. Otherwise the plates are solid, and the layout tool computes each plate's contrast over a white picture in linear light for both
   colours words are drawn in (4.5:1 or it fails). The engine is not Unity: it does not draw the menu's sea material
   and sets a paragraph's lines closer (17.6 against the kit's 23.2 at Body).
 - **The pad stays on the page.** NEXT, PREVIOUS and CLOSE steer it themselves (explicit navigation, `WAYS` in the
@@ -6196,7 +6202,7 @@ returns aggregate and a per-party funnel. Charts: the colour set's four rims in 
 solo, Ruby multiplayer, Blue plain data) with legends and labels; the rims sit above the usual chart lightness band
 (`dataviz` validator), so labels stay on. Awaiting a pick.
 
-## 142. Rev 66 mockups: Froglet Analytics, more ideas - chart switches, live now, alerts, funnels, release and player compare (2026-11-06, awaiting a pick)
+## 142. Rev 66 mockups: Froglet Analytics, more ideas - chart switches, live now, alerts, funnels, release and player compare (2026-11-06; Shombith picked A, Funnels and Releases, 2026-11-17)
 
 **Asked (Shombith, 2026-11-06, picking all seven Rev 65 screens to be built):** "If you have more ideas provide mockups
 lets do that too", and the console should have "switches in graphs which helps all these departments" (business,
@@ -6241,7 +6247,14 @@ launches and returns split by `app_version` and an exception event the game does
 the message and its top frame). Player compare needs `GET /v1/similar?id=` worked out on the server; Claude is not
 asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in that order with a legend; play types Jade
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
-a better number. No player id reaches Claude on any of these. Awaiting a pick.
+a better number. No player id reaches Claude on any of these.
+
+**Picked (Shombith, 2026-11-17, "Build them A"):** the Funnel builder and Release compare, built in
+`Tools/Analytics/server/analytics_compare.py` and `Tools/Analytics/console/compare.js` (rail: Funnels under Players,
+Releases under Health). Live, Alerts and Player compare stay parked. **Differs from the board:** the conversion chart
+is a line per platform (the console's charts have no grouped bars over ordered steps); Finished by mode is a table;
+the launch histogram is a line per version; saving a funnel as a segment is not built (the steps are kept in the
+browser); release reads are worked out on the server when asked, not from a nightly table.
 
 ## 143. Rev 68 mockups: the Fleet Codex for the website - four looks, the whole fleet and one vessel window each (2026-11-08; Shombith picked C, section 144)
 
@@ -8516,3 +8529,309 @@ with "2 of 5 claimed" and its meter. Claim's step reads "Unlocks <set>"; the nex
 
 **Differs from the build:** as section 207, plus a reward per quest: `SO_UnlockData` has no reward field, so a pick needs
 one (a colour set reference) and the claim to grant the set (Garrett's colour sets, `/colour-set`).
+## 209. Rev 113 mockups: Voyages Milestone 1, Escort the Ark and Crystal Run end to end (2026-11-16; Lobby, Crew, the toasts and the in-flight HUDs liked)
+
+**Asked** (Shombith, 2026-11-16): "When I go to app shell I am confused as select your squad or use the lobby approach. For
+this milestone I want lobby approach to be the main task. Now when I select a vessel it doesnt really get applied in the
+voyage I selected", "rework the crew rocemmends voyages screen it should be a popup from that window and categorization
+between hunters, pirates etc", "There is no in game hud for the voyage like which cell is coming what the ark is doing we
+should use both the toast and the objective box", "At the end of the voyage there should be a scoreboard with rewards and
+another button called venture into the voage or finish", "Lets keep all other voyages from crew locked for now", then "It
+can be something steal these many elemental crystals during the voyage and few cells attack you few dont" and "Please use
+frogma to draw under the voyages track". Numbers follow the Milestone 1 game plan (Claude Docs, "Voyages Milestone 1: game
+plan"): Escort the Ark is five worlds to The Maw, breach line 25% at difficulty 2; Crystal Run is 20 crystals over 4
+cells, 2 of them hostile, breach line 40%.
+
+**On the canvas**: tab Voyages, "Rev 113 - Milestone 1: Escort the Ark and Crystal Run, end to end". Copies in
+`Docs/MenuRedesignB/board/R113*.dc.html`, generator `Docs/MenuRedesignB/rounds/r113_voyages.py` (on Rev 108's kit).
+- **Compare**: the seven toasts across one voyage, each beside the moment that raises it.
+- **Lobby** (recommended): your Ark, lobby only. Seats fill you, friends who join, AI wingmates; a saved squad is one
+  line (Y) that fills only the open AI seats. "Flies this voyage" on your card and "You sail as Manta · Space" beside
+  Set sail are read from the record the voyage spawns from.
+- **Picker**: the seat popup on Vessel; one press saves the seat for this voyage and the line under the grid says so.
+- **Crew**: crew recommends as a popup from one button on the map; Escort the Ark and Crystal Run open, every other crew
+  voyage under its faction (Hunters, Pirates, Merchants, Thieves), locked for Milestone 1. The factions drawn are examples.
+- **Hud**: Escort the Ark in flight; the objective box (goal, the five worlds, the hull with the breach line, the Ark's
+  state, one action line), a threat toast, red markers on the fauna at the Ark.
+- **Run**: Crystal Run in flight; the 12 / 20 counter leads with its split by element, each cell marked calm or hostile.
+- **Score**: the Ark's hull at the core, a row per seat, rewards (crystals by difficulty, XP, the pilot's trust),
+  Finish (B) and Venture further (A).
+- **Notes**.
+
+**Differs from the build**: `VoyageArkPage` today opens on the lobby or the squad view and keeps "Fly a squad instead";
+Lobby drops that toggle for a squad shortcut that fills AI seats. The crew list on the HyperSea page becomes a popup.
+The objective box, the toast set and the end scoreboard are new HUD and end screens (today's `ShowBanner` lines stay as
+the toast). A first draft of the same screens was a standalone review page (https://claude.ai/artifact/L21DdQk9Gd5gzfBmdaynrk).
+
+**Picked (Shombith, 2026-11-16)**: "I like the toasts. I like the Lobby screen. Change your seat has weird borders maybe we can
+fix that. I like your crew recommends (It is still in the first voyage screen right) can I see that page once as well
+because the slider is not there anymore. I like all the in game UIs for now." Liked: Compare (toasts), Lobby, Crew, Hud,
+Run. Score had no word yet.
+
+**Changed on his notes (same day)**: Picker redrawn in place (a changed board, so the record of what he saw first is this
+section's list above): the popup is a flat panel with one thin line instead of the glass rim, the vessel tiles carry one thin
+line (the picked one in `#00D4FF`), "For this voyage" is plain text, the saved line has no bar. Added **Sea**: the
+HyperSea page (step 01) with the popup closed, Rev 108's table as it was, the crew list replaced by the two open voyages,
+the "Crew recommends · 8" button (Y) and a locked line. Section refitted to hold it.
+
+### 209.1 Built: the app shell - Sea, Crew, Lobby and Picker (2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
+
+Asked (Shombith, "go" on the Milestone 1 build prompt): build the picked Sea, Crew and Lobby boards and the redrawn Picker,
+make "You sail as" and the picker read the record the voyage launches from, and keep the lock PR #2021 added
+(`VoyageToyDefinitionSO.lockJobs` / `openJobs`) as the only lock.
+
+Built in code (no prefab or scene change), at the boards' own numbers:
+- **Sea** (`VoyageSeaPage`): the table as it was; the crew faces and their sliding drawer are gone for an "Open now" column at
+  board x 1400, 480 wide: a 140 tall card per voyage that sails now (the escort shows the Ark, `VoyageBoardStyleSO.ArkPicture`;
+  a job its pilot), the picked one on a faint cyan ground with one 2 unit cyan line at its left. Under them "Crew recommends -
+  N" (Y) and "N crew voyages, locked for Milestone 1". In full screen the column stands in the right margin.
+- **Crew** (`VoyageCrewPopup`, rules in `VoyageCrewRules`): the board's 1520 x 900 glass modal in its own canvas. The faction
+  rail ("All", then only the factions with locked work, each with its count; a pilot's faction is their record's
+  `FactionType`), "Open now" with an Open (A) per voyage that sails, then every locked crew voyage under its faction (pilot,
+  job, difficulty, the lock at .72). Pressing one says "<title> opens after Milestone 1." Locked means `Offer.Locked`: no Set
+  sail and not under way, which is #2021's lock.
+- **Lobby** (`VoyageArkPage`): lobby only. The squad presets and "Fly a squad instead" are gone. Seats fill you, then lobby
+  friends (`VoyageRules.FriendAt`), then AI wingmates. Your card says "Flies this voyage" and carries the four settings; a
+  friend's says they are in your lobby and pick their own (the party carries no Ready / Choosing state yet); an AI seat offers
+  Invite a friend (the Menu_Main friends list, as the Arcade lobby opens it) and Change wingmate (the popup on Pilot). "Fill
+  the AI seats from a saved squad" (Y) lists the saved squads (one fills at once) and copies its wingmates into the AI seats
+  only. "You sail as <vessel> - <element>" sits beside Set sail.
+- **Picker** (`VoyageSeatPicker`): the redrawn board: a flat #00041F panel in one #434C89 line, title 28, the four tabs, a
+  grid three across of 170 tall tiles each in one thin line (the picked one cyan), "For this voyage" in plain caps 13, the
+  400 wide preview, the note and Done. The quick kits are gone (the board has none); the Sees filter stays on the Pilot tab.
+  One press saves and the line under the grid says what ("Manta is your vessel for <voyage>. Your seat card behind has
+  changed.").
+- **The record** (`VoyageSeatRecord`, Data): the voyage's own seats, a copy of the active squad made when the Ark page opens
+  on a voyage (keyed by job or escort). The picker writes into it (`VoyageSeats.PickVoyage`), never into a saved squad;
+  Set sail passes it as the request's squad; "You sail as" reads `VoyageLaunch.HullThatSails`, the same call that writes the
+  spawn hull, so a hull with no prefab reads as the hull that really flies.
+
+New words in `voyage_slice.json` (Sea*, Crew*, Faction*, Ark*, Pick*). Tests: `VoyageLobbyTests`. Not opened in Unity or
+Amoebius; a render of the build beside the boards is still owed.
+
+
+### 209.2 Built: friends pick their own seat in the voyage lobby (2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
+
+Asked (Shombith, on 209.1): "friends should be able to change their configuration as well, not just use their vessel
+selected in the menu".
+
+Built, with nothing new on the wire (no protocol bump):
+- On a friend's machine (`VoyageLaunch.IsPartyGuest`) the Ark page is their own seat in the host's lobby: their card keeps
+  Vessel, Pilot, Element and Artifact, the seat popup writes `VoyageSeatRecord.PartyKey` (a copy of their active squad, kept
+  for whatever voyage the host sails), the head line says the host picks the voyage, and Set sail reads "THE HOST SETS SAIL"
+  and is off. The AI seat buttons and "Fill the AI seats" are the host's and are hidden.
+- Every change, and opening the page, runs `VoyageLaunch.SeatLocal` (the call Set sail makes for the host): the hull goes to
+  the friend's owner-written, replicated `Player.NetDefaultVesselType`, the pilot and artifact to that hull's loadout. The
+  voyage scene already spawns every person from that variable, so the friend spawns in the hull they picked.
+- In the voyage, a friend's `VoyageRun` follows the host with the party record as its squad, so their element seeds from the
+  seat they picked.
+- On the host's page a friend's card shows the hull they picked (their player's replicated hull, matched by UGS id), and
+  redraws within half a second when it changes or a friend joins or leaves. Their pilot and element live on their own machine
+  and are not shown to the host yet: showing them needs a replicated seat, which is a protocol bump.
+
+Not seen in Unity or with two machines: the hand test is a host and a friend in one party, the friend changing vessel,
+pilot and element on their Ark page, the host's card showing the new hull, and the friend spawning in it at the berth.
+
+## 210. Rev 114 mockups: the Voyages playtest, four of each (2026-11-16; C2, O1, Intro A and Feel A picked)
+
+**Asked** (Shombith, after playing the Milestone 1 build): "The crew screen needs some rework, suggest me some mockups
+in frogma for that. The in game still has no intro, I could not see there should be a kick ass intro. The objective on
+the left was too big show me 4 mockups of that on a new frogma page. There were no toasts in the game but text showed up
+at the top of the ark. Still in the game I did not get a good feel. Create 4 mockups of each thing".
+
+**On the canvas**: a new tab, **Voyages playtest** (`voyages-playtest`), Rev 114, one section with a group per row and
+the notes as a sticky beside it. Copies: `Docs/MenuRedesignB/board/R114*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r114_voyages.py`. The in-flight boards are drawn over real frames of the game
+(`Docs/Pilots/art/refs/sea_*.jpg`, `Docs/MenuRedesignB/build_refs/sea_cell_outside.jpg`, uploaded as canvas assets).
+- **Crew recommends** (`R114C1`-`C4`): A a drawer over the HyperSea, each job a numbered pin on the map
+  (recommended: the map stays in view and ties each job to its place); B pilot first, your crew's faces with the job each
+  brings, told in the pilot's words; C a job board, one poster per voyage in faction columns; D faction tabs across the
+  top with the two open voyages as a hero row above every tab.
+- **Intro** (`R114IAB`, `R114ICD`; two storyboards to a board, six shots each): A Departure, nine seconds: the Ark
+  undocks, your vessel and wingmates drop in with name cards, the title and five worlds, GO (recommended: it is his list,
+  the Ark, the vessels and the objective); B From the map, the HyperSea table dives down to the Ark; C Threat first,
+  The Maw and its fauna, then the Ark and a pilot's radio line; D One take, out of the Ark's bay into formation in five
+  seconds.
+- **Objective box** (`R114O1`-`O4`; Rev 113's box was about 600 x 330): A a 420 x 120 strip; B a 700 x 60 ribbon at top
+  centre where the route is the bar; C a 260 px hull gauge with the full objective held on View; D opens (440 x 170) for
+  four seconds on news and folds to one 380 x 44 line the rest of the time (recommended).
+- **Toasts** (`R114TAB`, `R114TCD`; event, threat and goal for each): A the Rev 113 band a third smaller and higher;
+  B the crew on the radio, a pilot's face with each line, lower left; C a quiet feed under the objective; D two sizes, big
+  moments (a new world, breach close, the goal) take the screen and the rest is a small line (recommended).
+- **Feel in flight** (`R114F1`-`F4`): A Chase, close behind you with the Ark ahead; B Guardian, pulled back with the Ark
+  central, its hull lights showing its hull and fauna lit red in the world (recommended); C Cinematic beats, two seconds
+  of letterbox and slow time at the big moments; D Punch, hit-stop, shard bursts, rumble and empty sound slots for kills,
+  crystals and bites. B and D combine.
+
+**Room on the canvas**: it holds at most 512 files of its own, and adding the round needed 18. The intro and toast
+options share boards two to one, the notes are a sticky, and the superseded Voyages rounds were taken off the canvas
+(Rev 100 P1A/P2A/P3A/Notes, Rev 103 A/B/C/Compare/Notes, Rev 108 Lobby/Picker/Squad/Table, Rev 111 Full; all built or
+replaced by Rev 113, copies kept in `Docs/MenuRedesignB/board/`).
+
+**Differs from the build**: the toasts in the build drew their words in the world over the Ark; every toast here is
+screen space. Everything else is new (no intro, no camera rig, no hit feedback in the build yet). A separate thread is
+finding why the intro and toasts did not show.
+
+**Picked (Shombith, 2026-11-16)**: "For sea screen what we have is fine. I like c2, o1, IAB and camera chase is fine build
+them in the game". So: the crew screen B (C2, pilot first); the objective strip A (O1, 420 px); the intro Departure (the
+IAB board, read as its option A); the chase camera (F1). No toast option was picked: the Rev 113 band stays, in screen
+space. The HyperSea page stays as built. Build prompts: `/mnt/project-files/milestone1-mockups/rev114-build-prompts.md`.
+
+**F1 retired (Shombith, 2026-11-17)**: "It should be exactly like how the vessels have their camera in any other game.
+Please remove whatever camera setup you have added." The chase camera (`VoyageChaseCamera`, `VoyageCameraSO`,
+`Resources/Voyages/VoyageCamera.asset`, `CustomCameraController.Mode`) was removed; a voyage flies each vessel's own
+follow camera. The intro still hands over onto that camera.
+
+### 210.1 Built: the crew screen, pilot first (Rev 114 C2; 2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
+
+Asked (Shombith, on Rev 114): "I like c2 ... build them in the game"; the HyperSea page stays as built. Build prompt A of
+`/mnt/project-files/milestone1-mockups/rev114-build-prompts.md`.
+
+Built in code (`VoyageCrewPopup`, no prefab or scene change), at the board's own numbers (`R114C2.dc.html`):
+- A 1680 x 920 glass panel at (120, 40): "Your crew, and the work they bring" (28), the line under it (15, Sub), Close.
+- **Your crew across the top**: a 248 x 250 portrait tile per voyage, 22 apart (six show; a larger crew scrolls
+  sideways), with its faction (caps 13), first name (17) and job (14, Sub); the voyages that sail come first
+  (`VoyageCrewRules.Crew`). The picked tile carries one thin cyan line; a locked one is dimmed to .62 with the gold lock.
+  The escort's tile is the Ark ("The Ark"), since it has no pilot.
+- **The picked pilot's job** at y 560: their widescreen scene, 620 x 330, cut round their face
+  (`VoyageBoardStyleSO.PilotScenes`, the shipped `PilotSceneCatalog`; loaded only while shown; the Ark for the escort);
+  then "<pilot>, <faction>, asks", the job's line as a quote (34), the difficulty pips, the worlds and the crystals it
+  pays; Take the job (A) and "<other open voyage> instead" (Y, `VoyageCrewRules.OtherOpen`). A locked job shows the gold
+  lock and "<job> opens after Milestone 1." in place of Take the job. The lock is PR #2021's.
+- **Left out on purpose**: XP and a pilot's trust in the rewards (Shombith, 2026-11-16: the game has no voyage XP yet,
+  "not needed, remove from UI as well"); the Rev 113 faction rail and grouped list, which C2 replaces.
+
+Every word is a `VoyageLines` field (nine new, `CrewTitle` and `CrewLine` reworded); colours from the kit and the worn set.
+Not seen in Unity: a render of the screen still needs to sit beside the board.
+
+## 211. Rev 115 mockups: your Ark and the seat picker, five ways (2026-11-16, picked A)
+
+**Asked** (Shombith): "rework on the crew screen as well 5 mockups for the crew selection screen". After a first Rev 115
+of five crew-recommends screens, he clarified: "My bad delete all these by crew I meant the ark screen where I select
+vessels and the popup to select pilots, elements etc." The five crew-recommends boards were taken off the canvas and
+out of this copy. This round redraws page 3, Your Ark (built from Rev 113 Lobby), and the seat popup (built from Rev 113 Picker).
+
+**On the canvas**: the Voyages playtest tab, section `sec-rev115`. Each board is one option, two screens tall: the Ark page above,
+the same page with its picker open below. Copies: `Docs/MenuRedesignB/board/R115*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r115_voyages.py`.
+- **A Hangar line-up** (`R115A`, recommended): the three seats stand as vessels in a row on a hangar floor, each with its
+  pilot, element flower and artifact under a thin line (cyan for yours). No boxes. The picker slides in from the right
+  (Vessel, Pilot, Element, Artifact tabs) and leaves your seat visible behind it, changing as you pick.
+- **B Your seat first** (`R115B`): your vessel large, with its four picks as chips under it; wingmates in a column on the right.
+  The picker is a bottom sheet showing one row at a time (pilots here), LB and RB moving between rows.
+- **C Pilot cards** (`R115C`): each seat a tall card led by its pilot's portrait, the vessel beneath. The picker is a full
+  loadout in four columns (vessel, pilot, element, artifact) with a "You sail as" preview.
+- **D Formation** (`R115D`): the seats shown where they fly around the Ark, over the sea. The picker walks vessel, pilot,
+  element and artifact one step at a time ("Who flies your Manta?").
+- **E Garage list** (`R115E`): the seats as rows read across (vessel, pilot, element, artifact). The picker is a
+  vessel-by-element grid where one press sets both, with pilots beside it. In the game each cell would show the hull's element morph.
+
+All keep the lobby-only rules of section 209: friends pick their own seat, open seats offer Invite a friend and Change
+wingmate, "Fill the AI seats from a saved squad" (Y), and "You sail as" beside Set sail.
+
+**Room on the canvas**: the unpicked Rev 114 options (Intro C/D, Objective B-D, Feel B-D) came off the canvas for room
+(copies kept).
+
+**Differs from the build**: the build is Rev 113 Lobby and Picker (three glass seat cards, a centred popup with a 3 x 2 vessel grid).
+
+**Picked (Shombith, 2026-11-16): "Lets go A."** A, Hangar line-up, is the Ark page and seat picker to build. Build prompt:
+`/mnt/project-files/milestone1-mockups/rev115-build-prompt.md` (project files).
+
+
+### 211.1 Built: your Ark and the seat picker, Hangar line-up (Rev 115 A; 2026-11-16, claude/project-thread-ga37fg, not seen in Unity)
+
+Asked (Shombith, "Lets go A."): build `R115A.dc.html` from `/mnt/project-files/milestone1-mockups/rev115-build-prompt.md`.
+
+Built in code (`VoyageArkPage`, `VoyageSeatPicker`; no prefab or scene change), at the board's own numbers:
+- **The Ark page** (now 1840 x 870, board y 176-1046): the voyage top left (its picture 90 x 48, its name, kind, worlds and
+  difficulty); three seats standing as vessels in a row, no boxes, 520 x 620 from board x 120, 580 apart, top 300: the role
+  and state (You in cyan, a friend IN YOUR LOBBY in Lime, AI wingmate in Sub) above, the hull render 480 x 260 on a soft
+  floor shadow, one thin line under it (cyan for yours), the pilot's face, the vessel (24), "pilot - artifact" and the
+  element's flower; at the foot "Change your seat" (X), "<friend> picks their own seat.", or Invite a friend and Change
+  wingmate. A faint hangar floor band runs under them. The bar at board y 990: Fill the AI seats (Y) left, "You sail as"
+  and Set sail (A) right. The Back button is gone (the header's steps go back), as the board draws it.
+- **The picker**: an 820 x 996 panel at board (1100, 84) that slides in from the right over a 45% scrim starting under
+  the menu bar, one thin line down its left edge. "Change your seat" and Close; the tabs underlined in cyan; the tab's
+  choices three across in 200 x 150 tiles (the Sees filter on the Pilot tab and "For this voyage" kept); the picked one's
+  name and line; "Your seat now" (face, "vessel - pilot - element - artifact", flower); the saved line and Done (A).
+  The Rev 113 preview column is gone.
+- Unchanged: a press saves to the voyage's seat (`VoyageSeatRecord`), never a saved squad; saved squads fill AI seats only;
+  a friend picks their own seat (209.2). The party still has no ready state, so a friend reads IN YOUR LOBBY rather than
+  Ready. A friend's pilot and element reach the host's card when PR #2050 (`VoyagePartySeats`) lands; this change leaves
+  that card's hull-only drawing as it was.
+
+Not seen in Unity: a render of both screens still needs to sit beside the board.
+
+
+## 212. Rev 116 mockups: the in-game voyage UI, six ways (2026-11-17; Shombith picked A, built in 212.1)
+
+**Asked** (Shombith, after playing the round-3 build): "the In game UI is too stupid and old like we need to work more
+on that for sure. I need new mockups lets say 6 of each in game screen including toasts, the toasts should come in the
+designated toast spot as it comes in many arcade games."
+
+**On the canvas**: the Voyages playtest tab, section `sec-rev116`. Every screen of every option is its own board, `R116<option>_<screen>.dc.html` (36 boards, 1920 x 1080; the toast spot boards 1920 x 1330 with the other toast kinds under the screen), one row per option in its group (116A Marquee ... 116F Blocks), the screens in the same order on every row. First published as one board per screen with all six options on it, then as one board per option; Shombith asked twice the same day for each to be separate. To fit 36 boards under the canvas's 512-file limit, on Shombith's word (2026-11-17) 32 superseded voyage boards came off the canvas, their repo copies kept: Rev 113 (all nine), Rev 114 (C2, F1, IAB, O1, TAB, TCD), Rev 115 B-E and the Rev 14-17 voyage windows (VoyageA-L and R14Notes). Generator: `Docs/MenuRedesignB/rounds/r116_voyage_hud.py <root> 116 singles`.
+
+Each option has the same six screens:
+- **In flight**: flying in a raided cell: 23 of 50 banked, 7 carried, the Ark's hull 64% (on the left in every
+  option that has room), cell 3 of 6, the Ark sails in 0:18.
+- **The Ark under attack**: a kaiju-sized raider on the hull, the hull at 27% (under the 30% leak line, near the 10%
+  breach line), THE HOLD IS LEAKING in the toast spot. The raider is lit red in the world; no rings or arrows on the screen.
+- **The toast spot**: each option's one fixed toast spot, outlined in cyan, with ARK UNDER ATTACK landing in it;
+  under each screen the same spot holding an event, the goal and a small BANKED toast. One toast at a time; a threat
+  jumps the queue.
+- **The raid countdown**: the last five seconds at anchor (ToastAnchorClosing), bank what you carry or lose it.
+- **Pause, goal met**: the goal met, Resume, Complete and set sail (the one Lime call to action), Settings,
+  Leave voyage.
+- **The end scoreboard**: docked at Home, a row per seat, rewards, Finish and Venture further (goal 60). The rewards
+  (crew trust, pilot XP, colour shards) are placeholders: there is no voyage XP or trust system yet.
+
+The options:
+- **116A Marquee** (recommended): arcade top centre. The banked count is the score at the top, the route a line under it;
+  the toast spot is a slanted band right under the score, where the eye already goes; the hull a tall bar on the left
+  edge with the breach and leak lines on it. Recommended because the toast spot and the number that matters share one
+  place, like an arcade game's score and combo callouts, and the middle of the screen stays the game's.
+- **116B Rail**: one column on the left, the hull first, then the goal, the timer and the route. Toasts slide out of the rail.
+- **116C Console**: a racing game's console at bottom centre (hull gauge, count, timer); the route across the top; toasts in
+  the lower third above the console.
+- **116D Corners**: a shooter's corners, hull top left and crystals top right; toasts are a feed of up to three under the
+  crystals, newest on top.
+- **116E Edges**: two arcs on the screen's sides, hull left and goal right; toasts are big spaced words at top centre with
+  no box.
+- **116F Blocks**: a fighting game's top bar in segments with the timer boxed between; toasts are a slanted banner that slams
+  in at mid left. Busiest of the six (its segments fail `check_mockup.py`'s noise budget).
+
+Every word is the authored voyage text already in the assets (ToastArkUnderAttack, ObjectiveStripAnchor, PauseCompleteAndSail,
+...); the vessel's own HUD keeps its corner (bottom right); nothing moves at rest except a toast's entry. `check_mockup.py`
+still flags the large display numbers as off the type scale and a few threat reds inherited from the Rev 113/114 kit.
+
+**Differs from the build**: the build is `ArkwayVoyageHud`'s Rev 114 O1 strip (420 px, top left) with toasts on the
+Rev 113 band at top centre, and the pause button is a copy of Resume made in code. Any pick replaces the strip and gives
+the toasts one fixed spot of their own.
+
+**Picked** (Shombith, 2026-11-17): "build A". 116A Marquee.
+
+### 212.1 Built: 116A Marquee in the game (2026-11-17, not yet seen in Unity)
+
+- **In flight** (`VoyageObjectiveBox`, `VoyageHud.cs`, replaces the Rev 114 O1 strip): the count top centre (72 pt, the
+  goal smaller and dimmer), the route under it with the cells done lit, then the flowers by element, the place and the
+  clock, and the action line. The hull is a tall bar on the left edge (x 75, 380 high) with its figure above, the breach
+  mark and the leak line's dashes on it and the new authored label `ObjectiveRailLabel` ("Ark hull") under it; it turns
+  the threat colour while leaking, under attack or in an assault. What the crew carries is a chip at mid height.
+- **The raid countdown**: the last five seconds at anchor draw a ring in the middle (`VoyageCountdownRing`, a mesh, no
+  sprite) emptying clockwise round the seconds left.
+- **The toast spot** (`ArkwayVoyageHud`): while the marquee is up (`VoyageObjectiveBox.Showing`) the toast sits right
+  under it (y 238), on a slanted band (`ArkwayToastBand`) with a thin line along its foot in the toast's mood colour
+  (event, threat, good). The leash countdown sits under the toast. The Arkway toy, which has no marquee, keeps the old
+  top spot.
+- **The end scoreboard** (`VoyageScoreboardView`): one centred column 900 wide: the kicker, title, the big count of
+  crystals with the count by element (flowers) under it and the stats line; the seats table; a row of reward tiles (the
+  Ark's hull with its bar, the pay); banked or at stake; then the quiet button and the call to action centred side by
+  side with their captions under them.
+- **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
+  colour shard tiles (no such systems yet).
+
+**Made room (2026-11-17):** Frogma was full again (511 boards plus `canvas.json` = its 512-file cap, which the
+claude.ai Design type sets and nothing in the repo can raise). On Shombith's pick the 228 boards of Rev 3 to Rev 40
+(222 on Menu Redesign, 6 on Compute Console) came off the canvas with their 96 title notes and section frames
+(canvas version `1794949812-dbeb`): 283 boards are left, 228 files free. Their copies stay in
+`Docs/MenuRedesignB/board/R3*` to `R40*`; the repo index and README were rewritten from the live canvas.

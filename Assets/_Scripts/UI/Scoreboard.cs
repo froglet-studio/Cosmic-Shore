@@ -232,6 +232,8 @@ namespace CosmicShore.UI
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
+            else
+                statsProvider.Changed += OnStatsChanged;
 
             ResolveGameController();
             if (wireButtonsInCode) WireButtons();
@@ -578,6 +580,13 @@ namespace CosmicShore.UI
         {
             s_boards.Remove(this);
             _entranceSeq?.Kill();
+            if (statsProvider) statsProvider.Changed -= OnStatsChanged;
+        }
+
+        // Another pilot's last numbers can land a moment after the board was drawn (B21): redraw the stat block only.
+        void OnStatsChanged()
+        {
+            if (scoreboardPanel && scoreboardPanel.gameObject.activeInHierarchy) PopulateDynamicStats();
         }
 
         /// <summary>
@@ -873,7 +882,7 @@ namespace CosmicShore.UI
                 {
                     if (!teamHeaderPrefab) continue;
                     var header = Instantiate(teamHeaderPrefab, playerCardContainer);
-                    header.Bind(entry.Domain.ToString(), GetDomainColor(entry.Domain), TeamLine(entry));
+                    header.Bind(entry.Domain.ToString(), GetDomainColor(entry.Domain), WithRuleTeamLine(TeamLine(entry), entry.Domain));
                     _spawnedHeaders.Add(header);
                     continue;
                 }
@@ -892,7 +901,8 @@ namespace CosmicShore.UI
             for (int s = 0; s < sides.Length; s++)
             {
                 var side = sides[s];
-                versusView.BindSide(s, side.Domain.ToString(), GetDomainColor(side.Domain), side.Won, side.Score);
+                versusView.BindSide(s, side.Domain.ToString(), GetDomainColor(side.Domain), side.Won, side.Score,
+                                    RuleTeamLine(side.Domain));
                 foreach (var entry in side.Rows)
                     SpawnRow(versusRowPrefab, versusView.Rows(s), results[entry.ResultIndex], entry,
                              entry.ShowsScore, stagger++, winnerName);
@@ -921,6 +931,17 @@ namespace CosmicShore.UI
                 card.ShowCrystalReward(reward);
 
             _spawnedCards.Add(card);
+        }
+
+        /// <summary>The scoring rule's own line for a team (the Mass-Space volume books), or null.</summary>
+        string RuleTeamLine(Domains domain) =>
+            gameData != null && gameData.ScoringRule != null ? gameData.ScoringRule.TeamLine(gameData, domain) : null;
+
+        string WithRuleTeamLine(string line, Domains domain)
+        {
+            string rule = RuleTeamLine(domain);
+            if (string.IsNullOrEmpty(rule)) return line;
+            return string.IsNullOrEmpty(line) ? rule : line + "\n" + rule;
         }
 
         string TeamLine(ScoreboardLadder.Entry header)

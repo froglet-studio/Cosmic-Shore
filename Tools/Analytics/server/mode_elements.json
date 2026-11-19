@@ -6,7 +6,8 @@
     "scoring_metric": "Assets/_Scripts/Data/Enums/ScoringMetric.cs",
     "element": "Assets/_Scripts/Data/Enums/Element.cs",
     "preview_library": "Assets/Resources/ModePreviewLibrary.asset",
-    "cards": "Assets/_SO_Assets/Games"
+    "cards": "Assets/_SO_Assets/Games",
+    "renames": "Assets/_Scripts/System/CloudData/GameModeRenameMigration.cs"
   },
   "modes": {
     "AstroLeague": [
@@ -15,6 +16,10 @@
     ],
     "Bends": [
       "Charge",
+      null
+    ],
+    "Blastline": [
+      "Space",
       null
     ],
     "Bloomrush": [
@@ -57,6 +62,10 @@
       "Space",
       null
     ],
+    "CleanerRam": [
+      "Charge",
+      null
+    ],
     "Cleave": [
       "Space",
       null
@@ -67,6 +76,10 @@
     ],
     "DecoyRun": [
       "Time",
+      null
+    ],
+    "DenBuilder": [
+      "Mass",
       null
     ],
     "DepthCharge": [
@@ -95,6 +108,10 @@
     ],
     "Glasshouse": [
       "Mass",
+      null
+    ],
+    "Gorge": [
+      "Space",
       null
     ],
     "GrizzlyCharge": [
@@ -165,6 +182,10 @@
       "Mass",
       null
     ],
+    "Marionette": [
+      "Charge",
+      null
+    ],
     "Multiplayer2v2CoOpVsAI": [
       "Time",
       null
@@ -193,12 +214,20 @@
       "Time",
       null
     ],
+    "Reefbuild": [
+      "Mass",
+      null
+    ],
     "Regatta": [
       "Time",
       null
     ],
     "Riposte": [
       "Charge",
+      null
+    ],
+    "Riptide": [
+      "Space",
       null
     ],
     "Salvo": [
@@ -255,6 +284,10 @@
     ],
     "SlipLine": [
       "Time",
+      null
+    ],
+    "Snap": [
+      "Charge",
       null
     ],
     "Spearline": [
@@ -379,6 +412,7 @@
   "metric": {
     "AstroLeague": "Goals",
     "Bends": "CombatPoints",
+    "Blastline": "PrismsDestroyed",
     "Bloomrush": "VolumeDestroyed",
     "Breach": "SwitchesThreaded",
     "Breakwater": "SwitchesThreaded",
@@ -389,9 +423,11 @@
     "BurrowRun": "SwitchesThreaded",
     "CaveIn": "PrismsDestroyed",
     "Chum": "PrismsDestroyed",
+    "CleanerRam": "CombatPoints",
     "Cleave": "PrismsDestroyed",
     "Corona": "CombatPoints",
     "DecoyRun": "SwitchesThreaded",
+    "DenBuilder": "VolumeRemaining",
     "DepthCharge": "PrismsDestroyed",
     "DogFight": "CombatPoints",
     "Dustup": "CombatPoints",
@@ -399,6 +435,7 @@
     "Flitstrike": "CombatPoints",
     "Fulmen": "PrismsDestroyed",
     "Glasshouse": "VolumeRemaining",
+    "Gorge": "PrismsDestroyed",
     "GrizzlyCharge": "PrismsDestroyed",
     "GrizzlyTime": "SwitchesThreaded",
     "Harvest": "PrismsDestroyed",
@@ -416,6 +453,7 @@
     "LanternRun": "SwitchesThreaded",
     "Larder": "CombatPoints",
     "Longshot": "VolumeRemaining",
+    "Marionette": "CombatPoints",
     "Multiplayer2v2CoOpVsAI": "Crystals",
     "Palisade": "VolumeRemaining",
     "PerchRun": "SwitchesThreaded",
@@ -423,8 +461,10 @@
     "Railrush": "CombatPoints",
     "Rampage": "PrismsDestroyed",
     "Redline": "SwitchesThreaded",
+    "Reefbuild": "VolumeRemaining",
     "Regatta": "SwitchesThreaded",
     "Riposte": "CombatPoints",
+    "Riptide": "PrismsDestroyed",
     "Salvo": "PrismsDestroyed",
     "ScarabRally": "SwitchesThreaded",
     "ScarabScramble": "Goals",
@@ -439,6 +479,7 @@
     "SkimRace": "Crystals",
     "Slingshot": "SwitchesThreaded",
     "SlipLine": "SwitchesThreaded",
+    "Snap": "CombatPoints",
     "Spearline": "SwitchesThreaded",
     "Standoff": "CombatPoints",
     "Starweave": "VolumeRemaining",
@@ -468,9 +509,15 @@
     "Scurry",
     "Tollway"
   ],
+  "party": [
+    "Maelstrom",
+    "ScarabScramble",
+    "Scurry"
+  ],
   "cards": [
     "AstroLeague",
     "Bends",
+    "Blastline",
     "BlockBandit",
     "Bloomrush",
     "BotDuel",
@@ -485,12 +532,14 @@
     "CaveIn",
     "CellularBrawl",
     "Chum",
+    "CleanerRam",
     "Cleave",
     "CoOpWildlifeBlitz",
     "Corona",
     "Curvatious",
     "DashNGrab",
     "DecoyRun",
+    "DenBuilder",
     "Denial",
     "DepthCharge",
     "Distraction",
@@ -502,6 +551,7 @@
     "Flitstrike",
     "Fulmen",
     "Glasshouse",
+    "Gorge",
     "GrizzlyCharge",
     "GrizzlyTime",
     "Harvest",
@@ -521,6 +571,7 @@
     "Larder",
     "Longshot",
     "Maelstrom",
+    "Marionette",
     "MasterExploder",
     "MazeRun",
     "Multiplayer2v2CoOpVsAI",
@@ -533,8 +584,10 @@
     "Railrush",
     "Rampage",
     "Redline",
+    "Reefbuild",
     "Regatta",
     "Riposte",
+    "Riptide",
     "RiskyDriftness",
     "Salvo",
     "ScarabRally",
@@ -552,6 +605,7 @@
     "Slingshot",
     "SlipLine",
     "SlipNStride",
+    "Snap",
     "Soar",
     "Spearline",
     "Standoff",
@@ -576,5 +630,18 @@
     "Woodpecker",
     "WrasseRun",
     "WreckingBall"
-  ]
+  ],
+  "renames": {
+    "CellularDuel": "DuelForTheCell",
+    "Darts": "DolphinDarts",
+    "HexRace": "SkimRace",
+    "MazeRunner": "MazeRun",
+    "MultiplayerCrystalCapture": "Scurry",
+    "MultiplayerJoust": "Joust",
+    "MultiplayerWildlifeBlitzGame": "CoOpWildlifeBlitz",
+    "NucleusRush": "BroodRush",
+    "PeelTheCage": "Cleave",
+    "Ribcage": "Cleave",
+    "Tournament": "Maelstrom"
+  }
 }

@@ -420,9 +420,11 @@ MonoBehaviour:
   ThrottleScalerMultiplier:
     Enabled: 1
     Value: 1
-    Min: 1
-    Max: 1.5
+    Min: 0.95
+    Max: 1
     element: 4
+    UseFloor: 1
+    Floor: 0.475
   PitchScaler: 100
   YawScaler: 100
   RollScaler: 30
@@ -451,6 +453,14 @@ MonoBehaviour:
   maxBlockScale: 4
   waitTillOutsideSkimmer: 1
   shielded: 0
+  trailVolume:
+    Enabled: 0
+    Value: 1.189
+    Min: 1
+    Max: 2.5
+    element: 0
+    UseFloor: 0
+    Floor: 0
   offset: 4
   Gap: 0
   MinimumGap: 0
@@ -581,11 +591,11 @@ MonoBehaviour:
   jukeController: {fileID: 7423918465920174631}
   jukeWhooshEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -80347349
+      Data2: 1177752133
+      Data3: 1086952125
+      Data4: -723090544
+    Path: event:/SFX/Oneshots/Gameplay sfx/Speed burst
   flareGain: 2.5
 --- !u!114 &838706159439259027
 MonoBehaviour:
@@ -854,6 +864,8 @@ MonoBehaviour:
     Min: 30
     Max: 60
     element: 3
+    UseFloor: 1
+    Floor: 15
   nudgeShardPoolManager: {fileID: 0}
   markerDistance: 70
   AOEPrefab: {fileID: 0}
@@ -976,11 +988,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.Audio.ShipAudioController
   engineEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1809053689
+      Data2: 1230251534
+      Data3: 566434957
+      Data4: -1286293035
+    Path: event:/Engine stuff/space ship engine main
   additionalEngineLayers: []
   speedParameterName: Speed
   tiltParameterName: Tilt Acel

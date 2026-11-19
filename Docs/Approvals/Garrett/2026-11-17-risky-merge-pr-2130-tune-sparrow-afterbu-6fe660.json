@@ -1,0 +1,28 @@
+{
+  "id": "2026-11-17-risky-merge-pr-2130-tune-sparrow-afterbu-6fe660",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-17T08:51:09+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2130 (tune(sparrow): afterburner Time Max 1.65 -> 1.875 (step 5, Regatta slow trio)) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Sparrow.prefab",
+  "branch": "claude/project-thread-cwavhz",
+  "pr": 2130,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Sparrow.prefab",
+    "Docs/Approvals/Yash/2026-11-17-sparrow-afterburner-boostspeedmultiplier-a653df.json"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Sparrow.prefab"
+    }
+  ]
+}

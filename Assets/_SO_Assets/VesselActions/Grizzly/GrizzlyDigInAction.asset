@@ -13,6 +13,11 @@ MonoBehaviour:
   m_Name: GrizzlyDigInAction
   m_EditorClassIdentifier: 
   energyIndex: 0
-  stationaryGainMultiplier: 2
-  chargeScaleAtFull: 3
-  chargeScaleMinMul: 0.5
+  dugInFill:
+    Enabled: 1
+    Value: 2
+    Min: 2
+    Max: 5
+    element: 1
+    UseFloor: 1
+    Floor: 1

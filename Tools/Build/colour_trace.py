@@ -1203,9 +1203,9 @@ TOKEN_ENUM = {"textLight": "TextLight", "textInactive": "TextInactive", "inactiv
               "elementTime": "ElementTime", "selection": "Selection"}
 
 # Shombith, 2026-11-05 (D3, Docs/UI_STYLE_GUIDE.md section 13): the selection and the focus ring are Jade
-# (controlActive). UITheme.asset's selection still holds the old sky blue, the colour prefabs were authored in, so a
-# raw colour typed from it is still found as the Selection token; Photic's Selection is the decided colour, as the style
-# guide's Deep Sea (Docs/UI/froglet-tokens.json) has it.
+# (controlActive). UITheme.asset's selection holds that Jade since 2026-11-17 (it was the old sky blue); the mapping
+# stays so Photic's Selection is the decided colour whatever the asset says, as the style guide's Deep Sea
+# (Docs/UI/froglet-tokens.json) has it.
 DECIDED = {"selection": "controlActive"}
 # The menu's sea lines (CosmicShore/UI/SeaLines): UIThemeLive paints a copy of the material with the set's four sea
 # colours (ColorSetUITheme.Build). Photic's are the material's own; every other set's the rims Shombith chose.

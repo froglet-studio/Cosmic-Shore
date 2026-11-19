@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-the-scarab-ai-s-drive-scarabaiboostpolic-49c3a3",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T01:54:25+00:00",
+  "area": "the Scarab racing AI",
+  "summary": "The Scarab AI's drive (ScarabAIBoostPolicy, also flown in Regatta) and Scarab Rally's own nose table (Legendary 15/s I1-I2, 18/s I3-I4, no-dodge 224 u) were trained in Scarab Rally and shipped; Switchback keeps the Dolphin's table.",
+  "why": "Garrett's Regatta flywheel: on 32 fresh flights I4 164->120 s, I1@T10 103->87 s, I4@T0 133->107 s, no DNF; one wide course +6%.",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "4f46d30d5",
+  "paths": [
+    "Assets/_SO_Assets/AI Boost Policies/ScarabAIBoostPolicy.asset",
+    "Assets/_Scripts/Controller/Arcade/ScarabRally/ScarabRallyController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Scarab"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

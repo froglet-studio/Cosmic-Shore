@@ -702,6 +702,14 @@ namespace CosmicShore.UI
                 case GameModes.Lancefall:
                     // Shatterplane's provider: the densest standing hostile mass - the nearest big plate still standing.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Lancefall");
+                case GameModes.Marionette:
+                    // The Bends' provider: the nearest pilot this player may strike. The creature is the weapon, so the
+                    // question is which rival hull to ride it into.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Marionette");
+                case GameModes.Gorge:
+                    // Rampage's provider: the nearest managed omni crystal, which hatches a predator the wasp rides at
+                    // once. The reef's shoals hang in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Gorge");
                 case GameModes.Stingherd:
                     // The Bends' provider: the nearest pilot this player may sting. The herd is driven, not flown, so
                     // the question is which rival hull to drive it at.
@@ -910,6 +918,16 @@ namespace CosmicShore.UI
                 LoadInsights.CompleteLoad("Loaded — arena complete (laid + grown), connecting screen done");
                 Show();
 
+                // A pilot who rejoined a running match (MatchRejoin, section 103) joined the turn while the panel was up:
+                // no intro and no Ready - nobody else will press Ready again, so it would wait for good. Straight into
+                // the race; OnMiniGameTurnStarted has already set up the score and the cards.
+                if (gameData != null && gameData.IsTurnRunning)
+                {
+                    ShowLocalVesselHUD();
+                    UpdateScoreUI();
+                    return;
+                }
+
                 // Play pre-game cinematic if available
                 if (enablePreGameCinematic && preGameCinematic != null)
                 {
@@ -939,6 +957,9 @@ namespace CosmicShore.UI
                 }
 
                 _readyButtonUnlocked = true;
+                // The turn can have been joined while the intro played (a rejoin whose roster raised ClientReady
+                // before the seat claim did): no Ready for a running turn.
+                if (gameData != null && gameData.IsTurnRunning) return;
                 ToggleReadyButton(true);
             }
             catch (OperationCanceledException)
@@ -960,6 +981,7 @@ namespace CosmicShore.UI
         private void PrepareIntro()
         {
             if (!enablePreGameCinematic || preGameCinematic == null) return;
+            if (gameData != null && gameData.IsTurnRunning) return;   // a rejoiner joins a running turn: no intro
             Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
             if (playerTarget == null) return;
             preGameCinematic.Prepare(cinematicLookAtCenter, playerTarget, gameData.GameMode, gameData.Vessels,
@@ -1030,7 +1052,7 @@ namespace CosmicShore.UI
         protected Color ResolveDomainColor(Domains domain) =>
             gameData != null && gameData.ThemeManagerData != null
                 ? gameData.ThemeManagerData.GetDomainUIColor(domain)
-                : Color.gray;
+                : ColorTrace.Retrace(ColorTrace.Ui, Color.gray);
 
         private void CleanupLocalPlayerCard()
         {

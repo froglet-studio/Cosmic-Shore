@@ -188,8 +188,9 @@ loads them; the ground is `#00041F` over `#00010A`. Copy the latest round's `<he
 
 ## 4. After the pick
 
-A pick ("go with C") is recorded in the round's section (**Picked (name, date): "..."**) and the build goes through the
-screen's generator and `/ui-redesign-tracker` (it verifies the build against the board). A follow-up round on the same
+A pick ("go with C") is recorded in the round's section (**Picked (name, date): "..."**) and the build goes through
+**`/frogma-to-unity`** (spec in `Docs/UI/specs/`, the screen's generator, the gates, the proof beside the board, the
+status note under the board) and `/ui-redesign-tracker` (it verifies the build against the board). A follow-up round on the same
 screen is a new round, not an edit of the picked board: the board a section names is the record of what was approved,
 and a changed board would silently change the record. Edit an existing board only for a typo or when the person asks
 for that board changed ("make D brighter") and say so in the doc.

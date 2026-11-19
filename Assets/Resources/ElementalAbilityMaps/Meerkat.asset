@@ -24,8 +24,8 @@ MonoBehaviour:
     UpgradeLabel: 'Steal'
     UpgradeDescription: 'Every prism your soliton swallows is stolen into your domain as its run starts, so it leaves the way out already yours.'
   - Element: 4
-    AbilityLabel: 'Faster Ride'
-    AbilityDescription: 'Passive: you ride every soliton faster, your own or anyone''s (the throat''s rush grows with Time). Garrett''s design, approved by Yash 2026-10-28.'
+    AbilityLabel: 'Ride'
+    AbilityDescription: 'Fly into any soliton, your own or anyone''s, and it carries you: the throat''s rush is your Time, x1 at rest and x2 at level 10, and the Rift''s void run is as fast. A high-Time Meerkat crosses the cell through its tunnels in a blink. Garrett''s design, approved by Yash 2026-10-28; x2 since 2026-11-16.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -50,3 +50,4 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: 'Six Sentinels'
     UpgradeDescription: 'The pool is 6 sentinels.'
+  omniAbilityLabel: Fulmen

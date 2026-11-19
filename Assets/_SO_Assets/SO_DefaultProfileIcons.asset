@@ -163,3 +163,231 @@ MonoBehaviour:
   - Name: Spare08
     Id: 50
     IconSprite: {fileID: 21300000, guid: 4094717556dd16a46f631b5153bdc4f2, type: 3}
+  - Name: Joriro
+    Id: 51
+    IconSprite: {fileID: 21300000, guid: 0848f3f76afbba824c53512b1952db44, type: 3}
+  - Name: Dellalia
+    Id: 52
+    IconSprite: {fileID: 21300000, guid: 99504b10474ff87f1a268a4d8c38eb40, type: 3}
+  - Name: Sabero
+    Id: 53
+    IconSprite: {fileID: 21300000, guid: 3e8020162e1a906ec6c5eebed3888181, type: 3}
+  - Name: Olo
+    Id: 54
+    IconSprite: {fileID: 21300000, guid: 41548dcd5b54e7c0b60c504cf952e744, type: 3}
+  - Name: Rolamo
+    Id: 55
+    IconSprite: {fileID: 21300000, guid: 0e9fd82cc42f70f63ac1361eff1421e2, type: 3}
+  - Name: Yox
+    Id: 56
+    IconSprite: {fileID: 21300000, guid: 3d7f89207588bac39d6645a5ea1e63f7, type: 3}
+  - Name: Xathata
+    Id: 57
+    IconSprite: {fileID: 21300000, guid: 53165bb0f2326a260dc251d97637a80a, type: 3}
+  - Name: Belthaly
+    Id: 58
+    IconSprite: {fileID: 21300000, guid: 45508bc179b1d483e084658c7147801f, type: 3}
+  - Name: Nethael
+    Id: 59
+    IconSprite: {fileID: 21300000, guid: d162826b4d2183c7477fee1b8591d673, type: 3}
+  - Name: Mamo
+    Id: 60
+    IconSprite: {fileID: 21300000, guid: 892f4a1afc902f21292f82833127ed55, type: 3}
+  - Name: Xalaai
+    Id: 61
+    IconSprite: {fileID: 21300000, guid: a0e903a429ede893b5703a87ad3dd128, type: 3}
+  - Name: Briola
+    Id: 62
+    IconSprite: {fileID: 21300000, guid: 360724c6c7562974c23d3dcd17b1bfdf, type: 3}
+  - Name: Peveth
+    Id: 63
+    IconSprite: {fileID: 21300000, guid: 2ecfaa213052ec35d433595b16241a86, type: 3}
+  - Name: Fenra
+    Id: 64
+    IconSprite: {fileID: 21300000, guid: e1214dd09712feaca2c006faca554918, type: 3}
+  - Name: Corrarin
+    Id: 65
+    IconSprite: {fileID: 21300000, guid: 65281038760a270dae3187db8873951a, type: 3}
+  - Name: Neloel
+    Id: 66
+    IconSprite: {fileID: 21300000, guid: 409d48733a4a99b3d4594969bdf914e6, type: 3}
+  - Name: Uthael
+    Id: 67
+    IconSprite: {fileID: 21300000, guid: e252788502b587f5c27dee50f190190b, type: 3}
+  - Name: Cario
+    Id: 68
+    IconSprite: {fileID: 21300000, guid: 24641a4b421dcd2e2175529818b01331, type: 3}
+  - Name: Lulaane
+    Id: 69
+    IconSprite: {fileID: 21300000, guid: 2e16a38e55589d5a1304c80da5668f1b, type: 3}
+  - Name: Belrenro
+    Id: 70
+    IconSprite: {fileID: 21300000, guid: be74d15a78bd2245341b2a995a0273b2, type: 3}
+  - Name: Zeriola
+    Id: 71
+    IconSprite: {fileID: 21300000, guid: 646ca1e3d1e237934449843380f23651, type: 3}
+  - Name: Maloane
+    Id: 72
+    IconSprite: {fileID: 21300000, guid: 6d3b30f7ed7c560d9b6fe2c383b5ea14, type: 3}
+  - Name: Fenx
+    Id: 73
+    IconSprite: {fileID: 21300000, guid: 543534467644e48cb17f325614440f9d, type: 3}
+  - Name: Quilox
+    Id: 74
+    IconSprite: {fileID: 21300000, guid: 2e9bc4d5b90927ad77d22577d7e5cf9a, type: 3}
+  - Name: Pediri
+    Id: 75
+    IconSprite: {fileID: 21300000, guid: 7fa97eea846ce4ad7b4a8380c5d65809, type: 3}
+  - Name: Zesondo
+    Id: 76
+    IconSprite: {fileID: 21300000, guid: 0706a54a45731b4037857b78403e76ea, type: 3}
+  - Name: Mirin
+    Id: 77
+    IconSprite: {fileID: 21300000, guid: f82985fb3868fbd8aae2a620042866e6, type: 3}
+  - Name: Olone
+    Id: 78
+    IconSprite: {fileID: 21300000, guid: 690d9f2b98e3775450b99b87fd6fba86, type: 3}
+  - Name: Quikoth
+    Id: 79
+    IconSprite: {fileID: 21300000, guid: 884c5a08f706c41cd87e78bdf36067f5, type: 3}
+  - Name: Athara
+    Id: 80
+    IconSprite: {fileID: 21300000, guid: 6677b20e2c2c9e505d1b36d2707cdc1e, type: 3}
+  - Name: Takoane
+    Id: 81
+    IconSprite: {fileID: 21300000, guid: 192f68b30c8e981e2ffd6934df8fe043, type: 3}
+  - Name: Dellorin
+    Id: 82
+    IconSprite: {fileID: 21300000, guid: 99f0277a21693a8ee48a1e045008274f, type: 3}
+  - Name: Maix
+    Id: 83
+    IconSprite: {fileID: 21300000, guid: 082a55012152948fa003da303cb66c17, type: 3}
+  - Name: Mirisa
+    Id: 84
+    IconSprite: {fileID: 21300000, guid: 8d5428b1c0fbe45c19453a2e3b3aa044, type: 3}
+  - Name: Cakoola
+    Id: 85
+    IconSprite: {fileID: 21300000, guid: 56cb8136678df5be380e18d3e098df43, type: 3}
+  - Name: Corlilia
+    Id: 86
+    IconSprite: {fileID: 21300000, guid: a06964387213c9f3070c0ac0694c9146, type: 3}
+  - Name: Galsoola
+    Id: 87
+    IconSprite: {fileID: 21300000, guid: 9efbcd3b092b3aa5dfdd27723e63b529, type: 3}
+  - Name: Veveola
+    Id: 88
+    IconSprite: {fileID: 21300000, guid: 50dc6bdbd050d5227c7f6bcf1f61e6c2, type: 3}
+  - Name: Zeth
+    Id: 89
+    IconSprite: {fileID: 21300000, guid: 917055b80ddee0047da9c17a66463198, type: 3}
+  - Name: Rosondo
+    Id: 90
+    IconSprite: {fileID: 21300000, guid: fa9351303309b31cb2a67c47fe43b67a, type: 3}
+  - Name: Uline
+    Id: 91
+    IconSprite: {fileID: 21300000, guid: b8aa761ad15e8ebe3960205cb956858c, type: 3}
+  - Name: Lunulo
+    Id: 92
+    IconSprite: {fileID: 21300000, guid: 6b0fc23bcbf1925b5d5266260143e761, type: 3}
+  - Name: Ovex
+    Id: 93
+    IconSprite: {fileID: 21300000, guid: 40282b9095a261c77f6fc2bd9b282271, type: 3}
+  - Name: Jodiola
+    Id: 94
+    IconSprite: {fileID: 21300000, guid: 6a7d31592fe628ce5daf54ff73673f27, type: 3}
+  - Name: Pekoar
+    Id: 95
+    IconSprite: {fileID: 21300000, guid: 8ee5698beb42a02b4bcfa0ed2ae5bb56, type: 3}
+  - Name: Quibemo
+    Id: 96
+    IconSprite: {fileID: 21300000, guid: 12a6fac6c07afde3f5f54ef2dcc30adc, type: 3}
+  - Name: Mamaola
+    Id: 97
+    IconSprite: {fileID: 21300000, guid: ee6b4fa37dd658b291a15f51db13be8a, type: 3}
+  - Name: Tanuwen
+    Id: 98
+    IconSprite: {fileID: 21300000, guid: 7b785b49f0fd99cbd780ca66b582ea50, type: 3}
+  - Name: Wyve
+    Id: 99
+    IconSprite: {fileID: 21300000, guid: 2d9c2eb79724b68a10b99c239a2316d9, type: 3}
+  - Name: Delliar
+    Id: 100
+    IconSprite: {fileID: 21300000, guid: dc34cce9d5f9b7896b022e63c0c6b551, type: 3}
+  - Name: Delsoko
+    Id: 101
+    IconSprite: {fileID: 21300000, guid: 16a7776819cd7524fb02e712c8809ebf, type: 3}
+  - Name: Nemaix
+    Id: 102
+    IconSprite: {fileID: 21300000, guid: c410105b8246bff79123f343acbc3a1d, type: 3}
+  - Name: Brilolia
+    Id: 103
+    IconSprite: {fileID: 21300000, guid: 59d0198d9a76170e0b2d2fe098f1019c, type: 3}
+  - Name: Ithax
+    Id: 104
+    IconSprite: {fileID: 21300000, guid: 215385d14ee3216cc07d3fa35a40b952, type: 3}
+  - Name: Makoola
+    Id: 105
+    IconSprite: {fileID: 21300000, guid: 60ea617e94d0ffff974eb82b2e5eb1ce, type: 3}
+  - Name: Talolo
+    Id: 106
+    IconSprite: {fileID: 21300000, guid: 2073962a02a304b1f3d670778a1774bc, type: 3}
+  - Name: Iri
+    Id: 107
+    IconSprite: {fileID: 21300000, guid: 43eca799e285945ef3fa330d5983b8fc, type: 3}
+  - Name: Miben
+    Id: 108
+    IconSprite: {fileID: 21300000, guid: 723038acd8a97182ca983782d6e9715d, type: 3}
+  - Name: Verao
+    Id: 109
+    IconSprite: {fileID: 21300000, guid: 8293f7d638c119087f150f3401412cbc, type: 3}
+  - Name: Brisilia
+    Id: 110
+    IconSprite: {fileID: 21300000, guid: 367311ddf60feacd617a55c8343ef54b, type: 3}
+  - Name: Pewen
+    Id: 111
+    IconSprite: {fileID: 21300000, guid: 04d52b985877bc2fca7e9012bbc34b45, type: 3}
+  - Name: Briraix
+    Id: 112
+    IconSprite: {fileID: 21300000, guid: 06d7ae6bd1662248682b075909e854d7, type: 3}
+  - Name: Mata
+    Id: 113
+    IconSprite: {fileID: 21300000, guid: 648685477eb189a328c11e1c351df7bb, type: 3}
+  - Name: Ludira
+    Id: 114
+    IconSprite: {fileID: 21300000, guid: aba92e3fff495e302e4e6edfbdf9a493, type: 3}
+  - Name: Belsiar
+    Id: 115
+    IconSprite: {fileID: 21300000, guid: 90a6efc48576cb4550986e5d7f42d19d, type: 3}
+  - Name: Canuar
+    Id: 116
+    IconSprite: {fileID: 21300000, guid: d62f45a639d16e8574f5909f22ed77c0, type: 3}
+  - Name: Uro
+    Id: 117
+    IconSprite: {fileID: 21300000, guid: d8a595585be5458ac189d2f08b020fad, type: 3}
+  - Name: Emao
+    Id: 118
+    IconSprite: {fileID: 21300000, guid: cbccb174eda14fe499e1b99340e19f5c, type: 3}
+  - Name: Ora
+    Id: 119
+    IconSprite: {fileID: 21300000, guid: 298546207c89594d192cf5f4b342539e, type: 3}
+  - Name: Nemath
+    Id: 120
+    IconSprite: {fileID: 21300000, guid: 0d467df0814bcface6ea5f4ae96ec1d5, type: 3}
+  - Name: Oth
+    Id: 121
+    IconSprite: {fileID: 21300000, guid: 730f309e83700160837b22336774cb2a, type: 3}
+  - Name: Sasoko
+    Id: 122
+    IconSprite: {fileID: 21300000, guid: 850abd81702f5cf6f4d93dc7780c17dc, type: 3}
+  - Name: Anudek
+    Id: 123
+    IconSprite: {fileID: 21300000, guid: 5f474eb1e199e32f997be47d5897e9df, type: 3}
+  - Name: Xabedek
+    Id: 124
+    IconSprite: {fileID: 21300000, guid: 0f956811f019faba24b48e2b0d9b121e, type: 3}
+  - Name: Belsoth
+    Id: 125
+    IconSprite: {fileID: 21300000, guid: d0f5da9390dc1ae9368e0c3c07c8feec, type: 3}
+  - Name: Zebeel
+    Id: 126
+    IconSprite: {fileID: 21300000, guid: edd911c5ac72aba81baf3ffbb0ba5f24, type: 3}

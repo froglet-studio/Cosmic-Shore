@@ -28,6 +28,7 @@ namespace CosmicShore.Tests
         [TestCase("chargePetalScale", Element.Charge)]
         [TestCase("massClusterScale", Element.Mass)]
         [TestCase("spaceReachScale", Element.Space)]
+        [TestCase("timeBankScale", Element.Time)]
         public void EachElementDoublesItsNumber(string field, Element element)
         {
             var f = (ElementalFloat)Raw(Config(), field);
@@ -55,6 +56,8 @@ namespace CosmicShore.Tests
             Assert.AreEqual(c.SpaceMaxScale, c.SpaceMaxScaleFor(null), 1e-5f);
             Assert.AreEqual(c.SpaceMaxScaleCap, c.SpaceMaxScaleCapFor(null), 1e-5f);
             Assert.AreEqual(c.TimeBoostSeconds, c.BoostSecondsFor(null), 1e-5f, "no Tailwind off a vessel");
+            Assert.AreEqual(1f, c.SavedBoostsFor(null), 1e-5f);
+            Assert.AreEqual(c.TimeBoostCap, c.TimeBoostCapFor(null), 1e-5f);
             Assert.IsFalse(c.CrystalStealActive(null));
             Assert.IsFalse(c.TailwindActive(null));
             Assert.AreEqual(1.5f, c.TailwindBoostScale, 1e-5f);

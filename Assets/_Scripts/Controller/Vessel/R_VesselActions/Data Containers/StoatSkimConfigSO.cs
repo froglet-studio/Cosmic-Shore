@@ -33,7 +33,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(10f, 300f)] float skimRadius = 60f;
 
         [Tooltip("Space is reach: a multiplier on R (and so the Tidepool) - more Space, a bigger shell (1 -> 1.4).")]
-        [SerializeField] ElementalFloat skimReach = ElementalFloat.Multiplier(1f, 1.4f, Element.Space, 1f);
+        [SerializeField] ElementalFloat skimReach = ElementalFloat.Multiplier(1f, 1.4f, Element.Space, 0.5f);
 
         [Tooltip("The Tidepool's radius as a multiple of R (1.3-2.2): inside it, as you pass, you are captured.")]
         [SerializeField, Range(1f, 4f)] float tidepoolScale = 1.6f;

@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-15-the-authenticationservicefacade-binding-5fa25e",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-15T02:16:16+00:00",
+  "area": "UGS auth layer and the DI root (AppManager bindings)",
+  "summary": "The AuthenticationServiceFacade binding now hands out one shared facade per Play (AuthenticationServiceFacade.Shared) and ResetStartupState keeps an in-flight sign-in",
+  "why": "AppManager's bindings install into two Reflex containers, so two facades existed and the Authentication scene could start a second UGS sign-in beside the boot one (already signing in); other pure services are still duplicated per container",
+  "branch": "Ys-bleeding-edge",
+  "commit": "f2439a05c",
+  "paths": [
+    "Assets/_Scripts/System/AppManager.cs",
+    "Assets/_Scripts/System/AuthenticationServiceFacade.cs"
+  ]
+}

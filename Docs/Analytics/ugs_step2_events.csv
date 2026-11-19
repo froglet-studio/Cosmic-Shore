@@ -27,3 +27,6 @@ share_triggered,The player used the native share sheet to share something from t
 quest_completed,The player completed a quest and claimed its reward.,quest shard_value
 repeated_game_fail,The player lost several games in a row. A frustration and churn-risk signal.,fail_count game_mode
 cloud_save_failed,A Cloud Save write exhausted all retries while online. Backend health signal.,key
+ftue_step_completed,One node of the FTUE quest graph completed (the activation funnel's steps).,phase_index quest_id seconds_since_launch step_id step_name
+ftue_phase_completed,A phase of the FTUE quest graph completed.,phase_index quest_id seconds_since_launch
+ftue_completed,The whole FTUE quest graph completed.,quest_id seconds_since_launch

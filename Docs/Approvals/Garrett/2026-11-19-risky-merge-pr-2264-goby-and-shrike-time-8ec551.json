@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2264-goby-and-shrike-time-8ec551",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T10:48:47+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2264 (Goby and Shrike Time curves flattened) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset, Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+  "branch": "claude/project-thread-frbecj",
+  "pr": 2264,
+  "commit": "e8e669df4",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset",
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+    "Docs/ElementalLoop/REDESIGN.md"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset, Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset"
+    }
+  ]
+}

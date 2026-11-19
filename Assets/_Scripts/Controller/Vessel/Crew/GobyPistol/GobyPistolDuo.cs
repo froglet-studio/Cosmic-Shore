@@ -213,10 +213,27 @@ namespace CosmicShore.Gameplay
         public float Energy01 => Config ? Mathf.Clamp01(_energy / Mathf.Max(1f, Config.EnergyMax)) : 0f;
         // what each seat's four cards read (GobyPistolHUDController): 1 the instant a move is spent, 0 when it is ready
         public bool LockHeld => _lockHeld && _human == Half.Goby;
-        public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldown));
+        public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldownFor(_status)));
         public float SnapCooldown01 => _p == null || _t >= _p.vortexAt ? 0f : Mathf.Clamp01((_p.vortexAt - _t) / Mathf.Max(0.01f, _body.pVortexCd));
         public float GhostCooldown01 => _p == null || _t >= _p.ghostAt ? 0f : Mathf.Clamp01((_p.ghostAt - _t) / Mathf.Max(0.01f, _body.pGhostCd));
         public bool SnapHeld => _p != null && _p.prevVortex;
+
+        /// <summary>
+        /// The pair's OMNI-CRYSTAL ability, the <b>restock</b> (2026-11-17, the design brief's "crystals restock both halves
+        /// fully" plus the Pistol's "ability cooldowns reset"): the Pistol's energy fills to the most it holds, and the
+        /// Goby's dart, the Pistol's snap and ghost, and every jump charge are ready at once. Called by <see cref="GobyOmniCrystalEffectSO"/>
+        /// on the machine that decides this hull (the same rule <see cref="CollectCrystal"/> takes the omni crystal by).
+        /// </summary>
+        public void OnOmniCrystal()
+        {
+            if (!Config) return;
+            _energy = Config.EnergyMax;
+            _dartReadyAt = Mathf.Min(_dartReadyAt, _t);
+            if (_p == null) return;
+            _p.vortexAt = Mathf.Min(_p.vortexAt, _t);
+            _p.ghostAt = Mathf.Min(_p.ghostAt, _t);
+            _p.launch = Mathf.Max(_p.launch, Mathf.FloorToInt(_body.pLaunchCharges));
+        }
         public bool Ghosting => _p != null && _t < _p.ghostUntil;
         public bool Diving => _dive > 0.5f;
         /// <summary>The Pistol's speed as a share of its top speed (pMaxSpeed), 0..1.</summary>
@@ -362,7 +379,7 @@ namespace CosmicShore.Gameplay
             if (_goby != null && (rider != _rider || aiCrew != _aiCrew)) Unbind();   // the seat changed hands: seat it afresh
             if (_goby == null) { _rider = rider; _aiCrew = aiCrew; Bind(vessel); }
             // the platform autopilot would fly the pinned Goby like its donor; the AI crew's own Goby AI flies it instead
-            if (_aiCrew && _status.AutoPilotEnabled) { _goby.ToggleAIPilot(false); _stoppedAutopilot = true; }
+            if (_aiCrew && _status.AutoPilotEnabled) { _goby.ToggleAIPilot(false); _stoppedAutopilot = true; ReleaseStick(); }
             float dt = Time.deltaTime; if (dt <= 0f) return;
             _t += dt;
             _body.pLaunchCd = Mathf.Max(0.1f, Config.JumpCooldown.EvaluateReplicated(_status));
@@ -399,6 +416,17 @@ namespace CosmicShore.Gameplay
             Undertow(dt);
             BodyHits();
             StepRings(dt);
+        }
+
+        /// <summary>The stopped autopilot leaves the stick where it last held it, and the hull's transformer goes on turning
+        /// by it every frame: in Regatta that was a full pitch (YSum -1), which spun the AI Goby's nose faster than its own
+        /// turn could bring it round, so it never lined up a dart (2026-11-19). The seat's Goby AI steers the hull itself,
+        /// so it lets go of the stick.</summary>
+        void ReleaseStick()
+        {
+            var input = _status?.InputStatus;
+            if (input == null) return;
+            input.XSum = 0f; input.YSum = 0f; input.XDiff = 0f; input.YDiff = 0f;
         }
 
         // the level-5 upgrades, each read where it acts (named literally so the element ability table finds every gate)
@@ -457,7 +485,7 @@ namespace CosmicShore.Gameplay
             if (!_dartPhase && FirstOnLine(o, f, dist, out float along)) go = Mathf.Max(0f, along);
             if (go < 6f) return;
             _darting = true; _dartDir = f; _dartUp = _gt.up; _dartDist = go; _dartWent = 0f;
-            _dartSpeed = go / Mathf.Max(0.05f, Config.DartSeconds);
+            _dartSpeed = go / Mathf.Max(0.05f, Config.DartSecondsFor(_status));   // Time: the dart's pace
             _perched = false; Pin(true);
         }
 
@@ -491,7 +519,7 @@ namespace CosmicShore.Gameplay
             _dartWent += move;
             if (_dartWent < _dartDist - 0.01f) return;
             _darting = false;
-            _dartReadyAt = _t + Config.DartCooldown;
+            _dartReadyAt = _t + Config.DartCooldownFor(_status);
             Vector3 at = _gt.position;
             var prev = _perches[_perches.Count - 1];
             // a dash, not a perch: too close to the last perch for an island, or the Pistol already has its islands ahead
@@ -932,6 +960,27 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Perched: pinned on a perch for its time (it still turns).</summary>
         public bool RacePerched => _perched;
+
+        /// <summary>The dart's charge range, shortest and longest (u), for a coach that plans its length.</summary>
+        public float RaceDartMinRange => Config ? Config.DartMinRange : 140f;
+        public float RaceDartRange => Config ? Config.DartRange : 600f;
+
+        /// <summary>The seat AI's cruise speed (u/s) and turn rate (deg/s): a coach's turning circle.</summary>
+        public float RaceCruiseSpeed => Config ? Config.AiCruiseSpeed : 100f;
+        public float RaceTurnRate => Config ? Config.AiTurnRate : 90f;
+
+        /// <summary>
+        /// Where a dart fired from <paramref name="from"/> along <paramref name="dir"/> (unit) for <paramref name="length"/>
+        /// would stop on a block: the same test <see cref="FireDart"/> makes. False when the line is clear, or when the
+        /// dart phases through (the Time upgrade). A read for a race coach (Regatta's dart plan); it changes nothing.
+        /// </summary>
+        public bool RaceDartStops(Vector3 from, Vector3 dir, float length, out float along)
+        {
+            along = float.MaxValue;
+            if (_goby == null || _status == null) return false;
+            if (Abilities && Abilities.IsUpgradeActive(Element.Time)) return false;
+            return FirstOnLine(from, dir, length, out along);
+        }
 
         void RaceAI(float dt)
         {
@@ -1707,7 +1756,7 @@ namespace CosmicShore.Gameplay
             for (int i = _rings.Count - 1; i >= 0; i--)
             {
                 var run = _rings[i]; var ring = run.Ring;
-                if (run.Target != null && UnityLiveness.Alive(run.Target.Transform)) ring.Steer(run.Target.Transform.position, Config.HomingTurnRate * Mathf.Deg2Rad * dt);
+                if (run.Target != null && UnityLiveness.Alive(run.Target.Transform)) ring.Steer(run.Target.Transform.position, Config.HomingTurnRate * Mathf.Max(0f, Config.RingHomingScale.EvaluateReplicated(_status)) * Mathf.Deg2Rad * dt);
                 bool alive = ring.Advance(dt, _vs);
                 if (index && index.IsAvailable && !ring.Full(_vs))
                 {

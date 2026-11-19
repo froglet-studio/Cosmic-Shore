@@ -160,7 +160,9 @@ add(f"{EFFECTS}/Effect Containers/VesselContainers/UrchinImpactorDataContainer.a
     f"  - {aref('VesselDamagePrismEffect')}\n"
     f"  - {aref('VesselElementalDebuffByDangerPrismEffect')}\n"
     "  vesselCrystalEffects:\n"
-    f"  - {aref('VesselHapticsByCrystalEffect')}\n")
+    f"  - {aref('VesselHapticsByCrystalEffect')}\n"
+    # the omnicrystal ability, "reloads its spikes" (2026-11-17, #2194): ammo slot 0 set to full
+    f"  - {aref('UrchinVesselChangeResourceByCrystalEffect')}\n")
 
 # --- the three ability assets -------------------------------------------------
 # CHARGE: the one spike weapon, both shots. TAP = the aimed shotgun (ConcentricRings, ammo);
@@ -169,7 +171,7 @@ add(f"{EFFECTS}/Effect Containers/VesselContainers/UrchinImpactorDataContainer.a
 # repeatWhileHeld is OFF - the press is semi-automatic and the hold belongs to the charge.
 #
 # chargeRangeMultiplier is the CHARGE -> spike reach curve (x1 resting, x2.5 at full Charge,
-# floored at x0.4), moved onto this asset by the 2026-09-18 element-scaling unification
+# floored at x0.5, the fleet floor rule #2070), moved onto this asset by the 2026-09-18 element-scaling unification
 # (Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md). The migration inserted it at the
 # TOP of the shipped asset although the class declares it last; Unity matches fields by name, so
 # the order is cosmetic, and it is emitted where the shipped file has it so --check stays
@@ -183,7 +185,7 @@ add(f"{ACTIONS}/UrchinSpikeAction.asset", "UrchinSpikeAction", "UrchinSpikeActio
     "    Max: 2.5\n"
     "    element: 1\n"            # Element.Charge
     "    UseFloor: 1\n"
-    "    Floor: 0.4\n"
+    "    Floor: 0.5\n"
     "  firingPattern: 2\n"          # ConcentricRings - the shotgun
     "  repeatWhileHeld: 0\n"
     "  barrageSpikeCount: 36\n"
@@ -234,7 +236,7 @@ add(f"{ACTIONS}/UrchinTrackAction.asset", "UrchinTrackAction", "UrchinTrackActio
     "  spawnPerFrame: 8\n"
     "  cooldown: 20\n"
     "  lengthMultiplierAtFullSpace: 2\n"
-    "  minLengthMultiplier: 0.4\n"
+    "  minLengthMultiplier: 0.5\n"
     "  upgradeExtraLength: 100\n")
 
 # TIME: detach + ghost.

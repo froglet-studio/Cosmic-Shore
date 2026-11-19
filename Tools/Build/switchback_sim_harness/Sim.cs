@@ -31,13 +31,13 @@ static class Program
         Console.WriteLine($"# Switchback Blast Run offline: {o.Gates} gates, seeds {string.Join(",", o.Seeds)}; " +
                           $"planner={(o.Planner ? "on" : "off")} sense={(o.Sense ? "on" : "off")} emergency={(o.Emergency ? "on" : "off")} " +
                           $"hit={o.Hit.Describe()} blast={(o.RealCone ? "asset cone" : "planner slot")} roll={(o.FlyRoll ? "flown" : "free")}");
-        Console.WriteLine("I  level      races finished  median_s  p90_s  rings/min  blasts thread direct  keys  hits(danger)  emerg  misses  taps/min  tap_s");
+        Console.WriteLine("I  level      races finished  median_s  p90_s  mean_s  rings/min  blasts thread direct  keys  hits(danger)  emerg  misses  taps/min  tap_s  passes  turnAways");
         foreach (int i in o.Intensities)
         foreach (int lvl in o.Levels)
         {
             var times = new List<float>();
             int carves = 0; float carveSecs = 0f, raceSecs = 0f;
-            int fin = 0, races = 0, blast = 0, thread = 0, direct = 0, keys = 0, hits = 0, dhits = 0, emerg = 0, misses = 0;
+            int fin = 0, races = 0, blast = 0, thread = 0, direct = 0, keys = 0, hits = 0, dhits = 0, emerg = 0, misses = 0, passes = 0, turnAways = 0;
             float ringsPerMin = 0f;
             foreach (int seed in o.Seeds)
             {
@@ -48,13 +48,16 @@ static class Program
                 blast += r.Blast; thread += r.Thread; direct += r.Direct; keys += r.Keys;
                 hits += r.Hits; dhits += r.DangerHits; emerg += r.Emergencies; misses += r.Misses;
                 carves += r.Carves; carveSecs += r.CarveSeconds; raceSecs += r.Time;
+                passes += r.Passes; turnAways += r.TurnAways;
             }
             times.Sort();
             string med = times.Count > 0 ? times[times.Count / 2].ToString("F1") : "-";
             string p90 = times.Count > 0 ? times[Math.Min(times.Count - 1, (int)(0.9f * times.Count))].ToString("F1") : "-";
-            Console.WriteLine($"{i}  {LevelName(lvl),-9} {races,6} {fin,8} {med,9} {p90,6} {ringsPerMin / races,10:F1} " +
+            float sum = 0f; foreach (float x in times) sum += x;
+            string mean = times.Count > 0 ? (sum / times.Count).ToString("F1") : "-";
+            Console.WriteLine($"{i}  {LevelName(lvl),-9} {races,6} {fin,8} {med,9} {p90,6} {mean,7} {ringsPerMin / races,10:F1} " +
                               $"{blast,7} {thread,6} {direct,6} {keys,5} {hits,7}({dhits}) {emerg,6} {misses,7} " +
-                              $"{carves * 60f / Mathf.Max(raceSecs, 1f),9:F1} {(carves > 0 ? carveSecs / carves : 0f),6:F2}");
+                              $"{carves * 60f / Mathf.Max(raceSecs, 1f),9:F1} {(carves > 0 ? carveSecs / carves : 0f),6:F2} {passes,7} {turnAways,10}");
         }
     }
 
@@ -83,7 +86,8 @@ static class Program
         var r = Race.Run(i, seed, lvl, o, log);
         foreach (var l in log) Console.WriteLine(l);
         Console.WriteLine($"# I{i} {LevelName(lvl)} seed {seed}: {(r.Finished ? r.Time.ToString("F1") + " s" : "DNF")} " +
-                          $"rings {r.Rings}, blasts {r.Blast}, keys {r.Keys}, hits {r.Hits} ({r.DangerHits} danger), emergencies {r.Emergencies}");
+                          $"rings {r.Rings}, blasts {r.Blast}, keys {r.Keys}, hits {r.Hits} ({r.DangerHits} danger), emergencies {r.Emergencies}, " +
+                          $"passes {r.Passes}, turn-aways {r.TurnAways}");
     }
 
     public static string LevelName(int l) => l switch { 1 => "Easy", 3 => "Hard", 4 => "Legendary", _ => "Medium" };
@@ -206,6 +210,8 @@ sealed class Opts
     public float NoseLeadGain;
     public float NoseLeadMaxExtraDegrees = Race.DefaultNoseLeadMaxExtraDegrees;
     public bool DangerOnly = true;
+    // SwitchbackController.aiSpeedOverBreaking (Yash, 2026-11-17): speedOverBreaking=0 = the AI before the rule
+    public bool SpeedOverBreaking = true;
     public float NoDodgeNear = 200f;
     public HitModel Hit = HitModel.Default;
     public float PickupRadius = 12f;     // Dolphin EnergySkimmer: radius 0.5 x scale 20 = 10 u, plus the crystal's own
@@ -244,6 +250,7 @@ sealed class Opts
                 case "cone": o.RealCone = v != "0"; break;
                 case "roll": o.FlyRoll = v != "0"; break;
                 case "dangerOnly": o.DangerOnly = v != "0"; break;
+                case "speedOverBreaking": o.SpeedOverBreaking = v != "0"; break;
                 case "setup": o.Setup = v != "0"; break;
                 case "strikeAtKey": o.StrikeAtKey = v != "0"; break;
                 case "strikeCommit": o.StrikeCommitCos = float.Parse(v); break;
@@ -336,7 +343,7 @@ sealed class World : ISwitchbackAIWorld
         var w = new World { Intensity = intensity, Course = SwitchbackCourse.Generate(seed, s) };
         w.L = o.NoLayout ? new SwitchbackFeatureLayout()
                          : SwitchbackBlastRun.Layout(w.Course, intensity, Vector3.zero, Inner / 1.22f + 30f);
-        w.Planner = new SwitchbackBlastPlanner(w.L, w.Course.Count, intensity);
+        w.Planner = new SwitchbackBlastPlanner(w.L, w.Course.Count, intensity) { SpeedOverBreaking = o.SpeedOverBreaking };
         int n = w.L.Prisms.Count;
         w.Standing = new bool[n];
         for (int k = 0; k < n; k++) w.Standing[k] = true;
@@ -445,6 +452,9 @@ sealed class Race
 {
     public float CarveSeconds; public int Carves;
     public bool Finished; public float Time; public int Rings, Blast, Thread, Direct, Keys, Hits, DangerHits, Emergencies, Misses;
+    // Speed over breaking (SwitchbackBlastAI.Pilot.Passes / TurnAways): blocked gates passed without a crystal run, and
+    // crystal runs taken while the ring could be flown (only with speedOverBreaking=0).
+    public int Passes, TurnAways;
 
     // AIPilot / GateRaceController / MinigameSwitchback.unity
     public const float CruiseSpeed = 68f;
@@ -543,6 +553,7 @@ sealed class Race
         var d = default(SwitchbackAIDecision); d.Station = -1;
         Phase phase = Phase.None; int planned = -1, plans = 0; float nextPlan = 0f;
         float keyClosest = float.MaxValue; bool keyClosestDrift = false; Phase keyClosestPhase = Phase.None;
+        int passGate = -1, passCounted = -1; float passMinDist = 0f;   // SwitchbackBlastAI.Pilot.PassGate / PassCountedGate / PassMinDist
         float nextSense = 0f; var avoidAct = SwitchbackAvoidAction.Clear; Vector3 avoidAim = default, blastCrystal = default, blastLook = default;
         bool emergOn = false; float emergHoldUntil = 0f, hotUntil = 0f; Vector3 emergSteer = default; int frame = 0;
         var pts = new Vector3[128]; var radii = new float[128]; var crystals = new Vector3[64];
@@ -563,7 +574,9 @@ sealed class Race
             }
             // ---- the gate race's own aim (GateRaceController.ArmRacer, Regatta steering), plus this pilot's lane at open gates
             float commit = Mathf.Min(CommitDist, lead + 0.5f * R);
-            Vector3 laneOff = w.Planner.StationFor(idx) >= 0 ? Vector3.zero
+            // SwitchbackBlastAI.LaneOffset: at a blocked gate zero, or on a pass the point the clear line runs through
+            Vector3 laneOff = w.Planner.StationFor(idx) >= 0
+                ? (passGate == idx && d.Gate == idx && d.Pass && d.Plan != SwitchbackAIPlan.Blast ? d.PassThrough - ring : Vector3.zero)
                 : SwitchbackPrismAvoidance.LaneOffset(pseed ^ (uint)(idx * 7919), ax, g.Radius, avoid.LaneShare);
             Vector3 ringAt = ring + laneOff;
             bool approaching = Vector3.Distance(ringAt, pos) > commit;
@@ -578,15 +591,33 @@ sealed class Race
                         (d.Plan == SwitchbackAIPlan.Blast ? $" closest to key {keyClosest:F0} u (drifting there {keyClosestDrift}, phase {keyClosestPhase})" : ""));
                     keyClosest = float.MaxValue;
                     planned = idx; plans = 0;
+                    passGate = -1;
                     Plan();
                 }
                 else
                 {
+                    // SwitchbackBlastAI.TrackPass: a pass is kept while the pilot closes on the ring
+                    if (passGate >= 0)
+                    {
+                        float pd = Vector3.Distance(pos, course[passGate].Position);
+                        if (pd < passMinDist) passMinDist = pd;
+                        else if (pd > passMinDist + 80f) passGate = -1;
+                    }
                     bool keyGone = d.Plan == SwitchbackAIPlan.Blast && phase != Phase.Done && !w.KeyAvailable(d.Station);
                     if (keyGone && Vector3.Distance(pos, d.Key) < 30f) phase = Phase.Done;
                     else if (keyGone || (skill.ReplanSeconds > 0f && t >= nextPlan && phase != Phase.Done && phase != Phase.Strike)) Plan();
                     // An I4 gauntlet: past this key, the next one is the plan (SwitchbackBlastAI.TryAim).
                     else if (d.Station >= 0 && w.Planner.StageFor(d.Gate, pos) != d.Station) Plan();
+                    // SwitchbackBlastAI.RingOpenedOnTheStrike: on a strike at a key chosen while the ring was not flyable, the
+                    // ring became flyable and the key is off the way and more than StrikeKeepSeconds (1 s) off
+                    else if (phase == Phase.Strike && skill.ReplanSeconds > 0f && t >= nextPlan)
+                    {
+                        nextPlan = t + Mathf.Max(skill.ReplanSeconds, 0.25f);
+                        if (w.Planner.SpeedOverBreaking && d.Plan == SwitchbackAIPlan.Blast && !d.Pass
+                            && Vector3.Distance(pos, d.Key) >= Mathf.Max(v, SwitchbackBlastPlanner.MinSpeed) * 1f
+                            && !w.Planner.KeyOnTheWay(d.Station, w, pos, course[d.Gate].Position, v)
+                            && w.Planner.Passable(d.Gate, w, pos, course[d.Gate].Position, course[d.Gate].Radius, t, v, false, default, out _)) Plan();
+                    }
                 }
                 bool gateAim = GateBlastAim(out Vector3 gAim);
                 if (gateAim && phase == Phase.Strike) { aim = gAim; avoidAct = SwitchbackAvoidAction.Clear; }
@@ -789,11 +820,23 @@ sealed class Race
             if (idx >= total) return;
             uint ps = pseed ^ (uint)(idx * 92821) ^ (uint)(plans * 68917);
             var prev = d;
-            d = w.Planner.Decide(idx, pos, v, course[idx].Position, t, in skill, w, ps);
+            var held = passGate == idx && prev.Gate == idx ? prev : default;
+            d = w.Planner.Decide(idx, pos, v, course[idx].Position, t, in skill, w, ps, in held, course[idx].Radius);
             plans++;
             nextPlan = t + Mathf.Max(skill.ReplanSeconds, 0.25f);
+            bool newBlast = d.Plan == SwitchbackAIPlan.Blast && (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != d.Gate || prev.Station != d.Station);
             if (d.Plan != SwitchbackAIPlan.Blast) phase = Phase.None;
-            else if (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != d.Gate || prev.Station != d.Station) phase = Phase.None;
+            else if (newBlast) phase = Phase.None;
+            if (d.Why == "passable" || d.Why == "committed")
+            {
+                if (passGate != idx) { passGate = idx; passMinDist = Vector3.Distance(pos, course[idx].Position); }
+                if (passCounted != idx) { passCounted = idx; Passes++; }
+            }
+            else if (newBlast && d.Pass && !d.KeyOnWay)
+            {
+                TurnAways++;
+                if (log != null) log.Add($"{t,6:F1} gate {idx} TURN-AWAY to key {d.Station}: the ring was flyable and the key is off the way");
+            }
             if (plans == 1) { if (d.Plan == SwitchbackAIPlan.Blast) Blast++; else if (d.Plan == SwitchbackAIPlan.Thread) Thread++; else Direct++; }
             if (log != null && (plans == 1 || prev.Plan != d.Plan))
                 log.Add($"{t,6:F1} gate {idx} plan={d.Plan} why={d.Why} cost thread={d.CostThread:F1} blast={d.CostBlast:F1} standing={d.Standing} cover={d.Coverage:P0}");
@@ -880,13 +923,23 @@ sealed class Race
             Vector3 blocker = SwitchbackPrismAvoidance.BlockerCentroid(pos, dir, range, avoid.Clearance * 2f, pts, n, out int blocking);
             int nc = 0;
             for (int s = 0; s < w.L.Stations.Count && nc < crystals.Length; s++) if (w.Key[s]) crystals[nc++] = w.L.Stations[s].Key;
-            if ((clear < avoid.Clearance || turn > 25f) &&
+            bool rule = w.Planner.SpeedOverBreaking;
+            if (SwitchbackPrismAvoidance.BlastsBlocker(clear, turn, avoid.Clearance, false, rule) &&
                 SwitchbackPrismAvoidance.TryBlast(pos, fwd, blocker, avoid.Clearance * 2f, pts, n, crystals, nc,
                                                   w.Planner.Slot, in avoid, out Vector3 crystal, out _, out _, out _))
             {
-                avoidAct = SwitchbackAvoidAction.Blast; blastCrystal = crystal; blastLook = blocker;
-                a = crystal + (blocker - crystal).normalized * StrikeThrough;
-                return true;
+                bool ringOpen = w.Planner.Passable(idx, w, pos, course[idx].Position, course[idx].Radius, t, v, false, default, out _);
+                if (SwitchbackPrismAvoidance.BlastsBlocker(clear, turn, avoid.Clearance, ringOpen, rule))
+                {
+                    if (!rule && (ringOpen || clear >= SwitchbackPrismAvoidance.PassClearance))
+                    {
+                        TurnAways++;
+                        if (log != null) log.Add($"{t,6:F1} gate {idx} TURN-AWAY to a crystal for a sensed prism: ring flyable {ringOpen}, corridor air {clear:F0} u");
+                    }
+                    avoidAct = SwitchbackAvoidAction.Blast; blastCrystal = crystal; blastLook = blocker;
+                    a = crystal + (blocker - crystal).normalized * StrikeThrough;
+                    return true;
+                }
             }
             avoidAct = SwitchbackAvoidAction.Avoid;
             avoidAim = corridor * range;

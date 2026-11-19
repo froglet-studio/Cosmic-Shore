@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-party-voyages-made-one-voyage-across-mac-94c807",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T21:54:54+00:00",
+  "area": "Voyages party play (VoyageRun, ArkEscortRun, VoyageCourseLink), Ark, ArkwayRun, cell fauna network gates",
+  "summary": "Party voyages made one voyage across machines (Docs/Voyages/PARTY.md): host seeds and places every friend's corridor, syncs its Ark pose (Ark.FollowPose, ArkwayRun.HomeOverride/EndsOnArkFall), sends seats and the Crystal Run count; Escort the Ark now sends a course (ported by hand from your claude/voyage-coop) with shared fate; satellite cells never network-spawn fauna and pacify on every peer. Protocol 32. Not tested on two machines.",
+  "branch": "claude/project-thread-6jgeji",
+  "commit": "339cdda62"
+}
