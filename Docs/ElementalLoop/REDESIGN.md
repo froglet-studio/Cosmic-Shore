@@ -20,6 +20,23 @@ five run 68.5-74.3 s on the card and 63.5-66.9 s at L5. Sweeps: `/mnt/project-fi
 | Serpent | 178.6 | 115.7 | 2.6x / 1.8x slower | Solid Fuel Pellets: pace comes from pellet burns, which last 1x at rest and 2.8x at Time 10; it raced Regatta at Time 10 only through its starting row | Pellet duration (Time): reaches the field only when it starts at 2.8 and peaks at 3.0 (card 78.7 s, L5 69.5 s), so Time no longer scales the ability. That is the row moved inside the kit, so it is flagged instead |
 | Manta (L5) | 86.1 (card, in the field without its -5 row) | 27.9 | 0.42x at L5 | Soar, its Time level-5 upgrade: a held boost that turns 60 s laps into ~20-30 s | Soar's BoostSpeedMultiplier (Time, acts only once Soar unlocks) at x0.375: L5 43.5 s, about 0.66x |
 | TigerMoth | 152.4 | 122.0 | 2.1x / 1.8x slower | One Drop per ring, each after a 90-degree line-up (heading square to the ring, belly rolled onto it), at a 67 u/s cruise between drops. Not the recharge: from 2x cheaper on, the Drop is back before the next line-up ends | Drop recharge (the Drop's own parameter; Garrett's 2026-11-18 pick, cruise kept): 2x / 2.5x / 3x / 4x / 5x cheaper than design all run card 152.4 s and L5 122 s, so 2x (shipped, #2207) is the knee and nothing past it moves. Time throttle slot, knee x2.0: card 104 s, L5 84 s (1.55x / 1.27x), and Waystation breaks (I4 2 of 3 DNF). Patch held: `step5/tigermoth/time-throttle-x1.9-2.1.patch` |
+| Jacks | 158.3 | 153.6 | 2.15x / 2.37x slower | One herd-and-travel cycle per ring: the hull holds while the jacks run out at 208 u/s, lay the decoy past the ring and meet behind it, then the hull travels through. Between cycles it flies at the rig's 50 u/s. Time 5's second decoy rarely finds a second ring on the board, so L5 is no faster | No Time lever acts on race pace (Time scales the herd's speed, `herdSpeed`, not the jacks). Jack run speed (`dogSpeed`, kit) at the 37.5% lever cap: Ref1-Ref4 geo mean 162 -> 118 s, about 1.6x. Flagged |
+| Meerkat | 294.3 | 256.7 | 4.0x / 4.0x slower | A 60 u/s cruise; its only speed past that is the wormhole ride (2.5x the entry speed at the throat, out at the speed it went in). Most of each Regatta leg is cruise | Time is the ride's rush (x1 at rest to x2 at level 10). At the 37.5% lever cap (x1.375 -> x2.75) Ref1-Ref4 go 285 -> 248 s (3.4x); doubling it (x2 -> x4) gives 224 s (3.0x). The trained wormhole autopilot is already at its optimum (Burrow Run search flat). Flagged |
+| Orca | 386 | 359 (3 of 8 courses DNF at 400 s) | 5.3x / 5.5x slower | A 21 u/s cruise and a x5 burn (about 106 u/s) on a 3 s tank refilling 0.25 to 0.35 a second, with a burning hull's wide turn | Time is the tank's refill (0.25 at rest, 0.35 at level 10). Its ceiling, an endless tank with an AI that burns on every leg (any distance, nose within 45 degrees): 185 s against 366 s on Ref2, still about 2.5x. No Time value or burn rule reaches the field |
+| Wrasse (pilot seat) | 144.2 | 124.0 | 2.0x / 1.9x slower | The Grouper hull cruises at 60 u/s and its only pace is the saved boosts (x5 for 1.5 s each) that the kite's Time loops bank; the AI pilot already spends one whenever the next ring is 180 u off and ahead. In Regatta it ran about 900 prism contacts a race | Time banks the boosts (`timeBankScale` x1 at rest, x2 at level 10, #2225). x2 at rest: 133.3 s. Boosts last 2x: 133.3 s. The ceiling, 4x the bank, 2x the length and 4x the cap together: 120.4 s (1.65x). The kite AI valuing Time loops 10x (with twice the race Time motes): 136.6 s. Its Wrasse Run nose pair (run1, 4.37/s, lead 0.69) in Regatta: 142.2 s |
+
+## Wrasse (pilot seat)
+
+Measured 2026-11-19 (thread "Seat Shrike and Wrasse in Regatta"): the shipped shuffle (8 courses), solo, real-game judge
+(`regatta_judge.py`), seeds 1-2, geometric mean of the per-course means, built from bleeding-edge at f6d85ce8d (the
+#2238 boot break was on trunk then). The Wrasse finishes every course (0 DNF) at 2x the polished five. Raw:
+`/mnt/project-files/regatta-flywheel/seat-sw/wrasse/`.
+
+Not the AI's spending: the pilot spends a boost whenever the next ring is 180 u off and roughly ahead, and quadrupling
+the bank with twice the boost length only reached 1.65x. The pace that is missing is the hull's 60 u/s cruise between
+boosts and the rate at which the kite closes Time loops on a moving board. A redesign that keeps the crew (the kite
+earns, the pilot spends) needs a pace term the pilot's own flying earns, or a much richer Time loop. Garrett's call;
+the Wrasse stays off the card (`author_regatta_assets.JUDGE_ONLY_HULLS`) meanwhile.
 
 ## Serpent
 
@@ -107,6 +124,90 @@ the belly on it. A pilot (the autopilot's `RegattaTigerMothDrop`) gets one drop 
 67 u/s. That is the same 90-degree constraint Garrett names for the Serpent's wall. Raw races:
 `/mnt/project-files/regatta-flywheel/step5/tigermoth/drop-knee/`.
 
+## Jacks
+
+Flagged 2026-11-19. Before this the Jacks had no Regatta AI at all: off its own game's coach an AI Jacks keeps its
+herding rhythm and crawls at 50 u/s (Ref1: 4 of 24 gates in 600 s). `RegattaJacksCoach` (Regatta's controller) now runs
+Decoy Run's door cycle on every Regatta ring (`DecoyRunCourse.PlanCycle`, the same planner the Jacks race their Time game
+with): roll the board onto the ring, herd, lay the decoy past it, take off behind it, travel through. Measured on the
+shuffle set, solo, 3 seeds, geometric mean of per-course means (`regatta_judge.balance_score`):
+
+| | Card s | L5 s | Card / five | L5 / five |
+|---|---|---|---|---|
+| Coach, shipped kit | 158.3 | 153.6 | 2.15 | 2.37 |
+| Coach, jack run x1.375 (`dogSpeed` 520 -> 715, Ref1-Ref4 only) | 118 (refs) | - | ~1.6 | - |
+
+What limits the hull is the cycle, not the AI: every ring costs a herd (the jacks' run, both swaps) and a travel, and the
+take-off is a teleport that threads nothing (`DECOY_RUN.md` 1). Regatta's legs (461-858 u) are longer than Decoy Run's
+(300-560 u), so the run is the cost. No Time parameter acts on it. Raw races:
+`/mnt/project-files/regatta-flywheel/train/Jacks/regatta/`.
+
+## Orca
+
+Flagged 2026-11-19 when it was first judged in Regatta (thread "Train and seat Goby and Orca in Regatta"). It had never
+been raced there. The shipped AI helm burns by `OrcaCrew.HelmAIWantsBurn` (Breach's rule without its walls) and
+finishes every course it is given time for.
+
+Shipped shuffle (8 courses), solo, seeds 1-3, geometric mean of the per-course means, a DNF counted at 400 s, against
+the polished five's median (73.5 s card, 64.7 s L5, `step5/noise/FIELD2.md`):
+
+| Start | Orca s | x five | Finished |
+|---|---|---|---|
+| card | 386 | 5.3 | 7 of 8 courses (Ref4 DNF on every seed) |
+| L5 | 359 | 5.5 | 4 of 8 (Ref4, Course2, Course4, Course6 DNF) |
+
+The Orca's Time element is its boost tank's refill: 0.25 tank-seconds a second at rest, 0.35 at level 10, and the L5
+Afterburner keeps refilling under a burn. The lever's ceiling was measured by making the tank endless (refill 50, tank
+1000 s), so the AI burns on every leg it is lined up for (card start, seed 1, limit 800 s):
+
+| Course | shipped s | endless tank s |
+|---|---|---|
+| Ref2 | 366 | 291 |
+| Course5 | 380 | 301 |
+| Ref3 | 387 | 328 |
+
+That run kept the shipped burn rule (next target 250 u or more away, nose within 8 degrees), which Regatta's gates
+rarely allow, so it understated the hull. Checked again the same night with the rule opened up (any distance, nose
+within 45 degrees, no minimum tank; Ref2, card start, seed 1):
+
+| Variant | Ref2 s | prism hits |
+|---|---|---|
+| shipped | 366 | about 1,300 |
+| open burn rule, shipped tank | 508 | 716 |
+| open burn rule, endless tank | 185 | 497 |
+
+So the AI's burn rule does cost the Orca about half its pace once the tank is not the limit, but with an endless tank
+and a helm that burns everywhere it is still about 2.5x the field (Ref2's field is about 73 s). On the shipped tank the
+open rule is slower, because the tank empties and only refills while the burn is let go. Neither the Time parameter
+nor a better pilot brings it in, so the flag stands. The pace is the hull: a 21 u/s cruise, a x5 burn to about 106 u/s, and a burning turn that widens with speed (`BreachCourse`'s
+numbers: turn 44 + 0.055/u). The field averages 200-plus u/s over the same courses. A redesign would have to give the
+Orca a race pace (a faster burn or cruise, or a Time ability that carries it), which is a kit change for every mode and
+Garrett's call.
+
+Its Time AI was not trained for Regatta: the open-rule, endless-tank run bounds what any burn policy can give at
+about 2.5x. Once the hull is redesigned, its Regatta burn rule needs training (a coach like Breach's), since the
+shipped rule's 250 u minimum rarely fires between Regatta's gates. Breach's coach already
+finishes all 24 of its ladder races (BREACH.md 5.1). Raw: `/mnt/project-files/regatta-flywheel/train/Orca/`.
+
+## Meerkat
+
+Flagged 2026-11-19 (thread "Train and seat Meerkat and Jacks in Regatta"). Shipped shuffle, solo, seeds 1-2, the shipped
+AI (the race controller's run1 genes plus the wormhole autopilot), against the polished five's median (73.5 s card,
+64.7 s L5):
+
+| | Card s | L5 s | Card / five | L5 / five |
+|---|---|---|---|---|
+| Shipped kit | 294.3 | 256.7 | 4.0 | 4.0 |
+| Time rush at the lever cap, x1.375 -> x2.75 (Ref1-Ref4) | 248 | - | 3.4 | - |
+| Time rush doubled, x2 -> x4 (Ref1-Ref4) | 224 | - | 3.0 | - |
+
+Ref1-Ref4 alone run 285 s on the card, so the rush probes are compared with that. The AI is not the limit: a
+search over the wormhole autopilot's own knobs (`time_ai_search.py --hull MeerkatDrive`: when to form a straight or a bent
+tunnel, how long to shape it) in Burrow Run I1-I4 plus I1 at Time 5 and a wide course found nothing better than the
+shipped values (best loss 2.252 against 2.25 for the shipped AI, 12 candidates). What limits the hull is the 60 u/s cruise. The
+ride is the only speed past it, and it comes out at the speed it went in, so a Regatta leg is mostly cruise. Raw races:
+`/mnt/project-files/regatta-flywheel/train/Meerkat/`.
+
 ## Not flagged (levered into the field instead)
 
 - Scarab: Time throttle curve x0.625 -> x0.9375 reshaped to x0.95 -> x1.0 (card 111.2 -> 73.5 s, L5 78.5 -> 64.0 s).
@@ -135,3 +236,5 @@ exists, otherwise the base asset the prefab wires.
 | BrittleStar | `_Regatta` = its Speed Mode policy trained in Brittle Star Time with the coach off (2026-11-18) | Brittle Star Time (`time_ai_search.py --hull BrittleStarDrive`) | Fixed; Speed Mode back to x6 -> x8 (card 71.3 s, L5 63.0 s, 15 seeds) |
 | Urchin | rail autopilot | Skein genome is Skein-only | Not a boost policy; check separately |
 | Manta, Serpent, TigerMoth | - | - | Flagged above; revisit with the redesigns |
+| Jacks | `RegattaJacksCoach` (Decoy Run's door planner, 2026-11-19) | Decoy Run's coach is that course's own; the planner is shared | Flagged above (2.15x) |
+| Meerkat | the gate race's steering + its own wormhole autopilot | Burrow Run (run1 controller genes; autopilot searched 2026-11-19, shipped values best) | Flagged above (4.0x) |

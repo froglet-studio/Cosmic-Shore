@@ -597,6 +597,12 @@ Not seated yet:
   RaceJudge seated hulls by name, an off-card hull raced under its own name as the card's Squirrel.)
 - **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
   (Thornline's AI plan aims at thorns).
+- **Jacks** (2026-11-19): off a coach an AI Jacks herds on its own rhythm and crawls at 50 u/s (4 of 24 gates in 600 s).
+  `RegattaJacksCoach` (`aiJacksCoach` on the controller) runs Decoy Run's door cycle on each ring through
+  `DecoyRunCourse.PlanCycle`: it finishes every course, card 158 s / L5 154 s on the shuffle (3 seeds), 2.2-2.4x the
+  five, so it stays off the card and is flagged in `Docs/ElementalLoop/REDESIGN.md`.
+- **Meerkat** (2026-11-19, judge-only): shuffle 294 s card / 257 s L5 (2 seeds), 4.0x the five on its trained AI. Its
+  Time rush at the lever cap only reaches 3.4x, so it is flagged in `Docs/ElementalLoop/REDESIGN.md`.
 
 **The Goby** joined the card on 2026-11-19. It had threaded 0 gates: two faults, both upstream of balance.
 - No coach. Perch Run's `IGobyRaceCoach` is set by `PerchRunController` only, so in Regatta the seat's Goby AI laid

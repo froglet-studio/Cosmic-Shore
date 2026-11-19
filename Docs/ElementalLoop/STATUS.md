@@ -14,11 +14,11 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Goby | `b ~ b` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
-| Jacks | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
+| Jacks | `R b b` | `b b .` | `- - -` | `b b .` | - | - |
 | JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
 | Manta | `R b ~` | `b b .` | `x x x` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Meerkat | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
-| Orca | `b ~ .` | `b b .` | `b b .` | `b b .` | - | - |
+| Meerkat | `R b b` | `b b .` | `b b .` | `b b .` | - | - |
+| Orca | `R ~ .` | `b b .` | `b b .` | `b b .` | - | - |
 | Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
 | Serpent | `R b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
@@ -31,7 +31,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | TigerMoth | `R b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside |
-| Wrasse | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| Wrasse | `R b b` | `b b .` | `b b .` | `b b .` | - | - |
 
 ## 2. Arena games
 
@@ -81,9 +81,14 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Dolphin Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | trained drive promoted to Switchback (all four files), model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | Goby Time | 2 intensities I1-I4 | doing | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Goby orbiting a ring inside its turning circle and failing to finish most races past I1; the coach now flies straight on to open the range (PERCH_RUN.md 5.1): Legendary 44/47/46/72 s, 12 of 12 finished on fresh seeds. Open: difficulty does nothing (no seat error); I4 still loses up to 40 s at some reef rings. |
 | Goby Time | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | Perch Run coach searched (time_ai_search.py --hull Goby, I1-I4 + I1@T5 + wide): best confirmed on seeds 101-103 within 0.4% of the shipped coach, so the shipped coach stays (PERCH_RUN.md 5.0). Regatta flies its own Goby dart coach (RegattaGobyDart): 15 seeds card 78.1 s / L5 62.6 s after dartPace rest 1.25 (REGATTA.md 6.6). |
+| Jacks Time | 1 fun (abilities + game, one intensity) | redo | Garrett | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta 2.15x card / 2.37x L5 with its coach; jack run at the 37.5% lever cap only ~1.6x; Docs/ElementalLoop/REDESIGN.md |
+| Jacks Time | 3 AI on I1-I4 | built | Garrett | 2026-11-19 |  | RegattaJacksCoach: Decoy Run's door planner on Regatta rings; Ref1 600 s DNF -> 131 s; shuffle 3 seeds card 158 s / L5 154 s (train/Jacks/regatta/) |
 | Manta Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-18 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md |
 | Manta Time | 2 intensities I1-I4 | built | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder Legendary 58/62/75/96 s (good); the default Medium rival stalled at mouths (152/298/226/214 s) and Easy DNF'd 7 of 12; AI noses now Easy 5 / Medium 7 / Hard 7-9, every race finishes (REDLINE.md 0.3) |
 | Manta Time | 3 AI on I1-I4 | doing | Regatta plan threads | 2026-11-08 |  | Redline AI nose rate (#1844); the Soar steering should be re-searched at the new nose rates (AI_PLAN.md section 5) |
+| Meerkat Time | 1 fun (abilities + game, one intensity) | redo | Garrett | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta 4.0x card / 4.0x L5; Time rush at the 37.5% lever cap 3.4x, doubled 3.0x; Docs/ElementalLoop/REDESIGN.md |
+| Meerkat Time | 3 AI on I1-I4 | built | Garrett | 2026-11-19 |  | Burrow Run AI: run1 controller genes (shipped) + wormhole-autopilot search 2026-11-19 (time_ai_search --hull MeerkatDrive, I1-I4 + I1@T5 + W0, 12 candidates): shipped values best; Regatta 294 s card / 257 s L5 (train/Meerkat/) |
+| Orca Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): first Regatta judge 2026-11-19, shuffle 3 seeds: card 386 s (5.3x the five), L5 359 s (5.5x, 4 of 8 courses DNF); its Time lever (tank refill) at an endless tank is still ~4.2x. Docs/ElementalLoop/REDESIGN.md § Orca |
 | Orca Time | 2 intensities I1-I4 | doing | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Orca timing out at I3-I4 (1 of 8 finished), missing a walled ring and wandering past it; Breach now uses the gate race's re-attack steering (BREACH.md 5.1): Legendary 120/116/160/141 s, Medium 126/121/167/150, 24 of 24 finished. Open: I4 easier than I3; Medium ~ Legendary. |
 | Rhino Time | 1 fun (abilities + game, one intensity) | built | Garrett | 2026-11-19 |  | Redesigned (ramp fuel from ploughing/slicing, #2233, #2240); back inside the Regatta field at both starts (Docs/ElementalLoop/REDESIGN.md: Rhino 70.0/66.9 s, Swordfish 70.8/65.8 s; trunk re-judge 2026-11-18 Rhino 70.8/66.8, Swordfish 71.7/65.4). Fun sign-off of the new ramp is still a person's (Headlong / Spearline) |
 | Rhino Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | RhinoAIBoostPolicy_Headlong from drive-rhino-headlong-on-lead, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
@@ -104,6 +109,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Urchin Time | 1 fun (abilities + game, one intensity) | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | fun call: I2 is the fun rung (AI 125-150 s, headless judge, 3 courses); the AI flies at cruise for half the race, 13 rail-seek variants swept, shipped numbers best; nothing changed at I2 (SKEIN.md 18) |
 | Urchin Time | 2 intensities I1-I4 | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | ladder call: AI 85/141/209/328 s after I4 at 5 laps (#2107); rivals by difficulty via rail-seek gain (SKEIN.md 19) |
 | Urchin Time | 3 AI on I1-I4 | doing | Regatta plan threads | 2026-11-08 |  | Skein aim, rail seek and genome (#1845); not yet well trained: Docs/Reports/SKEIN_URCHIN_AI.md |
+| Wrasse Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 Time levers cannot bring the pilot seat within 1.10x of the five (card 144 s / L5 124 s, 2.0x / 1.9x; lever ceiling 120 s, 1.65x); gap and mechanism in Docs/ElementalLoop/REDESIGN.md |
+| Wrasse Time | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | Wrasse run1 (time_ai_search.py, real-game judge, 2026-11-17): Wrasse Run gate knobs trained (aiCommitDistance 72 -> 433, aiApproachLead 80 -> 423, aiThroughDistance 55 -> 68, shipped in MinigameWrasseRun); confirm on seeds 101-104, 28 flights a side, 0 DNF, mean of seven conditions 171.5 -> 156.6 s. Its nose pair (4.37/s, lead 0.69) measured in Regatta 2026-11-19: no gain (142 vs 144 s), so not promoted. |
 | Regatta | 4 environment creator | doing | Regatta plan threads | 2026-11-08 |  | the course-pool search is the first environment creator: best pool 1.104x against the 1.10x bar in the model (#1825); live in bleeding-edge, waits on Garrett's playtest and on step 3 for every Regatta hull (Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md) |
 
 ## 5. Human involvement per loop
