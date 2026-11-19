@@ -4,7 +4,8 @@ Authors every serialized asset the Thornbush game mode needs (GameModes.Thornbus
 Docs/ElementalLoop/GAME_KIT_ROSTER.md row 13 reserved for it).
 
 Thornbush is the Shrike's MASS game: a timed nest-building match in a heap of sticks. Dock on a stick, press Mass, and
-the Shrike leaves a NEST - a cup of super-shielded blocks, 12 at Mass 0 and 32 at Mass 10, crowned with a missile plant
+the Shrike leaves a NEST - a shell of super-shielded plates (12 at Mass 0, 32 at Mass 10) round hoops of shielded
+twigs and a lining of plain pads, crowned with a missile plant
 (SHRIKE.md §3). The score is the mass standing in your colour at the whistle (ScoringMetric.VolumeRemaining, a live
 stock): every nest block and trail block is laid in the pilot's name, so StatsManager already counts it in and out.
 Rival missiles crack the shields and break what is under them; with Void Pierce (Space 5) a rival's lance breaks nest
@@ -96,13 +97,13 @@ NEST_BLOCK = common.config_value(g, "nestBlockSize")
 MAX_NESTS = int(common.config_value(g, "maxNests"))
 NEST_BLOCKS_MIN, NEST_BLOCKS_MAX = common.config_range(g, "nestBlocks")
 WAVELENGTH_MIN, _ = common.config_range(g, "trailWavelength")
-TRAIL_BLOCK = common.config_value(g, "trailThin") ** 2 * common.config_value(g, "trailLength")
-NEST_VOLUME = NEST_BLOCKS_MIN * NEST_BLOCK ** 3
+TRAIL_BLOCK = common.cruise_trail_block(g)
+NEST_VOLUME = common.nest_volume(g, int(NEST_BLOCKS_MIN))   # shell plates + weave + lining (ShrikeRules.NestPieces)
 TRAIL_VOLUME = common.CRUISE_SPEED * ROUND_SECONDS / WAVELENGTH_MIN * TRAIL_BLOCK
 REFERENCE_DOMAIN_VOLUME = MAX_NESTS * NEST_VOLUME + TRAIL_VOLUME
 # Comeback - a FUNCTION OF THE SCORE'S SCALE (bonusLevels = deficit x rate): a quarter of the reference domain behind
 # buys at least one element level. Mass is the element that grows a nest (12 -> 32 blocks), so it reaches the score.
-COMEBACK_RATE = 0.0012
+COMEBACK_RATE = round(1.1 / (0.25 * REFERENCE_DOMAIN_VOLUME), 5)   # a quarter behind buys 1.1 levels, whatever the scale
 
 SPAWN_RINGS = [450, 560, 660, 770]                    # Jackstraw's ring round the same heap
 CRYSTAL_BALL = 250                                    # among the sticks, inside the smallest heap (360 u)
@@ -146,8 +147,8 @@ g.emit_asset("Assets/_SO_Assets/Games/ThornbushSettings.asset", G_ASSET["Thornbu
              + "".join(f"  {k}: {lib.num(float(v))}\n" for k, v in SHARED.items()))
 
 # ── 4. Arcade card ───────────────────────────────────────────────────────────
-DESCRIPTION = ("Shrikes only - build in the thorn bush. Dock on a stick and press Mass to leave a nest - a cup of "
-               "super-shielded blocks crowned with a missile plant. You keep three; a fourth retires the oldest. The "
+DESCRIPTION = ("Shrikes only - build in the thorn bush. Dock on a stick and press Mass to leave a nest - a shell of "
+               "super-shielded plates round a weave of twigs, crowned with a missile plant. You keep three; a fourth retires the oldest. The "
                "score is the mass standing in your colour when the clock runs out, nests and trail. Paint a rival to "
                "send your missiles at their nests and break what is under the shields. Higher intensities grow the "
                "heap and tip its sticks with danger. Most mass standing at the whistle wins.")
@@ -259,10 +260,11 @@ if NEST_VOLUME < 4 * TRAIL_VOLUME / MAX_NESTS:
     errors.append(f"one nest ({NEST_VOLUME:,.0f}) is worth less than four times a nest's share of the whole round's trail "
                   f"({TRAIL_VOLUME:,.0f}) - the game would be a trail game, not a nest game")
 
-# The load-bearing assumptions: a nest is laid in the pilot's NAME (so StatsManager counts it), super-shielded, capped,
+# The load-bearing assumptions: a nest is laid in the pilot's NAME (so StatsManager counts it), its shell super-shielded
+# (ShrikeRules.NestPieces: the shell, the weave, the lining), capped,
 # and the lance only breaks super-shields with Void Pierce.
 executor = g.read(common.SHRIKE_EXECUTOR)
-for needle in ("var prism = BoostRingBuilder.LayOne(channel, centre + outward, face, scale, PrismKind.SuperShielded,\n"
+for needle in ("var prism = BoostRingBuilder.LayOne(channel, centre + rot * piece.Local, face, piece.Scale, piece.Kind,\n"
                "                    _status.Domain, _status.PlayerName, _status.PlayerName);",
                "if (live >= config.MaxNests && oldest != null) RetireNest(oldest);",
                "if (!ShrikeRules.LanceBreaks(prism.prismProperties is { IsSuperShielded: true }, pierce))",

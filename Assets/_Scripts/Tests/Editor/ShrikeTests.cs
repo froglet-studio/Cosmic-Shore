@@ -64,6 +64,52 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void WovenNest_ShellGuards_TwigsAndLiningSitBetweenHullAndShell()
+        {
+            var pieces = new System.Collections.Generic.List<ShrikeRules.NestPiece>();
+            foreach (int count in new[] { 12, 20, 32 })
+            {
+                ShrikeRules.NestPieces(pieces, count, 4.5f, 1.2f, 1.1f, 3f, 3, 1f, 4f, 15f, 7, 1.2f);
+                float radius = ShrikeRules.NestRadiusFor(count, false, 4.5f, 1.1f);
+                int shell = 0, twigs = 0, lining = 0;
+                foreach (var p in pieces)
+                {
+                    float d = p.Local.magnitude;
+                    Assert.Less(p.Local.z, radius * 0.25f + Eps, "nothing past the cup's rim: the nose's way out is open");
+                    Assert.AreEqual(0f, Vector3.Dot(p.Forward.normalized, p.Up.normalized), 1e-3f, "forward and up are square");
+                    switch (p.Kind)
+                    {
+                        case PrismKind.SuperShielded:
+                            shell++;
+                            Assert.AreEqual(radius, d, 1e-3f, "a shell plate sits on the cup's sphere");
+                            Assert.AreEqual(1f, Vector3.Dot(p.Up.normalized, p.Local.normalized), 1e-3f, "and lies flat on it");
+                            Assert.AreEqual(ShrikeRules.NestPlateSide(count, 4.5f, 1.1f), p.Scale.x, 1e-3f, "as wide as the cup allows");
+                            break;
+                        case PrismKind.Shielded:
+                            twigs++;
+                            float reach = Mathf.Sqrt(d * d + p.Scale.z * p.Scale.z * 0.25f) + p.Scale.x;
+                            Assert.Less(reach, radius - 0.6f, "a twig never reaches the shell's inner face");
+                            Assert.Greater(d - p.Scale.x, 3f, "nor the hull");
+                            Assert.Less(p.Local.z, 0.1f * radius, "the weave sits in the cup, behind the rim");
+                            break;
+                        case PrismKind.Plain:
+                            lining++;
+                            Assert.Greater(d - 0.2f, 3f, "a lining pad clears the hull");
+                            break;
+                    }
+                }
+                for (int a = 0; a < pieces.Count; a++)
+                for (int b = a + 1; b < pieces.Count; b++)
+                    if (pieces[a].Kind == PrismKind.SuperShielded && pieces[b].Kind == PrismKind.SuperShielded)
+                        Assert.Greater((pieces[a].Local - pieces[b].Local).magnitude, pieces[a].Scale.x * 1.41421f,
+                            "no two shell plates touch");
+                Assert.AreEqual(count, shell, "one shell plate per nest block");
+                Assert.GreaterOrEqual(twigs, 15, "three hoops of at least five twigs");
+                Assert.AreEqual(7, lining);
+            }
+        }
+
+        [Test]
         public void Turret_SitsOnTopBehind()
         {
             Near(new Vector3(0f, 11f, -4.05f), ShrikeRules.TurretLocal(false), "nest turret");
