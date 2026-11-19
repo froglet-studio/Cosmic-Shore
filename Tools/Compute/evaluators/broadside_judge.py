@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The Broadside JUDGE: each hull's points share in mixed brawls, scored with the real game's code (Plan step: charge-arena-balance).
+"""The Broadside JUDGE: each hull's points share in mixed brawls, scored with the real game's code (Plan step: charge-arena).
 
 Broadside (the Charge arena game, GameModes.Broadside) is a brawl, so a hull's balance number is not a time but how much
 of a mixed match's points it lands. Every seat is flown by that hull's SHIPPED AI (Legendary) in Amoebius, headless and
