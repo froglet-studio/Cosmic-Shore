@@ -288,6 +288,22 @@
      "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta 2.15x card / 2.37x L5 with its coach; jack run at the 37.5% lever cap only ~1.6x; Docs/ElementalLoop/REDESIGN.md"
     }
    }
+  },
+  "Wrasse": {
+   "Time": {
+    "1": {
+     "state": "redo",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 Time levers cannot bring the pilot seat within 1.10x of the five (card 144 s / L5 124 s, 2.0x / 1.9x; lever ceiling 120 s, 1.65x); gap and mechanism in Docs/ElementalLoop/REDESIGN.md"
+    },
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "Wrasse run1 (time_ai_search.py, real-game judge, 2026-11-17): Wrasse Run gate knobs trained (aiCommitDistance 72 -> 433, aiApproachLead 80 -> 423, aiThroughDistance 55 -> 68, shipped in MinigameWrasseRun); confirm on seeds 101-104, 28 flights a side, 0 DNF, mean of seven conditions 171.5 -> 156.6 s. Its nose pair (4.37/s, lead 0.69) measured in Regatta 2026-11-19: no gain (142 vs 144 s), so not promoted."
+    }
+   }
   }
  },
  "arenas": {
