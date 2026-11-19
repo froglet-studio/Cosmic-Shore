@@ -26,6 +26,7 @@ MonoBehaviour:
   - {fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}
   minBlastScale: 50
   maxBlastScale: 200
+  vesselHarmReach: 1
   selfLaunchMultiplier: 4.5
   selfLaunchCeiling: 300
   selfLaunchSeconds: 1
