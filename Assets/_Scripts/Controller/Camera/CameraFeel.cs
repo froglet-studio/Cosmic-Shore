@@ -169,10 +169,19 @@ namespace CosmicShore.Gameplay
         /// slower-responding hull.</param>
         /// <param name="drift">The signed drift, -1..1: how far, and to which side of the view, the hull's travel
         /// slips from where it points (0 when not drifting). It drives the rumble only.</param>
+        /// <param name="noShake">The followed hull wants no camera shake at all (<see cref="CameraFeelConfigSO.NoShakeFor"/>):
+        /// trauma, rumble and kicks are held at zero, so only the G-force lag and the breathing move the camera.</param>
         public void Step(CameraFeelConfigSO c, float dt, Vector3 point, Quaternion view, float distance,
-            float gForce, float response, float drift)
+            float gForce, float response, float drift, bool noShake = false)
         {
             if (!(dt > 0f)) return;   // paused: hold the pose as it is
+            if (noShake)
+            {
+                _kick = _kickVelocity = Vector3.zero;
+                _kickAngles = _kickAngularVelocity = Vector3.zero;
+                _trauma = _skimRumble = 0f;
+                drift = 0f;
+            }
             dt = Mathf.Min(dt, MaxStep);
             _clock += dt;
             _noiseTime += dt;

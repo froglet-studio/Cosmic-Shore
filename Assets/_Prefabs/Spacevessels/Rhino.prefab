@@ -681,6 +681,7 @@ GameObject:
   - component: {fileID: -7706008104071495775}
   - component: {fileID: 3901220300004001}
   - component: {fileID: 7740000000000001602}
+  - component: {fileID: 7740000000000001603}
   - component: {fileID: 7740000000000001700}
   m_Layer: 0
   m_Name: Rhino
@@ -923,6 +924,12 @@ MonoBehaviour:
   RollScaler: 90
   RotationThrottleScaler: 0.2
   restrictedTurnMultiplier: 3
+  vectorFlightModel: 1
+  driftOvershootCeiling: 1.25
+  driftThrottlePolicy: 0
+  inertialGripAtCruise: 16
+  inertialGripAtSpeed: 15
+  inertialGripSpeed: 1400
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13039,9 +13046,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   condition: 4
-  upgradeGate: 4
+  upgradeGate: 0
   wardedSources: 1
-  topSpeedFraction: 0.7
+  topSpeedFraction: 0.5
+--- !u!114 &7740000000000001603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bb87d08841a493e8319afe29bd5bcbe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  entrySlipDegrees: 12
+  exitSlipDegrees: 4
+  fullSlipDegrees: 35
+  maxKickShare: 0.3
+  maxKick: 350
+  minSpeed: 80
 --- !u!1 &7741000000000002001
 GameObject:
   m_ObjectHideFlags: 0
