@@ -21,6 +21,20 @@ five run 68.5-74.3 s on the card and 63.5-66.9 s at L5. Sweeps: `/mnt/project-fi
 | Manta (L5) | 86.1 (card, in the field without its -5 row) | 27.9 | 0.42x at L5 | Soar, its Time level-5 upgrade: a held boost that turns 60 s laps into ~20-30 s | Soar's BoostSpeedMultiplier (Time, acts only once Soar unlocks) at x0.375: L5 43.5 s, about 0.66x |
 | TigerMoth | 152.4 | 122.0 | 2.1x / 1.8x slower | One Drop per ring, each after a 90-degree line-up (heading square to the ring, belly rolled onto it), at a 67 u/s cruise between drops. Not the recharge: from 2x cheaper on, the Drop is back before the next line-up ends | Drop recharge (the Drop's own parameter; Garrett's 2026-11-18 pick, cruise kept): 2x / 2.5x / 3x / 4x / 5x cheaper than design all run card 152.4 s and L5 122 s, so 2x (shipped, #2207) is the knee and nothing past it moves. Time throttle slot, knee x2.0: card 104 s, L5 84 s (1.55x / 1.27x), and Waystation breaks (I4 2 of 3 DNF). Patch held: `step5/tigermoth/time-throttle-x1.9-2.1.patch` |
 | Orca | 386 | 359 (3 of 8 courses DNF at 400 s) | 5.3x / 5.5x slower | A 21 u/s cruise and a x5 burn (about 106 u/s) on a 3 s tank refilling 0.25 to 0.35 a second, with a burning hull's wide turn | Time is the tank's refill (0.25 at rest, 0.35 at level 10). Its ceiling, an endless tank with an AI that burns on every leg (any distance, nose within 45 degrees): 185 s against 366 s on Ref2, still about 2.5x. No Time value or burn rule reaches the field |
+| Wrasse (pilot seat) | 144.2 | 124.0 | 2.0x / 1.9x slower | The Grouper hull cruises at 60 u/s and its only pace is the saved boosts (x5 for 1.5 s each) that the kite's Time loops bank; the AI pilot already spends one whenever the next ring is 180 u off and ahead. In Regatta it ran about 900 prism contacts a race | Time banks the boosts (`timeBankScale` x1 at rest, x2 at level 10, #2225). x2 at rest: 133.3 s. Boosts last 2x: 133.3 s. The ceiling, 4x the bank, 2x the length and 4x the cap together: 120.4 s (1.65x). The kite AI valuing Time loops 10x (with twice the race Time motes): 136.6 s. Its Wrasse Run nose pair (run1, 4.37/s, lead 0.69) in Regatta: 142.2 s |
+
+## Wrasse (pilot seat)
+
+Measured 2026-11-19 (thread "Seat Shrike and Wrasse in Regatta"): the shipped shuffle (8 courses), solo, real-game judge
+(`regatta_judge.py`), seeds 1-2, geometric mean of the per-course means, built from bleeding-edge at f6d85ce8d (the
+#2238 boot break was on trunk then). The Wrasse finishes every course (0 DNF) at 2x the polished five. Raw:
+`/mnt/project-files/regatta-flywheel/seat-sw/wrasse/`.
+
+Not the AI's spending: the pilot spends a boost whenever the next ring is 180 u off and roughly ahead, and quadrupling
+the bank with twice the boost length only reached 1.65x. The pace that is missing is the hull's 60 u/s cruise between
+boosts and the rate at which the kite closes Time loops on a moving board. A redesign that keeps the crew (the kite
+earns, the pilot spends) needs a pace term the pilot's own flying earns, or a much richer Time loop. Garrett's call;
+the Wrasse stays off the card (`author_regatta_assets.JUDGE_ONLY_HULLS`) meanwhile.
 
 ## Serpent
 

@@ -31,7 +31,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | TigerMoth | `R b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside |
-| Wrasse | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| Wrasse | `R b b` | `b b .` | `b b .` | `b b .` | - | - |
 
 ## 2. Arena games
 
@@ -104,6 +104,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Urchin Time | 1 fun (abilities + game, one intensity) | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | fun call: I2 is the fun rung (AI 125-150 s, headless judge, 3 courses); the AI flies at cruise for half the race, 13 rail-seek variants swept, shipped numbers best; nothing changed at I2 (SKEIN.md 18) |
 | Urchin Time | 2 intensities I1-I4 | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | ladder call: AI 85/141/209/328 s after I4 at 5 laps (#2107); rivals by difficulty via rail-seek gain (SKEIN.md 19) |
 | Urchin Time | 3 AI on I1-I4 | doing | Regatta plan threads | 2026-11-08 |  | Skein aim, rail seek and genome (#1845); not yet well trained: Docs/Reports/SKEIN_URCHIN_AI.md |
+| Wrasse Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 Time levers cannot bring the pilot seat within 1.10x of the five (card 144 s / L5 124 s, 2.0x / 1.9x; lever ceiling 120 s, 1.65x); gap and mechanism in Docs/ElementalLoop/REDESIGN.md |
+| Wrasse Time | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | Wrasse run1 (time_ai_search.py, real-game judge, 2026-11-17): Wrasse Run gate knobs trained (aiCommitDistance 72 -> 433, aiApproachLead 80 -> 423, aiThroughDistance 55 -> 68, shipped in MinigameWrasseRun); confirm on seeds 101-104, 28 flights a side, 0 DNF, mean of seven conditions 171.5 -> 156.6 s. Its nose pair (4.37/s, lead 0.69) measured in Regatta 2026-11-19: no gain (142 vs 144 s), so not promoted. |
 | Regatta | 4 environment creator | doing | Regatta plan threads | 2026-11-08 |  | the course-pool search is the first environment creator: best pool 1.104x against the 1.10x bar in the model (#1825); live in bleeding-edge, waits on Garrett's playtest and on step 3 for every Regatta hull (Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md) |
 
 ## 5. Human involvement per loop
