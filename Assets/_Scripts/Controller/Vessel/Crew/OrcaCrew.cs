@@ -804,7 +804,9 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the guns (round 5: one per seat, each different)
 
-        bool GunReady(int s) => s == FastGunSeat ? !_fast.Hot : s == BombSeat ? !_bomb && _gunCd[s] <= 0f : _gunCd[s] <= 0f;   // one bomb in the air, then its re-arm (0 = none, round 6)
+        /// <summary>The bomb has what it costs: a missile from its seat's magazine when <see cref="OrcaCrewConfigSO.BombUsesMissile"/>.</summary>
+        bool BombStocked => !_cfg.BombUsesMissile || (_mags[BombSeat]?.CanTake ?? false);
+        bool GunReady(int s) => s == FastGunSeat ? !_fast.Hot : s == BombSeat ? !_bomb && _gunCd[s] <= 0f && BombStocked : _gunCd[s] <= 0f;   // one bomb in the air, then its re-arm (0 = none, round 6)
 
         float GunRange(int s) => s == SniperSeat ? Mathf.Min(_cfg.SniperRange, 600f)
             : s == FastGunSeat ? _cfg.FastGunRoundSpeed * 2f * _cfg.FastGunRoundSeconds / Mathf.PI * 0.8f
@@ -832,7 +834,7 @@ namespace CosmicShore.Gameplay
                     break;
                 case BombSeat:
                     if (_bomb) { if (human ? edge : AIBurstsBomb()) DetonateBomb(); }
-                    else if ((human ? edge : hold) && _gunCd[s] <= 0f) ThrowBomb(fromBarrel ? muzzleTip - aim * 4f : mount, aim);
+                    else if ((human ? edge : hold) && _gunCd[s] <= 0f && BombStocked) ThrowBomb(fromBarrel ? muzzleTip - aim * 4f : mount, aim);
                     break;
             }
         }
@@ -1009,6 +1011,7 @@ namespace CosmicShore.Gameplay
         void ThrowBomb(Vector3 mount, Vector3 aim)
         {
             if (!bombGun) return;
+            if (_cfg.BombUsesMissile) _mags[BombSeat]?.Take();   // the bomb is a missile from this seat's magazine
             var muzzle = bombGun.transform;
             muzzle.SetPositionAndRotation(mount + aim * 4f, Quaternion.LookRotation(aim, transform.up));
             var (speed, inherit) = ShotLaunch(aim, _cfg.BombSpeed);
