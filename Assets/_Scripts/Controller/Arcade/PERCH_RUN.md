@@ -102,6 +102,16 @@ Two, both kept to what a person already has:
    `aiTurnRate`, cruises at `aiCruiseSpeed`, and fires `FireDart` (the call the button makes) at the coach's length once
    the nose is within 0.5° of the coach's aim. Without a coach the shipped AI is unchanged. A person's Goby ignores it.
 
+3. **Its Time pace reshaped for Regatta** (2026-11-19, elemental loop step 5). `dartPace` (Time; divides the dart's
+   flight time and cooldown) went from x1.0 at rest / x2.2 at level 10 to x1.25 / x1.95. The level-5 value is
+   unchanged (x1.6), so the L5 start and the Time 5 phase-through dart fly exactly as before; only the rest of the
+   curve moved, and Time still raises the pace. Why: Regatta's 15-seed judge put the Goby at 83.3 s on the card start
+   (1.13x the polished five, outside the 1.10x bar) and 62.6 s on the L5 start (0.97x). With the new curve: card
+   78.1 s (1.06x), L5 unchanged. Knee (shuffle, 3 seeds, card): rest x1.0 82.3 s, x1.15 81.2 s, x1.3 79.3 s.
+   In Perch Run (fresh seeds 101-103, shipped coach) only I1 moves, 41.8 -> 39.9 s; I2-I4 start at Time 5 and race
+   exactly as before (48.0 / 46.1 / 38.7 s). Raw: `/mnt/project-files/regatta-flywheel/train/Goby/pace/` and
+   `pace125-ladder/`.
+
 ## 5. AI
 
 `PerchRunController` is every AI Goby's coach (set as each racer is armed, server). `TryRaceAim` returns
@@ -116,6 +126,14 @@ Two, both kept to what a person already has:
 The AI never fires a dart that stops on coral (`The_AI_dart_threads_every_ring`, all 400 seeds x 4 levels x 16 rings).
 Not verified in the editor: that the turn settles within 0.5° at low frame rates, and how the Pistol's island laying
 looks when the Goby perches mid-race.
+
+### 5.0 The coach is trained (2026-11-19, elemental loop step 3)
+
+The coach's two numbers became `PerchRunController` fields, `aiOvershoot` (40) and `aiTurnMargin` (1.25), and
+`time_ai_search.py --hull Goby` searched them (sep-CMA-ES then Pareto, I1-I4 plus I1 at Time 5 and one wide course,
+seeds 11-12, 4 + 3 generations). Its best (overshoot 28.6, margin 1.14) confirmed on fresh seeds 101-103 at loss
+2.272 against the shipped 2.282, 0.4%, inside seed noise: the shipped coach already sits at the search's plateau, so
+the shipped values stay. Raw: `/mnt/project-files/regatta-flywheel/train/Goby/coach1/`.
 
 ### 5.1 The orbit, found in the real game (2026-11-17, elemental loop step 2)
 

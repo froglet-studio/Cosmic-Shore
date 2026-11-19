@@ -154,10 +154,34 @@ ROWS["BrittleStarAIBoostPolicy_Regatta"] = dict(
             "engageRunwaySeconds": 0.386, "releaseRunwaySeconds": 0.481, "minHoldSeconds": 1.104, "minRestSeconds": 0.602},
     source="/mnt/project-files/regatta-flywheel/train/BrittleStar/drive1/best.json")
 
+# Angler, Lantern Run and Regatta (2026-11-19, loop step 3): both flew the hull's own AnglerAIBoostPolicy (the leapfrog:
+# throw at 4 degrees off, 120 u out, a 0.45 s hold; dash at 40 u within 50 degrees), which no search had trained. Trained
+# in Lantern Run (time_ai_search.py --hull Angler, run1: I1-I4, I1 at Time 5 and a wide course, seeds 11-12, 3+2
+# generations; LanternRunController.aiNoseLead carries its nose, 8.25/s, no lead). Confirm on seeds 101-104, 28 flights a
+# side, 0 DNF: loss 2.36 -> 1.47, I1 201 -> 131 s, I2 205 -> 127, I3 227 -> 135, I4 240 -> 154, I1@T5 181 -> 104, wide 227
+# -> 148. Regatta flies the same drive (and Angler_Regatta's nose 8.25/s). Regatta numbers: Docs/ElementalLoop/REDESIGN.md.
+_ANGLER_RUN1 = {"throwAlignDegrees": 13.57, "minThrowDistance": 326.413, "holdSeconds": 0.182, "throwIntervalSeconds": 0.654,
+                "minDashDistance": 96.767, "dashAheadDegrees": 41.347}
+for _mode in ("LanternRun", "Regatta"):
+    ROWS[f"AnglerAIBoostPolicy_{_mode}"] = dict(base=L.POLICY_DIR + "/AnglerAIBoostPolicy.asset", fields=dict(_ANGLER_RUN1),
+                                                 source="/mnt/project-files/regatta-flywheel/train/Angler/run1/best.json")
+# Sparrow, Regatta (2026-11-19): Regatta flew the hull's own SparrowAIBoostPolicy, never trained (the 2026-11-18 audit,
+# Docs/ElementalLoop/REDESIGN.md). The Breakwater drive held up in the real game (shuffle set, 5 seeds: card 74.2 -> 63.6 s,
+# L5 66.3 -> 54.3 at the shipped afterburner), so it ships with the afterburner re-fit to x1.75 -> x2.15
+# (step5/noise/sparrow_knee.jsonl): card 71.2 s (0.97x of the five), L5 65.0 s (1.00x).
+ROWS["SparrowAIBoostPolicy_Regatta"] = dict(base=L.POLICY_DIR + "/SparrowAIBoostPolicy.asset",
+    fields={"alignDegrees": 79.394, "releaseAlignDegrees": 89.527, "stickBand": 0.73, "releaseStickBand": 0.993,
+            "engageRunwaySeconds": 0.192, "releaseRunwaySeconds": 1.674, "minHoldSeconds": 1.631, "minRestSeconds": 0.183,
+            "rocketMaxRange": 651.421, "rocketMinRange": 55.448, "rocketAimDegrees": 16.727},
+    source="Assets/Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset (#1846)")
+
 # Every value each row overwrote, as it shipped on bleeding-edge 8197bd92 (2026-11-07). --revert writes these back.
 OLD = {
     "DolphinAIBoostPolicy_Regatta": None,  # new 2026-11-18: --revert removes it
+    "SparrowAIBoostPolicy_Regatta": None,  # new 2026-11-19: --revert removes it
     "BrittleStarAIBoostPolicy_Regatta": None,  # new 2026-11-18: --revert removes it
+    "AnglerAIBoostPolicy_LanternRun": None,  # new 2026-11-19: --revert removes it
+    "AnglerAIBoostPolicy_Regatta": None,  # new 2026-11-19
     # run3b, as it shipped before run4 (2026-11-17; #2088), refuel off
     "SerpentAIBoostPolicy_SerpentTime": {"alignDegrees": 68.568, "releaseAlignDegrees": 72.845, "stickBand": 0.372,
                                          "releaseStickBand": 0.497, "engageRunwaySeconds": 3.14, "releaseRunwaySeconds": 0.646,

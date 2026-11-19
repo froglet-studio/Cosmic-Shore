@@ -66,7 +66,10 @@ namespace CosmicShore.Player
         /// "Sparrow"]]</c> seats each team on its own domain (Jade, Ruby, Gold in order); the match runs to the mode's own end
         /// (first team to the brood target) or <c>limit_s</c>, and every seat reports its volume books (VolumeLedger: VC
         /// created, VD reduced, lost, counted live at the end) and its seconds inside the nucleus. See BroodJudge.cs.</summary>
-        bool IsBrood => _mode == "BroodRush";
+        /// <summary>The same volume-books match for ANY domain game (<c>"volume": true</c>): a hull's own Mass or Space
+        /// game (Den Builder, Palisade, Starweave, Trawl ...) judged on the measure the arena uses, so an AI is trained on
+        /// net control of space in its own game, never in the arena (Docs/AI_SYSTEM/AI_PLAN.md). No nucleus is required.</summary>
+        bool IsBrood => _mode == "BroodRush" || (_spec["volume"]?.GetValue<bool>() ?? false);
         readonly List<int> _seatTeam = new();
         readonly float _limit;
         readonly AIDifficulty _difficulty = AIDifficulty.Legendary;

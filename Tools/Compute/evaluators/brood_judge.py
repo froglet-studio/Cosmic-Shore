@@ -64,20 +64,22 @@ def deal(hulls, rounds, team_size=3, seed=0):
 
 
 def judge(rosters, seeds_per_roster=1, seed0=1, limit_s=300, workers=None, workdir=None, intensity=2, overrides=None,
-          start=None, ai_objective=None):
+          start=None, ai_objective=None, mode="BroodRush"):
     rj.build()
     t0 = time.time()
     workdir = workdir or tempfile.mkdtemp(prefix="brood-judge-")
     jobs = []
     for i, teams in enumerate(rosters):
         seeds = [seed0 + i * seeds_per_roster + k for k in range(seeds_per_roster)]
-        spec = {"mode": "BroodRush", "teams": teams, "seeds": seeds, "limit_s": limit_s, "intensity": intensity}
+        spec = {"mode": mode, "teams": teams, "seeds": seeds, "limit_s": limit_s, "intensity": intensity}
         if overrides:
             spec["overrides"] = overrides
         if start is not None:
             spec["start"] = start
         if ai_objective:
             spec["ai_objective"] = ai_objective      # "nucleus": the AI steers for the nucleus (experiment, BroodJudge.cs)
+        if mode != "BroodRush":
+            spec["volume"] = True                    # any domain game on the same volume books (no nucleus needed)
         jobs.append((f"m{i:03d}", spec))
     timeout_s = 150 + seeds_per_roster * (limit_s + 120)
     workers = workers or int(os.environ.get("REGATTA_JUDGE_WORKERS", 0)) or min(4, len(jobs))
@@ -180,6 +182,7 @@ def main():
     ap.add_argument("--limit", type=float, default=300)
     ap.add_argument("--overrides", help="JSON file: [{asset, fields}] in-memory asset edits for this run")
     ap.add_argument("--start", help="starting element levels: card (default), rest, or a JSON table")
+    ap.add_argument("--mode", default="BroodRush", help="any domain game: a hull's own Mass or Space game is judged on the same volume books (train an AI there, never in the arena)")
     ap.add_argument("--report", help="print the table of a saved result")
     ap.add_argument("--out")
     a = ap.parse_args()
@@ -193,10 +196,10 @@ def main():
     if a.teams:
         rosters = [[t.split(",") for t in a.teams.split("/")]]
         seeds = [int(s) for s in a.seeds.split(",")]
-        res = judge(rosters, seeds_per_roster=len(seeds), seed0=seeds[0], limit_s=a.limit, overrides=overrides, start=start)
+        res = judge(rosters, seeds_per_roster=len(seeds), seed0=seeds[0], limit_s=a.limit, overrides=overrides, start=start, mode=a.mode)
     else:
         rosters = deal(hulls, a.rounds, seed=a.deal_seed)
-        res = judge(rosters, seeds_per_roster=a.seeds_per_roster, limit_s=a.limit, overrides=overrides, start=start)
+        res = judge(rosters, seeds_per_roster=a.seeds_per_roster, limit_s=a.limit, overrides=overrides, start=start, mode=a.mode)
     print(report(res, None)[0])
     if a.out:
         with open(a.out, "w") as f:

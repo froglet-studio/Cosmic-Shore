@@ -82,8 +82,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(10f)] float tetherSpeed = 2400f;
         [Tooltip("Sling seconds: the fixed time the boost takes to reach the anchor.")]
         [SerializeField, Min(0.05f)] float slingSeconds = 1f;
-        [Tooltip("TIME: sling cooldown, s (slingCooldownAt0 6 -> slingCooldownAt10 2.5: \"shorter cooldown on void sling\").")]
-        [SerializeField] ElementalFloat slingCooldown = ElementalFloat.Multiplier(6f, 2.5f, Element.Time, 1f);
+        [Tooltip("TIME: sling cooldown, s (4.75 at Time 0 -> 3.75 at Time 10: \"shorter cooldown on void sling\"; was 6 -> 2.5 " +
+                 "until the 2026-11-19 Regatta knee, which put the Shrike inside 1.10x at both starts).")]
+        [SerializeField] ElementalFloat slingCooldown = ElementalFloat.Multiplier(4.75f, 3.75f, Element.Time, 1f);
         [Tooltip("Game only (the page's own constant): how fast the nose turns onto the sling's line, 1/s.")]
         [SerializeField, Min(0.1f)] float slingTurnRate = 6f;
 
