@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-19-unity-yaml-extensions-now-check-out-as-l-2d92d9",
+  "to": "Shombith",
+  "by": "Caleb",
+  "date": "2026-11-19T21:34:22+00:00",
+  "area": "repo git config (.gitattributes)",
+  "summary": "Unity YAML extensions now check out as LF on every OS (text eol=lf), so a Windows checkout under core.autocrlf=true no longer shows EditorBuildSettings.asset and ShaderGraphSettings.asset as modified after the first editor open (Editor Churn row 21, Caleb's call).",
+  "branch": "claude/editor-churn-w4-eol",
+  "commit": "51de4d612"
+}
