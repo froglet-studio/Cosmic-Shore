@@ -346,12 +346,15 @@ GAMES = {
         "assets": {i: "Assets/_SO_Assets/VesselActions/TigerMoth/TigerMothDropAction.asset" for i in (1, 2, 3, 4)},
         "fields": {},
         "ctrl_fields": {"aiHopLineShare": (0.3, 0.9), "aiHopMissMargin": (120.0, 800.0),
-                        "aiHopLookahead": (60.0, 400.0), "aiDropAimDegrees": (3.0, 25.0)},
-        "ctrl_defaults": {"aiHopLineShare": 0.85, "aiHopMissMargin": 600.0, "aiHopLookahead": 155.0,
-                          "aiDropAimDegrees": 6.6},    # TigerMoth run1 (2026-11-17)
+                        "aiHopLookahead": (60.0, 400.0), "aiDropAimDegrees": (3.0, 25.0),
+                        "aiDropMissMargin": (0.3, 3.0), "aiFoldLandShort": (0.0, 120.0)},
+        "ctrl_defaults": {"aiHopLineShare": 0.753, "aiHopMissMargin": 249.3, "aiHopLookahead": 137.4,
+                          "aiDropAimDegrees": 9.87,    # TigerMoth run3 (2026-11-19; run1 2026-11-17)
+                          "aiDropMissMargin": 1.02, "aiFoldLandShort": 77.4},   # the drop's let-go (run3)
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiHopLineShare", "aiHopMissMargin", "aiHopLookahead",
-                                                    "aiDropAimDegrees")},
-        "lead": None, "rows": [], "nose_gene": 6.41,   # WaystationController.aiNoseLead: TigerMoth at 6.41/s (run1)
+                                                    "aiDropAimDegrees", "aiDropMissMargin", "aiFoldLandShort")
+                           if k in p},
+        "lead": None, "rows": [], "nose_gene": 3.48,   # WaystationController.aiNoseLead: TigerMoth at 3.48/s (run3; 6.41 run1)
     },
     "BrittleStar": {
         "mode": "BrittleStarTime",

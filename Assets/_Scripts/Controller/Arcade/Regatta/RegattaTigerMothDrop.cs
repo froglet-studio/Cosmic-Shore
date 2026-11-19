@@ -20,13 +20,18 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float MinDistance = 350f;
 
         [Tooltip("Let go this many units SHORT of the ring's plane, so the hull flies through the mouth after the drop.")]
-        [Min(0f)] public float LandShort = 30f;
+        [Min(0f)] public float LandShort = 77.4f;
+
+        [Tooltip("How far short the drop lets go for the aim it carries: this many times the sideways miss (distance x " +
+                 "sin(belly error)). A copy of the Tiger Moth's drop drive, trained in Waystation " +
+                 "(WaystationController.aiDropMissMargin); Regatta trains no AI. 2 until 2026-11-19, then run3's 1.02.")]
+        [Min(0f)] public float MissMargin = 1.02f;
 
         [Tooltip("Seconds before a pilot tries again after a drop or a line-up it gave up on.")]
         [Min(0.1f)] public float RetrySeconds = 1.5f;
 
         [Tooltip("How closely the BELLY must be on the ring to drop.")]
-        [Range(1f, 30f)] public float DropAimDegrees = 10f;
+        [Range(1f, 30f)] public float DropAimDegrees = 9.87f;
 
         [Tooltip("Line the belly up only when the ring is within this many degrees of the nose (further round, fly on).")]
         [Range(60f, 170f)] public float RollMaxDegrees = 125f;
@@ -99,7 +104,7 @@ namespace CosmicShore.Gameplay
                 float aim = TigerMothDropMath.BellyAimError(status.Transform.rotation, toRing);
                 if (aim > DropAimDegrees) continue;
                 float along = distance * Mathf.Cos(aim * Mathf.Deg2Rad) - LandShort
-                              - 2f * distance * Mathf.Sin(aim * Mathf.Deg2Rad);
+                              - MissMargin * distance * Mathf.Sin(aim * Mathf.Deg2Rad);
                 _releaseAt[pilot] = now + TigerMothDropMath.HoldSecondsFor(Mathf.Max(0f, along), drop.DropSpeed,
                     drop.DropEaseSeconds, drop.LandSeconds, status.Speed);
                 _retryAt[pilot] = now + RetrySeconds;
