@@ -71,6 +71,17 @@ namespace CosmicShore.ScriptableObjects
             public string codeHash;
         }
 
+        /// <summary>A tester's account that holds a dealt crew without doing anything (Garrett, 2026-11-19: "have it just
+        /// work for them"). Only the hash of the player id is kept, never the id or whose account it is.</summary>
+        [Serializable]
+        public class Account
+        {
+            [Tooltip("SHA-256 (hex) of \"cosmic-shore/crew-account/\" + the UGS player id (AccountHash).")]
+            public string idHash;
+            [Tooltip("The dealt crew this account holds, from 0 (an index into crews).")]
+            public int crew;
+        }
+
         [Tooltip("One row per painted pilot, in the order a crew is granted them. This order is the pool's: a random crew "
                  + "picks from it by index, so append only.")]
         [SerializeField] List<Person> people = new();
@@ -79,7 +90,12 @@ namespace CosmicShore.ScriptableObjects
                  + "its index.")]
         [SerializeField] List<Crew> crews = new();
 
+        [Tooltip("The testers' accounts and the dealt crew each holds. Written by Tools/Build/author_pilot_scene_assets.py "
+                 + "from Docs/Pilots/art/roster/crew_accounts.json (hashes only).")]
+        [SerializeField] List<Account> accounts = new();
+
         public IReadOnlyList<Person> People => people;
+        public IReadOnlyList<Account> Accounts => accounts;
         public IReadOnlyList<Crew> Crews => crews;
 
         /// <summary>The origin of a painted pilot's record (<see cref="PilotRecord.Origin"/>).</summary>
@@ -156,6 +172,10 @@ namespace CosmicShore.ScriptableObjects
         public bool Grant(AccountInventory inventory, long nowMs, string playerId)
         {
             if (inventory == null || people == null) return false;
+            // A tester's account holds its dealt crew with nothing to do: the first read after the list names it claims
+            // it (a random crew dealt before is replaced). Claim grants again with no id, so this asks once.
+            int listed = CrewForAccount(playerId);
+            if (listed >= 0 && inventory.ClaimedCrew != listed + 1 && Claim(inventory, listed, nowMs)) return true;
             inventory.Crew ??= new List<string>();
             bool dealt = false;
             if (inventory.Crew.Count == 0 && !string.IsNullOrEmpty(playerId))
@@ -260,10 +280,27 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>The hash a crew's <see cref="Crew.codeHash"/> holds for <paramref name="typed"/>.</summary>
-        public static string CodeHash(string typed)
+        public static string CodeHash(string typed) => Sha256Hex("cosmic-shore/crew-code/" + CodeKey(typed));
+
+        /// <summary>The hash an <see cref="Account.idHash"/> holds for a UGS player id.</summary>
+        public static string AccountHash(string playerId) => Sha256Hex("cosmic-shore/crew-account/" + (playerId ?? string.Empty));
+
+        /// <summary>The dealt crew (from 0) listed for this player id, else -1.</summary>
+        public int CrewForAccount(string playerId)
+        {
+            if (string.IsNullOrEmpty(playerId) || accounts == null || accounts.Count == 0 || crews == null) return -1;
+            string hash = AccountHash(playerId);
+            foreach (var a in accounts)
+                if (a != null && a.crew >= 0 && a.crew < crews.Count
+                    && string.Equals(a.idHash, hash, StringComparison.OrdinalIgnoreCase))
+                    return a.crew;
+            return -1;
+        }
+
+        static string Sha256Hex(string text)
         {
             using var sha = SHA256.Create();
-            byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes("cosmic-shore/crew-code/" + CodeKey(typed)));
+            byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(text));
             var sb = new StringBuilder(hash.Length * 2);
             foreach (byte b in hash) sb.Append(b.ToString("x2"));
             return sb.ToString();

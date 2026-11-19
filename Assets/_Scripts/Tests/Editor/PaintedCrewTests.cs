@@ -272,6 +272,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Account_HashesAsCrewAccountsPy_AndAnUnlistedIdGetsARandomCrew()
+        {
+            // Tools/Build/pilot_art/crew_accounts.py account_hash: SHA-256 of "cosmic-shore/crew-account/" + the id.
+            Assert.AreEqual("3855d6c8098dd9a1b3a9160b72bb94026e1542e63f3a30dd38b0393f6c90cbb4", PaintedCrewSO.AccountHash("abc"));
+            var crew = Crew();
+            foreach (var a in crew.Accounts)
+            {
+                StringAssert.IsMatch("^[0-9a-f]{64}$", a.idHash ?? "");
+                Assert.That(a.crew, Is.InRange(0, crew.Crews.Count - 1));
+            }
+            Assert.AreEqual(-1, crew.CrewForAccount("player-a"), "an unlisted player is not a tester");
+            var inv = new AccountInventory();
+            crew.Grant(inv, 1, "player-a");
+            Assert.AreEqual(0, inv.ClaimedCrew, "an unlisted player keeps a random crew");
+        }
+
+        [Test]
         public void CrewAvatars_OfferTheCrew_AndKeepTheCallsign()
         {
             var crew = Crew();

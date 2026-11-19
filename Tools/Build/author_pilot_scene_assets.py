@@ -61,6 +61,7 @@ CREW_SCRIPT_META = "Assets/_Scripts/ScriptableObjects/PilotsAndArtifacts/Painted
 SPECIES_CS = "Assets/_Scripts/Data/Inventory/AnimalSpecies.cs"
 FACTION_TYPES_CS = "Assets/_Scripts/Data/Voyages/VoyageEnums.cs"
 FACTIONS_CS = "Assets/_Scripts/Data/Inventory/FactionCatalog.cs"
+CREW_ACCOUNTS = "Docs/Pilots/art/roster/crew_accounts.json"  # hashed tester player ids -> their dealt crew
 CREW_CODES = "Docs/Pilots/art/roster/crew_codes.json"  # the hash of each dealt crew's private claim code
 ROSTER_PLAN = "Docs/Pilots/art/roster/plan.json"     # roster.py: the new pilots that make a crew for every player
 
@@ -416,13 +417,23 @@ def crew_codes():
         return json.load(f).get("hashes", [])
 
 
+def crew_accounts():
+    """[(SHA-256 of 'cosmic-shore/crew-account/' + a UGS player id, dealt crew index)] (Garrett, 2026-11-19: each
+    tester's accounts hold their crew with nothing to do). Only hashes: the ids and whose they are stay private."""
+    path = os.path.join(ROOT, CREW_ACCOUNTS)
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as f:
+        return [(a["hash"], int(a["crew"])) for a in json.load(f).get("accounts", [])]
+
+
 def _by_callsign(roster):
     import collections
     by = collections.Counter(roster.pool().values())
     return by
 
 
-def crew_text(people, script_guid, dealt=None, codes=None):
+def crew_text(people, script_guid, dealt=None, codes=None, accounts=None):
     lines = [
         "%YAML 1.1",
         "%TAG !u! tag:unity3d.com,2011:",
@@ -461,6 +472,9 @@ def crew_text(people, script_guid, dealt=None, codes=None):
             f"    story: {yaml_text(p['story'])}",
         ]
     lines.append("  crews:" if tail else "  crews: []")
+    tail.append("  accounts:" if accounts else "  accounts: []")
+    for digest, crew in (accounts or []):
+        tail += [f"  - idHash: {digest}", f"    crew: {crew}"]
     return "\n".join(lines + tail) + "\n"
 
 
@@ -476,7 +490,7 @@ def outputs(manifest=None):
     out[CATALOG] = catalog_text(entries, guid_of(CATALOG_SCRIPT_META)).encode("utf-8")
     out[CATALOG + ".meta"] = asset_meta(minted("catalog")).encode("utf-8")
     out[CREW] = crew_text(crew_rows(manifest=manifest), guid_of(CREW_SCRIPT_META), crews(),
-                                    crew_codes()).encode("utf-8")
+                                    crew_codes(), crew_accounts()).encode("utf-8")
     out[CREW + ".meta"] = asset_meta(minted("crew")).encode("utf-8")
     return out
 
@@ -541,7 +555,13 @@ def self_test():
            and all(re.fullmatch(r"[0-9a-f]{64}", c or "") for c in codes))
     text = crew_text([], "0" * 32, [["A"], ["B"]], ["1" * 64])
     expect("a crew without a hash is written with an empty one (a negative control: the reader then accepts no code)",
-           "codeHash: " + "1" * 64 in text and text.rstrip().endswith("codeHash:"))
+           "codeHash: " + "1" * 64 in text and "    - B\n    codeHash: \n" in text)
+    accounts = crew_accounts()
+    expect("every listed account is a 64-hex hash on a dealt crew, listed once",
+           all(re.fullmatch(r"[0-9a-f]{64}", h) and 0 <= c < len(dealt) for h, c in accounts)
+           and len({h for h, _ in accounts}) == len(accounts))
+    expect("a listed account is written under accounts:",
+           "  - idHash: " + "2" * 64 + "\n    crew: 1" in crew_text([], "0" * 32, [["A"], ["B"]], [], [("2" * 64, 1)]))
     expect("a dealt crew's pilots carry the callsigns in order",
            all(json.loads(read(PEOPLE))["people"][k]["callsign"] == w for crew in dealt for k, (_, w, _) in zip(crew, CALLSIGNS)))
     carried = {value for value, _, _ in rows()}
