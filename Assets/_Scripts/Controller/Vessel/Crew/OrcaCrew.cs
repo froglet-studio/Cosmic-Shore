@@ -1088,6 +1088,7 @@ namespace CosmicShore.Gameplay
                     SpawnPosition = at,
                     SpawnRotation = rot,
                     AffectSelfOverride = false,
+                    VesselReach = _cfg.BombVesselHarmReach,   // harm to vessels only; prisms take the whole radius
                 };
                 ExplosionHelper.CreateExplosion(explosions, init, _impactor ? _impactor.DIContainer : null);
             }
