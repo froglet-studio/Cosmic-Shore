@@ -5,27 +5,27 @@
       "topGameAllocators": [
         [
           "PoolRefill.Squirrel Prism",
-          27.488
+          23.82
         ],
         [
           "VesselImpactor.AcceptImpactee",
-          6.054
+          4.71
         ],
         [
           "Vessel.Prism.CreateBlock",
-          4.966
+          4.247
         ],
         [
           "PoolActivate.Squirrel Prism",
-          2.153
+          1.825
         ],
         [
           "PoolRefill.FastGrowPrism",
-          1.288
+          0.915
         ],
         [
           "LOD.Sweep",
-          0.939
+          0.906
         ]
       ],
       "verdict": "REGRESSION"
@@ -69,7 +69,7 @@
   ],
   "bugs": {
     "open": 402,
-    "source": "692 branch(es)",
+    "source": "688 branch(es)",
     "top": [
       {
         "id": "E-cdf0c783c1",
@@ -242,7 +242,7 @@
     }
   ],
   "gatesOk": false,
-  "generatedUtc": "2026-11-18T14:35:31Z",
+  "generatedUtc": "2026-11-19T14:44:29Z",
   "next": [
     "Fix the red gate 'mathf params alloc': mathf-params-alloc check: 6 FAILURE(S) (python3 Tools/Build/perf_hunt.py gates)",
     "Resolve: Performance gate 'mathf params alloc' is red: mathf-params-alloc check: 6 FAILURE(S)",
@@ -297,19 +297,17 @@
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker BehaviourUpdate 1.2319 -> 5.0397 ms/frame (+309%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)",
     "Resolve: Performance regression in Menu_Main|S2-4min (will, 2026-11-09 12:18:51, commit 2cf1b6587f..d07176ee34): p95Ms 5.383793830871582 -> 6.65119743347168 (+24%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.Squirrel Prism allocates 8.908 -> 27.488 KB/frame (+209%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Vessel.Prism.CreateBlock: 4.966 KB/frame",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolActivate.Squirrel Prism allocates 0.726 -> 2.153 KB/frame (+197%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Fauna.Light.Update: 0.274 KB/frame",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: LightFauna.Feed allocates 0 -> 0.271 KB/frame (n/a)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.412 -> 6.054 KB/frame (+77%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.693 -> 1.288 KB/frame (+86%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.Squirrel Prism allocates 8.908 -> 23.82 KB/frame (+167%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.412 -> 4.71 KB/frame (+38%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Vessel.Prism.CreateBlock: 4.247 KB/frame",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.Destroy.EffectRequest: 0.279 KB/frame",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolActivate.Squirrel Prism allocates 0.726 -> 1.825 KB/frame (+151%)",
     "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: SkimmerImpactor.AcceptImpactee allocates 0.069 -> 0.136 KB/frame (+97%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SpatialBind allocates 0.159 -> 0.798 KB/frame (+402%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.Destroy.EffectRequest: 0.261 KB/frame",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: LOD.Sweep allocates 0.493 -> 0.939 KB/frame (+90%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SOAPRaise allocates 0.278 -> 0.741 KB/frame (+167%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.CreationQueue.Drain: 0.138 KB/frame",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SpatialBind allocates 0.159 -> 0.782 KB/frame (+392%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.693 -> 0.915 KB/frame (+32%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: LOD.Sweep allocates 0.493 -> 0.906 KB/frame (+84%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SOAPRaise allocates 0.278 -> 0.632 KB/frame (+127%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.CreationQueue.Drain: 0.104 KB/frame",
     "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself",
     "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix",
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go",
@@ -371,19 +369,17 @@
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker BehaviourUpdate 1.2319 -> 5.0397 ms/frame (+309%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)",
     "Performance regression in Menu_Main|S2-4min (will, 2026-11-09 12:18:51, commit 2cf1b6587f..d07176ee34): p95Ms 5.383793830871582 -> 6.65119743347168 (+24%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.Squirrel Prism allocates 8.908 -> 27.488 KB/frame (+209%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Vessel.Prism.CreateBlock: 4.966 KB/frame",
-    "Allocation regression in Amoebius SkimRace|I2|3p: PoolActivate.Squirrel Prism allocates 0.726 -> 2.153 KB/frame (+197%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Fauna.Light.Update: 0.274 KB/frame",
-    "Allocation regression in Amoebius SkimRace|I2|3p: LightFauna.Feed allocates 0 -> 0.271 KB/frame (n/a)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.412 -> 6.054 KB/frame (+77%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.693 -> 1.288 KB/frame (+86%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.Squirrel Prism allocates 8.908 -> 23.82 KB/frame (+167%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.412 -> 4.71 KB/frame (+38%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Vessel.Prism.CreateBlock: 4.247 KB/frame",
+    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.Destroy.EffectRequest: 0.279 KB/frame",
+    "Allocation regression in Amoebius SkimRace|I2|3p: PoolActivate.Squirrel Prism allocates 0.726 -> 1.825 KB/frame (+151%)",
     "Allocation regression in Amoebius SkimRace|I2|3p: SkimmerImpactor.AcceptImpactee allocates 0.069 -> 0.136 KB/frame (+97%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SpatialBind allocates 0.159 -> 0.798 KB/frame (+402%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.Destroy.EffectRequest: 0.261 KB/frame",
-    "Allocation regression in Amoebius SkimRace|I2|3p: LOD.Sweep allocates 0.493 -> 0.939 KB/frame (+90%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SOAPRaise allocates 0.278 -> 0.741 KB/frame (+167%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.CreationQueue.Drain: 0.138 KB/frame"
+    "Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SpatialBind allocates 0.159 -> 0.782 KB/frame (+392%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.693 -> 0.915 KB/frame (+32%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: LOD.Sweep allocates 0.493 -> 0.906 KB/frame (+84%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SOAPRaise allocates 0.278 -> 0.632 KB/frame (+127%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.CreationQueue.Drain: 0.104 KB/frame"
   ],
   "scenarios": [
     {
