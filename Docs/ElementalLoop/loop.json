@@ -336,6 +336,22 @@
      "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta shuffle, 5 seeds, trained AI: card 323 s / L5 312 s (4.4x / 4.8x the field); its pace levers at the 37.5% cap together reach 308 / 301 s. Docs/ElementalLoop/REDESIGN.md"
     }
    }
+  },
+  "Honeyguide": {
+   "Time": {
+    "3": {
+     "state": "doing",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "Slip Line's AI is its controller's coach (rail + race line leads); three real-game searches (2026-11-17, train/Honeyguide/NOTE.md) found no confirmed win over it, and the coach cannot leave Slip Line. Its trained nose rate (6.58/s) in Regatta, 2026-11-19: 369 / 355 s vs 374 / 363 s shipped, noise. No portable Time AI yet"
+    },
+    "1": {
+     "state": "redo",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta shuffle, 5 seeds: card 374 s / L5 363 s (5.1x / 5.6x the field); its Time levers at the 37.5% cap together (zip speed, slip reach, Time's zip scaling) reach 358 / 351 s. Docs/ElementalLoop/REDESIGN.md"
+    }
+   }
   }
  },
  "arenas": {

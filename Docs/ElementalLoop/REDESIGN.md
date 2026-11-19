@@ -26,6 +26,7 @@ five run 68.5-74.3 s on the card and 63.5-66.9 s at L5. Sweeps: `/mnt/project-fi
 | Wrasse (pilot seat) | 144.2 | 124.0 | 2.0x / 1.9x slower | The Grouper hull cruises at 60 u/s and its only pace is the saved boosts (x5 for 1.5 s each) that the kite's Time loops bank; the AI pilot already spends one whenever the next ring is 180 u off and ahead. In Regatta it ran about 900 prism contacts a race | Time banks the boosts (`timeBankScale` x1 at rest, x2 at level 10, #2225). x2 at rest: 133.3 s. Boosts last 2x: 133.3 s. The ceiling, 4x the bank, 2x the length and 4x the cap together: 120.4 s (1.65x). The kite AI valuing Time loops 10x (with twice the race Time motes): 136.6 s. Its Wrasse Run nose pair (run1, 4.37/s, lead 0.69) in Regatta: 142.2 s |
 | Angler | 323 | 312 | 4.4x / 4.8x slower | A 40 u/s cruise (the fleet's slowest); its pace is the leapfrog: throw a group of its school ahead at 150 u/s (x2 with Time), then dash 75% of the way to it in 0.35 s. Regatta has no prism mass clusters on the line to paint, so every throw is a plain sling along the nose | AI trained in Lantern Run (loop step 3, 2026-11-19): Regatta 358 -> 323 s card, 349 -> 312 s L5. Its pace levers at the 37.5% cap together (throw speed 150 -> 206, Time's throw scaling x2 -> x2.75, dash 0.35 -> 0.255 s): 308 / 301 s, about 5% more. Flagged |
 
+| Honeyguide | 374 | 363 | 5.1x / 5.6x slower | A 60 u/s cruise; its pace is the Slip, a 480 u/s zip down a prism trail in a colour its battery holds (Ratel patterns, about one charge every 15 s). Solo in Regatta there is almost no trail to ride (inferred: slip levers barely move it), so it flies the course near cruise | Its Slip Line coach was searched three times (2026-11-17, no win). Its Slip Line nose (6.58/s) in Regatta: 369 / 355 s, noise. Its Time levers at the 37.5% cap together (zip 480 -> 660 u/s, slip reach 400 -> 550 u, Time's zip scaling x1.5 -> x2.06): 358 / 351 s, about 4%. Flagged |
 
 ## Angler
 
@@ -44,6 +45,20 @@ flew, and nothing on a Regatta course to paint, so the throw is never aimed past
 let it be. A redesign that keeps "paint your path, zoom along it" needs either paintable mass the course or the hull
 itself provides, or a dash that carries real distance. Garrett's call; the Angler stays off the card
 (`author_regatta_assets.JUDGE_ONLY_HULLS`) meanwhile.
+
+
+## Honeyguide
+
+Measured 2026-11-19 (thread "Train and seat Angler and Honeyguide"), the same way as the Angler above: the shipped
+shuffle, solo, seeds 1-5 (lever test 1-3), a 900 s limit, 0 DNF. Raw: `/mnt/project-files/regatta-flywheel/train/Honeyguide/`.
+
+Not the AI. Slip Line's coach (the rail it rides, the race line between rides) is near its best: three searches
+(`train/Honeyguide/NOTE.md`) found no confirmed win, and its trained nose rate changes nothing in Regatta. The levers that
+make a slip faster or longer barely move the time either, which says the Honeyguide rarely slips in a solo Regatta (inferred from the lever test; slips were not counted): a slip
+needs a prism TRAIL in a colour the battery holds, and alone on a Regatta course there is none on the line (Slip Line lays
+its own rails for exactly this reason). So it cruises at 60 u/s. A redesign that keeps the two seats (the Ratel charges,
+the pilot spends) needs trails it can count on outside Slip Line (its own, a rival's, the course's), or a pace term the
+pilot earns without one. Garrett's call; the Honeyguide stays off the card meanwhile.
 
 ## Wrasse (pilot seat)
 
