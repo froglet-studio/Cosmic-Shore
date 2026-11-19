@@ -13,7 +13,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "Lantern Reach Cartographers",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Dellalia",
@@ -27,7 +27,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "The Bright Buoys",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Sabero",
@@ -41,7 +41,7 @@
    ],
    "faction": "Merchant",
    "faction_name": "Amber Ledger Guild",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Olo",
@@ -55,7 +55,7 @@
    ],
    "faction": "Sport",
    "faction_name": "The Glittering Heats",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Rolamo",
@@ -69,7 +69,7 @@
    ],
    "faction": "Gatherer",
    "faction_name": "Kelpline Gleaners",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Yox",
@@ -83,7 +83,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "Lantern Reach Cartographers",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Xathata",
@@ -111,7 +111,7 @@
    ],
    "faction": "Diplomat",
    "faction_name": "Envoys of the Accord",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Nethael",
@@ -125,7 +125,7 @@
    ],
    "faction": "Diplomat",
    "faction_name": "The Treaty Table",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Mamo",
@@ -139,7 +139,7 @@
    ],
    "faction": "Gatherer",
    "faction_name": "Driftnet Cooperative",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Xalaai",
@@ -167,7 +167,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "House Verdance",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Peveth",
@@ -195,7 +195,7 @@
    ],
    "faction": "Merchant",
    "faction_name": "Amber Ledger Guild",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Corrarin",
@@ -209,7 +209,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "Court of Still Water",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Neloel",
@@ -223,7 +223,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "Institute of the Shore",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Uthael",
@@ -237,7 +237,7 @@
    ],
    "faction": "Priest",
    "faction_name": "Order of the Slow Tide",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Cario",
@@ -349,7 +349,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "House Verdance",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Zesondo",
@@ -405,7 +405,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "The Tidal Archive",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Athara",
@@ -433,7 +433,7 @@
    ],
    "faction": "Preservationist",
    "faction_name": "Reefward Trust",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Dellorin",
@@ -503,7 +503,7 @@
    ],
    "faction": "BountyHunter",
    "faction_name": "Copperclaim Agency",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Galsoola",

@@ -49,7 +49,8 @@ SCENE = dict(
              "birds now, as many and the same size, riding high on the back and shoulders behind the ears."
              "\n\n"
              "The one at the chest hangs upside down on its rope, so its underside faces the camera: a flat "
-             "wooden base with a dark lead keel weight screwed along it. Rain beads on the painted wood and runs off it, and the lightning "
+             "wooden base with a dark lead keel weight screwed along it. Rain beads on the painted wood and runs "
+             "off it, and the lightning "
              "glints on the wet paint as it does now."),
         edit=(   # the whole frame: the decoys sit round the figure (refs.WHOLE)
             ((0, 0), (1536, 0), (1536, 864), (0, 864)),
