@@ -1,0 +1,34 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2263-feat-broadside-real-ba9bba",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T09:07:22+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2263 (feat(broadside): real-game judge; card seats the five balanced hulls, no handicaps) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset; a swim lane someone else occupies (approvals.py check exit 2): Broadside",
+  "branch": "HEAD",
+  "pr": 2263,
+  "commit": "d42b39c75",
+  "paths": [
+    "Assets/_SO_Assets/Games/ArcadeGameBroadside.asset",
+    "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+    "Assets/_Scripts/Controller/Arcade/BROADSIDE.md",
+    "Docs/Approvals/Yash/2026-11-19-broadside-s-card-now-seats-the-hulls-the-d6f456.json",
+    "Docs/ElementalLoop/STATUS.md",
+    "Port/src/CosmicShore.Player/RaceJudge.cs",
+    "Tools/Build/author_broadside_assets.py",
+    "Tools/Compute/evaluators/broadside_judge.py"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset"
+    },
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "Broadside"
+    }
+  ]
+}
