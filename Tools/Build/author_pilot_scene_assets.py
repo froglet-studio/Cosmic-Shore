@@ -61,6 +61,8 @@ CREW_SCRIPT_META = "Assets/_Scripts/ScriptableObjects/PilotsAndArtifacts/Painted
 SPECIES_CS = "Assets/_Scripts/Data/Inventory/AnimalSpecies.cs"
 FACTION_TYPES_CS = "Assets/_Scripts/Data/Voyages/VoyageEnums.cs"
 FACTIONS_CS = "Assets/_Scripts/Data/Inventory/FactionCatalog.cs"
+CREW_CODES = "Docs/Pilots/art/roster/crew_codes.json"  # the hash of each dealt crew's private claim code
+ROSTER_PLAN = "Docs/Pilots/art/roster/plan.json"     # roster.py: the new pilots that make a crew for every player
 
 WEBGL_STAND_IN = 32      # px: the longest side a browser build keeps (see the module docstring)
 BC7 = 25                 # TextureImporterFormat.BC7
@@ -390,7 +392,37 @@ def crew_rows(people=None, manifest=None):
     return out
 
 
-def crew_text(people, script_guid):
+def crews():
+    """The DEALT crews (Garrett, 2026-11-18: the seven test-pool players get crews unique among themselves), in the
+    order roster.py deals them: [[key a callsign, in callsign order]]. Only the crews: who holds which is player data
+    and never comes into the repository (it lives with the review page and the project files). Every other player is
+    dealt a random set from the whole pool in game (PaintedCrewSO.RandomCrew, roster.random_crew bit for bit)."""
+    kit = os.path.join(ROOT, "Tools", "Build", "pilot_art")
+    if kit not in sys.path:
+        sys.path.insert(0, kit)
+    import roster
+    order = [w for _, w, _ in CALLSIGNS]
+    dealt = roster.deal(list(range(roster.crews_possible(_by_callsign(roster)))))
+    return [[crew[c] for c in order] for crew in dealt.values() if crew]
+
+
+def crew_codes():
+    """The hash of each dealt crew's claim code, in deal order (Garrett, 2026-11-19: a tester types their code once and
+    keeps their crew). The codes are private; only these hashes are committed. Missing hashes are written empty."""
+    path = os.path.join(ROOT, CREW_CODES)
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as f:
+        return json.load(f).get("hashes", [])
+
+
+def _by_callsign(roster):
+    import collections
+    by = collections.Counter(roster.pool().values())
+    return by
+
+
+def crew_text(people, script_guid, dealt=None, codes=None):
     lines = [
         "%YAML 1.1",
         "%TAG !u! tag:unity3d.com,2011:",
@@ -408,6 +440,12 @@ def crew_text(people, script_guid):
         "  m_EditorClassIdentifier: ",
         "  people:" if people else "  people: []",
     ]
+    tail = []
+    codes = codes or []
+    for i, crew in enumerate(dealt or []):
+        tail.append("  - members:")
+        tail += [f"    - {key}" for key in crew]
+        tail.append(f"    codeHash: {codes[i] if i < len(codes) else ''}")
     for value, key, p in people:
         lines += [
             f"  - key: {key}",
@@ -422,7 +460,8 @@ def crew_text(people, script_guid):
             f"    homeworld: {yaml_text(p['home'])}",
             f"    story: {yaml_text(p['story'])}",
         ]
-    return "\n".join(lines) + "\n"
+    lines.append("  crews:" if tail else "  crews: []")
+    return "\n".join(lines + tail) + "\n"
 
 
 def outputs(manifest=None):
@@ -436,7 +475,8 @@ def outputs(manifest=None):
     out[SCENE_DIR + ".meta"] = folder_meta(minted("folder")).encode("utf-8")
     out[CATALOG] = catalog_text(entries, guid_of(CATALOG_SCRIPT_META)).encode("utf-8")
     out[CATALOG + ".meta"] = asset_meta(minted("catalog")).encode("utf-8")
-    out[CREW] = crew_text(crew_rows(manifest=manifest), guid_of(CREW_SCRIPT_META)).encode("utf-8")
+    out[CREW] = crew_text(crew_rows(manifest=manifest), guid_of(CREW_SCRIPT_META), crews(),
+                                    crew_codes()).encode("utf-8")
     out[CREW + ".meta"] = asset_meta(minted("crew")).encode("utf-8")
     return out
 
@@ -488,7 +528,22 @@ def self_test():
 
     expected = outputs()
     words = [word for _, word, _ in rows()]
-    expect("all fifty painted pilots are in the game", len(words) == 50)
+    painted_roster = sum(1 for p in json.loads(read(ROSTER_PLAN))["pilots"] if p.get("state") == "painted")
+    expect("every painted pilot is in the game: the fifty and the roster's", len(words) == 50 + painted_roster)
+    dealt = crews()
+    members = [k for crew in dealt for k in crew]
+    expect("the dealt crews are seven, one pilot a callsign each", len(dealt) == 7 and all(len(c) == len(CALLSIGNS) for c in dealt))
+    expect("no pilot is in two dealt crews, and every member is a painted pilot",
+           len(members) == len(set(members)) and set(members) <= set(words))
+    codes = crew_codes()
+    expect("every dealt crew has a claim-code hash (64 hex digits), no two alike, and no code itself is committed",
+           len(codes) == len(dealt) and len(set(codes)) == len(codes)
+           and all(re.fullmatch(r"[0-9a-f]{64}", c or "") for c in codes))
+    text = crew_text([], "0" * 32, [["A"], ["B"]], ["1" * 64])
+    expect("a crew without a hash is written with an empty one (a negative control: the reader then accepts no code)",
+           "codeHash: " + "1" * 64 in text and text.rstrip().endswith("codeHash:"))
+    expect("a dealt crew's pilots carry the callsigns in order",
+           all(json.loads(read(PEOPLE))["people"][k]["callsign"] == w for crew in dealt for k, (_, w, _) in zip(crew, CALLSIGNS)))
     carried = {value for value, _, _ in rows()}
     expect("every callsign is carried by at least one painted pilot", carried == set(CALLSIGN_VALUE.values()))
     expect("one scene, one importer a callsign, plus the folder, the catalog, the crew and their metas",

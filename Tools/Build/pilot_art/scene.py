@@ -471,9 +471,11 @@ def record(word):
 
 
 def records():
-    """{word: record} for every catalog pilot that has one, in the catalog's order."""
+    """{word: record} for every pilot that has one: the catalog's, then the roster's (roster.py), in that order.
+    The roster's painted pilots are in the game like the catalog's (Garrett, 2026-11-19: every player gets their own
+    crew), so the manifest, the avatars and the scene assets read them too."""
     out = {}
-    for w, *_ in creator.catalog():
+    for w, *_ in creator.cast_all():
         rec = record(w)
         if rec is not None:
             out[w] = rec
