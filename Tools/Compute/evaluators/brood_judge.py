@@ -64,7 +64,7 @@ def deal(hulls, rounds, team_size=3, seed=0):
 
 
 def judge(rosters, seeds_per_roster=1, seed0=1, limit_s=300, workers=None, workdir=None, intensity=2, overrides=None,
-          start=None):
+          start=None, ai_objective=None):
     rj.build()
     t0 = time.time()
     workdir = workdir or tempfile.mkdtemp(prefix="brood-judge-")
@@ -76,6 +76,8 @@ def judge(rosters, seeds_per_roster=1, seed0=1, limit_s=300, workers=None, workd
             spec["overrides"] = overrides
         if start is not None:
             spec["start"] = start
+        if ai_objective:
+            spec["ai_objective"] = ai_objective      # "nucleus": the AI steers for the nucleus (experiment, BroodJudge.cs)
         jobs.append((f"m{i:03d}", spec))
     timeout_s = 150 + seeds_per_roster * (limit_s + 120)
     workers = workers or int(os.environ.get("REGATTA_JUDGE_WORKERS", 0)) or min(4, len(jobs))

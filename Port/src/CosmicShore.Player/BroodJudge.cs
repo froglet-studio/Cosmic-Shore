@@ -110,6 +110,18 @@ namespace CosmicShore.Player
                 CosmicShore.Engine.Random.InitState(unchecked(seed * 7919 + 17));
 
                 var host = gameData.LocalPlayer;
+                // "ai_objective": "nucleus" - an experiment, in memory only: every AI steers for the nucleus while outside it and
+                // flies straight on through while inside, the way BroodRushObjectiveProvider guides a player (the shipped mode
+                // gives its AIs no objective). Overrides crystal seeking, like any mode's steering hook.
+                if (_spec["ai_objective"]?.GetValue<string>() == "nucleus")
+                    foreach (var p in ais)
+                        if (p.Vessel?.VesselStatus is Component c && c && c.TryGetComponent(out AIPilot pilot))
+                        {
+                            var tr = p.Vessel.Transform;
+                            pilot.SetExternalTargetProvider(() => cell && tr && cell.IsInsideNucleus(tr.position)
+                                ? tr.position + tr.forward * 200f
+                                : cell ? cell.transform.position : Vector3.zero);
+                        }
                 var startLevels = ais.Select(p => p.Vessel?.VesselStatus?.ResourceSystem is { } rs
                     ? $"M{rs.GetLevel(Element.Mass)} C{rs.GetLevel(Element.Charge)} S{rs.GetLevel(Element.Space)} T{rs.GetLevel(Element.Time)}"
                     : "?").ToArray();
