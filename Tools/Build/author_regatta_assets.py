@@ -380,7 +380,7 @@ MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sp
 # The Tiger Moth joined 2026-11-18 on Garrett's word ("he wants it in the ten"), with its Drop recharge halved (his pick)
 # and Regatta's Drop drive for its autopilot (RegattaTigerMothDrop). Judged alone, seeds 1-3: card start 131 s, about
 # 1.6x the slowest hull seated before it (Manta 82 s), so past the 1.5x rule on the card start; L5 start 87 s (1.25x).
-JUDGED_HULLS = ["Thresher", "BrittleStar", "Swordfish", "TigerMoth"]
+JUDGED_HULLS = ["Thresher", "BrittleStar", "Swordfish", "TigerMoth", "Shrike"]
 # Finish every course but at 2-5x the pace, so they are NOT on the card (#2123/#2127 seated them; taken off the same
 # night): the judge still seats them by name (RaceJudge adds a requested hull to the card in memory) and their race lines
 # stay, for step 5 and their own AI training to bring them within reach. REGATTA.md 6.6. The Stoat joined them

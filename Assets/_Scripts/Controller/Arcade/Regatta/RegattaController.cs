@@ -258,6 +258,10 @@ namespace CosmicShore.Gameplay
                 return true;
             // The Jacks: one Decoy Run door cycle a ring (RegattaJacksCoach).
             if (aiJacksCoach.TryAim(pilot, out target)) return true;
+            // The Shrike: sling to a block past the next ring, through its mouth (RegattaShrikeSling, Thornline's aim).
+            if (hasGate && aiShrikeSling.TryAim(pilot, status, gate, pilot.RoundStats?.SwitchesThreaded ?? 0,
+                                                RingAhead(pilot, 1), out target))
+                return true;
             // The Tiger Moth: line the belly up for a Drop to the next ring (RegattaTigerMothDrop, Waystation's coach).
             if (TryGetNextGate(pilot, out var ring) && ring && aiTigerMothDrop.TryAim(pilot, status, ring.position, out target))
                 return true;
@@ -284,6 +288,11 @@ namespace CosmicShore.Gameplay
             return _course[RingIndexFor(index)];
         }
 
+        [Header("AI Shrike Sling")]
+        [Tooltip("The Shrike's Void Sling for an autopilot: a block past the next ring whose chord threads the mouth, and " +
+                 "the hull's autopilot slings only at such anchors. Only a hull with a ShrikeExecutor is touched.")]
+        [SerializeField] RegattaShrikeSling aiShrikeSling = new();
+
         protected override bool OverrideAimIsLead(IPlayer pilot) => aiTigerMothDrop.IsAiming(pilot);
 
         protected override bool OverrideBellyTarget(IPlayer pilot, out Vector3 worldDirection)
@@ -303,6 +312,7 @@ namespace CosmicShore.Gameplay
             if (!gameData.IsTurnRunning)
             {
                 aiTigerMothDrop.ReleaseAll();
+                aiShrikeSling.ReleaseAll();
                 return;
             }
             aiTigerMothDrop.Tick(gameData.Players, p => TryGetNextGate(p, out var g) ? g : null);
@@ -688,6 +698,7 @@ namespace CosmicShore.Gameplay
         {
             aiTigerMothDrop.ReleaseAll();
             aiJacksCoach.ReleaseAll();
+            aiShrikeSling.ReleaseAll();
             _urchinAI?.Clear();
             _pilotLines.Clear();
             _gapLines.Clear();
