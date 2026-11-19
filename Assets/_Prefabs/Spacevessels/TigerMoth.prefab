@@ -30,6 +30,7 @@ GameObject:
   - component: {fileID: 8298610961815995264}
   - component: {fileID: 1910145565130234907}
   - component: {fileID: 8900000000000004005}
+  - component: {fileID: 7740000000000002902}
   m_Layer: 0
   m_Name: TigerMoth
   m_TagString: Untagged
@@ -1379,3 +1380,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e669e8d4897fc831070dfe1ae8cfaf3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &7740000000000002902
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 116782616907870029}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4c15dcef80649b8ac53ff2e35973dd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autopilot: {fileID: 7179641600799439939}
+  vesselStatus: {fileID: 3579962032467631405}
+  retargetSeconds: 1.5
+  interceptLeadSeconds: 0.5
+  humanFocus: 3
+  dustHover: 30
+  modeRetrySeconds: 1
