@@ -116,7 +116,8 @@ namespace CosmicShore.Gameplay
             DiagnosticsHUD.SetStat(Section, "lay",
                 $"wl {_prisms.Wavelength:0.0}  spacing {_prisms.LaySpacing:0.0}  gap {_prisms.Gap:0.0}  " +
                 $"scale x{_prisms.XScaler:0.00} y{_prisms.YScaler:0.00} z{_prisms.ZScaler:0.00}" +
-                $"{(_prisms.PenUp ? "  PEN UP" : "")}{(_prisms.TierHeld ? "  TIER HOLD" : "")}");
+                $"{(_prisms.PenUp ? "  PEN UP" : "")}{(_prisms.TierHeld ? "  TIER HOLD" : "")}" +
+                $"  drift along course {(_prisms.DriftLaysAlongCourse ? "ON" : "OFF")}");
             DiagnosticsHUD.SetStat(Section, "last gap",
                 $"rail A {Show(_gapA, _hasA)}  rail B {Show(_gapB, _hasB)}  min/2s {Show(_shownMinGap, true)}");
             DiagnosticsHUD.SetStat(Section, "laid behind hull", $"min/2s {Show(_shownMinBehind, true)} (negative = ahead)");

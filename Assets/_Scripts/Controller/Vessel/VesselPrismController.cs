@@ -174,6 +174,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Lay gates for diagnostics: a painting/ability pen-up and the device-tier hold.</summary>
         public bool PenUp => trailPenUp;
         public bool TierHeld => tierHold;
+        /// <summary>Whether a drift lays along the course (<see cref="driftLaysAlongCourse"/>), for diagnostics.</summary>
+        public bool DriftLaysAlongCourse => driftLaysAlongCourse;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
 
         /// <summary>
