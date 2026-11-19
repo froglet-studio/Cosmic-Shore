@@ -14,7 +14,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Goby | `b ~ .` | `b b .` | `b b .` | `b b .` | - | - |
 | Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
-| Jacks | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
+| Jacks | `R b b` | `b b .` | `- - -` | `b b .` | - | - |
 | JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
 | Manta | `R b ~` | `b b .` | `x x x` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Meerkat | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
@@ -80,6 +80,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Dolphin Time | 2 intensities I1-I4 | built | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed I3 flat over I2 (1.02x) and I4 1.7x; proposed I3 field + hairpins measure 1.16-1.21x over I2, I4 ~1.5x; HELD as a patch (Yash's occupied Switchback lane), DOLPHIN_TIME_LADDER.md |
 | Dolphin Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | trained drive promoted to Switchback (all four files), model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | Goby Time | 2 intensities I1-I4 | doing | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Goby orbiting a ring inside its turning circle and failing to finish most races past I1; the coach now flies straight on to open the range (PERCH_RUN.md 5.1): Legendary 44/47/46/72 s, 12 of 12 finished on fresh seeds. Open: difficulty does nothing (no seat error); I4 still loses up to 40 s at some reef rings. |
+| Jacks Time | 1 fun (abilities + game, one intensity) | redo | Garrett | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta 2.15x card / 2.37x L5 with its coach; jack run at the 37.5% lever cap only ~1.6x; Docs/ElementalLoop/REDESIGN.md |
+| Jacks Time | 3 AI on I1-I4 | built | Garrett | 2026-11-19 |  | RegattaJacksCoach: Decoy Run's door planner on Regatta rings; Ref1 600 s DNF -> 131 s; shuffle 3 seeds card 158 s / L5 154 s (train/Jacks/regatta/) |
 | Manta Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-18 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md |
 | Manta Time | 2 intensities I1-I4 | built | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder Legendary 58/62/75/96 s (good); the default Medium rival stalled at mouths (152/298/226/214 s) and Easy DNF'd 7 of 12; AI noses now Easy 5 / Medium 7 / Hard 7-9, every race finishes (REDLINE.md 0.3) |
 | Manta Time | 3 AI on I1-I4 | doing | Regatta plan threads | 2026-11-08 |  | Redline AI nose rate (#1844); the Soar steering should be re-searched at the new nose rates (AI_PLAN.md section 5) |

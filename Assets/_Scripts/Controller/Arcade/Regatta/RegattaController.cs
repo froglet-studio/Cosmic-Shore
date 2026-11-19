@@ -256,6 +256,8 @@ namespace CosmicShore.Gameplay
             // two times in three a rival's, ridden at 20 u/s or slipped and re-latched (2026-10-14 Regatta audit).
             if (hasGate && status.VesselType == VesselClassType.Urchin && TryOwnLaneAhead(pilot, tf.position, out target))
                 return true;
+            // The Jacks: one Decoy Run door cycle a ring (RegattaJacksCoach).
+            if (aiJacksCoach.TryAim(pilot, out target)) return true;
             // The Tiger Moth: line the belly up for a Drop to the next ring (RegattaTigerMothDrop, Waystation's coach).
             if (TryGetNextGate(pilot, out var ring) && ring && aiTigerMothDrop.TryAim(pilot, status, ring.position, out target))
                 return true;
@@ -267,11 +269,27 @@ namespace CosmicShore.Gameplay
                  "binds a TigerMothDropActionSO is touched.")]
         [SerializeField] RegattaTigerMothDrop aiTigerMothDrop = new();
 
+        [Header("AI Jacks")]
+        [Tooltip("The Jacks' race coach: every ring one Decoy Run door cycle (herd, decoy, take off, travel). Only a hull " +
+                 "with a JacksExecutor is touched.")]
+        [SerializeField] RegattaJacksCoach aiJacksCoach = new();
+
+        /// <summary>The <paramref name="ahead"/>-th ring <paramref name="pilot"/> has still to thread (0 the next), on the
+        /// course the platform's own gate aiming reads; null past the race's end.</summary>
+        RaceGate? RingAhead(IPlayer pilot, int ahead)
+        {
+            if (_course.Count == 0 || pilot?.RoundStats == null) return null;
+            int index = pilot.RoundStats.SwitchesThreaded + ahead;
+            if (index < 0 || index >= RaceLength) return null;
+            return _course[RingIndexFor(index)];
+        }
+
         protected override bool OverrideAimIsLead(IPlayer pilot) => aiTigerMothDrop.IsAiming(pilot);
 
         protected override bool OverrideBellyTarget(IPlayer pilot, out Vector3 worldDirection)
         {
             worldDirection = default;
+            if (aiJacksCoach.TryBelly(pilot, out worldDirection)) return true;
             return TryGetNextGate(pilot, out var ring) && ring &&
                    aiTigerMothDrop.TryBelly(pilot, pilot?.Vessel?.VesselStatus, ring.position, out worldDirection);
         }
@@ -411,6 +429,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override void OnRacerArmed(IPlayer pilot)
         {
+            aiJacksCoach.Arm(pilot, RingAhead);
             // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot (GateRaceController.HeldByAutopilot).
             if (pilot?.Vessel?.VesselStatus is not Component status || !status ||
                 !status.TryGetComponent(out AIPilot autopilot)) return;
@@ -668,6 +687,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             aiTigerMothDrop.ReleaseAll();
+            aiJacksCoach.ReleaseAll();
             _urchinAI?.Clear();
             _pilotLines.Clear();
             _gapLines.Clear();

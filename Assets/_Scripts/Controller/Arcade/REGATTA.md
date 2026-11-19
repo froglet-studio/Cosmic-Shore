@@ -598,6 +598,10 @@ Not seated yet:
 - **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
   (Thornline's AI plan aims at thorns).
 - **Goby**: 0 gates. It wanders, and Perch Run's dart coach armed from RegattaController did not take hold in the judge.
+- **Jacks** (2026-11-19): off a coach an AI Jacks herds on its own rhythm and crawls at 50 u/s (4 of 24 gates in 600 s).
+  `RegattaJacksCoach` (`aiJacksCoach` on the controller) runs Decoy Run's door cycle on each ring through
+  `DecoyRunCourse.PlanCycle`: it finishes every course, card 158 s / L5 154 s on the shuffle (3 seeds), 2.2-2.4x the
+  five, so it stays off the card and is flagged in `Docs/ElementalLoop/REDESIGN.md`.
 
 **The Swordfish** joined the card on 2026-11-17, toward Garrett's "regatta 10". It flies the Rhino's airframe and ramp
 (`RhinoAIBoostPolicy_Regatta` by the base policy's name) on the Rhino's line and nose pair, with Spearline's 10 degree
