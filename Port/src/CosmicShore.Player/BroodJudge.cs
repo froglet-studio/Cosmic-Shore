@@ -63,7 +63,7 @@ namespace CosmicShore.Player
             return f?.GetValue(pc) is ElementalFloat ef ? Math.Round(ef.EvaluateLive(p.Vessel.VesselStatus), 3) : null;
         }
 
-        static BroodRushController FindBrood() => CosmicShore.Engine.Object.FindAnyObjectByType<BroodRushController>();
+        static MultiplayerDomainGamesController FindBrood() => CosmicShore.Engine.Object.FindAnyObjectByType<MultiplayerDomainGamesController>();
 
         IEnumerator BroodMatches(GameDataSO gameData, VesselClassType hostHull, int intensity)
         {
@@ -71,7 +71,7 @@ namespace CosmicShore.Player
             {
                 int seed = _seeds[r];
                 double raceWall = _wall.Elapsed.TotalSeconds;
-                BroodRushController controller = null;
+                MultiplayerDomainGamesController controller = null;
                 Cell cell = null;
                 List<IPlayer> ais = null;
                 double deadline = Now + 180;
@@ -82,13 +82,13 @@ namespace CosmicShore.Player
                         controller = FindBrood();
                         cell = CosmicShore.Engine.Object.FindAnyObjectByType<Cell>();
                         ais = gameData.Players.Where(p => p != null && p.IsInitializedAsAI && p.Vessel != null).ToList();
-                        if (controller != null && cell != null && ais.Count >= _hulls.Count) break;
+                        if (controller != null && (cell != null || _mode != "BroodRush") && ais.Count >= _hulls.Count) break;
                     }
                     yield return 0.25f;
                 }
                 var race = new JsonObject { ["seed"] = seed, ["mode"] = "teams", ["game"] = _mode, ["intensity"] = intensity, ["host_hull"] = hostHull.ToString() };
                 _races.Add(race);
-                if (controller == null || cell == null || ais == null || ais.Count < _hulls.Count)
+                if (controller == null || (cell == null && _mode == "BroodRush") || ais == null || ais.Count < _hulls.Count)
                 {
                     race["outcome"] = "scene-not-ready";
                     yield break;
@@ -137,7 +137,7 @@ namespace CosmicShore.Player
                 while (true)
                 {
                     // Park the host every frame, before anything this frame reads its position.
-                    if (host?.Vessel?.Transform is { } ht) ht.position = cell.transform.position + HostParkOffset;
+                    if (host?.Vessel?.Transform is { } ht) ht.position = (cell != null ? cell.transform.position : Vector3.zero) + HostParkOffset;
                     float t = Time.time - start;
                     if (t >= nextSample)
                     {
@@ -146,9 +146,9 @@ namespace CosmicShore.Player
                         for (int k = 0; k < ais.Count; k++)
                         {
                             speedSum[k] += ais[k].Vessel?.VesselStatus?.Speed ?? 0f;
-                            if (ais[k].Vessel?.Transform is { } tr && cell.IsInsideNucleus(tr.position)) insideS[k] += SampleEvery;
+                            if (cell != null && ais[k].Vessel?.Transform is { } tr && cell.IsInsideNucleus(tr.position)) insideS[k] += SampleEvery;
                         }
-                        string claim = cell.TryGetNucleusClaim(out var c) ? c.ToString() : "none";
+                        string claim = cell != null && cell.TryGetNucleusClaim(out var c) ? c.ToString() : "none";
                         claimS[claim] = (claimS.TryGetValue(claim, out var s0) ? s0 : 0f) + SampleEvery;
                         if (Math.Abs(t % 5f) < SampleEvery) timeline.Add(new JsonArray(Math.Round(t, 1), claim));
                         foreach (var d in GameDataSO.ActiveDomains.Take(gameData.RequestedDomainCount))
