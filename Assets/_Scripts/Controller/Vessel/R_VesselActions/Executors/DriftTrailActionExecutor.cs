@@ -22,6 +22,9 @@ namespace CosmicShore.Gameplay
 
         CancellationTokenSource _cts;
 
+        /// <summary>True while the drift-trail loop is driving the trail (Begin without its End yet).</summary>
+        public bool IsRunning => _cts != null;
+
         void OnEnable()
         {
             if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;

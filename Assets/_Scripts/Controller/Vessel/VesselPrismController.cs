@@ -167,6 +167,13 @@ namespace CosmicShore.Gameplay
         /// <summary>The factory channel this vessel spawns through (read by the painting toy's restore).</summary>
         public PrismEventChannelWithReturnSO PrismSpawnChannel => _onPrismSpawnedEventChannel;
         public float MinWaveLength => minWavelength;
+        /// <summary>The live wavelength (drift and other rules change it); read by <c>TrailDiagnostics</c>.</summary>
+        public float Wavelength => wavelength;
+        /// <summary>The spacing behind the last lay, unwarped (the distance lay's nominal spacing).</summary>
+        public float LaySpacing => _laySpacing;
+        /// <summary>Lay gates for diagnostics: a painting/ability pen-up and the device-tier hold.</summary>
+        public bool PenUp => trailPenUp;
+        public bool TierHeld => tierHold;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
 
         /// <summary>

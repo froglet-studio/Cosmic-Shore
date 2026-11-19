@@ -356,3 +356,18 @@ Tests: `TrailFlyTestFixesTests`. Not verified in Unity: fly each of the four aga
   effect, and no element ability touches the lay. So the code read does not explain it. Next step: a short clip from
   the moment the packing starts, with the LT state visible (or a note of whether LT was touched in that life), and
   whether AI Dolphins were in the cell, since the AI drifts on a loop.
+
+**Tool: the Trail section of the diagnostics HUD (2026-11-19).** `TrailDiagnostics` publishes, live, for the vessel
+the local player flies:
+- **vessel**
+- **input:** device, LT and RT depth, stick sums and differences
+- **drift:** drifting or not, whether the drift-trail loop is still running, and nose.course
+- **speed**
+- **lay:** wavelength, spacing, gap, X/Y/Z scalers, pen up and tier hold
+- **last gap:** the gap between the last two prisms on each rail, plus the smallest gap in the last 2 s
+- **laid behind hull:** the smallest distance behind the hull a new prism went down in the last 2 s; negative is ahead
+- **nearest own prism:** the hull centre's distance to the surface of its newest 40 prisms, ahead or behind
+
+Editor and development builds only. Press F7 to show the HUD; the HUD console's `trail off` and `trail on` hide and
+restore the section. To film a fly test, use Unity Recorder with Playback **Variable** (Constant changes the game's
+frame timing) and Source **Game View**.
