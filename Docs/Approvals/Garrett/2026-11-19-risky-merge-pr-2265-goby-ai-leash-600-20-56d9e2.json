@@ -1,0 +1,22 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2265-goby-ai-leash-600-20-56d9e2",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T11:20:15+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2265 (Goby AI leash 600 -> 2000) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset",
+  "branch": "claude/project-thread-kszcm7",
+  "pr": 2265,
+  "commit": "553440f31",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset"
+    }
+  ]
+}
