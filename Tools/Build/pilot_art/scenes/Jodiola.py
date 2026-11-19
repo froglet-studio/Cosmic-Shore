@@ -3,6 +3,7 @@
 skiffs, and now drives a rescue skiff through a storm surge."""
 SCENE = dict(
     treatment='Rescue skiff in a storm surge, a line thrown',
+    close=(160, 0, 560, 400),
     shot=("A photograph taken in a storm at night from the bow of the same skiff, a 24mm lens and a fast shutter, "
           "spray frozen in the air. The figure is seen from the waist up, filling most of the height of the frame."),
     side='left',

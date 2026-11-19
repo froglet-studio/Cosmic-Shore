@@ -3,6 +3,7 @@
 rivets a vessel's hull high on a dry-dock scaffold."""
 SCENE = dict(
     treatment='High dry-dock scaffold, riveting a hull',
+    close=(230, 0, 590, 360),
     shot=("A photograph taken on a scaffold high in a dry dock, a 28mm lens from a little below, the hull curving up"
           " out of frame. The figure is seen from the knees up, filling most of the height of the frame."),
     side='left',

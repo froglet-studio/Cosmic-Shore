@@ -3,6 +3,7 @@ unique crew for every player), in Garrett's crew. The hobby is the scene: Uline 
 friend lost."""
 SCENE = dict(
     treatment='Launch rail at dawn, ribbons on the hull',
+    close=(180, 0, 600, 420),
     shot=("A photograph taken at dawn from the launch rail beside a small vessel, a 35mm lens, the hull curving away"
           " behind the figure. The figure is seen from the knees up, filling most of the height of the frame."),
     side='left',

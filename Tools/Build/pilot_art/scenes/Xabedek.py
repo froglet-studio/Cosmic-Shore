@@ -3,6 +3,7 @@ unique crew for every player), in Garrett's crew. The upbringing is the scene: r
 tends a living reef shrine at low tide."""
 SCENE = dict(
     treatment='Tide-pool reef shrine at blue hour, pouring water',
+    close=(760, 0, 1120, 360),
     shot=("A photograph taken at blue hour from low among the rocks, a 35mm lens, tide pools in the foreground. The "
           "figure stands in a pool, seen from the knees up, filling most of the height of the frame."),
     side='right',

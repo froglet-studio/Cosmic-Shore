@@ -3,6 +3,7 @@ Garrett 2026-11-18: a unique crew for every player), in Garrett's crew. The prof
 brass microscope in a field station grown inside a giant seed pod."""
 SCENE = dict(
     treatment='Field lab inside a hollow seed pod, a brass microscope',
+    close=(760, 20, 1180, 440),
     shot=("A photograph taken inside a field station from across a cluttered bench, a 50mm lens, the figure bent to "
           "an eyepiece. The figure is seen from the waist up, filling most of the height of the frame."),
     side='right',

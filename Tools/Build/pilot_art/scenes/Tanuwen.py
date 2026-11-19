@@ -3,6 +3,7 @@
 town at dusk with a rescue float."""
 SCENE = dict(
     treatment='Wading a flooded street at dusk with a rescue float',
+    close=(840, 0, 1260, 420),
     shot=("A photograph taken waist-deep in floodwater from a few steps away, a 35mm lens just above the surface. "
           "The figure is seen from the waist up, filling most of the height of the frame."),
     side='right',

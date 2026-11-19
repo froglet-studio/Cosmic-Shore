@@ -3,8 +3,10 @@ a unique crew for every player), in Garrett's crew. The hobby is the scene: Nema
 insists it answers."""
 SCENE = dict(
     treatment="Inside a great ship's hold at night, a palm on the wall",
-    shot=("A photograph taken at night inside a vast hold from far back, a 35mm lens, the ribs of the hull rising "
-          "into darkness. The figure kneels, seen whole, filling half the height of the frame."),
+    close=(120, 0, 520, 400),
+    shot=("A photograph taken at night inside a vast hold from a few steps away, a 35mm lens at kneeling height, the"
+          " ribs of the hull rising into darkness behind. The figure kneels, seen whole, filling most of the height "
+          "of the frame."),
     side='left',
     source='hobby: "talk to the Ark at night and insist it answers" (the game\'s Quirks; put it in the third person)',
     seen=('the vestment is pale sand with a wide embroidered stole', 'the nine small shells hang on their string',),

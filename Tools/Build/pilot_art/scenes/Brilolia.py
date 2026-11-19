@@ -3,15 +3,17 @@
 opened, pried open on a salvage barge's deck in the rain."""
 SCENE = dict(
     treatment='Salvage barge deck in rain, a strongbox pried open',
-    shot=("A photograph taken on a barge deck in the rain from a few steps away, a 35mm lens at chest height. The "
-          "figure crouches, seen whole, filling two thirds of the height of the frame."),
+    close=(900, 20, 1340, 460),
+    shot=("A photograph taken on a barge deck in the rain from close by, a 50mm lens at the height of the crouching "
+          "figure. The figure is seen from the waist up, filling most of the height of the frame."),
     side='right',
     source='want: "a vault no one else has opened" (the game\'s Wants)',
     seen=('the plated shoulder guard sits over a dark canvas jacket', 'the blank warrant tags hang on the lapel',),
     fused=("Brilolia is a leopard gecko grown into a tardigrade. The head is a gecko's, broad and flat, pale yellow "
-           "with bold black spots and a wide lipless smile, and behind the head the beaded skin turns soft and "
-           "translucent cream, swelling into plump stacked tardigrade folds that run down the nape and the throat "
-           "into the collar, the last black spots fading in the first folds."),
+           "with bold black spots and a wide lipless smile, and behind the head the spotted skin swells into the "
+           "tardigrade's own living body: plump translucent cream segments, ringed and puffy like a water bear's, "
+           "the neck a short stack of round bulging rings down into the collar, faintly see-through, the last black "
+           "spots fading in the first ring."),
     doing=("Brilolia crouches over a heavy salvaged strongbox and levers its lid with a pry bar, the plump "
            "tardigrade hands braced, the lid just cracking, the face turned toward the camera, the big gecko eyes "
            "lit by what is inside: hungry, triumphant."),

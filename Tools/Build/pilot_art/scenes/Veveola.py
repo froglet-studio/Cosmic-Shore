@@ -3,6 +3,7 @@
 opened, half dug out of a red glass desert."""
 SCENE = dict(
     treatment='A buried vault door in red glass dunes, ear to the steel',
+    close=(930, 40, 1330, 440),
     shot=("A photograph taken at late afternoon from low on the glassy sand, a 50mm lens, the round vault door "
           "filling the background. The figure is seen from the thighs up, filling two thirds of the height of the "
           "frame."),
@@ -10,9 +11,10 @@ SCENE = dict(
     source='want: "a vault no one else has opened" (the game\'s Wants)',
     seen=('the travelling coat is mustard wool, open over the quilted vest', 'the brass toggles are dulled',),
     fused=("Veveola is an orangutan grown into a tardigrade. The face is an orangutan's wide disc of dark leather "
-           "with broad cheek flanges, and the ring of long orange hair round it thins over the crown into soft "
-           "translucent cream tardigrade folds, plump and stacked like a quilted hood, that run down the nape and "
-           "the throat into the collar, the last orange hairs growing between the first folds."),
+           "with broad cheek flanges, and the ring of long orange hair round it thins over the crown into the "
+           "tardigrade's own living body: plump translucent cream segments, ringed and puffy like a water bear's, "
+           "bulging in a short stack of round rings at the nape and the throat, wet-looking and faintly see-through,"
+           " the last orange hairs growing between the first rings."),
     doing=("Veveola presses one side of the head flat against a great round steel door half buried in the sand, one "
            "plump tardigrade hand spread on the steel, the other knocking with a knuckle, listening for a hollow "
            "ring. The face is turned toward the camera, the mouth caught in a sudden laugh: delighted, greedy."),

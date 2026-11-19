@@ -3,6 +3,7 @@ unique crew for every player), in Garrett's crew. The want is the scene: a remat
 from the pavilion and waits."""
 SCENE = dict(
     treatment='Regatta pavilion above a sea of cloud, wings half open',
+    close=(280, 40, 640, 400),
     shot=("A photograph taken on a pavilion balcony in the afternoon, a 50mm lens from a few steps along the "
           "balustrade. The figure is seen from the knees up, filling two thirds of the height of the frame."),
     side='left',

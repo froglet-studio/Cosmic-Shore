@@ -3,6 +3,7 @@ unique crew for every player), in Garrett's crew. The upbringing is the scene: a
 still charts a lagoon by lantern light."""
 SCENE = dict(
     treatment='Black lagoon under glowing cliffs, charting on the knee',
+    close=(260, 0, 620, 360),
     shot=("A photograph taken at night from a second boat a few steps away, a 35mm lens wide open, the water black "
           "and still. The figure sits in a small skiff, seen whole from the waist up, filling two thirds of the "
           "height of the frame."),

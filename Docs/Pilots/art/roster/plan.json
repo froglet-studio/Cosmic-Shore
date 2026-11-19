@@ -517,7 +517,7 @@
    ],
    "faction": "Gatherer",
    "faction_name": "Kelpline Gleaners",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Veveola",
@@ -531,7 +531,7 @@
    ],
    "faction": "Merchant",
    "faction_name": "Saltmark Consortium",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Zeth",
@@ -545,7 +545,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "Far Shoal Society",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Rosondo",
@@ -559,7 +559,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "Institute of the Shore",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Uline",
@@ -573,7 +573,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "Far Shoal Society",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Lunulo",
@@ -587,7 +587,7 @@
    ],
    "faction": "Thief",
    "faction_name": "Whisperkelp",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Ovex",
@@ -615,7 +615,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Harbour Watch",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Pekoar",
@@ -629,7 +629,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "The Unmapped",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Quibemo",
@@ -643,7 +643,7 @@
    ],
    "faction": "Sport",
    "faction_name": "The Glittering Heats",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Mamaola",
@@ -671,7 +671,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Harbour Watch",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Wyve",
@@ -699,7 +699,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "House Albrine",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Delsoko",
@@ -713,7 +713,7 @@
    ],
    "faction": "Thief",
    "faction_name": "Whisperkelp",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Nemaix",
@@ -727,7 +727,7 @@
    ],
    "faction": "Priest",
    "faction_name": "The Ninefold Shell",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Brilolia",
@@ -741,7 +741,7 @@
    ],
    "faction": "BountyHunter",
    "faction_name": "Writ and Hook",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Ithax",
@@ -769,7 +769,7 @@
    ],
    "faction": "Hunter",
    "faction_name": "Deepreed Stalkers",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Talolo",
@@ -783,7 +783,7 @@
    ],
    "faction": "Thief",
    "faction_name": "Velvet Gill",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Iri",
@@ -797,7 +797,7 @@
    ],
    "faction": "Sport",
    "faction_name": "Spray and Spin",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Miben",
@@ -811,7 +811,7 @@
    ],
    "faction": "Sport",
    "faction_name": "Slipstream Racing Club",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Verao",
@@ -825,7 +825,7 @@
    ],
    "faction": "Merchant",
    "faction_name": "Amber Ledger Guild",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Brisilia",
@@ -839,7 +839,7 @@
    ],
    "faction": "Sport",
    "faction_name": "The Glittering Heats",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Pewen",
@@ -853,7 +853,7 @@
    ],
    "faction": "BountyHunter",
    "faction_name": "Copperclaim Agency",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Briraix",
@@ -867,7 +867,7 @@
    ],
    "faction": "Hunter",
    "faction_name": "Moonsedge Pack",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Mata",
@@ -881,7 +881,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Harbour Watch",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Ludira",
@@ -895,7 +895,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "Court of Still Water",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Belsiar",
@@ -909,7 +909,7 @@
    ],
    "faction": "Activist",
    "faction_name": "Open Current",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Canuar",
@@ -923,7 +923,7 @@
    ],
    "faction": "Hunter",
    "faction_name": "Hollowfen Trackers",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Uro",
@@ -937,7 +937,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Harbour Watch",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Emao",
@@ -951,7 +951,7 @@
    ],
    "faction": "Priest",
    "faction_name": "Choir of the Deep",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Ora",
@@ -965,7 +965,7 @@
    ],
    "faction": "Contractor",
    "faction_name": "Bright Hull Works",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Nemath",
@@ -979,7 +979,7 @@
    ],
    "faction": "Sport",
    "faction_name": "The Glittering Heats",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Oth",
@@ -993,7 +993,7 @@
    ],
    "faction": "Preservationist",
    "faction_name": "Reefward Trust",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Sasoko",
@@ -1007,7 +1007,7 @@
    ],
    "faction": "Sport",
    "faction_name": "Spray and Spin",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Anudek",
@@ -1021,7 +1021,7 @@
    ],
    "faction": "Contractor",
    "faction_name": "Steadfast Joinery",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Xabedek",
@@ -1035,7 +1035,7 @@
    ],
    "faction": "Priest",
    "faction_name": "Order of the Slow Tide",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Belsoth",
@@ -1049,7 +1049,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "The Unmapped",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Zebeel",
@@ -1063,7 +1063,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Harbour Watch",
-   "state": "designed"
+   "state": "painted"
   }
  ]
 }

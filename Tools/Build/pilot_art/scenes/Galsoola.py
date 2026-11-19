@@ -3,6 +3,7 @@
 hauling kelp on a floating raft."""
 SCENE = dict(
     treatment='Kelp raft under a ringed giant, hauling the line',
+    close=(140, 0, 500, 360),
     shot=("A photograph taken from the edge of a floating kelp raft at mid-morning, a 35mm lens at waist height, the"
           " line running from the figure's hands down into the water. The figure is seen from the knees up, filling "
           "most of the height of the frame."),

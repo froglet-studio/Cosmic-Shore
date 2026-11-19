@@ -3,6 +3,7 @@ unique crew for every player), in Garrett's crew. The profession is the scene: B
 dune into blank country."""
 SCENE = dict(
     treatment='Climbing a red dune crest at noon, ears up',
+    close=(200, 0, 580, 380),
     shot=("A photograph taken from the dune's slope below, a 50mm lens looking up the ridge against the sky. The "
           "figure is seen whole, mid-stride, filling two thirds of the height of the frame."),
     side='left',

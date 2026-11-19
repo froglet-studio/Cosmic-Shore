@@ -3,6 +3,7 @@ unique crew for every player), in Garrett's crew. The upbringing is the scene: r
 Lunulo climbs its hull by moonlight."""
 SCENE = dict(
     treatment="Climbing a dead colossal ship's hull by moonlight",
+    close=(880, 0, 1240, 360),
     shot=("A photograph taken at night from a ledge on the hull a little above, a 24mm lens looking down past the "
           "figure to the ground far below. The figure is seen whole, clinging to the plates, filling most of the "
           "height of the frame."),

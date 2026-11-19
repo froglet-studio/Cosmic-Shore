@@ -3,6 +3,7 @@ unique crew for every player), in Garrett's crew. The hobby is the scene: Pekoar
 ice-boat flat out across a frozen violet sea."""
 SCENE = dict(
     treatment='Ice-boat flat out on a frozen violet sea',
+    close=(840, 0, 1220, 380),
     shot=("A photograph taken from a chase sled racing alongside, a 70mm lens panning with the ice-boat, the ice "
           "streaked with motion blur. The figure stands at the mast, seen from the knees up, filling most of the "
           "height of the frame."),

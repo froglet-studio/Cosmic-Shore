@@ -3,6 +3,7 @@ unique crew for every player), in Garrett's crew. The upbringing is the scene: a
 Delsoko now steals charts from an archive."""
 SCENE = dict(
     treatment='Hanging-chart archive at night, a lifted map',
+    close=(760, 40, 1180, 460),
     shot=("A photograph taken in a dark archive from between two hanging charts, a 35mm lens, the figure caught "
           "mid-theft. The figure is seen from the waist up, filling most of the height of the frame."),
     side='right',

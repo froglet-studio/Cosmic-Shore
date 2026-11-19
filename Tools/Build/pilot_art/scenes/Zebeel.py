@@ -3,6 +3,7 @@
 and apologises after a hard landing; here, to a listing barge."""
 SCENE = dict(
     treatment='Listing barge in fog, a glove on the hull',
+    close=(780, 0, 1220, 440),
     shot=("A photograph taken on a tilted deck in fog from a few steps away, a 35mm lens. The figure is seen from "
           "the hips up, filling most of the height of the frame."),
     side='right',
