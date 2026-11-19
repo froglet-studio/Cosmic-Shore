@@ -21,6 +21,7 @@ five run 68.5-74.3 s on the card and 63.5-66.9 s at L5. Sweeps: `/mnt/project-fi
 | Manta (L5) | 86.1 (card, in the field without its -5 row) | 27.9 | 0.42x at L5 | Soar, its Time level-5 upgrade: a held boost that turns 60 s laps into ~20-30 s | Soar's BoostSpeedMultiplier (Time, acts only once Soar unlocks) at x0.375: L5 43.5 s, about 0.66x |
 | TigerMoth | 152.4 | 122.0 | 2.1x / 1.8x slower | One Drop per ring, each after a 90-degree line-up (heading square to the ring, belly rolled onto it), at a 67 u/s cruise between drops. Not the recharge: from 2x cheaper on, the Drop is back before the next line-up ends | Drop recharge (the Drop's own parameter; Garrett's 2026-11-18 pick, cruise kept): 2x / 2.5x / 3x / 4x / 5x cheaper than design all run card 152.4 s and L5 122 s, so 2x (shipped, #2207) is the knee and nothing past it moves. Time throttle slot, knee x2.0: card 104 s, L5 84 s (1.55x / 1.27x), and Waystation breaks (I4 2 of 3 DNF). Patch held: `step5/tigermoth/time-throttle-x1.9-2.1.patch` |
 | Jacks | 158.3 | 153.6 | 2.15x / 2.37x slower | One herd-and-travel cycle per ring: the hull holds while the jacks run out at 208 u/s, lay the decoy past the ring and meet behind it, then the hull travels through. Between cycles it flies at the rig's 50 u/s. Time 5's second decoy rarely finds a second ring on the board, so L5 is no faster | No Time lever acts on race pace (Time scales the herd's speed, `herdSpeed`, not the jacks). Jack run speed (`dogSpeed`, kit) at the 37.5% lever cap: Ref1-Ref4 geo mean 162 -> 118 s, about 1.6x. Flagged |
+| Orca | 386 | 359 (3 of 8 courses DNF at 400 s) | 5.3x / 5.5x slower | A 21 u/s cruise and a x5 burn (about 106 u/s) on a 3 s tank refilling 0.25 to 0.35 a second, with a burning hull's wide turn | Time is the tank's refill (0.25 at rest, 0.35 at level 10). Its ceiling, an endless tank with an AI that burns on every leg (any distance, nose within 45 degrees): 185 s against 366 s on Ref2, still about 2.5x. No Time value or burn rule reaches the field |
 
 ## Serpent
 
@@ -125,6 +126,53 @@ What limits the hull is the cycle, not the AI: every ring costs a herd (the jack
 take-off is a teleport that threads nothing (`DECOY_RUN.md` 1). Regatta's legs (461-858 u) are longer than Decoy Run's
 (300-560 u), so the run is the cost. No Time parameter acts on it. Raw races:
 `/mnt/project-files/regatta-flywheel/train/Jacks/regatta/`.
+
+## Orca
+
+Flagged 2026-11-19 when it was first judged in Regatta (thread "Train and seat Goby and Orca in Regatta"). It had never
+been raced there. The shipped AI helm burns by `OrcaCrew.HelmAIWantsBurn` (Breach's rule without its walls) and
+finishes every course it is given time for.
+
+Shipped shuffle (8 courses), solo, seeds 1-3, geometric mean of the per-course means, a DNF counted at 400 s, against
+the polished five's median (73.5 s card, 64.7 s L5, `step5/noise/FIELD2.md`):
+
+| Start | Orca s | x five | Finished |
+|---|---|---|---|
+| card | 386 | 5.3 | 7 of 8 courses (Ref4 DNF on every seed) |
+| L5 | 359 | 5.5 | 4 of 8 (Ref4, Course2, Course4, Course6 DNF) |
+
+The Orca's Time element is its boost tank's refill: 0.25 tank-seconds a second at rest, 0.35 at level 10, and the L5
+Afterburner keeps refilling under a burn. The lever's ceiling was measured by making the tank endless (refill 50, tank
+1000 s), so the AI burns on every leg it is lined up for (card start, seed 1, limit 800 s):
+
+| Course | shipped s | endless tank s |
+|---|---|---|
+| Ref2 | 366 | 291 |
+| Course5 | 380 | 301 |
+| Ref3 | 387 | 328 |
+
+That run kept the shipped burn rule (next target 250 u or more away, nose within 8 degrees), which Regatta's gates
+rarely allow, so it understated the hull. Checked again the same night with the rule opened up (any distance, nose
+within 45 degrees, no minimum tank; Ref2, card start, seed 1):
+
+| Variant | Ref2 s | prism hits |
+|---|---|---|
+| shipped | 366 | about 1,300 |
+| open burn rule, shipped tank | 508 | 716 |
+| open burn rule, endless tank | 185 | 497 |
+
+So the AI's burn rule does cost the Orca about half its pace once the tank is not the limit, but with an endless tank
+and a helm that burns everywhere it is still about 2.5x the field (Ref2's field is about 73 s). On the shipped tank the
+open rule is slower, because the tank empties and only refills while the burn is let go. Neither the Time parameter
+nor a better pilot brings it in, so the flag stands. The pace is the hull: a 21 u/s cruise, a x5 burn to about 106 u/s, and a burning turn that widens with speed (`BreachCourse`'s
+numbers: turn 44 + 0.055/u). The field averages 200-plus u/s over the same courses. A redesign would have to give the
+Orca a race pace (a faster burn or cruise, or a Time ability that carries it), which is a kit change for every mode and
+Garrett's call.
+
+Its Time AI was not trained for Regatta: the open-rule, endless-tank run bounds what any burn policy can give at
+about 2.5x. Once the hull is redesigned, its Regatta burn rule needs training (a coach like Breach's), since the
+shipped rule's 250 u minimum rarely fires between Regatta's gates. Breach's coach already
+finishes all 24 of its ladder races (BREACH.md 5.1). Raw: `/mnt/project-files/regatta-flywheel/train/Orca/`.
 
 ## Not flagged (levered into the field instead)
 
