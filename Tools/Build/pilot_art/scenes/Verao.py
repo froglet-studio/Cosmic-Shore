@@ -3,6 +3,7 @@
 early, and reaches the lantern market after it has emptied."""
 SCENE = dict(
     treatment='Empty lantern market on a jetty, counting tokens',
+    close=(860, 0, 1260, 400),
     shot=("A photograph taken at night along a lantern-hung jetty, a 50mm lens from a few steps away, lanterns soft "
           "behind. The figure is seen from the waist up, filling most of the height of the frame."),
     side='right',

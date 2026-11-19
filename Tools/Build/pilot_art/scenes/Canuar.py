@@ -3,6 +3,7 @@ a unique crew for every player), in Jones's crew. The upbringing is the scene: t
 alone on an ice floe at polar twilight."""
 SCENE = dict(
     treatment='Ice floe at polar twilight, by a breathing hole',
+    close=(300, 0, 740, 440),
     shot=("A photograph taken on an ice floe at twilight from a few steps away, a 35mm lens at kneeling height. The "
           "figure kneels, seen whole, filling most of the height of the frame."),
     side='left',

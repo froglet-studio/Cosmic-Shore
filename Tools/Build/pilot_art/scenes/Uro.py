@@ -3,6 +3,7 @@
 racing skiffs, and now poles one through a night swamp."""
 SCENE = dict(
     treatment='Poling a skiff through a night swamp by own glow',
+    close=(860, 60, 1220, 420),
     shot=("A photograph taken at night from the bow of the skiff, a 35mm lens wide open, the swamp dark around. The "
           "figure stands in the stern, seen from the knees up, filling most of the height of the frame."),
     side='right',

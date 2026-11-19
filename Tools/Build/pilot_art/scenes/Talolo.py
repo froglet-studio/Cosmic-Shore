@@ -3,6 +3,7 @@ crew for every player), in Jones's crew. The want is the scene: to pay back an o
 up into a counting house at night."""
 SCENE = dict(
     treatment='Breaking up through a counting-house floor at night',
+    close=(260, 60, 700, 500),
     shot=("A photograph taken at night from floor level in a dark counting house, a 28mm lens close to the hole in "
           "the floor. The figure is seen from the chest up, rising out of the hole, filling most of the height of "
           "the frame."),

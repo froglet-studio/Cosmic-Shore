@@ -3,6 +3,7 @@ a unique crew for every player), in Jones's crew. The hobby is the scene: Miben 
 floating on the back in a lagoon to open one."""
 SCENE = dict(
     treatment='Floating on the back in a turquoise lagoon, a shell on the chest',
+    close=(80, 120, 580, 620),
     shot=("A photograph taken from a low float in the water a few steps away, a 50mm lens just above the surface. "
           "The figure floats on the back, seen from the waist up, filling most of the width of its third of the "
           "frame."),

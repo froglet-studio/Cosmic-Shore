@@ -3,6 +3,7 @@ a unique crew for every player), in Jones's crew. The want is the scene: to see 
 across a moonlit field of giant fungi."""
 SCENE = dict(
     treatment='Moonlit field of giant fungi, tracking with a lantern',
+    close=(320, 0, 780, 460),
     shot=("A photograph taken at night from low among the fungi, a 35mm lens, giant caps overhead. The figure is "
           "seen from the knees up, filling most of the height of the frame."),
     side='left',

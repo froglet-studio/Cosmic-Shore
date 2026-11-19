@@ -3,6 +3,7 @@ crew for every player), in Jones's crew. The hobby is the scene: Iri laughs at e
 beside a capsized racing hydrofoil."""
 SCENE = dict(
     treatment='Capsized hydrofoil at a pontoon, laughing it off',
+    close=(880, 0, 1340, 460),
     shot=("A photograph taken from the same pontoon a few steps away, a 35mm lens at sitting height, the upturned "
           "hull behind. The figure sits, seen from the knees up, filling most of the height of the frame."),
     side='right',

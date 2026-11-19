@@ -3,6 +3,7 @@
 down a cliff ladder in rain to reach a wreck."""
 SCENE = dict(
     treatment='Rope ladder down a sea cliff in rain',
+    close=(780, 0, 1240, 460),
     shot=("A photograph taken from the ladder a few rungs above, a 24mm lens looking down past the figure to the "
           "surf below. The figure is seen from the waist up, turned back toward the camera, filling most of the "
           "height of the frame."),

@@ -3,6 +3,7 @@ unique crew for every player), in Jones's crew. The hobby is the scene: Emao nam
 after a hard landing, here with candles."""
 SCENE = dict(
     treatment='Candlelit boathouse, blessing a battered vessel',
+    close=(240, 0, 680, 440),
     shot=("A photograph taken inside a boathouse at night from beside the hull, a 50mm lens. The figure stands, seen"
           " from the waist up, filling most of the height of the frame."),
     side='left',

@@ -3,6 +3,7 @@ unique crew for every player), in Jones's crew. The want is the scene: to see th
 waterfall that falls into mist."""
 SCENE = dict(
     treatment='Top of a waterfall falling into mist, looking out',
+    close=(240, 0, 700, 460),
     shot=("A photograph taken from the rocks beside the brink of a waterfall, a 35mm lens, the drop beyond. The "
           "figure stands, seen from the knees up, filling most of the height of the frame."),
     side='left',

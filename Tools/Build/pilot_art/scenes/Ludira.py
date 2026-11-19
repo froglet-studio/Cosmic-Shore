@@ -3,6 +3,7 @@
 crystals in a market stall, and still sorts them by candle."""
 SCENE = dict(
     treatment='Stilt-palace terrace over still water, sorting crystals',
+    close=(220, 20, 680, 480),
     shot=("A photograph taken on a terrace at blue hour from across a small table, a 50mm lens. The figure sits, "
           "seen from the waist up, filling most of the height of the frame."),
     side='left',

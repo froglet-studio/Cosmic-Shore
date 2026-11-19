@@ -3,6 +3,7 @@
 and apologises to it after a hard landing."""
 SCENE = dict(
     treatment='Hangar at dusk, apologising to a dented racer',
+    close=(440, 100, 800, 460),
     shot=("A photograph taken inside a hangar at dusk from beside the nose of a small racer, a 35mm lens. The figure"
           " is seen from the knees up, filling most of the height of the frame."),
     side='left',

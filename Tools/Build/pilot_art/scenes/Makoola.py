@@ -3,6 +3,7 @@
 glowing reed marsh at night."""
 SCENE = dict(
     treatment='Glowing reed marsh at night, parting the reeds',
+    close=(700, 20, 1180, 500),
     shot=("A photograph taken at night from among tall reeds a few steps away, a 50mm lens wide open, reeds soft in "
           "the foreground. The figure is seen from the waist up, filling most of the height of the frame."),
     side='right',

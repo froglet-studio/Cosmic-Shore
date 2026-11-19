@@ -3,6 +3,7 @@
 plants reeds in a wetland by night."""
 SCENE = dict(
     treatment='Planting reeds in a night wetland',
+    close=(800, 20, 1200, 420),
     shot=("A photograph taken at night in a wetland from a few steps away, a 50mm lens at kneeling height. The "
           "figure kneels in the shallows, seen from the waist up, filling most of the height of the frame."),
     side='right',

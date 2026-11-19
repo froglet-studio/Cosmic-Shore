@@ -3,6 +3,7 @@ a unique crew for every player), in Jones's crew. The want is the scene: a quiet
 more repair in a flooded engine room."""
 SCENE = dict(
     treatment='Flooded engine room, mending a pipe by worklight',
+    close=(760, 40, 1180, 460),
     shot=("A photograph taken waist-deep in a flooded engine room, a 35mm lens just above the water. The figure is "
           "seen from the waist up, filling most of the height of the frame."),
     side='right',

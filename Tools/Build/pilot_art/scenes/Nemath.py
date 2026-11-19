@@ -3,6 +3,7 @@ a unique crew for every player), in Jones's crew. The want is the scene: a remat
 climb road at dawn."""
 SCENE = dict(
     treatment='Hill-climb start line at dawn, crouched by a racer',
+    close=(260, 0, 620, 360),
     shot=("A photograph taken at dawn on a steep cobbled mountain road, a 35mm lens at crouching height. The figure "
           "crouches beside a small racer, seen whole, filling most of the height of the frame."),
     side='left',
