@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2260-amoebius-reads-unity-132e67",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T06:53:57+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2260 (Amoebius reads Unity's hex-blob enum arrays) went in without waiting for you.",
+  "why": "a swim lane someone else occupies (approvals.py check exit 2): Amoebius engine (Port/)",
+  "branch": "claude/project-thread-kszcm7",
+  "pr": 2260,
+  "commit": "9cdd80188",
+  "paths": [
+    "Docs/Approvals/Shombith/2026-11-19-serializedreader-trydecodehexblob-now-de-9aa354.json",
+    "Port/src/CosmicShore.Content/Serialization/SerializedReader.cs",
+    "Port/tests/CosmicShore.Tests/PhysicsStepContractTests.cs"
+  ],
+  "risky": [
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "Amoebius engine (Port/)"
+    }
+  ]
+}
