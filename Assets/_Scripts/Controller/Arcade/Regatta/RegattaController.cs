@@ -38,7 +38,7 @@ namespace CosmicShore.Gameplay
     /// the authored target and the arena's ring count - one authority), a start line behind gate
     /// 0, and an attached AI's aim down its own rail.</para>
     /// </summary>
-    public class RegattaController : GateRaceController, IPlayerSpawnLine
+    public class RegattaController : GateRaceController, IPlayerSpawnLine, IGobyRaceCoach
     {
         [Header("Regatta")]
         [Tooltip("The scene's Cell. Its EXPECTED config carries the arena prefab whose seed and " +
@@ -268,6 +268,39 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        [Header("AI Goby Dart")]
+        [Tooltip("The Goby's dart for an AI seat: Perch Run's coach on Regatta's rings, planned against the dart's own block " +
+                 "test. Only a hull with a GobyPistolDuo is touched; without it the seat's Goby AI lays islands and never " +
+                 "races a ring.")]
+        [SerializeField] RegattaGobyDart aiGobyDart = new();
+
+        readonly Dictionary<GobyPistolDuo, IPlayer> _gobyPilots = new();
+
+        void ArmGobyDart(IPlayer pilot)
+        {
+            var tf = pilot?.Vessel?.Transform;
+            var goby = tf ? tf.GetComponentInChildren<GobyPistolDuo>(true) : null;
+            if (!goby) return;
+            _gobyPilots[goby] = pilot;
+            aiGobyDart.Forget(goby);
+            goby.RaceCoach = this;
+        }
+
+        /// <summary>The AI Goby's next dart (<see cref="RegattaGobyDart"/>) at its next course ring and the one after it.</summary>
+        public bool TryRaceAim(GobyPistolDuo goby, out Vector3 aim, out float dartLength)
+        {
+            aim = default;
+            dartLength = 0f;
+            if (!goby || !goby.RaceHull || !_gobyPilots.TryGetValue(goby, out var pilot) || pilot == null || _course.Count == 0)
+                return false;
+            int threaded = pilot.RoundStats?.SwitchesThreaded ?? 0;
+            if (threaded < 0 || threaded >= RaceLength) return false;
+            int next = RingIndexFor(threaded);
+            RaceGate? after = threaded + 1 < RaceLength ? (RaceGate?)_course[RingIndexFor(threaded + 1)] : null;
+            aiGobyDart.Aim(goby, threaded, _course[next], after, out aim, out dartLength);
+            return true;
+        }
+
         [Header("AI Tiger Moth Drop")]
         [Tooltip("The Tiger Moth's Drop for an autopilot: Waystation's belly-aim coach on Regatta's rings. Only a hull that " +
                  "binds a TigerMothDropActionSO is touched.")]
@@ -439,6 +472,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override void OnRacerArmed(IPlayer pilot)
         {
+            ArmGobyDart(pilot);
             aiJacksCoach.Arm(pilot, RingAhead);
             // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot (GateRaceController.HeldByAutopilot).
             if (pilot?.Vessel?.VesselStatus is not Component status || !status ||
@@ -697,6 +731,10 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             aiTigerMothDrop.ReleaseAll();
+            foreach (var goby in _gobyPilots.Keys)
+                if (goby && ReferenceEquals(goby.RaceCoach, this)) goby.RaceCoach = null;
+            _gobyPilots.Clear();
+            aiGobyDart.Clear();
             aiJacksCoach.ReleaseAll();
             aiShrikeSling.ReleaseAll();
             _urchinAI?.Clear();

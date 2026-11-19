@@ -224,6 +224,12 @@
      "by": "Claude",
      "date": "2026-11-17",
      "evidence": "Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Goby orbiting a ring inside its turning circle and failing to finish most races past I1; the coach now flies straight on to open the range (PERCH_RUN.md 5.1): Legendary 44/47/46/72 s, 12 of 12 finished on fresh seeds. Open: difficulty does nothing (no seat error); I4 still loses up to 40 s at some reef rings."
+    },
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "Perch Run coach searched (time_ai_search.py --hull Goby, I1-I4 + I1@T5 + wide): best confirmed on seeds 101-103 within 0.4% of the shipped coach, so the shipped coach stays (PERCH_RUN.md 5.0). Regatta flies its own Goby dart coach (RegattaGobyDart): 15 seeds card 78.1 s / L5 62.6 s after dartPace rest 1.25 (REGATTA.md 6.6)."
     }
    }
   },
@@ -324,6 +330,38 @@
      "by": "Garrett",
      "date": "2026-11-19",
      "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta 4.0x card / 4.0x L5; Time rush at the 37.5% lever cap 3.4x, doubled 3.0x; Docs/ElementalLoop/REDESIGN.md"
+    }
+   }
+  },
+  "Angler": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "Angler run1 (time_ai_search.py --hull Angler, real-game judge, 2026-11-19): the leapfrog drive (AnglerLeapfrogAIPolicySO) trained in Lantern Run I1-I4 + I1@T5 + 1 wide course; confirm seeds 101-104, 28 flights a side, 0 DNF: loss 2.36 -> 1.47, I1 201 -> 131 s, I2 205 -> 127, I3 227 -> 135, I4 240 -> 154. Shipped as AnglerAIBoostPolicy_LanternRun / _Regatta and LanternRunController.aiNoseLead (8.25/s). Regatta 358 -> 323 s card, 349 -> 312 s L5"
+    },
+    "1": {
+     "state": "redo",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta shuffle, 5 seeds, trained AI: card 323 s / L5 312 s (4.4x / 4.8x the field); its pace levers at the 37.5% cap together reach 308 / 301 s. Docs/ElementalLoop/REDESIGN.md"
+    }
+   }
+  },
+  "Honeyguide": {
+   "Time": {
+    "3": {
+     "state": "doing",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "Slip Line's AI is its controller's coach (rail + race line leads); three real-game searches (2026-11-17, train/Honeyguide/NOTE.md) found no confirmed win over it, and the coach cannot leave Slip Line. Its trained nose rate (6.58/s) in Regatta, 2026-11-19: 369 / 355 s vs 374 / 363 s shipped, noise. No portable Time AI yet"
+    },
+    "1": {
+     "state": "redo",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta shuffle, 5 seeds: card 374 s / L5 363 s (5.1x / 5.6x the field); its Time levers at the 37.5% cap together (zip speed, slip reach, Time's zip scaling) reach 358 / 351 s. Docs/ElementalLoop/REDESIGN.md"
     }
    }
   }

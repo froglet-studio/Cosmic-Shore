@@ -24,6 +24,41 @@ five run 68.5-74.3 s on the card and 63.5-66.9 s at L5. Sweeps: `/mnt/project-fi
 | Meerkat | 294.3 | 256.7 | 4.0x / 4.0x slower | A 60 u/s cruise; its only speed past that is the wormhole ride (2.5x the entry speed at the throat, out at the speed it went in). Most of each Regatta leg is cruise | Time is the ride's rush (x1 at rest to x2 at level 10). At the 37.5% lever cap (x1.375 -> x2.75) Ref1-Ref4 go 285 -> 248 s (3.4x); doubling it (x2 -> x4) gives 224 s (3.0x). The trained wormhole autopilot is already at its optimum (Burrow Run search flat). Flagged |
 | Orca | 386 | 359 (3 of 8 courses DNF at 400 s) | 5.3x / 5.5x slower | A 21 u/s cruise and a x5 burn (about 106 u/s) on a 3 s tank refilling 0.25 to 0.35 a second, with a burning hull's wide turn | Time is the tank's refill (0.25 at rest, 0.35 at level 10). Its ceiling, an endless tank with an AI that burns on every leg (any distance, nose within 45 degrees): 185 s against 366 s on Ref2, still about 2.5x. No Time value or burn rule reaches the field |
 | Wrasse (pilot seat) | 144.2 | 124.0 | 2.0x / 1.9x slower | The Grouper hull cruises at 60 u/s and its only pace is the saved boosts (x5 for 1.5 s each) that the kite's Time loops bank; the AI pilot already spends one whenever the next ring is 180 u off and ahead. In Regatta it ran about 900 prism contacts a race | Time banks the boosts (`timeBankScale` x1 at rest, x2 at level 10, #2225). x2 at rest: 133.3 s. Boosts last 2x: 133.3 s. The ceiling, 4x the bank, 2x the length and 4x the cap together: 120.4 s (1.65x). The kite AI valuing Time loops 10x (with twice the race Time motes): 136.6 s. Its Wrasse Run nose pair (run1, 4.37/s, lead 0.69) in Regatta: 142.2 s |
+| Angler | 323 | 312 | 4.4x / 4.8x slower | A 40 u/s cruise (the fleet's slowest); its pace is the leapfrog: throw a group of its school ahead at 150 u/s (x2 with Time), then dash 75% of the way to it in 0.35 s. Regatta has no prism mass clusters on the line to paint, so every throw is a plain sling along the nose | AI trained in Lantern Run (loop step 3, 2026-11-19): Regatta 358 -> 323 s card, 349 -> 312 s L5. Its pace levers at the 37.5% cap together (throw speed 150 -> 206, Time's throw scaling x2 -> x2.75, dash 0.35 -> 0.255 s): 308 / 301 s, about 5% more. Flagged |
+
+| Honeyguide | 374 | 363 | 5.1x / 5.6x slower | A 60 u/s cruise; its pace is the Slip, a 480 u/s zip down a prism trail in a colour its battery holds (Ratel patterns, about one charge every 15 s). Solo in Regatta there is almost no trail to ride (inferred: slip levers barely move it), so it flies the course near cruise | Its Slip Line coach was searched three times (2026-11-17, no win). Its Slip Line nose (6.58/s) in Regatta: 369 / 355 s, noise. Its Time levers at the 37.5% cap together (zip 480 -> 660 u/s, slip reach 400 -> 550 u, Time's zip scaling x1.5 -> x2.06): 358 / 351 s, about 4%. Flagged |
+
+## Angler
+
+Measured 2026-11-19 (thread "Train and seat Angler and Honeyguide"): the shipped shuffle (8 courses), solo, real-game judge
+(`regatta_judge.py`), seeds 1-5 (lever test 1-3), a 900 s limit, geometric mean of the per-course means, built from
+bleeding-edge 05da4be58 with the #2238 boot break reverted (the fix is #2243). 0 DNF. Raw:
+`/mnt/project-files/regatta-flywheel/train/Angler/regatta/`.
+
+Its AI was never the limit. Trained in its own Time game (Lantern Run, `time_ai_search.py --hull Angler`, run1), the
+leapfrog drive got 30-40% faster on every rung there (I1 201 -> 131 s, I4 240 -> 154 s, fresh seeds, 0 DNF) and 10% faster
+in Regatta (shipped AI 358 / 349 s, trained 323 / 312 s). Its own pace levers at the cap together add about 5%. Lantern
+Run itself takes 130-150 s for a course its doc estimated at 70-90 s.
+
+The pace that is missing is the hull between throws: a 40 u/s cruise, a sling that only carries it as far as the group
+flew, and nothing on a Regatta course to paint, so the throw is never aimed past a ring the way Lantern Run's clusters
+let it be. A redesign that keeps "paint your path, zoom along it" needs either paintable mass the course or the hull
+itself provides, or a dash that carries real distance. Garrett's call; the Angler stays off the card
+(`author_regatta_assets.JUDGE_ONLY_HULLS`) meanwhile.
+
+
+## Honeyguide
+
+Measured 2026-11-19 (thread "Train and seat Angler and Honeyguide"), the same way as the Angler above: the shipped
+shuffle, solo, seeds 1-5 (lever test 1-3), a 900 s limit, 0 DNF. Raw: `/mnt/project-files/regatta-flywheel/train/Honeyguide/`.
+
+Not the AI. Slip Line's coach (the rail it rides, the race line between rides) is near its best: three searches
+(`train/Honeyguide/NOTE.md`) found no confirmed win, and its trained nose rate changes nothing in Regatta. The levers that
+make a slip faster or longer barely move the time either, which says the Honeyguide rarely slips in a solo Regatta (inferred from the lever test; slips were not counted): a slip
+needs a prism TRAIL in a colour the battery holds, and alone on a Regatta course there is none on the line (Slip Line lays
+its own rails for exactly this reason). So it cruises at 60 u/s. A redesign that keeps the two seats (the Ratel charges,
+the pilot spends) needs trails it can count on outside Slip Line (its own, a rival's, the course's), or a pace term the
+pilot earns without one. Garrett's call; the Honeyguide stays off the card meanwhile.
 
 ## Wrasse (pilot seat)
 
@@ -213,6 +248,9 @@ ride is the only speed past it, and it comes out at the speed it went in, so a R
 - Scarab: Time throttle curve x0.625 -> x0.9375 reshaped to x0.95 -> x1.0 (card 111.2 -> 73.5 s, L5 78.5 -> 64.0 s).
 - Sparrow: afterburner (Time BoostSpeedMultiplier) x1 -> x2.25 reshaped to x2 -> x2.75 (card 121.5 -> 74.3 s, L5
   85.2 -> 66.9 s).
+
+- Goby: Time dart pace (dartPace) x1.0 -> x2.2 reshaped to x1.25 -> x1.95, the level-5 value unchanged (card 83.3 ->
+  78.1 s, L5 62.6 s, 15 seeds), after Regatta got its own Goby dart coach (REGATTA.md 6.6).
 
 ## Which AI each hull flies in Regatta (audit, 2026-11-18)
 

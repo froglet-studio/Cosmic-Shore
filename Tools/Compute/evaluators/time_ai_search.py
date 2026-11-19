@@ -256,6 +256,21 @@ GAMES = {
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
         "lead": None, "rows": [], "nose_gene": 7.97,
     },
+    "Goby": {
+        "mode": "PerchRun",
+        # The Goby's seat AI races on a coach's darts (IGobyRaceCoach), not the gate race's steering: it turns at its own
+        # aiTurnRate, cruises, and darts once the nose is on the coach's line. Perch Run's coach (PerchRunController)
+        # carries the two numbers a dart plan is made of that travel to any race: how far past the last ring it charges
+        # (aiOvershoot) and how wide the turning circle counts before it flies on instead of orbiting (aiTurnMargin).
+        # Regatta's coach (RegattaGobyDart, RegattaController.aiGobyDart) carries the same two, so a winner is copied
+        # there. No drive asset, no nose knob (the coach steers the hull itself), nothing on the vessel.
+        "assets": {},
+        "fields": {},
+        "ctrl_fields": {"aiOvershoot": (0.0, 300.0), "aiTurnMargin": (1.0, 3.0)},
+        "ctrl_defaults": {"aiOvershoot": 40.0, "aiTurnMargin": 1.25},
+        "ctrl": lambda p: {"aiOvershoot": float(p["aiOvershoot"]), "aiTurnMargin": float(p["aiTurnMargin"])},
+        "lead": None, "rows": [],
+    },
     # The Meerkat's portable Time AI (loop step 3, 2026-11-19): its OWN wormhole autopilot
     # (MeerkatSolitonExecutor.Autopilot, read off MeerkatSolitonConfig: when to form a straight or a bent tunnel, how
     # long to shape the reticle), trained in Burrow Run with the race controller's knobs left at what the scene ships
@@ -336,6 +351,20 @@ GAMES = {
         "ctrl_defaults": {"aiRailLead": 40.0, "aiRaceLineLead": 60.0},
         "ctrl": lambda p: {"aiRailLead": float(p["aiRailLead"]), "aiRaceLineLead": float(p["aiRaceLineLead"])},
         "lead": None, "rows": [], "nose_gene": 1.5,
+    },
+    "Angler": {
+        "mode": "LanternRun",
+        # AnglerLeapfrogAIPolicySO (the hull's own drive, AnglerAIBoostPolicy): when it paints and throws a group (lined up
+        # within throwAlignDegrees, objective at least minThrowDistance away, trigger held holdSeconds, throwIntervalSeconds
+        # between throws) and when it dashes to a group (at least minDashDistance, within dashAheadDegrees of the
+        # objective). Every other mode reads the same policy, so a winner ships as <name>_LanternRun / _Regatta variants.
+        # Lantern Run is a plain gate race (no aiNoseLead table) at the fleet lag, 1.5/s; the rate is searched through the
+        # judge and reaches Regatta through Resources/RaceLines/Angler_Regatta. Shipped from run1 (2026-11-19):
+        # AnglerAIBoostPolicy_LanternRun and LanternRunController.aiNoseLead (no lead, 8.25/s).
+        "assets": {i: POL + "AnglerAIBoostPolicy_LanternRun.asset" for i in (1, 2, 3, 4)},
+        "fields": {"throwAlignDegrees": (0.5, 30.0), "minThrowDistance": (0.0, 600.0), "holdSeconds": (0.05, 2.0),
+                   "throwIntervalSeconds": (0.0, 3.0), "minDashDistance": (1.0, 300.0), "dashAheadDegrees": (0.0, 120.0)},
+        "lead": None, "rows": [], "nose_gene": 8.25,
     },
     "TigerMoth": {
         "mode": "Waystation",
