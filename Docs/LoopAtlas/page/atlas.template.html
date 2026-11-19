@@ -1,0 +1,1400 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Loop Atlas Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
+<style>
+/* One screen: the bar, the map, the clock. Froglet tokens (Shore in light, Deep Sea in dark); Aldrich to read, Chakra Petch to press. */
+:root { --ground: #f4f5ff; --ground-deep: #e6e9ff; --surface: #ffffff; --surface-raised: #dde1f7; --line: #b8c0f0; --text: #00041f; --text-soft: #434c89; --text-off: #8a8fae; --selection: #007d73; --on-selection: #ffffff; --proposed: #487c1f; --proposed-fill: #99ff80; --on-fill: #00041f; --planned: #893bff; --hole: #cd373a; --tier-0: #566dfe; --tier-1: #4b5df5; --tier-2: #404eec; --tier-3: #383ce0; --tier-4: #302bd5; --tier-5: #2a1bc2; --tier-6: #230bb0; --tier-7: #16017f; --space-4: 4px; --space-8: 8px; --space-12: 12px; --space-16: 16px; --space-24: 24px; --space-32: 32px; --space-48: 48px; --space-64: 64px; --space-96: 96px; --sliver-large: 14px; --sliver-small: 10px; --hairline: 1px; --emphasis: 2px; --font-read: "Aldrich", system-ui, sans-serif; --font-label: "Chakra Petch", system-ui, sans-serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ground: #00041f; --ground-deep: #00010a; --surface: #222645; --surface-raised: #434c89; --line: #434c89; --text: #e6e9ff; --text-soft: #747bad; --text-off: #5c5f70; --selection: #00d4ff; --on-selection: #00041f; --proposed: #99ff80; --proposed-fill: #99ff80; --on-fill: #00041f; --planned: #fe6ef7; --hole: #ff4b3a; --tier-0: #566dfe; --tier-1: #667efd; --tier-2: #758ffb; --tier-3: #869efc; --tier-4: #96acfc; --tier-5: #a8bbfb; --tier-6: #b9c9fa; --tier-7: #d2dbfc; color-scheme: dark } }
+:root[data-theme="dark"] { --ground: #00041f; --ground-deep: #00010a; --surface: #222645; --surface-raised: #434c89; --line: #434c89; --text: #e6e9ff; --text-soft: #747bad; --text-off: #5c5f70; --selection: #00d4ff; --on-selection: #00041f; --proposed: #99ff80; --proposed-fill: #99ff80; --on-fill: #00041f; --planned: #fe6ef7; --hole: #ff4b3a; --tier-0: #566dfe; --tier-1: #667efd; --tier-2: #758ffb; --tier-3: #869efc; --tier-4: #96acfc; --tier-5: #a8bbfb; --tier-6: #b9c9fa; --tier-7: #d2dbfc; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--ground); color: var(--text); }
+#root { height: 100%; min-height: 420px; }
+#root .la-bar, #root .la-crumbs, #root .la-scale, #root .la-table { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+/* The Loop Atlas. Source: Docs/LoopAtlas/src/atlas.css, built into the artifact's bundle.css by Tools/Build/loop_atlas.py.
+   Every colour, size and face is a token from tokens.json (the Froglet tokens, Docs/UI/froglet-tokens.json). */
+.la, .la * { box-sizing: border-box; }
+.la {
+  --cut: var(--sliver-small);
+  display: flex; flex-direction: column; height: 100%; min-height: 0;
+  background: var(--ground); color: var(--text);
+  font-family: var(--font-read); font-size: 14px; line-height: 1.45;
+}
+.la button, .la select, .la input { font: inherit; color: inherit; }
+.la [hidden] { display: none !important; }
+.la :focus-visible { outline: 2px solid var(--selection); outline-offset: 2px; }
+
+/* top bar */
+.la-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-8) var(--space-16); padding: var(--space-12) var(--space-16); border-bottom: 1px solid var(--line); }
+.la-seg { display: flex; gap: 2px; }
+.la-btn {
+  font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
+  background: var(--surface); color: var(--text); border: 0; padding: 7px 12px; cursor: pointer; min-height: 32px;
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+}
+.la-btn:hover { background: var(--surface-raised); }
+.la-btn[aria-pressed="true"] { background: var(--selection); color: var(--on-selection); }
+.la-ico { padding: 7px 0; width: 34px; font-size: 16px; line-height: 1; }
+.la-cta { background: var(--proposed); color: var(--on-fill); margin-top: var(--space-8); }
+.la-vessel { display: flex; align-items: center; gap: 2px; margin-left: auto; }
+.la-lab { font-family: var(--font-label); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-soft); margin-right: var(--space-8); }
+.la-select, .la-find {
+  background: var(--ground-deep); border: 1px solid var(--line); min-height: 32px; padding: 4px 8px; font-size: 13px; border-radius: 0;
+}
+.la-find { width: 150px; }
+.la-find::placeholder { color: var(--text-soft); }
+
+/* body */
+.la-body { flex: 1; min-height: 0; display: flex; }
+.la-stage { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; }
+.la-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; padding: var(--space-8) var(--space-16); min-height: 36px; border-bottom: 1px solid var(--line); }
+.la-crumb { background: none; border: 0; padding: 2px 0; cursor: pointer; font-family: var(--font-label); font-weight: 600; font-size: 13px; color: var(--text-soft); }
+.la-crumb:hover { color: var(--text); }
+.la-crumb[aria-current="true"] { color: var(--text); }
+.la-sep { color: var(--text-soft); }
+.la-canvas { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+.la-canvas canvas { display: block; touch-action: none; cursor: grab; }
+.la-hud { position: absolute; left: var(--space-12); top: var(--space-12); display: flex; flex-wrap: wrap; gap: 2px; align-items: center; }
+.la-filter { margin-left: var(--space-8); }
+.la-legend { display: flex; flex-wrap: wrap; gap: 4px var(--space-16); padding: 6px var(--space-16); border-top: 1px solid var(--line); font-size: 11px; color: var(--text-soft); }
+.la:not([data-view="map"]) .la-legend { display: none; }
+.la-lg { display: inline-flex; align-items: center; gap: 6px; }
+.la-lg i { display: inline-block; width: 14px; height: 14px; }
+.lg-ring { border: 2px solid var(--tier-5); border-radius: 50%; }
+.lg-card { border: 1px solid var(--line); background: var(--ground-deep); clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px); }
+.lg-bead { width: 8px !important; height: 8px !important; background: var(--tier-5); transform: rotate(45deg); }
+.lg-hole { width: 10px !important; height: 10px !important; background: var(--hole); transform: rotate(45deg); }
+.lg-ghost { border: 2px dotted var(--planned); border-radius: 50%; }
+.lg-plan { border: 2px solid var(--planned); border-radius: 50%; }
+.lg-prop { border: 2px solid var(--proposed); border-radius: 50%; }
+.lg-cross { height: 0 !important; width: 18px !important; border-top: 2px dashed var(--text-soft); }
+.lg-feed { height: 0 !important; width: 18px !important; border-top: 2px dotted var(--text-soft); }
+
+/* timescale strip */
+.la-scale { padding: var(--space-8) var(--space-16) var(--space-4); border-top: 1px solid var(--line); }
+.la-axis { position: relative; height: 34px; }
+.la-tierbar { position: absolute; height: 14px; border-bottom: 3px solid var(--c); opacity: .55; }
+.la-tierbar span { position: absolute; left: 0; bottom: 3px; font-family: var(--font-label); font-weight: 600; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-soft); white-space: nowrap; }
+.la-tierbar.on { opacity: 1; }
+.la-tierbar.on span { color: var(--text); }
+.la-me { position: absolute; top: 0; bottom: 0; background: var(--selection); opacity: .28; pointer-events: none; }
+.la-ticks { position: relative; height: 16px; border-top: 1px solid var(--line); }
+.la-ticks span { position: absolute; top: 2px; transform: translateX(-50%); font-size: 10px; color: var(--text-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.la-ticks span::before { content: ""; position: absolute; left: 50%; top: -5px; height: 4px; border-left: 1px solid var(--line); }
+
+/* list views replace the canvas */
+.la-table { display: none; flex: 1; min-height: 0; overflow: auto; padding: var(--space-12) var(--space-16) var(--space-24); }
+.la[data-view="ladder"] .la-table, .la[data-view="drivers"] .la-table, .la[data-view="holes"] .la-table, .la[data-view="notes"] .la-table { display: block; }
+.la:not([data-view="map"]) .la-canvas { display: none; }
+.la-lede { margin: 0 0 var(--space-12); color: var(--text-soft); max-width: 70ch; }
+.la-h { margin: var(--space-24) 0 var(--space-8); font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--text); }
+.la-thead { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-8) var(--space-12); margin: var(--space-16) 0 var(--space-4); padding-left: var(--space-8); border-left: 3px solid var(--c); }
+.la-thead b { font-family: var(--font-label); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; }
+.la-thead span { font-size: 12px; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.la-thead em { font-style: normal; font-size: 12px; color: var(--text-soft); }
+.la-row { display: grid; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid transparent; padding: 3px var(--space-8); cursor: pointer; }
+.la-row:hover { background: var(--ground-deep); }
+.la-lrow { grid-template-columns: minmax(110px, 220px) 1fr 52px; gap: var(--space-12); align-items: center; }
+.la-lhead { display: grid; padding: 0 var(--space-8); color: var(--text-soft); font-size: 10px; }
+.la-lname { font-family: var(--font-label); font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.la-lrow.ghost .la-lname { color: var(--text-soft); }
+.la-lbar { position: relative; height: 10px; background: linear-gradient(var(--line), var(--line)) center / 100% 1px no-repeat; }
+.la-lbar i { position: absolute; top: 2px; height: 6px; background: var(--c); }
+.la-lrow.ghost .la-lbar i { background: none; border: 1px dashed var(--c); }
+.la-lrep { font-family: var(--font-label); font-weight: 600; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-soft); }
+.la-lticks { position: relative; height: 14px; }
+.la-lticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.la-grid { display: grid; grid-template-columns: minmax(96px, 130px) repeat(8, minmax(34px, 1fr)); gap: 2px; align-items: stretch; max-width: 760px; }
+.la-gh { font-family: var(--font-label); font-weight: 600; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-soft); text-align: center; padding: 4px 0; overflow: hidden; }
+.la-gname { text-align: left; background: none; border: 0; cursor: pointer; padding: 5px 6px; font-family: var(--font-label); font-weight: 600; font-size: 13px; }
+.la-gname:hover, .la-gname.on { background: var(--ground-deep); box-shadow: inset 3px 0 0 var(--selection); }
+.la-gc { position: relative; text-align: center; padding: 5px 0; font-family: var(--font-label); font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; background: var(--ground-deep); }
+.la-gc::before { content: ""; position: absolute; inset: 0; background: var(--tier-4); opacity: calc(var(--a) * .5); }
+.la-gc.zero { color: var(--text-soft); }
+.la-line { grid-template-columns: 84px 1fr; gap: var(--space-12); font-size: 13px; }
+.la-line.prop span:last-child { color: var(--proposed); }
+.la-ltier { font-family: var(--font-label); font-weight: 600; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-soft); }
+.la-hrow { grid-template-columns: minmax(100px, 170px) 1fr; gap: 2px var(--space-12); padding: 6px var(--space-8); font-size: 13px; border-bottom: 1px solid var(--line); }
+.la-hn { font-family: var(--font-label); font-weight: 600; }
+.la-hrow .la-fill, .la-hrow .la-open { grid-column: 2; }
+.la-fill { color: var(--proposed); }
+.la-fill::before { content: "Proposed: "; font-family: var(--font-label); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
+.la-open { color: var(--hole); }
+.la-hole { padding: 6px 0 6px var(--space-12); border-left: 3px solid var(--hole); margin: 0 0 var(--space-8); }
+.la-hole.prop { border-left-color: var(--proposed); max-width: 74ch; }
+.la-hole p { margin: 0 0 2px; }
+.la-touch { margin-top: 4px !important; }
+
+/* the picked loop as text, for screen readers: on the map its details are drawn inside its ring */
+.la-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.la-link { background: none; border: 0; padding: 0; cursor: pointer; color: var(--selection); font-family: var(--font-label); font-weight: 600; font-size: 13px; text-decoration: underline; text-underline-offset: 2px; }
+
+.la-chip { display: inline-block; font-family: var(--font-label); font-weight: 600; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border: 1px solid var(--line); color: var(--text); white-space: nowrap; }
+
+/* notes and suggestions */
+.lg-note { width: 10px !important; height: 10px !important; background: var(--selection); }
+.la-compose { position: absolute; left: 50%; bottom: var(--space-16); transform: translateX(-50%); width: min(520px, calc(100% - 32px)); display: grid; gap: var(--space-8); padding: var(--space-16); background: var(--ground-deep); border: 1px solid var(--selection); }
+.la-ctitle { margin: 0; font-family: var(--font-label); font-weight: 600; font-size: 13px; }
+.la-ctext { width: 100%; min-height: 96px; resize: vertical; background: var(--ground); color: var(--text); border: 1px solid var(--line); border-radius: 0; padding: var(--space-8); font-family: var(--font-read); font-size: 15px; line-height: 1.45; }
+.la-ctext::placeholder { color: var(--text-soft); }
+.la-crow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-8); }
+.la-crow .la-cta { margin-top: 0; }
+.la-cerr { font-size: 13px; color: var(--hole); }
+.la-empty { margin: var(--space-24) 0; padding: var(--space-16); border: 1px dashed var(--line); color: var(--text-soft); max-width: 70ch; }
+.la-note { max-width: 78ch; padding: var(--space-8) 0 var(--space-8) var(--space-12); border-left: 3px solid var(--line); margin: 0 0 var(--space-12); }
+.la-note.sug { border-left-color: var(--proposed); }
+.la-nhead { margin: 0 0 4px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--space-12); }
+.la-nmeta { font-size: 12px; color: var(--text-soft); }
+.la-ntext { margin: 0 0 var(--space-8); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.la-nacts { display: flex; flex-wrap: wrap; gap: 2px; }
+.la-nacts .la-btn { font-size: 12px; min-height: 28px; padding: 5px 10px; }
+.la-btn:disabled { opacity: .5; cursor: default; }
+
+/* narrow */
+.la-narrow .la-vessel { margin-left: 0; }
+.la-narrow .la-tierbar span { display: none; }
+.la-narrow .la-tierbar.on span { display: block; }
+.la-narrow .la-lrow { grid-template-columns: minmax(90px, 130px) 1fr 40px; }
+.la-narrow .la-legend { display: none; }
+
+/* full screen */
+.la:fullscreen { width: 100vw; height: 100vh; }
+
+/* bare: one loop, no chrome (the LoopRing card) */
+.la-bare .la-bar, .la-bare .la-crumbs, .la-bare .la-scale, .la-bare .la-hud, .la.la-bare .la-legend { display: none; }
+
+/* static pieces */
+.la-static { height: auto; padding: var(--space-16); display: block; }
+.la-terms { display: grid; gap: 2px; }
+.la-term { display: grid; grid-template-columns: 92px 110px minmax(120px, 220px) 1fr; gap: 2px var(--space-16); align-items: center; padding: 6px 0 6px var(--space-12); border-left: 3px solid var(--c); }
+.la-term b { font-family: var(--font-label); font-weight: 700; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; }
+.la-tspan { font-size: 12px; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.la-term .la-lbar i { background: var(--c); }
+.la-tis { font-size: 13px; }
+.la-term em { grid-column: 4; font-style: normal; font-size: 12px; color: var(--text-soft); }
+.la-dlist { display: grid; gap: 4px; }
+.la-ditem { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-12); align-items: baseline; font-size: 13px; }
+@media (max-width: 720px) {
+  .la-term { grid-template-columns: 84px 1fr; }
+  .la-term .la-lbar { display: none; }
+  .la-term .la-tis, .la-term em { grid-column: 1 / -1; }
+  .la-ditem { grid-template-columns: 1fr; gap: 2px; }
+}
+@media (prefers-reduced-motion: reduce) { .la * { transition: none !important; } }
+</style>
+<div id="root"></div>
+<script>
+/* @ds-bundle: {"format":4,"namespace":"LoopAtlas","components":[{"name":"LoopAtlas"},{"name":"TimescaleLadder"},{"name":"LoopRing"},{"name":"DriverChips"}]} */
+// The Loop Atlas runtime. Source: Docs/LoopAtlas/src/atlas.js. Built into the artifact's bundle.js by
+// Tools/Build/loop_atlas.py, which puts the resolved model where MODEL_JSON stands. Plain JS, no libraries.
+(function () {
+  'use strict';
+  var M = /*@loop-atlas-model*/null;
+
+  var LETTER = { now: 'n', plan: 'p', prop: 'x' };
+  var ELS = ['Time', 'Charge', 'Mass', 'Space', 'Omni'];
+  var TMIN = Math.log10(0.1), TMAX = Math.log10(31536000);
+
+  // ---------- helpers ----------
+  function has(o, L) { return (o.in || 'npx').indexOf(L) >= 0; }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function fmtT(s) {
+    if (s < 1) return (Math.round(s * 10) / 10) + ' s';
+    if (s < 90) return Math.round(s) + ' s';
+    if (s < 5400) return Math.round(s / 60) + ' min';
+    if (s < 86400) return (Math.round(s / 360) / 10) + ' h';
+    if (s < 1209600) return Math.round(s / 86400) + ' d';
+    if (s < 5184000) return Math.round(s / 604800) + ' wk';
+    return Math.round(s / 2592000) + ' mo';
+  }
+  function fmtSpan(t) {
+    if (!t) return '';
+    var a = fmtT(t[0]), b = fmtT(t[1]);
+    if (a === b) return a;
+    var ua = a.split(' ')[1], ub = b.split(' ')[1];
+    return ua === ub ? a.split(' ')[0] + ' to ' + b : a + ' to ' + b;
+  }
+  function tx(t) { return (Math.log10(Math.max(0.1, t)) - TMIN) / (TMAX - TMIN); }
+  function tierOf(n) { return M.tiers[n.tier]; }
+  function termOf(n) { return n.kind === 'kit' || n.kind === 'vessel' ? 'Kit' : M.tiers[n.tier].term; }
+  function driver(id) { for (var i = 0; i < M.drivers.length; i++) if (M.drivers[i].id === id) return M.drivers[i]; return null; }
+  function handoff(id) { for (var i = 0; i < M.handoffs.length; i++) if (M.handoffs[i].id === id) return M.handoffs[i]; return null; }
+
+  // ---------- the tree for one layer and one vessel ----------
+  function holesFor(list, L) {
+    var out = [];
+    (list || []).forEach(function (h) {
+      if (L === 'x') { if (h.on.indexOf('p') >= 0) out.push(h); }
+      else if (h.on.indexOf(L) >= 0) out.push(h);
+    });
+    return out;
+  }
+
+  function kitChildren(host, V, L, lead) {
+    var f = M.fleet[V], out = [];
+    var p = M.pulse;
+    out.push({ id: host.id + '/pulse', name: p.name, tier: 0, kind: 'pulse', t: p.t, is: p.is, phases: p.phases, drivers: p.drivers,
+      holes: holesFor(p.holes, L), src: [f.doc || 'Docs/FleetCodex/abilities.json'], children: [], vessel: V });
+    ELS.forEach(function (E) {
+      var v = f.verbs[E]; if (!v) return;
+      var hand = v.hand && has(v.hand, L) ? v.hand : null;
+      var arch = M.archetypes[v.arch] || M.archetypes.tap;
+      var phases, feel = null, feelAt = null, holes = [];
+      if (hand) { phases = hand.phases; feel = hand.feel; feelAt = hand.at; }
+      else if (L === 'x') { phases = arch.phases; feel = arch.feel; feelAt = arch.at; }
+      else phases = ['Trigger: ' + (v.trigger || 'not stated'), 'The effect', 'Ready again'];
+      if (!hand && v.arch !== 'off') {
+        holes.push({ on: 'np', q: M.verbHole.q, fill: M.verbHole.fillPrefix + arch.phases.join(', then ') + '. The feeling: ' + arch.feel });
+      }
+      out.push({ id: host.id + '/verb/' + E, name: v.ability, tier: 1, kind: 'verb', element: E, t: v.t, is: v.does,
+        phases: phases.map(function (s) { return { n: s }; }), drivers: M.elementDrivers[E] || [], feel: feel, feelAt: feelAt,
+        trigger: v.trigger, scales: v.scales, lead: lead.indexOf(E) >= 0, invented: !hand && L === 'x',
+        holes: holesFor(holes, L), src: [v.source || 'Docs/FleetCodex/abilities.json'], children: [], vessel: V,
+        board: f.board[E === 'Omni' ? '' : E], games: f.games[E] });
+    });
+    (f.combos || []).forEach(function (c, i) {
+      var cin = c.in || 'x'; if (cin.indexOf(L) < 0) return;
+      out.push({ id: host.id + '/combo/' + i, name: c.name, tier: 2, kind: 'combo', t: c.t, is: c.is,
+        phases: c.chain.map(function (s) { return { n: s[1], e: s[0] }; }), drivers: c.drivers || [], feel: c.feel,
+        invented: cin === 'x', holes: [], src: [c.src || 'invented from the kit text (proposal P3)'], children: [], vessel: V,
+        propS: cin === 'x' ? 'add' : null });
+      // a loop inside the combo: it opens at one step of the chain and is one more layer of depth
+      var cn = out[out.length - 1];
+      (c.sub || []).forEach(function (s, j) {
+        var sn = { id: cn.id + '/sub/' + j, name: s.name, tier: s.tier != null ? s.tier : 2, kind: 'combo', t: s.t, is: s.is, at: s.at,
+          phases: s.chain.map(function (p) { return { n: p[1], e: p[0] }; }), drivers: s.drivers || [], feel: s.feel,
+          reps: s.reps || null, repsOf: s.repsOf || null,
+          invented: cin === 'x', holes: [], src: [s.src || 'invented from the kit text (proposal P3)'], children: [], vessel: V, parent: cn,
+          propS: cin === 'x' ? 'add' : null };
+        cn.children.push(sn);
+      });
+    });
+    return out;
+  }
+
+  function buildTree(layer, vessel) {
+    var L = LETTER[layer], byId = {}, root = null, list = [];
+    M.nodes.forEach(function (s) {
+      var ghost = false;
+      if (!has(s, L)) {
+        if (L === 'n' && has(s, 'p')) ghost = true; else return;
+      }
+      var n = { id: s.id, name: s.name, tier: s.tier, kind: s.kind, t: s.t, is: s.is, phases: s.phases || [], drivers: s.drivers || [],
+        reps: s.reps, repsOf: s.repsOf, at: s.at, core: !!s.core, ghost: ghost, kitKind: s.kit, element: s.element,
+        now: s.now, plan: s.plan, prop: s.prop, inL: s.in || 'npx', holes: holesFor(s.holes, L), src: s.src || [], children: [], parentId: s.parent };
+      byId[n.id] = n; list.push(n);
+    });
+    list.forEach(function (n) {
+      if (n.parentId && byId[n.parentId]) { byId[n.parentId].children.push(n); n.parent = byId[n.parentId]; }
+      else if (!n.parentId) root = n;
+    });
+    // kits
+    list.slice().forEach(function (n) {
+      if (n.kitKind) {
+        var r = M.roles[n.kitKind];
+        var lead = n.element === 'Mass-Space' ? ['Mass', 'Space'] : n.element ? [n.element] : [];
+        var role = { id: n.id + '/role', name: r.name, tier: 3, kind: 'role', t: r.t, is: r.is, phases: r.phases, drivers: r.drivers,
+          reps: r.reps, repsOf: r.repsOf, core: true, holes: holesFor(n.kitKind === 'free' ? [] : (n.kitKind === 'ms' || n.kitKind === 'cell' ? M.roleHoles : [M.roleHoles[0]]), L),
+          src: ['Docs/ElementalLoop/PLAYBOOK.md section 1'], children: [], parent: n, roleKind: n.kitKind, vessel: vessel, ghost: n.ghost };
+        var f = M.fleet[vessel];
+        var hasCombos = (f.combos || []).some(function (c) { return (c.in || 'x').indexOf(L) >= 0; });
+        var kit = { id: n.id + '/kit', name: f.label + ' kit', tier: 2, kind: 'kit', t: [8, 60], is: M.kit.is, phases: [], drivers: ['joy', 'mastery'],
+          core: true, holes: L !== 'x' && hasCombos ? [] : holesFor(M.kit.holes, L), src: [f.doc || 'Docs/FleetCodex/abilities.json'], children: [], parent: role, vessel: vessel, ghost: n.ghost };
+        kit.children = kitChildren(kit, vessel, L, lead);
+        kit.children.forEach(function (c) { c.parent = kit; c.ghost = n.ghost; c.children.forEach(function (g) { g.ghost = n.ghost; }); });
+        role.children = [kit]; n.children.push(role);
+      }
+      if (n.kind === 'fleet') {
+        M.fleetOrder.forEach(function (V) {
+          var f = M.fleet[V];
+          var hasCombos = (f.combos || []).some(function (c) { return (c.in || 'x').indexOf(L) >= 0; });
+          var vn = { id: 'fleet/' + V, name: f.label, tier: 2, kind: 'vessel', t: [8, 60], is: f.is || M.kit.is, phases: [], drivers: ['joy', 'mastery'],
+            holes: L !== 'x' && hasCombos ? [] : holesFor(M.kit.holes, L), src: [f.doc || 'Docs/FleetCodex/abilities.json'], children: [], parent: n, vessel: V };
+          vn.children = kitChildren(vn, V, L, []);
+          vn.children.forEach(function (c) { c.parent = vn; });
+          n.children.push(vn);
+        });
+      }
+    });
+    // index, depth, aggregate hole counts
+    var all = {};
+    // A ring's count when its insides are too small to see. A kit counts once however many of its verbs are
+    // unwritten, and a Round does not count the role and kit inside it: the same kit is counted under The fleet.
+    (function walk(n, d) {
+      n.depth = d; all[n.id] = n; n.holeSum = openHoles(n, L);
+      var inner = 0;
+      n.children.forEach(function (c) { walk(c, d + 1); if (c.kind !== 'role') inner += c.holeSum; });
+      if (n.kind === 'kit' || n.kind === 'vessel') n.holeSum = n.holeSum + inner > 0 ? 1 : 0;
+      else if (n.kind !== 'role') n.holeSum += inner;
+    })(root, 0);
+    root.x = 0; root.y = 0; root.r = 1; layout(root);
+    return { root: root, all: all, layer: layer, L: L, vessel: vessel };
+  }
+  function openHoles(n, L) {
+    if (L !== 'x') return n.holes.length;
+    return n.holes.filter(function (h) { return !h.fill; }).length;
+  }
+
+  // ---------- layout: children inside the parent's ring, and one slot for the loop's own card ----------
+  // Every ring keeps a place for its own information (n.info): the top slot of its orbit, or its whole inside
+  // when it has no loops in it. Zooming into that place is how the loop is read.
+  function phaseAngle(n, i) { var m = Math.max(1, n.phases.length); return -Math.PI / 2 + 2 * Math.PI * i / m; }
+  function orbit(list, n, limit, inner, withInfo) {
+    var k = list.length + (withInfo ? 1 : 0); if (!k) return null;
+    var R = n.r, s = Math.sin(Math.PI / Math.max(k, 2)), rho, r;
+    if (k === 1) { r = (limit - inner) / 2 * 0.92; rho = (limit + inner) / 2; if (inner === 0) { rho = 0; r = limit * 0.66; } }
+    else {
+      rho = limit / (1 + 0.88 * s); r = 0.88 * s * rho;
+      if (rho - r < inner + 0.03) { r = Math.min(r, (limit - inner - 0.03) / 2); rho = limit - r; r = Math.min(r, 0.88 * s * rho); }
+    }
+    var th0 = -Math.PI / 2;
+    if (withInfo) n.info = { x: n.x + Math.cos(th0) * rho * R, y: n.y + Math.sin(th0) * rho * R, r: r * R };
+    list.forEach(function (c, i) {
+      var th = th0 + 2 * Math.PI * (i + (withInfo ? 1 : 0)) / k;
+      c.x = n.x + Math.cos(th) * rho * R; c.y = n.y + Math.sin(th) * rho * R; c.r = r * R;
+    });
+    return { rho: rho, r: r };
+  }
+  function layout(n) {
+    var ch = n.children;
+    if (!ch.length) { n.info = { x: n.x, y: n.y, r: n.r * 0.8 }; return; }
+    var core = null, rest = [];
+    ch.forEach(function (c) { if (c.core && !core) core = c; else rest.push(c); });
+    rest.sort(function (a, b) { return (a.at == null ? 99 : a.at) - (b.at == null ? 99 : b.at); });
+    if (n.kind === 'kit' || n.kind === 'vessel') rest = ch.slice();
+    var LIM = 0.84;
+    if (core && !rest.length) {
+      n.info = { x: n.x, y: n.y - n.r * 0.57, r: n.r * 0.25 };
+      core.x = n.x; core.y = n.y + n.r * 0.3; core.r = n.r * 0.53;
+    }
+    else if (core) { core.x = n.x; core.y = n.y; core.r = n.r * 0.36; orbit(rest, n, LIM, 0.36, true); }
+    else if (rest.length > 11) {
+      var k1 = Math.ceil(rest.length * 0.61);
+      var o1 = orbit(rest.slice(0, k1), n, LIM, 0, true);
+      orbit(rest.slice(k1), n, o1.rho - o1.r - 0.03, 0, false);
+    } else orbit(rest, n, LIM, 0, true);
+    ch.forEach(layout);
+  }
+
+  // ---------- mount ----------
+  function mount(host, opts) {
+    opts = opts || {};
+    var S = {
+      layer: opts.layer || 'now', vessel: opts.vessel || M.defaultVessel, view: opts.view || 'map',
+      sel: opts.select || 'era', filter: null, cam: { x: 0, y: 0, k: 200 }, tree: null, anim: null, w: 0, h: 0, dpr: 1, colors: {}
+    };
+    host.innerHTML = '';
+    var root = el('div', 'la'); host.appendChild(root);
+    if (opts.chrome === false) root.classList.add('la-bare');
+
+    // top bar
+    var bar = el('div', 'la-bar'); root.appendChild(bar);
+    var segL = el('div', 'la-seg'); segL.setAttribute('role', 'group'); segL.setAttribute('aria-label', 'Layer'); bar.appendChild(segL);
+    var layerBtns = {};
+    M.layers.forEach(function (l) {
+      var b = el('button', 'la-btn', l.name); b.type = 'button'; b.title = l.is;
+      b.addEventListener('click', function () { setLayer(l.id); });
+      layerBtns[l.id] = b; segL.appendChild(b);
+    });
+    var segV = el('div', 'la-seg'); segV.setAttribute('role', 'group'); segV.setAttribute('aria-label', 'View'); bar.appendChild(segV);
+    var viewBtns = {};
+    [['map', 'Map'], ['ladder', 'Timescales'], ['drivers', 'Drivers'], ['holes', 'Holes'], ['notes', 'Notes']].forEach(function (v) {
+      var b = el('button', 'la-btn', v[1]); b.type = 'button';
+      b.addEventListener('click', function () { setView(v[0]); });
+      viewBtns[v[0]] = b; segV.appendChild(b);
+    });
+    viewBtns.notes.hidden = true;
+    var vz = el('div', 'la-vessel'); bar.appendChild(vz);
+    var vPrev = el('button', 'la-btn la-ico', '‹'); vPrev.type = 'button'; vPrev.setAttribute('aria-label', 'Previous vessel');
+    var vSel = el('select', 'la-select'); vSel.setAttribute('aria-label', 'Vessel shown in every kit');
+    M.fleetOrder.forEach(function (V) { var o = el('option', null, M.fleet[V].label); o.value = V; vSel.appendChild(o); });
+    var vNext = el('button', 'la-btn la-ico', '›'); vNext.type = 'button'; vNext.setAttribute('aria-label', 'Next vessel');
+    vz.appendChild(el('span', 'la-lab', 'Vessel')); vz.appendChild(vPrev); vz.appendChild(vSel); vz.appendChild(vNext);
+    function stepVessel(d) { var i = M.fleetOrder.indexOf(S.vessel); setVessel(M.fleetOrder[(i + d + M.fleetOrder.length) % M.fleetOrder.length]); }
+    vPrev.addEventListener('click', function () { stepVessel(-1); });
+    vNext.addEventListener('click', function () { stepVessel(1); });
+    vSel.addEventListener('change', function () { setVessel(vSel.value); });
+    var find = el('input', 'la-find'); find.type = 'search'; find.placeholder = 'Find a loop'; find.setAttribute('aria-label', 'Find a loop');
+    var dl = el('datalist'); dl.id = 'la-dl-' + Math.random().toString(36).slice(2); find.setAttribute('list', dl.id);
+    bar.appendChild(find); bar.appendChild(dl);
+    find.addEventListener('change', function () {
+      var q = find.value.trim().toLowerCase(); if (!q) return;
+      var hit = null;
+      Object.keys(S.tree.all).some(function (id) { var n = S.tree.all[id]; if (n.name.toLowerCase() === q) { hit = n; return true; } return false; });
+      if (!hit) Object.keys(S.tree.all).some(function (id) { var n = S.tree.all[id]; if (n.name.toLowerCase().indexOf(q) >= 0) { hit = n; return true; } return false; });
+      if (hit) { setView('map'); select(hit.id, true); find.value = ''; }
+    });
+    // full screen, where the host allows it
+    var fsEl = root, canFs = !!(document.fullscreenEnabled && fsEl.requestFullscreen);
+    var fsBtn = el('button', 'la-btn', 'Full screen'); fsBtn.type = 'button'; fsBtn.hidden = !canFs; bar.appendChild(fsBtn);
+    fsBtn.addEventListener('click', function () {
+      if (document.fullscreenElement) { document.exitFullscreen(); return; }
+      var p = fsEl.requestFullscreen(); if (p && p.catch) p.catch(function () { fsBtn.hidden = true; });
+    });
+    document.addEventListener('fullscreenchange', function () { fsBtn.textContent = document.fullscreenElement ? 'Leave full screen' : 'Full screen'; resize(); });
+
+    // body
+    var body = el('div', 'la-body'); root.appendChild(body);
+    var stage = el('div', 'la-stage'); body.appendChild(stage);
+    var crumbs = el('nav', 'la-crumbs'); crumbs.setAttribute('aria-label', 'Where this loop sits'); stage.appendChild(crumbs);
+    var wrap = el('div', 'la-canvas'); stage.appendChild(wrap);
+    var cv = el('canvas'); cv.tabIndex = 0; cv.setAttribute('role', 'img');
+    cv.setAttribute('aria-label', 'Map of gameplay loops, nested by timescale. Each loop holds a card with its details; zoom into the card to read it. The picked loop is also described in text after the map.');
+    wrap.appendChild(cv);
+    var hud = el('div', 'la-hud'); wrap.appendChild(hud);
+    function hudBtn(t, lab, fn) { var b = el('button', 'la-btn la-ico', t); b.type = 'button'; b.setAttribute('aria-label', lab); b.title = lab; b.addEventListener('click', fn); hud.appendChild(b); return b; }
+    hudBtn('+', 'Zoom in', function () { zoomBy(1.6); });
+    hudBtn('−', 'Zoom out', function () { zoomBy(1 / 1.6); });
+    hudBtn('↑', 'Step up to the loop above', function () { var n = cur(); if (n && n.parent) select(n.parent.id, true); });
+    hudBtn('⌂', 'The whole map', function () { select('era', true); });
+    var readBtn = hudBtn('Read', 'Zoom into this loop’s card', function () { focusInfo(cur(), true); }); readBtn.classList.remove('la-ico');
+    var noteBtn = hudBtn('Note', 'Add a note or a suggestion to this loop', function () { openComposer(cur(), 'note'); }); noteBtn.classList.remove('la-ico'); noteBtn.hidden = true;
+    var fSel = el('select', 'la-select la-filter'); fSel.setAttribute('aria-label', 'Show only loops with this driver');
+    var o0 = el('option', null, 'All drivers'); o0.value = ''; fSel.appendChild(o0);
+    M.drivers.forEach(function (d) { var o = el('option', null, d.name); o.value = d.id; fSel.appendChild(o); });
+    fSel.addEventListener('change', function () { S.filter = fSel.value || null; draw(); if (S.view !== 'map') renderTable(); });
+    hud.appendChild(fSel);
+    var table = el('div', 'la-table'); stage.appendChild(table);
+    var legend = el('div', 'la-legend'); stage.appendChild(legend);
+    var scale = el('div', 'la-scale'); stage.appendChild(scale);
+    var sr = el('div', 'la-sr'); sr.setAttribute('aria-live', 'polite'); root.appendChild(sr);
+
+    var ctx = cv.getContext('2d');
+
+    // ---------- notes and suggestions ----------
+    // Kept in the artifact's shared store (the db capability), so they outlive a republish and a Claude session can
+    // read them back and fold the accepted ones into loop_model.json. Only the full-page map has the store; in the
+    // Design System card and in a saved copy of the page this whole part stays dark.
+    var N = { db: null, user: null, me: null, list: [], verdicts: {}, names: {}, rev: 0, state: 'off' };
+    function noteKey(n) {
+      if (n.kind === 'verb') return 'kit:' + n.vessel + '/verb/' + n.element;
+      if (n.kind === 'combo') return 'kit:' + n.vessel + '/combo/' + n.name;
+      if (n.kind === 'pulse') return 'kit:' + n.vessel + '/pulse';
+      if (n.kind === 'kit' || n.kind === 'vessel') return 'kit:' + n.vessel;
+      if (n.kind === 'role') return 'role:' + n.roleKind;
+      return n.id;
+    }
+    function notesFor(n) { var k = noteKey(n); return N.list.filter(function (x) { return x.loop === k; }); }
+    function countNotes() {
+      var by = {}; N.list.forEach(function (x) { by[x.loop] = (by[x.loop] || 0) + 1; });
+      (function walk(n) {
+        n.noteOwn = by[noteKey(n)] || 0; n.noteSum = n.noteOwn;
+        n.children.forEach(function (c) { walk(c); n.noteSum += c.kind === 'role' ? c.noteOwn : c.noteSum; });
+      })(S.tree.root);
+    }
+    function who(id) { var p = N.names[id]; return (p && p.name) || 'Someone'; }
+    function day(iso) { return String(iso || '').slice(0, 10); }
+    function verdictWords(v) { return v === 'accepted' ? 'Accepted' : v === 'declined' ? 'Declined' : v === 'done' ? 'In the model' : ''; }
+    function notesChanged() {
+      N.rev++; countNotes(); if (S.view === 'notes') renderTable(); draw();
+      if (!N.user) return;
+      var ids = {}; N.list.forEach(function (x) { if (x.by) ids[x.by] = 1; });
+      var arr = Object.keys(ids); if (!arr.length) return;
+      N.user.profiles(arr).then(function (ps) {
+        var changed = false;
+        arr.forEach(function (id) { var nm = ps[id] && ps[id].name; if (nm && (!N.names[id] || N.names[id].name !== nm)) { N.names[id] = { name: nm }; changed = true; } });
+        if (changed) { N.rev++; if (S.view === 'notes') renderTable(); draw(); }
+      });
+    }
+    function connectNotes() {
+      if (opts.notes === false || !window.claude || !window.claude.use) return;
+      N.state = 'loading';
+      Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function (r) {
+        N.db = r[0]; N.user = r[1];
+        if (!N.db) { N.state = 'off'; return; }
+        N.state = 'on'; noteBtn.hidden = false; viewBtns.notes.hidden = false; renderLegend();
+        if (N.user) N.user.me().then(function (m) { N.me = m; if (S.view === 'notes') renderTable(); });
+        function dead() { N.state = 'off'; N.db = null; noteBtn.hidden = true; comp.hidden = true; notesChanged(); }
+        N.db.collection('notes').onSnapshot(function (snap) {
+          N.list = snap.docs.map(function (d) {
+            var b = d.data() || {};
+            return { id: d.id, loop: String(b.loop || ''), name: String(b.name || ''), layer: String(b.layer || ''), kind: b.kind === 'suggest' ? 'suggest' : 'note',
+              text: String(b.text || '').slice(0, 2000), by: typeof b.by === 'string' ? b.by : null, at: String(b.at || '') };
+          }).sort(function (a, b) { return a.at < b.at ? -1 : a.at > b.at ? 1 : 0; });
+          notesChanged();
+        }, dead);
+        N.db.collection('verdicts').onSnapshot(function (snap) {
+          N.verdicts = {}; snap.docs.forEach(function (d) { var b = d.data() || {}; N.verdicts[d.id] = String(b.s || ''); });
+          notesChanged();
+        }, function () {});
+        notesChanged();
+      });
+    }
+    // the composer: the one place text is typed, a small form over the map
+    var comp = el('form', 'la-compose'); comp.hidden = true; wrap.appendChild(comp);
+    var cTitle = el('p', 'la-ctitle'); comp.appendChild(cTitle);
+    var cSeg = el('div', 'la-seg'); cSeg.setAttribute('role', 'group'); cSeg.setAttribute('aria-label', 'Kind'); comp.appendChild(cSeg);
+    var cKind = 'note', cBtns = {}, cTarget = null;
+    [['note', 'Note'], ['suggest', 'Suggestion']].forEach(function (k) {
+      var b = el('button', 'la-btn', k[1]); b.type = 'button'; b.addEventListener('click', function () { setKind(k[0]); cText.focus(); });
+      cBtns[k[0]] = b; cSeg.appendChild(b);
+    });
+    var cLab = el('label', 'la-sr', 'Your note or suggestion'); cLab.htmlFor = 'la-note-text'; comp.appendChild(cLab);
+    var cText = el('textarea', 'la-ctext'); cText.id = 'la-note-text'; cText.rows = 4; cText.maxLength = 2000; comp.appendChild(cText);
+    var cRow = el('div', 'la-crow'); comp.appendChild(cRow);
+    var cSave = el('button', 'la-btn la-cta', 'Save'); cSave.type = 'submit'; cRow.appendChild(cSave);
+    var cCancel = el('button', 'la-btn', 'Cancel'); cCancel.type = 'button'; cRow.appendChild(cCancel);
+    var cErr = el('span', 'la-cerr'); cErr.setAttribute('role', 'status'); cRow.appendChild(cErr);
+    function setKind(k) {
+      cKind = k; cBtns.note.setAttribute('aria-pressed', k === 'note' ? 'true' : 'false'); cBtns.suggest.setAttribute('aria-pressed', k === 'suggest' ? 'true' : 'false');
+      cText.placeholder = k === 'suggest' ? 'What should change here, and to what?' : 'What should a reader of this loop know?';
+    }
+    function openComposer(n, kind) {
+      if (!N.db || !n) return;
+      cTarget = n; setKind(kind || 'note'); cErr.textContent = '';
+      var lname = ''; M.layers.forEach(function (l) { if (l.id === S.layer) lname = l.name; });
+      cTitle.textContent = 'On ' + n.name + ' · ' + termOf(n) + ' · written on the ' + lname + ' layer';
+      comp.hidden = false; cText.focus();
+    }
+    function closeComposer() { comp.hidden = true; cv.focus(); }
+    cCancel.addEventListener('click', closeComposer);
+    comp.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeComposer(); });
+    comp.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var t = cText.value.trim();
+      if (!t || !cTarget || !N.db) { cErr.textContent = 'Write something first.'; return; }
+      cSave.disabled = true;
+      N.db.collection('notes').add({ loop: noteKey(cTarget), name: cTarget.name, layer: S.layer, kind: cKind, text: t.slice(0, 2000), by: (N.me && N.me.id) || null, at: new Date().toISOString() })
+        .then(function () { cSave.disabled = false; cText.value = ''; closeComposer(); },
+          function (err) { cSave.disabled = false; cErr.textContent = err && err.code === 'quota_exceeded' ? 'The note store is full. Delete old notes first.' : 'Not saved. Try again.'; });
+    });
+    function setVerdict(id, v) {
+      if (!N.db) return;
+      var ref = N.db.doc('verdicts/' + id);
+      (v ? ref.set({ s: v, by: (N.me && N.me.id) || null, at: new Date().toISOString() }) : ref.delete()).catch(function () {});
+    }
+    function deleteNote(id) { if (!N.db) return; N.db.doc('notes/' + id).delete().catch(function () {}); if (N.me && N.me.canEdit) N.db.doc('verdicts/' + id).delete().catch(function () {}); }
+    // open the loop a note is about; a kit note may belong to another vessel than the one shown
+    function goNote(x) {
+      var m = /^kit:([^\/]+)/.exec(x.loop);
+      if (m && M.fleet[m[1]] && m[1] !== S.vessel) { S.vessel = m[1]; rebuild(); countNotes(); }
+      var hit = null;
+      Object.keys(S.tree.all).some(function (id) { if (noteKey(S.tree.all[id]) === x.loop) { hit = S.tree.all[id]; return true; } return false; });
+      if (!hit) return;
+      S.view = 'map'; syncBar(); renderAll(); resize(); S.sel = hit.id; renderCrumbs(); renderScale(); renderSr(); focusInfo(hit, false);
+    }
+
+    // ---------- state changes ----------
+    function cur() { return S.tree.all[S.sel] || S.tree.root; }
+    function rebuild() {
+      var old = S.sel;
+      S.tree = buildTree(S.layer, S.vessel);
+      if (!S.tree.all[old]) {
+        var id = old; while (id && !S.tree.all[id]) { var k = id.lastIndexOf('/'); id = k > 0 ? id.slice(0, k) : null; }
+        S.sel = id || 'era';
+      }
+      countNotes();
+      dl.innerHTML = '';
+      var seen = {};
+      Object.keys(S.tree.all).forEach(function (id) { var n = S.tree.all[id]; if (!seen[n.name]) { seen[n.name] = 1; var o = el('option'); o.value = n.name; dl.appendChild(o); } });
+    }
+    function refocus() { if (S.onInfo) focusInfo(cur(), false); else focus(cur(), false); }
+    function setLayer(id) { S.layer = id; rebuild(); syncBar(); renderAll(); refocus(); }
+    function setVessel(V) { S.vessel = V; rebuild(); syncBar(); renderAll(); refocus(); }
+    function setView(v) { S.view = v; syncBar(); renderAll(); if (v === 'map') { resize(); refocus(); } }
+    function select(id, zoom) {
+      var n = S.tree.all[id]; if (!n) return;
+      S.sel = id; renderCrumbs(); renderScale(); renderSr();
+      if (!zoom || S.view !== 'map') { draw(); return; }
+      if (n.children.length) focus(n, true); else focusInfo(n, true);
+    }
+    function syncBar() {
+      M.layers.forEach(function (l) { layerBtns[l.id].setAttribute('aria-pressed', l.id === S.layer ? 'true' : 'false'); });
+      Object.keys(viewBtns).forEach(function (v) { viewBtns[v].setAttribute('aria-pressed', v === S.view ? 'true' : 'false'); });
+      vSel.value = S.vessel; root.setAttribute('data-view', S.view); root.setAttribute('data-layer', S.layer);
+    }
+    function renderAll() { renderCrumbs(); renderScale(); renderLegend(); renderSr(); if (S.view === 'map') draw(); else renderTable(); }
+
+    // ---------- camera ----------
+    function fitK(n) { return 0.43 * Math.min(S.w, S.h) / n.r; }
+    function flyTo(tx0, ty0, tk, animate) {
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!animate || reduce || !S.w) { S.cam = { x: tx0, y: ty0, k: tk }; S.anim = null; draw(); return; }
+      var c0 = { x: S.cam.x, y: S.cam.y, k: S.cam.k }, t0 = performance.now(), dur = 460;
+      S.anim = function (now) {
+        var u = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - u, 3);
+        var k = c0.k * Math.pow(tk / c0.k, e);
+        S.cam.k = k;
+        S.cam.x = tx0 - (tx0 - c0.x) * c0.k * (1 - e) / k;
+        S.cam.y = ty0 - (ty0 - c0.y) * c0.k * (1 - e) / k;
+        if (u >= 1) S.anim = null;
+      };
+      tick();
+    }
+    function focus(n, animate) { S.onInfo = false; flyTo(n.x, n.y, fitK(n), animate); }
+    // Fit a world rectangle. A card taller than the view is fitted by width and shown from its top: drag to read on.
+    function focusRect(r, animate) {
+      // never past reading size (one card unit a little over one pixel): past that, more text is better than bigger text
+      var kCap = r.u ? 1.12 / r.u : Infinity, kW = S.w * 0.96 / r.w, kH = (S.h - 70) * 0.94 / r.h, kFit = Math.min(kW, kH), k, cy;
+      if (!r.u || kFit * r.u >= 0.8) { k = Math.min(kFit, kCap); cy = r.y + r.h / 2 - 20 / k; }
+      else { k = Math.min(kW, kCap); cy = r.y + (S.h / 2 - 58) / k; }
+      flyTo(r.x + r.w / 2, cy, k, animate);
+    }
+    function focusInfo(n, animate) { if (!S.w) return; S.onInfo = true; focusRect(cardRect(n), animate); }
+    var raf = 0;
+    function tick() { if (raf) return; raf = requestAnimationFrame(function (now) { raf = 0; if (S.anim) S.anim(now); paint(); if (S.anim) tick(); }); }
+    function draw() { tick(); }
+    function zoomBy(f, px, py) {
+      S.anim = null;
+      if (px == null) { px = S.w / 2; py = S.h / 2; }
+      var wx = (px - S.w / 2) / S.cam.k + S.cam.x, wy = (py - S.h / 2) / S.cam.k + S.cam.y;
+      var k = Math.max(fitK(S.tree.root) * 0.6, Math.min(S.cam.k * f, fitK(S.tree.root) * 2e7));
+      S.cam.k = k; S.cam.x = wx - (px - S.w / 2) / k; S.cam.y = wy - (py - S.h / 2) / k; draw();
+    }
+    function sx(x) { return (x - S.cam.x) * S.cam.k + S.w / 2; }
+    function sy(y) { return (y - S.cam.y) * S.cam.k + S.h / 2; }
+
+    // ---------- a loop's card: what it says ----------
+    function boardWords(b) {
+      var w = { D: 'done', b: 'built', '~': 'doing', '.': 'to do', R: 'redo', x: 'no game', '-': 'excused' };
+      return b.split(' ').map(function (c, i) { return ['fun', 'ladder', 'AI'][i] + ' ' + (w[c] || c); }).join(' · ');
+    }
+    function infoDoc(n) {
+      var L = LETTER[S.layer], T = tierOf(n);
+      var d = { kicker: termOf(n).toUpperCase() + ' · ' + fmtSpan(n.t) + ' a pass' + (n.element ? ' · ' + n.element : ''), name: n.name, is: n.is || '', notes: [], secs: [] };
+      function sec(title) { var s = { title: title, rows: [] }; d.secs.push(s); return s; }
+      if (n.ghost) d.notes.push({ t: 'Planned. Not in the game today.', st: 'plan' });
+      if (n.invented) d.notes.push({ t: 'Invented for the proposed layer from the kit text. The vessel’s owner corrects it.', st: 'prop' });
+      if (n.kind === 'vessel' && n.vessel !== S.vessel) d.notes.push({ t: 'Show the ' + n.name + ' in every kit', act: function () { setVessel(n.vessel); } });
+      if (n.now || n.plan || n.prop) {
+        var ls = sec('On each layer');
+        [['now', 'Now'], ['plan', 'Planned'], ['prop', 'Proposed']].forEach(function (k) {
+          var here = (n.inL || 'npx').indexOf(LETTER[k[0]]) >= 0, o = n[k[0]] || {};
+          var st = !here ? 'not there' : k[0] === 'now' ? ({ signed: 'signed off by a person', built: 'built, not signed off', part: 'partly there', dark: 'built, switched off' }[o.s] || 'there')
+            : k[0] === 'plan' ? 'decided' : ({ add: 'new', change: 'changed' }[o.s] || 'as planned');
+          ls.rows.push({ lead: k[1] + ':', t: st + '.' + (o.note ? ' ' + o.note : ''), st: k[0] === S.layer ? (k[0] === 'plan' ? 'plan' : k[0] === 'prop' ? 'prop' : null) : 'soft' });
+        });
+      }
+      if (n.phases.length) {
+        var ps = sec(n.kind === 'combo' ? 'The chain' : 'Steps of one pass');
+        n.phases.forEach(function (p, i) {
+          ps.rows.push({ lead: (i + 1) + '  ' + (p.e ? '[' + p.e + '] ' : '') + p.n, t: p.d || '', st: 'soft', leadSt: n.feelAt === i ? 'prop' : null });
+          n.children.forEach(function (c) { if (c.at === i && !c.core) ps.rows.push({ t: '→ opens ' + c.name, go: c.id, ind: 1 }); });
+        });
+        if (n.feel) ps.rows.push({ lead: 'The feeling:', t: n.feel, st: 'prop', leadSt: 'prop' });
+      }
+      if (n.kind === 'verb') {
+        var vs = sec('The ability');
+        if (n.trigger) vs.rows.push({ lead: 'Trigger:', t: n.trigger });
+        if (n.scales) vs.rows.push({ lead: 'More of the element:', t: n.scales });
+        if (n.games && n.games.length) vs.rows.push({ lead: 'Its arcade game:', t: n.games.join(', ') });
+        if (n.board) vs.rows.push({ lead: 'Elemental loop steps:', t: boardWords(n.board) });
+      }
+      if (n.kind === 'role' || n.kind === 'kit' || n.kind === 'vessel') {
+        var f = M.fleet[n.vessel], rs = sec('The ' + f.label);
+        rs.rows.push({ t: f.lean ? 'Leans ' + f.lean + '. ' + f.leanWhy : 'Cultivator or destroyer: not measured yet.' });
+        rs.rows.push({ lead: 'Arena games:', t: f.arenas.length ? f.arenas.join(', ') : 'none' });
+        if (f.missing) rs.rows.push({ lead: 'Kit missing a game for:', t: f.missing, st: 'hole' });
+        ['Time', 'Charge', 'Mass', 'Space'].forEach(function (E) {
+          var g = (f.games[E] || []).join(', ') || (f.excused.indexOf(E) >= 0 ? 'excused' : 'no game');
+          rs.rows.push({ lead: E + ':', t: g + (f.board[E] ? ' — ' + boardWords(f.board[E]) : ''), st: 'soft' });
+        });
+      }
+      if (n.drivers.length) {
+        var ds = sec('What keeps you in it');
+        n.drivers.forEach(function (id) { var dr = driver(id); if (dr) ds.rows.push({ lead: dr.name + ':', t: dr.is, st: 'soft', leadSt: S.filter === id ? 'sel' : null }); });
+      }
+      var hs = sec('Where it leads');
+      if (n.parent) {
+        var rep = n.reps ? 'after ×' + n.reps.replace('-', '–') + (n.repsOf ? ' (' + n.repsOf + ')' : '') : n.repsOf ? 'how many passes first is not set (' + n.repsOf + ')' : '';
+        hs.rows.push({ lead: 'Steps up to', t: n.parent.name, go: n.parent.id });
+        if (rep) hs.rows.push({ t: rep, st: 'soft', ind: 1 });
+      }
+      if (n.children.length) {
+        hs.rows.push({ lead: 'Made of', t: '' });
+        n.children.forEach(function (c) { hs.rows.push({ t: c.name, go: c.id, ind: 1 }); });
+      }
+      M.edges.forEach(function (e) {
+        if (!has(e, L) || (e.from !== n.id && e.to !== n.id)) return;
+        var other = S.tree.all[e.from === n.id ? e.to : e.from]; if (!other) return;
+        var kind = e.kind === 'train' ? (e.from === n.id ? 'Trains for' : 'Trained by') : e.kind === 'cross' ? (e.from === n.id ? 'Crosses to' : 'Crossed to from') : (e.from === n.id ? 'Feeds' : 'Fed by');
+        var ho = handoff(e.handoff);
+        hs.rows.push({ lead: kind, t: other.name, go: other.id });
+        hs.rows.push({ t: e.why + (ho ? ' Hand-off: ' + ho.name.toLowerCase() + '.' : ''), st: e.in === 'x' ? 'prop' : 'soft', ind: 1 });
+      });
+      if (n.holes.length) {
+        var ho2 = sec(S.layer === 'prop' ? 'Holes and what is proposed' : 'Holes');
+        n.holes.forEach(function (h) {
+          ho2.rows.push({ lead: '◆', t: h.q, leadSt: 'hole' });
+          if (S.layer === 'prop') ho2.rows.push({ lead: h.fill ? 'Proposed:' : '', t: h.fill || 'Still open.', st: h.fill ? 'prop' : 'hole', leadSt: 'prop', ind: 1 });
+        });
+      }
+      if (S.layer === 'prop') {
+        var mine = M.proposals.filter(function (p) { return p.touches.indexOf(n.id) >= 0; });
+        if (mine.length) { var pr = sec('Proposals that touch this'); mine.forEach(function (p) { pr.rows.push({ lead: p.id + ' ' + p.title + '.', t: p.what, leadSt: 'prop' }); }); }
+      }
+      if (N.state === 'on') {
+        var ns = sec('Notes and suggestions'), nlist = notesFor(n);
+        nlist.forEach(function (x) {
+          var v = verdictWords(N.verdicts[x.id]);
+          ns.rows.push({ lead: (x.kind === 'suggest' ? 'Suggestion' : 'Note') + ' · ' + who(x.by) + ' · ' + day(x.at), t: '', leadSt: x.kind === 'suggest' ? 'prop' : null });
+          ns.rows.push({ t: x.text, ind: 1 });
+          if (v) ns.rows.push({ t: v + '.', st: N.verdicts[x.id] === 'declined' ? 'soft' : 'prop', ind: 1 });
+        });
+        if (!nlist.length) ns.rows.push({ t: 'None yet.', st: 'soft' });
+        ns.rows.push({ t: '+ Add a note', act: function () { openComposer(n, 'note'); } });
+        ns.rows.push({ t: '+ Suggest a change', act: function () { openComposer(n, 'suggest'); } });
+      }
+      sec('At this tier, ask').rows.push({ t: T.ask });
+      if (n.src && n.src.length) { var ss = sec('Sources'); n.src.forEach(function (s) { ss.rows.push({ t: s, st: 'soft', brk: 1 }); }); }
+      return d;
+    }
+    function renderSr() {
+      var d = infoDoc(cur()), t = [d.name, d.kicker, d.is];
+      d.secs.forEach(function (s) { t.push(s.title + ': ' + s.rows.map(function (r) { return (r.lead ? r.lead + ' ' : '') + (r.t || ''); }).join(' ')); });
+      sr.textContent = t.join('. ');
+    }
+
+    // ---------- a loop's card: laid out in its own units, then scaled into its slot ----------
+    // One unit is one pixel at reading size. The card is as big as its text needs; the slot scales it down, so a
+    // loop with more to say is read by zooming further in, never by leaving the map.
+    var U = { PAD: 24, CW: 300, GAP: 16, NAME: 34 };
+    var F = { b: '600 14px "Chakra Petch", system-ui, sans-serif', p: '400 14px "Aldrich", system-ui, sans-serif', name: '400 34px "Aldrich", system-ui, sans-serif',
+      is: '400 16px "Aldrich", system-ui, sans-serif', kick: '600 12px "Chakra Petch", system-ui, sans-serif', sec: '600 11px "Chakra Petch", system-ui, sans-serif' };
+    function flow(lead, text, W, brk) {
+      var toks = [], lines = [], line = [], x = 0;
+      (lead || '').split(/\s+/).filter(Boolean).forEach(function (w) { toks.push({ w: w, b: 1 }); });
+      (brk ? ((text || '').match(/[^\/ ]+[\/ ]?|[\/ ]/g) || []) : (text || '').split(/\s+/)).filter(Boolean).forEach(function (w) { toks.push({ w: w, b: 0 }); });
+      toks.forEach(function (tk) {
+        ctx.font = tk.b ? F.b : F.p;
+        var ww = ctx.measureText(tk.w).width, sp = brk && !tk.b ? 0 : ctx.measureText(' ').width;
+        if (x > 0 && x + ww > W) { lines.push(line); line = []; x = 0; }
+        var last = line[line.length - 1];
+        if (last && last.b === tk.b) last.t += (brk && !tk.b ? '' : ' ') + tk.w; else line.push({ t: tk.w, b: tk.b, x: x });
+        x += ww + sp;
+      });
+      if (line.length) lines.push(line);
+      return lines;
+    }
+    function wrapPlain(text, font, W) {
+      ctx.font = font; var out = [], cur2 = '';
+      (text || '').split(/\s+/).filter(Boolean).forEach(function (w) {
+        var t = cur2 ? cur2 + ' ' + w : w;
+        if (cur2 && ctx.measureText(t).width > W) { out.push(cur2); cur2 = w; } else cur2 = t;
+      });
+      if (cur2) out.push(cur2); return out;
+    }
+    function infoLayout(n) {
+      var cols = S.w >= 1000 ? 3 : S.w >= 620 ? 2 : 1;
+      if (n._lay && n._lay.cols === cols && n._lay.filter === S.filter && n._lay.rev === N.rev) return n._lay;
+      var d = infoDoc(n), VW = U.PAD * 2 + cols * U.CW + (cols - 1) * U.GAP, y = U.PAD, head = [], inner = VW - U.PAD * 2;
+      head.push({ k: 'kick', t: d.kicker, y: y + 12 }); y += 26;
+      wrapPlain(d.name, F.name, inner).forEach(function (t) { head.push({ k: 'name', t: t, y: y + 30 }); y += 40; });
+      y += 6;
+      wrapPlain(d.is, F.is, Math.min(inner, 700)).forEach(function (t) { head.push({ k: 'is', t: t, y: y + 16 }); y += 23; });
+      d.notes.forEach(function (nt) {
+        y += 8;
+        wrapPlain(nt.t, F.b, Math.min(inner, 700) - 14).forEach(function (t, i) { head.push({ k: 'note', t: t, y: y + 15, st: nt.st, act: nt.act, first: i === 0 }); y += 20; });
+      });
+      y += 18;
+      var colY = [], secs = [], c;
+      for (c = 0; c < cols; c++) colY.push(y);
+      d.secs.forEach(function (sec) {
+        var ci = 0; for (c = 1; c < cols; c++) if (colY[c] < colY[ci] - 1) ci = c;
+        var x0 = U.PAD + ci * (U.CW + U.GAP), y0 = colY[ci], yy = y0 + 34, rows = [];
+        sec.rows.forEach(function (r) {
+          var ind = r.ind ? 14 : 0, lines = flow(r.lead, r.t, U.CW - 24 - ind, r.brk), h = Math.max(1, lines.length) * 20;
+          rows.push({ r: r, x: x0 + 12 + ind, y: yy, h: h, w: U.CW - 24 - ind, lines: lines }); yy += h + 6;
+        });
+        var hgt = yy - y0 + 8;
+        secs.push({ title: sec.title, x: x0, y: y0, w: U.CW, h: hgt, rows: rows }); colY[ci] = y0 + hgt + U.GAP;
+      });
+      var VH = Math.max.apply(null, colY) - U.GAP + U.PAD;
+      n._lay = { cols: cols, filter: S.filter, rev: N.rev, VW: VW, VH: VH, head: head, secs: secs, headH: y };
+      return n._lay;
+    }
+    // the card's rectangle in world units: the largest of its shape that fits its slot
+    function cardRect(n) {
+      var lay = infoLayout(n), I = n.info, phi = Math.atan2(lay.VH, lay.VW);
+      var hw = 0.94 * I.r * Math.cos(phi), hh = 0.94 * I.r * Math.sin(phi);
+      return { x: I.x - hw, y: I.y - hh, w: hw * 2, h: hh * 2, u: hw * 2 / lay.VW, lay: lay };
+    }
+    function stColor(st) { return st === 'soft' ? S.colors['text-soft'] : st === 'prop' ? S.colors.proposed : st === 'hole' ? S.colors.hole : st === 'plan' ? S.colors.planned : st === 'sel' ? S.colors.selection : S.colors.text; }
+    function sliver(x, y, w, h, c) {
+      ctx.beginPath(); ctx.moveTo(x + c, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + h - c); ctx.lineTo(x + w - c, y + h); ctx.lineTo(x, y + h); ctx.lineTo(x, y + c); ctx.closePath();
+    }
+    function paintInfo(n, col) {
+      var I = n.info, X = sx(I.x), Y = sy(I.y), Rp = I.r * S.cam.k;
+      if (Rp < 13) return;
+      if (X + Rp < 0 || X - Rp > S.w || Y + Rp < 0 || Y - Rp > S.h) return;
+      var cr = cardRect(n), lay = cr.lay, s = cr.u * S.cam.k, left = sx(cr.x), top = sy(cr.y), W = cr.w * S.cam.k, H = cr.h * S.cam.k;
+      var entry = { n: n, x: X - Rp, y: Y - Rp, w: Rp * 2, h: Rp * 2, regions: [] };
+      S.infoHits.push(entry);
+      if (s * U.NAME < 10) {
+        // too small to read: the name, and a mark that there is a card here to zoom into
+        if (W > 34 && n.children.length) { ctx.lineWidth = 1; ctx.strokeStyle = S.colors.line; sliver(left, top, W, H, Math.min(6, H / 3)); ctx.stroke(); }
+        var fs = Rp > 70 ? 15 : Rp > 36 ? 12 : 10;
+        var nm = fitText(n.name, Rp * 1.86, fs, 'label');
+        if (nm) label(nm, X, Y, fs, S.colors.text, 'label');
+        if (Rp > 46) { label(termOf(n).toUpperCase(), X, Y - 20, 10, col, 'label'); label(fmtSpan(n.t), X, Y + 18, 11, S.colors['text-soft'], 'read'); }
+        return;
+      }
+      entry.x = left; entry.y = top; entry.w = W; entry.h = H; entry.card = true;
+      var body = s * 14 >= 5.6;
+      ctx.save(); ctx.translate(left, top); ctx.scale(s, s);
+      ctx.lineWidth = 1 / s; ctx.lineJoin = 'miter';
+      sliver(0, 0, lay.VW, lay.VH, 14); ctx.fillStyle = S.colors['ground-deep']; ctx.fill(); ctx.strokeStyle = col; ctx.stroke();
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      lay.head.forEach(function (h) {
+        if (h.k === 'kick') { ctx.font = F.kick; ctx.fillStyle = col; ctx.fillText(h.t, U.PAD, h.y); }
+        else if (h.k === 'name') { ctx.font = F.name; ctx.fillStyle = S.colors.text; ctx.fillText(h.t, U.PAD, h.y); }
+        else if (h.k === 'is' && s * 16 >= 5.6) { ctx.font = F.is; ctx.fillStyle = S.colors.text; ctx.fillText(h.t, U.PAD, h.y); }
+        else if (h.k === 'note' && body) {
+          ctx.font = F.b; ctx.fillStyle = h.act ? S.colors.selection : stColor(h.st);
+          if (h.first) { ctx.fillRect(U.PAD, h.y - 12, 3, 16); }
+          ctx.fillText(h.t, U.PAD + 12, h.y);
+          if (h.act) { var tw = ctx.measureText(h.t).width; ctx.fillRect(U.PAD + 12, h.y + 3, tw, 1); entry.regions.push({ x: left + (U.PAD) * s, y: top + (h.y - 16) * s, w: (tw + 24) * s, h: 22 * s, act: h.act }); }
+        }
+      });
+      lay.secs.forEach(function (sec) {
+        var y1 = top + sec.y * s, y2 = y1 + sec.h * s, x1 = left + sec.x * s;
+        if (y2 < -20 || y1 > S.h + 20 || x1 > S.w + 20 || x1 + sec.w * s < -20) return;
+        ctx.fillStyle = S.colors.ground; ctx.fillRect(sec.x, sec.y, sec.w, sec.h);
+        ctx.strokeStyle = S.colors.line; ctx.strokeRect(sec.x, sec.y, sec.w, sec.h);
+        entry.regions.push({ x: x1, y: y1, w: sec.w * s, h: sec.h * s, sec: { x: cr.x + sec.x * cr.u, y: cr.y + sec.y * cr.u, w: sec.w * cr.u, h: sec.h * cr.u, u: cr.u } });
+        if (!body) return;
+        ctx.font = F.sec; ctx.fillStyle = S.colors['text-soft']; ctx.fillText(sec.title.toUpperCase(), sec.x + 12, sec.y + 21);
+        sec.rows.forEach(function (row) {
+          var ry = top + row.y * s; if (ry > S.h + 10 || ry + row.h * s < -10) return;
+          var r = row.r, link = !!(r.go || r.act);
+          row.lines.forEach(function (ln, li) {
+            ln.forEach(function (run) {
+              ctx.font = run.b ? F.b : F.p;
+              ctx.fillStyle = run.b ? (r.leadSt ? stColor(r.leadSt) : S.colors.text) : link ? S.colors.selection : stColor(r.st);
+              ctx.fillText(run.t, row.x + run.x, row.y + 15 + li * 20);
+              if (link && !run.b) ctx.fillRect(row.x + run.x, row.y + 18 + li * 20, ctx.measureText(run.t).width, 1);
+            });
+          });
+          if (link) entry.regions.push({ x: left + row.x * s, y: ry, w: row.w * s, h: row.h * s, go: r.go, act: r.act });
+        });
+      });
+      ctx.restore();
+      if (!body) {
+        // between the name and readable text: say what each box holds
+        lay.secs.forEach(function (sec) {
+          var w = sec.w * s, cx0 = left + (sec.x + sec.w / 2) * s, cy0 = top + (sec.y + sec.h / 2) * s;
+          if (cy0 < -10 || cy0 > S.h + 10) return;
+          ctx.font = font(10, 'label'); var t = sec.title.toUpperCase();
+          if (ctx.measureText(t).width < w - 8 && sec.h * s > 14) { ctx.fillStyle = S.colors['text-soft']; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, cx0, cy0); }
+        });
+      }
+    }
+
+    // ---------- painting ----------
+    function readColors() {
+      var cs = getComputedStyle(root), c = {};
+      ['ground', 'ground-deep', 'line', 'text', 'text-soft', 'text-off', 'selection', 'proposed', 'planned', 'hole', 'tier-0', 'tier-1', 'tier-2', 'tier-3', 'tier-4', 'tier-5', 'tier-6', 'tier-7'].forEach(function (k) {
+        c[k] = (cs.getPropertyValue('--' + k) || '').trim() || '#888';
+      });
+      S.colors = c;
+    }
+    function font(px, kind) { return (kind === 'read' ? '400 ' : '600 ') + px + 'px ' + (kind === 'read' ? '"Aldrich", system-ui, sans-serif' : '"Chakra Petch", system-ui, sans-serif'); }
+    function label(text, x, y, px, color, kind, align) {
+      ctx.font = font(px, kind); ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = S.colors.ground; ctx.strokeText(text, x, y);
+      ctx.fillStyle = color; ctx.fillText(text, x, y);
+    }
+    function fitText(text, maxW, px, kind) {
+      ctx.font = font(px, kind);
+      if (ctx.measureText(text).width <= maxW) return text;
+      var t = text; while (t.length > 3 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+      return t.length > 3 ? t + '…' : null;
+    }
+    function ringColor(n) {
+      if (S.L === 'x' && (n.propS === 'add' || (n.prop && n.prop.s === 'add'))) return S.colors.proposed;
+      if (S.L !== 'n' && n.inL && n.inL.indexOf('n') < 0 && n.inL.indexOf('p') >= 0) return S.colors.planned;
+      if (n.ghost) return S.colors.planned;
+      return S.colors['tier-' + n.tier];
+    }
+    function dimmed(n) { return S.filter ? !subtreeHas(n, S.filter) : false; }
+    function subtreeHas(n, d) {
+      if (n._fh && n._fh.d === d) return n._fh.v;
+      var v = n.drivers.indexOf(d) >= 0 || n.children.some(function (c) { return subtreeHas(c, d); });
+      n._fh = { d: d, v: v }; return v;
+    }
+    function paint() {
+      if (S.view !== 'map' || !S.w) return;
+      S.L = LETTER[S.layer];
+      ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
+      ctx.fillStyle = S.colors.ground; ctx.fillRect(0, 0, S.w, S.h);
+      S.hits = []; S.infoHits = [];
+      paintNode(S.tree.root, 1);
+      paintEdges();
+      var n = cur(); if (n) paintSelected(n);
+    }
+    function paintNode(n, alpha) {
+      var X = sx(n.x), Y = sy(n.y), R = n.r * S.cam.k;
+      if (R < 1.1) return;
+      if (X + R < -40 || X - R > S.w + 40 || Y + R < -40 || Y - R > S.h + 40) return;
+      var a = alpha * (n.ghost ? 0.6 : 1) * (dimmed(n) ? 0.22 : 1);
+      var col = ringColor(n);
+      n._s = { x: X, y: Y, r: R };
+      ctx.globalAlpha = a;
+      if (R < 5) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X, Y, Math.max(1.4, R * 0.7), 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1; return; }
+      S.hits.push(n);
+      var huge = R > (S.w + S.h) * 4;   // far inside this ring: its edge is nowhere near the view
+      var dark = S.L === 'n' && n.now && n.now.s === 'dark';
+      var ch = n.children, maxChild = 0, m = n.phases.length, j;
+      for (j = 0; j < ch.length; j++) maxChild = Math.max(maxChild, ch[j].r * S.cam.k);
+      if (!huge) {
+        ctx.beginPath(); ctx.arc(X, Y, R, 0, 6.2832);
+        ctx.fillStyle = n.depth % 2 ? S.colors['ground-deep'] : S.colors.ground; ctx.fill();
+        ctx.lineWidth = n.kind === 'place' || n.kind === 'hub' ? 2.5 : n.tier >= 4 ? 2 : 1.5;
+        ctx.strokeStyle = col;
+        if (n.ghost) ctx.setLineDash([2, 5]); else if (dark) ctx.setLineDash([9, 5]); else ctx.setLineDash([]);
+        ctx.stroke(); ctx.setLineDash([]);
+        if ((n.kind === 'place' || n.kind === 'hub') && R > 30) { ctx.beginPath(); ctx.arc(X, Y, R - 5, 0, 6.2832); ctx.lineWidth = 1; ctx.stroke(); }
+        if (n.lead && R > 12) { ctx.beginPath(); ctx.arc(X, Y, R + 4, 0, 6.2832); ctx.lineWidth = 1; ctx.strokeStyle = S.colors.text; ctx.stroke(); }
+        // beads
+        if (m && R > 22) {
+          for (var i = 0; i < m; i++) {
+            var th = phaseAngle(n, i), bx = X + Math.cos(th) * R, by = Y + Math.sin(th) * R, bs = R > 110 ? 5 : 3;
+            if (bx < -10 || bx > S.w + 10 || by < -10 || by > S.h + 10) continue;
+            ctx.fillStyle = col; ctx.save(); ctx.translate(bx, by); ctx.rotate(Math.PI / 4); ctx.fillRect(-bs, -bs, bs * 2, bs * 2); ctx.restore();
+            if (R > 60) {
+              var tm = th + Math.PI / m, cx0 = X + Math.cos(tm) * R, cy0 = Y + Math.sin(tm) * R;
+              ctx.save(); ctx.translate(cx0, cy0); ctx.rotate(tm + Math.PI / 2); ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+              ctx.beginPath(); ctx.moveTo(-4, -4); ctx.lineTo(1, 0); ctx.lineTo(-4, 4); ctx.stroke(); ctx.restore();
+            }
+          }
+        }
+        // spokes from a step to the loop it opens
+        if (m && (R > 260 || (n.id === S.sel && R > 90))) {
+          ctx.strokeStyle = S.colors.line; ctx.lineWidth = 1;
+          ch.forEach(function (c) {
+            if (c.at == null || c.core) return;
+            var th = phaseAngle(n, c.at), bx = X + Math.cos(th) * R, by = Y + Math.sin(th) * R;
+            var cx1 = sx(c.x), cy1 = sy(c.y), cr = c.r * S.cam.k, dx = cx1 - bx, dy = cy1 - by, d = Math.sqrt(dx * dx + dy * dy);
+            if (d <= cr) return;
+            ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(cx1 - dx / d * cr, cy1 - dy / d * cr); ctx.stroke();
+          });
+        }
+      }
+      // a ring shows either its name, or its insides with its card among them
+      var showKids = maxChild >= 16;
+      if (ch.length && !showKids) {
+        if (R > 30) { ctx.beginPath(); ctx.arc(X, Y, R * 0.84, 0, 6.2832); ctx.lineWidth = 1; ctx.strokeStyle = S.colors.line; ctx.setLineDash([1, 4]); ctx.stroke(); ctx.setLineDash([]); }
+        if (R >= 18) {
+          var fs = R > 70 ? 15 : R > 36 ? 12 : 10;
+          var nm = fitText(n.name, R * 1.7, fs, 'label');
+          if (nm) label(nm, X, Y, fs, S.colors.text, 'label');
+          if (R > 46) { label(termOf(n).toUpperCase(), X, Y - 20, 10, col, 'label'); label(fmtSpan(n.t), X, Y + 18, 11, S.colors['text-soft'], 'read'); }
+        }
+      } else paintInfo(n, col);
+      // badges
+      if (R > 16 && !huge) {
+        var cnt = showKids || !ch.length ? openHoles(n, S.L) : n.holeSum;
+        if (cnt > 0) badge(X + Math.cos(-0.82) * R, Y + Math.sin(-0.82) * R, String(cnt), S.colors.hole, R > 30);
+        var nc = N.state === 'on' ? (showKids || !ch.length ? n.noteOwn : n.noteSum) : 0;
+        if (nc > 0) noteBadge(X + Math.cos(2.3) * R, Y + Math.sin(2.3) * R, String(nc), R > 30);
+        if (n.parent && n.reps && R > 34) tag(X + Math.cos(0.82) * R, Y + Math.sin(0.82) * R, '×' + n.reps.replace('-', '–'), S.colors.text);
+        var ps = S.L === 'x' ? (n.propS || (n.prop && n.prop.s)) : null, tx1 = X + Math.cos(-2.3) * R, ty1 = Y + Math.sin(-2.3) * R;
+        if (ps === 'add' && R > 26) tag(tx1, ty1, 'NEW', S.colors.proposed);
+        else if (ps && R > 110) tag(tx1, ty1, 'CHANGED', S.colors.proposed);
+        else if (ps && R > 20) badge(tx1, ty1, '', S.colors.proposed, false);
+        else if (n.ghost && R > 26) tag(tx1, ty1, 'PLANNED', S.colors.planned);
+        else if (dark && R > 26) tag(tx1, ty1, 'OFF', S.colors['text-soft']);
+        else if (S.L === 'n' && n.now && n.now.s === 'signed' && R > 26) tag(tx1, ty1, 'SIGNED', S.colors.text);
+      }
+      ctx.globalAlpha = 1;
+      if (showKids) for (var q = 0; q < ch.length; q++) paintNode(ch[q], alpha * (n.ghost ? 0.6 : 1));
+      else ch.forEach(function clear(c) { c._s = null; c.children.forEach(clear); });
+    }
+    function badge(x, y, t, color, withText) {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4);
+      var s = withText ? 8 : 4; ctx.fillStyle = color; ctx.fillRect(-s, -s, s * 2, s * 2);
+      ctx.strokeStyle = S.colors.ground; ctx.lineWidth = 1.5; ctx.strokeRect(-s, -s, s * 2, s * 2); ctx.restore();
+      if (withText) { ctx.font = font(10, 'label'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = S.colors.ground; ctx.fillText(t, x, y + 0.5); }
+    }
+    function noteBadge(x, y, t, withText) {
+      var s = withText ? 8 : 4; ctx.fillStyle = S.colors.selection; ctx.fillRect(x - s, y - s, s * 2, s * 2);
+      ctx.strokeStyle = S.colors.ground; ctx.lineWidth = 1.5; ctx.strokeRect(x - s, y - s, s * 2, s * 2);
+      if (withText) { ctx.font = font(10, 'label'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = S.colors.ground; ctx.fillText(t, x, y + 0.5); }
+    }
+    function tag(x, y, t, color) {
+      ctx.font = font(9, 'label'); var w = ctx.measureText(t).width + 8;
+      ctx.fillStyle = S.colors.ground; ctx.fillRect(x - w / 2, y - 7, w, 14);
+      ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.strokeRect(x - w / 2 + 0.5, y - 6.5, w - 1, 13);
+      ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y + 0.5);
+    }
+    function paintSelected(n) {
+      if (!n._s) return;
+      var X = sx(n.x), Y = sy(n.y), R = n.r * S.cam.k;
+      if (R < 5 || R > (S.w + S.h) * 4 || X + R < 0 || X - R > S.w || Y + R < 0 || Y - R > S.h) return;
+      ctx.beginPath(); ctx.arc(X, Y, R + 3, 0, 6.2832); ctx.lineWidth = 2.5; ctx.strokeStyle = S.colors.selection; ctx.stroke();
+      var m = n.phases.length;
+      if (m && R > 70 && R < Math.max(S.w, S.h)) {
+        for (var i = 0; i < m; i++) {
+          var th = phaseAngle(n, i), c = Math.cos(th), s = Math.sin(th);
+          var bx = X + c * R, by = Y + s * R;
+          var txt = (i + 1) + '  ' + n.phases[i].n, al = Math.abs(c) < 0.3 ? 'center' : c > 0 ? 'left' : 'right';
+          var px = bx + c * 14, py = by + s * 14 + (Math.abs(c) < 0.3 ? (s < 0 ? -4 : 4) : 0);
+          var f = fitText(txt, Math.max(60, Math.min(240, S.w - 16)), 12, 'label');
+          if (f) {
+            ctx.font = font(12, 'label'); var fw = ctx.measureText(f).width;
+            var lo = al === 'left' ? px : al === 'right' ? px - fw : px - fw / 2;
+            var shift = lo < 6 ? 6 - lo : lo + fw > S.w - 6 ? S.w - 6 - lo - fw : 0;
+            label(f, px + shift, py, 12, n.feelAt === i ? S.colors.proposed : S.colors.text, 'label', al);
+          }
+        }
+      }
+    }
+    function paintEdges() {
+      var sel = S.sel;
+      M.edges.forEach(function (e) {
+        if (!has(e, S.L)) return;
+        var a = S.tree.all[e.from], b = S.tree.all[e.to];
+        if (!a || !b || !a._s || !b._s) return;
+        var A = { x: sx(a.x), y: sy(a.y), r: a.r * S.cam.k }, B = { x: sx(b.x), y: sy(b.y), r: b.r * S.cam.k };
+        var lim = Math.min(S.w, S.h);
+        if (A.r < 4 || B.r < 4 || Math.max(A.r, B.r) < 16 || A.r > lim * 1.4 || B.r > lim * 1.4) return;
+        var on = sel === e.from || sel === e.to;
+        var dx = B.x - A.x, dy = B.y - A.y, d = Math.sqrt(dx * dx + dy * dy); if (d < A.r + B.r + 6) return;
+        var ux = dx / d, uy = dy / d;
+        var x1 = A.x + ux * (A.r + 3), y1 = A.y + uy * (A.r + 3), x2 = B.x - ux * (B.r + 6), y2 = B.y - uy * (B.r + 6);
+        var mx = (x1 + x2) / 2 - uy * d * 0.12, my = (y1 + y2) / 2 + ux * d * 0.12;
+        var col = e.in === 'x' ? S.colors.proposed : on ? S.colors.selection : S.colors['text-soft'];
+        ctx.globalAlpha = on ? 1 : 0.7; ctx.strokeStyle = col; ctx.lineWidth = on ? 2 : 1.25;
+        ctx.setLineDash(e.kind === 'cross' ? [7, 4] : e.kind === 'feed' ? [2, 4] : []);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(mx, my, x2, y2); ctx.stroke(); ctx.setLineDash([]);
+        var ang = Math.atan2(y2 - my, x2 - mx);
+        ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x2 + Math.cos(ang) * 6, y2 + Math.sin(ang) * 6);
+        ctx.lineTo(x2 + Math.cos(ang + 2.5) * 6, y2 + Math.sin(ang + 2.5) * 6); ctx.lineTo(x2 + Math.cos(ang - 2.5) * 6, y2 + Math.sin(ang - 2.5) * 6); ctx.fill();
+        ctx.globalAlpha = 1;
+        if (on && d > 90) {
+          var qx = (x1 + 2 * mx + x2) / 4, qy = (y1 + 2 * my + y2) / 4;
+          label(e.kind === 'train' ? 'trains for' : e.kind === 'cross' ? 'crossing' : 'feeds', qx, qy, 11, col, 'label');
+        }
+      });
+    }
+
+    // ---------- pointer and keys ----------
+    function inRect(r, px, py) { return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h; }
+    function hit(px, py) {
+      var best = null, i, j;
+      (S.hits || []).forEach(function (n) {
+        var s = n._s; if (!s || s.r < 7) return;
+        var dx = px - s.x, dy = py - s.y;
+        if (dx * dx + dy * dy <= s.r * s.r && (!best || n.depth >= best.depth)) best = n;
+      });
+      for (i = (S.infoHits || []).length - 1; i >= 0; i--) {
+        var e = S.infoHits[i];
+        if (e.n !== best || !inRect(e, px, py)) continue;
+        var reg = null;
+        for (j = e.regions.length - 1; j >= 0; j--) if (inRect(e.regions[j], px, py)) { reg = e.regions[j]; break; }
+        return { n: e.n, info: e, region: reg };
+      }
+      return best ? { n: best } : null;
+    }
+    var ptrs = {}, drag = null;
+    cv.addEventListener('pointerdown', function (e) {
+      cv.setPointerCapture(e.pointerId); ptrs[e.pointerId] = { x: e.offsetX, y: e.offsetY };
+      var ids = Object.keys(ptrs);
+      if (ids.length === 1) drag = { x: e.offsetX, y: e.offsetY, cx: S.cam.x, cy: S.cam.y, moved: false };
+      else if (ids.length === 2) { var a = ptrs[ids[0]], b = ptrs[ids[1]]; drag = { pinch: Math.hypot(a.x - b.x, a.y - b.y), k: S.cam.k, moved: true }; }
+      S.anim = null;
+    });
+    cv.addEventListener('pointermove', function (e) {
+      if (!ptrs[e.pointerId]) { var h = hit(e.offsetX, e.offsetY); cv.style.cursor = h ? 'pointer' : 'grab'; return; }
+      ptrs[e.pointerId] = { x: e.offsetX, y: e.offsetY };
+      var ids = Object.keys(ptrs);
+      if (drag && drag.pinch && ids.length === 2) {
+        var a = ptrs[ids[0]], b = ptrs[ids[1]], dist = Math.hypot(a.x - b.x, a.y - b.y);
+        zoomBy((drag.k * dist / drag.pinch) / S.cam.k, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      } else if (drag && !drag.pinch) {
+        var dx = e.offsetX - drag.x, dy = e.offsetY - drag.y;
+        if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
+        if (drag.moved) { S.cam.x = drag.cx - dx / S.cam.k; S.cam.y = drag.cy - dy / S.cam.k; draw(); }
+      }
+    });
+    function up(e) {
+      var was = drag; delete ptrs[e.pointerId];
+      if (!Object.keys(ptrs).length) drag = null;
+      if (!was || was.moved || was.pinch) return;
+      var h = hit(e.offsetX, e.offsetY);
+      if (!h) { select('era', true); return; }
+      if (h.region && h.region.act) { h.region.act(); return; }
+      if (h.region && h.region.go) { select(h.region.go, true); return; }
+      if (h.info) {
+        S.sel = h.n.id; renderCrumbs(); renderScale(); renderSr();
+        var unit = cardRect(h.n).u * S.cam.k;
+        // a card that is open but still small print: a click on one of its boxes brings that box up to reading size
+        if (h.info.card && h.region && h.region.sec && unit * 14 >= 5.6 && unit * 14 < 11.5) { S.onInfo = true; focusRect(h.region.sec, true); }
+        else if (unit * 14 < 11.5) focusInfo(h.n, true);
+        else draw();
+        return;
+      }
+      select(h.n.id, true);
+    }
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', function (e) { delete ptrs[e.pointerId]; drag = null; });
+    cv.addEventListener('wheel', function (e) { e.preventDefault(); zoomBy(Math.exp(-e.deltaY * 0.0016), e.offsetX, e.offsetY); }, { passive: false });
+    cv.addEventListener('keydown', function (e) {
+      var n = cur(), p = n.parent, i;
+      if (e.key === 'ArrowUp' || e.key === 'Escape' || e.key === 'Backspace') { if (S.onInfo && n.children.length) focus(n, true); else if (p) select(p.id, true); }
+      else if (e.key === 'ArrowDown' || e.key === 'Enter') { if (n.children.length) select(n.children[0].id, true); else focusInfo(n, true); }
+      else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        if (!p) return; i = p.children.indexOf(n); var k = p.children.length;
+        select(p.children[(i + (e.key === 'ArrowRight' ? 1 : k - 1)) % k].id, true);
+      }
+      else if (e.key === 'i' || e.key === ' ') focusInfo(n, true);
+      else if (e.key === 'n' && N.db) openComposer(n, 'note');
+      else if (e.key === '+' || e.key === '=') zoomBy(1.5);
+      else if (e.key === '-') zoomBy(1 / 1.5);
+      else if (e.key === 'Home' || e.key === '0') select('era', true);
+      else return;
+      e.preventDefault();
+    });
+
+    // ---------- crumbs ----------
+    function renderCrumbs() {
+      crumbs.innerHTML = '';
+      var path = [], n = cur(); while (n) { path.unshift(n); n = n.parent; }
+      path.forEach(function (p, i) {
+        if (i) crumbs.appendChild(el('span', 'la-sep', '›'));
+        var b = el('button', 'la-crumb', p.name); b.type = 'button';
+        if (i === path.length - 1) b.setAttribute('aria-current', 'true');
+        b.addEventListener('click', function () { if (S.view !== 'map') setView('map'); select(p.id, true); });
+        crumbs.appendChild(b);
+      });
+    }
+
+    // ---------- timescale strip ----------
+    function renderScale() {
+      scale.innerHTML = '';
+      var n = cur();
+      var axis = el('div', 'la-axis'); scale.appendChild(axis);
+      M.tiers.forEach(function (t) {
+        var b = el('div', 'la-tierbar' + (t.id === n.tier ? ' on' : ''));
+        b.style.left = (tx(t.span[0]) * 100) + '%'; b.style.width = ((tx(t.span[1]) - tx(t.span[0])) * 100) + '%';
+        b.style.top = (t.id % 2 ? 16 : 0) + 'px'; b.style.setProperty('--c', 'var(--tier-' + t.id + ')');
+        b.appendChild(el('span', null, t.term)); b.title = t.term + ': ' + fmtSpan(t.span) + '. ' + t.is;
+        axis.appendChild(b);
+      });
+      var me = el('div', 'la-me'); me.style.left = (tx(n.t[0]) * 100) + '%'; me.style.width = Math.max(0.6, (tx(n.t[1]) - tx(n.t[0])) * 100) + '%';
+      axis.appendChild(me);
+      var ticks = el('div', 'la-ticks'); scale.appendChild(ticks);
+      [[1, '1 s'], [10, '10 s'], [60, '1 min'], [600, '10 min'], [3600, '1 h'], [86400, '1 day'], [604800, '1 wk'], [2592000, '1 mo'], [15552000, '6 mo']].forEach(function (k) {
+        var t = el('span', null, k[1]); t.style.left = (tx(k[0]) * 100) + '%'; ticks.appendChild(t);
+      });
+    }
+
+    function renderLegend() {
+      legend.innerHTML = '';
+      function item(cls, text) { var i = el('span', 'la-lg'); i.appendChild(el('i', cls)); i.appendChild(document.createTextNode(text)); legend.appendChild(i); }
+      item('lg-ring', 'a loop, holding the faster loops it is made of');
+      item('lg-card', 'its card: zoom in to read');
+      item('lg-bead', 'a step');
+      item('lg-hole', 'holes');
+      if (N.state === 'on') item('lg-note', 'notes');
+      if (S.layer === 'now') item('lg-ghost', 'planned, not in the game');
+      if (S.layer !== 'now') item('lg-plan', 'new in the plan');
+      if (S.layer === 'prop') item('lg-prop', 'proposed');
+      item('lg-cross', 'crossing');
+      item('lg-feed', 'feeds');
+    }
+
+    // ---------- list views ----------
+    function flat() {
+      var out = [], seenKit = false;
+      (function walk(n) {
+        if (n.kind === 'kit') { if (seenKit) return; seenKit = true; }
+        if (n.kind === 'vessel') return;
+        out.push(n);
+        n.children.forEach(walk);
+      })(S.tree.root);
+      return out;
+    }
+    // a row opens that loop on the map; toCard goes straight to its card
+    function rowBtn(n, cls, toCard) {
+      var b = el('button', 'la-row ' + (cls || '')); b.type = 'button'; b.setAttribute('data-id', n.id);
+      b.addEventListener('click', function () {
+        S.view = 'map'; syncBar(); renderAll(); resize(); S.sel = n.id; renderCrumbs(); renderScale(); renderSr();
+        if (toCard || !n.children.length) focusInfo(n, false); else focus(n, false);
+      });
+      return b;
+    }
+    function goBtn(n) { var b = rowBtn(n, 'la-link', true); b.className = 'la-link'; b.textContent = n.name; return b; }
+    function renderTable() {
+      table.innerHTML = '';
+      if (S.view === 'ladder') renderLadder(); else if (S.view === 'drivers') renderDrivers(); else if (S.view === 'holes') renderHoles(); else if (S.view === 'notes') renderNotes();
+    }
+    function renderNotes() {
+      if (N.state !== 'on') { table.appendChild(el('p', 'la-lede', N.state === 'loading' ? 'Loading notes.' : 'Notes are kept on the full-page map.')); return; }
+      var canEdit = !!(N.me && N.me.canEdit), myId = N.me && N.me.id;
+      table.appendChild(el('p', 'la-lede', 'Everything the team has written on the map. A note is something a reader should know; a suggestion asks for a change to the model. ' +
+        (canEdit ? 'You can accept or decline a suggestion. Accepted ones are folded into the model by a Claude session, which then marks them as in the model.' : 'People who can edit this page accept or decline suggestions.') +
+        ' To write one, open a loop’s card on the map, or pick the loop and press Note.'));
+      if (!N.list.length) { table.appendChild(el('p', 'la-empty', 'Nothing has been written yet.')); return; }
+      var groups = [['Suggestions waiting for an answer', function (x) { return x.kind === 'suggest' && !N.verdicts[x.id]; }],
+        ['Accepted, not yet in the model', function (x) { return N.verdicts[x.id] === 'accepted'; }],
+        ['Notes', function (x) { return x.kind === 'note' && !N.verdicts[x.id]; }],
+        ['Settled', function (x) { return N.verdicts[x.id] === 'declined' || N.verdicts[x.id] === 'done'; }]];
+      groups.forEach(function (g) {
+        var mine = N.list.filter(g[1]); if (!mine.length) return;
+        table.appendChild(el('h4', 'la-h', g[0] + ' (' + mine.length + ')'));
+        mine.slice().reverse().forEach(function (x) {
+          var d = el('div', 'la-note' + (x.kind === 'suggest' ? ' sug' : '')), v = N.verdicts[x.id];
+          var head = el('p', 'la-nhead'); d.appendChild(head);
+          var go = el('button', 'la-link', x.name || x.loop); go.type = 'button'; go.addEventListener('click', function () { goNote(x); }); head.appendChild(go);
+          head.appendChild(el('span', 'la-nmeta', (x.kind === 'suggest' ? 'Suggestion' : 'Note') + ' · ' + who(x.by) + ' · ' + day(x.at) + (v ? ' · ' + verdictWords(v) : '')));
+          d.appendChild(el('p', 'la-ntext', x.text));
+          var acts = el('div', 'la-nacts'); d.appendChild(acts);
+          function act(label, fn) { var b = el('button', 'la-btn', label); b.type = 'button'; b.addEventListener('click', fn); acts.appendChild(b); }
+          if (canEdit && x.kind === 'suggest' && !v) { act('Accept', function () { setVerdict(x.id, 'accepted'); }); act('Decline', function () { setVerdict(x.id, 'declined'); }); }
+          if (canEdit && v) act('Reopen', function () { setVerdict(x.id, null); });
+          if (canEdit || (myId && x.by === myId)) act('Delete', function () { deleteNote(x.id); });
+          table.appendChild(d);
+        });
+      });
+    }
+    function renderLadder() {
+      var nodes = flat();
+      table.appendChild(el('p', 'la-lede', 'Every loop on one clock, slowest at the top. A bar is how long one pass takes; the number is how many passes before the loop above takes its next step. Kit rows show the ' + M.fleet[S.vessel].label + '. Pick a row to open that loop on the map.'));
+      var ax = el('div', 'la-lticks');
+      [[1, '1 s'], [60, '1 min'], [3600, '1 h'], [86400, '1 d'], [2592000, '1 mo']].forEach(function (k) { var t = el('span', null, k[1]); t.style.left = (tx(k[0]) * 100) + '%'; ax.appendChild(t); });
+      var axRow = el('div', 'la-lrow la-lhead'); axRow.appendChild(el('span', 'la-lname', '')); var axc = el('span', 'la-lbar'); axc.appendChild(ax); axRow.appendChild(axc); axRow.appendChild(el('span', 'la-lrep', 'passes')); table.appendChild(axRow);
+      for (var t = 7; t >= 0; t--) {
+        var T = M.tiers[t], mine = nodes.filter(function (n) { return n.tier === t; });
+        if (!mine.length) continue;
+        var h = el('div', 'la-thead'); h.style.setProperty('--c', 'var(--tier-' + t + ')');
+        h.appendChild(el('b', null, T.term)); h.appendChild(el('span', null, fmtSpan(T.span))); h.appendChild(el('em', null, T.is)); table.appendChild(h);
+        mine.forEach(function (n) {
+          if (S.filter && n.drivers.indexOf(S.filter) < 0) return;
+          var b = rowBtn(n, 'la-lrow' + (n.ghost ? ' ghost' : ''));
+          b.appendChild(el('span', 'la-lname', n.name));
+          var bar2 = el('span', 'la-lbar'), fill = el('i');
+          fill.style.left = (tx(n.t[0]) * 100) + '%'; fill.style.width = Math.max(0.8, (tx(n.t[1]) - tx(n.t[0])) * 100) + '%';
+          fill.style.setProperty('--c', n.ghost ? 'var(--planned)' : (S.layer === 'prop' && (n.propS === 'add' || (n.prop && n.prop.s === 'add'))) ? 'var(--proposed)' : 'var(--tier-' + t + ')');
+          bar2.appendChild(fill); b.appendChild(bar2);
+          b.appendChild(el('span', 'la-lrep', n.reps ? '×' + n.reps.replace('-', '–') : n.parent ? '?' : ''));
+          b.title = n.name + ': ' + fmtSpan(n.t) + (n.parent ? '. Steps up to ' + n.parent.name : '');
+          table.appendChild(b);
+        });
+      }
+    }
+    function renderDrivers() {
+      var nodes = flat();
+      table.appendChild(el('p', 'la-lede', 'Where each driver works. A cell counts the loops at that tier that the driver keeps a player in. An empty cell is a tier where that driver does nothing yet. Pick a driver to list its loops and to light them on the map.'));
+      var g = el('div', 'la-grid'); table.appendChild(g);
+      g.appendChild(el('span', 'la-gh', ''));
+      M.tiers.forEach(function (T) { g.appendChild(el('span', 'la-gh', T.term)); });
+      M.drivers.forEach(function (d) {
+        var rb = el('button', 'la-gname' + (S.filter === d.id ? ' on' : ''), d.name); rb.type = 'button'; rb.title = d.is;
+        rb.addEventListener('click', function () { S.filter = S.filter === d.id ? null : d.id; fSel.value = S.filter || ''; renderTable(); });
+        g.appendChild(rb);
+        M.tiers.forEach(function (T) {
+          var c = nodes.filter(function (n) { return n.tier === T.id && n.drivers.indexOf(d.id) >= 0; }).length;
+          var cell = el('span', 'la-gc' + (c ? '' : ' zero'), c ? String(c) : '·'); cell.style.setProperty('--a', String(Math.min(1, c / 6)));
+          g.appendChild(cell);
+        });
+      });
+      if (S.filter) {
+        var d = driver(S.filter);
+        table.appendChild(el('h4', 'la-h', 'Loops that ' + d.name.toLowerCase() + ' drives'));
+        table.appendChild(el('p', 'la-lede', d.is));
+        nodes.filter(function (n) { return n.drivers.indexOf(S.filter) >= 0; }).sort(function (a, b) { return b.tier - a.tier; }).forEach(function (n) {
+          var b = rowBtn(n, 'la-line'); b.appendChild(el('span', 'la-ltier', termOf(n))); b.appendChild(el('span', null, n.name)); table.appendChild(b);
+        });
+      }
+      table.appendChild(el('h4', 'la-h', 'Hand-offs: what moves a player out of one loop and into another'));
+      var L = LETTER[S.layer];
+      M.edges.forEach(function (e) {
+        if (!has(e, L)) return;
+        var a = S.tree.all[e.from], b2 = S.tree.all[e.to]; if (!a || !b2) return;
+        var b = rowBtn(a, 'la-line' + (e.in === 'x' ? ' prop' : ''), true);
+        b.appendChild(el('span', 'la-ltier', e.kind === 'train' ? 'trains' : e.kind === 'cross' ? 'crossing' : 'feeds'));
+        var ho = handoff(e.handoff);
+        b.appendChild(el('span', null, a.name + ' → ' + b2.name + ': ' + e.why + (ho ? ' (' + ho.name.toLowerCase() + ')' : '')));
+        table.appendChild(b);
+      });
+    }
+    function renderHoles() {
+      var nodes = flat(), L = LETTER[S.layer], total = 0, open = 0;
+      nodes.forEach(function (n) { total += n.holes.length; open += openHoles(n, L); });
+      var lede = S.layer === 'now' ? total + ' holes in what the game has today: loops that are missing, switched off, unplayed or uncounted.'
+        : S.layer === 'plan' ? total + ' holes in the plan: things the stabilised version needs that no decision covers yet.'
+        : total + ' holes in the plan, ' + (total - open) + ' filled here with an invention and ' + open + ' still open. Every fill is a proposal to accept, change or throw out.';
+      table.appendChild(el('p', 'la-lede', lede + ' Kit rows show the ' + M.fleet[S.vessel].label + '. Pick a row to open that loop’s card.'));
+      if (S.layer === 'prop') {
+        table.appendChild(el('h4', 'la-h', 'The twelve proposals'));
+        M.proposals.forEach(function (p) {
+          var d = el('div', 'la-hole prop'); var h = el('p'); h.appendChild(el('b', null, p.id + '  ' + p.title)); d.appendChild(h); d.appendChild(el('p', null, p.what));
+          var t = el('p', 'la-touch'); p.touches.forEach(function (id) { var n = S.tree.all[id]; if (n) { t.appendChild(goBtn(n)); t.appendChild(document.createTextNode('  ')); } }); d.appendChild(t);
+          table.appendChild(d);
+        });
+        table.appendChild(el('h4', 'la-h', 'Hole by hole'));
+      }
+      for (var t = 7; t >= 0; t--) {
+        var mine = nodes.filter(function (n) { return n.tier === t && n.holes.length; });
+        if (!mine.length) continue;
+        var h = el('div', 'la-thead'); h.style.setProperty('--c', 'var(--tier-' + t + ')'); h.appendChild(el('b', null, M.tiers[t].term)); h.appendChild(el('em', null, M.tiers[t].ask)); table.appendChild(h);
+        mine.forEach(function (n) {
+          n.holes.forEach(function (ho) {
+            var b = rowBtn(n, 'la-hrow', true); b.appendChild(el('span', 'la-hn', n.name)); b.appendChild(el('span', 'la-hq', ho.q));
+            if (S.layer === 'prop') b.appendChild(el('span', ho.fill ? 'la-fill' : 'la-open', ho.fill || 'Still open.'));
+            table.appendChild(b);
+          });
+        });
+      }
+    }
+
+    // ---------- size ----------
+    function resize() {
+      root.classList.toggle('la-narrow', root.clientWidth < 720);
+      var w = wrap.clientWidth, h = wrap.clientHeight; if (!w || !h) return;
+      var first = !S.w, k0 = S.w ? fitK(S.tree.root) : 0;
+      S.dpr = Math.min(2, window.devicePixelRatio || 1); S.w = w; S.h = h;
+      cv.width = Math.round(w * S.dpr); cv.height = Math.round(h * S.dpr); cv.style.width = w + 'px'; cv.style.height = h + 'px';
+      if (first) { if (opts.card) focusInfo(cur(), false); else focus(cur(), false); } else { S.cam.k *= fitK(S.tree.root) / k0; draw(); }
+    }
+    if (window.ResizeObserver) new ResizeObserver(resize).observe(root); else window.addEventListener('resize', resize);
+    if (window.MutationObserver) new MutationObserver(function () { readColors(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+    if (window.matchMedia) { var mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', function () { readColors(); draw(); }); }
+
+    rebuild(); readColors(); syncBar(); renderAll(); resize(); connectNotes();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { Object.keys(S.tree.all).forEach(function (id) { S.tree.all[id]._lay = null; }); readColors(); draw(); });
+    return { select: select, focusInfo: function (id) { var n = S.tree.all[id]; if (n) { S.sel = id; renderCrumbs(); renderScale(); focusInfo(n, false); } }, setLayer: setLayer, setVessel: setVessel, setView: setView, state: S };
+  }
+
+  // ---------- small standalone pieces for the component previews ----------
+  function ladder(host) {
+    host.innerHTML = '';
+    var w = el('div', 'la la-static'); host.appendChild(w);
+    var g = el('div', 'la-terms'); w.appendChild(g);
+    for (var t = 7; t >= 0; t--) {
+      var T = M.tiers[t], r = el('div', 'la-term'); r.style.setProperty('--c', 'var(--tier-' + t + ')');
+      r.appendChild(el('b', null, T.term)); r.appendChild(el('span', 'la-tspan', fmtSpan(T.span)));
+      var bar = el('span', 'la-lbar'), f = el('i'); f.style.left = (tx(T.span[0]) * 100) + '%'; f.style.width = ((tx(T.span[1]) - tx(T.span[0])) * 100) + '%'; bar.appendChild(f); r.appendChild(bar);
+      r.appendChild(el('span', 'la-tis', T.is)); r.appendChild(el('em', null, T.ask));
+      g.appendChild(r);
+    }
+  }
+  function drivers(host) {
+    host.innerHTML = '';
+    var w = el('div', 'la la-static'); host.appendChild(w);
+    [['inner', 'Inner drivers: the loop is its own reason'], ['outer', 'Outer drivers: the game gives the reason'], ['handoff', 'Hand-offs: what moves a player out of a loop']].forEach(function (k) {
+      w.appendChild(el('h4', 'la-h', k[1]));
+      var g = el('div', 'la-dlist'); w.appendChild(g);
+      (k[0] === 'handoff' ? M.handoffs : M.drivers.filter(function (d) { return d.kind === k[0]; })).forEach(function (d) {
+        var r = el('div', 'la-ditem'); r.appendChild(el('span', 'la-chip la-drv', d.name)); r.appendChild(el('span', null, d.is)); g.appendChild(r);
+      });
+    });
+  }
+
+  window.LoopAtlas = {
+    model: M, mount: mount, buildTree: buildTree, fmtSpan: fmtSpan,
+    LoopAtlas: mount, TimescaleLadder: ladder, DriverChips: drivers,
+    LoopRing: function (host, opts) { opts = opts || {}; opts.chrome = false; return mount(host, opts); }
+  };
+})();
+</script>
+<script>
+LoopAtlas.mount(document.getElementById('root'), {});
+</script>
+
+</body></html>

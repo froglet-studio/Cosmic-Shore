@@ -1,0 +1,79 @@
+# Loop Atlas model: vessel Angler. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Angler
+verbs:
+  Time:
+    ability: Dash to the School
+    does: Dash most of the way to the centre of one half of your school in a blink; the next dash goes to the other half,
+      so you hop between your two groups.
+    trigger: Tap
+    scales: More Time makes your tamed creatures swim faster.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+    arch: tap
+    t: [2, 20]
+  Charge:
+    ability: Erase / Lock-on
+    does: 'A narrow beam unpaints prisms. Sweep it onto a rival vessel to lock on: one creature leaves your school and chases
+      that vessel until it dies, every bite taking petals.'
+    trigger: Hold
+    scales: Charge does not change this ability yet.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+    arch: hold
+    t: [2, 12]
+  Mass:
+    ability: Lure, Tame & Grow
+    does: 'Light the lure and stop: wild herbivores in reach turn to you, and one held in the light long enough joins your
+      school. Plants in the light grow faster; let go to plant any seed an omni crystal left.'
+    trigger: Hold
+    scales: Mass does not change this ability yet.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+    arch: hold
+    t: [2, 12]
+  Space:
+    ability: Paint
+    does: A long beam paints prisms, which light up while half your school balls up ahead. Let go to throw that half at
+      the newest painted prisms to eat them; the next throw sends the other half.
+    trigger: Hold, release to throw
+    scales: Space does not change this ability yet.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+    arch: hold_release
+    t: [2, 12]
+  Omni:
+    ability: Tame
+    does: The crystal turns into a random creature that joins your school, and leaves a plant seed that is planted in your
+      colour the next time you let go of the lure.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Lantern Run]
+  Charge: [Kelpwood]
+  Mass: [Glasshouse]
+  Space: [Chum]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The school play
+  t: [15, 60]
+  is: You fight with what you have gathered.
+  chain:
+  - - Mass
+    - 'Light the lure: tame and grow the school'
+  - - Space
+    - 'Paint prisms, let go: half the school is thrown at them'
+  - [Time, Dash to the other half]
+  - - Charge
+    - 'Lock a rival: a creature hunts them'
+  drivers: [make, crew, break]
+  feel: Conducting, not fighting.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md

@@ -1,0 +1,70 @@
+# Loop Atlas model: vessel Grizzly. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Grizzly
+verbs:
+  Time:
+    ability: Rush
+    does: Spend energy to lunge forward in a burst of speed that fades out over a second. You hold up to three rushes, refilled
+      over time, and using one pulls you out of Dig In.
+    trigger: Tap
+    scales: More Time makes each rush cost less energy.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_RUSH.md
+    arch: tap
+    t: [2, 20]
+  Charge:
+    ability: Dig In
+    does: Toggle to plant the Grizzly in place. You cannot move but can still aim, your trail stops, and energy refills
+      faster. Rushing breaks you out.
+    trigger: Tap to toggle
+    scales: More Charge refills energy faster while dug in.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_DIG_IN.md
+    arch: mode
+    t: [5, 30]
+  Mass:
+    ability: Weapon Systems
+    does: 'Cycles your fire between three weapons: explosive shells, a sniper shot, and a plasma claw that sets enemy prisms
+      on fire with a burn that spreads and destroys them.'
+    trigger: Tap to cycle
+    scales: Mass does not change this ability right now.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_PLASMA_CLAW.md
+    arch: mode
+    t: [5, 30]
+  Space:
+    ability: Charged Cannon
+    does: Hold to charge a shell from your energy and release to fire it. Press again to freeze it where it is, then let
+      go to set it off. Bigger charge, bigger blast, and the blast can launch you.
+    trigger: Hold, release to fire
+    scales: More Space makes the cannon's explosions bigger.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_CHARGED_CANNON.md
+    arch: hold_release
+    t: [2, 12]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: '- - -'
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Grizzly Time]
+  Charge: [Standoff]
+  Mass: []
+  Space: [Grizzly Charge]
+excused: [Mass]
+lean: destroyer
+leanWhy: Its weapons only destroy; its Mass game is excused.
+combos:
+- name: The siege
+  t: [10, 40]
+  is: Rush in, dig in, fire, rush out.
+  chain:
+  - [Time, Rush to a post]
+  - [Charge, 'Dig In: energy refills']
+  - - Space
+    - Charge the cannon and release
+  - - Mass
+    - 'Cycle to the claw: the burn spreads'
+  - [Time, Rush out]
+  drivers: [break, mastery]
+  feel: Heavy, planted, loud.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_RUSH.md

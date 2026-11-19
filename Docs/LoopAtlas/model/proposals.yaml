@@ -1,0 +1,57 @@
+# Loop Atlas model: proposals. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+proposals:
+- id: P1
+  title: One ladder of words
+  what: Use the eight tier terms (Pulse, Verb, Combo, Role, Round, Session, Arc, Era) in every design doc, ticket and review,
+    so a problem is placed before it is argued.
+  touches: [era]
+- id: P2
+  title: Every verb names its feeling
+  what: 'Each ability''s doc gets its loop as steps and one sentence: the feeling, and the step where it lands. The fun
+    card asks about that step.'
+  touches: []
+- id: P3
+  title: Every kit names two combos
+  what: A feeder into a spender, and one that crosses two elements. Ability icons and the Mentor teach them; a game's course
+    is checked against them.
+  touches: []
+- id: P4
+  title: Show the role
+  what: The two volume numbers the scoreboard already books become one live meter, and the vessel's measured lean goes on
+    its Hangar card.
+  touches: [round.ms, round.broodrush, voy.cell]
+- id: P5
+  title: The breath between rounds
+  what: 'After every result, one offered next step: rematch, next rung, or a crossing to the place the round trained for.'
+  touches: [breath, sitting, arcade]
+- id: P6
+  title: The Tide
+  what: A daily job, a weekly card and a six-week season, built from the living sea's tick and the studio's rebalance.
+  touches: [era.tide, era.meta, arc.saga, arc.support]
+- id: P7
+  title: More to spend crystals on
+  what: Ark refits, recruiting pilots and colour sets, so the payout still drives something after the last vessel.
+  touches: [arc.fleet]
+- id: P8
+  title: The vessel's flower
+  what: Three petals per hull, lit by clearing its Time, Charge and Mass-Space games at I3. The player's own pass through
+    the elemental loop.
+  touches: [arc.flower, arc.unlock]
+- id: P9
+  title: Set the counts
+  what: 'Cells per leg, rounds per run, matches per set, passes per round: each gets a target number and an analytics event
+    that measures it.'
+  touches: [voy.cell, arcade, arena, sitting]
+- id: P10
+  title: One currency
+  what: Voyage pay is the same crystals as arcade pay, so 'the voyage ended, buy a vessel' is a real path.
+  touches: [voyages, arc.fleet]
+- id: P11
+  title: A party owns something
+  what: A party shares one voyage record, and a crew vessel's empty seat is an invite.
+  touches: [arc.social]
+- id: P12
+  title: A replay can travel
+  what: A ten-second cut shared as a link that opens the same card at the same rung.
+  touches: [arc.replay]

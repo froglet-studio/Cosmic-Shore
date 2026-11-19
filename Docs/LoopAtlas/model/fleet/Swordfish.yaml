@@ -1,0 +1,78 @@
+# Loop Atlas model: vessel Swordfish. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Swordfish
+verbs:
+  Time:
+    ability: Ramp Spool
+    does: Fly at full throttle in a straight line and the Swordfish winds up steadily toward a very high top speed. Turning
+      bleeds it off. Its hull breaks the prisms it rams, and ramming costs it no speed.
+    trigger: Passive - fly flat out and straight
+    scales: More Time winds you up to top speed faster; the top speed itself stays the same.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md
+    arch: passive
+    t: [2, 15]
+  Charge:
+    ability: Energize
+    does: Hold both evenly for a second to light the sword. It stays lit while you hold, then for a few seconds after, followed
+      by a short cooldown. It costs nothing. A sword hit on a rival knocks their petals loose as crystals.
+    trigger: Hold both
+    scales: More Charge knocks more petals off a rival with each sword hit.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md
+    arch: hold
+    t: [2, 12]
+  Mass:
+    ability: Afterimage
+    does: When the lit sword goes out, it keeps leaving prism copies of itself in its own shape and pose for five seconds
+      - walls you swing into place. Your own sword can still cut them.
+    trigger: Passive - after Energize
+    scales: More Mass makes the afterimage prisms bigger.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Blade Reach
+    does: Your sword cuts any ordinary or shielded prism it touches, and you swing it by how hard you squeeze each side.
+      Super-shielded mass makes the blade stick unless you have the upgrade.
+    trigger: Always on - swing with both
+    scales: More Space makes the sword longer, and your camera pulls back to match.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md
+    arch: passive
+    t: [2, 15]
+  Omni:
+    ability: Surge
+    does: For 8 seconds your blade stays energized and a ring of swords surrounds the ship, swinging with your triggers,
+      while the camera pulls back. A blast also breaks prisms round you.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SwordfishVesselSurgeByCrystalEffectSO.cs
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: [Regatta, Broadside, Brood Rush]
+games:
+  Time: [Spearline]
+  Charge: [Riposte]
+  Mass: [Palisade]
+  Space: [Cleave]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The lit run
+  t: [8, 25]
+  is: A straight line that ends in a cut and leaves a wall.
+  chain:
+  - [Time, Spool up on a straight]
+  - [Charge, Light the sword]
+  - - Space
+    - Cut through the field or a rival
+  - - Mass
+    - Afterimages stay as walls
+  drivers: [break, rival, joy]
+  feel: A charge with a blade at the end of it.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md

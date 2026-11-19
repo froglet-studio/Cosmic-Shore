@@ -1,0 +1,6256 @@
+{
+ "schema": 1,
+ "updated": "2026-11-19",
+ "layers": [
+  {
+   "id": "now",
+   "letter": "n",
+   "name": "Now",
+   "is": "What is in the game today, with how far each loop has been played and signed off. A loop the plan has and the game lacks shows as a ghost."
+  },
+  {
+   "id": "plan",
+   "letter": "p",
+   "name": "Planned",
+   "is": "The stabilised version the team has decided on: Garrett's elemental loop, the arcade restructure, voyages V1 to V4. Where the plan says nothing, it is a hole."
+  },
+  {
+   "id": "prop",
+   "letter": "x",
+   "name": "Proposed",
+   "is": "The plan plus proposed changes. Every hole is filled with an invention, marked as one, for the team to accept, change or throw out."
+  }
+ ],
+ "tiers": [
+  {
+   "id": 0,
+   "term": "Pulse",
+   "span": [
+    0.1,
+    3
+   ],
+   "is": "One input and the hull's answer. The feel of flying.",
+   "ask": "Is it a pleasure with nothing to do?"
+  },
+  {
+   "id": 1,
+   "term": "Verb",
+   "span": [
+    2,
+    20
+   ],
+   "is": "One elemental ability, from trigger to payoff and back to ready.",
+   "ask": "Is the payoff worth the trigger, and where does the pleasure land?"
+  },
+  {
+   "id": 2,
+   "term": "Combo",
+   "span": [
+    8,
+    60
+   ],
+   "is": "Verbs chained inside one kit. The loops a kit has baked in.",
+   "ask": "Does one verb set up the next?"
+  },
+  {
+   "id": 3,
+   "term": "Role",
+   "span": [
+    20,
+    180
+   ],
+   "is": "The kit pointed at the game's goals: what this vessel does for its team.",
+   "ask": "Does what I am good at matter to the objective?"
+  },
+  {
+   "id": 4,
+   "term": "Round",
+   "span": [
+    60,
+    360
+   ],
+   "is": "One objective, won or lost: an arcade or arena match, or a cell on a voyage.",
+   "ask": "Can I read who is winning and why, in about 90 seconds?"
+  },
+  {
+   "id": 5,
+   "term": "Session",
+   "span": [
+    600,
+    2700
+   ],
+   "is": "A sitting in one place: a ladder run, an arena set, a voyage.",
+   "ask": "Do I want one more, and does anything point me to another place?"
+  },
+  {
+   "id": 6,
+   "term": "Arc",
+   "span": [
+    86400,
+    2592000
+   ],
+   "is": "What changes between sittings: unlocks, the fleet, the squad, the crew, the hoard.",
+   "ask": "What do I have tomorrow that I did not have today?"
+  },
+  {
+   "id": 7,
+   "term": "Era",
+   "span": [
+    1209600,
+    15552000
+   ],
+   "is": "What changes without you: the living sea, sagas, the meta, new vessels.",
+   "ask": "Why come back next month?"
+  }
+ ],
+ "drivers": [
+  {
+   "id": "joy",
+   "code": "Jo",
+   "name": "Sensation",
+   "kind": "inner",
+   "is": "The raw joy of the movement itself."
+  },
+  {
+   "id": "mastery",
+   "code": "Ma",
+   "name": "Mastery",
+   "kind": "inner",
+   "is": "Getting better: a cleaner line, a harder rung."
+  },
+  {
+   "id": "make",
+   "code": "Mk",
+   "name": "Creation",
+   "kind": "inner",
+   "is": "Making mass, growing, building something that stays."
+  },
+  {
+   "id": "break",
+   "code": "Br",
+   "name": "Destruction",
+   "kind": "inner",
+   "is": "Breaking mass. The release of a big hit."
+  },
+  {
+   "id": "rival",
+   "code": "Ri",
+   "name": "Rivalry",
+   "kind": "inner",
+   "is": "Beating another pilot: a place, a petal, a claim."
+  },
+  {
+   "id": "crew",
+   "code": "Cr",
+   "name": "Fellowship",
+   "kind": "inner",
+   "is": "Playing with and for a team or a party."
+  },
+  {
+   "id": "find",
+   "code": "Fi",
+   "name": "Discovery",
+   "kind": "inner",
+   "is": "Something new: a toy, a hull, an uncharted place."
+  },
+  {
+   "id": "own",
+   "code": "Ow",
+   "name": "Collection",
+   "kind": "inner",
+   "is": "Having it: vessels, pilots, artifacts, relics."
+  },
+  {
+   "id": "stake",
+   "code": "St",
+   "name": "Stakes",
+   "kind": "inner",
+   "is": "Something of yours can be lost."
+  },
+  {
+   "id": "story",
+   "code": "Sy",
+   "name": "Story",
+   "kind": "inner",
+   "is": "People, factions and sagas that remember you."
+  },
+  {
+   "id": "goal",
+   "code": "Go",
+   "name": "Objective",
+   "kind": "outer",
+   "is": "Goals laid out on the map by the game you are in."
+  },
+  {
+   "id": "reward",
+   "code": "Re",
+   "name": "Reward",
+   "kind": "outer",
+   "is": "Crystals, pay and unlocks handed over at the end."
+  }
+ ],
+ "handoffs": [
+  {
+   "id": "fill",
+   "name": "Tank full",
+   "is": "A resource the loop was banking is full, so you go and spend it one tier up."
+  },
+  {
+   "id": "done",
+   "name": "Objective met",
+   "is": "The loop's goal is reached and the tier above takes its next step."
+  },
+  {
+   "id": "fail",
+   "name": "Loss",
+   "is": "The loop is lost and the tier above resets or sends you home."
+  },
+  {
+   "id": "spend",
+   "name": "Reward to spend",
+   "is": "You hold something that is only useful in another loop."
+  },
+  {
+   "id": "new",
+   "name": "Something new",
+   "is": "A new hull, card, place or piece of news opens a loop you have not run."
+  },
+  {
+   "id": "pull",
+   "name": "A friend",
+   "is": "An invite or a party moves you to where someone else is."
+  },
+  {
+   "id": "tired",
+   "name": "Enough of this",
+   "is": "The loop has stopped paying and you look for another at the same tier."
+  }
+ ],
+ "nodes": [
+  {
+   "id": "era",
+   "name": "The long game",
+   "tier": 7,
+   "kind": "loop",
+   "t": [
+    1209600,
+    15552000
+   ],
+   "is": "Everything the product offers a person over months. Each pass is a stretch of sittings that ends because the world, the fleet or the meta changed.",
+   "phases": [
+    {
+     "n": "Come back",
+     "d": "Something pulled you in: a friend, news from the sea, a new hull, habit."
+    },
+    {
+     "n": "Pick a place",
+     "d": "Home offers the Toybox, the Arcade, the Arena and Voyages."
+    },
+    {
+     "n": "Play a sitting",
+     "d": "Rounds in one place, sometimes crossing to another."
+    },
+    {
+     "n": "Bank what it paid",
+     "d": "Crystals, quest progress, artifacts, standing, replays."
+    },
+    {
+     "n": "Grow",
+     "d": "Spend and arrange: a vessel, a squad, a pilot, an artifact."
+    },
+    {
+     "n": "The world moves on",
+     "d": "The sea ticks, sagas open, the meta is rebalanced, a vessel is added."
+    }
+   ],
+   "drivers": [
+    "find",
+    "own",
+    "story",
+    "crew",
+    "mastery"
+   ],
+   "now": {
+    "s": "part",
+    "note": "The places and most arcs exist. Nothing in the build changes on a schedule, so the last phase is empty today."
+   },
+   "plan": {
+    "note": "The meta is rebalanced on a schedule by the elemental loop's step 5, voyages add a living sea with sagas and relics, and new vessels enter at step 1 and unsettle more than their own balance."
+   },
+   "prop": {
+    "s": "change",
+    "note": "Give the last phase a name and a clock: the Tide (see The Tide)."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "How many sittings make one pass, and how often a person comes back, is not measured. Analytics events are declared but no funnel reads them yet.",
+     "fill": "Target 3 to 5 sittings a week and one Tide every 6 weeks. Measure it from game_started and game_completed per account before tuning anything above the Round."
+    }
+   ],
+   "src": [
+    "Docs/ElementalLoop/PLAYBOOK.md section 0",
+    "Docs/Voyages/DEPTH.md",
+    "Docs/ACTIVATION.md section 5"
+   ]
+  },
+  {
+   "id": "sitting",
+   "parent": "era",
+   "at": 2,
+   "core": true,
+   "name": "A sitting",
+   "tier": 5,
+   "kind": "hub",
+   "t": [
+    600,
+    2700
+   ],
+   "is": "One time you open the game. Home is the hub: every change of place passes through it.",
+   "phases": [
+    {
+     "n": "Home",
+     "d": "The hub screen, with the menu freestyle flying behind it."
+    },
+    {
+     "n": "Choose a place",
+     "d": "Toybox, Arcade, Arena or Voyage."
+    },
+    {
+     "n": "Play rounds",
+     "d": "The place's own loop."
+    },
+    {
+     "n": "Results",
+     "d": "Placing, the scoreboard, the payout."
+    },
+    {
+     "n": "Again, cross over, or grow",
+     "d": "Rematch, another place, or the Hangar and the Ark."
+    },
+    {
+     "n": "Leave"
+    }
+   ],
+   "drivers": [
+    "joy",
+    "crew",
+    "goal",
+    "reward"
+   ],
+   "reps": null,
+   "repsOf": "sittings per pass of the long game",
+   "now": {
+    "s": "built",
+    "note": "Home, Hangar and Profile are open; the Ark screen is the Elemental Converter; Port is locked and the Store has no screen."
+   },
+   "plan": {
+    "note": "Four places: Toybox, Arcade, Arena, Voyages. Voyages are the culminating experience."
+   },
+   "prop": {
+    "s": "change",
+    "note": "Add the breath between rounds so that crossing to another place is offered, never left to the menu."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "Nothing in the game points a player from one place to another. A crossing happens only if the player opens Home and thinks of it.",
+     "fill": "The breath (new loop): after each result, one offered next step chosen from what the round just trained."
+    },
+    {
+     "on": "np",
+     "q": "Rounds per sitting and places per sitting are not measured.",
+     "fill": "Aim for 5 to 8 rounds and 1 or 2 places in a sitting; read it from the analytics events."
+    }
+   ],
+   "src": [
+    "Docs/MENU_PROGRESSION_AND_IAP.md section 1",
+    "Docs/Voyages/VOYAGES.md section 1"
+   ]
+  },
+  {
+   "id": "breath",
+   "parent": "sitting",
+   "at": 4,
+   "in": "x",
+   "name": "The breath",
+   "tier": 3,
+   "kind": "loop",
+   "t": [
+    8,
+    30
+   ],
+   "is": "Proposed. The pause between rounds, treated as a loop of its own: the one place where the game hands you up, down or across.",
+   "phases": [
+    {
+     "n": "See what you did",
+     "d": "Placing, plus the one number your role moved (time, petals, volume made and removed)."
+    },
+    {
+     "n": "See what it paid",
+     "d": "Crystals, a rung, a petal on the vessel's flower."
+    },
+    {
+     "n": "One offered next step",
+     "d": "Rematch, next rung, or a crossing: 'this trained you for Regatta'."
+    },
+    {
+     "n": "Take it or go Home"
+    }
+   ],
+   "drivers": [
+    "reward",
+    "mastery",
+    "find"
+   ],
+   "reps": "1",
+   "repsOf": "per round",
+   "prop": {
+    "s": "add",
+    "note": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off."
+   },
+   "src": [
+    "proposal"
+   ]
+  },
+  {
+   "id": "toybox",
+   "parent": "sitting",
+   "at": 1,
+   "name": "Toybox",
+   "tier": 5,
+   "kind": "place",
+   "t": [
+    300,
+    1800
+   ],
+   "is": "Freestyle. Nothing is scored. You fly, find toys and try hulls. It is also the menu's background, so every sitting starts inside it.",
+   "phases": [
+    {
+     "n": "Fly out of the menu"
+    },
+    {
+     "n": "Reach a toy station"
+    },
+    {
+     "n": "Play the toy"
+    },
+    {
+     "n": "Swap hull, domain or element"
+    },
+    {
+     "n": "Wander to the next toy"
+    }
+   ],
+   "drivers": [
+    "joy",
+    "find",
+    "make"
+   ],
+   "reps": null,
+   "repsOf": "toys per visit",
+   "now": {
+    "s": "built",
+    "note": "Toys are chosen in the Toy Box only (2026-11-01). The Vessel Changer is where every new hull first becomes flyable."
+   },
+   "plan": {
+    "note": "Stays the place with no stakes and no artifacts. The Arkway is a taste of a voyage."
+   },
+   "prop": {
+    "s": "change",
+    "note": "Each toy ends by offering its scored cousin: the Vessel Changer offers the hull's Time game, the Arkway offers a voyage."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "What a toy session is for, in loop terms, is not written: there is no stated reason to leave a toy or to come back to one.",
+     "fill": "A toy's exit is a crossing. Every toy names the scored loop it is the free version of, and offers it when the player has done the toy's verb a few times."
+    }
+   ],
+   "src": [
+    "Docs/ToySystem/ARCHITECTURE.md",
+    "Docs/claude/MENU_AND_LAVA_LAMP.md"
+   ]
+  },
+  {
+   "id": "toy.fly",
+   "parent": "toybox",
+   "at": 0,
+   "name": "Free flight",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    30,
+    600
+   ],
+   "kit": "free",
+   "is": "Flying a hull for its own sake in an open cell. The kit with no objective around it.",
+   "phases": [
+    {
+     "n": "Pick a line through the mass"
+    },
+    {
+     "n": "Use a verb because it feels good"
+    },
+    {
+     "n": "See what it did to the cell"
+    },
+    {
+     "n": "Pick another line"
+    }
+   ],
+   "drivers": [
+    "joy",
+    "find"
+   ],
+   "now": {
+    "s": "built"
+   },
+   "holes": [],
+   "src": [
+    "Docs/claude/MENU_AND_LAVA_LAMP.md"
+   ]
+  },
+  {
+   "id": "toy.changers",
+   "parent": "toybox",
+   "at": 3,
+   "name": "The changers",
+   "tier": 3,
+   "kind": "loop",
+   "t": [
+    5,
+    60
+   ],
+   "is": "Vessel Changer, Domain Changer and Element Charger: swap what you are and feel the difference at once.",
+   "phases": [
+    {
+     "n": "Fly to the station"
+    },
+    {
+     "n": "Pick a hull, a domain or an element level"
+    },
+    {
+     "n": "Feel the new kit"
+    },
+    {
+     "n": "Swap again"
+    }
+   ],
+   "drivers": [
+    "find",
+    "joy"
+   ],
+   "now": {
+    "s": "built",
+    "note": "Every new vessel is done when it can be flown from the Vessel Changer."
+   },
+   "prop": {
+    "s": "change",
+    "note": "After a few minutes in a hull you do not own, offer its Time game at I1."
+   },
+   "src": [
+    "Docs/ToySystem/ARCHITECTURE.md (Vessel Changer, Domain Changer, Element Charger)"
+   ]
+  },
+  {
+   "id": "toy.matrix",
+   "parent": "toybox",
+   "at": 2,
+   "name": "Spawn Matrix and Cell Selector",
+   "tier": 3,
+   "kind": "loop",
+   "t": [
+    10,
+    120
+   ],
+   "is": "Choose what the cell holds and which cell you are in, then play in it.",
+   "phases": [
+    {
+     "n": "Open the matrix"
+    },
+    {
+     "n": "Pick what to spawn or which cell"
+    },
+    {
+     "n": "Play in what you made"
+    },
+    {
+     "n": "Change it"
+    }
+   ],
+   "drivers": [
+    "find",
+    "make"
+   ],
+   "now": {
+    "s": "built"
+   },
+   "src": [
+    "Docs/ToySystem/ARCHITECTURE.md (Spawn Matrix, Cell Selector)"
+   ]
+  },
+  {
+   "id": "toy.paint",
+   "parent": "toybox",
+   "at": 2,
+   "name": "Painting",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    120,
+    600
+   ],
+   "is": "Connect the dots: fly strokes through rings until the picture is drawn, then share it.",
+   "phases": [
+    {
+     "n": "Pick a painting"
+    },
+    {
+     "n": "Fly a stroke through its rings"
+    },
+    {
+     "n": "The stroke stays"
+    },
+    {
+     "n": "Next stroke"
+    },
+    {
+     "n": "The picture is done: share it"
+    }
+   ],
+   "drivers": [
+    "make",
+    "mastery",
+    "joy"
+   ],
+   "reps": null,
+   "repsOf": "strokes per painting",
+   "now": {
+    "s": "built"
+   },
+   "src": [
+    "Docs/ToySystem/ARCHITECTURE.md (Painting)"
+   ]
+  },
+  {
+   "id": "toy.wander",
+   "parent": "toybox",
+   "at": 4,
+   "name": "Wanderway",
+   "tier": 5,
+   "kind": "loop",
+   "t": [
+    300,
+    1200
+   ],
+   "is": "Wander without the Ark: a conveyor of small scenes, one after another, until you turn back.",
+   "phases": [
+    {
+     "n": "Leave the toybox"
+    },
+    {
+     "n": "A microscene arrives"
+    },
+    {
+     "n": "Play in it"
+    },
+    {
+     "n": "Fly on to the next"
+    },
+    {
+     "n": "Return"
+    }
+   ],
+   "drivers": [
+    "find",
+    "joy"
+   ],
+   "now": {
+    "s": "built"
+   },
+   "src": [
+    "Docs/ToySystem/ARCHITECTURE.md (Wanderway)"
+   ]
+  },
+  {
+   "id": "toy.arkway",
+   "parent": "toybox",
+   "at": 4,
+   "name": "Arkway run",
+   "tier": 5,
+   "kind": "loop",
+   "t": [
+    300,
+    1500
+   ],
+   "kit": "cell",
+   "is": "Wander with the Ark: one Ark, a corridor of cells, no map and nothing at stake. The most voyage-like toy.",
+   "phases": [
+    {
+     "n": "The Ark gets under way"
+    },
+    {
+     "n": "A cell streams in ahead"
+    },
+    {
+     "n": "The crossing: fauna on the hull"
+    },
+    {
+     "n": "The nucleus is sanctuary"
+    },
+    {
+     "n": "On to the next cell"
+    }
+   ],
+   "drivers": [
+    "find",
+    "joy",
+    "crew"
+   ],
+   "now": {
+    "s": "built"
+   },
+   "plan": {
+    "note": "Stays a toy. Voyages reuse its machinery and do not change it."
+   },
+   "src": [
+    "Docs/ToySystem/ARKWAY_PLAN.md",
+    "Docs/Voyages/VOYAGES.md section 1"
+   ]
+  },
+  {
+   "id": "arcade",
+   "parent": "sitting",
+   "at": 1,
+   "name": "Arcade",
+   "tier": 5,
+   "kind": "place",
+   "t": [
+    300,
+    1500
+   ],
+   "is": "One vessel, scored. Every card seats a hull and teaches one element with it. This is where a kit is learned.",
+   "phases": [
+    {
+     "n": "Filter",
+     "d": "All, Time, Charge, Mass-Space, Party."
+    },
+    {
+     "n": "Pick a card",
+     "d": "The card seats its hull."
+    },
+    {
+     "n": "Pick a rung",
+     "d": "I1 intro, I2 fun, I3 challenging, I4 very hard."
+    },
+    {
+     "n": "Play the round",
+     "d": "Aimed at about 90 seconds for an experienced pilot."
+    },
+    {
+     "n": "Result",
+     "d": "Placing and the payout."
+    },
+    {
+     "n": "Rematch, next rung or next card"
+    }
+   ],
+   "drivers": [
+    "mastery",
+    "goal",
+    "reward",
+    "joy"
+   ],
+   "reps": null,
+   "repsOf": "rounds per arcade run",
+   "now": {
+    "s": "part",
+    "note": "The four categories and the filter landed 2026-11-17. About 80 hull-locked cards exist; most were built headless and never flown. One step is signed off by a person: Dolphin Time, fun."
+   },
+   "plan": {
+    "note": "Every vessel has at least a Time game, a Charge game and a Mass-Space game. Time trains for Regatta, Charge for Broadside, Mass-Space for Brood Rush. Party games train for nothing."
+   },
+   "prop": {
+    "s": "change",
+    "note": "The result screen says what the round trained, and lights a petal on the vessel's flower."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "Rounds per run are not measured, and nothing but the player's own wish moves them from a card to the next card.",
+     "fill": "3 to 5 rounds a run. The breath offers the next rung after a win and the same rung after a loss."
+    },
+    {
+     "on": "n",
+     "q": "Most cards have never been played: steps 1 to 3 of the elemental loop are 'built', not 'done', for every vessel and element except Dolphin Time step 1."
+    }
+   ],
+   "src": [
+    "Docs/ArcadeRestructure/PLAN.md",
+    "Docs/ElementalLoop/STATUS.md",
+    "Docs/ARCADE_MATCH_LENGTH.md"
+   ]
+  },
+  {
+   "id": "ladder",
+   "parent": "arcade",
+   "at": 2,
+   "name": "The rung ladder",
+   "tier": 5,
+   "kind": "loop",
+   "t": [
+    600,
+    7200
+   ],
+   "is": "A card's four rungs. Each rung adds one demand to the one below, coupled to the game's element the same way on every card.",
+   "phases": [
+    {
+     "n": "I1 intro",
+     "d": "Every hull starts at rest."
+    },
+    {
+     "n": "I2 fun",
+     "d": "Every hull starts at level 5 in the game's element."
+    },
+    {
+     "n": "I3 challenging",
+     "d": "Team crystals of the game's element on the map."
+    },
+    {
+     "n": "I4 very hard",
+     "d": "Fauna of the game's element. Unlocked by plays at I3 or a stat goal."
+    },
+    {
+     "n": "The quest is ready to claim"
+    }
+   ],
+   "drivers": [
+    "mastery",
+    "reward"
+   ],
+   "reps": "4",
+   "repsOf": "rungs per card; I4 after a set number of plays at I3",
+   "now": {
+    "s": "built",
+    "note": "The standard element ladder is in (2026-11-16). Rung bars are checked from recorded flights; most ladders wait for a person to fly all four."
+   },
+   "plan": {
+    "note": "One human plays the four rungs and signs them off as fun; only then is that vessel and element sent to AI training."
+   },
+   "src": [
+    "Docs/ElementalLoop/PLAYBOOK.md step 2",
+    "Docs/MENU_PROGRESSION_AND_IAP.md section 2b"
+   ]
+  },
+  {
+   "id": "round.time",
+   "parent": "arcade",
+   "at": 3,
+   "name": "Time game",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    60,
+    150
+   ],
+   "kit": "time",
+   "element": "Time",
+   "is": "A race. The vessel's mobility against a course and against rivals.",
+   "phases": [
+    {
+     "n": "The gun"
+    },
+    {
+     "n": "Read the next gate"
+    },
+    {
+     "n": "Carry speed through it"
+    },
+    {
+     "n": "Lap or finish"
+    },
+    {
+     "n": "Placing"
+    }
+   ],
+   "drivers": [
+    "joy",
+    "mastery",
+    "rival"
+   ],
+   "reps": null,
+   "repsOf": "races per arcade run",
+   "now": {
+    "s": "built",
+    "note": "Every vessel but the Jewel Wasp and the Starling has one. AI drives trained for ten hulls, model only, editor check pending."
+   },
+   "plan": {
+    "note": "Trains for Regatta. The arena balances mobility."
+   },
+   "src": [
+    "Docs/ElementalLoop/STATUS.md section 3",
+    "Docs/ARCADE_MATCH_LENGTH.md"
+   ]
+  },
+  {
+   "id": "round.charge",
+   "parent": "arcade",
+   "at": 3,
+   "name": "Charge game",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    60,
+    180
+   ],
+   "kit": "charge",
+   "element": "Charge",
+   "is": "Pilot against pilot. PvP is petals only: a scored hit takes a petal and silences the victim's abilities for what the hit is worth.",
+   "phases": [
+    {
+     "n": "Find a rival"
+    },
+    {
+     "n": "Close on them"
+    },
+    {
+     "n": "Land your Charge verb"
+    },
+    {
+     "n": "A petal leaves them as a crystal"
+    },
+    {
+     "n": "Take it, or they recover"
+    }
+   ],
+   "drivers": [
+    "rival",
+    "mastery",
+    "goal"
+   ],
+   "reps": null,
+   "repsOf": "matches per arcade run",
+   "now": {
+    "s": "built",
+    "note": "Every vessel but the Starling has one. None has an AI trained on it and none is signed off."
+   },
+   "plan": {
+    "note": "Trains for Broadside. The arena balances pvp: petals taken."
+   },
+   "src": [
+    "Docs/ELEMENTAL_ECONOMY.md",
+    "Docs/ElementalAbilitySystem/SILENCE.md",
+    "Docs/ElementalLoop/GAME_KIT_ROSTER.md"
+   ]
+  },
+  {
+   "id": "round.ms",
+   "parent": "arcade",
+   "at": 3,
+   "name": "Mass-Space game",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    90,
+    300
+   ],
+   "kit": "ms",
+   "element": "Mass-Space",
+   "is": "A team match for the cell. Fauna born under your nucleus claim score for your team. Making volume and removing rival volume count as one pair.",
+   "phases": [
+    {
+     "n": "Read the nucleus"
+    },
+    {
+     "n": "Make your volume or remove theirs"
+    },
+    {
+     "n": "The claim tips to your domain"
+    },
+    {
+     "n": "Fauna are born in your colour: a brood"
+    },
+    {
+     "n": "Hold it for the next brood"
+    }
+   ],
+   "drivers": [
+    "make",
+    "break",
+    "crew",
+    "goal"
+   ],
+   "reps": "3",
+   "repsOf": "broods to win with three teams",
+   "now": {
+    "s": "part",
+    "note": "The category exists, and the volume books (made, removed, lost per pilot) are on Brood Rush's scoreboard. Most vessels still have separate Mass and Space cards with their old rules."
+   },
+   "plan": {
+    "note": "Each vessel's Mass and Space games become one Mass-Space game: Brood Rush's rule in an environment built for that vessel. Up to 9 vessels, 3 a team. Dolphin first, then Scarab."
+   },
+   "holes": [
+    {
+     "on": "n",
+     "q": "Only the category has landed. The per-vessel merge has not started: the board still shows Mass and Space as two games each."
+    }
+   ],
+   "src": [
+    "Docs/ArcadeRestructure/PLAN.md",
+    "Docs/MassAndSpaceGames/PLAN.md"
+   ]
+  },
+  {
+   "id": "round.party",
+   "parent": "arcade",
+   "at": 3,
+   "name": "Party game",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    60,
+    300
+   ],
+   "kit": "party",
+   "element": "Party",
+   "is": "Scurry, Scarab Scramble, Maelstrom. No element, no rules it must keep; each exception is said on the card.",
+   "phases": [
+    {
+     "n": "Read the card's party rules"
+    },
+    {
+     "n": "Play its one idea"
+    },
+    {
+     "n": "Laugh at what happened"
+    },
+    {
+     "n": "Again"
+    }
+   ],
+   "drivers": [
+    "crew",
+    "joy",
+    "find"
+   ],
+   "now": {
+    "s": "built",
+    "note": "Maelstrom is always unlocked and runs as a shuffle: placement points across games, first to the target."
+   },
+   "plan": {
+    "note": "Trains for nothing downstream, by decision."
+   },
+   "src": [
+    "Docs/ArcadeRestructure/PLAN.md rulings 4 and 5"
+   ]
+  },
+  {
+   "id": "arena",
+   "parent": "sitting",
+   "at": 1,
+   "name": "Arena",
+   "tier": 5,
+   "kind": "place",
+   "t": [
+    600,
+    2400
+   ],
+   "is": "Squad against squad, several vessel classes on one card. Where the fleet is balanced against itself.",
+   "phases": [
+    {
+     "n": "Pick a squad",
+     "d": "Three seats. An arena hull is flown once in the whole match."
+    },
+    {
+     "n": "Launch",
+     "d": "The vessel carousel; AI fills empty seats."
+    },
+    {
+     "n": "Play the match"
+    },
+    {
+     "n": "Swap pilot",
+     "d": "D-pad left or right moves you to another seat."
+    },
+    {
+     "n": "Result"
+    }
+   ],
+   "drivers": [
+    "rival",
+    "crew",
+    "mastery"
+   ],
+   "reps": null,
+   "repsOf": "matches per arena set",
+   "now": {
+    "s": "part",
+    "note": "Regatta, Broadside, Brood Rush and Astro League are on the roster. Regatta's course-pool search is the first environment creator and waits on a playtest. Broadside and Brood Rush have not started steps 4 and 5."
+   },
+   "plan": {
+    "note": "Three polished arena games, one per element pair, each with an environment creator trained against a fixed pool of elemental AIs. No artifacts in the Arena."
+   },
+   "prop": {
+    "s": "change",
+    "note": "An arena match offers the voyage that squad is ready for."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "Matches per set, and what makes a squad stay for another, are not written.",
+     "fill": "Best of three against the same opponents, hulls re-drafted between matches, so the set is a loop of its own."
+    }
+   ],
+   "src": [
+    "Docs/ElementalLoop/STATUS.md section 2",
+    "Docs/ArcadeRestructure/PLAN.md rulings 3 and 11"
+   ]
+  },
+  {
+   "id": "round.regatta",
+   "parent": "arena",
+   "at": 2,
+   "name": "Regatta",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    90,
+    300
+   ],
+   "kit": "time",
+   "element": "Time",
+   "is": "The Time arena: every racing hull on one course drawn from a searched pool.",
+   "phases": [
+    {
+     "n": "The gun"
+    },
+    {
+     "n": "Find your hull's line"
+    },
+    {
+     "n": "Pass or be passed"
+    },
+    {
+     "n": "Finish"
+    },
+    {
+     "n": "Team placing"
+    }
+   ],
+   "drivers": [
+    "rival",
+    "mastery",
+    "joy"
+   ],
+   "now": {
+    "s": "part",
+    "note": "Eleven hulls seated. Best course pool 1.104x against the 1.10x bar in the model; live, waits on Garrett's playtest and on step 3 for every hull."
+   },
+   "plan": {
+    "note": "Balances mobility. What the plateau leaves over is vessel imbalance, tuned on the vessel and sent back through steps 2 to 4."
+   },
+   "src": [
+    "Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md",
+    "Docs/ElementalLoop/STATUS.md section 2"
+   ]
+  },
+  {
+   "id": "round.broadside",
+   "parent": "arena",
+   "at": 2,
+   "name": "Broadside",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    90,
+    300
+   ],
+   "kit": "charge",
+   "element": "Charge",
+   "is": "The Charge arena: squads take petals off each other.",
+   "phases": [
+    {
+     "n": "Pick a target"
+    },
+    {
+     "n": "Set it up with your squad"
+    },
+    {
+     "n": "Land the hit"
+    },
+    {
+     "n": "Petals change hands"
+    },
+    {
+     "n": "Regroup"
+    }
+   ],
+   "drivers": [
+    "rival",
+    "crew",
+    "mastery"
+   ],
+   "now": {
+    "s": "part",
+    "note": "Seven hulls seated. Steps 4 and 5 not started."
+   },
+   "plan": {
+    "note": "Balances pvp ability: petals taken."
+   },
+   "src": [
+    "Docs/ElementalLoop/STATUS.md section 2",
+    "Docs/ElementalAbilitySystem/SILENCE.md section 6"
+   ]
+  },
+  {
+   "id": "round.broodrush",
+   "parent": "arena",
+   "at": 2,
+   "name": "Brood Rush",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    120,
+    360
+   ],
+   "kit": "ms",
+   "element": "Mass-Space",
+   "is": "The Mass and Space arena: teams fight for the nucleus claim and score when fauna are born under it.",
+   "phases": [
+    {
+     "n": "Read the nucleus"
+    },
+    {
+     "n": "Cultivators add volume, destroyers remove it"
+    },
+    {
+     "n": "The claim tips"
+    },
+    {
+     "n": "A brood is born in your colour"
+    },
+    {
+     "n": "First to 3 broods"
+    }
+   ],
+   "drivers": [
+    "make",
+    "break",
+    "crew",
+    "goal"
+   ],
+   "reps": "3",
+   "repsOf": "broods to win with three teams",
+   "now": {
+    "s": "part",
+    "note": "Seven hulls seated; three teams and the volume books landed 2026-11-18. Steps 4 and 5 not started."
+   },
+   "plan": {
+    "note": "Balances net control of space. Each vessel's place between cultivator and destroyer is measured from play, never set."
+   },
+   "src": [
+    "Docs/ArcadeRestructure/PLAN.md rulings 10 to 12",
+    "Docs/ElementalLoop/PLAYBOOK.md section 1"
+   ]
+  },
+  {
+   "id": "round.astro",
+   "parent": "arena",
+   "at": 2,
+   "name": "Astro League",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    120,
+    360
+   ],
+   "kit": "party",
+   "is": "An arena card outside the three elemental arenas. The Swordfish flies it.",
+   "phases": [
+    {
+     "n": "Kick off"
+    },
+    {
+     "n": "Play the ball"
+    },
+    {
+     "n": "Score"
+    },
+    {
+     "n": "Reset"
+    }
+   ],
+   "drivers": [
+    "crew",
+    "rival",
+    "joy"
+   ],
+   "now": {
+    "s": "built"
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "The plan names three arena games. Where Astro League sits (a fourth arena, or an arena-sized party game) is not said.",
+     "fill": "Call it the Arena's party game: it balances nothing and is kept for fellowship, the way party cards are in the Arcade."
+    }
+   ],
+   "src": [
+    "Assets/_SO_Assets/Games/GameLists/ArenaGames.asset",
+    "Docs/claude/ABOUT_PROJECT.md (Swordfish)"
+   ]
+  },
+  {
+   "id": "voyages",
+   "parent": "sitting",
+   "at": 1,
+   "name": "A voyage",
+   "tier": 5,
+   "kind": "place",
+   "t": [
+    1200,
+    2400
+   ],
+   "is": "The culminating experience. A squad of three and one Ark sail the shared HyperSea from port to places and home again. What is aboard when you dock is yours.",
+   "phases": [
+    {
+     "n": "Port",
+     "d": "Your pilots drum up jobs for their factions."
+    },
+    {
+     "n": "Set sail"
+    },
+    {
+     "n": "A leg",
+     "d": "Flown with the Ark, cell after cell."
+    },
+    {
+     "n": "Arrive",
+     "d": "The location's experience."
+    },
+    {
+     "n": "Push on or turn for home"
+    },
+    {
+     "n": "Dock",
+     "d": "Extraction: only now is the find yours."
+    }
+   ],
+   "drivers": [
+    "find",
+    "stake",
+    "story",
+    "crew",
+    "own"
+   ],
+   "reps": "1",
+   "repsOf": "voyage per sitting",
+   "now": {
+    "s": "part",
+    "note": "V1 is built as the slice and D1 deepens it on the device: the living galaxy, rival crews by the same rules, work verbs, sagas, standing. Run once in Unity by Garrett. The networked Ark, rival Arks in the world and meeting other squads are not built."
+   },
+   "plan": {
+    "note": "V2 to V4: squads meet on arrival, placed by galactic traffic control so the meeting makes sense to both sides' missions. 3 to 6 legs, 20 to 40 minutes."
+   },
+   "prop": {
+    "s": "change",
+    "note": "Docking offers the Hangar when the pay covers a vessel, and the next saga chapter when one opened."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "It is not said whether voyage pay is the same crystals that buy vessels, so the step from 'voyage ends' to 'spend it on a vessel' has no confirmed path.",
+     "fill": "One soft currency. Voyage pay is crystals, paid at dock, scaled so a clean voyage is worth about three arcade wins."
+    }
+   ],
+   "src": [
+    "Docs/Voyages/VOYAGES.md",
+    "Docs/Voyages/DEPTH.md",
+    "Docs/Voyages/HANDOFF.md"
+   ]
+  },
+  {
+   "id": "voy.port",
+   "parent": "voyages",
+   "at": 0,
+   "name": "Port",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    60,
+    300
+   ],
+   "is": "Choosing the work. News arrives, each seated pilot finds jobs for their faction, and the board shows pay against risk.",
+   "phases": [
+    {
+     "n": "Read the news"
+    },
+    {
+     "n": "See the jobs your pilots found"
+    },
+    {
+     "n": "Weigh pay, distance and pressure"
+    },
+    {
+     "n": "Take a job"
+    },
+    {
+     "n": "Refit and sail"
+    }
+   ],
+   "drivers": [
+    "story",
+    "reward",
+    "stake",
+    "find"
+   ],
+   "now": {
+    "s": "built",
+    "note": "Jobs for all 16 faction types in nine work verbs; pay follows the course and the standing."
+   },
+   "src": [
+    "Docs/Voyages/VOYAGES.md section 6.2",
+    "Docs/Voyages/DEPTH.md sections 4 and 7"
+   ]
+  },
+  {
+   "id": "voy.leg",
+   "parent": "voyages",
+   "at": 2,
+   "name": "A leg",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    120,
+    300
+   ],
+   "is": "One lane, flown. The Ark moves, cells stream ahead and recycle behind, and the crossing is where the stakes are.",
+   "phases": [
+    {
+     "n": "Leave a location"
+    },
+    {
+     "n": "A cell streams in"
+    },
+    {
+     "n": "Take the cell"
+    },
+    {
+     "n": "The next cell"
+    },
+    {
+     "n": "Arrive: a hand-off"
+    }
+   ],
+   "drivers": [
+    "stake",
+    "crew",
+    "joy",
+    "goal"
+   ],
+   "reps": "3-6",
+   "repsOf": "legs per voyage",
+   "now": {
+    "s": "built",
+    "note": "Flown Arkway style; wingmates fly escort roles."
+   },
+   "plan": {
+    "note": "2 to 5 minutes a lane. Leaving and arriving are where a squad's instance may change."
+   },
+   "src": [
+    "Docs/Voyages/VOYAGES.md section 4",
+    "Docs/Voyages/ARK_ESCORT.md"
+   ]
+  },
+  {
+   "id": "voy.cell",
+   "parent": "voy.leg",
+   "at": 2,
+   "name": "A cell",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    45,
+    180
+   ],
+   "kit": "cell",
+   "element": "Mass-Space",
+   "is": "The round of a voyage. The squad takes the cell's nucleus for its domain, the Ark regrows inside it, and the voyage moves to the next cell.",
+   "phases": [
+    {
+     "n": "Enter the cell"
+    },
+    {
+     "n": "Contest the nucleus",
+     "d": "Destroyers reduce the opposing volume, cultivators make volume for the team. Both serve the same claim."
+    },
+    {
+     "n": "The cell is yours"
+    },
+    {
+     "n": "The Ark regrows",
+     "d": "Hull plates regrow only inside a nucleus its domain holds."
+    },
+    {
+     "n": "On to the next cell"
+    }
+   ],
+   "drivers": [
+    "goal",
+    "crew",
+    "break",
+    "make",
+    "stake"
+   ],
+   "reps": null,
+   "repsOf": "cells per leg",
+   "now": {
+    "s": "part",
+    "note": "Cells stream along a leg and the Ark regrows only in a held nucleus (the escort's rule). The docs do not confirm that taking the cell is what releases the squad to the next one."
+   },
+   "plan": {
+    "note": "Garrett, 2026-11-18: once they take over the cell and their Ark regenerates, the larger voyage loop resets and they proceed to the next cell."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "Cells per leg is not set.",
+     "fill": "2 to 4 cells a leg, more on a rough lane, so a leg stays inside 2 to 5 minutes at 45 to 90 seconds a cell."
+    },
+    {
+     "on": "n",
+     "q": "Whether 'take the cell, the Ark regrows, move on' is the built loop or the intended one needs one editor run to confirm."
+    }
+   ],
+   "src": [
+    "Garrett's brief, 2026-11-18",
+    "Docs/Voyages/ARK_ESCORT.md",
+    "Docs/Voyages/VOYAGES.md section 4.1"
+   ]
+  },
+  {
+   "id": "voy.place",
+   "parent": "voyages",
+   "at": 3,
+   "name": "A location",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    120,
+    480
+   ],
+   "kit": "cell",
+   "is": "A cell with an arrangement and a reason to come: a harbour, a vault field, a lair, a wreck, a contested core, a fold. Nothing is scripted; the fundamentals play it out.",
+   "phases": [
+    {
+     "n": "Arrive",
+     "d": "Pressure sets how rough it is."
+    },
+    {
+     "n": "Read the arrangement"
+    },
+    {
+     "n": "Do the job's verb"
+    },
+    {
+     "n": "Stow what you found"
+    },
+    {
+     "n": "Leave"
+    }
+   ],
+   "drivers": [
+    "find",
+    "goal",
+    "stake",
+    "own"
+   ],
+   "reps": "1",
+   "repsOf": "per leg",
+   "now": {
+    "s": "built",
+    "note": "Runs the same with one squad or two; today it is always one."
+   },
+   "src": [
+    "Docs/Voyages/VOYAGES.md section 5"
+   ]
+  },
+  {
+   "id": "voy.meet",
+   "parent": "voyages",
+   "at": 3,
+   "in": "px",
+   "name": "A meeting",
+   "tier": 4,
+   "kind": "loop",
+   "t": [
+    120,
+    480
+   ],
+   "kit": "charge",
+   "is": "Another squad is there. Traffic control chose the meeting so it makes sense to both missions: a race for vaults, a raid, a truce.",
+   "phases": [
+    {
+     "n": "Someone else arrives"
+    },
+    {
+     "n": "Read what they want"
+    },
+    {
+     "n": "Race, raid or share"
+    },
+    {
+     "n": "One Ark leaves heavier"
+    }
+   ],
+   "drivers": [
+    "rival",
+    "stake",
+    "crew",
+    "story"
+   ],
+   "plan": {
+    "s": "decided",
+    "note": "V2 and V3. One squad hosts, one joins, in a managed peer-to-peer instance."
+   },
+   "src": [
+    "Docs/Voyages/VOYAGES.md sections 6 and 7"
+   ]
+  },
+  {
+   "id": "voy.home",
+   "parent": "voyages",
+   "at": 4,
+   "name": "The way home",
+   "tier": 3,
+   "kind": "loop",
+   "t": [
+    30,
+    300
+   ],
+   "is": "A decision with teeth. A laden Ark draws pirates, and only docking extracts. A fall or an abandoned voyage loses what is aboard.",
+   "phases": [
+    {
+     "n": "Count what is aboard"
+    },
+    {
+     "n": "Read the rumour about your own Ark"
+    },
+    {
+     "n": "Push on or turn back"
+    },
+    {
+     "n": "Run for the harbour"
+    }
+   ],
+   "drivers": [
+    "stake",
+    "own"
+   ],
+   "reps": "1",
+   "repsOf": "per voyage",
+   "now": {
+    "s": "built",
+    "note": "Two or more artifacts aboard starts a rumour that pirate crews read."
+   },
+   "src": [
+    "Docs/Voyages/DEPTH.md section 7",
+    "Docs/Voyages/VOYAGES.md section 4.3"
+   ]
+  },
+  {
+   "id": "arc.activation",
+   "parent": "era",
+   "at": 0,
+   "name": "Activation",
+   "tier": 6,
+   "kind": "loop",
+   "t": [
+    600,
+    7200
+   ],
+   "is": "The first hours. A spotlight guide to the first game, a Lesson per ship with a ghost that flies the step once, then a Mentor's tips.",
+   "phases": [
+    {
+     "n": "First launch"
+    },
+    {
+     "n": "The spotlight leads to one card"
+    },
+    {
+     "n": "The Lesson",
+     "d": "The autopilot flies the step once, then hands over the stick."
+    },
+    {
+     "n": "The Mentor's tips"
+    },
+    {
+     "n": "The quest chain takes over"
+    }
+   ],
+   "drivers": [
+    "mastery",
+    "find",
+    "goal"
+   ],
+   "reps": "1",
+   "repsOf": "per player; one Lesson per ship",
+   "now": {
+    "s": "dark",
+    "note": "Built and merged, never run in the editor. The master unlock is on in shipped builds, so a fresh install gets every lock open and no guidance."
+   },
+   "plan": {
+    "note": "The Microgame Training plan. The gate is flipped once the chain is signed off."
+   },
+   "holes": [
+    {
+     "on": "n",
+     "q": "No player has seen the onboarding. The first loop a stranger meets is an unlocked menu."
+    },
+    {
+     "on": "p",
+     "q": "The Lesson teaches a ship's Time verb. Nothing yet teaches a combo or a role.",
+     "fill": "The Mentor's stream is ordered by the ladder of tiers: Pulse and Verb in the Lesson, the kit's first Combo after three races, the Role the first time the player enters a Mass-Space game."
+    }
+   ],
+   "src": [
+    "Docs/ACTIVATION.md",
+    "Docs/ModePreview/TRAINING_PLAN.md"
+   ]
+  },
+  {
+   "id": "arc.unlock",
+   "parent": "era",
+   "at": 3,
+   "name": "The quest chain",
+   "tier": 6,
+   "kind": "loop",
+   "t": [
+    3600,
+    1209600
+   ],
+   "is": "Games unlock in a chain. Reaching a mode's top rung completes its quest; claiming it opens the next. There is no XP.",
+   "phases": [
+    {
+     "n": "Play the frontier mode"
+    },
+    {
+     "n": "Reach rung I4"
+    },
+    {
+     "n": "Claim the quest"
+    },
+    {
+     "n": "The next mode unlocks"
+    },
+    {
+     "n": "At the end: the Hangar opens"
+    }
+   ],
+   "drivers": [
+    "reward",
+    "find",
+    "mastery"
+   ],
+   "reps": "4",
+   "repsOf": "quests before the Hangar",
+   "now": {
+    "s": "dark",
+    "note": "Scurry, Hex Race, Joust, Maelstrom, then the Vessel Hangar. Stood down by the master unlock."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "The chain orders 4 cards. About 80 others have no order, so after the Hangar opens nothing says what to play next.",
+     "fill": "After the Hangar, the chain is per vessel: each hull's flower (see The vessel's flower) is its own short chain of three element games."
+    }
+   ],
+   "src": [
+    "Docs/MENU_PROGRESSION_AND_IAP.md section 2",
+    "Docs/QUEST_TRACK_AND_BREADCRUMB.md"
+   ]
+  },
+  {
+   "id": "arc.fleet",
+   "parent": "era",
+   "at": 4,
+   "name": "The fleet",
+   "tier": 6,
+   "kind": "loop",
+   "t": [
+    86400,
+    2592000
+   ],
+   "is": "Winning pays crystals, crystals buy vessels, and a new vessel is a new kit with its own games to learn.",
+   "phases": [
+    {
+     "n": "Win rounds"
+    },
+    {
+     "n": "Crystals add up"
+    },
+    {
+     "n": "Buy a vessel in the Hangar"
+    },
+    {
+     "n": "Learn its kit in its games"
+    },
+    {
+     "n": "Seat it in a squad"
+    }
+   ],
+   "drivers": [
+    "own",
+    "reward",
+    "find"
+   ],
+   "reps": "20",
+   "repsOf": "wins per vessel (200 a win, 4000 a vessel)",
+   "now": {
+    "s": "part",
+    "note": "The economy is live: the winner is paid 200, everyone else nothing; five vessels cost 4000 each. Twenty-three hulls exist; most are not priced or in the shipping list."
+   },
+   "prop": {
+    "s": "change",
+    "note": "Crystals get a second sink so the loop does not end with the last vessel."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "Crystals buy only vessels. When the fleet is owned the reward has no use, and the payout stops driving anything.",
+     "fill": "Three more sinks: refitting the Ark (hold and plates), recruiting a pilot at port, and colour sets."
+    },
+    {
+     "on": "np",
+     "q": "Which of the 23 hulls ship, at what price and in what order, is not decided beyond the first five.",
+     "fill": "Price by how many loops a hull opens: a solo hull 4000, a crew vessel 6000 because it opens a second seat for a friend."
+    }
+   ],
+   "src": [
+    "Docs/ECONOMY_AND_PRICING.md",
+    "Docs/MENU_PROGRESSION_AND_IAP.md section 2c"
+   ]
+  },
+  {
+   "id": "fleet",
+   "parent": "arc.fleet",
+   "at": 3,
+   "name": "The fleet's kits",
+   "tier": 6,
+   "kind": "fleet",
+   "t": [
+    86400,
+    2592000
+   ],
+   "is": "Every vessel, each with its own loops. Pick one to make it the vessel shown everywhere in the atlas.",
+   "phases": [],
+   "drivers": [
+    "find",
+    "own",
+    "mastery"
+   ],
+   "now": {
+    "s": "part"
+   },
+   "src": [
+    "Docs/FleetCodex/abilities.json"
+   ]
+  },
+  {
+   "id": "arc.flower",
+   "parent": "era",
+   "at": 4,
+   "in": "x",
+   "name": "The vessel's flower",
+   "tier": 6,
+   "kind": "loop",
+   "t": [
+    3600,
+    604800
+   ],
+   "is": "Proposed. Each vessel has a flower of three petals: Time, Charge, Mass-Space. A petal lights when its game is cleared at I3. It is the player's own pass through the elemental loop.",
+   "phases": [
+    {
+     "n": "Fly the hull's Time game",
+     "d": "Petal 1. Offers Regatta."
+    },
+    {
+     "n": "Its Charge game",
+     "d": "Petal 2. Offers Broadside."
+    },
+    {
+     "n": "Its Mass-Space game",
+     "d": "Petal 3. Offers Brood Rush."
+    },
+    {
+     "n": "The flower is whole",
+     "d": "The hull is marked voyage-ready in the squad book."
+    }
+   ],
+   "drivers": [
+    "mastery",
+    "own",
+    "goal"
+   ],
+   "reps": "3",
+   "repsOf": "petals per vessel",
+   "prop": {
+    "s": "add",
+    "note": "Proposal P8. It gives every card an order, makes 'arcade trains for arena' visible to the player, and reuses the petal shape the HUD already teaches."
+   },
+   "src": [
+    "proposal"
+   ]
+  },
+  {
+   "id": "arc.squad",
+   "parent": "era",
+   "at": 4,
+   "name": "The squad book",
+   "tier": 6,
+   "kind": "loop",
+   "t": [
+    86400,
+    2592000
+   ],
+   "is": "A squad is a deck: three seats, each a vessel, an element, a pilot and an optional artifact. You build several and pick one before a game.",
+   "phases": [
+    {
+     "n": "Pick three vessels"
+    },
+    {
+     "n": "Give each an element"
+    },
+    {
+     "n": "Seat a pilot in each"
+    },
+    {
+     "n": "Risk an artifact, or not"
+    },
+    {
+     "n": "Play it, then change it"
+    }
+   ],
+   "drivers": [
+    "make",
+    "mastery",
+    "own"
+   ],
+   "reps": null,
+   "repsOf": "squads kept",
+   "now": {
+    "s": "part",
+    "note": "The squad book and the callsign pilots are built; unverified in the editor. Artifacts apply in voyages only."
+   },
+   "src": [
+    "Docs/PILOTS_AND_ARTIFACTS.md",
+    "Docs/Pilots/CALLSIGNS.md",
+    "Docs/Pilots/INVENTORY.md"
+   ]
+  },
+  {
+   "id": "arc.crew",
+   "parent": "era",
+   "at": 4,
+   "name": "Crew and standing",
+   "tier": 6,
+   "kind": "loop",
+   "t": [
+    259200,
+    5184000
+   ],
+   "is": "Pilots are people. Recruiting one brings their faction's jobs; succeeding for a faction raises standing, which widens the work and the pay. Pirate work raises notoriety, and a bounty.",
+   "phases": [
+    {
+     "n": "Recruit a pilot"
+    },
+    {
+     "n": "Seat them: their faction's jobs appear"
+    },
+    {
+     "n": "Do the work"
+    },
+    {
+     "n": "Standing rises",
+     "d": "Stranger, Known, Trusted."
+    },
+    {
+     "n": "Promote a captain: join a faction"
+    }
+   ],
+   "drivers": [
+    "story",
+    "own",
+    "reward"
+   ],
+   "reps": "5",
+   "repsOf": "successes for one faction to reach Trusted",
+   "now": {
+    "s": "part",
+    "note": "Device-side stand-in built 2026-11-07: unique people on 18 callsigns, standing, notoriety, grudges. The backend faction roster and the captain UI are not built."
+   },
+   "src": [
+    "Docs/Voyages/DEPTH.md section 6",
+    "Docs/Voyages/VOYAGES.md section 6.2.1",
+    "Docs/Pilots/CALLSIGNS.md"
+   ]
+  },
+  {
+   "id": "arc.hoard",
+   "parent": "era",
+   "at": 3,
+   "name": "The hoard",
+   "tier": 6,
+   "kind": "loop",
+   "t": [
+    86400,
+    5184000
+   ],
+   "is": "Artifacts are found in the HyperSea, carried home at risk, and then carried into the next voyage at risk again.",
+   "phases": [
+    {
+     "n": "Find one in the sea"
+    },
+    {
+     "n": "Stow it aboard the Ark"
+    },
+    {
+     "n": "Get it home"
+    },
+    {
+     "n": "Equip it to a seat"
+    },
+    {
+     "n": "Carry it out again: it can be lost"
+    }
+   ],
+   "drivers": [
+    "own",
+    "stake",
+    "find"
+   ],
+   "reps": null,
+   "repsOf": "artifacts per voyage",
+   "now": {
+    "s": "part",
+    "note": "Finds, the stake and extraction are built in the slice."
+   },
+   "src": [
+    "Docs/Pilots/ARTIFACTS.md",
+    "Docs/Voyages/SLICE.md section 5"
+   ]
+  },
+  {
+   "id": "arc.saga",
+   "parent": "era",
+   "at": 5,
+   "name": "A saga",
+   "tier": 6,
+   "kind": "loop",
+   "t": [
+    259200,
+    3628800
+   ],
+   "is": "One story across several voyages. Each chapter is news that becomes a job, found only with the right faction's pilot seated, and the last chapter holds a relic that exists once.",
+   "phases": [
+    {
+     "n": "A chapter's news reaches port"
+    },
+    {
+     "n": "Seat the pilot it asks for"
+    },
+    {
+     "n": "Sail the chapter's job"
+    },
+    {
+     "n": "The next chapter opens"
+    },
+    {
+     "n": "The finale: a relic"
+    }
+   ],
+   "drivers": [
+    "story",
+    "own",
+    "find"
+   ],
+   "reps": "3",
+   "repsOf": "chapters per saga; four sagas authored",
+   "now": {
+    "s": "built",
+    "note": "Four sagas of three chapters, each ending in a named relic. A saga runs once."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "A saga does not run again, so four sagas are a fixed amount of story. 'A season could reseed it' is a default, not a decision.",
+     "fill": "Each Tide reseeds one saga and adds one, so there is always an unfinished thread."
+    }
+   ],
+   "src": [
+    "Docs/Voyages/DEPTH.md section 5"
+   ]
+  },
+  {
+   "id": "arc.social",
+   "parent": "era",
+   "at": 0,
+   "name": "Party and friends",
+   "tier": 6,
+   "kind": "loop",
+   "t": [
+    600,
+    604800
+   ],
+   "is": "Invite a friend, play as a party, rematch, and come back because they did.",
+   "phases": [
+    {
+     "n": "Invite or be invited"
+    },
+    {
+     "n": "Party up",
+     "d": "AI fills the empty seats."
+    },
+    {
+     "n": "Play together"
+    },
+    {
+     "n": "Rematch"
+    },
+    {
+     "n": "They are on your friends list"
+    }
+   ],
+   "drivers": [
+    "crew",
+    "rival"
+   ],
+   "reps": null,
+   "repsOf": "sittings with a friend",
+   "now": {
+    "s": "built",
+    "note": "The party lobby, invites, friends and AI backfill exist. Crew vessels (two to four seats on one hull) are local only until networked."
+   },
+   "prop": {
+    "s": "change",
+    "note": "A crew vessel's empty seat is the invite: 'fly the kite on my Wrasse'."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "Nothing a party does together lasts past the sitting, so a friend is a reason to play tonight and not a reason to return.",
+     "fill": "A party shares one voyage record: the Ark, its hoard and the saga thread belong to the party that sailed it."
+    }
+   ],
+   "src": [
+    "Docs/claude/MULTIPLAYER_AND_SOCIAL.md",
+    "Docs/Voyages/PARTY.md"
+   ]
+  },
+  {
+   "id": "arc.replay",
+   "parent": "era",
+   "at": 3,
+   "name": "Replays",
+   "tier": 5,
+   "kind": "loop",
+   "t": [
+    60,
+    600
+   ],
+   "is": "Every match is recorded on the device. Watch your last ten from any camera.",
+   "phases": [
+    {
+     "n": "Finish a match"
+    },
+    {
+     "n": "Open My Replays"
+    },
+    {
+     "n": "Watch it from outside"
+    },
+    {
+     "n": "See what to do differently"
+    }
+   ],
+   "drivers": [
+    "mastery",
+    "crew"
+   ],
+   "now": {
+    "s": "built",
+    "note": "On Will Bogen's Theater. Reached from Profile and the Arcade."
+   },
+   "prop": {
+    "s": "change",
+    "note": "The breath offers 'watch the pass that beat you': a ten-second cut, not the whole match."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "A replay cannot leave the device, so it drives mastery and nothing else.",
+     "fill": "Share a ten-second cut as a link that opens the same card at the same rung for whoever taps it."
+    }
+   ],
+   "src": [
+    "Docs/REPLAYS.md",
+    "Docs/THEATER.md"
+   ]
+  },
+  {
+   "id": "arc.support",
+   "parent": "era",
+   "at": 4,
+   "name": "Episodes",
+   "tier": 6,
+   "kind": "loop",
+   "t": [
+    2592000,
+    15552000
+   ],
+   "is": "Real money. One token buys one episode. Built as an entitlement; nothing is for sale.",
+   "phases": [
+    {
+     "n": "An episode is offered"
+    },
+    {
+     "n": "Buy a token"
+    },
+    {
+     "n": "The episode is yours"
+    }
+   ],
+   "drivers": [
+    "own"
+   ],
+   "now": {
+    "s": "dark",
+    "note": "One episode asset priced at 0. No storefront is wired, and the web checkout is not Steam-compliant."
+   },
+   "holes": [
+    {
+     "on": "np",
+     "q": "What an episode gives the player is not defined in loop terms: it opens no loop on this map.",
+     "fill": "An episode is a Tide's content, sold once the Tide has run free for its season: its saga, its arena environments, its colour set."
+    }
+   ],
+   "src": [
+    "Docs/ECONOMY_AND_PRICING.md sections 4 and 5"
+   ]
+  },
+  {
+   "id": "era.world",
+   "parent": "era",
+   "at": 5,
+   "name": "The living sea",
+   "tier": 7,
+   "kind": "loop",
+   "t": [
+    86400,
+    7776000
+   ],
+   "is": "The galaxy moves without you. Every day pressure drifts, blooms ripen, vault fields restock, wrecks are grazed down and rival crews sail. Every change is news.",
+   "phases": [
+    {
+     "n": "A day passes"
+    },
+    {
+     "n": "Places change state"
+    },
+    {
+     "n": "Rival crews sail and resolve"
+    },
+    {
+     "n": "News is born from what happened"
+    },
+    {
+     "n": "The news reaches your port"
+    }
+   ],
+   "drivers": [
+    "find",
+    "story",
+    "stake"
+   ],
+   "reps": "1",
+   "repsOf": "tick per day, at most five while away",
+   "now": {
+    "s": "built",
+    "note": "On the device, deterministic per day. The same galaxy on the same day on every machine."
+   },
+   "plan": {
+    "note": "V3 moves the galaxy to the backend so that locations remember, and the galactic war begins."
+   },
+   "src": [
+    "Docs/Voyages/DEPTH.md section 2"
+   ]
+  },
+  {
+   "id": "era.meta",
+   "parent": "era",
+   "at": 5,
+   "name": "The meta turns",
+   "tier": 7,
+   "kind": "loop",
+   "t": [
+    2419200,
+    10368000
+   ],
+   "is": "The studio's elemental loop, seen from the player's side: arena play exposes imbalance, vessels are retuned, and a new vessel disturbs more than itself.",
+   "phases": [
+    {
+     "n": "Arena environments plateau"
+    },
+    {
+     "n": "What is left over is vessel imbalance"
+    },
+    {
+     "n": "Vessels and elements are retuned"
+    },
+    {
+     "n": "Ladders and AIs are redone for them"
+    },
+    {
+     "n": "A new vessel enters at step 1"
+    }
+   ],
+   "drivers": [
+    "mastery",
+    "find",
+    "rival"
+   ],
+   "in": "px",
+   "plan": {
+    "s": "decided",
+    "note": "Garrett, 2026-11-12: it will disrupt the meta on an optimized schedule before it gets stale. Each loop needs fewer people."
+   },
+   "prop": {
+    "s": "change",
+    "note": "Tie each turn to a Tide so that players can see it coming."
+   },
+   "holes": [
+    {
+     "on": "p",
+     "q": "The schedule is not set, and nothing tells a player that the meta turned or why their vessel flies differently.",
+     "fill": "One turn per Tide, six weeks. The Tide's news says in authored words which vessels changed and which arena environments are new."
+    }
+   ],
+   "src": [
+    "Docs/ElementalLoop/PLAYBOOK.md sections 0 and 1"
+   ]
+  },
+  {
+   "id": "era.tide",
+   "parent": "era",
+   "at": 0,
+   "in": "x",
+   "name": "The Tide",
+   "tier": 7,
+   "kind": "loop",
+   "t": [
+    604800,
+    3628800
+   ],
+   "is": "Proposed. The clock of the long game, shown on Home as news from the sea: a weekly beat inside a six-week season.",
+   "phases": [
+    {
+     "n": "Each day: one job that expires",
+     "d": "From the living sea's tick."
+    },
+    {
+     "n": "Each week: the card of the week",
+     "d": "One arcade card and one arena environment pool."
+    },
+    {
+     "n": "Each Tide: the meta turns",
+     "d": "Retuned vessels, a reseeded saga, sometimes a new hull."
+    },
+    {
+     "n": "The Tide goes out",
+     "d": "Its content becomes an episode."
+    }
+   ],
+   "drivers": [
+    "find",
+    "story",
+    "crew"
+   ],
+   "reps": "6",
+   "repsOf": "weeks per Tide",
+   "prop": {
+    "s": "add",
+    "note": "Proposal P6. It gives the long game's empty last phase a rhythm built from systems that already tick."
+   },
+   "src": [
+    "proposal"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "from": "round.time",
+   "to": "round.regatta",
+   "kind": "train",
+   "why": "Every Time game is training for Regatta."
+  },
+  {
+   "from": "round.charge",
+   "to": "round.broadside",
+   "kind": "train",
+   "why": "Every Charge game is training for Broadside."
+  },
+  {
+   "from": "round.ms",
+   "to": "round.broodrush",
+   "kind": "train",
+   "why": "Every Mass-Space game is training for Brood Rush."
+  },
+  {
+   "from": "toy.arkway",
+   "to": "voyages",
+   "kind": "cross",
+   "why": "The Arkway is a taste of a freestyle voyage.",
+   "handoff": "new"
+  },
+  {
+   "from": "toybox",
+   "to": "arcade",
+   "kind": "cross",
+   "why": "A hull you liked in the Vessel Changer has games of its own.",
+   "handoff": "new",
+   "in": "x"
+  },
+  {
+   "from": "arcade",
+   "to": "arena",
+   "kind": "cross",
+   "why": "A kit learned alone is ready to be flown against other classes.",
+   "handoff": "done",
+   "in": "px"
+  },
+  {
+   "from": "arena",
+   "to": "voyages",
+   "kind": "cross",
+   "why": "A squad that works in the Arena is the squad you take to sea.",
+   "handoff": "done",
+   "in": "px"
+  },
+  {
+   "from": "voyages",
+   "to": "arcade",
+   "kind": "cross",
+   "why": "After a voyage: back to a card to learn the hull that let you down.",
+   "handoff": "tired",
+   "in": "px"
+  },
+  {
+   "from": "voyages",
+   "to": "arc.fleet",
+   "kind": "feed",
+   "why": "Spend mission rewards on a new vessel.",
+   "handoff": "spend",
+   "in": "px"
+  },
+  {
+   "from": "voyages",
+   "to": "arc.hoard",
+   "kind": "feed",
+   "why": "What is aboard at the dock joins the hoard.",
+   "handoff": "done"
+  },
+  {
+   "from": "voyages",
+   "to": "arc.crew",
+   "kind": "feed",
+   "why": "A job done for a faction raises standing with it.",
+   "handoff": "done"
+  },
+  {
+   "from": "arcade",
+   "to": "arc.fleet",
+   "kind": "feed",
+   "why": "The winner is paid crystals.",
+   "handoff": "spend"
+  },
+  {
+   "from": "ladder",
+   "to": "arc.unlock",
+   "kind": "feed",
+   "why": "Rung I4 completes the mode's quest.",
+   "handoff": "done"
+  },
+  {
+   "from": "arc.fleet",
+   "to": "arcade",
+   "kind": "feed",
+   "why": "A new vessel brings its own games to learn.",
+   "handoff": "new"
+  },
+  {
+   "from": "arc.squad",
+   "to": "arena",
+   "kind": "feed",
+   "why": "The squad you saved is the squad you launch.",
+   "handoff": "spend"
+  },
+  {
+   "from": "arc.crew",
+   "to": "voy.port",
+   "kind": "feed",
+   "why": "Each seated pilot finds their faction's jobs.",
+   "handoff": "new"
+  },
+  {
+   "from": "era.world",
+   "to": "voy.port",
+   "kind": "feed",
+   "why": "What happened in the sea arrives as news, and news becomes jobs.",
+   "handoff": "new"
+  },
+  {
+   "from": "arc.saga",
+   "to": "voyages",
+   "kind": "feed",
+   "why": "A chapter is a job on the board.",
+   "handoff": "new"
+  },
+  {
+   "from": "era.meta",
+   "to": "arc.fleet",
+   "kind": "feed",
+   "why": "A new or retuned vessel is a kit to learn again.",
+   "handoff": "new",
+   "in": "px"
+  },
+  {
+   "from": "arc.social",
+   "to": "sitting",
+   "kind": "feed",
+   "why": "An invite opens the game.",
+   "handoff": "pull"
+  },
+  {
+   "from": "arc.flower",
+   "to": "arena",
+   "kind": "feed",
+   "why": "Each petal offers the arena game it trained for.",
+   "handoff": "done",
+   "in": "x"
+  },
+  {
+   "from": "era.tide",
+   "to": "sitting",
+   "kind": "feed",
+   "why": "The day's job and the week's card are reasons to open the game.",
+   "handoff": "new",
+   "in": "x"
+  },
+  {
+   "from": "breath",
+   "to": "arena",
+   "kind": "cross",
+   "why": "The offered next step after a round.",
+   "handoff": "done",
+   "in": "x"
+  }
+ ],
+ "roles": {
+  "free": {
+   "name": "Flying for its own sake",
+   "t": [
+    10,
+    120
+   ],
+   "is": "No objective. The only driver is whether the kit is a pleasure by itself.",
+   "phases": [
+    {
+     "n": "See a shape in the mass"
+    },
+    {
+     "n": "Fly at it"
+    },
+    {
+     "n": "Use the kit on it"
+    },
+    {
+     "n": "Enjoy the result"
+    }
+   ],
+   "drivers": [
+    "joy",
+    "find"
+   ],
+   "reps": null,
+   "repsOf": "passes per visit"
+  },
+  "time": {
+   "name": "Racing role",
+   "t": [
+    3,
+    20
+   ],
+   "is": "The kit's Time verb, spent where the course rewards it. One pass is one gate.",
+   "phases": [
+    {
+     "n": "See the gate and the line to it"
+    },
+    {
+     "n": "Bank what your Time verb needs"
+    },
+    {
+     "n": "Spend it where it pays"
+    },
+    {
+     "n": "Through the gate with speed kept"
+    }
+   ],
+   "drivers": [
+    "joy",
+    "mastery",
+    "goal"
+   ],
+   "reps": "16-64",
+   "repsOf": "gates per race"
+  },
+  "charge": {
+   "name": "Duelling role",
+   "t": [
+    10,
+    45
+   ],
+   "is": "The kit's Charge verb, landed on a rival's hull. One pass is one scored hit.",
+   "phases": [
+    {
+     "n": "Choose a rival"
+    },
+    {
+     "n": "Get into your verb's range"
+    },
+    {
+     "n": "Land it"
+    },
+    {
+     "n": "Take the petal while they are silenced"
+    },
+    {
+     "n": "Break away before they answer"
+    }
+   ],
+   "drivers": [
+    "rival",
+    "mastery",
+    "goal"
+   ],
+   "reps": null,
+   "repsOf": "scored hits per match"
+  },
+  "ms": {
+   "name": "Cell role",
+   "t": [
+    15,
+    90
+   ],
+   "is": "Where this vessel sits between cultivator and destroyer. Both serve one claim: a vessel may be poor at one if it is great at the other.",
+   "phases": [
+    {
+     "n": "Read the claim: who holds the nucleus"
+    },
+    {
+     "n": "Choose: make our volume or remove theirs"
+    },
+    {
+     "n": "Do it with your Mass or Space verb"
+    },
+    {
+     "n": "The books move",
+     "d": "Volume made, volume removed."
+    },
+    {
+     "n": "The claim shifts"
+    }
+   ],
+   "drivers": [
+    "make",
+    "break",
+    "crew",
+    "goal"
+   ],
+   "reps": null,
+   "repsOf": "passes per brood"
+  },
+  "party": {
+   "name": "Party role",
+   "t": [
+    5,
+    60
+   ],
+   "is": "Whatever the card's one idea asks of the hull.",
+   "phases": [
+    {
+     "n": "See what the card wants"
+    },
+    {
+     "n": "Use the kit on it"
+    },
+    {
+     "n": "Score or be laughed at"
+    }
+   ],
+   "drivers": [
+    "crew",
+    "joy"
+   ],
+   "reps": null,
+   "repsOf": "passes per round"
+  },
+  "cell": {
+   "name": "Escort role",
+   "t": [
+    15,
+    90
+   ],
+   "is": "The cell role with the Ark in it: take the nucleus for the domain, and keep fauna off the hull while it regrows.",
+   "phases": [
+    {
+     "n": "Read the cell: claim, fauna, the Ark's plates"
+    },
+    {
+     "n": "Choose: clear, build or guard"
+    },
+    {
+     "n": "Do it with the kit"
+    },
+    {
+     "n": "The claim and the Ark answer"
+    }
+   ],
+   "drivers": [
+    "crew",
+    "goal",
+    "stake",
+    "make",
+    "break"
+   ],
+   "reps": null,
+   "repsOf": "passes per cell"
+  }
+ },
+ "roleHoles": [
+  {
+   "on": "np",
+   "q": "How many passes of the role make a round is counted for races (gates) and not for the other games.",
+   "fill": "Count scored hits and claim shifts per match from the scoreboard's own events, and aim each game at 6 to 10 passes in its 90 seconds."
+  },
+  {
+   "on": "np",
+   "q": "Where this vessel sits between cultivator and destroyer is to be measured from play. It has not been measured, and the player is never shown it.",
+   "fill": "Show each pilot their two volume numbers live as one meter, and print the vessel's measured lean on its Hangar card once 100 matches exist."
+  }
+ ],
+ "kit": {
+  "is": "The vessel's four elemental verbs, its omni crystal, its combos and its feel. The kit as designed never changes for a game mode.",
+  "holes": [
+   {
+    "on": "np",
+    "q": "The combos baked into this kit are not written down anywhere, so nothing checks that a game rewards them or that the ability icons teach them.",
+    "fill": "Each kit doc names two combos: a feeder into a spender, and one that crosses two elements. The ones shown here are invented from the ability texts for the vessel's owner to correct."
+   }
+  ]
+ },
+ "pulse": {
+  "name": "Flight feel",
+  "t": [
+   0.1,
+   3
+  ],
+  "is": "Stick in, hull answers, camera, sound and haptics confirm. Skimming close to mass pays a pulse; ramming it costs a thud.",
+  "phases": [
+   {
+    "n": "Move the stick"
+   },
+   {
+    "n": "The hull answers"
+   },
+   {
+    "n": "The world confirms",
+    "d": "Camera, sound, the skim pulse or the punish thud."
+   },
+   {
+    "n": "Correct"
+   }
+  ],
+  "drivers": [
+   "joy"
+  ],
+  "holes": [
+   {
+    "on": "np",
+    "q": "What this hull should feel like with nothing to do is not stated per vessel, and only the Dolphin has been signed off as fun.",
+    "fill": "One sentence per hull in its kit doc: the feeling of its cruise, and the one motion that is a pleasure to repeat."
+   }
+  ]
+ },
+ "verbHole": {
+  "on": "np",
+  "q": "This verb's loop is written as what it does, not as steps, and the feeling it should provoke, and at which step, is not written.",
+  "fillPrefix": "Invented from the trigger: "
+ },
+ "archetypes": {
+  "hold_release": {
+   "match": "release",
+   "phases": [
+    "Commit: press and hold",
+    "It builds while you hold",
+    "Release at the right moment",
+    "The payoff lands",
+    "Recover"
+   ],
+   "feel": "Tension while it builds, then the snap of letting go.",
+   "at": 2
+  },
+  "mode": {
+   "match": "switch mode|toggle|cycle|select mode|tap to stop",
+   "phases": [
+    "Read what the moment needs",
+    "Switch",
+    "Play the mode's strength",
+    "Its weakness shows",
+    "Switch back"
+   ],
+   "feel": "Changing shape to fit the moment.",
+   "at": 2
+  },
+  "seat": {
+   "match": "seat",
+   "phases": [
+    "One seat sets it up",
+    "The other seat sees the chance",
+    "Press together",
+    "The payoff is shared"
+   ],
+   "feel": "We did that together.",
+   "at": 2
+  },
+  "hold": {
+   "match": "hold",
+   "phases": [
+    "Press in",
+    "It pays while you hold",
+    "The cost climbs",
+    "Let go in time",
+    "Cool down"
+   ],
+   "feel": "Power under the thumb, and the nerve to let go.",
+   "at": 1
+  },
+  "passive": {
+   "match": "passive|always on|on contact",
+   "phases": [
+    "Look for the condition",
+    "Fly it right",
+    "It fires by itself",
+    "The payoff",
+    "Look for the next"
+   ],
+   "feel": "The world pays you for flying well.",
+   "at": 2
+  },
+  "omni": {
+   "match": "omni",
+   "phases": [
+    "Spot the omni crystal",
+    "Race for it",
+    "It bursts",
+    "Ride the window",
+    "Hunt the next"
+   ],
+   "feel": "A jackpot you had to win a race for.",
+   "at": 2
+  },
+  "card": {
+   "match": "hand",
+   "phases": [
+    "A hand is dealt",
+    "Pick the card the swarm lacks",
+    "The swarm changes",
+    "Watch it work",
+    "The next hand"
+   ],
+   "feel": "A plan coming together without your hands on it.",
+   "at": 3
+  },
+  "off": {
+   "match": "switched off",
+   "phases": [
+    "Switched off"
+   ],
+   "feel": "",
+   "at": 0
+  },
+  "tap": {
+   "match": "tap",
+   "phases": [
+    "Spot the moment",
+    "Tap",
+    "The payoff",
+    "The cooldown runs",
+    "Ready again"
+   ],
+   "feel": "A clean decision, answered at once.",
+   "at": 2
+  }
+ },
+ "elementDrivers": {
+  "Time": [
+   "joy",
+   "mastery"
+  ],
+  "Charge": [
+   "rival",
+   "mastery"
+  ],
+  "Mass": [
+   "make",
+   "crew"
+  ],
+  "Space": [
+   "break",
+   "joy"
+  ],
+  "Omni": [
+   "find",
+   "joy"
+  ]
+ },
+ "proposals": [
+  {
+   "id": "P1",
+   "title": "One ladder of words",
+   "what": "Use the eight tier terms (Pulse, Verb, Combo, Role, Round, Session, Arc, Era) in every design doc, ticket and review, so a problem is placed before it is argued.",
+   "touches": [
+    "era"
+   ]
+  },
+  {
+   "id": "P2",
+   "title": "Every verb names its feeling",
+   "what": "Each ability's doc gets its loop as steps and one sentence: the feeling, and the step where it lands. The fun card asks about that step.",
+   "touches": []
+  },
+  {
+   "id": "P3",
+   "title": "Every kit names two combos",
+   "what": "A feeder into a spender, and one that crosses two elements. Ability icons and the Mentor teach them; a game's course is checked against them.",
+   "touches": []
+  },
+  {
+   "id": "P4",
+   "title": "Show the role",
+   "what": "The two volume numbers the scoreboard already books become one live meter, and the vessel's measured lean goes on its Hangar card.",
+   "touches": [
+    "round.ms",
+    "round.broodrush",
+    "voy.cell"
+   ]
+  },
+  {
+   "id": "P5",
+   "title": "The breath between rounds",
+   "what": "After every result, one offered next step: rematch, next rung, or a crossing to the place the round trained for.",
+   "touches": [
+    "breath",
+    "sitting",
+    "arcade"
+   ]
+  },
+  {
+   "id": "P6",
+   "title": "The Tide",
+   "what": "A daily job, a weekly card and a six-week season, built from the living sea's tick and the studio's rebalance.",
+   "touches": [
+    "era.tide",
+    "era.meta",
+    "arc.saga",
+    "arc.support"
+   ]
+  },
+  {
+   "id": "P7",
+   "title": "More to spend crystals on",
+   "what": "Ark refits, recruiting pilots and colour sets, so the payout still drives something after the last vessel.",
+   "touches": [
+    "arc.fleet"
+   ]
+  },
+  {
+   "id": "P8",
+   "title": "The vessel's flower",
+   "what": "Three petals per hull, lit by clearing its Time, Charge and Mass-Space games at I3. The player's own pass through the elemental loop.",
+   "touches": [
+    "arc.flower",
+    "arc.unlock"
+   ]
+  },
+  {
+   "id": "P9",
+   "title": "Set the counts",
+   "what": "Cells per leg, rounds per run, matches per set, passes per round: each gets a target number and an analytics event that measures it.",
+   "touches": [
+    "voy.cell",
+    "arcade",
+    "arena",
+    "sitting"
+   ]
+  },
+  {
+   "id": "P10",
+   "title": "One currency",
+   "what": "Voyage pay is the same crystals as arcade pay, so 'the voyage ended, buy a vessel' is a real path.",
+   "touches": [
+    "voyages",
+    "arc.fleet"
+   ]
+  },
+  {
+   "id": "P11",
+   "title": "A party owns something",
+   "what": "A party shares one voyage record, and a crew vessel's empty seat is an invite.",
+   "touches": [
+    "arc.social"
+   ]
+  },
+  {
+   "id": "P12",
+   "title": "A replay can travel",
+   "what": "A ten-second cut shared as a link that opens the same card at the same rung.",
+   "touches": [
+    "arc.replay"
+   ]
+  }
+ ],
+ "fleet": {
+  "Angler": {
+   "label": "Angler",
+   "verbs": {
+    "Time": {
+     "ability": "Dash to the School",
+     "does": "Dash most of the way to the centre of one half of your school in a blink; the next dash goes to the other half, so you hop between your two groups.",
+     "trigger": "Tap",
+     "scales": "More Time makes your tamed creatures swim faster.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Charge": {
+     "ability": "Erase / Lock-on",
+     "does": "A narrow beam unpaints prisms. Sweep it onto a rival vessel to lock on: one creature leaves your school and chases that vessel until it dies, every bite taking petals.",
+     "trigger": "Hold",
+     "scales": "Charge does not change this ability yet.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Mass": {
+     "ability": "Lure, Tame & Grow",
+     "does": "Light the lure and stop: wild herbivores in reach turn to you, and one held in the light long enough joins your school. Plants in the light grow faster; let go to plant any seed an omni crystal left.",
+     "trigger": "Hold",
+     "scales": "Mass does not change this ability yet.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Space": {
+     "ability": "Paint",
+     "does": "A long beam paints prisms, which light up while half your school balls up ahead. Let go to throw that half at the newest painted prisms to eat them; the next throw sends the other half.",
+     "trigger": "Hold, release to throw",
+     "scales": "Space does not change this ability yet.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md",
+     "arch": "hold_release",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Omni": {
+     "ability": "Tame",
+     "does": "The crystal turns into a random creature that joins your school, and leaves a plant seed that is planted in your colour the next time you let go of the lure.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b .",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Lantern Run"
+    ],
+    "Charge": [
+     "Kelpwood"
+    ],
+    "Mass": [
+     "Glasshouse"
+    ],
+    "Space": [
+     "Chum"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The school play",
+     "t": [
+      15,
+      60
+     ],
+     "is": "You fight with what you have gathered.",
+     "chain": [
+      [
+       "Mass",
+       "Light the lure: tame and grow the school"
+      ],
+      [
+       "Space",
+       "Paint prisms, let go: half the school is thrown at them"
+      ],
+      [
+       "Time",
+       "Dash to the other half"
+      ],
+      [
+       "Charge",
+       "Lock a rival: a creature hunts them"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "crew",
+      "break"
+     ],
+     "feel": "Conducting, not fighting."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md"
+  },
+  "BrittleStar": {
+   "label": "Brittle Star",
+   "verbs": {
+    "Time": {
+     "ability": "Speed Mode",
+     "does": "Ignite every thruster for a big jump in cruise speed. The trail spreads out and stretches so it still joins up, without laying more prisms per second.",
+     "trigger": "Tap to switch mode",
+     "scales": "More Time makes Speed Mode faster still.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Charge": {
+     "ability": "Charge Mode",
+     "does": "Five cords, one per turret, slice prisms and strike rival hulls for petals: loose whips, or stiff sabers while you fire. With a spare ring, throw the ring to burst a spinning disk that wrecks every prism in its plane.",
+     "trigger": "Tap to switch mode",
+     "scales": "More Charge widens the cords' cut, grows the rounds and thickens the thrown ring's blast disk.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Mass": {
+     "ability": "Creation Mode",
+     "does": "Lay a trail behind each of the ring's five corners instead of one behind the cockpit, the five lines turning with the ring. The slowest mode: you cruise at half speed.",
+     "trigger": "Tap to switch mode",
+     "scales": "More Mass makes every block you lay wider and taller, never longer.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Space": {
+     "ability": "Space Mode",
+     "does": "All five guns fire together, converged ahead or splayed by your aim, and rounds that hit rival hulls take petals. Firing heats the guns; overheated they stop, and your trail lays danger prisms.",
+     "trigger": "Tap to switch mode, hold to fire",
+     "scales": "More Space gives every gun longer range and lets the guns hold more heat before they overheat.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Omni": {
+     "ability": "Ring Charge",
+     "does": "Adds a spare ring to your stock, up to two, so you can throw your ring for a ring explosion.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b .",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [
+    "Regatta"
+   ],
+   "games": {
+    "Time": [
+     "Brittle Star Time"
+    ],
+    "Charge": [
+     "Flatline"
+    ],
+    "Mass": [
+     "Starweave"
+    ],
+    "Space": [
+     "Shatterplane"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The shift line",
+     "t": [
+      10,
+      40
+     ],
+     "is": "Four modes, each the answer to the last one's cost.",
+     "chain": [
+      [
+       "Time",
+       "Speed Mode to get there"
+      ],
+      [
+       "Space",
+       "Space Mode: five guns until they overheat"
+      ],
+      [
+       "Mass",
+       "Creation Mode: five trails while the guns cool"
+      ],
+      [
+       "Charge",
+       "Charge Mode when a rival comes close"
+      ]
+     ],
+     "drivers": [
+      "mastery",
+      "make",
+      "break"
+     ],
+     "feel": "Always in the right gear."
+    },
+    {
+     "name": "The ring throw",
+     "t": [
+      10,
+      30
+     ],
+     "is": "A spare ring is a thrown saw.",
+     "chain": [
+      [
+       "Omni",
+       "An omni crystal adds a spare ring"
+      ],
+      [
+       "Charge",
+       "Throw it: a disk wrecks every prism in its plane"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "joy"
+     ],
+     "feel": "One huge flat cut."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md"
+  },
+  "Dolphin": {
+   "label": "Dolphin",
+   "verbs": {
+    "Time": {
+     "ability": "Charge Fill Rate",
+     "does": "Hold to drift, sliding at the speed you entered with while your boost meter fills. Let go and the stored boost carries you off in a burst that fades back to cruise.",
+     "trigger": "Hold, release to boost",
+     "scales": "More Time fills the boost meter faster while you drift; it does not raise boost speed.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md",
+     "arch": "hold_release",
+     "t": [
+      2,
+      12
+     ],
+     "hand": {
+      "in": "px",
+      "phases": [
+       "Hold to drift at the speed you came in with",
+       "The boost meter fills",
+       "Let go",
+       "The burst carries you off",
+       "It fades back to cruise"
+      ],
+      "feel": "The slide and the kick out of it.",
+      "at": 3
+     }
+    },
+    "Charge": {
+     "ability": "Echo Sight",
+     "does": "While held, every prism inside the area your next crystal blast would destroy lights up, so you can line up the shot before you fire.",
+     "trigger": "Hold",
+     "scales": "More Charge makes your blast thicker across the beam, trading a long thin beam for a fat round one.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Mass": {
+     "ability": "Crystal Seeding",
+     "does": "On a repeating timer the Dolphin drops a crystal somewhere in the open space of the cell - ammo for your next blast, but any pilot who reaches it first can take it.",
+     "trigger": "Passive - on a timer",
+     "scales": "More Mass seeds crystals more often.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Echo Obliteration",
+     "does": "Skimming prisms banks energy; flying into a crystal spends all of it in a fan-shaped blast ahead that destroys the prisms inside. More energy opens it wider. Ramming a prism halves your bank.",
+     "trigger": "Passive - fly into a crystal",
+     "scales": "More Space makes the blast reach further ahead.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ],
+     "hand": {
+      "in": "px",
+      "phases": [
+       "Skim prisms to bank energy",
+       "Find a crystal",
+       "Fly into it",
+       "The fan-shaped blast spends the whole bank",
+       "Start banking again"
+      ],
+      "feel": "The size of the blast is the size of what you banked.",
+      "at": 3
+     }
+    },
+    "Omni": {
+     "ability": "Omni crystal",
+     "does": "Fires a cone blast ahead that destroys prisms in its path. The energy you banked by skimming sets how wide it opens, and the crystal spends all of it.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "D b b",
+    "Charge": "b b .",
+    "Mass": "- - -",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [
+    "Regatta",
+    "Broadside",
+    "Brood Rush"
+   ],
+   "games": {
+    "Time": [
+     "Switchback"
+    ],
+    "Charge": [
+     "The Bends"
+    ],
+    "Mass": [],
+    "Space": [
+     "Rampage"
+    ]
+   },
+   "excused": [
+    "Mass"
+   ],
+   "lean": "destroyer",
+   "leanWhy": "No mass-making ability; its Mass game is excused.",
+   "combos": [
+    {
+     "in": "px",
+     "name": "The echo shot",
+     "t": [
+      12,
+      40
+     ],
+     "src": "Garrett's brief, 2026-11-18",
+     "is": "The Dolphin's full attack: power, target, ammunition, alignment, explosion.",
+     "chain": [
+      [
+       "Space",
+       "Skim prisms to get power"
+      ],
+      [
+       "",
+       "Seek a target worth destroying"
+      ],
+      [
+       "Mass",
+       "Seek a crystal that can hit that target"
+      ],
+      [
+       "Charge",
+       "Aim onto the crystal so the two are on a collision course"
+      ],
+      [
+       "",
+       "Find the target again"
+      ],
+      [
+       "Space",
+       "The explosion completes the loop"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "mastery",
+      "goal"
+     ],
+     "feel": "Seeing the line before you fly it, and being right."
+    },
+    {
+     "in": "px",
+     "name": "The hunter's shot",
+     "t": [
+      10,
+      30
+     ],
+     "src": "Garrett's brief, 2026-11-18",
+     "is": "The same loop pointed at enemy vessels.",
+     "chain": [
+      [
+       "Space",
+       "Skim for power"
+      ],
+      [
+       "",
+       "Pick a rival vessel"
+      ],
+      [
+       "Mass",
+       "Find a crystal on their line"
+      ],
+      [
+       "Charge",
+       "Line them up"
+      ],
+      [
+       "Space",
+       "Fire through the crystal"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "mastery"
+     ],
+     "feel": "Leading a moving target."
+    },
+    {
+     "in": "px",
+     "name": "The snap shot",
+     "t": [
+      4,
+      12
+     ],
+     "src": "Garrett's brief, 2026-11-18",
+     "is": "Skip the skimming. The shot is smaller, and you fire more often. Which one to use depends on what you are shooting.",
+     "chain": [
+      [
+       "",
+       "See a target"
+      ],
+      [
+       "Mass",
+       "Take the nearest crystal"
+      ],
+      [
+       "Space",
+       "A small blast, now"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "joy"
+     ],
+     "feel": "Rate of fire over size."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md"
+  },
+  "Goby": {
+   "label": "Goby",
+   "verbs": {
+    "Time": {
+     "ability": "Quick Jump",
+     "does": "Switched off: the Pistol's aimed jump is disabled in the Goby and Pistol config, so nothing fires it right now, neither a player nor the AI. Its level-5 upgrade is wired for when it returns.",
+     "trigger": "Switched off",
+     "scales": "Time has nothing to act on while the jump is off.",
+     "source": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset",
+     "arch": "off",
+     "t": [
+      1,
+      1
+     ]
+    },
+    "Charge": {
+     "ability": "Vortex Sting",
+     "does": "The Pistol's Snap fires a vortex ring that sweeps up rival prisms and smashes them as it collapses; a ring that hits a rival hull takes petals. If the Goby holds a lock on a rival in the Pistol's view, the ring homes in.",
+     "trigger": "Passive - Pistol fires, Goby locks",
+     "scales": "More Charge makes each ring hit take more petals from every one of a rival's elements.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Mass": {
+     "ability": "Dens",
+     "does": "At each perch the Pistol rests and builds a den of prisms and shielded prisms, bigger the more energy it earned flying over its ground. It can ride back to add to an old den; a fall loses the energy.",
+     "trigger": "Passive - the Pistol rests at a perch",
+     "scales": "More Mass builds more den prisms from the same energy.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Undertow",
+     "does": "Mass either side of the Pistol's plane is pulled into it, and crystals drift in for the Pistol to collect. Danger, super-shielded and your own prisms never move.",
+     "trigger": "Always on",
+     "scales": "More Space pulls mass in from further away and widens the hull's skim reach.",
+     "source": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    }
+   },
+   "board": {
+    "Time": "b ~ .",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Perch Run"
+    ],
+    "Charge": [
+     "Snap"
+    ],
+    "Mass": [
+     "Den Builder"
+    ],
+    "Space": [
+     "Riptide"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "Perch to perch",
+     "t": [
+      15,
+      60
+     ],
+     "is": "One seat lays the path, the other plays it.",
+     "chain": [
+      [
+       "",
+       "The Goby darts: a path is laid"
+      ],
+      [
+       "Space",
+       "The Pistol rides it; mass is pulled into its plane"
+      ],
+      [
+       "Charge",
+       "A vortex ring homes on the Goby's lock"
+      ],
+      [
+       "Mass",
+       "At the perch the Pistol builds a den"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "make",
+      "rival"
+     ],
+     "feel": "Two games that need each other."
+    }
+   ],
+   "doc": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset"
+  },
+  "Grizzly": {
+   "label": "Grizzly",
+   "verbs": {
+    "Time": {
+     "ability": "Rush",
+     "does": "Spend energy to lunge forward in a burst of speed that fades out over a second. You hold up to three rushes, refilled over time, and using one pulls you out of Dig In.",
+     "trigger": "Tap",
+     "scales": "More Time makes each rush cost less energy.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_RUSH.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Charge": {
+     "ability": "Dig In",
+     "does": "Toggle to plant the Grizzly in place. You cannot move but can still aim, your trail stops, and energy refills faster. Rushing breaks you out.",
+     "trigger": "Tap to toggle",
+     "scales": "More Charge refills energy faster while dug in.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_DIG_IN.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Mass": {
+     "ability": "Weapon Systems",
+     "does": "Cycles your fire between three weapons: explosive shells, a sniper shot, and a plasma claw that sets enemy prisms on fire with a burn that spreads and destroys them.",
+     "trigger": "Tap to cycle",
+     "scales": "Mass does not change this ability right now.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_PLASMA_CLAW.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Space": {
+     "ability": "Charged Cannon",
+     "does": "Hold to charge a shell from your energy and release to fire it. Press again to freeze it where it is, then let go to set it off. Bigger charge, bigger blast, and the blast can launch you.",
+     "trigger": "Hold, release to fire",
+     "scales": "More Space makes the cannon's explosions bigger.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_CHARGED_CANNON.md",
+     "arch": "hold_release",
+     "t": [
+      2,
+      12
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b .",
+    "Charge": "b b .",
+    "Mass": "- - -",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Grizzly Time"
+    ],
+    "Charge": [
+     "Standoff"
+    ],
+    "Mass": [],
+    "Space": [
+     "Grizzly Charge"
+    ]
+   },
+   "excused": [
+    "Mass"
+   ],
+   "lean": "destroyer",
+   "leanWhy": "Its weapons only destroy; its Mass game is excused.",
+   "combos": [
+    {
+     "name": "The siege",
+     "t": [
+      10,
+      40
+     ],
+     "is": "Rush in, dig in, fire, rush out.",
+     "chain": [
+      [
+       "Time",
+       "Rush to a post"
+      ],
+      [
+       "Charge",
+       "Dig In: energy refills"
+      ],
+      [
+       "Space",
+       "Charge the cannon and release"
+      ],
+      [
+       "Mass",
+       "Cycle to the claw: the burn spreads"
+      ],
+      [
+       "Time",
+       "Rush out"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "mastery"
+     ],
+     "feel": "Heavy, planted, loud."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_RUSH.md"
+  },
+  "Honeyguide": {
+   "label": "Honeyguide",
+   "verbs": {
+    "Time": {
+     "ability": "Slip",
+     "does": "Touch a trail of a colour your battery holds with your nose along it and zip along it to its end. It spends that colour's charge, which the Ratel earns by making patterns.",
+     "trigger": "Passive - nose along a trail",
+     "scales": "The map names no Time scaling for the slip itself.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Charge": {
+     "ability": "Flit",
+     "does": "Hold to see the dart's line, let go to dart forward, striking every rival ship and creature along it. Each Charge card the Ratel makes on its puzzle banks three stronger uses.",
+     "trigger": "Hold, release to fire",
+     "scales": "The map names no Charge scaling for the dart; Charge cards from the Ratel are what change it.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+     "arch": "hold_release",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Mass": {
+     "ability": "Hive",
+     "does": "Every so often a hive appears somewhere in the cell, marked by a turning hex frame. Fly into it and the Ratel's board becomes a hive puzzle that pays out prisms and charges.",
+     "trigger": "Passive - fly into a hive",
+     "scales": "More Mass makes new hives appear sooner.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Peck",
+     "does": "Hold to see the aim line, let go to fire three quick shots that chip away rival prisms ahead. Each Space card the Ratel makes banks three stronger uses.",
+     "trigger": "Hold, release to fire",
+     "scales": "The map names no Space scaling for the pecks; Space cards from the Ratel are what change them.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+     "arch": "hold_release",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Omni": {
+     "ability": "Sparrow Vessel Ward + Omni",
+     "does": "The crystal turns into a hive comb behind you and the Ratel plays the hive puzzle. Your ship is shielded from elemental damage while hive mode lasts, and for 8 seconds besides.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/HoneyguideOmniCrystalEffectSO.cs",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b .",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Slip Line"
+    ],
+    "Charge": [
+     "Flitstrike"
+    ],
+    "Mass": [
+     "Honeycomb"
+    ],
+    "Space": [
+     "Woodpecker"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "Puzzle to dart",
+     "t": [
+      15,
+      60
+     ],
+     "is": "The Ratel's puzzle loads the Honeyguide's shots.",
+     "chain": [
+      [
+       "Mass",
+       "Fly into a hive"
+      ],
+      [
+       "",
+       "The Ratel plays: cards bank stronger uses"
+      ],
+      [
+       "Charge",
+       "Flit, or Peck, with what was banked"
+      ],
+      [
+       "Time",
+       "Slip along a trail to the next hive"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "mastery"
+     ],
+     "feel": "My partner made that shot possible."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md"
+  },
+  "Jacks": {
+   "label": "Jacks",
+   "verbs": {
+    "Time": {
+     "ability": "Decoys",
+     "does": "Herding, drop a decoy jack where one of your jacks stands; it keeps the herd away like a third jack. Netting, rush the whole ship to the decoy at speed.",
+     "trigger": "Tap",
+     "scales": "More Time makes your herd swim faster.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Charge": {
+     "ability": "Danger Share",
+     "does": "Part of your herd turns dangerous. A danger creature that touches a rival hull stings it, scoring a hit, and is used up.",
+     "trigger": "Passive - your herd touches a rival",
+     "scales": "More Charge makes more of your herd dangerous, from none of it to all of it.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Mass": {
+     "ability": "The Call",
+     "does": "Herding, the herd rushes to the point between your two jacks for a moment. Netting, it switches whether your creatures are pulled onto your plane.",
+     "trigger": "Tap",
+     "scales": "More Mass makes your herd breed faster, each birth costing less food.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Space": {
+     "ability": "Wide",
+     "does": "Herding, the view eases out to show the whole cell so you can find more creatures, and back in again. It does nothing while netting.",
+     "trigger": "Tap",
+     "scales": "More Space widens the ring your jacks and decoy push the herd away with.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Omni": {
+     "ability": "Omni Worm",
+     "does": "A jack or the hull that collects an omni crystal hatches a worm colony of your colour behind you, which eats prisms and creatures. A crystal caught in the net is carried, not collected.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b .",
+    "Charge": "b b .",
+    "Mass": "- - -",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Decoy Run"
+    ],
+    "Charge": [
+     "Stingherd"
+    ],
+    "Mass": [],
+    "Space": [
+     "Trawl"
+    ]
+   },
+   "excused": [
+    "Mass"
+   ],
+   "lean": "destroyer",
+   "leanWhy": "A herd is not mass; its Mass game is excused.",
+   "combos": [
+    {
+     "name": "Herd and sting",
+     "t": [
+      15,
+      60
+     ],
+     "is": "Find them, shape them, send them.",
+     "chain": [
+      [
+       "Space",
+       "Go wide to find creatures"
+      ],
+      [
+       "Time",
+       "Decoys shape the herd"
+      ],
+      [
+       "Mass",
+       "The Call rushes it between the jacks"
+      ],
+      [
+       "Charge",
+       "Danger creatures sting rival hulls"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "rival",
+      "mastery"
+     ],
+     "feel": "A flock turning as one."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md"
+  },
+  "JewelWasp": {
+   "label": "Jewel Wasp",
+   "verbs": {},
+   "board": {
+    "Time": "x x x",
+    "Charge": "b b .",
+    "Mass": "x x x",
+    "Space": "b b ."
+   },
+   "missing": "Time",
+   "arenas": [],
+   "games": {
+    "Time": [],
+    "Charge": [
+     "Marionette"
+    ],
+    "Mass": [],
+    "Space": [
+     "Gorge"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [],
+   "doc": ""
+  },
+  "Manta": {
+   "label": "Manta",
+   "verbs": {
+    "Time": {
+     "ability": "Yawstery",
+     "does": "Hard, flat turns on the turn pair, one side per direction. Your trail is a plain trail; Time makes the Manta faster, cruising and soaring.",
+     "trigger": "Hold, one side per direction",
+     "scales": "More Time raises your cruise speed and your soaring speed.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Charge": {
+     "ability": "Sting",
+     "does": "Graze a rival vessel or creature to plant a bomb without them knowing; each costs the energy your skimming gathers. Every bomb shares one fuse and a new plant resets it, so they all go off together, and none can be scraped off.",
+     "trigger": "Passive - skim to arm, graze to plant",
+     "scales": "More Charge makes the shared fuse run longer when a plant resets it: 20 s at rest, 30 s at Charge 10.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Mass": {
+     "ability": "Decoy",
+     "does": "Every elemental crystal you collect leaves a decoy where it was, one of its effects frozen as the tell. A rival who takes it gets a cluster of danger prisms laid across their course.",
+     "trigger": "Passive - collect a crystal",
+     "scales": "More Mass makes a decoy stand longer.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Skim",
+     "does": "Skimming prisms gathers the energy that plants bombs, and turns rival prisms explosive: destroyed, they take their neighbours with them. Touching a prism with your hull sets off every bomb and loses all the energy.",
+     "trigger": "Passive - skim prisms",
+     "scales": "More Space widens your skimmer.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Omni": {
+     "ability": "Kabloom",
+     "does": "Every bomb you have planted on rivals and creatures goes off at once, and a blast blooms round your own ship as well.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/MantaKabloomByCrystalEffectSO.cs",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "~ b ~",
+    "Charge": "b b .",
+    "Mass": "x x x",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [
+    "Regatta",
+    "Broadside",
+    "Brood Rush"
+   ],
+   "games": {
+    "Time": [
+     "Redline"
+    ],
+    "Charge": [
+     "Corona"
+    ],
+    "Mass": [],
+    "Space": [
+     "Bloomrush"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The fuse",
+     "t": [
+      15,
+      60
+     ],
+     "is": "Arm quietly, plant on many, set them all off at once.",
+     "chain": [
+      [
+       "Space",
+       "Skim a prism to arm: one energy is one bomb"
+      ],
+      [
+       "Charge",
+       "Plant on as many as you dare: the planting loop"
+      ],
+      [
+       "Omni",
+       "Kabloom: every bomb goes off"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "mastery"
+     ],
+     "feel": "Nobody knew until it went off.",
+     "sub": [
+      {
+       "name": "Plant and reset",
+       "at": 1,
+       "t": [
+        4,
+        20
+       ],
+       "is": "The loop inside the fuse. Graze a rival or a creature to plant a bomb, and the shared fuse starts again for every bomb already planted. Energy holds only one bomb, so each plant needs a fresh skim.",
+       "chain": [
+        [
+         "Charge",
+         "Graze a rival or creature: a bomb is planted"
+        ],
+        [
+         "Charge",
+         "The shared fuse resets: 20 s at rest, 30 s at Charge 10"
+        ],
+        [
+         "Space",
+         "Skim a prism for the next energy"
+        ],
+        [
+         "",
+         "Pick the next target, or cash out"
+        ]
+       ],
+       "drivers": [
+        "rival",
+        "mastery",
+        "stake"
+       ],
+       "repsOf": "bombs planted before the cash-out",
+       "feel": "One more bomb is a bigger bloom, and one more chance to brush a prism and lose them all.",
+       "src": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md section 0"
+      }
+     ]
+    },
+    {
+     "name": "The bait",
+     "t": [
+      10,
+      40
+     ],
+     "is": "Leave a decoy and let greed do the work.",
+     "chain": [
+      [
+       "Mass",
+       "Collect a crystal: a decoy is left"
+      ],
+      [
+       "Time",
+       "Yaw hard away"
+      ],
+      [
+       "",
+       "A rival takes the decoy into danger prisms"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "joy"
+     ],
+     "feel": "A trap someone chose to walk into."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
+  },
+  "Meerkat": {
+   "label": "Meerkat",
+   "verbs": {
+    "Time": {
+     "ability": "Faster Ride",
+     "does": "You rush through every tunnel faster, your own or another Meerkat's.",
+     "trigger": "Passive - ride a tunnel",
+     "scales": "More Time makes the rush through every tunnel stronger.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Charge": {
+     "ability": "Sentinel Mode",
+     "does": "While on, each new tunnel leaves a sentinel at its entrance that zaps rivals nearby, knocking out petals and silencing them, and shields your own prisms there. Its tunnel stands while it does.",
+     "trigger": "Toggle",
+     "scales": "More Charge makes each sentinel zap knock out more of a rival's petals.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Mass": {
+     "ability": "Exit Portal",
+     "does": "Each tunnel you form sets six small prisms of your colour in a hexagon round its way out.",
+     "trigger": "Passive - form a tunnel",
+     "scales": "More Mass makes the exit portal's prisms bigger.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Soliton",
+     "does": "Form the tunnel your reticle shows and dive through it. It stays standing for Meerkats to ride, sucks in nearby prisms and fires them out the far end to smash other prisms for you.",
+     "trigger": "Tap",
+     "scales": "More Space gives every tunnel more surface, so a tunnel of any length comes out fatter.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Omni": {
+     "ability": "Soliton Network",
+     "does": "Grows a network of branching wormhole tunnels from where you took the crystal that you can slide through; with full Mass it covers the whole cell.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b .",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Burrow Run",
+     "Warpline"
+    ],
+    "Charge": [
+     "Sentry"
+    ],
+    "Mass": [
+     "Warren"
+    ],
+    "Space": [
+     "Cave-in"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The burrow",
+     "t": [
+      8,
+      30
+     ],
+     "is": "A tunnel is a road, a cannon and a fort.",
+     "chain": [
+      [
+       "Space",
+       "Form a tunnel and dive: it fires prisms out the far end"
+      ],
+      [
+       "Time",
+       "Ride it faster"
+      ],
+      [
+       "Mass",
+       "A hexagon of your prisms at the exit"
+      ],
+      [
+       "Charge",
+       "A sentinel on the entrance"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "make",
+      "break"
+     ],
+     "feel": "Disappearing here and arriving there."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md"
+  },
+  "Orca": {
+   "label": "Orca",
+   "verbs": {
+    "Time": {
+     "ability": "Boost Tank",
+     "does": "The helm boosts while the tank lasts, and the tank refills on its own.",
+     "trigger": "Helm seat - hold",
+     "scales": "More Time refills the tank faster and makes the boost faster.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
+     "arch": "seat",
+     "t": [
+      4,
+      20
+     ]
+    },
+    "Charge": {
+     "ability": "Flown Missiles",
+     "does": "Each gunner launches missiles from its own magazine and steers them by hand; a missile collects crystals it flies through. An omni crystal gives every gunner one more missile.",
+     "trigger": "Gunner seats - tap to launch, then steer",
+     "scales": "More Charge makes the missiles fly faster and turn sharper.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
+     "arch": "seat",
+     "t": [
+      4,
+      20
+     ]
+    },
+    "Mass": {
+     "ability": "Danger Shield",
+     "does": "The helm rings the hull in super-shielded prisms, open ahead, that ride with it for a few seconds, then drop where they stand as danger prisms that linger.",
+     "trigger": "Helm seat - tap",
+     "scales": "More Mass carries the shield ring with the hull for longer before it drops.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
+     "arch": "seat",
+     "t": [
+      4,
+      20
+     ]
+    },
+    "Space": {
+     "ability": "Burst",
+     "does": "A missile bursts on contact, after five seconds, or when its gunner taps again, wrecking rival prisms nearby and taking petals from rival hulls; the bomb gunner's bomb bursts the same way.",
+     "trigger": "On contact, on its fuse, or tap again",
+     "scales": "More Space widens the missile and bomb blasts and the hull's skim reach.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Omni": {
+     "ability": "Omni",
+     "does": "Every gunner seat gets one more missile in its magazine, whether the hull or a gunner's missile took the crystal.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrew.cs",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b ~ .",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Breach"
+    ],
+    "Charge": [
+     "Pod Hunt"
+    ],
+    "Mass": [
+     "Ice Shelf"
+    ],
+    "Space": [
+     "Depth Charge"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The broadside",
+     "t": [
+      10,
+      40
+     ],
+     "is": "The helm puts the guns where they can work.",
+     "chain": [
+      [
+       "Time",
+       "Helm: boost into position"
+      ],
+      [
+       "Mass",
+       "Helm: ring the hull in shield"
+      ],
+      [
+       "Charge",
+       "Gunners: launch and fly the missiles"
+      ],
+      [
+       "Space",
+       "Burst on contact"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "break",
+      "rival"
+     ],
+     "feel": "Four people, one hit."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md"
+  },
+  "Rhino": {
+   "label": "Rhino",
+   "verbs": {
+    "Time": {
+     "ability": "Ramp Spool",
+     "does": "Fly at full throttle in a straight line and the Rhino winds up steadily toward a very high top speed. Turning bleeds it off. Prisms you ram are shoved aside and cost you no speed.",
+     "trigger": "Passive - fly flat out and straight",
+     "scales": "More Time winds you up to top speed faster; the top speed itself stays the same.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Charge": {
+     "ability": "Carry",
+     "does": "A prism your plough throws keeps flying past where it would land and smashes the next prism in its way - both break.",
+     "trigger": "Passive - plough",
+     "scales": "More Charge lets a thrown prism fly further on to hit another.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Mass": {
+     "ability": "Blade",
+     "does": "A plough blade across your nose catches the prisms you fly into and throws them clear of the whole blade.",
+     "trigger": "Passive - plough",
+     "scales": "More Mass makes the plough blade wider.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Furrow",
+     "does": "Every prism your hull hits is shoved aside, never destroyed. Pull a trigger for a little shove that way; hold it and everything you plough is thrown to that side.",
+     "trigger": "Hold LT or RT to steer",
+     "scales": "More Space throws ploughed prisms further aside.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b b",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [
+    "Regatta",
+    "Brood Rush"
+   ],
+   "games": {
+    "Time": [
+     "Headlong"
+    ],
+    "Charge": [
+     "Bullrush"
+    ],
+    "Mass": [
+     "Windrow"
+    ],
+    "Space": [
+     "Landslide"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The windrow",
+     "t": [
+      10,
+      40
+     ],
+     "is": "Speed turns the field into a thrown wall.",
+     "chain": [
+      [
+       "Time",
+       "Spool up on a straight"
+      ],
+      [
+       "Mass",
+       "Hit the field with the blade"
+      ],
+      [
+       "Space",
+       "Hold a trigger: throw it all to one side"
+      ],
+      [
+       "Charge",
+       "Thrown prisms carry into the next and break both"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "make",
+      "joy"
+     ],
+     "feel": "Momentum that nothing stops."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md"
+  },
+  "Scarab": {
+   "label": "Scarab",
+   "verbs": {
+    "Time": {
+     "ability": "Throttle",
+     "does": "Thrust along your nose: the deeper you press, the harder you keep accelerating. Letting go is your only brake.",
+     "trigger": "Hold, deeper pushes harder",
+     "scales": "More Time raises the throttle's top speed.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Charge": {
+     "ability": "Shove",
+     "does": "Every hard dash throws a broad flat plate along your path that shreds prisms, kills creatures and debuffs any rival pilot it engulfs, flinging everything the way you dashed. It recovers in a few seconds.",
+     "trigger": "Passive - rides your dash",
+     "scales": "More Charge recharges the shove faster: 2.5 s at rest, 1.25 s at Charge 10.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Mass": {
+     "ability": "Switch",
+     "does": "Place a curved ring around an elemental crystal on your path. Its panel deflects balls; any ball, friend or foe, that threads it pays you energy toward your next ball and breaks the switch into a dais of prisms.",
+     "trigger": "Tap near a crystal",
+     "scales": "More Mass widens the switch's ring, an easier mouth for a ball to thread.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Space": {
+     "ability": "Nucleus Seeding",
+     "does": "While you fly, balls of your domain appear stuck in the cell's nucleus. Anyone can knock them loose: outward they bounce harmlessly around the cell, inward they become live balls in play.",
+     "trigger": "Always on",
+     "scales": "More Space seeds bigger balls; each keeps the size it was born with.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Omni": {
+     "ability": "Omni crystal",
+     "does": "When your skimmer touches an omni crystal it turns into a ball, sitting still where the crystal was, ready for you to strike.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Crystal Effects/ScarabBallForgeBySkimmerCrystalEffectSO.cs",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "~ b .",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [
+    "Regatta",
+    "Broadside"
+   ],
+   "games": {
+    "Time": [
+     "Scarab Rally"
+    ],
+    "Charge": [
+     "Undertow"
+    ],
+    "Mass": [
+     "Tollway"
+    ],
+    "Space": [
+     "Wrecking Ball"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The ball game",
+     "t": [
+      10,
+      40
+     ],
+     "is": "Make a ball, strike it, make it pay.",
+     "chain": [
+      [
+       "Omni",
+       "An omni crystal becomes a ball"
+      ],
+      [
+       "Time",
+       "Throttle onto the line"
+      ],
+      [
+       "Charge",
+       "Dash: the shove strikes it"
+      ],
+      [
+       "Mass",
+       "Thread a Switch for energy"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "goal"
+     ],
+     "feel": "A clean strike."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md"
+  },
+  "Serpent": {
+   "label": "Serpent",
+   "verbs": {
+    "Time": {
+     "ability": "Solid Fuel Pellets",
+     "does": "Each press burns one of four fuel pellets for a burst of speed; press again while one burns and the boosts stack. The tank never refills on a clock - your Seed Wall eating your own trail earns pellets back.",
+     "trigger": "Tap, tap again to stack",
+     "scales": "More Time makes each pellet burn longer, not faster.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_FUEL_PELLETS.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Charge": {
+     "ability": "Scope",
+     "does": "Raise a magnified eyepiece beside your flight view - the ship keeps flying as normal - with the zoom following how far you pull. While it is up, your cloak trigger fires the Sniper Shot instead.",
+     "trigger": "Hold, pull deeper to zoom",
+     "scales": "More Charge shortens the sniper's recovery between shots.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Mass": {
+     "ability": "Seed Wall",
+     "does": "Stop dead and your last prism becomes a seed that pulls loose prisms into a growing herringbone wall, stealing rival prisms as they land. It grows while you stay stopped, and you shrug off debuffs meanwhile.",
+     "trigger": "Tap to stop, tap again to fly",
+     "scales": "More Mass makes the wall's bricks bigger and more widely spaced.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Space": {
+     "ability": "Cloak / Sniper Shot",
+     "does": "Unscoped: vanish, hull and trail, for about 15 s, leaving a decoy and a super-shielded seed that grows a wall. Scoped: one long hitscan round that breaks every hostile prism in its path, shields and all, and strips rival petals.",
+     "trigger": "Tap; fires the shot while scoped",
+     "scales": "More Space lets your Seed Walls reach further to steal prisms.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Omni": {
+     "ability": "Explosion + Wall Shield",
+     "does": "A blast breaks prisms round you, and beams from the crystal re-shield every seed wall you have standing, rippling out from each seed.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SerpentWallShieldByCrystalEffectSO.cs",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b b",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "x x x"
+   },
+   "missing": "",
+   "arenas": [
+    "Regatta",
+    "Brood Rush"
+   ],
+   "games": {
+    "Time": [
+     "Serpentine"
+    ],
+    "Charge": [
+     "Hood"
+    ],
+    "Mass": [
+     "Hedgerow",
+     "Longshot"
+    ],
+    "Space": []
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "Feed the tank",
+     "t": [
+      15,
+      45
+     ],
+     "is": "Your own trail is fuel.",
+     "chain": [
+      [
+       "",
+       "Lay trail"
+      ],
+      [
+       "Mass",
+       "Stop: the Seed Wall eats your trail and earns pellets"
+      ],
+      [
+       "Time",
+       "Burn pellets, stacked"
+      ]
+     ],
+     "drivers": [
+      "mastery",
+      "joy"
+     ],
+     "feel": "Stacking boosts you made yourself."
+    },
+    {
+     "name": "The ghost shot",
+     "t": [
+      10,
+      30
+     ],
+     "is": "Vanish, aim from nowhere, fire once.",
+     "chain": [
+      [
+       "Space",
+       "Cloak: a decoy and a seed stay behind"
+      ],
+      [
+       "Charge",
+       "Raise the scope"
+      ],
+      [
+       "Space",
+       "One round through everything on the line"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "break"
+     ],
+     "feel": "One shot they never saw coming."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_FUEL_PELLETS.md"
+  },
+  "Shrike": {
+   "label": "Shrike",
+   "verbs": {
+    "Time": {
+     "ability": "Void Sling",
+     "does": "Shoot a tether at the first block ahead; the hull flies straight there in one second, laying thick trail, and docks on arrival. No block in range, no sling. A crystal resets it.",
+     "trigger": "Select mode, then tap fire",
+     "scales": "More Time shortens the sling's cooldown.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Charge": {
+     "ability": "Targeting Array",
+     "does": "Paint a target - a rival first, then a creature, a plant or nearby mass - and every nest plant with a ready missile launches it. Missiles home while you paint and burst on contact, a petal hit on any rival caught.",
+     "trigger": "Select mode, then hold fire to paint",
+     "scales": "More Charge does not change the missiles; it widens your Void Lance's beam.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Mass": {
+     "ability": "Nest",
+     "does": "Touch any block and you dock to it; docked, every cooldown runs faster. Detach and you leave a nest behind - a cup of super-shielded blocks crowned with a plant that grows a missile. Up to three nests at once.",
+     "trigger": "Passive dock; tap to detach",
+     "scales": "More Mass builds each nest from more blocks and tightens your trail's wave.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Void Lance",
+     "does": "Fire a long hitscan beam that breaks every block it passes, any domain, except super-shielded mass and the nest you sit in. A rival hull on the line takes a scored petal hit.",
+     "trigger": "Select mode, then hold fire",
+     "scales": "More Space does not change the lance; it widens the Targeting Array's lock cone.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Omni": {
+     "ability": "Shrike",
+     "does": "The crystal becomes a nest plant where it was, which grows large missiles you can call down, and your Void Sling is ready again at once.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b b",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Thornline"
+    ],
+    "Charge": [
+     "Larder"
+    ],
+    "Mass": [
+     "Thornbush"
+    ],
+    "Space": [
+     "Lancefall"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The nest strike",
+     "t": [
+      20,
+      60
+     ],
+     "is": "Leave nests, then paint one target for all of them.",
+     "chain": [
+      [
+       "Time",
+       "Sling to a block and dock"
+      ],
+      [
+       "Mass",
+       "Detach: a nest is left, growing a missile"
+      ],
+      [
+       "Mass",
+       "Again, up to three"
+      ],
+      [
+       "Charge",
+       "Paint a rival: every nest launches"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "rival",
+      "mastery"
+     ],
+     "feel": "A trap sprung from three sides."
+    },
+    {
+     "name": "Perch and lance",
+     "t": [
+      8,
+      25
+     ],
+     "is": "Docked, everything recharges faster.",
+     "chain": [
+      [
+       "Time",
+       "Sling to a perch"
+      ],
+      [
+       "Space",
+       "Void Lance down the line"
+      ],
+      [
+       "Time",
+       "Sling away"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "joy"
+     ],
+     "feel": "A sniper who is never where they fired from."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md"
+  },
+  "Sparrow": {
+   "label": "Sparrow",
+   "verbs": {
+    "Time": {
+     "ability": "Afterburner",
+     "does": "Boost for as long as you hold - no heat, no meter. Push the stick fully to one side as you start boosting and the Sparrow does a quick strafing roll, even while stopped.",
+     "trigger": "Hold",
+     "scales": "More Time raises your boost speed.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Charge": {
+     "ability": "Skyburst Rockets",
+     "does": "Fire a rocket that bursts near a rival or creature: one blast tears prisms apart and lays new ones, a wider one debuffs pilots and kills wildlife. Restock rockets by shooting hostile prisms with your guns.",
+     "trigger": "Tap",
+     "scales": "More Charge widens the rockets' prism-tearing blast.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Mass": {
+     "ability": "Turret Stance",
+     "does": "Stop dead and your guns fire prisms instead of bullets - the same shot, but each prism stays wherever the bullet would have died, building mass as you shoot. You can still roll and turn faster while stopped.",
+     "trigger": "Tap to stop, tap again to fly",
+     "scales": "More Mass stretches the prisms you fire and swells every round bigger as it flies.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Space": {
+     "ability": "Pulsefire Cannons",
+     "does": "Full-auto cannons that break prisms. A cold gun is pin-accurate; keep firing and it heats, spreading the cone and shortening the range, then cools quickly when you let go.",
+     "trigger": "Hold",
+     "scales": "More Space widens your skimmer, the zone that grazes trails; the cannons' range stays fixed.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Omni": {
+     "ability": "Omni crystal",
+     "does": "For 8 seconds danger prisms, blasts and overtakes cannot lower your elements; buffs still land. Missiles now reload by shooting prisms, not from crystals.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/VesselWardByCrystalEffectSO.cs",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b b",
+    "Charge": "b b .",
+    "Mass": "x x x",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [
+    "Regatta",
+    "Broadside",
+    "Brood Rush"
+   ],
+   "games": {
+    "Time": [
+     "Breakwater"
+    ],
+    "Charge": [
+     "Dog Fight"
+    ],
+    "Mass": [],
+    "Space": [
+     "Salvo",
+     "Wildlife Liberation"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "Guns to rockets",
+     "t": [
+      10,
+      30
+     ],
+     "is": "Gunfire on mass stocks the rocket you spend on a pilot.",
+     "chain": [
+      [
+       "Space",
+       "Break prisms with the cannons"
+      ],
+      [
+       "Charge",
+       "A rocket is earned"
+      ],
+      [
+       "Time",
+       "Afterburn to close"
+      ],
+      [
+       "Charge",
+       "Skyburst on the rival"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "rival"
+     ],
+     "feel": "Earning the big shot with the small ones."
+    },
+    {
+     "name": "The bunker",
+     "t": [
+      8,
+      30
+     ],
+     "is": "Stop, build with bullets, roll out.",
+     "chain": [
+      [
+       "Mass",
+       "Turret Stance: shots become prisms"
+      ],
+      [
+       "Space",
+       "Shape it while you fire"
+      ],
+      [
+       "Time",
+       "Strafing roll out under boost"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "joy"
+     ],
+     "feel": "A wall where there was none."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md"
+  },
+  "Squirrel": {
+   "label": "Squirrel",
+   "verbs": {
+    "Time": {
+     "ability": "Skimming",
+     "does": "Every prism you skim past gives you boost energy, and that energy is your speed. Keep threading close to mass to stay fast.",
+     "trigger": "Passive - skim prisms",
+     "scales": "More Time gives more boost energy for each prism you skim.",
+     "source": "Docs/ElementalAbilitySystem/FLEET_MAPS.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Charge": {
+     "ability": "Crystal Joust",
+     "does": "Overtake a creature's crystal while flying faster than it to wither a rival creature, freeing its heart and collecting it. Overtake a rival pilot to steal petals off them. Either joust needs at least the minimum joust speed.",
+     "trigger": "Passive - overtake",
+     "scales": "More Charge lowers the speed a joust needs: 90 u/s at rest, 45 u/s at Charge 10. The Charge card's gauge marks it.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_ELEMENT_RECUT.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Mass": {
+     "ability": "Boost Ring",
+     "does": "Drops a ring of danger prisms ahead of you to fly through the middle of. Grazing it boosts you, but it slams any vessel that hits it, yours included. Twenty-second cooldown.",
+     "trigger": "Tap",
+     "scales": "More Mass shortens the cooldown between rings.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_TUBE.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Space": {
+     "ability": "Steal",
+     "does": "Skim a prism to steal it into your own domain. A rival's shielded prism only loses its shield, and super-shielded prisms can never be taken.",
+     "trigger": "Passive - skim a prism",
+     "scales": "More Space grows your skimmer, so each pass steals from further away.",
+     "source": "Assets/Resources/ElementalAbilityMaps/Squirrel.asset",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Omni": {
+     "ability": "Omni crystal",
+     "does": "The crystal opens and becomes a ring of eight shielded prisms just ahead of your nose.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b b",
+    "Charge": "b b .",
+    "Mass": "x x x",
+    "Space": "- - -"
+   },
+   "missing": "Mass",
+   "arenas": [
+    "Regatta",
+    "Broadside",
+    "Brood Rush"
+   ],
+   "games": {
+    "Time": [
+     "Skim Race"
+    ],
+    "Charge": [
+     "Joust"
+    ],
+    "Mass": [],
+    "Space": []
+   },
+   "excused": [
+    "Space"
+   ],
+   "lean": "cultivator",
+   "leanWhy": "Steals mass and destroys none; its Space game is excused.",
+   "combos": [
+    {
+     "name": "The tube run",
+     "t": [
+      8,
+      25
+     ],
+     "is": "Speed made from mass, spent on a rival.",
+     "chain": [
+      [
+       "Time",
+       "Skim prisms for boost"
+      ],
+      [
+       "Mass",
+       "Drop a Boost Ring ahead"
+      ],
+      [
+       "Time",
+       "Thread its middle"
+      ],
+      [
+       "Charge",
+       "Overtake a rival at joust speed"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "rival"
+     ],
+     "feel": "Threading the needle at full speed."
+    },
+    {
+     "name": "The thief's lap",
+     "t": [
+      15,
+      45
+     ],
+     "is": "Every pass along a rival's trail makes it yours and makes you faster.",
+     "chain": [
+      [
+       "Space",
+       "Skim a rival trail to steal it"
+      ],
+      [
+       "Time",
+       "Each prism skimmed is boost"
+      ],
+      [
+       "",
+       "Loop back along what is now your mass"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "joy"
+     ],
+     "feel": "Their wall becoming your road."
+    }
+   ],
+   "doc": "Docs/ElementalAbilitySystem/FLEET_MAPS.md"
+  },
+  "Starling": {
+   "label": "Starling",
+   "verbs": {
+    "Time": {
+     "ability": "Pick the Time card",
+     "does": "Take the Time card from a hand dealt to the swarm. Time cards make the swarm faster and nimbler, let members dodge hits, or shorten every phase so hands come sooner. A held card levels up.",
+     "trigger": "Tap while a hand is up",
+     "scales": "Your Time level does not change this; each card's own level sets its strength.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md",
+     "arch": "card",
+     "t": [
+      10,
+      40
+     ]
+    },
+    "Charge": {
+     "ability": "Pick the Charge card",
+     "does": "Take the Charge card from a hand dealt to the swarm. Charge cards arm the swarm against rivals and wildlife - stings, lasers, chain lightning, a pulse - and a card you already hold levels up.",
+     "trigger": "Tap while a hand is up",
+     "scales": "Your Charge level does not change this; each card's own level sets its strength.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md",
+     "arch": "card",
+     "t": [
+      10,
+      40
+     ]
+    },
+    "Mass": {
+     "ability": "Pick the Mass card",
+     "does": "Take the Mass card from a hand dealt to the swarm. Mass cards build and protect: the swarm lays your prisms, drips danger prisms, grows shells or breeds more members. A held card levels up.",
+     "trigger": "Tap while a hand is up",
+     "scales": "Your Mass level does not change this; each card's own level sets its strength.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md",
+     "arch": "card",
+     "t": [
+      10,
+      40
+     ]
+    },
+    "Space": {
+     "ability": "Pick the Space card",
+     "does": "Take the Space card from a hand dealt to the swarm. Space cards eat rival mass: members steal, burst or bite through shielded prisms, or the swarm splits to work two objectives. A held card levels up.",
+     "trigger": "Tap while a hand is up",
+     "scales": "Your Space level does not change this; each card's own level sets its strength.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md",
+     "arch": "card",
+     "t": [
+      10,
+      40
+     ]
+    }
+   },
+   "board": {
+    "Time": "x x x",
+    "Charge": "x x x",
+    "Mass": "x x x",
+    "Space": "x x x"
+   },
+   "missing": "Time, Charge, Mass or Space",
+   "arenas": [],
+   "games": {
+    "Time": [],
+    "Charge": [],
+    "Mass": [],
+    "Space": []
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "Hand by hand",
+     "t": [
+      20,
+      60
+     ],
+     "is": "The swarm flies itself; you choose what it becomes. The kit is not settled.",
+     "chain": [
+      [
+       "",
+       "A hand is dealt"
+      ],
+      [
+       "",
+       "Pick the card the swarm lacks"
+      ],
+      [
+       "",
+       "The swarm changes"
+      ],
+      [
+       "Time",
+       "Time cards bring the next hand sooner"
+      ]
+     ],
+     "drivers": [
+      "mastery",
+      "find"
+     ],
+     "feel": "A build coming together."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md"
+  },
+  "Stoat": {
+   "label": "Stoat",
+   "verbs": {
+    "Time": {
+     "ability": "Timed Slingshot",
+     "does": "While you orbit, your clock warps and you fly faster. Let go about a quarter-turn after the catch, when the dotted circle turns lime, for the full slingshot kick; any other moment gives only a fraction.",
+     "trigger": "Passive - release timing while orbiting",
+     "scales": "More Time speeds up the orbit's warp and strengthens the slingshot kick.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md",
+     "arch": "hold_release",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Charge": {
+     "ability": "Ripple",
+     "does": "Whenever one of your hole pairs collapses, it throws a space-time ripple that strips a petal of every element from each rival it sweeps over and kills creatures. It never touches prisms, you or teammates.",
+     "trigger": "Passive - when your pair collapses",
+     "scales": "More Charge makes the ripple reach further.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Mass": {
+     "ability": "Heavy Launch",
+     "does": "Your launch out of an orbit hits harder. Let go or flick your steering thumb to fly out of the orbit, aimed where you flick or steer, and the kick carries more momentum.",
+     "trigger": "Passive - on every launch",
+     "scales": "More Mass makes the launch kick harder.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Catch Orbit",
+     "does": "Lay a black hole and its white hole ahead, the black hole on the side you pressed. Fly past it on that side and it catches you into an orbit: squeeze for a tighter circle, let go or flick to launch where you aim.",
+     "trigger": "Press, hold to orbit, release or flick to launch",
+     "scales": "More Space widens the orbit your hole pair catches you into.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md",
+     "arch": "hold_release",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Omni": {
+     "ability": "Fulmen",
+     "does": "Fires a branching thunderbolt from your cell's centre that sets prisms along it burning; any omni crystal a branch reaches sends off a smaller bolt of its own.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Environment/Fulmen/README.md",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b b",
+    "Charge": "b b .",
+    "Mass": "- - -",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Slingshot"
+    ],
+    "Charge": [
+     "Shockfront"
+    ],
+    "Mass": [],
+    "Space": [
+     "Fulmen"
+    ]
+   },
+   "excused": [
+    "Mass"
+   ],
+   "lean": "destroyer",
+   "leanWhy": "Its Mass verb touches no mass; its Mass game is excused.",
+   "combos": [
+    {
+     "name": "The slingshot",
+     "t": [
+      5,
+      15
+     ],
+     "is": "Lay it, catch it, time it, and the collapse hits everyone near.",
+     "chain": [
+      [
+       "Space",
+       "Lay a hole pair ahead"
+      ],
+      [
+       "Time",
+       "Orbit, and let go when the circle turns lime"
+      ],
+      [
+       "Mass",
+       "The launch kicks harder"
+      ],
+      [
+       "Charge",
+       "The pair collapses: a ripple strips rivals"
+      ]
+     ],
+     "drivers": [
+      "joy",
+      "mastery",
+      "rival"
+     ],
+     "feel": "Being flung."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
+  },
+  "Swordfish": {
+   "label": "Swordfish",
+   "verbs": {
+    "Time": {
+     "ability": "Ramp Spool",
+     "does": "Fly at full throttle in a straight line and the Swordfish winds up steadily toward a very high top speed. Turning bleeds it off. Its hull breaks the prisms it rams, and ramming costs it no speed.",
+     "trigger": "Passive - fly flat out and straight",
+     "scales": "More Time winds you up to top speed faster; the top speed itself stays the same.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Charge": {
+     "ability": "Energize",
+     "does": "Hold both evenly for a second to light the sword. It stays lit while you hold, then for a few seconds after, followed by a short cooldown. It costs nothing. A sword hit on a rival knocks their petals loose as crystals.",
+     "trigger": "Hold both",
+     "scales": "More Charge knocks more petals off a rival with each sword hit.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Mass": {
+     "ability": "Afterimage",
+     "does": "When the lit sword goes out, it keeps leaving prism copies of itself in its own shape and pose for five seconds - walls you swing into place. Your own sword can still cut them.",
+     "trigger": "Passive - after Energize",
+     "scales": "More Mass makes the afterimage prisms bigger.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Blade Reach",
+     "does": "Your sword cuts any ordinary or shielded prism it touches, and you swing it by how hard you squeeze each side. Super-shielded mass makes the blade stick unless you have the upgrade.",
+     "trigger": "Always on - swing with both",
+     "scales": "More Space makes the sword longer, and your camera pulls back to match.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Omni": {
+     "ability": "Surge",
+     "does": "For 8 seconds your blade stays energized and a ring of swords surrounds the ship, swinging with your triggers, while the camera pulls back. A blast also breaks prisms round you.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SwordfishVesselSurgeByCrystalEffectSO.cs",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b .",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [
+    "Regatta",
+    "Broadside",
+    "Brood Rush"
+   ],
+   "games": {
+    "Time": [
+     "Spearline"
+    ],
+    "Charge": [
+     "Riposte"
+    ],
+    "Mass": [
+     "Palisade"
+    ],
+    "Space": [
+     "Cleave"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The lit run",
+     "t": [
+      8,
+      25
+     ],
+     "is": "A straight line that ends in a cut and leaves a wall.",
+     "chain": [
+      [
+       "Time",
+       "Spool up on a straight"
+      ],
+      [
+       "Charge",
+       "Light the sword"
+      ],
+      [
+       "Space",
+       "Cut through the field or a rival"
+      ],
+      [
+       "Mass",
+       "Afterimages stay as walls"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "rival",
+      "joy"
+     ],
+     "feel": "A charge with a blade at the end of it."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md"
+  },
+  "Thresher": {
+   "label": "Thresher",
+   "verbs": {
+    "Time": {
+     "ability": "Plant",
+     "does": "Brake the ball: a partial pull swings you round it like a sliding anchor, a full pull plants it as a pivot you orbit faster every lap. Pull both triggers fully to aim, then ease off to launch boosted.",
+     "trigger": "Hold, full pull to plant",
+     "scales": "More Time winds the spin up to launch speed faster.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Charge": {
+     "ability": "Wrecking Ball",
+     "does": "Your chained ball smashes rival prisms and bounces off your own. Swung to smash speed it turns red and blows up every prism it hits, yours too. Ball or chain striking a rival steals their petals.",
+     "trigger": "Always on",
+     "scales": "More Charge steals more petals with every strike on a rival.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Mass": {
+     "ability": "Mass Mode",
+     "does": "Switch the ball from breaking to building: it steals rival prisms it touches, shields your own and lays your trail behind it, never exploding. The energy it banks makes a bigger blast once you switch back.",
+     "trigger": "Tap to toggle",
+     "scales": "More Mass makes the trail prisms the ball lays bigger.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Space": {
+     "ability": "Winch",
+     "does": "Stiffen the chain: let go and it is a slack bungee, pull and it goes rigid, reeling the ball in and cracking it up to speed. The chain slices rival prisms and shields yours, banking energy for the ball's next explosion.",
+     "trigger": "Hold, pull deeper to tighten",
+     "scales": "More Space raises the biggest explosion your banked energy can buy.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md",
+     "arch": "hold",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Omni": {
+     "ability": "Omni crystal",
+     "does": "For 12 seconds your red-hot wrecking ball circles the ship across your line of flight, smashing what it sweeps; the winch still sets its size.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b b",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [
+    "Regatta"
+   ],
+   "games": {
+    "Time": [
+     "Thresher Time"
+    ],
+    "Charge": [
+     "Jackstraw"
+    ],
+    "Mass": [
+     "Haul"
+    ],
+    "Space": [
+     "Harvest"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The crack",
+     "t": [
+      6,
+      20
+     ],
+     "is": "Plant, wind, release.",
+     "chain": [
+      [
+       "Time",
+       "Plant the ball and orbit it faster each lap"
+      ],
+      [
+       "Space",
+       "Winch tight: the ball cracks up to speed"
+      ],
+      [
+       "Charge",
+       "The red ball goes through their mass and their hull"
+      ]
+     ],
+     "drivers": [
+      "break",
+      "joy",
+      "mastery"
+     ],
+     "feel": "A whip cracking."
+    },
+    {
+     "name": "Bank and burst",
+     "t": [
+      15,
+      50
+     ],
+     "is": "Build first, and the next break is bigger.",
+     "chain": [
+      [
+       "Mass",
+       "Mass Mode: the ball steals, shields and banks energy"
+      ],
+      [
+       "Mass",
+       "Switch back"
+      ],
+      [
+       "Charge",
+       "A bigger blast from what was banked"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "break"
+     ],
+     "feel": "Patience paid back at once."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md"
+  },
+  "TigerMoth": {
+   "label": "Tiger Moth",
+   "verbs": {
+    "Time": {
+     "ability": "Drop",
+     "does": "Shut your wings and fall straight down your belly line, passing through everything and leaving no trail. Let go to flip into the fall and fly on. A long drop leaves a wormhole pair.",
+     "trigger": "Hold, release to land",
+     "scales": "More Time shortens the drop's recharge, down to half at the top.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md",
+     "arch": "hold_release",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Charge": {
+     "ability": "Scale Dust",
+     "does": "In Dust mode your falling dust steals petals from any rival inside it, one at a time, scoring and silencing them. Allies it touches are cleansed; rival creatures it reaches wither.",
+     "trigger": "Passive - keep a rival in your dust",
+     "scales": "More Charge makes the dust steal petals faster, up to ten a second.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Mass": {
+     "ability": "Mass / Dust Mode",
+     "does": "Switch between two modes. Mass mode paints a wide wake of prisms behind you with no dust; Dust mode narrows the wake to a line and turns on the dust below you.",
+     "trigger": "Toggle",
+     "scales": "More Mass widens the wake you paint in Mass mode.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md",
+     "arch": "mode",
+     "t": [
+      5,
+      30
+     ]
+    },
+    "Space": {
+     "ability": "Dust Reach",
+     "does": "Your dust works on prisms too: your own grow, turn dangerous or get shielded, while rival prisms are destroyed, shrunk or stolen.",
+     "trigger": "Passive - dust over prisms",
+     "scales": "More Space makes the dust that falls below you longer.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Omni": {
+     "ability": "Explosion",
+     "does": "Sets off a huge bloom of dust: rivals in it lose petals of every element, rival prisms and creatures are blighted, your prisms are tended, and you and nearby allies are cleansed.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b .",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Waystation"
+    ],
+    "Charge": [
+     "Dustup"
+    ],
+    "Mass": [
+     "Tapestry"
+    ],
+    "Space": [
+     "Sirocco"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "Paint and tend",
+     "t": [
+      20,
+      90
+     ],
+     "is": "Lay a field, then fly back over it and make it better.",
+     "chain": [
+      [
+       "Mass",
+       "Mass mode: paint a wide wake"
+      ],
+      [
+       "Mass",
+       "Toggle to Dust"
+      ],
+      [
+       "Space",
+       "Dust over your prisms grows and shields them; over theirs it destroys"
+      ],
+      [
+       "Time",
+       "Drop out when threatened"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "crew"
+     ],
+     "feel": "Gardening at altitude."
+    },
+    {
+     "name": "The dust trap",
+     "t": [
+      8,
+      25
+     ],
+     "is": "Fall onto their line and let the dust do it.",
+     "chain": [
+      [
+       "Time",
+       "Drop onto a rival's path"
+      ],
+      [
+       "Charge",
+       "Keep them in your dust: petals leave them one at a time"
+      ]
+     ],
+     "drivers": [
+      "rival",
+      "joy"
+     ],
+     "feel": "Falling out of the sky onto someone."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md"
+  },
+  "Urchin": {
+   "label": "Urchin",
+   "verbs": {
+    "Time": {
+     "ability": "Slip",
+     "does": "Let go of the trail you are riding and phase out for a moment, so you can fly clear of the mass you were in without latching back on.",
+     "trigger": "Tap while riding",
+     "scales": "More Time makes the phase-out last longer.",
+     "source": "Assets/Resources/ElementalAbilityMaps/Urchin.asset",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    },
+    "Charge": {
+     "ability": "Chain Spikes",
+     "does": "Tap for an aimed shotgun of spikes, or hold and release for a burst in every direction. Each spike steals the prism it hits and sprays new spikes from it, chaining through enemy territory.",
+     "trigger": "Tap, or hold and release",
+     "scales": "More Charge makes each spike fly further and the chain run deeper.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md",
+     "arch": "hold_release",
+     "t": [
+      2,
+      12
+     ]
+    },
+    "Mass": {
+     "ability": "Trail Rider",
+     "does": "Fly into a trail to latch on and ride it. Your own trail grows as you pass, an enemy's is stolen, and riding refills ammo. Ride off the end to launch at grind speed.",
+     "trigger": "Passive - fly into a trail",
+     "scales": "More Mass makes your own prisms grow more each time you ride over them.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Track Projector",
+     "does": "Lays a straight stretch of your own trail out ahead of you - a rail to ride where the map has none. Anyone can steal it from you. Twenty-second cooldown.",
+     "trigger": "Tap",
+     "scales": "More Space makes the projected track longer.",
+     "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRACK_PROJECTOR.md",
+     "arch": "tap",
+     "t": [
+      2,
+      20
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b ~",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "- - -"
+   },
+   "missing": "",
+   "arenas": [
+    "Regatta",
+    "Broadside"
+   ],
+   "games": {
+    "Time": [
+     "Skein"
+    ],
+    "Charge": [
+     "Railrush"
+    ],
+    "Mass": [
+     "Hijack"
+    ],
+    "Space": []
+   },
+   "excused": [
+    "Space"
+   ],
+   "lean": "cultivator",
+   "leanWhy": "Lays and steals mass and destroys none; its Space game is excused.",
+   "combos": [
+    {
+     "name": "The rail thief",
+     "t": [
+      12,
+      45
+     ],
+     "is": "Make a rail, ride everyone's, leave with their mass.",
+     "chain": [
+      [
+       "Space",
+       "Project a rail ahead"
+      ],
+      [
+       "Mass",
+       "Ride it and any trail: yours grows, theirs is stolen, ammo refills"
+      ],
+      [
+       "Time",
+       "Slip off clear of the mass"
+      ],
+      [
+       "Charge",
+       "Chain spikes into their territory"
+      ]
+     ],
+     "drivers": [
+      "make",
+      "joy",
+      "rival"
+     ],
+     "feel": "Grinding a line nobody else can."
+    }
+   ],
+   "doc": "Assets/Resources/ElementalAbilityMaps/Urchin.asset"
+  },
+  "Wrasse": {
+   "label": "Wrasse",
+   "verbs": {
+    "Time": {
+     "ability": "Saved Boosts",
+     "does": "Each loop of Time motes the Wrasse's kite closes saves boosts for the Grouper. The Grouper's pilot spends them one at a time, each a short burst of speed, and can chain them back to back.",
+     "trigger": "Grouper seat - hold",
+     "scales": "More Time makes Time motes turn up more often and makes each boost faster.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
+     "arch": "seat",
+     "t": [
+      4,
+      20
+     ]
+    },
+    "Charge": {
+     "ability": "Kite Ram",
+     "does": "The Wrasse's kite loops its tail round Charge motes to power its ram: a charged ram on a rival hull knocks petals loose as crystals anyone can grab, and kills a creature it passes through.",
+     "trigger": "Passive - loop Charge motes, then ram",
+     "scales": "More Charge makes Charge motes turn up more often on the kite's board.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Mass": {
+     "ability": "Mass Cluster",
+     "does": "The Wrasse's kite closes its tail round Mass motes to lay a cluster of your prisms on its plane; the more motes in one loop, the far bigger the cluster. A loop holding two elements fizzles.",
+     "trigger": "Passive - loop Mass motes",
+     "scales": "More Mass makes Mass motes turn up more often on the kite's board.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Space": {
+     "ability": "Space Blast",
+     "does": "The Wrasse's kite closes its tail round Space motes and a blast goes off where the loop closed, destroying rival prisms and sparing yours; the more motes in the loop, the bigger the blast.",
+     "trigger": "Passive - loop Space motes",
+     "scales": "More Space makes Space motes turn up more often and widens the hull's skim reach.",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
+     "arch": "passive",
+     "t": [
+      2,
+      15
+     ]
+    },
+    "Omni": {
+     "ability": "Kite Omni",
+     "does": "Drops a cluster of motes of every element on the navigator's board for the kite to lasso, making up for a short supply of crystals.",
+     "trigger": "Pick up an omni crystal",
+     "scales": "",
+     "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
+     "arch": "omni",
+     "t": [
+      10,
+      60
+     ]
+    }
+   },
+   "board": {
+    "Time": "b b .",
+    "Charge": "b b .",
+    "Mass": "b b .",
+    "Space": "b b ."
+   },
+   "missing": "",
+   "arenas": [],
+   "games": {
+    "Time": [
+     "Wrasse Run"
+    ],
+    "Charge": [
+     "Cleaner Ram"
+    ],
+    "Mass": [
+     "Reefbuild"
+    ],
+    "Space": [
+     "Blastline"
+    ]
+   },
+   "excused": [],
+   "lean": null,
+   "leanWhy": null,
+   "combos": [
+    {
+     "name": "The one-colour loop",
+     "t": [
+      6,
+      25
+     ],
+     "is": "The navigator chooses which verb fires by what the kite's tail closes around.",
+     "chain": [
+      [
+       "",
+       "The Grouper flies the hull to the motes"
+      ],
+      [
+       "",
+       "The kite lassos motes of one element"
+      ],
+      [
+       "",
+       "The loop closes: that element's verb fires"
+      ],
+      [
+       "",
+       "On to the next cluster"
+      ]
+     ],
+     "drivers": [
+      "crew",
+      "mastery"
+     ],
+     "feel": "Closing the loop just in time."
+    }
+   ],
+   "doc": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md"
+  }
+ },
+ "fleetOrder": [
+  "Angler",
+  "BrittleStar",
+  "Dolphin",
+  "Goby",
+  "Grizzly",
+  "Honeyguide",
+  "Jacks",
+  "JewelWasp",
+  "Manta",
+  "Meerkat",
+  "Orca",
+  "Rhino",
+  "Scarab",
+  "Serpent",
+  "Shrike",
+  "Sparrow",
+  "Squirrel",
+  "Starling",
+  "Stoat",
+  "Swordfish",
+  "Thresher",
+  "TigerMoth",
+  "Urchin",
+  "Wrasse"
+ ],
+ "defaultVessel": "Dolphin",
+ "artifact": "https://claude.ai/artifact/1g4Xc6uSEt1EQFeQmHqsgs"
+}

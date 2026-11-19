@@ -1,0 +1,89 @@
+# Loop Atlas model: vessel Thresher. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Thresher
+verbs:
+  Time:
+    ability: Plant
+    does: 'Brake the ball: a partial pull swings you round it like a sliding anchor, a full pull plants it as a pivot you
+      orbit faster every lap. Pull both triggers fully to aim, then ease off to launch boosted.'
+    trigger: Hold, full pull to plant
+    scales: More Time winds the spin up to launch speed faster.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md
+    arch: hold
+    t: [2, 12]
+  Charge:
+    ability: Wrecking Ball
+    does: Your chained ball smashes rival prisms and bounces off your own. Swung to smash speed it turns red and blows up
+      every prism it hits, yours too. Ball or chain striking a rival steals their petals.
+    trigger: Always on
+    scales: More Charge steals more petals with every strike on a rival.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md
+    arch: passive
+    t: [2, 15]
+  Mass:
+    ability: Mass Mode
+    does: 'Switch the ball from breaking to building: it steals rival prisms it touches, shields your own and lays your
+      trail behind it, never exploding. The energy it banks makes a bigger blast once you switch back.'
+    trigger: Tap to toggle
+    scales: More Mass makes the trail prisms the ball lays bigger.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md
+    arch: mode
+    t: [5, 30]
+  Space:
+    ability: Winch
+    does: 'Stiffen the chain: let go and it is a slack bungee, pull and it goes rigid, reeling the ball in and cracking
+      it up to speed. The chain slices rival prisms and shields yours, banking energy for the ball''s next explosion.'
+    trigger: Hold, pull deeper to tighten
+    scales: More Space raises the biggest explosion your banked energy can buy.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md
+    arch: hold
+    t: [2, 12]
+  Omni:
+    ability: Omni crystal
+    does: For 12 seconds your red-hot wrecking ball circles the ship across your line of flight, smashing what it sweeps;
+      the winch still sets its size.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b b
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: [Regatta]
+games:
+  Time: [Thresher Time]
+  Charge: [Jackstraw]
+  Mass: [Haul]
+  Space: [Harvest]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The crack
+  t: [6, 20]
+  is: Plant, wind, release.
+  chain:
+  - - Time
+    - Plant the ball and orbit it faster each lap
+  - - Space
+    - 'Winch tight: the ball cracks up to speed'
+  - - Charge
+    - The red ball goes through their mass and their hull
+  drivers: [break, joy, mastery]
+  feel: A whip cracking.
+- name: Bank and burst
+  t: [15, 50]
+  is: Build first, and the next break is bigger.
+  chain:
+  - - Mass
+    - 'Mass Mode: the ball steals, shields and banks energy'
+  - [Mass, Switch back]
+  - - Charge
+    - A bigger blast from what was banked
+  drivers: [make, break]
+  feel: Patience paid back at once.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md

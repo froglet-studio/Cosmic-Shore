@@ -1,0 +1,198 @@
+# Loop Atlas model: loops, voyages. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+- id: voyages
+  parent: sitting
+  at: 1
+  name: A voyage
+  tier: 5
+  kind: place
+  t: [1200, 2400]
+  is: The culminating experience. A squad of three and one Ark sail the shared HyperSea from port to places and home again.
+    What is aboard when you dock is yours.
+  phases:
+  - n: Port
+    d: Your pilots drum up jobs for their factions.
+  - n: Set sail
+  - n: A leg
+    d: Flown with the Ark, cell after cell.
+  - n: Arrive
+    d: The location's experience.
+  - n: Push on or turn for home
+  - n: Dock
+    d: 'Extraction: only now is the find yours.'
+  drivers: [find, stake, story, crew, own]
+  reps: '1'
+  repsOf: voyage per sitting
+  now:
+    s: part
+    note: 'V1 is built as the slice and D1 deepens it on the device: the living galaxy, rival crews by the same rules, work
+      verbs, sagas, standing. Run once in Unity by Garrett. The networked Ark, rival Arks in the world and meeting other
+      squads are not built.'
+  plan:
+    note: 'V2 to V4: squads meet on arrival, placed by galactic traffic control so the meeting makes sense to both sides''
+      missions. 3 to 6 legs, 20 to 40 minutes.'
+  prop:
+    s: change
+    note: Docking offers the Hangar when the pay covers a vessel, and the next saga chapter when one opened.
+  holes:
+  - 'on': np
+    q: It is not said whether voyage pay is the same crystals that buy vessels, so the step from 'voyage ends' to 'spend
+      it on a vessel' has no confirmed path.
+    fill: One soft currency. Voyage pay is crystals, paid at dock, scaled so a clean voyage is worth about three arcade
+      wins.
+  src: [Docs/Voyages/VOYAGES.md, Docs/Voyages/DEPTH.md, Docs/Voyages/HANDOFF.md]
+- id: voy.port
+  parent: voyages
+  at: 0
+  name: Port
+  tier: 4
+  kind: loop
+  t: [60, 300]
+  is: Choosing the work. News arrives, each seated pilot finds jobs for their faction, and the board shows pay against risk.
+  phases:
+  - n: Read the news
+  - n: See the jobs your pilots found
+  - n: Weigh pay, distance and pressure
+  - n: Take a job
+  - n: Refit and sail
+  drivers: [story, reward, stake, find]
+  now:
+    s: built
+    note: Jobs for all 16 faction types in nine work verbs; pay follows the course and the standing.
+  src:
+  - Docs/Voyages/VOYAGES.md section 6.2
+  - Docs/Voyages/DEPTH.md sections 4 and 7
+- id: voy.leg
+  parent: voyages
+  at: 2
+  name: A leg
+  tier: 4
+  kind: loop
+  t: [120, 300]
+  is: One lane, flown. The Ark moves, cells stream ahead and recycle behind, and the crossing is where the stakes are.
+  phases:
+  - n: Leave a location
+  - n: A cell streams in
+  - n: Take the cell
+  - n: The next cell
+  - n: 'Arrive: a hand-off'
+  drivers: [stake, crew, joy, goal]
+  reps: 3-6
+  repsOf: legs per voyage
+  now:
+    s: built
+    note: Flown Arkway style; wingmates fly escort roles.
+  plan:
+    note: 2 to 5 minutes a lane. Leaving and arriving are where a squad's instance may change.
+  src:
+  - Docs/Voyages/VOYAGES.md section 4
+  - Docs/Voyages/ARK_ESCORT.md
+- id: voy.cell
+  parent: voy.leg
+  at: 2
+  name: A cell
+  tier: 4
+  kind: loop
+  t: [45, 180]
+  kit: cell
+  element: Mass-Space
+  is: The round of a voyage. The squad takes the cell's nucleus for its domain, the Ark regrows inside it, and the voyage
+    moves to the next cell.
+  phases:
+  - n: Enter the cell
+  - n: Contest the nucleus
+    d: Destroyers reduce the opposing volume, cultivators make volume for the team. Both serve the same claim.
+  - n: The cell is yours
+  - n: The Ark regrows
+    d: Hull plates regrow only inside a nucleus its domain holds.
+  - n: On to the next cell
+  drivers: [goal, crew, break, make, stake]
+  reps: null
+  repsOf: cells per leg
+  now:
+    s: part
+    note: Cells stream along a leg and the Ark regrows only in a held nucleus (the escort's rule). The docs do not confirm
+      that taking the cell is what releases the squad to the next one.
+  plan:
+    note: 'Garrett, 2026-11-18: once they take over the cell and their Ark regenerates, the larger voyage loop resets and
+      they proceed to the next cell.'
+  holes:
+  - 'on': np
+    q: Cells per leg is not set.
+    fill: 2 to 4 cells a leg, more on a rough lane, so a leg stays inside 2 to 5 minutes at 45 to 90 seconds a cell.
+  - 'on': n
+    q: Whether 'take the cell, the Ark regrows, move on' is the built loop or the intended one needs one editor run to confirm.
+  src:
+  - Garrett's brief, 2026-11-18
+  - Docs/Voyages/ARK_ESCORT.md
+  - Docs/Voyages/VOYAGES.md section 4.1
+- id: voy.place
+  parent: voyages
+  at: 3
+  name: A location
+  tier: 4
+  kind: loop
+  t: [120, 480]
+  kit: cell
+  is: 'A cell with an arrangement and a reason to come: a harbour, a vault field, a lair, a wreck, a contested core, a fold.
+    Nothing is scripted; the fundamentals play it out.'
+  phases:
+  - n: Arrive
+    d: Pressure sets how rough it is.
+  - n: Read the arrangement
+  - n: Do the job's verb
+  - n: Stow what you found
+  - n: Leave
+  drivers: [find, goal, stake, own]
+  reps: '1'
+  repsOf: per leg
+  now:
+    s: built
+    note: Runs the same with one squad or two; today it is always one.
+  src:
+  - Docs/Voyages/VOYAGES.md section 5
+- id: voy.meet
+  parent: voyages
+  at: 3
+  in: px
+  name: A meeting
+  tier: 4
+  kind: loop
+  t: [120, 480]
+  kit: charge
+  is: 'Another squad is there. Traffic control chose the meeting so it makes sense to both missions: a race for vaults,
+    a raid, a truce.'
+  phases:
+  - n: Someone else arrives
+  - n: Read what they want
+  - n: Race, raid or share
+  - n: One Ark leaves heavier
+  drivers: [rival, stake, crew, story]
+  plan:
+    s: decided
+    note: V2 and V3. One squad hosts, one joins, in a managed peer-to-peer instance.
+  src:
+  - Docs/Voyages/VOYAGES.md sections 6 and 7
+- id: voy.home
+  parent: voyages
+  at: 4
+  name: The way home
+  tier: 3
+  kind: loop
+  t: [30, 300]
+  is: A decision with teeth. A laden Ark draws pirates, and only docking extracts. A fall or an abandoned voyage loses what
+    is aboard.
+  phases:
+  - n: Count what is aboard
+  - n: Read the rumour about your own Ark
+  - n: Push on or turn back
+  - n: Run for the harbour
+  drivers: [stake, own]
+  reps: '1'
+  repsOf: per voyage
+  now:
+    s: built
+    note: Two or more artifacts aboard starts a rumour that pirate crews read.
+  src:
+  - Docs/Voyages/DEPTH.md section 7
+  - Docs/Voyages/VOYAGES.md section 4.3
