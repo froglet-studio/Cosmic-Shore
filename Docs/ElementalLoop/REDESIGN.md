@@ -300,3 +300,33 @@ shrink with a Thornbush rework, or nests that are plain-shielded (4.5x). Raw dat
 
 The Thresher (index 2.95, from its Mass Mode ball trail) came in on its own Mass lever: `massTrailScale` 1 -> 2 became
 0.45 -> 0.9, giving 1.00 in the same field. Its own games pass their checks.
+
+## Brood Rush (Mass-Space): the hulls the trail lever cannot reach (2026-11-19)
+
+Brood Rush is balanced on net control of space: a pilot's VC + VD from the match's VolumeLedger, divided by the mean of
+the six pilots in the match (1.00 is the field, bar 0.90-1.10). The judge is `Tools/Compute/evaluators/brood_judge.py`
+(3v3 in the real game, every seat its shipped AI, shuffled rounds). The lever is each hull's trail prism volume,
+`trailVolume` on its prism controller (`Tools/Build/brood_trail_levers.py`), capped at 0.4x-2.5x of what shipped. It is a
+vessel change, so it acts in every game. The "uncapped" column is the factor a 48-match challenge run gave the hull
+against the tuned field; a hull is flagged when the lever does not act on it, or when the factor it needs is past the cap.
+Shipped indexes are from 80 matches on the #2260 engine (ed4ae800f5). Results and the full table:
+`/mnt/project-files/regatta-flywheel/night3/broodrush/RESULT.md`.
+
+| Vessel | Shipped index | Uncapped lever: factor, index | Why the lever does not fit | What to change |
+|---|---|---|---|---|
+| Manta | 2.91 | x0.2, 1.11 | It lays 3x the field's mass; the lever works, but only as a 5x cut to its trail | Its trail is its Mass identity: shorten its wingspan trail (`wl`) or slow its lay rate in the Mass kit, then re-judge |
+| Serpent | 1.98 | x0.16, 1.92 | Its VD is 2.8x the field: it destroys prisms more than it lays them, so the trail does nothing | A Space lever on its destroy (its redesign happens in Garrett's other project; here it is only measured) |
+| Grizzly | 1.75 | x0.3, 1.27 | VD-heavy like the Serpent (3.1x); at 0.4x trail it is still 1.4 | A lever on how much it takes off the opposing domains (its claw or charge volume) |
+| JewelWasp | 0.36 | x8.1, 0.83 | Lays 0.10x the field's mass; past 3x the cap it is still under the bar | Its Mass ability needs a real trail (a lay rate, not a multiplier on a near-zero trail) |
+| Angler | 0.24 | x4.85, 0.67 | The fleet's slowest cruise (40 u/s), so it lays little whatever the prism size | Its Mass game: the school's paint should book as created volume, or the cruise rises |
+| Rhino | 0.19 | x3.2, 0.31 | Its 3x3x0.5 plough blocks are flat; the lever barely moves its score | A Mass kit that lays volume as it ploughs (the plough's own blocks) |
+| Jacks | 0.07 | x16.6, 0.68 | The hull holds while the jacks herd; it lays almost nothing (0.06x) | Kit-limited: the herd and the net rhythm change nothing (seat thread); the jacks themselves need to lay or claim |
+| Goby | 0.02 | x1 (the lever does not act) | Before #2257 it was 0.52 and its AI spent 9 s of 103 in the nucleus. Since #2257's `aiHomeRadius` 600, its leash, anchored at its spawn, pins it in the nucleus (79 s a match) laying almost nothing | Anchor the leash to its own islands instead of its spawn (the Goby/Orca thread's proposal, trained in Den Builder and Riptide), then re-judge |
+| Swordfish | 0.66 | x2.5, 0.82 | Its VC is not mostly trail, so 2.5x gives about 10% | A Mass lever on its slice (the volume each cut leaves), not the trail |
+| BrittleStar | 0.71 | x2.5, 0.87 | A 1x1x6 trail: 2.5x the volume is still a thin line | Its arms' lay (more prisms or a wider block), then re-judge |
+
+The Shrike (above) and the Thresher (in on its `massTrailScale`) are the Shrike / Wrasse seat thread's.
+Caveats. Only the Goby and the Swordfish have a trained Mass and Space AI (loop step 3, STATUS.md); the other 21 hulls
+fly an AI not trained for either element, so part of every number above may be the pilot, not the kit. No Brood Rush AI
+has a nucleus objective: most seats are inside the nucleus 85-95% of a match anyway, the Goby (trained on the volume
+books, not the claim) is the exception at 9%.
