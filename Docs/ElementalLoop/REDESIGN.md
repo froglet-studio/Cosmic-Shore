@@ -273,3 +273,29 @@ exists, otherwise the base asset the prefab wires.
 | Manta, Serpent, TigerMoth | - | - | Flagged above; revisit with the redesigns |
 | Jacks | `RegattaJacksCoach` (Decoy Run's door planner, 2026-11-19) | Decoy Run's coach is that course's own; the planner is shared | Flagged above (2.15x) |
 | Meerkat | the gate race's steering + its own wormhole autopilot | Burrow Run (run1 controller genes; autopilot searched 2026-11-19, shipped values best) | Flagged above (4.0x) |
+
+## Brood Rush (Mass-Space): Shrike, too strong (2026-11-19)
+
+Brood Rush judge (`brood_judge.py`, branch `claude/project-thread-sfixg0`), 3v3 against the Brood Rush thread's tuned
+trail-volume field: the Shrike's index is **3.15** (bar 0.9-1.1), and **1.02 with no nests at all** (`nestCooldown`
+9999). The nest is the whole edge. A nest is a cup of super-shielded blocks, and since 2026-11-18 the net-control books
+count a super-shield at 13.5x its box (`VolumeLedger.ShieldExtra`), so one 12-block nest of 4.5 u cubes books about
+14.8k against a ~33k field-mean pilot for the whole match.
+
+| Lever (3 seeds unless noted) | Index |
+|---|---|
+| shipped | 3.15 |
+| `nestBlocks` 12 -> 6 | 2.05 |
+| `nestCooldown` 8 -> 24 s | 2.29 (the AI's nest rate is set by its docking, not the cooldown) |
+| `nestBlockSize` 4.5 -> 2.5 u | 1.21 |
+| `nestBlockSize` 4.5 -> 2.2 u (12-hull field, 8 rounds) | 0.90 |
+
+The block-size knee (about 2.2-2.3 u, about 0.13x the nest's volume) breaks the Shrike's own Mass game:
+`author_thornbush_assets.py --check` fails, because Thornbush scores `VolumeRemaining` (box volume, no shield extra), so
+at 2.3 u one nest (146) is worth less than four times a nest's share of the trail (510). Thornbush stops being a nest
+game, and its comeback rate goes dead. Brood Rush counts nests at 13.5x, Thornbush at 1x, and no Shrike lever fits both,
+so the Shrike is **flagged for Brood Rush**. Its Regatta seat is unaffected. Garrett has the choice: the flag, the
+shrink with a Thornbush rework, or nests that are plain-shielded (4.5x). Raw data: `regatta-flywheel/seat-sw/brood/`.
+
+The Thresher (index 2.95, from its Mass Mode ball trail) came in on its own Mass lever: `massTrailScale` 1 -> 2 became
+0.45 -> 0.9, giving 1.00 in the same field. Its own games pass their checks.

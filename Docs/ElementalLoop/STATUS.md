@@ -22,7 +22,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
 | Serpent | `R b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
-| Shrike | `b R b` | `b b .` | `b b .` | `b b .` | - | Regatta |
+| Shrike | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | Sparrow | `b b b` | `b b .` | `x x x` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Squirrel | `b b b` | `b b .` | `x x x` | `- - -` | Mass | Regatta, Broadside, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
@@ -101,7 +101,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Serpent Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-18 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md |
 | Serpent Time | 2 intensities I1-I4 | built | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py, seeds 1-3) Legendary 102/67/76/87 s, Medium 97/78/100/98: no cliff, I2 faster from the L5 start as ruled, I3/I4 +14-15%; left as it is. Note: Medium as fast as Legendary at I1 |
 | Serpent Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | SerpentAIBoostPolicy_SerpentTime from serpenttime-serpent-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
-| Shrike Time | 2 intensities I1-I4 | redo | Garrett's night thread (Claude) | 2026-11-19 |  | Step 5 (Regatta, 2026-11-19) changed the Time sling cooldown 6->2.5 to 4.75->3.75: re-check Thornline's I1-I4 ladder with the new reload. |
+| Shrike Time | 2 intensities I1-I4 | built | Garrett's night thread (Claude) | 2026-11-19 |  | Re-checked 2026-11-19 after #2253's sling cooldown 4.75->3.75: real game, seeds 101-104, all 16 races finish; I1 49.1->42.3 s, I2 55.7->39.9, I3 39.3->40.9, I4 41.5->43.3 (THORNLINE.md 4.1). Difficulty is the aim, unchanged. |
 | Shrike Time | 3 AI on I1-I4 | built | Garrett's night thread (Claude) | 2026-11-19 |  | Regatta seat 2026-11-19: RegattaShrikeSling coach + Thornline run1 line; sling cooldown 4.75->3.75 (step 5 knee) = 1.04x card / 0.98x L5 on 15 seeds, no DNF (regatta-flywheel/seat-sw/shrike/f475s15_*). Thornline AI trained on the old 6->2.5 cooldown: re-check. |
 | Sparrow Time | 2 intensities I1-I4 | built | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder: course rungs never slow the AI; AI difficulty set by nose rate (Easy 1.8 / Medium 2.0 / Hard 3.5 / Legendary trained) so Medium ~110 s on every rung vs Legendary 80-97 (PR #2109, BREAKWATER.md) |
 | Sparrow Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | SparrowAIBoostPolicy_Breakwater from breakwater-sparrow-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
