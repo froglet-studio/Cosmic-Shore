@@ -71,8 +71,9 @@ the five scripts in rows 1-5; the two `.DS_Store` in row 17; 12 files inside FMO
 |---|---|---|---|---|---|---|---|---|---|
 | 2026-11-12 | Caleb's | ? | 6000.3.17f1 (pinned; not confirmed) | `4d580c31` | ? | 16 | n/a | n/a | hand list (no patch) |
 | 2026-11-19 | caleb-windows | Windows 11 | 6000.3.17f1 | `f160af0f7` | fresh (no Library) | 3 | 3 | 0 | harness |
+| 2026-11-19 | caleb-windows-2 | Windows 11 | 6000.3.17f1 | `f160af0f7` | fresh (Library deleted) | 3 (all left from run 1: `--allow-dirty`, dirty base) | 3 | 0 | harness; open 1 and open 2 each changed nothing, and the `.mat` came out byte-identical again (sha256 `fef4b185`) |
 
-First harness run against a real Unity: 2026-11-19 on caleb-windows (rows 11 and 21). Both opens compiled; open 2 changed nothing, so nothing on this machine fails to settle. Of the hand list's 16 files, only rows 10 and 11 showed up; the rest need a trigger a plain open does not pull (a generator run, Play mode, a package resolve) or a Mac. Before that, the cloud container that built W1 had no Unity. The harness was checked with
+First harness run against a real Unity: 2026-11-19 on caleb-windows (rows 11 and 21). Both opens compiled; open 2 changed nothing, so nothing on this machine fails to settle. A second run with the Library deleted wrote nothing new on top, so the upgraded `.mat` is stable and committing it should hold. Of the hand list's 16 files, only rows 10 and 11 showed up; the rest need a trigger a plain open does not pull (a generator run, Play mode, a package resolve) or a Mac. Before that, the cloud container that built W1 had no Unity. The harness was checked with
 stand-in editors (one writing churn shaped like row 1, 12 and 14, one writing nothing): it found 4 dirty after open
 1 and 1 file changed again by open 2 (the never-settling writer), exit 1; and 0 and 0, exit 0, for the quiet one.
 
