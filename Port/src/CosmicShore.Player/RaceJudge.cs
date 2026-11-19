@@ -37,7 +37,7 @@ namespace CosmicShore.Player
     /// <c>"mode": "SkimRace"</c> races the Squirrel's Skim Race the same way: no gates, so a seat's progress is its
     /// crystals and it finishes at the mode's crystal count; its track is forced to the race seed like any other game's.
     /// </summary>
-    internal sealed class RaceJudge
+    internal sealed partial class RaceJudge
     {
         const string CardPathFormat = "Assets/_SO_Assets/Games/ArcadeGame{0}.asset";
         /// <summary>Regatta's course pool: entries 0-3 are the reference courses Ref1-Ref4 (author_regatta_assets.py), which
@@ -62,6 +62,12 @@ namespace CosmicShore.Player
         /// the mode's crystal count (GameDataSO.CrystalTargetCount, EndConditionOverrides). "gates" and "gate_s" then
         /// count crystals; "crystals" and "crystals_total" say so.</summary>
         bool IsSkim => _mode == "SkimRace";
+        /// <summary>Brood Rush (the Mass-Space arena game): no gates and no finish. <c>"teams": [["Rhino", "Manta"], ["Serpent",
+        /// "Sparrow"]]</c> seats each team on its own domain (Jade, Ruby, Gold in order); the match runs to the mode's own end
+        /// (first team to the brood target) or <c>limit_s</c>, and every seat reports its volume books (VolumeLedger: VC
+        /// created, VD reduced, lost, counted live at the end) and its seconds inside the nucleus. See BroodJudge.cs.</summary>
+        bool IsBrood => _mode == "BroodRush";
+        readonly List<int> _seatTeam = new();
         readonly float _limit;
         readonly AIDifficulty _difficulty = AIDifficulty.Legendary;
         readonly JsonArray _races = new();
@@ -88,8 +94,20 @@ namespace CosmicShore.Player
                 if (ai != "shipped") throw new InvalidOperationException($"seat {hull}: only ai \"shipped\" is supported, not '{ai}'");
                 _hulls.Add(v);
             }
+            int teamIndex = 0;
+            foreach (var t in _spec["teams"]?.AsArray() ?? new JsonArray())
+            {
+                foreach (var h in t!.AsArray())
+                {
+                    string hull = h!.GetValue<string>();
+                    if (!Enum.TryParse(hull, out VesselClassType v)) throw new InvalidOperationException($"not a hull: {hull}");
+                    _hulls.Add(v);
+                    _seatTeam.Add(teamIndex);
+                }
+                teamIndex++;
+            }
             if (_hulls.Count == 0) throw new InvalidOperationException("the spec has no seats");
-            _field = _spec["field"]?.GetValue<bool>() ?? false;
+            _field = _spec["field"]?.GetValue<bool>() ?? _seatTeam.Count > 0;
             if (!_field && _hulls.Count != 1)
                 throw new InvalidOperationException("an alone race seats one hull per process; set \"field\": true or run one process per hull");
             foreach (var n in _spec["seeds"]?.AsArray() ?? new JsonArray { 1 }) _seeds.Add(n!.GetValue<int>());
@@ -191,7 +209,7 @@ namespace CosmicShore.Player
             else ApplyTrainingOverlay(genome);
 
             SeatOffCardHulls(card);
-            var hostHull = HostHull(_hulls);
+            var hostHull = IsBrood ? BroodHostHull(card) : HostHull(_hulls);
             gameData.SyncFromArcadeGame(card);
             ApplyStart(gameData);
             ApplyCrystalGenes();
@@ -207,9 +225,17 @@ namespace CosmicShore.Player
             gameData.RequestedDomainCount = 2;
             gameData.RequestedAIDifficulty = AIDifficultyRules.Resolve(_difficulty);
             gameData.SetRequestedAIVessels(_hulls);
+            if (IsBrood) SeatTeams(gameData);
             CosmicShore.Engine.Random.InitState(_seeds[0]);
             ForceCourse(0);
             gameData.InvokeGameLaunch();
+
+            if (IsBrood)
+            {
+                var matches = BroodMatches(gameData, hostHull, intensity);
+                while (matches.MoveNext()) yield return matches.Current;
+                yield break;
+            }
 
             for (int r = 0; r < _seeds.Count; r++)
             {
