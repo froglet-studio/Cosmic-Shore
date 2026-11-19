@@ -512,7 +512,8 @@
       ],
       "paths": [
         "Docs/LoopAtlas",
-        "Tools/Build/loop_atlas.py"
+        "Tools/Build/loop_atlas.py",
+        ".claude/skills/loop-atlas"
       ],
       "note": "Garrett owns the model (2026-11-19); the YAML in Docs/LoopAtlas/model is the source of truth for the map artifact."
     }

@@ -375,6 +375,215 @@ def do_import(page_path: Path, model_dir: Path = MODEL_DIR, template: Path = TEM
         raise AtlasError("the template does not rebuild the page byte for byte")
 
 
+# ------------------------------------------------------------------------------------- the lifecycle: what moves where
+
+# The three layers are three kinds of work (Garrett, 2026-11-19): changing Proposed is brainstorming, changing Planned
+# is planning, changing Now is development. An idea graduates Proposed -> Planned -> Now; reaching Now opens a build
+# order, and the build order closes when the game has it. Every move is one line in ledger.jsonl and shows on BOARD.md.
+LEDGER = ROOT / "ledger.jsonl"
+BOARD = ROOT / "BOARD.md"
+BUILD_STATES = ("queued", "building")
+
+
+def _today() -> str:
+    import datetime
+    return datetime.date.today().isoformat()
+
+
+def _header_of(path: Path) -> str:
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    head = []
+    for line in lines:
+        if not line.startswith("#"):
+            break
+        head.append(line)
+    return "".join(head)
+
+
+def _rewrite(path: Path, data) -> None:
+    path.write_text(_dump_yaml(data, _header_of(path)), encoding="utf-8")
+
+
+def _find_loop(loop_id: str, model_dir: Path = MODEL_DIR):
+    for path in sorted((model_dir / "loops").glob("*.yaml")):
+        data = _load_yaml(path) or []
+        for n in data:
+            if n.get("id") == loop_id:
+                return path, data, n
+    raise AtlasError(f"no loop '{loop_id}' in model/loops/*.yaml")
+
+
+def _find_proposal(pid: str, model_dir: Path = MODEL_DIR):
+    path = model_dir / "proposals.yaml"
+    data = _load_yaml(path)
+    for p in data["proposals"]:
+        if p["id"] == pid:
+            return path, data, p
+    raise AtlasError(f"no proposal '{pid}' in model/proposals.yaml")
+
+
+def read_ledger(path: Path = LEDGER) -> list[dict]:
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def _log(entry: dict, path: Path = LEDGER) -> None:
+    entry = {"at": _today(), **entry}
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def _add_layer(n: dict, letter: str) -> None:
+    """A loop that exists on only some layers carries `in`; reaching a layer adds its letter."""
+    if "in" in n and letter not in n["in"]:
+        n["in"] = "".join(c for c in "npx" if c in n["in"] + letter)
+        if n["in"] == "npx":
+            del n["in"]
+
+
+def move(verb: str, target: str, by: str, note: str | None = None, hole: int | None = None,
+         status: str = "built", branch: str | None = None, why: str | None = None,
+         model_dir: Path = MODEL_DIR, ledger: Path = LEDGER) -> str:
+    """Apply one lifecycle step to a loop (or a proposal P<n>) and log it. Returns a one-line summary."""
+    if not by:
+        raise AtlasError("say who decided it: --by <person>")
+    if re.fullmatch(r"P\d+", target):
+        return _move_proposal(verb, target, by, note, branch, why, model_dir, ledger)
+    path, data, n = _find_loop(target, model_dir)
+    entry = {"verb": verb, "target": target, "by": by}
+
+    if verb == "propose":  # brainstorming: write or rewrite the Proposed layer
+        if not note:
+            raise AtlasError("propose needs --note")
+        n["prop"] = {"s": n.get("prop", {}).get("s", "change"), "note": note}
+        entry["text"] = note
+    elif verb == "plan":  # graduate Proposed (or one hole's fill) to Planned
+        if hole is not None:
+            holes = n.get("holes", [])
+            if hole >= len(holes):
+                raise AtlasError(f"'{target}' has {len(holes)} holes; no hole {hole}")
+            h = holes.pop(hole)
+            if not holes:
+                n.pop("holes")
+            text = note or h.get("fill")
+            if not text:
+                raise AtlasError(f"hole {hole} on '{target}' has no fill; give --note with the decision")
+            entry["hole"] = h["q"]
+        else:
+            text = note or n.get("prop", {}).get("note")
+            if not text:
+                raise AtlasError(f"'{target}' has nothing proposed to plan; give --note")
+            n.pop("prop", None)
+        n["plan"] = {"s": "decided", "note": text}
+        _add_layer(n, "p")
+        entry["text"] = text
+    elif verb == "develop":  # graduate to Now: open a build order
+        if "build" in n:
+            raise AtlasError(f"'{target}' already has a build order ({n['build']['s']})")
+        text = note or n.get("plan", {}).get("note") or n.get("prop", {}).get("note")
+        if not text:
+            raise AtlasError(f"'{target}' has no plan or proposal to build; give --note with what to build")
+        n["build"] = {"s": "queued", "what": text, "by": by, "at": _today()}
+        entry["text"] = text
+    elif verb == "start":  # someone is building it
+        b = n.get("build")
+        if not b:
+            raise AtlasError(f"'{target}' has no build order; run develop first")
+        b["s"] = "building"
+        if branch:
+            b["branch"] = branch
+        entry["branch"] = branch
+    elif verb == "done":  # the game has it: Now is rewritten, the build order closes
+        b = n.pop("build", None)
+        if not b:
+            raise AtlasError(f"'{target}' has no build order to close")
+        n["now"] = {"s": status, "note": note or b["what"]}
+        if n.get("plan", {}).get("note") == b["what"]:
+            n.pop("plan")  # the plan was exactly this build: nothing is left planned
+        if n.get("prop", {}).get("note") == b["what"]:
+            n.pop("prop")
+        _add_layer(n, "n")
+        entry.update(text=n["now"]["note"], status=status, branch=b.get("branch"))
+    elif verb == "drop":  # brainstorming or planning undone, with the reason kept in the ledger
+        layer = "build" if "build" in n else "prop" if "prop" in n else None
+        if not layer:
+            raise AtlasError(f"'{target}' has no proposal or build order to drop")
+        entry.update(layer=layer, text=n.pop(layer).get("note") or "", why=why)
+    else:
+        raise AtlasError(f"unknown step '{verb}'")
+    _rewrite(path, data)
+    _log({k: v for k, v in entry.items() if v is not None}, ledger)
+    return f"{verb} {target}: {entry.get('text', '')}".strip()
+
+
+def _move_proposal(verb, pid, by, note, branch, why, model_dir, ledger) -> str:
+    path, data, p = _find_proposal(pid, model_dir)
+    stage = p.get("stage", "proposed")
+    order = {"plan": ("proposed", "planned"), "develop": ("planned", "building"), "done": ("building", "current")}
+    if verb == "start":
+        if stage != "building":
+            raise AtlasError(f"{pid} is {stage}; develop it first")
+        if branch:
+            p["branch"] = branch
+    elif verb == "drop":
+        p["stage"] = "dropped"
+    elif verb in order:
+        before, after = order[verb]
+        if verb == "develop" and stage == "proposed":
+            before = "proposed"  # straight from brainstorm to build, on the owner's word
+        if stage != before:
+            raise AtlasError(f"{pid} is {stage}; '{verb}' moves a {before} proposal")
+        p["stage"] = after
+    else:
+        raise AtlasError(f"'{verb}' does not apply to a proposal")
+    _rewrite(path, data)
+    _log({k: v for k, v in {"verb": verb, "target": pid, "by": by, "text": note or p["title"],
+                             "branch": branch, "why": why}.items() if v is not None}, ledger)
+    return f"{verb} {pid}: {p['title']} is now {p.get('stage')}"
+
+
+def board_text(model: dict, ledger: list[dict]) -> str:
+    """BOARD.md: the atlas as a work board. Generated; --check keeps it in step with the model."""
+    nodes = model["nodes"]
+    out = ["# Loop Atlas board", "",
+           "Generated by `python3 Tools/Build/loop_atlas.py build` from the model and `ledger.jsonl`; do not edit.",
+           "How work moves: `Docs/LoopAtlas/PROCESS.md`.", ""]
+
+    def table(title, rows, cols):
+        out.append(f"## {title} ({len(rows)})")
+        out.append("")
+        if not rows:
+            out.extend(["None.", ""])
+            return
+        out.append("| " + " | ".join(cols) + " |")
+        out.append("| " + " | ".join("---" for _ in cols) + " |")
+        for r in rows:
+            out.append("| " + " | ".join(str(c).replace("|", "/").replace("\n", " ") for c in r) + " |")
+        out.append("")
+
+    term = {t["id"]: t["term"] for t in model["tiers"]}
+    building = [(n["id"], term[n["tier"]], n["build"]["s"], n["build"]["at"], n["build"].get("branch", ""),
+                 n["build"]["what"]) for n in nodes if "build" in n]
+    building += [(p["id"], "proposal", "building", "", p.get("branch", ""), p["title"])
+                 for p in model["proposals"] if p.get("stage") == "building"]
+    table("Development: build orders", building, ["Loop", "Tier", "State", "Since", "Branch", "What to build"])
+    planned = [(n["id"], term[n["tier"]], n["plan"]["note"]) for n in nodes
+               if n.get("plan", {}).get("s") == "decided" and "build" not in n]
+    planned += [(p["id"], "proposal", p["title"]) for p in model["proposals"] if p.get("stage") == "planned"]
+    table("Planning: decided, not yet building", planned, ["Loop", "Tier", "The plan"])
+    proposed = [(n["id"], term[n["tier"]], n["prop"]["note"]) for n in nodes if "prop" in n]
+    proposed += [(p["id"], "proposal", f"{p['title']}: {p['what']}") for p in model["proposals"]
+                 if p.get("stage", "proposed") == "proposed"]
+    table("Brainstorm: proposed", proposed, ["Loop", "Tier", "The proposal"])
+    holes = [(n["id"], i, h["q"], h.get("fill", "")) for n in nodes for i, h in enumerate(n.get("holes", []))]
+    table("Holes: undecided", holes, ["Loop", "Hole", "Question", "Proposed fill"])
+    recent = [(e["at"], e["verb"], e["target"], e["by"], e.get("text", e.get("why", "")))
+              for e in reversed(ledger[-25:])]
+    table("Recent moves", recent, ["Date", "Step", "Loop", "By", "What"])
+    return "\n".join(out).rstrip() + "\n"
+
+
 # --------------------------------------------------------------------------------------------------------- self-test
 
 def self_test() -> int:
@@ -421,6 +630,55 @@ def self_test() -> int:
         print(f"self-test: {failed} negative control(s) were not refused")
         return 1
     print(f"self-test: all {len(cases)} negative controls refused")
+    return _lifecycle_test()
+
+
+def _lifecycle_test() -> int:
+    """Walk one proposed loop through plan, develop, start and done in a scratch copy, and the refusals between."""
+    import shutil
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        md, ledger = Path(tmp) / "model", Path(tmp) / "ledger.jsonl"
+        shutil.copytree(MODEL_DIR, md)
+        prop = next(n for n in assemble(md)["nodes"] if n.get("in") == "x" and "prop" in n)
+        lid, problems = prop["id"], []
+
+        def expect_refusal(label, **kw):
+            try:
+                move(model_dir=md, ledger=ledger, **kw)
+                problems.append(f"MISSED  {label}")
+            except AtlasError as e:
+                print(f"  refused  {label}: {e}")
+
+        expect_refusal("done before any build order", verb="done", target=lid, by="Garrett")
+        expect_refusal("a move with no decider", verb="plan", target=lid, by="")
+        move("plan", lid, "Garrett", model_dir=md, ledger=ledger)
+        n = _find_loop(lid, md)[2]
+        if n.get("in") != "px" or "prop" in n or n["plan"]["note"] != prop["prop"]["note"]:
+            problems.append(f"plan did not move the proposal to Planned: {n}")
+        move("develop", lid, "Garrett", model_dir=md, ledger=ledger)
+        expect_refusal("a second build order", verb="develop", target=lid, by="Garrett")
+        move("start", lid, "Garrett", branch="claude/test", model_dir=md, ledger=ledger)
+        move("done", lid, "Garrett", model_dir=md, ledger=ledger)
+        n = _find_loop(lid, md)[2]
+        if "in" in n or "build" in n or "plan" in n or n["now"]["s"] != "built":
+            problems.append(f"done did not land the loop on Now: {n}")
+        errs = validate(assemble(md))
+        if errs:
+            problems.append(f"the model is invalid after the walk: {errs[0]}")
+        steps = [e["verb"] for e in read_ledger(ledger)]
+        if steps != ["plan", "develop", "start", "done"]:
+            problems.append(f"the ledger recorded {steps}")
+        move("plan", "P7", "Garrett", model_dir=md, ledger=ledger)
+        expect_refusal("planning a proposal twice", verb="plan", target="P7", by="Garrett")
+        if _find_proposal("P7", md)[2].get("stage") != "planned":
+            problems.append("P7 did not reach planned")
+    for p in problems:
+        print(f"  {p}")
+    if problems:
+        print("self-test: the lifecycle walk failed")
+        return 1
+    print(f"self-test: lifecycle walk ok ({lid}: proposed -> planned -> building -> now)")
     return 0
 
 
@@ -436,6 +694,20 @@ def main(argv=None) -> int:
     i = sub.add_parser("import", help="split a published page's model into YAML (one-off)")
     i.add_argument("page", type=Path)
     sub.add_parser("self-test", help="negative controls")
+    for verb, what in (("propose", "brainstorm: write a loop's Proposed layer"),
+                       ("plan", "planning: graduate the proposal (or --hole N's fill) to Planned"),
+                       ("develop", "development: graduate to Now by opening a build order"),
+                       ("start", "a build order is being built (--branch)"),
+                       ("done", "the game has it: rewrite Now, close the build order"),
+                       ("drop", "drop a proposal or build order (--why)")):
+        m = sub.add_parser(verb, help=what)
+        m.add_argument("target", help="a loop id, or a proposal P<n>")
+        m.add_argument("--by", required=True, help="who decided it (a person, or Claude for propose)")
+        m.add_argument("--note", help="the text; defaults to the layer below's")
+        m.add_argument("--hole", type=int, help="plan: graduate this hole's fill (0-based)")
+        m.add_argument("--status", default="built", choices=["built", "part", "signed"], help="done: Now's status")
+        m.add_argument("--branch", help="start/done: the branch")
+        m.add_argument("--why", help="drop: the reason")
     args = ap.parse_args(argv)
 
     try:
@@ -446,6 +718,12 @@ def main(argv=None) -> int:
             args.html = None
         if args.cmd == "self-test":
             return self_test()
+        if args.cmd in ("propose", "plan", "develop", "start", "done", "drop"):
+            if args.cmd in ("plan", "develop", "done") and args.by.lower() == "claude":
+                raise AtlasError(f"'{args.cmd}' is a person's decision; Claude only proposes (PROCESS.md)")
+            print(move(args.cmd, args.target, args.by, note=args.note, hole=args.hole, status=args.status,
+                       branch=args.branch, why=args.why))
+            args.cmd, args.html = "build", None
         model = assemble()
         errors = validate(model)
         if errors:
@@ -458,17 +736,22 @@ def main(argv=None) -> int:
                 print(line)
             return 0
         text = model_json_text(model)
+        board = board_text(model, read_ledger())
         if args.check or args.cmd is None:
             current = MODEL_JSON.read_text(encoding="utf-8") if MODEL_JSON.exists() else ""
             if current != text:
                 print(f"loop_atlas: {MODEL_JSON.relative_to(REPO)} is stale; run python3 Tools/Build/loop_atlas.py build")
+                return 1
+            if (BOARD.read_text(encoding="utf-8") if BOARD.exists() else "") != board:
+                print(f"loop_atlas: {BOARD.relative_to(REPO)} is stale; run python3 Tools/Build/loop_atlas.py build")
                 return 1
             render_page(model)  # the template still takes the model
             print(f"loop_atlas: model valid ({len(model['nodes'])} loops, {len(model['edges'])} edges, "
                   f"{len(model['fleet'])} vessels) and model.json up to date")
             return 0
         MODEL_JSON.write_text(text, encoding="utf-8")
-        print(f"wrote {MODEL_JSON.relative_to(REPO)}")
+        BOARD.write_text(board, encoding="utf-8")
+        print(f"wrote {MODEL_JSON.relative_to(REPO)} and {BOARD.relative_to(REPO)}")
         if args.html:
             args.html.write_text(render_page(model), encoding="utf-8")
             print(f"wrote {args.html}")

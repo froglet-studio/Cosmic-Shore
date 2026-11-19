@@ -91,7 +91,7 @@
         "repsOf": {"type": "string"},
         "now": {
           "type": "object", "additionalProperties": false,
-          "properties": {"s": {"enum": ["built", "part", "dark"]}, "note": {"type": "string"}}
+          "properties": {"s": {"enum": ["signed", "built", "part", "dark"]}, "note": {"type": "string"}}
         },
         "plan": {
           "type": "object", "additionalProperties": false,
@@ -102,7 +102,16 @@
           "properties": {"s": {"enum": ["change", "add"]}, "note": {"type": "string"}}
         },
         "holes": {"type": "array", "items": {"$ref": "#/$defs/hole"}},
+        "build": {"$ref": "#/$defs/buildOrder"},
         "src": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
+      }
+    },
+    "buildOrder": {
+      "description": "A change graduated to Now that the game does not have yet (PROCESS.md). Closed by 'done', which rewrites now.",
+      "type": "object", "additionalProperties": false, "required": ["s", "what", "by", "at"],
+      "properties": {
+        "s": {"enum": ["queued", "building"]}, "what": {"type": "string", "minLength": 1},
+        "by": {"type": "string"}, "at": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}, "branch": {"type": "string"}
       }
     },
     "edge": {
@@ -144,7 +153,9 @@
       "type": "object", "additionalProperties": false, "required": ["id", "title", "what", "touches"],
       "properties": {
         "id": {"type": "string", "pattern": "^P\\d+$"}, "title": {"type": "string"}, "what": {"type": "string"},
-        "touches": {"type": "array", "items": {"$ref": "#/$defs/id"}}
+        "touches": {"type": "array", "items": {"$ref": "#/$defs/id"}},
+        "stage": {"enum": ["proposed", "planned", "building", "current", "dropped"], "description": "Absent means proposed."},
+        "branch": {"type": "string"}
       }
     },
     "verb": {

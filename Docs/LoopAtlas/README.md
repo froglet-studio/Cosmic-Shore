@@ -22,17 +22,23 @@ https://claude.ai/artifact/QUiM5ztvnHhkpWgsn4S43K.
 | `schema.json` | JSON Schema for the assembled model. |
 | `model.json` | The assembled model, **generated**; never edit it by hand. Other tools read this. |
 | `page/atlas.template.html` | The published page with the model taken out. The map's runtime lives here. |
+| `PROCESS.md` | **How work moves**: Proposed is brainstorming, Planned is planning, Now is development; graduation and build orders. |
+| `ledger.jsonl` | One line per lifecycle step (who graduated what, when). Appended by the tool. |
+| `BOARD.md` | The atlas as a work board, **generated**: build orders, decided plans, proposals, holes, recent moves. |
 
 ## Editing the model
 
+Moving an idea between layers (propose, plan, develop, start, done, drop) goes through the tool's lifecycle steps in
+`PROCESS.md`, which log every move. Other edits:
+
 1. Edit the YAML. Field meanings are below; `schema.json` is the full list.
-2. `python3 Tools/Build/loop_atlas.py build` validates and rewrites `model.json`. Commit both.
+2. `python3 Tools/Build/loop_atlas.py build` validates and rewrites `model.json` and `BOARD.md`. Commit them with the YAML.
 3. To publish the map, `python3 Tools/Build/loop_atlas.py build --html /tmp/LoopAtlas.html` and republish that file
    to the artifact's URL. The page is the template with the model put back, so a build with no YAML change is byte for
    byte the published page.
 
 `python3 Tools/Build/loop_atlas.py --check` is what CI runs (`.github/workflows/loop-atlas-check.yml`): the model is
-valid and `model.json` matches the YAML. `report` lists drift that does not fail the build yet (source docs that are not
+valid and `model.json` and `BOARD.md` match the YAML. `report` lists drift that does not fail the build yet (source docs that are not
 in the repo, a loop whose timescale lies outside its tier). `self-test` proves every check refuses what it must.
 
 The tool needs PyYAML and jsonschema (`pip install pyyaml jsonschema`).
@@ -58,10 +64,11 @@ The tool needs PyYAML and jsonschema (`pip install pyyaml jsonschema`).
 | `phases` | The steps of one pass: `n` the step, `d` an optional line on it. |
 | `drivers` | What pulls a player into this loop (`vocabulary.yaml` drivers). |
 | `reps`, `repsOf` | How many passes make one pass of the parent, and of what. `null` means not measured. |
-| `now`, `plan`, `prop` | The loop on each layer: `s` a status, `note` a line. `now.s`: built, part, dark. |
+| `now`, `plan`, `prop` | The loop on each layer: `s` a status, `note` a line. `now.s`: signed, built, part, dark. |
 | `in` | Layers the loop exists on when not all: `x` only Proposed, `px` Planned and Proposed. |
 | `holes` | Open questions: `on` the layers, `q` the question, `fill` the proposed answer. |
 | `src` | Where the loop came from: a repo path (optionally with a section), or a dated brief. |
+| `build` | A build order: the change graduated to Now that the game does not have yet (`s` queued or building, `what`, `by`, `at`, `branch`). |
 | `kit`, `element`, `core` | The role it plays a vessel's kit in, its element, and whether it is on the core path. |
 
 ## Next phases
