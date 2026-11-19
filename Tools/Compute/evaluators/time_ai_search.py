@@ -256,6 +256,21 @@ GAMES = {
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
         "lead": None, "rows": [], "nose_gene": 7.97,
     },
+    "Goby": {
+        "mode": "PerchRun",
+        # The Goby's seat AI races on a coach's darts (IGobyRaceCoach), not the gate race's steering: it turns at its own
+        # aiTurnRate, cruises, and darts once the nose is on the coach's line. Perch Run's coach (PerchRunController)
+        # carries the two numbers a dart plan is made of that travel to any race: how far past the last ring it charges
+        # (aiOvershoot) and how wide the turning circle counts before it flies on instead of orbiting (aiTurnMargin).
+        # Regatta's coach (RegattaGobyDart, RegattaController.aiGobyDart) carries the same two, so a winner is copied
+        # there. No drive asset, no nose knob (the coach steers the hull itself), nothing on the vessel.
+        "assets": {},
+        "fields": {},
+        "ctrl_fields": {"aiOvershoot": (0.0, 300.0), "aiTurnMargin": (1.0, 3.0)},
+        "ctrl_defaults": {"aiOvershoot": 40.0, "aiTurnMargin": 1.25},
+        "ctrl": lambda p: {"aiOvershoot": float(p["aiOvershoot"]), "aiTurnMargin": float(p["aiTurnMargin"])},
+        "lead": None, "rows": [],
+    },
     # The Meerkat's portable Time AI (loop step 3, 2026-11-19): its OWN wormhole autopilot
     # (MeerkatSolitonExecutor.Autopilot, read off MeerkatSolitonConfig: when to form a straight or a bent tunnel, how
     # long to shape the reticle), trained in Burrow Run with the race controller's knobs left at what the scene ships

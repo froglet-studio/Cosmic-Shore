@@ -249,6 +249,9 @@ ride is the only speed past it, and it comes out at the speed it went in, so a R
 - Sparrow: afterburner (Time BoostSpeedMultiplier) x1 -> x2.25 reshaped to x2 -> x2.75 (card 121.5 -> 74.3 s, L5
   85.2 -> 66.9 s).
 
+- Goby: Time dart pace (dartPace) x1.0 -> x2.2 reshaped to x1.25 -> x1.95, the level-5 value unchanged (card 83.3 ->
+  78.1 s, L5 62.6 s, 15 seeds), after Regatta got its own Goby dart coach (REGATTA.md 6.6).
+
 ## Which AI each hull flies in Regatta (audit, 2026-11-18)
 
 A hull can look like a balance outlier because Regatta flies an AI that was never trained. The Dolphin's two-line racing
