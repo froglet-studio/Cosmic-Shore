@@ -86,10 +86,10 @@
      "evidence": "RhinoAIBoostPolicy_Headlong from drive-rhino-headlong-on-lead, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846)"
     },
     "1": {
-     "state": "redo",
-     "by": "Claude",
-     "date": "2026-11-18",
-     "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md"
+     "state": "built",
+     "by": "Garrett",
+     "date": "2026-11-19",
+     "evidence": "Redesigned (ramp fuel from ploughing/slicing, #2233, #2240); back inside the Regatta field at both starts (Docs/ElementalLoop/REDESIGN.md: Rhino 70.0/66.9 s, Swordfish 70.8/65.8 s; trunk re-judge 2026-11-18 Rhino 70.8/66.8, Swordfish 71.7/65.4). Fun sign-off of the new ramp is still a person's (Headlong / Spearline)"
     }
    }
   },
@@ -250,10 +250,10 @@
   "Swordfish": {
    "Time": {
     "1": {
-     "state": "redo",
-     "by": "Claude",
-     "date": "2026-11-18",
-     "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md"
+     "state": "built",
+     "by": "Garrett",
+     "date": "2026-11-19",
+     "evidence": "Redesigned (ramp fuel from ploughing/slicing, #2233, #2240); back inside the Regatta field at both starts (Docs/ElementalLoop/REDESIGN.md: Rhino 70.0/66.9 s, Swordfish 70.8/65.8 s; trunk re-judge 2026-11-18 Rhino 70.8/66.8, Swordfish 71.7/65.4). Fun sign-off of the new ramp is still a person's (Headlong / Spearline)"
     }
    }
   },
