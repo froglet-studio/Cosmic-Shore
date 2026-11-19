@@ -256,6 +256,18 @@ GAMES = {
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
         "lead": None, "rows": [], "nose_gene": 7.97,
     },
+    # The Meerkat's portable Time AI (loop step 3, 2026-11-19): its OWN wormhole autopilot
+    # (MeerkatSolitonExecutor.Autopilot, read off MeerkatSolitonConfig: when to form a straight or a bent tunnel, how
+    # long to shape the reticle), trained in Burrow Run with the race controller's knobs left at what the scene ships
+    # (run1's 42 / 702 / 74 and nose 7.97/s). The autopilot is the vessel's, so every race (Regatta included) flies what this learns.
+    "MeerkatDrive": {
+        "hull": "Meerkat",
+        "mode": "BurrowRun",
+        "assets": {i: "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset" for i in (1, 2, 3, 4)},
+        "fields": {"aiStraightMinDistance": (50.0, 2000.0), "aiBentMinDistance": (50.0, 2000.0),
+                   "aiShapeSeconds": (0.05, 2.0)},
+        "lead": None, "rows": [],
+    },
     "Shrike": {
         "mode": "Thornline",
         # Thornline aims the AI itself (ThornlineAIPlan) and sets its skill by difficulty on every arming

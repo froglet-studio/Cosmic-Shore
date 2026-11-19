@@ -304,6 +304,22 @@
      "evidence": "Wrasse run1 (time_ai_search.py, real-game judge, 2026-11-17): Wrasse Run gate knobs trained (aiCommitDistance 72 -> 433, aiApproachLead 80 -> 423, aiThroughDistance 55 -> 68, shipped in MinigameWrasseRun); confirm on seeds 101-104, 28 flights a side, 0 DNF, mean of seven conditions 171.5 -> 156.6 s. Its nose pair (4.37/s, lead 0.69) measured in Regatta 2026-11-19: no gain (142 vs 144 s), so not promoted."
     }
    }
+  },
+  "Meerkat": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Garrett",
+     "date": "2026-11-19",
+     "evidence": "Burrow Run AI: run1 controller genes (shipped) + wormhole-autopilot search 2026-11-19 (time_ai_search --hull MeerkatDrive, I1-I4 + I1@T5 + W0, 12 candidates): shipped values best; Regatta 294 s card / 257 s L5 (train/Meerkat/)"
+    },
+    "1": {
+     "state": "redo",
+     "by": "Garrett",
+     "date": "2026-11-19",
+     "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta 4.0x card / 4.0x L5; Time rush at the 37.5% lever cap 3.4x, doubled 3.0x; Docs/ElementalLoop/REDESIGN.md"
+    }
+   }
   }
  },
  "arenas": {
