@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-19-broadside-s-card-now-seats-the-hulls-the-d6f456",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-19T09:04:46+00:00",
+  "area": "Broadside card and the Angler's Charge numbers",
+  "summary": "Broadside's card now seats the hulls the real-game judge measured as balanced (Scarab, Stoat, Brittle Star, Meerkat, Angler) with no per-hull starting rows, and the Angler's lockBiteCooldown goes from 1 to 4.5 s (its lock-bite latch; 2.8x the field before, 0.9-1.0 after). Your unmerged claude/dreamy-goldberg-enztvh touches the same files.",
+  "why": "Garrett's overnight ask: balance the three arena games with each vessel's own levers, no per-mode handicaps",
+  "branch": "HEAD",
+  "commit": "ee11a0b21",
+  "paths": [
+    "Assets/_SO_Assets/Games/ArcadeGameBroadside.asset",
+    "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+    "Tools/Build/author_broadside_assets.py"
+  ]
+}

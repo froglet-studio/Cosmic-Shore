@@ -8,29 +8,29 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 
 | Vessel | Time 1 2 3 | Charge 1 2 3 | Mass 1 2 3 | Space 1 2 3 | Kit missing | Arenas |
 |---|---|---|---|---|---|---|
-| Angler | `R b b` | `b b .` | `b b .` | `b b .` | - | - |
-| BrittleStar | `b b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
-| Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, Broadside, BroodRush |
+| Angler | `R b b` | `b b .` | `b b .` | `b b .` | - | Broadside |
+| BrittleStar | `b b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
+| Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, BroodRush |
 | Goby | `b ~ b` | `b b .` | `b b b` | `b b b` | - | Regatta |
 | Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `R b ~` | `b b .` | `b b .` | `b b .` | - | - |
 | Jacks | `R b b` | `b b .` | `- - -` | `b b .` | - | - |
 | JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
-| Manta | `R b ~` | `b b .` | `x x x` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Meerkat | `R b b` | `b b .` | `b b .` | `b b .` | - | - |
+| Manta | `R b ~` | `b b .` | `x x x` | `b b .` | - | Regatta, BroodRush |
+| Meerkat | `R b b` | `b b .` | `b b .` | `b b .` | - | Broadside |
 | Orca | `R ~ .` | `b b .` | `b b .` | `b b .` | - | - |
 | Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
 | Serpent | `R b b` | `b b .` | `b b .` | `x x x` | - | Regatta, BroodRush |
 | Shrike | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
-| Sparrow | `b b b` | `b b .` | `x x x` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Squirrel | `b b b` | `b b .` | `x x x` | `- - -` | Mass | Regatta, Broadside, BroodRush |
+| Sparrow | `b b b` | `b b .` | `x x x` | `b b .` | - | Regatta, BroodRush |
+| Squirrel | `b b b` | `b b .` | `x x x` | `- - -` | Mass | Regatta, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
-| Stoat | `b b b` | `b b .` | `- - -` | `b b .` | - | - |
-| Swordfish | `b b .` | `b b .` | `b b b` | `b b b` | - | Regatta, Broadside, BroodRush |
+| Stoat | `b b b` | `b b .` | `- - -` | `b b .` | - | Broadside |
+| Swordfish | `b b .` | `b b .` | `b b b` | `b b b` | - | Regatta, BroodRush |
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | TigerMoth | `R b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
-| Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside |
+| Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta |
 | Wrasse | `R b b` | `b b .` | `b b .` | `b b .` | - | - |
 
 ## 2. Arena games
@@ -38,7 +38,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Element | Arena game | Vessels seated | Their steps 1-3 complete | Step 4 environment creator | Step 5 vessel imbalance |
 |---|---|---|---|---|---|
 | Time | Regatta | BrittleStar, Dolphin, Goby, Manta, Rhino, Scarab, Serpent, Shrike, Sparrow, Squirrel, Swordfish, Thresher, TigerMoth, Urchin | no | doing: the course-pool search is the first environment creator: best pool 1.104x against the 1.10x bar in the model (#1825); live in bleeding-edge, waits on Garrett's playtest and on step 3 for every Regatta hull (Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md) | todo |
-| Charge | Broadside | Dolphin, Manta, Scarab, Sparrow, Squirrel, Swordfish, Urchin | no | todo | todo |
+| Charge | Broadside | Angler, BrittleStar, Meerkat, Scarab, Stoat | no | todo | todo |
 | Mass + Space | BroodRush | Dolphin, Manta, Rhino, Serpent, Sparrow, Squirrel, Swordfish | no | todo | todo |
 
 ## 3. Each vessel's arcade games (measured from the cards)

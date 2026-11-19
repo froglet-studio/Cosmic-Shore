@@ -1,5 +1,7 @@
 # Broadside — the arena brawl
 
+> **2026-11-19: the roster is the real-game judge's, and nobody starts handicapped.** `Tools/Compute/evaluators/broadside_judge.py` (4v4 timed brawls in Amoebius, every hull flown by its own AI, a hull's share of the match's points) judged all 23 Charge hulls. The card now seats the five it measured within about +-10% at rest and at L5: Scarab, Stoat, Brittle Star, Meerkat, Angler (the Angler's lockBiteCooldown 1 -> 4.5 s). The per-hull Time starting rows are gone (Garrett 2026-11-18: no per-mode handicaps). The tables and the fleet below are history; the per-hull results and what each hull needs are in `regatta-flywheel/night3/broadside/RESULT.md` (project files).
+
 > **2026-11-07: the SWORDFISH has the Rhino's seat.** The Rhino split in two (`R_VesselActions/SWORDFISH.md`): the plough-only Rhino has no vessel-hit verb, so the sword hull is the Swordfish (`broadside_balance.py`, `author_broadside_assets.py`; its starting Time rows carried over unchanged). Read "the Rhino" below as "the Swordfish".
 
 `GameModes.Broadside = 57` · `MinigameBroadside.unity` · `BroadsideController`

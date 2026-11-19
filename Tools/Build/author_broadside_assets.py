@@ -67,8 +67,12 @@ G_ASSET = {
 # ── Existing GUIDs we reference (read from the repo, never invented) ──────────
 EXISTING = dict(lib.SCRIPT_GUIDS)
 EXISTING.update(lib.CARD_ART)
-for hull in ("Manta", "Dolphin", "Swordfish", "Urchin", "Squirrel", "Sparrow", "Scarab"):
-    EXISTING[f"Vessel_{hull}"] = lib.VESSELS[hull]
+# The card's roster: the hulls the real-game judge measured as a balanced brawl
+# (Tools/Compute/evaluators/broadside_judge.py; regatta-flywheel/night3/broadside/RESULT.md, 2026-11-19).
+# Every other Charge hull is judged too and is listed there with what it needs to join.
+CARD_HULLS = ("Scarab", "Stoat", "BrittleStar", "Meerkat", "Angler")
+for hull in CARD_HULLS:
+    EXISTING[f"Vessel_{hull}"] = lib.existing_guid(f"Assets/_SO_Assets/Classes/SO_Class_{hull}.asset")
 
 # The donor (Dog Fight) - its scene is the closest sibling: same metric, same arena, same
 # HasEndGame shape. Read off disk rather than re-derived, because Dog Fight predates the lib.
@@ -122,10 +126,10 @@ SHIPPED_W = bal.read_shipped_windows()
 # fuller lobby races to a bigger number and the comeback only ever buys more, never less.
 COMEBACK_RATE = 0.12
 
-# The card's per-hull handicap, solved by the model. Time is the only element that reaches a
-# speed on more than one hull, so it is the axis; three hulls it cannot reach get no row and the
-# residual is REPORTED rather than faked (see BROADSIDE.md).
-LEVELS = bal.solve_levels()
+# NO per-hull handicap (Garrett, 2026-11-18: "don't cheat" - balance with each vessel's own levers, no per-mode
+# starting rows). The card used to start hulls at the model's solved Time levels (bal.solve_levels()); every hull
+# now starts at rest, which is what the judge measures. A hull its levers cannot balance is flagged for redesign.
+LEVELS = {}
 
 g.folder_meta("Assets/_Scripts/Controller/Arcade/Broadside")
 g.text_meta("Assets/_Scripts/Controller/Arcade/BROADSIDE.md")
@@ -233,7 +237,7 @@ g.emit_asset("Assets/_SO_Assets/Games/BroadsideSettings.asset", G_ASSET["Broadsi
 # ── 5. The ARENA card ────────────────────────────────────────────────────────
 VESSEL_ROWS = "".join(
     f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n"
-    for h in ("Manta", "Dolphin", "Swordfish", "Urchin", "Squirrel", "Sparrow", "Scarab"))
+    for h in CARD_HULLS)
 
 # A row per (hull, intensity) the model moves off rest. A hull at rest gets NO row - the platform
 # default IS rest, and a row of zeros would claim the card had made a decision it did not make.
@@ -250,8 +254,8 @@ def starting_elements():
 
 _BROADSIDE_DESC = lib.wrap_yaml_scalar(
     "Every hull that can fight, loose in the Boneyard, each with the weapon it "
-    "actually has - a Sparrow's guns and rockets, an Urchin's spikes, a Swordfish's sword, a "
-    "Squirrel's joust, a Dolphin's cone, a Scarab's plate, a Manta's bloom. A hit is worth "
+    "actually has - a Scarab's plate, a Stoat's joust, a Brittle Star's cord, a Meerkat's "
+    "zap, an Angler's bite. A hit is worth "
     "what it cost you to land, not what you flew: a round is 1, a contact strike 8, a debuff "
     "12, a rocket up to 30. First team to the target wins. Pick the hull you fight best.")
 g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameBroadside.asset", G_ASSET["ArcadeGameBroadside"],
@@ -276,7 +280,6 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameBroadside.asset", G_ASSET["Arcad
   - Your hull already has a weapon. The card does not hand you one - it pays for the one you brought.
   - A contact strike is worth eight rounds. Closing is the expensive part, so it pays like it.
   - You cannot hit a teammate with anything here. The domains are the sides.
-  - Slow hulls start with Time already high. Fast ones start with it low.
   ViewUserAction: 0
   PlayUserAction: 0
   StartingElements:
@@ -387,18 +390,13 @@ if not (P["bullet"] < P["strike"] < P["debuff"] < P["missile_direct"]):
 
 # EVERY hull on the card must be able to score. This is the arena rule, and it is the one that
 # would have shipped a seat nobody can play.
-CARD_HULLS = ("Manta", "Dolphin", "Swordfish", "Urchin", "Squirrel", "Sparrow", "Scarab")
-if "Serpent" in CARD_HULLS:
-    errors.append("the Serpent has no anti-vessel verb authored - it cannot score here")
-for h in CARD_HULLS:
-    if h not in bal.HULLS:
-        errors.append(f"{h} is on the card but the balance model does not price its verbs")
-
-# The model's own claim, asserted rather than trusted.
-r = bal.solve(LEVELS)
-tuned_spread = bal.spread(r["tuned"])
-if tuned_spread > 1.6:
-    errors.append(f"tuned points/min spread {tuned_spread:.2f}x exceeds the 1.6x the doc claims")
+# The roster is the real-game judge's (above), not the offline model's: the model priced seven hulls with estimated
+# connect fractions, and the judge measured all 23 Charge hulls flown by their own AIs. No starting rows.
+if starting_elements():
+    errors.append("the card carries per-hull starting rows - Broadside starts every hull at rest")
+if len(CARD_HULLS) + 1 > 9:
+    errors.append(f"{len(CARD_HULLS)} hulls plus a human exceed the card's 9 seats")
+r = bal.solve(bal.solve_levels())
 # WHAT THIS GATE CAN AND CANNOT SAY, after the first playtest corrected it.
 #
 # The model's points/min is a rate against a victim you are ALREADY engaged with, thinned by a
