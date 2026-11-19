@@ -42,6 +42,33 @@ turn, best first (big illustrations before interface bits and placeholders, `ima
 a picture follows its node into the parent; on the way down the parent's pictures (split in quarters when the ring is
 big) fade as the children come up showing their own.
 
+## The inspection window: the node you are on, drawn by Amoebius
+
+Garrett, 2026-11-19: "a small inspection window that can use an amoebius tool to display a flora, fauna, vessel, etc.
+so have that tool give a responsive window into the current view. if it is the home screen it shows the layout of the
+buttons."
+
+The corner of the map holds a window that follows you. Wherever you are (a loop, a ring of code, a value), it shows
+the view of that node or of the nearest node above it that has one, and changes as you zoom:
+
+- **Models**: every first-party FBX (87, the vessels, the fauna, the crystals) as a 12-frame turntable drawn on the CPU
+  by Amoebius (`cs-asset model-preview --turntable`, in the game's material colours). It turns by itself; drag to turn
+  it by hand. A model is the view of its file, of every object whose mesh it is, of the prefab or scene holding it, of
+  the types whose components sit there, and of the folders and loops above them. Squirrel shows the Squirrel.
+- **Screens**: the real game booted headless in Amoebius sweeps Menu_Main (`ui_sweep`: each menu screen, then each
+  modal) and records every RectTransform's rect and text. The window draws that layout at its own size, buttons
+  outlined, and lights the rect of the node you are on: the long game, or Menu_Main, shows the home screen; zoom to
+  its button bar and the bar is lit.
+
+‹ › step through a node's views (up to four), ⤢ makes the window bigger, – folds it.
+
+A web page cannot run the engine, so the views are drawn ahead of time by `Tools/Build/code_atlas_views.py`:
+`sweep` boots the game (xvfb, the .NET 10 SDK; about ten minutes), `build` renders the turntables and maps the nodes
+(about a minute), into `code-out/views/` (1.6 MB). Known gaps: the sweep runs without the boot scene, so screens show
+default data (Pilot, 0 crystals) and the Hangar, Profile and Store screens were caught mid-transition and are left
+out; a sweep path is matched to the atlas by name, so a name that is ambiguous where the atlas lost a prefab's nesting
+is skipped (the bar is matched, its Arcade button is not); flora built in code (no FBX) have no model yet.
+
 ## The data model: canonical nodes, placements made while you zoom
 
 `Tools/Build/code_atlas.py build` stores the graph **once**. A record per node:

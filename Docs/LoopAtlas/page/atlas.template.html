@@ -56,6 +56,18 @@ body { background: var(--ground); color: var(--text); }
 .la-canvas canvas { display: block; touch-action: none; cursor: grab; }
 .la-hud { position: absolute; left: var(--space-12); top: var(--space-12); display: flex; flex-wrap: wrap; gap: 2px; align-items: center; }
 .la-filter { margin-left: var(--space-8); }
+/* the inspection window: what Amoebius drew for the node you are on (Tools/Build/code_atlas_views.py) */
+.la-insp { position: absolute; right: var(--space-12); bottom: var(--space-12); width: min(300px, calc(100% - 24px)); background: var(--surface); border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+.la-insp-head { display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px var(--space-8); border-bottom: 1px solid var(--line); }
+.la-insp-title { flex: 1; min-width: 0; font-family: var(--font-label); font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.la-insp-title small { display: block; font-weight: 400; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-soft); }
+.la-insp .la-btn { min-height: 26px; padding: 3px 8px; font-size: 12px; }
+.la-insp canvas { display: block; width: 100%; height: 180px; background: var(--ground-deep); cursor: ew-resize; touch-action: none; }
+.la-insp[data-k="ui"] canvas { cursor: default; }
+.la-insp[data-min="true"] canvas { display: none; }
+.la-insp[data-big="true"] { width: min(640px, calc(100% - 24px)); }
+.la-insp[data-big="true"] canvas { height: min(360px, 55vh); }
+@media (max-width: 520px) { .la-insp canvas { height: 130px; } }
 .la-legend { display: flex; flex-wrap: wrap; gap: 4px var(--space-16); padding: 6px var(--space-16); border-top: 1px solid var(--line); font-size: 11px; color: var(--text-soft); }
 .la:not([data-view="map"]) .la-legend { display: none; }
 .la-lg { display: inline-flex; align-items: center; gap: 6px; }
@@ -305,6 +317,14 @@ body { background: var(--ground); color: var(--text); }
     fetch(CODE.base + 'index.json').then(function (r) { if (!r.ok) throw r.status; return r.json(); })
       .then(function (j) { CODE.idx = j; CODE.state = 'on'; done(); })
       .catch(function () { CODE.state = 'none'; });
+  }
+  // The inspection window's views (Tools/Build/code_atlas_views.py): Amoebius's turntables and screen layouts, by node id.
+  function viewsInit(done) {
+    if (CODE.vstate || !CODE.idx || !CODE.idx.views) return;
+    CODE.vstate = 'loading';
+    fetch(CODE.base + 'views/views.json').then(function (r) { if (!r.ok) throw r.status; return r.json(); })
+      .then(function (j) { CODE.vw = j; CODE.vstate = 'on'; done(); })
+      .catch(function () { CODE.vstate = 'none'; });
   }
   function fnv(s) {
     var b = new TextEncoder().encode(s), h = 0x811c9dc5;
@@ -760,6 +780,100 @@ body { background: var(--ground); color: var(--text); }
     // S.deep is null on the loop map. Inside a loop's Code ring it is { node (the loop map's Code ring), anchor (a Place),
     // x, y, r (the anchor's circle on screen) }; every other circle is worked out from the anchor, so precision never runs out.
     var CZ = { sel: null }; CODE.view = { S: S, CZ: CZ, select: function (id) { select(id, true); } };
+    // ---------- the inspection window: the view Amoebius drew for the node you are on, found up the path ----------
+    var IN = { key: null, entries: [], at: 0, frame: 0, imgs: {}, ui: {}, min: false, spin: null, drag: null };
+    CODE.view.IN = IN;
+    var insp = el('div', 'la-insp'); insp.hidden = true; insp.setAttribute('role', 'region'); insp.setAttribute('aria-label', 'Inspection window');
+    wrap.appendChild(insp);
+    var inHead = el('div', 'la-insp-head'); insp.appendChild(inHead);
+    var inTitle = el('div', 'la-insp-title'); inHead.appendChild(inTitle);
+    function inBtn(t, lab, fn) { var b = el('button', 'la-btn', t); b.type = 'button'; b.title = lab; b.setAttribute('aria-label', lab); b.addEventListener('click', fn); inHead.appendChild(b); return b; }
+    var inPrev = inBtn('‹', 'The previous view', function () { IN.at = (IN.at + IN.entries.length - 1) % IN.entries.length; IN.frame = 0; inRender(); });
+    var inNext = inBtn('›', 'The next view', function () { IN.at = (IN.at + 1) % IN.entries.length; IN.frame = 0; inRender(); });
+    var inBig = inBtn('⤢', 'Make the window bigger', function () { insp.dataset.big = insp.dataset.big !== 'true'; inBig.setAttribute('aria-pressed', insp.dataset.big); inRender(); });
+    var inMin = inBtn('–', 'Fold the window', function () { IN.min = !IN.min; insp.dataset.min = IN.min; inMin.textContent = IN.min ? '+' : '–'; inRender(); });
+    var icv = el('canvas'); icv.setAttribute('role', 'img'); insp.appendChild(icv);
+    var ictx = icv.getContext('2d');
+    icv.addEventListener('pointerdown', function (e) { if (insp.dataset.k !== 'model') return; IN.drag = { x: e.clientX, f: IN.frame }; icv.setPointerCapture(e.pointerId); });
+    icv.addEventListener('pointermove', function (e) {
+      var v = inView(); if (!IN.drag || !v) return;
+      IN.frame = ((IN.drag.f + Math.round((e.clientX - IN.drag.x) / 14)) % v.frames + v.frames) % v.frames; inRender();
+    });
+    icv.addEventListener('pointerup', function () { IN.drag = null; });
+    function inView() { var e = IN.entries[IN.at]; return e && CODE.vw.views[e[0]]; }
+    // the node the view is about: the ring you picked or are inside, else the picked loop; its own view or the nearest above
+    function inFocus() {
+      var V = CODE.vw && CODE.vw.nodes; if (!V) return null;
+      function hit(id) { if (!id) return null; if (id.slice(0, 2) === 'v:') id = recIdOf(id); return V[id] ? { id: id, entries: V[id] } : null; }
+      if (S.deep) {
+        for (var q = CZ.sel || S.deep.anchor; q; q = q.parent) { var h = hit(q.id); if (h) return h; }
+      }
+      for (var n = cur(); n; n = n.parent) {
+        var k = codeKeyOf(n), h2 = (k && hit(portalId(k))) || hit('L:' + n.id); if (h2) return h2;
+      }
+      return null;
+    }
+    function inspect() {
+      if (CODE.state !== 'on') return;
+      if (!CODE.vstate) { viewsInit(function () { IN.key = null; draw(); }); return; }
+      if (CODE.vstate !== 'on') return;
+      if (S.view !== 'map') { insp.hidden = true; IN.key = null; inSpin(false); return; }
+      var f = inFocus(), key = f ? f.id : '';
+      if (key === IN.key) return;
+      IN.key = key; IN.entries = f ? f.entries : []; IN.at = 0; IN.frame = 0;
+      insp.hidden = !f || S.view !== 'map'; inRender();
+    }
+    function inRender() {
+      var v = inView(); if (!v || insp.hidden) { inSpin(false); return; }
+      var r = CODE.recs[IN.key], e = IN.entries[IN.at];
+      inTitle.textContent = ''; inTitle.appendChild(el('small', null, 'Amoebius view · ' + (v.k === 'model' ? 'model' : 'screen') + (IN.entries.length > 1 ? ' ' + (IN.at + 1) + ' of ' + IN.entries.length : '')));
+      inTitle.appendChild(document.createTextNode(v.n + (r && r.n && r.n !== v.n && e.length > 1 ? ' › ' + r.n : '')));
+      inPrev.hidden = inNext.hidden = IN.entries.length < 2;
+      insp.dataset.k = v.k;
+      if (IN.min) { inSpin(false); return; }
+      var W = icv.clientWidth, H = icv.clientHeight, d = S.dpr || 1;
+      if (icv.width !== Math.round(W * d) || icv.height !== Math.round(H * d)) { icv.width = Math.round(W * d); icv.height = Math.round(H * d); }
+      ictx.setTransform(d, 0, 0, d, 0, 0); ictx.clearRect(0, 0, W, H);
+      if (v.k === 'model') paintModel(v, W, H); else paintScreen(v, e[1], W, H);
+      inSpin(v.k === 'model');
+      icv.setAttribute('aria-label', (v.k === 'model' ? 'The model ' : 'The layout of ') + v.n + ', drawn by Amoebius' + (v.k === 'model' ? '; drag to turn it.' : '.'));
+    }
+    function inSpin(on) {
+      var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (on && !still && !IN.spin) IN.spin = setInterval(function () { var v = inView(); if (!v || v.k !== 'model' || IN.drag) return; IN.frame = (IN.frame + 1) % v.frames; inRender(); }, 160);
+      if (!on && IN.spin) { clearInterval(IN.spin); IN.spin = null; }
+    }
+    function paintModel(v, W, H) {
+      var im = IN.imgs[v.src];
+      if (!im) { im = IN.imgs[v.src] = new Image(); im.onload = function () { inRender(); }; im.src = CODE.base + 'views/' + v.src; }
+      if (!im.complete || !im.naturalWidth) return;
+      var s = v.size, c = IN.frame % v.cols, rw = Math.floor(IN.frame / v.cols), side = Math.min(W, H);
+      ictx.drawImage(im, c * s, rw * s, s, s, (W - side) / 2, (H - side) / 2, side, side);
+    }
+    function paintScreen(v, row, W, H) {
+      var L = IN.ui[v.src];
+      if (!L) { IN.ui[v.src] = 'loading'; fetch(CODE.base + 'views/' + v.src).then(function (r) { return r.json(); }).then(function (j) { IN.ui[v.src] = j; inRender(); }).catch(function () {}); return; }
+      if (L === 'loading') return;
+      var C = S.colors, k = Math.min(W / L.w, H / L.h), ox = (W - L.w * k) / 2, oy = (H - L.h * k) / 2;
+      ictx.fillStyle = C.ground; ictx.fillRect(ox, oy, L.w * k, L.h * k);
+      ictx.textBaseline = 'middle'; ictx.textAlign = 'left';
+      for (var i = 0; i < L.rows.length; i++) {
+        var q = L.rows[i], x = ox + q[0] * k, y = oy + q[1] * k, w = q[2] * k, h = q[3] * k, btn = /Button$|Link$/.test(q[6]);
+        if (q[4] === 'i') { ictx.fillStyle = C['surface-raised']; ictx.globalAlpha = 0.28; ictx.fillRect(x, y, w, h); ictx.globalAlpha = 1; }
+        if (btn) { ictx.strokeStyle = C.proposed; ictx.lineWidth = 1; ictx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1); }
+        if (q[4] === 't' && q[5]) {
+          var px = Math.max(5, Math.min(h * 0.8, 14)); if (px * 1 > h + 3) continue;
+          ictx.font = '600 ' + px + 'px "Chakra Petch", system-ui, sans-serif'; ictx.fillStyle = C.text;
+          ictx.fillText(q[5], x, y + h / 2);
+        }
+      }
+      ictx.strokeStyle = C.line; ictx.lineWidth = 1; ictx.strokeRect(ox + 0.5, oy + 0.5, L.w * k - 1, L.h * k - 1);
+      if (row != null && L.rows[row]) {
+        var z = L.rows[row], hx = ox + z[0] * k, hy = oy + z[1] * k, hw = Math.max(4, z[2] * k), hh = Math.max(4, z[3] * k);
+        ictx.fillStyle = C.selection; ictx.globalAlpha = 0.25; ictx.fillRect(hx, hy, hw, hh); ictx.globalAlpha = 1;
+        ictx.strokeStyle = C.selection; ictx.lineWidth = 2; ictx.strokeRect(hx - 1, hy - 1, hw + 2, hh + 2);
+      }
+    }
     function ping() { draw(); }
     function covers(c) {
       var w = S.w, h = S.h, x, y, r2 = c.r * c.r;
@@ -1329,7 +1443,7 @@ body { background: var(--ground); color: var(--text); }
     }
     function focusInfo(n, animate) { if (!S.w) return; S.onInfo = true; focusRect(cardRect(n), animate); }
     var raf = 0;
-    function tick() { if (raf) return; raf = requestAnimationFrame(function (now) { raf = 0; if (S.anim) S.anim(now); paint(); if (S.anim) tick(); }); }
+    function tick() { if (raf) return; raf = requestAnimationFrame(function (now) { raf = 0; if (S.anim) S.anim(now); paint(); inspect(); if (S.anim) tick(); }); }
     function draw() { tick(); }
     function zoomBy(f, px, py) {
       if (S.deep) { deepZoom(f, px, py); return; }
@@ -1582,7 +1696,7 @@ body { background: var(--ground); color: var(--text); }
     // ---------- painting ----------
     function readColors() {
       var cs = getComputedStyle(root), c = {};
-      ['ground', 'ground-deep', 'line', 'text', 'text-soft', 'text-off', 'selection', 'proposed', 'planned', 'hole', 'tier-0', 'tier-1', 'tier-2', 'tier-3', 'tier-4', 'tier-5', 'tier-6', 'tier-7'].forEach(function (k) {
+      ['ground', 'ground-deep', 'surface', 'surface-raised', 'line', 'text', 'text-soft', 'text-off', 'selection', 'proposed', 'planned', 'hole', 'tier-0', 'tier-1', 'tier-2', 'tier-3', 'tier-4', 'tier-5', 'tier-6', 'tier-7'].forEach(function (k) {
         c[k] = (cs.getPropertyValue('--' + k) || '').trim() || '#888';
       });
       S.colors = c;
@@ -2076,9 +2190,10 @@ body { background: var(--ground); color: var(--text); }
       S.dpr = Math.min(2, window.devicePixelRatio || 1); S.w = w; S.h = h;
       cv.width = Math.round(w * S.dpr); cv.height = Math.round(h * S.dpr); cv.style.width = w + 'px'; cv.style.height = h + 'px';
       if (first) { if (opts.card) focusInfo(cur(), false); else focus(cur(), false); } else { S.cam.k *= fitK(S.tree.root) / k0; draw(); }
+      inRender();
     }
     if (window.ResizeObserver) new ResizeObserver(resize).observe(root); else window.addEventListener('resize', resize);
-    if (window.MutationObserver) new MutationObserver(function () { readColors(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+    if (window.MutationObserver) new MutationObserver(function () { readColors(); draw(); inRender(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
     if (window.matchMedia) { var mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', function () { readColors(); draw(); }); }
 
     rebuild(); readColors(); syncBar(); renderAll(); resize(); connectNotes();
