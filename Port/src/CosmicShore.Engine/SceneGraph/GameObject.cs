@@ -22,7 +22,23 @@ namespace CosmicShore.Engine
         /// </summary>
         public GameObject gameObject => this;
 
-        public Scene scene { get; internal set; }
+        /// <summary>
+        /// The scene this object lives in. A prefab ASSET (anything under a <see cref="isPrefabAsset"/> root) lives in
+        /// none, as in Unity, so its <c>scene.IsValid()</c> is false: AppManager.InstallBindings installs only from the
+        /// root-scope prefab asset and skips its live copy by exactly that test (ab622b42), and every binding was lost
+        /// while templates reported the loop's scene (the race judge stopped booting, 2026-11-19).
+        /// </summary>
+        public Scene scene
+        {
+            get
+            {
+                for (var t = transform; t != null; t = t.parent)
+                    if (t.gameObject.isPrefabAsset) return Scene.NoScene;
+                return _scene;
+            }
+            internal set => _scene = value;
+        }
+        Scene _scene;
         public int layer;
         public string tag = "Untagged";
 
