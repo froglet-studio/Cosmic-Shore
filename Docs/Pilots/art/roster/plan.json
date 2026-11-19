@@ -517,7 +517,7 @@
    ],
    "faction": "Gatherer",
    "faction_name": "Kelpline Gleaners",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Veveola",
@@ -531,7 +531,7 @@
    ],
    "faction": "Merchant",
    "faction_name": "Saltmark Consortium",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Zeth",
@@ -545,7 +545,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "Far Shoal Society",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Rosondo",
@@ -559,7 +559,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "Institute of the Shore",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Uline",
@@ -573,7 +573,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "Far Shoal Society",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Lunulo",
@@ -587,7 +587,7 @@
    ],
    "faction": "Thief",
    "faction_name": "Whisperkelp",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Ovex",
@@ -615,7 +615,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Harbour Watch",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Pekoar",
@@ -629,7 +629,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "The Unmapped",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Quibemo",
@@ -643,7 +643,7 @@
    ],
    "faction": "Sport",
    "faction_name": "The Glittering Heats",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Mamaola",
@@ -671,7 +671,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Harbour Watch",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Wyve",
@@ -699,7 +699,7 @@
    ],
    "faction": "Aristocrat",
    "faction_name": "House Albrine",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Delsoko",
@@ -713,7 +713,7 @@
    ],
    "faction": "Thief",
    "faction_name": "Whisperkelp",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Nemaix",
@@ -727,7 +727,7 @@
    ],
    "faction": "Priest",
    "faction_name": "The Ninefold Shell",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Brilolia",
@@ -741,7 +741,7 @@
    ],
    "faction": "BountyHunter",
    "faction_name": "Writ and Hook",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Ithax",
@@ -1021,7 +1021,7 @@
    ],
    "faction": "Contractor",
    "faction_name": "Steadfast Joinery",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Xabedek",
@@ -1035,7 +1035,7 @@
    ],
    "faction": "Priest",
    "faction_name": "Order of the Slow Tide",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Belsoth",
@@ -1049,7 +1049,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "The Unmapped",
-   "state": "planned"
+   "state": "designed"
   },
   {
    "word": "Zebeel",
@@ -1063,7 +1063,7 @@
    ],
    "faction": "FirstResponder",
    "faction_name": "Harbour Watch",
-   "state": "planned"
+   "state": "designed"
   }
  ]
 }
