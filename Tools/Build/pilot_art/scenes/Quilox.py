@@ -4,6 +4,7 @@ deep cells, and Quilox reads fresh tracks at the mouth of a lair. The pelican's 
 axolotl-pink, and the axolotl's frilled gills grow behind the jaw."""
 SCENE = dict(
     treatment='Mouth of a lair at the edge of the light, a wide lens at ground level',
+    close=(840, 100, 1240, 500),
     shot=("A photograph taken at ground level at the mouth of a cave, a 21mm lens close to the tracks in the mud, "
           "the figure crouched just beyond them and the dark of the cave behind. The figure is seen whole, "
           "crouching, filling half the height of the frame."),

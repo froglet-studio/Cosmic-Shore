@@ -4,6 +4,7 @@ to it after a hard landing, in a meadow of tall glass flowers. The moose's young
 puffin's head where antlers grow, and the moose's bell hangs at the throat."""
 SCENE = dict(
     treatment='An apology to a dented vessel in a meadow of tall glass flowers, soft overcast',
+    close=(240, 0, 640, 400),
     shot=("A photograph taken in a meadow under soft overcast, a 50mm lens at kneeling height among the flower "
           "stems. The figure is seen from the knees up, filling most of the height of the frame."),
     side='left',

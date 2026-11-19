@@ -4,6 +4,7 @@ lanes open for everyone, and Dellorin repaints a channel marker from a dinghy at
 grows from the axolotl's lips, the mouth."""
 SCENE = dict(
     treatment='Repainting a channel marker from a dinghy at dusk, a waterline wide lens',
+    close=(520, 40, 960, 480),
     shot=("A photograph taken at dusk from the waterline beside a dinghy, a 24mm lens just above the water, the "
           "marker post rising above. The figure is seen from the waist up in the boat, filling most of the height of"
           " the frame."),

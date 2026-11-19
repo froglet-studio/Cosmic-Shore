@@ -4,6 +4,7 @@ a cartographer, Cakoola draws the day's map by the jellyfish's own glow at a nig
 hair grows finer toward its ends into glowing jellyfish tentacles."""
 SCENE = dict(
     treatment="Night bivouac in a canyon, a map drawn by the mapmaker's own glow",
+    close=(860, 60, 1340, 540),
     shot=("A photograph taken at night across a small camp in a canyon, a 35mm lens wide open, the canyon wall "
           "behind. The figure is seen from the knees up, sitting on a rock, filling most of the height of the frame."),
     side='right',

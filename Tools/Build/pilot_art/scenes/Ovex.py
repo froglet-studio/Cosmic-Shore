@@ -4,6 +4,7 @@ sitting in the gravel trap beside a racer just spun off. The mole's snout and li
 the mouth, and the pelican's wings grow from the shoulder blades."""
 SCENE = dict(
     treatment='Gravel trap after a spin, a trackside long lens, dust still hanging',
+    close=(220, 180, 580, 540),
     shot=("A trackside photograph taken from beyond the barrier with a 300mm lens, the dust of a spin still hanging "
           "in the air. The figure is seen whole, sitting in the gravel, filling half the height of the frame."),
     side='left',

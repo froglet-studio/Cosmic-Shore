@@ -4,6 +4,7 @@ salvage barge, and still floats on the back in the dark water beside one, a samp
 lantern glows under the otter's tail."""
 SCENE = dict(
     treatment='Floating on the back at night beside a salvage barge, looking down from the rail',
+    close=(130, 60, 470, 400),
     shot=("A photograph taken at night looking straight down from the rail of a barge, a 35mm lens, the water black."
           " The figure is seen whole, floating on the back, filling most of the frame."),
     side='left',

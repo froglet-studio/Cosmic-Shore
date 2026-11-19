@@ -4,6 +4,7 @@ glory and side bets, and Zeriola steps onto the brass weigh-in scale before a he
 grows clear toward the crown into the jellyfish's glowing bell."""
 SCENE = dict(
     treatment='Weigh-in under a striped paddock tent, a bare-bulb flash',
+    close=(220, 0, 580, 360),
     shot=("A sports photograph made in a paddock tent before a heat with a bare-bulb flash bounced off the canvas: a"
           " 35mm lens at chest height, two paces off. The figure is seen from the knees up, standing on the scale, "
           "filling most of the height of the frame."),

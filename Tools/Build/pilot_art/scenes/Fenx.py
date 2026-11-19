@@ -4,6 +4,7 @@ empty stomach, and eats a large lunch on a girder high over a half-built dome. T
 the wolf's grey ruff, and the wolf's tail grows from the base of the spine."""
 SCENE = dict(
     treatment='Lunch on a girder high above a half-built dome, a long lens from the next beam',
+    close=(860, 0, 1220, 360),
     shot=("A construction photograph taken from the next beam along, a 135mm lens that presses the girder, the "
           "figure and the city far below into one plane. The figure is seen whole, sitting on the beam, filling two "
           "thirds of the height of the frame."),

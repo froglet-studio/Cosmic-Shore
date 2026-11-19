@@ -4,6 +4,7 @@ rolls under a closing door at the last instant. The armadillo's banded shell run
 mantis's wings grow from under it at the shoulders."""
 SCENE = dict(
     treatment='Last-instant roll under a closing door, flash and a slow shutter',
+    close=(330, 320, 630, 620),
     shot=("A photograph taken from inside a vault corridor at floor level, a 24mm lens, a flash frozen on a slow "
           "shutter so the closing door is sharp and the light behind it streaks. The figure is seen whole, rolling, "
           "filling half the height of the frame."),

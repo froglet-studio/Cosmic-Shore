@@ -4,6 +4,7 @@ finds its door sealed under the ice of a frozen lake. The moose's antlers grow f
 grow, and the moose's bell hangs at the throat."""
 SCENE = dict(
     treatment='A frozen lake at blue dawn, a sealed door under the ice, low on the ice',
+    close=(280, 110, 680, 510),
     shot=("A photograph taken at blue dawn lying on the ice, a 24mm lens just above the surface so the sealed door "
           "under the ice fills the foreground. The figure is seen whole, standing over it, filling half the height "
           "of the frame."),

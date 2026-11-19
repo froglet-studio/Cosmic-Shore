@@ -4,9 +4,10 @@ the very end of the charted world with the helmet in the lap. The tapir's short 
 hardens forward into the toucan's great bill, the mouth."""
 SCENE = dict(
     treatment='Edge of the world at sunset, a wide lens from behind and to one side',
-    shot=("A photograph taken at sunset from behind and to one side of the figure, a 24mm lens at sitting height, "
-          "the drop and the far sky filling most of the frame. The figure is seen whole, sitting, filling a third of"
-          " the height of the frame."),
+    close=(320, 20, 760, 460),
+    shot=("A photograph taken at sunset from a few steps along the cliff edge, a 35mm lens at sitting height, the "
+          "figure in three-quarter profile against the drop and the far sky. The figure is seen from the knees up, "
+          "sitting, filling two thirds of the height of the frame."),
     side='left',
     source='want: "to see the edge of the map" (the game\'s Wants)',
     seen=('the pit-crew hoodie is light, under a plain satin sash', 'the helmet is scuffed white',),
@@ -16,8 +17,9 @@ SCENE = dict(
            "following it. Around the eyes the dark coat gives way to the toucan's bare sky-blue skin, and on the "
            "throat and chest the coat turns to the toucan's glossy black feathers with a bib of yellow."),
     doing=("Maloane sits on the very lip of a cliff with the boots hanging over the drop and a scuffed racing helmet"
-           " in the lap, leaning back on one hand, the great bill turned to the last of the sun. The hood is down. "
-           "The face is still and soft, the eyes wide: wonder, at rest."),
+           " in the lap, leaning back on one hand, the head half turned toward the camera so the whole tapir face "
+           "and the great bill show against the last of the sun. The hood is down. The face is still and soft, the "
+           "eyes wide: wonder, at rest."),
     place=("The end of a high plateau where the ground simply stops: below, a sea of cloud far down, and beyond it "
            "no horizon at all, only a vast deep sky of slow luminous currents and floating glassy shapes catching "
            "the sun. A small racing vessel sits parked a little way back on the rock. No one else is there."),

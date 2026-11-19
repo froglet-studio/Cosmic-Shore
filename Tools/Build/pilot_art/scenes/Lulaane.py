@@ -5,6 +5,7 @@ neck, the koi's barbels grow from the corners of the mouth, and the koi's veiled
 spine."""
 SCENE = dict(
     treatment='Lighthouse gallery at night, the turning beam the only light',
+    close=(180, 40, 660, 520),
     shot=("A photograph taken at night on the lamp gallery of a lighthouse from a few steps along the rail, a 28mm "
           "lens wide open, the great beam sweeping out over the sea beside the figure. The figure is seen from the "
           "hips up, filling most of the height of the frame."),

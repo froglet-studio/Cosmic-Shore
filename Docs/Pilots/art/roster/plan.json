@@ -265,7 +265,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "The Unmapped",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Belrenro",
@@ -279,7 +279,7 @@
    ],
    "faction": "Diplomat",
    "faction_name": "The Treaty Table",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Zeriola",
@@ -293,7 +293,7 @@
    ],
    "faction": "Sport",
    "faction_name": "The Glittering Heats",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Maloane",
@@ -307,7 +307,7 @@
    ],
    "faction": "Sport",
    "faction_name": "Spray and Spin",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Fenx",
@@ -321,7 +321,7 @@
    ],
    "faction": "Contractor",
    "faction_name": "Steadfast Joinery",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Quilox",
@@ -335,7 +335,7 @@
    ],
    "faction": "Hunter",
    "faction_name": "Moonsedge Pack",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Pediri",
@@ -363,7 +363,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "The Tidal Archive",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Mirin",
@@ -377,7 +377,7 @@
    ],
    "faction": "Pirate",
    "faction_name": "Saltjaw Brethren",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Olone",
@@ -391,7 +391,7 @@
    ],
    "faction": "Hunter",
    "faction_name": "Moonsedge Pack",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Quikoth",
@@ -419,7 +419,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "Institute of the Shore",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Takoane",
@@ -447,7 +447,7 @@
    ],
    "faction": "Activist",
    "faction_name": "Open Current",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Maix",
@@ -461,7 +461,7 @@
    ],
    "faction": "Pirate",
    "faction_name": "Red Reef Rovers",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Mirisa",
@@ -475,7 +475,7 @@
    ],
    "faction": "Researcher",
    "faction_name": "The Tidal Archive",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Cakoola",
@@ -489,7 +489,7 @@
    ],
    "faction": "Explorer",
    "faction_name": "Lantern Reach Cartographers",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Corlilia",
@@ -601,7 +601,7 @@
    ],
    "faction": "Sport",
    "faction_name": "The Glittering Heats",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Jodiola",
@@ -657,7 +657,7 @@
    ],
    "faction": "Gatherer",
    "faction_name": "The Patient Harvest",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Tanuwen",
@@ -685,7 +685,7 @@
    ],
    "faction": "Merchant",
    "faction_name": "Amber Ledger Guild",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Delliar",
@@ -755,7 +755,7 @@
    ],
    "faction": "Thief",
    "faction_name": "The Pickled Hand",
-   "state": "designed"
+   "state": "painted"
   },
   {
    "word": "Makoola",

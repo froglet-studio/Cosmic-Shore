@@ -5,6 +5,7 @@ of the bison's mouth, the coat turns to koi scales down the body, and the koi's 
 spine."""
 SCENE = dict(
     treatment='Leaning into the harness on a switchback road, a telephoto from below',
+    close=(1040, 40, 1440, 440),
     shot=("A photograph taken from a bend below on a switchback mountain road, a 200mm lens looking up, the road "
           "stacked in zigzags behind. The figure is seen whole, pulling, filling two thirds of the height of the "
           "frame."),

@@ -4,6 +4,7 @@ sibling who never writes back, at night in a tide station. The lobster's shell o
 wet spotted skin down the neck, and the newt's tail grows from the base of the spine."""
 SCENE = dict(
     treatment='Through a rain-streaked window at night, a writer at a desk, a long lens from outside',
+    close=(880, 260, 1240, 620),
     shot=("A photograph taken at night from outside a small window, a 105mm lens through the rain on the glass, the "
           "drops soft in the foreground. The figure is seen from the waist up at a desk, filling half the height of "
           "the frame."),

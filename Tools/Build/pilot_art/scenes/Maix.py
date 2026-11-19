@@ -4,6 +4,7 @@ market stall, and still sorts a night's take into trays in a smugglers' back roo
 the lynx's brow and the mantis's wings lie folded down the back."""
 SCENE = dict(
     treatment="From the doorway of a smugglers' back room, one hanging bulb, deep shadow",
+    close=(760, 40, 1180, 460),
     shot=("A photograph taken from a half-open doorway into a small back room, a 35mm lens at standing height, the "
           "door frame dark at one edge. The figure is seen from the waist up at a table under one bulb, filling most"
           " of the height of the frame."),

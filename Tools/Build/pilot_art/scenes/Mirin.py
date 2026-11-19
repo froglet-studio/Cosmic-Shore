@@ -4,6 +4,7 @@ carry, and Mirin rides out on the bowsprit of a cutter in fog toward a prize. Th
 lynx's head and the crane's wings grow from the shoulder blades."""
 SCENE = dict(
     treatment='Out on a bowsprit in morning fog, shot from the deck behind',
+    close=(840, 0, 1140, 300),
     shot=("A photograph taken from the foredeck of a sailing cutter looking forward along the bowsprit, a 35mm lens,"
           " morning fog all round. The figure is seen whole from behind and to one side, out on the bowsprit, "
           "filling two thirds of the height of the frame."),

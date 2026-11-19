@@ -4,6 +4,7 @@ by the chameleon's tail from a cable over a chasm. The koi's scales grow into th
 chameleon's coiling tail grows from the base of the spine."""
 SCENE = dict(
     treatment='Hanging by the tail from a cable over a chasm, a dare, shot from the cliff edge',
+    close=(280, 500, 560, 780),
     shot=("A photograph taken from the cliff edge out along a cable strung over a chasm, a 50mm lens, the drop "
           "falling away below. The figure is seen whole, hanging upside down, filling half the height of the frame."),
     side='left',

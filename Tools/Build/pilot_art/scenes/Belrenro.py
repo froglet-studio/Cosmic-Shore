@@ -5,9 +5,10 @@ The cuttlefish's arms grow round the mouth where the lips are, its skin turns to
 and the gecko's tail grows from the base of the spine."""
 SCENE = dict(
     treatment='Neutral ground at first light, a table set for two, squared-up and symmetrical',
-    shot=("A photograph made at first light on a tripod at standing height, squared up to the scene: a 40mm lens, "
-          "the table dead centre in the frame and the figure beside it. The figure is seen whole, filling half the "
-          "height of the frame."),
+    close=(900, 60, 1260, 420),
+    shot=("A photograph made at first light on a tripod at standing height: a 50mm lens close to the table's end, "
+          "the table and its second chair beside the figure. The figure is seen from the knees up, filling most of "
+          "the height of the frame."),
     side='right',
     source='profession: diplomat',
     seen=('the long coat is charcoal', 'the treaty seal hangs on a plain chain',),
