@@ -247,7 +247,8 @@ ride is the only speed past it, and it comes out at the speed it went in, so a R
 
 - Scarab: Time throttle curve x0.625 -> x0.9375 reshaped to x0.95 -> x1.0 (card 111.2 -> 73.5 s, L5 78.5 -> 64.0 s).
 - Sparrow: afterburner (Time BoostSpeedMultiplier) x1 -> x2.25 reshaped to x2 -> x2.75 (card 121.5 -> 74.3 s, L5
-  85.2 -> 66.9 s).
+  85.2 -> 66.9 s). 2026-11-19: that reshape had been making up for an untrained AI; with the Breakwater drive in
+  Regatta (`SparrowAIBoostPolicy_Regatta`) the afterburner is re-fit to x1.75 -> x2.15 (card 71.2 s, L5 65.0 s).
 
 - Goby: Time dart pace (dartPace) x1.0 -> x2.2 reshaped to x1.25 -> x1.95, the level-5 value unchanged (card 83.3 ->
   78.1 s, L5 62.6 s, 15 seeds), after Regatta got its own Goby dart coach (REGATTA.md 6.6).
@@ -262,7 +263,7 @@ exists, otherwise the base asset the prefab wires.
 | Hull | Regatta flies | Trained in its Time game | Verdict |
 |---|---|---|---|
 | Dolphin | `_Regatta` = the Switchback drive (from this change) | Switchback | Fixed; Drift Charge re-fit to x1.25 -> x2.76 |
-| Sparrow | base, defaults | Breakwater (#1846, model-only search) | Untrained: next to fix, then re-fit its afterburner |
+| Sparrow | `_Regatta` = the Breakwater drive (2026-11-19) | Breakwater (#1846; holds up in the real game) | Fixed; afterburner re-fit to x1.75 -> x2.15 |
 | Rhino | `_Regatta` = base + cornerSpeed 333 | Headlong | Partly trained; the Headlong genes predate the #2233 fuel tank |
 | Swordfish | the Rhino's `_Regatta` (shared asset) | Spearline flies the Rhino's Headlong genes | Never trained for the Swordfish |
 | Scarab | base, trained (#2087 wrote it) | Scarab Rally | OK |
