@@ -92,6 +92,12 @@ namespace CosmicShore.Gameplay
         /// when any segment is entered").</summary>
         public override Fauna PossessionHost => Colony ? Colony : this;
 
+        /// <summary>A segment's body is its own prisms, so it re-colours whole (its colony steals it with the rest,
+        /// <see cref="WormFauna.OnTeamChanged"/>).</summary>
+        public override bool CanBeStolen => true;
+
+        protected override void OnTeamChanged() => RecolourBodyPrisms();
+
         /// <summary>
         /// Colony-driven: no per-segment goal coroutine (the base Start would tick
         /// ResolveGoal per segment for a Goal nothing reads — the colony steers).
