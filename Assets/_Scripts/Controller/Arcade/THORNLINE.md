@@ -158,6 +158,12 @@ own rungs stay within about 1 s. A crystal detour gene of 55 u scored a little b
 shipped: there is no `RaceAICrystalGenesSO` asset for it to live in yet, and its edge is within the noise. The files are
 in `/mnt/project-files/regatta-flywheel/train/Shrike/run1/`.
 
+**2026-11-19: re-checked after the Regatta knee (#2253) moved the sling cooldown from 6 -> 2.5 s to 4.75 -> 3.75 s.**
+Real game, the shipped AI, seeds 101-104, mean s (old -> new): I1 49.1 -> 42.3, I2 55.7 -> 39.9, I3 39.3 -> 40.9, I4
+41.5 -> 43.3. Every race finishes. The rungs that start at rest (I1, I2) are faster, and the rungs that start at Time 5
+(I3, I4) are within 4%. The ladder's difficulty is in the aim (snipes, rim crystals), which did not change, so no rung
+was re-cut. Raw data: `regatta-flywheel/seat-sw/shrike/thornline/`.
+
 ## 5. Numbers, and where they are authored
 
 | Knob | Where | Shipped |
