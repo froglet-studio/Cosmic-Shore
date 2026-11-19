@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken on a tripod at night from the far side of a balcony, a 35mm lens, a slow exposure so "
           "the moonlit sky is deep blue and the city below glows. The figure is seen from the waist up at the "
           "telescope, filling most of the height of the frame."),
+    close=(906, 116, 1266, 476),
     side='right',
     source='want: "to find the Ark that left them behind" (the game\'s Wants)',
     seen=('the court jacket is midnight-blue velvet with a jewelled chain of office', 'a fang hangs on a cord',),

@@ -6,6 +6,7 @@ SCENE = dict(
     treatment="Hanging from a gantry in a great ship's night hold, one work lamp",
     shot=("A photograph taken from the deck of a dark cargo hold looking up, a 28mm lens, one work lamp the light. "
           "The figure hangs whole in the upper middle of the frame."),
+    close=(925, 167, 1225, 467),
     side='right',
     source='hobby: "talks to the Ark at night and insists it answers" (the game\'s Quirks)',
     seen=('the cloak is heavy indigo over a striped silk tunic', 'strings of trade tokens hang on the chest',),

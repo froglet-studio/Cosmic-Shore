@@ -6,9 +6,11 @@ SCENE = dict(
     treatment="Wading a night marsh, the pilot's own glow on the water",
     shot=("A photograph taken at night from a low boat in a marsh, a fast 35mm lens wide open, the only light the "
           "pilot's. The figure is seen from the knees up, wading, filling most of the height of the frame."),
+    close=(761, 2, 1121, 362),
     side='right',
     source='profession: researcher',
     seen=('the cardigan is chalk-dusted plum', 'a bandolier of specimen jars hangs over the chest',),
+    lower="plain dark trousers rolled up above the knee, and below them the ibis's long bare legs",
     fused=("Neloel is a firefly grown into an ibis. The head is a firefly's, a dark smooth head with two large dark "
            "eyes, a red and yellow shield plate over the brow and two long segmented black antennae, and where the "
            "firefly's small mouthparts are, the ibis's long, slim, down-curved scarlet bill grows, the mouth. Below "

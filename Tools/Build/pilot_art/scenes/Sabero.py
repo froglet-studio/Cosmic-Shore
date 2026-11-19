@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken across the counter of a street stall through rising steam, a 50mm lens close in at "
           "counter height, the steam soft in the foreground. The figure is seen from the waist up on a stool, "
           "filling most of the frame."),
+    close=(174, 16, 594, 436),
     side='left',
     source='hobby: "refuses to fly on an empty stomach" (the game\'s Quirks)',
     seen=('the travelling coat is mustard wool over a quilted vest with brass toggles',),

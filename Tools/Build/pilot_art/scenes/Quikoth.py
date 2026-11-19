@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken in a quiet reading room from the next table, a 50mm lens at seated height, a shaft of "
           "light from a skylight falling across the scene. The figure is seen from the waist up at a desk, filling "
           "most of the frame."),
+    close=(232, 40, 652, 460),
     side='left',
     source='hobby: "laughs at exactly the wrong moments" (the game\'s Quirks)',
     seen=("the archivist's robe is grey with ink-stained cuffs", 'the vines over one shoulder are small-leaved',),

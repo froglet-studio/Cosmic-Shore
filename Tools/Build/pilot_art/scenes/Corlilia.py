@@ -8,9 +8,12 @@ SCENE = dict(
     shot=("A photograph taken at night from a doorway down a flooded street, a long lens that flattens the street, "
           "one sodium lamp the light. The figure is seen whole, standing in the water, filling two thirds of the "
           "height of the frame."),
+    close=(888, 10, 1148, 270),
     side='right',
     source='profession: bounty hunter',
     seen=('the duster coat is sand-coloured', 'the visor hanging on the chest is a band of rippled glass',),
+    lower=("dark reinforced trousers that end at the knee, and below them the heron's long thin bare yellow-grey "
+           "legs"),
     fused=("Corlilia is a raven grown into a heron. The head is a raven's, glossy black feathers with a blue sheen, "
            "a heavy black bill and a dark clever eye, set on the heron's long slender neck, the black feathers "
            "fading to the heron's soft blue-grey down it. The heron's broad blue-grey wings with black flight "

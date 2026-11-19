@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken inside a dim hangar against the open door at first light, a 50mm lens, the figure and "
           "the hull backlit with soft edges. The figure is seen from the waist up, filling most of the height of the"
           " frame."),
+    close=(270, 60, 730, 520),
     side='left',
     source='hobby: "ties a ribbon on the hull for every friend lost" (the game\'s Quirks)',
     seen=('the silk mantle is pale grey over an embroidered waistcoat', 'a brass eyepiece hangs on a cord',),

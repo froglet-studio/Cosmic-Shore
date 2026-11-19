@@ -7,6 +7,7 @@ SCENE = dict(
     treatment='Sea cliff at dawn in a gale, a wide lens from the grass',
     shot=("A photograph taken from the grass of a cliff top at dawn in a strong wind, a 24mm lens close in and low, "
           "the cliff edge and the sea behind. The figure is seen whole, kneeling, filling most of the frame."),
+    close=(252, 0, 592, 340),
     side='left',
     source='profession: priest',
     seen=('the layered robe is deep indigo over a flight suit', 'a shell pendant hangs at the chest',),

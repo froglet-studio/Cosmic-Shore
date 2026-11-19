@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken from the edge of a ploughed field, a 50mm lens at standing height, smoke drifting "
           "across the frame. The figure is seen from the knees up beside the craft, filling most of the height of "
           "the frame."),
+    close=(329, 0, 669, 340),
     side='left',
     source='hobby: "names every vessel they fly, and apologises to it after a hard landing" (the game\'s Quirks)',
     seen=("the envoy's sash is wine red over a cream tunic", 'the breastplate is embossed with a fortress tower',),
@@ -24,6 +25,6 @@ SCENE = dict(
            "at the field's edge. No one else is there."),
     light=("Flat overcast daylight, soft and cool; the gorget and crown flash where they catch it, and a faint warm "
            "glow comes from under the craft where the smoke rises."),
-    wear=("Mud has splashed up the cream tunic and the boots; the shell's bands have a scrape of soil along them; "
+    wear=("Mud has splashed up the cream tunic and the shoes; the shell's bands have a scrape of soil along them; "
           "the sash has come loose at one end."),
 )

@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken from far down the start line with a long telephoto lens at noon, the heat shimmer "
           "bending the far end of the grid, the near figure sharp. The figure is seen whole, crouched, filling half "
           "the height of the frame."),
+    close=(904, 69, 1304, 469),
     side='right',
     source='profession: sport',
     seen=(

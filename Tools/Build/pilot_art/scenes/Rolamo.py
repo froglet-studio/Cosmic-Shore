@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken on an overcast morning in light drizzle, a 50mm lens at eye level along the top of a "
           "harbour wall, the far end soft. The figure is seen from the knees up, stooping, filling most of the "
           "frame."),
+    close=(433, 116, 853, 536),
     side='left',
     source='hobby: "collects shells from every port and gives them away to strangers" (the game\'s Quirks)',
     seen=('the quilted patchwork jacket is faded reds and greens', 'the astrolabe pendant is brass',),
@@ -14,8 +15,7 @@ SCENE = dict(
            "down-curved scarlet bill, and the scarlet feathers of the crown run down the long neck to the shoulders."
            " From the back, where ribs are, grows the tortoise's high domed shell, olive-brown scutes ringed with "
            "gold growth lines, coming out through the jacket's back and rising over the shoulders, the scarlet "
-           "feathers of the neck lying over its front edge, and the tortoise's grey scaled skin covers the forearms "
-           "and the backs of the hands."),
+           "feathers of the neck lying over its front edge."),
     doing=("Rolamo stoops along the top of the wall setting down shells one by one in a neat row, the next one held "
            "in the right hand and a cloth bag of them in the left. The stoop brings the domed shell up over the head"
            " like a roof, and the drizzle runs off it in drops. The bill is a little open, the eye on the row of "

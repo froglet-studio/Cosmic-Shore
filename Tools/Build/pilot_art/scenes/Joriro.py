@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken in driving snow from a few steps away, a 35mm lens at chest height and a fast shutter,"
           " so the snow is caught as short white strokes. The figure is seen from the knees up, side-on to the hole,"
           " filling most of the height of the frame."),
+    close=(367, 0, 747, 380),
     side='left',
     source='profession: explorer',
     seen=('the map tubes are capped in worn brass', "the chart-maker's smock is canvas, trimmed in ruby magenta",),

@@ -6,13 +6,15 @@ SCENE = dict(
     treatment="Dusk under a dead ship's ribs on a beach, a lantern the warm light",
     shot=("A photograph taken at dusk from low on the sand, a 35mm lens looking up at the figure and the great hull "
           "behind. The figure is seen from the knees up, filling two thirds of the height of the frame."),
+    close=(865, 0, 1265, 400),
     side='right',
     source='history: "grew up in the shadow of a dead Ark" (the game\'s Upbringings)',
     seen=("the envoy's sash is wine red over a cream tunic", 'the shoulder plate is crenellated like a castle wall',),
-    fused=("Belthaly is a lynx grown into a hyena. The face is a lynx's, broad with pale eyes, a short muzzle and "
-           "tall black-tufted ears, the tawny coat spotted dark; from the crown down the back of the neck the coat "
-           "coarsens into the hyena's upright bristling mane, and the neck and shoulders are the hyena's, heavy and "
-           "sloping, the spots growing larger and rounder down them."),
+    fused=("Belthaly is a lynx grown into a hyena. The eyes, cheeks and tall black-tufted ears are a lynx's, the "
+           "tawny coat spotted dark, but the muzzle is the hyena's, long, deep and blunt with a broad black nose and"
+           " a heavy jaw; from the crown down the back of the neck the coat coarsens into the hyena's upright "
+           "bristling dark mane, and the neck and shoulders are the hyena's, heavy and sloping, the spots growing "
+           "larger and rounder down them."),
     doing=("Belthaly sets a lit lantern down on the sill of a broken doorway in the hull with both hands, stooping a"
            " little under the mane. The face is turned three-quarters toward the camera, the eyes on the flame, the "
            "mouth just open as if humming to it: steady and tender."),
@@ -21,6 +23,6 @@ SCENE = dict(
            "out, the wet sand reflecting the sky. No one else is there."),
     light=("The lantern's warm flame lights the hands, the face and the inside of the doorway; the dusk sky behind "
            "is cold violet and grey; the ribs are dark against it."),
-    wear=("Sand clings to the boots and the hem of the tunic; the crenellated shoulder plate is scratched; the sash "
+    wear=("Sand clings to the shoes and the hem of the tunic; the crenellated shoulder plate is scratched; the sash "
           "is faded at the fold."),
 )

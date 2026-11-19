@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken inside a narrow earth tunnel from behind and to one side of the digger, a 24mm lens, "
           "the only light a headlamp, the dust hanging in its beam. The figure is seen from the waist up, kneeling, "
           "filling most of the frame."),
+    close=(693, 31, 1073, 411),
     side='right',
     source='want: "a vault no one else has opened" (the game\'s Wants)',
     seen=('the survey parka is padded sky blue', 'the sundial brooch at the collar is brass',),

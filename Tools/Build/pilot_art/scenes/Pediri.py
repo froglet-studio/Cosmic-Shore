@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken from the far end of a long dining table at seated height, a 24mm lens, the rows of "
           "candles and plates running toward the figure. The figure is seen from the waist up, standing at the "
           "table, in the upper middle of the frame."),
+    close=(466, 21, 846, 401),
     side='left',
     source='want: "a crew that stays" (the game\'s Wants)',
     seen=('the silk mantle is pale grey over an embroidered waistcoat', 'the opal pendant is iridescent',),

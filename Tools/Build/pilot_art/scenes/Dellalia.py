@@ -7,6 +7,7 @@ SCENE = dict(
     shot=("A photograph taken at the waterline at night from a camera in a housing, half above and half below the "
           "surface: the top half shows the swimmer's head and shoulders and the black sea, the bottom half the "
           "glowing water beneath. The figure fills the middle of the frame."),
+    close=(962, 63, 1342, 443),
     side='right',
     source='profession: first responder',
     seen=('the rescue jacket is signal orange with a chest harness, trimmed in jade teal',),

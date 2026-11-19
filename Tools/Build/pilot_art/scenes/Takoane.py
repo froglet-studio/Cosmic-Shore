@@ -6,6 +6,7 @@ SCENE = dict(
     treatment='Blue hour in a tide-pool garden, a tripod shot at knee height',
     shot=("A photograph taken at blue hour from a tripod at knee height at the edge of a tide pool, a 35mm lens, the"
           " water still as glass. The figure is seen from the knees up, crouched, filling most of the frame."),
+    close=(308, 1, 728, 421),
     side='left',
     source='profession: preservationist',
     seen=("the warden's coat is waxed brown with bloom tags", 'a small brass bell is at the collar',),
