@@ -25360,3 +25360,17 @@ Garrett: the cooldown is felt more granularly on the Dolphin's seeding and combo
 - [ ] Dolphin: at Mass 0 vs Mass 10 the team crystal seeding cycle visibly shortens; one crystal per cycle, as before #2227.
 - [ ] Squirrel: at Mass 0 vs Mass 10 the Boost Ring comes back sooner; prism size unchanged by Mass.
 - Not run in Unity. unity_refcompile result in the PR.
+
+## Shrike: a trail of almost nothing and a woven nest (2026-11-19)
+
+Garrett: shrink the Shrike's trail to almost nothing so the nest stays its source of mass, and make the nest a polyhedron
+of super-shielded plates with normal and shielded prisms as its own structure. The cruising trail's `trailVolume` is
+1.35 -> 0.0675 and the sling trail's `trailThick` 2.6 -> 0.5. `ShrikeRules.NestPieces` builds the nest: a shell of
+super-shielded plates 0.7 u thick (as wide as they go without touching), three hoops of tilted shielded twigs inside it, and a
+lining of plain pads round the hull. Not run in the Unity editor. Unity reference compile: 0 errors in changed files
+(29 in untouched files, from packages this machine lacks). Shrike harness: 22 passed.
+
+- [ ] Shrike at Mass 0 and Mass 10: dock and press Mass; the nest shows grey super-shielded plates outside, brown twig
+      hoops inside them, green pads round the hull, nothing clipping, and the nose side open.
+- [ ] The cruising trail is a thin thread; the sling trail is a thin line, not a wall.
+- [ ] Thornbush I2: a rival AI still finds your nest and its missiles break the twigs and pads behind the plates.

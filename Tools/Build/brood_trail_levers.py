@@ -36,6 +36,8 @@ TABLE = {
     "Urchin": 2.1,        # shipped 1 (default) x 2.1
     "TigerMoth": 0.4,     # shipped 1 x 0.4 (the cap)
     "Thresher": 1.1475,   # shipped 1.35 x 0.85, on top of its massTrailScale knee (#2258)
+    "Shrike": 0.0675,     # shipped 1.35 x 0.05: "shrink shrike's trail so it is almost nothing" (Garrett, 2026-11-19);
+                          # its mass is its nest (ShrikeRules.NestPieces), not a Brood Rush knee
 }
 
 BLOCK = "  trailVolume:\n    Enabled: 0\n    Value: {v}\n    Min: 1\n    Max: 2.5\n    element: 0\n    UseFloor: 0\n    Floor: 0\n"

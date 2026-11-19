@@ -16,11 +16,11 @@ MonoBehaviour:
   IsMultiplayer: 1
   DisplayName: Thornbush
   Description: 'Shrikes only - build in the thorn bush. Dock on a stick and press Mass to leave a nest
-    - a cup of super-shielded blocks crowned with a missile plant. You keep three; a fourth
-    retires the oldest. The score is the mass standing in your colour when the clock runs
-    out, nests and trail. Paint a rival to send your missiles at their nests and break what
-    is under the shields. Higher intensities grow the heap and tip its sticks with danger.
-    Most mass standing at the whistle wins.'
+    - a shell of super-shielded plates round a weave of twigs, crowned with a missile plant.
+    You keep three; a fourth retires the oldest. The score is the mass standing in your
+    colour when the clock runs out, nests and trail. Paint a rival to send your missiles at
+    their nests and break what is under the shields. Higher intensities grow the heap and
+    tip its sticks with danger. Most mass standing at the whistle wins.'
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 85f1a34097a34802b22ececeaa78dbfa, type: 3}
@@ -36,4 +36,4 @@ MonoBehaviour:
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.0012
+  ComebackRatePerScoreDeficit: 0.00382

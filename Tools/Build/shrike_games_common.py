@@ -117,3 +117,45 @@ def omni_block(ball, extras, per_player=None):
     return (f"  noNucleusSpawnRadius: {ball}\n  crystalCountMode: 2\n  fixedCrystalCount: 1\n"
             "  extraCrystalsToSpawnBeyondPlayerCount: 0\n  crystalCountByIntensity:\n"
             + "".join(f"  - CrystalsPerPlayer: {p}\n    ExtraCrystals: {e}\n" for p, e in zip(per_player, extras)))
+
+SHRIKE_PREFAB = "Assets/_Prefabs/Spacevessels/Shrike.prefab"
+
+
+def cruise_trail_block(g):
+    """One cruising trail block's volume, u^3: the Shrike prefab's prism BaseScale times its trailVolume (the prism
+    controller's ElementalFloat, Value while it is off), the block the game actually lays."""
+    text = g.read(SHRIKE_PREFAB)
+    m = re.search(r"BaseScale: \{x: ([-0-9.e]+), y: ([-0-9.e]+), z: ([-0-9.e]+)\}", text)
+    assert m, f"no prism BaseScale in {SHRIKE_PREFAB}"
+    tv = re.search(r"\n  trailVolume:\n    Enabled: 0\n    Value: ([-0-9.e]+)\n", text)
+    return float(m.group(1)) * float(m.group(2)) * float(m.group(3)) * (float(tv.group(1)) if tv else 1.0)
+
+
+def nest_volume(g, count):
+    """One nest's raw box volume, u^3, at `count` shell plates: a port of ShrikeRules.NestPieces (shell plates, the
+    weave of twigs, the lining), read off ShrikeConfig.asset. Box volume, no shield extra (what Thornbush scores)."""
+    import math
+    side, t, cl = config_value(g, "nestBlockSize"), config_value(g, "nestShellThickness"), config_value(g, "nestClearance")
+    hull_r, hoops = config_value(g, "hullRadius"), int(config_value(g, "nestHoops"))
+    w, L, lining, ls = (config_value(g, k) for k in ("nestTwigWidth", "nestTwigLength", "nestLining", "nestLiningSize"))
+
+    def local(i, n, r, zmin=-0.25):
+        z = 1 - (i + .5) / n * (1 - zmin)
+        rr = math.sqrt(max(0.0, 1 - z * z))
+        return (rr * math.cos(i * 2.39996) * r, rr * math.sin(i * 2.39996) * r, -z * r)
+
+    pts = [local(i, count, 1.0) for i in range(count)]
+    sp = min((math.dist(a, b) for i, a in enumerate(pts) for b in pts[i + 1:]), default=2.0)
+    radius = max(9.0, side * math.sqrt(3) * cl / sp)
+    plate = max(side, radius * sp / (math.sqrt(2) * cl))       # ShrikeRules.NestPlateSide
+    vol = count * plate * plate * t
+    inner, hull = radius - t * .5 * cl - .5, hull_r + .5
+    if hoops > 0 and inner - w > hull + w:
+        ri = .5 * (hull + inner) + .5
+        max_half = math.sqrt(max(0.0, (inner - w) ** 2 - ri * ri))
+        for h in range(hoops):
+            th = math.radians(65 if hoops == 1 else 35 + 60 * h / (hoops - 1))
+            rho = ri * math.sin(th)
+            m = max(5, int(math.floor(2 * math.pi * rho / max(.5, L * 1.15) + .5)))
+            vol += m * w * w * min(2 * rho * math.sin(math.pi / m) * .85, 2 * max_half)
+    return vol + int(lining) * ls * ls * 0.4

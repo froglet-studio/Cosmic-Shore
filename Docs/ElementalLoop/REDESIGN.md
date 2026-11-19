@@ -307,6 +307,24 @@ game, and its comeback rate goes dead. Brood Rush counts nests at 13.5x, Thornbu
 so the Shrike is **flagged for Brood Rush**. Its Regatta seat is unaffected. Garrett has the choice: the flag, the
 shrink with a Thornbush rework, or nests that are plain-shielded (4.5x). Raw data: `regatta-flywheel/seat-sw/brood/`.
 
+**Redesigned 2026-11-19 (Garrett: "shrink shrike's trail so it is almost nothing ... its nest can gain more and
+maintain its place as the source of mass"; "protected from most sides by a polyhedron of supershielded prisms, but ...
+normal and shielded prisms as part of the shrikes unique structure").** The cruising trail's `trailVolume` 1.35 ->
+0.0675 (`brood_trail_levers.py`) and the sling trail's `trailThick` 2.6 -> 0.5. The nest (`ShrikeRules.NestPieces`) is
+now a shell of super-shielded plates, each as wide as the plates go without touching and `nestShellThickness` thick,
+round three hoops of tilted shielded twigs and a lining of plain pads at the hull. Same judge, 16 rounds (n=32):
+
+| Shell thickness | Index | Held | Win |
+|---|---|---|---|
+| 1.2 u | 1.44 | 21.4k | 6% |
+| **0.7 u (shipped)** | **1.09** | 13.8k | 9% |
+| 0.5 u | 0.81 | 10.2k | 12% |
+
+0.7 u sits at the top of the bar, the nest is the Shrike's mass (VC share 1.17 against a trail of almost nothing), and
+Thornbush stays a nest game (`author_thornbush_assets.py --check`: one nest 361 against a trail of 69; comeback rate
+rescaled to 0.00382). The Shrike is **in** for Brood Rush. Its win rate stays low (9%): it holds mass, its team still
+loses the nucleus.
+
 The Thresher (index 2.95, from its Mass Mode ball trail) came in on its own Mass lever: `massTrailScale` 1 -> 2 became
 0.45 -> 0.9, giving 1.00 in the same field. Its own games pass their checks.
 
