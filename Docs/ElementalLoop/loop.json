@@ -234,6 +234,12 @@
      "by": "Claude",
      "date": "2026-11-17",
      "evidence": "Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Orca timing out at I3-I4 (1 of 8 finished), missing a walled ring and wandering past it; Breach now uses the gate race's re-attack steering (BREACH.md 5.1): Legendary 120/116/160/141 s, Medium 126/121/167/150, 24 of 24 finished. Open: I4 easier than I3; Medium ~ Legendary."
+    },
+    "1": {
+     "state": "redo",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): first Regatta judge 2026-11-19, shuffle 3 seeds: card 386 s (5.3x the five), L5 359 s (5.5x, 4 of 8 courses DNF); its Time lever (tank refill) at an endless tank is still ~4.2x. Docs/ElementalLoop/REDESIGN.md § Orca"
     }
    }
   },

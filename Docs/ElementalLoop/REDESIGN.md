@@ -20,6 +20,7 @@ five run 68.5-74.3 s on the card and 63.5-66.9 s at L5. Sweeps: `/mnt/project-fi
 | Serpent | 178.6 | 115.7 | 2.6x / 1.8x slower | Solid Fuel Pellets: pace comes from pellet burns, which last 1x at rest and 2.8x at Time 10; it raced Regatta at Time 10 only through its starting row | Pellet duration (Time): reaches the field only when it starts at 2.8 and peaks at 3.0 (card 78.7 s, L5 69.5 s), so Time no longer scales the ability. That is the row moved inside the kit, so it is flagged instead |
 | Manta (L5) | 86.1 (card, in the field without its -5 row) | 27.9 | 0.42x at L5 | Soar, its Time level-5 upgrade: a held boost that turns 60 s laps into ~20-30 s | Soar's BoostSpeedMultiplier (Time, acts only once Soar unlocks) at x0.375: L5 43.5 s, about 0.66x |
 | TigerMoth | 152.4 | 122.0 | 2.1x / 1.8x slower | One Drop per ring, each after a 90-degree line-up (heading square to the ring, belly rolled onto it), at a 67 u/s cruise between drops. Not the recharge: from 2x cheaper on, the Drop is back before the next line-up ends | Drop recharge (the Drop's own parameter; Garrett's 2026-11-18 pick, cruise kept): 2x / 2.5x / 3x / 4x / 5x cheaper than design all run card 152.4 s and L5 122 s, so 2x (shipped, #2207) is the knee and nothing past it moves. Time throttle slot, knee x2.0: card 104 s, L5 84 s (1.55x / 1.27x), and Waystation breaks (I4 2 of 3 DNF). Patch held: `step5/tigermoth/time-throttle-x1.9-2.1.patch` |
+| Orca | 386 | 359 (3 of 8 courses DNF at 400 s) | 5.3x / 5.5x slower | A 21 u/s cruise and a x5 burn (about 106 u/s) on a 3 s tank refilling 0.25 to 0.35 a second, with a burning hull's wide turn | Time is the tank's refill (0.25 at rest, 0.35 at level 10). Its ceiling, an endless tank so the helm burns on every leg: 291 / 301 / 328 s against 366 / 380 / 387 s on three courses, still about 4.2x. No Time value reaches the field |
 
 ## Serpent
 
@@ -106,6 +107,39 @@ Drop's geometry. It falls along the belly, so every drop costs a 90-degree turn 
 the belly on it. A pilot (the autopilot's `RegattaTigerMothDrop`) gets one drop per ring that way, and flies the rest at
 67 u/s. That is the same 90-degree constraint Garrett names for the Serpent's wall. Raw races:
 `/mnt/project-files/regatta-flywheel/step5/tigermoth/drop-knee/`.
+
+## Orca
+
+Flagged 2026-11-19 when it was first judged in Regatta (thread "Train and seat Goby and Orca in Regatta"). It had never
+been raced there. The shipped AI helm burns by `OrcaCrew.HelmAIWantsBurn` (Breach's rule without its walls) and
+finishes every course it is given time for.
+
+Shipped shuffle (8 courses), solo, seeds 1-3, geometric mean of the per-course means, a DNF counted at 400 s, against
+the polished five's median (73.5 s card, 64.7 s L5, `step5/noise/FIELD2.md`):
+
+| Start | Orca s | x five | Finished |
+|---|---|---|---|
+| card | 386 | 5.3 | 7 of 8 courses (Ref4 DNF on every seed) |
+| L5 | 359 | 5.5 | 4 of 8 (Ref4, Course2, Course4, Course6 DNF) |
+
+The Orca's Time element is its boost tank's refill: 0.25 tank-seconds a second at rest, 0.35 at level 10, and the L5
+Afterburner keeps refilling under a burn. The lever's ceiling was measured by making the tank endless (refill 50, tank
+1000 s), so the AI burns on every leg it is lined up for (card start, seed 1, limit 800 s):
+
+| Course | shipped s | endless tank s |
+|---|---|---|
+| Ref2 | 366 | 291 |
+| Course5 | 380 | 301 |
+| Ref3 | 387 | 328 |
+
+That is about 20% faster and still about 4.2x the field, so no setting of the Time parameter brings it in. The pace is
+the hull: a 21 u/s cruise, a x5 burn to about 106 u/s, and a burning turn that widens with speed (`BreachCourse`'s
+numbers: turn 44 + 0.055/u). The field averages 200-plus u/s over the same courses. A redesign would have to give the
+Orca a race pace (a faster burn or cruise, or a Time ability that carries it), which is a kit change for every mode and
+Garrett's call.
+
+Its Time AI was not trained for Regatta: at 4x off the field, a better burn rule cannot matter. Breach's coach already
+finishes all 24 of its ladder races (BREACH.md 5.1). Raw: `/mnt/project-files/regatta-flywheel/train/Orca/`.
 
 ## Not flagged (levered into the field instead)
 
