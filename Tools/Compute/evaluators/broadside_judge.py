@@ -22,7 +22,7 @@ RoundStats.CombatPoints. Nothing is modelled: the Boneyard, the hit latch, the v
 
 Command line:
     python3 Tools/Compute/evaluators/broadside_judge.py --hulls Sparrow,Urchin,... [--per-hull 15] [--out r.json]
-    python3 Tools/Compute/evaluators/broadside_judge.py --report r.json        the table of an earlier run
+    python3 Tools/Compute/evaluators/broadside_judge.py --report r.json[,r2.json]   the table of earlier runs, pooled
     python3 Tools/Compute/evaluators/broadside_judge.py --self-test
 
 Setup: as regatta_judge.py (.NET 10; the player is built into REGATTA_JUDGE_BIN on first use).
@@ -90,7 +90,7 @@ def judge(hulls, matches=None, per_hull=15, start="rest", limit_s=180, seed=1, o
         if overrides:
             spec["overrides"] = overrides
         jobs.append((f"m{i:03d}", spec))
-    timeout_s = 240 + limit_s
+    timeout_s = 240 + 2 * limit_s   # four 480 s matches at once took over 720 s wall (2026-11-19)
     workers = workers or int(os.environ.get("REGATTA_JUDGE_WORKERS", 0)) or 4
     with concurrent.futures.ThreadPoolExecutor(workers) as ex:
         results = list(ex.map(lambda j: rj._run_one(j[1], timeout_s, workdir, j[0]), jobs))
@@ -205,14 +205,18 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--overrides", help="JSON file: [{asset, fields}] in-memory asset edits for this run")
     ap.add_argument("--out")
-    ap.add_argument("--report")
+    ap.add_argument("--report", help="the table of earlier runs: one RESULT json, or several comma-separated to pool")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
     if a.self_test:
         self_test()
         return
     if a.report:
-        print(report(json.load(open(a.report))))
+        # Several runs pool into one table (the same build and levers, different seeds or boxes).
+        runs = [json.load(open(f)) for f in a.report.split(",")]
+        pooled = dict(runs[0], races=[r for run in runs for r in run["races"]],
+                      wall_s=sum(run.get("wall_s", 0) for run in runs))
+        print(report(pooled))
         return
     start = json.loads(a.start) if a.start.startswith("{") else a.start
     overrides = json.load(open(a.overrides)) if a.overrides else None
