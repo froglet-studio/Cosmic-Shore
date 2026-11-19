@@ -231,6 +231,22 @@
      "date": "2026-11-19",
      "evidence": "Perch Run coach searched (time_ai_search.py --hull Goby, I1-I4 + I1@T5 + wide): best confirmed on seeds 101-103 within 0.4% of the shipped coach, so the shipped coach stays (PERCH_RUN.md 5.0). Regatta flies its own Goby dart coach (RegattaGobyDart): 15 seeds card 78.1 s / L5 62.6 s after dartPace rest 1.25 (REGATTA.md 6.6)."
     }
+   },
+   "Mass": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread"
+    }
+   },
+   "Space": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread"
+    }
    }
   },
   "Orca": {
@@ -272,6 +288,22 @@
      "by": "Garrett",
      "date": "2026-11-19",
      "evidence": "Redesigned (ramp fuel from ploughing/slicing, #2233, #2240); back inside the Regatta field at both starts (Docs/ElementalLoop/REDESIGN.md: Rhino 70.0/66.9 s, Swordfish 70.8/65.8 s; trunk re-judge 2026-11-18 Rhino 70.8/66.8, Swordfish 71.7/65.4). Fun sign-off of the new ramp is still a person's (Headlong / Spearline)"
+    }
+   },
+   "Mass": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread"
+    }
+   },
+   "Space": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-19",
+     "evidence": "AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread"
     }
    }
   },
