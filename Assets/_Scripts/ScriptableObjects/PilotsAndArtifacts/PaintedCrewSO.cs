@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 using CosmicShore.Data;
 using UnityEngine;
 
@@ -16,6 +18,16 @@ namespace CosmicShore.ScriptableObjects
     /// other thirty-two share one. Every person marked <see cref="Person.starter"/> is granted to every crew
     /// (<see cref="Grant"/>); a person leaves the starter crew by clearing that flag in people.json, which is how crews
     /// move to growing one pilot at a time.</para>
+    ///
+    /// <para><b>A crew of one's own</b> (Garrett, 2026-11-18: "each player of our game has a unique crew of pilots";
+    /// 2026-11-19: "lets get everything in place so that each of these players get their own crew"). Every painted
+    /// pilot (the fifty and the roster's) is in the pool, marked <see cref="Person.starter"/>. An account is dealt
+    /// eighteen of them, one a callsign, once (<see cref="AccountInventory.Crew"/>): a DEALT crew when it claims one
+    /// (<see cref="Claim"/>; the seven test-pool crews, unique among themselves, <see cref="Crews"/>), else a random
+    /// set picked by a hash of the player's id (<see cref="RandomCrew"/>, Tools/Build/pilot_art/roster.py's
+    /// random_crew bit for bit). Only crew members are granted; a starter pilot granted before crews (every painted
+    /// pilot, 2026-11-16..19) who is not in the crew leaves it, and the crew pilot on the same callsign takes their
+    /// captain's chair and Hangar seats. Who holds which dealt crew is player data and is never in the repository.</para>
     ///
     /// <para>Written by <c>Tools/Build/author_pilot_scene_assets.py</c> from <c>Docs/Pilots/art/scenes/people.json</c>,
     /// whose stories are the authored text (short paragraphs about the wider world and the work the pilot's faction
@@ -49,10 +61,26 @@ namespace CosmicShore.ScriptableObjects
             public string story;
         }
 
-        [Tooltip("One row per painted pilot, in the order a crew is granted them.")]
+        /// <summary>A dealt crew: one painted pilot's key a callsign, in callsign order.</summary>
+        [Serializable]
+        public class Crew
+        {
+            public List<string> members = new();
+            [Tooltip("SHA-256 (hex) of \"cosmic-shore/crew-code/\" + this crew's claim code (CodeKey). The code itself is "
+                     + "private and never in the repository; empty claims nothing.")]
+            public string codeHash;
+        }
+
+        [Tooltip("One row per painted pilot, in the order a crew is granted them. This order is the pool's: a random crew "
+                 + "picks from it by index, so append only.")]
         [SerializeField] List<Person> people = new();
 
+        [Tooltip("The dealt crews, in the order roster.py deals them. Never reorder: an account that claimed one keeps "
+                 + "its index.")]
+        [SerializeField] List<Crew> crews = new();
+
         public IReadOnlyList<Person> People => people;
+        public IReadOnlyList<Crew> Crews => crews;
 
         /// <summary>The origin of a painted pilot's record (<see cref="PilotRecord.Origin"/>).</summary>
         public const string StarterOrigin = "starter";
@@ -117,9 +145,24 @@ namespace CosmicShore.ScriptableObjects
         /// granted joins it (one discontinued is not granted again, <see cref="AccountInventory.PaintedGranted"/>); and
         /// every painted record is painted again, so an edited story catches up.
         /// </summary>
-        public bool Grant(AccountInventory inventory, long nowMs)
+        public bool Grant(AccountInventory inventory, long nowMs) => Grant(inventory, nowMs, null);
+
+        /// <summary>
+        /// <see cref="Grant(AccountInventory,long)"/> for a player: an account with no crew yet is dealt the random set
+        /// <paramref name="playerId"/> picks (<see cref="RandomCrew"/>), then only its crew is granted and every starter
+        /// pilot outside it leaves (<see cref="Dismiss"/>). With no id and no crew, every starter pilot is granted (the
+        /// build before crews).
+        /// </summary>
+        public bool Grant(AccountInventory inventory, long nowMs, string playerId)
         {
             if (inventory == null || people == null) return false;
+            inventory.Crew ??= new List<string>();
+            bool dealt = false;
+            if (inventory.Crew.Count == 0 && !string.IsNullOrEmpty(playerId))
+            {
+                inventory.Crew.AddRange(RandomCrew(playerId));
+                dealt = inventory.Crew.Count > 0;
+            }
             inventory.Pilots ??= new List<PilotRecord>();
             inventory.PaintedGranted ??= new List<string>();
             bool changed = false;
@@ -142,6 +185,7 @@ namespace CosmicShore.ScriptableObjects
             foreach (var p in people)
             {
                 if (p == null || !p.starter || string.IsNullOrEmpty(p.key) || p.callsign == PilotVision.None) continue;
+                if (!inventory.InCrew(p.key)) continue;
                 if (inventory.PaintedGranted.Contains(p.key) || inventory.PaintedPilot(p.key) != null) continue;
                 var pilot = Mint(p, inventory, nowMs);
                 if (pilot == null) continue;
@@ -149,9 +193,119 @@ namespace CosmicShore.ScriptableObjects
                 changed = true;
             }
 
+            if (Dismiss(inventory)) changed = true;
+
             foreach (var pilot in inventory.Pilots)
                 if (Paint(pilot)) changed = true;
-            return changed;
+            return changed || dealt;
+        }
+
+        /// <summary>
+        /// Deals the dealt crew <paramref name="index"/> (from 0) to <paramref name="inventory"/>, replacing whatever crew
+        /// it had, and grants it. False for an index with no crew.
+        /// </summary>
+        public bool Claim(AccountInventory inventory, int index, long nowMs)
+        {
+            if (inventory == null || crews == null || index < 0 || index >= crews.Count || crews[index]?.members == null) return false;
+            inventory.Crew = new List<string>(crews[index].members);
+            inventory.ClaimedCrew = index + 1;
+            // A pilot of the new crew dismissed with the old one comes back.
+            inventory.PaintedGranted?.RemoveAll(k => inventory.Crew.Contains(k) && inventory.PaintedPilot(k) == null);
+            Grant(inventory, nowMs, null);
+            return true;
+        }
+
+        /// <summary>
+        /// Starter pilots outside the account's crew leave it (none while no crew is dealt). Before one goes, the crew's
+        /// painted pilot on the same callsign takes their captain's chair and their Hangar seats, so nothing the player
+        /// set up is left empty. Recruits (any other origin) stay.
+        /// </summary>
+        public static bool Dismiss(AccountInventory inventory)
+        {
+            if (inventory?.Pilots == null || inventory.Crew == null || inventory.Crew.Count == 0) return false;
+            var leaving = new List<PilotRecord>();
+            foreach (var pilot in inventory.Pilots)
+                if (pilot != null && pilot.Origin == StarterOrigin && !string.IsNullOrEmpty(pilot.PaintedKey) && !inventory.InCrew(pilot.PaintedKey))
+                    leaving.Add(pilot);
+            foreach (var pilot in leaving)
+            {
+                PilotRecord heir = null;
+                foreach (var other in inventory.Pilots)
+                    if (other != null && other != pilot && inventory.InCrew(other.PaintedKey) && !string.IsNullOrEmpty(other.PaintedKey)
+                        && other.CallsignOrTemplate() == pilot.CallsignOrTemplate())
+                    {
+                        heir = other;
+                        break;
+                    }
+                if (heir != null)
+                {
+                    if (inventory.CaptainId == pilot.Id) inventory.CaptainId = heir.Id;
+                    foreach (var h in inventory.Hangar)
+                        if (h != null && h.PilotId == pilot.Id) h.PilotId = heir.Id;
+                }
+                inventory.RemovePilot(pilot.Id);
+            }
+            return leaving.Count > 0;
+        }
+
+        /// <summary>A typed claim code as it is hashed: upper case, letters and digits only ("ab12-cd34" is "AB12CD34").
+        /// </summary>
+        public static string CodeKey(string typed)
+        {
+            if (string.IsNullOrEmpty(typed)) return string.Empty;
+            var sb = new StringBuilder(typed.Length);
+            foreach (char c in typed)
+                if (char.IsLetterOrDigit(c)) sb.Append(char.ToUpperInvariant(c));
+            return sb.ToString();
+        }
+
+        /// <summary>The hash a crew's <see cref="Crew.codeHash"/> holds for <paramref name="typed"/>.</summary>
+        public static string CodeHash(string typed)
+        {
+            using var sha = SHA256.Create();
+            byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes("cosmic-shore/crew-code/" + CodeKey(typed)));
+            var sb = new StringBuilder(hash.Length * 2);
+            foreach (byte b in hash) sb.Append(b.ToString("x2"));
+            return sb.ToString();
+        }
+
+        /// <summary>The dealt crew (from 0) whose claim code is <paramref name="typed"/>, else -1. A code is at least eight
+        /// letters or digits, so a short display name never asks the question.</summary>
+        public int CrewForCode(string typed)
+        {
+            if (crews == null || CodeKey(typed).Length < 8) return -1;
+            string hash = CodeHash(typed);
+            for (int i = 0; i < crews.Count; i++)
+                if (crews[i] != null && !string.IsNullOrEmpty(crews[i].codeHash)
+                    && string.Equals(crews[i].codeHash, hash, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            return -1;
+        }
+
+        /// <summary>
+        /// The random crew for a player outside the dealt crews (Garrett, 2026-11-18: "all other players can grab a
+        /// random set from that pool"): for each callsign, the starter pilot at index SHA-256("cosmic-shore/crew/{id}/
+        /// {CALLSIGN}")[first 12 hex digits] mod the callsign's count, in <see cref="People"/>'s order. The same for a
+        /// player every time; it may share pilots with anyone else's. Empty for an empty id.
+        /// </summary>
+        public List<string> RandomCrew(string playerId)
+        {
+            var crew = new List<string>();
+            if (string.IsNullOrEmpty(playerId) || people == null) return crew;
+            var pool = new List<string>();
+            using var sha = SHA256.Create();
+            foreach (var vision in Callsigns.All)
+            {
+                pool.Clear();
+                foreach (var p in people)
+                    if (p != null && p.starter && p.callsign == vision && !string.IsNullOrEmpty(p.key)) pool.Add(p.key);
+                if (pool.Count == 0) continue;
+                byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes($"cosmic-shore/crew/{playerId}/{Callsigns.WordOf(vision)}"));
+                ulong h = 0;
+                for (int i = 0; i < 6; i++) h = (h << 8) | hash[i];          // the first 12 hex digits
+                crew.Add(pool[(int)(h % (ulong)pool.Count)]);
+            }
+            return crew;
         }
 
         static PilotRecord Mint(Person p, AccountInventory inventory, long nowMs)

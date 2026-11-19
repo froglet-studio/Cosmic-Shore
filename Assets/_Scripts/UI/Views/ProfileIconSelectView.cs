@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
@@ -235,10 +236,20 @@ namespace CosmicShore.UI
         private void HandleOpened()
         {
             SwitchTab(_tab);
+            KeepAvatarInCrew();
+            RebuildGridIfCrewChanged();
             SyncSelection();
             if (saveNoteText) saveNoteText.SetText(SaveNoteIdle);
             if (saveNoteText) saveNoteText.SetColorToken(UIColorToken.NeutralLightest);
             if (windowEntrance) windowEntrance.Play();
+        }
+
+        private void RebuildGridIfCrewChanged()
+        {
+            if (!profileIcons || !iconGrid || !iconButtonPrefab || _builtFor == CrewKey()) return;
+            _hasSelectedIcon = false;
+            _selectedButton = null;
+            BuildAvatarGrid();              // the crew was dealt (or claimed) after the grid was first built
         }
 
         // ------------------------------------------------------------------
@@ -309,13 +320,35 @@ namespace CosmicShore.UI
         // Avatar grid build
         // ------------------------------------------------------------------
 
+        private string _builtFor;
+
+        private static string CrewKey()
+        {
+            var crew = AccountInventoryStore.Current.Crew;
+            return crew == null ? string.Empty : string.Join(",", crew);
+        }
+
+        /// <summary>An avatar from outside the account's crew becomes its crew's pilot on the same callsign. Only once
+        /// the cloud inventory has loaded, so this device's stand-in crew never rewrites the profile.</summary>
+        private void KeepAvatarInCrew()
+        {
+            var service = Service;
+            if (!profileIcons || service == null || service.CurrentProfile == null || !AccountInventoryStore.IsCloudLoaded) return;
+            int id = service.CurrentProfile.Identity.AvatarId;
+            int own = CrewAvatars.Consistent(id, profileIcons.ProfileIcons, AccountInventoryStore.Current.Crew, PaintedCrewSO.Load());
+            if (own != id) service.SetAvatarId(own);
+        }
+
         private void BuildAvatarGrid()
         {
             int selectedIconId = LoadProfileIconSelection();
 
             ClearGrid();
 
-            foreach (var profileIcon in profileIcons.ProfileIcons)
+            // Only the account's own crew (CrewAvatars; Garrett, 2026-11-19).
+            var offered = CrewAvatars.Offered(profileIcons.ProfileIcons, AccountInventoryStore.Current.Crew);
+            _builtFor = CrewKey();
+            foreach (var profileIcon in offered)
             {
                 var buttonInstance = Instantiate(iconButtonPrefab, iconGrid.transform);
                 buttonInstance.transform.localScale = Vector3.one;
@@ -340,9 +373,9 @@ namespace CosmicShore.UI
             }
 
             // If nothing matched the saved id, default to first icon
-            if (!_hasSelectedIcon && profileIcons.ProfileIcons.Count > 0)
+            if (!_hasSelectedIcon && offered.Count > 0)
             {
-                var first = profileIcons.ProfileIcons[0];
+                var first = offered[0];
 
                 var allButtons = iconGrid.GetComponentsInChildren<ProfileIconSelectButton>(true);
                 var firstButton = allButtons.FirstOrDefault(b => b.ProfileIcon.Id == first.Id);
@@ -498,6 +531,7 @@ namespace CosmicShore.UI
             var config = DisplayNameValidator.Config;
             var rules = DisplayNameValidator.EvaluateRules(raw);
             var check = DisplayNameValidator.Validate(raw);
+            bool crewCode = AccountInventoryStore.CrewForCode(raw) >= 0;   // a tester's claim code: Save claims the crew
 
             if (characterCountText)
                 characterCountText.text = $"{sanitized.Length} / {config.MaxLength}";
@@ -517,7 +551,7 @@ namespace CosmicShore.UI
 
             bool judge = sanitized.Length == 0 || sanitized.Length >= config.MinLength;
             string message = !string.IsNullOrEmpty(_refusal) ? _refusal
-                : !check.IsValid && judge ? check.Message
+                : !check.IsValid && judge && !crewCode ? check.Message
                 : null;
             bool refused = !string.IsNullOrEmpty(message) && !_saving;
 
@@ -527,7 +561,7 @@ namespace CosmicShore.UI
             if (fieldBorder)
                 fieldBorder.color = UITheme.Resolve(theme, refused ? UIColorToken.Danger : UIColorToken.ControlActive);
             if (displayNameSaveButton)
-                displayNameSaveButton.interactable = check.IsValid && !_saving && string.IsNullOrEmpty(_refusal);
+                displayNameSaveButton.interactable = (check.IsValid || crewCode) && !_saving && string.IsNullOrEmpty(_refusal);
         }
 
         private void SaveDisplayName()
@@ -542,6 +576,19 @@ namespace CosmicShore.UI
         {
             try
             {
+                // A tester's private claim code (Garrett, 2026-11-19) is never a name: it claims the crew dealt to that
+                // tester, and the window shows the avatar page, now that crew's avatars.
+                if (AccountInventoryStore.ClaimCrewByCode(newName))
+                {
+                    PopulateDisplayNameFromProfile();
+                    KeepAvatarInCrew();
+                    RebuildGridIfCrewChanged();
+                    SwitchTab(ProfileModalTab.Avatar);
+                    SyncSelection();
+                    DrawPreview();
+                    return;
+                }
+
                 // Full rule set (length, characters, profanity, duplicates) lives in
                 // PlayerDataService.TrySetDisplayNameAsync. On rejection the window stays open on
                 // the strip, so the player can correct the name.
