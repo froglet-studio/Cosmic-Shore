@@ -1875,7 +1875,7 @@ MonoBehaviour:
   blastPrefab: {fileID: 7412093556301884212, guid: dd8d6149fdb64a5d869d0b0d041dd659, type: 3}
   radiusPerVesselRadius: 10
   fallbackVesselRadius: 4.5
-  cooldownSeconds: 2.5
+  cooldownSeconds: 4.25
   cooldownScale:
     Enabled: 1
     Value: 1

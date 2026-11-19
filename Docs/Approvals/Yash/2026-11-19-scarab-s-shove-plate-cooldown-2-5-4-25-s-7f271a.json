@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-19-scarab-s-shove-plate-cooldown-2-5-4-25-s-7f271a",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-19T13:33:08+00:00",
+  "area": "Broadside card",
+  "summary": "Scarab's shove plate cooldown 2.5 -> 4.25 s (Charge curve 4.25 -> 2.125 s): the Broadside judge put Scarab at 1.05 rest / 1.07 L5 over 3 seeds each, from 1.27. Your claude/dreamy-goldberg-enztvh touches the same files.",
+  "branch": "HEAD",
+  "commit": "27d0d2784"
+}
