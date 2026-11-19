@@ -1,0 +1,30 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2258-went-in-without-wait-4ab0f7",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T06:13:18+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2258 went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset",
+  "branch": "claude/project-thread-b6u2jo",
+  "pr": 2258,
+  "commit": "6c2fa25b0",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset",
+    "Assets/_Scripts/Controller/Arcade/THORNLINE.md",
+    "Assets/_Scripts/Controller/Arcade/Thornline/ThornlineCourse.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data",
+    "Assets/_Scripts/Tests/Editor/ShrikeConfigTests.cs",
+    "Containers/ThresherConfigSO.cs",
+    "Docs/ElementalLoop/REDESIGN.md",
+    "Docs/ElementalLoop/STATUS.md",
+    "Docs/ElementalLoop/loop.json"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset"
+    }
+  ]
+}
