@@ -11,7 +11,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Angler | `R b b` | `b b .` | `b b .` | `b b .` | - | - |
 | BrittleStar | `b b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | Dolphin | `D b b` | `b b .` | `- - -` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Goby | `b ~ b` | `b b .` | `b b .` | `b b .` | - | Regatta |
+| Goby | `b ~ b` | `b b .` | `b b b` | `b b b` | - | Regatta |
 | Grizzly | `b b .` | `b b .` | `- - -` | `b b .` | - | - |
 | Honeyguide | `R b ~` | `b b .` | `b b .` | `b b .` | - | - |
 | Jacks | `R b b` | `b b .` | `- - -` | `b b .` | - | - |
@@ -27,7 +27,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Squirrel | `b b b` | `b b .` | `x x x` | `- - -` | Mass | Regatta, Broadside, BroodRush |
 | Starling | `x x x` | `x x x` | `x x x` | `x x x` | Time, Charge, Mass or Space | - |
 | Stoat | `b b b` | `b b .` | `- - -` | `b b .` | - | - |
-| Swordfish | `b b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
+| Swordfish | `b b .` | `b b .` | `b b b` | `b b b` | - | Regatta, Broadside, BroodRush |
 | Thresher | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | TigerMoth | `R b .` | `b b .` | `b b .` | `b b .` | - | Regatta |
 | Urchin | `b b ~` | `b b .` | `b b .` | `- - -` | - | Regatta, Broadside |
@@ -83,6 +83,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Dolphin Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | trained drive promoted to Switchback (all four files), model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | Goby Time | 2 intensities I1-I4 | doing | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Goby orbiting a ring inside its turning circle and failing to finish most races past I1; the coach now flies straight on to open the range (PERCH_RUN.md 5.1): Legendary 44/47/46/72 s, 12 of 12 finished on fresh seeds. Open: difficulty does nothing (no seat error); I4 still loses up to 40 s at some reef rings. |
 | Goby Time | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | Perch Run coach searched (time_ai_search.py --hull Goby, I1-I4 + I1@T5 + wide): best confirmed on seeds 101-103 within 0.4% of the shipped coach, so the shipped coach stays (PERCH_RUN.md 5.0). Regatta flies its own Goby dart coach (RegattaGobyDart): 15 seeds card 78.1 s / L5 62.6 s after dartPace rest 1.25 (REGATTA.md 6.6). |
+| Goby Mass | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread |
+| Goby Space | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread |
 | Honeyguide Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta shuffle, 5 seeds: card 374 s / L5 363 s (5.1x / 5.6x the field); its Time levers at the 37.5% cap together (zip speed, slip reach, Time's zip scaling) reach 358 / 351 s. Docs/ElementalLoop/REDESIGN.md |
 | Honeyguide Time | 3 AI on I1-I4 | doing | Claude | 2026-11-19 |  | Slip Line's AI is its controller's coach (rail + race line leads); three real-game searches (2026-11-17, train/Honeyguide/NOTE.md) found no confirmed win over it, and the coach cannot leave Slip Line. Its trained nose rate (6.58/s) in Regatta, 2026-11-19: 369 / 355 s vs 374 / 363 s shipped, noise. No portable Time AI yet |
 | Jacks Time | 1 fun (abilities + game, one intensity) | redo | Garrett | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta 2.15x card / 2.37x L5 with its coach; jack run at the 37.5% lever cap only ~1.6x; Docs/ElementalLoop/REDESIGN.md |
@@ -109,6 +111,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Stoat Time | 2 intensities I1-I4 | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | ladder call: no change; Legendary 64/53/66/75 s on 8 courses a rung, Medium 76/66/72/95 s; denser I3 Orrery measured no effect |
 | Stoat Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | StoatSlingConfig_Slingshot from slingshot-stoat-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | Swordfish Time | 1 fun (abilities + game, one intensity) | built | Garrett | 2026-11-19 |  | Redesigned (ramp fuel from ploughing/slicing, #2233, #2240); back inside the Regatta field at both starts (Docs/ElementalLoop/REDESIGN.md: Rhino 70.0/66.9 s, Swordfish 70.8/65.8 s; trunk re-judge 2026-11-18 Rhino 70.8/66.8, Swordfish 71.7/65.4). Fun sign-off of the new ramp is still a person's (Headlong / Spearline) |
+| Swordfish Mass | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread |
+| Swordfish Space | 3 AI on I1-I4 | built | Claude | 2026-11-19 |  | AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread |
 | Thresher Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | ThresherAIBoostPolicy_ThresherTime from threshertime-thresher-time-lead, model only, editor soak pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | TigerMoth Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-18 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md |
 | Urchin Time | 1 fun (abilities + game, one intensity) | built | Claude, on Garrett's 'do your best on fun' (2026-11-17), pending his playtest | 2026-11-17 |  | fun call: I2 is the fun rung (AI 125-150 s, headless judge, 3 courses); the AI flies at cruise for half the race, 13 rail-seek variants swept, shipped numbers best; nothing changed at I2 (SKEIN.md 18) |
