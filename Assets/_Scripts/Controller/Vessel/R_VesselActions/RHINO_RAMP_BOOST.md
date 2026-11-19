@@ -1,5 +1,13 @@
 # Rhino Ramp Boost + Speed-Tunnel Quasi Dolly Zoom
 
+> **2026-11-19: the Rhino is a freight train, and it oversteers** (Garrett: "change the time ability so it builds up
+> velocity and looses it with a lot more inertia. this will introduce a new type of drift: over steering as the rhino
+> turns a little sharper than it changes direction. set the top speed very high, but the acceleration low"). The Time
+> card is now **Momentum**: top 1400 u/s (x28), climb 110 u/s per second at Time rest, bleed 90 and coast 60, the
+> Momentum ward in the base kit (above 50% of top), and an inertial grip that lets the nose lead the travel. Its new
+> level 5 is **Slingshot**. See § "Inertia and Slingshot (2026-11-19)"; the Swordfish's ramp
+> (`SwordfishRampBoostAction.asset`) is untouched. The numbers in the older sections below are the 840 u/s record.
+
 > **2026-11-18: the ramp runs on FUEL that ploughing and slicing earn** (Garrett: "make their boosting resource tied
 > to their slicing and plowing. that will slow them down over longer time scales, while letting them keep their speed
 > and reward them for their fun"). See § "Fuel" below. Both hulls ran Regatta about 2x faster than the polished five
@@ -261,6 +269,38 @@ grading already run per peer. A replica can disagree briefly on whether the tank
 
 Regatta, shuffle set, card and all-L5 starts, measured by the real-game judge: see `Docs/ElementalLoop/REDESIGN.md`.
 Tests: `RampFuelTests`.
+
+## Inertia and Slingshot (2026-11-19)
+
+| | before | now |
+|---|---|---|
+| top (`maxBoostMultiplier`) | 16.8, 840 u/s | **28, 1400 u/s** |
+| climb (`accelerationPerSecond`, x Time 1 -> 2.5) | 220 (cruise -> top 3.6 s) | **110** (12.3 s at rest, 4.9 s at Time 10) |
+| bleed while steering (`bleedPerSecond`) | 300 | **90** |
+| coast once released (`returnPerSecond`) | 120 | **60** |
+| Momentum ward (`VesselElementalImmunity`) | Time level 5, above 70% of top (588) | **base**, above 50% of top (700) |
+| flight model | scalar | **vector, inertial grip 16 -> 15 per second** (`Rhino.prefab`, `VesselTransformer`) |
+
+**Inertia (oversteer).** `VesselTransformer` gained an inertial grip for the vector flight model
+(`inertialGripAtCruise`, `inertialGripAtSpeed`, `inertialGripSpeed`): outside a drift, momentum swings back onto the
+nose at that grip instead of snapping (`InertialGripMath.Convergence`, `1 - e^(-grip dt)`). A steady turn settles at a
+slip of turn rate / grip: about 6 degrees at cruise (100 deg/s / 16), about 13 at 600 u/s and 23 at the 1400 top. The
+nose leads and the path catches up; the turn radius of a held turn is unchanged (the travel still rotates at the
+nose's rate once settled). Turning never gains speed: outside a drift the vector model's magnitude is bounded by the
+throttle target (`ShapeSpeed`). Every other hull authors grip 0 and is bit-identical.
+
+**Slingshot (Time level 5, `RhinoSlingshot` on the root).** A slide begins when the slip passes 12 degrees and ends
+when it falls back under 4. With `IsUpgradeActive(Time)` the end flings the hull forward by the slide's depth: up to
+30% of its speed (at most 350 u/s) for a 35 degree slide, linear below that, none under 80 u/s, never past the ramp's
+top (`VesselTransformer.KickSpeed`). The 90 / 60 bleed then holds the kick for seconds. The Time card flashes on each fling.
+
+**Camera.** The Rhino takes no camera shake at all: `CameraFeelConfig`'s Rhino row is `noShake` (no trauma, no skim or
+drift rumble, no hit / shot / pickup kicks, and `CustomCameraController.Shake` is ignored while following it). The
+G-force lag and the breathing stay. The oversteer would otherwise rumble on every turn.
+
+**Not moved:** Headlong's course generator still sizes corners for the 840 u/s top (`HeadlongCircuitSettings`
+constants, `HeadlongHedges.MomentumFraction` 0.7); the drive sims (`rhino_drive_sim.py`, `rhino_line_sim.py`) still
+model the old numbers. Regatta: measured with the real-game judge, see the PR and `Docs/ElementalLoop/REDESIGN.md`.
 
 ## Visual model — the speed-tunnel PLATFORM LAW
 

@@ -20,11 +20,11 @@ MonoBehaviour:
     element: 4
     UseFloor: 1
     Floor: 0.5
-  maxBoostMultiplier: 16.8
-  accelerationPerSecond: 220
-  returnPerSecond: 120
+  maxBoostMultiplier: 28
+  accelerationPerSecond: 110
+  returnPerSecond: 60
   straightnessGraceBand: 1
-  bleedPerSecond: 300
+  bleedPerSecond: 90
   fuelResourceIndex: 0
   fuelBurnPerSecond: 0.1
   emptyTankMaxBoostMultiplier: 2.5

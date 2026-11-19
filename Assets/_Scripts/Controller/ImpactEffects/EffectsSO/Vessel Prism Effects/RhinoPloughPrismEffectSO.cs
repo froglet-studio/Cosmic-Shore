@@ -12,8 +12,9 @@ namespace CosmicShore.Gameplay
     /// <see cref="RhinoPloughSteerExecutor"/>), far enough to clear the hull — it is never destroyed.
     /// Since 2026-11-07 the plough IS the Rhino (the sword split off into the Swordfish). Since the
     /// 2026-11-12 rework: Mass (Heft) throws further, Charge carries a thrown prism on to strike another
-    /// (Charge's rival hit is the Gore, <see cref="RhinoGoreBySkimmerEffectSO"/>), and two level-5s (Unstoppable on
-    /// Space, Berm on Mass) gate here; Space widens the blade (<see cref="RhinoPloughBlade"/>).
+    /// (Charge's rival hit is the Gore, <see cref="RhinoGoreBySkimmerEffectSO"/>), the plough moves super-shielded mass
+    /// (Unstoppable, base since 2026-11-19), and two level-5s (Avalanche on Space, the shove's chain reaction; Berm on
+    /// Mass) gate here; Space widens the blade (<see cref="RhinoPloughBlade"/>).
     /// Replaces <see cref="VesselDamagePrismEffectSO"/> in the Rhino's vessel container only — every
     /// other hull still rams as before. Design + verification: <c>R_VesselActions/RHINO_PLOUGH.md</c>.
     ///
@@ -57,9 +58,14 @@ namespace CosmicShore.Gameplay
                  "in the deficit band (Space until 2026-11-12: a heavier hull pushes further). Read at the Rhino's replicated level, so every peer lands the prism alike.")]
         [SerializeField] ElementalFloat furrowDistance = ElementalFloat.Multiplier(20f, 60f, Element.Mass, 10f);   // tripled 2026-11-09, moved to Mass 2026-11-12 (Garrett), rest 20 by the fleet floor rule 2026-11-16
 
-        [Tooltip("SPACE level-5 'Unstoppable' (the fleet's Space shield-breaker slot): with this element's upgrade active the plough moves SUPER-shielded " +
-                 "mass too (without it super-shielded prisms are the immovable tier and only jiggle). None = never.")]
-        [SerializeField] Element unstoppableUpgradeElement = Element.Space;
+        [Tooltip("'Unstoppable', BASE since 2026-11-19 (Garrett: move the Space and Time level-5s into the base kit): the plough " +
+                 "moves SUPER-shielded mass too. Off = super-shielded prisms are the immovable tier and only jiggle, unless the " +
+                 "upgrade element below is active.")]
+        [SerializeField] bool ploughSuperShielded = true;
+
+        [Tooltip("A level-5 that grants Unstoppable when Plough Super Shielded is off (Space until 2026-11-19, when it went " +
+                 "into the base kit; the asset authors None). None = never.")]
+        [SerializeField] Element unstoppableUpgradeElement = Element.None;
 
         [Header("Carry (Charge)")]
         [Tooltip("CHARGE: how far past its landing point a thrown prism still flies on to strike another (a thrown " +
@@ -68,13 +74,17 @@ namespace CosmicShore.Gameplay
                  "still lands where the furrow puts it.")]
         [SerializeField] ElementalFloat carryDistance = ElementalFloat.Multiplier(10f, 40f, Element.Charge, 5f);
 
-        [Tooltip("'Avalanche' (retired as Charge's level-5 on 2026-11-12, when Gore Steal took the slot; the asset authors None): with this element's upgrade active a strike carries on - the next " +
-                 "prism down the line within the carry is thrown on too, and its own strike can throw the next. " +
-                 "None = never.")]
-        [SerializeField] Element avalancheUpgradeElement = Element.None;
+        [Tooltip("SPACE level-5 'Avalanche' (the shove's chain reaction; Space since 2026-11-19 - Charge's level-5 until " +
+                 "2026-11-12): with this element's upgrade active a strike carries on - the next prism down the line within " +
+                 "the chain reach is thrown on too, and its own strike can throw the next. None = never.")]
+        [SerializeField] Element avalancheUpgradeElement = Element.Space;
 
         [Tooltip("How many further prisms one Avalanche can throw on, after the first strike.")]
-        [SerializeField, Min(0)] int avalancheLinks = 3;
+        [SerializeField, Min(0)] int avalancheLinks = 5;
+
+        [Tooltip("Avalanche: how far down the line a strike looks for the next prism, and how far it throws it, in world " +
+                 "units - at least this, or the Carry when that is longer, so the chain works at Charge rest.")]
+        [SerializeField, Min(0f)] float avalancheReach = 30f;
 
         [Header("Berm (Mass)")]
         [Tooltip("MASS level-5 'Berm': with this element's upgrade active a ploughed prism LANDS SHIELDED, so the " +
@@ -105,8 +115,9 @@ namespace CosmicShore.Gameplay
             // unless the Space level-5 (Unstoppable) is active.
             // Each level-5 gate is the replicated unlock bit, read per contact (vessel skill rule 3).
             var abilities = status.ElementalAbilityHandler;
-            bool unstoppable = unstoppableUpgradeElement != Element.None && abilities &&
-                               abilities.IsUpgradeActive(unstoppableUpgradeElement);
+            bool unstoppable = ploughSuperShielded ||
+                               (unstoppableUpgradeElement != Element.None && abilities &&
+                                abilities.IsUpgradeActive(unstoppableUpgradeElement));
             if (!unstoppable && prism.AbsorbSuperShieldHit(status.Speed)) return;
 
             var hull = status.ShipTransform;
@@ -135,8 +146,8 @@ namespace CosmicShore.Gameplay
             var throwSettings = new ThrowSettings
             {
                 Carry = Mathf.Max(0f, carryDistance.EvaluateReplicated(status)),
-                LinksLeft = avalancheUpgradeElement != Element.None && abilities &&
-                            abilities.IsUpgradeActive(avalancheUpgradeElement) ? avalancheLinks : 0,
+                LinksLeft = AvalancheActive(abilities) ? avalancheLinks : 0,
+                ChainReach = avalancheReach,
                 Berm = bermUpgradeElement != Element.None && abilities && abilities.IsUpgradeActive(bermUpgradeElement),
                 Unstoppable = unstoppable,
             };
@@ -144,8 +155,19 @@ namespace CosmicShore.Gameplay
             Throw(prism, prismPos, land, throwSettings, status);
         }
 
+        // Avalanche's gate: the Space level-5 bit, spelled out so the element table attributes it (any other authored
+        // element still works through the general branch).
+        bool AvalancheActive(R_VesselElementalAbilityHandler abilities)
+        {
+            if (avalancheUpgradeElement == Element.None || !abilities) return false;
+            return avalancheUpgradeElement == Element.Space
+                ? abilities.IsUpgradeActive(Element.Space)
+                : abilities.IsUpgradeActive(avalancheUpgradeElement);
+        }
+
         struct ThrowSettings
         {
+            public float ChainReach;
             public float Carry;
             public int LinksLeft;
             public bool Berm;
@@ -174,10 +196,11 @@ namespace CosmicShore.Gameplay
                 // Avalanche: find the next prism down the line BEFORE this pair breaks (the probe sweeps the
                 // struck prism's own box on along the throw).
                 Prism next = null;
-                if (settings.LinksLeft > 0 && settings.Carry > 0f && dir != Vector3.zero)
+                float chain = Mathf.Max(settings.Carry, settings.ChainReach);
+                if (settings.LinksLeft > 0 && chain > 0f && dir != Vector3.zero)
                 {
                     Vector3 sp = struck.transform.position;
-                    if (PrismMotion.TrySweep(struck, sp, sp + dir * settings.Carry, out var n, out _) &&
+                    if (PrismMotion.TrySweep(struck, sp, sp + dir * chain, out var n, out _) &&
                         n && n != prism && !n.destroyed)
                         next = n;
                 }
@@ -193,7 +216,7 @@ namespace CosmicShore.Gameplay
                     var chained = settings;
                     chained.LinksLeft--;
                     Vector3 np = next.transform.position;
-                    Throw(next, np, np + dir * settings.Carry, chained, status);
+                    Throw(next, np, np + dir * chain, chained, status);
                 }
                 return;
             }

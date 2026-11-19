@@ -120,7 +120,8 @@ Three things set how much G a pilot feels, so no two hulls feel the same:
 | Urchin, Sparrow | 1 | 0.9, 1 | | Sparrow ~12.5 x 3 x 12.2: mean ~9.2, size G 0.81 |
 | Serpent, Butterfly | 0.9 | 1.1, 0.9 | long cameras, floaty | |
 | Orca | 0.9 | 1.3 | the 4-seat hull | 49 x ~10 x 37: mean ~32, size G 0.55 (the floor), so ~0.5, and ~0.6x as quick |
-| Rhino, Grizzly | 0.85 | 1.25 | lumbering, heavy hitters | |
+| Rhino | 0.85 | 0, **noShake** | no camera shake at all (Garrett 2026-11-19): no trauma, rumble or kicks, legacy `Shake` ignored; G lag and breathing stay | |
+| Grizzly | 0.85 | 1.25 | lumbering, heavy hitter | |
 | Starling | 0.4 | 0.5 | a swarm seen from 1200 u: it should float, not shake | |
 
 ## Rules it keeps

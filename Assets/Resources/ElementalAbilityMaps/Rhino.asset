@@ -34,20 +34,20 @@ MonoBehaviour:
     UpgradeDescription: 'A ploughed prism LANDS SHIELDED, so the furrow banks into walls of armour; a prism that strikes another still breaks (RhinoPloughPrismEffectSO.bermUpgradeElement, gated on IsUpgradeActive(Mass); Garrett, 2026-11-07).'
   - Element: 3
     AbilityLabel: 'Blade'
-    AbilityDescription: 'A plough blade across the nose: one hull collider whose width follows Space - 14 u at rest (a little wider than the hull), 40 u at level 10, floored at 10, read at the replicated level (RhinoPloughBlade.width). A wider blade reaches more mass, and the plough throws what it catches clear of the whole blade.'
+    AbilityDescription: 'A plough blade across the nose: one hull collider whose width follows Space - 14 u at rest (a little wider than the hull), 40 u at level 10, floored at 10, read at the replicated level (RhinoPloughBlade.width). A wider blade reaches more mass, and the plough throws what it catches clear of the whole blade. Nothing is immovable to it: the plough moves SUPER-shielded mass too (Unstoppable, the Space level-5 until 2026-11-19, now base: RhinoPloughPrismEffectSO.ploughSuperShielded), so arena linings and race tracks can be ploughed out of line.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Unstoppable'
-    UpgradeDescription: 'The plough moves SUPER-shielded mass too; without it super-shielded prisms are the immovable tier and only jiggle (RhinoPloughPrismEffectSO.unstoppableUpgradeElement, gated on IsUpgradeActive(Space); Garrett, 2026-11-07). Arena linings and race tracks are super-shielded, so an upgraded Rhino can plough them out of line.'
+    UpgradeLabel: 'Avalanche'
+    UpgradeDescription: 'The shove sets off a chain reaction: when a thrown prism strikes another, the next prism down the line (within 30 u, or the Charge carry when that is longer) is thrown on too, and its own strike throws the next - up to 5 more prisms from one shove; a shielded pair bounces and ends the chain (RhinoPloughPrismEffectSO.avalancheUpgradeElement, gated on IsUpgradeActive(Space); Garrett, 2026-11-19).'
   - Element: 4
-    AbilityLabel: 'Ramp Spool'
-    AbilityDescription: 'Time raises how fast the ramp boost winds the Rhino up to its top speed: 220 u/s per second at rest, 550 at level 10, 110 at the -5 floor (RampBoostActionSO.timeAccelerationMultiplier, x1 -> x2.5, floored x0.5, read live). It does not raise the ceiling - cruise 50 x maxBoostMultiplier 16.8 = 840 u/s - only how long the run-up takes. The Rhino is a bulldozer: its hull carries no prism slow, so ramming mass costs it no speed - the plough shoves what it hits aside (RhinoPloughPrismEffectSO) and the ramp keeps climbing through it.'
+    AbilityLabel: 'Momentum'
+    AbilityDescription: 'The Rhino is a freight train: its ramp builds speed slowly and keeps it. A very high top - cruise 50 x maxBoostMultiplier 28 = 1400 u/s - reached at 110 u/s per second at rest, 275 at level 10, 55 at the -5 floor (RampBoostActionSO.timeAccelerationMultiplier, x1 -> x2.5, floored x0.5, read live), and lost slowly too (90 u/s per second while steering, 60 once the ramp lets go). It flies with inertia: the nose turns a little sharper than the travel does, so a hard turn is a short oversteer slide (VesselTransformer inertial grip 16 -> 15 per second). Above 50% of top speed (700 u/s) danger prisms cannot drain its elements (the Time level-5 until 2026-11-19, now base: VesselElementalImmunity, WhileAboveTopSpeedFraction). The hull carries no prism slow, so ploughing costs it no speed.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Momentum'
-    UpgradeDescription: 'Above 70% of top speed (588 u/s) danger prisms cannot drain the Rhino''s elements - the elemental-debuff ward scoped to DangerPrism alone, so an opposing pilot''s blast still lands (VesselElementalImmunity on the root, condition WhileAboveTopSpeedFraction, upgradeGate Time). The Time card lights while the ward is holding.'
+    UpgradeLabel: 'Slingshot'
+    UpgradeDescription: 'Coming out of an oversteer slide flings the Rhino forward: once the nose has swung 12 degrees or more off the travel and settles back under 4, the hull gains speed by the slide''s depth - up to 30% of its speed (at most 350 u/s) for a 35 degree slide, never past top speed - and the slow-bleeding ramp holds it for seconds (RhinoSlingshot, gated on IsUpgradeActive(Time); Garrett, 2026-11-19).'
   omniAbilityLabel: Stampede
