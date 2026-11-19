@@ -42,9 +42,9 @@ MonoBehaviour:
   slingSeconds: 1
   slingCooldown:
     Enabled: 1
-    Value: 4.75
-    Min: 4.75
-    Max: 3.75
+    Value: 4.4
+    Min: 4.4
+    Max: 4.1
     element: 4
     UseFloor: 1
     Floor: 1

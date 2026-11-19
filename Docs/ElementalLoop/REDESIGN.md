@@ -252,6 +252,15 @@ ride is the only speed past it, and it comes out at the speed it went in, so a R
 
 - Goby: Time dart pace (dartPace) x1.0 -> x2.2 reshaped to x1.25 -> x1.95, the level-5 value unchanged (card 83.3 ->
   78.1 s, L5 62.6 s, 15 seeds), after Regatta got its own Goby dart coach (REGATTA.md 6.6).
+  2026-11-19 (night 3): flattened again to x1.45 -> x1.75, level-5 value still x1.6 (card 75.7 s, L5 62.7 s, 15 seeds,
+  trunk a1b85ab): the card start was the field's slow edge at 1.10-1.11x.
+- Shrike: Time sling cooldown 4.75 -> 3.75 s flattened to 4.4 -> 4.1 s, level-5 value still 4.25 s (card 78.2 -> 75.4 s,
+  L5 65.8 -> 64.9 s, 15 seeds, trunk a1b85ab). 4.5 -> 4.0 gave 76.7 s at 5 seeds but 78.2 s at 15; a flat 4.25 overshoots
+  (card 70.1 s).
+- Regatta field after these (night 3, trunk a1b85ab with #2261 and #2262): Urchin, Scarab, Sparrow, Dolphin, Squirrel,
+  Thresher, BrittleStar, Rhino, Swordfish, Goby, Shrike = 11 hulls at 1.076x card / 1.077x L5. The Serpent at pellet Min
+  1.5 (measured only; its kit is Garrett's other project's) would be the twelfth: 73.1 / 67.9 s, 12 at 1.076x / 1.083x.
+  Data: /mnt/project-files/regatta-flywheel/night3/regatta/.
 
 ## Which AI each hull flies in Regatta (audit, 2026-11-18)
 
