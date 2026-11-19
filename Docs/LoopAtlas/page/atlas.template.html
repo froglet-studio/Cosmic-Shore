@@ -26,7 +26,7 @@ body { background: var(--ground); color: var(--text); }
 
 /* top bar */
 .la-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-8) var(--space-16); padding: var(--space-12) var(--space-16); border-bottom: 1px solid var(--line); }
-.la-seg { display: flex; gap: 2px; }
+.la-seg { display: flex; flex-wrap: wrap; gap: 2px; }
 .la-btn {
   font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
   background: var(--surface); color: var(--text); border: 0; padding: 7px 12px; cursor: pointer; min-height: 32px;
@@ -84,7 +84,7 @@ body { background: var(--ground); color: var(--text); }
 
 /* list views replace the canvas */
 .la-table { display: none; flex: 1; min-height: 0; overflow: auto; padding: var(--space-12) var(--space-16) var(--space-24); }
-.la[data-view="ladder"] .la-table, .la[data-view="drivers"] .la-table, .la[data-view="holes"] .la-table, .la[data-view="notes"] .la-table { display: block; }
+.la[data-view="ladder"] .la-table, .la[data-view="drivers"] .la-table, .la[data-view="holes"] .la-table, .la[data-view="notes"] .la-table, .la[data-view="board"] .la-table { display: block; }
 .la:not([data-view="map"]) .la-canvas { display: none; }
 .la-lede { margin: 0 0 var(--space-12); color: var(--text-soft); max-width: 70ch; }
 .la-h { margin: var(--space-24) 0 var(--space-8); font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--text); }
@@ -139,6 +139,8 @@ body { background: var(--ground); color: var(--text); }
 .la-ctext::placeholder { color: var(--text-soft); }
 .la-crow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-8); }
 .la-crow .la-cta { margin-top: 0; }
+.la-cname { min-height: 0; }
+.la-compose [hidden] { display: none !important; }
 .la-cerr { font-size: 13px; color: var(--hole); }
 .la-empty { margin: var(--space-24) 0; padding: var(--space-16); border: 1px dashed var(--line); color: var(--text-soft); max-width: 70ch; }
 .la-note { max-width: 78ch; padding: var(--space-8) 0 var(--space-8) var(--space-12); border-left: 3px solid var(--line); margin: 0 0 var(--space-12); }
@@ -692,7 +694,7 @@ body { background: var(--ground); color: var(--text); }
     });
     var segV = el('div', 'la-seg'); segV.setAttribute('role', 'group'); segV.setAttribute('aria-label', 'View'); bar.appendChild(segV);
     var viewBtns = {};
-    [['map', 'Map'], ['ladder', 'Timescales'], ['drivers', 'Drivers'], ['holes', 'Holes'], ['notes', 'Notes']].forEach(function (v) {
+    [['map', 'Map'], ['board', 'Board'], ['ladder', 'Timescales'], ['drivers', 'Drivers'], ['holes', 'Holes'], ['notes', 'Notes']].forEach(function (v) {
       var b = el('button', 'la-btn', v[1]); b.type = 'button';
       b.addEventListener('click', function () { setView(v[0]); });
       viewBtns[v[0]] = b; segV.appendChild(b);
@@ -982,11 +984,12 @@ body { background: var(--ground); color: var(--text); }
       N.rev++; countNotes(); if (S.view === 'notes') renderTable(); draw();
       if (!N.user) return;
       var ids = {}; N.list.forEach(function (x) { if (x.by) ids[x.by] = 1; });
+      W.req.forEach(function (x) { if (x.by) ids[x.by] = 1; }); Object.keys(W.dec).forEach(function (k) { if (W.dec[k].by) ids[W.dec[k].by] = 1; });
       var arr = Object.keys(ids); if (!arr.length) return;
       N.user.profiles(arr).then(function (ps) {
         var changed = false;
         arr.forEach(function (id) { var nm = ps[id] && ps[id].name; if (nm && (!N.names[id] || N.names[id].name !== nm)) { N.names[id] = { name: nm }; changed = true; } });
-        if (changed) { N.rev++; if (S.view === 'notes') renderTable(); draw(); }
+        if (changed) { N.rev++; if (S.view === 'notes' || S.view === 'board') renderTable(); draw(); }
       });
     }
     function connectNotes() {
@@ -996,7 +999,8 @@ body { background: var(--ground); color: var(--text); }
         N.db = r[0]; N.user = r[1];
         if (!N.db) { N.state = 'off'; return; }
         N.state = 'on'; noteBtn.hidden = false; viewBtns.notes.hidden = false; renderLegend();
-        if (N.user) N.user.me().then(function (m) { N.me = m; if (S.view === 'notes') renderTable(); });
+        if (N.user) N.user.me().then(function (m) { N.me = m; if (S.view === 'notes' || S.view === 'board') renderTable(); });
+        connectWork();
         function dead() { N.state = 'off'; N.db = null; noteBtn.hidden = true; comp.hidden = true; notesChanged(); }
         N.db.collection('notes').onSnapshot(function (snap) {
           N.list = snap.docs.map(function (d) {
@@ -1014,7 +1018,7 @@ body { background: var(--ground); color: var(--text); }
       });
     }
     // the composer: the one place text is typed, a small form over the map
-    var comp = el('form', 'la-compose'); comp.hidden = true; wrap.appendChild(comp);
+    var comp = el('form', 'la-compose'); comp.hidden = true; stage.appendChild(comp);
     var cTitle = el('p', 'la-ctitle'); comp.appendChild(cTitle);
     var cSeg = el('div', 'la-seg'); cSeg.setAttribute('role', 'group'); cSeg.setAttribute('aria-label', 'Kind'); comp.appendChild(cSeg);
     var cKind = 'note', cBtns = {}, cTarget = null;
@@ -1022,6 +1026,12 @@ body { background: var(--ground); color: var(--text); }
       var b = el('button', 'la-btn', k[1]); b.type = 'button'; b.addEventListener('click', function () { setKind(k[0]); cText.focus(); });
       cBtns[k[0]] = b; cSeg.appendChild(b);
     });
+    var cName = el('input', 'la-ctext la-cname'); cName.id = 'la-idea-name'; cName.maxLength = 80; cName.placeholder = 'A short name for the idea';
+    var cNameLab = el('label', 'la-sr', 'Name'); cNameLab.htmlFor = 'la-idea-name'; comp.appendChild(cNameLab); comp.appendChild(cName);
+    var cArea = el('select', 'la-btn'); cArea.id = 'la-idea-area'; cArea.setAttribute('aria-label', 'Area');
+    (M.areas || []).forEach(function (a) { var o = el('option', null, a.name); o.value = a.id; o.title = a.is; cArea.appendChild(o); });
+    comp.appendChild(cArea);
+    var cMode = 'note', cStep = null;
     var cLab = el('label', 'la-sr', 'Your note or suggestion'); cLab.htmlFor = 'la-note-text'; comp.appendChild(cLab);
     var cText = el('textarea', 'la-ctext'); cText.id = 'la-note-text'; cText.rows = 4; cText.maxLength = 2000; comp.appendChild(cText);
     var cRow = el('div', 'la-crow'); comp.appendChild(cRow);
@@ -1032,19 +1042,55 @@ body { background: var(--ground); color: var(--text); }
       cKind = k; cBtns.note.setAttribute('aria-pressed', k === 'note' ? 'true' : 'false'); cBtns.suggest.setAttribute('aria-pressed', k === 'suggest' ? 'true' : 'false');
       cText.placeholder = k === 'suggest' ? 'What should change here, and to what?' : 'What should a reader of this loop know?';
     }
+    function composerMode(m) { cMode = m; cSeg.hidden = m !== 'note'; cName.hidden = cArea.hidden = m !== 'idea'; }
+    function openMove(e, step) {
+      if (!N.db || !e) return;
+      composerMode('move'); cTarget = e; cStep = step; cErr.textContent = ''; cText.value = '';
+      var d = canDecide();
+      cTitle.textContent = (d ? STEP[step][0] : STEP[step][1]) + ': ' + e.name;
+      cText.placeholder = step === 'drop' ? 'Why drop it? (kept in the record)' : d ? 'Anything the builder should know? (optional)' : 'Why now? (optional)';
+      cSave.textContent = d ? STEP[step][0] : 'Ask';
+      comp.hidden = false; cText.focus();
+    }
+    function openIdea() {
+      if (!N.db) return;
+      composerMode('idea'); cTarget = null; cStep = 'idea'; cErr.textContent = ''; cText.value = ''; cName.value = '';
+      if (S.area && AREA[S.area]) cArea.value = S.area;
+      cTitle.textContent = 'A new idea, in any part of the product';
+      cText.placeholder = 'What should we make, for whom, and why?'; cSave.textContent = 'Add idea';
+      comp.hidden = false; cName.focus();
+    }
     function openComposer(n, kind) {
       if (!N.db || !n) return;
+      composerMode('note'); cSave.textContent = 'Save';
       cTarget = n; setKind(kind || 'note'); cErr.textContent = '';
       var lname = ''; M.layers.forEach(function (l) { if (l.id === S.layer) lname = l.name; });
       cTitle.textContent = 'On ' + n.name + ' · ' + termOf(n) + ' · written on the ' + lname + ' layer';
       comp.hidden = false; cText.focus();
     }
-    function closeComposer() { comp.hidden = true; cv.focus(); }
+    function closeComposer() { comp.hidden = true; if (S.view === 'map') cv.focus(); }
     cCancel.addEventListener('click', closeComposer);
     comp.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeComposer(); });
     comp.addEventListener('submit', function (e) {
       e.preventDefault();
       var t = cText.value.trim();
+      function fail(err) { cSave.disabled = false; cErr.textContent = err && err.code === 'quota_exceeded' ? 'The store is full. Delete old notes first.' : err && (err.code === 'permission_denied' || err.code === 'not_granted') ? 'You cannot do that here.' : 'Not saved. Try again.'; }
+      function ok() { cSave.disabled = false; cText.value = ''; closeComposer(); }
+      if (cMode === 'move') {
+        if (!N.db || !cTarget) return;
+        if (cStep === 'drop' && !t) { cErr.textContent = 'Say why, so the reason is kept.'; return; }
+        cSave.disabled = true;
+        (canDecide() ? decide(cStep, cTarget, t) : ask(cStep, cTarget, t)).then(ok, fail);
+        return;
+      }
+      if (cMode === 'idea') {
+        var nm = cName.value.trim();
+        if (!nm || !t) { cErr.textContent = 'Give it a name and a line on what it is.'; return; }
+        cSave.disabled = true;
+        var s = stamp();
+        N.db.collection('requests').add({ step: 'idea', target: slug(nm) + '-' + Date.now().toString(36).slice(-4), name: nm.slice(0, 80), area: cArea.value, note: t.slice(0, 2000), by: s.by, at: s.at }).then(ok, fail);
+        return;
+      }
       if (!t || !cTarget || !N.db) { cErr.textContent = 'Write something first.'; return; }
       cSave.disabled = true;
       N.db.collection('notes').add({ loop: noteKey(cTarget), name: cTarget.name, layer: S.layer, kind: cKind, text: t.slice(0, 2000), by: (N.me && N.me.id) || null, at: new Date().toISOString() })
@@ -1065,6 +1111,163 @@ body { background: var(--ground); color: var(--text); }
       Object.keys(S.tree.all).some(function (id) { if (noteKey(S.tree.all[id]) === x.loop) { hit = S.tree.all[id]; return true; } return false; });
       if (!hit) return;
       S.view = 'map'; syncBar(); renderAll(); resize(); S.sel = hit.id; renderCrumbs(); renderScale(); renderSr(); focusInfo(hit, false);
+    }
+
+    // ---------- the work board: ask, decide, and new ideas ----------
+    // Anyone who can use the page asks for a move (requests) or adds an idea; only an editor decides a move
+    // (decisions, write admin). The scheduled steward session applies decisions and ideas to the YAML through
+    // loop_atlas.py (`apply`), opens the pull request and marks each one in `applied`. PROCESS.md.
+    var W = { req: [], dec: {}, app: {} }, MN = {}, MI = {}, AREA = {};
+    (M.nodes || []).forEach(function (n) { MN[n.id] = n; });
+    (M.items || []).forEach(function (n) { MI[n.id] = n; });
+    (M.areas || []).forEach(function (a) { AREA[a.id] = a; });
+    var STEP = { plan: ['Plan', 'Ask to plan', 'plan'], develop: ['Build', 'Ask to build', 'build'], drop: ['Drop', 'Ask to drop', 'drop'], idea: ['', '', 'add'], decline: ['', '', 'decline'] };
+    function canDecide() { return !!(N.me && N.me.canEdit); }
+    // one entry per thing that can move: a loop, an item, a proposal P<n>
+    function workEntries() {
+      var out = [], term = {};
+      M.tiers.forEach(function (t) { term[t.id] = t.term; });
+      function add(key, name, where, area, o, kind) {
+        var stage = o.build ? 'building' : (o.plan && o.plan.s === 'decided') ? 'planned' : o.prop ? 'proposed' : null;
+        if (stage) out.push({ key: key, name: name, where: where, area: area, stage: stage, kind: kind,
+          text: o.build ? o.build.what : stage === 'planned' ? o.plan.note : o.prop.note, build: o.build || null });
+      }
+      (M.nodes || []).forEach(function (n) { add(n.id, n.name, term[n.tier], 'loops', n, 'loop'); });
+      (M.items || []).forEach(function (n) { add(n.id, n.name, (AREA[n.area] || {}).name || n.area, n.area, n, 'item'); });
+      (M.proposals || []).forEach(function (p) {
+        var st = p.stage || 'proposed';
+        if (st === 'proposed' || st === 'planned' || st === 'building')
+          out.push({ key: p.id, name: p.id + ' ' + p.title, where: 'Proposal', area: 'loops', stage: st, kind: 'proposal', text: p.what, build: st === 'building' ? { s: 'building', branch: p.branch } : null });
+      });
+      return out;
+    }
+    // what the map already holds about a target: a pending ask, or a decision not yet in the model
+    function pendingFor(key) {
+      var r = null;
+      W.req.forEach(function (x) { if (x.target === key && x.step !== 'idea' && !W.dec[x.id]) r = { t: who(x.by) + ' asked to ' + STEP[x.step][2] + ' this.', req: x }; });
+      Object.keys(W.dec).forEach(function (id) {
+        var d = W.dec[id];
+        if (d.target === key && d.step !== 'decline' && !W.app[id]) r = { t: who(d.by) + ' decided to ' + STEP[d.step][2] + ' this. It goes into the model on the next steward run.' };
+      });
+      return r;
+    }
+    function nextSteps(e) { return e.stage === 'proposed' ? ['plan', 'develop', 'drop'] : e.stage === 'planned' ? ['develop', 'drop'] : e.stage === 'building' ? ['drop'] : []; }
+    function stamp() { return { by: (N.me && N.me.id) || null, at: new Date().toISOString() }; }
+    function ask(step, e, note) {
+      var s = stamp();
+      return N.db.collection('requests').add({ step: step, target: e.key, name: e.name, note: note || '', by: s.by, at: s.at });
+    }
+    function decide(step, e, note, reqId) {
+      var s = stamp(), data = { step: step, target: e.key, name: e.name, note: note || '', by: s.by, at: s.at };
+      if (reqId) { data.req = reqId; return N.db.doc('decisions/' + reqId).set(data); }
+      return N.db.collection('decisions').add(data);
+    }
+    function workChanged() { N.rev++; if (S.view === 'board') renderTable(); draw(); notesChanged(); }
+    function connectWork() {
+      N.db.collection('requests').onSnapshot(function (snap) {
+        W.req = snap.docs.map(function (d) {
+          var b = d.data() || {};
+          return { id: d.id, step: String(b.step || ''), target: String(b.target || ''), name: String(b.name || ''), area: String(b.area || ''),
+            note: String(b.note || '').slice(0, 2000), by: typeof b.by === 'string' ? b.by : null, at: String(b.at || '') };
+        }).filter(function (x) { return STEP[x.step]; }).sort(function (a, b) { return a.at < b.at ? -1 : a.at > b.at ? 1 : 0; });
+        workChanged();
+      }, function () {});
+      N.db.collection('decisions').onSnapshot(function (snap) {
+        W.dec = {}; snap.docs.forEach(function (d) { var b = d.data() || {}; if (STEP[b.step]) W.dec[d.id] = { step: String(b.step), target: String(b.target || ''), name: String(b.name || ''), note: String(b.note || ''), by: typeof b.by === 'string' ? b.by : null, at: String(b.at || ''), req: b.req || null }; });
+        workChanged();
+      }, function () {});
+      N.db.collection('applied').onSnapshot(function (snap) {
+        W.app = {}; snap.docs.forEach(function (d) { var b = d.data() || {}; W.app[d.id] = { ok: b.ok !== false, msg: String(b.msg || ''), pr: String(b.pr || ''), at: String(b.at || '') }; });
+        workChanged();
+      }, function () {});
+    }
+    function slug(s) { return (String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'idea').replace(/^[^a-z]/, 'i$&'); }
+    // the rows a loop's card shows under "Move it along"
+    function moveRows(id) {
+      var rows = [], e = null;
+      workEntries().forEach(function (x) { if (x.key === id) e = x; });
+      if (!e) {
+        rows.push({ t: 'Nothing is proposed or planned here. Suggest a change first.', st: 'soft' });
+        return rows;
+      }
+      rows.push({ lead: e.stage === 'building' ? 'Building' : e.stage === 'planned' ? 'Planned' : 'Proposed', t: e.build && e.build.branch ? 'on ' + e.build.branch : '', leadSt: 'prop' });
+      var p = pendingFor(e.key);
+      if (p) { rows.push({ t: p.t, st: 'prop' }); return rows; }
+      nextSteps(e).forEach(function (st) {
+        rows.push({ t: '→ ' + (canDecide() ? STEP[st][0] : STEP[st][1]), act: function () { openMove(e, st); } });
+      });
+      return rows;
+    }
+    function renderBoard() {
+      var on = N.state === 'on', dec = canDecide();
+      table.appendChild(el('p', 'la-lede', 'Where every idea stands, for the loops and for any other part of the product. Ideas start as proposals, get planned, then built; building one opens a build order that a session takes into the game. ' +
+        (!on ? 'Asking and deciding work on the full-page map.' : dec ? 'You can decide: Plan, Build and Drop act at once, and you approve or decline what others ask for.' : 'Ask to plan, build or drop anything here; the model’s owner decides. Anyone can add a new idea.') +
+        ' A scheduled Claude session puts decisions and ideas into the model and opens the pull request.'));
+      var tools = el('div', 'la-crow'); table.appendChild(tools);
+      if (on) { var nb = el('button', 'la-btn la-cta', '+ New idea'); nb.type = 'button'; nb.addEventListener('click', openIdea); tools.appendChild(nb); }
+      var fl = el('label', 'la-sr', 'Area'); fl.htmlFor = 'la-area-f'; tools.appendChild(fl);
+      var fs = el('select', 'la-btn'); fs.id = 'la-area-f';
+      [['', 'Every area'], ['loops', 'Gameplay loops']].concat((M.areas || []).map(function (a) { return [a.id, a.name]; })).forEach(function (o) {
+        var op = el('option', null, o[1]); op.value = o[0]; if ((S.area || '') === o[0]) op.selected = true; fs.appendChild(op);
+      });
+      fs.addEventListener('change', function () { S.area = fs.value || null; renderTable(); });
+      tools.appendChild(fs);
+      function inArea(a) { return !S.area || S.area === a; }
+      function card(cls, title, meta, text, acts, go) {
+        var d = el('div', 'la-note' + cls), head = el('p', 'la-nhead'); d.appendChild(head);
+        if (go) { var g = el('button', 'la-link', title); g.type = 'button'; g.addEventListener('click', go); head.appendChild(g); } else head.appendChild(el('b', null, title));
+        head.appendChild(el('span', 'la-nmeta', meta));
+        if (text) d.appendChild(el('p', 'la-ntext', text));
+        if (acts.length) { var a = el('div', 'la-nacts'); acts.forEach(function (x) { var b = el('button', 'la-btn', x[0]); b.type = 'button'; b.addEventListener('click', x[1]); a.appendChild(b); }); d.appendChild(a); }
+        return d;
+      }
+      function group(title, list) { if (!list.length) return; table.appendChild(el('h4', 'la-h', title + ' (' + list.length + ')')); list.forEach(function (d) { table.appendChild(d); }); }
+      function goTo(e) {
+        if (e.kind !== 'loop' || !MN[e.key]) return null;
+        return function () { if (S.layer !== 'prop' && e.stage === 'proposed') setLayer('prop'); if (!S.tree.all[e.key]) return; setView('map'); select(e.key, true); };
+      }
+      var byKey = {}; workEntries().forEach(function (e) { byKey[e.key] = e; });
+      var myId = N.me && N.me.id;
+      // asks waiting for a decision
+      var waiting = W.req.filter(function (r) { return r.step !== 'idea' && !W.dec[r.id] && inArea(byKey[r.target] ? byKey[r.target].area : 'loops'); }).reverse().map(function (r) {
+        var e = byKey[r.target] || { key: r.target, name: r.name, kind: 'loop' }, acts = [];
+        if (dec) { acts.push(['Approve', function () { decide(r.step, e, r.note, r.id); }]); acts.push(['Decline', function () { decide('decline', e, '', r.id); }]); }
+        if (dec || (myId && r.by === myId)) acts.push(['Withdraw', function () { N.db.doc('requests/' + r.id).delete().catch(function () {}); }]);
+        return card(' sug', who(r.by) + ' asks to ' + STEP[r.step][2] + ' ' + (r.name || r.target), day(r.at), r.note, acts, goTo(e));
+      });
+      group('Waiting for a decision', waiting);
+      // decided or added on the map, not yet in the model
+      var going = [];
+      Object.keys(W.dec).forEach(function (id) {
+        var d = W.dec[id]; if (d.step === 'decline' || W.app[id]) return;
+        going.push([d.at, card(' sug', who(d.by) + ' decided to ' + STEP[d.step][2] + ' ' + d.name, day(d.at) + ' · goes into the model on the next steward run', d.note, [])]);
+      });
+      W.req.forEach(function (r) {
+        if (r.step !== 'idea' || W.app[r.id] || !inArea(r.area)) return;
+        var acts = (dec || (myId && r.by === myId)) ? [['Withdraw', function () { N.db.doc('requests/' + r.id).delete().catch(function () {}); }]] : [];
+        going.push([r.at, card(' sug', 'New idea: ' + r.name, ((AREA[r.area] || {}).name || r.area) + ' · ' + who(r.by) + ' · ' + day(r.at) + ' · goes onto the Proposed layer on the next steward run', r.note, acts)]);
+      });
+      N.list.forEach(function (x) { if (N.verdicts[x.id] === 'accepted' && inArea('loops')) going.push([x.at, card(' sug', 'Suggestion on ' + (x.name || x.loop), who(x.by) + ' · accepted · goes onto the Proposed layer on the next steward run', x.text, [])]); });
+      group('Decided, going into the model', going.sort(function (a, b) { return a[0] < b[0] ? 1 : -1; }).map(function (x) { return x[1]; }));
+      // the model's own stages
+      [['building', 'Building: build orders'], ['planned', 'Planned'], ['proposed', 'Proposed']].forEach(function (g) {
+        var list = workEntries().filter(function (e) { return e.stage === g[0] && inArea(e.area); }).map(function (e) {
+          var p = on ? pendingFor(e.key) : null, acts = [];
+          if (on && !p) nextSteps(e).forEach(function (st) { acts.push([dec ? STEP[st][0] : STEP[st][1], function () { openMove(e, st); }]); });
+          var meta = e.where + (e.build ? ' · ' + e.build.s + (e.build.branch ? ' on ' + e.build.branch : '') + (e.build.at ? ' since ' + e.build.at : '') : '') + (p ? ' · ' + p.t : '');
+          return card(e.stage === 'proposed' ? ' sug' : '', e.name, meta, e.text, acts, goTo(e));
+        });
+        group(g[1], list);
+      });
+      // settled on the map
+      var settled = [];
+      Object.keys(W.app).forEach(function (id) {
+        var a = W.app[id], d = W.dec[id], r = null; W.req.forEach(function (x) { if (x.id === id) r = x; });
+        var name = (d && d.name) || (r && r.name) || id, what = d ? STEP[d.step][2] : r ? STEP[r.step][2] : 'move';
+        settled.push([a.at, el('p', 'la-nmeta', day(a.at) + ' · ' + what + ' ' + name + ': ' + (a.ok ? (a.pr ? 'in ' + a.pr : 'in the model') : 'could not be applied (' + a.msg + ')'))]);
+      });
+      Object.keys(W.dec).forEach(function (id) { var d = W.dec[id]; if (d.step === 'decline') settled.push([d.at, el('p', 'la-nmeta', day(d.at) + ' · declined: ' + d.name + ' (' + who(d.by) + ')')]); });
+      group('Settled', settled.sort(function (a, b) { return a[0] < b[0] ? 1 : -1; }).slice(0, 15).map(function (x) { return x[1]; }));
     }
 
     // ---------- state changes ----------
@@ -1229,6 +1432,7 @@ body { background: var(--ground); color: var(--text); }
         if (!nlist.length) ns.rows.push({ t: 'None yet.', st: 'soft' });
         ns.rows.push({ t: '+ Add a note', act: function () { openComposer(n, 'note'); } });
         ns.rows.push({ t: '+ Suggest a change', act: function () { openComposer(n, 'suggest'); } });
+        if (MN[n.id]) { var ws = sec('Move it along'); moveRows(n.id).forEach(function (r) { ws.rows.push(r); }); }
       }
       sec('At this tier, ask').rows.push({ t: T.ask });
       if (n.src && n.src.length) { var ss = sec('Sources'); n.src.forEach(function (s) { ss.rows.push({ t: s, st: 'soft', brk: 1 }); }); }
@@ -1742,7 +1946,7 @@ body { background: var(--ground); color: var(--text); }
     function goBtn(n) { var b = rowBtn(n, 'la-link', true); b.className = 'la-link'; b.textContent = n.name; return b; }
     function renderTable() {
       table.innerHTML = '';
-      if (S.view === 'ladder') renderLadder(); else if (S.view === 'drivers') renderDrivers(); else if (S.view === 'holes') renderHoles(); else if (S.view === 'notes') renderNotes();
+      if (S.view === 'ladder') renderLadder(); else if (S.view === 'drivers') renderDrivers(); else if (S.view === 'holes') renderHoles(); else if (S.view === 'notes') renderNotes(); else if (S.view === 'board') renderBoard();
     }
     function renderNotes() {
       if (N.state !== 'on') { table.appendChild(el('p', 'la-lede', N.state === 'loading' ? 'Loading notes.' : 'Notes are kept on the full-page map.')); return; }

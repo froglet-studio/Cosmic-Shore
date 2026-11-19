@@ -5,7 +5,7 @@
   "description": "The assembled Loop Atlas model (Docs/LoopAtlas/model.json), built from the YAML files under Docs/LoopAtlas/model/ by Tools/Build/loop_atlas.py. Cross-references (parents, edges, drivers, handoffs, proposals) are checked by the tool, not here. Docs/LoopAtlas/README.md explains every field.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "updated", "layers", "tiers", "drivers", "handoffs", "nodes", "edges", "roles", "roleHoles", "kit", "pulse", "verbHole", "archetypes", "elementDrivers", "proposals", "fleet", "fleetOrder", "defaultVessel", "artifact"],
+  "required": ["schema", "updated", "layers", "tiers", "drivers", "handoffs", "nodes", "edges", "roles", "roleHoles", "kit", "pulse", "verbHole", "archetypes", "elementDrivers", "proposals", "fleet", "fleetOrder", "defaultVessel", "artifact", "areas", "items"],
   "properties": {
     "schema": {"const": 1},
     "updated": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
@@ -32,9 +32,32 @@
     "fleet": {"type": "object", "additionalProperties": {"$ref": "#/$defs/vessel"}},
     "fleetOrder": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
     "defaultVessel": {"type": "string"},
-    "artifact": {"type": "string"}
+    "artifact": {"type": "string"},
+    "areas": {"type": "array", "items": {"$ref": "#/$defs/area"}, "minItems": 1, "description": "Areas of product work beyond the loops (items.yaml)."},
+    "items": {"type": "array", "items": {"$ref": "#/$defs/item"}, "description": "Product work in any area; it moves through the layers like a loop."}
   },
   "$defs": {
+    "area": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "is"],
+      "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string", "minLength": 1}, "is": {"type": "string", "minLength": 1}}
+    },
+    "item": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "area", "is", "src"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1},
+        "area": {"$ref": "#/$defs/id"},
+        "is": {"type": "string", "minLength": 1, "description": "One line: what it is and who it is for."},
+        "loops": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true, "description": "Loops on the map it serves, if any."},
+        "in": {"$ref": "#/$defs/layerSet"},
+        "now": {"type": "object", "additionalProperties": false, "properties": {"s": {"enum": ["signed", "built", "part", "dark"]}, "note": {"type": "string"}}},
+        "plan": {"type": "object", "additionalProperties": false, "properties": {"s": {"enum": ["decided"]}, "note": {"type": "string"}}},
+        "prop": {"type": "object", "additionalProperties": false, "properties": {"s": {"enum": ["change", "add"]}, "note": {"type": "string"}}},
+        "holes": {"type": "array", "items": {"$ref": "#/$defs/hole"}},
+        "build": {"$ref": "#/$defs/buildOrder"},
+        "src": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
+      }
+    },
     "id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
     "span": {
       "description": "A timescale in seconds: [shortest, longest] pass of the loop.",

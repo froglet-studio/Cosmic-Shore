@@ -48,11 +48,12 @@ FILES = {
     "kit.yaml": ["roles", "roleHoles", "kit", "pulse", "verbHole", "archetypes", "elementDrivers"],
     "proposals.yaml": ["proposals"],
     "edges.yaml": ["edges"],
+    "items.yaml": ["areas", "items"],
 }
 # The order of the assembled model's keys (the order the page was first published with).
 KEY_ORDER = ["schema", "updated", "layers", "tiers", "drivers", "handoffs", "nodes", "edges", "roles", "roleHoles",
              "kit", "pulse", "verbHole", "archetypes", "elementDrivers", "proposals", "fleet", "fleetOrder",
-             "defaultVessel", "artifact"]
+             "defaultVessel", "artifact", "areas", "items"]
 # The loops/ files an import writes: each top-level subtree of the era goes in one file.
 LOOP_FILES = [
     ("00-long-game.yaml", ["era"]),
@@ -259,6 +260,21 @@ def validate(model: dict) -> list[str]:
     for el, ds in model["elementDrivers"].items():
         check_drivers(ds, f"elementDrivers '{el}'")
 
+    areas = dupes([a["id"] for a in model["areas"]], "area")
+    for it in model["items"]:
+        where = f"item '{it['id']}'"
+        if it["id"] in node_ids:
+            errors.append(f"{where}: a loop already has this id")
+        if it["area"] not in areas:
+            errors.append(f"{where}: area '{it['area']}' is not in items.yaml areas")
+        for lp in it.get("loops", []):
+            if lp not in node_ids:
+                errors.append(f"{where}: serves '{lp}', which is not a loop")
+        if "in" in it:
+            check_layers(it["in"], where)
+        check_holes(it.get("holes"), where)
+    dupes([it["id"] for it in model["items"]], "item")
+
     if model["defaultVessel"] not in model["fleet"]:
         errors.append(f"defaultVessel '{model['defaultVessel']}' is not in the fleet")
     archetypes = set(model["archetypes"])
@@ -405,12 +421,43 @@ def _rewrite(path: Path, data) -> None:
 
 
 def _find_loop(loop_id: str, model_dir: Path = MODEL_DIR):
+    """A loop, or a product item (items.yaml): both move through the layers the same way."""
     for path in sorted((model_dir / "loops").glob("*.yaml")):
         data = _load_yaml(path) or []
         for n in data:
             if n.get("id") == loop_id:
                 return path, data, n
-    raise AtlasError(f"no loop '{loop_id}' in model/loops/*.yaml")
+    path = model_dir / "items.yaml"
+    data = _load_yaml(path)
+    for n in data["items"]:
+        if n.get("id") == loop_id:
+            return path, data, n
+    raise AtlasError(f"no loop or item '{loop_id}' in model/loops/*.yaml or model/items.yaml")
+
+
+def new_item(item_id: str, area: str, name: str, note: str, by: str, src: str | None = None, is_: str | None = None,
+             ref: str | None = None, model_dir: Path = MODEL_DIR, ledger: Path = LEDGER) -> str:
+    """Brainstorm a new piece of product work in any area: an item on the Proposed layer only."""
+    if not (area and name and note):
+        raise AtlasError("idea needs --area, --name and --note")
+    if not re.fullmatch(r"[a-z][a-z0-9_.-]*", item_id):
+        raise AtlasError(f"'{item_id}' is not an id (lower case, digits, . _ -)")
+    try:
+        _find_loop(item_id, model_dir)
+        raise AtlasError(f"'{item_id}' already exists")
+    except AtlasError as e:
+        if "already" in str(e):
+            raise
+    path = model_dir / "items.yaml"
+    data = _load_yaml(path)
+    if area not in {a["id"] for a in data["areas"]}:
+        raise AtlasError(f"no area '{area}'; areas: {', '.join(a['id'] for a in data['areas'])}")
+    data["items"].append({"id": item_id, "name": name, "area": area, "is": is_ or note, "in": "x",
+                          "prop": {"s": "add", "note": note}, "src": [src or f"{by}, {_today()}"]})
+    _rewrite(path, data)
+    _log({k: v for k, v in {"verb": "idea", "target": item_id, "by": by, "text": f"{name}: {note}", "ref": ref}.items()
+          if v is not None}, ledger)
+    return f"idea {item_id} ({area}): {name}"
 
 
 def _find_proposal(pid: str, model_dir: Path = MODEL_DIR):
@@ -444,14 +491,14 @@ def _add_layer(n: dict, letter: str) -> None:
 
 def move(verb: str, target: str, by: str, note: str | None = None, hole: int | None = None,
          status: str = "built", branch: str | None = None, why: str | None = None,
-         model_dir: Path = MODEL_DIR, ledger: Path = LEDGER) -> str:
+         model_dir: Path = MODEL_DIR, ledger: Path = LEDGER, ref: str | None = None) -> str:
     """Apply one lifecycle step to a loop (or a proposal P<n>) and log it. Returns a one-line summary."""
     if not by:
         raise AtlasError("say who decided it: --by <person>")
     if re.fullmatch(r"P\d+", target):
-        return _move_proposal(verb, target, by, note, branch, why, model_dir, ledger)
+        return _move_proposal(verb, target, by, note, branch, why, model_dir, ledger, ref)
     path, data, n = _find_loop(target, model_dir)
-    entry = {"verb": verb, "target": target, "by": by}
+    entry = {"verb": verb, "target": target, "by": by, "ref": ref}
 
     if verb == "propose":  # brainstorming: write or rewrite the Proposed layer
         if not note:
@@ -509,7 +556,9 @@ def move(verb: str, target: str, by: str, note: str | None = None, hole: int | N
         layer = "build" if "build" in n else "prop" if "prop" in n else None
         if not layer:
             raise AtlasError(f"'{target}' has no proposal or build order to drop")
-        entry.update(layer=layer, text=n.pop(layer).get("note") or "", why=why)
+        entry.update(layer=layer, text=(lambda o: o.get("note") or o.get("what") or "")(n.pop(layer)), why=why)
+        if path.name == "items.yaml" and n.get("in") == "x" and layer == "prop":
+            data["items"].remove(n)  # an idea that never left Proposed goes with its proposal
     else:
         raise AtlasError(f"unknown step '{verb}'")
     _rewrite(path, data)
@@ -517,7 +566,7 @@ def move(verb: str, target: str, by: str, note: str | None = None, hole: int | N
     return f"{verb} {target}: {entry.get('text', '')}".strip()
 
 
-def _move_proposal(verb, pid, by, note, branch, why, model_dir, ledger) -> str:
+def _move_proposal(verb, pid, by, note, branch, why, model_dir, ledger, ref=None) -> str:
     path, data, p = _find_proposal(pid, model_dir)
     stage = p.get("stage", "proposed")
     order = {"plan": ("proposed", "planned"), "develop": ("planned", "building"), "done": ("building", "current")}
@@ -539,8 +588,92 @@ def _move_proposal(verb, pid, by, note, branch, why, model_dir, ledger) -> str:
         raise AtlasError(f"'{verb}' does not apply to a proposal")
     _rewrite(path, data)
     _log({k: v for k, v in {"verb": verb, "target": pid, "by": by, "text": note or p["title"],
-                             "branch": branch, "why": why}.items() if v is not None}, ledger)
+                             "branch": branch, "why": why, "ref": ref}.items() if v is not None}, ledger)
     return f"{verb} {pid}: {p['title']} is now {p.get('stage')}"
+
+
+DECISION_STEPS = ("idea", "propose", "plan", "develop", "drop")
+
+
+def apply_decisions(decisions: list[dict], model_dir: Path = MODEL_DIR, ledger: Path = LEDGER) -> list[dict]:
+    """Apply moves decided on the map (its `decisions` collection, exported by the steward). Each is
+    {id, step, target, by, note?, hole?, why?, area?, name?}; `by` is the person who pressed the button, by name.
+    A decision already in the ledger (its `ref`) is skipped, so a run can be repeated. Returns one result per decision:
+    {id, ok, msg}."""
+    done = {e.get("ref") for e in read_ledger(ledger)}
+    out = []
+    for d in decisions:
+        did, step, by = d.get("id"), d.get("step"), (d.get("by") or "").strip()
+        if did in done:
+            out.append({"id": did, "ok": True, "msg": "already applied", "skipped": True})
+            continue
+        try:
+            if step == "decline":
+                out.append({"id": did, "ok": True, "msg": "declined on the map; nothing to change"})
+                continue
+            if step not in DECISION_STEPS:
+                raise AtlasError(f"unknown step '{step}'")
+            if not by:
+                raise AtlasError("the decision names nobody")
+            if step in ("plan", "develop") and by.lower() == "claude":
+                raise AtlasError(f"'{step}' is a person's decision")
+            if step == "idea":
+                msg = new_item(d["target"], d.get("area", ""), d.get("name", ""), d.get("note", ""), by,
+                               src=f"map idea, {by}, {_today()}", ref=did, model_dir=model_dir, ledger=ledger)
+            else:
+                msg = move(step, d["target"], by, note=d.get("note") or None, hole=d.get("hole"), why=d.get("why"),
+                           model_dir=model_dir, ledger=ledger, ref=did)
+            out.append({"id": did, "ok": True, "msg": msg})
+        except (AtlasError, KeyError) as e:
+            out.append({"id": did, "ok": False, "msg": str(e)})
+    return out
+
+
+def _db_docs(folder: Path, collection: str) -> dict:
+    """The documents ArtifactData saved under <folder>/<collection>/<id>.json, as {id: fields}."""
+    out = {}
+    for f in sorted((folder / collection).glob("*.json")) if (folder / collection).is_dir() else []:
+        doc = json.loads(f.read_text(encoding="utf-8"))
+        out[doc.get("id", f.stem) if isinstance(doc, dict) and "data" in doc else f.stem] = (
+            doc["data"] if isinstance(doc, dict) and "data" in doc else doc)
+    return out
+
+
+def gather(folder: Path, names: dict, model: dict, ledger: list[dict]) -> tuple[list[dict], list[str]]:
+    """Turn the map's database (exported by the steward with ArtifactData into `folder`) into the list `apply` takes.
+    Brainstorming needs nobody's yes, so ideas and accepted suggestions go in as they are; plan, develop and drop come
+    only from `decisions`, which only an editor can write. `names` maps person ids to names. Returns (decisions,
+    notes for the steward: things it has to do by hand)."""
+    reqs, decs = _db_docs(folder, "requests"), _db_docs(folder, "decisions")
+    applied, notes, verdicts = _db_docs(folder, "applied"), _db_docs(folder, "notes"), _db_docs(folder, "verdicts")
+    done = set(applied) | {e.get("ref") for e in ledger}
+    node_ids = {n["id"] for n in model["nodes"]}
+    out, hand = [], []
+
+    def name(pid):
+        return names.get(pid or "", "") or ""
+    for did, d in sorted(decs.items(), key=lambda kv: kv[1].get("at", "")):
+        if did in done or d.get("step") == "decline":
+            continue
+        if not name(d.get("by")):
+            hand.append(f"decision {did}: no name for {d.get('by')}; resolve it with ArtifactData profiles")
+            continue
+        out.append({"id": did, "step": d["step"], "target": d["target"], "by": name(d["by"]),
+                    "note": d.get("note") or None, "why": d.get("note") or None})
+    for rid, r in sorted(reqs.items(), key=lambda kv: kv[1].get("at", "")):
+        if rid in done or r.get("step") != "idea":
+            continue
+        out.append({"id": rid, "step": "idea", "target": r["target"], "area": r.get("area", ""), "name": r.get("name", ""),
+                    "note": r.get("note", ""), "by": name(r.get("by")) or "a teammate"})
+    for nid, n in sorted(notes.items(), key=lambda kv: kv[1].get("at", "")):
+        if (verdicts.get(nid) or {}).get("s") != "accepted" or nid in done:
+            continue
+        if n.get("loop") in node_ids:
+            out.append({"id": nid, "step": "propose", "target": n["loop"], "note": n.get("text", ""),
+                        "by": name(n.get("by")) or "a teammate"})
+        else:
+            hand.append(f"note {nid} on {n.get('loop')} ({n.get('name')}): accepted; edit the kit by hand, then mark it done")
+    return out, hand
 
 
 def board_text(model: dict, ledger: list[dict]) -> str:
@@ -567,20 +700,27 @@ def board_text(model: dict, ledger: list[dict]) -> str:
                  n["build"]["what"]) for n in nodes if "build" in n]
     building += [(p["id"], "proposal", "building", "", p.get("branch", ""), p["title"])
                  for p in model["proposals"] if p.get("stage") == "building"]
-    table("Development: build orders", building, ["Loop", "Tier", "State", "Since", "Branch", "What to build"])
+    area = {a["id"]: a["name"] for a in model["areas"]}
+    items = model["items"]
+    building += [(i["id"], area[i["area"]], i["build"]["s"], i["build"]["at"], i["build"].get("branch", ""),
+                  i["build"]["what"]) for i in items if "build" in i]
+    table("Development: build orders", building, ["Loop or item", "Tier or area", "State", "Since", "Branch", "What to build"])
     planned = [(n["id"], term[n["tier"]], n["plan"]["note"]) for n in nodes
                if n.get("plan", {}).get("s") == "decided" and "build" not in n]
     planned += [(p["id"], "proposal", p["title"]) for p in model["proposals"] if p.get("stage") == "planned"]
-    table("Planning: decided, not yet building", planned, ["Loop", "Tier", "The plan"])
+    planned += [(i["id"], area[i["area"]], i["plan"]["note"]) for i in items
+                if i.get("plan", {}).get("s") == "decided" and "build" not in i]
+    table("Planning: decided, not yet building", planned, ["Loop or item", "Tier or area", "The plan"])
     proposed = [(n["id"], term[n["tier"]], n["prop"]["note"]) for n in nodes if "prop" in n]
     proposed += [(p["id"], "proposal", f"{p['title']}: {p['what']}") for p in model["proposals"]
                  if p.get("stage", "proposed") == "proposed"]
-    table("Brainstorm: proposed", proposed, ["Loop", "Tier", "The proposal"])
-    holes = [(n["id"], i, h["q"], h.get("fill", "")) for n in nodes for i, h in enumerate(n.get("holes", []))]
-    table("Holes: undecided", holes, ["Loop", "Hole", "Question", "Proposed fill"])
+    proposed += [(i["id"], area[i["area"]], f"{i['name']}: {i['prop']['note']}") for i in items if "prop" in i]
+    table("Brainstorm: proposed", proposed, ["Loop or item", "Tier or area", "The proposal"])
+    holes = [(n["id"], i, h["q"], h.get("fill", "")) for n in nodes + items for i, h in enumerate(n.get("holes", []))]
+    table("Holes: undecided", holes, ["Loop or item", "Hole", "Question", "Proposed fill"])
     recent = [(e["at"], e["verb"], e["target"], e["by"], e.get("text", e.get("why", "")))
               for e in reversed(ledger[-25:])]
-    table("Recent moves", recent, ["Date", "Step", "Loop", "By", "What"])
+    table("Recent moves", recent, ["Date", "Step", "Loop or item", "By", "What"])
     return "\n".join(out).rstrip() + "\n"
 
 
@@ -673,6 +813,54 @@ def _lifecycle_test() -> int:
         expect_refusal("planning a proposal twice", verb="plan", target="P7", by="Garrett")
         if _find_proposal("P7", md)[2].get("stage") != "planned":
             problems.append("P7 did not reach planned")
+
+        # map decisions: an idea in any area, planned and built, and a repeat run that changes nothing
+        decided = [{"id": "d1", "step": "idea", "target": "test.idea", "area": "tooling", "name": "A test idea",
+                    "note": "Try it.", "by": "Someone"},
+                   {"id": "d2", "step": "plan", "target": "test.idea", "by": "Garrett"},
+                   {"id": "d3", "step": "develop", "target": "test.idea", "by": "Garrett"},
+                   {"id": "d4", "step": "plan", "target": "test.idea", "by": "Claude"},
+                   {"id": "d5", "step": "idea", "target": "test.drop", "area": "nowhere", "name": "x", "note": "y",
+                    "by": "Someone"}]
+        res = {r["id"]: r for r in apply_decisions(decided, md, ledger)}
+        if not (res["d1"]["ok"] and res["d2"]["ok"] and res["d3"]["ok"]):
+            problems.append(f"map decisions failed: {res}")
+        for bad in ("d4", "d5"):
+            if res[bad]["ok"]:
+                problems.append(f"MISSED  map decision {bad} should be refused")
+            else:
+                print(f"  refused  map decision {bad}: {res[bad]['msg']}")
+        if not all(r.get("skipped") for r in apply_decisions(decided[:3], md, ledger)):
+            problems.append("a repeated map decision was applied twice")
+        item = _find_loop("test.idea", md)[2]
+        if item.get("in") != "px" or item.get("build", {}).get("s") != "queued":
+            problems.append(f"the idea did not reach a build order: {item}")
+        move("propose", "test.idea", "Claude", note="A second thought.", model_dir=md, ledger=ledger)
+        apply_decisions([{"id": "d6", "step": "idea", "target": "test.gone", "area": "app", "name": "Gone",
+                          "note": "Soon dropped.", "by": "Someone"},
+                         {"id": "d7", "step": "drop", "target": "test.gone", "why": "not wanted", "by": "Garrett"}],
+                        md, ledger)
+        if any(i["id"] == "test.gone" for i in assemble(md)["items"]):
+            problems.append("a dropped idea that never left Proposed is still in items.yaml")
+        board = board_text(assemble(md), read_ledger(ledger))
+        if "test.idea" not in board:
+            problems.append("the board does not show items")
+        errs = validate(assemble(md))
+        if errs:
+            problems.append(f"the model is invalid after the map decisions: {errs[0]}")
+
+        # gather: the steward's export of the map's database becomes an apply list; only editors' decisions move
+        db = Path(tmp) / "db"
+        for coll, did, data in (("decisions", "g1", {"step": "drop", "target": "test.idea", "note": "no", "by": "u_g"}),
+                                ("requests", "g2", {"step": "plan", "target": "test.idea", "by": "u_s"}),
+                                ("requests", "g3", {"step": "idea", "target": "test.g", "area": "ai", "name": "G",
+                                                    "note": "n", "by": "u_s"}),
+                                ("applied", "g4", {"ok": True}), ("decisions", "g4", {"step": "plan", "target": "x", "by": "u_g"})):
+            (db / coll).mkdir(parents=True, exist_ok=True)
+            (db / coll / f"{did}.json").write_text(json.dumps({"id": did, "data": data}), encoding="utf-8")
+        todo, _ = gather(db, {"u_g": "Garrett", "u_s": "Sam"}, assemble(md), read_ledger(ledger))
+        if sorted((d["id"], d["step"], d["by"]) for d in todo) != [("g1", "drop", "Garrett"), ("g3", "idea", "Sam")]:
+            problems.append(f"gather took the wrong moves (a request is not a decision; applied ones skip): {todo}")
     for p in problems:
         print(f"  {p}")
     if problems:
@@ -694,6 +882,20 @@ def main(argv=None) -> int:
     i = sub.add_parser("import", help="split a published page's model into YAML (one-off)")
     i.add_argument("page", type=Path)
     sub.add_parser("self-test", help="negative controls")
+    ide = sub.add_parser("idea", help="brainstorm: a new item of product work in any area (Proposed only)")
+    ide.add_argument("target", help="the new item's id")
+    ide.add_argument("--area", required=True)
+    ide.add_argument("--name", required=True)
+    ide.add_argument("--note", required=True, help="the proposal: what to make and why")
+    ide.add_argument("--is", dest="is_", help="one line on what it is; defaults to the note")
+    ide.add_argument("--src", help="where it came from (a doc path, a note, a date)")
+    ide.add_argument("--by", required=True)
+    ap_ = sub.add_parser("apply", help="apply the moves decided on the map (a JSON list exported from `decisions`)")
+    ap_.add_argument("file", type=Path)
+    ga = sub.add_parser("gather", help="the steward's input: turn the map's exported database into an apply list")
+    ga.add_argument("folder", type=Path, help="where ArtifactData saved requests/, decisions/, applied/, notes/, verdicts/")
+    ga.add_argument("--names", type=Path, help="JSON {person id: name} from ArtifactData profiles")
+    ga.add_argument("--out", type=Path, required=True)
     for verb, what in (("propose", "brainstorm: write a loop's Proposed layer"),
                        ("plan", "planning: graduate the proposal (or --hole N's fill) to Planned"),
                        ("develop", "development: graduate to Now by opening a build order"),
@@ -701,7 +903,7 @@ def main(argv=None) -> int:
                        ("done", "the game has it: rewrite Now, close the build order"),
                        ("drop", "drop a proposal or build order (--why)")):
         m = sub.add_parser(verb, help=what)
-        m.add_argument("target", help="a loop id, or a proposal P<n>")
+        m.add_argument("target", help="a loop or item id, or a proposal P<n>")
         m.add_argument("--by", required=True, help="who decided it (a person, or Claude for propose)")
         m.add_argument("--note", help="the text; defaults to the layer below's")
         m.add_argument("--hole", type=int, help="plan: graduate this hole's fill (0-based)")
@@ -718,6 +920,23 @@ def main(argv=None) -> int:
             args.html = None
         if args.cmd == "self-test":
             return self_test()
+        if args.cmd == "idea":
+            print(new_item(args.target, args.area, args.name, args.note, args.by, src=args.src, is_=args.is_))
+            args.cmd, args.html = "build", None
+        if args.cmd == "gather":
+            names = json.loads(args.names.read_text(encoding="utf-8")) if args.names else {}
+            todo, hand = gather(args.folder, names, assemble(), read_ledger())
+            args.out.write_text(json.dumps(todo, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+            print(f"{len(todo)} to apply -> {args.out}")
+            for h in hand:
+                print(f"  by hand: {h}")
+            return 0
+        if args.cmd == "apply":
+            results = apply_decisions(json.loads(args.file.read_text(encoding="utf-8")))
+            print(json.dumps(results, ensure_ascii=False, indent=1))
+            if not any(r["ok"] and not r.get("skipped") for r in results):
+                return 0 if all(r["ok"] for r in results) else 1
+            args.cmd, args.html = "build", None
         if args.cmd in ("propose", "plan", "develop", "start", "done", "drop"):
             if args.cmd in ("plan", "develop", "done") and args.by.lower() == "claude":
                 raise AtlasError(f"'{args.cmd}' is a person's decision; Claude only proposes (PROCESS.md)")

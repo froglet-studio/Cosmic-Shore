@@ -9,14 +9,14 @@ None.
 
 ## Planning: decided, not yet building (2)
 
-| Loop | Tier | The plan |
+| Loop or item | Tier or area | The plan |
 | --- | --- | --- |
 | voy.meet | Round | V2 and V3. One squad hosts, one joins, in a managed peer-to-peer instance. |
 | era.meta | Era | Garrett, 2026-11-12: it will disrupt the meta on an optimized schedule before it gets stale. Each loop needs fewer people. |
 
 ## Brainstorm: proposed (26)
 
-| Loop | Tier | The proposal |
+| Loop or item | Tier or area | The proposal |
 | --- | --- | --- |
 | era | Era | Give the last phase a name and a clock: the Tide (see The Tide). |
 | sitting | Session | Add the breath between rounds so that crossing to another place is offered, never left to the menu. |
@@ -47,7 +47,7 @@ None.
 
 ## Holes: undecided (22)
 
-| Loop | Hole | Question | Proposed fill |
+| Loop or item | Hole | Question | Proposed fill |
 | --- | --- | --- | --- |
 | era | 0 | How many sittings make one pass, and how often a person comes back, is not measured. Analytics events are declared but no funnel reads them yet. | Target 3 to 5 sittings a week and one Tide every 6 weeks. Measure it from game_started and game_completed per account before tuning anything above the Round. |
 | sitting | 0 | Nothing in the game points a player from one place to another. A crossing happens only if the player opens Home and thinks of it. | The breath (new loop): after each result, one offered next step chosen from what the round just trained. |
