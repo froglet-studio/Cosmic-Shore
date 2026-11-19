@@ -172,13 +172,7 @@ namespace CosmicShore.Gameplay
             _clusterRadiusOverride = tuning.FeedingClusterRadius;
         }
 
-        protected override void OnTeamChanged()
-        {
-            var body = BodyPrisms;
-            if (body == null) return;
-            for (int i = 0; i < body.Length; i++)
-                if (body[i] && !body[i].destroyed) body[i].ChangeTeam(domain);
-        }
+        protected override void OnTeamChanged() => RecolourBodyPrisms();
 
         public override void Initialize(Cell cell)
         {

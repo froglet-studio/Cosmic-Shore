@@ -24442,6 +24442,13 @@ Compiled with `Tools/Build/unity_refcompile` (player, player-dev and editor conf
       pilot's colours, flashing on an attack, a suction bite and a burst; free again, the tail is full width and the glow off.
 - [ ] Multiplayer, a client on a plant: the orbit, roll and zoom answer its sticks smoothly; a client hull on autopilot
       stings and rides creatures (the server runs its AI); the client's ride writes one `possession_*.json`.
+- [ ] Stolen host (2026-11-19, `claude/jewel-wasp-steal-prisms`): nest in a rival-coloured shark, a worm (sting a middle
+  segment) and a boid; each body turns the wasp's colour the moment it nests, every worm segment with it. Leave with A:
+  the body stays the wasp's colour, its offspring are born in it, and it now hunts the wasp's rivals. A MultiDomain swarm
+  keeps its own colours. Suction while riding never eats the host's own body.
+- [ ] Free camera (2026-11-19): flying free, the camera sits close behind the wasp (about 45 u back, 8 up; it was 204
+  back). Nesting in a small creature eases it back out to at least 204; leaving eases it close again. On a plant the
+  orbit is unchanged. A client's hull shows the same.
 - [ ] After a ride of 3 s or more, `Documents/CosmicShore Diagnostics/Flights/possession_<scene>_<species>_<time>.json` exists
       and is sent with the flights after Play.
 
