@@ -1,0 +1,28 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2246-feat-regatta-the-jac-d761ef",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T04:19:42+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2246 (feat(regatta): the Jacks race Regatta on Decoy Run's door cycle; flagged for redesign at 2.2x) went in without waiting for you.",
+  "why": "a swim lane someone else occupies (approvals.py check exit 2): Regatta, The elemental vessel loop (process, board, sign-offs)",
+  "branch": "wip/jacks-regatta",
+  "pr": 2246,
+  "commit": "ff1a66f52",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/REGATTA.md",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaController.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaJacksCoach.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaJacksCoach.cs.meta",
+    "Docs/ElementalLoop/REDESIGN.md",
+    "Docs/ElementalLoop/STATUS.md",
+    "Docs/ElementalLoop/loop.json"
+  ],
+  "risky": [
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "Regatta, The elemental vessel loop (process, board, sign-offs)"
+    }
+  ]
+}

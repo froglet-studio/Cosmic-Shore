@@ -272,6 +272,22 @@
      "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md"
     }
    }
+  },
+  "Jacks": {
+   "Time": {
+    "3": {
+     "state": "built",
+     "by": "Garrett",
+     "date": "2026-11-19",
+     "evidence": "RegattaJacksCoach: Decoy Run's door planner on Regatta rings; Ref1 600 s DNF -> 131 s; shuffle 3 seeds card 158 s / L5 154 s (train/Jacks/regatta/)"
+    },
+    "1": {
+     "state": "redo",
+     "by": "Garrett",
+     "date": "2026-11-19",
+     "evidence": "REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta 2.15x card / 2.37x L5 with its coach; jack run at the 37.5% lever cap only ~1.6x; Docs/ElementalLoop/REDESIGN.md"
+    }
+   }
   }
  },
  "arenas": {

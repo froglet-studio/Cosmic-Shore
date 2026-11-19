@@ -20,6 +20,7 @@ five run 68.5-74.3 s on the card and 63.5-66.9 s at L5. Sweeps: `/mnt/project-fi
 | Serpent | 178.6 | 115.7 | 2.6x / 1.8x slower | Solid Fuel Pellets: pace comes from pellet burns, which last 1x at rest and 2.8x at Time 10; it raced Regatta at Time 10 only through its starting row | Pellet duration (Time): reaches the field only when it starts at 2.8 and peaks at 3.0 (card 78.7 s, L5 69.5 s), so Time no longer scales the ability. That is the row moved inside the kit, so it is flagged instead |
 | Manta (L5) | 86.1 (card, in the field without its -5 row) | 27.9 | 0.42x at L5 | Soar, its Time level-5 upgrade: a held boost that turns 60 s laps into ~20-30 s | Soar's BoostSpeedMultiplier (Time, acts only once Soar unlocks) at x0.375: L5 43.5 s, about 0.66x |
 | TigerMoth | 152.4 | 122.0 | 2.1x / 1.8x slower | One Drop per ring, each after a 90-degree line-up (heading square to the ring, belly rolled onto it), at a 67 u/s cruise between drops. Not the recharge: from 2x cheaper on, the Drop is back before the next line-up ends | Drop recharge (the Drop's own parameter; Garrett's 2026-11-18 pick, cruise kept): 2x / 2.5x / 3x / 4x / 5x cheaper than design all run card 152.4 s and L5 122 s, so 2x (shipped, #2207) is the knee and nothing past it moves. Time throttle slot, knee x2.0: card 104 s, L5 84 s (1.55x / 1.27x), and Waystation breaks (I4 2 of 3 DNF). Patch held: `step5/tigermoth/time-throttle-x1.9-2.1.patch` |
+| Jacks | 158.3 | 153.6 | 2.15x / 2.37x slower | One herd-and-travel cycle per ring: the hull holds while the jacks run out at 208 u/s, lay the decoy past the ring and meet behind it, then the hull travels through. Between cycles it flies at the rig's 50 u/s. Time 5's second decoy rarely finds a second ring on the board, so L5 is no faster | No Time lever acts on race pace (Time scales the herd's speed, `herdSpeed`, not the jacks). Jack run speed (`dogSpeed`, kit) at the 37.5% lever cap: Ref1-Ref4 geo mean 162 -> 118 s, about 1.6x. Flagged |
 | Orca | 386 | 359 (3 of 8 courses DNF at 400 s) | 5.3x / 5.5x slower | A 21 u/s cruise and a x5 burn (about 106 u/s) on a 3 s tank refilling 0.25 to 0.35 a second, with a burning hull's wide turn | Time is the tank's refill (0.25 at rest, 0.35 at level 10). Its ceiling, an endless tank with an AI that burns on every leg (any distance, nose within 45 degrees): 185 s against 366 s on Ref2, still about 2.5x. No Time value or burn rule reaches the field |
 
 ## Serpent
@@ -108,6 +109,24 @@ the belly on it. A pilot (the autopilot's `RegattaTigerMothDrop`) gets one drop 
 67 u/s. That is the same 90-degree constraint Garrett names for the Serpent's wall. Raw races:
 `/mnt/project-files/regatta-flywheel/step5/tigermoth/drop-knee/`.
 
+## Jacks
+
+Flagged 2026-11-19. Before this the Jacks had no Regatta AI at all: off its own game's coach an AI Jacks keeps its
+herding rhythm and crawls at 50 u/s (Ref1: 4 of 24 gates in 600 s). `RegattaJacksCoach` (Regatta's controller) now runs
+Decoy Run's door cycle on every Regatta ring (`DecoyRunCourse.PlanCycle`, the same planner the Jacks race their Time game
+with): roll the board onto the ring, herd, lay the decoy past it, take off behind it, travel through. Measured on the
+shuffle set, solo, 3 seeds, geometric mean of per-course means (`regatta_judge.balance_score`):
+
+| | Card s | L5 s | Card / five | L5 / five |
+|---|---|---|---|---|
+| Coach, shipped kit | 158.3 | 153.6 | 2.15 | 2.37 |
+| Coach, jack run x1.375 (`dogSpeed` 520 -> 715, Ref1-Ref4 only) | 118 (refs) | - | ~1.6 | - |
+
+What limits the hull is the cycle, not the AI: every ring costs a herd (the jacks' run, both swaps) and a travel, and the
+take-off is a teleport that threads nothing (`DECOY_RUN.md` 1). Regatta's legs (461-858 u) are longer than Decoy Run's
+(300-560 u), so the run is the cost. No Time parameter acts on it. Raw races:
+`/mnt/project-files/regatta-flywheel/train/Jacks/regatta/`.
+
 ## Orca
 
 Flagged 2026-11-19 when it was first judged in Regatta (thread "Train and seat Goby and Orca in Regatta"). It had never
@@ -180,3 +199,4 @@ exists, otherwise the base asset the prefab wires.
 | BrittleStar | `_Regatta` = its Speed Mode policy trained in Brittle Star Time with the coach off (2026-11-18) | Brittle Star Time (`time_ai_search.py --hull BrittleStarDrive`) | Fixed; Speed Mode back to x6 -> x8 (card 71.3 s, L5 63.0 s, 15 seeds) |
 | Urchin | rail autopilot | Skein genome is Skein-only | Not a boost policy; check separately |
 | Manta, Serpent, TigerMoth | - | - | Flagged above; revisit with the redesigns |
+| Jacks | `RegattaJacksCoach` (Decoy Run's door planner, 2026-11-19) | Decoy Run's coach is that course's own; the planner is shared | Flagged above (2.15x) |
