@@ -383,7 +383,9 @@ MODEL_HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sp
 # The Goby joined 2026-11-19: Regatta's own dart coach (RegattaGobyDart) flies its seat, and its Time lever (dartPace
 # at rest 1.0 -> 1.25, level 10 2.2 -> 1.95, the level-5 value unchanged) brings it in: 15 seeds on the shipped shuffle,
 # card 78.1 s (1.06x the polished five), L5 62.6 s (0.97x).
-JUDGED_HULLS = ["Thresher", "BrittleStar", "Swordfish", "TigerMoth", "Goby"]
+# The Shrike joined 2026-11-19: Regatta's sling coach (RegattaShrikeSling) flies it, and its Time lever (sling cooldown
+# 6 -> 2.5 reshaped to 4.75 -> 3.75) brings it in: 15 seeds on the shipped shuffle, card 1.04x the five, L5 0.98x.
+JUDGED_HULLS = ["Thresher", "BrittleStar", "Swordfish", "TigerMoth", "Goby", "Shrike"]
 # Finish every course but at 2-5x the pace, so they are NOT on the card (#2123/#2127 seated them; taken off the same
 # night): the judge still seats them by name (RaceJudge adds a requested hull to the card in memory) and their race lines
 # stay, for step 5 and their own AI training to bring them within reach. REGATTA.md 6.6. The Stoat joined them

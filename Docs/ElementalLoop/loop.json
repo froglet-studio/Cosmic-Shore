@@ -253,9 +253,15 @@
    "Time": {
     "3": {
      "state": "built",
-     "by": "Claude",
-     "date": "2026-11-17",
-     "evidence": "Shrike run1 (time_ai_search.py, real-game judge, 2026-11-17): Thornline's Legendary row trained (nose lead 16 -> 9.2, follow 1.6/s); confirm on seeds 101-104, 32 flights a side, none unfinished, loss 2.67 -> 2.39 (THORNLINE.md 4.1). Shrike is not on the Regatta card yet."
+     "by": "Garrett's night thread (Claude)",
+     "date": "2026-11-19",
+     "evidence": "Regatta seat 2026-11-19: RegattaShrikeSling coach + Thornline run1 line; sling cooldown 4.75->3.75 (step 5 knee) = 1.04x card / 0.98x L5 on 15 seeds, no DNF (regatta-flywheel/seat-sw/shrike/f475s15_*). Thornline AI trained on the old 6->2.5 cooldown: re-check."
+    },
+    "2": {
+     "state": "redo",
+     "by": "Garrett's night thread (Claude)",
+     "date": "2026-11-19",
+     "evidence": "Step 5 (Regatta, 2026-11-19) changed the Time sling cooldown 6->2.5 to 4.75->3.75: re-check Thornline's I1-I4 ladder with the new reload."
     }
    }
   },

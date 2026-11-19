@@ -41,7 +41,7 @@ COMMON = {"RiskSpread": 0.15, "CarefulLookaheadSeconds": 0.35, "BoldLookaheadSec
 # Redline's I3-I4 rate (9), not I1-I2's 15: with Soar lit 15 overshot the mouths. Each hull's NoseLeadGain is the lead
 # trained WITH that rate (a pair: Rhino 2.47, Dolphin 2.03, Serpent 2.09 at 10.42 (run4, with its refuel genes), Stoat 2.62 at 10.43 (run1, with its sling genes), Sparrow 1.29 at 13.9 (run4), Scarab 0, Manta 0). Not yet judged in Regatta.
 OPTIONAL = ["NoseLeadGain", "NoseLeadMaxExtraDegrees", "NoseFollowPerSecond"]
-RANGES = {"NoseLeadGain": (0, 6), "NoseFollowPerSecond": (0, 30), "NoseLeadMaxExtraDegrees": (0, 120), "LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
+RANGES = {"NoseLeadGain": (0, 10), "NoseFollowPerSecond": (0, 30), "NoseLeadMaxExtraDegrees": (0, 120), "LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
           "CarefulLookaheadSeconds": (0, 3), "BoldLookaheadSeconds": (0, 3), "MinLookahead": (1, 400),
           "MaxLookahead": (1, 2000)}
 # The starting values, per hull (why, in a word): big and fast flies far out and plays safer; agile flies closer and bolder.
@@ -90,6 +90,10 @@ HULLS = {
     # The TigerMoth's Waystation AI is that controller's own (the Fold and the drop are pressed by the mode), so in
     # Regatta it flies the plain line: the starting values of the mid-size hulls.
     "TigerMoth": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseFollowPerSecond": 10},
+    # 2026-11-19: the Shrike's speed is its sling (RegattaController's RegattaShrikeSling coach picks the anchor), so its
+    # line only matters between slings at 18 u/s; the nose pair is its Time game's trained Legendary row (Thornline run1:
+    # lead 9.2, follow 1.6), the aim that lands a sling on a block.
+    "Shrike":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 9.2, "NoseFollowPerSecond": 1.6},
 }
 
 
