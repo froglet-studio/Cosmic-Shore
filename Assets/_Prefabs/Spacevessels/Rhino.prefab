@@ -978,7 +978,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Resources:
-  - Name: Boost
+  - Name: Ramp Fuel
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
@@ -1024,6 +1024,7 @@ MonoBehaviour:
   playerSeekUpdateInterval: 0.5
   playerReacquireInterval: 0.1
   massClusterRetargetInterval: 1.5
+  rivalRunOvershoot: 140
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 5397651131628914846}

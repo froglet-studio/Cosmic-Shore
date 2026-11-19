@@ -19,12 +19,12 @@ MonoBehaviour:
   dartCooldown: 1.2
   dartPace:
     Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 2.2
+    Value: 1.45
+    Min: 1.45
+    Max: 1.75
     element: 4
     UseFloor: 1
-    Floor: 0.5
+    Floor: 0.725
   hullRadius: 3
   queryReach: 6
   ownPerchBlocks: 5
@@ -112,8 +112,16 @@ MonoBehaviour:
   pVortexCd: 4
   pVortexCollapse: 1
   homingTurnRate: 240
-  ringPetals:
+  ringHomingScale:
     Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
+  ringPetals:
+    Enabled: 0
     Value: 1
     Min: 1
     Max: 3
@@ -159,7 +167,7 @@ MonoBehaviour:
   aiCruiseSpeed: 100
   aiTurnRate: 90
   aiRethinkSeconds: 2.5
-  aiHomeRadius: 4000
+  aiHomeRadius: 2000
   aiBackAfter: 4
   dartButtonIcon: {fileID: 21300000, guid: 173cce5c2e60d5fe47fe15cfb2bfa249, type: 3}
   dartButtonLabel: 

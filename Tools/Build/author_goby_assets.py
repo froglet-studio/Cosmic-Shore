@@ -197,9 +197,9 @@ def check_containers(prefab_text: str):
 # The Goby & Pistol's four cards (Garrett, 2026-10-22). Passive cards (Input 0): what each element scales happens in the
 # seat (GobyPistolDuo), read from GobyPistolConfig.asset's ElementalFloats and gated by IsUpgradeActive at level 5.
 GOBY_KIT = [
-    (1, "Vortex Sting", "A vortex ring from the Pistol's Snap that hits a rival hull takes petals from each of its elements; Charge "
-        "raises how many (GobyPistolConfig ringPetals, 1 at rest -> 3 at level 10). While the Goby holds a lock on a rival that "
-        "is on the Pistol's screen, the ring flies at it.", "Vortex Steal",
+    (1, "Vortex Sting", "A vortex ring from the Pistol's Snap that hits a rival hull takes a petal from each of its elements. "
+        "While the Goby holds a lock on a rival that is on the Pistol's screen, the ring flies at it, and Charge sets how hard it "
+        "homes (GobyPistolConfig ringHomingScale, x1 at rest -> x2.5 at level 10).", "Vortex Steal",
         "A ring's hit steals the petals it takes: they land on the pair instead of being knocked loose (GobyPistolDuo."
         "ScoreRingHit, IsUpgradeActive(Charge))."),
     (2, "Dens", "At each perch the Pistol rests and builds a den of prisms and shielded prisms, as many as the distance it travelled "

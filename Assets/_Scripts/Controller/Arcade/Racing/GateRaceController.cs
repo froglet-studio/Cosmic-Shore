@@ -1264,11 +1264,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Arm ONE pilot mid-race: a human's hull handed to the AI after the start (<see cref="PilotControl"/>).
-        /// The same steering <see cref="ArmRacers"/> gives every seat at the start. Server only.
+        /// The same steering <see cref="ArmRacers"/> gives every seat at the start. On the server, or on the machine
+        /// that flies the hull (a guest handing its OWN hull over): the steering reads the course and the ring count,
+        /// and a guest has both (<c>SyncCourse_ClientRpc</c>, the replicated <c>SwitchesThreaded</c>).
         /// </summary>
         public bool ArmAIPilot(IPlayer player)
         {
-            if (!IsServer || player == null) return false;
+            if (player == null || _course.Count == 0) return false;
+            if (!IsServer && player is not Player { IsLocalUser: true }) return false;
             ArmRacer(player, ResolveCellCentre(), RaceHandicapLevel(player));
             return true;
         }
@@ -1363,6 +1366,7 @@ namespace CosmicShore.Gameplay
             float approachLead = aiApproachLead;
             float nextCrystalScan = 0f;
             Crystal detour = null;
+            var refuel = new RefuelDetour();
             Vector3 lastSelf = default;
             bool hasLastSelf = false;
             // Where the pilot flies after the point the provider below returns (the boost driver's corner), or null.
@@ -1447,6 +1451,15 @@ namespace CosmicShore.Gameplay
                     lockedIndex = -1;
                     lineLostIndex = index;
                     pilot.BreakOffNow();
+                }
+
+                // A prism ON THE WAY while the ramp's tank is low (the Rhino ploughs fuel, the Swordfish slices it;
+                // RHINO_RAMP_BOOST.md § Fuel), as far as the hull's learned refuel genes allow (RaceAIRefuelGenesSO, no
+                // row = never). Before the race line, so a hull flying one still refuels when its genes say it pays.
+                if (!misjudged && refuel.TryAim(captured, self, gate.Position, aiCrystalScanSeconds, out Vector3 prismAim))
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.CrystalDetour, prismAim, ringNo, lap);
+                    return prismAim;
                 }
 
                 // The hull's own race line (Regatta: the gap between two rails, RegattaRaceLine), when the mode has one
@@ -1557,6 +1570,86 @@ namespace CosmicShore.Gameplay
         /// every crystal a Dolphin seeds, and steering at those would take the pilot off the
         /// course chasing whatever just died.</para>
         /// </summary>
+        /// <summary>
+        /// One racer's refuel detour (<see cref="RaceAIRefuelGenesSO"/>): while its ramp's tank is below the learned
+        /// threshold, the nearest live, not super-shielded prism within the learned slack of the straight line to the
+        /// gate. Re-scanned every <c>aiCrystalScanSeconds</c>; the on-the-way test is re-run every frame, so a passed
+        /// prism is dropped at once (no orbit), exactly as the crystal detour does.
+        /// </summary>
+        sealed class RefuelDetour
+        {
+            static readonly List<Prism> s_hits = new();
+
+            RampBoostActionExecutor _ramp;
+            bool _looked;
+            float _nextScan;
+            Prism _target;
+
+            public bool TryAim(IPlayer pilot, Vector3 self, Vector3 gate, float scanSeconds, out Vector3 aim)
+            {
+                aim = default;
+                var status = pilot?.Vessel?.VesselStatus;
+                if (status == null || !RaceAIRefuelGenesSO.Learned(status.VesselType, out var genes)) return false;
+                if (!_looked)
+                {
+                    _looked = true;
+                    if (status is Component c && c) _ramp = c.GetComponentInChildren<RampBoostActionExecutor>(true);
+                }
+                if (!_ramp || !RaceAIRefuelGenesSO.WantsFuel(genes, _ramp.Fuel01)) { _target = null; return false; }
+
+                if (Time.time >= _nextScan)
+                {
+                    _nextScan = Time.time + scanSeconds;
+                    _target = Find(self, gate, genes.PrismDetourSlack, pilot.Name);
+                }
+                if (!_target || _target.destroyed) { _target = null; return false; }
+
+                Vector3 p = _target.transform.position;
+                if (!Ahead(self, gate, p)
+                    || Vector3.Distance(self, p) + Vector3.Distance(p, gate) > Vector3.Distance(self, gate) + genes.PrismDetourSlack)
+                {
+                    _target = null;
+                    return false;
+                }
+                aim = p;
+                return true;
+            }
+
+            // Only a prism between the vessel and its gate: one beside or behind it (its own fresh trail, mostly)
+            // would turn the racer round.
+            static bool Ahead(Vector3 self, Vector3 gate, Vector3 p)
+            {
+                Vector3 line = gate - self;
+                float t = Vector3.Dot(p - self, line) / Mathf.Max(line.sqrMagnitude, 1e-4f);
+                return t > 0.05f && t < 1f;
+            }
+
+            static Prism Find(Vector3 self, Vector3 gate, float slack, string selfName)
+            {
+                var index = PrismSpatialIndex.Instance;
+                if (index == null) return null;
+                // A prism whose detour costs at most `slack` lies within slack/2 of the straight line.
+                index.QuerySegment(self, gate, slack * 0.5f, s_hits);
+                float budget = Vector3.Distance(self, gate) + slack;
+                Prism best = null;
+                float bestNear = float.MaxValue;
+                for (int i = 0; i < s_hits.Count; i++)
+                {
+                    var prism = s_hits[i];
+                    if (!prism || prism.destroyed || prism.prismProperties is { IsSuperShielded: true }) continue;
+                    if (!string.IsNullOrEmpty(selfName) && prism.PlayerName == selfName) continue;
+                    Vector3 p = prism.transform.position;
+                    if (!Ahead(self, gate, p)) continue;
+                    float near = Vector3.Distance(self, p);
+                    if (near < 1f || near + Vector3.Distance(p, gate) > budget || near >= bestNear) continue;
+                    bestNear = near;
+                    best = prism;
+                }
+                s_hits.Clear();
+                return best;
+            }
+        }
+
         Crystal FindDetourCrystal(Vector3 self, Vector3 gate, Domains domain, float slack)
         {
             var crystals = Crystal.Active;

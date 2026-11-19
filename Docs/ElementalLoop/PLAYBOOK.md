@@ -288,6 +288,10 @@ model number (standing rule).
 5. **Vessels with no arena seat** (Angler, Brittle Star, Goby, Grizzly, Honeyguide, Jacks, Meerkat, Orca, Shrike,
    Starling, Thresher, Tiger Moth, Wrasse): they still run steps 0-3 for the Toybox, the arcade and voyages; which arena games seat them is yours.
 
+Step 5's redesign flags (Garrett, 2026-11-18: "if the tuning levers aren't working then flag the vessel for a
+redesign", too fast or too slow alike) are in [`REDESIGN.md`](REDESIGN.md), each with its measured gap and mechanism;
+a flagged vessel's Time step 1 reads `redo` on the board.
+
 ## 10. Log
 
 | Date | What moved |

@@ -46,6 +46,11 @@ namespace CosmicShore.Gameplay
                  "than the engine is a feel choice, not a tug of war.")]
         [SerializeField, Min(0f)] float accelerationPerSecond = 90f;
 
+        [Tooltip("TIME: multiplier on accelerationPerSecond, x1 at rest -> x2 at Time 10 (floor x0.5). A Time-heavy " +
+                 "Scarab punches up to its ceiling in half the time - the throttle's tempo, beside the ceiling Time " +
+                 "already raises (ThrottleScalerMultiplier). 2026-11-18, the element-placeholder pass.")]
+        [SerializeField] ElementalFloat accelerationScale = ElementalFloat.Multiplier(1f, 2f, Element.Time, 0.5f);
+
         [Tooltip("Speed shed per second when the trigger is released (world units/s²). The Scarab " +
                  "has no brake — releasing the throttle IS the brake, so this is deliberately " +
                  "strong: at 120 a full-speed vessel is stopped in about 1.8 seconds. " +
@@ -269,7 +274,7 @@ namespace CosmicShore.Gameplay
         {
             _throttle01 = ReadThrottle01();
             DetectSnapDash(_throttle01);
-            return _throttle01 * accelerationPerSecond * dt;
+            return _throttle01 * accelerationPerSecond * Mathf.Max(0f, accelerationScale.EvaluateLive(VesselStatus)) * dt;
         }
 
         /// <summary>

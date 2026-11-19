@@ -102,6 +102,10 @@ against the best fixed habit; a human reader (one factor fitted to the recorded 
   (the same airframe on the same circuit): 141 / 150 / 155 / 191 s Legendary and 174 / 182 / 174 / 212 s Medium at
   I1-I4, every race finished. Still open: I1-I3 barely climb (0.95-1.06x a rung), and a 650 u leg never lets the
   ramp reach 840 u/s (it peaks near 500).
+  **2026-11-18:** the Swordfish has its own policy, `SwordfishAIBoostPolicy` (the prefab named the Rhino's), with its own
+  `SwordfishAIBoostPolicy_Spearline` and `_Regatta` variants; `RhinoAIBoostPolicy_Spearline` is gone. The Spearline
+  variant is trained here by `time_ai_search.py --hull Swordfish` with the ramp's slice fuel (#2233) and the refuel gene
+  (`RaceAIRefuelGenes`, row 1), and promoted by `promote_trained_drives.py`.
 - **By difficulty** (Easy / Medium / Hard / Legendary): the chance it does not read a seal and crosses the centre with
   a right-hand stroke 30 / 15 / 5 / 0%, and a fixed lane error up to 10 / 7 / 4 / 2 u.
 - **A closed pass** is the gate race's own: the AI comes round to the same approach. The worn seal and its own cut

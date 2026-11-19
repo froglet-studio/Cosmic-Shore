@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Wrecking Ball
-    AbilityDescription: 'The ball itself - PASSIVE, always destructive, and its destruction is binary. Below smash speed it wears your DOMAIN colour, destroys rival prisms it touches and BOUNCES off your own domain''s; at smash speed it turns RED, destroys every prism it hits (yours included) and every hit sets off an explosion. The ball and the chain also reach ENEMY VESSELS: each contact is a scored Strike that STEALS petals (the PvP-is-petals-only rule). Charge scales how many: ThresherConfigSO.vesselHitPetals, 1 petal per element at rest -> 3 at level 10 (floor 0.5).'
+    AbilityDescription: 'The ball itself - PASSIVE, always destructive, and its destruction is binary. Below smash speed it wears your DOMAIN colour, destroys rival prisms it touches and BOUNCES off your own domain''s; at smash speed it turns RED, destroys every prism it hits (yours included) and every hit sets off an explosion. The ball and the chain also reach ENEMY VESSELS: each contact is a scored Strike that STEALS petals (the PvP-is-petals-only rule). Charge lowers the smash speed: ThresherConfigSO.smashSpeedScale, x1 at rest -> x0.6 at level 10, so a charged ball turns red on a lazier swing.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

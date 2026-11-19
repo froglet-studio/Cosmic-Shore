@@ -899,6 +899,12 @@ python3 Tools/Build/author_cleave_assets.py             # re-author the assets
 python3 Tools/Build/author_cleave_assets.py --check     # must pass
 ```
 
+### The sword hand, trained (2026-11-19)
+
+The Swordfish's sword hand (`SwordfishSwordAutopilot` on its prefab) was trained in Palisade and Cleave together on the
+volume books: reach x6, energize at one prism. Cleave's mean seat VC + VD rose 7.5k -> 21.1k at I1, 13.0k -> 25.1k at I2,
+26.3k -> 33.3k at I3 and 31.2k -> 38.7k at I4. Numbers and knee: `PALISADE.md` 3.1.
+
 ## In-editor verification (authored headless — NOT yet run)
 
 Nothing below has been executed. The arenas were measured by compiling and running their real

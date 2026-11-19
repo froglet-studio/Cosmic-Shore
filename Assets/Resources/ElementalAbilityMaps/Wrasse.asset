@@ -25,7 +25,7 @@ MonoBehaviour:
     UpgradeDescription: 'Space blasts destroy shielded and super-shielded prisms.'
   - Element: 4
     AbilityLabel: 'Saved Boosts'
-    AbilityDescription: 'Every loop of Time motes the kite closes saves boosts for the pilot. The pilot spends them on the trigger; the card counts how many are saved.'
+    AbilityDescription: 'Every loop of Time motes the kite closes saves boosts for the pilot, and Time sets how many: twice as many, and twice the cap, at Time 10. The pilot spends them on the trigger; the card counts how many are saved.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4

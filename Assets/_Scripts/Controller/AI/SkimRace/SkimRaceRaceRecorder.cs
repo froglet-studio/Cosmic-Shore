@@ -34,6 +34,11 @@ namespace CosmicShore.Gameplay
             public int crystals;
             public float score;
             public List<float> collectionTimes = new();
+            // Crystals this seat took within SameSpotRadius of where it took its previous one: the second
+            // ring at a spawn point it had just scored at. A seat alone on its domain has one ring and
+            // scores 0 here; on a shared domain it counts the times a pilot stayed or turned back for its
+            // teammate's ring (Docs/SKIM_RACE_AI.md section 13).
+            public int sameSpotPickups;
             public string policy = "";
             public string difficulty = "";   // the lobby AI difficulty this AI seat flew
             public int mistakes;             // crystals it misjudged on purpose (Easy / Medium)
@@ -85,6 +90,12 @@ namespace CosmicShore.Gameplay
         float _start;
         RaceRecord _race;
         readonly Dictionary<string, int> _lastCount = new();
+        readonly Dictionary<string, Vector3> _lastPickupAt = new();
+
+        /// <summary>Two pickups by one seat closer than this are two rings of ONE spawn point: rings stand
+        /// within the 35 u anchor jitter of their anchor, and the nearest two anchors of any Skim Race track
+        /// are 389 u apart (MinigameSkimRace.unity, 2026-11-17).</summary>
+        public const float SameSpotRadius = 100f;
         readonly Dictionary<string, SkimRacePilot> _pilots = new();
         readonly Dictionary<string, float> _speedSum = new();
         readonly Dictionary<string, int> _speedSamples = new();
@@ -161,6 +172,7 @@ namespace CosmicShore.Gameplay
             };
 
             _seatByName.Clear();
+            _lastPickupAt.Clear();
             foreach (var p in _gameData.Players)
             {
                 if (p == null) continue;
@@ -191,7 +203,17 @@ namespace CosmicShore.Gameplay
                 if (!_seatByName.TryGetValue(p.Name, out var seat)) continue;
                 int c = p.RoundStats != null ? p.RoundStats.CrystalsCollected : 0;
                 if (_lastCount.TryGetValue(p.Name, out int last) && c > last)
+                {
                     for (int k = last; k < c; k++) seat.collectionTimes.Add(now);
+                    if (p.Vessel?.Transform != null)
+                    {
+                        Vector3 at = p.Vessel.Transform.position;
+                        if (_lastPickupAt.TryGetValue(p.Name, out var before) &&
+                            (at - before).sqrMagnitude < SameSpotRadius * SameSpotRadius)
+                            seat.sameSpotPickups++;
+                        _lastPickupAt[p.Name] = at;
+                    }
+                }
                 _lastCount[p.Name] = c;
                 seat.crystals = c;
 

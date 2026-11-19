@@ -1,0 +1,49 @@
+{
+  "id": "2026-11-18-risky-merge-pr-2233-feat-rhino-swordfish-6cc5a2",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-18T16:32:49+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2233 (feat(rhino,swordfish): the ramp runs on fuel that ploughing and slicing earn) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Rhino.prefab, Assets/_Prefabs/Spacevessels/Swordfish.prefab, Assets/_SO_Assets/VesselActions/Rhino/RhinoRampBoostAction.asset, Assets/_SO_Assets/VesselActions/Swordfish/SwordfishRampBoostAction.asset",
+  "branch": "claude/project-thread-gb9qjt",
+  "pr": 2233,
+  "commit": "060c9b74e",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Rhino.prefab",
+    "Assets/_Prefabs/Spacevessels/Swordfish.prefab",
+    "Assets/_SO_Assets/Effects/Effect",
+    "Assets/_SO_Assets/Effects/Skimmer",
+    "Assets/_SO_Assets/Effects/Vessel",
+    "Assets/_SO_Assets/VesselActions/Rhino/RhinoRampBoostAction.asset",
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishRampBoostAction.asset",
+    "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer",
+    "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/RampBoostActionExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md",
+    "Assets/_Scripts/Tests/Editor/RampFuelTests.cs",
+    "Assets/_Scripts/Tests/Editor/RampFuelTests.cs.meta",
+    "Containers/RampBoostActionSO.cs",
+    "Containers/SkimmerContainers/SwordfishForceFieldSkimmerImpactorDataContainer.asset",
+    "Containers/VesselContainers/RhinoImpactorDataContainer.asset",
+    "Docs/ElementalLoop/REDESIGN.md",
+    "Effects/RhinoPloughFuelByPrismEffect.asset",
+    "Effects/RhinoPloughFuelByPrismEffect.asset.meta",
+    "Effects/SkimmerChangeResourceByPrismEffectSO.cs",
+    "Effects/SwordfishSliceFuelByPrismEffect.asset",
+    "Effects/SwordfishSliceFuelByPrismEffect.asset.meta",
+    "Effects/VesselGainResourceByPrismEffectSO.cs",
+    "Effects/VesselGainResourceByPrismEffectSO.cs.meta",
+    "Prism"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Rhino.prefab, Assets/_Prefabs/Spacevessels/Swordfish.prefab, Assets/_SO_Assets/VesselActions/Rhino/RhinoRampBoostAction.asset, Assets/_SO_Assets/VesselActions/Swordfish/SwordfishRampBoostAction.asset"
+    }
+  ]
+}

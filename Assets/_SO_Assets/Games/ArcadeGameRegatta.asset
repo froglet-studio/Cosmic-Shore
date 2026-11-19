@@ -39,6 +39,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d8ebb29f2d63ad7eb488fdcb97145cfe, type: 2}
   - {fileID: 11400000, guid: a7e14c2b9d3f4a6c8b5e0d1f2c3a4b96, type: 2}
   - {fileID: 11400000, guid: d46d96ae184a444faf9a09a2b793a07d, type: 2}
+  - {fileID: 11400000, guid: b569f215d5ca452d9e4ab28af3ee55ab, type: 2}
+  - {fileID: 11400000, guid: bbb0b0e8c8f85ba69d31e63fe9e05d77, type: 2}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
@@ -55,117 +57,6 @@ MonoBehaviour:
   ViewUserAction: 0
   PlayUserAction: 0
   StartingElements:
-  - Class: 1
-    Intensity: 1
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: -0.5
-  - Class: 7
-    Intensity: 1
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 11
-    Intensity: 1
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 12
-    Intensity: 1
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 1
-    Intensity: 2
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: -0.5
-  - Class: 7
-    Intensity: 2
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 11
-    Intensity: 2
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 12
-    Intensity: 2
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 1
-    Intensity: 3
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: -0.5
-  - Class: 7
-    Intensity: 3
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 11
-    Intensity: 3
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 12
-    Intensity: 3
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 1
-    Intensity: 4
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: -0.5
-  - Class: 7
-    Intensity: 4
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 11
-    Intensity: 4
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 12
-    Intensity: 4
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
+ []
   ComebackRatePerScoreDeficit: 0.35
   OpponentAIVessel: {fileID: 0}

@@ -1482,7 +1482,8 @@ finish in seconds. "Hull hits" counts both AI together, per race.
   the 15% hysteresis (`SkimRaceTargetTracker.Hysteresis`).
 - **AI only.** A human teammate is never planned for. An AI does not leave a crystal "for" a human,
   because an idle or slow human would strand it and the team would lose it. The AI just stop doubling up
-  on each other.
+  on each other. (Since 2026-11-17 this holds for the plan only: an AI the plan does not cover shares its
+  domain's rings with every teammate, see "Teammates the plan cannot see" below.)
 - **A lone AI is unchanged.** A team with one AI gets no plan and flies the nearest-crystal rule exactly
   as before, so every solo race in §8 to §12 is unaffected. An AI the plan has no crystal for (more AI
   than crystals, which one-crystal-per-player rules out) falls back to the same rule.
@@ -1498,6 +1499,70 @@ cheapest plan beats "nearest pair first", a near-tie keeps the last plan, a plan
 replaced, and the edge cases (more AI than crystals, a team past the exact search, no AI or no crystal).
 Three deliberate breaks of the code (greedy only, never keep, allow a crystal twice) are each caught by
 the test written for them.
+
+**Teammates the plan cannot see: one ring each** (Yash, 2026-11-17: "each AI of same domain only cares of
+one ring per spawn point ... not turning back to collect the other one"). Plan step: `time-arcade`.
+
+- **What was seen.** Driven two-player Maelstrom runs (intensity 2 deals only Skim Race), both Jade hulls on
+  AI: the host's flown by the pilot on the host, the guest's by a pilot on the GUEST's machine. The two
+  pilots flew at the same ring; the one that took it turned back for the second ring at the same spawn
+  point, at spawn point after spawn point.
+- **Why.** The team plan above is a memory shared between the pilots of ONE machine (`SkimRaceTeamPlan`
+  keeps a static list of the pilots racing in this process). Each machine saw one Jade pilot, so neither
+  had a plan and both fell back to the nearest ring. That rule is also what turns a pilot back: a ring it
+  takes moves to its next anchor (389-790 u on in today's scene), while the teammate's ring still stands within the 35 u
+  jitter of the anchor it is at, so the nearest ring is the one behind.
+- **The rule** (`SkimRaceCoopShare`). A pilot the plan has nothing for, on a domain the roster says it
+  shares, flies its OWN ring and never its teammate's. The domain's players are ranked by network id and
+  its rings by crystal id; pilot k flies ring k, for the whole race. It takes one ring at a spawn point and
+  its next target is that same ring, one spawn point on.
+- **Why ranks and not distance.** Two machines see each other's hull a few units apart. If each split the
+  rings by distance, each could decide the other pilot has the ring nobody is flying, and that ring would
+  stand there for the race. Network ids and crystal ids are the same number on every machine, so the two
+  cannot disagree, and the rule needs no memory.
+- **Who counts as a teammate: every player of the domain.** Whether a hull on another machine is flown by a
+  person or by an AI is not replicated, so the rule cannot tell. This changes one thing from the list
+  above: an AI that is the only AI of its machine on a team now leaves its teammate's ring to them, person
+  or AI. Next to a teammate who never collects, it takes one ring per spawn point (a lone AI's pace) where
+  it used to take both.
+- **Unchanged:** a pilot alone on its domain (it calls the same `SkimRaceTargetTracker.Select` as before),
+  AI that all run on one machine (the team plan, tried first), and Regatta.
+- **Counted in the race file.** `SkimRaceRaceRecorder` now writes `sameSpotPickups` per seat: crystals
+  taken within 100 u of where that seat took its previous one, which is the second ring of one spawn point.
+- `SkimRaceCoopShareTests` covers it: two pilots and two rings at one point fly different rings, wherever
+  the pilots are; after a pickup the target is at the next spawn point while the nearest rule turns back;
+  a ring taken this frame is not replaced by the teammate's; a pilot alone gets the nearest rule's answer
+  for every case tried; uneven counts leave no ring ownerless and no pilot idle; and a race flown round
+  eight anchors has no turn-back with the rule and several with the nearest rule.
+
+**Measured in the editor** (2026-11-17; main editor "Lion" as host, MPPM Player 2 "Tiger" as guest, a Maelstrom
+at intensity 2, which deals Skim Race at I1 or I2 each round; both Jade hulls on AI, one lone AI each on Ruby and
+Gold; every race listed is every race played, none selected). Numbers are from the race files, which are local
+(`BenchmarkResults/SkimRaceAI/manual_I*_20261116-211752.jsonl` before, `..._20261116-225618.jsonl` after,
+`..._20261116-231551.jsonl` for the rule-off run).
+
+| | Races | Jade placed 1st / 2nd / 3rd | Jade's winning times | Rings a minute, each Jade pilot (I2 / I1) | Same for a lone AI (I2 / I1) |
+|---|---|---|---|---|---|
+| Before (three runs) | 14 | 3 / 5 / 6 | I2 98.4, 86.7 s; I1 66.0 s | 7.6 / 9.1 | 15.3 / 16.9 |
+| Rule switched off again, same build (one run) | 3 | 0 / 0 / 3 | none | 5.6 / 5.0 | 17.1 / 19.2 |
+| After (two runs) | 7 | **6 / 1 / 0** | I2 62.1, 75.8, 71.8 s; I1 42.2, 36.6, 39.5 s | **11.1 / 18.3** | 16.0 / 20.8 |
+
+- Jade won both Maelstroms after the change (7 points in 4 rounds, 6 points in 3) and neither of the three
+  before it, nor the rule-off one.
+- **Second rings at one spawn point** (`sameSpotPickups`, which the files from before the change do not
+  have, hence the rule-off run). Rule off: 9 in 6 pilot-races, at least 7 of them more than 1.5 s after the
+  pilot's previous pickup, which is a pilot going back. Rule on: 9 in 14 pilot-races, every one 0.0-0.4 s
+  after the previous pickup, which is a hull flying through two rings that stood in its path, not a turn.
+  A teammate's ring taken that way just moves on a spawn point, and its owner follows it there.
+- Each pilot's own split per race, Lion / Tiger. Before: 16/6, 13/11, 16/12, 14/13, 8/15, 17/5, 15/15, 6/19,
+  18/5, 15/10, 6/24, 19/7, 7/10, 9/14. After: 15/10, 17/13, 17/13, 7/23, 10/14, 11/13, 10/14.
+- **What this does not fix.** A Jade pilot is still slower than a lone AI at I2 (11.1 against 16.0 rings a
+  minute), and pilots still lose 15 s or more at a time (1.0 such wait per pilot-race at I2 after, 1.35
+  before, 0.5 for a lone AI): Lion took 7 of Jade's 30 in one race. Why was not looked into here; it reads as the pilot missing a ring or
+  hitting mass rather than its choice of ring. Under this rule its teammate no longer takes that ring for it.
+- **Not run:** the offline simulator and `unity_refcompile` (neither runs on this Windows machine), a
+  person flying a hull beside an AI teammate, a team of three, and AI that share one machine (the team
+  plan's path, which this change does not touch).
 
 **Team size: today's seating rule is kept** (the user's call, 2026-10-06, after seeing the table below).
 Backfilled AI still go to the team with the fewest pilots (`GetBalancedDomain`). To race 2 humans against a

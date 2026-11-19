@@ -165,6 +165,15 @@ namespace CosmicShore.Gameplay
         int _aiTargetsAhead;
         bool _aiEnemyAhead, _aiHoldingTrigger;
 
+        /// <summary>
+        /// A race mode's AI coach (Regatta's <c>RegattaShrikeSling</c>): while set, the AUTOPILOT stays in Time mode and
+        /// slings the moment its axis anchors on a block this accepts (the anchor point, world space), instead of its own
+        /// "far target within 20 degrees" rule and the lance on rival mass ahead. An AI-skill setting a mode makes, as
+        /// <see cref="AIPilot.NoseLeadGain"/> is: a human's controls, the kit and every number of it are untouched, and
+        /// null (the default, every other mode) is the shipped autopilot.
+        /// </summary>
+        public System.Func<Vector3, bool> AiSlingAccept { get; set; }
+
         // ------------------------------------------------------------------ read by the HUD and the animation
 
         public ShrikeConfigSO Config => config;
@@ -341,8 +350,16 @@ namespace CosmicShore.Gameplay
             Vector3 at = HullPosition;
             Quaternion rot = _status.Transform.rotation;
             bool leaveNest = _nestCd <= 0f && _dock != DockKind.Nest;
+            var fromNest = _dock == DockKind.Nest ? _dockNest : null;
             Undock(push: true);
             PlayAt(config.UndockEvent, at);
+            if (fromNest != null)
+            {
+                // Leaving a nest from inside: the nest does not catch the hull on its way out either. Without this the
+                // dock grace ran out while the hull was still within the nest's blocks and it snapped back to the centre.
+                _leftNest = fromNest;
+                _leftNestUntil = Time.time + config.LeaveNestSeconds;
+            }
             if (!leaveNest) return;
             var nest = BuildNest(at, rot);
             if (nest == null) return;
@@ -401,13 +418,22 @@ namespace CosmicShore.Gameplay
         /// <summary>The first block on the weapons' axis (<see cref="AimOrigin"/> along the hull's forward) within the
         /// sling's range that the tether may anchor to — never your own fresh trail, the block you sit on or the nest you
         /// sit in.</summary>
-        bool FindSlingAnchor(out Prism anchor, out Vector3 point)
+        bool FindSlingAnchor(out Prism anchor, out Vector3 point) =>
+            FindSlingAnchor(_status.Transform.forward, out anchor, out point);
+
+        /// <summary>Where a sling along <paramref name="direction"/> would anchor right now, by the press's own rule (the
+        /// first block on that line within the sling's range): a question an AI coach asks before it turns the nose, so it
+        /// never aims at a block a nearer one hides. Reads only.</summary>
+        public bool PreviewSlingAnchor(Vector3 direction, out Prism anchor, out Vector3 point) =>
+            FindSlingAnchor(direction.normalized, out anchor, out point);
+
+        bool FindSlingAnchor(Vector3 f, out Prism anchor, out Vector3 point)
         {
             anchor = null;
             point = default;
             var index = PrismSpatialIndex.Instance;
-            if (!index || !index.IsAvailable) return false;
-            Vector3 o = AimOrigin, f = _status.Transform.forward;
+            if (!index || !index.IsAvailable || f.sqrMagnitude < 1e-6f) return false;
+            Vector3 o = AimOrigin;
             float best = float.MaxValue;
             index.QuerySegment(o, o + f * config.SlingRange, config.DockQueryReach, _candidates);
             for (int i = 0; i < _candidates.Count; i++)
@@ -1523,9 +1549,11 @@ namespace CosmicShore.Gameplay
             }
 
             Vector3 toTarget = ai.TargetPosition - pos;
+            var coach = AiSlingAccept;
             Mode want = _aiEnemyAhead && MissilesReady > 0 ? Mode.Charge
                       : _aiTargetsAhead >= config.AiLanceMinTargets ? Mode.Space
                       : Mode.Time;
+            if (coach != null) want = Mode.Time;   // a race coach flies the sling only
             if (want != _mode && now >= _aiNextMode && TryResolve(handler, ModeControl(want), out var modeInput))
             {
                 _aiNextMode = now + 0.5f;
@@ -1553,8 +1581,10 @@ namespace CosmicShore.Gameplay
                     else handler.StopShipControllerActionsReplicated(trigger);
                 }
                 if (_mode == Mode.Time && !_slinging && !_tethering && _slingCd <= 0f
-                    && toTarget.magnitude >= config.AiSlingMinDistance && Vector3.Angle(fwd, toTarget) <= config.AiSlingDegrees
-                    && FindSlingAnchor(out _, out _))   // the press does nothing without one: never spam it
+                    && (coach != null
+                        ? FindSlingAnchor(out _, out var anchorPoint) && coach(anchorPoint)   // the coach's anchors only
+                        : toTarget.magnitude >= config.AiSlingMinDistance && Vector3.Angle(fwd, toTarget) <= config.AiSlingDegrees
+                          && FindSlingAnchor(out _, out _)))   // the press does nothing without one: never spam it
                 {
                     handler.PerformShipControllerActionsReplicated(trigger);
                     handler.StopShipControllerActionsReplicated(trigger);

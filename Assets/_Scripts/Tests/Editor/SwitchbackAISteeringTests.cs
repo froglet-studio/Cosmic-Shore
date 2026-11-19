@@ -127,6 +127,8 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(Field<bool>(c, "aiDodgeDangerOnly"));
                 Assert.AreEqual(177f, Field<float>(c, "aiNoDodgeNearRing"));
                 Assert.IsFalse(Field<bool>(c, "aiStrikeSetupLeg"), "the setup leg cost about what the blast saved");
+                // Yash, 2026-11-17: in a Time game speed beats breaking (MINIGAME_TRAINING_PLAN.md 6.2).
+                Assert.IsTrue(Field<bool>(c, "aiSpeedOverBreaking"), "a passable ring is flown, never left for a crystal");
             }
             finally { Object.DestroyImmediate(go); }
         }
