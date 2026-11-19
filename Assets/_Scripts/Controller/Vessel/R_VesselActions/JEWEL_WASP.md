@@ -17,7 +17,9 @@ JewelWasp`.
 
 ## 1. The loop
 
-1. **Free**, the wasp flies like any hull. **RT held** aims at a creature: the one nearest the aim line within a 14 degree
+1. **Free**, the wasp flies like any hull, its chase camera close behind it (45 u back, 8 up, its own
+   `JewelWaspCameraSettingsSO`; Garrett, 2026-11-19: "the camera on the jewel wasp could be much closer. when it is not in
+   a lifeform"). A ride keeps its wide view (at least 204 u, `hostCameraFloor`) and a plant its orbit. **RT held** aims at a creature: the one nearest the aim line within a 14 degree
    cone lights in the pilot's hue (`LifeformHighlight`, the leash mark's look; a world fact shown in the world). **LT held**
    aims at a plant the same way.
 2. **Let go** and the wasp stings it. The range is the whole cell (its diameter; 3000 u in no cell). The hull flies to the
@@ -29,6 +31,10 @@ JewelWasp`.
    - LT is a burst of speed.
    - A leaves.
    - A worm segment takes the whole worm by its head. A swarm member takes the whole murmuration.
+   - **The creature is stolen** (Garrett, 2026-11-19: "steal the prisms of any controlled fauna and convert it to its
+     domain, even after leaving"): the moment the wasp nests, its body prisms, its diet's side and its offspring take the
+     wasp's domain (`Fauna.StealInto`, the Jacks net's steal), and it stays the wasp's after the wasp leaves. A worm
+     changes with every segment; a MultiDomain swarm, whose colours are its lineages, is the one host that keeps its own.
 4. **In a plant** the camera leaves the chase and ORBITS the plant (Garrett, 2026-11-15), framing the whole plant from
    its middle and drawing back as it grows (3.2 plant radii, 18 to 650 u; `CustomCameraController.Spectate`, eased in
    and out):
@@ -70,6 +76,10 @@ the newborn's heart (`FaunaBirthCrystalMorphByCrystal` retirement).
 - **The rider's triggers reach the mouth and the attack.** `PossessedSuction` eats up to 8 of the nearest rival prisms
   within reach, nearest first, through the ordinary consume: the suction implosion fills the stomach, so mass is
   conserved. The rider's own team's mass, creatures' bodies and the race corridor are never food.
+
+**The host becomes the wasp's** (section 1, item 3; the fourth sign-off in
+`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`): `Possess` steals it into the wasp's domain, so the rider's own suction never
+takes the host's body, and a left host hunts the wasp's rivals by its own rules.
 
 **The host keeps its starvation clock** (`Sustains` false): a wasp that never feeds its host loses it.
 

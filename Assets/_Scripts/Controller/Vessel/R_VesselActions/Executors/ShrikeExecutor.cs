@@ -73,6 +73,7 @@ namespace CosmicShore.Gameplay
             public readonly List<Prism> Blocks = new();
             public readonly List<float> Born = new();   // each block's TimeCreated at lay: a pooled reuse is not ours
             public Vector3 Centre;
+            public float Radius;                         // the shell's radius (the turret sits on it)
             public bool Dead;
         }
 
@@ -140,6 +141,7 @@ namespace CosmicShore.Gameplay
         float _lockScanAt;
 
         readonly List<Nest> _nests = new();
+        readonly List<ShrikeRules.NestPiece> _nestPieces = new();
         readonly List<Flora> _flora = new();
         readonly List<Missile> _missiles = new();
         readonly List<Missile> _idleMissiles = new();
@@ -368,8 +370,7 @@ namespace CosmicShore.Gameplay
             _leftNest = nest;
             _leftNestUntil = Time.time + config.LeaveNestSeconds;
             _nestCd = config.NestCooldown;
-            float radius = ShrikeRules.NestRadiusFor(nest.Blocks.Count, false, config.NestBlockSize, config.NestClearance);
-            AddFlora(at + rot * ShrikeRules.TurretLocal(radius), rot * Vector3.up, config.NestMissilesFor(_status), nest);   // Mass 5 Armed Nests
+            AddFlora(at + rot * ShrikeRules.TurretLocal(nest.Radius), rot * Vector3.up, config.NestMissilesFor(_status), nest);   // Mass 5 Armed Nests
             PlayAt(config.NestEvent, at);
         }
 
@@ -798,8 +799,9 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ nests and flora
 
-        /// <summary>A cup of super-shielded blocks round <paramref name="centre"/>, the nose's way out open, its radius
-        /// grown so that NO two blocks clip (<see cref="ShrikeRules.NestRadiusFor"/>), each block facing out.</summary>
+        /// <summary>The nest round <paramref name="centre"/> (<see cref="ShrikeRules.NestPieces"/>): a shell of
+        /// super-shielded plates on the cup, the nose's way out open, its radius grown so that NO two plates clip
+        /// (<see cref="ShrikeRules.NestRadiusFor"/>); inside it a weave of shielded twigs and a lining of plain pads.</summary>
         Nest BuildNest(Vector3 centre, Quaternion rot)
         {
             var prisms = _status.VesselPrismController;
@@ -814,18 +816,18 @@ namespace CosmicShore.Gameplay
             if (live >= config.MaxNests && oldest != null) RetireNest(oldest);
             _nests.RemoveAll(n => n.Dead);
 
-            var nest = new Nest { Centre = centre };
             int count = ShrikeRules.NestBlockCount(config.NestBlocks.EvaluateReplicated(_status));
             float size = config.NestBlockSize;
-            float radius = ShrikeRules.NestRadiusFor(count, false, size, config.NestClearance);
-            Vector3 scale = Vector3.one * size;
-            Vector3 up = rot * Vector3.up;
-            for (int i = 0; i < count; i++)
+            var nest = new Nest { Centre = centre, Radius = ShrikeRules.NestRadiusFor(count, false, size, config.NestClearance) };
+            ShrikeRules.NestPieces(_nestPieces, count, size, config.NestShellThickness, config.NestClearance, config.HullRadius,
+                config.NestHoops, config.NestTwigWidth, config.NestTwigLength, config.NestTwigTilt, config.NestLining,
+                config.NestLiningSize);
+            for (int i = 0; i < _nestPieces.Count; i++)
             {
-                Vector3 local = ShrikeRules.NestLocal(i, count, false, radius);
-                Vector3 outward = rot * local;
-                Quaternion face = SafeLookRotation.TryGet(outward, up, out var r, this, logError: false) ? r : rot;
-                var prism = BoostRingBuilder.LayOne(channel, centre + outward, face, scale, PrismKind.SuperShielded,
+                var piece = _nestPieces[i];
+                Vector3 forward = rot * piece.Forward, up = rot * piece.Up;
+                Quaternion face = SafeLookRotation.TryGet(forward, up, out var r, this, logError: false) ? r : rot;
+                var prism = BoostRingBuilder.LayOne(channel, centre + rot * piece.Local, face, piece.Scale, piece.Kind,
                     _status.Domain, _status.PlayerName, _status.PlayerName);
                 if (!prism) continue;
                 nest.Blocks.Add(prism);

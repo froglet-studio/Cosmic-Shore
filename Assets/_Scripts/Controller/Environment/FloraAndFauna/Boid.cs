@@ -1020,6 +1020,11 @@ namespace CosmicShore.Gameplay
         public override float PossessionTopSpeed => Mathf.Max(1f, maxSpeed);
         public override float PossessionMouthReach => Mathf.Max(base.PossessionMouthReach, FeedReach, feedingClusterRadius);
 
+        /// <summary>A boid's body is its own prisms (and every block it lays takes its domain when laid), so it can be stolen.</summary>
+        public override bool CanBeStolen => true;
+
+        protected override void OnTeamChanged() => RecolourBodyPrisms();
+
         protected override void OnPossessionChanged(bool possessed)
         {
             _feedTarget = null;      // the rider decides every meal now (or, leaving, the boid picks again)

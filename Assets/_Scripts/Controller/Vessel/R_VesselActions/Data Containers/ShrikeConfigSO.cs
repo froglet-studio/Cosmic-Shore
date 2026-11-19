@@ -117,6 +117,22 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.5f)] float nestBlockSize = 4.5f;
         [Tooltip("Game only: extra room between nest blocks past touching (1 = their bounding spheres just meet).")]
         [SerializeField, Range(1f, 2f)] float nestClearance = 1.1f;
+        [Tooltip("Game only: the shell's super-shielded plates are this thick, u; each side is as wide as the plates go "
+                 + "without touching (at least nestBlockSize), lying flat on the cup, so the shell guards every side but the nose's way out with a fraction of a cube's mass "
+                 + "(Garrett, 2026-11-19: \"protected from most sides by a polyhedron of supershielded prisms\").")]
+        [SerializeField, Min(0.2f)] float nestShellThickness = 0.7f;
+        [Tooltip("Game only: rings of shielded twigs woven inside the shell, behind the hull (0 = none).")]
+        [SerializeField, Range(0, 6)] int nestHoops = 3;
+        [Tooltip("Game only: each twig's width, u.")]
+        [SerializeField, Min(0.2f)] float nestTwigWidth = 1f;
+        [Tooltip("Game only: the twig length a ring aims for, u (a ring takes as many twigs as fit, at least five).")]
+        [SerializeField, Min(0.5f)] float nestTwigLength = 4f;
+        [Tooltip("Game only: each twig tilts this far off its ring, alternately up and down, degrees (the weave).")]
+        [SerializeField, Range(0f, 45f)] float nestTwigTilt = 15f;
+        [Tooltip("Game only: soft pads of plain prisms lining the back of the cup, just outside the hull (0 = none).")]
+        [SerializeField, Range(0, 24)] int nestLining = 7;
+        [Tooltip("Game only: each lining pad's side, u.")]
+        [SerializeField, Min(0.2f)] float nestLiningSize = 1.2f;
         [Tooltip("Nest cooldown, s.")]
         [SerializeField, Min(0f)] float nestCooldown = 8f;
         [Tooltip("Game only: the missiles a left-behind nest's flora carries (\"leave behind a nest with only one missile\").")]
@@ -233,6 +249,13 @@ namespace CosmicShore.Gameplay
         public ElementalFloat NestBlocks => nestBlocks;
         public float NestBlockSize => nestBlockSize;
         public float NestClearance => nestClearance;
+        public float NestShellThickness => nestShellThickness;
+        public int NestHoops => nestHoops;
+        public float NestTwigWidth => nestTwigWidth;
+        public float NestTwigLength => nestTwigLength;
+        public float NestTwigTilt => nestTwigTilt;
+        public int NestLining => nestLining;
+        public float NestLiningSize => nestLiningSize;
         public float NestCooldown => nestCooldown;
         public int DetachNestMissiles => detachNestMissiles;
         public float LeaveNestSeconds => leaveNestSeconds;
