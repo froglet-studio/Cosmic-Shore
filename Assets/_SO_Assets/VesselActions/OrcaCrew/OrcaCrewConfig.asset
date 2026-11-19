@@ -124,6 +124,7 @@ MonoBehaviour:
   fastGunPenScale: {x: 0.8, y: 0.5, z: 4.6}
   bombSpeed: 90
   bombFuse: 10
+  bombRearmSeconds: 0
   bombBlastRadius:
     Enabled: 1
     Value: 50

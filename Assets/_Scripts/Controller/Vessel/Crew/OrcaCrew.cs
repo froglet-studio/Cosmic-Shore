@@ -170,6 +170,7 @@ namespace CosmicShore.Gameplay
             Helm => 1f - BoostTank01,
             SniperSeat => _cfg && _cfg.SniperCooldown > 0f ? Mathf.Clamp01(_gunCd[SniperSeat] / _cfg.SniperCooldown) : 0f,
             FastGunSeat => _fast.Hot ? 1f : _fast.Heat,
+            BombSeat => _cfg && _cfg.BombRearmSeconds > 0f && !_bomb ? Mathf.Clamp01(_gunCd[BombSeat] / _cfg.BombRearmSeconds) : 0f,
             _ => 0f,
         };
         /// <summary>A bomb is in the air (the bomb seat's next press bursts it).</summary>
@@ -803,7 +804,7 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the guns (round 5: one per seat, each different)
 
-        bool GunReady(int s) => s == FastGunSeat ? !_fast.Hot : s == BombSeat ? !_bomb : _gunCd[s] <= 0f;   // round 6: the bomb has no cooldown, one in the air
+        bool GunReady(int s) => s == FastGunSeat ? !_fast.Hot : s == BombSeat ? !_bomb && _gunCd[s] <= 0f : _gunCd[s] <= 0f;   // one bomb in the air, then its re-arm (0 = none, round 6)
 
         float GunRange(int s) => s == SniperSeat ? Mathf.Min(_cfg.SniperRange, 600f)
             : s == FastGunSeat ? _cfg.FastGunRoundSpeed * 2f * _cfg.FastGunRoundSeconds / Mathf.PI * 0.8f
@@ -831,7 +832,7 @@ namespace CosmicShore.Gameplay
                     break;
                 case BombSeat:
                     if (_bomb) { if (human ? edge : AIBurstsBomb()) DetonateBomb(); }
-                    else if (human ? edge : hold) ThrowBomb(fromBarrel ? muzzleTip - aim * 4f : mount, aim);
+                    else if ((human ? edge : hold) && _gunCd[s] <= 0f) ThrowBomb(fromBarrel ? muzzleTip - aim * 4f : mount, aim);
                     break;
             }
         }
@@ -1092,6 +1093,7 @@ namespace CosmicShore.Gameplay
             }
             if (_cfg.ChainBurstActive(_status)) ChainFrom(at, _cfg.BombBlastRadiusAt(_status));
             LastBurstAt = _burstAt[BombSeat] = Time.time;
+            _gunCd[BombSeat] = _cfg.BombRearmSeconds;   // the re-arm before the next bomb (Garrett 2026-11-19; 0 = none)
             Play(_cfg.BombBurstSound, at);
         }
 

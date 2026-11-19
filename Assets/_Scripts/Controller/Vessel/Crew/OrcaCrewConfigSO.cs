@@ -194,6 +194,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float bombSpeed = 90f;
         [Tooltip("lab bombLife: a safety (s). The bomb cruises until its gunner presses again (Garrett 2026-10-21: \"it never goes on cooldown it can just only have one bomb at a time so it must blow up a bomb to fire another\"); it also bursts on a rival hull or a hostile prism, and at this. It never knocks our own hull about.")]
         [SerializeField, Min(0.1f)] float bombFuse = 10f;
+        [Tooltip("Seconds after a bomb bursts before the next can be thrown: still one bomb at a time, then this wait (Garrett 2026-11-19 amended his 2026-10-21 \"no cooldown\" rule for Broadside balance). 0 = no wait, the shipped round-6 behaviour.")]
+        [SerializeField, Min(0f)] float bombRearmSeconds = 0f;
         [Tooltip("lab bombBlastR x Space: the blast radius (u). 50 at rest (the Grizzly's mid-charge MaxScale 100); the lab's kSpace 0.8 is 76.7 at level 10.")]
         [SerializeField] ElementalFloat bombBlastRadius = ElementalFloat.Multiplier(50f, 76.666667f, Element.Space, 25f);
         [Tooltip("The bomb's projectile scale (GrizzlyTriggerBombConfig 2.5-5 by charge; the middle).")]
@@ -352,6 +354,7 @@ namespace CosmicShore.Gameplay
         public float FastGunCoolSeconds => fastGunCoolSeconds;
         public float BombSpeed => bombSpeed;
         public float BombFuse => bombFuse;
+        public float BombRearmSeconds => bombRearmSeconds;
         public float BombBlastRadiusAt(IVesselStatus status) => bombBlastRadius.EvaluateLive(status);
         public float BombScale => bombScale;
         public Color BombColor => ColorTrace.Retrace(ColorTrace.World, bombColor);
