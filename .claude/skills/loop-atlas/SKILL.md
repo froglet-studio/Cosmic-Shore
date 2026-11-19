@@ -61,3 +61,16 @@ Drop what is no longer wanted with `drop <loop> --why "..." --by <who>`; the rea
 After a model change merges: `python3 Tools/Build/loop_atlas.py build --html /tmp/LoopAtlas.html`, then republish
 that file to https://claude.ai/artifact/8XkvFKuTFeEpRoLfp8QQpw (Artifact tool, same URL; read the artifact first, as
 it may have been edited). The page keeps its notes database. Never publish a second map.
+
+The map's **Code** rings read the Code Atlas files next to the page (`Docs/LoopAtlas/CODE.md`). To refresh them:
+`python3 Tools/Build/code_atlas.py build --strict` (about three minutes; or take the nightly `code-atlas` workflow
+artifact), then publish with `files` mapping `code/index.json`, `code/names.json`, every `code/shards/NNN.json.gz`
+(contentType `application/gzip`) and every `code/img/sheetNN.webp` from `Docs/LoopAtlas/code-out/`. One publish
+carries them all (about 150 files, 24 MB). Without the files the map still works; it just has no Code rings.
+
+## 7. Link a loop to its code
+
+A loop's Code ring holds what implements it. Most links are automatic (every repo path the loop cites, a vessel's class
+asset, ability map and named types, the arcade cards the map names). Add the rest to `Docs/LoopAtlas/code/links.yaml`
+(loop id -> node ids or globs); `build --strict` fails on a link that matches nothing. Linking is brainstorming-free:
+it records what is true of the code, so any session may add a link it has checked.

@@ -1,0 +1,86 @@
+# Code Atlas hand links: which code implements each loop. Loop id (Docs/LoopAtlas/model) -> code node ids, or globs over
+# ids (* ? [...], at most 60 hits each). Ids: d:<dir> f:<file> t:<Full.Type> n:<namespace> (Docs/LoopAtlas/CODE.md).
+# Every repo path a loop already cites in src (and every vessel's class asset, ability map and named types, and every
+# arcade card the map names) is linked automatically by Tools/Build/code_atlas.py; add here what that misses.
+# A pattern that matches nothing is listed by the build ("link: ..."), never dropped silently.
+era:
+  - d:Assets/_Scripts
+  - d:Assets/_SO_Assets
+  - f:Assets/_Scenes/Menu_Main.unity
+sitting:
+  - f:Assets/_Scripts/System/MainMenuController.cs
+  - d:Assets/_Scripts/UI/Screens
+  - f:Assets/_Scripts/System/AppManager.cs
+toybox:
+  - d:Assets/_Scripts/Controller/Toys
+  - d:Assets/_SO_Assets/Toys
+  - d:Assets/_Scenes/MinigameFreestyle
+toy.changers:
+  - f:Assets/_Scripts/Controller/Toys/VesselChangerToy.cs
+  - f:Assets/_Scripts/Controller/Toys/DomainChangerToySet.cs
+  - f:Assets/_Scripts/Controller/Toys/ElementChargerToy.cs
+toy.matrix:
+  - f:Assets/_Scripts/Controller/Toys/SpawnMatrixToy.cs
+  - f:Assets/_Scripts/Controller/Toys/CellSelectorToy.cs
+  - f:Assets/_Scripts/Controller/Toys/MatrixToy.cs
+toy.paint:
+  - f:Assets/_Scripts/Controller/Toys/Painting*
+toy.wander:
+  - f:Assets/_Scripts/Controller/Toys/Wander*
+toy.arkway:
+  - f:Assets/_Scripts/Controller/Toys/ArkwayRun*
+arcade:
+  - d:Assets/_Scripts/Controller/Arcade
+  - d:Assets/_SO_Assets/Games
+  - f:Assets/_Scripts/Controller/Arcade/MiniGameControllerBase.cs
+  - d:Assets/_Graphics/ARCADE/CardBackgrounds
+round.time:
+  - f:Assets/_Scripts/Controller/Arcade/SkimRaceController.cs
+  - d:Assets/_Scripts/Controller/Arcade/Racing
+round.charge:
+  - f:Assets/_Scripts/Controller/Arcade/JoustController.cs
+round.ms:
+  - f:Assets/_Scripts/Controller/Arcade/BroodRushController.cs
+arena:
+  - f:Assets/_SO_Assets/Games/GameLists/ArenaGames.asset
+round.regatta:
+  - d:Assets/_Scripts/Controller/Arcade/Regatta
+round.broadside:
+  - d:Assets/_Scripts/Controller/Arcade/Broadside
+round.broodrush:
+  - f:Assets/_Scripts/Controller/Arcade/BroodRush*
+round.astro:
+  - d:Assets/_Scripts/Controller/Arcade/AstroLeague
+voyages:
+  - d:Assets/_Scripts/Controller/Voyages
+  - d:Assets/_Scripts/System/Voyages
+  - f:Assets/_Scenes/Voyage.unity
+voy.leg:
+  - f:Assets/_Scripts/Controller/Voyages/VoyageRun*
+voy.cell:
+  - f:Assets/_Scripts/Controller/Voyages/ArkEscortRun*
+voy.port:
+  - f:Assets/_Scripts/Controller/Voyages/VoyageHarbour.cs
+arc.squad:
+  - d:Assets/_Scripts/System/Pilots
+  - d:Assets/_SO_Assets/Pilots
+  - d:Assets/_Graphics/Pilots
+arc.crew:
+  - d:Assets/_Scripts/System/Squads
+arc.social:
+  - d:Assets/_Scripts/Controller/Party
+  - f:Assets/_Scripts/System/FriendsServiceFacade.cs
+arc.fleet:
+  - d:Assets/_Scripts/System/VesselUnlock
+  - d:Assets/_Scripts/System/Economy
+arc.unlock:
+  - d:Assets/_Scripts/System/Progression
+  - d:Assets/_SO_Assets/GameModeQuest
+arc.replay:
+  - d:Assets/_Scripts/System/RewindSystem
+fleet:
+  - d:Assets/_Scripts/Controller/Vessel
+  - d:Assets/_SO_Assets/Classes
+  - d:Assets/Resources/ElementalAbilityMaps
+era.world:
+  - d:Assets/_Scripts/Controller/Environment

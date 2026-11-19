@@ -25,6 +25,9 @@ https://claude.ai/artifact/QUiM5ztvnHhkpWgsn4S43K.
 | `PROCESS.md` | **How work moves**: Proposed is brainstorming, Planned is planning, Now is development; graduation and build orders. |
 | `ledger.jsonl` | One line per lifecycle step (who graduated what, when). Appended by the tool. |
 | `BOARD.md` | The atlas as a work board, **generated**: build orders, decided plans, proposals, holes, recent moves. |
+| `CODE.md` | **The Code Atlas**: how the map zooms from a loop into the whole codebase down to every value (equivalent places, no links), the data model, loading, the anchored camera, the pictures. |
+| `code/links.yaml` | Hand links from loops to the code that implements them (the automatic ones need none). |
+| `code-out/` | The Code Atlas build (`Tools/Build/code_atlas.py build`), **generated and ignored**; published beside the page as `code/`. |
 
 ## Editing the model
 
