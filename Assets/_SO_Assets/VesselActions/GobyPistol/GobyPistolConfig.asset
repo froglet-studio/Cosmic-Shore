@@ -19,12 +19,12 @@ MonoBehaviour:
   dartCooldown: 1.2
   dartPace:
     Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 2.2
+    Value: 1.25
+    Min: 1.25
+    Max: 1.95
     element: 4
     UseFloor: 1
-    Floor: 0.5
+    Floor: 0.625
   hullRadius: 3
   queryReach: 6
   ownPerchBlocks: 5
