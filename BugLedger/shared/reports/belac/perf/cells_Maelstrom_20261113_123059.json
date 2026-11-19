@@ -1,0 +1,49 @@
+{
+    "scene": "Maelstrom",
+    "timestamp": "2026-11-13 12:30:59",
+    "label": "",
+    "secondsSinceSceneLoad": 0.0,
+    "floraObjectsInScene": 0,
+    "faunaObjectsInScene": 0,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Barren Cell Config",
+            "spawnProfile": "Barren Cell Spawn Profile",
+            "configChoice": "Random",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": false,
+            "postInitDeferred": false,
+            "activeSpawner": "",
+            "phase": "Calm",
+            "liveVolume": 0.0,
+            "liveEnvironmentVolume": 0.0,
+            "livePrismCount": 0,
+            "floraPlantingEnabled": true,
+            "faunaSpawningEnabled": false,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 128000.0,
+            "frenzyEnterVolume": 640000.0,
+            "frenzyExitVolume": 544000.0,
+            "frenzyEnterCount": 40000,
+            "frenzyExitCount": 34000,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 391.9114685058594,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Jade",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 0,
+            "faunaLiveTotal": 0,
+            "flora": [],
+            "fauna": []
+        }
+    ],
+    "notes": [
+        "Cell 0: bootstrap has not run - no crystal has registered with this cell yet."
+    ]
+}
