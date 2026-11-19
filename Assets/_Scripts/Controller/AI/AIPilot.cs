@@ -327,6 +327,11 @@ namespace CosmicShore.Gameplay
         /// target, a chased vessel) — read-only, for an ability that must aim the way the AI is
         /// going (the Stoat's autopilot sling). Steering may differ (the drift look target).</summary>
         public Vector3 TargetPosition => _targetPosition;
+        /// <summary>True in a mode whose objective is another pilot (ConfigureForGameMode with seek-players: Joust, Dog
+        /// Fight, Broadside) - read-only, for a hull's own combat hook (<see cref="AnglerHuntAutopilot"/>).</summary>
+        public bool SeeksPlayers => seekPlayers;
+        /// <summary>The match this pilot was configured for (ConfigureForGameMode); null before.</summary>
+        public GameDataSO GameData => gameData;
         // Live opponent the AI is chasing in player-seek (Joust) mode. Chosen by the
         // UpdatePlayerTarget coroutine; Update() reads its current position every frame.
         Transform _targetVesselTransform;
