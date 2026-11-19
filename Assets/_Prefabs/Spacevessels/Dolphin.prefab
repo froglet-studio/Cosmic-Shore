@@ -1477,7 +1477,8 @@ MonoBehaviour:
     Max: 1
     element: 0
   massUpgradeShieldsTrail: 0
-  driftLaysAlongCourse: 1
+  driftKeepsNoseClear: 1
+  driftNoseClearance: 2
   offset: 0
   Gap: 1
   MinimumGap: 1

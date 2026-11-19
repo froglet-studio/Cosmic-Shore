@@ -54,12 +54,16 @@ namespace CosmicShore.Gameplay
         [FormerlySerializedAs("massUpgradeShieldsTrail")]
         [SerializeField] bool driftShieldsTrail = false;
 
-        [Tooltip("While DRIFTING, lay each prism along the path the hull is travelling (its Course), not along " +
-                 "its nose, and never longer than Max Length Of Spacing of the gap to the next one. Off, a drift " +
-                 "lays prisms along the nose: with the drift trail's longer, closer prisms (SetDotProduct) that " +
-                 "is a stack of long bars across the path, and the ones that reach ahead of the nose are flown " +
-                 "into when the drift ends (the Dolphin, Caleb 2026-11-18).")]
-        [SerializeField] bool driftLaysAlongCourse = false;
+        [Tooltip("While DRIFTING, slide each prism back along its own length so no part of it lies ahead of the " +
+                 "nose. The drift still reads in the trail (the prisms keep the nose's angle and the drift trail's " +
+                 "length and spacing: the trail tells the story, Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md); only " +
+                 "their place moves. Off, a drift prism is centred on the hull, so on a narrow-gap hull (the " +
+                 "Dolphin) its front half lies on the line the hull flies down when the drift ends, and the hull " +
+                 "breaks it (Caleb, 2026-11-18/19).")]
+        [SerializeField] bool driftKeepsNoseClear = false;
+
+        [Tooltip("How far behind the nose a drift prism's front end sits, world units (Drift Keeps Nose Clear).")]
+        [SerializeField, Min(0f)] float driftNoseClearance = 2f;
 
         [Tooltip("MASS level-5 'Shielded Turn Trails' (the Manta's Yawstery): prisms laid while " +
                  "a hard TURN is held arrive shielded once the Mass upgrade is live (regular " +
@@ -174,8 +178,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Lay gates for diagnostics: a painting/ability pen-up and the device-tier hold.</summary>
         public bool PenUp => trailPenUp;
         public bool TierHeld => tierHold;
-        /// <summary>Whether a drift lays along the course (<see cref="driftLaysAlongCourse"/>), for diagnostics.</summary>
-        public bool DriftLaysAlongCourse => driftLaysAlongCourse;
+        /// <summary>Whether a drift prism is kept behind the nose (<see cref="driftKeepsNoseClear"/>), for diagnostics.</summary>
+        public bool DriftKeepsNoseClear => driftKeepsNoseClear;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
 
         /// <summary>
@@ -431,6 +435,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Where a drift prism moves so none of it lies ahead of the nose: back along its own axis by half its length
+        /// plus <paramref name="clearance"/>. Its angle and length are untouched, so the drift still reads in the trail.
+        /// Full whenever the nose is not pointing back against the travel (nose.course 0 and up, a sideways drift
+        /// included, where the prisms are longest); faded out as the nose turns past broadside (to nose.course -0.25),
+        /// because a hull flying backwards would meet a prism slid back along its nose in the path it is travelling.
+        /// Pure, so it is testable.
+        /// </summary>
+        public static Vector3 DriftNoseClearShift(Vector3 prismAxis, Vector3 course, float length, float clearance)
+        {
+            float k = TrailSpeedShape.Smooth(-0.25f, 0f, Vector3.Dot(prismAxis.normalized, course.normalized));
+            return -prismAxis.normalized * ((length * 0.5f + clearance) * k);
+        }
+
+        /// <summary>
         /// The gap between prisms on one rail at this (unwarped) speed: the wavelength, stretched past 600 u/s (the
         /// speed shape's own stretch on the Manta, <see cref="TrailStretch"/> on every other hull), times the hull's
         /// spawn rule (<see cref="ApplyBoostSpawnDelay"/>: the Sparrow family's unboosted x2, the Shrike's and the Brittle
@@ -586,12 +604,6 @@ namespace CosmicShore.Gameplay
                 && turnFlareMaxScale > 1f)
                 scale.x *= Mathf.Lerp(1f, turnFlareMaxScale, _turnFlare01);
 
-            // A drift line laid along the path: never longer than the gap to the next prism.
-            bool alongCourse = driftLaysAlongCourse && vesselStatus.IsDrifting;
-            if (alongCourse)
-                scale.z = Mathf.Min(scale.z,
-                    stretch.MaxLengthOfSpacing * (_laySpacing > 0f ? _laySpacing : wavelength));
-
             // Warp field (Docs/WARP_FIELD.md): every length of the lay — the prism, the lane gap,
             // the offset behind the hull — shrinks with the vessel, so a shrunken vessel lays a
             // trail that looks exactly like its own to itself. Exactly 1 with no field.
@@ -605,16 +617,12 @@ namespace CosmicShore.Gameplay
 
             // --- Position & Rotation ---
             Quaternion rot = vesselStatus.blockRotation;
-            Vector3 railRight = vesselStatus.ShipTransform.right;
-            if (alongCourse && SafeLookRotation.TryGet(vesselStatus.Course, vesselStatus.ShipTransform.up,
-                    out var courseRot, this, logError: false))
-            {
-                rot = courseRot;
-                railRight = courseRot * Vector3.right;
-            }
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
             Vector3 pos = transform.position - vesselStatus.Course * (offset * warp + _layBack)
-                        + railRight * xShift;
+                        + vesselStatus.ShipTransform.right * xShift;
+            if (driftKeepsNoseClear && vesselStatus.IsDrifting)
+                pos += DriftNoseClearShift(rot * Vector3.forward, vesselStatus.Course, scale.z,
+                                           driftNoseClearance * warp);
 
             // --- Ask factory to spawn Interactive prism (pooled) ---
             var ret = _onPrismSpawnedEventChannel.RaiseEvent(new PrismEventData

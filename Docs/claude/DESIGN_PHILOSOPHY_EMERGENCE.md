@@ -519,6 +519,47 @@ everywhere. If a universal system genuinely can't serve the context, that is a
 fundamentals discussion (see the curation process above), not a license for a
 local workaround.
 
+### Trails tell the story of the flight (LOCKED, Caleb 2026-11-19)
+
+**A vessel's trail is a record of how it moved through the environment, and anyone who looks at it should be able to
+read that story:** where it flew fast or slow, where it turned, where it drifted, where it boosted. Every prism a hull
+lays starts from the general lay equation:
+- by distance (`VesselPrismController.DistanceSpawnLoopAsync`);
+- the hull's `BaseScale` and wavelength;
+- the fleet stretch past 600 u/s (`TrailStretch`).
+
+A vessel then layers its own **modifiers** on top. Each modifier is part of the vessel's kit and of the story its
+trail tells, and **is preserved**:
+
+| Modifier | Where | What it records |
+|---|---|---|
+| Drift reorient and stretch: prisms follow the nose, grow longer and closer as the nose leaves the course | `DriftTrailActionExecutor` → `SetDotProduct` (Squirrel, Dolphin) | a drift, and how hard |
+| Armoured drift line: drift prisms arrive shielded | `driftShieldsTrail` | a drift |
+| Turn flare and shielded turn trails | `SetTurnTrail`, `turnFlareMaxScale`, `turnUpgradeShieldsTrail` | a held hard turn |
+| Speed shape: X, Y, Z from speed and turning | `TrailSpeedShape` (Manta) | crawl, cruise, Soar, Yawstery banks |
+| Fleet stretch: further apart, longer and thinner past 600 u/s | `TrailStretch` | very high speed |
+| Boost size and gap | `SparrowPrismController.ApplyBoostScale` / `ApplyBoostGap` | boosting |
+| Spacing rules | `ApplyBoostSpawnDelay` (Sparrow family, Shrike, Brittle Star) | boost, Mass, Speed Mode |
+| Mass volume, slabs and gap growth | `trailVolume`, `GrowTrailAction` | the hull's Mass |
+| Danger mode | `EnableDangerMode` (Brittle Star) | the danger state |
+| Ball trail that rolls with the hull | `ThresherExecutor.BallTrailUp` | the ball's path and the hull's rolls |
+
+**The rule for any change:**
+1. **When a modifier causes a problem** (prisms a hull flies into, an unrideable ribbon, overlap that reads as noise),
+   **fix the problem and keep the modifier's visible effect.** Move the prism, time its collider, cap what reads
+   it, or make the rider tolerate it. Never switch the modifier off, flatten it back to the plain equation, or
+   re-lay it in a shape that no longer shows what the vessel did.
+2. **The worked example is the Dolphin's drift (2026-11-18/19).** Its drift prisms follow the nose, 6 times longer and
+   twice as close, centred on the hull. Their front halves lay on the line the hull flies down when the drift ends, and
+   it broke them and lost its blast energy.
+   - The first fix laid them along the course instead. It erased the drift from the trail and was withdrawn.
+   - The kept fix (`driftKeepsNoseClear`) slides each drift prism back along its own axis until its front end is
+     behind the nose. The angle, length and spacing are untouched, so the drift still reads, and the hazard is gone.
+3. **A new modifier states what it records.** Put a line in its tooltip and add a row to the table above, so the next
+   person knows it is story, not noise.
+4. **A modifier is changed only on the vessel**, by its owner's decision (`/approve`), like any kit change. A mode never
+   changes it (CLAUDE.md, "A game mode never changes the vessel").
+
 ### When in doubt
 
 Name the fundamentals involved, describe how each candidate solution

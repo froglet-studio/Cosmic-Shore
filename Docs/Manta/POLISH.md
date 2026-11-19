@@ -371,3 +371,14 @@ the local player flies:
 Editor and development builds only. Press F7 to show the HUD; the HUD console's `trail off` and `trail on` hide and
 restore the section. To film a fly test, use Unity Recorder with Playback **Variable** (Constant changes the game's
 frame timing) and Source **Game View**.
+
+**Dolphin drift, revised (Caleb, 2026-11-19).** Laying drift prisms along the course erased the drift from the trail,
+and the trail must tell the story of the flight. The drift-trail modifier (prisms follow the nose, longer and closer)
+is now a LOCKED rule to preserve: CLAUDE.md and `Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` § Trails tell the story
+of the flight. `driftLaysAlongCourse` is replaced by **`driftKeepsNoseClear`** (Dolphin on, `driftNoseClearance` 2 u).
+While drifting, each prism keeps the nose's angle and the drift trail's length and spacing, and is slid back along its
+own axis by half its length plus 2 u, so its front end sits behind the nose. The line the hull flies down when the
+drift ends is then clear. The slide is full whenever the nose is not turned back against the travel, and fades out
+past broadside (nose.course 0 to -0.25), where a backward-flying hull would meet it. The F7 Trail row shows
+"drift keeps nose clear ON/OFF". The A/B clips (Movie_003, Movie_005) both ran the withdrawn along-course fix, which
+was on in both. Neither packed, and the drift trail ended cleanly on every LT release.

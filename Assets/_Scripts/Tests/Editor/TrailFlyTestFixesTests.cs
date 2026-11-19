@@ -14,13 +14,37 @@ namespace CosmicShore.Tests
     {
         const float Tol = 1e-4f;
 
-        // ---- Dolphin: a drift lays along the path, so its long drift prisms no longer stack across it.
+        // ---- Dolphin: drift prisms keep the nose's angle and the drift trail's length (the trail tells the story),
+        // but are slid back so none of them lies ahead of the nose, where the hull flies when the drift ends.
 
         [Test]
-        public void Dolphin_DriftLaysAlongCourse()
+        public void Dolphin_DriftKeepsNoseClear()
         {
             string yaml = File.ReadAllText("Assets/_Prefabs/Spacevessels/Dolphin.prefab");
-            StringAssert.Contains("\n  driftLaysAlongCourse: 1\n", yaml);
+            StringAssert.Contains("\n  driftKeepsNoseClear: 1\n", yaml);
+            StringAssert.Contains("\n  driftNoseClearance: 2\n", yaml);
+        }
+
+        [Test]
+        public void DriftNoseClear_SidewaysDrift_PutsTheWholePrismBehindTheNose()
+        {
+            // A 48 u drift prism along the nose (+z) while the hull travels sideways (+x).
+            Vector3 shift = VesselPrismController.DriftNoseClearShift(Vector3.forward, Vector3.right, 48f, 2f);
+            Assert.AreEqual(-26f, shift.z, Tol);
+            Assert.AreEqual(0f, shift.x, Tol, "only along the prism's own axis: its angle and length are untouched");
+            float frontEnd = shift.z + 24f;
+            Assert.LessOrEqual(frontEnd, -2f + Tol, "the front end sits the clearance behind the nose");
+        }
+
+        [Test]
+        public void DriftNoseClear_IsFullUntilTheNoseTurnsBackward_ThenFadesOut()
+        {
+            Vector3 aligned = VesselPrismController.DriftNoseClearShift(Vector3.forward, Vector3.forward, 8f, 2f);
+            Assert.AreEqual(-6f, aligned.z, Tol);
+            Vector3 broadside = VesselPrismController.DriftNoseClearShift(Vector3.forward, Vector3.right, 8f, 2f);
+            Assert.AreEqual(-6f, broadside.z, Tol);
+            Vector3 backward = VesselPrismController.DriftNoseClearShift(Vector3.forward, -Vector3.forward, 8f, 2f);
+            Assert.AreEqual(0f, backward.magnitude, Tol, "flying backwards it would be slid into the path ahead");
         }
 
         // ---- Urchin: the ride's surface offset is capped, whatever the prism.

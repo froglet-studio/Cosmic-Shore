@@ -148,7 +148,7 @@ This file holds only the rules every session needs. Everything else moved verbat
 - [`Docs/claude/VIDEOS_AND_PREVIEWS.md`](Docs/claude/VIDEOS_AND_PREVIEWS.md): **Show a change instead of handing over a "go and check" step** (Yash, 2026-10-27): a still by default, a clip (60 s max, 15 fps) for motion; measured cost (~8-10 min and ~10-15k tokens a clip once the recipe is known, against no tokens for the person at the editor); the Amoebius recipe (xvfb, `--frames`, `--render-from`, the control port, ffmpeg; the replay it records); what an Amoebius clip cannot show (the final look, feel, audio).
   Sections: The rule; What it costs; How; What an Amoebius video does not show
 - [`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`](Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md): Read before designing any gameplay feature: fundamentals, order of preference, universality. Holds the LOCKED prism-movement rule (Garrett 2026-10-28): a moving prism that hits another destroys both, and a collision a shielded prism is part of bounces instead (`Docs/PRISM_MOTION.md` 1, 1a).
-  Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; When in doubt
+  Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; Trails tell the story of the flight (LOCKED); When in doubt
 
 ## Team: know who works where, and build on each other's work (read before working)
 
@@ -310,6 +310,15 @@ ability (Serpent Time's crystal-bought sniper rounds), no press vetoes, no added
 speed), no per-mode rescaling, no edits to vessel code or assets for one mode. Both of those Serpent Time rules were built
 and retired for this. A kit change is a vessel change, made on the vessel (its owner hears of it through `/approve`), never through
 a mode. `/arcadegame` §6.
+
+## Trails tell the story of the flight (LOCKED rule, Caleb, 2026-11-19)
+
+A vessel's trail records how it moved: drifts, turns, boosts, speed. Every per-vessel modifier to the general lay
+equation (the drift reorient and stretch, shielded drift lines, turn flares, the Manta's speed shape, the fleet stretch,
+boost sizing, Mass growth) is part of that story and **is preserved**. When a modifier causes a problem, fix the
+problem (move the prism, time its collider, make the rider tolerate it) and keep its visible effect; never switch it
+off or flatten it. The modifier table and the Dolphin's worked example are in
+`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` § Trails tell the story of the flight.
 
 ## Every colour comes from the colour set (LOCKED rule, Garrett, 2026-11-10)
 
