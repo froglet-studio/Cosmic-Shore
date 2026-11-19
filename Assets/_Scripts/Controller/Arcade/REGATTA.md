@@ -602,6 +602,8 @@ Not seated yet:
   `RegattaJacksCoach` (`aiJacksCoach` on the controller) runs Decoy Run's door cycle on each ring through
   `DecoyRunCourse.PlanCycle`: it finishes every course, card 158 s / L5 154 s on the shuffle (3 seeds), 2.2-2.4x the
   five, so it stays off the card and is flagged in `Docs/ElementalLoop/REDESIGN.md`.
+- **Meerkat** (2026-11-19, judge-only): shuffle 294 s card / 257 s L5 (2 seeds), 4.0x the five on its trained AI. Its
+  Time rush at the lever cap only reaches 3.4x, so it is flagged in `Docs/ElementalLoop/REDESIGN.md`.
 
 **The Swordfish** joined the card on 2026-11-17, toward Garrett's "regatta 10". It flies the Rhino's airframe and ramp
 (`RhinoAIBoostPolicy_Regatta` by the base policy's name) on the Rhino's line and nose pair, with Spearline's 10 degree

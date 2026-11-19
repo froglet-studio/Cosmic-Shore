@@ -17,7 +17,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Jacks | `R b b` | `b b .` | `- - -` | `b b .` | - | - |
 | JewelWasp | `x x x` | `b b .` | `x x x` | `b b .` | Time | - |
 | Manta | `R b ~` | `b b .` | `x x x` | `b b .` | - | Regatta, Broadside, BroodRush |
-| Meerkat | `b b .` | `b b .` | `b b .` | `b b .` | - | - |
+| Meerkat | `R b b` | `b b .` | `b b .` | `b b .` | - | - |
 | Orca | `R ~ .` | `b b .` | `b b .` | `b b .` | - | - |
 | Rhino | `b b b` | `b b .` | `b b .` | `b b .` | - | Regatta, BroodRush |
 | Scarab | `~ b .` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside |
@@ -85,6 +85,8 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 | Manta Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-18 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta step-5 levers cannot bring it within 1.10x of the five; gap and mechanism in Docs/ElementalLoop/REDESIGN.md |
 | Manta Time | 2 intensities I1-I4 | built | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder Legendary 58/62/75/96 s (good); the default Medium rival stalled at mouths (152/298/226/214 s) and Easy DNF'd 7 of 12; AI noses now Easy 5 / Medium 7 / Hard 7-9, every race finishes (REDLINE.md 0.3) |
 | Manta Time | 3 AI on I1-I4 | doing | Regatta plan threads | 2026-11-08 |  | Redline AI nose rate (#1844); the Soar steering should be re-searched at the new nose rates (AI_PLAN.md section 5) |
+| Meerkat Time | 1 fun (abilities + game, one intensity) | redo | Garrett | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): Regatta 4.0x card / 4.0x L5; Time rush at the 37.5% lever cap 3.4x, doubled 3.0x; Docs/ElementalLoop/REDESIGN.md |
+| Meerkat Time | 3 AI on I1-I4 | built | Garrett | 2026-11-19 |  | Burrow Run AI: run1 controller genes (shipped) + wormhole-autopilot search 2026-11-19 (time_ai_search --hull MeerkatDrive, I1-I4 + I1@T5 + W0, 12 candidates): shipped values best; Regatta 294 s card / 257 s L5 (train/Meerkat/) |
 | Orca Time | 1 fun (abilities + game, one intensity) | redo | Claude | 2026-11-19 |  | REDESIGN (Garrett 2026-11-18 'flag the vessel for a redesign'): first Regatta judge 2026-11-19, shuffle 3 seeds: card 386 s (5.3x the five), L5 359 s (5.5x, 4 of 8 courses DNF); its Time lever (tank refill) at an endless tank is still ~4.2x. Docs/ElementalLoop/REDESIGN.md § Orca |
 | Orca Time | 2 intensities I1-I4 | doing | Claude | 2026-11-17 |  | Claude on Garrett's 'do your best on fun' (2026-11-17), pending his playtest: real-game ladder (time_ladder_judge.py) showed the AI Orca timing out at I3-I4 (1 of 8 finished), missing a walled ring and wandering past it; Breach now uses the gate race's re-attack steering (BREACH.md 5.1): Legendary 120/116/160/141 s, Medium 126/121/167/150, 24 of 24 finished. Open: I4 easier than I3; Medium ~ Legendary. |
 | Rhino Time | 1 fun (abilities + game, one intensity) | built | Garrett | 2026-11-19 |  | Redesigned (ramp fuel from ploughing/slicing, #2233, #2240); back inside the Regatta field at both starts (Docs/ElementalLoop/REDESIGN.md: Rhino 70.0/66.9 s, Swordfish 70.8/65.8 s; trunk re-judge 2026-11-18 Rhino 70.8/66.8, Swordfish 71.7/65.4). Fun sign-off of the new ramp is still a person's (Headlong / Spearline) |
