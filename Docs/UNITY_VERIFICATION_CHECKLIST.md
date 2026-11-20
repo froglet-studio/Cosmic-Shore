@@ -1769,10 +1769,11 @@ not blasting; I4 Legendary 205 -> 175 s; `SWITCHBACK.md` "Step 2"). NOT run: the
 of a stream always burn (a spent ignite budget makes the segment wait a frame; `PrismBurnManager`'s 192 cap does not
 refuse them, `Ignite(.., overCap)`), and the halo out to `burnRadius` (200 u) burns while the burn manager has room.
 Before, segments past the frame's 96 ignites were skipped and the 192 cap refused the rest. `IgniteRemote` (a client's
-replay) no longer applies the cap. Compiled with Unity's Roslyn (player + editor) from a worktree; the EditMode tests
-and the game have not run. Affects: the Meerkat (same `FulmenConfig`); the Grizzly's claw burn is unchanged.
+replay) no longer applies the cap. Compiled with Unity's Roslyn (player + editor) from a worktree. **Step 1 ran
+2026-11-20 in the open editor on `68e610bdeb` (pipeline `run_tests`): `FulmenMathTests` 18 of 18 and
+`PrismBurnSpreadTests` 5 of 5 pass.** The game has not been played: steps 2-6 are still owed. Affects: the Meerkat (same `FulmenConfig`); the Grizzly's claw burn is unchanged.
 
-1. Run the EditMode tests `FulmenMathTests` and `PrismBurnSpreadTests`. **Pass:** all green.
+1. ~~Run the EditMode tests `FulmenMathTests` and `PrismBurnSpreadTests`.~~ Done 2026-11-20: 18 + 5 green.
 2. Toybox, Stoat, rival trails or flora in the cell: collect an omni crystal. **Pass:** one bolt from the cell's centre;
    every rival prism a stream visibly crosses catches fire (none left standing on the line) and is gone about 12 s later.
 3. Collect three omni crystals within 12 s in dense rival mass. **Pass:** each bolt still burns the prisms on its own
