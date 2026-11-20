@@ -8854,7 +8854,7 @@ hull as a tall rail at mid left, a Carrying chip mid screen, the flower split in
 sized-up HUD is already written on branch `claude/project-thread-xnd2ma` (not merged, not run in Unity) and waits on
 this pick; Pickup's and Pause's sizes and the escort / home marquee are not in it yet.
 
-## 214. Rev 119 mockups: four HUD directions without the marquee, at normal text sizes (2026-11-20, awaiting a pick)
+## 214. Rev 119 mockups: four HUD directions without the marquee, at normal text sizes (2026-11-20; Shombith picked B)
 
 **Asked.** Shombith on Rev 118: "Why are the texts so big. I do not want big texts what the hell", then "Yes I want
 different mockups not just marquee, I didnt like marquee and how it looks in game".
@@ -8870,5 +8870,20 @@ Banked, Attack and Sail, none with the objective at top centre and each unlike R
   top; toasts are words over the aim point.
 - **D Card**: one small card top left with everything in it; toasts slide out under it.
 
-**Picked.** Nothing yet. The pick gets the full sixteen screens next. The Rev 118 sized-up HUD code parked on
+**Picked.** B, On the Ark (Shombith, 2026-11-20: "I like B with the HUD above the ark, thats cool"). Drawn on every screen in 215. The Rev 118 sized-up HUD code parked on
 `claude/project-thread-xnd2ma` is not built and will be replaced by the pick.
+
+## 215. Rev 120 mockups: B On the Ark on every in-game voyage screen (2026-11-20, awaiting sign-off before the build)
+
+**Asked.** Shombith picked Rev 119 B: "I like B with the HUD above the ark, thats cool".
+
+**Drawn.** Tab "Voyages playtest", sixteen screens and notes (`Docs/MenuRedesignB/rounds/r120_voyage_hud_ark.py`), at the
+game's own text sizes: Intro, SetOff, Raid, Pickup, Banked, Attack, Leak, Sail, Kaiju, Stray, Goal, Pause, Home, Escort,
+Score, Lost. A lit plate over the Ark in the world carries the crystals aboard, the hull as 16 lit segments and one
+state line (+7 to bank, Sails in 5, Under attack, Leaking, Goal met); sea blue at rest, red when hit, lime at the goal.
+On an escort its number is the hull; on the way home, what is aboard. A one-line chip top left repeats the numbers for
+when the Ark is off screen (outlined on Stray), and toasts are a feed under it. Pause and the end board are the shared
+windows at normal sizes.
+
+**To build.** VoyageHud's objective box becomes the chip and toast feed; a world-space plate parented to the Ark shows
+the rest. Replaces the Rev 118 code parked on `claude/project-thread-xnd2ma`.
