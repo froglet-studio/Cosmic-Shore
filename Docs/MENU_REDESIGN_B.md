@@ -8822,3 +8822,34 @@ the toasts one fixed spot of their own.
   side with their captions under them.
 - **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
   colour shard tiles (no such systems yet).
+
+## 213. Rev 118 mockups: every in-game voyage screen, one HUD for every device (2026-11-20, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-20): "We can definitely improve the in game hud lets do that I guess", then, after a
+phone-sized mockup page: "HUD should be same accross all devices, I was asking you to draw in game mockups for all in
+game HUD." and "Use frogma".
+
+**On the canvas**: the Voyages playtest tab, round `rev118`, sixteen boards in the order a run meets them plus a notes
+board, all one family: Rev 116 A (Marquee, picked and built) sized up so the one 1920 x 1080 layout reads on every
+device (a phone shows it at about 0.40, `Docs/UI_STYLE_GUIDE.md` section 8, D6), with no word under 28 units. Generator:
+`Docs/MenuRedesignB/rounds/r118_voyage_hud_all.py <root> 118`; copies `Docs/MenuRedesignB/board/R118*.dc.html`.
+- **R118Intro**: the intro reel's title shot, no HUD, hold to skip.
+- **R118SetOff**: setting off, STEAL 50 CRYSTALS in the toast spot, the Ark's hull top left.
+- **R118Raid** (the main screen): 23 / 50 with +7 carried beside it, the route, the place and the raid clock on one row;
+  the toast spot holds the next thing to do, dimmed, when no toast is up.
+- **R118Pickup**, **R118Banked**: the running +1 toast; the BANKED toast carrying what was banked by element (the flower
+  split left the marquee).
+- **R118Attack**, **R118Leak**: the hull block turns red with UNDER ATTACK; ArkAttackerMarks' diamonds and edge arrow
+  (built) mark the raiders in the world.
+- **R118Sail**: the countdown ring with "Bank the +7 or lose it" under it.
+- **R118Kaiju**, **R118Stray**: between cells (no clock, "Ark bound for"), and the recall countdown.
+- **R118Goal**, **R118Pause**: the goal met (count in Lime), and the pause sheet drawn at the new sizes.
+- **R118Home**: on the way home the score is what is aboard and at stake.
+- **R118Escort**: an escort's score is its hull, so the marquee carries the hull and its bar and the top-left block is
+  not drawn.
+- **R118Score**, **R118Lost**: the met board (Finish here X, Sail home B, Venture further A) and the Ark lost.
+
+**Differs from the build**: the built Marquee (212.1) has a 54-unit count, 20-unit lines (about 8 pt on a phone), the
+hull as a tall rail at mid left, a Carrying chip mid screen, the flower split in the marquee and 28 / 19 toasts. The
+sized-up HUD is already written on branch `claude/project-thread-xnd2ma` (not merged, not run in Unity) and waits on
+this pick; Pickup's and Pause's sizes and the escort / home marquee are not in it yet.
