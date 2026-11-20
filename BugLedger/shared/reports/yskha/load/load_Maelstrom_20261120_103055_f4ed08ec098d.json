@@ -1,0 +1,365 @@
+{
+    "schemaVersion": 1,
+    "reportId": "f4ed08ec098d",
+    "timestamp": "2026-11-20T10:30:55.8401786Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "Ys-bleeding-edge",
+    "gitCommitHash": "7788ad036d",
+    "trigger": "Netcode scene load (client) — Maelstrom",
+    "loadKind": "launch",
+    "completionReason": "Superseded by new load (Cell swap -> Serpentine - Shallows)",
+    "interrupted": false,
+    "sceneFrom": "MinigameBreakwater",
+    "sceneTo": "Maelstrom",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Client",
+    "connectedClients": 0,
+    "totalMs": 7268.22021484375,
+    "visualReadyMs": 5385.96923828125,
+    "waitMs": 338.21630859375,
+    "humanWaitMs": 0.0,
+    "workMs": 6930.00390625,
+    "unattributedMs": 1811.6971435546875,
+    "framesDuringLoad": 4,
+    "avgFpsDuringLoad": 0.5503410696983337,
+    "worstFrameMs": 5837.6220703125,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Client scene load (Maelstrom)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 1.820199966430664,
+            "endMs": 5043.60498046875,
+            "durationMs": 5041.78466796875,
+            "exclusiveMs": 4812.07421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": 0,
+            "depth": 1,
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 4813.89453125,
+            "endMs": 5458.34326171875,
+            "durationMs": 644.44873046875,
+            "exclusiveMs": 338.21630859375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (PlanetDestroyer6)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 5052.95654296875,
+            "endMs": 5209.373046875,
+            "durationMs": 156.41650390625,
+            "exclusiveMs": 156.41650390625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (Iggy)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 5225.00732421875,
+            "endMs": 5270.91162109375,
+            "durationMs": 45.904296875,
+            "exclusiveMs": 45.904296875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (Lion)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 5284.3935546875,
+            "endMs": 5323.0087890625,
+            "durationMs": 38.615234375,
+            "exclusiveMs": 38.615234375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (Tiger)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 5323.20068359375,
+            "endMs": 5385.962890625,
+            "durationMs": 62.76220703125,
+            "exclusiveMs": 62.76220703125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 5398.7998046875,
+            "endMs": 5400.232421875,
+            "durationMs": 1.4326171875,
+            "exclusiveMs": 1.4326171875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 5400.25390625,
+            "endMs": 5401.35546875,
+            "durationMs": 1.1015625,
+            "exclusiveMs": 1.1015625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 4812.07421875,
+            "percent": 66.2070541381836,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 1811.6971435546875,
+            "percent": 24.92628288269043,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 1,
+            "name": "Netcode & Sync",
+            "attributedMs": 338.21630859375,
+            "percent": 4.653357982635498,
+            "spanCount": 1,
+            "waitMs": 338.21630859375
+        },
+        {
+            "category": 4,
+            "name": "AI Backfill",
+            "attributedMs": 202.32080078125,
+            "percent": 2.7836360931396486,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 101.37744140625,
+            "percent": 1.3948042392730713,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 2.5341796875,
+            "percent": 0.0348665788769722,
+            "spanCount": 2,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Client scene load (Maelstrom)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 5041.78466796875,
+            "exclusiveMs": 4812.07421875,
+            "maxSingleMs": 5041.78466796875,
+            "isWait": false
+        },
+        {
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "count": 1,
+            "totalMs": 644.44873046875,
+            "exclusiveMs": 338.21630859375,
+            "maxSingleMs": 644.44873046875,
+            "isWait": true
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (PlanetDestroyer6)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 156.41650390625,
+            "exclusiveMs": 156.41650390625,
+            "maxSingleMs": 156.41650390625,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Tiger)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 62.76220703125,
+            "exclusiveMs": 62.76220703125,
+            "maxSingleMs": 62.76220703125,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Iggy)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 45.904296875,
+            "exclusiveMs": 45.904296875,
+            "maxSingleMs": 45.904296875,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Lion)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 38.615234375,
+            "exclusiveMs": 38.615234375,
+            "maxSingleMs": 38.615234375,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1.4326171875,
+            "exclusiveMs": 1.4326171875,
+            "maxSingleMs": 1.4326171875,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1.1015625,
+            "exclusiveMs": 1.1015625,
+            "maxSingleMs": 1.1015625,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 7220.24169921875,
+            "durationMs": 5837.6220703125,
+            "during": "Client scene load (Maelstrom)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Netcode scene load (client) — Maelstrom"
+        },
+        {
+            "atMs": 1.8099000453948975,
+            "label": "Netcode scene load begins: Maelstrom"
+        },
+        {
+            "atMs": 4765.43505859375,
+            "label": "Unity scene loaded: Maelstrom (Single)"
+        },
+        {
+            "atMs": 5043.6005859375,
+            "label": "Netcode scene load complete: Maelstrom (client 3)"
+        },
+        {
+            "atMs": 5385.97021484375,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 5386.02099609375,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 5401.37451171875,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 7202.69873046875,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 7203.044921875,
+            "label": "Netcode scene load completed on ALL clients: Maelstrom"
+        }
+    ],
+    "counters": [],
+    "accumulators": [],
+    "errors": [],
+    "hints": [
+        {
+            "id": "single-dominator",
+            "severity": 1,
+            "title": "One cost dominates this load",
+            "finding": "\"Client scene load (Maelstrom)\" alone is 66% of the load (4.8s).",
+            "fixAdvice": "See the hot-path breakdown for its per-stage costs. Cut its workload (content/intensity tuning), pool or pre-instantiate its prefabs, or spread the work across frames.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 5.8s during \"Client scene load (Maelstrom)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        }
+    ]
+}
