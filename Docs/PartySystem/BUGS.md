@@ -2766,7 +2766,12 @@ cheap rate). From the button to the menu is about 17 s where it was about 10.5 s
 **Not found:** why a destroy during play costs nearly three times the unload's. The editor Profiler was switched on
 to look at one such frame and the editor crashed (native fault, 21:35); do not profile these frames on this PC.
 
-**Not measured:** a guest, two machines, a build, any mode other than Bloomrush, and the hold on a focused editor.
+**Two players (editor + MPPM Player 2, the same evening):** the load's frame was 5.7 s on the host and 4.5 s on the
+guest, with 74,000 prisms on each at the end; the drain's frames were 1.4-3.5 s and 0.5-1.8 s. Both reached the menu
+still in the party. In a gate race (Breakwater, inside a Maelstrom) the drain found nothing to take and cost 2.1 s:
+a course's own prisms are not the cell's plants or environment, so they still die in the load's frame.
+
+**Not measured:** two machines, a build, the hold on a focused editor, and any heavy mode other than Bloomrush.
 The second freeze on the menu a minute after a return (6.9-21.9 s, B45 of 2026-11-20) is untouched.
 
 ## B48 - a reaped party session rebuilt in place leaves the pilot unpaired, and the next match seats them on the wrong domain (2026-11-07)

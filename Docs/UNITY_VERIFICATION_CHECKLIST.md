@@ -24868,8 +24868,11 @@ Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
 
 - [x] Solo online host, Bloomrush 90 s, Main Menu: the load's frame is 5.7-6.5 s (9.5-10.5 s before), the menu comes
       up normally, no red error, and the test log has a `sceneExitDrain` mark.
-- [ ] Two players, the same: the guest also reaches the menu, nobody bounces, and both logs carry the mark. Compare
-      each player's longest freeze with the 8.7-10.0 s of the test with Garrett of 2026-11-20.
+- [x] Two players, the same: the guest also reaches the menu, nobody bounces, and both logs carry the mark.
+      **Passed 2026-11-20** (editor + MPPM Player 2, `fbb1961a48`, 74,000 prisms on each at the end): longest frame
+      5.7 s on the host and 4.5 s on the guest (8.7-10.0 s in the test with Garrett the night before); the drain's own
+      frames were 1.4-3.5 s on the host and 0.5-1.8 s on the guest; both back on the menu, party still 2 of 4, no red
+      error. Both marks read `cut short at 8.0s`. One PC: a second machine and a build are still owed.
 - [ ] By eye: after pressing Main Menu the splash is up for longer than before (up to about 8 s more after a very
       heavy match) and nothing of the match shows through it.
 - [ ] A match with a cell environment (Cleave, Dog Fight), return to the menu, then launch it again: the arena lays
@@ -24883,8 +24886,11 @@ Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
 `MaelstromController.DealAISeats`. `PlacedAIDomainTests` (4) pass in the editor (run by reflection, not the Test Runner).
 
 - [x] Solo host, Maelstrom, three AI placed on Ruby: the hub deals and spawns all three on Ruby.
-- [ ] Two players as in the report: both on Jade, two AI placed on Ruby. The hub shows both AI on Ruby on BOTH
-      machines, and every round keeps them there.
+- [x] Two players as in the report: both on Jade, two AI placed on Ruby. The hub shows both AI on Ruby on BOTH
+      machines, and every round keeps them there. **Passed 2026-11-20** (editor + MPPM Player 2, `fbb1961a48`): the
+      hub, a Breakwater round and the hub after it list ys1 and YS2 on Jade and both AI on Ruby on both machines; the
+      round's scoreboard has two teams, Ruby and Jade, and no Gold. One round played, set through the launch data
+      (`SetRequestedAIDomains`), not by clicking the launch panel.
 - [ ] Nothing placed (the default): the AI are spread as before (one per empty domain first).
 
 ## 🟡 Stoat: one slingshot - the swing's speed-up, no second push at the exit (2026-11-19, Yash, NOT PLAYED)
