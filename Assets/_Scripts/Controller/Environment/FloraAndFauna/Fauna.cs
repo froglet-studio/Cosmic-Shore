@@ -1064,12 +1064,6 @@ namespace CosmicShore.Gameplay
 
         HealthPrism[] _bodyPrisms;
 
-        /// <summary>
-        /// A creature grown at birth beyond its species' size (a voyage's raiders, Shombith 2026-11-16: "bigger faunas ...
-        /// attack the ark"): its root scale times <paramref name="factor"/>, its rig re-bound and its heart re-sized, as a
-        /// variant's body scale does. Call in the spawn frame, right after <c>SpawnFaunaWithDomain</c>, so the body blooms
-        /// in at its grown size (continuity holds). A variant applied later re-sizes from the authored scale.
-        /// </summary>
         /// <summary>How many times <see cref="GrowBody"/> has grown this body over its species' size (1 = never).</summary>
         public float GrownBy => _grownBy;
         float _grownBy = 1f;
@@ -1102,6 +1096,12 @@ namespace CosmicShore.Gameplay
             _prismsGrownBy *= settle;
         }
 
+        /// <summary>
+        /// A creature grown at birth beyond its species' size (a voyage's raiders, Shombith 2026-11-16: "bigger faunas ...
+        /// attack the ark"): its root scale times <paramref name="factor"/>, its rig re-bound and its heart re-sized, as a
+        /// variant's body scale does. Call in the spawn frame, right after <c>SpawnFaunaWithDomain</c>, so the body blooms
+        /// in at its grown size (continuity holds). A variant applied later re-sizes from the authored scale.
+        /// </summary>
         public void GrowBody(float factor)
         {
             if (factor <= 0f || Mathf.Approximately(factor, 1f)) return;
