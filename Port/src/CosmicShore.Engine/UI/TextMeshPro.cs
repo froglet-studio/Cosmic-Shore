@@ -557,6 +557,17 @@ namespace CosmicShore.Engine.UI
         public TextMeshPro() { m_isOrthographic = false; }
     }
 
+    /// <summary>
+    /// A canvas TextMeshPro sub-mesh (original contract: TMPro.TMP_SubMeshUI, the child TMP adds for a fallback font's
+    /// glyphs). The port draws a text in one mesh, so none is ever created; the type exists for game code that asks
+    /// whether a graphic is one (UIThemeLive.SwapSea).
+    /// </summary>
+    public class TMP_SubMeshUI : MaskableGraphic
+    {
+        /// <summary>The sub-mesh's material, read without cloning it.</summary>
+        public Material sharedMaterial { get; set; }
+    }
+
     /// <summary>Canvas (UGUI) TextMeshPro component.</summary>
     public class TextMeshProUGUI : TMP_Text
     {
