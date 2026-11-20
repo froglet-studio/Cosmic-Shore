@@ -23758,9 +23758,10 @@ compile of the controller partial, which the harness does not build), `unity_ref
    every ring. Freeze a full bomb by one and blow it: the keg bursts, the gate clears (the lime ring moves on), and the
    blast throws you away from the bomb. Threading the ring mouth still clears the gate. The hint toast shows once.
 3. **Regrow.** An opened keg grows back as a live ribbon about 3 s later, never on top of a hull.
-4. **I2 bank shot.** A rail of 6 chalk dots marks each keg's exit lane, on the corner's inside. Blow a keg from its far
-   side (keg between you and the next ring): you are thrown down the lane and "Bank shot (1)" shows; a straight blow
-   throws you wide and shows nothing. Fly the ring-to-ring line: you never hit a chalk dot.
+4. **I2 bank shot.** A rail of 6 chalk dots marks each keg's exit lane, on the corner's inside. Blow a keg from its EXIT
+   side (YOU between the keg and the next ring, the bomb in the keg behind you): you are thrown down the lane and "Bank
+   shot (1)" shows; a straight blow throws you wide and shows nothing. Fly the ring-to-ring line: you never hit a chalk
+   dot. (Corrected 2026-11-20: this step said "keg between you and the next ring", which throws you backwards.)
 5. **I3 shielded cores.** The first blast only strips the core's shield (no burst); a second opens it. Leave a stripped
    keg alone: it shields itself again about 2.5 s later. Confirm a Grizzly blast damages these Blue `GrizzlyTimeKeg`
    prisms at all (the spec's reading of `PrismSpatialIndex`, unverified).
@@ -23771,8 +23772,53 @@ compile of the controller partial, which the harness does not build), `unity_ref
 8. **Two clients (MPPM).** Both see the same kegs and chalk; a keg one client opens opens on the other; a gate is
    credited once.
 9. **Feedback and cost.** A crown of debris bursts off each ring you clear; the burst doubles in speed on your final
-   lap. On a phone-class device the bursts and regrow cost no visible hitch. The four sound slots are empty (by design).
+   lap. On a phone-class device the bursts and regrow cost no visible hitch. The four keg sounds play their ledger
+   placeholders since 2026-11-16 (`Docs/AudioSystem/sound_placeholders.json`); only `kegRammedEvent` (2026-11-20) is empty.
 10. **Kegs off.** Untick `kegsAtGates` on the scene's controller: the race is rings only, as before.
+
+### 🔴 Grizzly Time, the fun pass: the bank shot fixed, a Rush rams a keg open, the AI Rushes (2026-11-20, Yash, NOT PLAYED)
+
+`GRIZZLYTIME.md` §0.1. `GrizzlyTimeKegs.BlowPoint` moved to the keg's exit side; every peer opens a keg a Rushing hull
+rams (`GrizzlyTimeController.Kegs.cs`: `SyncRamWatches`, `TryRammer`; toast 302, the empty `kegRammedEvent` slot); the
+AI presses Rush on a straight and its stall clock runs on the machine that flies it (`GrizzlyTimeController.AI.cs`).
+Ran: `grizzly_time_course_harness/run.sh` (33 tests pass; `--self-test`, 13 negative controls fire; `--sweep`),
+`author_grizzly_time_assets.py --check` (26 files match), `check_ai_no_state_writes.py`, `check_console_logging.py`. The
+open editor compiled the final code, runtime and tests (its `Assembly-CSharp.dll` and `Assembly-CSharp-Editor.dll` of
+2026-11-20 21:40 hold the new members; the recompile was another session's). It was in Play for that session, so the
+EditMode tests were NOT run in Unity and nothing was flown. Not run: `unity_refcompile` (cannot run on this Windows
+box).
+
+1. **EditMode tests** `GrizzlyTimeKegsTests` and `GrizzlyTimeCourseTests` pass in the editor.
+2. **The side.** I1 or I2: freeze a full bomb in a keg, fly round so you are between the keg and the next ring, let go.
+   You are thrown at the next ring and "Bank shot (1)" shows. From the other side you are thrown away from it. If this
+   is the wrong way round in play, the sign in `GrizzlyTimeKegs.BlowPoint` is the one thing to revert.
+3. **A Rush opens a keg.** Rush through a keg's core (through the hoop, or across the three cubes; either way opens
+   it): the keg bursts, the gate clears and "Rammed open (1)" shows. At I3 one Rush opens a SHIELDED keg in one pass,
+   where a bomb only strips it. A Rush that passes more than about 20 u from the core opens nothing; if it broke hoop
+   slabs, they grow back about 3 s after you leave.
+4. **Rush, then bomb-jump.** In a fresh race (the toast shows on the 1st and every 4th bank shot), freeze a bomb just
+   short of a keg, Rush through the hoop TOWARD THE NEXT RING, and let the bomb go within about 1.5 s while you are
+   still within 100 u of the keg: you are thrown down the lane and "Bank shot" shows. It is read only when the throw
+   points within 30 degrees of the lane to the next ring, so the same jump after ramming ACROSS the cubes shows
+   nothing, by design. A Rush alone never shows it.
+5. **Silenced.** While silenced (a rival's blast caught you), your Rush opens no keg.
+6. **Two clients (MPPM), I3.** The guest Rushes through a shielded keg: it opens on the HOST's screen too, and the
+   other way round. A third client sees it open as well. Before this change it stayed standing on any machine that
+   was neither the rammer's nor the host. Then the two known misses, to COUNT them: (a) mash Rush through kegs the
+   instant the card comes ready, and note how often a keg stays standing on the other screen (each machine keeps its
+   own Energy and cooldown for the hull, so it can refuse a press the owner made); (b) Rush from about 100 u out, so
+   the keg is reached at the very end of the burst. If either is common, the fix is an owner-decided open sent over
+   the wire (`GRIZZLYTIME.md` section 0.1), which needs a protocol-version bump.
+7. **AI, every seat, I1-I4.** AI Grizzlies visibly Rush on straights (the burst, and the Rush sound), at I3-I4 too
+   (on the leg into the approach point, before the turn-in), and still finish every level. None Rushes into a turn
+   and misses a ring because of it; if one does, raise `GrizzlyTimeKegs.AIRushMinRun` (150) or untick `aiRushes` on
+   the scene's controller. On two machines, an AI's Rush shows on the guest as well.
+8. **A guest hands its own hull to the AI** (dev build, the Pilot control): the hull is NOT steered back to a run-up
+   every 18 s while it is clearing gates. A hull truly stuck at one ring for 18 s still is.
+9. **Text.** The start hint reads "Open a keg and its gate is yours: bomb it, or Rush through it. Freeze a bomb in
+   the keg, fly just past it toward the next ring and let go: the blast throws you down the leg."; the card says the
+   same. The new `kegRammedEvent` slot is empty by design.
+10. **Match length.** Time an I2 race flown well with Rush: the offline models say 78-100 s for two laps.
 ## 🔴 The colour trace: every colour the game draws comes from the worn colour set (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/nifty-cray-41hy43`. Docs/VesselModels/COLOR_TRACE.md. Every colour authored outside the palette blocks is
