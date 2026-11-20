@@ -232,7 +232,7 @@ namespace CosmicShore.UI
             VoyageMapGraphic.Quad(vh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax),
                 new Vector2(r.xMax, r.yMax), new Vector2(r.xMax, r.yMin), SeaTint, new Vector2(0f, 0f),
                 new Vector2(0f, seaV), new Vector2(1f, seaV), new Vector2(1f, 0f));
-            if (CellZoom) Cells(vh, r, s, zc, white);
+            if (_map.Sky != null && (_map.Sky.CellReveal > 0f || _map.Sky.DotReveal > 0f)) Cells(vh, r, s, zc, white);
 
             // The disk's faces at +-500 ly and the midplane.
             var diskFace = ColorTrace.Retrace(ColorTrace.Ui, DiskFace);
@@ -300,14 +300,15 @@ namespace CosmicShore.UI
             double z0 = zc - r.height * .5 / s, z1 = zc + r.height * .5 / s;
             HyperSeaCells.NucleiInUpright(ys, x0, x1, z0, z1, _nuclei, MaxSideCells);
             float px = (float)(HyperSeaCells.A * s);
-            float alpha = Mathf.Clamp01((px - VoyageMapSky.CellsFromPx) / 22f);
+            // the cells come in as the map's own do (its dots, then its walls), so the strip and the table never disagree
+            float alpha = _map.Sky.CellReveal;
             float fill = Mathf.Clamp01((px - 60f) / 30f);
             bool inner = px > 90f;
-            float nucA = (float)HyperSeaCells.NucleusAlpha(px);
+            float nucA = Mathf.Max((float)HyperSeaCells.NucleusAlpha(px), _map.Sky.DotReveal);
             int budget = vh.currentVertCount + SideCellVerts;
             // the liquid between the cells, under them
-            VoyageCellDraw.Liquid(vh, r, Mathf.Max(.4f, (float)HyperSeaCells.MembraneAlpha(px)) * alpha, white);
-            for (int pass = 0; pass < 3; pass++)
+            if (alpha > 0f) VoyageCellDraw.Liquid(vh, r, Mathf.Max(.4f, (float)HyperSeaCells.MembraneAlpha(px)) * alpha, white);
+            for (int pass = alpha > 0f ? 0 : 2; pass < 3; pass++)
                 foreach (var c in _nuclei)
                 {
                     if (vh.currentVertCount > budget) return;

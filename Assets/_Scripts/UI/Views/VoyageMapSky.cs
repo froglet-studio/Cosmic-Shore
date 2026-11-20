@@ -72,13 +72,16 @@ namespace CosmicShore.UI
         const float DotsCountFade = .4f;
         // The cost ratio the walls fade in over (cells drawn ~ 1 / width^2: 3 is a zoom of ~1.7), and the plain-to-wet one.
         const float FitRange = 3f, WetBlendRange = 2.25f;
+        // How long a stage takes to come in (or go) when the zoom jumps past it, seconds.
+        const float RevealSeconds = .6f;
+        // The walls are full once the nuclei are this far in (1 / this), so the dots always lead.
+        const float WallsAfterDots = 1.6f;
         const float CellFadeTo = 58f, CellFillFrom = 60f, CellFillTo = 90f, CellInnerFrom = 90f, CellTagsFrom = 200f,
             CellTapFrom = 40f, NucleusOutlineFrom = 50f;
         const int MaxCells = 4000, CellVertBudget = 34000;
         // The view's cells are drawn whole or not at all: past the budget the mesh would keep only the first rows the
         // lattice yields, a band of foam across the top of the map (Shombith, 2026-11-17). They fade in as the budget's
         // room grows instead (FitRange), so the foam comes in across the whole view as the cells grow.
-        const int MinWetPoints = 12;
         const float Margin = 20f;
 
         static HyperSeaSkyCatalog s_Catalog;
@@ -136,6 +139,12 @@ namespace CosmicShore.UI
         readonly List<int> _cellStart = new();
         readonly List<(double u, double v)> _cellPoly = new();
         readonly List<(double u, double v)> _sectionScratch = new();
+        // Each cell's section as the slice cuts it, in _secPts from _secStart[i] to _secStart[i + 1]: the wet outlines are
+        // made from them once the room for the wet foam is known.
+        readonly List<int> _secStart = new();
+        // Whether each cell is drawn at all (its middle within a cell of the view); only those count toward the budget.
+        readonly List<bool> _cellSeen = new();
+        readonly List<(double u, double v)> _secPts = new();
         // Each cell's plain section too (its straight walls), in _cellRaw from _rawStart[i] to _rawStart[i + 1]: the
         // far view's foam (CellLod.Plain).
         readonly List<int> _rawStart = new();
@@ -145,6 +154,11 @@ namespace CosmicShore.UI
         CellLod _cellLod;
         // How far the wet foam has taken over from the plain walls (0-1), and how strongly the nuclei show as dots.
         float _wetBlend, _dotAlpha;
+        // When the reveal last eased, and whether it is still on its way (the map redraws until it lands).
+        float _easedAt = float.NegativeInfinity;
+        bool _easing;
+        // Whether the wet foam's lit rims and the missed nuclei's dashed outlines fit beside it.
+        bool _wetExtras;
         // How much of a cell's fill the plain foam draws (0-1): its fans fade out first as the view widens past the budget.
         float _plainFill;
         readonly List<Vector2> _screenPoly = new();
@@ -177,6 +191,10 @@ namespace CosmicShore.UI
         public double SliceBase { get; private set; }
         /// <summary>True while the map shows the cells (the edge view then cuts them upright and shows the slice bar).</summary>
         public bool CellZoom => _hasView && CellPx >= CellsFromPx;
+        /// <summary>How far the cells' walls have come in (0-1), as the map shows them now; the edge view follows it.</summary>
+        public float CellReveal => _cellAlpha;
+        /// <summary>How strongly the nuclei show as dots before the walls (0-1).</summary>
+        public float DotReveal => _dotAlpha;
 
         struct Hit
         {
@@ -199,8 +217,11 @@ namespace CosmicShore.UI
         public void SetTemplate(TMP_Text template) => _template = template;
         public void SetLines(VoyageLines lines) => _lines = lines;
 
-        /// <summary>Read more of the sky table; true when this frame finished it (the map then redraws).</summary>
-        public bool Tick()
+        /// <summary>Read more of the sky table; true when this frame finished it, or while the cells' reveal is still easing
+        /// in or out (the map then redraws).</summary>
+        public bool Tick() => TickCatalog() | _easing;
+
+        bool TickCatalog()
         {
             if (!s_Loaded)
             {
@@ -348,21 +369,35 @@ namespace CosmicShore.UI
             _rawStart.Clear();
             _cellRaw.Clear();
             _cellLod = CellLod.None;
-            _wetBlend = 0f;
-            _dotAlpha = 0f;
-            _cellAlpha = 0f;
             float px = CellPx;
-            if (px < DotsFromPx) return;
+            // the time since the last look, for the reveal's easing (a long gap is a fresh start, not a jump)
+            float now = Time.unscaledTime, dt = Mathf.Clamp(now - _easedAt, 0f, .1f);
+            _easedAt = now;
+            _easing = false;
+            if (px < DotsFromPx)
+            {
+                _cellAlpha = _wetBlend = _dotAlpha = 0f;
+                return;
+            }
             double m = HyperSeaCells.A;
             HyperSeaCells.NucleiInSlice(_sliceZ, x0 - m, y0 - m, x1 + m, y1 + m, _nuclei, MaxCells + 1);
-            // More cells than the map draws: the plain sea until they are fewer.
-            if (_nuclei.Count > MaxCells) return;
-            _dotAlpha = Smooth((px - DotsFromPx) / (CellsFromPx - DotsFromPx))
-                * Smooth((MaxCells - _nuclei.Count) / (MaxCells * DotsCountFade));
-            bool walls = px >= CellsFromPx;
-            // Every cell's wet outline has at least a dozen points; a view that could not draw even that many walls for half
-            // its nuclei (some only graze the slice and are dropped) draws the plain foam and skips the wet outlines.
-            bool wetMay = walls && (long)_nuclei.Count * MinWetPoints * (Tilted ? 6 : 4) <= 2L * CellVertBudget;
+            if (_nuclei.Count > MaxCells)
+            {
+                // More cells than the map draws: the plain sea until they are fewer.
+                _cellAlpha = _wetBlend = _dotAlpha = 0f;
+                return;
+            }
+            float dotRoom = Smooth((MaxCells - _nuclei.Count) / (MaxCells * DotsCountFade));
+            float dotGoal = Smooth((px - DotsFromPx) / (CellsFromPx - DotsFromPx)) * dotRoom;
+            // the walls' sections while they show or are on their way in or out
+            bool walls = px >= CellsFromPx || _cellAlpha > 0f;
+            _secPts.Clear();
+            _secStart.Clear();
+            _cellSeen.Clear();
+            // a cell counts toward the mesh only where it is drawn: its middle within a cell of the view (PopulateCells)
+            var vr = _map.rectTransform.rect;
+            var seenLim = new Rect(vr.xMin - px, vr.yMin - px, vr.width + 2f * px, vr.height + 2f * px);
+            long seenRaw = 0;
             foreach (var c in _nuclei)
             {
                 if (!HyperSeaCells.TrySection(c, (0, 0, _sliceZ), (1, 0, 0), (0, 1, 0), _sectionScratch, out var sec)) continue;
@@ -370,33 +405,76 @@ namespace CosmicShore.UI
                 _cellH.Add(sec.Mh);
                 _cellR.Add(sec.NucleusR);
                 _cellMid.Add((sec.Mu, sec.Mv));
+                bool seen = seenLim.Contains(At(sec.Mu, sec.Mv));
+                _cellSeen.Add(seen);
+                // the plain foam: each cell's own section pulled in by the liquid, its corners sharp (the wet foam's
+                // outline before it is rounded, so the one becomes the other); a sliver the slice only grazes is left to
+                // the liquid between cells, as the wet foam leaves it
                 _rawStart.Add(_cellRaw.Count);
-                if (walls) AddCcw(_sectionScratch, _cellRaw);
-                _cellStart.Add(_cellPoly.Count);
-                // a sliver the slice only grazes is left to the liquid between cells (the wet foam draws none for it)
-                if (wetMay && HyperSeaCells.TryWetOutline(_sectionScratch, _wetScratch)) _cellPoly.AddRange(_wetScratch);
+                if (walls && HyperSeaCells.TryWetOutline(_sectionScratch, _wetScratch, 0))
+                {
+                    _cellRaw.AddRange(_wetScratch);
+                    if (seen) seenRaw += _wetScratch.Count;
+                }
+                _cellStart.Add(0);
+                _secStart.Add(_secPts.Count);
+                if (walls) _secPts.AddRange(_sectionScratch);
             }
             _rawStart.Add(_cellRaw.Count);
-            _cellStart.Add(_cellPoly.Count);
-            if (!walls)
+            _cellStart.Add(0);
+            _secStart.Add(_secPts.Count);
+            _wetExtras = false;
+            float cellGoal = 0f, wetGoal = 0f, cellRoom = 0f;
+            if (walls)
             {
-                if (_dotAlpha > 0f) _cellLod = CellLod.Dots;
-                return;
+                // The walls grow in with the cells' size and with the budget's room, so the view's cells are drawn whole,
+                // never the lattice's first rows alone (a band across the top, Shombith 2026-11-17).
+                long plainWalls = CellsCost(px, CellLod.Plain, fill: false);
+                cellRoom = Fit(plainWalls);
+                // and never ahead of the nuclei, which come first
+                cellGoal = px >= CellsFromPx
+                    ? Smooth((px - CellsFromPx) / (CellFadeTo - CellsFromPx)) * cellRoom * Smooth(dotGoal * WallsAfterDots)
+                    : 0f;
+                _plainFill = px > CellFillFrom ? Fit(CellsCost(px, CellLod.Plain)) : 0f;
+                // The rounded (wet) foam once it fits beside the plain walls; it takes over from them as its room grows, and
+                // the plain walls stop when it has. Its corners are rounded as finely as the room lets the whole view's
+                // take over (3, 2 or 1 samples a corner; the side view's are 3), and its lit rims and the dashed outlines
+                // of the nuclei the slice misses come with it only where they fit too. Short of that, the plain foam
+                // alone, which costs a fraction of it. (The full wet foam cost about twice the budget at Cell, so before
+                // 2026-11-20 the map never drew it and showed straight walls over the side view's round ones.)
+                long room = CellVertBudget - plainWalls;
+                int corners = 0;
+                for (int k = 3; k >= 1 && corners == 0; k--)
+                {
+                    long est = WetCost(seenRaw * (k + 1L), px);
+                    if (est * WetBlendRange <= room || (k == 1 && est < room)) corners = k;
+                }
+                if (corners > 0)
+                {
+                    for (int i = 0; i < _cellNuclei.Count; i++)
+                    {
+                        _cellStart[i] = _cellPoly.Count;
+                        if (!_cellSeen[i]) continue;
+                        _sectionScratch.Clear();
+                        for (int k = _secStart[i]; k < _secStart[i + 1]; k++) _sectionScratch.Add(_secPts[k]);
+                        if (_sectionScratch.Count >= 3 && HyperSeaCells.TryWetOutline(_sectionScratch, _wetScratch, corners))
+                            _cellPoly.AddRange(_wetScratch);
+                    }
+                    _cellStart[_cellNuclei.Count] = _cellPoly.Count;
+                    long wet = CellsCost(px, CellLod.Wet, extras: false);
+                    if (wet > 0 && room > wet) wetGoal = Smooth(Mathf.Log((float)room / wet) / Mathf.Log(WetBlendRange));
+                    _wetExtras = CellsCost(px, CellLod.Wet, extras: true) * WetBlendRange <= room;
+                }
             }
-            // The walls grow in with the cells' size and with the budget's room, so the view's cells are drawn whole, never
-            // the lattice's first rows alone (a band across the top, Shombith 2026-11-17).
-            long plainWalls = CellsCost(px, CellLod.Plain, fill: false);
-            _cellAlpha = Smooth((px - CellsFromPx) / (CellFadeTo - CellsFromPx)) * Fit(plainWalls);
-            _plainFill = px > CellFillFrom ? Fit(CellsCost(px, CellLod.Plain)) : 0f;
-            // The wet foam once it fits beside the plain walls; it takes over from them as its room grows, and the plain
-            // walls stop when it has. Short of that, the plain foam (each wall once, straight, no rims or dashed nuclei),
-            // which costs a fraction of it.
-            if (wetMay)
-            {
-                long wet = CellsCost(px, CellLod.Wet), room = CellVertBudget - plainWalls;
-                if (wet > 0 && room > wet) _wetBlend = Smooth(Mathf.Log((float)room / wet) / Mathf.Log(WetBlendRange));
-            }
-            if (_cellAlpha > 0f) _cellLod = _wetBlend > 0f ? CellLod.Wet : CellLod.Plain;
+            // Each stage eases to where the zoom puts it over RevealSeconds, so a jump (+, a tier, a dive) still shows the
+            // foam coming in. What the budget or the count cannot hold goes at once, so the mesh never overflows.
+            float step = dt / RevealSeconds;
+            _dotAlpha = Mathf.Min(Mathf.MoveTowards(_dotAlpha, dotGoal, step), dotRoom);
+            _cellAlpha = Mathf.Min(Mathf.MoveTowards(_cellAlpha, cellGoal, step), cellRoom);
+            _wetBlend = wetGoal > 0f ? Mathf.MoveTowards(_wetBlend, wetGoal, step) : 0f;
+            _easing = !Mathf.Approximately(_dotAlpha, dotGoal) || !Mathf.Approximately(_cellAlpha, cellGoal)
+                || !Mathf.Approximately(_wetBlend, wetGoal);
+            if (_cellAlpha > 0f && _cellRaw.Count > 0) _cellLod = _wetBlend > 0f && _cellPoly.Count > 0 ? CellLod.Wet : CellLod.Plain;
             else if (_dotAlpha > 0f) _cellLod = CellLod.Dots;
             else _cellNuclei.Clear();
         }
@@ -412,63 +490,58 @@ namespace CosmicShore.UI
             return t * t * (3f - 2f * t);
         }
 
-        /// <summary>Add <paramref name="poly"/> to <paramref name="into"/> counter-clockwise (board frame), so a wall shared
-        /// by two cells runs one way in each and <see cref="OwnsWall"/> gives it to exactly one.</summary>
-        static void AddCcw(List<(double u, double v)> poly, List<(double u, double v)> into)
-        {
-            int n = poly.Count;
-            double a2 = 0;
-            for (int i = 0; i < n; i++) a2 += poly[i].u * poly[(i + 1) % n].v - poly[(i + 1) % n].u * poly[i].v;
-            if (a2 >= 0) into.AddRange(poly);
-            else for (int i = n - 1; i >= 0; i--) into.Add(poly[i]);
-        }
-
-        /// <summary>True when a counter-clockwise cell draws its wall from <paramref name="a"/> to <paramref name="b"/>: the
-        /// wall's outward side faces +x (or +y when it runs along x). Its neighbour runs it the other way and leaves it.</summary>
-        static bool OwnsWall((double u, double v) a, (double u, double v) b)
-        {
-            double nx = b.v - a.v, ny = a.u - b.u;
-            return nx > 1e-9 || (nx >= -1e-9 && ny > 0);
-        }
-
         /// <summary>
         /// What drawing the collected cells costs the mesh, in the units <see cref="Used"/> counts (vertices on a flat map,
         /// the list's vertices on a tilted one): every wall a quad, a filled cell's fan with its rims, and each nucleus a
         /// quad or its dashed outline. An upper bound, as <see cref="PopulateCells"/> skips short walls and cells off the
         /// view.
         /// </summary>
-        long CellsCost(float px, CellLod lod, bool fill = true)
+        long CellsCost(float px, CellLod lod, bool fill = true, bool extras = true)
         {
             bool tilted = Tilted;
             int quad = tilted ? 6 : 4;
             fill &= px > CellFillFrom;
             if (lod == CellLod.Plain)
             {
-                // half the walls (each shared wall once), the fan on the plain section, and a nucleus quad
+                // each cell's own pulled-in walls, the fan on them, and a nucleus quad
                 long plain = quad;
                 for (int i = 0; i < _cellNuclei.Count; i++)
                 {
+                    if (!_cellSeen[i]) continue;
                     int m = _rawStart[i + 1] - _rawStart[i];
-                    plain += (long)(m + 1) / 2 * quad + quad;
+                    plain += (long)m * quad + quad;
                     if (fill) plain += tilted ? 9L * m : 1L + 2L * m;
                 }
                 return plain;
             }
-            bool inner = px > CellInnerFrom;
+            bool inner = extras && px > CellInnerFrom;
             double s = _map.PixelsPerUnit;
             long cost = quad;
             for (int i = 0; i < _cellNuclei.Count; i++)
             {
                 int n = _cellStart[i + 1] - _cellStart[i];
-                if (n == 0) continue;
+                if (n == 0 || !_cellSeen[i]) continue;
                 cost += (long)n * quad;
                 if (fill) cost += tilted ? 9L * n : 1L + 2L * n;
                 if (inner) cost += 2L * n * quad;
-                int dashes = px > NucleusOutlineFrom
+                int dashes = extras && px > NucleusOutlineFrom
                     ? Mathf.Clamp(Mathf.RoundToInt(2f * Mathf.PI * (float)(_cellR[i] * s) / 7f), 6, 32)
                     : 1;
                 cost += (long)dashes * quad;
             }
+            return cost;
+        }
+
+        /// <summary>What <paramref name="points"/> points of rounded outline would cost as the wet foam without its extras:
+        /// their walls and fills, and a nucleus quad a cell (an estimate before the outlines are made).</summary>
+        long WetCost(long points, float px)
+        {
+            bool tilted = Tilted;
+            int quad = tilted ? 6 : 4;
+            int cells = 0;
+            foreach (bool seen in _cellSeen) if (seen) cells++;
+            long cost = quad + points * quad + (long)cells * quad;
+            if (px > CellFillFrom) cost += tilted ? 9L * points : 2L * points + cells;
             return cost;
         }
 
@@ -649,7 +722,7 @@ namespace CosmicShore.UI
             float px = CellPx, fill = Mathf.Clamp01((px - CellFillFrom) / (CellFillTo - CellFillFrom));
             // the fills come in with the plain foam's, and are the wet outlines' once the wet foam is drawn at all
             fill *= wet ? Mathf.Lerp(_plainFill, 1f, _wetBlend) : _plainFill;
-            bool inner = wet && px > CellInnerFrom;
+            bool inner = wet && _wetExtras && px > CellInnerFrom;
             // while the wet foam takes over, the plain walls fade out under it
             float wetA = _cellAlpha * (wet ? _wetBlend : 0f), plainA = _cellAlpha * (wet ? 1f - _wetBlend : 1f);
             var lim = new Rect(r.xMin - px, r.yMin - px, r.width + 2f * px, r.height + 2f * px);
@@ -663,8 +736,14 @@ namespace CosmicShore.UI
                     if (Used(vh) > budget) break;
                     var at = At(_cellMid[i].x, _cellMid[i].y);
                     if (!lim.Contains(at)) continue;
-                    // the plain walls first (they use _screenPoly themselves), under the wet foam taking over from them
-                    if (pass == 1 && plainA > 0.004f) PlainWalls(vh, i, px, plainA, white);
+                    // the plain walls first, under the wet foam taking over from them
+                    if (pass == 1 && plainA > 0.004f)
+                    {
+                        _screenPoly.Clear();
+                        for (int k = _rawStart[i]; k < _rawStart[i + 1]; k++) _screenPoly.Add(At(_cellRaw[k].u, _cellRaw[k].v));
+                        if (_screenPoly.Count >= 3) VoyageCellDraw.Walls(vh, _screenPoly, px, plainA, white);
+                        if (wetA <= 0f) continue;
+                    }
                     _screenPoly.Clear();
                     if (wet)
                         for (int k = _cellStart[i]; k < _cellStart[i + 1]; k++) _screenPoly.Add(At(_cellPoly[k].u, _cellPoly[k].v));
@@ -693,25 +772,8 @@ namespace CosmicShore.UI
                     float rad = (float)(Math.Sqrt(R * R - h * h) * s);
                     VoyageCellDraw.NucleusQuad(vh, at, rad, nucA, _map.NucleusUv(rad));
                 }
-                else if (wet && px > NucleusOutlineFrom)
+                else if (wet && _wetExtras && px > NucleusOutlineFrom)
                     VoyageCellDraw.NucleusOutline(vh, at, (float)(R * s), _wetBlend * nucA * (float)(.8 - h / HyperSeaCells.A * .6), white);
-            }
-        }
-
-        /// <summary>The plain foam's walls of cell <paramref name="i"/>: the ones it owns (<see cref="OwnsWall"/>), so every
-        /// wall between two cells draws once.</summary>
-        void PlainWalls(VertexHelper vh, int i, float px, float alpha, Vector2 white)
-        {
-            int k0 = _rawStart[i], n = _rawStart[i + 1] - k0;
-            for (int k = 0; k < n; k++)
-            {
-                var a = _cellRaw[k0 + k];
-                var b = _cellRaw[k0 + (k + 1) % n];
-                if (!OwnsWall(a, b)) continue;
-                _screenPoly.Clear();
-                _screenPoly.Add(At(a.u, a.v));
-                _screenPoly.Add(At(b.u, b.v));
-                VoyageCellDraw.Wall(vh, _screenPoly[0], _screenPoly[1], px, alpha, white);
             }
         }
 
