@@ -29,9 +29,8 @@
 ## 1a. Waiting on Garrett (Yash, 2026-10-15: "tell this to Garrett, this has to [reach him] next time he works")
 
 Four performance items were waiting on Garrett. On 2026-10-17 Yash took the first three over ("Garrett is busy, we do
-them ourselves"); what was done is below, so Garrett only needs to look, not build. `team_tasks.py list --area Performance`
-lists the open ones (tickets name nobody since 2026-10-23; the `team_tasks_nudge.py` hook that showed them on a first
-matching prompt was switched off that day and deleted on 2026-10-25).
+them ourselves"); what was done is below, so Garrett only needs to look, not build. Open
+ones are on the swim lanes board (`/swimlanes`; Froglet Tasks, where they were tickets, was retired on 2026-11-20).
 
 1. **Charge light sleep size: done** (T-20261015-a5a5 closed). Kept at 24 px radius; between 24 and 64 px the arcs now
    update every other frame (`halfRateBelowScreenRadiusPixels`). Garrett may still retune either number in the profile.
@@ -54,11 +53,11 @@ matching prompt was switched off that day and deleted on 2026-10-25).
 2. The editor shares the file: after Play stops, the editor sends it by itself, with no question, to the person's `bugledger/<user>` branch.
 3. `perf_hunt.py sweep` (daily, or any session) reads every branch, judges validity first (Debug, Deep Profile, a frame
    cap, Burst off, a second camera: not a number), compares with `Docs/perf/baselines.json`, and writes the block below.
-4. A regression becomes a `Docs/TEAM_TASKS.md` task (area Performance); `/perf-hunt` fixes it with a before/after.
+4. A regression is listed in the block below and in `Docs/perf/status.json`; `/perf-hunt` fixes it with a before/after.
 
 ## 3. Open measurements (who can take them)
 
-See the Performance tasks on `Docs/TEAM_TASKS.md`: the S2 Lattice capture, the Skim Race Release capture (the Burst
+Still owed: the S2 Lattice capture, the Skim Race Release capture (the Burst
 check the 10-08 fix still owes, and the `PoolRefill.Squirrel Prism` ~9 KB/frame lead), and the S5 capture (the L8
 go/no-go). Yash has offered to take editor tests.
 
