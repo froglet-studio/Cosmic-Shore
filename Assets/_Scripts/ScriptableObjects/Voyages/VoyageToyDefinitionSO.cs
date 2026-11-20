@@ -257,6 +257,11 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(1f), Tooltip("A kaiju's body is this many times its species' size (\"pretty huge\").")]
         float kaijuScale = 14f;
 
+        [SerializeField, Min(1f), Tooltip("A kaiju's body PRISMS grow this many times, not Kaiju Scale (its frame does): a body " +
+                                          "prism is a thin plate, and one grown 12-14x read as a flat featureless square " +
+                                          "bigger than the Ark's plates (Shombith 2026-11-20).")]
+        float kaijuPrismScale = 3f;
+
         [SerializeField, Min(0f), Tooltip("The crossing (and its kaiju) starts this far, u, before the Ark leaves the cell " +
                                           "behind it, so the kaiju is already waiting in the gap when the Ark comes out.")]
         float kaijuLeadDistance = 900f;
@@ -454,6 +459,7 @@ namespace CosmicShore.ScriptableObjects
         public int KaijuPerCrossing => kaijuPerCrossing;
         public int KaijuMax => kaijuMax;
         public float KaijuScale => OnMobile ? Mathf.Min(kaijuScale, mobileKaijuScale) : kaijuScale;
+        public float KaijuPrismScale => Mathf.Min(kaijuPrismScale, KaijuScale);
         public float KaijuLeadDistance => kaijuLeadDistance;
         public float KaijuSideOffset => kaijuSideOffset;
         public float CellScale => cellScale;

@@ -214,7 +214,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ needs.resolve.outputs.ref }}
           lfs: false          # source-only check; binary assets are not needed
@@ -326,7 +326,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ needs.resolve.outputs.ref }}
           lfs: true          # the project stores binary assets in Git LFS
@@ -492,7 +492,7 @@ jobs:
       # red player build diagnosable without anyone copying lines out of a web page.
       - name: Upload build log
         if: failure() && env.MODE != 'compile'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: build-log-${{ env.MODE }}-${{ github.run_id }}
           path: ${{ env.UNITY_BUILD_LOG }}
@@ -501,7 +501,7 @@ jobs:
 
       - name: Upload test results
         if: always() && env.MODE == 'compile'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: editmode-results
           path: Artifacts/
@@ -510,7 +510,7 @@ jobs:
 
       - name: Upload build manifest
         if: always() && env.MODE != 'compile'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: build-manifest-${{ env.MODE }}
           path: ${{ env.BUILD_OUTPUT }}/build_manifest.txt

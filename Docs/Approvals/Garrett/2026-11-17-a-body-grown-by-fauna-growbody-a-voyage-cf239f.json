@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-17-a-body-grown-by-fauna-growbody-a-voyage-cf239f",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-17T22:07:52+00:00",
+  "area": "ecology: fauna skeletons (Docs/ECOSYSTEM.md 26)",
+  "summary": "A body grown by Fauna.GrowBody (a voyage's kaiju, its raiders) now leaves its skeleton at its species' size: each prism settles back by the growth factor where it lies, instead of standing as plates bigger than the Ark's.",
+  "why": "Shombith saw the 14x kaiju's skeleton as huge flat squares beside the Ark (2026-11-17).",
+  "branch": "claude/project-thread-lfj3rj",
+  "commit": "537d75b39",
+  "paths": [
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs"
+  ]
+}

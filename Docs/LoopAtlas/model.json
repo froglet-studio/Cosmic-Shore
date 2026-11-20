@@ -1252,7 +1252,11 @@
    "src": [
     "Docs/ArcadeRestructure/PLAN.md rulings 10 to 12",
     "Docs/ElementalLoop/PLAYBOOK.md section 1"
-   ]
+   ],
+   "prop": {
+    "s": "change",
+    "note": "Seat the twelve hulls the trail-volume lever already balanced (Meerkat, Wrasse, Urchin, Honeyguide, Stoat, Sparrow, Scarab, Squirrel, Dolphin, Orca, Tiger Moth, Thresher: each within 10% of the mean on net control of space over 124 real-game matches) as Brood Rush's roster now, and hold the ten flagged hulls (Manta, Serpent, Grizzly, Jewel Wasp, Angler, Rhino, Jacks, Goby, Swordfish, Brittle Star) out until the redesign brings each in range. The Shrike's nest rework measured 1.09, so it may join first. Source: commits 2b94a1fda and b8f578023, Docs/ElementalLoop/REDESIGN.md."
+   }
   },
   {
    "id": "round.astro",
@@ -1994,7 +1998,11 @@
     "Docs/Voyages/DEPTH.md section 6",
     "Docs/Voyages/VOYAGES.md section 6.2.1",
     "Docs/Pilots/CALLSIGNS.md"
-   ]
+   ],
+   "prop": {
+    "s": "change",
+    "note": "Since 2026-11-19 every account holds one crew of 18 dealt from the 126 painted pilots (commit 5a34332f9). Make that dealt crew the start of this loop: recruiting becomes choosing which of your 18 to seat, and standing is earned per pilot of that crew, so the device-side standing stand-in and the dealt crew are one roster instead of two."
+   }
   },
   {
    "id": "arc.hoard",
@@ -2384,7 +2392,13 @@
    },
    "src": [
     "proposal"
-   ]
+   ],
+   "build": {
+    "s": "queued",
+    "what": "This and the quest chain should take over the two little windows under the profile on the home screen.",
+    "by": "Garrett",
+    "at": "2026-11-20"
+   }
   }
  ],
  "edges": [
@@ -6285,5 +6299,20 @@
    "is": "The team's tools, such as studios, skills, Amoebius, CI and this atlas."
   }
  ],
- "items": []
+ "items": [
+  {
+   "id": "kit-drift",
+   "name": "Kit drift check",
+   "area": "tooling",
+   "is": "Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not. On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table reader already reads the shipped ability maps, so the check can compare against it.",
+   "in": "x",
+   "prop": {
+    "s": "add",
+    "note": "Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not. On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table reader already reads the shipped ability maps, so the check can compare against it."
+   },
+   "src": [
+    "commits a67739a1e, b8f578023, c30156ef7"
+   ]
+  }
+ ]
 }

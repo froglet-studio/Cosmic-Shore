@@ -1064,6 +1064,38 @@ namespace CosmicShore.Gameplay
 
         HealthPrism[] _bodyPrisms;
 
+        /// <summary>How many times <see cref="GrowBody"/> has grown this body over its species' size (1 = never).</summary>
+        public float GrownBy => _grownBy;
+        float _grownBy = 1f;
+
+        /// <summary>How many times its BODY PRISMS have grown with it (= <see cref="GrownBy"/> unless the grow named a
+        /// smaller prism factor).</summary>
+        public float PrismsGrownBy => _prismsGrownBy;
+        float _prismsGrownBy = 1f;
+
+        /// <summary>
+        /// Grow the body <paramref name="factor"/> times, its prisms only <paramref name="prismFactor"/> times: the frame
+        /// (spindles, heart reach, spacing) takes the full size and each prism keeps nearer its species' own. A body
+        /// prism is a thin plate, and one grown 12-14x read as a flat, featureless square bigger than the Ark's plates
+        /// (Shombith, 2026-11-20: on a living kaiju). A prism factor of 0 or above the body's grows the prisms with it.
+        /// </summary>
+        public void GrowBody(float factor, float prismFactor)
+        {
+            GrowBody(factor);
+            if (factor <= 0f || Mathf.Approximately(factor, 1f) || prismFactor <= 0f || prismFactor >= factor) return;
+            float settle = prismFactor / factor;
+            var prisms = _bodyPrisms ?? CacheBodyPrisms();
+            for (int i = 0; i < prisms.Length; i++)
+            {
+                var hp = prisms[i];
+                if (!hp || hp.destroyed) continue;
+                Vector3 size = hp.TargetScale * settle;
+                hp.AdmitTargetScale(size);
+                hp.TargetScale = size;
+            }
+            _prismsGrownBy *= settle;
+        }
+
         /// <summary>
         /// A creature grown at birth beyond its species' size (a voyage's raiders, Shombith 2026-11-16: "bigger faunas ...
         /// attack the ark"): its root scale times <paramref name="factor"/>, its rig re-bound and its heart re-sized, as a
@@ -1075,6 +1107,8 @@ namespace CosmicShore.Gameplay
             if (factor <= 0f || Mathf.Approximately(factor, 1f)) return;
             if (_authoredRootScale.x < 0f) _authoredRootScale = transform.localScale;
             transform.localScale *= factor;
+            _grownBy *= factor;
+            _prismsGrownBy *= factor;
             RebuildRig();
             ApplyHeartSize();
         }
@@ -1892,12 +1926,26 @@ namespace CosmicShore.Gameplay
             var host = cell;
             Transform skeletonParent = host ? host.transform : null;
 
+            // A GROWN body (a voyage's kaiju at 12-14x, its raiders) leaves the frame its species leaves: each prism
+            // settles back to its species' size where it lies. Kept at the grown size, a kaiju's skeleton was a field of
+            // flat plates bigger than the Ark's own, standing in the open water beside it (Shombith, 2026-11-17: "what
+            // are these big sims like structure?").
+            float grown = _prismsGrownBy;
             var prisms = GetComponentsInChildren<HealthPrism>(true);
             for (int i = 0; i < prisms.Length; i++)
             {
                 var hp = prisms[i];
-                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent, recycleWhenDestroyed: true);
+                if (!hp || hp.destroyed) continue;
+                hp.LeaveAsSkeleton(skeletonParent, recycleWhenDestroyed: true);
+                if (grown > 1.01f) SettleToSpeciesSize(hp, grown);
             }
+        }
+
+        static void SettleToSpeciesSize(HealthPrism hp, float grown)
+        {
+            Vector3 size = hp.transform.localScale / grown;
+            hp.AdmitTargetScale(size);
+            hp.TargetScale = size;
         }
 
         /// <summary>

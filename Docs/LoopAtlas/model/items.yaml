@@ -19,4 +19,22 @@ areas:
 - id: tooling
   name: Tooling
   is: The team's tools, such as studios, skills, Amoebius, CI and this atlas.
-items: []
+items:
+- id: kit-drift
+  name: Kit drift check
+  area: tooling
+  is: Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not.
+    On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche
+    and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed
+    creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table
+    reader already reads the shipped ability maps, so the check can compare against it.
+  in: x
+  prop:
+    s: add
+    note: Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not.
+      On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche
+      and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed
+      creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table
+      reader already reads the shipped ability maps, so the check can compare against it.
+  src:
+  - commits a67739a1e, b8f578023, c30156ef7
