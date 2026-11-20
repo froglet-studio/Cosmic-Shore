@@ -1,0 +1,159 @@
+{
+    "scene": "MinigameDepthCharge",
+    "timestamp": "2026-11-19 19:20:47",
+    "label": "",
+    "secondsSinceSceneLoad": 1.0199999809265137,
+    "floraObjectsInScene": 45,
+    "faunaObjectsInScene": 0,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Rampage Cell Config 1",
+            "spawnProfile": "Rampage Spawn Profile 1",
+            "configChoice": "IntensityWise",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "IntensityWiseLifeSpawner",
+            "phase": "Calm",
+            "liveVolume": 1098.8572998046875,
+            "liveEnvironmentVolume": 978.8572998046875,
+            "livePrismCount": 171,
+            "floraPlantingEnabled": true,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 2018000.0,
+            "frenzyEnterVolume": 29110000.0,
+            "frenzyExitVolume": 22500000.0,
+            "frenzyEnterCount": 60750,
+            "frenzyExitCount": 48600,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 489.88934326171877,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Gold",
+            "floraPopulationScale": 5.0,
+            "floraPrismScale": 1.600000023841858,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 45,
+            "faunaLiveTotal": 0,
+            "flora": [
+                {
+                    "config": "Rampage Cacti Flora Config Data",
+                    "prefab": "CactiFlora",
+                    "live": 5,
+                    "initialBatch": 130,
+                    "seedFloor": 130,
+                    "cap": 195,
+                    "atCap": false,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Rampage Spire Flora Config Data",
+                    "prefab": "SpireFlora",
+                    "live": 5,
+                    "initialBatch": 50,
+                    "seedFloor": 50,
+                    "cap": 75,
+                    "atCap": false,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Rampage Pine Flora Config Data",
+                    "prefab": "PineFlora",
+                    "live": 5,
+                    "initialBatch": 50,
+                    "seedFloor": 50,
+                    "cap": 75,
+                    "atCap": false,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Rampage Rosette Flora Config Data",
+                    "prefab": "RosetteFlora",
+                    "live": 5,
+                    "initialBatch": 35,
+                    "seedFloor": 35,
+                    "cap": 50,
+                    "atCap": false,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Rampage Coral Flora Config Data",
+                    "prefab": "CoralFlora",
+                    "live": 5,
+                    "initialBatch": 30,
+                    "seedFloor": 30,
+                    "cap": 45,
+                    "atCap": false,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Rampage Borromean Flora Charge Config Data",
+                    "prefab": "BorromeanFlora",
+                    "live": 5,
+                    "initialBatch": 10,
+                    "seedFloor": 10,
+                    "cap": 15,
+                    "atCap": false,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Rampage Borromean Flora Mass Config Data",
+                    "prefab": "BorromeanFlora",
+                    "live": 5,
+                    "initialBatch": 10,
+                    "seedFloor": 10,
+                    "cap": 15,
+                    "atCap": false,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Rampage Borromean Flora Space Config Data",
+                    "prefab": "BorromeanFlora",
+                    "live": 5,
+                    "initialBatch": 10,
+                    "seedFloor": 10,
+                    "cap": 15,
+                    "atCap": false,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Rampage Borromean Flora Time Config Data",
+                    "prefab": "BorromeanFlora",
+                    "live": 5,
+                    "initialBatch": 10,
+                    "seedFloor": 10,
+                    "cap": 15,
+                    "atCap": false,
+                    "spawnProbability": 1.0
+                }
+            ],
+            "fauna": [
+                {
+                    "config": "Blob Tadpole Fauna Config Data",
+                    "prefab": "TadPoleFauna",
+                    "live": 0,
+                    "initialBatch": 4,
+                    "cap": 6,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                },
+                {
+                    "config": "Blob Shark Fauna Config Data",
+                    "prefab": "MassSharkFauna",
+                    "live": 0,
+                    "initialBatch": 1,
+                    "cap": 2,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                }
+            ]
+        }
+    ],
+    "notes": []
+}
