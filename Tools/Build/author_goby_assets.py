@@ -142,7 +142,24 @@ def goby_container(squirrel_text: str, drop) -> str:
             continue
         out.append(line)
     text = "".join(out).replace("m_Name: Squirrel", "m_Name: Goby", 1)
-    return re.sub(r"^(  \w+):\n(?=  [a-zA-Z_])", r"\1: []\n", text, flags=re.M)   # an emptied list prints as []
+    text = re.sub(r"^(  \w+):\n(?=  [a-zA-Z_])", r"\1: []\n", text, flags=re.M)   # an emptied list prints as []
+    for field, name in GOBY_ADDS.get(drop_key(drop), ()):
+        ref = f"  - {{fileID: 11400000, guid: {asset_guid(name)}, type: 2}}\n"
+        m = re.search(rf"^  {field}:(?: \[\])?\n((?:  - [^\n]*\n)*)", text, flags=re.M)
+        text = text[:m.start()] + f"  {field}:\n{m.group(1)}{ref}" + text[m.end():]
+    return text
+
+
+def drop_key(drop) -> str:
+    return drop[0] if drop else ""
+
+
+# Effects the Goby's container ADDS to what it keeps of the Squirrel's (keyed by the first effect its row drops).
+GOBY_ADDS = {
+    # the pair's omnicrystal ability, "restocks the pair" (2026-11-17, #2194): GobyPistolDuo.OnOmniCrystal
+    "SquirrelVesselHapticsByPrismEffect": [("vesselCrystalEffects", "GobyOmniCrystalEffect")],
+}
+GOBY_OMNI_LABEL = "restocks the pair"
 
 
 def swap_containers(text: str) -> str:
@@ -180,9 +197,9 @@ def check_containers(prefab_text: str):
 # The Goby & Pistol's four cards (Garrett, 2026-10-22). Passive cards (Input 0): what each element scales happens in the
 # seat (GobyPistolDuo), read from GobyPistolConfig.asset's ElementalFloats and gated by IsUpgradeActive at level 5.
 GOBY_KIT = [
-    (1, "Vortex Sting", "A vortex ring from the Pistol's Snap that hits a rival hull takes petals from each of its elements; Charge "
-        "raises how many (GobyPistolConfig ringPetals, 1 at rest -> 3 at level 10). While the Goby holds a lock on a rival that "
-        "is on the Pistol's screen, the ring flies at it.", "Vortex Steal",
+    (1, "Vortex Sting", "A vortex ring from the Pistol's Snap that hits a rival hull takes a petal from each of its elements. "
+        "While the Goby holds a lock on a rival that is on the Pistol's screen, the ring flies at it, and Charge sets how hard it "
+        "homes (GobyPistolConfig ringHomingScale, x1 at rest -> x2.5 at level 10).", "Vortex Steal",
         "A ring's hit steals the petals it takes: they land on the pair instead of being knocked loose (GobyPistolDuo."
         "ScoreRingHit, IsUpgradeActive(Charge))."),
     (2, "Dens", "At each perch the Pistol rests and builds a den of prisms and shielded prisms, as many as the distance it travelled "
@@ -212,7 +229,8 @@ def goby_map() -> str:
     return head + "".join(
         f"  - Element: {e}\n    AbilityLabel: {yaml_quote(label)}\n    AbilityDescription: {yaml_quote(desc)}\n    Input: 0\n"
         f"    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n    UpgradeLabel: {yaml_quote(ul)}\n"
-        f"    UpgradeDescription: {yaml_quote(ud)}\n" for e, label, desc, ul, ud in GOBY_KIT)
+        f"    UpgradeDescription: {yaml_quote(ud)}\n" for e, label, desc, ul, ud in GOBY_KIT) + \
+        f"  omniAbilityLabel: {GOBY_OMNI_LABEL}\n"
 
 
 def guid_of(meta_path: str) -> str:

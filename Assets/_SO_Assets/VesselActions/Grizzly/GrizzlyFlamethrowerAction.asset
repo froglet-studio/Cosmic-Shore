@@ -30,3 +30,12 @@ MonoBehaviour:
     element: 2
     UseFloor: 1
     Floor: 1.5
+  energyIndex: 0
+  energyPerIgnite:
+    Enabled: 1
+    Value: 0.01
+    Min: 0.01
+    Max: 0.025
+    element: 2
+    UseFloor: 1
+    Floor: 0.005

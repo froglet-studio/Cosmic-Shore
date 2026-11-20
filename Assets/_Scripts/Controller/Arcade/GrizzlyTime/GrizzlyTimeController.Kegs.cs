@@ -9,16 +9,25 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Grizzly Time's POWDER KEGS (<see cref="GrizzlyTimeKegs"/>, Docs/GrizzlyTime/POWDER_KEGS_SPEC.md): a keg of prisms
-    /// beside every ring. Blow it with your own bomb and the gate is yours - a pilot who passes within the credit radius of
-    /// an OPEN keg clears its ring - and the blast that opened it is the launch down the next leg. The ring mouth still
-    /// clears the gate as it always did, so the kegs are a second way in, never a wall.
+    /// beside every ring. Blow it with your own bomb, or Rush through it, and the gate is yours - a pilot who passes
+    /// within the credit radius of an OPEN keg clears its ring - and a bomb blown from the keg's exit side is the launch
+    /// down the next leg. The ring mouth still clears the gate as it always did, so the kegs are a second way in, never
+    /// a wall.
     ///
     /// <para><b>Every peer lays the same kegs</b> from the broadcast course in <see cref="OnCourseRaised"/>, and every
-    /// peer breaks its own copy from the replicated bombs, as Thresher Time's nests did. Nothing new is replicated: the
-    /// pilot's owner decides a gate's credit (<see cref="ThreadsGate"/>) and the server records it.</para>
+    /// peer breaks its own copy from the replicated bombs, as Thresher Time's nests did. A Rush's ram runs only where
+    /// the vessel has authority, so every peer also hears each hull's Rush (<see cref="SyncRamWatches"/>) and opens its
+    /// own copy of a keg that hull rams (<see cref="GrizzlyTimeKegs.RamOpens"/>). Nothing new is replicated: the pilot's
+    /// owner decides a gate's credit (<see cref="ThreadsGate"/>) and the server records it. <b>What that does not
+    /// promise:</b> a peer hears a Rush only when ITS copy of the hull accepted the press, and each copy keeps its own
+    /// charges, cooldown clock and Energy (none is replicated). A press made the instant the Energy or the cooldown
+    /// allows can be refused on a peer a tick behind, and that peer's keg then stands until it regrows elsewhere; the
+    /// rammer's own credit is decided on its owner and is never lost. Deciding the open once, on the hull's owner, and
+    /// sending it is the full fix; it is a wire change (a protocol-version bump), so it was left as a decision.</para>
     ///
     /// <para><b>The vessel is not touched</b> (CLAUDE.md, "A game mode never changes the vessel"): the kegs are the
-    /// track, the AI changes are this controller's aim, and every word and sound is an authored field.</para>
+    /// track, the AI (GrizzlyTimeController.AI.cs) is an aim and a press of the hull's own control, and every word and
+    /// sound is an authored field.</para>
     /// </summary>
     public partial class GrizzlyTimeController
     {
@@ -44,22 +53,36 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far (u) outside the ring's mouth the crown bursts from.")]
         [SerializeField, Min(0f)] float crownOutset = 14f;
 
+        [Header("Powder kegs: AI")]
+        [Tooltip("On: an AI Grizzly presses Rush for pace on a straight it is lined up on (its own bound control, through " +
+                 "the replicated press). Off: it never presses Rush, as before 2026-11-20.")]
+        [SerializeField] bool aiRushes = true;
+
         [Header("Powder kegs: toasts (GameToastConfig_GrizzlyTime)")]
         [Tooltip("Posted once to the local pilot as the race starts: how a keg is played.")]
         [SerializeField] GameToastSituation hintToast = GameToastSituation.GrizzlyTimeHint;
-        [Tooltip("Posted to the local pilot on a BANK SHOT (a keg blown from its exit side threw you down the lane); {0} = " +
-                 "how many this race.")]
+        [Tooltip("Posted to the local pilot on a BANK SHOT (a keg broke beside you and a bomb threw you down its exit " +
+                 "lane); {0} = how many this race.")]
         [SerializeField] GameToastSituation bankShotToast = GameToastSituation.GrizzlyTimeBankShot;
         [Tooltip("Post the bank-shot toast on the first bank shot and then every Nth.")]
         [SerializeField, Min(1)] int bankShotEveryN = 4;
         [Tooltip("How far (deg) the launch may point off the keg's exit lane and still count as a bank shot.")]
         [SerializeField, Range(5f, 60f)] float bankShotMaxDegrees = 30f;
+        [Tooltip("Seconds after a keg breaks beside the local hull that its launch is still read for a bank shot. Long " +
+                 "enough that a keg rammed open with a Rush, then a bomb-jump down its lane, is one too.")]
+        [SerializeField, Min(0.1f)] float bankShotWindowSeconds = 1.5f;
+        [Tooltip("Posted to the local pilot when its own Rush rams a keg open; {0} = how many this race.")]
+        [SerializeField] GameToastSituation ramKeyToast = GameToastSituation.GrizzlyTimeRamKey;
+        [Tooltip("Post the rammed-open toast on the first keg the local pilot rams open and then every Nth.")]
+        [SerializeField, Min(1)] int ramKeyEveryN = 4;
 
-        [Header("Powder kegs: sounds (ship empty; /sound-brief)")]
+        [Header("Powder kegs: sounds (a new slot ships empty; /sound-brief)")]
         [Tooltip("A keg bursts (3D, at the keg, every peer).")]
         [SerializeField] FMODUnity.EventReference kegBurstEvent;
         [Tooltip("A shielded keg core loses its shield (I3-I4; 3D, at the keg, every peer).")]
         [SerializeField] FMODUnity.EventReference kegStrippedEvent;
+        [Tooltip("A Rush rams a keg open (3D, at the keg, every peer; it plays with the burst).")]
+        [SerializeField] FMODUnity.EventReference kegRammedEvent;
         [Tooltip("The local pilot's bank shot (2D, local).")]
         [SerializeField] FMODUnity.EventReference bankShotEvent;
         [Tooltip("The crown bursting off a ring the local pilot just cleared (3D, at the ring, local).")]
@@ -85,9 +108,35 @@ namespace CosmicShore.Gameplay
             public float RegrowAt = -1f;
             /// <summary>When the standing core was first seen without its shield (I3-I4), or -1.</summary>
             public float StrippedAt = -1f;
+            /// <summary>When a standing keg's hoop is next looked over for slabs to lay back.</summary>
+            public float MendAt;
         }
 
+        /// <summary>One hull's Rush, heard on this peer: the vessel raises <c>OnRam</c> wherever the replicated press
+        /// lands AND that peer's copy of the hull accepts it (its own charges, cooldown and Energy), and for
+        /// <see cref="GrizzlyTimeKegs.RamSeconds"/> after it that hull opens the kegs it ploughs into.</summary>
+        sealed class RamWatch
+        {
+            public IPlayer Pilot;
+            public GrizzlyRushActionExecutor Rush;
+            public System.Action Heard;
+            public float Until = -1f;
+        }
+
+        /// <summary>Seconds between two looks for a hull whose Rush is not heard yet (a late join, a swapped vessel).</summary>
+        const float RamSyncSeconds = 1f;
+        /// <summary>A keg that breaks this long (s) after a ram ended still reads as that ram's (the burst is seen a frame
+        /// or two after the vessel's own last sweep).</summary>
+        const float RamCreditGrace = 0.25f;
+        /// <summary>Extra seconds on the END of the ram's window for a hull this machine does not fly: its press arrives a
+        /// round trip late and its replica trails its owner, so the last of the owner's ram would fall outside the
+        /// window here. Zero for a hull this machine flies, whose window is the vessel's own.</summary>
+        const float RamLatencyGrace = 0.2f;
+
         readonly List<KegSite> _kegs = new();
+        readonly List<RamWatch> _rams = new();
+        float _ramSyncAt;
+        int _ramKeys;
         readonly List<GrizzlyTimeKegs.Keg> _kegScratch = new();
         readonly List<Prism> _crown = new();
         readonly Trail _crownTrail = new();
@@ -105,6 +154,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The local pilot's bank shots this race.</summary>
         public int BankShots => _bankShots;
 
+        /// <summary>Kegs the local pilot's own Rush rammed open this race.</summary>
+        public int RamKeys => _ramKeys;
+
         public override void OnNetworkDespawn()
         {
             ClearKegs();
@@ -119,6 +171,7 @@ namespace CosmicShore.Gameplay
             ClearKegs();
             _hintPosted = false;
             _bankShots = 0;
+            _ramKeys = 0;
             KegsBroken = 0;
             if (!kegsAtGates) return;
             if (!kegPrefab)
@@ -194,6 +247,7 @@ namespace CosmicShore.Gameplay
                         site.ChalkPrisms[d].Damage(Vector3.zero, Domains.Blue, string.Empty, devastate: true);
             }
             _kegs.Clear();
+            ClearRamWatches();
             BurstCrown();
             _bankShotKeg = -1;
             if (_kegRoot) Destroy(_kegRoot.gameObject);
@@ -206,6 +260,7 @@ namespace CosmicShore.Gameplay
             if (_crown.Count > 0) BurstCrown();
             if (_kegs.Count == 0) return;
             using var _ = s_kegMarker.Auto();
+            SyncRamWatches(Time.time);
             TickKegs();
             TickLocalFeedback();
         }
@@ -213,7 +268,8 @@ namespace CosmicShore.Gameplay
         // ── The kegs (every peer, every frame) ─────────────────────────────
 
         /// <summary>
-        /// A standing keg whose core lost a block bursts (opening its gate); a bursting one blows
+        /// A standing keg whose core lost a block, or whose core a ramming hull is in, bursts (opening its gate); a
+        /// bursting one blows
         /// <see cref="kegBurstPerFrame"/> more prisms apart, core outward; an opened one grows back
         /// <see cref="GrizzlyTimeKegs.RegrowSeconds"/> later, once no hull is inside <see cref="GrizzlyTimeKegs.HullClear"/>.
         /// At I3-I4 a standing core that lost its shield shields itself again <see cref="GrizzlyTimeKegs.ReshieldSeconds"/>
@@ -239,6 +295,11 @@ namespace CosmicShore.Gameplay
                         if (!Holds(core, site.Parts[p].Position)) { site.Prisms[p] = null; broken = true; break; }
                         if (shielded && core.prismProperties is { IsShielded: false }) stripped = true;
                     }
+                    // The Rush: the vessel's ram broke the core where it has authority (read whose it was); everywhere
+                    // else this peer opens its own copy for a ramming hull in the core, so the keg is open on every peer.
+                    IPlayer rammer = null;
+                    if (broken) TryRammer(site.Keg, now, GrizzlyTimeKegs.RamCreditReach, RamCreditGrace, out rammer);
+                    else if (TryRammer(site.Keg, now, GrizzlyTimeKegs.RamReach, 0f, out rammer)) broken = true;
                     if (broken)
                     {
                         site.Standing = false;
@@ -247,6 +308,7 @@ namespace CosmicShore.Gameplay
                         site.StrippedAt = -1f;
                         KegsBroken++;
                         PlayAt(kegBurstEvent, site.Keg.Centre);
+                        if (rammer != null) OnKegRammed(site, rammer);
                         WatchForBankShot(k, now);
                     }
                     else if (stripped)
@@ -263,6 +325,18 @@ namespace CosmicShore.Gameplay
                                 if (site.Prisms[p].prismProperties is { IsShielded: false }) site.Prisms[p].ActivateShield();
                             site.StrippedAt = -1f;
                         }
+                    }
+                    else if (now >= site.MendAt)
+                    {
+                        // A standing keg lays its lost hoop slabs back (a ram that grazed it breaks slabs only where
+                        // the vessel has authority; a blast that stripped the core took the hoop on every peer), so
+                        // every peer's keg is whole again once no hull is near. The core is never mended: a lost core
+                        // block is the keg opening.
+                        site.MendAt = now + chalkRegrowSeconds;
+                        if (!HullWithin(site.Keg.Centre, GrizzlyTimeKegs.HullClear))
+                            for (int p = GrizzlyTimeKegs.CoreBlocks; p < site.Prisms.Count; p++)
+                                if (!Holds(site.Prisms[p], site.Parts[p].Position))
+                                    site.Prisms[p] = Lay(site.Parts[p], site.Trail, forReveal: false);
                     }
                 }
 
@@ -346,6 +420,82 @@ namespace CosmicShore.Gameplay
             if (!sound.IsNull) CosmicShore.Core.AudioSystem.Instance.PlaySFXEvent(sound, at);
         }
 
+        // ── The Rush: every hull's ram, heard on every peer ───────────────
+
+        /// <summary>Hear the Rush of every Grizzly in the race: subscribe each hull's <c>OnRam</c> once, and drop a watch
+        /// whose hull is gone or was swapped. The vessel is read, never changed: the event is the one its HUD listens to.</summary>
+        void SyncRamWatches(float now)
+        {
+            if (now < _ramSyncAt) return;
+            _ramSyncAt = now + RamSyncSeconds;
+            for (int i = _rams.Count - 1; i >= 0; i--)
+            {
+                var watch = _rams[i];
+                var hull = HullOf(watch.Pilot);
+                if (watch.Rush && hull && watch.Rush.transform.IsChildOf(hull)) continue;
+                if (watch.Rush) watch.Rush.OnRam -= watch.Heard;
+                _rams.RemoveAt(i);
+            }
+            var players = gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var pilot = players[i];
+                if (pilot == null || IsRamWatched(pilot)) continue;
+                var hull = HullOf(pilot);
+                var rush = hull ? hull.GetComponentInChildren<GrizzlyRushActionExecutor>(true) : null;
+                if (!rush) continue;
+                var watch = new RamWatch { Pilot = pilot, Rush = rush };
+                watch.Heard = () => watch.Until = Time.time + GrizzlyTimeKegs.RamSeconds;
+                rush.OnRam += watch.Heard;
+                _rams.Add(watch);
+            }
+        }
+
+        bool IsRamWatched(IPlayer pilot)
+        {
+            for (int i = 0; i < _rams.Count; i++)
+                if (_rams[i].Pilot == pilot) return true;
+            return false;
+        }
+
+        void ClearRamWatches()
+        {
+            for (int i = 0; i < _rams.Count; i++)
+                if (_rams[i].Rush) _rams[i].Rush.OnRam -= _rams[i].Heard;
+            _rams.Clear();
+            _ramSyncAt = 0f;
+        }
+
+        /// <summary>Is a hull whose Rush is live (or ended within <paramref name="grace"/> s) within
+        /// <paramref name="reach"/> of <paramref name="keg"/>'s core? A silenced pilot's ram deflects (the fleet's silence
+        /// rule), so it opens nothing here either.</summary>
+        bool TryRammer(in GrizzlyTimeKegs.Keg keg, float now, float reach, float grace, out IPlayer rammer)
+        {
+            rammer = null;
+            for (int i = 0; i < _rams.Count; i++)
+            {
+                var watch = _rams[i];
+                if (now > watch.Until + grace + (watch.Pilot.IsNetworkOwner ? 0f : RamLatencyGrace)) continue;
+                var hull = HullOf(watch.Pilot);
+                if (!hull || !GrizzlyTimeKegs.RamOpens(hull.position, keg, reach)) continue;
+                if (VesselSilence.IsSilenced(watch.Pilot.Vessel.VesselStatus)) continue;
+                rammer = watch.Pilot;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>A Rush rammed <paramref name="site"/> open: its sound on every peer, and the toast for the pilot
+        /// whose ram it was.</summary>
+        void OnKegRammed(KegSite site, IPlayer rammer)
+        {
+            PlayAt(kegRammedEvent, site.Keg.Centre);
+            if (rammer != gameData.LocalPlayer) return;
+            _ramKeys++;
+            if (_ramKeys == 1 || _ramKeys % ramKeyEveryN == 0)
+                GameToastAPI.Post(ramKeyToast, rammer.Domain, _ramKeys.ToString());
+        }
+
         // ── Clearing a gate ───────────────────────────────────────────────
 
         /// <summary>The ring mouth clears its gate as it always did; so does passing within the credit radius of the
@@ -367,15 +517,16 @@ namespace CosmicShore.Gameplay
             return stats.SwitchesThreaded >= RaceLengthFor(_rings.Count, LeadInGates, LapsPerRace - 1);
         }
 
-        /// <summary>A keg broke beside the local hull: watch its launch for a moment (the push lands the frame the bomb
-        /// goes off or the next) and call it a bank shot if it points down the keg's exit lane.</summary>
+        /// <summary>A keg broke beside the local hull: watch its launch for <see cref="bankShotWindowSeconds"/> (a bomb's
+        /// push lands the frame it goes off or the next; a keg rammed open is followed by the bomb-jump) and call it a
+        /// bank shot if a bomb's push points down the keg's exit lane.</summary>
         void WatchForBankShot(int keg, float now)
         {
             var tf = HullOf(gameData.LocalPlayer);
             if (!tf || (tf.position - _kegs[keg].Keg.Centre).sqrMagnitude > GrizzlyTimeKegs.FullReach * GrizzlyTimeKegs.FullReach)
                 return;
             _bankShotKeg = keg;
-            _bankShotUntil = now + 0.3f;
+            _bankShotUntil = now + bankShotWindowSeconds;
         }
 
         void TickLocalFeedback()
@@ -429,122 +580,6 @@ namespace CosmicShore.Gameplay
                 if (prism) _crown.Add(prism);
             }
             PlayAt(crownBurstEvent, gate.Position);
-        }
-
-        // ── The AI's aim (server; input only - the bombs stay the vessel's autopilot) ──
-
-        /// <summary>One AI's race state: when it last cleared a gate, which gate's keg it gave up on, and whether it is
-        /// being steered back to its ring after a stall.</summary>
-        sealed class RacerAI
-        {
-            public int Threaded = -1;
-            public float ThreadedAt;
-            public int GaveUpOn = -1;
-            public bool Rescue;
-            public float RescueSince;
-        }
-
-        readonly Dictionary<IPlayer, RacerAI> _aiState = new();
-
-        RacerAI RacerFor(IPlayer pilot)
-        {
-            if (!_aiState.TryGetValue(pilot, out var state))
-            {
-                state = new RacerAI { ThreadedAt = Time.time };
-                _aiState[pilot] = state;
-            }
-            return state;
-        }
-
-        protected override void OnRacerArmed(IPlayer pilot)
-        {
-            if (pilot != null) _aiState[pilot] = new RacerAI { ThreadedAt = Time.time };
-        }
-
-        /// <summary>Stamp each AI's last cleared gate, so a stalled one can be steered back to its ring.</summary>
-        protected override void OnServerTick()
-        {
-            if (_aiState.Count == 0) return;
-            bool running = gameData != null && gameData.IsTurnRunning;
-            float now = Time.time;
-            foreach (var pair in _aiState)
-            {
-                var state = pair.Value;
-                int threaded = pair.Key?.RoundStats?.SwitchesThreaded ?? 0;
-                if (!running || threaded != state.Threaded)
-                {
-                    state.Threaded = threaded;
-                    state.ThreadedAt = now;
-                    state.Rescue = false;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Where an AI Grizzly flies instead of the ring (Docs/GrizzlyTime/POWDER_KEGS_SPEC.md section 5):
-        /// <list type="number">
-        /// <item><b>Stall rescue.</b> <see cref="GrizzlyTimeKegs.AIStallSeconds"/> without a gate: a run-up point back along
-        /// the ring's axis, then the mouth (handed back to the ring logic within <see cref="GrizzlyTimeKegs.AIStallHandBack"/>
-        /// u of it).</item>
-        /// <item><b>An open keg</b> (anyone's blast, its own included) within <see cref="GrizzlyTimeKegs.AIKegAimRange"/>:
-        /// pass beside it down its exit lane, inside the credit radius.</item>
-        /// <item><b>A standing plain keg</b> (I1-I2): the same pass. The autopilot fires a full bomb about every 2.3 s and
-        /// blows it behind the hull, so a pass beside the core usually opens it; if the pass comes and the keg still
-        /// stands, the AI gives that keg up for this gate and threads the mouth.</item>
-        /// <item>A standing <b>shielded</b> keg (I3-I4) takes two hits the AI cannot plan: it threads the mouth.</item>
-        /// </list>
-        /// </summary>
-        protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
-        {
-            target = default;
-            var self = HullOf(pilot);
-            var stats = pilot?.RoundStats;
-            if (!self || stats == null || _course.Count == 0) return false;
-            int index = stats.SwitchesThreaded;
-            if (index < 0 || index >= RaceLength) return false;
-            int ring = RingIndexFor(index);
-            if (ring < 0 || ring >= _course.Count) return false;
-            var state = RacerFor(pilot);
-            Vector3 at = self.position;
-
-            if (state.Rescue || Time.time - state.ThreadedAt >= GrizzlyTimeKegs.AIStallSeconds)
-            {
-                var gate = _course[ring];
-                Vector3 runUp = gate.Position - RaceCourseGeometry.SafeNormalize(gate.Axis, Vector3.forward) * GrizzlyTimeKegs.AIStallRunUp;
-                if (!state.Rescue)
-                {
-                    CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[GrizzlyTime] stall rescue for an AI at gate {index}");
-                    state.Rescue = true;
-                    state.RescueSince = Time.time;
-                }
-                bool reached = (at - runUp).sqrMagnitude <= GrizzlyTimeKegs.AIStallHandBack * GrizzlyTimeKegs.AIStallHandBack;
-                if (!reached && Time.time - state.RescueSince < GrizzlyTimeKegs.AIStallSeconds)
-                {
-                    target = runUp;
-                    return true;
-                }
-                // At the run-up (or the rescue itself ran out): back to the ring logic for the MOUTH - this gate's keg is
-                // given up, so the keg that stalled it cannot pull it back - with a fresh clock.
-                state.Rescue = false;
-                state.GaveUpOn = index;
-                state.ThreadedAt = Time.time;
-                return false;
-            }
-
-            if (ring >= _kegs.Count || state.GaveUpOn == index) return false;
-            var site = _kegs[ring];
-            Vector3 pass = site.Keg.Centre + site.Keg.ExitDir * GrizzlyTimeKegs.AIKegPassOffset;
-            if ((at - site.Keg.Centre).sqrMagnitude > GrizzlyTimeKegs.AIKegAimRange * GrizzlyTimeKegs.AIKegAimRange) return false;
-            bool open = !site.Standing;
-            bool plain = GrizzlyTimeKegs.CoreKind(Intensity) == PrismKind.Plain;
-            if (!open && !plain) return false;
-            if (!open && (at - pass).sqrMagnitude <= GrizzlyTimeKegs.AIKegGiveUp * GrizzlyTimeKegs.AIKegGiveUp)
-            {
-                state.GaveUpOn = index;
-                return false;
-            }
-            target = pass;
-            return true;
         }
 
         void BurstCrown()

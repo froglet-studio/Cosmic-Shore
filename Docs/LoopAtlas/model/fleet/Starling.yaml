@@ -1,0 +1,69 @@
+# Loop Atlas model: vessel Starling. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Starling
+verbs:
+  Time:
+    ability: Pick the Time card
+    does: Take the Time card from a hand dealt to the swarm. Time cards make the swarm faster and nimbler, let members dodge
+      hits, or shorten every phase so hands come sooner. A held card levels up.
+    trigger: Tap while a hand is up
+    scales: Your Time level does not change this; each card's own level sets its strength.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+    arch: card
+    t: [10, 40]
+  Charge:
+    ability: Pick the Charge card
+    does: Take the Charge card from a hand dealt to the swarm. Charge cards arm the swarm against rivals and wildlife -
+      stings, lasers, chain lightning, a pulse - and a card you already hold levels up.
+    trigger: Tap while a hand is up
+    scales: Your Charge level does not change this; each card's own level sets its strength.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+    arch: card
+    t: [10, 40]
+  Mass:
+    ability: Pick the Mass card
+    does: 'Take the Mass card from a hand dealt to the swarm. Mass cards build and protect: the swarm lays your prisms,
+      drips danger prisms, grows shells or breeds more members. A held card levels up.'
+    trigger: Tap while a hand is up
+    scales: Your Mass level does not change this; each card's own level sets its strength.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+    arch: card
+    t: [10, 40]
+  Space:
+    ability: Pick the Space card
+    does: 'Take the Space card from a hand dealt to the swarm. Space cards eat rival mass: members steal, burst or bite
+      through shielded prisms, or the swarm splits to work two objectives. A held card levels up.'
+    trigger: Tap while a hand is up
+    scales: Your Space level does not change this; each card's own level sets its strength.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+    arch: card
+    t: [10, 40]
+board:
+  Time: x x x
+  Charge: x x x
+  Mass: x x x
+  Space: x x x
+missing: Time, Charge, Mass or Space
+arenas: []
+games:
+  Time: []
+  Charge: []
+  Mass: []
+  Space: []
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: Hand by hand
+  t: [20, 60]
+  is: The swarm flies itself; you choose what it becomes. The kit is not settled.
+  chain:
+  - ['', A hand is dealt]
+  - - ''
+    - Pick the card the swarm lacks
+  - ['', The swarm changes]
+  - - Time
+    - Time cards bring the next hand sooner
+  drivers: [mastery, find]
+  feel: A build coming together.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md

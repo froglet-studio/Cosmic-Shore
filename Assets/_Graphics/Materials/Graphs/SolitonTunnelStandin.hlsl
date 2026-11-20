@@ -14,7 +14,8 @@
 //
 // LIMITS. A ray running along a tube (looking down its throat from the mouth, or riding inside) is not a "crossing":
 // the stand-in fades itself out as sin(gamma) falls below 0.25 and the shipped mouth lens / throat stretch carry that
-// view; riding a tube (_MWView.y > 0) should keep the march (the C# switches the keyword off while riding).
+// view. Riding (2026-11-20): the tube the eye is inside is skipped here (MW_RIDE_SKIP) and drawn by the throat
+// (SolitonTunnel.shader, _MWThroat*), so the stand-in now stays on while riding too: the other tubes are seen from outside.
 
 #ifndef MW_SHELL_LUT
 TEXTURE2D(_MWShellLut);
@@ -98,6 +99,7 @@ float2 MWContourStandin(float2 p, float sceneZ)
     for (int i = 0; i < MEERKAT_LENS_MAX_TUBES; i++)
     {
         if (i >= n) break;
+        if (_MWTubeShape[i].z > MW_RIDE_SKIP) continue;   // the tube you ride: the throat draws it
         float3 oc = ro - _MWTubeBound[i].xyz;
         float bq = dot(oc, rd), cq = dot(oc, oc) - _MWTubeBound[i].w * _MWTubeBound[i].w;
         if (bq * bq - cq < 0.0 || (cq > 0.0 && bq > 0.0)) continue;

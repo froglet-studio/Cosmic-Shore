@@ -114,12 +114,62 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(card.ArenaRules,
                     $"'{card.DisplayName}' is on the Arena roster without ArenaRules - its hulls would " +
                     "not be exclusive and its pilots could not swap into an AI teammate's hull.");
+                int teams = System.Math.Max(1, card.MaxDomainsAllowed);
                 Assert.LessOrEqual(card.MaxSeats, card.DistinctHullCount,
                     $"'{card.DisplayName}' seats {card.MaxSeats} but lists {card.DistinctHullCount} hulls: " +
-                    "under ArenaRules the extra pilots would have no hull to fly.");
-                Assert.LessOrEqual(card.MaxPlayersAllowed, 6,
-                    $"'{card.DisplayName}' allows {card.MaxPlayersAllowed} pilots; arena cards go up to 6.");
+                    "under ArenaRules a hull is flown once in the whole match, so the extra pilots would have no hull to fly.");
+                Assert.LessOrEqual(card.MaxSeats, SO_ArcadeGame.TeamSeatCap(teams),
+                    $"'{card.DisplayName}' seats {card.MaxSeats}; no team fields more than {SO_ArcadeGame.MaxPerTeam}.");
+                Assert.LessOrEqual(card.MaxPlayersAllowed, 9,
+                    $"'{card.DisplayName}' allows {card.MaxPlayersAllowed} pilots; every game goes up to 9 (Garrett, 2026-11-17).");
             }
+        }
+
+        // ── nine vessels, three a team (Garrett, 2026-11-17) ───────────────────────────────
+
+        static SO_ArcadeGame CardOf(int maxPlayers, int maxDomains, bool arena, params VesselClassType[] hulls)
+        {
+            var g = UnityEngine.ScriptableObject.CreateInstance<SO_ArcadeGame>();
+            g.MaxPlayersAllowed = maxPlayers;
+            g.MaxDomainsAllowed = maxDomains;
+            g.ArenaRules = arena;
+            g.Vessels = new List<SO_Vessel>();
+            foreach (var h in hulls)
+            {
+                var v = UnityEngine.ScriptableObject.CreateInstance<SO_Vessel>();
+                v.Class = h;
+                g.Vessels.Add(v);
+            }
+            return g;
+        }
+
+        [Test]
+        public void TeamSeatCap_IsThreeATeam()
+        {
+            Assert.AreEqual(3, SO_ArcadeGame.TeamSeatCap(1));
+            Assert.AreEqual(6, SO_ArcadeGame.TeamSeatCap(2));
+            Assert.AreEqual(9, SO_ArcadeGame.TeamSeatCap(3));
+            Assert.AreEqual(3, SO_ArcadeGame.TeamSeatCap(0), "no teams is read as one team");
+        }
+
+        [Test]
+        public void ArcadeCard_SeatsNine_WithThreeTeams_AndSixWithTwo()
+        {
+            Assert.AreEqual(9, CardOf(9, 3, false, VesselClassType.Dolphin).MaxSeats);
+            Assert.AreEqual(6, CardOf(9, 2, false, VesselClassType.Dolphin).MaxSeats,
+                "two teams of three is six, whatever the card's player cap says");
+            Assert.AreEqual(4, CardOf(4, 3, false, VesselClassType.Dolphin).MaxSeats,
+                "a card that caps itself lower keeps its own cap");
+        }
+
+        [Test]
+        public void ArenaCard_SeatsEachHullOnceInTheWholeMatch()
+        {
+            var two = CardOf(9, 3, true, VesselClassType.Manta, VesselClassType.Dolphin);
+            Assert.AreEqual(2, two.MaxSeats, "two hulls: two pilots, whatever the team count (Garrett, 2026-11-18)");
+            var many = CardOf(9, 3, true, VesselClassType.Manta, VesselClassType.Dolphin,
+                VesselClassType.Rhino, VesselClassType.Sparrow);
+            Assert.AreEqual(9, many.MaxSeats, "four hulls, three teams: the three-a-team cap binds first");
         }
 
         [Test]

@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-18-tigermoth-drop-recharge-20-s-10-s-garret-2d7348",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T01:10:32+00:00",
+  "area": "TigerMoth vessel and AI",
+  "summary": "TigerMoth Drop recharge 20 s -> 10 s (Garrett's pick), Regatta Drop drive for its autopilot, TigerMoth seated on the Regatta card",
+  "why": "Regatta ten; card start 214 -> 131 s",
+  "branch": "HEAD",
+  "commit": "0e4d695fd",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/TigerMoth/TigerMothDropAction.asset",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaTigerMothDrop.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "TigerMoth"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

@@ -26,6 +26,21 @@ namespace CosmicShore.Gameplay
         ArkAttackerMarks _attackerMarks;
         int _toastedCell = -1;
         float _legStartedAt;
+        string _runPilotId;
+
+        /// <summary>The name of the pilot whose run this is (the job's pilot), or empty when none is named.</summary>
+        string RunPilotName => Content?.Person(_runPilotId)?.Name ?? string.Empty;
+
+        /// <summary>A line in the run's pilot's voice: empty when no pilot is named, so a line never opens on a bare
+        /// colon (Shombith 2026-11-20, the story pass).</summary>
+        string PilotSays(string template, params string[] tokens)
+        {
+            string pilot = RunPilotName;
+            if (string.IsNullOrEmpty(pilot) || string.IsNullOrEmpty(template)) return string.Empty;
+            var pairs = new List<string> { "pilot", pilot };
+            pairs.AddRange(tokens);
+            return TemplateText.Fill(template, pairs.ToArray());
+        }
         bool _anchorWarned;
         float _nextBankCheck;
         readonly Dictionary<string, float> _spillReadyAt = new();
@@ -70,6 +85,7 @@ namespace CosmicShore.Gameplay
             _spillReadyAt.Clear();
             _leakToasted = false;
             _legStartedAt = Time.time;
+            if (!string.IsNullOrEmpty(job?.PilotId)) _runPilotId = job.PilotId;   // the way home keeps the run's pilot
             _voyageRaid.Absorb(_raid);
             _raid.Clear();
             HookRaid(job is { CountsUnderway: true });
@@ -395,6 +411,12 @@ namespace CosmicShore.Gameplay
             VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Event,
                 TemplateText.Fill(Lines.ToastSetOff, "goal", Mathf.CeilToInt(job.Goal).ToString(), "to", to),
                 TemplateText.Fill(Lines.ToastSetOffSub, "to", to, "breach", Mathf.RoundToInt(job.BreachHull * 100f).ToString()));
+            // The run's pilot on the comms: who asked, and why the Ark wants the crystals.
+            string goal = Mathf.CeilToInt(job.Goal).ToString();
+            string brief = PilotSays(Lines.PilotBriefTitle, "goal", goal, "to", to);
+            if (!string.IsNullOrEmpty(brief))
+                VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Event, brief.ToUpperInvariant(),
+                    PilotSays(Lines.PilotBrief, "goal", goal, "to", to), VoyageToasts.Seconds * 1.5f);
         }
 
         /// <summary>The cell the Ark is in, from 1 (0 while unknown), and the leg's cells.</summary>
@@ -508,6 +530,7 @@ namespace CosmicShore.Gameplay
                 Pay = r.Outcome == JobOutcome.Succeeded ? job.Pay : 0,
                 // A friend's board: the host chooses what next (the next leg, or the way home, reaches them on its own).
                 Following = _following,
+                Quote = PilotSays(r.Outcome == JobOutcome.Succeeded ? Lines.ScoreQuoteMet : Lines.ScoreQuoteMissed),
             };
             foreach (var e in VoyageRaid.Elements) board.Crystals[(int)e] = _raid.Of(e);
             AddRows(board);
@@ -652,6 +675,7 @@ namespace CosmicShore.Gameplay
                 Hull = _sea && _sea.Ark ? _sea.Ark.HealthFraction : 1f,
                 Banked = true,
                 Following = _following,
+                Quote = PilotSays(Lines.ScoreQuoteDocked),
             };
             if (x != null)
                 for (int e = 0; e < x.Crystals.Length && e < board.Crystals.Length; e++) board.Crystals[e] = x.Crystals[e];
@@ -682,6 +706,7 @@ namespace CosmicShore.Gameplay
                 Seconds = Time.time - _legStartedAt,
                 Hull = 0f,
                 Following = _following,
+                Quote = PilotSays(Lines.ScoreQuoteLost),
             };
             for (int e = 0; e < board.Crystals.Length && stake != null && e < stake.Length; e++) board.Crystals[e] = stake[e];
             AddVoyageRows(board);

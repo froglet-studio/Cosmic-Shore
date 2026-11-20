@@ -23,7 +23,8 @@ MonoBehaviour:
     element: 2
     UseFloor: 1
     Floor: 10
-  unstoppableUpgradeElement: 3
+  ploughSuperShielded: 1
+  unstoppableUpgradeElement: 0
   carryDistance:
     Enabled: 1
     Value: 10
@@ -32,8 +33,9 @@ MonoBehaviour:
     element: 1
     UseFloor: 1
     Floor: 5
-  avalancheUpgradeElement: 0
-  avalancheLinks: 3
+  avalancheUpgradeElement: 3
+  avalancheLinks: 5
+  avalancheReach: 30
   bermUpgradeElement: 2
   slideSeconds: 0.25
   skipWhileAttached: 1

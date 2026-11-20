@@ -1113,8 +1113,24 @@ namespace CosmicShore.ScriptableObjects
         public string ToastGoalMissed = "GOAL MISSED: {done} / {goal}";
         public string ToastGoalMissedSub = "This run's haul is lost. Try again, or sail home.";
         public string ScoreRetryRaid = "Same goal: {goal} crystals in {cells} cells";
-        public string ToastKaiju = "KAIJU IN OPEN WATER";
-        public string ToastKaijuSub = "A giant waits between the cells for the Ark's hull. Bring it down.";
+        [Tooltip("Toast: a kaiju waits in the open water between two cells ({kaiju}: the HyperSea's apex creature, the " +
+                 "content's kaiju name).")]
+        public string ToastKaiju = "SPAWN OF THE {kaiju}";
+        [Tooltip("Toast: the line under the kaiju toast ({kaiju}).")]
+        public string ToastKaijuSub = "It smells the crystal in the Ark's hold. Bring it down before it reaches the hull.";
+        [Tooltip("Toast: the run's pilot on the comms as a Crystal Run sets off, after its goal toast ({pilot}: the pilot " +
+                 "whose job it is). Empty shows nothing; so does a run with no pilot named.")]
+        public string PilotBriefTitle = "{pilot} ON THE COMMS";
+        [Tooltip("Toast: the line under the pilot's set-off toast ({pilot}, {goal}, {to}).")]
+        public string PilotBrief = "Her hold is nearly dry. Every creature out here carries crystal: bring {goal} to the Ark and she sails us home.";
+        [Tooltip("The scoreboard: the run's pilot, under the kicker, when a Crystal Run met its goal ({pilot}).")]
+        public string ScoreQuoteMet = "{pilot}: \"That is enough crystal to cross half the sea. Your call.\"";
+        [Tooltip("The scoreboard: the run's pilot when a Crystal Run fell short ({pilot}).")]
+        public string ScoreQuoteMissed = "{pilot}: \"Not enough to fill her. The sea keeps what we could not carry.\"";
+        [Tooltip("The scoreboard: the run's pilot when the Ark docked home ({pilot}).")]
+        public string ScoreQuoteDocked = "{pilot}: \"Home. Every crystal in her hold is ours.\"";
+        [Tooltip("The scoreboard: the run's pilot when the Ark was lost ({pilot}).")]
+        public string ScoreQuoteLost = "{pilot}: \"She is gone, and her hold with her. We sail again.\"";
         [Tooltip("Toast: the pilot is past the stray radius; held while the countdown runs ({seconds}: 5, 4, 3, 2, 1).")]
         public string ToastStray = "RETURN TO THE ARK: {seconds}";
         [Tooltip("Toast: the line under the stray countdown when the pilot carries nothing ({seconds}).")]

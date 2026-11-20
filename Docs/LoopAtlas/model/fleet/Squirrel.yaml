@@ -1,0 +1,89 @@
+# Loop Atlas model: vessel Squirrel. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Squirrel
+verbs:
+  Time:
+    ability: Skimming
+    does: Every prism you skim past gives you boost energy, and that energy is your speed. Keep threading close to mass
+      to stay fast.
+    trigger: Passive - skim prisms
+    scales: More Time gives more boost energy for each prism you skim.
+    source: Docs/ElementalAbilitySystem/FLEET_MAPS.md
+    arch: passive
+    t: [2, 15]
+  Charge:
+    ability: Crystal Joust
+    does: Overtake a creature's crystal while flying faster than it to wither a rival creature, freeing its heart and collecting
+      it. Overtake a rival pilot to steal petals off them. Either joust needs at least the minimum joust speed.
+    trigger: Passive - overtake
+    scales: 'More Charge lowers the speed a joust needs: 90 u/s at rest, 45 u/s at Charge 10. The Charge card''s gauge marks
+      it.'
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_ELEMENT_RECUT.md
+    arch: passive
+    t: [2, 15]
+  Mass:
+    ability: Boost Ring
+    does: Drops a ring of danger prisms ahead of you to fly through the middle of. Grazing it boosts you, but it slams any
+      vessel that hits it, yours included. Twenty-second cooldown.
+    trigger: Tap
+    scales: More Mass shortens the cooldown between rings.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_TUBE.md
+    arch: tap
+    t: [2, 20]
+  Space:
+    ability: Steal
+    does: Skim a prism to steal it into your own domain. A rival's shielded prism only loses its shield, and super-shielded
+      prisms can never be taken.
+    trigger: Passive - skim a prism
+    scales: More Space grows your skimmer, so each pass steals from further away.
+    source: Assets/Resources/ElementalAbilityMaps/Squirrel.asset
+    arch: passive
+    t: [2, 15]
+  Omni:
+    ability: Omni crystal
+    does: The crystal opens and becomes a ring of eight shielded prisms just ahead of your nose.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b b
+  Charge: b b .
+  Mass: x x x
+  Space: '- - -'
+missing: Mass
+arenas: [Regatta, Broadside, Brood Rush]
+games:
+  Time: [Skim Race]
+  Charge: [Joust]
+  Mass: []
+  Space: []
+excused: [Space]
+lean: cultivator
+leanWhy: Steals mass and destroys none; its Space game is excused.
+combos:
+- name: The tube run
+  t: [8, 25]
+  is: Speed made from mass, spent on a rival.
+  chain:
+  - [Time, Skim prisms for boost]
+  - [Mass, Drop a Boost Ring ahead]
+  - [Time, Thread its middle]
+  - - Charge
+    - Overtake a rival at joust speed
+  drivers: [joy, rival]
+  feel: Threading the needle at full speed.
+- name: The thief's lap
+  t: [15, 45]
+  is: Every pass along a rival's trail makes it yours and makes you faster.
+  chain:
+  - - Space
+    - Skim a rival trail to steal it
+  - - Time
+    - Each prism skimmed is boost
+  - - ''
+    - Loop back along what is now your mass
+  drivers: [make, joy]
+  feel: Their wall becoming your road.
+doc: Docs/ElementalAbilitySystem/FLEET_MAPS.md

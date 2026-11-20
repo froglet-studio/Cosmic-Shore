@@ -1,0 +1,31 @@
+{
+  "id": "2026-11-17-risky-merge-pr-2100-fix-ai-the-serpent-p-4769f2",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-17T05:03:46+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2100 (fix(ai): the Serpent presses its refuel cloak only when it is ready, with corner genes) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; shared AI code every AI hull runs: Assets/_Scripts/Controller/AI/Boost/PelletBoostAIPolicySO.cs",
+  "branch": "claude/project-thread-qaz3ia",
+  "pr": 2100,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/_Scripts/Controller/AI/Boost/PelletBoostAIPolicySO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/CloakSeedWallActionExecutor.cs",
+    "Docs/Approvals/Yash/2026-11-17-pelletboostaipolicyso-presses-its-refuel-101596.json",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "detail": "Assets/_Scripts/Controller/AI/Boost/PelletBoostAIPolicySO.cs"
+    }
+  ]
+}

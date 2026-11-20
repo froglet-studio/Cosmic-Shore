@@ -149,7 +149,7 @@ g.emit_asset(CARD_REL, G_ASSET["ArcadeGameCaveIn"],
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Meerkat']}, type: 2}}
   MinPlayersAllowed: 1
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1

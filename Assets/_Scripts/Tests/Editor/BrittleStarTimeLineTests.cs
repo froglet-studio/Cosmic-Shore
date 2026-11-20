@@ -243,7 +243,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Laps_scale_per_rung_and_keep_eight_rings_a_lap()
         {
-            int[] laps = { 2, 3, 3, 4 };
+            int[] laps = { 2, 3, 6, 6 };
             for (int i = 1; i <= 4; i++)
             {
                 Assert.AreEqual(laps[i - 1], BrittleStarTimeCourse.LapsFor(i));

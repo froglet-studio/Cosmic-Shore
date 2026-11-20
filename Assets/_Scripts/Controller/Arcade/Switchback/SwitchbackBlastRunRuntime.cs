@@ -118,6 +118,18 @@ namespace CosmicShore.Gameplay
                                                    Mathf.FloorToInt(p.y / PrismMatchDistance),
                                                    Mathf.FloorToInt(p.z / PrismMatchDistance));
 
+        /// <summary>
+        /// Start tracking every laid prism after <see cref="Init"/>: a guest that only now flies an AI hull
+        /// (SwitchbackController.OnRacerArmed). The scan window reopens so the prisms already laid are matched.
+        /// </summary>
+        public void TrackAllPrisms()
+        {
+            if (_trackAll || _layout == null) return;
+            BuildLaidIndex();
+            _scanDeadline = Time.time + PrismScanTimeout;
+            _nextScan = 0f;
+        }
+
         void BuildLaidIndex()
         {
             int n = _layout.Prisms.Count;

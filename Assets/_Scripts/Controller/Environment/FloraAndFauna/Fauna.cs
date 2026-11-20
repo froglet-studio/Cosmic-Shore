@@ -1064,12 +1064,6 @@ namespace CosmicShore.Gameplay
 
         HealthPrism[] _bodyPrisms;
 
-        /// <summary>
-        /// A creature grown at birth beyond its species' size (a voyage's raiders, Shombith 2026-11-16: "bigger faunas ...
-        /// attack the ark"): its root scale times <paramref name="factor"/>, its rig re-bound and its heart re-sized, as a
-        /// variant's body scale does. Call in the spawn frame, right after <c>SpawnFaunaWithDomain</c>, so the body blooms
-        /// in at its grown size (continuity holds). A variant applied later re-sizes from the authored scale.
-        /// </summary>
         /// <summary>How many times <see cref="GrowBody"/> has grown this body over its species' size (1 = never).</summary>
         public float GrownBy => _grownBy;
         float _grownBy = 1f;
@@ -1102,6 +1096,12 @@ namespace CosmicShore.Gameplay
             _prismsGrownBy *= settle;
         }
 
+        /// <summary>
+        /// A creature grown at birth beyond its species' size (a voyage's raiders, Shombith 2026-11-16: "bigger faunas ...
+        /// attack the ark"): its root scale times <paramref name="factor"/>, its rig re-bound and its heart re-sized, as a
+        /// variant's body scale does. Call in the spawn frame, right after <c>SpawnFaunaWithDomain</c>, so the body blooms
+        /// in at its grown size (continuity holds). A variant applied later re-sizes from the authored scale.
+        /// </summary>
         public void GrowBody(float factor)
         {
             if (factor <= 0f || Mathf.Approximately(factor, 1f)) return;
@@ -1660,6 +1660,14 @@ namespace CosmicShore.Gameplay
         {
             hostCell = cell;
             ApplyRuntimeTuningFrom(cell);
+            if (cell && cell.CullOffscreenAnimation) CullOffscreenAnimation();
+        }
+
+        /// <summary>The rig stops animating while no camera sees it (<see cref="Cell.CullOffscreenAnimation"/>).</summary>
+        void CullOffscreenAnimation()
+        {
+            foreach (var animator in GetComponentsInChildren<Animator>(true))
+                if (animator) animator.cullingMode = AnimatorCullingMode.CullCompletely;
         }
 
         // ===================================================================
@@ -2082,7 +2090,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// STEAL this creature into <paramref name="thief"/>'s domain (Garrett, 2026-10-24: "if an opposing team's fauna is
-        /// netted it steals it"; the third sign-off on the one-colour law, <c>Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md</c>):
+        /// netted it steals it"; the third sign-off on the one-colour law, <c>Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md</c>;
+        /// the fourth, 2026-11-19: a creature the Jewel Wasp possesses is stolen, <c>JewelWaspExecutor.Possess</c>):
         /// its domain, its body prisms and its diet's side become the thief's, and its offspring are born the thief's
         /// (birth copies the parent's domain). Nothing is spawned or killed. On the peer that simulates it; a puppet takes
         /// it from <see cref="FaunaNetworkSync"/>. False when it cannot be stolen, is dying, or is already the thief's.
@@ -2142,6 +2151,16 @@ namespace CosmicShore.Gameplay
         /// <summary>After <see cref="SetTeam"/> changed <see cref="domain"/> - a subclass that draws or caches
         /// its colour re-reads it here.</summary>
         protected virtual void OnTeamChanged() { }
+
+        /// <summary>Every live body prism takes this creature's domain: the recolour a species whose body is its own
+        /// <see cref="BodyPrisms"/> runs in <see cref="OnTeamChanged"/> (a steal, or a mode's recolour).</summary>
+        protected void RecolourBodyPrisms()
+        {
+            var body = _bodyPrisms;
+            if (body == null) return;
+            for (int i = 0; i < body.Length; i++)
+                if (body[i] && !body[i].destroyed) body[i].ChangeTeam(domain);
+        }
 
         IEnumerator UpdateGoalCoroutine()
         {

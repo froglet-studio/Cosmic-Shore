@@ -65,7 +65,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 300
-    messageTemplate: 'Freeze a bomb in the keg, get round to its far side, blow it - the gate is yours and the blast throws you down the next leg.'
+    messageTemplate: 'Open a keg and its gate is yours: bomb it, or Rush through it. Freeze a bomb in the keg, fly just past it toward the next ring and let go: the blast throws you down the leg.'
     tintWithDomainColor: 0
     useDomainColoredNames: 0
     alpha: 1
@@ -76,6 +76,16 @@ MonoBehaviour:
     repeatWhileIdle: 1
   - situation: 301
     messageTemplate: 'Bank shot ({0})'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 302
+    messageTemplate: 'Rammed open ({0})'
     tintWithDomainColor: 1
     useDomainColoredNames: 0
     alpha: 1

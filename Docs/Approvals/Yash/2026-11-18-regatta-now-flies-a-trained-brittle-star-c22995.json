@@ -1,0 +1,25 @@
+{
+  "id": "2026-11-18-regatta-now-flies-a-trained-brittle-star-c22995",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T21:08:14+00:00",
+  "area": "Brittle Star Speed Mode and its Regatta AI",
+  "summary": "Regatta now flies a trained Brittle Star drive (BrittleStarAIBoostPolicy_Regatta, its Speed Mode policy trained in Brittle Star Time with the coach off), and Speed Mode's rest multiplier goes back from x6.5 to x6 (Max 8, floor 3), undoing #2217: that raise had been compensating the untrained AI. Regatta 15 seeds: card 69.8 -> 71.3 s, L5 65.2 -> 63.0 s, both inside the 1.10x bar. Brittle Star Time Legendary at x6 (coach unchanged): I1 49.6, I2 54.3, I3 59.6, I4 84.1 s.",
+  "why": "Loop step 3 gap from the step-5 audit: no trained policy anywhere for the Brittle Star.",
+  "branch": "claude/project-thread-91zcss",
+  "lane": "brittlestar",
+  "commit": "97771f13b",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/BrittleStarAIBoostPolicy_Regatta.asset",
+    "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset"
+  ],
+  "loop": {
+    "vessels": [
+      "BrittleStar"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

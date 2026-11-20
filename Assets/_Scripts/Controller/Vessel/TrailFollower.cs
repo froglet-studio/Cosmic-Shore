@@ -62,6 +62,13 @@ namespace CosmicShore.Gameplay
                  "a braking slide rather than a 15x snap, and letting go coasts to a stop.")]
         [SerializeField] float speedTrackingRate = 5f;
 
+        [Header("Element")]
+        [Tooltip("TIME paces the ride: a multiplier on the rail speed (friendly, hostile and " +
+                 "destroyed terrain alike), Min at the resting level, Max at level 10. Off by " +
+                 "default, so a follower that does not author it rides at x1 (the Urchin's Time " +
+                 "pace lever, 2026-11-17).")]
+        [SerializeField] ElementalFloat rideSpeedMultiplier = new(1f);
+
         [HideInInspector]
         public float Throttle;
 
@@ -300,6 +307,7 @@ namespace CosmicShore.Gameplay
             var block = AttachedPrism;
             float terrain = block ? GetTerrainAwareBlockSpeed(block) : FriendlyTerrainSpeed;
             float multiplier = vesselData.VesselTransformer ? vesselData.VesselTransformer.SpeedMultiplier : 1f;
+            multiplier *= rideSpeedMultiplier.EvaluateLive(vesselData);
 
             _rideSpeed = Mathf.Lerp(_rideSpeed, Throttle * terrain * multiplier,
                                     1f - Mathf.Exp(-speedTrackingRate * Time.deltaTime));

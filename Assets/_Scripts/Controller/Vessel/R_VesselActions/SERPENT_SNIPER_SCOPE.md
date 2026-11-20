@@ -1436,13 +1436,11 @@ the cheaper-to-undo one switchable.**
 
 ## Checked and clear
 
-- **Rule 26 (re-scoping an L5).** Space 5 on this hull could have granted two upgrades:
-  `SerpentVesselExplosionByCrystalEffect.asset` reads `IsUpgradeActive(Element.Space)` for the
-  blast's "spares allies" upgrade. It does **not** fire — the asset serializes no
-  `_spaceUpgradeSparesAllies`, whose field initializer is `false`, and its
-  `_heightMultiplierAtFullSpace` / `_coreMultiplierAtFullCharge` are both `1`, which the code
-  skips outright. Nothing to switch off. (Confirmed by
-  `Tools/Build/element_ability_table.py Serpent`, which labels both reads *inert — authored x1*.)
+- **Rule 26 (re-scoping an L5).** Space 5 on this hull once had a second reader:
+  `SerpentVesselExplosionByCrystalEffect.asset`, an inert crystal blast (no allies upgrade, x1 on
+  both element dials). Garrett called it a vestige on 2026-11-18 and it was removed from
+  `SerpentImpactorDataContainer.asset`, so a crystal pickup now only shields the wall and plays
+  haptics, and Shield Steal is gated in one place (`SerpentWallAssembler`).
 
 ## Known limitations
 

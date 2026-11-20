@@ -412,3 +412,38 @@ body prisms. A Brittlestar's body prisms are thin plates, and grown 12-14x with 
 featureless square bigger than the Ark's plates. The kaiju's frame still grows `kaijuScale` times, but its prisms
 only `kaijuPrismScale` (3) times (`Fauna.GrowBody(factor, prismFactor)`); its skeleton settles by what its prisms grew
 (`Fauna.PrismsGrownBy`). Not run in Unity.
+
+## 17. The phone pass, run length and the story (Shombith, 2026-11-20)
+
+From the mobile audit Shombith approved ("Yes do 1-6"; the squad on hulls that work on phone AND PC; every story item but
+the rival crew). Numbers on `Voyage.asset` ("Voyage - phones"; code defaults). Not run in Unity.
+
+- **A phone's budget.** Plants are a cell's growing prism mass: a phone grows half the authored plants
+  (`mobileCellFloraScale` 0.5), retires the cell behind 150 u past its membrane instead of 600 (`mobileRetireMargin`,
+  `CellConveyor.RetireMargin`), and its creatures' rigs stop animating off screen (`mobileStillOffscreenCreatures`,
+  `Cell.CullOffscreenAnimation` read in `Fauna.Initialize`). Production gating only: nothing living is culled.
+- **Slow captures on a phone.** A dev Android build with the diagnostics HUD on captures `<scene>-slow` (and `-slower`)
+  when a scene holds under 20 fps for 10 s (`DeviceLogCapture`), as the editor's `PerfAutoCapture` does.
+- **Leaving the app.** The run writes its record as the app goes to the background (`VoyageRun.OnApplicationPause`), and
+  a phone that comes back mid-voyage presses the flight HUD's pause button (`VoyageScene.pauseButton`). A voyage the
+  phone KILLS at sea is still abandoned on the next launch (`VoyageRules.Resume`, unchanged): resuming a run mid-sea is not
+  built.
+- **Loading.** `Voyage.unity`'s cell boots the bare canvas (`Cell.bootBareCanvas`), not the Boot Default world (Garland),
+  which the Arkway's revert threw away anyway.
+- **The first line-up** is Sparrow (you), Squirrel and Dolphin: every ability reachable by touch
+  (`Docs/Reports/MOBILE_VESSELS.md`), the starter squad's hulls. The Butterfly's Fold and the Serpent's scope do not work on touch.
+- **Touch.** The scoreboard fits the safe area; the intro skips only on a touch held on its hint (bottom right), which reads
+  `touchSkipHint` ("Hold here to skip") on a touch device.
+- **Run length** (read from the code, not timed: Ark 27 u/s inside a cell's radius easing to 108 between cells, cells about
+  3000 u in radius, 6500 u core to core): a 4-cell run reaches its stop in about 8 minutes with the intro and the raid
+  windows, which Finish here ends. The way home now sails `homewardArkSpeedFactor` (2) times faster, about 3 more minutes
+  instead of 6. The scoreboard's time is the measured answer.
+- **The story.** The Ark burns crystal to sail and her hold is nearly dry (`ToastSetOffSub`, the job's summary). The run's
+  pilot speaks: on the comms after the goal toast (`PilotBriefTitle`, `PilotBrief`) and on every board
+  (`ScoreQuoteMet`, `ScoreQuoteMissed`, `ScoreQuoteDocked`, `ScoreQuoteLost`; `VoyageScoreboard.Quote`). A kaiju between
+  the cells is the Leviathan's spawn (`ToastKaiju` with `{kaiju}`, the content's kaiju name). Docking home plays a short
+  reel first (`Resources/Voyages/DockOutro`: the Ark, HOME and the pilot's line), then banks and shows the board. No line
+  shows when the run names no pilot. No rival crew (Shombith's call).
+- **Not done:** phone haptics (the game's haptics are gamepad rumble only, `HapticController`; a phone needs a vibration
+  path first, Caleb's haptics policy), and the 45-50 KB of garbage a frame (no capture names its source yet; the phone's
+  slow captures are how it is found).

@@ -612,6 +612,9 @@ namespace CosmicShore.Gameplay
         private IVesselStatus _feelVessel;                      // the vessel the follow target belongs to
         private Component _feelVesselBody;                      // the same object, for Unity's destroyed check
         private float _feelWeight = 1f;
+        // The followed hull's row says no camera shake at all (CameraFeelConfigSO.NoShakeFor): the feel holds its
+        // trauma, rumble and kicks at zero and Shake() ignores every call. Refreshed every frame by ApplyFeel.
+        private bool _feelNoShake;
         // The followed hull's measured size and what it and the hull's table row give the G. Fields rather than
         // properties so the Inspector's Debug view shows them while tuning.
         private float _feelHullSize;     // the mean of the model's length, width and height, world units; 0 = not yet
@@ -805,6 +808,7 @@ namespace CosmicShore.Gameplay
         private void ApplyFeel(Vector3 followPoint, float warp)
         {
             var config = CameraFeelConfigSO.Instance;
+            _feelNoShake = _feelVesselBody && config.NoShakeFor(_feelVessel.VesselType);
             float scale = config.Enabled && !PlacementAnchor.HasValue
                 ? config.Strength * VesselCameraFeel.AccessibilityScale * (1f - Mathf.SmoothStep(0f, 1f, _spectateBlend))
                 : 0f;
@@ -834,7 +838,7 @@ namespace CosmicShore.Gameplay
             Quaternion view = transform.rotation;
             float distance = Mathf.Max(1f, EffectiveOffset.magnitude * warp);
             Feel.Step(config, Time.deltaTime, followPoint, view, distance, _feelGForce, _feelResponse,
-                DriftSlip(config, view));
+                DriftSlip(config, view), _feelNoShake);
 
             _feelPosition = view * (Feel.LocalOffset * (distance * scale));
             _feelRotation = Quaternion.Euler(Feel.LocalAngles * scale);
@@ -1183,6 +1187,7 @@ namespace CosmicShore.Gameplay
         public void Shake(float intensity, float duration)
         {
             if (intensity <= 0f || duration <= 0f) return;
+            if (_feelNoShake) return;   // a no-shake hull (the Rhino) takes no shake from any source
 
             // Only override if this shake is stronger than what's already playing
             if (_shakeTimeRemaining > 0f && intensity < _shakeIntensity * (_shakeTimeRemaining / _shakeDuration))

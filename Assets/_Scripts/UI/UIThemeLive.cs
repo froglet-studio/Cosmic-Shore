@@ -428,7 +428,10 @@ namespace CosmicShore.UI
 
         static void SwapSea(Graphic g)
         {
-            var m = g.material;
+            // A TMP sub-mesh's `material` getter is not a read: it clones the sub-mesh's shared material on the
+            // spot (one more material instance per sweep), and throws when that shared material was destroyed
+            // with the font fallback it came from. Its shared material answers the same question.
+            var m = g is TMP_SubMeshUI subMesh ? subMesh.sharedMaterial : g.material;
             if (!m || !m.HasProperty(LineColorId) || !m.HasProperty(LineColorMidId) || !m.HasProperty(LineColorEndId)) return;
             bool isCopy = SeaCopySet.Contains(m);
             if (_live == null)

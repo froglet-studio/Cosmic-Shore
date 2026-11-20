@@ -761,7 +761,12 @@ namespace CosmicShore.UI
             _page = VoyageKit.Node("Page", _root);
             VoyageKit.Stretch(_page);
             VoyageKit.Block(_page, VoyageKit.Fade(_kit.Popup, 0.62f), hit: true);
-            var frame = VoyageKit.Node("Frame", _page);
+            // The board fits inside the screen's safe area, clear of a phone's notch and rounded corners (Shombith
+            // 2026-11-20, the phone pass); the dim still covers the whole screen.
+            var safe = VoyageKit.Node("Safe", _page);
+            VoyageKit.Stretch(safe);
+            safe.gameObject.AddComponent<SafeAreaFitter>().Apply();
+            var frame = VoyageKit.Node("Frame", safe);
             VoyageKit.Fit(frame, new Vector2(1920f, 1080f));
 
             Head(frame, b);
@@ -799,6 +804,7 @@ namespace CosmicShore.UI
                 _ => string.Empty,
             };
             _kit.Text(head, 60, _kit.Light, TextAlignmentOptions.Center).text = title;
+            if (!string.IsNullOrEmpty(b.Quote)) _kit.Text(head, 20, _kit.Sub, TextAlignmentOptions.Center).text = b.Quote;
 
             // The big count: every crystal the crew took, and beside it the count by element (Rev 116 A, Score).
             if (b.Board != VoyageScoreboard.Kind.Escort)

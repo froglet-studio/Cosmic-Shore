@@ -1,0 +1,51 @@
+{
+  "id": "2026-11-18-risky-merge-pr-2205-went-in-without-wait-f6ad15",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-18T00:47:23+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2205 went in without waiting for you.",
+  "why": "multiplayer wire format (NetworkConfig.ProtocolVersion): Assets/_Prefabs/CORE/NetworkManager.prefab",
+  "branch": "claude/project-thread-e9yath",
+  "pr": 2205,
+  "commit": "591ef1070",
+  "paths": [
+    "Assets/_Prefabs/CORE/NetworkManager.prefab",
+    "Assets/_SO_Assets/Games/ArcadeGameBends.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameBlastline.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameBloomrush.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameBreach.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameBreakwater.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameBrittleStarTime.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameBroadside.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameBroodRush.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameBullrush.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameBurrowRun.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameCaveIn.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameChum.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameCleanerRam.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameCleave.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameCorona.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameDecoyRun.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameDenBuilder.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameDepthCharge.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameDogFight.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameDustup.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameFlatline.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameFlitstrike.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameFulmen.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameGlasshouse.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameGorge.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameGrizzlyCharge.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameGrizzlyTime.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameHarvest.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameHaul.asset"
+  ],
+  "risky": [
+    {
+      "key": "protocol",
+      "name": "multiplayer wire format (NetworkConfig.ProtocolVersion)",
+      "detail": "Assets/_Prefabs/CORE/NetworkManager.prefab"
+    }
+  ]
+}

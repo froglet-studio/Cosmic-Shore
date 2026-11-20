@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
   Class: 10
   Name: Shrike
-  Description: A slow sniper that docks to whatever it touches. Build nests of super-shielded blocks,
-    pierce anything with the Void Lance, sling across the cell on a tether, and paint targets for the
+  Description: A slow sniper that docks to whatever it touches. Weave nests walled in super-shielded
+    plates, pierce anything with the Void Lance, sling across the cell on a tether, and paint targets for the
     missiles your nests launch.
   PrimaryElement: 0
   Element: {fileID: 0}

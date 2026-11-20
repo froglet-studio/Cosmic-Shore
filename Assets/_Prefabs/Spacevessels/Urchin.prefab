@@ -1736,6 +1736,14 @@ MonoBehaviour:
   maxBlockScale: 1
   waitTillOutsideSkimmer: 1
   shielded: 0
+  trailVolume:
+    Enabled: 0
+    Value: 2.1
+    Min: 1
+    Max: 2.5
+    element: 0
+    UseFloor: 0
+    Floor: 0
   offset: 0
   Gap: 6
   MinimumGap: 1
@@ -1864,6 +1872,15 @@ MonoBehaviour:
   FriendlyTerrainSpeed: 300
   HostileTerrainSpeed: 20
   DestroyedTerrainSpeed: 300
+  speedTrackingRate: 5
+  rideSpeedMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 0.75
+    Max: 0.9
+    element: 4
+    UseFloor: 1
+    Floor: 0.375
   Throttle: 0
 --- !u!114 &4235613159111207255
 MonoBehaviour:

@@ -96,7 +96,12 @@ the speed it carried, not by where it crossed the mouth:
 
 - **Eight FMOD slots**, all shipped EMPTY.
 
-**4. Laps per rung, 2 / 3 / 3 / 4** (`BrittleStarTimeCourse.LapsByIntensity`):
+**4. Laps per rung, 2 / 3 / 6 / 6** (`BrittleStarTimeCourse.LapsByIntensity`; 2 / 3 / 3 / 4 until 2026-11-17):
+- **The climbing ladder (2026-11-17, "do your best on fun").** At 2 / 3 / 3 / 4 the Legendary AI raced I1 49, I2 54,
+  I3 36, I4 57 s in the real-game judge: I3's team crystals made it the fastest rung. The mode may not touch the kit, so
+  the course carries it: I3 and I4 fly 6 laps. Now 49 / 54 / 65 / 90 s (seeds 1-3, every rung finishing), each rung
+  1.10 / 1.21 / 1.38x the one before. 2 / 3 / 5 / 5 gave 49 / 54 / 55 / 71 (I3 no harder than I2). The offline human
+  model below laps faster at I4 than at I3, so a person may find I4 the easier of the two; Garrett's playtest decides.
 - The I2-I4 shapes are short. At two laps, a reading pilot finished in 25-37 s.
 - The authored race (`brittleStarTimeGateTarget`, 16) stays I1's, and the others scale from it, so it is still eight
   rings a lap.
@@ -105,7 +110,7 @@ the speed it carried, not by where it crossed the mouth:
 
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
-| Laps (rings) | 2 (16) | 3 (24) | 3 (24) | 4 (32) |
+| Laps (rings), before 2026-11-17 | 2 (16) | 3 (24) | 3 (24) | 4 (32) |
 | Reading human, model | 49 s | 54 s | 41 s | 48 s |
 | ... x1.6, a person (estimate) | ~79 s | ~86 s | ~66 s | ~76 s |
 | Let-go gates worth | none stand | none stand | 4.4% | 8.3% |

@@ -147,6 +147,21 @@ WING_BEAT = (("beatAmplitude", "52", "30"), ("beatAmplitudeAtCruise", "16", "12"
 
 
 # ----------------------------------------------------------------------------- the prefab
+# The wasp's own chase camera (Garrett, 2026-11-19: "the camera on the jewel wasp could be much closer. when it is not in
+# a lifeform"): forked from the Tiger Moth's, which stood 204 u back of a 6.5 u hull. A ride and a plant keep their own
+# views (JewelWaspConfig.hostCameraFloor, the plant orbit).
+CAMERA = os.path.join(ROOT, "Assets", "_SO_Assets", "Camera", "JewelWaspCameraSettingsSO.asset")
+CAMERA_GUID = "085bebe09734406e8fc75553a8daa8a9"
+DONOR_CAMERA = os.path.join(ROOT, "Assets", "_SO_Assets", "Camera", "ButterflyCameraSettingsSO.asset")
+DONOR_CAMERA_GUID = "2bd6a6d58dbefa346b5b51b78a9c82a8"
+CAMERA_OFFSET = "{x: 0, y: 8, z: -45}"
+
+
+def camera_asset(donor: str) -> str:
+    t = re.sub(r"(?m)^  m_Name: .*$", "  m_Name: JewelWaspCameraSettingsSO", donor, count=1)
+    return re.sub(r"(?m)^  followOffset: .*$", f"  followOffset: {CAMERA_OFFSET}", t, count=1)
+
+
 def clone_prefab(donor: str) -> str:
     t = donor
     t = replace_once(t, "  m_Name: TigerMoth\n  m_TagString", "  m_Name: JewelWasp\n  m_TagString", "root name")
@@ -248,7 +263,7 @@ def config_asset() -> str:
     t += efloat("floraGrowth", 3.5, 7, 2, 2.2)
     t += "  overgrowthRadius: 200\n  floraCameraDistance: 650\n"
     t += FLORA_VIEW
-    t += "  hostCameraBodies: 6\n  hostCameraBase: 30\n  cameraEase: 4\n"
+    t += "  hostCameraBodies: 6\n  hostCameraBase: 30\n  hostCameraFloor: 204\n  cameraEase: 4\n"
     t += "  omniPredators:\n" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in OMNI_PREDATORS)
     t += "  aiHostSeconds: 14\n  aiLookSeconds: 1.5\n"
     t += f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_EVENT_GUID}, type: 2}}\n"
@@ -371,6 +386,9 @@ def wear_own_hull(t: str) -> str:
             f"  m_Script: {{fileID: 11500000, guid: {guid_of(RELAY_META)}, type: 3}}\n  m_Name: \n"
             f"  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.JewelWaspNetworkRelay\n"
             f"  ShowTopMostFoldoutHeaderGroup: 1\n")
+    if os.path.exists(CAMERA + ".meta"):
+        t = t.replace(f"  settings: {{fileID: 11400000, guid: {DONOR_CAMERA_GUID}, type: 2}}\n",
+                      f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}\n", 1)
     return retire_dust_skimmer(t)
 
 
@@ -379,6 +397,9 @@ def author() -> None:
     if not os.path.exists(PREFAB) and os.path.exists(DONOR):
         write(PREFAB, clone_prefab(read(DONOR)))
         write(PREFAB + ".meta", prefab_meta(PREFAB_GUID))
+    if not os.path.exists(CAMERA) and os.path.exists(DONOR_CAMERA):
+        write(CAMERA, camera_asset(read(DONOR_CAMERA)))
+        write(CAMERA + ".meta", asset_meta(CAMERA_GUID))
     if os.path.exists(PREFAB) and os.path.exists(MODEL_FBX + ".meta"):
         t = read(PREFAB)
         n = wear_own_hull(t)
@@ -423,12 +444,16 @@ def errors() -> list:
     out = []
     def need(cond, what):
         if not cond: out.append(what)
-    for p in [PREFAB, CONFIG, HATCH, IMPACTOR, MAP, CLASS_ASSET] + [c[0] for c in CONTROLS.values()]:
+    for p in [PREFAB, CONFIG, HATCH, IMPACTOR, MAP, CLASS_ASSET, CAMERA] + [c[0] for c in CONTROLS.values()]:
         need(os.path.exists(p) and os.path.exists(p + ".meta"), f"missing {os.path.relpath(p, ROOT)} (+ .meta)")
     if out:
         return out
     pf = read(PREFAB)
     need(guid_of(PREFAB + ".meta") == PREFAB_GUID, "JewelWasp.prefab.meta guid moved")
+    need(guid_of(CAMERA + ".meta") == CAMERA_GUID, "JewelWaspCameraSettingsSO.asset.meta guid moved")
+    need(f"  followOffset: {CAMERA_OFFSET}\n" in read(CAMERA), f"the wasp's own camera is not at {CAMERA_OFFSET}")
+    need(f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}\n" in pf
+         and f"guid: {DONOR_CAMERA_GUID}" not in pf, "the wasp flies the Tiger Moth's far camera, not its own")
     need(f"  _name: JewelWasp\n  vesselType: {CLASS_ID}\n" in pf, "VesselStatus is not the Jewel Wasp (31)")
     need(f"  GlobalObjectIdHash: {global_object_id_hash(PREFAB_GUID, NETWORK_OBJECT_ID)}\n" in pf,
          "GlobalObjectIdHash is not this prefab's (a donor hash keys two prefabs on one Netcode entry)")
@@ -534,6 +559,7 @@ def self_test() -> int:
         "a butterfly's beat": good.replace("\n  beatHz: 5\n", "\n  beatHz: 1.15\n"),
         "no network relay": good.replace(f"  - component: {{fileID: {RELAY_ID}}}\n", "", 1),
         "the dust capsule back": good.replace("  _nearFieldSkimmer: {fileID: 0}\n", f"  _nearFieldSkimmer: {{fileID: {DUST_SKIMMER}}}\n"),
+        "the Moth's camera": good.replace(f"guid: {CAMERA_GUID}", f"guid: {DONOR_CAMERA_GUID}"),
         "the Moth's HUD": good.replace(f"guid: {guid_of(OWN_HUD_META)}", f"guid: {BUTTERFLY_HUD_GUID}"),
     }
     failed = 0
@@ -547,7 +573,9 @@ def self_test() -> int:
     finally:
         write_quiet(PREFAB, good)
     others = [
-        ("borrowed FMOD event", CONFIG, "  stingEvent:\n    Guid:\n      Data1: 0\n", "  stingEvent:\n    Guid:\n      Data1: 1234\n"),
+        # the slot may hold a listed placeholder (sound_placeholders.json) or be empty: an event path no ledger lists
+        ("borrowed FMOD event", CONFIG, "  stingEvent:\n",
+         lambda t: re.sub(r"(  stingEvent:\n    Guid:\n(?:      Data\d: -?\d+\n){4}    Path: ).*", r"\g<1>event:/SFX/Borrowed", t, count=1)),
         ("suction on Time", CONFIG, "  suctionReachScale:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 3\n    element: 3\n",
          "  suctionReachScale:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 3\n    element: 4\n"),
         ("omni explodes", IMPACTOR, f"guid: {HATCH_GUID}", f"guid: {BUTTERFLY_EXPLOSION_GUID}"),
@@ -558,7 +586,7 @@ def self_test() -> int:
         if old not in text:
             print(f"  SELF-TEST FAILED: '{name}' could not be planted"); failed += 1; continue
         try:
-            write_quiet(path, text.replace(old, new, 1))
+            write_quiet(path, new(text) if callable(new) else text.replace(old, new, 1))
             if not errors():
                 print(f"  SELF-TEST FAILED: '{name}' was not caught"); failed += 1
             else:
