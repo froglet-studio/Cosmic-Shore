@@ -1106,6 +1106,42 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>The caption on the Ark's hull rail down the left edge (Frogma Rev 116 A).</summary>
         public string ObjectiveRailLabel = "Ark hull";
         public string ObjectiveStripLeaking = "Hull below {line}%: the hold is losing crystals.";
+        [Tooltip("The Ark's plate (Frogma Rev 120 B): the crystals aboard, big. {done}.")]
+        public string PlateCount = "{done}";
+        [Tooltip("The Ark's plate: the goal, small beside the count. {goal}.")]
+        public string PlateGoal = "/ {goal}";
+        [Tooltip("The Ark's plate on the way home: the word beside what is aboard.")]
+        public string PlateAboard = "aboard";
+        [Tooltip("The Ark's plate on an escort: the hull is the score. {hull}.")]
+        public string PlateHull = "{hull}%";
+        [Tooltip("The Ark's plate on an escort: the word beside the hull.")]
+        public string PlateHullTag = "hull";
+        [Tooltip("The Ark's plate: crystals the pilot carries unbanked. {count}.")]
+        public string PlateCarried = "+{count} to bank";
+        [Tooltip("The Ark's plate: the raid window at anchor. {time}.")]
+        public string PlateSails = "Sails in {time}";
+        [Tooltip("The Ark's plate: the Ark is losing plates.")]
+        public string PlateUnderAttack = "Under attack";
+        [Tooltip("The Ark's plate: the hull is under the leak line.")]
+        public string PlateLeaking = "Leaking: guard the hold";
+        [Tooltip("The Ark's plate: an assault under way. {kills}, {needed}.")]
+        public string PlateAssault = "Assault: {kills} of {needed}";
+        [Tooltip("The Ark's plate: an assault announced. {seconds}.")]
+        public string PlateIncoming = "Assault in {seconds}";
+        [Tooltip("The Ark's plate: the goal is met.")]
+        public string PlateGoalMet = "Goal met. Bring them home.";
+        [Tooltip("The Ark's plate on the way home.")]
+        public string PlateHome = "Docking banks it all";
+        [Tooltip("The Ark's plate when nothing else is up: where the Ark is. {place}, {cell}, {cells}.")]
+        public string PlatePlace = "{place}, {cell} of {cells}";
+        [Tooltip("The chip top left (Rev 120 B): the crystals aboard. {done}, {goal}.")]
+        public string ChipCount = "{done}/{goal}";
+        [Tooltip("The chip: crystals carried unbanked. {count}.")]
+        public string ChipCarried = "+{count}";
+        [Tooltip("The chip: the Ark's hull. {hull}.")]
+        public string ChipHull = "{hull}%";
+        [Tooltip("The chip: the raid clock. {time}.")]
+        public string ChipClock = "{time}";
         public string ToastHullLeaking = "THE HOLD IS LEAKING";
         public string ToastHullLeakingSub = "The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.";
         public string ToastRaiders = "RAIDERS IN OPEN WATER";

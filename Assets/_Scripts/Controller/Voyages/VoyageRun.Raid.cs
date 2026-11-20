@@ -24,6 +24,7 @@ namespace CosmicShore.Gameplay
         bool _goalToastShown;
         ArkAlarmToasts _alarms;
         ArkAttackerMarks _attackerMarks;
+        ArkHudPlate _plate;
         int _toastedCell = -1;
         float _legStartedAt;
         string _runPilotId;
@@ -729,6 +730,8 @@ namespace CosmicShore.Gameplay
             _alarms?.Unhook();
             if (_attackerMarks) Destroy(_attackerMarks.gameObject);
             _attackerMarks = null;
+            if (_plate) Destroy(_plate.gameObject);
+            _plate = null;
             if (ReferenceEquals(VoyageObjective.Source, this)) VoyageObjective.Source = null;
             PauseMenuAction.Release(this);
         }

@@ -25632,3 +25632,16 @@ compiler from the editor's response file: 0 errors. No EditMode tests ran.
 - [ ] Hangar > Upgrades on a vessel with an open element slot, then claim a Daily Toy reward: the page redraws with
       the open-slot text (`79f1ff888b`).
 - [ ] Trigger a toast, change scene, trigger another: it shows, with no MissingReferenceException (`540bac6a24`).
+
+## Voyage HUD, Rev 120 B: the plate over the Ark (2026-11-20)
+
+The plate, chip and toast feed from Frogma Rev 120 (`Docs/MENU_REDESIGN_B.md` section 215). Not run in the Unity
+editor: none in this session. The reference compile has 0 errors in the changed files (29 in untouched files, from
+packages this machine lacks). Seen in Amoebius on a Crystal Run, offline.
+
+- [ ] Crystal Run: a lit plate floats over the Ark with the crystal count, 16 hull segments and a state line; it reads
+      at the same size near and far, and hides during the intro and the end board.
+- [ ] Get the Ark hit: the plate turns red ("Under attack", then "Assault: n of m"); reach the goal: it turns lime.
+- [ ] The chip top left shows crystals, hull and, while anchored, the clock; toasts stack under it as a feed, and a
+      long toast line widens the band instead of being cut off.
+- [ ] Escort the Ark: the plate shows the hull and the way home; Ruby and the other domains read correctly.

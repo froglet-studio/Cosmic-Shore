@@ -208,6 +208,7 @@ namespace CosmicShore.Gameplay
             PauseMenuAction.Current = this;
             (_alarms ??= new ArkAlarmToasts(this, () => _sea)).Hook();
             if (!_attackerMarks) _attackerMarks = ArkAttackerMarks.Create(transform, this, () => Ark);
+            if (!_plate) _plate = ArkHudPlate.Create(transform, () => Ark);
 
             ArkFall.Settled -= OnFallSettled;
             ArkFall.Settled += OnFallSettled;

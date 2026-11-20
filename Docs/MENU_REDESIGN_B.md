@@ -8886,7 +8886,7 @@ Banked, Attack and Sail, none with the objective at top centre and each unlike R
 **Picked.** B, On the Ark (Shombith, 2026-11-20: "I like B with the HUD above the ark, thats cool"). Drawn on every screen in 215. The Rev 118 sized-up HUD code parked on
 `claude/project-thread-xnd2ma` is not built and will be replaced by the pick.
 
-## 215. Rev 120 mockups: B On the Ark on every in-game voyage screen (2026-11-20, awaiting sign-off before the build)
+## 215. Rev 120 mockups: B On the Ark on every in-game voyage screen (2026-11-20, built)
 
 **Asked.** Shombith picked Rev 119 B: "I like B with the HUD above the ark, thats cool".
 
@@ -8900,3 +8900,10 @@ windows at normal sizes.
 
 **To build.** VoyageHud's objective box becomes the chip and toast feed; a world-space plate parented to the Ark shows
 the rest. Replaces the Rev 118 code parked on `claude/project-thread-xnd2ma`.
+
+**Built (2026-11-20).** `ArkHudPlate` (Controller/Voyages) is the plate: a faceted slab with 16 segments, the count and
+one state line in 3D text, a sixth of the screen wide at any camera distance, hidden during the intro, the end board and
+a fallen Ark. `VoyageObjectiveBox` is the chip (`VoyageGlyph` draws its gem, Ark and clock marks), and
+`ArkwayVoyageHud` lays toasts out as a feed under the chip while it shows, widening to a long line. Every word is a
+`VoyageLines` field (`Plate*`, `Chip*`). Seen in Amoebius on a Crystal Run (calm, under attack, assault, anchored); not
+yet run in the Unity editor.
