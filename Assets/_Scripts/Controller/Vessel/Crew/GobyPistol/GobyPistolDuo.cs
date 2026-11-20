@@ -379,7 +379,7 @@ namespace CosmicShore.Gameplay
             if (_goby != null && (rider != _rider || aiCrew != _aiCrew)) Unbind();   // the seat changed hands: seat it afresh
             if (_goby == null) { _rider = rider; _aiCrew = aiCrew; Bind(vessel); }
             // the platform autopilot would fly the pinned Goby like its donor; the AI crew's own Goby AI flies it instead
-            if (_aiCrew && _status.AutoPilotEnabled) { _goby.ToggleAIPilot(false); _stoppedAutopilot = true; }
+            if (_aiCrew && _status.AutoPilotEnabled) { _goby.ToggleAIPilot(false); _stoppedAutopilot = true; ReleaseStick(); }
             float dt = Time.deltaTime; if (dt <= 0f) return;
             _t += dt;
             _body.pLaunchCd = Mathf.Max(0.1f, Config.JumpCooldown.EvaluateReplicated(_status));
@@ -416,6 +416,17 @@ namespace CosmicShore.Gameplay
             Undertow(dt);
             BodyHits();
             StepRings(dt);
+        }
+
+        /// <summary>The stopped autopilot leaves the stick where it last held it, and the hull's transformer goes on turning
+        /// by it every frame: in Regatta that was a full pitch (YSum -1), which spun the AI Goby's nose faster than its own
+        /// turn could bring it round, so it never lined up a dart (2026-11-19). The seat's Goby AI steers the hull itself,
+        /// so it lets go of the stick.</summary>
+        void ReleaseStick()
+        {
+            var input = _status?.InputStatus;
+            if (input == null) return;
+            input.XSum = 0f; input.YSum = 0f; input.XDiff = 0f; input.YDiff = 0f;
         }
 
         // the level-5 upgrades, each read where it acts (named literally so the element ability table finds every gate)
@@ -949,6 +960,27 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Perched: pinned on a perch for its time (it still turns).</summary>
         public bool RacePerched => _perched;
+
+        /// <summary>The dart's charge range, shortest and longest (u), for a coach that plans its length.</summary>
+        public float RaceDartMinRange => Config ? Config.DartMinRange : 140f;
+        public float RaceDartRange => Config ? Config.DartRange : 600f;
+
+        /// <summary>The seat AI's cruise speed (u/s) and turn rate (deg/s): a coach's turning circle.</summary>
+        public float RaceCruiseSpeed => Config ? Config.AiCruiseSpeed : 100f;
+        public float RaceTurnRate => Config ? Config.AiTurnRate : 90f;
+
+        /// <summary>
+        /// Where a dart fired from <paramref name="from"/> along <paramref name="dir"/> (unit) for <paramref name="length"/>
+        /// would stop on a block: the same test <see cref="FireDart"/> makes. False when the line is clear, or when the
+        /// dart phases through (the Time upgrade). A read for a race coach (Regatta's dart plan); it changes nothing.
+        /// </summary>
+        public bool RaceDartStops(Vector3 from, Vector3 dir, float length, out float along)
+        {
+            along = float.MaxValue;
+            if (_goby == null || _status == null) return false;
+            if (Abilities && Abilities.IsUpgradeActive(Element.Time)) return false;
+            return FirstOnLine(from, dir, length, out along);
+        }
 
         void RaceAI(float dt)
         {

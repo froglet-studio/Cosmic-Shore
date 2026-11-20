@@ -1,0 +1,77 @@
+# Loop Atlas model: vessel Orca. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Orca
+verbs:
+  Time:
+    ability: Boost Tank
+    does: The helm boosts while the tank lasts, and the tank refills on its own.
+    trigger: Helm seat - hold
+    scales: More Time refills the tank faster and makes the boost faster.
+    source: Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+    arch: seat
+    t: [4, 20]
+  Charge:
+    ability: Flown Missiles
+    does: Each gunner launches missiles from its own magazine and steers them by hand; a missile collects crystals it flies
+      through. An omni crystal gives every gunner one more missile.
+    trigger: Gunner seats - tap to launch, then steer
+    scales: More Charge makes the missiles fly faster and turn sharper.
+    source: Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+    arch: seat
+    t: [4, 20]
+  Mass:
+    ability: Danger Shield
+    does: The helm rings the hull in super-shielded prisms, open ahead, that ride with it for a few seconds, then drop where
+      they stand as danger prisms that linger.
+    trigger: Helm seat - tap
+    scales: More Mass carries the shield ring with the hull for longer before it drops.
+    source: Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+    arch: seat
+    t: [4, 20]
+  Space:
+    ability: Burst
+    does: A missile bursts on contact, after five seconds, or when its gunner taps again, wrecking rival prisms nearby and
+      taking petals from rival hulls; the bomb gunner's bomb bursts the same way.
+    trigger: On contact, on its fuse, or tap again
+    scales: More Space widens the missile and bomb blasts and the hull's skim reach.
+    source: Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+    arch: passive
+    t: [2, 15]
+  Omni:
+    ability: Omni
+    does: Every gunner seat gets one more missile in its magazine, whether the hull or a gunner's missile took the crystal.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/Crew/OrcaCrew.cs
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b ~ .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Breach]
+  Charge: [Pod Hunt]
+  Mass: [Ice Shelf]
+  Space: [Depth Charge]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The broadside
+  t: [10, 40]
+  is: The helm puts the guns where they can work.
+  chain:
+  - - Time
+    - 'Helm: boost into position'
+  - - Mass
+    - 'Helm: ring the hull in shield'
+  - - Charge
+    - 'Gunners: launch and fly the missiles'
+  - [Space, Burst on contact]
+  drivers: [crew, break, rival]
+  feel: Four people, one hit.
+doc: Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md

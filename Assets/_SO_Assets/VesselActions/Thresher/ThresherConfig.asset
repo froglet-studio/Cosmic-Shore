@@ -73,12 +73,12 @@ MonoBehaviour:
     Floor: 0.4
   massTrailScale:
     Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 2
+    Value: 0.45
+    Min: 0.45
+    Max: 0.9
     element: 2
     UseFloor: 1
-    Floor: 0.5
+    Floor: 0.25
   energyMaxDiameterScale:
     Enabled: 1
     Value: 4

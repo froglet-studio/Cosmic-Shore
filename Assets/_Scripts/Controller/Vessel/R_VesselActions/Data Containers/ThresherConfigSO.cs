@@ -36,8 +36,10 @@ namespace CosmicShore.Gameplay
                  "turns its ball destructive with a lazier swing. Falling: the Floor guards the Charge 15 end. Read at " +
                  "the replicated level every frame (ApplyElementScaling), so every peer flies the same ball.")]
         [SerializeField] ElementalFloat smashSpeedScale = ElementalFloat.Multiplier(1f, 0.6f, Element.Charge, 0.4f);
-        [Tooltip("MASS: size multiplier (every axis) on the prisms the ball lays in Mass Mode (massTrailPrismScale).")]
-        [SerializeField] ElementalFloat massTrailScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
+        [Tooltip("MASS: size multiplier (every axis) on the prisms the ball lays in Mass Mode (massTrailPrismScale). " +
+                 "0.45 -> 0.9 since the 2026-11-19 Brood Rush knee (was 1 -> 2: the ball trail was ~80% of the Thresher's " +
+                 "net control, index 2.95 against the tuned field; 1.00 at 0.45 -> 0.9).")]
+        [SerializeField] ElementalFloat massTrailScale = ElementalFloat.Multiplier(0.45f, 0.9f, Element.Mass, 0.25f);
         [Tooltip("SPACE: the largest explosion-diameter multiplier the chain's banked energy can buy - the cap " +
                  "of 1 + energyDiameterPerUnit x energy. 4 at rest -> 8 at full Space. The Space card's gauge " +
                  "shows how much of it is banked.")]

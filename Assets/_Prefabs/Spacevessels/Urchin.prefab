@@ -1736,6 +1736,14 @@ MonoBehaviour:
   maxBlockScale: 1
   waitTillOutsideSkimmer: 1
   shielded: 0
+  trailVolume:
+    Enabled: 0
+    Value: 2.1
+    Min: 1
+    Max: 2.5
+    element: 0
+    UseFloor: 0
+    Floor: 0
   offset: 0
   Gap: 6
   MinimumGap: 1

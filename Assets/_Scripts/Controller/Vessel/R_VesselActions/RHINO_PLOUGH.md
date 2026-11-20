@@ -1,5 +1,12 @@
 # Rhino Plough — the hull shoves prisms aside instead of destroying them
 
+> **2026-11-19 (Garrett: "lets move its Space and Time L5 abilities to be base abilities and give it more interesting
+> abilities when it is upgrades like the chain reactions of the shove"):** **Unstoppable is base** - the plough moves
+> super-shielded mass at every level (`ploughSuperShielded`, so arena linings and race tracks can be ploughed out of
+> line by any Rhino). **Avalanche is back as the Space level 5** - the shove's chain reaction (§ "Avalanche, exactly"),
+> now with its own reach (`avalancheReach` 30 u, or the Charge carry when longer, so it chains at Charge rest) and 5
+> links. Time's new level 5 is Slingshot (`RHINO_RAMP_BOOST.md`). The Rhino also takes no camera shake.
+
 > **2026-11-07 (Garrett): the Rhino is ALL PLOUGH.** "split the rhino into two vessels: the rhino and a swordfish.
 > the sword fish will be all about the sword. the rhino will be all about the plow." The sword, its energize, the
 > afterimages and the Surge moved to the **Swordfish** (`SWORDFISH.md`); the Rhino keeps the plough and the ramp and

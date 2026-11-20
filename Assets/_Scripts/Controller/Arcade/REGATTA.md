@@ -597,7 +597,23 @@ Not seated yet:
   RaceJudge seated hulls by name, an off-card hull raced under its own name as the card's Squirrel.)
 - **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
   (Thornline's AI plan aims at thorns).
-- **Goby**: 0 gates. It wanders, and Perch Run's dart coach armed from RegattaController did not take hold in the judge.
+- **Jacks** (2026-11-19): off a coach an AI Jacks herds on its own rhythm and crawls at 50 u/s (4 of 24 gates in 600 s).
+  `RegattaJacksCoach` (`aiJacksCoach` on the controller) runs Decoy Run's door cycle on each ring through
+  `DecoyRunCourse.PlanCycle`: it finishes every course, card 158 s / L5 154 s on the shuffle (3 seeds), 2.2-2.4x the
+  five, so it stays off the card and is flagged in `Docs/ElementalLoop/REDESIGN.md`.
+- **Meerkat** (2026-11-19, judge-only): shuffle 294 s card / 257 s L5 (2 seeds), 4.0x the five on its trained AI. Its
+  Time rush at the lever cap only reaches 3.4x, so it is flagged in `Docs/ElementalLoop/REDESIGN.md`.
+
+**The Goby** joined the card on 2026-11-19. It had threaded 0 gates: two faults, both upstream of balance.
+- No coach. Perch Run's `IGobyRaceCoach` is set by `PerchRunController` only, so in Regatta the seat's Goby AI laid
+  islands for the Pistol. `RegattaController` is now the Goby's coach too (`RegattaGobyDart`, a field on the
+  controller): Perch Run's plan on Regatta's gates, a double shot through the next gate to the one after when one dart
+  reaches, else a clear shot at the next gate's centre or rim (`GobyPistolDuo.RaceDartStops` asks whether a block
+  stops the dart; none does once Time 5 phases it through), and fly straight while the gate is inside the turning circle.
+- A stuck stick. The seat's Goby AI stops the hull's autopilot, which left the stick where it last held it (full
+  pitch), so the nose spun and never settled within the dart's 0.5 degrees. `GobyPistolDuo.ReleaseStick` zeroes it.
+Then its Time lever (PERCH_RUN.md 4.3, `dartPace` at rest x1.0 -> x1.25, the level-5 value unchanged) brought it inside
+the bar: 15 seeds on the shipped shuffle, card 83.3 -> 78.1 s (1.06x the polished five), L5 62.6 s (0.97x).
 
 **The Swordfish** joined the card on 2026-11-17, toward Garrett's "regatta 10". It flies the Rhino's airframe and ramp
 (`RhinoAIBoostPolicy_Regatta` by the base policy's name) on the Rhino's line and nose pair, with Spearline's 10 degree

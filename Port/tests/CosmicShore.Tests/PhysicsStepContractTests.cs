@@ -161,4 +161,15 @@ public class PhysicsStepContractTests
         Assert.False(SerializedReader.TryDecodeHexBlob("012", typeof(int), out _));
         Assert.False(SerializedReader.TryDecodeHexBlob("00000000", typeof(string), out _));
     }
+
+    enum HexEnum { None = 0, Mass = 1, Charge = 2, Space = 3, Time = 4 }
+
+    [Fact]
+    public void HexBlob_EnumArray_DecodesAsItsUnderlyingInts()
+    {
+        // The Tiger Moth's dust (ButterflyScaleDustDebuffBySkimmerEffect.elements) is an Element[] Unity writes as one
+        // blob; read as items it came back EMPTY, so the dust never found a petal to take and never scored.
+        Assert.True(SerializedReader.TryDecodeHexBlob("01000000020000000300000004000000", typeof(HexEnum), out var e));
+        Assert.Equal(new[] { HexEnum.Mass, HexEnum.Charge, HexEnum.Space, HexEnum.Time }, (HexEnum[])e);
+    }
 }

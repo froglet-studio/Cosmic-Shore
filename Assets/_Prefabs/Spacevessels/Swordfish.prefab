@@ -13912,11 +13912,11 @@ MonoBehaviour:
   sword: {fileID: 5087576590319522259}
   vesselStatus: {fileID: 6441696348568773771}
   thinkSeconds: 0.15
-  reachMultiple: 1.1
+  reachMultiple: 6
   strokeSeconds: 0.3
   restSeconds: 0.45
-  energizeCrowd: 6
-  hardenedSearchMultiple: 1.6
+  energizeCrowd: 1
+  hardenedSearchMultiple: 9
   stanceTimeoutSeconds: 2
   comboChance: 0.35
   finisherChance: 0.4

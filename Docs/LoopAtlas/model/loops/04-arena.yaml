@@ -1,0 +1,144 @@
+# Loop Atlas model: loops, arena. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+- id: arena
+  parent: sitting
+  at: 1
+  name: Arena
+  tier: 5
+  kind: place
+  t: [600, 2400]
+  is: Squad against squad, several vessel classes on one card. Where the fleet is balanced against itself.
+  phases:
+  - n: Pick a squad
+    d: Three seats. An arena hull is flown once in the whole match.
+  - n: Launch
+    d: The vessel carousel; AI fills empty seats.
+  - n: Play the match
+  - n: Swap pilot
+    d: D-pad left or right moves you to another seat.
+  - n: Result
+  drivers: [rival, crew, mastery]
+  reps: null
+  repsOf: matches per arena set
+  now:
+    s: part
+    note: Regatta, Broadside, Brood Rush and Astro League are on the roster. Regatta's course-pool search is the first environment
+      creator and waits on a playtest. Broadside and Brood Rush have not started steps 4 and 5.
+  plan:
+    note: Three polished arena games, one per element pair, each with an environment creator trained against a fixed pool
+      of elemental AIs. No artifacts in the Arena.
+  prop:
+    s: change
+    note: An arena match offers the voyage that squad is ready for.
+  holes:
+  - 'on': np
+    q: Matches per set, and what makes a squad stay for another, are not written.
+    fill: Best of three against the same opponents, hulls re-drafted between matches, so the set is a loop of its own.
+  src:
+  - Docs/ElementalLoop/STATUS.md section 2
+  - Docs/ArcadeRestructure/PLAN.md rulings 3 and 11
+- id: round.regatta
+  parent: arena
+  at: 2
+  name: Regatta
+  tier: 4
+  kind: loop
+  t: [90, 300]
+  kit: time
+  element: Time
+  is: 'The Time arena: every racing hull on one course drawn from a searched pool.'
+  phases:
+  - n: The gun
+  - n: Find your hull's line
+  - n: Pass or be passed
+  - n: Finish
+  - n: Team placing
+  drivers: [rival, mastery, joy]
+  now:
+    s: part
+    note: Eleven hulls seated. Best course pool 1.104x against the 1.10x bar in the model; live, waits on Garrett's playtest
+      and on step 3 for every hull.
+  plan:
+    note: Balances mobility. What the plateau leaves over is vessel imbalance, tuned on the vessel and sent back through
+      steps 2 to 4.
+  src:
+  - Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md
+  - Docs/ElementalLoop/STATUS.md section 2
+- id: round.broadside
+  parent: arena
+  at: 2
+  name: Broadside
+  tier: 4
+  kind: loop
+  t: [90, 300]
+  kit: charge
+  element: Charge
+  is: 'The Charge arena: squads take petals off each other.'
+  phases:
+  - n: Pick a target
+  - n: Set it up with your squad
+  - n: Land the hit
+  - n: Petals change hands
+  - n: Regroup
+  drivers: [rival, crew, mastery]
+  now:
+    s: part
+    note: Seven hulls seated. Steps 4 and 5 not started.
+  plan:
+    note: 'Balances pvp ability: petals taken.'
+  src:
+  - Docs/ElementalLoop/STATUS.md section 2
+  - Docs/ElementalAbilitySystem/SILENCE.md section 6
+- id: round.broodrush
+  parent: arena
+  at: 2
+  name: Brood Rush
+  tier: 4
+  kind: loop
+  t: [120, 360]
+  kit: ms
+  element: Mass-Space
+  is: 'The Mass and Space arena: teams fight for the nucleus claim and score when fauna are born under it.'
+  phases:
+  - n: Read the nucleus
+  - n: Cultivators add volume, destroyers remove it
+  - n: The claim tips
+  - n: A brood is born in your colour
+  - n: First to 3 broods
+  drivers: [make, break, crew, goal]
+  reps: '3'
+  repsOf: broods to win with three teams
+  now:
+    s: part
+    note: Seven hulls seated; three teams and the volume books landed 2026-11-18. Steps 4 and 5 not started.
+  plan:
+    note: Balances net control of space. Each vessel's place between cultivator and destroyer is measured from play, never
+      set.
+  src:
+  - Docs/ArcadeRestructure/PLAN.md rulings 10 to 12
+  - Docs/ElementalLoop/PLAYBOOK.md section 1
+- id: round.astro
+  parent: arena
+  at: 2
+  name: Astro League
+  tier: 4
+  kind: loop
+  t: [120, 360]
+  kit: party
+  is: An arena card outside the three elemental arenas. The Swordfish flies it.
+  phases:
+  - n: Kick off
+  - n: Play the ball
+  - n: Score
+  - n: Reset
+  drivers: [crew, rival, joy]
+  now:
+    s: built
+  holes:
+  - 'on': np
+    q: The plan names three arena games. Where Astro League sits (a fourth arena, or an arena-sized party game) is not said.
+    fill: 'Call it the Arena''s party game: it balances nothing and is kept for fellowship, the way party cards are in the
+      Arcade.'
+  src:
+  - Assets/_SO_Assets/Games/GameLists/ArenaGames.asset
+  - Docs/claude/ABOUT_PROJECT.md (Swordfish)
