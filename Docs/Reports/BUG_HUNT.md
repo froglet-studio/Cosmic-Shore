@@ -30,6 +30,29 @@
   package throws on every script reload (E-15034bdc73, 48 sightings). Pick the installed editor in
   Preferences > External Tools, or reinstall Rider.
 
+## 1a. Errors from a build's console that the ledger never had (2026-11-20)
+
+A development build showed "Scene 'MinigameElimination' couldn't be loaded" and the same for `MinigameMazeRun`. Neither
+was on any ledger branch. Why:
+
+1. **The ledger hears the editor only.** That console is a development build's. Nothing of it is in this PC's editor
+   log or Windows player log, so it came from a phone or another machine's build. A phone's sessions reach Git only
+   through a USB ingest (last one 2026-11-02) and land on `bugledger-android/<user>`, which the sweep did not read. A
+   Windows development build sends nothing at all.
+2. **The static check that exists for dead cards looked at rosters only.** `check_gamelist_scenes.py` read every
+   `SO_GameList`. The vessel class assets' `Games` lists and the training games' `Game` field are not rosters, so the
+   23 cards archived on 2026-10-13 stayed linked from there. On Windows the check also failed every card (backslash
+   paths), so here it read as noise.
+
+What was dead: 12 card entries in ten vessel class assets, the eight training entries of four of them, and **all four** entries of `TrainingGames`, the daily
+challenge's whole pool (Block Bandit, Dolphin Darts, Maze Run, Slip and Stride), each leading to a deleted scene.
+
+Fixed: the dead entries are gone and the four training games are in `Games/_Archive/`; the check now fails on any live
+asset that points at a dead archived asset, and runs on Windows; the sweep reads phone sessions and runs the check
+(`/bug-ledger` section 6). **Left for a decision:** `TrainingGames` is now empty, so the daily challenge reports itself
+unavailable and the Hangar's training modal does not open, instead of loading a scene that is not there. Which live
+games the daily challenge should offer is its owner's call.
+
 ## 2. What is blocking it
 
 1. **Testers on old checkouts.** Each tester pulls `bleeding-edge`; their editor then takes the fixes and closes them

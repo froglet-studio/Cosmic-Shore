@@ -25620,3 +25620,15 @@ compiler from the editor's response file: 0 errors. No EditMode tests ran.
 - [ ] Hangar > Upgrades on a vessel with an open element slot, then claim a Daily Toy reward: the page redraws with
       the open-slot text (`79f1ff888b`).
 - [ ] Trigger a toast, change scene, trigger another: it shows, with no MissingReferenceException (`540bac6a24`).
+
+## Dead game cards unlinked (2026-11-20)
+
+Ten vessel class assets no longer list archived cards whose scenes were deleted, `TrainingGames` is empty (all four of
+its games led to deleted scenes and are archived), and `HangarScreen.DisplayTrainingModal` opens only for a hull with
+two training games. `check_gamelist_scenes.py`: OK (self-test 16/16). Unity editor recompile: 0 errors. Not played.
+
+- [ ] Menu: open the Hangar on the Dolphin, Manta, Serpent and Squirrel and press whatever opened training before.
+      Nothing opens and the console has no exception and no "Scene ... couldn't be loaded".
+- [ ] The daily challenge entry point: it reads as unavailable (one `[DailyChallengeSystem] Training game list is
+      empty` warning), and does not start a load.
+- [ ] A development build: play any game from the Arcade grid and the Hangar's Games page; no scene-load error.
