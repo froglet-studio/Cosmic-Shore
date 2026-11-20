@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5260000000000301
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5260000000000302}
+  - component: {fileID: 5260000000000303}
+  m_Layer: 0
+  m_Name: RegattaShuffleRailsCourse7
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5260000000000302
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5260000000000301}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5260000000000303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5260000000000301}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24b34d8d18afe497d8873ce631a6c7d5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  seed: 0
+  domain: 3
+  children: []
+  leafPrefab: {fileID: 0}
+  layAcrossFrames: 1
+  layBudgetMsPerFrame: 8
+  intensityLevel: 2
+  prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
+  density: 1
+  spawnClearRadius: 0
+  spawnClearPoints: []
+  courseIntensity: 2
+  courseSeed: 0
+  prismScale: {x: 6, y: 6, z: 8}
+  laneOffset: 22
+  laneTwistTurnsPerLap: 1
+  prismSpacing: 8
+  lifeforms:
+    sitesPerLeg: []
+    offsetMin: 90
+    offsetMax: 160
+    sideDegrees: 0
+    sideSpreadDegrees: 180
+    legWindowStart: 0.2
+    legWindowEnd: 0.8
+    ringClearance: 60
+    faunaCorridorRadius: 0
+    faunaCorridorStandoff: 50
+  courseGenome: '{"circuit":{"AngularSpread":4.2941628532959095,"AxisJitterDegrees":0.0,"BaseRadius":751.8265561005898,"CornerFloorRadius":194.80909907437825,"CornerProfile":[77.91599617819772,77.91599617819772,34.028001273934095,34.028001273934095,34.028001273934095,34.028001273934095,34.028001273934095,34.028001273934095],"LateralPerturbation":50.91382542732968,"RadialSwing":0.043573117776335886},"features":{"AlternateGates":[{"Bearing":10.672399881500603,"Offset":266.9712932512829,"RadiusScale":1.136180036838486,"Ring":0}],"Crystals":{"PerLap":0,"Phase":0.15571029802116365},"Sections":[{"Detour":0.0,"DetourBearing":126.47484119952534,"From":0.8586649945471784,"Kind":3,"Leg":6,"Neutral":true,"To":1.0}]},"flora":{"faunaCorridorRadius":0.0,"faunaCorridorStandoff":50.0,"legWindowEnd":0.8,"legWindowStart":0.2,"offsetMax":160.0,"offsetMin":90.0,"preset":"reef-fenced","ringClearance":60.0,"sideDegrees":0.0,"sideSpreadDegrees":180.0,"sitesPerLeg":[8,0,2,4,1,2,4,1]},"intensity":2,"line_clearance":19.923015781102436,"placements":[{"cross_line":false,"cross_rail":false,"density":1.0,"domain":"Native","kind":"LinkedRings","leg":4.276796573818537,"offset":[219.9434454011973,117.53278182050805,54.91776600692114],"params":{"blocksPerRing":27.0,"colorByRing":0.0,"numberOfRings":7.0},"pitch":131.43401848798317,"prism":"Native","roll":168.90613340356654,"scale":36.24582118954495,"seed":1858495181,"yaw":257.3751000858344},{"cross_line":true,"cross_rail":false,"density":1.0,"domain":"Jade","kind":"Wall","leg":3.4558763783172965,"offset":[36.30234139242412,348.1016255559506,22.523835207352363],"params":{"padding":0.16764525096746158},"pitch":265.7036525325304,"prism":"Danger","roll":163.13129430142664,"scale":25.581061875862893,"seed":0,"yaw":118.8848862265004},{"cross_line":false,"cross_rail":false,"density":0.3989821743020552,"domain":"Native","kind":"Standoff","leg":5.401793819621476,"offset":[179.9299124310353,1.1069570022236386,29.48955583653938],"params":{"postCount":7.0,"postGrid":3.0,"shieldedRim":1.0},"pitch":84.88573193371715,"prism":"Native","roll":82.23568678137853,"scale":81.8747227017148,"seed":1311017387,"yaw":215.56658100649378}],"seed":0,"version":1}'

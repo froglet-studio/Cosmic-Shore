@@ -1,0 +1,28 @@
+{
+  "id": "2026-11-17-step-5-regatta-levers-widened-from-25-to-18be0e",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T20:15:42+00:00",
+  "area": "Stoat, Scarab, Sparrow and Dolphin Time abilities",
+  "summary": "Step-5 Regatta levers widened from ±25% to the knee setting: Stoat boost Max 3.75->3.125, Scarab throttle Max 1.125->1.05, Sparrow afterburner Max 1.875->2.0625, Dolphin Drift Charge max 2.82->3.106",
+  "why": "Garrett 2026-11-17: try 50%, plot imbalance vs lever %, find the knee. Pool imbalance card 1.60->1.46, L5 1.37->1.36; 50% overshoots the Stoat at L5. Every home Time rung stays inside its bars. Scarab stopped at 30% so Time still raises its top speed.",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "6b669362f",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Scarab.prefab",
+    "Assets/_Prefabs/Spacevessels/Sparrow.prefab",
+    "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset",
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset"
+  ],
+  "loop": {
+    "vessels": [
+      "Stoat",
+      "Scarab",
+      "Sparrow",
+      "Dolphin"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

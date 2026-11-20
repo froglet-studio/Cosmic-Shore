@@ -87,4 +87,4 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: Fifth Pellet
     UpgradeDescription: 'The tank holds FIVE pellets instead of four: each pellet costs a fifth of
-      the tank and still burns and boosts exactly as before, so a full overlap is 11x cruise.'
+      the tank and still burns and boosts exactly as before, so a full overlap is 9.5x cruise.'

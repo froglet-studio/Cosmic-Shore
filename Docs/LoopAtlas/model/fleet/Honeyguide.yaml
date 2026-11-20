@@ -1,0 +1,79 @@
+# Loop Atlas model: vessel Honeyguide. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Honeyguide
+verbs:
+  Time:
+    ability: Slip
+    does: Touch a trail of a colour your battery holds with your nose along it and zip along it to its end. It spends that
+      colour's charge, which the Ratel earns by making patterns.
+    trigger: Passive - nose along a trail
+    scales: The map names no Time scaling for the slip itself.
+    source: Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+    arch: passive
+    t: [2, 15]
+  Charge:
+    ability: Flit
+    does: Hold to see the dart's line, let go to dart forward, striking every rival ship and creature along it. Each Charge
+      card the Ratel makes on its puzzle banks three stronger uses.
+    trigger: Hold, release to fire
+    scales: The map names no Charge scaling for the dart; Charge cards from the Ratel are what change it.
+    source: Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+    arch: hold_release
+    t: [2, 12]
+  Mass:
+    ability: Hive
+    does: Every so often a hive appears somewhere in the cell, marked by a turning hex frame. Fly into it and the Ratel's
+      board becomes a hive puzzle that pays out prisms and charges.
+    trigger: Passive - fly into a hive
+    scales: More Mass makes new hives appear sooner.
+    source: Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Peck
+    does: Hold to see the aim line, let go to fire three quick shots that chip away rival prisms ahead. Each Space card
+      the Ratel makes banks three stronger uses.
+    trigger: Hold, release to fire
+    scales: The map names no Space scaling for the pecks; Space cards from the Ratel are what change them.
+    source: Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+    arch: hold_release
+    t: [2, 12]
+  Omni:
+    ability: Sparrow Vessel Ward + Omni
+    does: The crystal turns into a hive comb behind you and the Ratel plays the hive puzzle. Your ship is shielded from
+      elemental damage while hive mode lasts, and for 8 seconds besides.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/HoneyguideOmniCrystalEffectSO.cs
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Slip Line]
+  Charge: [Flitstrike]
+  Mass: [Honeycomb]
+  Space: [Woodpecker]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: Puzzle to dart
+  t: [15, 60]
+  is: The Ratel's puzzle loads the Honeyguide's shots.
+  chain:
+  - [Mass, Fly into a hive]
+  - - ''
+    - 'The Ratel plays: cards bank stronger uses'
+  - - Charge
+    - Flit, or Peck, with what was banked
+  - - Time
+    - Slip along a trail to the next hive
+  drivers: [crew, mastery]
+  feel: My partner made that shot possible.
+doc: Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md

@@ -156,7 +156,7 @@ def author(spec: dict):
   Vessels:
   - {{fileID: 11400000, guid: {vessel_guid}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1

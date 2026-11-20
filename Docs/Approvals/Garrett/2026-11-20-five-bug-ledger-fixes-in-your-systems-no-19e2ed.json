@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-20-five-bug-ledger-fixes-in-your-systems-no-19e2ed",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-20T15:47:03+00:00",
+  "area": "prism occlusion, the Urchin and Manta hulls, the colour sweep, the cell conveyor",
+  "summary": "Five bug-ledger fixes in your systems, no kit number or look changed: the occlusion corridor measures a hull again when it was hidden at bind time (ba3ad0569a), VesselAnimation exposes IsInitialized and the Urchin's pods wait on it (d8a7763cd0, your ticket #1773), a Manta decoy is built from Update in the same frame because Unity refuses its strip inside OnTriggerEnter (dedc985d2a), UIThemeLive.SwapSea reads a TMP sub-mesh's sharedMaterial (c0ef0c8281), and CellConveyor.OnDestroy skips the strike when the scene itself is closing (d391dc761d).",
+  "why": "Console errors the editors sent to the Bug Ledger: E-5f2ee86d9b, E-d6b3d6f496, E-75a12f0559, E-3e99fba873, E-0f0eb8a59f, E-c703a8f80b.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "540bac6a2",
+  "paths": [
+    "Assets/_Scripts/Controller/Animation/UrchinAnimation.cs",
+    "Assets/_Scripts/Controller/Animation/VesselAnimation.cs",
+    "Assets/_Scripts/Controller/Toys/CellConveyor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MantaStingActionExecutor.cs",
+    "Assets/_Scripts/UI/UIThemeLive.cs",
+    "Assets/_Scripts/Utility/PrismOcclusionCorridor.cs"
+  ]
+}

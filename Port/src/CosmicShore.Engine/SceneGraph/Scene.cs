@@ -29,6 +29,9 @@ namespace CosmicShore.Engine.SceneManagement
 
         internal Scene(string name) { this.name = name; handle = ++s_nextHandle; }
 
+        /// <summary>The scene of an object in no scene (a prefab asset): <see cref="IsValid"/> is false.</summary>
+        internal static readonly Scene NoScene = new(null);
+
         static int s_nextHandle;
 
         /// <summary>Unique per loaded scene instance (original: Scene.handle); renewed on every Single load.</summary>

@@ -77,9 +77,11 @@ the build after it, so 32 is above both) - the voyage party's named messages (`V
 and leg serial, and the end's outcome; new `cosmicshore.voyage.arkpose` (the host's Ark pose, unreliable) and
 `cosmicshore.voyage.report` (a friend's lobby seat, crystals and kills, to the host). When `voyages` merges into
 bleeding-edge, keep the higher number.
+**33** (2026-11-17, `Ys-bleeding-edge`, the merge of `fix/android-startup-logs`; 33 was free on every origin branch pushed since 2026-11-08, checked that day) - `QuadFish.prefab` and `MassBrittlestarFauna.prefab` left the network prefab list: neither species is opted in to replication. The branch had claimed 25 for this on 2026-11-02; 25 was since used on bleeding-edge.
 **34** (2026-11-16, the merge of `bleeding-edge` into `voyages` for its ship; every origin branch checked that day,
 33 is taken on `Ys-bleeding-edge`) - both sides had claimed 32 for different wire changes (`Ys-bleeding-edge`'s merge
 above and the voyage party's messages), so the build that carries both is 34: a 32 build from either line cannot join it.
+**37** (2026-11-19, the merge of `bleeding-edge` into `Ys-bleeding-edge`; 36 was the highest on every origin branch pushed since 2026-11-10, checked that day) - no wire change of its own: the build that carries both bleeding-edge's 36 and `Ys-bleeding-edge`'s 33 (the two fauna prefabs off the network prefab list).
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

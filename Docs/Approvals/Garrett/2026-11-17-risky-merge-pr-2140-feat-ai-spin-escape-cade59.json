@@ -1,0 +1,29 @@
+{
+  "id": "2026-11-17-risky-merge-pr-2140-feat-ai-spin-escape-cade59",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-17T09:57:24+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2140 (feat(ai): spin escape - a tight circle far from the objective drops the nose lead) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; shared AI code every AI hull runs: Assets/_Scripts/Controller/AI/AIPilot.cs",
+  "branch": "claude/project-thread-v7jk17",
+  "pr": 2140,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/_Scripts/Controller/AI/AIPilot.cs",
+    "Docs/Approvals/Yash/2026-11-17-aipilot-gains-a-spin-escape-when-the-hul-5356ba.json",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "detail": "Assets/_Scripts/Controller/AI/AIPilot.cs"
+    }
+  ]
+}

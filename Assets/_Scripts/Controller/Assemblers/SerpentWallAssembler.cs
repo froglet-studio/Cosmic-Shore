@@ -81,6 +81,9 @@ namespace CosmicShore.Gameplay
             /// in the wall is reported to it: the wall eating the trail is the only thing that
             /// refills the tank (R_VesselActions/SERPENT_FUEL_PELLETS.md). Null = no refill.</summary>
             public ConsumeBoostActionExecutor Fuel;
+            /// <summary>The owner's cloak. While it runs, no wall takes a trail prism the owner laid
+            /// under it (see <see cref="HiddenUnderCloak"/>). Null = no such rule (a hull without a cloak).</summary>
+            public CloakSeedWallActionExecutor Cloak;
         }
 
         sealed class Member
@@ -183,8 +186,13 @@ namespace CosmicShore.Gameplay
             _pitch = SerpentWallLattice.Pitch(shape.ShortSide);
             _seedBornAt = Prism.prismProperties != null ? Prism.prismProperties.TimeCreated : 0f;
             _origin = Prism.transform.position;
-            _frame = Prism.transform.rotation;
+            // The plane the wall is laid in, from the heading the seed was laid on. The seed turns into it: it is
+            // site (0, 0) and keeps its long axis on wall y, so a Keel wall's seed stands edge-on to the heading.
+            // The cloak's illusion collapses into the seed's pose, whatever it is, so the decoy still ends there.
+            _frame = SerpentWallLattice.WallFrame(Prism.transform.rotation, shape.Config.Plane);
             _toWall = Quaternion.Inverse(_frame);
+            Prism.transform.rotation = _frame;
+            Prism.NotifyPositionChanged();
             _panelsDirty = false;
             _maxRing = 0;
             _members.Clear();
@@ -402,7 +410,22 @@ namespace CosmicShore.Gameplay
             // every enabled one.
             if (Ark.Live.Count > 0 && p.transform.parent && p.GetComponentInParent<Ark>()) return false;
             if (p.TryGetComponent<SerpentWallAssembler>(out var wall) && wall.IsActive) return false;
+            if (HiddenUnderCloak(p)) return false;
             return true;
+        }
+
+        /// <summary>
+        /// A trail prism the owner laid under a cloak that is still running. The wall stands along the heading
+        /// (Keel / Wings), so the cloaked Serpent flying straight on lays its hidden trail in the wall's plane;
+        /// taking it would grow the decoy's wall forward toward the real Serpent and show an opponent both that
+        /// the "stopped" Serpent is a decoy and where the real one went. Held back, the cloak's wall grows only
+        /// along the trail behind the seed, exactly as a stopped Serpent's stance wall does, until the cloak ends
+        /// and the real hull is back in sight; then the wall takes that trail like any other.
+        /// </summary>
+        bool HiddenUnderCloak(Prism p)
+        {
+            var cloak = _shape.Cloak;
+            return cloak && cloak.LaidUnderCloak(p);
         }
 
         void SteerMembers()

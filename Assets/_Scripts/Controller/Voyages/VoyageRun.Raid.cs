@@ -26,6 +26,21 @@ namespace CosmicShore.Gameplay
         ArkAttackerMarks _attackerMarks;
         int _toastedCell = -1;
         float _legStartedAt;
+        string _runPilotId;
+
+        /// <summary>The name of the pilot whose run this is (the job's pilot), or empty when none is named.</summary>
+        string RunPilotName => Content?.Person(_runPilotId)?.Name ?? string.Empty;
+
+        /// <summary>A line in the run's pilot's voice: empty when no pilot is named, so a line never opens on a bare
+        /// colon (Shombith 2026-11-20, the story pass).</summary>
+        string PilotSays(string template, params string[] tokens)
+        {
+            string pilot = RunPilotName;
+            if (string.IsNullOrEmpty(pilot) || string.IsNullOrEmpty(template)) return string.Empty;
+            var pairs = new List<string> { "pilot", pilot };
+            pairs.AddRange(tokens);
+            return TemplateText.Fill(template, pairs.ToArray());
+        }
         bool _anchorWarned;
         float _nextBankCheck;
         readonly Dictionary<string, float> _spillReadyAt = new();
@@ -70,6 +85,7 @@ namespace CosmicShore.Gameplay
             _spillReadyAt.Clear();
             _leakToasted = false;
             _legStartedAt = Time.time;
+            if (!string.IsNullOrEmpty(job?.PilotId)) _runPilotId = job.PilotId;   // the way home keeps the run's pilot
             _voyageRaid.Absorb(_raid);
             _raid.Clear();
             HookRaid(job is { CountsUnderway: true });
@@ -132,7 +148,7 @@ namespace CosmicShore.Gameplay
                 under = TemplateText.Fill(Lines.ToastCrystalCarrySub, "carried", _raid.CarriedBy(playerName).ToString());
             else
                 under = TemplateText.Fill(Lines.ToastBankedSub, "count", "1", "done", _raid.Total.ToString(),
-                    "goal", Mathf.CeilToInt(_state?.Current?.Goal ?? 0f).ToString(), "split", BankedSplit(Lines, element)).TrimEnd();
+                    "goal", Mathf.CeilToInt(_state?.Current?.Goal ?? 0f).ToString());
             if (_sea) _sea.ShowRunningBanner(line, PickupToastSeconds, ArkwayVoyageHud.Mood.Good, under);
         }
 
@@ -289,34 +305,9 @@ namespace CosmicShore.Gameplay
                 string goal = Mathf.CeilToInt(job?.Goal ?? 0f).ToString(), done = _raid.Total.ToString();
                 VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Good,
                     TemplateText.Fill(Lines.ToastBanked, "count", n.ToString(), "done", done, "goal", goal),
-                    TemplateText.Fill(Lines.ToastBankedSub, "count", n.ToString(), "done", done, "goal", goal,
-                        "split", BankedSplit(Lines, banked)).TrimEnd());
+                    TemplateText.Fill(Lines.ToastBankedSub, "count", n.ToString(), "done", done, "goal", goal));
             }
             CheckGoalToast();
-        }
-
-        /// <summary>What one bank held, by element, for the banked toast's {split} (the voyage HUD keeps the split off the
-        /// marquee and shows it here, when it changes; 2026-11-20): each element with any, as ObjectiveElement, joined by
-        /// ObjectiveElementSeparator. Empty when nothing is known. Pure.</summary>
-        public static string BankedSplit(VoyageLines lines, int[] banked)
-        {
-            if (lines == null || banked == null || string.IsNullOrEmpty(lines.ObjectiveElement)) return string.Empty;
-            var parts = new List<string>(4);
-            foreach (var e in VoyageRaid.Elements)
-            {
-                int i = (int)e;
-                if (i < 0 || i >= banked.Length || banked[i] <= 0) continue;
-                parts.Add(TemplateText.Fill(lines.ObjectiveElement, "element", CosmicShore.UI.VoyageHudColors.ElementName(lines, e),
-                    "count", banked[i].ToString()));
-            }
-            return string.Join(lines.ObjectiveElementSeparator ?? string.Empty, parts);
-        }
-
-        static string BankedSplit(VoyageLines lines, Element one)
-        {
-            var banked = new int[(int)Element.Time + 1];
-            if ((int)one >= 0 && (int)one < banked.Length) banked[(int)one] = 1;
-            return BankedSplit(lines, banked);
         }
 
         // ── P6: a hit spills what a seat carries (Shombith, 2026-11-16) ─────
@@ -420,6 +411,12 @@ namespace CosmicShore.Gameplay
             VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Event,
                 TemplateText.Fill(Lines.ToastSetOff, "goal", Mathf.CeilToInt(job.Goal).ToString(), "to", to),
                 TemplateText.Fill(Lines.ToastSetOffSub, "to", to, "breach", Mathf.RoundToInt(job.BreachHull * 100f).ToString()));
+            // The run's pilot on the comms: who asked, and why the Ark wants the crystals.
+            string goal = Mathf.CeilToInt(job.Goal).ToString();
+            string brief = PilotSays(Lines.PilotBriefTitle, "goal", goal, "to", to);
+            if (!string.IsNullOrEmpty(brief))
+                VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Event, brief.ToUpperInvariant(),
+                    PilotSays(Lines.PilotBrief, "goal", goal, "to", to), VoyageToasts.Seconds * 1.5f);
         }
 
         /// <summary>The cell the Ark is in, from 1 (0 while unknown), and the leg's cells.</summary>
@@ -533,6 +530,7 @@ namespace CosmicShore.Gameplay
                 Pay = r.Outcome == JobOutcome.Succeeded ? job.Pay : 0,
                 // A friend's board: the host chooses what next (the next leg, or the way home, reaches them on its own).
                 Following = _following,
+                Quote = PilotSays(r.Outcome == JobOutcome.Succeeded ? Lines.ScoreQuoteMet : Lines.ScoreQuoteMissed),
             };
             foreach (var e in VoyageRaid.Elements) board.Crystals[(int)e] = _raid.Of(e);
             AddRows(board);
@@ -677,6 +675,7 @@ namespace CosmicShore.Gameplay
                 Hull = _sea && _sea.Ark ? _sea.Ark.HealthFraction : 1f,
                 Banked = true,
                 Following = _following,
+                Quote = PilotSays(Lines.ScoreQuoteDocked),
             };
             if (x != null)
                 for (int e = 0; e < x.Crystals.Length && e < board.Crystals.Length; e++) board.Crystals[e] = x.Crystals[e];
@@ -707,6 +706,7 @@ namespace CosmicShore.Gameplay
                 Seconds = Time.time - _legStartedAt,
                 Hull = 0f,
                 Following = _following,
+                Quote = PilotSays(Lines.ScoreQuoteLost),
             };
             for (int e = 0; e < board.Crystals.Length && stake != null && e < stake.Length; e++) board.Crystals[e] = stake[e];
             AddVoyageRows(board);

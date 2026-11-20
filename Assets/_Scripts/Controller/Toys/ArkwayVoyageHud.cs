@@ -46,10 +46,6 @@ namespace CosmicShore.Gameplay
         // Frogma Rev 116 A (Marquee): in a voyage the toast has ONE spot, just under the marquee the objective box
         // draws top centre, like an arcade cabinet's call-out line. Elsewhere (the Arkway toy) it keeps the top spot.
         const float TopY = 40f, UnderMarqueeGap = 10f;
-        // Sized for phones (Shombith, 2026-11-20): a phone shows this 1920 x 1080 layout at about 0.40, so the line is 46
-        // units (about 18 pt there) and the line under it 30 (about 12 pt); Docs/UI_STYLE_GUIDE.md section 8.
-        const float BandWidth = 1040f, LineWidth = 1000f, HeadSize = 46f, UnderSize = 30f;
-        const float HeadHeight = 58f, UnderHeight = 42f, UnderY = 70f, TallBand = 122f, ShortBand = 80f;
 
         CanvasGroup _bannerGroup, _countdownGroup;
         ArkwayToastBand _band, _countdownBand;
@@ -79,27 +75,27 @@ namespace CosmicShore.Gameplay
             scaler.matchWidthOrHeight = 0.5f;
 
             // The banner: a band top centre, a bold line and an optional line under it.
-            var band = Child("Banner", transform, new Vector2(0f, -TopY), new Vector2(BandWidth, TallBand));
+            var band = Child("Banner", transform, new Vector2(0f, -TopY), new Vector2(720f, 90f));
             _bannerGroup = band.gameObject.AddComponent<CanvasGroup>();
             _band = band.gameObject.AddComponent<ArkwayToastBand>();
             _band.raycastTarget = false;
-            _head = Line(band, "Line", new Vector2(0f, -10f), new Vector2(LineWidth, HeadHeight), HeadSize, FontStyles.Bold);
-            _under = Line(band, "Under", new Vector2(0f, -UnderY), new Vector2(LineWidth, UnderHeight), UnderSize, FontStyles.Normal);
+            _head = Line(band, "Line", new Vector2(0f, -10f), new Vector2(680f, 40f), 28f, FontStyles.Bold);
+            _under = Line(band, "Under", new Vector2(0f, -52f), new Vector2(680f, 28f), 19f, FontStyles.Normal);
             _under.color = ColorTrace.Retrace(ColorTrace.Ui, UnderInk);
             _bannerGroup.alpha = 0f;
 
             // The countdown: the leash, held while it is breached, as a threat toast in the toast's spot (Shombith
             // 2026-11-17: "a warning 5 4 3 2 1"). The banners wait behind it.
-            var cd = Child("Countdown", transform, new Vector2(0f, -TopY), new Vector2(BandWidth, TallBand));
+            var cd = Child("Countdown", transform, new Vector2(0f, -TopY), new Vector2(720f, 90f));
             _countdownRect = cd;
             _countdownGroup = cd.gameObject.AddComponent<CanvasGroup>();
             _countdownBand = cd.gameObject.AddComponent<ArkwayToastBand>();
             _countdownBand.raycastTarget = false;
             _countdownBand.color = ColorTrace.Retrace(ColorTrace.Ui, ThreatBand);
-            _countdown = Line(cd, "Line", new Vector2(0f, -10f), new Vector2(LineWidth, HeadHeight), HeadSize, FontStyles.Bold);
+            _countdown = Line(cd, "Line", new Vector2(0f, -10f), new Vector2(680f, 40f), 30f, FontStyles.Bold);
             _countdown.color = ColorTrace.Retrace(ColorTrace.Ui, CountdownInk);
             _countdownBand.Accent = ColorTrace.Retrace(ColorTrace.Ui, ThreatInk);
-            _countdownUnder = Line(cd, "Under", new Vector2(0f, -UnderY), new Vector2(LineWidth, UnderHeight), UnderSize, FontStyles.Normal);
+            _countdownUnder = Line(cd, "Under", new Vector2(0f, -52f), new Vector2(680f, 28f), 19f, FontStyles.Normal);
             _countdownUnder.color = ColorTrace.Retrace(ColorTrace.Ui, UnderInk);
             _countdownGroup.alpha = 0f;
         }
@@ -146,7 +142,7 @@ namespace CosmicShore.Gameplay
             bool hasUnder = !string.IsNullOrEmpty(under);
             _countdownUnder.text = hasUnder ? under : string.Empty;
             _countdownUnder.gameObject.SetActive(hasUnder);
-            _countdownRect.sizeDelta = new Vector2(_countdownRect.sizeDelta.x, hasUnder ? TallBand : ShortBand);
+            _countdownRect.sizeDelta = new Vector2(_countdownRect.sizeDelta.x, hasUnder ? 90f : 58f);
         }
 
         public void HideCountdown() => _countdownShown = false;
@@ -193,15 +189,8 @@ namespace CosmicShore.Gameplay
             _queue.Enqueue((mood, line, under, seconds, running));
         }
 
-        /// <summary>True while a toast or the countdown is on screen: the voyage HUD's quiet line in the toast spot
-        /// (<see cref="CosmicShore.UI.VoyageObjectiveBox"/>) steps aside for it.</summary>
-        public static bool BannerUp { get; private set; }
-
-        void OnDisable() => BannerUp = false;
-
         void Update()
         {
-            BannerUp = _bannerGroup.alpha > 0f || _countdownGroup.alpha > 0f || _bannerUntil >= 0f || _countdownShown;
             Place();
             float now = Time.unscaledTime;
             float step = Time.unscaledDeltaTime / FadeSeconds;
@@ -265,7 +254,7 @@ namespace CosmicShore.Gameplay
             _under.text = under;
             _under.gameObject.SetActive(hasUnder);
             var band = (RectTransform)_band.transform;
-            band.sizeDelta = new Vector2(band.sizeDelta.x, hasUnder ? TallBand : ShortBand);
+            band.sizeDelta = new Vector2(band.sizeDelta.x, hasUnder ? 90f : 58f);
         }
     }
 

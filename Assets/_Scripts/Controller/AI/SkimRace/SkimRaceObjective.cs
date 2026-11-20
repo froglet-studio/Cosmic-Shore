@@ -95,8 +95,9 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>Skim Race: the domain's crystal along the waypoint track - the pilot's own Skim Race
-    /// behaviour, split out of it: nearest crystal for a lone AI, and the team plan's crystal when
-    /// two or more AI fly for one team (<see cref="SkimRaceTeamPlan"/>).</summary>
+    /// behaviour, split out of it: nearest crystal for a pilot alone on its domain, the team plan's
+    /// crystal when two or more AI on one machine fly for one team (<see cref="SkimRaceTeamPlan"/>), and
+    /// the pilot's own ring when it shares its domain any other way (<see cref="SkimRaceCoopShare"/>).</summary>
     public sealed class CrystalTrackObjective : SkimRaceObjective
     {
         Crystal _target;
@@ -114,11 +115,19 @@ namespace CosmicShore.Gameplay
 
         public override bool TryGetTarget(IVesselStatus status, Vector3 position, out SkimRaceTarget target)
         {
-            // The authoritative active crystal for this domain. When other AI fly for the same team,
-            // the team plan shares the crystals out so no two chase the same one (SkimRaceTeamPlan); a
-            // lone AI - or one the plan has no crystal for - flies the nearest.
+            // The authoritative active crystal for this domain. When other AI on THIS machine fly for the
+            // same team, the team plan shares the crystals out so no two chase the same one
+            // (SkimRaceTeamPlan). A pilot the plan has nothing for still shares its domain when the roster
+            // says so - a teammate flown on another machine, or by a person - and then flies its own ring
+            // and never its teammate's (SkimRaceCoopShare: one ring per spawn point, no turning back). A
+            // pilot alone on its domain flies the nearest, as it always has.
             var planned = Pilot != null ? SkimRaceTeamPlan.TargetFor(Pilot, status.Domain) : null;
-            _target = planned != null ? planned : SkimRaceTargetTracker.Select(status.Domain, position, _target);
+            if (planned != null) _target = planned;
+            else
+            {
+                SkimRaceCoopShare.RankInDomain(GameData.Players, status.Player, out int rank, out int pilots);
+                _target = SkimRaceCoopShare.Select(status.Domain, position, _target, rank, pilots);
+            }
             target = default;
             if (_target == null) return false;
             target.Position = _target.transform.position;

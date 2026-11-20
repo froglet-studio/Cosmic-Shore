@@ -1,0 +1,77 @@
+# Loop Atlas model: vessel Meerkat. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Meerkat
+verbs:
+  Time:
+    ability: Faster Ride
+    does: You rush through every tunnel faster, your own or another Meerkat's.
+    trigger: Passive - ride a tunnel
+    scales: More Time makes the rush through every tunnel stronger.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md
+    arch: passive
+    t: [2, 15]
+  Charge:
+    ability: Sentinel Mode
+    does: While on, each new tunnel leaves a sentinel at its entrance that zaps rivals nearby, knocking out petals and silencing
+      them, and shields your own prisms there. Its tunnel stands while it does.
+    trigger: Toggle
+    scales: More Charge makes each sentinel zap knock out more of a rival's petals.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md
+    arch: mode
+    t: [5, 30]
+  Mass:
+    ability: Exit Portal
+    does: Each tunnel you form sets six small prisms of your colour in a hexagon round its way out.
+    trigger: Passive - form a tunnel
+    scales: More Mass makes the exit portal's prisms bigger.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Soliton
+    does: Form the tunnel your reticle shows and dive through it. It stays standing for Meerkats to ride, sucks in nearby
+      prisms and fires them out the far end to smash other prisms for you.
+    trigger: Tap
+    scales: More Space gives every tunnel more surface, so a tunnel of any length comes out fatter.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md
+    arch: tap
+    t: [2, 20]
+  Omni:
+    ability: Soliton Network
+    does: Grows a network of branching wormhole tunnels from where you took the crystal that you can slide through; with
+      full Mass it covers the whole cell.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Burrow Run, Warpline]
+  Charge: [Sentry]
+  Mass: [Warren]
+  Space: [Cave-in]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The burrow
+  t: [8, 30]
+  is: A tunnel is a road, a cannon and a fort.
+  chain:
+  - - Space
+    - 'Form a tunnel and dive: it fires prisms out the far end'
+  - [Time, Ride it faster]
+  - - Mass
+    - A hexagon of your prisms at the exit
+  - - Charge
+    - A sentinel on the entrance
+  drivers: [joy, make, break]
+  feel: Disappearing here and arriving there.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md

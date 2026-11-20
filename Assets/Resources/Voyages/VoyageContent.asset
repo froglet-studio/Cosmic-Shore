@@ -1515,7 +1515,7 @@ MonoBehaviour:
       Needs: 0
       Goes: 1
       Title: 'Crystal Run to {to}'
-      Summary: 'Steal crystals between the three of you while the Ark sails to {to}. Hostile cells are rich in crystals, but their fauna go for the Ark. Bring the crystals home and they are yours; lose the Ark and you lose them.'
+      Summary: 'The Ark burns elemental crystal to cross the HyperSea, and her hold is nearly dry. Steal crystals between the three of you while she sails to {to}. Hostile cells are rich in crystals, but their fauna go for the Ark. Bring the crystals home and they are yours; lose the Ark and you lose them.'
       SuccessLine: 'The squad stole its crystals on the way to {to}.'
       FailLine: 'The Crystal Run to {to} came up short.'
       SuccessLines:
@@ -3323,7 +3323,7 @@ MonoBehaviour:
     ToastCellHostileSub: More crystals here. Its fauna are hunting the Ark.
     ToastCellCalmSub: Fewer crystals. Nothing here hunts the Ark.
     ToastSetOff: 'STEAL {goal} CRYSTALS'
-    ToastSetOffSub: 'Before the Ark reaches {to}. Keep its hull above {breach}%.'
+    ToastSetOffSub: 'The Ark burns crystal to sail. Fill her hold before {to}, and keep her hull above {breach}%.'
     ToastHome: SAIL THE ARK HOME
     ToastHomeSub: 'Docking at {to} banks everything aboard.'
     ObjectiveDestinationTag: Destination
@@ -3361,7 +3361,7 @@ MonoBehaviour:
     ToastAnchorClosingSub: Bank what you carry or lose it.
     ToastWeighed: THE ARK SAILS ON
     ToastBanked: 'BANKED {count}'
-    ToastBankedSub: '{done} of {goal} aboard.   {split}'
+    ToastBankedSub: '{done} of {goal} aboard.'
     ToastCrystal: '+1 {element}'
     ToastCrystalCarrySub: 'Carrying {carried}. Bank them at the Ark.'
     ToastSpilled: CRYSTALS SPILLED
@@ -3373,16 +3373,19 @@ MonoBehaviour:
     ObjectiveStripComplete: Goal met. Pause to complete and set sail.
     ObjectiveStripArkHull: 'Ark hull {hull}%'
     ObjectiveRailLabel: Ark hull
-    ObjectiveCountCarried: '+{count}'
-    ObjectiveRailUnderAttack: Under attack
-    ObjectiveRingCaption: 'Bank the +{count} or lose it'
     ObjectiveStripLeaking: 'Hull below {line}%: the hold is losing crystals.'
     ToastHullLeaking: THE HOLD IS LEAKING
     ToastHullLeakingSub: 'The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.'
     ToastRaiders: RAIDERS IN OPEN WATER
     ToastRaidersSub: Big creatures are coming for the Ark between the cells.
-    ToastKaiju: KAIJU IN OPEN WATER
-    ToastKaijuSub: A giant waits between the cells for the Ark's hull. Bring it down.
+    ToastKaiju: 'SPAWN OF THE {kaiju}'
+    ToastKaijuSub: It smells the crystal in the Ark's hold. Bring it down before it reaches the hull.
+    PilotBriefTitle: '{pilot} ON THE COMMS'
+    PilotBrief: 'Her hold is nearly dry. Every creature out here carries crystal: bring {goal} to the Ark and she sails us home.'
+    ScoreQuoteMet: '{pilot}: "That is enough crystal to cross half the sea. Your call."'
+    ScoreQuoteMissed: '{pilot}: "Not enough to fill her. The sea keeps what we could not carry."'
+    ScoreQuoteDocked: '{pilot}: "Home. Every crystal in her hold is ours."'
+    ScoreQuoteLost: '{pilot}: "She is gone, and her hold with her. We sail again."'
     ToastGoalMissed: 'GOAL MISSED: {done} / {goal}'
     ToastGoalMissedSub: Venture further to keep this run's haul, or sail home without it.
     ScoreRetryRaid: 'Same goal: {goal} crystals in {cells} cells'

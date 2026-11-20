@@ -83,6 +83,8 @@ namespace CosmicShore.Gameplay
                 skimmerImpactor.Skimmer.VesselStatus.Domain != _onlyFor.Value) return;
             // a hull whose touch leaves crystals alone (the Jacks netting, IHullContactGate) does not skim one up either
             if (!IsSweepDispatch && !VesselTakesByContact(skimmerImpactor)) return;
+            // a crystal a Soliton Tunnel carries is not in the world: nobody skims it up (SolitonIsolation.Seal)
+            if (!IsSweepDispatch && SolitonIsolation.Sealed(Crystal)) return;
 
             CollectBy(skimmerImpactor);
         }

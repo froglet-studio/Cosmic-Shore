@@ -123,6 +123,87 @@ namespace CosmicShore.Tests
             Assert.AreEqual(s.Range, far, 0.5f);
         }
 
+        // ---- the burn rule (FulmenMath.Decide), driven the way FulmenSystem.BurnAlong drives it ----
+
+        [Test]
+        public void APrismOnThePathIsNeverDropped()
+        {
+            // whatever the budgets say, the verdict for an on-path prism is Light or Wait
+            for (int room = 0; room < 2; room++)
+                for (int used = 0; used <= 4; used++)
+                    Assert.AreNotEqual(FulmenMath.BurnVerdict.Drop, FulmenMath.Decide(true, room == 1, used, 3),
+                        $"room {room} used {used}");
+            Assert.AreEqual(FulmenMath.BurnVerdict.Light, FulmenMath.Decide(true, false, 2, 3), "full burn manager");
+            Assert.AreEqual(FulmenMath.BurnVerdict.Wait, FulmenMath.Decide(true, true, 3, 3), "spent frame budget");
+        }
+
+        [Test]
+        public void TheHaloStopsAtTheBurnCap()
+        {
+            Assert.AreEqual(FulmenMath.BurnVerdict.Light, FulmenMath.Decide(false, true, 0, 3));
+            Assert.AreEqual(FulmenMath.BurnVerdict.Wait, FulmenMath.Decide(false, true, 3, 3));
+            Assert.AreEqual(FulmenMath.BurnVerdict.Drop, FulmenMath.Decide(false, false, 0, 3));
+            Assert.AreEqual(FulmenMath.BurnVerdict.Drop, FulmenMath.Decide(false, false, 3, 3));
+        }
+
+        /// <summary>
+        /// A bolt of 40 segments, 9 prisms on each one's path and 60 more in each one's halo, an ignite budget of 16 a
+        /// frame and a burn manager that holds 64: every on-path prism burns, the halo fills the cap and no further, no
+        /// frame spends more than its budget, and the bolt finishes.
+        /// </summary>
+        [Test]
+        public void EveryPrismOnTheBoltsPathBurnsWithinTheBudgets()
+        {
+            const int segments = 40, onPathEach = 9, haloEach = 60, perFrame = 16, cap = 64;
+            var lit = new System.Collections.Generic.HashSet<int>();
+            int burning = 0, haloLit = 0, next = 0, frames = 0, worstFrame = 0;
+
+            while (next < segments)
+            {
+                Assert.Less(++frames, 1000, "the bolt never finished");
+                int ignites = 0;
+                while (next < segments)
+                {
+                    bool done = true;
+                    // pass 1: on the path (ids 0..8 of the segment), over the cap
+                    for (int i = 0; i < onPathEach && done; i++)
+                    {
+                        int id = next * 1000 + i;
+                        if (lit.Contains(id)) continue;
+                        var v = FulmenMath.Decide(true, burning < cap, ignites, perFrame);
+                        if (v == FulmenMath.BurnVerdict.Wait) { done = false; break; }
+                        Assert.AreEqual(FulmenMath.BurnVerdict.Light, v);
+                        lit.Add(id); burning++; ignites++;
+                    }
+                    // pass 2: the halo (ids 100..159), only while the manager has room
+                    if (done && burning < cap)
+                    {
+                        if (ignites >= perFrame) done = false;
+                        else
+                            for (int i = 0; i < haloEach; i++)
+                            {
+                                int id = next * 1000 + 100 + i;
+                                if (lit.Contains(id)) continue;
+                                var v = FulmenMath.Decide(false, burning < cap, ignites, perFrame);
+                                if (v == FulmenMath.BurnVerdict.Wait) { done = false; break; }
+                                if (v == FulmenMath.BurnVerdict.Drop) break;
+                                lit.Add(id); burning++; ignites++; haloLit++;
+                            }
+                    }
+                    if (!done) break;   // the segment waits for the next frame
+                    next++;
+                }
+                worstFrame = Mathf.Max(worstFrame, ignites);
+            }
+
+            for (int s = 0; s < segments; s++)
+                for (int i = 0; i < onPathEach; i++)
+                    Assert.That(lit.Contains(s * 1000 + i), $"segment {s} on-path prism {i} never burnt");
+            Assert.LessOrEqual(worstFrame, perFrame, "a frame spent more than its ignite budget");
+            Assert.LessOrEqual(haloLit, cap, "the halo burnt past the burn manager's cap");
+            Assert.Greater(haloLit, 0, "the halo never burnt at all");
+        }
+
         [Test]
         public void ANullOrEmptyBufferGrowsNothing()
         {

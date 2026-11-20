@@ -2708,6 +2708,67 @@ after it; `rec_on.cs` / `rec_get.cs` (ProfilerRecorders, the worst frame's marke
 **Still to confirm:** the same loads in a development build (two machines or two builds on one), and the same on a
 second machine, to learn how much of each frame the editor adds.
 
+### B45 in a Maelstrom (2026-11-17): the round no longer lays the arena a second time
+
+A Maelstrom is where B45 costs most: every round is two full arena lays on the host with Relay live (the hub's
+preview, then the round, "Prisms reused from the environment pool 0" both times) plus two Single loads, and a host
+drop ends the tournament for everyone. Seen: the 82.6 s frame of 2026-10-30, Garrett bounced "Host disconnected"
+about 20 s after round one of a Maelstrom on 2026-11-13 (`gradi-20261113_200642`; the host's log was never sent, so
+the cause is inferred from timing), and a 72 s host freeze on two Cleave draws in the driven runs of 2026-11-16
+(`Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md`).
+
+**Change** (`claude/maelstrom-preview-reuse`): lever 2 above, applied to the hub. At the countdown's zero every
+machine hands the hub's arena to `EnvironmentPrismPool` in 24 ms slices, after a 0.5 s suction and after waiting for a
+preview still being laid (`Cell.RetireWorldIntoPoolForSceneExit`, called through
+`MaelstromPreviewHost.ParkArenaForRound`), the host holds the load until its own hand-over finishes (5 s at most,
+`MaelstromLobby.ShouldLaunchNow`), and the round re-issues those prisms. One lay a round instead of two, and the hub's 13-15 thousand prisms are no longer destroyed inside the
+load's activation frame. Details: `Docs/MaelstromSystem/ARCHITECTURE.md` §1.5.1.
+
+**What it does not do.** It does not find the 72 s frame's cause: no Profiler capture of that frame exists. The hub's
+own preview lay is unchanged and is still a full lay with Relay live. The round's world is still destroyed on the way
+back to the hub. Reviewed by three independent readers before any run (Cell, launch flow, pool); their findings are
+in the code: the world eases away because nothing opaque covers the hub at launch, a preview still building is waited
+for, life retires with the world, the drain runs newest first. Held by `MaelstromArenaHandOverTests` (11: the
+launch-hold rule and the wires). **Not compiled or run
+in Unity**; the checklist entry has the two-player steps and the marks to read.
+
+### B45 on the return to the menu (2026-11-20): the match's world is taken down before the load
+
+Solo online host in the editor (unfocused), Bloomrush for 90 s, return to the menu. `Ys-bleeding-edge`, measured with
+ProfilerRecorders on the worst frame and a per-frame log; six returns before and after.
+
+**Before** (two returns): the load's frame was **10.5 s and 9.5 s**. 73,500 prisms were alive at the end: 60,700 are
+plant prisms under 493 plants in the match scene, 5,700 the Manta's trail (in its pool, which outlives the scene).
+In the 10.5 s frame: destroying the match scene 3.4 s (1.6 s of it `GameObject.Deactivate`), waking the menu about
+2.7 s, `GC.Collect` 1.1 s, scene-load handlers 1.1 s (`UIThemeLive.OnSceneLoaded` 0.85 s).
+
+**Change.** On a scene load out of a match, every machine retires each cell's world behind the splash and the host
+holds the load for it, 8 s at most (`SceneLoader.DrainSceneForExitAsync`; a guest starts its own at the veil RPC,
+`MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc`). It is the Maelstrom hub's
+`Cell.RetireWorldIntoPoolForSceneExit`, with two additions: a world that is plants only is retired too
+(`requireEnvironment: false`), and plants are destroyed a whole root at a time (`ReleaseRetiredWorldByRoot`).
+Leaving the menu is not drained. A `sceneExitDrain` mark goes in the test log.
+
+**After** (three returns with the by-root drain): the load's frame was **6.4 s, 5.7 s and 6.5 s**, and the scene
+destroy is out of it (`Destroy` no longer among the frame's markers). The drain's own frames are 0.5-3 s.
+
+**What it costs.** A destroy during play is dearer than the same destroy inside the unload: about 150 microseconds a
+prism against 57. So the 60,700 plant prisms take about 10 s to drain where the unload spent 3.4 s on them, and the
+drain is cut short at its 8 s limit (the mark reads `cut short at 8.0s`; what is left dies in the load's frame at the
+cheap rate). From the button to the menu is about 17 s where it was about 10.5 s. A lighter match pays in proportion.
+
+**What was tried and dropped.**
+- Destroying prism by prism (the hub's way): 13 s for the plants, ending in one 4.1 s frame when the emptied plants
+  went, and the load's frame got worse (12.3 s, 11.4 s) because the 6 s limit cut it off half done.
+- Small slices: 2,000 prisms' worth a frame left a 7.8 s load frame; 15,000 a 6.4 s one; 30,000 a 5.7 s one.
+- Draining the menu on a launch: it held every launch about 5 s for nothing (a launch's frame is 2.1-2.6 s).
+
+**Not found:** why a destroy during play costs nearly three times the unload's. The editor Profiler was switched on
+to look at one such frame and the editor crashed (native fault, 21:35); do not profile these frames on this PC.
+
+**Not measured:** a guest, two machines, a build, any mode other than Bloomrush, and the hold on a focused editor.
+The second freeze on the menu a minute after a return (6.9-21.9 s, B45 of 2026-11-20) is untouched.
+
 ## B48 - a reaped party session rebuilt in place leaves the pilot unpaired, and the next match seats them on the wrong domain (2026-11-07)
 
 **Seen.** Yash, solo in the editor, opened Thresher Time and placed himself on Jade with AIs on Ruby and Gold

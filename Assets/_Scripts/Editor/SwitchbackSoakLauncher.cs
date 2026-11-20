@@ -60,6 +60,8 @@ namespace CosmicShore.Editor
                 Tag = Arg("-sbSoakTag", ""),
                 TimeScale = float.Parse(Arg("-sbSoakTimeScale", "1"), CultureInfo.InvariantCulture),
                 TargetFrameRate = int.Parse(Arg("-sbSoakFps", "60"), CultureInfo.InvariantCulture),
+                // -sbSoakBreakFirst: the AI without speed over breaking, for the "before" side of an A/B.
+                BreakFirst = Array.IndexOf(Environment.GetCommandLineArgs(), "-sbSoakBreakFirst") >= 0,
             };
             SwitchbackSoakRunner.Launch(s);
         }

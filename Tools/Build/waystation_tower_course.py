@@ -681,6 +681,10 @@ SHELF_TOL = 0.05
 
 
 FAR_EDGE_REACH = 400.0
+# How much further past the authored far edge the HARD edge may sit, beyond a ring radius and the reaction allowance (u).
+# 0 while the Drop recharged in 20 s; the 10 s recharge (2026-11-18, Garrett's pick for Regatta) lets a pilot who
+# overshoots recover sooner, so the hard edge moved out by up to 35 u (measured 55-71 u past the authored edge).
+FAR_EDGE_GIVE = 40.0
 
 
 def _fits(T, span, landing, roll, spare):
@@ -966,7 +970,7 @@ def measure(intensity, T, CT, seeds, target, **kw):
                     m["drops"].append(len(pl_plan["steps"]))
             short_ok, far = edges(T, s, pl_plan, plates)
             m["far"] = max(m.get("far", 0.0), far)
-            if not short_ok or far > s["HopRingRadius"] + T["ReactSeconds"] * T["Cruise"]:
+            if not short_ok or far > s["HopRingRadius"] + T["ReactSeconds"] * T["Cruise"] + FAR_EDGE_GIVE:
                 m["edges"] = False
             # Lantern Towers: the shelf the course says is the shelf Lay sized; a landing at it presses in time, one
             # just past the hard far edge cannot reach the next ring; the autopilot's landing budget fits between.
@@ -998,7 +1002,7 @@ def measure(intensity, T, CT, seeds, target, **kw):
                 if overshoot(T, s, steps, k, fe + 5.0) <= steps[k + 1].get("r", s["HopRingRadius"]) - T["HullRadius"]:
                     m["past"] = False
                 for seat in range(4):
-                    tgt = ai_target(T, laid, g, s, seat) if not kw.get("ignore_ai") else s["WindowCentre"]
+                    tgt = ai_target(T, laid, g, s, seat) if not kw.get("ignore_ai") else s["high"]
                     lo_m = tgt - AI_FRAME_U - AI_CARRY_U - s["low"]
                     hi_m = fe - (tgt + AI_FRAME_U + AI_CARRY_U)
                     m["worst_budget"] = min(m["worst_budget"], lo_m, hi_m)
@@ -1142,7 +1146,9 @@ def self_test(seeds, target):
         ("lantern posts on the drop line itself", dict(kw=dict(posts_on_axis=True)), ("lantern",)),
         ("the crown gem at the plunge's near edge (a short plunge lands in it, so there is no choice)",
          dict(kw=dict(gem_at_low=True)), ("gem",)),
-        ("an autopilot that ignores the lanterns (window centre on every hop)", dict(kw=dict(ignore_ai=True)),
+        # The window's far edge, not its centre: since the 10 s recharge (2026-11-18) the centre stays inside the
+        # budget on every hop, so it no longer proves the check fires.
+        ("an autopilot that ignores the lanterns (window's far edge on every hop)", dict(kw=dict(ignore_ai=True)),
          ("aibudget",)),
     )
     for label, c, expect in controls:

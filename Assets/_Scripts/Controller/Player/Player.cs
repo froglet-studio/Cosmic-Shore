@@ -920,12 +920,12 @@ namespace CosmicShore.Gameplay
             if (!IsCreditableVolume(volume)) return;
             if (!PassesHitReportGuard(ref volume)) return;
 
-            StatsManager.CreditPrismSteal(RoundStats, volume);
+            StatsManager.CreditPrismSteal(RoundStats, volume, gameData ? gameData.VolumeLedger : null);
 
             var victim = victimName.ToString();
             if (string.IsNullOrEmpty(victim) || gameData == null) return;
             if (gameData.TryGetRoundStats(victim, out IRoundStats victimStats))
-                StatsManager.DebitPrismSteal(victimStats, volume);
+                StatsManager.DebitPrismSteal(victimStats, volume, gameData.VolumeLedger, -1f, RoundStats);
         }
 
         /// <summary>

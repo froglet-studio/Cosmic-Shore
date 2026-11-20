@@ -80,7 +80,7 @@ BOND_GUID = guid("bond_mat")
 # tints it), sweeping and breathing; the Bar runs along an underline.
 SELECTION_GUID = guid("selection_rim_mat")
 SELECTION_BAR_GUID = guid("selection_bar_mat")
-SELECTION = (0.23921569, 0.69803923, 1)            # #3DB2FF, UITheme.Selection
+SELECTION = (0, 0.83137256, 1)                     # #00D4FF, UITheme.Selection: Jade (Docs/UI_STYLE_GUIDE.md D3)
 THEME = "Assets/_SO_Assets/UI/UITheme.asset"
 # The elemental rims (§45.3), RETIRED 2026-10-24 (Docs/UI_COLOR_RULES.md): elements carry no colour in the UI, and a
 # light running round a panel nobody selected read as the selection. Their five materials are deleted; the guids stay

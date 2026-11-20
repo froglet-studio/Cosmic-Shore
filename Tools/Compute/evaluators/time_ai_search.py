@@ -57,6 +57,10 @@ POL = "Assets/Resources/AIBoostPolicies/"
 SO = "Assets/_SO_Assets/AI Boost Policies/"
 CRYSTAL = "crystal"            # the RaceAICrystalGenesSO gene: detour budget, world units
 CRYSTAL_RANGE = (0.0, 300.0)
+# RaceAIRefuelGenesSO (a ramp that burns fuel earned by ploughing or slicing, #2233): turn toward a prism ahead when the
+# tank is under refuelBelow, if the detour costs at most refuelSlack units. Searched with the drive ("refuel_row").
+REFUEL = "Assets/Resources/RaceAIRefuelGenes.asset"
+REFUEL_FIELDS = {"refuelSlack": ("PrismDetourSlack", (0.0, 300.0)), "refuelBelow": ("RefuelBelow", (0.0, 1.0))}
 
 def _switchback_nose(p):
     return {
@@ -68,10 +72,10 @@ def _switchback_nose(p):
 
 
 # SwitchbackController's AI knobs (Scarab Rally inherits them): the Legendary nose follow rate (every intensity's row,
-# shipped 11.18/s at I1-I2 and 13.41/s at I3-I4 since Dolphin run2, and the I4 gauntlet's) and how near a ring the AI stops dodging.
+# shipped 10.57/s at I1-I2 and 12.69/s at I3-I4 since the Dolphin step-5 run (2026-11-18), and the I4 gauntlet's) and how near a ring the AI stops dodging.
 SWITCHBACK_NOSE = {
     "ctrl_fields": {"noseLegendary": (3.0, 24.0), "aiNoDodgeNearRing": (0.0, 600.0)},
-    "ctrl_defaults": {"noseLegendary": 11.18, "aiNoDodgeNearRing": 177.0},   # Dolphin run2 (2026-11-17)
+    "ctrl_defaults": {"noseLegendary": 10.57, "aiNoDodgeNearRing": 277.67},   # Dolphin step-5 run (2026-11-18)
     "ctrl": _switchback_nose,
 }
 
@@ -104,7 +108,7 @@ GAMES = {
                    "spendAtCharge01": (0.05, 1.0), "peakMarginUnits": (0.0, 30.0), "minDischargeSeconds": (0.0, 2.0),
                    "minPulseGainUnits": (0.0, 120.0), "maxHoldOffSeconds": (0.5, 8.0)},
         **SWITCHBACK_NOSE,
-        "lead": 2.03, "rows": [],                      # SwitchbackController.aiNoseLead: Dolphin 2.03 (run2)
+        "lead": 2.15, "rows": [],                      # SwitchbackController.aiNoseLead: Dolphin 2.15 (step-5 run)
     },
     "Serpent": {
         "mode": "SerpentTime",
@@ -157,6 +161,19 @@ GAMES = {
         # HeadlongController.aiNoseLead: Rhino 2.5. At 2.5 the AI orbits in place (~70 s a lap at 33 u/s, 2026-11-17);
         # 1.0 halved I1 and I2. Headlong has no nose knob: the fleet lag.
         "lead": 2.47, "rows": [], "nose_gene": 7.5,    # Rhino run1 (2026-11-17)
+        "refuel_row": 0,                               # RaceAIRefuelGenes row: the ramp runs on plough fuel (#2233)
+    },
+    "Swordfish": {
+        "mode": "Spearline",
+        # Its own RampBoostAIPolicySO (it shared the Rhino's until 2026-11-18): the same ramp, run on slice fuel.
+        "assets": {i: POL + "SwordfishAIBoostPolicy_Spearline.asset" for i in (1, 2, 3, 4)},
+        "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
+                   "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
+                   "cornerSpeed": (60.0, 900.0), "minCornerSpeed": (30.0, 600.0), "brakeMarginUnits": (0.0, 300.0),
+                   "brakeLeadSeconds": (0.0, 2.0), "brakeSteerFloor": (0.0, 1.0), "cornerReleaseDegrees": (0.0, 90.0)},
+        # SpearlineController.aiNoseLead: Swordfish 2.5, at most 10 extra degrees. Spearline has no nose knob.
+        "lead": 2.5, "lead_max": 10.0, "rows": [], "nose_gene": 1.5,
+        "refuel_row": 1,
     },
     "Manta": {
         "mode": "Redline",
@@ -239,6 +256,33 @@ GAMES = {
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
         "lead": None, "rows": [], "nose_gene": 7.97,
     },
+    "Goby": {
+        "mode": "PerchRun",
+        # The Goby's seat AI races on a coach's darts (IGobyRaceCoach), not the gate race's steering: it turns at its own
+        # aiTurnRate, cruises, and darts once the nose is on the coach's line. Perch Run's coach (PerchRunController)
+        # carries the two numbers a dart plan is made of that travel to any race: how far past the last ring it charges
+        # (aiOvershoot) and how wide the turning circle counts before it flies on instead of orbiting (aiTurnMargin).
+        # Regatta's coach (RegattaGobyDart, RegattaController.aiGobyDart) carries the same two, so a winner is copied
+        # there. No drive asset, no nose knob (the coach steers the hull itself), nothing on the vessel.
+        "assets": {},
+        "fields": {},
+        "ctrl_fields": {"aiOvershoot": (0.0, 300.0), "aiTurnMargin": (1.0, 3.0)},
+        "ctrl_defaults": {"aiOvershoot": 40.0, "aiTurnMargin": 1.25},
+        "ctrl": lambda p: {"aiOvershoot": float(p["aiOvershoot"]), "aiTurnMargin": float(p["aiTurnMargin"])},
+        "lead": None, "rows": [],
+    },
+    # The Meerkat's portable Time AI (loop step 3, 2026-11-19): its OWN wormhole autopilot
+    # (MeerkatSolitonExecutor.Autopilot, read off MeerkatSolitonConfig: when to form a straight or a bent tunnel, how
+    # long to shape the reticle), trained in Burrow Run with the race controller's knobs left at what the scene ships
+    # (run1's 42 / 702 / 74 and nose 7.97/s). The autopilot is the vessel's, so every race (Regatta included) flies what this learns.
+    "MeerkatDrive": {
+        "hull": "Meerkat",
+        "mode": "BurrowRun",
+        "assets": {i: "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset" for i in (1, 2, 3, 4)},
+        "fields": {"aiStraightMinDistance": (50.0, 2000.0), "aiBentMinDistance": (50.0, 2000.0),
+                   "aiShapeSeconds": (0.05, 2.0)},
+        "lead": None, "rows": [],
+    },
     "Shrike": {
         "mode": "Thornline",
         # Thornline aims the AI itself (ThornlineAIPlan) and sets its skill by difficulty on every arming
@@ -308,6 +352,39 @@ GAMES = {
         "ctrl": lambda p: {"aiRailLead": float(p["aiRailLead"]), "aiRaceLineLead": float(p["aiRaceLineLead"])},
         "lead": None, "rows": [], "nose_gene": 1.5,
     },
+    "Angler": {
+        "mode": "LanternRun",
+        # AnglerLeapfrogAIPolicySO (the hull's own drive, AnglerAIBoostPolicy): when it paints and throws a group (lined up
+        # within throwAlignDegrees, objective at least minThrowDistance away, trigger held holdSeconds, throwIntervalSeconds
+        # between throws) and when it dashes to a group (at least minDashDistance, within dashAheadDegrees of the
+        # objective). Every other mode reads the same policy, so a winner ships as <name>_LanternRun / _Regatta variants.
+        # Lantern Run is a plain gate race (no aiNoseLead table) at the fleet lag, 1.5/s; the rate is searched through the
+        # judge and reaches Regatta through Resources/RaceLines/Angler_Regatta. Shipped from run1 (2026-11-19):
+        # AnglerAIBoostPolicy_LanternRun and LanternRunController.aiNoseLead (no lead, 8.25/s).
+        "assets": {i: POL + "AnglerAIBoostPolicy_LanternRun.asset" for i in (1, 2, 3, 4)},
+        "fields": {"throwAlignDegrees": (0.5, 30.0), "minThrowDistance": (0.0, 600.0), "holdSeconds": (0.05, 2.0),
+                   "throwIntervalSeconds": (0.0, 3.0), "minDashDistance": (1.0, 300.0), "dashAheadDegrees": (0.0, 120.0)},
+        "lead": None, "rows": [], "nose_gene": 8.25,
+    },
+    "TigerMoth": {
+        "mode": "Waystation",
+        # Waystation drives the AI itself (WaystationController: the Fold toward far rings, the belly-aimed drop, and
+        # the tower hop over each ring under a plate). The genes are that controller's hop and drop gates, through
+        # controller_overrides, and the nose follow rate through the judge (shipped in WaystationController.aiNoseLead).
+        # TigerMothDropAction is listed for the shipped-genome read only: it is the vessel's, never searched.
+        "assets": {i: "Assets/_SO_Assets/VesselActions/TigerMoth/TigerMothDropAction.asset" for i in (1, 2, 3, 4)},
+        "fields": {},
+        "ctrl_fields": {"aiHopLineShare": (0.3, 0.9), "aiHopMissMargin": (120.0, 800.0),
+                        "aiHopLookahead": (60.0, 400.0), "aiDropAimDegrees": (3.0, 25.0),
+                        "aiDropMissMargin": (0.3, 3.0), "aiFoldLandShort": (0.0, 120.0)},
+        "ctrl_defaults": {"aiHopLineShare": 0.753, "aiHopMissMargin": 249.3, "aiHopLookahead": 137.4,
+                          "aiDropAimDegrees": 9.87,    # TigerMoth run3 (2026-11-19; run1 2026-11-17)
+                          "aiDropMissMargin": 1.02, "aiFoldLandShort": 77.4},   # the drop's let-go (run3)
+        "ctrl": lambda p: {k: float(p[k]) for k in ("aiHopLineShare", "aiHopMissMargin", "aiHopLookahead",
+                                                    "aiDropAimDegrees", "aiDropMissMargin", "aiFoldLandShort")
+                           if k in p},
+        "lead": None, "rows": [], "nose_gene": 3.48,   # WaystationController.aiNoseLead: TigerMoth at 3.48/s (run3; 6.41 run1)
+    },
     "BrittleStar": {
         "mode": "BrittleStarTime",
         # The mode stands the hull's boost policy down (BrittleStarAIBoostPolicy_BrittleStarTime, engage runway 999 s):
@@ -319,6 +396,25 @@ GAMES = {
         "lead": None, "rows": [],                      # BrittleStarTimeController has no nose lead table
         "nose_gene": 13.66, "nose_split": 15.04,       # seeds: the coach's Legendary I2 / I4 rate (run1)
         "nose_mode_sets": True,                        # the shipped AI (params None) keeps the coach's table
+    },
+    # The Brittle Star's portable Time AI (loop step 3, 2026-11-18): the hull's OWN Speed Mode policy
+    # (BrittleStarSpeedModeAIPolicySO) trained in Brittle Star Time with the coach switched off (coachOn false: no
+    # coached wish, no coached line, the gate way), so what it learns is the policy every other race flies too -
+    # Regatta's BrittleStarAIBoostPolicy_Regatta copies it. The coach is static C# that reads this game's course and
+    # cannot leave it. The reference (params None) is the shipped game, coach on, so a loss under 1 beats the coach.
+    "BrittleStarDrive": {
+        "hull": "BrittleStar",
+        "mode": "BrittleStarTime",
+        "assets": {i: POL + "BrittleStarAIBoostPolicy_BrittleStarTime.asset" for i in (1, 2, 3, 4)},
+        # The mode file stands the policy down (engage runway 999 s), so seeds read the hull's own policy.
+        "seed_assets": [SO + "BrittleStarAIBoostPolicy.asset"],
+        "fields": {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
+                   "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 4.0), "releaseRunwaySeconds": (0.0, 3.0),
+                   "minHoldSeconds": (0.0, 4.0), "minRestSeconds": (0.0, 4.0)},
+        "ctrl": lambda p: {"coachOn": False},
+        "lead": None, "rows": [],
+        "nose_gene": 13.66, "nose_split": 15.04,       # the coach's trained Legendary rates (run1), as Regatta's line has
+        "nose_mode_sets": True,
     },
 }
 LEAD_RANGE = (0.0, 3.0)
@@ -335,7 +431,8 @@ def wide_genome(hull, w, seed):
     import random
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import regatta_genome as RG
-    return RG.training_genome(random.Random(seed), w, for_mode=GAMES[hull]["mode"])
+    mode = next(g["mode"] for k, g in GAMES.items() if g.get("hull", k) == hull)
+    return RG.training_genome(random.Random(seed), w, for_mode=mode)
 
 
 def conditions_for(a):
@@ -360,10 +457,20 @@ def read_fields(rel, names):
     return {k: float(v) for k, v in re.findall(r"^  (\w+): (-?[0-9.]+(?:e-?\d+)?)\s*$", body, re.M) if k in names}
 
 
+def read_refuel(row):
+    """{refuelSlack, refuelBelow} as RaceAIRefuelGenes.asset ships them for this row."""
+    rows = re.findall(r"PrismDetourSlack: (-?[0-9.]+)\s+RefuelBelow: (-?[0-9.]+)",
+                      open(os.path.join(ROOT, REFUEL), encoding="utf-8").read())
+    slack, below = rows[row]
+    return {"refuelSlack": float(slack), "refuelBelow": float(below)}
+
+
 def dims_for(g):
     ints = g.get("ints", ())
     dims = [{"name": k, "lo": lo, "hi": hi, **({"type": "int"} if k in ints else {})} for k, (lo, hi) in g["fields"].items()]
     dims += [{"name": k, "lo": lo, "hi": hi} for k, (lo, hi) in g.get("ctrl_fields", {}).items()]
+    if "refuel_row" in g:
+        dims += [{"name": k, "lo": lo, "hi": hi} for k, (_, (lo, hi)) in REFUEL_FIELDS.items()]
     if "nose_gene" in g:
         dims.append({"name": "noseFollow", "lo": NOSE_RANGE[0], "hi": NOSE_RANGE[1]})
     if "nose_split" in g:
@@ -377,10 +484,12 @@ def shipped_genomes(g):
     """Every drive the game ships for this vessel and game, with today's nose lead and no crystal detour."""
     out = []
     # A game with no drive asset (the Meerkat: the gate race's own steering) seeds from its controller knobs alone.
-    for rel in sorted(set(g["assets"].values())) or [None]:
+    for rel in sorted(set(g.get("seed_assets") or g["assets"].values())) or [None]:
         p = read_fields(rel, g["fields"]) if rel else {}
         p.update({k: int(v) for k, v in p.items() if k in g.get("ints", ())})
         p.update(g.get("ctrl_defaults", {}))
+        if "refuel_row" in g:
+            p.update(read_refuel(g["refuel_row"]))
         if "nose_gene" in g:
             p["noseFollow"] = g["nose_gene"]
         if "nose_split" in g:
@@ -400,6 +509,9 @@ def spec_for(hull, g, params, intensity=None):
         return {}
     fields = {k: params[k] for k in g["fields"] if k in params}
     ov = [{"asset": rel, "fields": fields} for rel in sorted(set(g["assets"].values()))]
+    if "refuel_row" in g:
+        ov.append({"asset": REFUEL, "fields": {f"Rows.{g['refuel_row']}.{f}": float(params[k])
+                                               for k, (f, _) in REFUEL_FIELDS.items() if k in params}})
     # No mode knob: the judge sets the rate on the AI's transformer (left alone at the shipped fleet lag).
     nose = float(params.get("noseFollow", g.get("nose_gene", 0)))
     if "nose_split" in g and intensity is not None and intensity >= 3:   # I3-I4's own band
@@ -409,7 +521,8 @@ def spec_for(hull, g, params, intensity=None):
     out_nose = {hull: nose} if "nose_gene" in g and (g.get("nose_mode_sets") or nose != g["nose_gene"]) else None
     ctrl = {}
     if g["lead"] is not None:
-        ctrl["aiNoseLead"] = list(g["rows"]) + [{"Hull": hull, "Gain": float(params.get(LEAD, g["lead"])), "MaxExtraDegrees": 40}]
+        ctrl["aiNoseLead"] = list(g["rows"]) + [{"Hull": hull, "Gain": float(params.get(LEAD, g["lead"])),
+                                                     "MaxExtraDegrees": g.get("lead_max", 40)}]
     if "ctrl" in g:
         ctrl.update(g["ctrl"](dict(g.get("ctrl_defaults", {}), **params)))
     out = {"overrides": ov}
@@ -589,6 +702,9 @@ def self_test():
         for rel in sorted(set(g["assets"].values())):
             if not os.path.exists(os.path.join(ROOT, rel)):
                 out.append(f"{hull}: missing asset {rel}")
+        for rel in sorted(set(g.get("seed_assets") or g["assets"].values())):
+            if not os.path.exists(os.path.join(ROOT, rel)):
+                out.append(f"{hull}: missing asset {rel}")
                 continue
             got = read_fields(rel, g["fields"])
             for k, (lo, hi) in g["fields"].items():
@@ -606,7 +722,9 @@ def self_test():
                         out.append(f"{hull}: {d['name']} does not round-trip ({p[d['name']]} -> {q[d['name']]})")
                 spec = spec_for(hull, g, p)
                 for ov in spec["overrides"]:
-                    extra = set(ov["fields"]) - set(g["fields"])
+                    own = ({f"Rows.{g['refuel_row']}.{f}" for f, _ in REFUEL_FIELDS.values()}
+                           if ov["asset"] == REFUEL and "refuel_row" in g else set(g["fields"]))
+                    extra = set(ov["fields"]) - own
                     if extra:
                         out.append(f"{hull}: spec writes foreign fields {sorted(extra)}")
                 lead_rows = spec.get("controller_overrides", {}).get("aiNoseLead")
@@ -624,7 +742,8 @@ def self_test():
                                    f"{hi.get('ai_nose_follow')})")
         return out
 
-    for hull, g in sorted(GAMES.items()):
+    for key, g in sorted(GAMES.items()):
+        hull = g.get("hull", key)
         e = check(hull, g)
         errs += e
         print(f"{hull:8s} {g['mode']:12s} {'ok' if not e else 'FAIL'}  {len(g['fields'])} fields")
@@ -676,6 +795,7 @@ def main():
     if a.confirm and 4 not in a.l5:
         a.l5.append(4)
     g = GAMES[a.hull]
+    a.hull = g.get("hull", a.hull)                     # a game entry may train another entry's hull (BrittleStarDrive)
     hold = [s for s in a.hold.split(",") if s]
     if hold:
         unknown = [k for k in hold if k not in g["fields"]]

@@ -10,7 +10,8 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Plasma-claw spray: while held, scans a forward cone each tick (via
     /// PrismSpatialIndex.QuerySphere + angle filter) and ignites enemy prisms
-    /// through PrismBurnManager. Free to use — no energy cost by design.
+    /// through PrismBurnManager. Free to use — no energy cost by design; every prism it lights
+    /// REFILLS energy instead, by the Mass level (the Grizzly's Mass card).
     /// Mass-5 state is sampled at IGNITE time: burns started while the upgrade is
     /// active convert (steal) on burnout even if the level later drops.
     /// </summary>
@@ -123,6 +124,10 @@ namespace CosmicShore.Gameplay
                 burn.Ignite(prism, status.PlayerName, status.Domain, convert);
                 ignited++;
             }
+
+            // MASS: the claw feeds the Grizzly. Each prism it lit this tick refills energy.
+            if (ignited > 0 && status.ResourceSystem)
+                status.ResourceSystem.ChangeResourceAmount(so.EnergyIndex, ignited * so.EnergyPerIgniteFor(status));
         }
     }
 }
