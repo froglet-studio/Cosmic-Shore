@@ -26,7 +26,7 @@ body { background: var(--ground); color: var(--text); }
 
 /* top bar */
 .la-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-8) var(--space-16); padding: var(--space-12) var(--space-16); border-bottom: 1px solid var(--line); }
-.la-seg { display: flex; gap: 2px; }
+.la-seg { display: flex; flex-wrap: wrap; gap: 2px; }
 .la-btn {
   font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
   background: var(--surface); color: var(--text); border: 0; padding: 7px 12px; cursor: pointer; min-height: 32px;
@@ -56,6 +56,18 @@ body { background: var(--ground); color: var(--text); }
 .la-canvas canvas { display: block; touch-action: none; cursor: grab; }
 .la-hud { position: absolute; left: var(--space-12); top: var(--space-12); display: flex; flex-wrap: wrap; gap: 2px; align-items: center; }
 .la-filter { margin-left: var(--space-8); }
+/* the inspection window: what Amoebius drew for the node you are on (Tools/Build/code_atlas_views.py) */
+.la-insp { position: absolute; right: var(--space-12); bottom: var(--space-12); width: min(300px, calc(100% - 24px)); background: var(--surface); border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+.la-insp-head { display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px var(--space-8); border-bottom: 1px solid var(--line); }
+.la-insp-title { flex: 1; min-width: 0; font-family: var(--font-label); font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.la-insp-title small { display: block; font-weight: 400; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-soft); }
+.la-insp .la-btn { min-height: 26px; padding: 3px 8px; font-size: 12px; }
+.la-insp canvas { display: block; width: 100%; height: 180px; background: var(--ground-deep); cursor: ew-resize; touch-action: none; }
+.la-insp[data-k="ui"] canvas { cursor: default; }
+.la-insp[data-min="true"] canvas { display: none; }
+.la-insp[data-big="true"] { width: min(640px, calc(100% - 24px)); }
+.la-insp[data-big="true"] canvas { height: min(360px, 55vh); }
+@media (max-width: 520px) { .la-insp canvas { height: 130px; } }
 .la-legend { display: flex; flex-wrap: wrap; gap: 4px var(--space-16); padding: 6px var(--space-16); border-top: 1px solid var(--line); font-size: 11px; color: var(--text-soft); }
 .la:not([data-view="map"]) .la-legend { display: none; }
 .la-lg { display: inline-flex; align-items: center; gap: 6px; }
@@ -84,7 +96,7 @@ body { background: var(--ground); color: var(--text); }
 
 /* list views replace the canvas */
 .la-table { display: none; flex: 1; min-height: 0; overflow: auto; padding: var(--space-12) var(--space-16) var(--space-24); }
-.la[data-view="ladder"] .la-table, .la[data-view="drivers"] .la-table, .la[data-view="holes"] .la-table, .la[data-view="notes"] .la-table { display: block; }
+.la[data-view="ladder"] .la-table, .la[data-view="drivers"] .la-table, .la[data-view="holes"] .la-table, .la[data-view="notes"] .la-table, .la[data-view="board"] .la-table { display: block; }
 .la:not([data-view="map"]) .la-canvas { display: none; }
 .la-lede { margin: 0 0 var(--space-12); color: var(--text-soft); max-width: 70ch; }
 .la-h { margin: var(--space-24) 0 var(--space-8); font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--text); }
@@ -139,6 +151,8 @@ body { background: var(--ground); color: var(--text); }
 .la-ctext::placeholder { color: var(--text-soft); }
 .la-crow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-8); }
 .la-crow .la-cta { margin-top: 0; }
+.la-cname { min-height: 0; }
+.la-compose [hidden] { display: none !important; }
 .la-cerr { font-size: 13px; color: var(--hole); }
 .la-empty { margin: var(--space-24) 0; padding: var(--space-16); border: 1px dashed var(--line); color: var(--text-soft); max-width: 70ch; }
 .la-note { max-width: 78ch; padding: var(--space-8) 0 var(--space-8) var(--space-12); border-left: 3px solid var(--line); margin: 0 0 var(--space-12); }
@@ -277,6 +291,302 @@ body { background: var(--ground); color: var(--text); }
     return out;
   }
 
+  // ---------- the code beneath the loops (Docs/LoopAtlas/CODE.md) ----------
+  // The repository is ONE graph of canonical nodes (Tools/Build/code_atlas.py). The map turns it into a tree as you
+  // zoom: a node's ring holds its contents AND a copy of every neighbour (its type, its base, the assets that use it,
+  // the folder it lives in, the loop it implements). A copy is the same node: arriving at any copy shows the same record
+  // and the same rings, so there are no links and no long edges. A cycle unrolls into a chain that never ends but stays
+  // inside its first ring, because every ring is a fixed fraction of its parent. The camera is kept relative to the
+  // ring it is in (an "anchor" and that ring's circle on screen), so zooming has no floor.
+  var CODE = { base: 'code/', idx: null, state: 'off', shards: {}, recs: {}, sheets: {}, roots: {}, wait: [], hits: [] };
+  var REL = [
+    ['code', 'Code'], ['script', 'Script'], ['type', 'Its type'], ['base', 'Base type'], ['derived', 'Derived types'],
+    ['instances', 'Assets made from it'], ['source', 'Prefab it instances'], ['refs', 'Refers to'], ['assetRefs', 'Uses assets'],
+    ['uses', 'Types it holds'], ['mentions', 'Types it mentions'], ['types', 'Types'], ['declares', 'Declares'],
+    ['usedBy', 'Fields of this type'], ['usedByType', 'Types that hold it'], ['mentionedBy', 'Mentioned by'],
+    ['refBy', 'Referred to by'], ['assetRefBy', 'Used by assets'], ['instancedIn', 'Instanced in'], ['namespace', 'Namespace'],
+    ['loops', 'Loops it serves']];
+  var MEMBER_BOX = { S: 'Serialized fields', F: 'Fields', K: 'Constants', P: 'Properties', M: 'Methods', C: 'Constructors',
+    E: 'Events', V: 'Enum values', t: 'Nested types' };
+  var KIND_WORD = { root: 'Codebase', group: 'Group', dir: 'Folder', cs: 'C# file', asset: 'Asset', prefab: 'Prefab', unity: 'Scene',
+    md: 'Doc', img: 'Picture', type: 'Type', ns: 'Namespace', member: 'Member', go: 'GameObject', comp: 'Component',
+    pi: 'Prefab instance', sec: 'Section', loop: 'Loop', value: 'Value' };
+  function codeInit(done) {
+    if (CODE.state !== 'off' || !window.fetch) return;
+    CODE.state = 'loading';
+    fetch(CODE.base + 'index.json').then(function (r) { if (!r.ok) throw r.status; return r.json(); })
+      .then(function (j) { CODE.idx = j; CODE.state = 'on'; done(); })
+      .catch(function () { CODE.state = 'none'; });
+  }
+  // The inspection window's views (Tools/Build/code_atlas_views.py): Amoebius's turntables and screen layouts, by node id.
+  function viewsInit(done) {
+    if (CODE.vstate || !CODE.idx || !CODE.idx.views) return;
+    CODE.vstate = 'loading';
+    fetch(CODE.base + 'views/views.json').then(function (r) { if (!r.ok) throw r.status; return r.json(); })
+      .then(function (j) { CODE.vw = j; CODE.vstate = 'on'; done(); })
+      .catch(function () { CODE.vstate = 'none'; });
+  }
+  function fnv(s) {
+    var b = new TextEncoder().encode(s), h = 0x811c9dc5;
+    for (var i = 0; i < b.length; i++) { h ^= b[i]; h = Math.imul(h, 0x01000193) >>> 0; }
+    return h >>> 0;
+  }
+  function recIdOf(id) { if (id.slice(0, 2) === 'v:') { var k = id.indexOf('|'); return 'o:' + id.slice(2, k); } return id; }
+  // A shard is gzip, or gzip as base64 text (claude.ai serves no .gz), or plain JSON when a server already inflated it.
+  function inflate(buf) {
+    var u = new Uint8Array(buf);
+    if (u[0] === 0x48 && u[1] === 0x34 && u[2] === 0x73) { // "H4s": base64 of the gzip magic
+      var bin = atob(new TextDecoder().decode(u).replace(/\s+/g, '')), b = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+      u = b;
+    }
+    if (u[0] !== 0x1f || u[1] !== 0x8b || !window.DecompressionStream) return Promise.resolve(new TextDecoder().decode(u));
+    return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  }
+  function loadShard(n, ping) {
+    if (CODE.shards[n]) return;
+    CODE.shards[n] = 'loading';
+    var name = ('00' + n).slice(-3);
+    var file = (CODE.idx.shardFile || '{n}.json.gz').replace('{n}', name);
+    fetch(CODE.base + 'shards/' + file).then(function (r) { if (!r.ok) throw r.status; return r.arrayBuffer(); })
+      .then(inflate).then(function (t) {
+        var d = JSON.parse(t); for (var k in d) CODE.recs[k] = d[k];
+        CODE.shards[n] = 'on'; ping();
+      }).catch(function () { CODE.shards[n] = 'failed'; ping(); });
+  }
+  // A record, or null while its shard loads (ping redraws when it lands). A v: id is a row of its o: record.
+  function rec(id, ping) {
+    if (id.slice(0, 2) === 'v:') return valueRec(id, ping);
+    var r = CODE.recs[id]; if (r) return r;
+    if (!CODE.idx) return null;
+    var s = fnv(id) % CODE.idx.shards;
+    if (CODE.shards[s] === 'on' || CODE.shards[s] === 'failed') return CODE.recs[id] || { k: 'missing', n: nameOf(id) };
+    loadShard(s, ping); return null;
+  }
+  function valueRec(id, ping) {
+    var o = recIdOf(id), key = id.slice(id.indexOf('|') + 1), r = rec(o, ping); if (!r) return null;
+    var rows = (r.f || []).filter(function (x) { return x[0] === key || x[0].indexOf(key + '.') === 0 || x[0].indexOf(key + '[') === 0; });
+    var exact = rows.length === 1 && rows[0][0] === key ? rows[0] : null;
+    return { k: 'value', n: key.split('.').pop(), key: key, v: exact ? exact[1] : rows.length ? rows.length + ' values' : 'not set here',
+      ref: exact ? exact[2] : null, sub: exact ? null : rows, o: o, script: r.r && r.r.script ? r.r.script[0] : null };
+  }
+  function nameOf(id) {
+    if (id === 'code') return 'The codebase';
+    var p = id.slice(0, 2), s = id.slice(2);
+    if (p === 'd:' || p === 'f:') return s.slice(s.lastIndexOf('/') + 1);
+    if (p === 't:' || p === 'n:') return s.slice(s.lastIndexOf('.') + 1);
+    if (p === 'm:') return s.slice(s.lastIndexOf('.') + 1).replace(/~\d+$/, '');
+    if (p === 'v:') return s.slice(s.indexOf('|') + 1).split('.').pop();
+    if (p === 'o:') { var f = s.slice(0, s.indexOf('#')); return f.slice(f.lastIndexOf('/') + 1) + ' ›'; }
+    return s;
+  }
+  function labelOf(spec, ping) {
+    if (spec.label) return spec.label;
+    if (spec.box) return spec.box;
+    var r = CODE.recs[spec.id]; return r ? r.n : nameOf(spec.id);
+  }
+  // A place in the tree. Many places can hold the same node id: they are the same node.
+  function Place(spec, parent) {
+    return { id: spec.id || null, box: spec.box || null, items: spec.items || null, label: spec.label || null, parent: parent,
+      depth: parent ? parent.depth + 1 : 0, kids: null, lx: 0, ly: 0, lr: 1, info: null, tone: spec.tone || null };
+  }
+  function codeRoot(n) {
+    return CODE.roots[n.id] || (CODE.roots[n.id] = Place({ id: portalId(n.codeKey) }, null));
+  }
+  function portalId(key) {
+    if (key.indexOf('fleet/') === 0) return 'L:vessel/' + key.slice(6);
+    return 'L:' + key;
+  }
+  // What a ring holds: its contents, then one box per kind of neighbour. Null while a record it needs is loading.
+  function specsFor(pl, ping) {
+    if (pl.box) return pl.items;
+    var id = pl.id, r = rec(id, ping); if (!r) return null;
+    var out = [], i;
+    if (r.k === 'value') {
+      if (r.sub) r.sub.forEach(function (x) { out.push({ id: 'v:' + r.o.slice(2) + '|' + x[0], label: x[0].slice(r.key.length).replace(/^\./, '') || x[0] }); });
+      if (r.ref) out.push({ box: 'Refers to', items: [{ id: r.ref }], tone: 'near' });
+      if (r.script) {
+        var f = fieldOf(r.script, r.key.split(/[.\[]/)[0], ping);
+        if (f === null) return null;
+        if (f) out.push({ box: 'The field', items: [{ id: f }], tone: 'near' });
+      }
+      out.push({ box: 'Set on', items: [{ id: r.o }], tone: 'near' });
+      return out;
+    }
+    if (r.k === 'loop') (r.r && r.r.code || []).forEach(function (c) { out.push({ id: c }); });
+    if (r.f && r.f.length) {
+      var segs = {}, order = [];
+      r.f.forEach(function (x) { var s = x[0].split(/[.\[]/)[0]; if (!segs[s]) { segs[s] = 1; order.push(s); } });
+      var vals = order.map(function (s) { return { id: 'v:' + id.slice(2) + '|' + s, label: s }; });
+      if (r.c && r.c.length) out.push({ box: 'Values (' + vals.length + ')', items: vals }); else out = out.concat(vals);
+    }
+    var inside = [];
+    if (r.c && r.c.length) {
+      var kids = r.c.map(function (c, j) { return { id: c, label: (r.cn && r.cn[j]) || null, ck: r.ck ? r.ck[j] : '' }; });
+      if (r.k === 'type') {
+        var groups = {}, gorder = [];
+        kids.forEach(function (k) { var g = MEMBER_BOX[k.ck] || 'Members'; if (!groups[g]) { groups[g] = []; gorder.push(g); } groups[g].push(k); });
+        if (gorder.length === 1) inside = kids;
+        else gorder.forEach(function (g) { inside.push({ box: g + ' (' + groups[g].length + ')', items: groups[g] }); });
+      } else inside = kids;
+    }
+    var near = [];
+    if (r.k === 'member' && (r.tk === 'field') && r.p) {
+      var tr = rec(r.p, ping); if (!tr) return null;
+      var inst = tr.r && tr.r.instances || [];
+      if (inst.length) near.push({ box: 'Its value in each asset (' + inst.length + ')', items: inst.map(function (o) { return { id: 'v:' + o.slice(2) + '|' + r.n, label: nameOf(o).replace(' ›', '') }; }), tone: 'value' });
+    }
+    REL.forEach(function (rl) {
+      if (rl[0] === 'code' && r.k === 'loop') return;
+      var lst = r.r && r.r[rl[0]]; if (!lst || !lst.length) return;
+      near.push({ box: rl[1] + ' (' + lst.length + ')', items: lst.map(function (x) { return { id: x }; }), tone: 'near' });
+    });
+    if (r.p && r.p.indexOf('code/') !== 0) near.push({ box: r.k === 'loop' ? 'The loop above' : 'Lives in', items: [{ id: r.p }], tone: 'near' });
+    if (r.k === 'loop') near.push({ id: 'code', label: 'The whole codebase' });
+    // what it is made of stays loose when there is room; otherwise it gets a box of its own beside the neighbours
+    if (inside.length && (r.k === 'loop' || out.length + inside.length + near.length > MAXK)) out.push({ box: (r.k === 'loop' ? 'Loops inside' : 'Inside') + ' (' + r.c.length + ')', items: inside });
+    else out = out.concat(inside);
+    return out.concat(near);
+  }
+  // The field a serialized value fills: on the script's type, or up its base types.
+  function fieldOf(tid, name, ping) {
+    var seen = {};
+    while (tid && !seen[tid]) {
+      seen[tid] = 1;
+      var t = rec(tid, ping); if (!t) return null;
+      var m = 'm:' + tid.slice(2) + '.' + name;
+      if (t.c && t.c.indexOf(m) >= 0) return m;
+      tid = t.r && t.r.base ? t.r.base[0] : null;
+    }
+    return '';
+  }
+  // More than MAXK things in one ring: split them into boxes by name, so every ring stays readable.
+  var MAXK = 18;
+  function bucket(specs) {
+    if (specs.length <= MAXK) return specs;
+    var sorted = specs.slice().sort(function (a, b) { var x = labelOf(a).toLowerCase(), y = labelOf(b).toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; });
+    var per = Math.ceil(sorted.length / Math.min(MAXK, Math.ceil(sorted.length / MAXK) * 2)), out = [];
+    for (var i = 0; i < sorted.length; i += per) {
+      var ch = sorted.slice(i, i + per), a = labelOf(ch[0]), b = labelOf(ch[ch.length - 1]);
+      out.push(ch.length === 1 ? ch[0] : { box: a.slice(0, 14) + ' – ' + b.slice(0, 14), items: ch, tone: 'bucket' });
+    }
+    return out.length > MAXK ? bucket(out) : out;
+  }
+  function kidsOf(pl, ping) {
+    if (pl.kids) return pl.kids;
+    var specs = specsFor(pl, ping); if (!specs) return null;
+    pl.kids = bucket(specs).map(function (s) { return Place(s, pl); });
+    layoutPlace(pl);
+    return pl.kids;
+  }
+  // The same rings as the loop map: children on an orbit with one slot kept for the ring's own card.
+  function orbitU(list, limit, inner, withInfo, pl) {
+    var k = list.length + (withInfo ? 1 : 0); if (!k) return null;
+    var s = Math.sin(Math.PI / Math.max(k, 2)), rho, r;
+    if (k === 1) { r = limit * 0.66; rho = 0; }
+    else { rho = limit / (1 + 0.9 * s); r = 0.9 * s * rho; if (rho - r < inner + 0.03) { r = Math.min(r, (limit - inner - 0.03) / 2); rho = limit - r; } }
+    var th0 = -Math.PI / 2;
+    if (withInfo) pl.info = { x: Math.cos(th0) * rho, y: Math.sin(th0) * rho, r: r };
+    list.forEach(function (c, i) {
+      var th = th0 + 2 * Math.PI * (i + (withInfo ? 1 : 0)) / k;
+      c.lx = Math.cos(th) * rho; c.ly = Math.sin(th) * rho; c.lr = r;
+    });
+    return { rho: rho, r: r };
+  }
+  function layoutPlace(pl) {
+    var ch = pl.kids, LIM = 0.86;
+    if (!ch.length) { pl.info = { x: 0, y: 0, r: 0.82 }; return; }
+    if (ch.length === 1) { pl.info = { x: 0, y: -0.52, r: 0.3 }; ch[0].lx = 0; ch[0].ly = 0.3; ch[0].lr = 0.52; return; }
+    if (ch.length > 10) {
+      var k1 = Math.ceil(ch.length * 0.62), o1 = orbitU(ch.slice(0, k1), LIM, 0, true, pl);
+      orbitU(ch.slice(k1), o1.rho - o1.r - 0.03, 0, false, pl);
+    } else orbitU(ch, LIM, 0, true, pl);
+  }
+  function imagesOf(pl) {
+    if (pl.id) { var r = CODE.recs[recIdOf(pl.id)]; return r && r.im || null; }
+    if (pl._im !== undefined && pl._imN === pl.items.length) return pl._im;
+    var out = [];
+    for (var i = 0; i < pl.items.length && out.length < 4; i++) {
+      var it = pl.items[i], r2 = it.id ? CODE.recs[it.id] : null;
+      if (r2 && r2.im && out.indexOf(r2.im[0]) < 0) out.push(r2.im[0]);
+    }
+    pl._imN = pl.items.length; pl._im = out.length ? out : null;
+    return pl._im;
+  }
+  function sheet(i, ping) {
+    var per = CODE.idx.sheet * CODE.idx.sheet, n = Math.floor(i / per), im = CODE.sheets[n];
+    if (!im) {
+      im = CODE.sheets[n] = new Image();
+      im.onload = ping; im.src = CODE.base + 'img/sheet' + ('0' + n).slice(-2) + '.webp';
+    }
+    return im.complete && im.naturalWidth ? im : null;
+  }
+  // Pictures in a ring: one fills it; more split it into quarters, the way they will split into the children below.
+  function paintImages(ctx, ims, X, Y, R, alpha, ping) {
+    if (!ims || !ims.length || alpha <= 0.02 || !CODE.idx) return;
+    var T = CODE.idx.thumb, G = CODE.idx.sheet, per = G * G, n = R < 70 ? 1 : Math.min(4, ims.length);
+    ctx.save(); ctx.beginPath(); ctx.arc(X, Y, R, 0, 6.2832); ctx.clip(); ctx.globalAlpha *= alpha;
+    for (var q = 0; q < n; q++) {
+      var i = ims[q], img = sheet(i, ping); if (!img) continue;
+      var c = i % per, sx0 = (c % G) * T, sy0 = Math.floor(c / G) * T;
+      var dx = X - R, dy = Y - R, dw = 2 * R, dh = 2 * R;
+      if (n === 2) { dw = R; dx += q * R; }
+      else if (n >= 3) { dw = R; dh = R; dx += (q % 2) * R; dy += Math.floor(q / 2) * R; if (n === 3 && q === 2) dw = 2 * R; }
+      var side = Math.max(dw, dh);
+      ctx.drawImage(img, sx0, sy0, T, T, dx + (dw - side) / 2, dy + (dh - side) / 2, side, side);
+    }
+    ctx.restore();
+  }
+  function placeTone(pl, r, C) {
+    if (pl.box) return pl.tone === 'value' ? C.proposed : C.line;
+    if (!r) return C['text-off'];
+    return ({ loop: C['tier-7'], type: C['tier-5'], member: C['tier-3'], value: C.proposed, ns: C['tier-6'], dir: C['text-soft'],
+      asset: C['tier-6'], prefab: C['tier-6'], unity: C['tier-7'], comp: C['tier-4'], go: C['tier-2'], pi: C['tier-2'],
+      cs: C['tier-4'], md: C['text-soft'], sec: C['text-soft'], img: C.selection, missing: C.hole })[r.k] || C.text;
+  }
+  // The lines a node's card says, most important first.
+  function cardLines(pl, r) {
+    if (pl.box) return pl.tone === 'near' || pl.tone === 'value'
+      ? { kick: pl.tone === 'value' ? 'VALUES' : 'NEIGHBOURS', name: pl.box, rows: [pl.items.length + (pl.items.length === 1 ? ' neighbour' : ' neighbours') + '. Each is the node itself, the same wherever it appears: zoom in instead of following a link.'] }
+      : { kick: pl.tone === 'bucket' ? 'BY NAME' : 'INSIDE', name: pl.box, rows: [pl.items.length + ' inside'] };
+    if (!r) return { kick: '…', name: nameOf(pl.id), rows: [] };
+    if (!pl.parent && r.k === 'loop') return { kick: 'THE CODE OF ' + r.n.toUpperCase(), name: 'Code', rows: [((r.r && r.r.code) || []).length + ' places in the code implement this loop. Zoom into any of them: every neighbour of a node sits beside it, so the whole codebase is reachable from here without a link.'] };
+    var kw = KIND_WORD[r.k] || r.k, rows = [], nm = r.n;
+    if (r.k === 'value' && pl.label && pl.label !== r.key) nm = pl.label;
+    if (r.k === 'member') kw = ({ field: r.ser === true ? 'Serialized field' : 'Field', const: 'Constant', property: 'Property', method: 'Method', ctor: 'Constructor', event: 'Event', enum: 'Enum value' })[r.tk] || 'Member';
+    if (r.k === 'type') kw = (r.mods ? r.mods + ' ' : '') + (r.tk || 'type');
+    if (r.k === 'value') { rows.push('= ' + r.v); rows.push('key ' + r.key); }
+    if (r.v != null && r.k !== 'value') rows.push('= ' + r.v);
+    if (r.ty) rows.push('type ' + r.ty);
+    if (r.sig) rows.push(r.sig);
+    if (r.tip) rows.push('“' + r.tip + '”');
+    if (r.hd) rows.push('under the header “' + r.hd + '”');
+    if (r.path) rows.push(r.path + (r.l ? ':' + r.l : ''));
+    else if (r.l && pl.id && pl.id.slice(0, 2) === 'm:') rows.push('line ' + r.l);
+    if (r.wh) rows.push(r.wh + ' px');
+    if (r.lines) rows.push(r.lines + ' lines');
+    if (r.uc && r.k !== 'go') rows.push('Unity ' + r.uc);
+    if (r.d) rows.push(r.d);
+    if (r.c && r.c.length && r.k !== 'type') rows.push(r.c.length + ' inside');
+    if (r.r && r.r.code && pl.parent) rows.push(r.r.code.length + ' places in the code implement it');
+    if (pl.parent && pl.parent.box && pl.parent.parent && pl.parent.parent.id) rows.push('Here as a neighbour of ' + labelOf({ id: pl.parent.parent.id }) + '. Every copy is this same node.');
+    return { kick: kw.toUpperCase(), name: nm, rows: rows };
+  }
+  function codeKeyOf(n) {
+    if (n.kind === 'verb') return 'verb/' + n.vessel + '/' + n.element;
+    if (n.kind === 'vessel' || n.kind === 'kit') return 'fleet/' + n.vessel;
+    if (n.kind === 'role' || n.kind === 'pulse' || n.kind === 'combo' || n.kind === 'code') return null;
+    return n.id;
+  }
+  // a loop with code gets one more ring: Code, the door into the code that implements it
+  function addCodeRings(n) {
+    n.children.forEach(addCodeRings);
+    var key = CODE.idx ? codeKeyOf(n) : null;
+    if (!key || !CODE.idx.loopCode[key]) return;
+    n.children.push({ id: n.id + '/code', name: 'Code', tier: Math.max(0, n.tier - 1), kind: 'code', t: n.t, is: 'The code that implements this loop.',
+      phases: [], drivers: [], holes: [], src: [], children: [], parent: n, codeKey: key, ghost: n.ghost, vessel: n.vessel });
+  }
+
   function buildTree(layer, vessel) {
     var L = LETTER[layer], byId = {}, root = null, list = [];
     M.nodes.forEach(function (s) {
@@ -321,6 +631,7 @@ body { background: var(--ground); color: var(--text); }
         });
       }
     });
+    addCodeRings(root);
     // index, depth, aggregate hole counts
     var all = {};
     // A ring's count when its insides are too small to see. A kit counts once however many of its verbs are
@@ -403,7 +714,7 @@ body { background: var(--ground); color: var(--text); }
     });
     var segV = el('div', 'la-seg'); segV.setAttribute('role', 'group'); segV.setAttribute('aria-label', 'View'); bar.appendChild(segV);
     var viewBtns = {};
-    [['map', 'Map'], ['ladder', 'Timescales'], ['drivers', 'Drivers'], ['holes', 'Holes'], ['notes', 'Notes']].forEach(function (v) {
+    [['map', 'Map'], ['board', 'Board'], ['ladder', 'Timescales'], ['drivers', 'Drivers'], ['holes', 'Holes'], ['notes', 'Notes']].forEach(function (v) {
       var b = el('button', 'la-btn', v[1]); b.type = 'button';
       b.addEventListener('click', function () { setView(v[0]); });
       viewBtns[v[0]] = b; segV.appendChild(b);
@@ -450,7 +761,7 @@ body { background: var(--ground); color: var(--text); }
     function hudBtn(t, lab, fn) { var b = el('button', 'la-btn la-ico', t); b.type = 'button'; b.setAttribute('aria-label', lab); b.title = lab; b.addEventListener('click', fn); hud.appendChild(b); return b; }
     hudBtn('+', 'Zoom in', function () { zoomBy(1.6); });
     hudBtn('−', 'Zoom out', function () { zoomBy(1 / 1.6); });
-    hudBtn('↑', 'Step up to the loop above', function () { var n = cur(); if (n && n.parent) select(n.parent.id, true); });
+    hudBtn('↑', 'Step up to the loop above', function () { if (S.deep) { var q = CZ.sel || S.deep.anchor; if (q.parent) { deepFly(q.parent, true); return; } } var n = cur(); if (n && n.parent) select(n.parent.id, true); });
     hudBtn('⌂', 'The whole map', function () { select('era', true); });
     var readBtn = hudBtn('Read', 'Zoom into this loop’s card', function () { focusInfo(cur(), true); }); readBtn.classList.remove('la-ico');
     var noteBtn = hudBtn('Note', 'Add a note or a suggestion to this loop', function () { openComposer(cur(), 'note'); }); noteBtn.classList.remove('la-ico'); noteBtn.hidden = true;
@@ -465,6 +776,305 @@ body { background: var(--ground); color: var(--text); }
     var sr = el('div', 'la-sr'); sr.setAttribute('aria-live', 'polite'); root.appendChild(sr);
 
     var ctx = cv.getContext('2d');
+    // ---------- the code beneath the loops: drawing, the anchored camera, and the hand-off from the loop map ----------
+    // S.deep is null on the loop map. Inside a loop's Code ring it is { node (the loop map's Code ring), anchor (a Place),
+    // x, y, r (the anchor's circle on screen) }; every other circle is worked out from the anchor, so precision never runs out.
+    var CZ = { sel: null }; CODE.view = { S: S, CZ: CZ, select: function (id) { select(id, true); } };
+    // ---------- the inspection window: the view Amoebius drew for the node you are on, found up the path ----------
+    var IN = { key: null, entries: [], at: 0, frame: 0, imgs: {}, ui: {}, min: false, spin: null, drag: null };
+    CODE.view.IN = IN;
+    var insp = el('div', 'la-insp'); insp.hidden = true; insp.setAttribute('role', 'region'); insp.setAttribute('aria-label', 'Inspection window');
+    wrap.appendChild(insp);
+    var inHead = el('div', 'la-insp-head'); insp.appendChild(inHead);
+    var inTitle = el('div', 'la-insp-title'); inHead.appendChild(inTitle);
+    function inBtn(t, lab, fn) { var b = el('button', 'la-btn', t); b.type = 'button'; b.title = lab; b.setAttribute('aria-label', lab); b.addEventListener('click', fn); inHead.appendChild(b); return b; }
+    var inPrev = inBtn('‹', 'The previous view', function () { IN.at = (IN.at + IN.entries.length - 1) % IN.entries.length; IN.frame = 0; inRender(); });
+    var inNext = inBtn('›', 'The next view', function () { IN.at = (IN.at + 1) % IN.entries.length; IN.frame = 0; inRender(); });
+    var inBig = inBtn('⤢', 'Make the window bigger', function () { insp.dataset.big = insp.dataset.big !== 'true'; inBig.setAttribute('aria-pressed', insp.dataset.big); inRender(); });
+    var inMin = inBtn('–', 'Fold the window', function () { IN.min = !IN.min; insp.dataset.min = IN.min; inMin.textContent = IN.min ? '+' : '–'; inRender(); });
+    var icv = el('canvas'); icv.setAttribute('role', 'img'); insp.appendChild(icv);
+    var ictx = icv.getContext('2d');
+    icv.addEventListener('pointerdown', function (e) { if (insp.dataset.k !== 'model') return; IN.drag = { x: e.clientX, f: IN.frame }; icv.setPointerCapture(e.pointerId); });
+    icv.addEventListener('pointermove', function (e) {
+      var v = inView(); if (!IN.drag || !v) return;
+      IN.frame = ((IN.drag.f + Math.round((e.clientX - IN.drag.x) / 14)) % v.frames + v.frames) % v.frames; inRender();
+    });
+    icv.addEventListener('pointerup', function () { IN.drag = null; });
+    function inView() { var e = IN.entries[IN.at]; return e && CODE.vw.views[e[0]]; }
+    // the node the view is about: the ring you picked or are inside, else the picked loop; its own view or the nearest above
+    function inFocus() {
+      var V = CODE.vw && CODE.vw.nodes; if (!V) return null;
+      function hit(id) { if (!id) return null; if (id.slice(0, 2) === 'v:') id = recIdOf(id); return V[id] ? { id: id, entries: V[id] } : null; }
+      if (S.deep) {
+        for (var q = CZ.sel || S.deep.anchor; q; q = q.parent) { var h = hit(q.id); if (h) return h; }
+      }
+      for (var n = cur(); n; n = n.parent) {
+        var k = codeKeyOf(n), h2 = (k && hit(portalId(k))) || hit('L:' + n.id); if (h2) return h2;
+      }
+      return null;
+    }
+    function inspect() {
+      if (CODE.state !== 'on') return;
+      if (!CODE.vstate) { viewsInit(function () { IN.key = null; draw(); }); return; }
+      if (CODE.vstate !== 'on') return;
+      if (S.view !== 'map') { insp.hidden = true; IN.key = null; inSpin(false); return; }
+      var f = inFocus(), key = f ? f.id : '';
+      if (key === IN.key) return;
+      IN.key = key; IN.entries = f ? f.entries : []; IN.at = 0; IN.frame = 0;
+      insp.hidden = !f || S.view !== 'map'; inRender();
+    }
+    function inRender() {
+      var v = inView(); if (!v || insp.hidden) { inSpin(false); return; }
+      var r = CODE.recs[IN.key], e = IN.entries[IN.at];
+      inTitle.textContent = ''; inTitle.appendChild(el('small', null, 'Amoebius view · ' + (v.k === 'model' ? 'model' : 'screen') + (IN.entries.length > 1 ? ' ' + (IN.at + 1) + ' of ' + IN.entries.length : '')));
+      inTitle.appendChild(document.createTextNode(v.n + (r && r.n && r.n !== v.n && e.length > 1 ? ' › ' + r.n : '')));
+      inPrev.hidden = inNext.hidden = IN.entries.length < 2;
+      insp.dataset.k = v.k;
+      if (IN.min) { inSpin(false); return; }
+      var W = icv.clientWidth, H = icv.clientHeight, d = S.dpr || 1;
+      if (icv.width !== Math.round(W * d) || icv.height !== Math.round(H * d)) { icv.width = Math.round(W * d); icv.height = Math.round(H * d); }
+      ictx.setTransform(d, 0, 0, d, 0, 0); ictx.clearRect(0, 0, W, H);
+      if (v.k === 'model') paintModel(v, W, H); else paintScreen(v, e[1], W, H);
+      inSpin(v.k === 'model');
+      icv.setAttribute('aria-label', (v.k === 'model' ? 'The model ' : 'The layout of ') + v.n + ', drawn by Amoebius' + (v.k === 'model' ? '; drag to turn it.' : '.'));
+    }
+    function inSpin(on) {
+      var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (on && !still && !IN.spin) IN.spin = setInterval(function () { var v = inView(); if (!v || v.k !== 'model' || IN.drag) return; IN.frame = (IN.frame + 1) % v.frames; inRender(); }, 160);
+      if (!on && IN.spin) { clearInterval(IN.spin); IN.spin = null; }
+    }
+    function paintModel(v, W, H) {
+      var im = IN.imgs[v.src];
+      if (!im) { im = IN.imgs[v.src] = new Image(); im.onload = function () { inRender(); }; im.src = CODE.base + 'views/' + v.src; }
+      if (!im.complete || !im.naturalWidth) return;
+      var s = v.size, c = IN.frame % v.cols, rw = Math.floor(IN.frame / v.cols), side = Math.min(W, H);
+      ictx.drawImage(im, c * s, rw * s, s, s, (W - side) / 2, (H - side) / 2, side, side);
+    }
+    function paintScreen(v, row, W, H) {
+      var L = IN.ui[v.src];
+      if (!L) { IN.ui[v.src] = 'loading'; fetch(CODE.base + 'views/' + v.src).then(function (r) { return r.json(); }).then(function (j) { IN.ui[v.src] = j; inRender(); }).catch(function () {}); return; }
+      if (L === 'loading') return;
+      var C = S.colors, k = Math.min(W / L.w, H / L.h), ox = (W - L.w * k) / 2, oy = (H - L.h * k) / 2;
+      ictx.fillStyle = C.ground; ictx.fillRect(ox, oy, L.w * k, L.h * k);
+      // the screen as the game drew it, when the sweep kept a picture; the layout then only marks the node
+      var bg = v.bg && IN.imgs[v.bg];
+      if (v.bg && !bg) { bg = IN.imgs[v.bg] = new Image(); bg.onload = function () { inRender(); }; bg.src = CODE.base + 'views/' + v.bg; }
+      var pic = bg && bg.complete && bg.naturalWidth;
+      if (pic) { ictx.drawImage(bg, ox, oy, L.w * k, L.h * k); L = { w: L.w, h: L.h, rows: [], all: L.rows }; }
+      ictx.textBaseline = 'middle'; ictx.textAlign = 'left';
+      for (var i = 0; i < L.rows.length; i++) {
+        var q = L.rows[i], x = ox + q[0] * k, y = oy + q[1] * k, w = q[2] * k, h = q[3] * k, btn = /Button$|Link$/.test(q[6]);
+        if (q[4] === 'i') { ictx.fillStyle = C['surface-raised']; ictx.globalAlpha = 0.28; ictx.fillRect(x, y, w, h); ictx.globalAlpha = 1; }
+        if (btn) { ictx.strokeStyle = C.proposed; ictx.lineWidth = 1; ictx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1); }
+        if (q[4] === 't' && q[5]) {
+          var px = Math.max(5, Math.min(h * 0.8, 14)); if (px * 1 > h + 3) continue;
+          ictx.font = '600 ' + px + 'px "Chakra Petch", system-ui, sans-serif'; ictx.fillStyle = C.text;
+          ictx.fillText(q[5], x, y + h / 2);
+        }
+      }
+      ictx.strokeStyle = C.line; ictx.lineWidth = 1; ictx.strokeRect(ox + 0.5, oy + 0.5, L.w * k - 1, L.h * k - 1);
+      var allRows = L.all || L.rows;
+      if (row != null && allRows[row]) {
+        var z = allRows[row], hx = ox + z[0] * k, hy = oy + z[1] * k, hw = Math.max(4, z[2] * k), hh = Math.max(4, z[3] * k);
+        ictx.fillStyle = C.selection; ictx.globalAlpha = 0.25; ictx.fillRect(hx, hy, hw, hh); ictx.globalAlpha = 1;
+        ictx.strokeStyle = C.selection; ictx.lineWidth = 2; ictx.strokeRect(hx - 1, hy - 1, hw + 2, hh + 2);
+      }
+    }
+    function ping() { draw(); }
+    function covers(c) {
+      var w = S.w, h = S.h, x, y, r2 = c.r * c.r;
+      x = c.x; y = c.y;
+      return (x * x + y * y <= r2) && ((w - x) * (w - x) + y * y <= r2) && (x * x + (h - y) * (h - y) <= r2) && ((w - x) * (w - x) + (h - y) * (h - y) <= r2);
+    }
+    function kidCircle(k, c) { return { x: c.x + k.lx * c.r, y: c.y + k.ly * c.r, r: k.lr * c.r }; }
+    function upCircle(p, c) { var R = c.r / p.lr; return { x: c.x - p.lx * R, y: c.y - p.ly * R, r: R }; }
+    // where a place is on screen now, from the anchor (both are in the same Code ring)
+    function circleOf(p) {
+      var D = S.deep; if (!D) return p._s || null;
+      var up = [], q = p; while (q) { up.push(q); q = q.parent; }
+      var a = D.anchor, c = { x: D.x, y: D.y, r: D.r };
+      while (up.indexOf(a) < 0) { c = upCircle(a, c); a = a.parent; if (!a) return null; }
+      for (var i = up.indexOf(a) - 1; i >= 0; i--) c = kidCircle(up[i], c);
+      return c;
+    }
+    function reanchor() {
+      var D = S.deep, guard = 0, a0 = D.anchor;
+      while (guard++ < 200) {
+        var c = { x: D.x, y: D.y, r: D.r }, kids = D.anchor.kids, moved = false;
+        if (kids) for (var i = 0; i < kids.length; i++) {
+          var kc = kidCircle(kids[i], c);
+          if (kc.r > Math.max(S.w, S.h) * 0.7 && covers(kc)) { D.anchor = kids[i]; D.x = kc.x; D.y = kc.y; D.r = kc.r; moved = true; break; }
+        }
+        if (moved) continue;
+        if (D.anchor.parent && !covers(c)) { var pc = upCircle(D.anchor, c); D.anchor = D.anchor.parent; D.x = pc.x; D.y = pc.y; D.r = pc.r; continue; }
+        break;
+      }
+      if (D.anchor !== a0 && !CZ.sel) renderCrumbs();
+    }
+    function enterDeep(n, X, Y, R) {
+      var root = codeRoot(n);
+      S.deep = { node: n, anchor: root, x: X, y: Y, r: R };
+      S.sel = n.id; reanchor(); renderCrumbs();
+    }
+    // back on the loop map: the camera that puts the Code ring where it is on screen now
+    function leaveDeep(c) {
+      var n = S.deep.node; S.deep = null; CZ.sel = null;
+      var k = c.r / n.r; S.cam = { x: n.x - (c.x - S.w / 2) / k, y: n.y - (c.y - S.h / 2) / k, k: k };
+      S.sel = n.parent ? n.parent.id : S.sel; renderCrumbs(); renderSr();
+    }
+    function deepZoom(f, px, py) {
+      var D = S.deep; S.anim = null;
+      if (px == null) { px = S.w / 2; py = S.h / 2; }
+      D.x = px + (D.x - px) * f; D.y = py + (D.y - py) * f; D.r *= f; reanchor(); draw();
+    }
+    function deepPan(dx, dy) { var D = S.deep; D.x += dx; D.y += dy; reanchor(); draw(); }
+    // fly so the place fills the view (its card when it has nothing inside)
+    function deepFly(p, animate) {
+      if (!S.deep) return;
+      CZ.sel = p; renderCrumbs(); renderSr();
+      var reduce = !animate || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      var c0 = circleOf(p); if (!c0) return;
+      var fit = 0.43 * Math.min(S.w, S.h);
+      var kids = kidsOf(p, ping), info = p.info;
+      var tgt = { x: S.w / 2, y: S.h / 2 + 12, r: fit };
+      if (kids && !kids.length && info) tgt.r = fit / info.r * 0.9;
+      var t0 = performance.now(), dur = 520, lr0 = Math.log(c0.r), lr1 = Math.log(tgt.r);
+      function step(now) {
+        var u = reduce ? 1 : Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - u, 3);
+        var cur = S.deep && circleOf(p); if (!cur) { S.anim = null; CZ.flying = false; return; }
+        CZ.flying = u < 1;
+        var r = Math.exp(lr0 + (lr1 - lr0) * e), x = c0.x + (tgt.x - c0.x) * e, y = c0.y + (tgt.y - c0.y) * e;
+        var s = r / cur.r, D = S.deep;
+        D.x = x + (D.x - cur.x) * s; D.y = y + (D.y - cur.y) * s; D.r *= s; reanchor();
+        if (u >= 1) S.anim = null;
+      }
+      S.anim = step; tick();
+    }
+    function paintDeep() {
+      var D = S.deep, top = D.anchor, c = { x: D.x, y: D.y, r: D.r };
+      while (!covers(c) && top.parent) { c = upCircle(top, c); top = top.parent; }
+      if (!top.parent && !covers(c)) {
+        // the Code ring no longer fills the view: the loop map is around it again (stay anchored while flying)
+        if (!CZ.flying) { leaveDeep(c); return false; }
+        var n0 = D.node, k0 = c.r / n0.r; S.cam = { x: n0.x - (c.x - S.w / 2) / k0, y: n0.y - (c.y - S.h / 2) / k0, k: k0 };
+        CODE.hits = []; ctx.fillStyle = S.colors.ground; ctx.fillRect(0, 0, S.w, S.h); paintNode(S.tree.root, 1);
+        return true;
+      }
+      CODE.hits = [];
+      ctx.fillStyle = S.colors.ground; ctx.fillRect(0, 0, S.w, S.h);
+      paintPlace(top, c.x, c.y, c.r, 1);
+      if (CZ.sel) { var sc = circleOf(CZ.sel); if (sc && sc.r > 6 && sc.r < (S.w + S.h) * 2) { ctx.beginPath(); ctx.arc(sc.x, sc.y, sc.r + 3, 0, 6.2832); ctx.lineWidth = 2.5; ctx.strokeStyle = S.colors.selection; ctx.stroke(); } }
+      return true;
+    }
+    // One ring of the code tree, and what it holds when there is room to see it.
+    function paintPlace(pl, X, Y, R, alpha) {
+      if (R < 1.2) return;
+      if (X + R < -20 || X - R > S.w + 20 || Y + R < -20 || Y - R > S.h + 20) return;
+      var C = S.colors, r = pl.id ? rec(pl.id, ping) : null, col = placeTone(pl, r, C);
+      pl._s = { x: X, y: Y, r: R };
+      if (R < 4) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X, Y, Math.max(1.2, R * 0.7), 0, 6.2832); ctx.fill(); return; }
+      CODE.hits.push(pl);
+      var huge = R > (S.w + S.h) * 4;
+      var kids = R > 26 ? kidsOf(pl, ping) : pl.kids, maxChild = 0, i;
+      if (kids) for (i = 0; i < kids.length; i++) maxChild = Math.max(maxChild, kids[i].lr * R);
+      var showKids = kids && kids.length && maxChild >= 14;
+      if (!huge) {
+        ctx.beginPath(); ctx.arc(X, Y, R, 0, 6.2832);
+        ctx.fillStyle = pl.depth % 2 ? C['ground-deep'] : C.ground; ctx.fill();
+        ctx.lineWidth = pl.box ? 1 : 1.5; ctx.strokeStyle = col;
+        if (pl.box) ctx.setLineDash([3, 4]); ctx.stroke(); ctx.setLineDash([]);
+      }
+      // pictures: whole while the ring is small, fading as its children come up with their own
+      var ims = imagesOf(pl);
+      if (ims && !huge) paintImages(ctx, ims, X, Y, R * 0.97, showKids ? Math.max(0, 1 - (maxChild - 14) / 50) * 0.85 : 0.9, ping);
+      if (!showKids) {
+        if (R >= 16) {
+          var cl = cardLines(pl, r), fs = R > 70 ? 15 : R > 34 ? 12 : 10, nm = fitText(r && r.k === 'value' ? cl.name + ' = ' + r.v : cl.name, R * 1.7, fs, 'label');
+          if (nm) label(nm, X, Y, fs, C.text, 'label');
+          if (R > 44) label(fitText(cl.kick, R * 1.5, 10, 'label') || '', X, Y - 19, 10, col, 'label');
+          if (R > 60 && cl.rows[0]) { var t0 = fitText(cl.rows[0], R * 1.6, 11, 'read'); if (t0) label(t0, X, Y + 19, 11, C['text-soft'], 'read'); }
+          if (!kids && R > 26 && pl.id) label('…', X, Y + (R > 60 ? 36 : 16), 12, C['text-off'], 'label');
+        }
+        return;
+      }
+      if (pl.info) paintCard(pl, r, col, X + pl.info.x * R, Y + pl.info.y * R, pl.info.r * R);
+      for (i = 0; i < kids.length; i++) { var k = kids[i]; paintPlace(k, X + k.lx * R, Y + k.ly * R, k.lr * R, alpha); }
+    }
+    function paintCard(pl, r, col, X, Y, R) {
+      if (R < 14 || X + R < 0 || X - R > S.w || Y + R < 0 || Y - R > S.h) return;
+      var C = S.colors, cl = cardLines(pl, r), u = R / 150;   // the card is 300 units wide at reading size
+      if (pl.id && pl.id.slice(0, 2) === 'f:' && r && r.k === 'img' && r.im) { paintImages(ctx, r.im.slice(0, 1), X, Y, R * 0.9, 1, ping); return; }
+      if (u * 14 < 6) {
+        var fs = R > 70 ? 15 : R > 36 ? 12 : 10, nm = fitText(cl.name, R * 1.8, fs, 'label');
+        if (nm) label(nm, X, Y, fs, C.text, 'label');
+        if (R > 46) label(cl.kick, X, Y - 20, 10, col, 'label');
+        return;
+      }
+      ctx.save(); ctx.beginPath(); ctx.arc(X, Y, R, 0, 6.2832); ctx.fillStyle = C['ground-deep']; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.stroke(); ctx.clip();
+      ctx.translate(X, Y); ctx.scale(u, u); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      var y = -70;
+      ctx.font = font(12, 'label'); ctx.fillStyle = col; ctx.fillText(cl.kick, 0, y); y += 30;
+      ctx.font = font(22, 'read'); ctx.fillStyle = C.text;
+      wrapText(cl.name, 250, 26).forEach(function (ln) { ctx.fillText(ln, 0, y); y += 26; });
+      y += 6; ctx.font = font(13, 'read');
+      cl.rows.forEach(function (row, j) {
+        ctx.fillStyle = j === 0 && r && (r.k === 'value' || r.v != null) ? C.proposed : C['text-soft'];
+        wrapText(row, 250 - Math.max(0, y) * 0.5, 17).forEach(function (ln) { if (y < 132) ctx.fillText(ln, 0, y); y += 17; });
+      });
+      ctx.restore();
+    }
+    function wrapText(t, W, lh) {
+      var words = String(t).split(/\s+/), lines = [], line = '';
+      words.forEach(function (w) {
+        var tryL = line ? line + ' ' + w : w;
+        if (ctx.measureText(tryL).width > W && line) { lines.push(line); line = w; } else line = tryL;
+        while (ctx.measureText(line).width > W && line.length > 8) { var cut = Math.max(8, Math.floor(line.length * W / ctx.measureText(line).width)); lines.push(line.slice(0, cut)); line = line.slice(cut); }
+      });
+      if (line) lines.push(line);
+      return lines;
+    }
+    function codeHit(px, py) {
+      var best = null;
+      CODE.hits.forEach(function (p) { var s = p._s; if (!s || s.r < 6) return; var dx = px - s.x, dy = py - s.y; if (dx * dx + dy * dy <= s.r * s.r && (!best || p.depth >= best.depth)) best = p; });
+      return best;
+    }
+    // a click on a code ring from the loop map: step into its Code ring, then fly
+    function codeClick(px, py, portalHit) {
+      var p = codeHit(px, py); if (!p) return false;
+      if (!S.deep) {
+        var root = p; while (root.parent) root = root.parent;
+        var n = null; Object.keys(S.tree.all).some(function (id) { var m = S.tree.all[id]; if (m.kind === 'code' && CODE.roots[m.id] === root) { n = m; return true; } return false; });
+        if (!n || !n._s) return false;
+        enterDeep(n, n._s.x, n._s.y, n._s.r);
+      }
+      deepFly(p, true); return true;
+    }
+    function deepCrumbs() {
+      if (!S.deep) return;
+      var chain = [], p = CZ.sel || S.deep.anchor; while (p) { chain.unshift(p); p = p.parent; }
+      chain.shift();
+      if (chain.length > 7) chain = chain.slice(0, 1).concat([{ box: '…', _gap: 1 }], chain.slice(-5));
+      chain.forEach(function (q) {
+        crumbs.appendChild(el('span', 'la-sep', '›'));
+        var b = el('button', 'la-crumb', !q.parent && !q._gap ? 'Code' : q.box || labelOf({ id: q.id, label: q.label })); b.type = 'button';
+        if (q._gap) { crumbs.appendChild(el('span', 'la-sep', '…')); return; }
+        if (q === CZ.sel) b.setAttribute('aria-current', 'true');
+        b.addEventListener('click', function () { deepFly(q, true); });
+        crumbs.appendChild(b);
+      });
+    }
+    function deepSr() {
+      var p = CZ.sel; if (!p) return '';
+      var cl = cardLines(p, p.id ? CODE.recs[recIdOf(p.id)] && rec(p.id, ping) : null);
+      return [cl.name, cl.kick].concat(cl.rows).join('. ');
+    }
+    // the loop map's pictures: a loop shows its code's pictures until its children are big enough to show their own
+    function paintLoopImages(n, X, Y, R, maxChild) {
+      if (!CODE.idx || R < 10 || R > (S.w + S.h) * 2) return;
+      var ims = CODE.idx.loopImages[n.codeKey || codeKeyOf(n)]; if (!ims) return;
+      var a = maxChild >= 16 ? Math.max(0, 1 - (maxChild - 16) / 40) * 0.4 : 0.75;
+      paintImages(ctx, ims, X, Y, R * 0.97, a, ping);
+    }
 
     // ---------- notes and suggestions ----------
     // Kept in the artifact's shared store (the db capability), so they outlive a republish and a Claude session can
@@ -494,11 +1104,12 @@ body { background: var(--ground); color: var(--text); }
       N.rev++; countNotes(); if (S.view === 'notes') renderTable(); draw();
       if (!N.user) return;
       var ids = {}; N.list.forEach(function (x) { if (x.by) ids[x.by] = 1; });
+      W.req.forEach(function (x) { if (x.by) ids[x.by] = 1; }); Object.keys(W.dec).forEach(function (k) { if (W.dec[k].by) ids[W.dec[k].by] = 1; });
       var arr = Object.keys(ids); if (!arr.length) return;
       N.user.profiles(arr).then(function (ps) {
         var changed = false;
         arr.forEach(function (id) { var nm = ps[id] && ps[id].name; if (nm && (!N.names[id] || N.names[id].name !== nm)) { N.names[id] = { name: nm }; changed = true; } });
-        if (changed) { N.rev++; if (S.view === 'notes') renderTable(); draw(); }
+        if (changed) { N.rev++; if (S.view === 'notes' || S.view === 'board') renderTable(); draw(); }
       });
     }
     function connectNotes() {
@@ -508,7 +1119,8 @@ body { background: var(--ground); color: var(--text); }
         N.db = r[0]; N.user = r[1];
         if (!N.db) { N.state = 'off'; return; }
         N.state = 'on'; noteBtn.hidden = false; viewBtns.notes.hidden = false; renderLegend();
-        if (N.user) N.user.me().then(function (m) { N.me = m; if (S.view === 'notes') renderTable(); });
+        if (N.user) N.user.me().then(function (m) { N.me = m; if (S.view === 'notes' || S.view === 'board') renderTable(); });
+        connectWork();
         function dead() { N.state = 'off'; N.db = null; noteBtn.hidden = true; comp.hidden = true; notesChanged(); }
         N.db.collection('notes').onSnapshot(function (snap) {
           N.list = snap.docs.map(function (d) {
@@ -526,7 +1138,7 @@ body { background: var(--ground); color: var(--text); }
       });
     }
     // the composer: the one place text is typed, a small form over the map
-    var comp = el('form', 'la-compose'); comp.hidden = true; wrap.appendChild(comp);
+    var comp = el('form', 'la-compose'); comp.hidden = true; stage.appendChild(comp);
     var cTitle = el('p', 'la-ctitle'); comp.appendChild(cTitle);
     var cSeg = el('div', 'la-seg'); cSeg.setAttribute('role', 'group'); cSeg.setAttribute('aria-label', 'Kind'); comp.appendChild(cSeg);
     var cKind = 'note', cBtns = {}, cTarget = null;
@@ -534,6 +1146,12 @@ body { background: var(--ground); color: var(--text); }
       var b = el('button', 'la-btn', k[1]); b.type = 'button'; b.addEventListener('click', function () { setKind(k[0]); cText.focus(); });
       cBtns[k[0]] = b; cSeg.appendChild(b);
     });
+    var cName = el('input', 'la-ctext la-cname'); cName.id = 'la-idea-name'; cName.maxLength = 80; cName.placeholder = 'A short name for the idea';
+    var cNameLab = el('label', 'la-sr', 'Name'); cNameLab.htmlFor = 'la-idea-name'; comp.appendChild(cNameLab); comp.appendChild(cName);
+    var cArea = el('select', 'la-btn'); cArea.id = 'la-idea-area'; cArea.setAttribute('aria-label', 'Area');
+    (M.areas || []).forEach(function (a) { var o = el('option', null, a.name); o.value = a.id; o.title = a.is; cArea.appendChild(o); });
+    comp.appendChild(cArea);
+    var cMode = 'note', cStep = null;
     var cLab = el('label', 'la-sr', 'Your note or suggestion'); cLab.htmlFor = 'la-note-text'; comp.appendChild(cLab);
     var cText = el('textarea', 'la-ctext'); cText.id = 'la-note-text'; cText.rows = 4; cText.maxLength = 2000; comp.appendChild(cText);
     var cRow = el('div', 'la-crow'); comp.appendChild(cRow);
@@ -544,19 +1162,55 @@ body { background: var(--ground); color: var(--text); }
       cKind = k; cBtns.note.setAttribute('aria-pressed', k === 'note' ? 'true' : 'false'); cBtns.suggest.setAttribute('aria-pressed', k === 'suggest' ? 'true' : 'false');
       cText.placeholder = k === 'suggest' ? 'What should change here, and to what?' : 'What should a reader of this loop know?';
     }
+    function composerMode(m) { cMode = m; cSeg.hidden = m !== 'note'; cName.hidden = cArea.hidden = m !== 'idea'; }
+    function openMove(e, step) {
+      if (!N.db || !e) return;
+      composerMode('move'); cTarget = e; cStep = step; cErr.textContent = ''; cText.value = '';
+      var d = canDecide();
+      cTitle.textContent = (d ? STEP[step][0] : STEP[step][1]) + ': ' + e.name;
+      cText.placeholder = step === 'drop' ? 'Why drop it? (kept in the record)' : d ? 'Anything the builder should know? (optional)' : 'Why now? (optional)';
+      cSave.textContent = d ? STEP[step][0] : 'Ask';
+      comp.hidden = false; cText.focus();
+    }
+    function openIdea() {
+      if (!N.db) return;
+      composerMode('idea'); cTarget = null; cStep = 'idea'; cErr.textContent = ''; cText.value = ''; cName.value = '';
+      if (S.area && AREA[S.area]) cArea.value = S.area;
+      cTitle.textContent = 'A new idea, in any part of the product';
+      cText.placeholder = 'What should we make, for whom, and why?'; cSave.textContent = 'Add idea';
+      comp.hidden = false; cName.focus();
+    }
     function openComposer(n, kind) {
       if (!N.db || !n) return;
+      composerMode('note'); cSave.textContent = 'Save';
       cTarget = n; setKind(kind || 'note'); cErr.textContent = '';
       var lname = ''; M.layers.forEach(function (l) { if (l.id === S.layer) lname = l.name; });
       cTitle.textContent = 'On ' + n.name + ' · ' + termOf(n) + ' · written on the ' + lname + ' layer';
       comp.hidden = false; cText.focus();
     }
-    function closeComposer() { comp.hidden = true; cv.focus(); }
+    function closeComposer() { comp.hidden = true; if (S.view === 'map') cv.focus(); }
     cCancel.addEventListener('click', closeComposer);
     comp.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeComposer(); });
     comp.addEventListener('submit', function (e) {
       e.preventDefault();
       var t = cText.value.trim();
+      function fail(err) { cSave.disabled = false; cErr.textContent = err && err.code === 'quota_exceeded' ? 'The store is full. Delete old notes first.' : err && (err.code === 'permission_denied' || err.code === 'not_granted') ? 'You cannot do that here.' : 'Not saved. Try again.'; }
+      function ok() { cSave.disabled = false; cText.value = ''; closeComposer(); }
+      if (cMode === 'move') {
+        if (!N.db || !cTarget) return;
+        if (cStep === 'drop' && !t) { cErr.textContent = 'Say why, so the reason is kept.'; return; }
+        cSave.disabled = true;
+        (canDecide() ? decide(cStep, cTarget, t) : ask(cStep, cTarget, t)).then(ok, fail);
+        return;
+      }
+      if (cMode === 'idea') {
+        var nm = cName.value.trim();
+        if (!nm || !t) { cErr.textContent = 'Give it a name and a line on what it is.'; return; }
+        cSave.disabled = true;
+        var s = stamp();
+        N.db.collection('requests').add({ step: 'idea', target: slug(nm) + '-' + Date.now().toString(36).slice(-4), name: nm.slice(0, 80), area: cArea.value, note: t.slice(0, 2000), by: s.by, at: s.at }).then(ok, fail);
+        return;
+      }
       if (!t || !cTarget || !N.db) { cErr.textContent = 'Write something first.'; return; }
       cSave.disabled = true;
       N.db.collection('notes').add({ loop: noteKey(cTarget), name: cTarget.name, layer: S.layer, kind: cKind, text: t.slice(0, 2000), by: (N.me && N.me.id) || null, at: new Date().toISOString() })
@@ -579,6 +1233,163 @@ body { background: var(--ground); color: var(--text); }
       S.view = 'map'; syncBar(); renderAll(); resize(); S.sel = hit.id; renderCrumbs(); renderScale(); renderSr(); focusInfo(hit, false);
     }
 
+    // ---------- the work board: ask, decide, and new ideas ----------
+    // Anyone who can use the page asks for a move (requests) or adds an idea; only an editor decides a move
+    // (decisions, write admin). The scheduled steward session applies decisions and ideas to the YAML through
+    // loop_atlas.py (`apply`), opens the pull request and marks each one in `applied`. PROCESS.md.
+    var W = { req: [], dec: {}, app: {} }, MN = {}, MI = {}, AREA = {};
+    (M.nodes || []).forEach(function (n) { MN[n.id] = n; });
+    (M.items || []).forEach(function (n) { MI[n.id] = n; });
+    (M.areas || []).forEach(function (a) { AREA[a.id] = a; });
+    var STEP = { plan: ['Plan', 'Ask to plan', 'plan'], develop: ['Build', 'Ask to build', 'build'], drop: ['Drop', 'Ask to drop', 'drop'], idea: ['', '', 'add'], decline: ['', '', 'decline'] };
+    function canDecide() { return !!(N.me && N.me.canEdit); }
+    // one entry per thing that can move: a loop, an item, a proposal P<n>
+    function workEntries() {
+      var out = [], term = {};
+      M.tiers.forEach(function (t) { term[t.id] = t.term; });
+      function add(key, name, where, area, o, kind) {
+        var stage = o.build ? 'building' : (o.plan && o.plan.s === 'decided') ? 'planned' : o.prop ? 'proposed' : null;
+        if (stage) out.push({ key: key, name: name, where: where, area: area, stage: stage, kind: kind,
+          text: o.build ? o.build.what : stage === 'planned' ? o.plan.note : o.prop.note, build: o.build || null });
+      }
+      (M.nodes || []).forEach(function (n) { add(n.id, n.name, term[n.tier], 'loops', n, 'loop'); });
+      (M.items || []).forEach(function (n) { add(n.id, n.name, (AREA[n.area] || {}).name || n.area, n.area, n, 'item'); });
+      (M.proposals || []).forEach(function (p) {
+        var st = p.stage || 'proposed';
+        if (st === 'proposed' || st === 'planned' || st === 'building')
+          out.push({ key: p.id, name: p.id + ' ' + p.title, where: 'Proposal', area: 'loops', stage: st, kind: 'proposal', text: p.what, build: st === 'building' ? { s: 'building', branch: p.branch } : null });
+      });
+      return out;
+    }
+    // what the map already holds about a target: a pending ask, or a decision not yet in the model
+    function pendingFor(key) {
+      var r = null;
+      W.req.forEach(function (x) { if (x.target === key && x.step !== 'idea' && !W.dec[x.id]) r = { t: who(x.by) + ' asked to ' + STEP[x.step][2] + ' this.', req: x }; });
+      Object.keys(W.dec).forEach(function (id) {
+        var d = W.dec[id];
+        if (d.target === key && d.step !== 'decline' && !W.app[id]) r = { t: who(d.by) + ' decided to ' + STEP[d.step][2] + ' this. It goes into the model on the next steward run.' };
+      });
+      return r;
+    }
+    function nextSteps(e) { return e.stage === 'proposed' ? ['plan', 'develop', 'drop'] : e.stage === 'planned' ? ['develop', 'drop'] : e.stage === 'building' ? ['drop'] : []; }
+    function stamp() { return { by: (N.me && N.me.id) || null, at: new Date().toISOString() }; }
+    function ask(step, e, note) {
+      var s = stamp();
+      return N.db.collection('requests').add({ step: step, target: e.key, name: e.name, note: note || '', by: s.by, at: s.at });
+    }
+    function decide(step, e, note, reqId) {
+      var s = stamp(), data = { step: step, target: e.key, name: e.name, note: note || '', by: s.by, at: s.at };
+      if (reqId) { data.req = reqId; return N.db.doc('decisions/' + reqId).set(data); }
+      return N.db.collection('decisions').add(data);
+    }
+    function workChanged() { N.rev++; if (S.view === 'board') renderTable(); draw(); notesChanged(); }
+    function connectWork() {
+      N.db.collection('requests').onSnapshot(function (snap) {
+        W.req = snap.docs.map(function (d) {
+          var b = d.data() || {};
+          return { id: d.id, step: String(b.step || ''), target: String(b.target || ''), name: String(b.name || ''), area: String(b.area || ''),
+            note: String(b.note || '').slice(0, 2000), by: typeof b.by === 'string' ? b.by : null, at: String(b.at || '') };
+        }).filter(function (x) { return STEP[x.step]; }).sort(function (a, b) { return a.at < b.at ? -1 : a.at > b.at ? 1 : 0; });
+        workChanged();
+      }, function () {});
+      N.db.collection('decisions').onSnapshot(function (snap) {
+        W.dec = {}; snap.docs.forEach(function (d) { var b = d.data() || {}; if (STEP[b.step]) W.dec[d.id] = { step: String(b.step), target: String(b.target || ''), name: String(b.name || ''), note: String(b.note || ''), by: typeof b.by === 'string' ? b.by : null, at: String(b.at || ''), req: b.req || null }; });
+        workChanged();
+      }, function () {});
+      N.db.collection('applied').onSnapshot(function (snap) {
+        W.app = {}; snap.docs.forEach(function (d) { var b = d.data() || {}; W.app[d.id] = { ok: b.ok !== false, msg: String(b.msg || ''), pr: String(b.pr || ''), at: String(b.at || '') }; });
+        workChanged();
+      }, function () {});
+    }
+    function slug(s) { return (String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'idea').replace(/^[^a-z]/, 'i$&'); }
+    // the rows a loop's card shows under "Move it along"
+    function moveRows(id) {
+      var rows = [], e = null;
+      workEntries().forEach(function (x) { if (x.key === id) e = x; });
+      if (!e) {
+        rows.push({ t: 'Nothing is proposed or planned here. Suggest a change first.', st: 'soft' });
+        return rows;
+      }
+      rows.push({ lead: e.stage === 'building' ? 'Building' : e.stage === 'planned' ? 'Planned' : 'Proposed', t: e.build && e.build.branch ? 'on ' + e.build.branch : '', leadSt: 'prop' });
+      var p = pendingFor(e.key);
+      if (p) { rows.push({ t: p.t, st: 'prop' }); return rows; }
+      nextSteps(e).forEach(function (st) {
+        rows.push({ t: '→ ' + (canDecide() ? STEP[st][0] : STEP[st][1]), act: function () { openMove(e, st); } });
+      });
+      return rows;
+    }
+    function renderBoard() {
+      var on = N.state === 'on', dec = canDecide();
+      table.appendChild(el('p', 'la-lede', 'Where every idea stands, for the loops and for any other part of the product. Ideas start as proposals, get planned, then built; building one opens a build order that a session takes into the game. ' +
+        (!on ? 'Asking and deciding work on the full-page map.' : dec ? 'You can decide: Plan, Build and Drop act at once, and you approve or decline what others ask for.' : 'Ask to plan, build or drop anything here; the model’s owner decides. Anyone can add a new idea.') +
+        ' A scheduled Claude session puts decisions and ideas into the model and opens the pull request.'));
+      var tools = el('div', 'la-crow'); table.appendChild(tools);
+      if (on) { var nb = el('button', 'la-btn la-cta', '+ New idea'); nb.type = 'button'; nb.addEventListener('click', openIdea); tools.appendChild(nb); }
+      var fl = el('label', 'la-sr', 'Area'); fl.htmlFor = 'la-area-f'; tools.appendChild(fl);
+      var fs = el('select', 'la-btn'); fs.id = 'la-area-f';
+      [['', 'Every area'], ['loops', 'Gameplay loops']].concat((M.areas || []).map(function (a) { return [a.id, a.name]; })).forEach(function (o) {
+        var op = el('option', null, o[1]); op.value = o[0]; if ((S.area || '') === o[0]) op.selected = true; fs.appendChild(op);
+      });
+      fs.addEventListener('change', function () { S.area = fs.value || null; renderTable(); });
+      tools.appendChild(fs);
+      function inArea(a) { return !S.area || S.area === a; }
+      function card(cls, title, meta, text, acts, go) {
+        var d = el('div', 'la-note' + cls), head = el('p', 'la-nhead'); d.appendChild(head);
+        if (go) { var g = el('button', 'la-link', title); g.type = 'button'; g.addEventListener('click', go); head.appendChild(g); } else head.appendChild(el('b', null, title));
+        head.appendChild(el('span', 'la-nmeta', meta));
+        if (text) d.appendChild(el('p', 'la-ntext', text));
+        if (acts.length) { var a = el('div', 'la-nacts'); acts.forEach(function (x) { var b = el('button', 'la-btn', x[0]); b.type = 'button'; b.addEventListener('click', x[1]); a.appendChild(b); }); d.appendChild(a); }
+        return d;
+      }
+      function group(title, list) { if (!list.length) return; table.appendChild(el('h4', 'la-h', title + ' (' + list.length + ')')); list.forEach(function (d) { table.appendChild(d); }); }
+      function goTo(e) {
+        if (e.kind !== 'loop' || !MN[e.key]) return null;
+        return function () { if (S.layer !== 'prop' && e.stage === 'proposed') setLayer('prop'); if (!S.tree.all[e.key]) return; setView('map'); select(e.key, true); };
+      }
+      var byKey = {}; workEntries().forEach(function (e) { byKey[e.key] = e; });
+      var myId = N.me && N.me.id;
+      // asks waiting for a decision
+      var waiting = W.req.filter(function (r) { return r.step !== 'idea' && !W.dec[r.id] && inArea(byKey[r.target] ? byKey[r.target].area : 'loops'); }).reverse().map(function (r) {
+        var e = byKey[r.target] || { key: r.target, name: r.name, kind: 'loop' }, acts = [];
+        if (dec) { acts.push(['Approve', function () { decide(r.step, e, r.note, r.id); }]); acts.push(['Decline', function () { decide('decline', e, '', r.id); }]); }
+        if (dec || (myId && r.by === myId)) acts.push(['Withdraw', function () { N.db.doc('requests/' + r.id).delete().catch(function () {}); }]);
+        return card(' sug', who(r.by) + ' asks to ' + STEP[r.step][2] + ' ' + (r.name || r.target), day(r.at), r.note, acts, goTo(e));
+      });
+      group('Waiting for a decision', waiting);
+      // decided or added on the map, not yet in the model
+      var going = [];
+      Object.keys(W.dec).forEach(function (id) {
+        var d = W.dec[id]; if (d.step === 'decline' || W.app[id]) return;
+        going.push([d.at, card(' sug', who(d.by) + ' decided to ' + STEP[d.step][2] + ' ' + d.name, day(d.at) + ' · goes into the model on the next steward run', d.note, [])]);
+      });
+      W.req.forEach(function (r) {
+        if (r.step !== 'idea' || W.app[r.id] || !inArea(r.area)) return;
+        var acts = (dec || (myId && r.by === myId)) ? [['Withdraw', function () { N.db.doc('requests/' + r.id).delete().catch(function () {}); }]] : [];
+        going.push([r.at, card(' sug', 'New idea: ' + r.name, ((AREA[r.area] || {}).name || r.area) + ' · ' + who(r.by) + ' · ' + day(r.at) + ' · goes onto the Proposed layer on the next steward run', r.note, acts)]);
+      });
+      N.list.forEach(function (x) { if (N.verdicts[x.id] === 'accepted' && inArea('loops')) going.push([x.at, card(' sug', 'Suggestion on ' + (x.name || x.loop), who(x.by) + ' · accepted · goes onto the Proposed layer on the next steward run', x.text, [])]); });
+      group('Decided, going into the model', going.sort(function (a, b) { return a[0] < b[0] ? 1 : -1; }).map(function (x) { return x[1]; }));
+      // the model's own stages
+      [['building', 'Building: build orders'], ['planned', 'Planned'], ['proposed', 'Proposed']].forEach(function (g) {
+        var list = workEntries().filter(function (e) { return e.stage === g[0] && inArea(e.area); }).map(function (e) {
+          var p = on ? pendingFor(e.key) : null, acts = [];
+          if (on && !p) nextSteps(e).forEach(function (st) { acts.push([dec ? STEP[st][0] : STEP[st][1], function () { openMove(e, st); }]); });
+          var meta = e.where + (e.build ? ' · ' + e.build.s + (e.build.branch ? ' on ' + e.build.branch : '') + (e.build.at ? ' since ' + e.build.at : '') : '') + (p ? ' · ' + p.t : '');
+          return card(e.stage === 'proposed' ? ' sug' : '', e.name, meta, e.text, acts, goTo(e));
+        });
+        group(g[1], list);
+      });
+      // settled on the map
+      var settled = [];
+      Object.keys(W.app).forEach(function (id) {
+        var a = W.app[id], d = W.dec[id], r = null; W.req.forEach(function (x) { if (x.id === id) r = x; });
+        var name = (d && d.name) || (r && r.name) || id, what = d ? STEP[d.step][2] : r ? STEP[r.step][2] : 'move';
+        settled.push([a.at, el('p', 'la-nmeta', day(a.at) + ' · ' + what + ' ' + name + ': ' + (a.ok ? (a.pr ? 'in ' + a.pr : 'in the model') : 'could not be applied (' + a.msg + ')'))]);
+      });
+      Object.keys(W.dec).forEach(function (id) { var d = W.dec[id]; if (d.step === 'decline') settled.push([d.at, el('p', 'la-nmeta', day(d.at) + ' · declined: ' + d.name + ' (' + who(d.by) + ')')]); });
+      group('Settled', settled.sort(function (a, b) { return a[0] < b[0] ? 1 : -1; }).slice(0, 15).map(function (x) { return x[1]; }));
+    }
+
     // ---------- state changes ----------
     function cur() { return S.tree.all[S.sel] || S.tree.root; }
     function rebuild() {
@@ -599,6 +1410,7 @@ body { background: var(--ground); color: var(--text); }
     function setView(v) { S.view = v; syncBar(); renderAll(); if (v === 'map') { resize(); refocus(); } }
     function select(id, zoom) {
       var n = S.tree.all[id]; if (!n) return;
+      if (S.deep) leaveDeep({ x: S.w / 2, y: S.h / 2, r: Math.hypot(S.w, S.h) * 0.6 });
       S.sel = id; renderCrumbs(); renderScale(); renderSr();
       if (!zoom || S.view !== 'map') { draw(); return; }
       if (n.children.length) focus(n, true); else focusInfo(n, true);
@@ -637,9 +1449,10 @@ body { background: var(--ground); color: var(--text); }
     }
     function focusInfo(n, animate) { if (!S.w) return; S.onInfo = true; focusRect(cardRect(n), animate); }
     var raf = 0;
-    function tick() { if (raf) return; raf = requestAnimationFrame(function (now) { raf = 0; if (S.anim) S.anim(now); paint(); if (S.anim) tick(); }); }
+    function tick() { if (raf) return; raf = requestAnimationFrame(function (now) { raf = 0; if (S.anim) S.anim(now); paint(); inspect(); if (S.anim) tick(); }); }
     function draw() { tick(); }
     function zoomBy(f, px, py) {
+      if (S.deep) { deepZoom(f, px, py); return; }
       S.anim = null;
       if (px == null) { px = S.w / 2; py = S.h / 2; }
       var wx = (px - S.w / 2) / S.cam.k + S.cam.x, wy = (py - S.h / 2) / S.cam.k + S.cam.y;
@@ -739,6 +1552,7 @@ body { background: var(--ground); color: var(--text); }
         if (!nlist.length) ns.rows.push({ t: 'None yet.', st: 'soft' });
         ns.rows.push({ t: '+ Add a note', act: function () { openComposer(n, 'note'); } });
         ns.rows.push({ t: '+ Suggest a change', act: function () { openComposer(n, 'suggest'); } });
+        if (MN[n.id]) { var ws = sec('Move it along'); moveRows(n.id).forEach(function (r) { ws.rows.push(r); }); }
       }
       sec('At this tier, ask').rows.push({ t: T.ask });
       if (n.src && n.src.length) { var ss = sec('Sources'); n.src.forEach(function (s) { ss.rows.push({ t: s, st: 'soft', brk: 1 }); }); }
@@ -747,7 +1561,7 @@ body { background: var(--ground); color: var(--text); }
     function renderSr() {
       var d = infoDoc(cur()), t = [d.name, d.kicker, d.is];
       d.secs.forEach(function (s) { t.push(s.title + ': ' + s.rows.map(function (r) { return (r.lead ? r.lead + ' ' : '') + (r.t || ''); }).join(' ')); });
-      sr.textContent = t.join('. ');
+      sr.textContent = S.deep && CZ.sel ? deepSr() : t.join('. ');
     }
 
     // ---------- a loop's card: laid out in its own units, then scaled into its slot ----------
@@ -888,7 +1702,7 @@ body { background: var(--ground); color: var(--text); }
     // ---------- painting ----------
     function readColors() {
       var cs = getComputedStyle(root), c = {};
-      ['ground', 'ground-deep', 'line', 'text', 'text-soft', 'text-off', 'selection', 'proposed', 'planned', 'hole', 'tier-0', 'tier-1', 'tier-2', 'tier-3', 'tier-4', 'tier-5', 'tier-6', 'tier-7'].forEach(function (k) {
+      ['ground', 'ground-deep', 'surface', 'surface-raised', 'line', 'text', 'text-soft', 'text-off', 'selection', 'proposed', 'planned', 'hole', 'tier-0', 'tier-1', 'tier-2', 'tier-3', 'tier-4', 'tier-5', 'tier-6', 'tier-7'].forEach(function (k) {
         c[k] = (cs.getPropertyValue('--' + k) || '').trim() || '#888';
       });
       S.colors = c;
@@ -922,13 +1736,27 @@ body { background: var(--ground); color: var(--text); }
       S.L = LETTER[S.layer];
       ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
       ctx.fillStyle = S.colors.ground; ctx.fillRect(0, 0, S.w, S.h);
-      S.hits = []; S.infoHits = [];
+      S.hits = []; S.infoHits = []; CODE.hits = [];
+      if (S.deep && paintDeep()) return;
+      ctx.fillStyle = S.colors.ground; ctx.fillRect(0, 0, S.w, S.h);
       paintNode(S.tree.root, 1);
+      if (S.deep) { paintDeep(); return; }
       paintEdges();
       var n = cur(); if (n) paintSelected(n);
     }
+    // a loop's Code ring: the code tree inside it, and the hand-off to the anchored camera once it fills the view
+    function paintPortal(n, X, Y, R) {
+      if (R < 1.1 || X + R < -40 || X - R > S.w + 40 || Y + R < -40 || Y - R > S.h + 40) return;
+      n._s = { x: X, y: Y, r: R };
+      if (R >= 5) S.hits.push(n);
+      if (!S.deep && covers({ x: X, y: Y, r: R })) { enterDeep(n, X, Y, R); return; }
+      if (R < 5) { ctx.fillStyle = S.colors.selection; ctx.beginPath(); ctx.arc(X, Y, Math.max(1.4, R * 0.7), 0, 6.2832); ctx.fill(); return; }
+      paintPlace(codeRoot(n), X, Y, R, 1);
+      if (R > 20) { ctx.beginPath(); ctx.arc(X, Y, R + 2, 0, 6.2832); ctx.lineWidth = 1; ctx.strokeStyle = S.colors.selection; ctx.stroke(); }
+    }
     function paintNode(n, alpha) {
       var X = sx(n.x), Y = sy(n.y), R = n.r * S.cam.k;
+      if (n.kind === 'code') { paintPortal(n, X, Y, R); return; }
       if (R < 1.1) return;
       if (X + R < -40 || X - R > S.w + 40 || Y + R < -40 || Y - R > S.h + 40) return;
       var a = alpha * (n.ghost ? 0.6 : 1) * (dimmed(n) ? 0.22 : 1);
@@ -948,6 +1776,7 @@ body { background: var(--ground); color: var(--text); }
         ctx.strokeStyle = col;
         if (n.ghost) ctx.setLineDash([2, 5]); else if (dark) ctx.setLineDash([9, 5]); else ctx.setLineDash([]);
         ctx.stroke(); ctx.setLineDash([]);
+        paintLoopImages(n, X, Y, R, maxChild);
         if ((n.kind === 'place' || n.kind === 'hub') && R > 30) { ctx.beginPath(); ctx.arc(X, Y, R - 5, 0, 6.2832); ctx.lineWidth = 1; ctx.stroke(); }
         if (n.lead && R > 12) { ctx.beginPath(); ctx.arc(X, Y, R + 4, 0, 6.2832); ctx.lineWidth = 1; ctx.strokeStyle = S.colors.text; ctx.stroke(); }
         // beads
@@ -1105,18 +1934,22 @@ body { background: var(--ground); color: var(--text); }
       var ids = Object.keys(ptrs);
       if (drag && drag.pinch && ids.length === 2) {
         var a = ptrs[ids[0]], b = ptrs[ids[1]], dist = Math.hypot(a.x - b.x, a.y - b.y);
+        if (S.deep) { deepZoom(dist / (drag.last || drag.pinch), (a.x + b.x) / 2, (a.y + b.y) / 2); drag.last = dist; return; }
         zoomBy((drag.k * dist / drag.pinch) / S.cam.k, (a.x + b.x) / 2, (a.y + b.y) / 2);
       } else if (drag && !drag.pinch) {
         var dx = e.offsetX - drag.x, dy = e.offsetY - drag.y;
         if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
-        if (drag.moved) { S.cam.x = drag.cx - dx / S.cam.k; S.cam.y = drag.cy - dy / S.cam.k; draw(); }
+        if (drag.moved && S.deep) { deepPan(e.offsetX - (drag.lx == null ? drag.x : drag.lx), e.offsetY - (drag.ly == null ? drag.y : drag.ly)); drag.lx = e.offsetX; drag.ly = e.offsetY; }
+        else if (drag.moved) { S.cam.x = drag.cx - dx / S.cam.k; S.cam.y = drag.cy - dy / S.cam.k; draw(); }
       }
     });
     function up(e) {
       var was = drag; delete ptrs[e.pointerId];
       if (!Object.keys(ptrs).length) drag = null;
       if (!was || was.moved || was.pinch) return;
+      if (S.deep) { codeClick(e.offsetX, e.offsetY); return; }
       var h = hit(e.offsetX, e.offsetY);
+      if (h && h.n.kind === 'code') { if (!codeClick(e.offsetX, e.offsetY)) { enterDeep(h.n, h.n._s.x, h.n._s.y, h.n._s.r); deepFly(codeRoot(h.n), true); } return; }
       if (!h) { select('era', true); return; }
       if (h.region && h.region.act) { h.region.act(); return; }
       if (h.region && h.region.go) { select(h.region.go, true); return; }
@@ -1134,6 +1967,17 @@ body { background: var(--ground); color: var(--text); }
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', function (e) { delete ptrs[e.pointerId]; drag = null; });
     cv.addEventListener('wheel', function (e) { e.preventDefault(); zoomBy(Math.exp(-e.deltaY * 0.0016), e.offsetX, e.offsetY); }, { passive: false });
     cv.addEventListener('keydown', function (e) {
+      if (S.deep) {
+        var q = CZ.sel || S.deep.anchor;
+        if (e.key === 'ArrowUp' || e.key === 'Escape' || e.key === 'Backspace') { if (q.parent) deepFly(q.parent, true); else { var dn = S.deep.node; S.deep = null; CZ.sel = null; select(dn.parent.id, true); } }
+        else if (e.key === 'ArrowDown' || e.key === 'Enter') { var ks = kidsOf(q, ping); if (ks && ks.length) deepFly(ks[0], true); }
+        else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && q.parent && q.parent.kids) { var sib = q.parent.kids, j = sib.indexOf(q); deepFly(sib[(j + (e.key === 'ArrowRight' ? 1 : sib.length - 1)) % sib.length], true); }
+        else if (e.key === '+' || e.key === '=') deepZoom(1.5);
+        else if (e.key === '-') deepZoom(1 / 1.5);
+        else if (e.key === 'Home' || e.key === '0') { S.deep = null; CZ.sel = null; select('era', true); }
+        else return;
+        e.preventDefault(); return;
+      }
       var n = cur(), p = n.parent, i;
       if (e.key === 'ArrowUp' || e.key === 'Escape' || e.key === 'Backspace') { if (S.onInfo && n.children.length) focus(n, true); else if (p) select(p.id, true); }
       else if (e.key === 'ArrowDown' || e.key === 'Enter') { if (n.children.length) select(n.children[0].id, true); else focusInfo(n, true); }
@@ -1161,6 +2005,7 @@ body { background: var(--ground); color: var(--text); }
         b.addEventListener('click', function () { if (S.view !== 'map') setView('map'); select(p.id, true); });
         crumbs.appendChild(b);
       });
+      deepCrumbs();
     }
 
     // ---------- timescale strip ----------
@@ -1203,7 +2048,7 @@ body { background: var(--ground); color: var(--text); }
       var out = [], seenKit = false;
       (function walk(n) {
         if (n.kind === 'kit') { if (seenKit) return; seenKit = true; }
-        if (n.kind === 'vessel') return;
+        if (n.kind === 'vessel' || n.kind === 'code') return;
         out.push(n);
         n.children.forEach(walk);
       })(S.tree.root);
@@ -1221,7 +2066,7 @@ body { background: var(--ground); color: var(--text); }
     function goBtn(n) { var b = rowBtn(n, 'la-link', true); b.className = 'la-link'; b.textContent = n.name; return b; }
     function renderTable() {
       table.innerHTML = '';
-      if (S.view === 'ladder') renderLadder(); else if (S.view === 'drivers') renderDrivers(); else if (S.view === 'holes') renderHoles(); else if (S.view === 'notes') renderNotes();
+      if (S.view === 'ladder') renderLadder(); else if (S.view === 'drivers') renderDrivers(); else if (S.view === 'holes') renderHoles(); else if (S.view === 'notes') renderNotes(); else if (S.view === 'board') renderBoard();
     }
     function renderNotes() {
       if (N.state !== 'on') { table.appendChild(el('p', 'la-lede', N.state === 'loading' ? 'Loading notes.' : 'Notes are kept on the full-page map.')); return; }
@@ -1351,12 +2196,14 @@ body { background: var(--ground); color: var(--text); }
       S.dpr = Math.min(2, window.devicePixelRatio || 1); S.w = w; S.h = h;
       cv.width = Math.round(w * S.dpr); cv.height = Math.round(h * S.dpr); cv.style.width = w + 'px'; cv.style.height = h + 'px';
       if (first) { if (opts.card) focusInfo(cur(), false); else focus(cur(), false); } else { S.cam.k *= fitK(S.tree.root) / k0; draw(); }
+      inRender();
     }
     if (window.ResizeObserver) new ResizeObserver(resize).observe(root); else window.addEventListener('resize', resize);
-    if (window.MutationObserver) new MutationObserver(function () { readColors(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+    if (window.MutationObserver) new MutationObserver(function () { readColors(); draw(); inRender(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
     if (window.matchMedia) { var mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', function () { readColors(); draw(); }); }
 
     rebuild(); readColors(); syncBar(); renderAll(); resize(); connectNotes();
+    codeInit(function () { rebuild(); renderAll(); draw(); });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { Object.keys(S.tree.all).forEach(function (id) { S.tree.all[id]._lay = null; }); readColors(); draw(); });
     return { select: select, focusInfo: function (id) { var n = S.tree.all[id]; if (n) { S.sel = id; renderCrumbs(); renderScale(); focusInfo(n, false); } }, setLayer: setLayer, setVessel: setVessel, setView: setView, state: S };
   }
@@ -1386,7 +2233,7 @@ body { background: var(--ground); color: var(--text); }
     });
   }
 
-  window.LoopAtlas = {
+  window.LoopAtlas = { code: CODE,
     model: M, mount: mount, buildTree: buildTree, fmtSpan: fmtSpan,
     LoopAtlas: mount, TimescaleLadder: ladder, DriverChips: drivers,
     LoopRing: function (host, opts) { opts = opts || {}; opts.chrome = false; return mount(host, opts); }

@@ -48,6 +48,44 @@ A session that records a decision names the person whose word it was.
 A brand-new loop (not an edit to an existing one) is added by hand to the right `model/loops/*.yaml` with `in: x`
 and a `prop`; from there it moves like any other.
 
+## Beyond the loops: product work in any area
+
+The same steps run any kind of product work, not only gameplay loops. `model/items.yaml` holds **items** in areas
+(Game, App, AI, Art and sound, Launch, Tooling; add an area there when one is missing). An item has the loop's
+layers (`prop`, `plan`, `now`, `build`, `holes`) and an optional `loops` list of the loops it serves. A new idea is
+`loop_atlas.py idea <id> --area <area> --name "..." --note "..." --by <who>`: it starts on Proposed only, and from
+there `plan`, `develop`, `start`, `done` and `drop` take an item id like a loop id. An idea dropped before it was
+planned leaves the file.
+
+## From the map: anyone asks, the owner decides
+
+The map's **Board** view (https://claude.ai/artifact/8XkvFKuTFeEpRoLfp8QQpw) is the easy way in, with no CLI and no
+repo: it lists every build order, plan and proposal (loops, items and P1 to P12), with an area filter.
+
+| Who | Can do on the map | Stored in |
+| --- | --- | --- |
+| Anyone who can use the page | **+ New idea** in any area; a note or suggestion on a loop's card; **Ask to plan / build / drop** anything | `requests`, `notes` |
+| An editor of the page (the model's owner) | **Plan**, **Build**, **Drop** at once; **Approve** or **Decline** what others asked; accept a suggestion | `decisions`, `verdicts` (editors only) |
+| The steward session | Puts it into the model and marks it | `applied` (editors only) |
+
+A loop's card on the map has the same buttons under "Move it along". Brainstorming needs nobody's yes, so ideas and
+accepted suggestions go in as they are; planning and building come only from `decisions`, which only an editor can
+write, and the steward names that editor in the ledger. Nothing a request says is a decision.
+
+## The steward run
+
+A scheduled Claude session (daily) keeps the atlas moving; the `/loop-atlas` skill's "Steward run" is its routine:
+
+1. Exports the map's database and runs `loop_atlas.py gather` then `apply`: every decision and idea since the last
+   run lands in the YAML through the steps above, each logged with its map id (`ref`) so nothing applies twice.
+2. Brainstorms: reads what changed in the repo since its last run (design docs, playtest notes, the Code Atlas, the
+   drift `report`) and adds at most five proposals or holes where it finds a suggestion, an insight or a gap.
+3. Opens one pull request against `Docs/LoopAtlas/` with all of it and marks each map entry `applied` with the PR,
+   so the Board shows "in PR #n".
+4. Takes at most one queued build order into development: if its lane is free, `start` on a new branch, build it with
+   the area's skill and open a **draft** PR that also runs `done`. A person signs off and merges.
+5. Republishes the map when the model on `bleeding-edge` differs from the published page.
+
 ## Development: what a build order means for the game
 
 - A build order is the atlas asking the game to change. The session that takes one runs `start` with its branch,

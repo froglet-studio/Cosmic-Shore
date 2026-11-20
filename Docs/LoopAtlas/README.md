@@ -18,13 +18,17 @@ https://claude.ai/artifact/QUiM5ztvnHhkpWgsn4S43K.
 | `model/edges.yaml` | Links between loops that are not parent and child: `train`, `cross`, `feed`. |
 | `model/kit.yaml` | What every vessel's kit shares: roles per game type, the flight-feel pulse, the verb archetypes, which drivers each element serves. |
 | `model/proposals.yaml` | Proposals P1 to P12 and the loops each touches. |
+| `model/items.yaml` | Product work beyond the loops: the areas (Game, App, AI, ...) and the items in them, which move through the layers like loops. |
 | `model/fleet/<Vessel>.yaml` | One vessel: its verbs, combos (with nested `sub` loops), games, arenas and board. |
 | `schema.json` | JSON Schema for the assembled model. |
 | `model.json` | The assembled model, **generated**; never edit it by hand. Other tools read this. |
 | `page/atlas.template.html` | The published page with the model taken out. The map's runtime lives here. |
-| `PROCESS.md` | **How work moves**: Proposed is brainstorming, Planned is planning, Now is development; graduation and build orders. |
+| `PROCESS.md` | **How work moves**: Proposed is brainstorming, Planned is planning, Now is development; graduation and build orders; the map's Board (anyone asks, the owner decides) and the daily steward run. |
 | `ledger.jsonl` | One line per lifecycle step (who graduated what, when). Appended by the tool. |
 | `BOARD.md` | The atlas as a work board, **generated**: build orders, decided plans, proposals, holes, recent moves. |
+| `CODE.md` | **The Code Atlas**: how the map zooms from a loop into the whole codebase down to every value (equivalent places, no links), the data model, loading, the anchored camera, the pictures. |
+| `code/links.yaml` | Hand links from loops to the code that implements them (the automatic ones need none). |
+| `code-out/` | The Code Atlas build (`Tools/Build/code_atlas.py build`), **generated and ignored**; published beside the page as `code/`. |
 
 ## Editing the model
 

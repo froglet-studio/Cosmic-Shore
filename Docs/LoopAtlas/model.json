@@ -6252,5 +6252,38 @@
   "Wrasse"
  ],
  "defaultVessel": "Dolphin",
- "artifact": "https://claude.ai/artifact/1g4Xc6uSEt1EQFeQmHqsgs"
+ "artifact": "https://claude.ai/artifact/1g4Xc6uSEt1EQFeQmHqsgs",
+ "areas": [
+  {
+   "id": "game",
+   "name": "Game",
+   "is": "Gameplay that is not one loop on the map yet, such as a mode, a system or a feel."
+  },
+  {
+   "id": "app",
+   "name": "App",
+   "is": "The app around the game, such as menus, onboarding, the store and settings."
+  },
+  {
+   "id": "ai",
+   "name": "AI",
+   "is": "Vessel AIs, their training and the learning sweeps."
+  },
+  {
+   "id": "art",
+   "name": "Art and sound",
+   "is": "Models, icons, portraits, colour, music and sound."
+  },
+  {
+   "id": "launch",
+   "name": "Launch",
+   "is": "Platforms, stores, builds, live operations and analytics."
+  },
+  {
+   "id": "tooling",
+   "name": "Tooling",
+   "is": "The team's tools, such as studios, skills, Amoebius, CI and this atlas."
+  }
+ ],
+ "items": []
 }
