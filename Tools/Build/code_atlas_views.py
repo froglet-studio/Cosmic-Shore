@@ -66,7 +66,17 @@ def post(cmd: str, arg: str = "", timeout: int = 60) -> dict:
         return json.loads(r.read() or b"{}")
 
 
-def sweep(dest: Path) -> None:
+def sweep(dest: Path, attach: bool = False) -> None:
+    if attach:  # a player the person booted through Bootstrap (real profile data) is already on PORT
+        if post("state", timeout=5).get("scene") != "Menu_Main":
+            raise SystemExit(f"no player on Menu_Main at port {PORT}")
+        say("sweeping the attached player's Menu_Main ...")
+        post("ui_sweep", f"{dest};1920x1080;", timeout=3600)
+        n = len(list((dest / "ui").glob("*.jsonl")))
+        if not n:
+            raise SystemExit("the sweep wrote no layouts")
+        say(f"swept {n} views into {dest}")
+        return
     subprocess.run(["dotnet", "build", str(REPO / "Port/src/CosmicShore.Player"), "-v", "q"], check=True)
     dest.mkdir(parents=True, exist_ok=True)
     log = open(dest / "player.log", "w")
@@ -204,15 +214,36 @@ class Matcher:
         one of its prefabs, or (where the atlas lost the nesting, as under prefab instances) the one GameObject of
         that name below the last match, or the only one anywhere. An ambiguous name is skipped, never guessed."""
         cur, hit = None, None
-        for seg in path.split("/"):
+        segs = path.split("/")
+        for i, seg in enumerate(segs):
             cand = (self.kids[cur].get(seg) if cur else None) or self.roots.get(seg)
             if not cand:
                 many = self.any.get(seg, [])
                 below = [c for c in many if cur and self.under(c, cur)]
-                cand = below[:1] if len(below) == 1 else many[:1] if len(many) == 1 else None
+                cand = below[:1] if len(below) == 1 else many[:1] if len(many) == 1 else self.best(many, segs[:i])
             if cand:
                 cur = hit = cand[0]
         return hit
+
+    def best(self, many: list[str], before: list[str]) -> list[str] | None:
+        """Of several GameObjects with one name, the one whose own parents carry the most of the path's earlier names,
+        nearest first; None when two tie, so an ambiguous name is still never guessed."""
+        if not many or not before:
+            return None
+        want = set(before[-8:])
+        scored = []
+        for c in many:
+            names, p, n = [], self.recs.get(c, {}).get("p"), 0
+            while p and n < 32:
+                r = self.recs.get(p, {})
+                names.append(r.get("n", ""))
+                p, n = r.get("p"), n + 1
+            score = sum(1 for k, nm in enumerate(names[:8]) if nm in want for _ in [k])
+            scored.append((score, c))
+        scored.sort(key=lambda t: -t[0])
+        if scored[0][0] == 0 or (len(scored) > 1 and scored[1][0] == scored[0][0]):
+            return None
+        return [scored[0][1]]
 
 
 def screen_title(view: str, rows: list[dict]) -> str:
@@ -334,7 +365,13 @@ def build(out: Path, sweep_dir: Path) -> None:
         (vdir / "ui" / f"{view}.json").write_text(json.dumps({"w": 1920, "h": 1080, "rows": out_rows},
                                                              separators=(",", ":"), ensure_ascii=False))
         title = screen_title(view, rows)
-        views.append({"k": "ui", "n": title, "src": f"ui/{view}.json", "rows": len(out_rows)})
+        entry = {"k": "ui", "n": title, "src": f"ui/{view}.json", "rows": len(out_rows)}
+        shot = sweep_dir / "frames" / "ui" / f"{view}_1920x1080.png"
+        if shot.exists():  # the screen as the game drew it, under the layout
+            from PIL import Image
+            Image.open(shot).convert("RGB").resize((768, 432)).save(vdir / "ui" / f"{view}.webp", "WEBP", quality=78)
+            entry["bg"] = f"ui/{view}.webp"
+        views.append(entry)
         say(f"  {view}: {len(out_rows)} rects, {len(hits)} matched to atlas nodes")
 
     # Models.
@@ -426,6 +463,8 @@ def self_test() -> None:
         m.find("UI/Somewhere/Lost") == "o:x#1",  # the only GameObject of that name, nesting lost
         m.find("UI/Somewhere/Lost/Label") == "o:x#2",  # an ambiguous name, settled by the last match
         m.find("UI/Screens/Label") == "o:s#2",  # an ambiguous name with nothing to settle it is skipped
+        m.best(["o:x#2", "o:y#1"], ["UI", "Z"]) == ["o:y#1"],  # one name, settled by a parent the path names
+        m.best(["o:x#2", "o:y#1"], ["UI", "Q"]) is None,  # nothing to settle it: skipped, not guessed
     ]
     if not all(ok):
         raise SystemExit(f"self-test FAILED: {[i for i, v in enumerate(ok) if not v]}")
@@ -437,9 +476,11 @@ def main() -> None:
     ap.add_argument("cmd", choices=["sweep", "build", "self-test"])
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--sweep", type=Path, default=DEFAULT_SWEEP)
+    ap.add_argument("--attach", action="store_true",
+                    help="sweep: use a player already running on the control port (booted through Bootstrap)")
     a = ap.parse_args()
     if a.cmd == "sweep":
-        sweep(a.sweep)
+        sweep(a.sweep, a.attach)
     elif a.cmd == "build":
         build(a.out, a.sweep)
     else:

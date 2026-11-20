@@ -64,10 +64,13 @@ the view of that node or of the nearest node above it that has one, and changes 
 
 A web page cannot run the engine, so the views are drawn ahead of time by `Tools/Build/code_atlas_views.py`:
 `sweep` boots the game (xvfb, the .NET 10 SDK; about ten minutes), `build` renders the turntables and maps the nodes
-(about a minute), into `code-out/views/` (1.6 MB). Known gaps: the sweep runs without the boot scene, so screens show
-default data (Pilot, 0 crystals) and the Hangar, Profile and Store screens were caught mid-transition and are left
-out; a sweep path is matched to the atlas by name, so a name that is ambiguous where the atlas lost a prefab's nesting
-is skipped (the bar is matched, its Arcade button is not); flora built in code (no FBX) have no model yet.
+(about a minute), into `code-out/views/`, with each screen's real frame as its picture. The published views come
+from a player booted through Bootstrap with a fresh profile (birth year, consent declined, a username), so screens
+carry real data (the Hangar shows its vessel, Profile its pilot); start it with `--control-port 47811`, then
+`code_atlas_views.py sweep --attach`. A bare `sweep` opens Menu_Main directly and gets default data. Store came out
+identical to Home and is folded into it. A sweep path is matched to the atlas by name; where the atlas lost a prefab's
+nesting, an ambiguous name is settled by its parents' names and skipped only on a tie. Known gap: flora grown in code
+(no FBX) show only their seed, because drawing them needs the game's own code running (engine follow-up).
 
 ## The data model: canonical nodes, placements made while you zoom
 

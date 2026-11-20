@@ -856,6 +856,11 @@ body { background: var(--ground); color: var(--text); }
       if (L === 'loading') return;
       var C = S.colors, k = Math.min(W / L.w, H / L.h), ox = (W - L.w * k) / 2, oy = (H - L.h * k) / 2;
       ictx.fillStyle = C.ground; ictx.fillRect(ox, oy, L.w * k, L.h * k);
+      // the screen as the game drew it, when the sweep kept a picture; the layout then only marks the node
+      var bg = v.bg && IN.imgs[v.bg];
+      if (v.bg && !bg) { bg = IN.imgs[v.bg] = new Image(); bg.onload = function () { inRender(); }; bg.src = CODE.base + 'views/' + v.bg; }
+      var pic = bg && bg.complete && bg.naturalWidth;
+      if (pic) { ictx.drawImage(bg, ox, oy, L.w * k, L.h * k); L = { w: L.w, h: L.h, rows: [], all: L.rows }; }
       ictx.textBaseline = 'middle'; ictx.textAlign = 'left';
       for (var i = 0; i < L.rows.length; i++) {
         var q = L.rows[i], x = ox + q[0] * k, y = oy + q[1] * k, w = q[2] * k, h = q[3] * k, btn = /Button$|Link$/.test(q[6]);
@@ -868,8 +873,9 @@ body { background: var(--ground); color: var(--text); }
         }
       }
       ictx.strokeStyle = C.line; ictx.lineWidth = 1; ictx.strokeRect(ox + 0.5, oy + 0.5, L.w * k - 1, L.h * k - 1);
-      if (row != null && L.rows[row]) {
-        var z = L.rows[row], hx = ox + z[0] * k, hy = oy + z[1] * k, hw = Math.max(4, z[2] * k), hh = Math.max(4, z[3] * k);
+      var allRows = L.all || L.rows;
+      if (row != null && allRows[row]) {
+        var z = allRows[row], hx = ox + z[0] * k, hy = oy + z[1] * k, hw = Math.max(4, z[2] * k), hh = Math.max(4, z[3] * k);
         ictx.fillStyle = C.selection; ictx.globalAlpha = 0.25; ictx.fillRect(hx, hy, hw, hh); ictx.globalAlpha = 1;
         ictx.strokeStyle = C.selection; ictx.lineWidth = 2; ictx.strokeRect(hx - 1, hy - 1, hw + 2, hh + 2);
       }
