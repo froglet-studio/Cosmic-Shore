@@ -41,7 +41,7 @@ jobs:
     name: Static validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
 
@@ -60,7 +60,7 @@ jobs:
     runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
           # Do NOT clean: the default `git clean -ffdx` deletes Library/ and
@@ -114,7 +114,7 @@ jobs:
             -testResults "$GITHUB_WORKSPACE/test-results.xml" \
             -logFile - || exit 1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: editmode-results-${{ github.run_id }}
@@ -144,7 +144,7 @@ jobs:
             echo "have=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         if: steps.key.outputs.have == 'true'
         with:
           fetch-depth: 0

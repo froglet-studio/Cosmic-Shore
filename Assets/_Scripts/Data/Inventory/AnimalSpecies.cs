@@ -104,6 +104,11 @@ namespace CosmicShore.Data
         Ram = 84,
         Deer = 85,
         Kangaroo = 86,
+
+        // Players' own pilots (Garrett, 2026-11-20): painted only, past LastRollable like the animals above.
+        Cordyceps = 87,
+        VenusFlytrap = 88,
+        Ratel = 89,
     }
 
     /// <summary>Names and combos for <see cref="AnimalSpecies"/>.</summary>
