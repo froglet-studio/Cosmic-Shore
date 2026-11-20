@@ -593,8 +593,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        static float Sq(float x) => x * x;
-
         protected override void AcceptImpactee(IImpactor impactee)
         {    
             var impactVector = explosion.CalculateImpactVector(impactee.Transform.position);
@@ -603,14 +601,6 @@ namespace CosmicShore.Gameplay
             {
                 case VesselImpactor vesselImpactee:
                     if (vesselImpactee.Vessel.VesselStatus.Domain == explosion.Domain && !affectSelf)
-                        break;
-
-                    // A blast whose harm to vessels reaches less far than the blast itself (the
-                    // Grizzly bomb's VesselReach) spares a pilot caught beyond that reach. Not
-                    // recorded in the ledger: the reach is a distance, not a once-per-blast fact.
-                    if (explosion != null && explosion.VesselReach < 1f &&
-                        (vesselImpactee.Transform.position - transform.position).sqrMagnitude >
-                        Sq(explosion.MaxScale * 0.5f * explosion.VesselReach))
                         break;
 
                     // Recorded BEFORE the effect container is consulted: a pilot who passed the

@@ -123,9 +123,6 @@ namespace CosmicShore.Gameplay
         public IVessel Vessel { get; protected set; }
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
-        /// <summary>The fraction of the blast's radius inside which it harms other vessels (1 = all of it).
-        /// See <see cref="InitializeStruct.VesselReach"/>.</summary>
-        public float VesselReach { get; protected set; } = 1f;
 
         /// <summary>The visual wavefront's full-expansion time (authored on the prefab,
         /// or the per-instance <see cref="InitializeStruct.DurationOverride"/>).</summary>
@@ -339,7 +336,6 @@ namespace CosmicShore.Gameplay
             Vessel = initStruct.Vessel;
             Domain = initStruct.OwnDomain;
             MaxScale = initStruct.MaxScale;
-            VesselReach = initStruct.VesselReach > 0f ? Mathf.Min(1f, initStruct.VesselReach) : 1f;
 
             // Optional per-instance duration (0 = keep the authored value). Callers
             // that want a fixed physical EXPANSION SPEED rather than a fixed sweep
@@ -648,15 +644,6 @@ namespace CosmicShore.Gameplay
             /// their shields. null (the default) keeps the authored value. Same shape as
             /// <see cref="AffectSelfOverride"/>.</summary>
             public bool? DevastatingOverride;
-
-            /// <summary>How far the blast HARMS OTHER VESSELS, as a fraction of its own radius:
-            /// a pilot caught farther out than <c>MaxScale / 2 x VesselReach</c> takes nothing from
-            /// it (no hit, no debuff, no shove), while the prisms it reaches and the firing vessel's
-            /// own launch stay on the full radius. 0 (the default) means the full radius, so every
-            /// caller that does not set it is unchanged. The Grizzly's bomb sets it (Garrett,
-            /// 2026-11-19: how hard its bombs harm others is a lever separate from how far they
-            /// fling the Grizzly and from what they do to prisms).</summary>
-            public float VesselReach;
         }
     }
 }

@@ -446,7 +446,6 @@ namespace CosmicShore.Gameplay
                     SpawnPosition       = pos,
                     SpawnRotation       = rot,
                     AffectSelfOverride  = false,
-                    VesselReach         = config.VesselHarmReach,
                 });
                 spawned.Detonate();
                 if (blastSeconds <= 0f) blastSeconds = spawned.Duration;

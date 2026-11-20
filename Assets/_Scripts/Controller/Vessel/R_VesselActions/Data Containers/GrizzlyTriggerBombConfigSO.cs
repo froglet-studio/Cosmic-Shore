@@ -66,8 +66,6 @@ namespace CosmicShore.Gameplay
         float minBlastScale = 50f;
         [SerializeField, Tooltip("Blast scale of a maximum bomb (the cannon's full charge is 120). Reach is half the scale: 100 u.")]
         float maxBlastScale = 200f;
-        [SerializeField, Tooltip("How far the blast HARMS OTHER VESSELS, as a fraction of its reach (1 = the whole blast). A rival caught beyond it takes no hit, debuff or shove. The blast's reach on prisms and the Grizzly's own launch stay on the full blast (Garrett, 2026-11-19: harm to others, effect on prisms and self-fling are three independent levers).")]
-        [Range(0.05f, 1f)] float vesselHarmReach = 1f;
 
         [Header("Self launch (away from the bomb)")]
         [SerializeField, Tooltip("A Grizzly inside its own blast is thrown AWAY FROM THE BOMB at blast scale / ExplosionDuration x this, capped by Self Launch Ceiling. 4.5 = three times the 1.5 it first shipped at (design ask, 2026-10-08).")]
@@ -114,7 +112,6 @@ namespace CosmicShore.Gameplay
         public AOEExplosion[] AoePrefabs => aoePrefabs;
         public float MinBlastScale => minBlastScale;
         public float MaxBlastScale => maxBlastScale;
-        public float VesselHarmReach => vesselHarmReach;
         public float AiFireStickBand => aiFireStickBand;
         public float AiFreezeDistance => aiFreezeDistance;
         public float AiDetonateBehindDistance => aiDetonateBehindDistance;

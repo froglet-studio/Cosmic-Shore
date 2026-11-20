@@ -130,8 +130,6 @@ MonoBehaviour:
   bombSpeed: 90
   bombFuse: 10
   bombRearmSeconds: 0
-  bombVesselHarmReach: 1
-  bombUsesMissile: 0
   bombBlastRadius:
     Enabled: 1
     Value: 50

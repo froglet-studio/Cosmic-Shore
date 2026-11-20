@@ -211,10 +211,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float bombFuse = 10f;
         [Tooltip("Seconds after a bomb bursts before the next can be thrown: still one bomb at a time, then this wait (Garrett 2026-11-19 amended his 2026-10-21 \"no cooldown\" rule for Broadside balance). 0 = no wait, the shipped round-6 behaviour.")]
         [SerializeField, Min(0f)] float bombRearmSeconds = 0f;
-        [Tooltip("How far the bomb's burst HARMS other vessels, as a fraction of its blast radius (Charge). Prisms still take the whole radius (Space), so its volume in the Mass-Space games is untouched (Garrett 2026-11-19, the Grizzly's split). 1 = the whole radius, the shipped behaviour.")]
-        [SerializeField, Range(0.05f, 1f)] float bombVesselHarmReach = 1f;
-        [Tooltip("The bomb draws one missile from its seat's magazine, so it is resource gated: crystals refill it like any missile (Garrett 2026-11-19, \"make the missiles better but resource gated\"). Off = the bomb is free, the shipped round-6 behaviour.")]
-        [SerializeField] bool bombUsesMissile;
         [Tooltip("lab bombBlastR x Space: the blast radius (u). 50 at rest (the Grizzly's mid-charge MaxScale 100); the lab's kSpace 0.8 is 76.7 at level 10.")]
         [SerializeField] ElementalFloat bombBlastRadius = ElementalFloat.Multiplier(50f, 76.666667f, Element.Space, 25f);
         [Tooltip("The bomb's projectile scale (GrizzlyTriggerBombConfig 2.5-5 by charge; the middle).")]
@@ -381,8 +377,6 @@ namespace CosmicShore.Gameplay
         public float BombSpeed => bombSpeed;
         public float BombFuse => bombFuse;
         public float BombRearmSeconds => bombRearmSeconds;
-        public float BombVesselHarmReach => bombVesselHarmReach;
-        public bool BombUsesMissile => bombUsesMissile;
         public float BombBlastRadiusAt(IVesselStatus status) => bombBlastRadius.EvaluateLive(status);
         public float BombScale => bombScale;
         public Color BombColor => ColorTrace.Retrace(ColorTrace.World, bombColor);
