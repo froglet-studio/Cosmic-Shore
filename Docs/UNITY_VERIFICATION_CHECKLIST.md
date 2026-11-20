@@ -1714,6 +1714,25 @@ not blasting; I4 Legendary 205 -> 175 s; `SWITCHBACK.md` "Step 2"). NOT run: the
 3. Switchback I3 with AI Dolphins (AI Diagnose panel, "AI plan" overlay): a blasting AI flies at its key without
    swinging out behind it, and its nose turns onto the door as it reaches the key.
 
+### 🔴 Fulmen burns every prism on the bolt's path - the Stoat's and the Meerkat's omni crystal (`Ys-bleeding-edge`, 2026-11-20, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `FulmenSystem.BurnAlong` burns in two passes: prisms within `pathRadius` (16 u, new on `FulmenConfig`)
+of a stream always burn (a spent ignite budget makes the segment wait a frame; `PrismBurnManager`'s 192 cap does not
+refuse them, `Ignite(.., overCap)`), and the halo out to `burnRadius` (200 u) burns while the burn manager has room.
+Before, segments past the frame's 96 ignites were skipped and the 192 cap refused the rest. `IgniteRemote` (a client's
+replay) no longer applies the cap. Compiled with Unity's Roslyn (player + editor) from a worktree; the EditMode tests
+and the game have not run. Affects: the Meerkat (same `FulmenConfig`); the Grizzly's claw burn is unchanged.
+
+1. Run the EditMode tests `FulmenMathTests` and `PrismBurnSpreadTests`. **Pass:** all green.
+2. Toybox, Stoat, rival trails or flora in the cell: collect an omni crystal. **Pass:** one bolt from the cell's centre;
+   every rival prism a stream visibly crosses catches fire (none left standing on the line) and is gone about 12 s later.
+3. Collect three omni crystals within 12 s in dense rival mass. **Pass:** each bolt still burns the prisms on its own
+   path (before: the second and third burnt almost nothing while the first 192 were still burning).
+4. Same strike with the Profiler on (`Fulmen.Tick`, `Fulmen.Burn`). **Pass:** no frame above a few ms; `Prisms Burnt` on
+   the `FulmenConfig` inspector reads the strike's count.
+5. Host + one client, the host's Stoat collects an omni crystal. **Pass:** the client sees the same prisms burn and go.
+6. Your own trail and your team's prisms on the bolt's path. **Expected:** they do NOT burn (own-domain rule, unchanged).
+
 ### 🔴 Wide-radius prism queries run as one Burst pass - Fulmen's burn freeze (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `PrismSpatialIndex.QuerySphere` / `QuerySegment` take `LinearCapsuleScanJob` (Burst, `.Run()`, marker
