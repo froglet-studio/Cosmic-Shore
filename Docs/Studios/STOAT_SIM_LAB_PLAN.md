@@ -1,5 +1,7 @@
 # Stoat sim lab — what the AI measured, and the plan from here
 
+> **History, not the current Stoat (marked 2026-11-20, Yash).** What ships is the swing: one small black hole, the stick picks the exit angle, one slingshot. The source of truth is `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md` (the banner at its top) and `STOAT_DIPOLE.md` ("The swing", "One slingshot"). Kept as a record: the sim lab's plan was for the dipole sling, which the swing replaced.
+
 Status: **studio round 14** (2026-10-09; the AI and the course ladder were reworked in round 14: §2, "The intensity ladder and the round-14 AI"). Nothing here is in `Assets/` yet; the game still runs the orbit
 sling. Companion docs: `STOAT_PLAY_STYLES.md` (the five styles) and `README.md` (the studio rounds).
 

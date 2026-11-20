@@ -115,7 +115,7 @@ STOAT_FBX_GUID = "0ef0b84d93774ac39ddc699c59d0821a"     # Stoat.fbx, the hull th
 MEERKAT_FBX_GUID = "81b9ac1e02714f0fa49b1eef2bb2d9f5"   # Meerkat.fbx, its own hull on the Stoat's rig (2026-11-03)
 # 2026-11-11 (Yash: "replace this ability with current fulmen omni crystal ability. Replace meerkat's networked tunnel with
 # this fulmen ... Archive the networked wormhole for now, maybe we modify and use it in future somewhere else"): the
-# omnicrystal is FULMEN (the Stoat's omni ability until its giant white hole), a container entry like any vessel's; the
+# omnicrystal is FULMEN (the Stoat's omni ability too; the giant white hole planned to replace it there was dropped, 2026-11-20), a container entry like any vessel's; the
 # soliton's own omni abilities (the Rift, the network) are parked behind omniOn = 0, code and assets kept
 FULMEN_EFFECT_GUID = "a45807f7b21b4c898e6646a9865c0bba"  # FulmenByCrystalEffect (Environment/Fulmen/README.md)
 FULMEN_ICON_GUID = "765ce4af4495cbc8f4dc73bac4a1b5ff"    # Stoat/Core/Stoat_Fulmen.png, the Fulmen omni card
