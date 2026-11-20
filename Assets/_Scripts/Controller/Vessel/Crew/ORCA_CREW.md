@@ -115,6 +115,23 @@ Tests: `OrcaUpgradeTests`.
 (`Tools/Build/icon_kit/specs/orca.py`), with the level-5 card swapped in when the upgrade unlocks: Flown Missiles /
 Rearm, Danger Shield / Bulwark, Burst / Chain Burst, Boost Tank / Afterburner. Tests: `OrcaHUDTests`.
 
+## The helm's charge (Garrett, 2026-11-20)
+
+"The helm seat should be able to join the fight by charging things like a real orca ... it should give the helm some
+more fun, allow it to race, and give it more orca identity." The helm's boost (RT) is a **charge** now:
+
+- **Its own speed.** `chargeMultiplier` is the hull's boost multiplier while the helm charges (0 = the prefab's x5, the
+  burn before the charge). It is on the config, not the prefab, so a judge can tune it, and Breach's course reads it.
+- **A ram.** A rival hull the charging nose passes within `chargeRamReach` of (past the hull's radius, the charge's one
+  radius; the path since last frame is tested, so a fast charge cannot step over a hull) is rammed: a scored **Strike** (Strike only, Garrett 2026-11-20: no refill, no plough through prisms),
+  `chargeRamPetals` petals per element, petals only and no shove (the LOCKED PvP rule; `ThresherExecutor.TryHitVessel`
+  is the pattern), once per rival every `chargeRamCooldown`, decided on the machine that owns the hull
+  (`OrcaCrew.StepRam` / `Ram`). `chargeRamSound` ships empty.
+- **The AI helm charges prey.** With a rival inside `aiRamRange` and the nose within `aiBurnAlignDegrees` of it, the AI
+  helm charges however near it is (`OrcaCrewAI.RivalInRamLine`); the course burn rule is unchanged otherwise.
+
+Every field at 0 is the shipped burn. The tuned values and what they measured are in the PR that set them.
+
 ## The seats
 
 The swap gesture (D-pad left / right, the left / right arrow keys, a two-finger swipe) steps helm -> gunners -> the next hull

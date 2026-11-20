@@ -13,15 +13,20 @@ MonoBehaviour:
   m_Name: OrcaCrewConfig
   m_EditorClassIdentifier: 
   hullRadius: 9
-  boostTank: 3
+  boostTank: 6
   boostRefill:
     Enabled: 1
-    Value: 0.25
-    Min: 0.25
-    Max: 0.35
+    Value: 2
+    Min: 2
+    Max: 2.8
     element: 4
     UseFloor: 1
-    Floor: 0.125
+    Floor: 1
+  chargeMultiplier: 14
+  chargeRamReach: 6
+  chargeRamPetals: 1
+  chargeRamCooldown: 1
+  aiRamRange: 300
   rearmUpgradeElement: 1
   rearmSeconds: 12
   bulwarkUpgradeElement: 2
