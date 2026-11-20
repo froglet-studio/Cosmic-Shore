@@ -472,7 +472,7 @@ Shader "CosmicShore/SolitonTunnel"
                     }
                     if (_MWThroat.w > 0.0 && _MWThroat3.x > 0.0)
                     {
-                        float R = _MWThroat.z, kr = (length(q) - (R * 1.25 + 0.03)) / (0.02 + 0.12 * R);
+                        float R = _MWThroat.z, kr = (length(q) - (R * 1.25 + 0.03)) / (0.012 + 0.04 * R);   // a thin ring, however big
                         col += lerp(float3(1.0, 1.0, 1.0), _MWThroatTint.rgb, saturate(_MWThroatTint.a))
                                * (_MWThroat3.x * _MWThroat.w * exp(-kr * kr));
                     }
