@@ -1073,6 +1073,11 @@ namespace CosmicShore.Gameplay
         public float PrismsGrownBy => _prismsGrownBy;
         float _prismsGrownBy = 1f;
 
+        /// <summary>How many times its authored DANGER prisms have grown with it (1 on a kaiju: a stinger keeps its
+        /// species' size).</summary>
+        public float DangerPrismsGrownBy => _dangerGrownBy;
+        float _dangerGrownBy = 1f;
+
         /// <summary>
         /// Grow the body <paramref name="factor"/> times, its prisms only <paramref name="prismFactor"/> times: the frame
         /// (spindles, heart reach, spacing) takes the full size and each prism keeps nearer its species' own. A body
@@ -1084,16 +1089,21 @@ namespace CosmicShore.Gameplay
             GrowBody(factor);
             if (factor <= 0f || Mathf.Approximately(factor, 1f) || prismFactor <= 0f || prismFactor >= factor) return;
             float settle = prismFactor / factor;
+            // A DANGER plate (a stinger: the Brittlestar's five arm tips are flat 4 x 4 x 1 plates) keeps its species'
+            // size outright. Grown even 3x it was a big flat square, and the danger shader draws an arrow in a square on
+            // it (Shombith, 2026-11-20: "these sims like shapes are still there on the kaiju").
+            float dangerSettle = 1f / factor;
             var prisms = _bodyPrisms ?? CacheBodyPrisms();
             for (int i = 0; i < prisms.Length; i++)
             {
                 var hp = prisms[i];
                 if (!hp || hp.destroyed) continue;
-                Vector3 size = hp.TargetScale * settle;
+                Vector3 size = hp.TargetScale * (IsAuthoredDanger(hp) ? dangerSettle : settle);
                 hp.AdmitTargetScale(size);
                 hp.TargetScale = size;
             }
             _prismsGrownBy *= settle;
+            _dangerGrownBy *= dangerSettle;
         }
 
         /// <summary>
@@ -1109,6 +1119,7 @@ namespace CosmicShore.Gameplay
             transform.localScale *= factor;
             _grownBy *= factor;
             _prismsGrownBy *= factor;
+            _dangerGrownBy *= factor;
             RebuildRig();
             ApplyHeartSize();
         }
@@ -1945,7 +1956,8 @@ namespace CosmicShore.Gameplay
                 var hp = prisms[i];
                 if (!hp || hp.destroyed) continue;
                 hp.LeaveAsSkeleton(skeletonParent, recycleWhenDestroyed: true);
-                if (grown > 1.01f) SettleToSpeciesSize(hp, grown);
+                float by = IsAuthoredDanger(hp) ? _dangerGrownBy : grown;
+                if (by > 1.01f) SettleToSpeciesSize(hp, by);
             }
         }
 
