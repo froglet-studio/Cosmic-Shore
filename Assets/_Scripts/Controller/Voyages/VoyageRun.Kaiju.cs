@@ -66,7 +66,7 @@ namespace CosmicShore.Gameplay
             var kaiju = CellLifeSpawnerBase.SpawnFaunaWithDomain(host, cfg.FaunaPrefab, ark.Position,
                 host.ControllingDomain, at, cfg);
             if (!kaiju) return;
-            kaiju.GrowBody(_def.KaijuScale);
+            kaiju.GrowBody(_def.KaijuScale, _def.KaijuPrismScale);   // the frame huge, its plates not
             RaidLeash.Hold(kaiju);
             _kaiju.Add(kaiju);
             if (_kaijuThisCrossing++ > 0 || Lines == null) return;   // one toast per crossing

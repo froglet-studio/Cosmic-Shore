@@ -1074,12 +1074,41 @@ namespace CosmicShore.Gameplay
         public float GrownBy => _grownBy;
         float _grownBy = 1f;
 
+        /// <summary>How many times its BODY PRISMS have grown with it (= <see cref="GrownBy"/> unless the grow named a
+        /// smaller prism factor).</summary>
+        public float PrismsGrownBy => _prismsGrownBy;
+        float _prismsGrownBy = 1f;
+
+        /// <summary>
+        /// Grow the body <paramref name="factor"/> times, its prisms only <paramref name="prismFactor"/> times: the frame
+        /// (spindles, heart reach, spacing) takes the full size and each prism keeps nearer its species' own. A body
+        /// prism is a thin plate, and one grown 12-14x read as a flat, featureless square bigger than the Ark's plates
+        /// (Shombith, 2026-11-20: on a living kaiju). A prism factor of 0 or above the body's grows the prisms with it.
+        /// </summary>
+        public void GrowBody(float factor, float prismFactor)
+        {
+            GrowBody(factor);
+            if (factor <= 0f || Mathf.Approximately(factor, 1f) || prismFactor <= 0f || prismFactor >= factor) return;
+            float settle = prismFactor / factor;
+            var prisms = _bodyPrisms ?? CacheBodyPrisms();
+            for (int i = 0; i < prisms.Length; i++)
+            {
+                var hp = prisms[i];
+                if (!hp || hp.destroyed) continue;
+                Vector3 size = hp.TargetScale * settle;
+                hp.AdmitTargetScale(size);
+                hp.TargetScale = size;
+            }
+            _prismsGrownBy *= settle;
+        }
+
         public void GrowBody(float factor)
         {
             if (factor <= 0f || Mathf.Approximately(factor, 1f)) return;
             if (_authoredRootScale.x < 0f) _authoredRootScale = transform.localScale;
             transform.localScale *= factor;
             _grownBy *= factor;
+            _prismsGrownBy *= factor;
             RebuildRig();
             ApplyHeartSize();
         }
@@ -1901,7 +1930,7 @@ namespace CosmicShore.Gameplay
             // settles back to its species' size where it lies. Kept at the grown size, a kaiju's skeleton was a field of
             // flat plates bigger than the Ark's own, standing in the open water beside it (Shombith, 2026-11-17: "what
             // are these big sims like structure?").
-            float grown = _grownBy;
+            float grown = _prismsGrownBy;
             var prisms = GetComponentsInChildren<HealthPrism>(true);
             for (int i = 0; i < prisms.Length; i++)
             {
