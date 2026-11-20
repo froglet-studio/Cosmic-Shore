@@ -40,10 +40,29 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         const string OfflineKey = "CosmicShore.OfflinePreferred";
         const float SettleSeconds = 15f;
         const int CaptureSeconds = 15;
-        const int MaxFrames = 120 * 120;   // two minutes at 120 Hz
+        const int MaxFrames = 120 * 600;   // two minutes at 600 fps (an uncapped PC), ten at 120 Hz
+        /// <summary>When each game's Profiler capture runs: <c>all</c> (default), <c>slow</c> (only a game whose p95 is over 16.7 ms or that had a frame over 50 ms) or <c>none</c>.</summary>
+        public const string CaptureExtraName = "csbenchcap";
+        /// <summary><c>1</c> measures with VSync off and no frame cap, so a PC's numbers are costs and not the monitor's rate.</summary>
+        public const string UncapExtraName = "csbenchuncap";
+        const string AllModes = "All";
+        const string MaelstromMode = "Maelstrom";
+        const float MaelstromRoundCapSeconds = 150f;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         struct Entry { public string Mode; public int Intensity; public float Seconds; }
+
+        // The frame watch: every frame since the last ResetWatch, whatever the runner is waiting on (a load, a return,
+        // a Maelstrom hub), so a freeze outside a measuring window is still counted.
+        int _wFrames, _wOver100, _wOver500, _wOver1000;
+        float _wMaxMs, _wStart;
+        // The scene-switch watch: the longest frame around the frame the active scene changed in (the Single load's activation).
+        string _scene = "";
+        string _switchFrom;
+        int _switchFramesLeft;
+        float _switchMaxMs, _prev1Ms, _prev2Ms;
+        string _captureWhen = "all";
+        bool _uncap;
 
         readonly float[] _frames = new float[MaxFrames];
         static readonly FrameTiming[] s_timings = new FrameTiming[1];
@@ -69,6 +88,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             string markers = ReadExtra(MarkersExtraName);
             r._markers = string.IsNullOrWhiteSpace(markers) ? "" : " " + MarkerBudget.ExtraMarkersPrefix + markers.Replace(" ", "");
             r._gfx = ReadExtra(GfxExtraName);
+            string cap = ReadExtra(CaptureExtraName);
+            if (!string.IsNullOrWhiteSpace(cap)) r._captureWhen = cap.Trim().ToLowerInvariant();
+            r._uncap = ReadExtra(UncapExtraName) == "1";
+            // A PC's player build shares Documents with the editor, which sends that folder's captures by itself: keep ours apart.
+            if (!Application.isMobilePlatform)
+                DiagnosticsHUD.OutputDirectoryOverride = Path.Combine(Application.persistentDataPath, OutputFolder, "diag_" + r._tag);
             // Offline (a local host): a Relay hiccup mid-game bounces the host to the menu and voids the run. Put back at the end.
             r._offlineWas = PlayerPrefs.GetInt(OfflineKey, 0);
             PlayerPrefs.SetInt(OfflineKey, 1);
@@ -123,14 +148,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             yield return WaitForMenu(180f);
             if (!InMenuWithPilot()) { Finish("the menu never gave a local pilot"); yield break; }
 
+            _entries = ExpandAll(_entries);
+            CSDebug.Log($"[PhoneBench] {_entries.Length} entries after expanding '{AllModes}'");
+
             for (int i = 0; i < _entries.Length; i++)
             {
                 var e = _entries[i];
                 if (!InMenuWithPilot())
                 {
-                    var loader = FindAnyObjectByType<SceneLoader>();
-                    if (loader) loader.ReturnToMainMenu();
-                    yield return WaitForMenu(120f);
+                    yield return ReturnToMenu(i > 0 ? _entries[i - 1] : e);
                     if (!InMenuWithPilot()) { Finish("the menu never came back"); yield break; }
                 }
                 yield return new WaitForSecondsRealtime(2f);
@@ -143,8 +169,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 var card = FindCard(e.Mode);
                 if (card == null) { WriteSkip(e, "no arcade card for this mode in this build"); continue; }
                 Configure(card, e);
+                ResetWatch();
                 _gameData.InvokeGameLaunch();
                 CSDebug.Log($"[PhoneBench] launching {e.Mode} I{e.Intensity}");
+                if (e.Mode.Equals(MaelstromMode, StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return MaelstromJourney(e);
+                    continue;
+                }
 
                 MiniGameControllerBase controller = null;
                 float deadline = Time.unscaledTime + 120f;
@@ -168,6 +200,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     while (!_gameData.IsTurnRunning && Time.unscaledTime < repress) yield return new WaitForSecondsRealtime(0.25f);
                 }
                 if (!_gameData.IsTurnRunning) { WriteSkip(e, "the game never started"); continue; }
+                WriteWatch(e, "load");   // launch to the turn running: the menu-to-game load and the Ready wait
 
                 yield return null;
                 string seat = "ai";
@@ -175,7 +208,172 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     seat = "idle: " + refusal;
                 yield return Measure(e, seat, false);
             }
+            if (!InMenuWithPilot() && _entries.Length > 0) yield return ReturnToMenu(_entries[_entries.Length - 1]);
             Finish("done");
+        }
+
+        void Update()
+        {
+            float ms = Time.unscaledDeltaTime * 1000f;
+            _wFrames++;
+            if (ms > _wMaxMs) _wMaxMs = ms;
+            if (ms > 100f) _wOver100++;
+            if (ms > 500f) _wOver500++;
+            if (ms > 1000f) _wOver1000++;
+
+            // A Single load's activation frame is reported one frame after the active scene changes, so take the
+            // longest of the two frames before the change and the four after it.
+            string scene = SceneManager.GetActiveScene().name;
+            if (scene != _scene)
+            {
+                if (_switchFramesLeft > 0) WriteSwitch();
+                _switchFrom = _scene;
+                _scene = scene;
+                _switchMaxMs = Mathf.Max(ms, Mathf.Max(_prev1Ms, _prev2Ms));
+                _switchFramesLeft = 4;
+            }
+            else if (_switchFramesLeft > 0)
+            {
+                if (ms > _switchMaxMs) _switchMaxMs = ms;
+                if (--_switchFramesLeft == 0) WriteSwitch();
+            }
+            _prev2Ms = _prev1Ms;
+            _prev1Ms = ms;
+        }
+
+        void WriteSwitch()
+        {
+            _switchFramesLeft = 0;
+            if (string.IsNullOrEmpty(_outPath) || string.IsNullOrEmpty(_switchFrom)) return;
+            var sb = new StringBuilder(160).Append('{');
+            Field(sb, "tag", _tag).Append(',');
+            Field(sb, "phase", "switch").Append(',');
+            Field(sb, "from", _switchFrom).Append(',');
+            Field(sb, "to", _scene).Append(',');
+            sb.Append("\"maxMs\":").Append(_switchMaxMs.ToString("F0", CultureInfo.InvariantCulture)).Append(',');
+            sb.Append("\"allocMB\":").Append(UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong() / (1024 * 1024));
+            Append(sb.Append('}').ToString());
+        }
+
+        void ResetWatch()
+        {
+            _wFrames = _wOver100 = _wOver500 = _wOver1000 = 0;
+            _wMaxMs = 0f;
+            _wStart = Time.realtimeSinceStartup;
+        }
+
+        void WriteWatch(Entry e, string phase, string scene = null)
+        {
+            var inv = CultureInfo.InvariantCulture;
+            var sb = new StringBuilder(256).Append('{');
+            Field(sb, "tag", _tag).Append(',');
+            Field(sb, "mode", e.Mode).Append(',');
+            sb.Append("\"intensity\":").Append(e.Intensity).Append(',');
+            Field(sb, "phase", phase).Append(',');
+            Field(sb, "scene", scene ?? SceneManager.GetActiveScene().name).Append(',');
+            float seconds = Time.realtimeSinceStartup - _wStart;
+            sb.Append("\"seconds\":").Append(seconds.ToString("F1", inv)).Append(',');
+            sb.Append("\"frames\":").Append(_wFrames).Append(',');
+            sb.Append("\"fps\":").Append((_wFrames / Mathf.Max(0.001f, seconds)).ToString("F1", inv)).Append(',');
+            sb.Append("\"maxMs\":").Append(_wMaxMs.ToString("F0", inv)).Append(',');
+            sb.Append("\"over100\":").Append(_wOver100).Append(",\"over500\":").Append(_wOver500).Append(",\"over1000\":").Append(_wOver1000).Append(',');
+            sb.Append("\"allocMB\":").Append(UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong() / (1024 * 1024));
+            Append(sb.Append('}').ToString());
+            CSDebug.Log($"[PhoneBench] {e.Mode} {phase}: {sb}");
+        }
+
+        /// <summary>Back to the menu from wherever the last entry left the game, with the return's frames watched.</summary>
+        IEnumerator ReturnToMenu(Entry from)
+        {
+            ResetWatch();
+            if (MaelstromController.Instance is { IsActive: true } maelstrom) maelstrom.EndMaelstrom();
+            var loader = FindAnyObjectByType<SceneLoader>();
+            if (loader) loader.ReturnToMainMenu();
+            yield return WaitForMenu(120f);
+            WriteWatch(from, "return");
+        }
+
+        void Uncap()
+        {
+            if (!_uncap) return;
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = -1;
+        }
+
+        /// <summary>'All' becomes every arcade card this build has loaded (Maelstrom apart: it is not one game), by mode name.</summary>
+        static Entry[] ExpandAll(Entry[] entries)
+        {
+            var list = new System.Collections.Generic.List<Entry>(entries.Length);
+            foreach (var e in entries)
+            {
+                if (!e.Mode.Equals(AllModes, StringComparison.OrdinalIgnoreCase)) { list.Add(e); continue; }
+                var names = new System.Collections.Generic.SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var g in Resources.FindObjectsOfTypeAll<SO_ArcadeGame>())
+                    if (g != null) names.Add(g.Mode.ToString());
+                names.Remove(MaelstromMode);
+                foreach (var other in entries) names.Remove(other.Mode);
+                foreach (string name in names) list.Add(new Entry { Mode = name, Intensity = e.Intensity, Seconds = e.Seconds });
+            }
+            return list.ToArray();
+        }
+
+        /// <summary>
+        /// A Maelstrom as its host plays it, watched from the launch: the hub (its preview lay and countdown), each
+        /// round's load, the round with the AI on the host's hull, the scoreboard, and the load back to the hub. One
+        /// line per stretch (phase + scene) with its longest frame; the scene-switch lines hold each load's frame.
+        /// Continue is pressed for the host 8 s after a round ends, or after <see cref="MaelstromRoundCapSeconds"/> of
+        /// a round that has no clock.
+        /// </summary>
+        IEnumerator MaelstromJourney(Entry e)
+        {
+            float end = Time.realtimeSinceStartup + Mathf.Max(60f, e.Seconds);
+            string stretch = null, stretchScene = null;
+            bool ran = false, handed = false, advanced = false;
+            float nextReady = 0f, advanceAt = -1f, roundStart = 0f;
+            int rounds = 0;
+            while (Time.realtimeSinceStartup < end)
+            {
+                Uncap();
+                string scene = SceneManager.GetActiveScene().name;
+                bool running = _gameData.IsTurnRunning;
+                bool hub = scene.IndexOf(MaelstromMode, StringComparison.OrdinalIgnoreCase) >= 0;
+                bool menu = !hub && scene.IndexOf("Menu", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (scene != stretchScene) { ran = handed = advanced = false; nextReady = 0f; advanceAt = -1f; }
+                string now = menu ? "menu" : hub ? "hub" : running ? "round" : ran ? "roundEnd" : "roundLoad";
+                if (now != stretch || scene != stretchScene)
+                {
+                    if (stretch != null) WriteWatch(e, stretch, stretchScene);
+                    ResetWatch();
+                    stretch = now;
+                    stretchScene = scene;
+                }
+                if (menu && Time.realtimeSinceStartup > end - Mathf.Max(60f, e.Seconds) + 45f) break;   // the Maelstrom ended by itself
+
+                if (!hub && !menu)
+                {
+                    if (running && !ran) { ran = true; roundStart = Time.unscaledTime; rounds++; }
+                    if (running && !handed)
+                    {
+                        handed = true;
+                        if (_gameData.LocalPlayer is Player host) PilotControl.TrySetAIFlies(host, true, _gameData, out _);
+                    }
+                    if (!running && !ran && Time.unscaledTime >= nextReady && _gameData.LocalPlayer?.Vessel != null)
+                    {
+                        var controller = FindAnyObjectByType<MiniGameControllerBase>();
+                        if (controller != null) { controller.OnReadyClicked(); nextReady = Time.unscaledTime + 10f; }
+                    }
+                    if (ran && !advanced && advanceAt < 0f && (!running || Time.unscaledTime - roundStart > MaelstromRoundCapSeconds))
+                        advanceAt = Time.unscaledTime + (running ? 0f : 8f);
+                    if (!advanced && advanceAt >= 0f && Time.unscaledTime >= advanceAt && MaelstromController.Instance != null)
+                    {
+                        advanced = true;
+                        CSDebug.Log($"[PhoneBench] Maelstrom: Continue after round {rounds} ({scene})");
+                        MaelstromController.Instance.AdvanceToNextGame();
+                    }
+                }
+                yield return new WaitForSecondsRealtime(0.25f);
+            }
+            if (stretch != null) WriteWatch(e, stretch, stretchScene);
         }
 
         /// <summary>Applies the <c>csbenchgfx</c> override to a copy of the player's settings: nothing is saved, the next
@@ -193,11 +391,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         IEnumerator Measure(Entry e, string seat, bool menu)
         {
             ApplyGfxOverride();
+            Uncap();
             yield return new WaitForSecondsRealtime(SettleSeconds);
+            Uncap();
 
             string scene = SceneManager.GetActiveScene().name;
             int n = 0, running = 0, timings = 0;
-            double cpu = 0, gpu = 0, gc = 0;
+            double cpu = 0, cpuMain = 0, gpu = 0, gc = 0;
             long allocStart = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
             using var gcRec = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
             float end = Time.realtimeSinceStartup + Mathf.Max(5f, e.Seconds);
@@ -211,6 +411,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 if (FrameTimingManager.GetLatestTimings(1, s_timings) == 1 && s_timings[0].cpuFrameTime > 0)
                 {
                     cpu += s_timings[0].cpuFrameTime;
+                    cpuMain += s_timings[0].cpuMainThreadFrameTime;
                     gpu += s_timings[0].gpuFrameTime;
                     timings++;
                 }
@@ -246,6 +447,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             sb.Append("\"over33Pct\":").Append((100.0 * over33 / Math.Max(1, n)).ToString("F1", inv)).Append(',');
             sb.Append("\"over50\":").Append(over50).Append(',');
             sb.Append("\"cpuMs\":").Append((timings > 0 ? cpu / timings : -1).ToString("F2", inv)).Append(',');
+            sb.Append("\"cpuMainMs\":").Append((timings > 0 ? cpuMain / timings : -1).ToString("F2", inv)).Append(',');
+            sb.Append("\"vsync\":").Append(QualitySettings.vSyncCount).Append(',');
             sb.Append("\"gpuMs\":").Append((timings > 0 ? gpu / timings : -1).ToString("F2", inv)).Append(',');
             sb.Append("\"gcKBPerFrame\":").Append((gc / 1024.0 / Math.Max(1, n)).ToString("F1", inv)).Append(',');
             sb.Append("\"allocMBStart\":").Append(allocStart / (1024 * 1024)).Append(',');
@@ -264,6 +467,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             CSDebug.Log($"[PhoneBench] {e.Mode} I{e.Intensity}: {sb}");
 
             // The per-system breakdown, AFTER the clean window: a capture turns the Profiler on.
+            bool slow = DeviceLogFormat.Percentile(_frames, n, .95f) > 16.7f || over50 > 0;
+            if (_captureWhen == "none" || (_captureWhen == "slow" && !slow)) yield break;
             string label = DeviceLogFormat.SafeName($"bench_{_tag}_{e.Mode}", "bench");
             CSDebug.Log("[PhoneBench] " + DiagnosticsHUD.RunConsole($"{DiagnosticsHUD.CaptureCommand} {label} {CaptureSeconds}{_markers}"));
             yield return new WaitForSecondsRealtime(CaptureSeconds + 3f);

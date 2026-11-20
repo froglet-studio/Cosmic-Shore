@@ -174,11 +174,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// </summary>
         public const string OutputFolderName = "CosmicShore Diagnostics";
 
+        /// <summary>Set by a self-running benchmark on a PC so its captures and flight records stay out of the folder the
+        /// editor sends from by itself (a player build and the editor share Documents). Null in every normal session.</summary>
+        public static string OutputDirectoryOverride;
+
         /// <summary>The absolute folder <see cref="OutputFolderName"/> resolves to on this machine.</summary>
         public static string OutputDirectory
         {
             get
             {
+                if (!string.IsNullOrEmpty(OutputDirectoryOverride)) return OutputDirectoryOverride;
                 // A phone has no user Documents folder: Android hands back a path on a read-only volume, so
                 // every report failed with "Read-only file system" and no diag ever left a phone.
                 string docs = Application.isMobilePlatform
