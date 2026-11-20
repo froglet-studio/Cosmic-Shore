@@ -99,7 +99,7 @@ This run puts all of it into the model and keeps proposing. Map = https://claude
 6. Build orders: take the oldest `queued` one whose swim lane is free (`/swimlanes`), at most one per run. `start`
    it on `claude/build-<target>`, build it with the area's skill and every `CLAUDE.md` rule, run `done ... --status
    part` in the same branch, and open it as a **draft** PR. A build that needs the Unity editor to judge stops at a
-   draft with a Froglet Tasks suggestion, never a merge. Skip this step when nothing is queued.
+   draft with its hand test in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, never a merge. Skip this step when nothing is queued.
 7. Republish (section 6) when the model on `bleeding-edge` differs from the published page (build `--html` from
    `bleeding-edge` and compare with an Artifact `read`). Other sessions publish the map too: if the live page's
    template part is not what your base builds (it carries a newer feature, such as the inspection window of

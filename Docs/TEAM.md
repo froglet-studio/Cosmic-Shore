@@ -18,7 +18,7 @@ Correct them in [`TEAM.json`](TEAM.json), which also maps each person's git name
 | **Caleb** | **Heads FTUE with Shombith**, inside the activation work Shombith leads; no one else is on it (Shombith, 2026-10-26). QA sessions (`Docs/QA/RESULTS`), the arcade mode map and previews, card art; merges some `claude/*` work (Skim Race race rings, #1096). | Caleb Steinhagen / FenrysUnchained |
 | **Shombith** | **Heads tooling**: the Amoebius engine, editor tools, the Claude skills such as `/ship`, and the hooks (Shombith, 2026-10-23). **Leads activation** (onboarding, FTUE, the first-run flow), with Caleb heading FTUE; no one else is on it (2026-10-26). **Owns all cloud and backend services and data management** (UGS: Cloud Save and its data such as `HangarCloudData`, authentication, the backend; Shombith, 2026-10-18). UI: `Menu_Main`, the UI prefabs, colour tokens, the Codex; multiplayer scenes. He drives the **Amoebius engine** milestones (`Port/src/CosmicShore.Engine`, `Player`, tests, online play) and merges those pull requests (`cece/focused-planck-*`). | Shombith03, shombith@froglet.studio |
 | **Yash** | The Bug Hunt; party / multiplayer (UGS) hardening (the cloud and backend layer itself is Shombith's); diagnostics (redlog); leaderboards; the **Vessel Studio** (the artifact, studio pages, Sync panel); the **Amoebius launcher** (VESSEL STUDIO page, studio server, artifact library). Branches `Ys-*`, `vessel-studio*`, `amoebius-*`. | Yash Sadhukhan / YsKhan61 |
-| **Iggy** | Wrote much of the game's foundation (`Assets/_Scripts/_Core`, `Game`, `App`; 2022-04 to 2025-12). An **approver** on Froglet Tasks with the core four (Shombith, 2026-10-25). | KidIgarus, isaiah.merrill@gmail.com |
+| **Iggy** | Wrote much of the game's foundation (`Assets/_Scripts/_Core`, `Game`, `App`; 2022-04 to 2025-12). An **approver** with the core four (Shombith, 2026-10-25). | KidIgarus, isaiah.merrill@gmail.com |
 | Andrew | QA sessions and results. | Andrew Mokhtary (Soncub) |
 | aradia1 | Audio and haptics (FMOD project, drift / boost sounds), vessel feel. | unconfirmed |
 | dbrutus | Arcade and multiplayer code, tests. | unconfirmed |
@@ -87,33 +87,17 @@ full history, no commit, line, area owner or role moved credit from another coll
    it, and tell the person. It ran as a hook on every prompt until 2026-10-23, when Shombith switched it off as too
    noisy and too slow; it is now run on request (or from the session deck's Team button). Self-test:
    `python3 .claude/hooks/team_activity.py --self-test`.
-9. **Hand work to each other as tickets** (Yash, 2026-10-15: "ask them during their work to make to-dos and
-   tests for other collaborators"; Shombith, 2026-10-23 and 2026-10-25: never assigned, branch-tracked, a real ticket
-   tool). A session cannot open Unity, sign in to a dashboard or watch a first-timer play, so what its work leaves for
-   a person (the editor test, the playtest, the UGS or PostHog step, the missing content, the decision) is a ticket on
-   **Froglet Tasks**: a GitHub issue labelled `team-task`, read on the Froglet Tasks page
-   (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f) and written through the page or the `/team-tasks` skill
-   (`Tools/Build/team_tasks.py`). Developers and testers file tickets themselves; a Claude session **suggests** one
-   and files it only when its person approves (no hook files, closes or re-ranks anything). People sign in with
-   claude.ai; the **approvers** (the core four and Iggy, `TEAM.json`) are the page's Editors, edit milestones and let
-   others in. Opening the page at the start of a day is recommended, never required. The rules:
-   - **Nobody's until taken.** A ticket names no one (rule 11); an assignee set on GitHub is cleared by the sweep.
-   - **Taking needs only your name** (`take <id>`, or Take it on the page): the ticket shows as yours to everyone.
-     **Naming a branch starts it** (`take <id> --branch <branch>`, a branch pasted on the page at the take or later, or
-     "Start in a new session", which opens a Claude Code session on the ticket from the base branch, `bleeding-edge` in
-     Beta phase 1). Not started within 14 days of the take, it goes back to open, nobody's (Shombith, 2026-10-25). It closes when that
-     branch merges into bleeding-edge, and goes back to open, nobody's, when the branch is deleted, released or idle
-     for 14 days (`.github/workflows/team-tasks.yml` runs the sweep on every merge, deletion and nightly).
-   - **14 days untaken: archived** (closed as not planned, label `archived`). Done tickets close as completed. Both
-     come back with `revive`, and the 14 days start again.
-   - **One ticket per branch.** Every hand test a branch leaves is a checklist line on its one ticket.
-   - **Priority ranks tickets, milestones rank time** (M1 closed testing on all platforms ... M5 full release). A person
-     re-ranks with `set` or on the page, and nothing automatic overrides that.
-   - **Done needs its proof**: `done <id> --note "<the check>"`; a failed test is not done.
-   `/ship` puts `team_tasks.py pr-section` in the PR body. The old markdown board (`TEAM_TASKS.md`) is a pointer now;
-   the `team_tasks_nudge.py` hook that pushed tasks into every prompt was switched off on 2026-10-23 and deleted on
-   2026-10-25 (Shombith). Self-test: `team_tasks.py --self-test`.
-   **An area's owner is not a ticket's assignee.** Tickets still name nobody; owners are who a session TELLS when it
+9. **Hand work to each other on the swim lanes board** (Yash, 2026-10-15: "ask them during their work to make to-dos
+   and tests for other collaborators"; Shombith, 2026-11-20: Froglet Tasks retired for Swim Lanes). A session cannot
+   open Unity, sign in to a dashboard or watch a first-timer play, so what its work leaves for a person goes where the
+   board reads it: an editor hand test in `Docs/UNITY_VERIFICATION_CHECKLIST.md` (the lane shows it as work waiting),
+   and a lane left for someone through `/handoff-to-<person>`, `/handoff-open` or `/handoff-for-test`
+   (`Tools/Build/handoff.py`, `.claude/skills/swimlanes/HANDOFF.md`), only once its person says yes. A hand-off names
+   no assignee (rule 11): it is a heads-up with a brief, and the recipient can hand it straight back to open.
+   **History:** from 2026-10-15 to 2026-11-20 hand-offs were Froglet Tasks tickets (GitHub issues labelled
+   `team-task`, the `/team-tasks` skill and `Tools/Build/team_tasks.py`, a claude.ai page and a nightly sweep). The
+   issues stay on GitHub as the record; the tool, skill and sweep were removed.
+   **An area's owner is not an assignee.** Hand-offs still name nobody; owners are who a session TELLS when it
    changes their area, and whose approval queue the change goes into (rule 13); `who_works_where.py query` prints the
    owner `Docs/TEAM.json` declares (`owners`). **Anything on UGS or the backend** (Cloud Code, Cloud Save, Access
    Control, Moderation, authentication, dashboards, deploys) **is Shombith's** (Shombith, 2026-10-26): a code change
@@ -258,11 +242,11 @@ volunteer.
 one way a branch reaches `bleeding-edge`. `/to-bleeding-edge`, written on 2026-10-15 for Yash's repeated promotion of
 `Ys-bleeding-edge`, duplicated `/ship`'s merge, gates, push and PR steps without either skill naming the other; it is
 now an alias of `/ship promote [branch]`, and its conflict rules and `gates.sh` live in `/ship` §1.5. Yash is asked to
-promote through `/ship promote` (a Froglet Tasks ticket) so the two habits cannot drift apart again.
+promote through `/ship promote` so the two habits cannot drift apart again.
 
 **Notices.** `team_context.py` used to show the person a team notice on a session's first prompt, and the tools
 decision on the first prompt about the engine or the tools. Shombith switched it off on 2026-10-23 with
 `team_activity.py` and `team_tasks_nudge.py` (deleted 2026-10-25): together they added about 7 KB to prompts and sent
 sessions off to fetch and query before answering. `vessel_studio_nudge.py` (once per session, on vessel work) and
-`report_request.py` (when a prompt asks for a report) still run. The Froglet Tasks page
-(https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f) is the board for the team's tickets (rule 9).
+`report_request.py` (when a prompt asks for a report) still run. The Swim Lanes page
+(https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf) is the board for the team's hand-offs (rule 9).

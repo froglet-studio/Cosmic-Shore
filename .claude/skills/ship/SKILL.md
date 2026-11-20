@@ -157,7 +157,7 @@ git diff --name-only --diff-filter=U        # the conflicted files
 - **Scenes and prefabs**: per OBJECT, never per line (§1 above, `/asset-surgery`); never hand-merge YAML
   overrides you do not understand - take one side whole and name in the PR what the other side changed so its
   owner re-applies it, or ask.
-- **Docs and logs** (`Docs/TEAM_TASKS.md`, `UNITY_VERIFICATION_CHECKLIST.md`, sync logs): keep every row from
+- **Docs and logs** (`UNITY_VERIFICATION_CHECKLIST.md`, `Docs/Handoffs/`, sync logs): keep every row from
   both sides.
 - **Same logic changed on both sides**, where picking either loses behaviour: ask the person.
 - Commit: `merge: bleeding-edge (<short sha>, #<PR>) into <$BRANCH> before the PR`, listing each conflict and
@@ -391,7 +391,7 @@ don't block building on the branch become a **Follow-ups** section in the PR bod
 scoped, and assigned a doc home — not reasons to sit on finished work.
 
 **A GO now means it merges (§5.7)**, so the bar is "safe to batch-test on bleeding-edge", not "proven in the
-editor": untested in Unity is fine when it is honestly labelled and its hand tests are on the branch's ticket. A
+editor": untested in Unity is fine when it is honestly labelled and its hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. A
 branch that would break bleeding-edge for everyone else (a known compile error, a half-landed tool output, a broken
 scene) is still a NO.
 
@@ -409,11 +409,11 @@ scene) is still a NO.
   `approvals.py add --to <them> --by <person> --area ... --summary ...` entry before opening the PR (add `--pr` when
   you know it). The PR body's **Affects** section lists the entries it queued ("queued for Shombith's /approve:
   <id>").
-- **Hand-offs** (`Docs/TEAM.md` rule 9, the `/team-tasks` skill): anything the branch leaves for a person (an editor
-  test, a playtest, a dashboard step, content, a decision) goes on the branch's ONE ticket (`/team-tasks add`; a second
-  `add` appends a checklist line), naming nobody: tickets are never assigned; taking one makes it the taker's, and naming a branch starts it. Close
-  the tickets the branch finished (`team_tasks.py done <id> --note <proof>`). Then put
-  `python3 Tools/Build/team_tasks.py pr-section` in the PR body as its **Hand-offs** section.
+- **Hand-offs** (`Docs/TEAM.md` rule 9, the swim lanes board): an editor test the branch leaves goes in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`; anything else it leaves for a person (a playtest, a dashboard step,
+  content, a decision) goes in the PR body's **Hand-offs** section, and, when the person says yes, on the lane through
+  `/handoff-to-<person>`, `/handoff-open` or `/handoff-for-test` (`.claude/skills/swimlanes/HANDOFF.md`), naming
+  nobody as an assignee.
 - Do not ask whether Amoebius or the Vessel Studio helped: the decision is recorded (`Docs/TOOLING_DECISIONS.md`
   §6, 2026-10-19) and Shombith asked sessions to stop. Keep Vessel Studio work out of `Port/`.
 - Check for a PR template (`.github/pull_request_template.md` and variants); mirror its
@@ -524,8 +524,8 @@ branches at once on `bleeding-edge` instead of checking out each one. Skip this 
    ```
 
    The team's readers rely on GitHub's `Merge pull request #N from froglet-studio/<branch>` commits: `who_works_where.py`,
-   `swimlanes.py` and `team_tasks.py` read who landed what, which lane opened and which ticket closes from them, and
-   a squash merge leaves no such commit, so the ticket sweep and the landed lists miss it.
+   and `swimlanes.py` read who landed what and which lane opened from them, and a squash merge leaves no such commit,
+   so the landed lists miss it.
 4. **If GitHub refuses** (a ruleset wants a review, a code owner's review for `.github/` or the UI paths in
    `.github/CODEOWNERS`, or a required check): turn on auto-merge instead (`mcp__github__enable_pr_auto_merge`,
    `mergeMethod: MERGE`) so it lands the moment the requirement is met, and tell the person in one line which
@@ -535,8 +535,8 @@ branches at once on `bleeding-edge` instead of checking out each one. Skip this 
    origin/bleeding-edge` (or the merge commit's sha from the tool result). `bleeding-edge-guard.yml` verifies every
    commit that lands there and attempts a repair; a red guard run after your merge is yours to fix, on a new branch.
 6. **After the merge the branch is finished.** Any later work on it restarts the branch from `bleeding-edge` and goes
-   out as a new PR (§5, "Before pushing MORE work"). The swim lane opens again by itself. The branch's ONE Froglet
-   Tasks ticket (§5 Hand-offs) is filed, not taken, so it stays open after the merge: it is the list the team
+   out as a new PR (§5, "Before pushing MORE work"). The swim lane opens again by itself. The branch's hand tests
+   (§5 Hand-offs) stay in `Docs/UNITY_VERIFICATION_CHECKLIST.md` after the merge: they are the list the team
    batch-tests on `bleeding-edge`. Whatever fails there is fixed on a new branch, shipped the same way.
 
 Someone else's branch (`/ship promote Ys-bleeding-edge`, a teammate's branch) merges only when §1.5 already confirmed

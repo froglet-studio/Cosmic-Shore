@@ -25,9 +25,7 @@ This file holds only the rules every session needs. Everything else moved verbat
 
 - [`Docs/ElementalLoop/PLAYBOOK.md`](Docs/ElementalLoop/PLAYBOOK.md): **The elemental vessel loop, the top priority** (`/elemental-loop`, Garrett 2026-11-12): steps 0-5 with each step's start, work, exit and sign-off, the game kit rule, the three arena games, how the loop needs fewer people each round, the missing scaffolding and Garrett's open decisions. Board `STATUS.md` and sign-offs `loop.json`, both through `Tools/Build/elemental_loop.py` (`next`, `vessel`, `set`, `--check`).
   Sections: Garrett's words; The loop at a glance; Step 0 the game kit; The steps; Running the loop; What the loop pays for; How this maps onto what exists; Missing scaffolding; Rules this loop keeps; Decisions for Garrett; Log
-- [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **Froglet Tasks, the team's hand-off tickets** - tests, playtests, setup, content and decisions one collaborator's session leaves for another: GitHub issues labelled `team-task`, read on the Froglet Tasks page, written only through the `/team-tasks` skill (`Tools/Build/team_tasks.py`). Tickets are nobody's until someone takes one.
-  Sections: a pointer to the tickets (the board moved to GitHub Issues)
-- [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels, games, app-shell sections and systems are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the tickets, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`). **Hand-offs** (Shombith 2026-11-13): `/handoff-to-<person>` (NEW on their board), `/handoff-open`, `/handoff-for-test` (to Andrew, who answers with `/handoff-feedback`); `Tools/Build/handoff.py`, files in `Docs/Handoffs/`, procedure `HANDOFF.md`. **The Swim Lanes page** (https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf): the board, claim, hand off, test feedback and every approval queue in a browser, synced by `/swimlanes` section 6.
+- [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels, games, app-shell sections and systems are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the hand-offs, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`). **Hand-offs** (Shombith 2026-11-13): `/handoff-to-<person>` (NEW on their board), `/handoff-open`, `/handoff-for-test` (to Andrew, who answers with `/handoff-feedback`); `Tools/Build/handoff.py`, files in `Docs/Handoffs/`, procedure `HANDOFF.md`. **The Swim Lanes page** (https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf): the board, claim, hand off, test feedback and every approval queue in a browser, synced by `/swimlanes` section 6.
   Sections: Run it; How occupancy is read; Answer the person; Polished or rough is a person's call; 4.5 Hand-offs; Adding, fixing or archiving a lane; 6 The Swim Lanes page
 - [`.claude/skills/approve/SKILL.md`](.claude/skills/approve/SKILL.md): **Approve after the fact** (`/approve`, Garrett 2026-11-10) - changes to someone else's work go through unless they collide with an occupied swim lane (`Tools/Build/approvals.py check`), and land in that person's queue (`Docs/Approvals/<Person>/`, [`Docs/Approvals/README.md`](Docs/Approvals/README.md)); `/approve` retrieves the list and records approve / discuss / resolve.
   Sections: Who you are; Retrieve the list; Walk through it; Record the answers; Commit the answers; What your own changes queued; Filing entries
@@ -187,22 +185,16 @@ the engine renamed twice, retired tools brought back. **Every session:**
 - **Report on request**: when anyone asks for a report on a shared area or another person's work, build it with
   `python3 Tools/Build/team_report.py area <key>` (or `person <name>` / `paths <paths>`) plus the area's report in
   `Docs/Reports/`, never from memory (`Docs/TEAM.md` rule 10; the `report_request.py` hook reminds you).
-- **Hand-offs are tickets on Froglet Tasks**: GitHub issues labelled `team-task`, read on the Froglet Tasks page
-  (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f). An editor test, playtest, setup step, content gap or decision your work leaves for
-  someone else goes on one, **through the `/team-tasks` skill, and only once the person approves**: a session may
-  *suggest* a ticket (it waits on the page until that person or an approver approves it), never file one on its own;
-  no hook, no end-of-session filing, no re-ranking on your own (Shombith, 2026-10-25). People sign in to the page with
-  claude.ai; the approvers (the core four and Iggy, `Docs/TEAM.json`) are its Editors and let others in. Opening the
-  page at the start of a day is recommended, not required; the skill does everything it does. **Never assign one**: never a
-  person, never a volunteer (Shombith, 2026-10-23). A ticket is nobody's until someone takes it; then it shows as theirs.
-  Naming a branch starts it (not started in 14 days, it goes back to open), and it closes when that branch merges (`.github/workflows/team-tasks.yml`). **One ticket per branch**: every
-  hand test your branch leaves is a checklist line on its one ticket (49 branches had filed 242 open tasks in 9 days).
-  A ticket nobody takes in 14 days is archived.
+- **Hand-offs go on the swim lanes board** (Shombith, 2026-11-20: Froglet Tasks, the `team-task` GitHub issues and
+  the `/team-tasks` skill, were retired for Swim Lanes). An editor test your work leaves goes in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`; a lane you leave for someone goes through `/handoff-to-<person>`,
+  `/handoff-open` or `/handoff-for-test` (`.claude/skills/swimlanes/HANDOFF.md`), **only once your person says yes**.
+  **Never assign one**: a hand-off is a heads-up with a brief, and the recipient can hand it straight back to open.
 - **No favourites among the core four.** Garrett, Caleb, Shombith and Yash carry equal weight. Never assign a task
   to anyone, and do not let one person's request override another's area silently: whoever decides there hears of it
   in their `/approve` queue. **Shombith heads tooling** (the Amoebius engine, editor tools, the Claude skills such as `/ship`, and the
   hooks; Shombith, 2026-10-23): changes to those go into his queue.
-- **Areas have owners; tickets do not.** An owner is who you TELL when you change an area, and whose `/approve` queue
+- **Areas have owners; hand-offs are not assignments.** An owner is who you TELL when you change an area, and whose `/approve` queue
   the change goes into: `who_works_where.py query` prints the owner `Docs/TEAM.json` declares (`owners`) above the merge
   counts, which credit whoever merged. **Anything on UGS or the backend is Shombith's**: code there goes into his
   queue like any other change, but anything POSTED to the live backend (a deploy, a policy, production data) still
@@ -211,8 +203,8 @@ the engine renamed twice, retired tools brought back. **Every session:**
 Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`).
 The per-prompt team hooks (`team_context.py`, `team_activity.py`, `team_tasks_nudge.py`, deleted 2026-10-25) were switched off on
 2026-10-23 (Shombith: too noisy, and they slowed every chat). Ask for what the others pushed when you need it:
-`python3 .claude/hooks/team_activity.py --peek 12`. The Froglet Tasks page (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f)
-is the board people read; the `/team-tasks` skill syncs it with the issues.
+`python3 .claude/hooks/team_activity.py --peek 12`. The Swim Lanes page (https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf)
+is the board people read; `/swimlanes` section 6 syncs it.
 
 ## Amoebius and the Vessel Studio (DECIDED 2026-10-19, `Docs/TOOLING_DECISIONS.md` §6)
 
@@ -347,7 +339,6 @@ Workflows in `.github/workflows/` (2026-10-29):
 - `perf-daily.yml` (perf-daily): daily perf gates plus Amoebius allocations.
 - `sync-build-branches.yml` (Promote test build): every third Wednesday, `development` → build branches.
 - `tag-internal-build.yml` (Tag internal build): Friday tag of `bleeding-edge`.
-- `team-tasks.yml` (team-tasks): the ticket sweep.
 - `toybox-publish.yml` (Publish browser Toybox): manual, publishes WebGL to R2.
 
 Player builds themselves are still made by hand from the build profiles in `Assets/Settings/Build Profiles/`.

@@ -32,7 +32,6 @@ on:
 
 permissions:
   contents: read
-  issues: read   # the status lists the open Performance tickets (Froglet Tasks, team_tasks.open_tickets)
 
 concurrency:
   group: perf-daily-${{ github.ref }}

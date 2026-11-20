@@ -81,6 +81,6 @@ Amoebius clip for the effect in play (`Docs/claude/VIDEOS_AND_PREVIEWS.md`).
 
 - An effect reaches a prefab through the asset tools (`/asset-surgery`), never a hand edit; the perf gates
   (`Docs/claude/SHADERS_AND_PERFORMANCE.md`) and `audit.py --check` run before the commit.
-- The checklist entry names the sheet; the PR body shows it; one team-task line per branch for the editor look.
+- The checklist entry names the sheet; the PR body shows it; the editor look is a hand test in the checklist.
 - Round status: `Docs/Shaders/WORLD_LOOK_SKILL_PLAN.md` section 8 (R0 built 2026-11-07; R1 the Orca's missile and
   bomb, R2 crystal capture, R3 the black hole's ring, R4 a trail: proposed, Garrett's order).
