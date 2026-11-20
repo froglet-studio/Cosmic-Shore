@@ -90,7 +90,8 @@ def game_modes(root=REPO):
 def cards(root=REPO):
     """Every SO_ArcadeGame: mode, display name, hulls (roster keys), lists it is on, intensity range, elements."""
     modes, classes = game_modes(root), class_index(root)
-    genres = mode_elements.build()["modes"] if root == REPO else {}
+    built = mode_elements.build() if root == REPO else {}
+    genres, party = built.get("modes", {}), set(built.get("party", []))
     lists = {}
     for name in ("ArcadeGames", "ArenaGames"):
         path = os.path.join(root, "Assets", "_SO_Assets", "Games", "GameLists", f"{name}.asset")
@@ -112,6 +113,7 @@ def cards(root=REPO):
             "lists": sorted(k for k, v in lists.items() if guid in v),
             "intensities": [int(lo.group(1)) if lo else 1, int(hi.group(1)) if hi else 1],
             "elements": [e for e in (genres.get(mode) or []) if e in ELEMENTS],
+            "party": mode in party,
         })
     return out
 
@@ -122,6 +124,8 @@ def kit(vessel, all_cards, no_game_ok):
     games = {e: [] for e in ELEMENTS}
     for c in all_cards:
         if "ArcadeGames" not in c["lists"] or vessel not in c["hulls"]:
+            continue
+        if c.get("party"):      # a Party game trains no element (Garrett, 2026-11-17: Scurry, Scarab Scramble)
             continue
         for e in c["elements"]:
             games[e].append({"mode": c["mode"], "name": c["name"], "shared": len(c["hulls"]) > 1,
@@ -564,10 +568,12 @@ def self_test():
     expect("Rampage" in [g["mode"] for g in rows["Dolphin"]["games"]["Space"]], "Dolphin's Space game is Rampage")
     expect(not rows["Dolphin"]["games"]["Mass"], "Dolphin has no Mass game")
     expect(rows["Dolphin"]["steps"]["Mass"]["1"][0] == "n/a", "Dolphin's Mass is excused, not missing")
-    expect("Scurry" in [g["mode"] for g in rows["Squirrel"]["games"]["Mass"]], "Squirrel's Mass game is Scurry")
+    # Scurry moved to Party (Garrett, 2026-11-17): it is no element's game, so the Squirrel's Mass slot is empty.
+    expect("Scurry" not in [g["mode"] for g in rows["Squirrel"]["games"]["Mass"]], "Scurry, a Party game, is no Mass game")
+    expect("Mass" in rows["Squirrel"]["missing"], "the Squirrel needs a Mass-Space game once Scurry is Party")
     expect(rows["Squirrel"]["arenas"]["Time"], "Regatta seats the Squirrel")
     expect(not rows["Rhino"]["arenas"]["Charge"], "Broadside does not seat the Rhino")
-    expect("Charge" in rows["Rhino"]["missing"], "the Rhino has no Charge game")
+    expect("Bullrush" in [g["mode"] for g in rows["Rhino"]["games"]["Charge"]], "the Rhino's Charge game is Bullrush")
     acts = actions(board)
     expect(acts and acts[0]["element"] == "Time", "the first action is on the Time element (element order)")
     # A recorded 'done' moves the step on.
@@ -578,7 +584,9 @@ def self_test():
     b2 = build(data=trial)
     d2 = {r["vessel"]: r for r in b2["rows"]}["Dolphin"]
     expect(d2["steps"]["Time"]["1"][0] == "done", "set marks a step done")
-    expect(human_share(trial).get(1) == {"human": 2 + human_share(data).get(1, {}).get("human", 0),
+    already = sum(1 for k in ("1", "2")
+                  if data["vessels"].get("Dolphin", {}).get("Time", {}).get(k, {}).get("state") == "done")
+    expect(human_share(trial).get(1) == {"human": 2 - already + human_share(data).get(1, {}).get("human", 0),
                                          "auto": 1 + human_share(data).get(1, {}).get("auto", 0)},
            "human_share counts human and automatic sign-offs")
     expect(markdown(board).startswith("# The elemental loop"), "the board renders")

@@ -84,6 +84,9 @@ namespace CosmicShore.ScriptableObjects
         public static bool TryGenres(GameModes mode, out Element primary, out Element secondary) =>
             ModeGenre.TryElementsFor(mode, ObjectiveMetricOf(mode), out primary, out secondary);
 
+        /// <summary>A mode's arcade category (<see cref="ModeGenre.CategoryFor"/>, with the metric read from this library).</summary>
+        public static ArcadeCategory CategoryOf(GameModes mode) => ModeGenre.CategoryFor(mode, ObjectiveMetricOf(mode));
+
         /// <summary>The metric a mode is scored on, from its preview definition; null when the library has none.</summary>
         public static ScoringMetric? ObjectiveMetricOf(GameModes mode)
         {

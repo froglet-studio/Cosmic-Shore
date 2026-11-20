@@ -15,7 +15,10 @@ is on `bleeding-edge` until Yash has played it in the editor.
   row and five icons (the four abilities and the omni card), its own class cards, and a phone profile (section 5).
 - The Unity code compiled clean at the last check (the reference compile, player and editor, 2026-10-28; the 2026-11-03
   HUD files compiled with Unity's Roslyn against the project's built assemblies, not in the editor).
-- **None of it has been played in the Unity editor yet.** That is the next step (section 5).
+- **2026-11-20, the wormhole revisited (Yash):** it looks and rides like a real wormhole, and nothing inside a tube
+  touches anything outside it, on every machine (sections 1, 3 and 4). Compiled and tested in the open editor; the look
+  was captured there on a test tunnel, not yet flown by a person.
+- **None of it has been played by a person in the Unity editor yet.** That is the next step (section 5).
 
 ## 1. In one minute
 
@@ -30,10 +33,15 @@ is on `bleeding-edge` until Yash has played it in the editor.
   the cell to the whole cell.
 - **You slip and slide through it.** Gravity presses you to the inner wall and you slide along it, bouncing now and then.
   There is no left stick; RT gives a small push, and you leave at the speed you carry, a little boosted (the slingshot).
-- **It looks like a plain wormhole** (2026-11-01): bent space, a mouth that lenses the world into an Einstein ring, and a
-  stretch inside (`Docs/Shaders/WORMHOLE_SHADERS.md` §16).
-- **Inside a tube is another dimension.** Nothing outside touches you, you collect nothing, and you are solid again when
-  you come out.
+- **It looks like a real wormhole** (2026-11-20, `Docs/Shaders/WORMHOLE_SHADERS.md` §17, on top of §16's bent space and
+  Einstein ring):
+  - a mouth shows the place round its other mouth, so it reads as a way through;
+  - its ring flares while it forms;
+  - riding, the world outside smears into streaks running to a clear disk round the way ahead, which grows until it
+    swallows the view; leaving throws one ripple.
+- **Inside a tube is another dimension** (widened 2026-11-20, `R_VesselActions/MEERKAT.md` §11). No prism, crystal,
+  blast, round, mine, skimmer, zap or creature outside reaches a rider, and a rider reaches none of them. What a tunnel
+  carries is sealed until it is fired out. It holds on every player's machine. You are solid again when you come out.
 - **It swallows the world round its way in.**
   - Prisms and crystals near the mouth are pulled in.
   - They are carried through stretched and twisted, first in first out, so nothing catches you inside.
@@ -51,8 +59,8 @@ is on `bleeding-edge` until Yash has played it in the editor.
 - **In Unity** (pull `Ys-bleeding-edge`, open the project, wait for the compile):
   1. Toybox (Lava Lamp), Vessel Changer: the Meerkat. RT a short, fat wormhole. Inside, you drop onto the wall and slide.
      Hold RT for a small push. Fly out of the far mouth a little faster than you went in.
-  2. Look at a wormhole from outside: the world round its mouth bends into a ring. Inside, the view streams toward the
-     way out.
+  2. Look at a wormhole from outside: inside the ring round its mouth you see the place at its other end. Inside, the
+     world smears into streaks round a clear way ahead that grows as you near the way out.
   3. Form a wormhole next to prisms: they are pulled in, stretched through and fired out. None catches you inside, and
      you lose no petal in the tube. Form one through a wall of prisms: you pass through and the wall stands.
   4. Fly into an omni crystal: a Soliton Network opens round you. Watch an AI Meerkat take one: its network opens too.
@@ -87,10 +95,15 @@ The design is in `Docs/Studios/MEERKAT.md` (its "Where it stands now", then the 
 | 2026-11-03 | Its own hull on the Stoat's rig (StoatAnimation still drives it), its class cards | `Docs/VesselModels/Meerkat.md`, `vessel_model/specs/meerkat.py`, `render_cards.py` |
 | 2026-11-03 | Its own HUD row (MeerkatHUDView, MeerkatHUDVariant), four ability icons and the omni card | MEERKAT.md §5, `icon_kit/specs/meerkat.py` |
 | 2026-11-03 | A phone profile (ThumbLifts, prototype) | MEERKAT.md §5, `author_touch_profiles.py` |
+| 2026-11-20 | A real wormhole: the far view, the throat, the forming flare, the exit ripple; the ridden tube is no longer marched | `WORMHOLE_SHADERS.md` §17, `SolitonTunnelLensPass.Throat` |
+| 2026-11-20 | Nothing inside a tube touches anything outside it, on every machine; carried prisms and crystals are sealed | MEERKAT.md §11, `SolitonIsolation`, `MeerkatSolitonExecutor.InsideTube` |
 
 **Shared code touched (the trail):**
 - `OmniCrystalImpactor.CollectedByVessel`: an additive event in Garrett's area.
 - `SkimmerImpactor`: the prism skim honours a hull's `IHullContactGate`, a no-op for hulls without one.
+- 2026-11-20, the isolation: one guarded line each in the blast, round, mine, skimmer, hull and crystal impactors and in
+  `FulmenSystem`, and `Prism.SetSealed` with five guards (MEERKAT.md §11). All are no-ops in a match with no Meerkat.
+  Queued for Garrett's `/approve`.
 
 ## 4. Measured
 
@@ -130,10 +143,27 @@ The design is in `Docs/Studios/MEERKAT.md` (its "Where it stands now", then the 
   - its top speed 90 → 119;
   - `suckRadius` 90 → 40.
 
+- **The wormhole's render cost (2026-11-20)**, in the Unity editor on an RTX 4070 Ti, the lens pass's GPU time per
+  1920x1080 frame (the method and the full table: `Docs/Shaders/WORMHOLE_SHADERS.md` §17.3):
+
+  | | Before (the plain wormhole) | Now (the real wormhole) |
+  |---|---|---|
+  | Riding inside, PC path | 5.85 ms | 0.50 ms |
+  | Riding inside, phone path | 5.90 ms (it fell back to the PC path while riding) | 0.66 ms |
+  | Outside views, PC path | 1.96 to 2.28 ms | 1.48 to 2.78 ms (unchanged within the noise) |
+  | Outside views, phone path | 0.50 to 1.22 ms | 0.36 to 0.61 ms (unchanged within the noise) |
+
+  Riding is about ten times cheaper because the tube you ride is no longer ray-marched. Not measured on a phone.
+
 ## 5. Open items, and what is asked of you
 
-1. **Play it in the editor** (section 2). Nothing of the Meerkat has been played there yet. When it passes, merge
-   `Ys-bleeding-edge` to `bleeding-edge`.
+1. **Play it in the editor** (section 2). Nothing of the Meerkat has been played there by a person yet. When it passes,
+   merge `Ys-bleeding-edge` to `bleeding-edge`.
+   - For the 2026-11-20 look, judge what a still cannot show: whether the streaks and the growing way ahead feel like
+     travelling, whether the ripple on leaving is welcome or a jolt, and whether a mouth's far view reads as "the other
+     end" when the other end is off screen (it then shows the mirrored edge of the frame).
+   - For the isolation, the checklist's hand test: ride through a rival's fire and a wall of prisms, with a second
+     player watching.
 2. **Done (round 27, 2026-11-03): the artifact and the game agree again.** The slip-and-slide, the plain-wormhole look
    and the 14 tuned numbers are in the artifact, which stays the Meerkat's source of truth. The look's numbers sit in a
    nested struct the clone script cannot write, so they are matched by hand (`Docs/Studios/MEERKAT.md` round 27).

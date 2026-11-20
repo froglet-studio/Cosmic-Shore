@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-18-pr-2202-the-dolphin-s-switchback-ai-was-f87640",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T00:36:10+00:00",
+  "area": "Switchback AI (Dolphin drive, nose, no-dodge)",
+  "summary": "PR #2202: the Dolphin's Switchback AI was searched again in the real game after #2196 raised its Drift Charge rate. Four DolphinAIBoostPolicy_Switchback files, lead 2.03->2.15, Legendary nose 11.18/13.41->10.57/12.69, aiNoDodgeNearRing 177->277.67. I1 106->88 s on seeds 101-103. Merged past your occupied Switchback lane on Garrett's pick. These numbers were fitted to the bleeding-edge planner, and a re-fit on Ys-bleeding-edge (speed over breaking) is running for when yours lands.",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "c624b3855"
+}

@@ -64,9 +64,15 @@ namespace CosmicShore.Gameplay
                  "interval (SeedWallAction.stealSweepInterval, 0.3 s), or a steady stream reads as stalls.")]
         [SerializeField, Min(0.05f)] private float wallBuildingGapSeconds = 0.4f;
 
+        [Tooltip("Off (2026-11-18): the tank refills only while the Serpent FLIES. Since the wall stands along the " +
+                 "heading, a stopped Serpent's stance wall eats the whole straight trail behind it; on, that would " +
+                 "turn stopping into a fuel stop. The refill stays the reward for flying in the wall's plane.")]
+        [SerializeField] private bool refillWhileStopped;
+
         public float BoostMultiplier => boostMultiplier;
         public float SecondsOfWallBuildingPerPellet => secondsOfWallBuildingPerPellet;
         public float WallBuildingGapSeconds => wallBuildingGapSeconds;
+        public bool RefillWhileStopped => refillWhileStopped;
         public float BoostDuration => boostDuration;
 
         /// <summary>The live TIME multiplier on one pellet's burn duration.</summary>

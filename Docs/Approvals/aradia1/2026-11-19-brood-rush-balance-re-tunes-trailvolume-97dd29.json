@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-19-brood-rush-balance-re-tunes-trailvolume-97dd29",
+  "to": "aradia1",
+  "by": "Garrett",
+  "date": "2026-11-19T07:53:43+00:00",
+  "area": "vessel prefabs (Charles-Land branch)",
+  "summary": "Brood Rush balance re-tunes trailVolume.Value on 12 vessel prefabs' prism controllers (Orca, Sparrow, Wrasse, Scarab, Honeyguide, Squirrel, Stoat, Meerkat, Dolphin, Urchin, TigerMoth, Thresher) via Tools/Build/brood_trail_levers.py; your unmerged Charles-Land branch edits the same prefab files, so expect a one-line merge conflict per prefab.",
+  "branch": "brood-pr2",
+  "commit": "01cb1e5a0"
+}

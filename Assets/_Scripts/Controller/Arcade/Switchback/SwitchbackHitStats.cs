@@ -26,6 +26,10 @@ namespace CosmicShore.Gameplay
             public int Difficulty;
             public readonly int[] Hits = new int[4];
             public int Avoids, Blasts, Emergencies, Threaded;
+            /// <summary>Speed over breaking (MINIGAME_TRAINING_PLAN.md 6.2). Passes: blocked gates where the AI found
+            /// its ring flyable and refused a crystal that was off its way. TurnAways: times it left for a crystal that was
+            /// off its way while its ring could be flown (0 with the rule on; counted with it off, for a before/after).</summary>
+            public int Passes, TurnAways;
             public float FinishTime = -1f;
             public int Total => Hits[0] + Hits[1] + Hits[2] + Hits[3];
         }
@@ -104,10 +108,12 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Fill the per-pilot fields the race knows (AI, difficulty, sense tallies, gates, finish) - called by the controller.</summary>
-        public void Note(IPlayer p, bool ai, int difficulty, int avoids, int blasts, int emergencies, int threaded, float finishTime)
+        public void Note(IPlayer p, bool ai, int difficulty, int avoids, int blasts, int emergencies, int threaded, float finishTime,
+                         int passes = 0, int turnAways = 0)
         {
             var r = RowFor(p);
             r.AI = ai; r.Difficulty = difficulty; r.Avoids = avoids; r.Blasts = blasts; r.Emergencies = emergencies; r.Threaded = threaded;
+            r.Passes = passes; r.TurnAways = turnAways;
             if (finishTime >= 0f && r.FinishTime < 0f) r.FinishTime = finishTime;
         }
 
@@ -141,7 +147,8 @@ namespace CosmicShore.Gameplay
                   .Append(" [course ").Append(r.Hits[0]).Append(", mover ").Append(r.Hits[1])
                   .Append(", rival ").Append(r.Hits[2]).Append(", own ").Append(r.Hits[3]).Append(']')
                   .Append(", dodges ").Append(r.Emergencies).Append(", avoids ").Append(r.Avoids)
-                  .Append(", blasts ").Append(r.Blasts).Append(", gates ").Append(r.Threaded);
+                  .Append(", blasts ").Append(r.Blasts).Append(", passes ").Append(r.Passes)
+                  .Append(", turnAways ").Append(r.TurnAways).Append(", gates ").Append(r.Threaded);
                 if (r.FinishTime >= 0f) sb.Append(", finish ").Append(r.FinishTime.ToString("F1")).Append(" s");
             }
             return sb.ToString();

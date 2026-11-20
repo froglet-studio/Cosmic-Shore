@@ -17,7 +17,7 @@ mkdir -p "$OUT"
 
 build_and_run() {   # $1 = hull form source, $2 = rules source, $3 = expected (pass|fail), $4 = what
   ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
-  printf '%s\n' "$HERE/Stubs.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" "$1" "$2" \
+  printf '%s\n' "$HERE/Stubs.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" "$ROOT/Assets/_Scripts/Data/Enums/PrismKind.cs" "$1" "$2" \
     "$ROOT/Assets/_Scripts/Data/Enums/Element.cs" "$ROOT/Assets/_Scripts/UI/View/ScopePetalGeometry.cs" \
     "$ROOT/Assets/_Scripts/UI/View/ElementPetalGeometry.cs" \
     "$ROOT/Assets/_Scripts/Tests/Editor/ShrikeTests.cs" | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"

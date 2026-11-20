@@ -1,0 +1,34 @@
+{
+  "id": "2026-11-16-risky-merge-pr-2062-feat-regatta-course-e01cbb",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-16T22:58:48+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2062 (feat(regatta): course genome widens each hull's own Time game for AI training) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; shared AI code every AI hull runs: Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+  "branch": "claude/project-thread-cwavhz",
+  "pr": 2062,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaPlacementCarve.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/TrainingCourseOverlay.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/TrainingCourseOverlay.cs.meta",
+    "Docs/AI_SYSTEM/REGATTA_COURSE_GENOME.md",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+    "Port/src/CosmicShore.Player/RaceJudge.cs",
+    "Tools/Compute/evaluators/regatta_genome.py"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "detail": "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs"
+    }
+  ]
+}

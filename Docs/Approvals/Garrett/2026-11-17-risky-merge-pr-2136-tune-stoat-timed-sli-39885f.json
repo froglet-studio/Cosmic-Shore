@@ -1,0 +1,28 @@
+{
+  "id": "2026-11-17-risky-merge-pr-2136-tune-stoat-timed-sli-39885f",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-17T09:28:42+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2136 (tune(stoat): Timed Slingshot boost at Time 10 4 -> 3.75 (step 5, Regatta fast trio)) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset",
+  "branch": "claude/project-thread-cwavhz",
+  "pr": 2136,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset",
+    "Docs/Approvals/Yash/2026-11-17-stoat-timed-slingshot-boost-elementalflo-ef6348.json"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset"
+    }
+  ]
+}

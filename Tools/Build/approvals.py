@@ -275,13 +275,13 @@ def write_json(path, data):
         fh.write('\n')
 
 
-def add(root, team, to, by, area, summary, why, paths, branch, pr, lane, now=None, loop=None):
+def add(root, team, to, by, area, summary, why, paths, branch, pr, lane, now=None, loop=None, risky=None):
     to_p, by_p = person_of(team, to), person_of(team, by)
     if not to_p:
         raise SystemExit(f'--to "{to}" is not a person in Docs/TEAM.json')
     if not by_p:
         raise SystemExit(f'--by "{by}" is not a person in Docs/TEAM.json (the person driving this session)')
-    if to_p == by_p:
+    if to_p == by_p and not risky:
         raise SystemExit('an entry goes to someone else: your own work needs no approval')
     if not summary or not summary.strip():
         raise SystemExit('--summary is required: what changed in their work, in a sentence')
@@ -290,7 +290,8 @@ def add(root, team, to, by, area, summary, why, paths, branch, pr, lane, now=Non
     entry = {'id': eid, 'to': to_p, 'by': by_p, 'date': now.isoformat(), 'area': area or '', 'summary': summary.strip(),
              'why': (why or '').strip(), 'branch': branch or '', 'pr': pr, 'lane': lane or '',
              'commit': git('rev-parse', '--short=9', 'HEAD', cwd=root).strip(), 'paths': sorted(set(paths or []))[:30],
-             'loop': {k: v for k, v in (loop or {}).items() if v} or None}
+             'loop': {k: v for k, v in (loop or {}).items() if v} or None,
+             'risky': [{'key': r['key'], 'name': r['name'], 'detail': r['detail']} for r in risky] if risky else None}
     path = os.path.join(root, QUEUE, to_p, eid + '.json')
     write_json(path, {k: v for k, v in entry.items() if v not in (None, '', [])})
     return eid, os.path.relpath(path, root)
@@ -499,14 +500,17 @@ def print_entries(rows, header, show_to=False):
         pr = f', PR #{e["pr"]}' if e.get('pr') else ''
         who = f'to {e["to"]}' if show_to else f'from {e["by"]}'
         imp = f'  LOOP IMPACT {e["loopImpact"]}' if e.get('loopImpact') else ''
-        print(f'\n  [{e["status"].upper()}]{imp} {e["id"]}')
+        risky = '  RISKY MERGE' if e.get('risky') else ''
+        print(f'\n  [{e["status"].upper()}]{risky}{imp} {e["id"]}')
         print(f'    {who}, {e["date"][:10]}: {e["summary"]}')
         if e.get('loopRework'):
             more = f' and {len(e["loopRework"]) - 4} more' if len(e['loopRework']) > 4 else ''
             print(f'    answer early: if this goes against the vessel, the loop redoes {"; ".join(e["loopRework"][:4])}{more}')
         if e.get('area'):
             print(f'    their area: {e["area"]}' + (f'  (lane: {e["lane"]})' if e.get('lane') else ''))
-        if e.get('why'):
+        for r in e.get('risky') or []:
+            print(f'    risky: {r["name"]}: {r["detail"]}')
+        if e.get('why') and not e.get('risky'):
             print(f'    why: {e["why"]}')
         print(f'    where: {where}' + (f' (branch {e["branch"]}{pr})' if e.get('branch') and e['where'] == 'landed' else pr))
         if e.get('paths'):
@@ -523,8 +527,9 @@ def list_queue(entries, person=None, sender=None, show_all=False, as_json=False,
     el, board = loop
     for e in rows:
         e['loopImpact'], e['loopRework'] = loop_impact(e, el, board) if e['status'] in OPEN_STATUSES else (0, [])
-    # Open entries the loop is building on first, the most rework first; then talk-about before waiting; oldest first.
-    rows.sort(key=lambda e: (e['status'] not in OPEN_STATUSES, -e['loopImpact'], e['status'] != 'discuss',
+    # Open entries the loop is building on first, the most rework first; then risky merges (risky_merge.py); then
+    # talk-about before waiting; oldest first.
+    rows.sort(key=lambda e: (e['status'] not in OPEN_STATUSES, -e['loopImpact'], not e.get('risky'), e['status'] != 'discuss',
                              e['status'] != 'pending', e['date']))
     if as_json:
         print(json.dumps(rows, indent=1, ensure_ascii=False))

@@ -707,9 +707,8 @@ How it is enforced, all on the host:
 - **The draft** is a snake (Garrett agreed, 2026-11-06): teams in domain order, A B B A A B, within a team its humans
   first, then its AI. A seat has 20 s (`draftTurnSeconds`), then it is dealt a random free hull. Adding an AI, a pilot
   joining or anyone moving team restarts it. Start waits until the draft is done.
-- **Regatta's pinned opponents stay pinned** (`OpponentAIVessel`, the Squirrel): those seats are neither dealt nor
-  drafted until the racing AIs are confirmed well trained (Garrett's plan, 2026-11-06). Lift it by clearing the field
-  on the card.
+- **Regatta's opponents are no longer pinned** (the `OpponentAIVessel` Squirrel pin retired 2026-11-17, Garrett): those
+  seats are dealt and drafted like any other. A card that sets the field still pins them.
 
 Squad mode reads the squads from the cloud save (`SquadRepo.Data.Book`), opening on the squad taken in from the Ark
 (`SquadLaunchIntent`) or the active one. Only the vessel comes; the pilot may come later (Garrett: "the element no, but

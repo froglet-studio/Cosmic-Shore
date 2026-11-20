@@ -97,6 +97,7 @@ namespace CosmicShore.Gameplay
                 var shape = SnapshotWallShape(so, status);
                 shape.HeldByStance = heldByStance;
                 shape.Fuel = FuelPellets();
+                shape.Cloak = Cloak();
                 // Release any earlier hold BEFORE configuring: the stance can stop on the same
                 // live seed again, and Configure re-holds it.
                 if (heldByStance) ReleaseHeldWall();
@@ -202,6 +203,17 @@ namespace CosmicShore.Gameplay
             var registry = GetComponentInParent<ActionExecutorRegistry>();
             _fuelPellets = registry ? registry.Get<ConsumeBoostActionExecutor>() : null;
             return _fuelPellets;
+        }
+
+        CloakSeedWallActionExecutor _cloak;
+
+        /// <summary>This vessel's cloak (its sibling executor), or null on a hull without one.</summary>
+        CloakSeedWallActionExecutor Cloak()
+        {
+            if (_cloak) return _cloak;
+            var registry = GetComponentInParent<ActionExecutorRegistry>();
+            _cloak = registry ? registry.Get<CloakSeedWallActionExecutor>() : null;
+            return _cloak;
         }
 
         /// <summary>

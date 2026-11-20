@@ -318,6 +318,19 @@ class Details(StoreCase):
         for secret in ("'p1'", "'p2'", "Kestrel"):
             self.assertNotIn(secret, dump)
 
+    def test_launch_time_counts_only_the_first_menu_of_each_run(self):
+        """Ian, 2026-11-17: every return to the menu also sends menu_ready, which put the release p90 at 41 minutes."""
+        self.store.ingest([
+            ev("menu_ready", "q1", T0, seconds_since_launch=10, is_first=True),
+            ev("menu_ready", "q1", T0 + 600_000, seconds_since_launch=610, is_first=False),     # back from a match
+            ev("menu_ready", "q1", T0 + 2_400_000, seconds_since_launch=2410, is_first=False),
+            ev("menu_ready", "q2", T0, seconds_since_launch=20, is_first="true"),
+            ev("menu_ready", "q3", T0, seconds_since_launch=3000),                               # no flag: not a launch
+        ])
+        self.store.rebuild_aggregates()
+        launches = V.audience(self.store.agg_path, "release", 7)["launches"]
+        self.assertEqual([(r["launches"], r["p90_seconds"] <= 20) for r in launches], [(2, True)])
+
     def test_a_profile_holds_everything_about_one_player(self):
         self.seed()
         listing = self.store.people_list(days=7)
@@ -1137,6 +1150,27 @@ class Elements(StoreCase):
         self.assertEqual(rows["o2"], (None, None, None))                  # an old name with no genre: honest none
         health = V.health(self.store.agg_path, {}, 90)["modes_without_element"]
         self.assertEqual(health, [{"game_mode": "CrystalCapture", "plays": 1, "imported_plays": 1}])
+
+    def test_an_old_mode_name_counts_as_the_mode_it_is_now(self):
+        """Ian, 2026-11-17: HexRace, PeelTheCage and MultiplayerCrystalCapture showed as modes of their own with no
+        element. The game's GameModeRenameMigration.Renames (carried in mode_elements.json) merges them."""
+        self.assertEqual(S.mode_renames().get("HexRace"), "SkimRace")
+        old = S.now_ms() - 20 * DAY
+        self.store.ingest([started("r1", "x1", old, game_mode="HexRace"),
+                           started("r2", "x2", old, game_mode="PeelTheCage"),
+                           started("r3", "x3", old, game_mode="MultiplayerCrystalCapture"),
+                           started("r4", "x4", old, game_mode="SkimRace")], trusted=True, max_age_days=365)
+        self.store.rebuild_aggregates()
+        agg = sqlite3.connect(self.store.agg_path)
+        rows = {m: (g, e) for m, g, e in agg.execute("SELECT match_id, game_mode, element FROM plays")}
+        table = M.load()
+        self.assertEqual(rows["x1"], ("SkimRace", table["SkimRace"][0]))
+        self.assertEqual(rows["x2"], ("Cleave", table["Cleave"][0]))
+        self.assertEqual(rows["x3"], ("Scurry", "Mass"))
+        modes = {r["game_mode"] for r in V.matches(self.store.agg_path, "release", 30)["by_mode"]}
+        self.assertEqual(modes & {"HexRace", "PeelTheCage", "MultiplayerCrystalCapture"}, set())
+        self.assertIn("SkimRace", modes)
+        self.assertEqual(S.canonical_mode({"game_mode": "Unknown"}, {"HexRace": "SkimRace"})["game_mode"], "Unknown")
 
     def test_series_splits_by_element_and_lists_the_second_apart(self):
         self.seed()

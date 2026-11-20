@@ -70,6 +70,7 @@ MonoBehaviour:
   swingMaxDegrees: 90
   swingDegreesPerSecond: 150
   swingSeconds: 4
+  swingKickShare: 0
   aiSwingFaceDegrees: 8
   swingStartEvent:
     Guid:

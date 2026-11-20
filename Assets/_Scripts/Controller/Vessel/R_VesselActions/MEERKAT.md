@@ -10,8 +10,13 @@ Cloned from the Vessel Studio (2026-10-27, `/artifact-to-unity`): the Meerkat pa
   - the wormhole is a **Soliton Tunnel**, an environmental fundamental, and the omnicrystal grows a **Soliton Network**;
   - both ride as a **slip-and-slide** (`SolitonTunnelRider`, no left stick; this replaced round 24's left-stick slide);
   - the look is the **plain wormhole** of `Docs/Shaders/WORMHOLE_SHADERS.md` §16 (2026-11-01).
+- **2026-11-20 (Yash: "the visual will be like a wormhole ... anything inside a wormhole won't interact with anything
+  outside the hole"):**
+  - the look is a **real wormhole** (`WORMHOLE_SHADERS.md` §17): a mouth shows the place round its other mouth, the ride
+    is a streaked throat with a clear way ahead that grows until it swallows the view, and leaving throws one ripple;
+  - **nothing inside a tube touches anything outside it**, on every machine: §11 is the audit.
 - **Still as built here:**
-  - inside any tube the hull is phased (§9, round 25);
+  - inside any tube the hull is phased (§9, round 25; widened to every machine and every kind of contact in §11);
   - Space's surface area sizes a wormhole (§8, round 23), and the swallow carries things first in first out;
   - Mass sizes the network (§7a, round 26);
   - Garrett's four abilities are in (§10).
@@ -476,6 +481,8 @@ wormholes getting created"*.
   its touch takes no prism and no crystal. That is read by both halves of every contact: the hull's
   (`VesselImpactor`), the prism's (`PrismImpactor`), the crystals' (`ElementalCrystalImpactor`, `OmniCrystalImpactor`)
   and now the skimmer's prism skim too (`SkimmerImpactor.HullTakesPrisms`). Out of the mouth, it is solid again.
+  - 2026-11-20: that gate only ever covered prism and crystal touches, and only on the machine that flies the hull.
+    §11 lists what it left open and what closes each one.
   - A race ring threaded inside still counts: rings are a sweep (`CrystalRaceRing`), not a touch.
 - **First in, first out.** A carried prism or crystal moves at the slide's top speed, never nearer than
   `SolitonTunnelShapeMath.TubeGap` (6 u) behind this Meerkat's rider ahead of it (`TubeAdvance`). So a stream that went in
@@ -615,3 +622,64 @@ sounds are their brief.
 - The Meerkat's own HUD view and four icons (`/ability-icon`); a ready colour on the Charge and Space cards.
 - A zap's look in the world (today its cues are the victim's ejected crystals and the empty `zapEvent`).
 - The AI does not yet seek a soliton to ride (the page's `kitAiSoliton`); it only rides one it flies into.
+
+## 11. Nothing inside a tube touches anything outside it (2026-11-20)
+
+Yash, 2026-11-20: *"travelling through it without hitting any outside objects. So yes, anything inside a wormhole won't
+interact with anything outside the hole."*
+
+**The rule** (`SolitonIsolation`, `Controller/Environment/SolitonTunnel/`): two things interact only when they are in the
+same place. The world is one place; each tube is another. A rider and a rival outside are apart. So are two riders in
+different tubes. Two riders in the same tube are together, as before.
+
+**Who says where a thing is:**
+- **A hull:** `MeerkatSolitonExecutor.InsideTube`. The machine that flies the hull knows: the tunnel it slides, the
+  network it slides, or the void (a place of its own). A peer is not told a hull is riding (only its pose and the tubes
+  replicate), so a peer reads the hull's place against the tubes it has (`SolitonIsolation.TubeAt`, once a frame, with
+  a 4 u margin because the slide presses the hull to the wall).
+- **Cargo:** `MeerkatSwallow` seals a prism (`Prism.SetSealed`) and a crystal (`SolitonIsolation.Seal`) from the moment
+  it enters the tube until it is fired out, set down, or its tunnel is gone.
+
+**Who asks:** each place where one thing lands on another, with one line. In a match with no Meerkat every question
+answers "not apart" at once (`SolitonIsolation.Idle`).
+
+| # | What could interact | Before | Now | Where |
+|---|---|---|---|---|
+| 1 | The rider's hull and skimmer touching prisms and crystals, on the machine that flies it | closed (round 25) | unchanged | `IHullContactGate`, `MeerkatVesselTransformer.Phased` |
+| 2 | The same touches on every other machine. The server collects omni crystals for a client's hull | **open**: a peer's copy of a rider was never phased, because the riding flag is not replicated | closed: `Phased` is `InsideTube`, which a peer reads from the hull's place | `MeerkatSolitonExecutor.InsideTube`, `SolitonIsolation.TubeAt` |
+| 3 | Every scored hit and petal theft (rounds, blasts, rams, zaps, sniper shots: all pass `CombatHitDrain.TryAdmit`) and every elemental debuff (danger prisms, a wormhole toll) | **open** | closed: the hull holds a full ward while inside, on every machine | `MeerkatSolitonExecutor.StepWard` (`ResourceSystem.SetElementalDebuffImmunity`) |
+| 4 | A blast's other vessel effects (the knock, the slow, the camera rock) | **open** | closed | `ExplosionImpactor` asks `Apart(source, victim)` |
+| 5 | A round, by its trigger or its sweep. It also stopped on the hull | **open** | closed: it passes through | `ProjectileImpactor` |
+| 6 | A mine | **open** | closed | `MineImpactor` |
+| 7 | A rival's skimmer on the rider's hull, and the rider's skimmer on a rival's hull (jousts, overtakes, the Rhino's sword) | **open** | closed, both halves | `SkimmerImpactor`, `VesselImpactor` |
+| 8 | The rider's hull on an elemental crystal or a lifeform's heart. The crystal's half was gated; the hull's half was not | **open** | closed | `VesselImpactor` |
+| 9 | A sentinel zapping a rival that rides through its guarded mouth | **open** | closed: a rider is not picked, and row 3 refuses the hit | `MeerkatSentinels.NearestRival` |
+| 10 | Fulmen. It strikes prisms and crystals, never hulls. A bolt chained off a carried crystal | **open** | closed | `FulmenSystem` (candidates) |
+| 11 | A carried prism rammed or skimmed by a hull outside | **open**: it kept its collider | closed: the collider is held off while sealed | `Prism.SetSealed` |
+| 12 | A carried prism damaged from outside: a blast's batch pass, a swept round, a blade, a burn, a creature's bite, a consume, a vanish, a steal | **open** | closed: `Damage` (the funnel every damage source passes), `Consume`, `GnawArmour`, `Vanish` and `Steal` ignore a sealed prism; a swept round passes through it | `Prism.cs`, `ProjectileImpactor` |
+| 13 | A carried prism taken by another Meerkat's tunnel | **open** | closed | `MeerkatSwallow.CatchPrisms` |
+| 14 | A carried crystal collected by a hull or a skimmer outside. The swallow used to let it go | **open** | closed | `OmniCrystalImpactor`, `ElementalCrystalImpactor`, `VesselImpactor`, `SkimmerImpactor` |
+| 15 | A carried crystal pulled by something else | closed already: the swallow re-poses it every frame in the tube | unchanged. A move of more than 15 u (a respawn) still lets it go | `MeerkatSwallow.MoveCrystals` |
+| 16 | A carried crystal taken by another Meerkat's tunnel | **open** | closed | `MeerkatSwallow.CatchCrystals` |
+| 17 | Flora and fauna. They reach a hull only through their prisms and hearts (rows 1, 8) and their danger (row 3), and carried prisms through bites (row 12) | **open** where those rows were | closed with those rows | none of their own |
+| 18 | Riders in different tubes | not asked | apart: each tube is its own place | `SolitonIsolation.ApartPlaces` |
+| 19 | Riders in the same tube | together | unchanged; cargo still keeps first in, first out behind its maker's rider (§9) | |
+| 20 | A race ring threaded inside a tube | counts (a sweep, not a touch) | unchanged: every crystal gate lets a sweep through | `IsSweepDispatch` |
+
+**Still open, and why:**
+- **The Jacks' net** can still catch a sealed prism or a carried crystal, because it moves things it finds in the spatial
+  index and the crystal list. One line in `JacksNet` (Garrett's) would close it; it is not in the Meerkat's code.
+- **A rival's AI still aims at a rider.** Its shots pass through.
+- **A peer's read is by place.** A Meerkat that crosses a tube's hollow without riding it reads as inside on other
+  machines for those frames. Replicating the riding flag would be exact; it needs a protocol version bump.
+- **The Rift's void** counts as a place of its own on the machine that flies it only (rifts are not replicated, §7b).
+
+**Shared code touched (the trail):** one guarded line each in `ExplosionImpactor`, `ProjectileImpactor` (two),
+`MineImpactor`, `SkimmerImpactor` (two), `VesselImpactor` (three), `OmniCrystalImpactor`, `ElementalCrystalImpactor` and
+`FulmenSystem`; `Prism.SetSealed` / `IsSealed` and five guards in `Prism.cs`. Queued for Garrett's `/approve`.
+
+**Tests:** `Tests/Editor/SolitonIsolationTests.cs` (6): places are apart unless the same, the hollow's wall, window and
+margin, finding the tube a point is in, a dying or unformed tube holds nobody, cargo is sealed only while carried, a hull
+nobody flies through tubes is in the world.
+
+**Hand tests:** `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Meerkat: a real wormhole, and nothing inside touches outside".

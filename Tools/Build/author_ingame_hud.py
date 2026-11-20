@@ -265,13 +265,14 @@ S.update(kitbutton=K.kit_script("KitButton"), button=A.BUTTON, cbp=script_guid(n
 
 def ready_nodes():
     """FocusRing, Fill, Border, KeycapSlot, Label, Caption - under the Ready button's own RT."""
-    border, fillc, content = K.button_palette("Play", True)
+    # READY is Play / Ready on Frogma's Style Guide 5: the commit Ruby, no way back (Docs/UI/specs/sg5-play-ready.md Q2).
+    border, fillc, content = K.button_palette("Commit", True)
     ring = N("Ready/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10)))
     ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), K.kit_sprite("kit_sliver10_line2"), True)) \
         .add("le", 114, H.le(ignore=True))
     fill = N("Ready/Fill", "Fill", STRETCH)
     fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True)) \
-        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n")) \
+        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n", enabled=False)) \
         .add("le", 114, H.le(ignore=True))
     bord = N("Ready/Border", "Border", STRETCH)
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True)) \
@@ -297,7 +298,7 @@ def ready_button_doc(old, ctx):
     doc = re.sub(r"\n  theme: .*\Z", "\n", doc, flags=re.S)          # re-run: drop the KitButton tail
     return (doc.rstrip("\n") + "\n"
             + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {{fileID: {ctx.c('Ready/FocusRing', 'img')}}}\n"
-            + f"  variant: {K.VARIANTS['Play']}\n  fill: 1\n"
+            + f"  variant: {K.VARIANTS['Commit']}\n  fill: 1\n"
             + f"  fillGraphic: {{fileID: {ctx.c('Ready/Fill', 'img')}}}\n"
             + f"  borderGraphic: {{fileID: {ctx.c('Ready/Border', 'img')}}}\n"
             + K.refs_list("contentGraphics", [ctx.c("Ready/Label", "tmp")])
@@ -514,7 +515,8 @@ def kit_button(k, name, r, variant, opaque, caption, cap, pad, group_key=None, k
         .add("le", 114, H.le(ignore=True))
     fill = n.child(N(f"{k}/Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True)) \
-        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n", enabled=opaque)) \
+        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n",
+                                                   enabled=opaque and variant != "Commit")) \
         .add("le", 114, H.le(ignore=True))
     bord = n.child(N(f"{k}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True)) \
@@ -1239,7 +1241,7 @@ ANIM_SETTINGS = "e1e99ce577ae9be408463160f475ed8d"
 LIST_W, ROW_HT, LIST_H = 1400, 84, 500
 HEAD_HT = 30
 SB_BUTTONS = [  # key, caption, variant, keycap, pad (South 6 = A, East 5 = B), width
-    ("PlayAgain", "Play again", "Play", "A", 6, 300),
+    ("PlayAgain", "Play again", "Commit", "A", 6, 300),   # launches a game: the commit Ruby (sg5-play-ready Q2)
     ("Continue", "Continue", "Play", "A", 6, 300),
     ("MainMenu", "Main menu", "Default", "B", 5, 260),
     ("LeaveLobby", "Leave lobby", "Default", "B", 5, 260),
@@ -1976,7 +1978,7 @@ def validate(files):
     view = next(f for f, d in docs.items() if f"guid: {S['hudview']}" in d)
     btn = re.search(r"  readyButton: \{fileID: (-?\d+)\}", docs[view]).group(1)
     assert f"guid: {S['kitbutton']}" in docs[btn], "the Ready button is not a KitButton"
-    assert f"  variant: {K.VARIANTS['Play']}\n" in docs[btn], "the Ready button is not the Play variant"
+    assert f"  variant: {K.VARIANTS['Commit']}\n" in docs[btn], "the Ready button is not the Ruby Commit variant (Play / Ready)"
     assert "propertyPath: m_text\n      value: A\n" in cv, "the Ready button has no A keycap"
     cbp = [d for d in docs.values() if f"guid: {S['cbp']}" in d and f"m_GameObject: {{fileID: {re.search(r'm_GameObject: {fileID: (-?[0-9]+)}', docs[btn]).group(1)}}}" in d]
     assert len(cbp) == 1 and "  activationButton: 6\n" in cbp[0], "the Ready button no longer answers the pad's A (South)"

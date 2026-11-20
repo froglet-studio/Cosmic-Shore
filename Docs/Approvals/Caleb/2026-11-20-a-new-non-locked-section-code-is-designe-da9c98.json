@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-20-a-new-non-locked-section-code-is-designe-da9c98",
+  "to": "Caleb",
+  "by": "Yash",
+  "date": "2026-11-20T14:22:52+00:00",
+  "area": "CLAUDE.md, the rules every session follows",
+  "summary": "A new non-LOCKED section, 'Code is designed for the session that writes it', with seven code rules and a ratchet gate (Docs/claude/AGENT_FIRST_ARCHITECTURE.md). Proposed to you: approve, or say what you would change.",
+  "why": "Yash asked for it",
+  "branch": "Ys-bleeding-edge",
+  "commit": "950fffd9a",
+  "paths": [
+    "CLAUDE.md",
+    "Docs/claude/AGENT_FIRST_ARCHITECTURE.md",
+    "Docs/claude/principles.json",
+    "Tools/Build/agent_first_baseline.json",
+    "Tools/Build/check_agent_first.py"
+  ]
+}

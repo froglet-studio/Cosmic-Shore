@@ -499,6 +499,21 @@ branches at once on `bleeding-edge` instead of checking out each one. Skip this 
    §1.5): on exit 2, do not merge unless this PR is the fix or the person says to merge anyway. Then **read the PR** (`pull_request_read`, method `get`): still open, `mergeable` true. If
    `bleeding-edge` moved and the PR now conflicts, run §1.5 again (merge `bleeding-edge` in, resolve, `gates.sh`,
    push) and read it again. Never merge a PR whose gates you did not run on what is being merged.
+2.5 **Flag a risky merge** (Garrett, 2026-11-17: "as long as we have a way to flag the risky stuff, and get sign off
+   after the fact I would rather move as fast as we can"). What counts is defined once, in `Docs/Approvals/risky.json`:
+   shared AI code, vessel kit numbers, the multiplayer `ProtocolVersion`, UGS or the backend, an area another person
+   owns, a swim lane someone else occupies, and a merge past a review rule. Pass `--bypass` when the PR read in step 2
+   says `mergeable_state: blocked` with its checks green (the merge goes in past a review rule):
+
+   ```
+   python3 Tools/Build/risky_merge.py check --me <person> [--bypass]
+   ```
+
+   Exit 0: merge. Exit 1 (label only) or 3 (sign-off): add the `risky-merge` label to the PR (`mcp__github__issue_write`,
+   `method: update`, `labels`: the PR's current labels plus `risky-merge`, since the list replaces them). On exit 3 also
+   run `python3 Tools/Build/risky_merge.py flag --pr <N> --by <person> --title "<PR title>" [--bypass]`, commit the
+   entry it writes (`Docs/Approvals/Garrett/`) on the branch, push, and merge that head: the entry lands with the
+   change and shows in the signer's `/approve` list as RISKY MERGE. A risky merge never waits; it is only flagged.
 3. **Merge with a merge commit**, never squash or rebase:
 
    ```

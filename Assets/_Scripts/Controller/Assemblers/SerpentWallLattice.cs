@@ -40,6 +40,23 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class SerpentWallLattice
     {
+        /// <summary>
+        /// The wall's frame (wall-local x right, y up, z the plane's normal) for a seed laid at
+        /// <paramref name="seed"/>, the pose of the heading it was laid on (trail prisms face along it).
+        /// <para><b>Across</b>: the seed's own frame - the wall stands square to the heading, the original wall.
+        /// <b>Keel</b> (Garrett, 2026-11-18): a quarter turn about the seed's up, so wall x runs along the heading
+        /// and y stays the hull's up - the plane a pure pitch turn keeps to. <b>Wings</b>: a quarter turn about the
+        /// seed's right, so wall y runs along the heading and x stays the hull's right. In both, flying straight on
+        /// keeps the trail in the wall's plane: no 90 degree turn to feed it.</para>
+        /// The seed takes this frame too, so it still sits at site (0, 0) with its long axis on wall y.
+        /// </summary>
+        public static Quaternion WallFrame(Quaternion seed, SeedWallActionSO.WallPlane plane) => plane switch
+        {
+            SeedWallActionSO.WallPlane.Keel  => seed * Quaternion.AngleAxis(-90f, Vector3.up),
+            SeedWallActionSO.WallPlane.Wings => seed * Quaternion.AngleAxis(90f, Vector3.right),
+            _                                => seed,
+        };
+
         /// <summary>The fixed brick aspect (long / short). The pitch formula assumes it.</summary>
         public const float Aspect = 2f;
 

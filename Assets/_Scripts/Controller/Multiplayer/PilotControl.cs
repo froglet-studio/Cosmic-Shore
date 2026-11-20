@@ -38,6 +38,14 @@ namespace CosmicShore.Gameplay
         public static bool CanControl => NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
 
         /// <summary>
+        /// True when this machine may hand <paramref name="human"/>'s hull to the AI and back: the server, or the
+        /// machine that owns the hull. A hull is flown on the machine that owns it, so a guest's own hull can only be
+        /// handed over there; with the host-only rule a guest's hull sat at its spawn in every two-player test unless
+        /// someone held its controller (2026-11-17). Taking over ANOTHER hull stays host only.
+        /// </summary>
+        public static bool CanSetAIFlies(Player human) => CanControl || (human && human.IsLocalUser);
+
+        /// <summary>
         /// Is <paramref name="human"/>'s hull being flown by the AI right now? The AI trainer counts: it switches the
         /// hull's AIPilot off and writes the sticks itself, so without it a trainer match read as a person's flight
         /// (HumanFlightRecorder stored seven of Froglet Compute's first run as hand-flown, 2026-10-28).
@@ -60,7 +68,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool TrySetAIFlies(Player human, bool aiFlies, GameDataSO gameData, out string refusal)
         {
-            if (!TryCheckHuman(human, out refusal)) return false;
+            if (!TryCheckHuman(human, out refusal, ownHullOnOwnMachine: true)) return false;
             // Handing the hull to the AIPilot would start it writing the sticks against the trainer, every frame.
             if (IsHeldByTrainer(human)) { refusal = TrainerRefusal; return false; }
             var hull = human.Vessel;
@@ -138,10 +146,11 @@ namespace CosmicShore.Gameplay
             if (hull is Component c && c && c.TryGetComponent(out SkimRacePilot skim)) skim.FlyingForHuman = false;
         }
 
-        static bool TryCheckHuman(Player human, out string refusal)
+        static bool TryCheckHuman(Player human, out string refusal, bool ownHullOnOwnMachine = false)
         {
             refusal = null;
-            if (!CanControl)                              { refusal = "only the host can change who flies a hull"; return false; }
+            if (!(ownHullOnOwnMachine ? CanSetAIFlies(human) : CanControl))
+                                                          { refusal = "only the host can change who flies a hull"; return false; }
             if (!human || human.NetIsAI.Value)            { refusal = "no human pilot"; return false; }
             if (human.Vessel is not Object v || !v)       { refusal = "you have no hull"; return false; }
             return true;

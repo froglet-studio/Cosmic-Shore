@@ -60,7 +60,18 @@ namespace CosmicShore.Utility
         static Transform _target;
         static Vector3 _viewShift;
         static float _targetRadius;
+        static float _targetBoundAt;
+        static float _nextRemeasureAt;
         static bool _suppressed;
+
+        /// <summary>How often a hull that measured to nothing is measured again, in seconds.</summary>
+        const float RemeasureEverySeconds = 0.25f;
+
+        /// <summary>How long a bound hull may stay unmeasurable before it is reported. A vessel is bound in
+        /// <c>VesselController.Initialize</c>, which can run while its model is still switched off (a spawn that
+        /// reveals the hull later, a seat taken on a hidden hull); that is a hull not shown YET, not a vessel
+        /// without one.</summary>
+        const float UnmeasurableGraceSeconds = 3f;
         static PrismOcclusionConfigSO _config;
         static bool _configResolved;
         static bool _publishedActive;
@@ -203,6 +214,8 @@ namespace CosmicShore.Utility
             _target = target;
             _viewShift = Vector3.zero;
             _targetRadius = target != null ? MeasureCircumscribedRadius(target) : 0f;
+            _targetBoundAt = Time.unscaledTime;
+            _nextRemeasureAt = _targetBoundAt + RemeasureEverySeconds;
         }
 
         /// <summary>
@@ -370,11 +383,22 @@ namespace CosmicShore.Utility
             // is not cosmetic: too small and the ship stays hidden, too large and the world
             // dissolves in front of the player. Both degrade to a sane corridor and scream —
             // never to a silently-absent one, which is the platform law failing quietly.
+            // The measurement is taken once, when the vessel is bound, and only enabled renderers on active
+            // objects count. A hull still hidden at that moment measured to nothing and the corridor stayed on
+            // the fallback guess for the whole flight (the Serpent and the Jacks, both of which have a hull).
+            // So an unmeasured hull is measured again until it shows, and only one that stays unmeasurable is
+            // reported.
             float radius = _targetRadius;
+            if (radius <= 0f && Time.unscaledTime >= _nextRemeasureAt)
+            {
+                _nextRemeasureAt = Time.unscaledTime + RemeasureEverySeconds;
+                _targetRadius = radius = MeasureCircumscribedRadius(_target);
+            }
             if (radius <= 0f)
             {
                 radius = config.FallbackVesselRadius;
-                PrismOcclusionDiagnostics.WarnUnmeasurableVessel(_target, radius);
+                if (Time.unscaledTime - _targetBoundAt >= UnmeasurableGraceSeconds)
+                    PrismOcclusionDiagnostics.WarnUnmeasurableVessel(_target, radius);
             }
             else
             {
