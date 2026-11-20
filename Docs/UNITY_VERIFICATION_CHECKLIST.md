@@ -24653,10 +24653,15 @@ nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed
 `MatchRejoin.DroppedThisRun` / `GiveUpSaysHostLeft`; `DisconnectNotice.CheckRejoin` uses it. The Unity editor was in Play for
 another test when this was written, so nothing was compiled or run.
 
-- [ ] The project compiles; `MatchRejoinTests` pass (the new `GiveUp_SaysHostLeftOnlyForADropSeenInThisRun` among them).
-- [ ] MPPM, Player 2 a guest in a match: stop Play, press Play again. Player 2 sits on the menu 30 s: no "The host left".
+- [ ] `MatchRejoinTests` pass (the new `GiveUp_SaysHostLeftOnlyForADropSeenInThisRun` among them). Not run; the project compiles (2026-11-20).
+- [x] MPPM, Player 2 a guest in a match: stop Play, press Play again. Player 2 sits on the menu 30 s: no "The host left".
+      **Passed 2026-11-20** (session-driven, editor "Lion" + Player 2 "Tiger", `7788ad036d`): the host stopped mid-Bloomrush,
+      Player 2 bounced "Host disconnected"; after Play again its menu showed no notice for 55 s. A drop record planted as
+      "dropped two minutes ago in an earlier run" was given up after 20 s with no notice on either player.
 - [ ] A guest whose host quits while the guest keeps running still gets "The host left" on its menu after about 20 s.
-- [ ] A guest that restarts while the match is still running is still offered the rejoin.
+      Not run: Player 2 stops with the main editor, so this needs a second machine or a build.
+- [x] A guest that restarts while the match is still running is still offered the rejoin. **Passed 2026-11-20** as a link
+      drop: REJOIN offered on the menu, seat back 15 s after the press, no READY, race finished, both scoreboards agree.
 
 ## 🔴 A guest hands its own hull to the AI, and an idle guest in the editor is handed over by itself (2026-11-17, Yash, COMPILED in the open editor, NOT PLAYED)
 
@@ -24664,13 +24669,37 @@ another test when this was written, so nothing was compiled or run.
 guest's own row, and the editor-only `IdleGuestAutopilot` (FrogletTools > Multiplayer > Idle Guest Flies On AI, on by default).
 `unity recompile`: 0 errors. No match was played with it.
 
-- [ ] Two players, any gate race (Switchback, Skim Race, Redline): leave Player 2 alone. About 4 s after the turn starts its
-      hull flies the rings and finishes; the host sees it move.
+Run of 2026-11-20 (session-driven, editor "Lion" + MPPM Player 2 "Tiger", `7788ad036d`; nobody watched a screen):
+- [x] Two players, any gate race: leave Player 2 alone. **Passed in Switchback**: its hull was on the AI within 11 s of
+      the start and threaded 20 gates (16 and 11 in two later races); the host saw the same count. In a Maelstrom:
+      Breakwater 24 stations, Serpent Time 14 gates.
+      **Open:** it is not reliable in Switchback. Some races it threads 20, 16 or 11 gates; in three others it ended
+      on 0, 1 and 2 (one hull sat at 0 for 75 s at about 59 u/s, course present, autopilot on), and it tends to start
+      slower in each later race of one Play. The host's AI hull finished all 26 every time. Cause not found.
 - [ ] Touch Player 2's pad or keyboard: control comes back at once; leave it again and the AI takes over after 4 s.
-- [ ] A mode that is not a gate race (Joust, Cleave, Bloomrush): the idle guest hull flies the platform autopilot.
-- [ ] Maelstrom, several rounds: the guest hull is handed over again in each round.
-- [ ] The host's own hull is never handed over by idling; the menu toggle off stops it on the guest too.
-- [ ] Third Eye on the guest: the AI / You toggle works on its own row and stays disabled on every other row.
+      Not run: a key event queued from a script lands in the editor's input state, not the player's. Needs a person.
+- [x] A mode that is not a gate race: **passed in Bloomrush and Dog Fight** (autopilot on, about 162 u/s in Bloomrush).
+- [x] Maelstrom, several rounds: **passed**, three rounds (Dog Fight, Breakwater, Serpent Time), handed over in each.
+- [x] The host's own hull is never handed over by idling: **passed** (Bloomrush, host idle: autopilot off, speed 0).
+      The menu toggle off was not tried.
+- [ ] Third Eye on the guest: the AI / You toggle works on its own row and stays disabled on every other row. Not run.
+
+## 🟡 A pilot who rejoined or left is no longer skipped or left behind on the menu (2026-11-20, Yash, COMPILED and PLAYED by a session)
+
+`ServerPlayerVesselInitializer.PersistentPlayerOf` and `ReleaseDepartedHumans`. Found by the run above; before the fix:
+after a drop and REJOIN the host's menu listed only itself (the reclaimed Player is owned by the new connection but is
+not its player object, so the scene pass skipped it), and a guest who then left the party stayed on the host as a
+server-owned Player. Joining again made two "Tiger"s, one named "Tiger (2)" (seen as "Lion (2)" in the test with Garrett
+of 2026-11-20), and the leftover showed in the other machine's roster and on its scoreboard.
+`unity recompile`: 0 errors. EditMode tests not run.
+
+- [x] Drop and REJOIN in Switchback, finish, Main Menu: the host lists both pilots and Player 2 has its menu hull.
+- [x] Launch the next match from there (Bloomrush): both pilots are seated and Player 2's hull flies.
+- [x] Player 2 leaves the party on the menu: the host has one Player. Player 2 joins again: both machines list
+      "Lion, Tiger", no "(2)".
+- [x] Player 2 leaves the party while the match is returning to the menu: no Player left behind; joins again, no "(2)".
+- [ ] The same with three or four players, and in a Maelstrom hub (a pilot who leaves between rounds).
+- [ ] By hand: after a rejoin and a return to the menu, Player 2 can change hull and the party panel shows both.
 
 ## 🟡 Stoat: one slingshot - the swing's speed-up, no second push at the exit (2026-11-19, Yash, NOT PLAYED)
 `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "One slingshot". `StoatSlingConfig`: swingKickShare 0.

@@ -22,6 +22,7 @@ One line per bug, with its current state. Full entries (repro, root cause, fix) 
 | Bug | Fix |
 |---|---|
 | `[UGS Auth] Sign-in failed ... The player is already signing in`, twice at boot (2026-11-15) | Fixed 2026-11-15 on `Ys-bleeding-edge`. **Cause:** there were two `AuthenticationServiceFacade`s in every Play. AppManager's bindings are installed twice, into Reflex's root container (AppManager.prefab is a root scope, installed from the prefab asset) and into the Bootstrap scene's container (the prefab's instance carries a `ContainerScope`), and a Singleton factory is single per container. AppManager's facade started the boot sign-in; the Authentication scene held the other one, whose `_signInTask` was null, so when it asked while that sign-in was still in flight it issued a second `SignInAnonymouslyAsync`, which the SDK refused and the facade reported as a failure. When the first sign-in had already landed, the second facade raised `OnSignedIn` a second time, which is what printed `[FriendsInitializer] Friends service did not come up` on every boot. Not specific to "play offline": it only needs the sign-in to outlast the splash. **Fix:** the binding hands out one shared facade per Play (`AuthenticationServiceFacade.Shared`, `AppManager.RegisterAuthenticationFacade`), and `ResetStartupState` no longer forgets a sign-in that is still in flight. **Evidence:** before, a trace on 11 boots showed two facade instances each time (ctor at frame 0 and frame 4, both from `ContainerScope.Awake`) and the Friends warning on all 11; the SDK refusal itself did not recur on this machine (the sign-in finished in under 0.5 s each time). After: 6 offline-preferred and 3 online boots, one facade in both containers, no `already signing in`, no Friends warning, online boots reached InParty. `AuthenticationFacadeSingleInstanceTests` (3 tests) passes. **Still open:** every other pure service AppManager binds (NetworkMonitor, FriendsServiceFacade, ReconnectService, ApplicationStateMachine, OfflineModeService and the rest) is still built once per container, so AppManager and the later scenes hold different instances; the reconnect path (menu online/offline toggle) was not replayed |
+| **A pilot who rejoined is skipped on the menu; a pilot who left stays behind as a Player** (2026-11-20; no B number: B48 is taken twice) | Fixed 2026-11-20 on `Ys-bleeding-edge`. **Cause:** a rejoin is approved with no player object of its own, so the reclaimed Player is owned by the new connection without being its player object, and the host's scene pass (which read only player objects) never reached it: no menu hull, not in the host's roster, and still flagged to outlive its owner. When that guest left the party, or when any guest left while the match was returning to the menu, the Player stayed on the host, server-owned and not an AI. Joining again gave two pilots of one name ("Tiger (2)"), and the leftover was on the other machine's roster and scoreboard. **Fix:** `ServerPlayerVesselInitializer.PersistentPlayerOf` (a client's Player is its player object or the human Player it owns) and `ReleaseDepartedHumans` (a scene that adopts no leaver clears the flag at once and removes a Player already left behind). **Played** by a session (editor + MPPM Player 2): after a rejoin the host's menu lists both pilots and the next match seats both; a leave on the menu and a leave during the return leave no Player; joining again shows no "(2)". Not played: three or four players, the Maelstrom hub, a build |
 | **Lobby bug 1: ghost row**, a friend who quit still shows online | Offline on quit, leave on `ExitingPlayMode`, 2 absence strikes, Friends re-read every 15 s while open (2026-11-01). [`TEST_CHECKLIST.md`](TEST_CHECKLIST.md) §1 |
 | **Lobby bug 2: slow join / split presence lobby**, a new player isn't visible | Converge at +2 s / +7 s after joining; 8 s poll while a list is watched. §2 |
 | **Lobby bug 3: stale AI on a guest**, an AI the host removed still shows | Guest roster drawn from the host's `LobbySnapshot`, redrawn on drift. §3 |
@@ -77,6 +78,28 @@ missing-stat zero and the "host left" close in a game scene all PASSED. One new 
 scoreboard carried its last match's drift and boost into the next match (`EventDrivenStatsProvider` now seeds 0);
 replayed, both machines agree. Seen, not followed up: a stale REJOIN offer stays on the menu after the player has
 rejoined that party; FMOD `Event not found` errors on both players (not multiplayer code).
+
+Session-driven run of 2026-11-20 (`7788ad036d`, editor "Lion" + MPPM Player 2 "Tiger", live UGS; nobody watched a
+screen; checklist entries "The host left", "A guest hands its own hull to the AI" and "A pilot who rejoined or left"):
+- Boot: both players reached `InParty`, no `Invalid transition` at boot, no Friends warning, no second sign-in. A second
+  Play started in a new session (P-B33 held).
+- "The host left": PASSED. After a mid-match Stop and a new Play, Player 2's menu showed nothing for 55 s; a planted old
+  drop record was given up silently.
+- Idle guest on AI: PASSED in Switchback (20 gates), Bloomrush, and three Maelstrom rounds. The host's idle hull was left
+  alone. The key-press hand-back needs a person.
+- Drop and REJOIN: PASSED again (seat back 15 s after the press, `rejoinedRunningTurn`, no READY, no P-B46 / P-B47 error).
+- Maelstrom, intensity 3, three rounds (Dog Fight, Breakwater, Serpent Time): all finished, same scoreboards on both.
+  The prism hand-over ran on the one round with a cell arena: `arenaParked 9043 prisms` in 3.5 s (host) and 3.2 s
+  (guest), no `arenaParkCutShort`. Player 2 froze 9.9 s returning from Dog Fight to the hub (the host 3.4 s); the
+  driver's probes add 2-3 s, so that number is not clean. The hub then started a fourth round by itself.
+- **Found and fixed:** a pilot who rejoined was skipped on the host's menu, and a pilot who left stayed behind as a
+  Player (the "Lion (2)" of the test with Garrett the night before). Replayed after the fix: all four cases pass.
+- **Found, open:** the idle guest's AI hull is not reliable in Switchback: 20, 16 and 11 gates in some races, 0, 1 and
+  2 in three others (one sat at 0 for 75 s at about 59 u/s), slower to start in each later race of one Play. The host's
+  AI hull finished all 26 every time. Cause not found. Editor test aid only.
+- Not a game fault: the PC's internet dropped twice during the day (UGS `Request timeout`, `Cannot resolve destination
+  host`, `DTLS handshake failed`). One drop cut the guest and then the host out of a running match with no freeze
+  (`relayDrop no freeze in the last 30 s`); another made a whole Play boot without a party. Those runs were thrown away.
 
 ## Not bugs, missing features (tracked in [`TODO.md`](TODO.md))
 
