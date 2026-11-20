@@ -24732,7 +24732,9 @@ Run of 2026-11-20 (session-driven, editor "Lion" + MPPM Player 2 "Tiger", `7788a
       the door, the prism sense) was built on the server only, so a guest's own AI hull flew the plain ring steering
       and stopped at the first closed door. A guest now builds it when it arms its own hull
       (`SwitchbackController.BuildBlastAI`, `OnRacerArmed`; `SwitchbackBlastRunRuntime.TrackAllPrisms`). The host's AI
-      is unchanged. Replayed: REPLAY_RESULT
+      is unchanged. Replayed: two races in a fresh Play, 25 and 21 gates with the blast AI
+      built and its keys seen on the guest (a race ends when the host's hull threads its 26th). A third could not be run: Player 2's
+      editor hung when the PC ran out of memory.
 - [ ] Touch Player 2's pad or keyboard: control comes back at once; leave it again and the AI takes over after 4 s.
       Not run: a key event queued from a script lands in the editor's input state, not the player's. Needs a person.
 - [x] A mode that is not a gate race: **passed in Bloomrush and Dog Fight** (autopilot on, about 162 u/s in Bloomrush).
