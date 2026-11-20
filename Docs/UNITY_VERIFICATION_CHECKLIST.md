@@ -3218,6 +3218,41 @@ frame time not measured.
 
 ---
 
+### 🔴 Replays: crystals, plants, creatures and cytoplasm shards stand where the match had them (`replay/crystal-fidelity`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/REPLAYS.md` §6.4; Yash: "everyone's position, orientation, to mimic the whole game"):
+- Stream 4 of a `.cstheater` (`TheaterActors`): per-actor pose tracks (crystals by id, plants and creatures by species)
+  and per-cell shard fields (positions at Go plus each dying limb's shard). `TheaterActorRecorder` records them on the
+  vessel samples (`ReplayConfigSO` **Record Actors**, on).
+- `ReplayActorSync` (from `ReplayMatchDirector`) places them every frame: crystals by id (far jumps through
+  `CrystalManager.RelocateCrystal`), plants and creatures by species and nearness (unpaired ones hidden), shard fields
+  stood at their recorded positions and limb shards added on time (live limbs add none during a replay).
+- Additive hooks: `SnowChanger` (`CopyShardPositions`, `ApplyShardPositions`, `AddRecordedMorphedShard`,
+  `MorphedShardAdded`, `ReplayHoldsMorphs`), `Cell.SpawnedLifeForms`, `TheaterRecorder.RecordActors`.
+
+**Verified without the editor:** the format and the pure playback maths (`TheaterActorsTests`, 13 tests) compiled and
+run with dotnet against Unity stubs, beside `TheaterRecordingTests` (whose `Duration_SpansEveryTrack` fails on the base
+branch too: its data ends at 12.5, so the duration is 2.5, not 2.1). The Unity-dependent files were checked against the
+project's APIs by reading, not compiled. **Compile first.**
+
+**Verify in editor:**
+1. Play Regatta (or any mode with a cell ecology) to the end; the `.cstheater` is larger than before and the log has no
+   errors. WATCH it.
+2. Crystals: each stands where it stood in the match at every moment, including after it is taken and respawns
+   (snaps, no glide across the cell); the cell's crystal-facing shards point at it.
+3. Plants and creatures: each visible one stands and faces as in the match; extra live ones are hidden and come back
+   after leaving the replay.
+4. Cytoplasm: the shard field matches the match's (compare a screenshot at Go); dying limbs leave shards at the moments
+   they did, and no extra ones.
+5. Leave mid-replay and play a normal match: dying limbs leave shards again (`ReplayHoldsMorphs` cleared); nothing
+   stays hidden.
+6. An older `.cstheater` (no stream 4) still watches as before.
+
+**First-pass tuning:** `ReplayConfigSO.ActorJumpDistance` 8; `TheaterActorThinning` 1 cm / 0.25 deg / 0.001 scale;
+life-form pairing every 6 frames.
+
+---
+
 ### 🔴 Destroyed prisms are recycled after their death effect; trail hygiene (`perf/lavalamp-prism-recycle`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PERFORMANCE_OPTIMIZATION.md` §2, row 10-29; Yash approved recycling DEAD prisms):
@@ -24692,9 +24727,12 @@ Run of 2026-11-20 (session-driven, editor "Lion" + MPPM Player 2 "Tiger", `7788a
 - [x] Two players, any gate race: leave Player 2 alone. **Passed in Switchback**: its hull was on the AI within 11 s of
       the start and threaded 20 gates (16 and 11 in two later races); the host saw the same count. In a Maelstrom:
       Breakwater 24 stations, Serpent Time 14 gates.
-      **Open:** it is not reliable in Switchback. Some races it threads 20, 16 or 11 gates; in three others it ended
-      on 0, 1 and 2 (one hull sat at 0 for 75 s at about 59 u/s, course present, autopilot on), and it tends to start
-      slower in each later race of one Play. The host's AI hull finished all 26 every time. Cause not found.
+      It was not reliable in Switchback: some races 20, 16 or 11 gates, three others 0, 1 and 2 while the host's AI
+      hull threaded all 26. **Cause and fix (same day):** Switchback's blast AI (the key it takes, the blast that opens
+      the door, the prism sense) was built on the server only, so a guest's own AI hull flew the plain ring steering
+      and stopped at the first closed door. A guest now builds it when it arms its own hull
+      (`SwitchbackController.BuildBlastAI`, `OnRacerArmed`; `SwitchbackBlastRunRuntime.TrackAllPrisms`). The host's AI
+      is unchanged. Replayed: REPLAY_RESULT
 - [ ] Touch Player 2's pad or keyboard: control comes back at once; leave it again and the AI takes over after 4 s.
       Not run: a key event queued from a script lands in the editor's input state, not the player's. Needs a person.
 - [x] A mode that is not a gate race: **passed in Bloomrush and Dog Fight** (autopilot on, about 162 u/s in Bloomrush).
