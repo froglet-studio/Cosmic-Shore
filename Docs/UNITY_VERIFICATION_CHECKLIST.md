@@ -25638,3 +25638,10 @@ two training games. `check_gamelist_scenes.py`: OK (self-test 16/16). Unity edit
 - [ ] The daily challenge entry point: it reads as unavailable (one `[DailyChallengeSystem] Training game list is
       empty` warning), and does not start a load.
 - [ ] A development build: play any game from the Arcade grid and the Hangar's Games page; no scene-load error.
+
+## 🟡 Stoat: the ripple is a colourless space-time wave (2026-11-21, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1c "The drawn wave". `StoatRipplePass` + `StoatRipple.shader` (full-screen, its own copy); `StoatRippleConfig`: wavelength 9, bend 0.012, nearRadius 22, shimmer 0.05, passShare 0.35. Compiled (both assemblies, Roslyn against the editor's references) and the shader through `Tools/Shaders/verify_stoat_ripple.py` (glslang, both stages, negative control fires); not yet run in the editor.
+- [ ] EditMode `StoatRippleTests`: all pass.
+- [ ] Let the swing hole go back to nothing: no coloured ring; the scene behind the wave wobbles outward from where the hole was, a few crests, and fades as it spreads.
+- [ ] The wave running past your own camera: a small swell of the whole view, not uncomfortable.
+- [ ] No hitch on the frame a ripple starts (the pass copies the camera colour only while one lives); try the Mobile look on a phone build.
