@@ -346,6 +346,9 @@ namespace CosmicShore.Gameplay
                     // victim-effect chain ran against the pilot themselves (muting their
                     // own RightStickAction and spamming impact SFX).
                     if (ReferenceEquals(shipImpactor.Vessel?.VesselStatus, skimmer.VesselStatus)) return;
+                    // A hull inside a Soliton Tunnel and one outside it (or in another tube) are in different places:
+                    // neither's skimmer lands on the other's hull (SolitonIsolation).
+                    if (SolitonIsolation.Apart(skimmer.VesselStatus, shipImpactor.Vessel?.VesselStatus)) return;
                     if (!IsSweepDispatch && !IsShellDispatch && TracksStandingVessels())
                         _overlappingVessels[shipImpactor] =
                             _overlappingVessels.TryGetValue(shipImpactor, out int entered) ? entered + 1 : 1;
@@ -424,6 +427,8 @@ namespace CosmicShore.Gameplay
                     // the heart's collider never gets disabled by a collection.
                     var crystal = crystalImpactor.Crystal;
                     if (crystal == null || crystal.IsExploding) return;
+                    // a crystal a Soliton Tunnel carries is not in the world (SolitonIsolation.Seal)
+                    if (!IsSweepDispatch && SolitonIsolation.Sealed(crystal)) return;
 
                     // A LIVING lifeform's embedded heart is NOT a pickup, and the collectability
                     // guard below declines it on purpose. It IS a surface a skimmer can act on —

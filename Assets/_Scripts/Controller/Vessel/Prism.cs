@@ -1040,6 +1040,7 @@ namespace CosmicShore.Gameplay
             _lastSuperShieldJiggleTime = float.NegativeInfinity;
             _lodCulled = false; // pool reuse: Initialize owns the collider again
             _carried = false;   // (and no parcel holds a pooled prism)
+            _sealed = false;    // (nor a Soliton Tunnel)
             CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
             BookedShieldVolume = 0f; // the shell volume the books hold for this prism (VolumeLedger)
             IsSmallest = false;
@@ -1538,6 +1539,26 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a payload parcel holds this prism (<see cref="SetCarried"/>).</summary>
         public bool IsCarried => _carried;
 
+        bool _sealed;
+
+        /// <summary>
+        /// This prism is inside a Soliton Tunnel, in another dimension until it comes out (<see cref="SolitonIsolation"/>;
+        /// Yash, 2026-11-20: "anything inside a wormhole won't interact with anything outside the hole"). Its collider is
+        /// held off as a carried parcel's is (<see cref="SetCarried"/>), and nothing damages, consumes, gnaws, vanishes or
+        /// steals it: <see cref="Damage"/> is the funnel every damage source passes, so the one gate there covers rounds,
+        /// blasts, blades, rams, burns and sweeps. It keeps its mass and its place in the spatial index. Whoever seals it
+        /// (<c>MeerkatSwallow</c>) lets it out; a pooled prism is never sealed.
+        /// </summary>
+        public void SetSealed(bool on)
+        {
+            if (_sealed == on) return;
+            _sealed = on;
+            SetCarried(on);
+        }
+
+        /// <summary>True while a Soliton Tunnel carries this prism (<see cref="SetSealed"/>).</summary>
+        public bool IsSealed => _sealed;
+
         /// <summary>True while this prism's collider is enabled (LOD telemetry).</summary>
         public bool ColliderEnabled => blockCollider && blockCollider.enabled;
 
@@ -1892,6 +1913,7 @@ namespace CosmicShore.Gameplay
                            float debrisSpeedLimit = 0f, bool byGunfire = false)
         {
             if (destroyed) return;
+            if (_sealed) return;   // inside a Soliton Tunnel: nothing in the world reaches it (SetSealed)
             // A SILENCED attacker's hit on anything but their own domain's mass deflects
             // (VesselSilence, Docs/ElementalAbilitySystem/SILENCE.md): the weapon still connects and
             // the prism still answers with the deflection wobble, so the shot reads as blocked rather
@@ -1979,7 +2001,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void Vanish(string playerName)
         {
-            if (destroyed) return;
+            if (destroyed || _sealed) return;
             if (DeflectsSilenced(playerName, 0f)) return;
             SetupDestruction(Domain, playerName, devastate: true);
         }
@@ -2008,7 +2030,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool GnawArmour(float bite)
         {
-            if (destroyed || bite <= 0f) return false;
+            if (destroyed || _sealed || bite <= 0f) return false;
             var props = prismProperties;
             if (props is not { IsShielded: true } && props is not { IsSuperShielded: true }) return false;
             _armourWear += bite;
@@ -2046,7 +2068,7 @@ namespace CosmicShore.Gameplay
             // A consume carries no impact vector — only the suction sink — so the deflection
             // is stamped at the floor magnitude rather than derived from a direction that
             // describes where the mass was being pulled, not how hard it was struck.
-            if (destroyed) return;
+            if (destroyed || _sealed) return;
             if (DeflectsSilenced(playerName, 0f)) return;
             if (AbsorbSuperShieldHit(0f)) return;
             // Impact-less on purpose, for the same reason the deflection above is stamped
@@ -2193,6 +2215,7 @@ namespace CosmicShore.Gameplay
         {
             // A silenced pilot steals no prism (VesselSilence) - the steal deflects like a hit.
             if (DeflectsSilenced(playerName, 0f)) return;
+            if (_sealed) return;   // inside a Soliton Tunnel (SetSealed): its carrier steals before it seals
             teamManager.Steal(playerName, domain, superSteal);
         }
 

@@ -257,6 +257,7 @@ namespace CosmicShore.Gameplay
                 {
                     var c = live[i];
                     if (c == null || !c.isActiveAndEnabled || c.IsExploding) continue;
+                    if (SolitonIsolation.Sealed(c)) continue;   // carried through a Soliton Tunnel: not in the world
                     if (cfg.OmniCrystalsOnly && c.crystalProperties.Element != Element.Omni) continue;
                     if (chain.Struck.Contains(c.Id)) continue;
                     if ((c.transform.position - origin).sqrMagnitude > reachSq) continue;
