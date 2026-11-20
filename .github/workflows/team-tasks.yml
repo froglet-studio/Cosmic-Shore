@@ -43,7 +43,7 @@ jobs:
     steps:
       # Treeless: the sweep reads commit history and branch tips (merge commits on bleeding-edge, each branch's last
       # commit date) and four small files, never the repository's gigabytes of assets.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
           filter: tree:0

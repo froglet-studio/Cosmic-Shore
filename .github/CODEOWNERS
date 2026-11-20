@@ -18,3 +18,7 @@
 /Docs/UI_STYLE_GUIDE.md @Shombith03
 /Docs/UI/ @Shombith03
 /Tools/Build/froglet_style.py @Shombith03
+
+# Backend (CLAUDE.md: anything on UGS or the backend is Shombith's): Cloud Code, access control, commerce
+# and the deploy script hold the server's rules, so a change there gets his review.
+/Tools/UGS/ @Shombith03
