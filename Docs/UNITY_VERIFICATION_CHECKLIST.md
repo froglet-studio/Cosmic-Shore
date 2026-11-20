@@ -24855,6 +24855,36 @@ of 2026-11-20), and the leftover showed in the other machine's roster and on its
 - [ ] The same with three or four players, and in a Maelstrom hub (a pilot who leaves between rounds).
 - [ ] By hand: after a rejoin and a return to the menu, Player 2 can change hull and the party panel shows both.
 
+## 🟡 The return to the menu takes the match's world down before the load (B45, 2026-11-20, Yash, COMPILED and PLAYED by a session, solo host)
+
+`SceneLoader.DrainSceneForExitAsync`, `Cell.RetireWorldIntoPoolForSceneExit` (`requireEnvironment`,
+`rootDestroyPrismsPerFrame`, `returnPooledTrail`), `Cell.ReleaseRetiredWorldByRoot`, and the guest's start in
+`MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc`. Affects: the cell's owners (ecology); a cell swap
+and the Maelstrom hub call the retire exactly as before. `unity recompile`: 0 errors; `check_agent_first`,
+`check_console_logging`, `check_conditional_compilation` pass. `MaelstromArenaHandOverTests` 11/11 by reflection in the editor. The scene-exit code then moved into `Cell.SceneExit.cs` (Cell.cs is over the size limit and may not grow): compiled and those tests re-run after the move, the Play measurements are from before it.
+Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
+
+- [x] Solo online host, Bloomrush 90 s, Main Menu: the load's frame is 5.7-6.5 s (9.5-10.5 s before), the menu comes
+      up normally, no red error, and the test log has a `sceneExitDrain` mark.
+- [ ] Two players, the same: the guest also reaches the menu, nobody bounces, and both logs carry the mark. Compare
+      each player's longest freeze with the 8.7-10.0 s of the test with Garrett of 2026-11-20.
+- [ ] By eye: after pressing Main Menu the splash is up for longer than before (up to about 8 s more after a very
+      heavy match) and nothing of the match shows through it.
+- [ ] A match with a cell environment (Cleave, Dog Fight), return to the menu, then launch it again: the arena lays
+      normally (environment prisms were parked in the pool on the way out, not destroyed).
+- [ ] Play Again (the same scene reloads) and a Maelstrom round back to the hub still work.
+- [ ] `FrogletTools`: nothing new. The two numbers are on the SceneLoader in Bootstrap ("Scene exit drain").
+
+## 🟡 Maelstrom seats its AI where the host placed them (2026-11-20, Yash, COMPILED and PLAYED by a session, solo host)
+
+`ServerPlayerVesselInitializerWithAI.PlacedOrBalancedDomain`, used by the match spawner and by
+`MaelstromController.DealAISeats`. `PlacedAIDomainTests` (4) pass in the editor (run by reflection, not the Test Runner).
+
+- [x] Solo host, Maelstrom, three AI placed on Ruby: the hub deals and spawns all three on Ruby.
+- [ ] Two players as in the report: both on Jade, two AI placed on Ruby. The hub shows both AI on Ruby on BOTH
+      machines, and every round keeps them there.
+- [ ] Nothing placed (the default): the AI are spread as before (one per empty domain first).
+
 ## 🟡 Stoat: one slingshot - the swing's speed-up, no second push at the exit (2026-11-19, Yash, NOT PLAYED)
 `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "One slingshot". `StoatSlingConfig`: swingKickShare 0.
 - [x] EditMode `StoatSlingTests`: all pass (`SlingConfig_ShipsTheSwing` reads swingKickShare 0). 2026-11-19, real editor on B: at 08b67d4d76: filter `Stoat` 141/141, `Slingshot` 19/19.

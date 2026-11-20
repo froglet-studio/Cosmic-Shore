@@ -22,6 +22,8 @@ namespace CosmicShore.Tests
     public class MaelstromArenaHandOverTests
     {
         const string CellPath = "Assets/_Scripts/Controller/Environment/Cell.cs";
+        // The scene-exit retire is the cell's own partial file (moved out of Cell.cs on 2026-11-20).
+        const string CellSceneExitPath = "Assets/_Scripts/Controller/Environment/Cell.SceneExit.cs";
         const string LobbyPath = "Assets/_Scripts/Controller/Arcade/Maelstrom/MaelstromLobby.cs";
         const string ViewPath = "Assets/_Scripts/Controller/Arcade/Maelstrom/MaelstromSceneView.cs";
         const string PreviewPath = "Assets/_Scripts/Controller/Arcade/Maelstrom/MaelstromPreviewHost.cs";
@@ -71,7 +73,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Cell_SceneExitRetire_ParksInThePool_AndBuildsNothing()
         {
-            string routine = Body(Read(CellPath), "IEnumerator RetireForSceneExitRoutine(");
+            string routine = Body(Read(CellSceneExitPath), "IEnumerator RetireForSceneExitRoutine(");
             Assert.IsTrue(routine.Contains("ReturnRetiredTrailToPool("),
                 "pooled trail must go back to ITS pool; destroying it corrupts that pool's accounting");
             Assert.IsTrue(routine.Contains("ReleaseRetiredWorld("),
@@ -86,7 +88,7 @@ namespace CosmicShore.Tests
         public void Cell_SceneExitRetire_RefusesDuringASwap_AndASwapRefusesDuringIt()
         {
             string cell = Read(CellPath);
-            string entry = Body(cell, "public bool RetireWorldIntoPoolForSceneExit(");
+            string entry = Body(Read(CellSceneExitPath), "public bool RetireWorldIntoPoolForSceneExit(");
             Assert.IsTrue(entry.Contains("_swapping || _retiringForSceneExit"),
                 "a world still being laid cannot be handed over");
             string swap = Body(cell, "public bool RequestCellSwap(");
@@ -132,7 +134,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Cell_SceneExitRetire_RetiresLifeWithTheWorld_AndCannotLatchItsFlag()
         {
-            string routine = Body(Read(CellPath), "IEnumerator RetireForSceneExitRoutine(");
+            string routine = Body(Read(CellSceneExitPath), "IEnumerator RetireForSceneExitRoutine(");
             Assert.IsTrue(routine.Contains("RetireWithWorld()"),
                 "the root is destroyed with the scene still loaded: without this every plant runs its death path");
             Assert.IsTrue(routine.Contains("leaveSpawnedNetworkLifeForms: true"),
