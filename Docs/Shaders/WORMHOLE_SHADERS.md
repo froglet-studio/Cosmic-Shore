@@ -15,6 +15,10 @@ network. For each one it gives:
 It ends with the other wormhole and lens shaders in the project, which share the same plumbing. The general recipe for
 the "watery glass" family is in `WATERY_GLASS.md`.
 
+**What ships since 2026-11-20: §17, a real wormhole** (on top of §16's plain wormhole, the same one pass): a mouth
+shows the place round its other mouth, the ride is a streaked throat with a clear way ahead, and the tube you ride is no
+longer marched. §17 has what fell short, every new field, the measured cost and what was traded away.
+
 **What ships today (`feat/wormhole-pc-unified`, PR #1624, from the calm-jelly round, 2026-10-29):** ONE look, the
 same for the trunk (a formed tunnel) and the root (an omnicrystal network's channel), each with its own numbers: a clear,
 calm, slightly jelly-like hollow in space, with no water and no tint, and comfort settings for riding inside. **§14 is
@@ -37,7 +41,8 @@ Paths below are relative to the repository root. The two folders used most often
 
 | # | Look | Shader | Driver (C#) | Material (`Assets/Resources/`) | Status |
 |---|---|---|---|---|---|
-| 14 | **THE look**: the clear jelly hollow, trunk and root (§1 + §11 simplified) | `Graphs/SolitonTunnel.shader` (no keywords) | `RVA/SolitonTunnelLensPass.cs`, `RVA/SolitonTunnelLook.cs` | `SolitonTunnel.mat` | **Ships**, always on |
+| 17 | **THE look**: a real wormhole (§16 + the far view, the throat, the forming flare, the exit ripple) | `Graphs/SolitonTunnel.shader` (`_MW_STANDIN`: `Graphs/SolitonTunnelStandin.hlsl`) | `Controller/Environment/SolitonTunnel/SolitonTunnelLensPass.cs`, `SolitonTunnelLook.cs` | `SolitonTunnel.mat` | **Ships**, always on |
+| 14 | The clear jelly hollow, trunk and root (§1 + §11 simplified); §16 and §17 grew from it | `Graphs/SolitonTunnel.shader` (no keywords) | `RVA/SolitonTunnelLensPass.cs`, `RVA/SolitonTunnelLook.cs` | `SolitonTunnel.mat` | **Ships**, always on |
 | 1 + 11 | The contour-field lens, its tinted outer layer, YASH'S / GARRETT'S presets | the same shader at 0c8c5218c | `MeerkatWormholeHQ.cs` at 0c8c5218c | the same | **Replaced** by §14 (§13) |
 | 2 (reticle) | The reticle: your aiming spindles | `Graphs/SolitonTunnelAdditive.shader` | `RVA/SolitonTunnelView.cs` (`DrawReticle`, `BridgeFrame`, `Spindle`) | `SolitonTunnelAdditive.mat` | **Ships** |
 | 2 | YASH'S LOOK: the spindle bridge on formed tunnels, and its glass skin | `SolitonTunnelAdditive.shader`, `MeerkatWormholeGlass.shader` | `SolitonTunnelView.DrawBridge` | `MeerkatWormholeGlass.mat` | **Removed** (§12) |
@@ -982,3 +987,98 @@ frame (`bridgeRings`, `bridgeSpindlesPerRing`, `bridgeRibs`, `bridgeSpindleThick
 
 Tuning: too much swirl round a mouth → lower `MouthLens`; mouth looks small → raise `MouthFlare`; queasy inside → lower
 `InsideStretch` / `InsideFlow` or Comfort `DistortionIntensity`.
+
+
+## 17. THE look now: a real wormhole (from 2026-11-20)
+
+Yash, 2026-11-20: *"Let's revisit the Meerkat's wormhole tunnel, the visual will be like a wormhole, if that's too much
+render cost, then we can mimic to the best we can to make players feel the enjoyment of creating a real wormhole and
+travelling through it without hitting any outside objects."*
+
+### 17.1 What fell short in §16
+
+| Moment | §16 | Why it did not read as a wormhole |
+|---|---|---|
+| Forming it | the lens faded in as the window grew out of the middle | nothing marked the moment space opened |
+| Seeing it from outside | the jelly wall and two lensing mouths | fine; kept as it is |
+| The mouth | a point-mass lens: the LOCAL scene turned over inside an Einstein ring, with a grey shadow in the core | that is what a black hole without a horizon looks like. A wormhole's mouth is a window: it shows the place at its other end |
+| The ride inside | the whole world stayed in plain sight, stretched by 12 % in slow log-polar waves about the middle of the screen | you did not look like you were anywhere else. The rule "nothing inside touches anything outside" had no picture |
+| The exit | the far mouth was one more lens ahead; leaving changed nothing | the way out never grew to meet you, and nothing closed behind you |
+
+### 17.2 What it does now
+
+Still ONE full-screen pass (`SolitonTunnel.shader`, `SolitonTunnelLensPass`), no second camera, no new texture, no
+allocation after a camera's first ride.
+
+| Part | What it does | Fields (`SolitonTunnelLook`) | Shader |
+|---|---|---|---|
+| Far view | Inside its Einstein ring a mouth shows the place round its tube's OTHER mouth: the same scene copy, sampled round the far mouth's place on screen (`_MWWellF`). The pixel's place in the disk is squared out to a wide field, so the middle is magnified and the far side's whole surroundings crowd the rim, as a wormhole's do. The rim darkens like a sphere's limb (`MouthShadow`). A far mouth behind the camera is carried to the opposite edge. Outside the ring the §16 lens is unchanged | `FarView` (0 = §16's mouth) | `MWWells`, `MWShade` |
+| Forming flare | While the tube opens its rings flare, settling as it finishes | `FormFlare` | folded into `_MWWellP.z` in C# |
+| The throat (riding) | The way ahead (the centreline 60 u on, then the way out) is a CLEAR disk: it shows where you are going, unbent. It is as wide as the tube is there, so it grows as the way out nears until it swallows the view. Outside it the world smears into streaks running to it, dimmed in moving lines and washed in the tube's tint, with a bright ring round the way ahead | `InsideStreak`, `InsideDim`; the ring is `EinsteinRing`; `InsideStretch` / `InsideFlow` / `InsideSwirl` now turn about the way ahead, not the middle of the screen | `MWThroatScene`, `MWStretch`, `MWShade` (`_MWThroat`, `_MWThroat2`, `_MWThroat3`, `_MWThroatTint`) |
+| Exit ripple | Leaving throws one ripple out from the middle of the screen for 0.45 s | `ExitPop` | `MWPop` |
+| The ridden tube's wall | Not drawn. A tube the eye is inside (past half way to its wall) is skipped by the march and by the march-free stand-in; the throat draws it. Its mouths are not lensed either: the way ahead is the clear disk | none | `MW_RIDE_SKIP` |
+
+**Shipped numbers** (`SolitonTunnel.asset` / `SolitonNetwork.asset`): `FarView` 0.9 / 0.75, `FormFlare` 1.5 / 1,
+`InsideStreak` 0.55 / 0.5, `InsideDim` 0.35 / 0.3, `ExitPop` 0.08 / 0.06. They are Unity-side, like the rest of the
+look: the Vessel Studio page does not carry them yet.
+
+**Comfort.** `DistortionIntensity` scales the streaks and the ripple as it scales every bend. The clear disk is never
+smaller than 0.4 x `SteadyCentre`, so where you are heading stays still. The ride eases in and out over 0.25 s
+(`RideEaseSeconds`), so crossing a mouth does not pop.
+
+### 17.3 The cost, measured
+
+Measured in the Unity editor (6000.3.17f1, Direct3D 12, RTX 4070 Ti, Play mode in Menu_Main): one standing tunnel
+(220 u long, throat 6, mouth 22) and four bench cameras each rendering 1920x1080 at it, far from the menu's own scene.
+The lens was switched on and off (the same tunnel faded out, so the pass draws nothing) three times per view, and the
+editor's own GPU frame time read each time (`FrameTimingManager`, about 28 frames a reading). The number is
+(on - off) / 4: the pass's GPU cost per 1080p frame. A phone's GPU is many times slower than this card; the ratios are
+what carry over, not the milliseconds.
+
+| View (camera to the tunnel) | Variant | §16, before (ms) | §17, now (ms) |
+|---|---|---|---|
+| From the side, the tube across the view | march (PC) | 2.25 | 2.21 |
+| | march-free (phones) | 0.50 | 0.46 |
+| Facing a mouth from 75 u | march | 1.96 | 1.48 |
+| | march-free | 0.72 | 0.61 |
+| Close to a mouth, oblique | march | 2.28 | 2.78 |
+| | march-free | 1.22 | 0.36 |
+| **Riding inside** | march | **5.85** | **0.50** |
+| | march-free | **5.90** (it fell back to the march while riding) | **0.66** |
+
+- **Riding is about ten times cheaper.** Before, every pixel marched the tube it was inside; now none does, and the
+  throat costs 6 taps of the scene copy (4 on the march-free path) outside the clear disk.
+- **From outside nothing moved** beyond the noise. The far view replaces the mouth's one scene sample; only the thin
+  blend band at the ring takes two.
+- **How far to trust it.** Three on/off pairs a row; the spread between pairs was 0.2 to 0.6 ms on most rows and up to
+  2.3 ms on the noisiest ("facing a mouth, march, now"), so read the outside rows as "unchanged", not as gains. The null
+  control (off against off) read 0.07 to 0.09 ms. A longer second run was cut short when another session's compile took
+  the editor. One GPU, one tunnel, no phone: the phone number that matters, riding on the march-free path, is the
+  5.90 to 0.66 row, and it should be measured on the M36 bench before anyone quotes a frame rate.
+- The compiled fragment grew from 672 to 868 instruction slots (march) and 552 to 741 (march-free), by `fxc` at
+  `ps_5_0`. That is program size, not cost: the march's loop dominated and is what the ride no longer runs.
+
+### 17.4 What was traded away
+
+- **A true far view** needs the scene drawn again from the far mouth, once per visible mouth. That is a whole extra
+  scene render each (the lava lamp's scene costs about 3 ms per 1080p frame on this card, far more on a phone). The far
+  view here re-uses the frame already drawn: it shows what is round the far mouth as THIS camera sees it, not as you
+  would see it standing there. When the far mouth is off screen it shows the mirrored edge of the frame.
+- **The wall from inside.** The ridden tube's jelly wall (its rim, glint and bend at half strength) is gone; the streaks
+  stand in for it. Its shape is told by the way ahead moving as the tube bends.
+- **The streaks are a radial smear of the frame**, 6 taps (4 on the march-free path), dithered. They are not the true
+  image of the outside through a curved throat.
+
+### 17.5 Tuning
+
+- The mouth looks like a lens, not a way through: raise `FarView`. Too busy: lower it (0 is §16's mouth).
+- The ride feels like flying in the open: raise `InsideStreak` and `InsideDim`. Queasy: lower `InsideStreak`, or
+  Comfort `DistortionIntensity`, or raise `SteadyCentre` (a bigger clear disk).
+- The exit jolt is too much: lower `ExitPop` (0 is none).
+
+### 17.6 Restore §16
+
+`git show c7d104e5a1^:Assets/_Graphics/Materials/Graphs/SolitonTunnel.shader` (and `SolitonTunnelStandin.hlsl`,
+`SolitonTunnelLensPass.cs`, `SolitonTunnelLook.cs` from the same parent). Or, without touching code: set `FarView`,
+`FormFlare`, `InsideStreak`, `InsideDim` and `ExitPop` to 0 on both assets. That keeps the ridden tube unmarched (the
+ride then shows the plain stretch about the way ahead).

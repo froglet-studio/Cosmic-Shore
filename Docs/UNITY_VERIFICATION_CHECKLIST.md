@@ -65,6 +65,55 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🟡 Meerkat: a real wormhole, and nothing inside touches outside (`Ys-bleeding-edge`, 2026-11-20, Yash) — COMPILED AND TESTED IN THE EDITOR, NOT FLOWN
+
+**What landed:** the Soliton Tunnel's look is a real wormhole (`Docs/Shaders/WORMHOLE_SHADERS.md` §17: a mouth shows
+its far side, the ride is a streaked throat with a clear, growing way ahead, the ring flares as it forms, leaving throws
+a ripple; the ridden tube is no longer marched). A rider, and the prisms and crystals a tunnel carries, interact with
+nothing outside the tube, on every machine (`R_VesselActions/MEERKAT.md` §11, `SolitonIsolation`).
+
+**Verified:**
+- The open Unity editor (6000.3.17f1) compiled it: 0 errors.
+- EditMode in that editor: `SolitonIsolationTests` 6 of 6, `MeerkatSolitonMathTests` 6 of 6,
+  `SolitonTunnelShapeMathTests` 51 of 51, `MeerkatRiftTests` 6 of 6.
+- The shader compiles with `fxc` (`ps_5_0`) in both variants and drew in Play mode: stills of a test tunnel from outside,
+  facing a mouth and along a ride were captured before and after and sent to Yash.
+- The lens pass's GPU cost was measured in the editor before and after (`WORMHOLE_SHADERS.md` §17.3): riding fell from
+  5.9 ms to 0.5-0.7 ms per 1080p frame on an RTX 4070 Ti; the outside views did not move.
+- `author_meerkat_assets.py --check` and `--self-test`: ok. `studio_to_unity.py --vessel meerkat --check`: 81 mapped,
+  0 drift. `check_agent_first.py`: ok. `check_console_logging.py`: 0 problems.
+- `colour_trace.py --check` was already failing on this branch (Switchback debug colours, three font assets). None of
+  the findings it printed names a file this change touched; the change adds no colour literal in C#, no material and no
+  colour field.
+
+**NOT done:** nobody has flown it. The look was captured on a test tunnel made by script in Menu_Main, not on one a
+Meerkat formed. No multiplayer session was run, so the peer-side read (a remote rider's place against the tubes) is
+tested as arithmetic only. No phone was measured.
+
+**Verify in editor:**
+1. Toybox (Lava Lamp), Vessel Changer: the Meerkat. Form a wormhole with RT near some prisms.
+   - **Pass:** its rings flare as it opens. Inside the ring round each mouth you see the scenery at the other end, not
+     the local scene turned over.
+2. Ride it.
+   - **Pass:** the world outside smears into streaks running to a clear disk ahead; the disk grows as the way out
+     nears and swallows the view as you leave; one ripple runs out from the middle. Nothing pops as you cross the mouth.
+   - **Judge:** comfort. If it is too much, lower `InsideStreak` or `ExitPop` on `SolitonTunnel.asset` (FrogletTools >
+     Environment > Environmental Fundamentals).
+3. Form a wormhole through a wall of prisms and ride it. Have a rival (an AI Sparrow or Rhino) fire at you and ram
+   you while you are inside.
+   - **Pass:** the wall stands, you lose no petal, you are not knocked, slowed or silenced, and the camera does not
+     rock. The moment you are out, hits land again.
+4. Form a wormhole next to prisms and an omni crystal so they are swallowed, then shoot or ram them while they are in
+   the tube.
+   - **Pass:** carried prisms take no damage and are not stolen; the carried crystal is not collected until it is
+     fired out of the far mouth.
+5. Y for Sentinel Mode, then have a rival Meerkat ride through your guarded wormhole.
+   - **Pass:** your sentinel does not zap it while it is inside.
+6. Burrow Run or Warpline with rings inside a tube.
+   - **Pass:** a ring threaded inside still counts.
+7. Two machines (or MPPM): one player rides, the other watches and shoots.
+   - **Pass:** on the WATCHER'S machine too the rider takes no hit and collects no crystal while inside.
+
 ### 🔴 Mass-Space volume books on the Brood Rush scoreboard (`claude/project-thread-e9yath`, 2026-11-18, Garrett) — NOT EDITOR-VERIFIED
 
 New `VolumeLedger` on `GameDataSO`, fed by `StatsManager` (create, restore, grow/shrink, destroy, steal) and the
