@@ -52,6 +52,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] List<CellConfigDataSO> CellConfigs;
         [SerializeField] CellTypeChoiceOptions cellTypeChoiceOptions = CellTypeChoiceOptions.Random;
 
+        [SerializeField, Tooltip("Environment Free only: boot into the bare canvas (the first config that grows nothing), " +
+                                 "never the Boot Default world. For a scene that reverts its cell to the bare canvas as it " +
+                                 "starts anyway (Voyage.unity: the Arkway's revert), so the Boot Default world (Garland) is " +
+                                 "not built only to be thrown away behind the loading screen (Shombith 2026-11-20).")]
+        bool bootBareCanvas;
+
         [Header("Runtime Cell Swap (freestyle Cell Selector toy)")]
         [SerializeField, Min(0f), Tooltip("Seconds the retiring world suctions toward the cell centre " +
                                           "before it is released. Continuity of existence: the old world " +
@@ -2363,6 +2369,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         int ResolveBootIndex()
         {
+            if (bootBareCanvas)
+                for (int i = 0; i < CellConfigs.Count; i++)
+                    if (IsBareCanvas(CellConfigs[i]))
+                        return i;
+
             for (int i = 0; i < CellConfigs.Count; i++)
                 if (CellConfigs[i] && CellConfigs[i].BootDefault)
                     return i;
@@ -2899,6 +2910,13 @@ namespace CosmicShore.Gameplay
         /// code, never serialized.
         /// </summary>
         public float RuntimeFloraShare { get; set; } = 1f;
+
+        /// <summary>
+        /// Creatures born in this cell stop animating their rigs while no camera sees them (their Animators cull
+        /// completely; the body still swims where its code steers it). Off by default; a voyage on a phone sets it on its
+        /// cells (VoyageToyDefinitionSO.StillOffscreenCreatures, Shombith 2026-11-20). Set by code, never serialized.
+        /// </summary>
+        public bool CullOffscreenAnimation { get; set; }
 
         /// <summary>
         /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still

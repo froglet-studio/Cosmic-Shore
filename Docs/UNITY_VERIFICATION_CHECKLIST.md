@@ -25010,3 +25010,16 @@ I2 118 -> 96, I4 139 -> 101, I1 from Time 10 104 -> 90, I4 from Time 0 152 -> 11
 I1 at rest is now the slowest rung after I4 from rest, so the ladder still runs flat.
 Not run in Unity: the reference compile shows 0 errors in the changed files.
 - [ ] Fly Burrow Run against a Legendary Meerkat AI: it should commit late, tunnel down each leg and finish faster than before.
+
+## Voyage phone pass: budget, background, loading, squad, touch, run length, story (2026-11-20, Shombith)
+Branch claude/project-thread-chvxox into voyages. Spec: Docs/Voyages/CRYSTAL_RUN.md section 17.
+Not run in Unity: the reference compile shows 0 errors in the changed files (and an Android dev-define pass showed none in DeviceLogCapture).
+- [ ] Start a voyage: the loading screen no longer builds Garland first (Voyage.unity's cell boots the bare canvas).
+- [ ] First voyage on a fresh profile: the Ark seats you in the Sparrow with AI in the Squirrel and the Dolphin.
+- [ ] Crystal Run sets off: the goal toast, then "<PILOT> ON THE COMMS" with why the Ark wants crystals.
+- [ ] A kaiju in open water: "SPAWN OF THE LEVIATHAN".
+- [ ] Each scoreboard (met, missed, lost, docked) shows the run's pilot's line under the title.
+- [ ] Sail home: the Ark crosses about twice as fast; on docking a short "HOME" shot with the pilot's line plays, then the board.
+- [ ] Phone build: the scoreboard stays clear of the notch; the intro hint reads "Hold here to skip" and only a touch held bottom-right skips.
+- [ ] Phone build: send the app to the background mid-voyage and come back: the pause window is open.
+- [ ] Phone dev build with the diagnostics HUD on: a stretch under 20 fps sends a Voyage-slow capture.

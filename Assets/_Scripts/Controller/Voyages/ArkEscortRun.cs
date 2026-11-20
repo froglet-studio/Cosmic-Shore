@@ -251,6 +251,7 @@ namespace CosmicShore.Gameplay
         void PrepareCell(Cell cell, int routePosition)
         {
             if (!cell || routePosition < 0 || routePosition >= _escort.Legs.Count) return;
+            cell.CullOffscreenAnimation = _def && _def.StillOffscreenCreatures;   // phones (Voyage.asset)
             var leg = _escort.Legs[routePosition];
             var tier = _escort.TierFor(_difficulty);
             cell.RuntimePopulationScale = _escort.PopulationFor(routePosition, _difficulty);
@@ -659,6 +660,8 @@ namespace CosmicShore.Gameplay
             var corridor = new GameObject("ArkEscortCellConveyor");
             corridor.transform.SetParent(_root, false);
             _corridor = corridor.AddComponent<CellConveyor>();
+            // A phone retires the cell behind the Ark sooner (Voyage.asset, "Voyage - phones").
+            if (_def && _def.RetireMargin >= 0f) _corridor.RetireMargin = _def.RetireMargin;
             var sea = new GameObject("ArkEscortArkwayRun");
             sea.transform.SetParent(_root, false);
             _sea = sea.AddComponent<ArkwayRun>();

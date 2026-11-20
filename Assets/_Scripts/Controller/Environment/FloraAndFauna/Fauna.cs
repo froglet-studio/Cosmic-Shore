@@ -1660,6 +1660,14 @@ namespace CosmicShore.Gameplay
         {
             hostCell = cell;
             ApplyRuntimeTuningFrom(cell);
+            if (cell && cell.CullOffscreenAnimation) CullOffscreenAnimation();
+        }
+
+        /// <summary>The rig stops animating while no camera sees it (<see cref="Cell.CullOffscreenAnimation"/>).</summary>
+        void CullOffscreenAnimation()
+        {
+            foreach (var animator in GetComponentsInChildren<Animator>(true))
+                if (animator) animator.cullingMode = AnimatorCullingMode.CullCompletely;
         }
 
         // ===================================================================
