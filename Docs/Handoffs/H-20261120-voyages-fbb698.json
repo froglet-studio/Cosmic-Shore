@@ -1,0 +1,16 @@
+{
+  "id": "H-20261120-voyages-fbb698",
+  "kind": "keep",
+  "lane": "voyages",
+  "laneName": "Voyages map",
+  "laneKind": "shell",
+  "by": "Shombith",
+  "on": "2026-11-20T18:19:41+00:00",
+  "branch": "claude/project-thread-h122rc",
+  "signals": {
+    "laneKind": "shell",
+    "handTests": false,
+    "merged": true
+  },
+  "source": "cli"
+}
