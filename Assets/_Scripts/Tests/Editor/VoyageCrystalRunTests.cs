@@ -513,6 +513,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void BankedSplit_ListsOnlyTheElementsBanked_InTheAuthoredWords()
+        {
+            var lines = new VoyageLines
+            {
+                ObjectiveElement = "{element} {count}", ObjectiveElementSeparator = ", ",
+                ElementCharge = "Charge", ElementMass = "Mass", ElementSpace = "Space", ElementTime = "Time",
+            };
+            var banked = new int[(int)Element.Time + 1];
+            banked[(int)Element.Space] = 2;
+            banked[(int)Element.Time] = 3;
+            Assert.AreEqual("Space 2, Time 3", VoyageRun.BankedSplit(lines, banked));
+            Assert.AreEqual(string.Empty, VoyageRun.BankedSplit(lines, new int[(int)Element.Time + 1]), "nothing banked");
+            Assert.AreEqual(string.Empty, VoyageRun.BankedSplit(lines, null), "nothing known");
+            lines.ObjectiveElement = string.Empty;
+            Assert.AreEqual(string.Empty, VoyageRun.BankedSplit(lines, banked), "an empty line shows nothing");
+        }
+
+        [Test]
         public void Leak_TakesOneBankedCrystal_FromTheRichestSeat_NeverCarried()
         {
             var tally = new VoyageRaidTally();

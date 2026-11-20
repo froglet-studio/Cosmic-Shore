@@ -132,7 +132,7 @@ namespace CosmicShore.Gameplay
                 under = TemplateText.Fill(Lines.ToastCrystalCarrySub, "carried", _raid.CarriedBy(playerName).ToString());
             else
                 under = TemplateText.Fill(Lines.ToastBankedSub, "count", "1", "done", _raid.Total.ToString(),
-                    "goal", Mathf.CeilToInt(_state?.Current?.Goal ?? 0f).ToString());
+                    "goal", Mathf.CeilToInt(_state?.Current?.Goal ?? 0f).ToString(), "split", BankedSplit(Lines, element)).TrimEnd();
             if (_sea) _sea.ShowRunningBanner(line, PickupToastSeconds, ArkwayVoyageHud.Mood.Good, under);
         }
 
@@ -289,9 +289,34 @@ namespace CosmicShore.Gameplay
                 string goal = Mathf.CeilToInt(job?.Goal ?? 0f).ToString(), done = _raid.Total.ToString();
                 VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Good,
                     TemplateText.Fill(Lines.ToastBanked, "count", n.ToString(), "done", done, "goal", goal),
-                    TemplateText.Fill(Lines.ToastBankedSub, "count", n.ToString(), "done", done, "goal", goal));
+                    TemplateText.Fill(Lines.ToastBankedSub, "count", n.ToString(), "done", done, "goal", goal,
+                        "split", BankedSplit(Lines, banked)).TrimEnd());
             }
             CheckGoalToast();
+        }
+
+        /// <summary>What one bank held, by element, for the banked toast's {split} (the voyage HUD keeps the split off the
+        /// marquee and shows it here, when it changes; 2026-11-20): each element with any, as ObjectiveElement, joined by
+        /// ObjectiveElementSeparator. Empty when nothing is known. Pure.</summary>
+        public static string BankedSplit(VoyageLines lines, int[] banked)
+        {
+            if (lines == null || banked == null || string.IsNullOrEmpty(lines.ObjectiveElement)) return string.Empty;
+            var parts = new List<string>(4);
+            foreach (var e in VoyageRaid.Elements)
+            {
+                int i = (int)e;
+                if (i < 0 || i >= banked.Length || banked[i] <= 0) continue;
+                parts.Add(TemplateText.Fill(lines.ObjectiveElement, "element", CosmicShore.UI.VoyageHudColors.ElementName(lines, e),
+                    "count", banked[i].ToString()));
+            }
+            return string.Join(lines.ObjectiveElementSeparator ?? string.Empty, parts);
+        }
+
+        static string BankedSplit(VoyageLines lines, Element one)
+        {
+            var banked = new int[(int)Element.Time + 1];
+            if ((int)one >= 0 && (int)one < banked.Length) banked[(int)one] = 1;
+            return BankedSplit(lines, banked);
         }
 
         // ── P6: a hit spills what a seat carries (Shombith, 2026-11-16) ─────

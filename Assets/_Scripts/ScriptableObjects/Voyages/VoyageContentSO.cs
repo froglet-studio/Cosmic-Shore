@@ -1083,8 +1083,8 @@ namespace CosmicShore.ScriptableObjects
         public string ToastWeighed = "THE ARK SAILS ON";
         [Tooltip("Toast: the pilot banked what they carried at the Ark ({count}, {done}, {goal}).")]
         public string ToastBanked = "BANKED {count}";
-        [Tooltip("Toast: the line under the banked toast ({count}, {done}, {goal}).")]
-        public string ToastBankedSub = "{done} of {goal} aboard.";
+        [Tooltip("Toast: the line under the banked toast ({count}, {done}, {goal}; {split} is what was banked by element, each ObjectiveElement, joined by ObjectiveElementSeparator).")]
+        public string ToastBankedSub = "{done} of {goal} aboard.   {split}";
         [Tooltip("Toast: the pilot picked up a crystal ({element}). A quick string of pickups is one toast that keeps " +
                  "count; empty shows no pickup toast.")]
         public string ToastCrystal = "+1 {element}";
@@ -1105,6 +1105,12 @@ namespace CosmicShore.ScriptableObjects
         public string ObjectiveStripArkHull = "Ark hull {hull}%";
         /// <summary>The caption on the Ark's hull rail down the left edge (Frogma Rev 116 A).</summary>
         public string ObjectiveRailLabel = "Ark hull";
+        [Tooltip("Voyage HUD: what you carry unbanked, small beside the count (sized for phones, 2026-11-20). {count}.")]
+        public string ObjectiveCountCarried = "+{count}";
+        [Tooltip("Voyage HUD: the line under the Ark's hull bar while the hull is losing plates or an assault is on.")]
+        public string ObjectiveRailUnderAttack = "Under attack";
+        [Tooltip("Voyage HUD: under the countdown ring in the last seconds at anchor, while you carry crystals. {count}.")]
+        public string ObjectiveRingCaption = "Bank the +{count} or lose it";
         public string ObjectiveStripLeaking = "Hull below {line}%: the hold is losing crystals.";
         public string ToastHullLeaking = "THE HOLD IS LEAKING";
         public string ToastHullLeakingSub = "The hull is below {line}%. Banked crystals spill one by one: guard the Ark and grab them back.";
