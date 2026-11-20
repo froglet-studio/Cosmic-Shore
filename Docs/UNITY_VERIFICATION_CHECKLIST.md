@@ -65,6 +65,55 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🟡 Meerkat: a real wormhole, and nothing inside touches outside (`Ys-bleeding-edge`, 2026-11-20, Yash) — COMPILED AND TESTED IN THE EDITOR, NOT FLOWN
+
+**What landed:** the Soliton Tunnel's look is a real wormhole (`Docs/Shaders/WORMHOLE_SHADERS.md` §17: a mouth shows
+its far side, the ride is a streaked throat with a clear, growing way ahead, the ring flares as it forms, leaving throws
+a ripple; the ridden tube is no longer marched). A rider, and the prisms and crystals a tunnel carries, interact with
+nothing outside the tube, on every machine (`R_VesselActions/MEERKAT.md` §11, `SolitonIsolation`).
+
+**Verified:**
+- The open Unity editor (6000.3.17f1) compiled it: 0 errors.
+- EditMode in that editor: `SolitonIsolationTests` 6 of 6, `MeerkatSolitonMathTests` 6 of 6,
+  `SolitonTunnelShapeMathTests` 51 of 51, `MeerkatRiftTests` 6 of 6.
+- The shader compiles with `fxc` (`ps_5_0`) in both variants and drew in Play mode: stills of a test tunnel from outside,
+  facing a mouth and along a ride were captured before and after and sent to Yash.
+- The lens pass's GPU cost was measured in the editor before and after (`WORMHOLE_SHADERS.md` §17.3): riding fell from
+  5.9 ms to 0.5-0.7 ms per 1080p frame on an RTX 4070 Ti; the outside views did not move.
+- `author_meerkat_assets.py --check` and `--self-test`: ok. `studio_to_unity.py --vessel meerkat --check`: 81 mapped,
+  0 drift. `check_agent_first.py`: ok. `check_console_logging.py`: 0 problems.
+- `colour_trace.py --check` was already failing on this branch (Switchback debug colours, three font assets). None of
+  the findings it printed names a file this change touched; the change adds no colour literal in C#, no material and no
+  colour field.
+
+**NOT done:** nobody has flown it. The look was captured on a test tunnel made by script in Menu_Main, not on one a
+Meerkat formed. No multiplayer session was run, so the peer-side read (a remote rider's place against the tubes) is
+tested as arithmetic only. No phone was measured.
+
+**Verify in editor:**
+1. Toybox (Lava Lamp), Vessel Changer: the Meerkat. Form a wormhole with RT near some prisms.
+   - **Pass:** its rings flare as it opens. Inside the ring round each mouth you see the scenery at the other end, not
+     the local scene turned over.
+2. Ride it.
+   - **Pass:** the world outside smears into streaks running to a clear disk ahead; the disk grows as the way out
+     nears and swallows the view as you leave; one ripple runs out from the middle. Nothing pops as you cross the mouth.
+   - **Judge:** comfort. If it is too much, lower `InsideStreak` or `ExitPop` on `SolitonTunnel.asset` (FrogletTools >
+     Environment > Environmental Fundamentals).
+3. Form a wormhole through a wall of prisms and ride it. Have a rival (an AI Sparrow or Rhino) fire at you and ram
+   you while you are inside.
+   - **Pass:** the wall stands, you lose no petal, you are not knocked, slowed or silenced, and the camera does not
+     rock. The moment you are out, hits land again.
+4. Form a wormhole next to prisms and an omni crystal so they are swallowed, then shoot or ram them while they are in
+   the tube.
+   - **Pass:** carried prisms take no damage and are not stolen; the carried crystal is not collected until it is
+     fired out of the far mouth.
+5. Y for Sentinel Mode, then have a rival Meerkat ride through your guarded wormhole.
+   - **Pass:** your sentinel does not zap it while it is inside.
+6. Burrow Run or Warpline with rings inside a tube.
+   - **Pass:** a ring threaded inside still counts.
+7. Two machines (or MPPM): one player rides, the other watches and shoots.
+   - **Pass:** on the WATCHER'S machine too the rider takes no hit and collects no crystal while inside.
+
 ### 🔴 Mass-Space volume books on the Brood Rush scoreboard (`claude/project-thread-e9yath`, 2026-11-18, Garrett) — NOT EDITOR-VERIFIED
 
 New `VolumeLedger` on `GameDataSO`, fed by `StatsManager` (create, restore, grow/shrink, destroy, steal) and the
@@ -1714,6 +1763,26 @@ not blasting; I4 Legendary 205 -> 175 s; `SWITCHBACK.md` "Step 2"). NOT run: the
 3. Switchback I3 with AI Dolphins (AI Diagnose panel, "AI plan" overlay): a blasting AI flies at its key without
    swinging out behind it, and its nose turns onto the door as it reaches the key.
 
+### 🔴 Fulmen burns every prism on the bolt's path - the Stoat's and the Meerkat's omni crystal (`Ys-bleeding-edge`, 2026-11-20, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `FulmenSystem.BurnAlong` burns in two passes: prisms within `pathRadius` (16 u, new on `FulmenConfig`)
+of a stream always burn (a spent ignite budget makes the segment wait a frame; `PrismBurnManager`'s 192 cap does not
+refuse them, `Ignite(.., overCap)`), and the halo out to `burnRadius` (200 u) burns while the burn manager has room.
+Before, segments past the frame's 96 ignites were skipped and the 192 cap refused the rest. `IgniteRemote` (a client's
+replay) no longer applies the cap. Compiled with Unity's Roslyn (player + editor) from a worktree. **Step 1 ran
+2026-11-20 in the open editor on `68e610bdeb` (pipeline `run_tests`): `FulmenMathTests` 18 of 18 and
+`PrismBurnSpreadTests` 5 of 5 pass.** The game has not been played: steps 2-6 are still owed. Affects: the Meerkat (same `FulmenConfig`); the Grizzly's claw burn is unchanged.
+
+1. ~~Run the EditMode tests `FulmenMathTests` and `PrismBurnSpreadTests`.~~ Done 2026-11-20: 18 + 5 green.
+2. Toybox, Stoat, rival trails or flora in the cell: collect an omni crystal. **Pass:** one bolt from the cell's centre;
+   every rival prism a stream visibly crosses catches fire (none left standing on the line) and is gone about 12 s later.
+3. Collect three omni crystals within 12 s in dense rival mass. **Pass:** each bolt still burns the prisms on its own
+   path (before: the second and third burnt almost nothing while the first 192 were still burning).
+4. Same strike with the Profiler on (`Fulmen.Tick`, `Fulmen.Burn`). **Pass:** no frame above a few ms; `Prisms Burnt` on
+   the `FulmenConfig` inspector reads the strike's count.
+5. Host + one client, the host's Stoat collects an omni crystal. **Pass:** the client sees the same prisms burn and go.
+6. Your own trail and your team's prisms on the bolt's path. **Expected:** they do NOT burn (own-domain rule, unchanged).
+
 ### 🔴 Wide-radius prism queries run as one Burst pass - Fulmen's burn freeze (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `PrismSpatialIndex.QuerySphere` / `QuerySegment` take `LinearCapsuleScanJob` (Burst, `.Run()`, marker
@@ -3196,6 +3265,41 @@ SWITCHBACK.md; `StationSpacing` 280 u; key lead 0.62 x leg in 230-400 u; key cor
 
 **Known minimal:** reverse-threading a blocked ring at I1-I3 is not prevented; the AI does not aim blasts at doors;
 frame time not measured.
+
+---
+
+### 🔴 Replays: crystals, plants, creatures and cytoplasm shards stand where the match had them (`replay/crystal-fidelity`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/REPLAYS.md` §6.4; Yash: "everyone's position, orientation, to mimic the whole game"):
+- Stream 4 of a `.cstheater` (`TheaterActors`): per-actor pose tracks (crystals by id, plants and creatures by species)
+  and per-cell shard fields (positions at Go plus each dying limb's shard). `TheaterActorRecorder` records them on the
+  vessel samples (`ReplayConfigSO` **Record Actors**, on).
+- `ReplayActorSync` (from `ReplayMatchDirector`) places them every frame: crystals by id (far jumps through
+  `CrystalManager.RelocateCrystal`), plants and creatures by species and nearness (unpaired ones hidden), shard fields
+  stood at their recorded positions and limb shards added on time (live limbs add none during a replay).
+- Additive hooks: `SnowChanger` (`CopyShardPositions`, `ApplyShardPositions`, `AddRecordedMorphedShard`,
+  `MorphedShardAdded`, `ReplayHoldsMorphs`), `Cell.SpawnedLifeForms`, `TheaterRecorder.RecordActors`.
+
+**Verified without the editor:** the format and the pure playback maths (`TheaterActorsTests`, 13 tests) compiled and
+run with dotnet against Unity stubs, beside `TheaterRecordingTests` (whose `Duration_SpansEveryTrack` fails on the base
+branch too: its data ends at 12.5, so the duration is 2.5, not 2.1). The Unity-dependent files were checked against the
+project's APIs by reading, not compiled. **Compile first.**
+
+**Verify in editor:**
+1. Play Regatta (or any mode with a cell ecology) to the end; the `.cstheater` is larger than before and the log has no
+   errors. WATCH it.
+2. Crystals: each stands where it stood in the match at every moment, including after it is taken and respawns
+   (snaps, no glide across the cell); the cell's crystal-facing shards point at it.
+3. Plants and creatures: each visible one stands and faces as in the match; extra live ones are hidden and come back
+   after leaving the replay.
+4. Cytoplasm: the shard field matches the match's (compare a screenshot at Go); dying limbs leave shards at the moments
+   they did, and no extra ones.
+5. Leave mid-replay and play a normal match: dying limbs leave shards again (`ReplayHoldsMorphs` cleared); nothing
+   stays hidden.
+6. An older `.cstheater` (no stream 4) still watches as before.
+
+**First-pass tuning:** `ReplayConfigSO.ActorJumpDistance` 8; `TheaterActorThinning` 1 cm / 0.25 deg / 0.001 scale;
+life-form pairing every 6 frames.
 
 ---
 
@@ -23704,9 +23808,10 @@ compile of the controller partial, which the harness does not build), `unity_ref
    every ring. Freeze a full bomb by one and blow it: the keg bursts, the gate clears (the lime ring moves on), and the
    blast throws you away from the bomb. Threading the ring mouth still clears the gate. The hint toast shows once.
 3. **Regrow.** An opened keg grows back as a live ribbon about 3 s later, never on top of a hull.
-4. **I2 bank shot.** A rail of 6 chalk dots marks each keg's exit lane, on the corner's inside. Blow a keg from its far
-   side (keg between you and the next ring): you are thrown down the lane and "Bank shot (1)" shows; a straight blow
-   throws you wide and shows nothing. Fly the ring-to-ring line: you never hit a chalk dot.
+4. **I2 bank shot.** A rail of 6 chalk dots marks each keg's exit lane, on the corner's inside. Blow a keg from its EXIT
+   side (YOU between the keg and the next ring, the bomb in the keg behind you): you are thrown down the lane and "Bank
+   shot (1)" shows; a straight blow throws you wide and shows nothing. Fly the ring-to-ring line: you never hit a chalk
+   dot. (Corrected 2026-11-20: this step said "keg between you and the next ring", which throws you backwards.)
 5. **I3 shielded cores.** The first blast only strips the core's shield (no burst); a second opens it. Leave a stripped
    keg alone: it shields itself again about 2.5 s later. Confirm a Grizzly blast damages these Blue `GrizzlyTimeKeg`
    prisms at all (the spec's reading of `PrismSpatialIndex`, unverified).
@@ -23717,8 +23822,54 @@ compile of the controller partial, which the harness does not build), `unity_ref
 8. **Two clients (MPPM).** Both see the same kegs and chalk; a keg one client opens opens on the other; a gate is
    credited once.
 9. **Feedback and cost.** A crown of debris bursts off each ring you clear; the burst doubles in speed on your final
-   lap. On a phone-class device the bursts and regrow cost no visible hitch. The four sound slots are empty (by design).
+   lap. On a phone-class device the bursts and regrow cost no visible hitch. The four keg sounds play their ledger
+   placeholders since 2026-11-16 (`Docs/AudioSystem/sound_placeholders.json`); only `kegRammedEvent` (2026-11-20) is empty.
 10. **Kegs off.** Untick `kegsAtGates` on the scene's controller: the race is rings only, as before.
+
+### 🔴 Grizzly Time, the fun pass: the bank shot fixed, a Rush rams a keg open, the AI Rushes (2026-11-20, Yash, NOT PLAYED)
+
+`GRIZZLYTIME.md` §0.1. `GrizzlyTimeKegs.BlowPoint` moved to the keg's exit side; every peer opens a keg a Rushing hull
+rams (`GrizzlyTimeController.Kegs.cs`: `SyncRamWatches`, `TryRammer`; toast 302, the empty `kegRammedEvent` slot); the
+AI presses Rush on a straight and its stall clock runs on the machine that flies it (`GrizzlyTimeController.AI.cs`).
+Ran: `grizzly_time_course_harness/run.sh` (33 tests pass; `--self-test`, 13 negative controls fire; `--sweep`),
+`author_grizzly_time_assets.py --check` (26 files match), `check_ai_no_state_writes.py`, `check_console_logging.py`. The
+open editor compiled the final code, runtime and tests (its `Assembly-CSharp.dll` and `Assembly-CSharp-Editor.dll` of
+2026-11-20 21:40 hold the new members; the recompile was another session's), and the EditMode tests ran in it at
+22:10: `GrizzlyTimeKegsTests` 19 of 19, `GrizzlyTimeCourseTests` 14 of 14. Nothing was flown. Not run:
+`unity_refcompile` (cannot run on this Windows box).
+
+1. ~~**EditMode tests** `GrizzlyTimeKegsTests` and `GrizzlyTimeCourseTests` pass in the editor.~~ Done 2026-11-20
+   (33 of 33, through the editor's Pipeline `run_tests`).
+2. **The side.** I1 or I2: freeze a full bomb in a keg, fly round so you are between the keg and the next ring, let go.
+   You are thrown at the next ring and "Bank shot (1)" shows. From the other side you are thrown away from it. If this
+   is the wrong way round in play, the sign in `GrizzlyTimeKegs.BlowPoint` is the one thing to revert.
+3. **A Rush opens a keg.** Rush through a keg's core (through the hoop, or across the three cubes; either way opens
+   it): the keg bursts, the gate clears and "Rammed open (1)" shows. At I3 one Rush opens a SHIELDED keg in one pass,
+   where a bomb only strips it. A Rush that passes more than about 20 u from the core opens nothing; if it broke hoop
+   slabs, they grow back about 3 s after you leave.
+4. **Rush, then bomb-jump.** In a fresh race (the toast shows on the 1st and every 4th bank shot), freeze a bomb just
+   short of a keg, Rush through the hoop TOWARD THE NEXT RING, and let the bomb go within about 1.5 s while you are
+   still within 100 u of the keg: you are thrown down the lane and "Bank shot" shows. It is read only when the throw
+   points within 30 degrees of the lane to the next ring, so the same jump after ramming ACROSS the cubes shows
+   nothing, by design. A Rush alone never shows it.
+5. **Silenced.** While silenced (a rival's blast caught you), your Rush opens no keg.
+6. **Two clients (MPPM), I3.** The guest Rushes through a shielded keg: it opens on the HOST's screen too, and the
+   other way round. A third client sees it open as well. Before this change it stayed standing on any machine that
+   was neither the rammer's nor the host. Then the two known misses, to COUNT them: (a) mash Rush through kegs the
+   instant the card comes ready, and note how often a keg stays standing on the other screen (each machine keeps its
+   own Energy and cooldown for the hull, so it can refuse a press the owner made); (b) Rush from about 100 u out, so
+   the keg is reached at the very end of the burst. If either is common, the fix is an owner-decided open sent over
+   the wire (`GRIZZLYTIME.md` section 0.1), which needs a protocol-version bump.
+7. **AI, every seat, I1-I4.** AI Grizzlies visibly Rush on straights (the burst, and the Rush sound), at I3-I4 too
+   (on the leg into the approach point, before the turn-in), and still finish every level. None Rushes into a turn
+   and misses a ring because of it; if one does, raise `GrizzlyTimeKegs.AIRushMinRun` (150) or untick `aiRushes` on
+   the scene's controller. On two machines, an AI's Rush shows on the guest as well.
+8. **A guest hands its own hull to the AI** (dev build, the Pilot control): the hull is NOT steered back to a run-up
+   every 18 s while it is clearing gates. A hull truly stuck at one ring for 18 s still is.
+9. **Text.** The start hint reads "Open a keg and its gate is yours: bomb it, or Rush through it. Freeze a bomb in
+   the keg, fly just past it toward the next ring and let go: the blast throws you down the leg."; the card says the
+   same. The new `kegRammedEvent` slot is empty by design.
+10. **Match length.** Time an I2 race flown well with Rush: the offline models say 78-100 s for two laps.
 ## 🔴 The colour trace: every colour the game draws comes from the worn colour set (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/nifty-cray-41hy43`. Docs/VesselModels/COLOR_TRACE.md. Every colour authored outside the palette blocks is
@@ -24653,10 +24804,15 @@ nucleus or the membrane). The Unity editor and the `unity` CLI did not run. Owed
 `MatchRejoin.DroppedThisRun` / `GiveUpSaysHostLeft`; `DisconnectNotice.CheckRejoin` uses it. The Unity editor was in Play for
 another test when this was written, so nothing was compiled or run.
 
-- [ ] The project compiles; `MatchRejoinTests` pass (the new `GiveUp_SaysHostLeftOnlyForADropSeenInThisRun` among them).
-- [ ] MPPM, Player 2 a guest in a match: stop Play, press Play again. Player 2 sits on the menu 30 s: no "The host left".
+- [ ] `MatchRejoinTests` pass (the new `GiveUp_SaysHostLeftOnlyForADropSeenInThisRun` among them). Not run; the project compiles (2026-11-20).
+- [x] MPPM, Player 2 a guest in a match: stop Play, press Play again. Player 2 sits on the menu 30 s: no "The host left".
+      **Passed 2026-11-20** (session-driven, editor "Lion" + Player 2 "Tiger", `7788ad036d`): the host stopped mid-Bloomrush,
+      Player 2 bounced "Host disconnected"; after Play again its menu showed no notice for 55 s. A drop record planted as
+      "dropped two minutes ago in an earlier run" was given up after 20 s with no notice on either player.
 - [ ] A guest whose host quits while the guest keeps running still gets "The host left" on its menu after about 20 s.
-- [ ] A guest that restarts while the match is still running is still offered the rejoin.
+      Not run: Player 2 stops with the main editor, so this needs a second machine or a build.
+- [x] A guest that restarts while the match is still running is still offered the rejoin. **Passed 2026-11-20** as a link
+      drop: REJOIN offered on the menu, seat back 15 s after the press, no READY, race finished, both scoreboards agree.
 
 ## 🔴 A guest hands its own hull to the AI, and an idle guest in the editor is handed over by itself (2026-11-17, Yash, COMPILED in the open editor, NOT PLAYED)
 
@@ -24664,17 +24820,76 @@ another test when this was written, so nothing was compiled or run.
 guest's own row, and the editor-only `IdleGuestAutopilot` (FrogletTools > Multiplayer > Idle Guest Flies On AI, on by default).
 `unity recompile`: 0 errors. No match was played with it.
 
-- [ ] Two players, any gate race (Switchback, Skim Race, Redline): leave Player 2 alone. About 4 s after the turn starts its
-      hull flies the rings and finishes; the host sees it move.
+Run of 2026-11-20 (session-driven, editor "Lion" + MPPM Player 2 "Tiger", `7788ad036d`; nobody watched a screen):
+- [x] Two players, any gate race: leave Player 2 alone. **Passed in Switchback**: its hull was on the AI within 11 s of
+      the start and threaded 20 gates (16 and 11 in two later races); the host saw the same count. In a Maelstrom:
+      Breakwater 24 stations, Serpent Time 14 gates.
+      It was not reliable in Switchback: some races 20, 16 or 11 gates, three others 0, 1 and 2 while the host's AI
+      hull threaded all 26. **Cause and fix (same day):** Switchback's blast AI (the key it takes, the blast that opens
+      the door, the prism sense) was built on the server only, so a guest's own AI hull flew the plain ring steering
+      and stopped at the first closed door. A guest now builds it when it arms its own hull
+      (`SwitchbackController.BuildBlastAI`, `OnRacerArmed`; `SwitchbackBlastRunRuntime.TrackAllPrisms`). The host's AI
+      is unchanged. Replayed: two races in a fresh Play, 25 and 21 gates with the blast AI
+      built and its keys seen on the guest (a race ends when the host's hull threads its 26th). A third could not be run: Player 2's
+      editor hung when the PC ran out of memory.
 - [ ] Touch Player 2's pad or keyboard: control comes back at once; leave it again and the AI takes over after 4 s.
-- [ ] A mode that is not a gate race (Joust, Cleave, Bloomrush): the idle guest hull flies the platform autopilot.
-- [ ] Maelstrom, several rounds: the guest hull is handed over again in each round.
-- [ ] The host's own hull is never handed over by idling; the menu toggle off stops it on the guest too.
-- [ ] Third Eye on the guest: the AI / You toggle works on its own row and stays disabled on every other row.
+      Not run: a key event queued from a script lands in the editor's input state, not the player's. Needs a person.
+- [x] A mode that is not a gate race: **passed in Bloomrush and Dog Fight** (autopilot on, about 162 u/s in Bloomrush).
+- [x] Maelstrom, several rounds: **passed**, three rounds (Dog Fight, Breakwater, Serpent Time), handed over in each.
+- [x] The host's own hull is never handed over by idling: **passed** (Bloomrush, host idle: autopilot off, speed 0).
+      The menu toggle off was not tried.
+- [ ] Third Eye on the guest: the AI / You toggle works on its own row and stays disabled on every other row. Not run.
+
+## 🟡 A pilot who rejoined or left is no longer skipped or left behind on the menu (2026-11-20, Yash, COMPILED and PLAYED by a session)
+
+`ServerPlayerVesselInitializer.PersistentPlayerOf` and `ReleaseDepartedHumans`. Found by the run above; before the fix:
+after a drop and REJOIN the host's menu listed only itself (the reclaimed Player is owned by the new connection but is
+not its player object, so the scene pass skipped it), and a guest who then left the party stayed on the host as a
+server-owned Player. Joining again made two "Tiger"s, one named "Tiger (2)" (seen as "Lion (2)" in the test with Garrett
+of 2026-11-20), and the leftover showed in the other machine's roster and on its scoreboard.
+`unity recompile`: 0 errors. EditMode tests not run.
+
+- [x] Drop and REJOIN in Switchback, finish, Main Menu: the host lists both pilots and Player 2 has its menu hull.
+- [x] Launch the next match from there (Bloomrush): both pilots are seated and Player 2's hull flies.
+- [x] Player 2 leaves the party on the menu: the host has one Player. Player 2 joins again: both machines list
+      "Lion, Tiger", no "(2)".
+- [x] Player 2 leaves the party while the match is returning to the menu: no Player left behind; joins again, no "(2)".
+- [ ] The same with three or four players, and in a Maelstrom hub (a pilot who leaves between rounds).
+- [ ] By hand: after a rejoin and a return to the menu, Player 2 can change hull and the party panel shows both.
+
+## 🟡 The return to the menu takes the match's world down before the load (B45, 2026-11-20, Yash, COMPILED and PLAYED by a session, solo host)
+
+`SceneLoader.DrainSceneForExitAsync`, `Cell.RetireWorldIntoPoolForSceneExit` (`requireEnvironment`,
+`rootDestroyPrismsPerFrame`, `returnPooledTrail`), `Cell.ReleaseRetiredWorldByRoot`, and the guest's start in
+`MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc`. Affects: the cell's owners (ecology); a cell swap
+and the Maelstrom hub call the retire exactly as before. `unity recompile`: 0 errors; `check_agent_first`,
+`check_console_logging`, `check_conditional_compilation` pass. `MaelstromArenaHandOverTests` 11/11 by reflection in the editor. The scene-exit code then moved into `Cell.SceneExit.cs` (Cell.cs is over the size limit and may not grow): compiled and those tests re-run after the move, the Play measurements are from before it.
+Measured in `Docs/PartySystem/BUGS.md`, "B45 on the return to the menu".
+
+- [x] Solo online host, Bloomrush 90 s, Main Menu: the load's frame is 5.7-6.5 s (9.5-10.5 s before), the menu comes
+      up normally, no red error, and the test log has a `sceneExitDrain` mark.
+- [ ] Two players, the same: the guest also reaches the menu, nobody bounces, and both logs carry the mark. Compare
+      each player's longest freeze with the 8.7-10.0 s of the test with Garrett of 2026-11-20.
+- [ ] By eye: after pressing Main Menu the splash is up for longer than before (up to about 8 s more after a very
+      heavy match) and nothing of the match shows through it.
+- [ ] A match with a cell environment (Cleave, Dog Fight), return to the menu, then launch it again: the arena lays
+      normally (environment prisms were parked in the pool on the way out, not destroyed).
+- [ ] Play Again (the same scene reloads) and a Maelstrom round back to the hub still work.
+- [ ] `FrogletTools`: nothing new. The two numbers are on the SceneLoader in Bootstrap ("Scene exit drain").
+
+## 🟡 Maelstrom seats its AI where the host placed them (2026-11-20, Yash, COMPILED and PLAYED by a session, solo host)
+
+`ServerPlayerVesselInitializerWithAI.PlacedOrBalancedDomain`, used by the match spawner and by
+`MaelstromController.DealAISeats`. `PlacedAIDomainTests` (4) pass in the editor (run by reflection, not the Test Runner).
+
+- [x] Solo host, Maelstrom, three AI placed on Ruby: the hub deals and spawns all three on Ruby.
+- [ ] Two players as in the report: both on Jade, two AI placed on Ruby. The hub shows both AI on Ruby on BOTH
+      machines, and every round keeps them there.
+- [ ] Nothing placed (the default): the AI are spread as before (one per empty domain first).
 
 ## 🟡 Stoat: one slingshot - the swing's speed-up, no second push at the exit (2026-11-19, Yash, NOT PLAYED)
 `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "One slingshot". `StoatSlingConfig`: swingKickShare 0.
-- [ ] EditMode `StoatSlingTests`: all pass (`SlingConfig_ShipsTheSwing` reads swingKickShare 0).
+- [x] EditMode `StoatSlingTests`: all pass (`SlingConfig_ShipsTheSwing` reads swingKickShare 0). 2026-11-19, real editor on B: at 08b67d4d76: filter `Stoat` 141/141, `Slingshot` 19/19.
 - [ ] Swing round the black hole: one surge of speed as it swings you, then you leave along the dotted line with no second shove.
 - [ ] Aim the dotted line at the next ring with the stick: you reach it without overshooting.
 - [ ] Slingshot I1-I4: AI Stoats finish (model: 62-76 s, no rings missed).
@@ -25381,3 +25596,27 @@ lining of plain pads round the hull. Not run in the Unity editor. Unity referenc
       hoops inside them, green pads round the hull, nothing clipping, and the nose side open.
 - [ ] The cruising trail is a thin thread; the sling trail is a thin line, not a wall.
 - [ ] Thornbush I2: a rival AI still finds your nest and its missiles break the twigs and pads behind the plates.
+
+## Bug ledger fixes (2026-11-20)
+
+Nine console-error fixes from the Bug Ledger, one commit each (`Docs/Reports/BUG_HUNT.md` section 3). Not run in the
+Unity editor: it was in Play mode for a multiplayer test. Assembly-CSharp was compiled with Unity 6000.3.17f1's own
+compiler from the editor's response file: 0 errors. No EditMode tests ran.
+
+- [ ] Arkway / a voyage leg: fly until a cell stands, then leave to the menu and stop Play. The console has no
+      "Some objects were not cleaned up when closing the scene" naming `Cell0_RetiringWorld` (`d391dc761d`).
+- [ ] Voyages map, zoomed in to the cells: drag the slice bar on the edge strip up, down and off the strip. The
+      label rides the handle and hides off the strip; no "rebuild list" error (`e357fbad6c`).
+- [ ] Serpent and Jacks, any mode: no `[PrismOcclusion] could not measure` error, and prisms between the camera and
+      the hull fade as on other vessels (`ba3ad0569a`).
+- [ ] Wear another colour set from the menu with a screen showing text that uses a fallback font: the sea lines
+      change colour and the console stays clean (`c0ef0c8281`).
+- [ ] Manta: collect an elemental crystal. The decoy stands where the crystal was the same frame, cannot be
+      collected as a real crystal by the Manta's own team, and springs on a rival (`dedc985d2a`).
+- [ ] In a multiplayer match, after the host drops and before the menu returns, hit an omni crystal: it explodes,
+      and no "Rpc methods can only be invoked" error (`e56a9f1d5d`).
+- [ ] Urchin: spawn into any mode and swap to it in the Toybox. No NullReferenceException from `UrchinAnimation`,
+      and the jets still scale when not attached (`d8a7763cd0`).
+- [ ] Hangar > Upgrades on a vessel with an open element slot, then claim a Daily Toy reward: the page redraws with
+      the open-slot text (`79f1ff888b`).
+- [ ] Trigger a toast, change scene, trigger another: it shows, with no MissingReferenceException (`540bac6a24`).

@@ -79,6 +79,9 @@ namespace CosmicShore.Gameplay
         MantaDecoyCrystal _elementalDecoy;
         MantaDecoyCrystal _omniDecoy;
 
+        /// <summary>Decoys asked for this frame and not built yet (see <see cref="LeaveDecoy"/>).</summary>
+        readonly List<CrystalImpactData> _pendingDecoys = new();
+
         public MantaStingConfigSO Config => config;
         public IVesselStatus Status => _status;
 
@@ -161,6 +164,8 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            SpawnPendingDecoys();
+
             // The shared fuse: the whole board goes off together, so the executor fires it, never a bomb.
             if (_status == null || !config || _planted.Count == 0) return;
             if (Time.time < _fuseDeadline || !IsSimAuthority(_status)) return;
@@ -454,6 +459,24 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Built from Update, not here. A collect arrives inside the physics step (OnTriggerEnter), where
+            // Unity refuses DestroyImmediate: the copy kept its collider, CellItem and impactor and woke as a second
+            // real crystal ("Destroying components immediately is not permitted during physics trigger/contact").
+            // Update runs later in the same frame, so the decoy is still there the frame the crystal is taken.
+            _pendingDecoys.Add(data);
+        }
+
+        void SpawnPendingDecoys()
+        {
+            if (_pendingDecoys.Count == 0) return;
+            for (int i = 0; i < _pendingDecoys.Count; i++)
+                if (_status != null && config) SpawnDecoy(_pendingDecoys[i]);
+            _pendingDecoys.Clear();
+        }
+
+        void SpawnDecoy(in CrystalImpactData data)
+        {
+            bool omni = data.Element == Element.Omni;
             var decoy = MantaDecoyCrystal.Spawn(this, config, data, config.DecoyLifetimeFor(_status));
             if (!decoy) return;
 
@@ -491,6 +514,7 @@ namespace CosmicShore.Gameplay
             if (_elementalDecoy) _elementalDecoy.Pop();
             _omniDecoy = null;
             _elementalDecoy = null;
+            _pendingDecoys.Clear();
         }
 
         /// <summary>The DI container blasts spawned for this Manta resolve through.</summary>

@@ -35,6 +35,11 @@ MonoBehaviour:
     InsideStretch: 0.1
     InsideFlow: 0.6
     InsideSwirl: 0.06
+    FarView: 0.75
+    FormFlare: 1
+    InsideStreak: 0.5
+    InsideDim: 0.3
+    ExitPop: 0.06
   ride:
     InsideBend: 0.5
     InsideWobble: 0.5

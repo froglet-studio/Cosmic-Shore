@@ -4273,6 +4273,22 @@
    "retired": "",
    "test": "",
    "status": "drafted"
+  },
+  {
+   "id": "P-process-03",
+   "owner": "Yash",
+   "date": "2026-11-10",
+   "words": "all I want you is to use the best code practices that can benefit both you and us, but you as priority, as we dont read codes much, we want you to design architectures that benefits you 100percent",
+   "rule": "Code is designed for the session that writes it: the codebase explains itself to a cold-start session and a wrong change fails a machine check (seven rules, three of them gated by check_agent_first.py).",
+   "source": {
+    "file": "Docs/claude/AGENT_FIRST_ARCHITECTURE.md",
+    "line": 3
+   },
+   "kind": "quote",
+   "area": "process",
+   "retired": "",
+   "test": "python3 Tools/Build/check_agent_first.py",
+   "status": "confirmed"
   }
  ]
 }

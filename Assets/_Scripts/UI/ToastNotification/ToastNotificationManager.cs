@@ -125,19 +125,19 @@ namespace CosmicShore.UI
 
         private ToastNotificationItem GetOrCreateItem()
         {
-            ToastNotificationItem item;
-
-            if (_pool.Count > 0)
+            // A pooled item can be gone: the items live under the toast container, and one destroyed with its
+            // scene (or its canvas) is still on the stack. Those are dropped here and a new one is made, instead of
+            // handing out a destroyed item (MissingReferenceException on the first toast after a scene change).
+            while (_pool.Count > 0)
             {
-                item = _pool.Pop();
-                item.transform.SetParent(container, false);
-            }
-            else
-            {
-                item = Instantiate(toastPrefab, container);
-                item.OnDismissed += HandleDismissed;
+                var pooled = _pool.Pop();
+                if (!pooled) continue;
+                pooled.transform.SetParent(container, false);
+                return pooled;
             }
 
+            var item = Instantiate(toastPrefab, container);
+            item.OnDismissed += HandleDismissed;
             return item;
         }
 
