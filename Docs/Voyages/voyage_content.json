@@ -1763,7 +1763,7 @@
    "Needs": 0,
    "Goes": 1,
    "Title": "Crystal Run to {to}",
-   "Summary": "Steal crystals between the three of you while the Ark sails to {to}. Hostile cells are rich in crystals, but their fauna go for the Ark. Bring the crystals home and they are yours; lose the Ark and you lose them.",
+   "Summary": "The Ark burns elemental crystal to cross the HyperSea, and her hold is nearly dry. Steal crystals between the three of you while she sails to {to}. Hostile cells are rich in crystals, but their fauna go for the Ark. Bring the crystals home and they are yours; lose the Ark and you lose them.",
    "SuccessLine": "The squad stole its crystals on the way to {to}.",
    "FailLine": "The Crystal Run to {to} came up short.",
    "SuccessLines": [

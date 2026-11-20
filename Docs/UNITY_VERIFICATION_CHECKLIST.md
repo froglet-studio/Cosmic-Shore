@@ -25385,6 +25385,18 @@ I1 at rest is now the slowest rung after I4 from rest, so the ladder still runs 
 Not run in Unity: the reference compile shows 0 errors in the changed files.
 - [ ] Fly Burrow Run against a Legendary Meerkat AI: it should commit late, tunnel down each leg and finish faster than before.
 
+## Voyage phone pass: budget, background, loading, squad, touch, run length, story (2026-11-20, Shombith)
+Branch claude/project-thread-chvxox into voyages. Spec: Docs/Voyages/CRYSTAL_RUN.md section 17.
+Not run in Unity: the reference compile shows 0 errors in the changed files (and an Android dev-define pass showed none in DeviceLogCapture).
+- [ ] Start a voyage: the loading screen no longer builds Garland first (Voyage.unity's cell boots the bare canvas).
+- [ ] First voyage on a fresh profile: the Ark seats you in the Sparrow with AI in the Squirrel and the Dolphin.
+- [ ] Crystal Run sets off: the goal toast, then "<PILOT> ON THE COMMS" with why the Ark wants crystals.
+- [ ] A kaiju in open water: "SPAWN OF THE LEVIATHAN".
+- [ ] Each scoreboard (met, missed, lost, docked) shows the run's pilot's line under the title.
+- [ ] Sail home: the Ark crosses about twice as fast; on docking a short "HOME" shot with the pilot's line plays, then the board.
+- [ ] Phone build: the scoreboard stays clear of the notch; the intro hint reads "Hold here to skip" and only a touch held bottom-right skips.
+- [ ] Phone build: send the app to the background mid-voyage and come back: the pause window is open.
+- [ ] Phone dev build with the diagnostics HUD on: a stretch under 20 fps sends a Voyage-slow capture.
 ## Spearline AI ramps between rings (2026-11-17, elemental loop step 3, Regatta flywheel)
 
 Not run in the Unity editor. The change is one asset, `Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Spearline.asset`
@@ -25620,3 +25632,16 @@ compiler from the editor's response file: 0 errors. No EditMode tests ran.
 - [ ] Hangar > Upgrades on a vessel with an open element slot, then claim a Daily Toy reward: the page redraws with
       the open-slot text (`79f1ff888b`).
 - [ ] Trigger a toast, change scene, trigger another: it shows, with no MissingReferenceException (`540bac6a24`).
+
+## Voyage HUD, Rev 120 B: the plate over the Ark (2026-11-20)
+
+The plate, chip and toast feed from Frogma Rev 120 (`Docs/MENU_REDESIGN_B.md` section 215). Not run in the Unity
+editor: none in this session. The reference compile has 0 errors in the changed files (29 in untouched files, from
+packages this machine lacks). Seen in Amoebius on a Crystal Run, offline.
+
+- [ ] Crystal Run: a lit plate floats over the Ark with the crystal count, 16 hull segments and a state line; it reads
+      at the same size near and far, and hides during the intro and the end board.
+- [ ] Get the Ark hit: the plate turns red ("Under attack", then "Assault: n of m"); reach the goal: it turns lime.
+- [ ] The chip top left shows crystals, hull and, while anchored, the clock; toasts stack under it as a feed, and a
+      long toast line widens the band instead of being cut off.
+- [ ] Escort the Ark: the plate shows the hull and the way home; Ruby and the other domains read correctly.

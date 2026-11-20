@@ -343,6 +343,10 @@ namespace CosmicShore.Gameplay
         /// is queued for its (off-screen-gated) retirement.</summary>
         public const float DepartedRetireMargin = 600f;
 
+        /// <summary>The margin this conveyor uses (<see cref="DepartedRetireMargin"/> unless its owner sets one: a voyage on a
+        /// phone retires the cell behind sooner, VoyageToyDefinitionSO.RetireMargin).</summary>
+        public float RetireMargin { get; set; } = DepartedRetireMargin;
+
         /// <summary>
         /// Queue the cell the Ark departed for its off-screen retirement once the Ark is
         /// <see cref="DepartedRetireMargin"/> clear of its membrane, instead of only when the Ark reaches the NEXT core.
@@ -357,7 +361,7 @@ namespace CosmicShore.Gameplay
             var record = _cells[_targetIndex - 1];
             if (record.RetireQueued || !record.Root) return;
             float r = record.Cell && record.Cell.MembraneRadius > 1f ? record.Cell.MembraneRadius : MembraneRadiusFloor;
-            float clear = r + DepartedRetireMargin;
+            float clear = r + Mathf.Max(0f, RetireMargin);
             if ((arkPosition - record.Centre).sqrMagnitude > clear * clear) record.RetireQueued = true;
         }
 

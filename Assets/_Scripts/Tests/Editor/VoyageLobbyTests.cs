@@ -52,12 +52,12 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void FirstLineUp_IsYouInTheSparrow_ThenTheButterflyAndTheSerpent()
+        public void FirstLineUp_IsYouInTheSparrow_ThenTheSquirrelAndTheDolphin()
         {
             var settings = VoyageToyDefinitionSO.Load();
             Assert.IsNotNull(settings, "Resources/Voyages/Voyage is missing.");
             CollectionAssert.AreEqual(
-                new[] { VesselClassType.Sparrow, VesselClassType.TigerMoth, VesselClassType.Serpent }, settings.FirstLineUp);
+                new[] { VesselClassType.Sparrow, VesselClassType.Squirrel, VesselClassType.Dolphin }, settings.FirstLineUp);
         }
 
         // ── The voyage's own seats ───────────────────────────────────────────
