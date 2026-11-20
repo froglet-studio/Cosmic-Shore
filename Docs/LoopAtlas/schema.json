@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/froglet-studio/cosmic-shore/Docs/LoopAtlas/schema.json",
+  "title": "Loop Atlas model, schema 1",
+  "description": "The assembled Loop Atlas model (Docs/LoopAtlas/model.json), built from the YAML files under Docs/LoopAtlas/model/ by Tools/Build/loop_atlas.py. Cross-references (parents, edges, drivers, handoffs, proposals) are checked by the tool, not here. Docs/LoopAtlas/README.md explains every field.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "updated", "layers", "tiers", "drivers", "handoffs", "nodes", "edges", "roles", "roleHoles", "kit", "pulse", "verbHole", "archetypes", "elementDrivers", "proposals", "fleet", "fleetOrder", "defaultVessel", "artifact", "areas", "items"],
+  "properties": {
+    "schema": {"const": 1},
+    "updated": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "layers": {"type": "array", "items": {"$ref": "#/$defs/layer"}, "minItems": 1},
+    "tiers": {"type": "array", "items": {"$ref": "#/$defs/tier"}, "minItems": 1},
+    "drivers": {"type": "array", "items": {"$ref": "#/$defs/driver"}, "minItems": 1},
+    "handoffs": {"type": "array", "items": {"$ref": "#/$defs/handoff"}, "minItems": 1},
+    "nodes": {"type": "array", "items": {"$ref": "#/$defs/node"}, "minItems": 1},
+    "edges": {"type": "array", "items": {"$ref": "#/$defs/edge"}},
+    "roles": {"type": "object", "additionalProperties": {"$ref": "#/$defs/role"}},
+    "roleHoles": {"type": "array", "items": {"$ref": "#/$defs/hole"}},
+    "kit": {
+      "type": "object", "additionalProperties": false, "required": ["is"],
+      "properties": {"is": {"type": "string"}, "holes": {"type": "array", "items": {"$ref": "#/$defs/hole"}}}
+    },
+    "pulse": {"$ref": "#/$defs/role"},
+    "verbHole": {
+      "type": "object", "additionalProperties": false, "required": ["on", "q"],
+      "properties": {"on": {"$ref": "#/$defs/layerSet"}, "q": {"type": "string"}, "fillPrefix": {"type": "string"}}
+    },
+    "archetypes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/archetype"}},
+    "elementDrivers": {"type": "object", "additionalProperties": {"type": "array", "items": {"$ref": "#/$defs/id"}}},
+    "proposals": {"type": "array", "items": {"$ref": "#/$defs/proposal"}},
+    "fleet": {"type": "object", "additionalProperties": {"$ref": "#/$defs/vessel"}},
+    "fleetOrder": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "defaultVessel": {"type": "string"},
+    "artifact": {"type": "string"},
+    "areas": {"type": "array", "items": {"$ref": "#/$defs/area"}, "minItems": 1, "description": "Areas of product work beyond the loops (items.yaml)."},
+    "items": {"type": "array", "items": {"$ref": "#/$defs/item"}, "description": "Product work in any area; it moves through the layers like a loop."}
+  },
+  "$defs": {
+    "area": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "is"],
+      "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string", "minLength": 1}, "is": {"type": "string", "minLength": 1}}
+    },
+    "item": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "area", "is", "src"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1},
+        "area": {"$ref": "#/$defs/id"},
+        "is": {"type": "string", "minLength": 1, "description": "One line: what it is and who it is for."},
+        "loops": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true, "description": "Loops on the map it serves, if any."},
+        "in": {"$ref": "#/$defs/layerSet"},
+        "now": {"type": "object", "additionalProperties": false, "properties": {"s": {"enum": ["signed", "built", "part", "dark"]}, "note": {"type": "string"}}},
+        "plan": {"type": "object", "additionalProperties": false, "properties": {"s": {"enum": ["decided"]}, "note": {"type": "string"}}},
+        "prop": {"type": "object", "additionalProperties": false, "properties": {"s": {"enum": ["change", "add"]}, "note": {"type": "string"}}},
+        "holes": {"type": "array", "items": {"$ref": "#/$defs/hole"}},
+        "build": {"$ref": "#/$defs/buildOrder"},
+        "src": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
+      }
+    },
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
+    "span": {
+      "description": "A timescale in seconds: [shortest, longest] pass of the loop.",
+      "type": "array", "items": {"type": "number", "exclusiveMinimum": 0}, "minItems": 2, "maxItems": 2
+    },
+    "layerSet": {
+      "description": "Letters of the layers something appears on: n = Now, p = Planned, x = Proposed (see layers[].letter).",
+      "type": "string", "pattern": "^[npx]+$"
+    },
+    "layer": {
+      "type": "object", "additionalProperties": false, "required": ["id", "letter", "name", "is"],
+      "properties": {"id": {"$ref": "#/$defs/id"}, "letter": {"type": "string", "pattern": "^[a-z]$"}, "name": {"type": "string"}, "is": {"type": "string"}}
+    },
+    "tier": {
+      "type": "object", "additionalProperties": false, "required": ["id", "term", "span", "is", "ask"],
+      "properties": {"id": {"type": "integer", "minimum": 0}, "term": {"type": "string"}, "span": {"$ref": "#/$defs/span"}, "is": {"type": "string"}, "ask": {"type": "string"}}
+    },
+    "driver": {
+      "type": "object", "additionalProperties": false, "required": ["id", "code", "name", "kind", "is"],
+      "properties": {"id": {"$ref": "#/$defs/id"}, "code": {"type": "string", "pattern": "^[A-Z][a-z]$"}, "name": {"type": "string"}, "kind": {"enum": ["inner", "outer"]}, "is": {"type": "string"}}
+    },
+    "handoff": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "is"],
+      "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string"}, "is": {"type": "string"}}
+    },
+    "phase": {
+      "type": "object", "additionalProperties": false, "required": ["n"],
+      "properties": {"n": {"type": "string", "minLength": 1}, "d": {"type": "string"}}
+    },
+    "hole": {
+      "type": "object", "additionalProperties": false, "required": ["on", "q"],
+      "properties": {"on": {"$ref": "#/$defs/layerSet"}, "q": {"type": "string", "minLength": 1}, "fill": {"type": "string"}}
+    },
+    "reps": {"type": ["string", "null"]},
+    "node": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name", "tier", "kind", "t", "is", "phases", "drivers", "src"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "parent": {"$ref": "#/$defs/id"},
+        "at": {"type": "integer", "minimum": 0, "description": "The parent's phase index this loop runs inside."},
+        "core": {"type": "boolean"},
+        "in": {"$ref": "#/$defs/layerSet"},
+        "name": {"type": "string", "minLength": 1},
+        "tier": {"type": "integer", "minimum": 0},
+        "kind": {"enum": ["loop", "place", "hub", "fleet"]},
+        "t": {"$ref": "#/$defs/span"},
+        "kit": {"type": "string"},
+        "element": {"type": "string"},
+        "is": {"type": "string", "minLength": 1},
+        "phases": {"type": "array", "items": {"$ref": "#/$defs/phase"}, "description": "Empty only on the fleet node, whose phases are each vessel's own verbs."},
+        "drivers": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "reps": {"$ref": "#/$defs/reps"},
+        "repsOf": {"type": "string"},
+        "now": {
+          "type": "object", "additionalProperties": false,
+          "properties": {"s": {"enum": ["signed", "built", "part", "dark"]}, "note": {"type": "string"}}
+        },
+        "plan": {
+          "type": "object", "additionalProperties": false,
+          "properties": {"s": {"enum": ["decided"]}, "note": {"type": "string"}}
+        },
+        "prop": {
+          "type": "object", "additionalProperties": false,
+          "properties": {"s": {"enum": ["change", "add"]}, "note": {"type": "string"}}
+        },
+        "holes": {"type": "array", "items": {"$ref": "#/$defs/hole"}},
+        "build": {"$ref": "#/$defs/buildOrder"},
+        "src": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
+      }
+    },
+    "buildOrder": {
+      "description": "A change graduated to Now that the game does not have yet (PROCESS.md). Closed by 'done', which rewrites now.",
+      "type": "object", "additionalProperties": false, "required": ["s", "what", "by", "at"],
+      "properties": {
+        "s": {"enum": ["queued", "building"]}, "what": {"type": "string", "minLength": 1},
+        "by": {"type": "string"}, "at": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}, "branch": {"type": "string"}
+      }
+    },
+    "edge": {
+      "type": "object", "additionalProperties": false, "required": ["from", "to", "kind", "why"],
+      "properties": {
+        "from": {"$ref": "#/$defs/id"}, "to": {"$ref": "#/$defs/id"},
+        "kind": {"enum": ["train", "cross", "feed"]},
+        "why": {"type": "string", "minLength": 1},
+        "handoff": {"$ref": "#/$defs/id"},
+        "in": {"$ref": "#/$defs/layerSet"}
+      }
+    },
+    "role": {
+      "type": "object", "additionalProperties": false, "required": ["name", "t", "is", "phases", "drivers"],
+      "properties": {
+        "name": {"type": "string"}, "t": {"$ref": "#/$defs/span"}, "is": {"type": "string"},
+        "phases": {"type": "array", "items": {"$ref": "#/$defs/phase"}, "minItems": 1},
+        "drivers": {"type": "array", "items": {"$ref": "#/$defs/id"}},
+        "reps": {"$ref": "#/$defs/reps"}, "repsOf": {"type": "string"},
+        "holes": {"type": "array", "items": {"$ref": "#/$defs/hole"}}
+      }
+    },
+    "archetype": {
+      "type": "object", "additionalProperties": false, "required": ["match", "phases", "feel", "at"],
+      "properties": {
+        "match": {"type": "string"}, "phases": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "feel": {"type": "string"}, "at": {"type": "integer", "minimum": 0}
+      }
+    },
+    "handLoop": {
+      "description": "A verb's loop written by hand, replacing the one its archetype would give.",
+      "type": "object", "additionalProperties": false, "required": ["phases", "feel", "at"],
+      "properties": {
+        "phases": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "feel": {"type": "string"}, "at": {"type": "integer", "minimum": 0}, "in": {"$ref": "#/$defs/layerSet"}
+      }
+    },
+    "proposal": {
+      "type": "object", "additionalProperties": false, "required": ["id", "title", "what", "touches"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^P\\d+$"}, "title": {"type": "string"}, "what": {"type": "string"},
+        "touches": {"type": "array", "items": {"$ref": "#/$defs/id"}},
+        "stage": {"enum": ["proposed", "planned", "building", "current", "dropped"], "description": "Absent means proposed."},
+        "branch": {"type": "string"}
+      }
+    },
+    "verb": {
+      "type": "object", "additionalProperties": false, "required": ["ability", "does", "trigger", "scales", "source", "arch", "t"],
+      "properties": {
+        "ability": {"type": "string"}, "does": {"type": "string"}, "trigger": {"type": "string"},
+        "scales": {"type": "string"}, "source": {"type": "string"}, "arch": {"type": "string"},
+        "t": {"$ref": "#/$defs/span"}, "hand": {"$ref": "#/$defs/handLoop"}
+      }
+    },
+    "chainStep": {
+      "description": "[element, what happens]; the element is empty for a step no element drives.",
+      "type": "array", "prefixItems": [{"type": "string"}, {"type": "string"}], "minItems": 2, "maxItems": 2
+    },
+    "combo": {
+      "type": "object", "additionalProperties": false, "required": ["name", "t", "is", "chain", "drivers", "feel"],
+      "properties": {
+        "name": {"type": "string"}, "at": {"type": "integer", "minimum": 0}, "t": {"$ref": "#/$defs/span"},
+        "is": {"type": "string"}, "chain": {"type": "array", "items": {"$ref": "#/$defs/chainStep"}, "minItems": 1},
+        "drivers": {"type": "array", "items": {"$ref": "#/$defs/id"}}, "feel": {"type": "string"},
+        "repsOf": {"type": "string"}, "in": {"$ref": "#/$defs/layerSet"}, "src": {"type": "string"},
+        "sub": {"type": "array", "items": {"$ref": "#/$defs/combo"}}
+      }
+    },
+    "vessel": {
+      "type": "object", "additionalProperties": false,
+      "required": ["label", "verbs", "board", "missing", "arenas", "games", "excused", "lean", "leanWhy", "combos", "doc"],
+      "properties": {
+        "label": {"type": "string"},
+        "verbs": {"type": "object", "additionalProperties": {"$ref": "#/$defs/verb"}},
+        "board": {"type": "object", "additionalProperties": {"type": "string"}},
+        "missing": {"type": "string"},
+        "arenas": {"type": "array", "items": {"type": "string"}},
+        "games": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}},
+        "excused": {"type": "array", "items": {"type": "string"}},
+        "lean": {"type": ["string", "null"]},
+        "leanWhy": {"type": ["string", "null"]},
+        "combos": {"type": "array", "items": {"$ref": "#/$defs/combo"}},
+        "doc": {"type": "string"}
+      }
+    }
+  }
+}

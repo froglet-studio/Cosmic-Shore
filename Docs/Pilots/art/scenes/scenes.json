@@ -590,7 +590,7 @@
    "size": [1536, 864],
    "close": [610, 0, 1070, 460],
    "side": "centre",
-   "treatment": "Rear-curtain flash at dusk with the shutter dragged, ice in the air",
+   "treatment": "Afterglow on a frozen slip, a burst of rime in the air",
    "source": "profession: a racer clears the intake the evening before a winter heat, with one rap of the hand",
    "crops": {
     "16:9": [0, 0, 1536, 864],
@@ -807,6 +807,1222 @@
     "1:1": [588, 0, 1452, 864],
     "4:5": [674, 0, 1365, 864],
     "9:16": [777, 0, 1263, 864]
+   }
+  },
+  "Joriro": {
+   "name": "Joriro Wavecove",
+   "file": "Docs/Pilots/art/scenes/Joriro.jpg",
+   "size": [1536, 864],
+   "close": [367, 0, 747, 380],
+   "side": "left",
+   "treatment": "Blizzard on a high plateau, a survey line paid out into a sinkhole",
+   "source": "profession: explorer",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [125, 0, 989, 864],
+    "4:5": [212, 0, 903, 864],
+    "9:16": [314, 0, 800, 864]
+   }
+  },
+  "Dellalia": {
+   "name": "Dellalia Tidebloom",
+   "file": "Docs/Pilots/art/scenes/Dellalia.jpg",
+   "size": [1536, 864],
+   "close": [962, 63, 1342, 443],
+   "side": "right",
+   "treatment": "Half-under photograph at night, a rescuer's own glow lighting the water",
+   "source": "profession: first responder",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [806, 0, 1497, 864],
+    "9:16": [909, 0, 1395, 864]
+   }
+  },
+  "Sabero": {
+   "name": "Sabero Lowrest",
+   "file": "Docs/Pilots/art/scenes/Sabero.jpg",
+   "size": [1536, 864],
+   "close": [174, 16, 594, 436],
+   "side": "left",
+   "treatment": "Steam and neon at a dawn noodle stall, shot through the steam",
+   "source": "hobby: \"refuses to fly on an empty stomach\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [38, 0, 729, 864],
+    "9:16": [141, 0, 627, 864]
+   }
+  },
+  "Olo": {
+   "name": "Olo Spindlewing",
+   "file": "Docs/Pilots/art/scenes/Olo.jpg",
+   "size": [1536, 864],
+   "close": [904, 69, 1304, 469],
+   "side": "right",
+   "treatment": "Heat shimmer on a desert start line, a long lens at noon",
+   "source": "profession: sport",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [758, 0, 1449, 864],
+    "9:16": [861, 0, 1347, 864]
+   }
+  },
+  "Rolamo": {
+   "name": "Rolamo Mirehollow",
+   "file": "Docs/Pilots/art/scenes/Rolamo.jpg",
+   "size": [1536, 864],
+   "close": [433, 116, 853, 536],
+   "side": "left",
+   "treatment": "Soft drizzle on a harbour wall, an overcast morning at eye level",
+   "source": "hobby: \"collects shells from every port and gives them away to strangers\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [67, 0, 1219, 864],
+    "1:1": [211, 0, 1075, 864],
+    "4:5": [298, 0, 989, 864],
+    "9:16": [400, 0, 886, 864]
+   }
+  },
+  "Yox": {
+   "name": "Yox Lowhook",
+   "file": "Docs/Pilots/art/scenes/Yox.jpg",
+   "size": [1536, 864],
+   "close": [693, 31, 1073, 411],
+   "side": "right",
+   "treatment": "Headlamp in a fresh tunnel, dust hanging in a single beam",
+   "source": "want: \"a vault no one else has opened\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [307, 0, 1459, 864],
+    "1:1": [451, 0, 1315, 864],
+    "4:5": [538, 0, 1229, 864],
+    "9:16": [640, 0, 1126, 864]
+   }
+  },
+  "Xathata": {
+   "name": "Xathata Ashwell",
+   "file": "Docs/Pilots/art/scenes/Xathata.jpg",
+   "size": [1536, 864],
+   "close": [160, 100, 520, 460],
+   "side": "left",
+   "treatment": "Campfire at a dry-lake camp, a long exposure under a sky of slow star trails",
+   "source": "hobby: \"keeps a jar of every crystal they have ever missed\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [0, 0, 691, 864],
+    "9:16": [97, 0, 583, 864]
+   }
+  },
+  "Belthaly": {
+   "name": "Belthaly Wavewell",
+   "file": "Docs/Pilots/art/scenes/Belthaly.jpg",
+   "size": [1536, 864],
+   "close": [865, 0, 1265, 400],
+   "side": "right",
+   "treatment": "Dusk under a dead ship's ribs on a beach, a lantern the warm light",
+   "source": "history: \"grew up in the shadow of a dead Ark\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [633, 0, 1497, 864],
+    "4:5": [720, 0, 1411, 864],
+    "9:16": [822, 0, 1308, 864]
+   }
+  },
+  "Nethael": {
+   "name": "Nethael Foamridge",
+   "file": "Docs/Pilots/art/scenes/Nethael.jpg",
+   "size": [1536, 864],
+   "close": [329, 0, 669, 340],
+   "side": "left",
+   "treatment": "Furrowed field after a hard landing, overcast, smoke drifting",
+   "source": "hobby: \"names every vessel they fly, and apologises to it after a hard landing\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [67, 0, 931, 864],
+    "4:5": [154, 0, 845, 864],
+    "9:16": [256, 0, 742, 864]
+   }
+  },
+  "Mamo": {
+   "name": "Mamo Silverthorn",
+   "file": "Docs/Pilots/art/scenes/Mamo.jpg",
+   "size": [1536, 864],
+   "close": [750, 80, 1110, 440],
+   "side": "right",
+   "treatment": "Low tide at sunrise on mudflats, a low angle at mud level",
+   "source": "profession: gatherer",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [354, 0, 1506, 864],
+    "1:1": [498, 0, 1362, 864],
+    "4:5": [584, 0, 1275, 864],
+    "9:16": [687, 0, 1173, 864]
+   }
+  },
+  "Xalaai": {
+   "name": "Xalaai Shellhollow",
+   "file": "Docs/Pilots/art/scenes/Xalaai.jpg",
+   "size": [1536, 864],
+   "close": [1000, 20, 1370, 390],
+   "side": "right",
+   "treatment": "Pit lane after a night heat, lit only by the pilot's own glow",
+   "source": "hobby: \"keeps score of everything, including naps\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [840, 0, 1531, 864],
+    "9:16": [942, 0, 1428, 864]
+   }
+  },
+  "Briola": {
+   "name": "Briola Whistlefield",
+   "file": "Docs/Pilots/art/scenes/Briola.jpg",
+   "size": [1536, 864],
+   "close": [906, 116, 1266, 476],
+   "side": "right",
+   "treatment": "Moonlit palace balcony, a brass telescope, a slow exposure",
+   "source": "want: \"to find the Ark that left them behind\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [654, 0, 1518, 864],
+    "4:5": [740, 0, 1431, 864],
+    "9:16": [843, 0, 1329, 864]
+   }
+  },
+  "Peveth": {
+   "name": "Peveth Driftrest",
+   "file": "Docs/Pilots/art/scenes/Peveth.jpg",
+   "size": [1536, 864],
+   "close": [320, 40, 640, 360],
+   "side": "left",
+   "treatment": "Telephoto from the water at a windy dawn, a postbox at the end of a jetty",
+   "source": "hobby: \"writes letters to a sibling who never writes back\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [48, 0, 912, 864],
+    "4:5": [134, 0, 825, 864],
+    "9:16": [237, 0, 723, 864]
+   }
+  },
+  "Fenra": {
+   "name": "Fenra Greywell",
+   "file": "Docs/Pilots/art/scenes/Fenra.jpg",
+   "size": [1536, 864],
+   "close": [925, 167, 1225, 467],
+   "side": "right",
+   "treatment": "Hanging from a gantry in a great ship's night hold, one work lamp",
+   "source": "hobby: \"talks to the Ark at night and insists it answers\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [643, 0, 1507, 864],
+    "4:5": [730, 0, 1421, 864],
+    "9:16": [832, 0, 1318, 864]
+   }
+  },
+  "Corrarin": {
+   "name": "Corrarin Deepreach",
+   "file": "Docs/Pilots/art/scenes/Corrarin.jpg",
+   "size": [1536, 864],
+   "close": [270, 60, 730, 520],
+   "side": "left",
+   "treatment": "A hangar at first light, a hull hung with ribbons, backlit",
+   "source": "hobby: \"ties a ribbon on the hull for every friend lost\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [68, 0, 932, 864],
+    "4:5": [154, 0, 845, 864],
+    "9:16": [257, 0, 743, 864]
+   }
+  },
+  "Neloel": {
+   "name": "Neloel Anchorfall",
+   "file": "Docs/Pilots/art/scenes/Neloel.jpg",
+   "size": [1536, 864],
+   "close": [761, 2, 1121, 362],
+   "side": "right",
+   "treatment": "Wading a night marsh, the pilot's own glow on the water",
+   "source": "profession: researcher",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [365, 0, 1517, 864],
+    "1:1": [509, 0, 1373, 864],
+    "4:5": [596, 0, 1287, 864],
+    "9:16": [698, 0, 1184, 864]
+   }
+  },
+  "Uthael": {
+   "name": "Uthael Stormdrift",
+   "file": "Docs/Pilots/art/scenes/Uthael.jpg",
+   "size": [1536, 864],
+   "close": [252, 0, 592, 340],
+   "side": "left",
+   "treatment": "Sea cliff at dawn in a gale, a wide lens from the grass",
+   "source": "profession: priest",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [76, 0, 767, 864],
+    "9:16": [179, 0, 665, 864]
+   }
+  },
+  "Cario": {
+   "name": "Cario Emberrest",
+   "file": "Docs/Pilots/art/scenes/Cario.jpg",
+   "size": [1536, 864],
+   "close": [810, 0, 1200, 390],
+   "side": "right",
+   "treatment": "Panned street photograph in the rain, caught mid-stride on a canal stair",
+   "source": "hobby: \"has never once arrived early\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [573, 0, 1437, 864],
+    "4:5": [660, 0, 1351, 864],
+    "9:16": [762, 0, 1248, 864]
+   }
+  },
+  "Lulaane": {
+   "name": "Lulaane Whistlewright",
+   "file": "Docs/Pilots/art/scenes/Lulaane.jpg",
+   "size": [1536, 864],
+   "close": [180, 40, 660, 520],
+   "side": "left",
+   "treatment": "Lighthouse gallery at night, the turning beam the only light",
+   "source": "history: \"was raised in a lighthouse\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [74, 0, 765, 864],
+    "9:16": [177, 0, 663, 864]
+   }
+  },
+  "Belrenro": {
+   "name": "Belrenro Frostbrook",
+   "file": "Docs/Pilots/art/scenes/Belrenro.jpg",
+   "size": [1536, 864],
+   "close": [900, 60, 1260, 420],
+   "side": "right",
+   "treatment": "Neutral ground at first light, a table set for two, squared-up and symmetrical",
+   "source": "profession: diplomat",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [648, 0, 1512, 864],
+    "4:5": [734, 0, 1425, 864],
+    "9:16": [837, 0, 1323, 864]
+   }
+  },
+  "Zeriola": {
+   "name": "Zeriola Lanternsong",
+   "file": "Docs/Pilots/art/scenes/Zeriola.jpg",
+   "size": [1536, 864],
+   "close": [220, 0, 580, 360],
+   "side": "left",
+   "treatment": "Weigh-in under a striped paddock tent, a bare-bulb flash",
+   "source": "profession: sport",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [54, 0, 745, 864],
+    "9:16": [157, 0, 643, 864]
+   }
+  },
+  "Maloane": {
+   "name": "Maloane Wavegate",
+   "file": "Docs/Pilots/art/scenes/Maloane.jpg",
+   "size": [1536, 864],
+   "close": [320, 20, 760, 460],
+   "side": "left",
+   "treatment": "Edge of the world at sunset, a wide lens from behind and to one side",
+   "source": "want: \"to see the edge of the map\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [108, 0, 972, 864],
+    "4:5": [194, 0, 885, 864],
+    "9:16": [297, 0, 783, 864]
+   }
+  },
+  "Fenx": {
+   "name": "Fenx Brightlight",
+   "file": "Docs/Pilots/art/scenes/Fenx.jpg",
+   "size": [1536, 864],
+   "close": [860, 0, 1220, 360],
+   "side": "right",
+   "treatment": "Lunch on a girder high above a half-built dome, a long lens from the next beam",
+   "source": "hobby: \"refuse to fly on an empty stomach\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [608, 0, 1472, 864],
+    "4:5": [694, 0, 1385, 864],
+    "9:16": [797, 0, 1283, 864]
+   }
+  },
+  "Quilox": {
+   "name": "Quilox Ambermere",
+   "file": "Docs/Pilots/art/scenes/Quilox.jpg",
+   "size": [1536, 864],
+   "close": [840, 100, 1240, 500],
+   "side": "right",
+   "treatment": "Mouth of a lair at the edge of the light, a wide lens at ground level",
+   "source": "profession: hunter",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [608, 0, 1472, 864],
+    "4:5": [694, 0, 1385, 864],
+    "9:16": [797, 0, 1283, 864]
+   }
+  },
+  "Pediri": {
+   "name": "Pediri Wakereach",
+   "file": "Docs/Pilots/art/scenes/Pediri.jpg",
+   "size": [1536, 864],
+   "close": [466, 21, 846, 401],
+   "side": "left",
+   "treatment": "Candlelit banquet hall, a wide-angle from the end of an empty table",
+   "source": "want: \"a crew that stays\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [80, 0, 1232, 864],
+    "1:1": [224, 0, 1088, 864],
+    "4:5": [310, 0, 1001, 864],
+    "9:16": [413, 0, 899, 864]
+   }
+  },
+  "Zesondo": {
+   "name": "Zesondo Kelphook",
+   "file": "Docs/Pilots/art/scenes/Zesondo.jpg",
+   "size": [1536, 864],
+   "close": [880, 260, 1240, 620],
+   "side": "right",
+   "treatment": "Through a rain-streaked window at night, a writer at a desk, a long lens from outside",
+   "source": "hobby: \"write letters to a sibling who never writes back\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [628, 0, 1492, 864],
+    "4:5": [714, 0, 1405, 864],
+    "9:16": [817, 0, 1303, 864]
+   }
+  },
+  "Mirin": {
+   "name": "Mirin Dawnstone",
+   "file": "Docs/Pilots/art/scenes/Mirin.jpg",
+   "size": [1536, 864],
+   "close": [840, 0, 1140, 300],
+   "side": "right",
+   "treatment": "Out on a bowsprit in morning fog, shot from the deck behind",
+   "source": "profession: pirate",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [558, 0, 1422, 864],
+    "4:5": [644, 0, 1335, 864],
+    "9:16": [747, 0, 1233, 864]
+   }
+  },
+  "Olone": {
+   "name": "Olone Deepwright",
+   "file": "Docs/Pilots/art/scenes/Olone.jpg",
+   "size": [1536, 864],
+   "close": [280, 110, 680, 510],
+   "side": "left",
+   "treatment": "A frozen lake at blue dawn, a sealed door under the ice, low on the ice",
+   "source": "want: \"a vault no one else has opened\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [48, 0, 912, 864],
+    "4:5": [134, 0, 825, 864],
+    "9:16": [237, 0, 723, 864]
+   }
+  },
+  "Quikoth": {
+   "name": "Quikoth Ashfield",
+   "file": "Docs/Pilots/art/scenes/Quikoth.jpg",
+   "size": [1536, 864],
+   "close": [232, 40, 652, 460],
+   "side": "left",
+   "treatment": "Hushed archive under a skylight, dust motes in a shaft of light",
+   "source": "hobby: \"laughs at exactly the wrong moments\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [10, 0, 874, 864],
+    "4:5": [96, 0, 787, 864],
+    "9:16": [199, 0, 685, 864]
+   }
+  },
+  "Athara": {
+   "name": "Athara Glassmore",
+   "file": "Docs/Pilots/art/scenes/Athara.jpg",
+   "size": [1536, 864],
+   "close": [130, 60, 470, 400],
+   "side": "left",
+   "treatment": "Floating on the back at night beside a salvage barge, looking down from the rail",
+   "source": "history: \"grew up on a salvage barge\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [0, 0, 691, 864],
+    "9:16": [57, 0, 543, 864]
+   }
+  },
+  "Takoane": {
+   "name": "Takoane Sandfin",
+   "file": "Docs/Pilots/art/scenes/Takoane.jpg",
+   "size": [1536, 864],
+   "close": [308, 1, 728, 421],
+   "side": "left",
+   "treatment": "Blue hour in a tide-pool garden, a tripod shot at knee height",
+   "source": "profession: preservationist",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [86, 0, 950, 864],
+    "4:5": [172, 0, 863, 864],
+    "9:16": [275, 0, 761, 864]
+   }
+  },
+  "Dellorin": {
+   "name": "Dellorin Stillbell",
+   "file": "Docs/Pilots/art/scenes/Dellorin.jpg",
+   "size": [1536, 864],
+   "close": [520, 40, 960, 480],
+   "side": "centre",
+   "treatment": "Repainting a channel marker from a dinghy at dusk, a waterline wide lens",
+   "source": "profession: activist",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [164, 0, 1316, 864],
+    "1:1": [308, 0, 1172, 864],
+    "4:5": [394, 0, 1085, 864],
+    "9:16": [497, 0, 983, 864]
+   }
+  },
+  "Maix": {
+   "name": "Maix Whistlesworth",
+   "file": "Docs/Pilots/art/scenes/Maix.jpg",
+   "size": [1536, 864],
+   "close": [760, 40, 1180, 460],
+   "side": "right",
+   "treatment": "From the doorway of a smugglers' back room, one hanging bulb, deep shadow",
+   "source": "history: \"grew up sorting crystals in a market stall\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [538, 0, 1402, 864],
+    "4:5": [624, 0, 1315, 864],
+    "9:16": [727, 0, 1213, 864]
+   }
+  },
+  "Mirisa": {
+   "name": "Mirisa Saltward",
+   "file": "Docs/Pilots/art/scenes/Mirisa.jpg",
+   "size": [1536, 864],
+   "close": [280, 500, 560, 780],
+   "side": "left",
+   "treatment": "Hanging by the tail from a cable over a chasm, a dare, shot from the cliff edge",
+   "source": "hobby: \"cannot resist a dare\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [74, 0, 765, 864],
+    "9:16": [177, 0, 663, 864]
+   }
+  },
+  "Cakoola": {
+   "name": "Cakoola Lanterndrift",
+   "file": "Docs/Pilots/art/scenes/Cakoola.jpg",
+   "size": [1536, 864],
+   "close": [860, 60, 1340, 540],
+   "side": "right",
+   "treatment": "Night bivouac in a canyon, a map drawn by the mapmaker's own glow",
+   "source": "history: \"was apprenticed to a cartographer\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [668, 0, 1532, 864],
+    "4:5": [754, 0, 1445, 864],
+    "9:16": [857, 0, 1343, 864]
+   }
+  },
+  "Corlilia": {
+   "name": "Corlilia Rustmark",
+   "file": "Docs/Pilots/art/scenes/Corlilia.jpg",
+   "size": [1536, 864],
+   "close": [888, 10, 1148, 270],
+   "side": "right",
+   "treatment": "Flooded street at night under one sodium lamp, a long lens",
+   "source": "profession: bounty hunter",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [586, 0, 1450, 864],
+    "4:5": [672, 0, 1363, 864],
+    "9:16": [775, 0, 1261, 864]
+   }
+  },
+  "Galsoola": {
+   "name": "Galsoola Gulltail",
+   "file": "Docs/Pilots/art/scenes/Galsoola.jpg",
+   "size": [1536, 864],
+   "close": [140, 0, 500, 360],
+   "side": "left",
+   "treatment": "Kelp raft under a ringed giant, hauling the line",
+   "source": "hobby: \"hum off-key during every jump\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [0, 0, 691, 864],
+    "9:16": [77, 0, 563, 864]
+   }
+  },
+  "Veveola": {
+   "name": "Veveola Spindlespark",
+   "file": "Docs/Pilots/art/scenes/Veveola.jpg",
+   "size": [1536, 864],
+   "close": [930, 40, 1330, 440],
+   "side": "right",
+   "treatment": "A buried vault door in red glass dunes, ear to the steel",
+   "source": "want: \"a vault no one else has opened\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [784, 0, 1475, 864],
+    "9:16": [887, 0, 1373, 864]
+   }
+  },
+  "Zeth": {
+   "name": "Zeth Starwater",
+   "file": "Docs/Pilots/art/scenes/Zeth.jpg",
+   "size": [1536, 864],
+   "close": [260, 0, 620, 360],
+   "side": "left",
+   "treatment": "Black lagoon under glowing cliffs, charting on the knee",
+   "source": "history: \"was apprenticed to a cartographer\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [8, 0, 872, 864],
+    "4:5": [94, 0, 785, 864],
+    "9:16": [197, 0, 683, 864]
+   }
+  },
+  "Rosondo": {
+   "name": "Rosondo Rusthollow",
+   "file": "Docs/Pilots/art/scenes/Rosondo.jpg",
+   "size": [1536, 864],
+   "close": [760, 20, 1180, 440],
+   "side": "right",
+   "treatment": "Field lab inside a hollow seed pod, a brass microscope",
+   "source": "profession: researcher",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [538, 0, 1402, 864],
+    "4:5": [624, 0, 1315, 864],
+    "9:16": [727, 0, 1213, 864]
+   }
+  },
+  "Uline": {
+   "name": "Uline Shellmoor",
+   "file": "Docs/Pilots/art/scenes/Uline.jpg",
+   "size": [1536, 864],
+   "close": [180, 0, 600, 420],
+   "side": "left",
+   "treatment": "Launch rail at dawn, ribbons on the hull",
+   "source": "hobby: \"tie a ribbon on the hull for every friend lost\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [44, 0, 735, 864],
+    "9:16": [147, 0, 633, 864]
+   }
+  },
+  "Lunulo": {
+   "name": "Lunulo Stormlight",
+   "file": "Docs/Pilots/art/scenes/Lunulo.jpg",
+   "size": [1536, 864],
+   "close": [880, 0, 1240, 360],
+   "side": "right",
+   "treatment": "Climbing a dead colossal ship's hull by moonlight",
+   "source": "history: \"grew up in the shadow of a dead Ark\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [628, 0, 1492, 864],
+    "4:5": [714, 0, 1405, 864],
+    "9:16": [817, 0, 1303, 864]
+   }
+  },
+  "Ovex": {
+   "name": "Ovex Driftsong",
+   "file": "Docs/Pilots/art/scenes/Ovex.jpg",
+   "size": [1536, 864],
+   "close": [220, 180, 580, 540],
+   "side": "left",
+   "treatment": "Gravel trap after a spin, a trackside long lens, dust still hanging",
+   "source": "hobby: \"laugh at exactly the wrong moments\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [54, 0, 745, 864],
+    "9:16": [157, 0, 643, 864]
+   }
+  },
+  "Jodiola": {
+   "name": "Jodiola Emberthorn",
+   "file": "Docs/Pilots/art/scenes/Jodiola.jpg",
+   "size": [1536, 864],
+   "close": [160, 0, 560, 400],
+   "side": "left",
+   "treatment": "Rescue skiff in a storm surge, a line thrown",
+   "source": "history: \"spent a childhood racing skiffs\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [14, 0, 705, 864],
+    "9:16": [117, 0, 603, 864]
+   }
+  },
+  "Pekoar": {
+   "name": "Pekoar Starwright",
+   "file": "Docs/Pilots/art/scenes/Pekoar.jpg",
+   "size": [1536, 864],
+   "close": [840, 0, 1220, 380],
+   "side": "right",
+   "treatment": "Ice-boat flat out on a frozen violet sea",
+   "source": "hobby: \"cannot resist a dare\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [598, 0, 1462, 864],
+    "4:5": [684, 0, 1375, 864],
+    "9:16": [787, 0, 1273, 864]
+   }
+  },
+  "Quibemo": {
+   "name": "Quibemo Ashstone",
+   "file": "Docs/Pilots/art/scenes/Quibemo.jpg",
+   "size": [1536, 864],
+   "close": [240, 0, 620, 380],
+   "side": "left",
+   "treatment": "High diving gate above a racing canal at dawn",
+   "source": "want: \"to be remembered in a song\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [84, 0, 775, 864],
+    "9:16": [187, 0, 673, 864]
+   }
+  },
+  "Mamaola": {
+   "name": "Mamaola Crestmark",
+   "file": "Docs/Pilots/art/scenes/Mamaola.jpg",
+   "size": [1536, 864],
+   "close": [240, 0, 640, 400],
+   "side": "left",
+   "treatment": "An apology to a dented vessel in a meadow of tall glass flowers, soft overcast",
+   "source": "hobby: \"name every vessel they fly, and apologise to it after a hard landing\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [8, 0, 872, 864],
+    "4:5": [94, 0, 785, 864],
+    "9:16": [197, 0, 683, 864]
+   }
+  },
+  "Tanuwen": {
+   "name": "Tanuwen Spindlespark",
+   "file": "Docs/Pilots/art/scenes/Tanuwen.jpg",
+   "size": [1536, 864],
+   "close": [840, 0, 1260, 420],
+   "side": "right",
+   "treatment": "Wading a flooded street at dusk with a rescue float",
+   "source": "profession: first responder",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [618, 0, 1482, 864],
+    "4:5": [704, 0, 1395, 864],
+    "9:16": [807, 0, 1293, 864]
+   }
+  },
+  "Wyve": {
+   "name": "Wyve Stillline",
+   "file": "Docs/Pilots/art/scenes/Wyve.jpg",
+   "size": [1536, 864],
+   "close": [1040, 40, 1440, 440],
+   "side": "right",
+   "treatment": "Leaning into the harness on a switchback road, a telephoto from below",
+   "source": "profession: merchant",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [845, 0, 1536, 864],
+    "9:16": [997, 0, 1483, 864]
+   }
+  },
+  "Delliar": {
+   "name": "Delliar Brinewater",
+   "file": "Docs/Pilots/art/scenes/Delliar.jpg",
+   "size": [1536, 864],
+   "close": [280, 40, 640, 400],
+   "side": "left",
+   "treatment": "Regatta pavilion above a sea of cloud, wings half open",
+   "source": "want: \"a rematch\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [28, 0, 892, 864],
+    "4:5": [114, 0, 805, 864],
+    "9:16": [217, 0, 703, 864]
+   }
+  },
+  "Delsoko": {
+   "name": "Delsoko Tidehook",
+   "file": "Docs/Pilots/art/scenes/Delsoko.jpg",
+   "size": [1536, 864],
+   "close": [760, 40, 1180, 460],
+   "side": "right",
+   "treatment": "Hanging-chart archive at night, a lifted map",
+   "source": "history: \"was apprenticed to a cartographer\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [538, 0, 1402, 864],
+    "4:5": [624, 0, 1315, 864],
+    "9:16": [727, 0, 1213, 864]
+   }
+  },
+  "Nemaix": {
+   "name": "Nemaix Hollowline",
+   "file": "Docs/Pilots/art/scenes/Nemaix.jpg",
+   "size": [1536, 864],
+   "close": [120, 0, 520, 400],
+   "side": "left",
+   "treatment": "Inside a great ship's hold at night, a palm on the wall",
+   "source": "hobby: \"talk to the Ark at night and insist it answers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [0, 0, 691, 864],
+    "9:16": [77, 0, 563, 864]
+   }
+  },
+  "Brilolia": {
+   "name": "Brilolia Coralrest",
+   "file": "Docs/Pilots/art/scenes/Brilolia.jpg",
+   "size": [1536, 864],
+   "close": [900, 20, 1340, 460],
+   "side": "right",
+   "treatment": "Salvage barge deck in rain, a strongbox pried open",
+   "source": "want: \"a vault no one else has opened\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [774, 0, 1465, 864],
+    "9:16": [877, 0, 1363, 864]
+   }
+  },
+  "Ithax": {
+   "name": "Ithax Moonmark",
+   "file": "Docs/Pilots/art/scenes/Ithax.jpg",
+   "size": [1536, 864],
+   "close": [330, 320, 630, 620],
+   "side": "left",
+   "treatment": "Last-instant roll under a closing door, flash and a slow shutter",
+   "source": "hobby: \"have never once arrived early\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [48, 0, 912, 864],
+    "4:5": [134, 0, 825, 864],
+    "9:16": [237, 0, 723, 864]
+   }
+  },
+  "Makoola": {
+   "name": "Makoola Starsail",
+   "file": "Docs/Pilots/art/scenes/Makoola.jpg",
+   "size": [1536, 864],
+   "close": [700, 20, 1180, 500],
+   "side": "right",
+   "treatment": "Glowing reed marsh at night, parting the reeds",
+   "source": "profession: hunter",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [364, 0, 1516, 864],
+    "1:1": [508, 0, 1372, 864],
+    "4:5": [594, 0, 1285, 864],
+    "9:16": [697, 0, 1183, 864]
+   }
+  },
+  "Talolo": {
+   "name": "Talolo Foamrest",
+   "file": "Docs/Pilots/art/scenes/Talolo.jpg",
+   "size": [1536, 864],
+   "close": [260, 60, 700, 500],
+   "side": "left",
+   "treatment": "Breaking up through a counting-house floor at night",
+   "source": "want: \"to pay back an old debt, with interest\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [48, 0, 912, 864],
+    "4:5": [134, 0, 825, 864],
+    "9:16": [237, 0, 723, 864]
+   }
+  },
+  "Iri": {
+   "name": "Iri Whistlebell",
+   "file": "Docs/Pilots/art/scenes/Iri.jpg",
+   "size": [1536, 864],
+   "close": [880, 0, 1340, 460],
+   "side": "right",
+   "treatment": "Capsized hydrofoil at a pontoon, laughing it off",
+   "source": "hobby: \"laugh at exactly the wrong moments\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [764, 0, 1455, 864],
+    "9:16": [867, 0, 1353, 864]
+   }
+  },
+  "Miben": {
+   "name": "Miben Glasscove",
+   "file": "Docs/Pilots/art/scenes/Miben.jpg",
+   "size": [1536, 864],
+   "close": [80, 120, 580, 620],
+   "side": "left",
+   "treatment": "Floating on the back in a turquoise lagoon, a shell on the chest",
+   "source": "hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [0, 0, 691, 864],
+    "9:16": [87, 0, 573, 864]
+   }
+  },
+  "Verao": {
+   "name": "Verao Emberrest",
+   "file": "Docs/Pilots/art/scenes/Verao.jpg",
+   "size": [1536, 864],
+   "close": [860, 0, 1260, 400],
+   "side": "right",
+   "treatment": "Empty lantern market on a jetty, counting tokens",
+   "source": "hobby: \"have never once arrived early\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [628, 0, 1492, 864],
+    "4:5": [714, 0, 1405, 864],
+    "9:16": [817, 0, 1303, 864]
+   }
+  },
+  "Brisilia": {
+   "name": "Brisilia Stillridge",
+   "file": "Docs/Pilots/art/scenes/Brisilia.jpg",
+   "size": [1536, 864],
+   "close": [440, 100, 800, 460],
+   "side": "left",
+   "treatment": "Hangar at dusk, apologising to a dented racer",
+   "source": "hobby: \"name every vessel they fly, and apologise to it after a hard landing\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [44, 0, 1196, 864],
+    "1:1": [188, 0, 1052, 864],
+    "4:5": [274, 0, 965, 864],
+    "9:16": [377, 0, 863, 864]
+   }
+  },
+  "Pewen": {
+   "name": "Pewen Reefwatch",
+   "file": "Docs/Pilots/art/scenes/Pewen.jpg",
+   "size": [1536, 864],
+   "close": [800, 0, 1220, 420],
+   "side": "right",
+   "treatment": "All-night diner counter, a huge plate",
+   "source": "hobby: \"refuse to fly on an empty stomach\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [578, 0, 1442, 864],
+    "4:5": [664, 0, 1355, 864],
+    "9:16": [767, 0, 1253, 864]
+   }
+  },
+  "Briraix": {
+   "name": "Briraix Driftthorn",
+   "file": "Docs/Pilots/art/scenes/Briraix.jpg",
+   "size": [1536, 864],
+   "close": [320, 0, 780, 460],
+   "side": "left",
+   "treatment": "Moonlit field of giant fungi, tracking with a lantern",
+   "source": "want: \"to see the edge of the map\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [118, 0, 982, 864],
+    "4:5": [204, 0, 895, 864],
+    "9:16": [307, 0, 793, 864]
+   }
+  },
+  "Mata": {
+   "name": "Mata Deepridge",
+   "file": "Docs/Pilots/art/scenes/Mata.jpg",
+   "size": [1536, 864],
+   "close": [780, 0, 1240, 460],
+   "side": "right",
+   "treatment": "Rope ladder down a sea cliff in rain",
+   "source": "want: \"a crew that stays\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [578, 0, 1442, 864],
+    "4:5": [664, 0, 1355, 864],
+    "9:16": [767, 0, 1253, 864]
+   }
+  },
+  "Ludira": {
+   "name": "Ludira Kelpfin",
+   "file": "Docs/Pilots/art/scenes/Ludira.jpg",
+   "size": [1536, 864],
+   "close": [220, 20, 680, 480],
+   "side": "left",
+   "treatment": "Stilt-palace terrace over still water, sorting crystals",
+   "source": "history: \"grew up sorting crystals in a market stall\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [18, 0, 882, 864],
+    "4:5": [104, 0, 795, 864],
+    "9:16": [207, 0, 693, 864]
+   }
+  },
+  "Belsiar": {
+   "name": "Belsiar Silvermore",
+   "file": "Docs/Pilots/art/scenes/Belsiar.jpg",
+   "size": [1536, 864],
+   "close": [900, 0, 1300, 400],
+   "side": "right",
+   "treatment": "Atop stacked crates at an empty dock, megaphone up",
+   "source": "hobby: \"have never once arrived early\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [668, 0, 1532, 864],
+    "4:5": [754, 0, 1445, 864],
+    "9:16": [857, 0, 1343, 864]
+   }
+  },
+  "Canuar": {
+   "name": "Canuar Stormwatch",
+   "file": "Docs/Pilots/art/scenes/Canuar.jpg",
+   "size": [1536, 864],
+   "close": [300, 0, 740, 440],
+   "side": "left",
+   "treatment": "Ice floe at polar twilight, by a breathing hole",
+   "source": "history: \"grew up the youngest of eleven\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [88, 0, 952, 864],
+    "4:5": [174, 0, 865, 864],
+    "9:16": [277, 0, 763, 864]
+   }
+  },
+  "Uro": {
+   "name": "Uro Spindlefield",
+   "file": "Docs/Pilots/art/scenes/Uro.jpg",
+   "size": [1536, 864],
+   "close": [860, 60, 1220, 420],
+   "side": "right",
+   "treatment": "Poling a skiff through a night swamp by own glow",
+   "source": "history: \"spent a childhood racing skiffs\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [608, 0, 1472, 864],
+    "4:5": [694, 0, 1385, 864],
+    "9:16": [797, 0, 1283, 864]
+   }
+  },
+  "Emao": {
+   "name": "Emao Ambermark",
+   "file": "Docs/Pilots/art/scenes/Emao.jpg",
+   "size": [1536, 864],
+   "close": [240, 0, 680, 440],
+   "side": "left",
+   "treatment": "Candlelit boathouse, blessing a battered vessel",
+   "source": "hobby: \"name every vessel they fly, and apologise to it after a hard landing\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [28, 0, 892, 864],
+    "4:5": [114, 0, 805, 864],
+    "9:16": [217, 0, 703, 864]
+   }
+  },
+  "Ora": {
+   "name": "Ora Spindlestone",
+   "file": "Docs/Pilots/art/scenes/Ora.jpg",
+   "size": [1536, 864],
+   "close": [760, 40, 1180, 460],
+   "side": "right",
+   "treatment": "Flooded engine room, mending a pipe by worklight",
+   "source": "want: \"a quiet harbour and a long sleep\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [538, 0, 1402, 864],
+    "4:5": [624, 0, 1315, 864],
+    "9:16": [727, 0, 1213, 864]
+   }
+  },
+  "Nemath": {
+   "name": "Nemath Dawnward",
+   "file": "Docs/Pilots/art/scenes/Nemath.jpg",
+   "size": [1536, 864],
+   "close": [260, 0, 620, 360],
+   "side": "left",
+   "treatment": "Hill-climb start line at dawn, crouched by a racer",
+   "source": "want: \"a rematch\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [8, 0, 872, 864],
+    "4:5": [94, 0, 785, 864],
+    "9:16": [197, 0, 683, 864]
+   }
+  },
+  "Oth": {
+   "name": "Oth Farmere",
+   "file": "Docs/Pilots/art/scenes/Oth.jpg",
+   "size": [1536, 864],
+   "close": [800, 20, 1200, 420],
+   "side": "right",
+   "treatment": "Planting reeds in a night wetland",
+   "source": "want: \"to be remembered in a song\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [568, 0, 1432, 864],
+    "4:5": [654, 0, 1345, 864],
+    "9:16": [757, 0, 1243, 864]
+   }
+  },
+  "Sasoko": {
+   "name": "Sasoko Hollowwell",
+   "file": "Docs/Pilots/art/scenes/Sasoko.jpg",
+   "size": [1536, 864],
+   "close": [240, 0, 700, 460],
+   "side": "left",
+   "treatment": "Top of a waterfall falling into mist, looking out",
+   "source": "want: \"to see the edge of the map\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [38, 0, 902, 864],
+    "4:5": [124, 0, 815, 864],
+    "9:16": [227, 0, 713, 864]
+   }
+  },
+  "Anudek": {
+   "name": "Anudek Silversong",
+   "file": "Docs/Pilots/art/scenes/Anudek.jpg",
+   "size": [1536, 864],
+   "close": [230, 0, 590, 360],
+   "side": "left",
+   "treatment": "High dry-dock scaffold, riveting a hull",
+   "source": "want: \"a crew that stays\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [64, 0, 755, 864],
+    "9:16": [167, 0, 653, 864]
+   }
+  },
+  "Xabedek": {
+   "name": "Xabedek Stormgate",
+   "file": "Docs/Pilots/art/scenes/Xabedek.jpg",
+   "size": [1536, 864],
+   "close": [760, 0, 1120, 360],
+   "side": "right",
+   "treatment": "Tide-pool reef shrine at blue hour, pouring water",
+   "source": "history: \"was raised among reef gardeners\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [364, 0, 1516, 864],
+    "1:1": [508, 0, 1372, 864],
+    "4:5": [594, 0, 1285, 864],
+    "9:16": [697, 0, 1183, 864]
+   }
+  },
+  "Belsoth": {
+   "name": "Belsoth Deepwell",
+   "file": "Docs/Pilots/art/scenes/Belsoth.jpg",
+   "size": [1536, 864],
+   "close": [200, 0, 580, 380],
+   "side": "left",
+   "treatment": "Climbing a red dune crest at noon, ears up",
+   "source": "profession: explorer",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [44, 0, 735, 864],
+    "9:16": [147, 0, 633, 864]
+   }
+  },
+  "Zebeel": {
+   "name": "Zebeel Reefsail",
+   "file": "Docs/Pilots/art/scenes/Zebeel.jpg",
+   "size": [1536, 864],
+   "close": [780, 0, 1220, 440],
+   "side": "right",
+   "treatment": "Listing barge in fog, a glove on the hull",
+   "source": "hobby: \"name every vessel they fly, and apologise to it after a hard landing\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [568, 0, 1432, 864],
+    "4:5": [654, 0, 1345, 864],
+    "9:16": [757, 0, 1243, 864]
    }
   }
  }

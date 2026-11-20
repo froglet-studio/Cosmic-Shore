@@ -1,0 +1,83 @@
+# Loop Atlas model: loops, era. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+- id: era.world
+  parent: era
+  at: 5
+  name: The living sea
+  tier: 7
+  kind: loop
+  t: [86400, 7776000]
+  is: The galaxy moves without you. Every day pressure drifts, blooms ripen, vault fields restock, wrecks are grazed down
+    and rival crews sail. Every change is news.
+  phases:
+  - n: A day passes
+  - n: Places change state
+  - n: Rival crews sail and resolve
+  - n: News is born from what happened
+  - n: The news reaches your port
+  drivers: [find, story, stake]
+  reps: '1'
+  repsOf: tick per day, at most five while away
+  now:
+    s: built
+    note: On the device, deterministic per day. The same galaxy on the same day on every machine.
+  plan:
+    note: V3 moves the galaxy to the backend so that locations remember, and the galactic war begins.
+  src:
+  - Docs/Voyages/DEPTH.md section 2
+- id: era.meta
+  parent: era
+  at: 5
+  name: The meta turns
+  tier: 7
+  kind: loop
+  t: [2419200, 10368000]
+  is: 'The studio''s elemental loop, seen from the player''s side: arena play exposes imbalance, vessels are retuned, and
+    a new vessel disturbs more than itself.'
+  phases:
+  - n: Arena environments plateau
+  - n: What is left over is vessel imbalance
+  - n: Vessels and elements are retuned
+  - n: Ladders and AIs are redone for them
+  - n: A new vessel enters at step 1
+  drivers: [mastery, find, rival]
+  in: px
+  plan:
+    s: decided
+    note: 'Garrett, 2026-11-12: it will disrupt the meta on an optimized schedule before it gets stale. Each loop needs
+      fewer people.'
+  prop:
+    s: change
+    note: Tie each turn to a Tide so that players can see it coming.
+  holes:
+  - 'on': p
+    q: The schedule is not set, and nothing tells a player that the meta turned or why their vessel flies differently.
+    fill: One turn per Tide, six weeks. The Tide's news says in authored words which vessels changed and which arena environments
+      are new.
+  src:
+  - Docs/ElementalLoop/PLAYBOOK.md sections 0 and 1
+- id: era.tide
+  parent: era
+  at: 0
+  in: x
+  name: The Tide
+  tier: 7
+  kind: loop
+  t: [604800, 3628800]
+  is: 'Proposed. The clock of the long game, shown on Home as news from the sea: a weekly beat inside a six-week season.'
+  phases:
+  - n: 'Each day: one job that expires'
+    d: From the living sea's tick.
+  - n: 'Each week: the card of the week'
+    d: One arcade card and one arena environment pool.
+  - n: 'Each Tide: the meta turns'
+    d: Retuned vessels, a reseeded saga, sometimes a new hull.
+  - n: The Tide goes out
+    d: Its content becomes an episode.
+  drivers: [find, story, crew]
+  reps: '6'
+  repsOf: weeks per Tide
+  prop:
+    s: add
+    note: Proposal P6. It gives the long game's empty last phase a rhythm built from systems that already tick.
+  src: [proposal]

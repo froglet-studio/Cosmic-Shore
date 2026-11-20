@@ -90,6 +90,7 @@ MonoBehaviour:
   abilityFlashSeconds: 0.6
   hostCameraBodies: 6
   hostCameraBase: 30
+  hostCameraFloor: 204
   cameraEase: 4
   omniPredators:
   - {fileID: 11400000, guid: 58835b82ea284255855af2649ef185a5, type: 2}

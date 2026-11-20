@@ -75,6 +75,13 @@ MonoBehaviour:
     Floor: 6
   nestBlockSize: 4.5
   nestClearance: 1.1
+  nestShellThickness: 0.7
+  nestHoops: 3
+  nestTwigWidth: 1
+  nestTwigLength: 4
+  nestTwigTilt: 15
+  nestLining: 7
+  nestLiningSize: 1.2
   nestCooldown: 8
   detachNestMissiles: 1
   leaveNestSeconds: 2
@@ -100,7 +107,7 @@ MonoBehaviour:
     UseFloor: 1
     Floor: 2
   trailThin: 0.6
-  trailThick: 2.6
+  trailThick: 0.5
   trailLength: 7
   slingMaxBlocksPerFrame: 6
   lanceHitClass: 0

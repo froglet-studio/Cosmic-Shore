@@ -512,6 +512,10 @@ namespace CosmicShore.Gameplay
             _host = host;
             _mode = WaspMode.InFauna;
             _hostSince = Time.time;
+            // the creature is the wasp's from now on (Garrett, 2026-11-19: "steal the prisms of any controlled fauna and
+            // convert it to its domain, even after leaving"): its body prisms, its diet's side and its offspring take the
+            // wasp's domain, and nothing gives them back when the wasp leaves. Fauna.StealInto, replicated by FaunaNetworkSync.
+            host.StealInto(_status.Domain);
             _burstUntil = 0f;
             _strikeFrom = _strikeUntil = -1f;
             Vector3 fwd = host.PossessionForward;
@@ -1364,7 +1368,7 @@ namespace CosmicShore.Gameplay
         {
             if (Mirrors) return Relay.View.w;
             if (_mode == WaspMode.InFauna && _host)
-                return config.HostCameraBase + _host.PossessionBodyRadius * config.HostCameraBodies;
+                return Mathf.Max(config.HostCameraFloor, config.HostCameraBase + _host.PossessionBodyRadius * config.HostCameraBodies);
             return _mode == WaspMode.InFlora ? _plantDistance : 0f;
         }
 

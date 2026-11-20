@@ -191,5 +191,101 @@ namespace CosmicShore.Gameplay
         /// <summary>Does the Void Lance break this block? Every block, but super-shielded mass only with the Space
         /// upgrade (Garrett, 2026-10-15); below it, super-shielded mass lets the beam pass.</summary>
         public static bool LanceBreaks(bool superShielded, bool upgraded) => !superShielded || upgraded;
+        // ------------------------------------------------------------------ the woven nest (Garrett, 2026-11-19)
+
+        /// <summary>One block of a nest, in the hull's local space at the moment it leaves the nest.</summary>
+        public readonly struct NestPiece
+        {
+            public readonly Vector3 Local, Forward, Up, Scale;
+            public readonly PrismKind Kind;
+
+            public NestPiece(Vector3 local, Vector3 forward, Vector3 up, Vector3 scale, PrismKind kind)
+            {
+                Local = local; Forward = forward; Up = up; Scale = scale; Kind = kind;
+            }
+        }
+
+        /// <summary>The side of a shell plate: as wide as the cup's tightest pair of plates allows without touching (two
+        /// squares whose centres are more than side x sqrt(2) apart cannot meet, whatever their turn), times
+        /// <paramref name="clearance"/>, so the shell closes as far as it can. Never smaller than the cube it replaced.</summary>
+        public static float NestPlateSide(int count, float blockSize, float clearance)
+            => Mathf.Max(blockSize, NestRadiusFor(count, false, blockSize, clearance) * NestMinSpacing(count, false)
+                                    / (1.41421356f * clearance));
+
+        /// <summary>
+        /// The Shrike's nest (Garrett, 2026-11-19: "protected from most sides by a polyhedron of supershielded prisms, but
+        /// you can make a more interesting and differentiated nest with normal and shielded prisms as part of the shrikes
+        /// unique structure"). Three layers, outside in:
+        /// <list type="bullet">
+        /// <item>the SHELL: <paramref name="shellCount"/> super-shielded plates (<see cref="NestPlateSide"/>,
+        /// <paramref name="shellThickness"/> thick; <paramref name="shellSide"/> sizes the cup) on the cup's golden spiral (<see cref="NestLocal(int,int,bool,float)"/>),
+        /// each lying flat on the sphere, so it guards every side but the nose's way out;</item>
+        /// <item>the WEAVE: <paramref name="hoops"/> rings of shielded twigs on an inner sphere behind the hull, each twig
+        /// tangent to its ring and tilted alternately by <paramref name="twigTiltDeg"/> (the woven look), alternate rings
+        /// offset half a twig;</item>
+        /// <item>the LINING: <paramref name="lining"/> soft pads of plain prisms in the back of the cup, just outside the hull.</item>
+        /// </list>
+        /// No two blocks clip: the weave sits between the hull's radius and the shell's inner face, the lining between
+        /// the hull and the weave, and twigs leave a gap at their ends.
+        /// </summary>
+        public static void NestPieces(System.Collections.Generic.List<NestPiece> into, int shellCount, float shellSide,
+            float shellThickness, float clearance, float hullRadius, int hoops, float twigWidth, float twigLength,
+            float twigTiltDeg, int lining, float liningSide)
+        {
+            into.Clear();
+            float radius = NestRadiusFor(shellCount, false, shellSide, clearance);
+            float plate = NestPlateSide(shellCount, shellSide, clearance);
+            for (int i = 0; i < shellCount; i++)
+            {
+                Vector3 local = NestLocal(i, shellCount, false, radius);
+                Vector3 n = local.normalized;
+                Vector3 f = Vector3.Cross(Mathf.Abs(n.y) > 0.9f ? Vector3.right : Vector3.up, n).normalized;
+                into.Add(new NestPiece(local, f, n, new Vector3(plate, shellThickness, plate), PrismKind.SuperShielded));
+            }
+
+            float inner = radius - shellThickness * 0.5f * clearance - 0.5f;
+            float hull = hullRadius + 0.5f;
+            if (hoops > 0 && inner - twigWidth > hull + twigWidth)
+            {
+                float ri = 0.5f * (hull + inner) + 0.5f;
+                float maxHalf = Mathf.Sqrt(Mathf.Max(0f, (inner - twigWidth) * (inner - twigWidth) - ri * ri));
+                const float back0 = 35f, back1 = 95f;   // degrees from straight behind the hull
+                for (int h = 0; h < hoops; h++)
+                {
+                    float theta = Mathf.Deg2Rad * (hoops == 1 ? 0.5f * (back0 + back1) : Mathf.Lerp(back0, back1, h / (float)(hoops - 1)));
+                    float rho = ri * Mathf.Sin(theta);
+                    float z = -ri * Mathf.Cos(theta);   // behind the hull is local -Z
+                    int m = Mathf.Max(5, Mathf.FloorToInt(2f * Mathf.PI * rho / Mathf.Max(0.5f, twigLength * 1.15f) + 0.5f));
+                    float len = Mathf.Min(2f * rho * Mathf.Sin(Mathf.PI / m) * 0.85f, 2f * maxHalf);
+                    float offset = (h & 1) == 0 ? 0f : Mathf.PI / m;
+                    for (int k = 0; k < m; k++)
+                    {
+                        float a = offset + k * 2f * Mathf.PI / m;
+                        Vector3 local = new(rho * Mathf.Cos(a), rho * Mathf.Sin(a), z);
+                        Vector3 radial = local.normalized;
+                        Vector3 tangent = new(-Mathf.Sin(a), Mathf.Cos(a), 0f);
+                        float tilt = ((k & 1) == 0 ? 1f : -1f) * twigTiltDeg;
+                        Vector3 f = Quaternion.AngleAxis(tilt, radial) * tangent;
+                        into.Add(new NestPiece(local, f, radial, new Vector3(twigWidth, twigWidth, len), PrismKind.Shielded));
+                    }
+                }
+            }
+
+            if (lining > 0)
+            {
+                float rl = hull + 0.7f;
+                const float capCos = 0.7071f;   // the back 45 degrees of the cup
+                for (int k = 0; k < lining; k++)
+                {
+                    float c = 1f - (k + 0.5f) / lining * (1f - capCos);
+                    float sn = Mathf.Sqrt(Mathf.Max(0f, 1f - c * c));
+                    float ph = k * 2.39996f;
+                    Vector3 local = new(sn * Mathf.Cos(ph) * rl, sn * Mathf.Sin(ph) * rl, -c * rl);
+                    Vector3 n = local.normalized;
+                    Vector3 f = Vector3.Cross(Mathf.Abs(n.y) > 0.9f ? Vector3.right : Vector3.up, n).normalized;
+                    into.Add(new NestPiece(local, f, n, new Vector3(liningSide, 0.4f, liningSide), PrismKind.Plain));
+                }
+            }
+        }
     }
 }

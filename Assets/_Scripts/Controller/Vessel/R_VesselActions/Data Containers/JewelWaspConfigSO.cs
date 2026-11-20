@@ -148,6 +148,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float hostCameraBodies = 6f;
         [Tooltip("The chase camera's base stand-back on a host (u).")]
         [SerializeField, Min(0f)] float hostCameraBase = 30f;
+        [Tooltip("The nearest the chase camera comes on a host (u): a ride keeps its wide view while the free wasp's own " +
+                 "camera sits close (Garrett, 2026-11-19: closer only when it is not in a lifeform).")]
+        [SerializeField, Min(0f)] float hostCameraFloor = 204f;
         [Tooltip("How fast the camera eases to a new stand-back (1/s).")]
         [SerializeField, Min(0.1f)] float cameraEase = 4f;
 
@@ -227,6 +230,7 @@ namespace CosmicShore.Gameplay
         public float AbilityFlashSeconds => abilityFlashSeconds;
         public float HostCameraBodies => hostCameraBodies;
         public float HostCameraBase => hostCameraBase;
+        public float HostCameraFloor => hostCameraFloor;
         public float CameraEase => cameraEase;
         public IReadOnlyList<FaunaConfigurationSO> OmniPredators => omniPredators;
         public float AIHostSeconds => aiHostSeconds;

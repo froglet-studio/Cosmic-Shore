@@ -1,0 +1,31 @@
+# Loop Atlas model: meta. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+schema: 1
+updated: '2026-11-19'
+defaultVessel: Dolphin
+artifact: https://claude.ai/artifact/1g4Xc6uSEt1EQFeQmHqsgs
+fleetOrder:
+- Angler
+- BrittleStar
+- Dolphin
+- Goby
+- Grizzly
+- Honeyguide
+- Jacks
+- JewelWasp
+- Manta
+- Meerkat
+- Orca
+- Rhino
+- Scarab
+- Serpent
+- Shrike
+- Sparrow
+- Squirrel
+- Starling
+- Stoat
+- Swordfish
+- Thresher
+- TigerMoth
+- Urchin
+- Wrasse

@@ -138,6 +138,16 @@ namespace CosmicShore.Gameplay
             SetState(AttackState.Lunge);
         }
 
+        /// <summary>A colony is its segments: a steal (the Jewel Wasp riding it, the Jacks' net) takes every one of them,
+        /// and a segment it adopts later takes the colony's domain then (<c>AdoptChain</c>).</summary>
+        public override bool CanBeStolen => true;
+
+        protected override void OnTeamChanged()
+        {
+            for (int i = 0; i < segments.Count; i++)
+                if (segments[i]) segments[i].SetTeam(domain);
+        }
+
         protected override void OnPossessionChanged(bool possessed)
         {
             _threat = null;

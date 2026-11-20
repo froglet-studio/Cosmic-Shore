@@ -1059,18 +1059,18 @@ MonoBehaviour:
   ballSpeedSmoothing: 12
   leftTriggerEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1874401507
+      Data2: 1302339466
+      Data3: 422139035
+      Data4: -338279812
+    Path: event:/SFX/Loops/Morning Star Left Trigger
   leftTriggerReleaseEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -671012783
+      Data2: 1229147325
+      Data3: -679525457
+      Data4: -1504701734
+    Path: event:/SFX/Oneshots/Gameplay sfx/morning Star Release
   leftTriggerDepthParameter: Trigger Depth
   rightTriggerEvent:
     Guid:
@@ -1081,11 +1081,11 @@ MonoBehaviour:
     Path: event:/SFX/Loops/Morning Star Right trigger
   rightTriggerReleaseEvent:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1930622044
+      Data2: 1161399853
+      Data3: 1488097721
+      Data4: 1918040886
+    Path: event:/SFX/Oneshots/Gameplay sfx/morning Star Release 2
   rightTriggerDepthParameter: Trigger Depth
   onlyAudibleToController: 1
   baseVolumeMultiplier: 1

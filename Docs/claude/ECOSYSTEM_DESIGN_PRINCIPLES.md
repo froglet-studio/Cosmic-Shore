@@ -76,12 +76,17 @@ trio, and the traps).
   body prisms and diet stay the cell's.) **THE THIRD SIGN-OFF (the designer, 2026-10-24): the Jacks' net STEALS, and the omni crystal
   BEARS, in the player's colour.** "if an opposing team's fauna is netted it steals it" and "lets have the omnicrystal
   produce an omnivorous worm fauna in the player's domain" (`R_VesselActions/JACKS.md` §1.1). So a cell may hold a second
-  fauna colour, fenced: a creature changes domain only through `Fauna.StealInto` (one caller, `JacksNet`; only a species
-  whose whole body recolours, `Fauna.CanBeStolen`; replicated by `FaunaNetworkSync`), and a creature is BORN in a player's
+  fauna colour, fenced: a creature changes domain only through `Fauna.StealInto` (two callers: `JacksNet`, and
+  `JewelWaspExecutor` on possession, below; only a species whose whole body recolours, `Fauna.CanBeStolen`: light fauna,
+  boids, worm colonies with every segment, one-colour swarms - never a MultiDomain swarm; replicated by `FaunaNetworkSync`
+  where the species carries one), and a creature is BORN in a player's
   colour only through `VesselSpawnFaunaByCrystalEffectSO` (one asset, the Jacks' omni crystal), through the platform's one
   spawn seam. A stolen or crystal-born creature's offspring are born in its colour (birth copies the parent's domain).
   Nothing else about it changes: it eats, breeds, starves and dies by its own rules, and a mode's
-  `Cell.SetModeControlOverride` still re-colours the live swarm. An exception, never a precedent. A mode may also PEN a cell's fauna
+  `Cell.SetModeControlOverride` still re-colours the live swarm. An exception, never a precedent. **The fourth sign-off
+  (Garrett, 2026-11-19): a creature the Jewel Wasp POSSESSES is stolen.** "the jewel wasp should steal the prisms of any
+  controlled fauna and convert it to its domain, even after leaving": the moment the wasp nests in a host it calls
+  `StealInto` with its own domain, and the host stays the wasp's after the wasp leaves, by the same rules as a netted one. A mode may also PEN a cell's fauna
   (`Cell.FaunaContainmentRadius` = the OUTER wall, `Cell.FaunaExclusionRadius` = the INNER one —
   together a cell-level annulus a mode can open and close while the match runs; Astro League holds
   its cleanup crew outside the court and drops the inner wall when the cell's own volume ladder
