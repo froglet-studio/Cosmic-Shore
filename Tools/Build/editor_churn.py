@@ -105,6 +105,9 @@ HARM_NOISE = "noise"
 
 # ------------------------------------------------------------------------------------------ parsing
 
+URP_ASSET_VERSION = "d0353a89b1f911e48b9e16bdc9f2e058"  # UnityEditor.Rendering.Universal.AssetVersion
+
+
 @dataclass
 class FileDiff:
     path: str
@@ -450,6 +453,11 @@ def classify_file(xy: str, path: str, d: FileDiff | None, idx: WriterIndex,
         return row("version-skew", "Unity editor (serialization upgrade)", harm,
                    note="only version fields changed")
 
+    if path.endswith(".mat") and d is not None and any(URP_ASSET_VERSION in ln for ln in d.added):
+        return row("editor-on-load", "URP MaterialPostprocessor (adds the AssetVersion sub-asset)", harm,
+                   note="committed without URP's version stamp: commit the .mat as Unity saved it "
+                        "(Tools/Build/check_material_versions.py finds the others)")
+
     if path not in GENERATED_SETTINGS:
         who = _match(path, PACKAGE_WRITERS)
         if who:
@@ -732,6 +740,7 @@ def self_test() -> int:
         "?? Assets/NewFolder/",
         " M Assets/Scenes/Menu_Main.unity",
         " M Assets/Resources/GlowyRayMaterial.mat",
+        " M Assets/Art/Stamped.mat",
     ]) + "\n"
     patch = "\n".join([
         "diff --git a/Assets/_Prefabs/UI/ConfigureView.prefab b/Assets/_Prefabs/UI/ConfigureView.prefab",
@@ -764,6 +773,9 @@ def self_test() -> int:
         "+      objectReference: {fileID: 0}",
         "diff --git a/Assets/Resources/GlowyRayMaterial.mat b/Assets/Resources/GlowyRayMaterial.mat",
         "@@ -9 +9 @@", "-    - _BaseColor: {r: 1, g: 0, b: 0, a: 1}", "+    - _BaseColor: {r: 0, g: 1, b: 0, a: 1}",
+        "diff --git a/Assets/Art/Stamped.mat b/Assets/Art/Stamped.mat",
+        "@@ -2,0 +3,3 @@", "+--- !u!114 &-9107202918723861369", "+MonoBehaviour:",
+        f"+  m_Script: {{fileID: 11500000, guid: {URP_ASSET_VERSION}, type: 3}}",
     ]) + "\n"
     tracked = {"Assets/_Scripts/Regatta/RegattaCourseFeatures.cs"}
     rows = {r.path: r for r in classify(status, patch, idx, tracked,
@@ -787,6 +799,7 @@ def self_test() -> int:
         "Assets/NewFolder/": ("unknown", "?"),
         "Assets/Scenes/Menu_Main.unity": ("unknown", "?"),
         "Assets/Resources/GlowyRayMaterial.mat": ("unknown", "RayPaint.cs"),
+        "Assets/Art/Stamped.mat": ("editor-on-load", "MaterialPostprocessor"),
     }
     for path, (cat, writer) in expect.items():
         r = rows.get(path)
