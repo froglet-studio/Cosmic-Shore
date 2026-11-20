@@ -97,7 +97,7 @@ jobs:
       # Read by the report job so the tracking issue names each one.
       red_generators: ${{ steps.generators.outputs.red }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           lfs: false        # source-only checks; binary assets are not needed
           fetch-depth: 1
@@ -312,7 +312,7 @@ jobs:
       # a compile break.
       failure_kind: ${{ steps.compile.outputs.failure_kind }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           lfs: true         # the project stores binary assets in Git LFS
           fetch-depth: 1
@@ -427,7 +427,7 @@ jobs:
       # Only on failure. Nobody has ever opened the editor log of a green run,
       # and uploading ~1 MB per push on a branch that sees dozens a day is pure
       # noise. When it IS needed, it is the artifact the autofix reads.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
           name: editmode-results-${{ github.run_id }}
@@ -613,7 +613,7 @@ jobs:
             echo "have=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         if: steps.key.outputs.have == 'true'
         with:
           lfs: false
