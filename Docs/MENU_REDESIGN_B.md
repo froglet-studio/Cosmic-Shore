@@ -8823,7 +8823,7 @@ the toasts one fixed spot of their own.
 - **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
   colour shard tiles (no such systems yet).
 
-## 213. Rev 118 mockups: every in-game voyage screen, one HUD for every device (2026-11-20, awaiting a pick)
+## 213. Rev 118 mockups: every in-game voyage screen, one HUD for every device (2026-11-20; set aside: too big, and the marquee was not wanted, see 214)
 
 **Asked** (Shombith, 2026-11-20): "We can definitely improve the in game hud lets do that I guess", then, after a
 phone-sized mockup page: "HUD should be same accross all devices, I was asking you to draw in game mockups for all in
@@ -8853,3 +8853,22 @@ device (a phone shows it at about 0.40, `Docs/UI_STYLE_GUIDE.md` section 8, D6),
 hull as a tall rail at mid left, a Carrying chip mid screen, the flower split in the marquee and 28 / 19 toasts. The
 sized-up HUD is already written on branch `claude/project-thread-xnd2ma` (not merged, not run in Unity) and waits on
 this pick; Pickup's and Pause's sizes and the escort / home marquee are not in it yet.
+
+## 214. Rev 119 mockups: four HUD directions without the marquee, at normal text sizes (2026-11-20, awaiting a pick)
+
+**Asked.** Shombith on Rev 118: "Why are the texts so big. I do not want big texts what the hell", then "Yes I want
+different mockups not just marquee, I didnt like marquee and how it looks in game".
+
+**Drawn.** Tab "Voyages playtest", sixteen boards and notes (`Docs/MenuRedesignB/rounds/r119_voyage_hud_directions.py`).
+The game's own text sizes again (labels 15, body 18, toasts 24 / 17, numbers 18-34). Four families, each on Raid,
+Banked, Attack and Sail, none with the objective at top centre and each unlike Rev 116's B-F:
+- **A Tracker**: an open-world quest tracker on the right (Steal crystals 23 / 50 +7, Keep the Ark above 10% 64%,
+  The Ark sails 0:18); toasts a slim line in the lower third.
+- **B On the Ark**: a lit plate over the Ark in the world holds the crystals aboard and the hull as lit segments, red
+  when hit; a small chip top left carries the same numbers when the Ark is off screen; toasts a feed under the chip.
+- **C Reticle**: two thin arcs around the aim point, hull left and crystals right; route and clock a hairline at the
+  top; toasts are words over the aim point.
+- **D Card**: one small card top left with everything in it; toasts slide out under it.
+
+**Picked.** Nothing yet. The pick gets the full sixteen screens next. The Rev 118 sized-up HUD code parked on
+`claude/project-thread-xnd2ma` is not built and will be replaced by the pick.

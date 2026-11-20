@@ -2482,6 +2482,142 @@
       "h": 900,
       "page": "voyages-playtest",
       "title": "Rev 118 - notes: what changed from the build, the type floor, what is not built"
+    },
+    "R119ARaid.dc.html": {
+      "x": 0,
+      "y": 32450,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 ARaid - A Tracker: raiding a hostile cell"
+    },
+    "R119ABanked.dc.html": {
+      "x": 2100,
+      "y": 32450,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 ABanked - A Tracker: the banked toast"
+    },
+    "R119AAttack.dc.html": {
+      "x": 4200,
+      "y": 32450,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 AAttack - A Tracker: the Ark under attack"
+    },
+    "R119ASail.dc.html": {
+      "x": 0,
+      "y": 33710,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 ASail - A Tracker: the raid countdown"
+    },
+    "R119BRaid.dc.html": {
+      "x": 2100,
+      "y": 33710,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 BRaid - B On the Ark: raiding a hostile cell"
+    },
+    "R119BBanked.dc.html": {
+      "x": 4200,
+      "y": 33710,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 BBanked - B On the Ark: the banked toast"
+    },
+    "R119BAttack.dc.html": {
+      "x": 0,
+      "y": 34970,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 BAttack - B On the Ark: the Ark under attack"
+    },
+    "R119BSail.dc.html": {
+      "x": 2100,
+      "y": 34970,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 BSail - B On the Ark: the raid countdown"
+    },
+    "R119CRaid.dc.html": {
+      "x": 4200,
+      "y": 34970,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 CRaid - C Reticle: raiding a hostile cell"
+    },
+    "R119CBanked.dc.html": {
+      "x": 0,
+      "y": 36230,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 CBanked - C Reticle: the banked toast"
+    },
+    "R119CAttack.dc.html": {
+      "x": 2100,
+      "y": 36230,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 CAttack - C Reticle: the Ark under attack"
+    },
+    "R119CSail.dc.html": {
+      "x": 4200,
+      "y": 36230,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 CSail - C Reticle: the raid countdown"
+    },
+    "R119DRaid.dc.html": {
+      "x": 0,
+      "y": 37490,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 DRaid - D Card: raiding a hostile cell"
+    },
+    "R119DBanked.dc.html": {
+      "x": 2100,
+      "y": 37490,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 DBanked - D Card: the banked toast"
+    },
+    "R119DAttack.dc.html": {
+      "x": 4200,
+      "y": 37490,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 DAttack - D Card: the Ark under attack"
+    },
+    "R119DSail.dc.html": {
+      "x": 0,
+      "y": 38750,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages-playtest",
+      "title": "Rev 119 DSail - D Card: the raid countdown"
+    },
+    "R119Notes.dc.html": {
+      "x": 0,
+      "y": 40010,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages-playtest",
+      "title": "Rev 119 - notes: what each option changes, what is shared, what differs from the build"
     }
   },
   "createdOnFiles": {
@@ -2565,6 +2701,8 @@
     "sec-rev117",
     "sec-rev118",
     "sec-rev118-2",
+    "sec-rev119",
+    "sec-rev119-2",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -2650,7 +2788,8 @@
     "grp-116e-edges-t",
     "grp-116f-blocks-t",
     "rev117",
-    "rev118"
+    "rev118",
+    "rev119"
   ],
   "notes": {
     "hud_end": {
@@ -4607,6 +4746,45 @@
         "border-radius": "0px 0px 40px 40px"
       },
       "page": "voyages-playtest"
+    },
+    "rev119": {
+      "kind": "title1",
+      "text": "Rev 119 - Four HUD directions without the marquee, at normal text sizes",
+      "x": 0,
+      "y": 32050,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages-playtest"
+    },
+    "sec-rev119": {
+      "kind": "rect",
+      "x": -160,
+      "y": 31890,
+      "w": 6440,
+      "h": 4590,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 0px 3px",
+        "border-radius": "40px 40px 0px 0px"
+      },
+      "page": "voyages-playtest"
+    },
+    "sec-rev119-2": {
+      "kind": "rect",
+      "x": -160,
+      "y": 36480,
+      "w": 6440,
+      "h": 4590,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "0px 3px 3px 3px",
+        "border-radius": "0px 0px 40px 40px"
+      },
+      "page": "voyages-playtest"
     }
   },
   "order": [
@@ -4909,7 +5087,24 @@
     "R118Escort.dc.html",
     "R118Score.dc.html",
     "R118Lost.dc.html",
-    "R118Notes.dc.html"
+    "R118Notes.dc.html",
+    "R119ARaid.dc.html",
+    "R119ABanked.dc.html",
+    "R119AAttack.dc.html",
+    "R119ASail.dc.html",
+    "R119BRaid.dc.html",
+    "R119BBanked.dc.html",
+    "R119BAttack.dc.html",
+    "R119BSail.dc.html",
+    "R119CRaid.dc.html",
+    "R119CBanked.dc.html",
+    "R119CAttack.dc.html",
+    "R119CSail.dc.html",
+    "R119DRaid.dc.html",
+    "R119DBanked.dc.html",
+    "R119DAttack.dc.html",
+    "R119DSail.dc.html",
+    "R119Notes.dc.html"
   ],
   "pages": [
     {
