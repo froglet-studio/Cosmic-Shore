@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-20 from canvas version `1795202134-e5a9` of **Frogma**: Rev 41 to Rev 120, 334 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-20 from canvas version `1795202224-87de` of **Frogma**: Rev 41 to Rev 120, 300 boards on 14 tabs. The canvas opens on the tab `voyages-playtest`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -471,46 +471,6 @@ No boards yet.
 - [`R120Score.dc.html`](R120Score.dc.html) - Rev 120 Score - The end board: Finish here, Sail home, Venture further
 - [`R120Lost.dc.html`](R120Lost.dc.html) - Rev 120 Lost - The Ark lost
 - [`R120Notes.dc.html`](R120Notes.dc.html) - Rev 120 - notes: what each option changes, what is shared, what differs from the build
-
-#### Rev 119 - Four HUD directions without the marquee, at normal text sizes
-
-- [`R119ARaid.dc.html`](R119ARaid.dc.html) - Rev 119 ARaid - A Tracker: raiding a hostile cell
-- [`R119ABanked.dc.html`](R119ABanked.dc.html) - Rev 119 ABanked - A Tracker: the banked toast
-- [`R119AAttack.dc.html`](R119AAttack.dc.html) - Rev 119 AAttack - A Tracker: the Ark under attack
-- [`R119ASail.dc.html`](R119ASail.dc.html) - Rev 119 ASail - A Tracker: the raid countdown
-- [`R119BRaid.dc.html`](R119BRaid.dc.html) - Rev 119 BRaid - B On the Ark: raiding a hostile cell
-- [`R119BBanked.dc.html`](R119BBanked.dc.html) - Rev 119 BBanked - B On the Ark: the banked toast
-- [`R119BAttack.dc.html`](R119BAttack.dc.html) - Rev 119 BAttack - B On the Ark: the Ark under attack
-- [`R119BSail.dc.html`](R119BSail.dc.html) - Rev 119 BSail - B On the Ark: the raid countdown
-- [`R119CRaid.dc.html`](R119CRaid.dc.html) - Rev 119 CRaid - C Reticle: raiding a hostile cell
-- [`R119CBanked.dc.html`](R119CBanked.dc.html) - Rev 119 CBanked - C Reticle: the banked toast
-- [`R119CAttack.dc.html`](R119CAttack.dc.html) - Rev 119 CAttack - C Reticle: the Ark under attack
-- [`R119CSail.dc.html`](R119CSail.dc.html) - Rev 119 CSail - C Reticle: the raid countdown
-- [`R119DRaid.dc.html`](R119DRaid.dc.html) - Rev 119 DRaid - D Card: raiding a hostile cell
-- [`R119DBanked.dc.html`](R119DBanked.dc.html) - Rev 119 DBanked - D Card: the banked toast
-- [`R119DAttack.dc.html`](R119DAttack.dc.html) - Rev 119 DAttack - D Card: the Ark under attack
-- [`R119DSail.dc.html`](R119DSail.dc.html) - Rev 119 DSail - D Card: the raid countdown
-- [`R119Notes.dc.html`](R119Notes.dc.html) - Rev 119 - notes: what each option changes, what is shared, what differs from the build
-
-#### Rev 118 - Every in-game voyage screen, one HUD for every device: the Marquee sized up
-
-- [`R118Intro.dc.html`](R118Intro.dc.html) - Rev 118 Intro - The intro: course title and objective, no HUD
-- [`R118SetOff.dc.html`](R118SetOff.dc.html) - Rev 118 SetOff - Setting off: the goal toast, the Ark's hull top left
-- [`R118Raid.dc.html`](R118Raid.dc.html) - Rev 118 Raid - Raiding a hostile cell: count, carried, route, clock, the quiet hint (recommended)
-- [`R118Pickup.dc.html`](R118Pickup.dc.html) - Rev 118 Pickup - A crystal picked up: the running +1 toast
-- [`R118Banked.dc.html`](R118Banked.dc.html) - Rev 118 Banked - Banked at the Ark: the toast with what was banked by element
-- [`R118Attack.dc.html`](R118Attack.dc.html) - Rev 118 Attack - The Ark under attack: hull red, UNDER ATTACK, raiders marked in the world
-- [`R118Leak.dc.html`](R118Leak.dc.html) - Rev 118 Leak - The hold leaking: hull under 30%
-- [`R118Sail.dc.html`](R118Sail.dc.html) - Rev 118 Sail - The raid countdown: the ring and what is at stake
-- [`R118Kaiju.dc.html`](R118Kaiju.dc.html) - Rev 118 Kaiju - Between cells: a kaiju in open water
-- [`R118Stray.dc.html`](R118Stray.dc.html) - Rev 118 Stray - Too far from the Ark: the recall countdown
-- [`R118Goal.dc.html`](R118Goal.dc.html) - Rev 118 Goal - Goal met: the call to set sail
-- [`R118Pause.dc.html`](R118Pause.dc.html) - Rev 118 Pause - Pause, goal met: Complete and set sail
-- [`R118Home.dc.html`](R118Home.dc.html) - Rev 118 Home - Sailing home: what is aboard and at stake
-- [`R118Escort.dc.html`](R118Escort.dc.html) - Rev 118 Escort - Escort the Ark: the hull is the score, an assault on
-- [`R118Score.dc.html`](R118Score.dc.html) - Rev 118 Score - The end board, goal met: Finish here, Sail home, Venture further
-- [`R118Lost.dc.html`](R118Lost.dc.html) - Rev 118 Lost - The Ark lost
-- [`R118Notes.dc.html`](R118Notes.dc.html) - Rev 118 - notes: what changed from the build, the type floor, what is not built
 
 #### Rev 116 - The in-game voyage UI, six ways: flight HUD, the Ark under attack, the toast spot, the raid countdown, pause, the scoreboard
 

@@ -8823,7 +8823,7 @@ the toasts one fixed spot of their own.
 - **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
   colour shard tiles (no such systems yet).
 
-## 213. Rev 118 mockups: every in-game voyage screen, one HUD for every device (2026-11-20; set aside: too big, and the marquee was not wanted, see 214)
+## 213. Rev 118 mockups: every in-game voyage screen, one HUD for every device (2026-11-20; set aside, removed from the canvas; regenerate from its round script)
 
 **Asked** (Shombith, 2026-11-20): "We can definitely improve the in game hud lets do that I guess", then, after a
 phone-sized mockup page: "HUD should be same accross all devices, I was asking you to draw in game mockups for all in
@@ -8854,7 +8854,7 @@ hull as a tall rail at mid left, a Carrying chip mid screen, the flower split in
 sized-up HUD is already written on branch `claude/project-thread-xnd2ma` (not merged, not run in Unity) and waits on
 this pick; Pickup's and Pause's sizes and the escort / home marquee are not in it yet.
 
-## 214. Rev 119 mockups: four HUD directions without the marquee, at normal text sizes (2026-11-20; Shombith picked B)
+## 214. Rev 119 mockups: four HUD directions without the marquee, at normal text sizes (2026-11-20; Shombith picked B; removed from the canvas after Rev 120)
 
 **Asked.** Shombith on Rev 118: "Why are the texts so big. I do not want big texts what the hell", then "Yes I want
 different mockups not just marquee, I didnt like marquee and how it looks in game".

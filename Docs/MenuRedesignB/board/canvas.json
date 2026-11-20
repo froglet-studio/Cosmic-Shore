@@ -2347,281 +2347,9 @@
       "page": "launch-console",
       "title": "Rev 117 - notes: what each page reads, what is sample data, the open questions"
     },
-    "R118Intro.dc.html": {
-      "x": 0,
-      "y": 22530,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Intro - The intro: course title and objective, no HUD"
-    },
-    "R118SetOff.dc.html": {
-      "x": 2100,
-      "y": 22530,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 SetOff - Setting off: the goal toast, the Ark's hull top left"
-    },
-    "R118Raid.dc.html": {
-      "x": 4200,
-      "y": 22530,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Raid - Raiding a hostile cell: count, carried, route, clock, the quiet hint (recommended)"
-    },
-    "R118Pickup.dc.html": {
-      "x": 0,
-      "y": 23790,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Pickup - A crystal picked up: the running +1 toast"
-    },
-    "R118Banked.dc.html": {
-      "x": 2100,
-      "y": 23790,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Banked - Banked at the Ark: the toast with what was banked by element"
-    },
-    "R118Attack.dc.html": {
-      "x": 4200,
-      "y": 23790,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Attack - The Ark under attack: hull red, UNDER ATTACK, raiders marked in the world"
-    },
-    "R118Leak.dc.html": {
-      "x": 0,
-      "y": 25050,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Leak - The hold leaking: hull under 30%"
-    },
-    "R118Sail.dc.html": {
-      "x": 2100,
-      "y": 25050,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Sail - The raid countdown: the ring and what is at stake"
-    },
-    "R118Kaiju.dc.html": {
-      "x": 4200,
-      "y": 25050,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Kaiju - Between cells: a kaiju in open water"
-    },
-    "R118Stray.dc.html": {
-      "x": 0,
-      "y": 26310,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Stray - Too far from the Ark: the recall countdown"
-    },
-    "R118Goal.dc.html": {
-      "x": 2100,
-      "y": 26310,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Goal - Goal met: the call to set sail"
-    },
-    "R118Pause.dc.html": {
-      "x": 4200,
-      "y": 26310,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Pause - Pause, goal met: Complete and set sail"
-    },
-    "R118Home.dc.html": {
-      "x": 0,
-      "y": 27570,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Home - Sailing home: what is aboard and at stake"
-    },
-    "R118Escort.dc.html": {
-      "x": 2100,
-      "y": 27570,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Escort - Escort the Ark: the hull is the score, an assault on"
-    },
-    "R118Score.dc.html": {
-      "x": 4200,
-      "y": 27570,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Score - The end board, goal met: Finish here, Sail home, Venture further"
-    },
-    "R118Lost.dc.html": {
-      "x": 0,
-      "y": 28830,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 118 Lost - The Ark lost"
-    },
-    "R118Notes.dc.html": {
-      "x": 0,
-      "y": 30090,
-      "w": 1920,
-      "h": 900,
-      "page": "voyages-playtest",
-      "title": "Rev 118 - notes: what changed from the build, the type floor, what is not built"
-    },
-    "R119ARaid.dc.html": {
-      "x": 0,
-      "y": 32450,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 ARaid - A Tracker: raiding a hostile cell"
-    },
-    "R119ABanked.dc.html": {
-      "x": 2100,
-      "y": 32450,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 ABanked - A Tracker: the banked toast"
-    },
-    "R119AAttack.dc.html": {
-      "x": 4200,
-      "y": 32450,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 AAttack - A Tracker: the Ark under attack"
-    },
-    "R119ASail.dc.html": {
-      "x": 0,
-      "y": 33710,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 ASail - A Tracker: the raid countdown"
-    },
-    "R119BRaid.dc.html": {
-      "x": 2100,
-      "y": 33710,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 BRaid - B On the Ark: raiding a hostile cell"
-    },
-    "R119BBanked.dc.html": {
-      "x": 4200,
-      "y": 33710,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 BBanked - B On the Ark: the banked toast"
-    },
-    "R119BAttack.dc.html": {
-      "x": 0,
-      "y": 34970,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 BAttack - B On the Ark: the Ark under attack"
-    },
-    "R119BSail.dc.html": {
-      "x": 2100,
-      "y": 34970,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 BSail - B On the Ark: the raid countdown"
-    },
-    "R119CRaid.dc.html": {
-      "x": 4200,
-      "y": 34970,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 CRaid - C Reticle: raiding a hostile cell"
-    },
-    "R119CBanked.dc.html": {
-      "x": 0,
-      "y": 36230,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 CBanked - C Reticle: the banked toast"
-    },
-    "R119CAttack.dc.html": {
-      "x": 2100,
-      "y": 36230,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 CAttack - C Reticle: the Ark under attack"
-    },
-    "R119CSail.dc.html": {
-      "x": 4200,
-      "y": 36230,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 CSail - C Reticle: the raid countdown"
-    },
-    "R119DRaid.dc.html": {
-      "x": 0,
-      "y": 37490,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 DRaid - D Card: raiding a hostile cell"
-    },
-    "R119DBanked.dc.html": {
-      "x": 2100,
-      "y": 37490,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 DBanked - D Card: the banked toast"
-    },
-    "R119DAttack.dc.html": {
-      "x": 4200,
-      "y": 37490,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 DAttack - D Card: the Ark under attack"
-    },
-    "R119DSail.dc.html": {
-      "x": 0,
-      "y": 38750,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages-playtest",
-      "title": "Rev 119 DSail - D Card: the raid countdown"
-    },
-    "R119Notes.dc.html": {
-      "x": 0,
-      "y": 40010,
-      "w": 1920,
-      "h": 900,
-      "page": "voyages-playtest",
-      "title": "Rev 119 - notes: what each option changes, what is shared, what differs from the build"
-    },
     "R120Intro.dc.html": {
       "x": 0,
-      "y": 42370,
+      "y": 22530,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2629,7 +2357,7 @@
     },
     "R120SetOff.dc.html": {
       "x": 2100,
-      "y": 42370,
+      "y": 22530,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2637,7 +2365,7 @@
     },
     "R120Raid.dc.html": {
       "x": 4200,
-      "y": 42370,
+      "y": 22530,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2645,7 +2373,7 @@
     },
     "R120Pickup.dc.html": {
       "x": 0,
-      "y": 43630,
+      "y": 23790,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2653,7 +2381,7 @@
     },
     "R120Banked.dc.html": {
       "x": 2100,
-      "y": 43630,
+      "y": 23790,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2661,7 +2389,7 @@
     },
     "R120Attack.dc.html": {
       "x": 4200,
-      "y": 43630,
+      "y": 23790,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2669,7 +2397,7 @@
     },
     "R120Leak.dc.html": {
       "x": 0,
-      "y": 44890,
+      "y": 25050,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2677,7 +2405,7 @@
     },
     "R120Sail.dc.html": {
       "x": 2100,
-      "y": 44890,
+      "y": 25050,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2685,7 +2413,7 @@
     },
     "R120Kaiju.dc.html": {
       "x": 4200,
-      "y": 44890,
+      "y": 25050,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2693,7 +2421,7 @@
     },
     "R120Stray.dc.html": {
       "x": 0,
-      "y": 46150,
+      "y": 26310,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2701,7 +2429,7 @@
     },
     "R120Goal.dc.html": {
       "x": 2100,
-      "y": 46150,
+      "y": 26310,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2709,7 +2437,7 @@
     },
     "R120Pause.dc.html": {
       "x": 4200,
-      "y": 46150,
+      "y": 26310,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2717,7 +2445,7 @@
     },
     "R120Home.dc.html": {
       "x": 0,
-      "y": 47410,
+      "y": 27570,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2725,7 +2453,7 @@
     },
     "R120Escort.dc.html": {
       "x": 2100,
-      "y": 47410,
+      "y": 27570,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2733,7 +2461,7 @@
     },
     "R120Score.dc.html": {
       "x": 4200,
-      "y": 47410,
+      "y": 27570,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2741,7 +2469,7 @@
     },
     "R120Lost.dc.html": {
       "x": 0,
-      "y": 48670,
+      "y": 28830,
       "w": 1920,
       "h": 1080,
       "page": "voyages-playtest",
@@ -2749,7 +2477,7 @@
     },
     "R120Notes.dc.html": {
       "x": 0,
-      "y": 49930,
+      "y": 30090,
       "w": 1920,
       "h": 900,
       "page": "voyages-playtest",
@@ -2835,10 +2563,6 @@
     "sec-rev116-3",
     "sec-rev116-4",
     "sec-rev117",
-    "sec-rev118",
-    "sec-rev118-2",
-    "sec-rev119",
-    "sec-rev119-2",
     "sec-rev120",
     "sec-rev120-2",
     "grp-toasts-a-d",
@@ -2926,8 +2650,6 @@
     "grp-116e-edges-t",
     "grp-116f-blocks-t",
     "rev117",
-    "rev118",
-    "rev119",
     "rev120"
   ],
   "notes": {
@@ -4847,89 +4569,11 @@
       },
       "page": "launch-console"
     },
-    "rev118": {
-      "kind": "title1",
-      "text": "Rev 118 - Every in-game voyage screen, one HUD for every device: the Marquee sized up",
-      "x": 0,
-      "y": 22130,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages-playtest"
-    },
-    "sec-rev118": {
-      "kind": "rect",
-      "x": -160,
-      "y": 21970,
-      "w": 6440,
-      "h": 4590,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 0px 3px",
-        "border-radius": "40px 40px 0px 0px"
-      },
-      "page": "voyages-playtest"
-    },
-    "sec-rev118-2": {
-      "kind": "rect",
-      "x": -160,
-      "y": 26560,
-      "w": 6440,
-      "h": 4590,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "0px 3px 3px 3px",
-        "border-radius": "0px 0px 40px 40px"
-      },
-      "page": "voyages-playtest"
-    },
-    "rev119": {
-      "kind": "title1",
-      "text": "Rev 119 - Four HUD directions without the marquee, at normal text sizes",
-      "x": 0,
-      "y": 32050,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages-playtest"
-    },
-    "sec-rev119": {
-      "kind": "rect",
-      "x": -160,
-      "y": 31890,
-      "w": 6440,
-      "h": 4590,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 0px 3px",
-        "border-radius": "40px 40px 0px 0px"
-      },
-      "page": "voyages-playtest"
-    },
-    "sec-rev119-2": {
-      "kind": "rect",
-      "x": -160,
-      "y": 36480,
-      "w": 6440,
-      "h": 4590,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "0px 3px 3px 3px",
-        "border-radius": "0px 0px 40px 40px"
-      },
-      "page": "voyages-playtest"
-    },
     "rev120": {
       "kind": "title1",
       "text": "Rev 120 - B On the Ark on every in-game voyage screen",
       "x": 0,
-      "y": 41970,
+      "y": 22130,
       "w": 240,
       "maxW": 6120,
       "page": "voyages-playtest"
@@ -4937,7 +4581,7 @@
     "sec-rev120": {
       "kind": "rect",
       "x": -160,
-      "y": 41810,
+      "y": 21970,
       "w": 6440,
       "h": 4590,
       "css": {
@@ -4952,7 +4596,7 @@
     "sec-rev120-2": {
       "kind": "rect",
       "x": -160,
-      "y": 46400,
+      "y": 26560,
       "w": 6440,
       "h": 4590,
       "css": {
@@ -5249,40 +4893,6 @@
     "R116F_Score.dc.html",
     "R117Console.dc.html",
     "R117Notes.dc.html",
-    "R118Intro.dc.html",
-    "R118SetOff.dc.html",
-    "R118Raid.dc.html",
-    "R118Pickup.dc.html",
-    "R118Banked.dc.html",
-    "R118Attack.dc.html",
-    "R118Leak.dc.html",
-    "R118Sail.dc.html",
-    "R118Kaiju.dc.html",
-    "R118Stray.dc.html",
-    "R118Goal.dc.html",
-    "R118Pause.dc.html",
-    "R118Home.dc.html",
-    "R118Escort.dc.html",
-    "R118Score.dc.html",
-    "R118Lost.dc.html",
-    "R118Notes.dc.html",
-    "R119ARaid.dc.html",
-    "R119ABanked.dc.html",
-    "R119AAttack.dc.html",
-    "R119ASail.dc.html",
-    "R119BRaid.dc.html",
-    "R119BBanked.dc.html",
-    "R119BAttack.dc.html",
-    "R119BSail.dc.html",
-    "R119CRaid.dc.html",
-    "R119CBanked.dc.html",
-    "R119CAttack.dc.html",
-    "R119CSail.dc.html",
-    "R119DRaid.dc.html",
-    "R119DBanked.dc.html",
-    "R119DAttack.dc.html",
-    "R119DSail.dc.html",
-    "R119Notes.dc.html",
     "R120Intro.dc.html",
     "R120SetOff.dc.html",
     "R120Raid.dc.html",
