@@ -94,9 +94,12 @@ screen; checklist entries "The host left", "A guest hands its own hull to the AI
   driver's probes add 2-3 s, so that number is not clean. The hub then started a fourth round by itself.
 - **Found and fixed:** a pilot who rejoined was skipped on the host's menu, and a pilot who left stayed behind as a
   Player (the "Lion (2)" of the test with Garrett the night before). Replayed after the fix: all four cases pass.
-- **Found, open:** the idle guest's AI hull is not reliable in Switchback: 20, 16 and 11 gates in some races, 0, 1 and
-  2 in three others (one sat at 0 for 75 s at about 59 u/s), slower to start in each later race of one Play. The host's
-  AI hull finished all 26 every time. Cause not found. Editor test aid only.
+- **Found and fixed:** the idle guest's AI hull was not reliable in Switchback (20, 16 and 11 gates in some races, 0, 1
+  and 2 in three others; the host's AI hull threaded all 26 every time). Switchback's blast AI (key, blast, prism sense)
+  was built on the server only, so a guest's own AI hull flew the plain ring steering into the first closed door. A
+  guest now builds it when it arms its own hull. Replayed: two races in a fresh Play, 25 and 21 gates (a race ends when the host's hull
+  threads its 26th); a third could not be run, Player 2's editor hung when the PC ran out of memory. Editor and development builds only
+  (`PilotControl` is not in a release build).
 - Not a game fault: the PC's internet dropped twice during the day (UGS `Request timeout`, `Cannot resolve destination
   host`, `DTLS handshake failed`). One drop cut the guest and then the host out of a running match with no freeze
   (`relayDrop no freeze in the last 30 s`); another made a whole Play boot without a party. Those runs were thrown away.

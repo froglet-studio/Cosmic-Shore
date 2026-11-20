@@ -28,6 +28,7 @@ MonoBehaviour:
   flickerDepth: 0.7
   segmentQueriesPerFrame: 128
   ignitesPerFrame: 96
+  pathRadius: 16
   burnRadius: 200
   burnSeconds: 12
   convertOnBurnout: 0

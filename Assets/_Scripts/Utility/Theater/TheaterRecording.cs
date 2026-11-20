@@ -180,6 +180,9 @@ namespace CosmicShore.Utility
         /// <summary>Every vessel's actions (<see cref="Actions"/>). Written only when there are any.</summary>
         public const ushort StreamActions = 3;
 
+        /// <summary>The crystals, plants, creatures and cytoplasm shards (<see cref="Actors"/>). Written only when it holds any.</summary>
+        public const ushort StreamActors = 4;
+
         public string SceneName = string.Empty;
         public string CellConfigName = string.Empty;
         public int GameMode;
@@ -192,6 +195,15 @@ namespace CosmicShore.Utility
 
         /// <summary>The actions the vessels ran, in time order. Empty for a recording made before 2026-10-27.</summary>
         public readonly List<TheaterActionEvent> Actions = new();
+
+        /// <summary>
+        /// Where every crystal, plant, creature and cytoplasm shard was, or null when they were not recorded (any
+        /// recording made before 2026-10-29). An older reader skips the stream by its length.
+        /// </summary>
+        public TheaterActors Actors;
+
+        /// <summary>True when there are recorded actors to place.</summary>
+        public bool HasActors => Actors != null && !Actors.IsEmpty;
 
         /// <summary>True when there is a recorded world to play.</summary>
         public bool HasWorld => World != null && World.Events.Count > 0;
@@ -249,7 +261,7 @@ namespace CosmicShore.Utility
 
             // One chunk per stream. Each is (id, byteLength, payload) so a reader from a future
             // phase — or a reader OLDER than the recording — can step over what it does not know.
-            writer.Write((ushort)(1 + (HasWorld ? 1 : 0) + (Actions.Count > 0 ? 1 : 0))); // chunk count
+            writer.Write((ushort)(1 + (HasWorld ? 1 : 0) + (Actions.Count > 0 ? 1 : 0) + (HasActors ? 1 : 0))); // chunk count
 
             writer.Write(StreamVessels);
             using (var payload = new MemoryStream())
@@ -275,6 +287,16 @@ namespace CosmicShore.Utility
                 writer.Write(StreamActions);
                 using var payload = new MemoryStream();
                 WriteActionStream(payload);
+                var bytes = payload.ToArray();
+                writer.Write(bytes.Length);
+                writer.Write(bytes);
+            }
+
+            if (HasActors)
+            {
+                writer.Write(StreamActors);
+                using var payload = new MemoryStream();
+                Actors.Write(payload);
                 var bytes = payload.ToArray();
                 writer.Write(bytes.Length);
                 writer.Write(bytes);
@@ -403,6 +425,7 @@ namespace CosmicShore.Utility
                     if (id == StreamVessels) ReadVesselStream(payloadStream, result);
                     else if (id == StreamWorld) result.World = TheaterWorld.Read(payloadStream);
                     else if (id == StreamActions) ReadActionStream(payloadStream, result);
+                    else if (id == StreamActors) result.Actors = TheaterActors.Read(payloadStream);
                     // Any other id is a stream this build does not know: already stepped over.
                 }
 
