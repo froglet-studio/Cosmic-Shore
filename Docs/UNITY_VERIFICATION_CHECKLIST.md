@@ -23833,11 +23833,12 @@ AI presses Rush on a straight and its stall clock runs on the machine that flies
 Ran: `grizzly_time_course_harness/run.sh` (33 tests pass; `--self-test`, 13 negative controls fire; `--sweep`),
 `author_grizzly_time_assets.py --check` (26 files match), `check_ai_no_state_writes.py`, `check_console_logging.py`. The
 open editor compiled the final code, runtime and tests (its `Assembly-CSharp.dll` and `Assembly-CSharp-Editor.dll` of
-2026-11-20 21:40 hold the new members; the recompile was another session's). It was in Play for that session, so the
-EditMode tests were NOT run in Unity and nothing was flown. Not run: `unity_refcompile` (cannot run on this Windows
-box).
+2026-11-20 21:40 hold the new members; the recompile was another session's), and the EditMode tests ran in it at
+22:10: `GrizzlyTimeKegsTests` 19 of 19, `GrizzlyTimeCourseTests` 14 of 14. Nothing was flown. Not run:
+`unity_refcompile` (cannot run on this Windows box).
 
-1. **EditMode tests** `GrizzlyTimeKegsTests` and `GrizzlyTimeCourseTests` pass in the editor.
+1. ~~**EditMode tests** `GrizzlyTimeKegsTests` and `GrizzlyTimeCourseTests` pass in the editor.~~ Done 2026-11-20
+   (33 of 33, through the editor's Pipeline `run_tests`).
 2. **The side.** I1 or I2: freeze a full bomb in a keg, fly round so you are between the keg and the next ring, let go.
    You are thrown at the next ring and "Bank shot (1)" shows. From the other side you are thrown away from it. If this
    is the wrong way round in play, the sign in `GrizzlyTimeKegs.BlowPoint` is the one thing to revert.

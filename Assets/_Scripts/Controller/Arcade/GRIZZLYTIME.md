@@ -63,8 +63,8 @@ in, and `kegsAtGates` turns them off).
 
 Design, three judged designs, the skeptics' findings and a 13-finding review: this session (Yash). Nothing here was
 played. What ran: the offline harness (33 tests, 13 negative controls), and the open editor compiled the final code,
-runtime and tests (its assemblies of 2026-11-20 21:40 hold the new members). The editor was in Play for another
-session, so the EditMode tests were not run in Unity.
+runtime and tests, and `GrizzlyTimeKegsTests` (19) and `GrizzlyTimeCourseTests` (14) pass in it (EditMode, 2026-11-20
+22:10).
 
 - **The bank shot stood on the wrong side.** `GrizzlyTimeKegs.BlowPoint` was `Centre - ExitDir x 60`, the ENTRY side.
   A Grizzly is launched away from its bomb (`LaunchSelf`: direction = hull - bomb), so a bomb in the keg threw a hull
