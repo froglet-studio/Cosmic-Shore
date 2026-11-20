@@ -366,6 +366,7 @@ BUILD = {   # by the face animal: the body under the clothes follows the head it
     "Tortoise": "stocky and slow, short in the leg, built to last",
     "Toucan": "of middle height and sturdy, a little top-heavy under the great bill",
     "Tree frog": "slight and long-limbed, long in the finger and the shin, folded up when at rest",
+    "Venus flytrap": "lean and upright like a stem, long-limbed and still, quick only when it strikes",
     "Walrus": "huge and heavy, barrel-chested and thick-necked, broad as a doorway, a big man's bulk carried upright "
               "and gently",
     "Wolf": "tall, rangy and deep-chested, an easy tireless walker",
