@@ -25469,3 +25469,27 @@ lining of plain pads round the hull. Not run in the Unity editor. Unity referenc
       hoops inside them, green pads round the hull, nothing clipping, and the nose side open.
 - [ ] The cruising trail is a thin thread; the sling trail is a thin line, not a wall.
 - [ ] Thornbush I2: a rival AI still finds your nest and its missiles break the twigs and pads behind the plates.
+
+## Bug ledger fixes (2026-11-20)
+
+Nine console-error fixes from the Bug Ledger, one commit each (`Docs/Reports/BUG_HUNT.md` section 3). Not run in the
+Unity editor: it was in Play mode for a multiplayer test. Assembly-CSharp was compiled with Unity 6000.3.17f1's own
+compiler from the editor's response file: 0 errors. No EditMode tests ran.
+
+- [ ] Arkway / a voyage leg: fly until a cell stands, then leave to the menu and stop Play. The console has no
+      "Some objects were not cleaned up when closing the scene" naming `Cell0_RetiringWorld` (`d391dc761d`).
+- [ ] Voyages map, zoomed in to the cells: drag the slice bar on the edge strip up, down and off the strip. The
+      label rides the handle and hides off the strip; no "rebuild list" error (`e357fbad6c`).
+- [ ] Serpent and Jacks, any mode: no `[PrismOcclusion] could not measure` error, and prisms between the camera and
+      the hull fade as on other vessels (`ba3ad0569a`).
+- [ ] Wear another colour set from the menu with a screen showing text that uses a fallback font: the sea lines
+      change colour and the console stays clean (`c0ef0c8281`).
+- [ ] Manta: collect an elemental crystal. The decoy stands where the crystal was the same frame, cannot be
+      collected as a real crystal by the Manta's own team, and springs on a rival (`dedc985d2a`).
+- [ ] In a multiplayer match, after the host drops and before the menu returns, hit an omni crystal: it explodes,
+      and no "Rpc methods can only be invoked" error (`e56a9f1d5d`).
+- [ ] Urchin: spawn into any mode and swap to it in the Toybox. No NullReferenceException from `UrchinAnimation`,
+      and the jets still scale when not attached (`d8a7763cd0`).
+- [ ] Hangar > Upgrades on a vessel with an open element slot, then claim a Daily Toy reward: the page redraws with
+      the open-slot text (`79f1ff888b`).
+- [ ] Trigger a toast, change scene, trigger another: it shows, with no MissingReferenceException (`540bac6a24`).
