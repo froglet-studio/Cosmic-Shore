@@ -1,0 +1,191 @@
+# Loop Atlas model: loops, arcade. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+- id: arcade
+  parent: sitting
+  at: 1
+  name: Arcade
+  tier: 5
+  kind: place
+  t: [300, 1500]
+  is: One vessel, scored. Every card seats a hull and teaches one element with it. This is where a kit is learned.
+  phases:
+  - n: Filter
+    d: All, Time, Charge, Mass-Space, Party.
+  - n: Pick a card
+    d: The card seats its hull.
+  - n: Pick a rung
+    d: I1 intro, I2 fun, I3 challenging, I4 very hard.
+  - n: Play the round
+    d: Aimed at about 90 seconds for an experienced pilot.
+  - n: Result
+    d: Placing and the payout.
+  - n: Rematch, next rung or next card
+  drivers: [mastery, goal, reward, joy]
+  reps: null
+  repsOf: rounds per arcade run
+  now:
+    s: part
+    note: 'The four categories and the filter landed 2026-11-17. About 80 hull-locked cards exist; most were built headless
+      and never flown. One step is signed off by a person: Dolphin Time, fun.'
+  plan:
+    note: Every vessel has at least a Time game, a Charge game and a Mass-Space game. Time trains for Regatta, Charge for
+      Broadside, Mass-Space for Brood Rush. Party games train for nothing.
+  prop:
+    s: change
+    note: The result screen says what the round trained, and lights a petal on the vessel's flower.
+  holes:
+  - 'on': np
+    q: Rounds per run are not measured, and nothing but the player's own wish moves them from a card to the next card.
+    fill: 3 to 5 rounds a run. The breath offers the next rung after a win and the same rung after a loss.
+  - 'on': n
+    q: 'Most cards have never been played: steps 1 to 3 of the elemental loop are ''built'', not ''done'', for every vessel
+      and element except Dolphin Time step 1.'
+  src:
+  - Docs/ArcadeRestructure/PLAN.md
+  - Docs/ElementalLoop/STATUS.md
+  - Docs/ARCADE_MATCH_LENGTH.md
+- id: ladder
+  parent: arcade
+  at: 2
+  name: The rung ladder
+  tier: 5
+  kind: loop
+  t: [600, 7200]
+  is: A card's four rungs. Each rung adds one demand to the one below, coupled to the game's element the same way on every
+    card.
+  phases:
+  - n: I1 intro
+    d: Every hull starts at rest.
+  - n: I2 fun
+    d: Every hull starts at level 5 in the game's element.
+  - n: I3 challenging
+    d: Team crystals of the game's element on the map.
+  - n: I4 very hard
+    d: Fauna of the game's element. Unlocked by plays at I3 or a stat goal.
+  - n: The quest is ready to claim
+  drivers: [mastery, reward]
+  reps: '4'
+  repsOf: rungs per card; I4 after a set number of plays at I3
+  now:
+    s: built
+    note: The standard element ladder is in (2026-11-16). Rung bars are checked from recorded flights; most ladders wait
+      for a person to fly all four.
+  plan:
+    note: One human plays the four rungs and signs them off as fun; only then is that vessel and element sent to AI training.
+  src:
+  - Docs/ElementalLoop/PLAYBOOK.md step 2
+  - Docs/MENU_PROGRESSION_AND_IAP.md section 2b
+- id: round.time
+  parent: arcade
+  at: 3
+  name: Time game
+  tier: 4
+  kind: loop
+  t: [60, 150]
+  kit: time
+  element: Time
+  is: A race. The vessel's mobility against a course and against rivals.
+  phases:
+  - n: The gun
+  - n: Read the next gate
+  - n: Carry speed through it
+  - n: Lap or finish
+  - n: Placing
+  drivers: [joy, mastery, rival]
+  reps: null
+  repsOf: races per arcade run
+  now:
+    s: built
+    note: Every vessel but the Jewel Wasp and the Starling has one. AI drives trained for ten hulls, model only, editor
+      check pending.
+  plan:
+    note: Trains for Regatta. The arena balances mobility.
+  src:
+  - Docs/ElementalLoop/STATUS.md section 3
+  - Docs/ARCADE_MATCH_LENGTH.md
+- id: round.charge
+  parent: arcade
+  at: 3
+  name: Charge game
+  tier: 4
+  kind: loop
+  t: [60, 180]
+  kit: charge
+  element: Charge
+  is: 'Pilot against pilot. PvP is petals only: a scored hit takes a petal and silences the victim''s abilities for what
+    the hit is worth.'
+  phases:
+  - n: Find a rival
+  - n: Close on them
+  - n: Land your Charge verb
+  - n: A petal leaves them as a crystal
+  - n: Take it, or they recover
+  drivers: [rival, mastery, goal]
+  reps: null
+  repsOf: matches per arcade run
+  now:
+    s: built
+    note: Every vessel but the Starling has one. None has an AI trained on it and none is signed off.
+  plan:
+    note: 'Trains for Broadside. The arena balances pvp: petals taken.'
+  src:
+  - Docs/ELEMENTAL_ECONOMY.md
+  - Docs/ElementalAbilitySystem/SILENCE.md
+  - Docs/ElementalLoop/GAME_KIT_ROSTER.md
+- id: round.ms
+  parent: arcade
+  at: 3
+  name: Mass-Space game
+  tier: 4
+  kind: loop
+  t: [90, 300]
+  kit: ms
+  element: Mass-Space
+  is: A team match for the cell. Fauna born under your nucleus claim score for your team. Making volume and removing rival
+    volume count as one pair.
+  phases:
+  - n: Read the nucleus
+  - n: Make your volume or remove theirs
+  - n: The claim tips to your domain
+  - n: 'Fauna are born in your colour: a brood'
+  - n: Hold it for the next brood
+  drivers: [make, break, crew, goal]
+  reps: '3'
+  repsOf: broods to win with three teams
+  now:
+    s: part
+    note: The category exists, and the volume books (made, removed, lost per pilot) are on Brood Rush's scoreboard. Most
+      vessels still have separate Mass and Space cards with their old rules.
+  plan:
+    note: 'Each vessel''s Mass and Space games become one Mass-Space game: Brood Rush''s rule in an environment built for
+      that vessel. Up to 9 vessels, 3 a team. Dolphin first, then Scarab.'
+  holes:
+  - 'on': n
+    q: 'Only the category has landed. The per-vessel merge has not started: the board still shows Mass and Space as two
+      games each.'
+  src:
+  - Docs/ArcadeRestructure/PLAN.md
+  - Docs/MassAndSpaceGames/PLAN.md
+- id: round.party
+  parent: arcade
+  at: 3
+  name: Party game
+  tier: 4
+  kind: loop
+  t: [60, 300]
+  kit: party
+  element: Party
+  is: Scurry, Scarab Scramble, Maelstrom. No element, no rules it must keep; each exception is said on the card.
+  phases:
+  - n: Read the card's party rules
+  - n: Play its one idea
+  - n: Laugh at what happened
+  - n: Again
+  drivers: [crew, joy, find]
+  now:
+    s: built
+    note: 'Maelstrom is always unlocked and runs as a shuffle: placement points across games, first to the target.'
+  plan:
+    note: Trains for nothing downstream, by decision.
+  src:
+  - Docs/ArcadeRestructure/PLAN.md rulings 4 and 5

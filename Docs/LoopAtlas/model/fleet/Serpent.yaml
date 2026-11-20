@@ -1,0 +1,87 @@
+# Loop Atlas model: vessel Serpent. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Serpent
+verbs:
+  Time:
+    ability: Solid Fuel Pellets
+    does: Each press burns one of four fuel pellets for a burst of speed; press again while one burns and the boosts stack.
+      The tank never refills on a clock - your Seed Wall eating your own trail earns pellets back.
+    trigger: Tap, tap again to stack
+    scales: More Time makes each pellet burn longer, not faster.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_FUEL_PELLETS.md
+    arch: tap
+    t: [2, 20]
+  Charge:
+    ability: Scope
+    does: Raise a magnified eyepiece beside your flight view - the ship keeps flying as normal - with the zoom following
+      how far you pull. While it is up, your cloak trigger fires the Sniper Shot instead.
+    trigger: Hold, pull deeper to zoom
+    scales: More Charge shortens the sniper's recovery between shots.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md
+    arch: hold
+    t: [2, 12]
+  Mass:
+    ability: Seed Wall
+    does: Stop dead and your last prism becomes a seed that pulls loose prisms into a growing herringbone wall, stealing
+      rival prisms as they land. It grows while you stay stopped, and you shrug off debuffs meanwhile.
+    trigger: Tap to stop, tap again to fly
+    scales: More Mass makes the wall's bricks bigger and more widely spaced.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md
+    arch: mode
+    t: [5, 30]
+  Space:
+    ability: Cloak / Sniper Shot
+    does: 'Unscoped: vanish, hull and trail, for about 15 s, leaving a decoy and a super-shielded seed that grows a wall.
+      Scoped: one long hitscan round that breaks every hostile prism in its path, shields and all, and strips rival petals.'
+    trigger: Tap; fires the shot while scoped
+    scales: More Space lets your Seed Walls reach further to steal prisms.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md
+    arch: tap
+    t: [2, 20]
+  Omni:
+    ability: Explosion + Wall Shield
+    does: A blast breaks prisms round you, and beams from the crystal re-shield every seed wall you have standing, rippling
+      out from each seed.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SerpentWallShieldByCrystalEffectSO.cs
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b b
+  Charge: b b .
+  Mass: b b .
+  Space: x x x
+missing: ''
+arenas: [Regatta, Brood Rush]
+games:
+  Time: [Serpentine]
+  Charge: [Hood]
+  Mass: [Hedgerow, Longshot]
+  Space: []
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: Feed the tank
+  t: [15, 45]
+  is: Your own trail is fuel.
+  chain:
+  - ['', Lay trail]
+  - - Mass
+    - 'Stop: the Seed Wall eats your trail and earns pellets'
+  - [Time, 'Burn pellets, stacked']
+  drivers: [mastery, joy]
+  feel: Stacking boosts you made yourself.
+- name: The ghost shot
+  t: [10, 30]
+  is: Vanish, aim from nowhere, fire once.
+  chain:
+  - - Space
+    - 'Cloak: a decoy and a seed stay behind'
+  - [Charge, Raise the scope]
+  - - Space
+    - One round through everything on the line
+  drivers: [rival, break]
+  feel: One shot they never saw coming.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_FUEL_PELLETS.md

@@ -1,0 +1,88 @@
+# Loop Atlas model: vessel Shrike. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Shrike
+verbs:
+  Time:
+    ability: Void Sling
+    does: Shoot a tether at the first block ahead; the hull flies straight there in one second, laying thick trail, and
+      docks on arrival. No block in range, no sling. A crystal resets it.
+    trigger: Select mode, then tap fire
+    scales: More Time shortens the sling's cooldown.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md
+    arch: mode
+    t: [5, 30]
+  Charge:
+    ability: Targeting Array
+    does: Paint a target - a rival first, then a creature, a plant or nearby mass - and every nest plant with a ready missile
+      launches it. Missiles home while you paint and burst on contact, a petal hit on any rival caught.
+    trigger: Select mode, then hold fire to paint
+    scales: More Charge does not change the missiles; it widens your Void Lance's beam.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md
+    arch: mode
+    t: [5, 30]
+  Mass:
+    ability: Nest
+    does: Touch any block and you dock to it; docked, every cooldown runs faster. Detach and you leave a nest behind - a
+      cup of super-shielded blocks crowned with a plant that grows a missile. Up to three nests at once.
+    trigger: Passive dock; tap to detach
+    scales: More Mass builds each nest from more blocks and tightens your trail's wave.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Void Lance
+    does: Fire a long hitscan beam that breaks every block it passes, any domain, except super-shielded mass and the nest
+      you sit in. A rival hull on the line takes a scored petal hit.
+    trigger: Select mode, then hold fire
+    scales: More Space does not change the lance; it widens the Targeting Array's lock cone.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md
+    arch: mode
+    t: [5, 30]
+  Omni:
+    ability: Shrike
+    does: The crystal becomes a nest plant where it was, which grows large missiles you can call down, and your Void Sling
+      is ready again at once.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b b
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Thornline]
+  Charge: [Larder]
+  Mass: [Thornbush]
+  Space: [Lancefall]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The nest strike
+  t: [20, 60]
+  is: Leave nests, then paint one target for all of them.
+  chain:
+  - - Time
+    - Sling to a block and dock
+  - - Mass
+    - 'Detach: a nest is left, growing a missile'
+  - [Mass, 'Again, up to three']
+  - - Charge
+    - 'Paint a rival: every nest launches'
+  drivers: [make, rival, mastery]
+  feel: A trap sprung from three sides.
+- name: Perch and lance
+  t: [8, 25]
+  is: Docked, everything recharges faster.
+  chain:
+  - [Time, Sling to a perch]
+  - [Space, Void Lance down the line]
+  - [Time, Sling away]
+  drivers: [break, joy]
+  feel: A sniper who is never where they fired from.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md

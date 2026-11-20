@@ -502,6 +502,20 @@
         "Tools/Build/who_works_where.py"
       ],
       "note": "Shombith heads tooling (CLAUDE.md, Team): tell him, and queue changes for his /approve."
+    },
+    {
+      "key": "loop-atlas",
+      "name": "Loop Atlas: the gameplay loop model and map",
+      "tokens": [
+        "LoopAtlas",
+        "loop_atlas"
+      ],
+      "paths": [
+        "Docs/LoopAtlas",
+        "Tools/Build/loop_atlas.py",
+        ".claude/skills/loop-atlas"
+      ],
+      "note": "Garrett owns the model (2026-11-19); the YAML in Docs/LoopAtlas/model is the source of truth for the map artifact."
     }
   ],
   "comment_owners": "'owners' is who a lane BELONGS to (they made it, or lead it), set by a person's word with `swimlanes.py owner <lane> <person> --by <who>`. It only changes the People page and the quiet rule: work pushed more than window_days ago stops holding a lane; a lane its OWNER went quiet in stays listed under them until they hand it off, while a lane someone else went quiet in goes back to open and asks them whether they are still on it (Shombith, 2026-11-13). A lane with no entry here takes the owner its catalog note or Docs/TEAM.json declares, else has none.",
@@ -546,6 +560,10 @@
     "voyages": {
       "owner": "Shombith",
       "said": "Shombith, 2026-11-13"
+    },
+    "loop-atlas": {
+      "owner": "Garrett",
+      "said": "Garrett, 2026-11-19: I can own the model for now; pieces are handed off over time"
     }
   },
   "verdicts": {}

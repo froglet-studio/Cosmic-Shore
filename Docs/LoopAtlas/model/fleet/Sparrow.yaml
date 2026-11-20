@@ -1,0 +1,88 @@
+# Loop Atlas model: vessel Sparrow. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Sparrow
+verbs:
+  Time:
+    ability: Afterburner
+    does: Boost for as long as you hold - no heat, no meter. Push the stick fully to one side as you start boosting and
+      the Sparrow does a quick strafing roll, even while stopped.
+    trigger: Hold
+    scales: More Time raises your boost speed.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md
+    arch: hold
+    t: [2, 12]
+  Charge:
+    ability: Skyburst Rockets
+    does: 'Fire a rocket that bursts near a rival or creature: one blast tears prisms apart and lays new ones, a wider one
+      debuffs pilots and kills wildlife. Restock rockets by shooting hostile prisms with your guns.'
+    trigger: Tap
+    scales: More Charge widens the rockets' prism-tearing blast.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md
+    arch: tap
+    t: [2, 20]
+  Mass:
+    ability: Turret Stance
+    does: Stop dead and your guns fire prisms instead of bullets - the same shot, but each prism stays wherever the bullet
+      would have died, building mass as you shoot. You can still roll and turn faster while stopped.
+    trigger: Tap to stop, tap again to fly
+    scales: More Mass stretches the prisms you fire and swells every round bigger as it flies.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md
+    arch: mode
+    t: [5, 30]
+  Space:
+    ability: Pulsefire Cannons
+    does: Full-auto cannons that break prisms. A cold gun is pin-accurate; keep firing and it heats, spreading the cone
+      and shortening the range, then cools quickly when you let go.
+    trigger: Hold
+    scales: More Space widens your skimmer, the zone that grazes trails; the cannons' range stays fixed.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md
+    arch: hold
+    t: [2, 12]
+  Omni:
+    ability: Omni crystal
+    does: For 8 seconds danger prisms, blasts and overtakes cannot lower your elements; buffs still land. Missiles now reload
+      by shooting prisms, not from crystals.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/VesselWardByCrystalEffectSO.cs
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b b
+  Charge: b b .
+  Mass: x x x
+  Space: b b .
+missing: ''
+arenas: [Regatta, Broadside, Brood Rush]
+games:
+  Time: [Breakwater]
+  Charge: [Dog Fight]
+  Mass: []
+  Space: [Salvo, Wildlife Liberation]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: Guns to rockets
+  t: [10, 30]
+  is: Gunfire on mass stocks the rocket you spend on a pilot.
+  chain:
+  - - Space
+    - Break prisms with the cannons
+  - [Charge, A rocket is earned]
+  - [Time, Afterburn to close]
+  - [Charge, Skyburst on the rival]
+  drivers: [break, rival]
+  feel: Earning the big shot with the small ones.
+- name: The bunker
+  t: [8, 30]
+  is: Stop, build with bullets, roll out.
+  chain:
+  - - Mass
+    - 'Turret Stance: shots become prisms'
+  - [Space, Shape it while you fire]
+  - - Time
+    - Strafing roll out under boost
+  drivers: [make, joy]
+  feel: A wall where there was none.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md

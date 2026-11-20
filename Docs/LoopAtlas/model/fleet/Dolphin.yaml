@@ -1,0 +1,129 @@
+# Loop Atlas model: vessel Dolphin. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Dolphin
+verbs:
+  Time:
+    ability: Charge Fill Rate
+    does: Hold to drift, sliding at the speed you entered with while your boost meter fills. Let go and the stored boost
+      carries you off in a burst that fades back to cruise.
+    trigger: Hold, release to boost
+    scales: More Time fills the boost meter faster while you drift; it does not raise boost speed.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md
+    arch: hold_release
+    t: [2, 12]
+    hand:
+      in: px
+      phases:
+      - Hold to drift at the speed you came in with
+      - The boost meter fills
+      - Let go
+      - The burst carries you off
+      - It fades back to cruise
+      feel: The slide and the kick out of it.
+      at: 3
+  Charge:
+    ability: Echo Sight
+    does: While held, every prism inside the area your next crystal blast would destroy lights up, so you can line up the
+      shot before you fire.
+    trigger: Hold
+    scales: More Charge makes your blast thicker across the beam, trading a long thin beam for a fat round one.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md
+    arch: hold
+    t: [2, 12]
+  Mass:
+    ability: Crystal Seeding
+    does: On a repeating timer the Dolphin drops a crystal somewhere in the open space of the cell - ammo for your next
+      blast, but any pilot who reaches it first can take it.
+    trigger: Passive - on a timer
+    scales: More Mass seeds crystals more often.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Echo Obliteration
+    does: Skimming prisms banks energy; flying into a crystal spends all of it in a fan-shaped blast ahead that destroys
+      the prisms inside. More energy opens it wider. Ramming a prism halves your bank.
+    trigger: Passive - fly into a crystal
+    scales: More Space makes the blast reach further ahead.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md
+    arch: passive
+    t: [2, 15]
+    hand:
+      in: px
+      phases:
+      - Skim prisms to bank energy
+      - Find a crystal
+      - Fly into it
+      - The fan-shaped blast spends the whole bank
+      - Start banking again
+      feel: The size of the blast is the size of what you banked.
+      at: 3
+  Omni:
+    ability: Omni crystal
+    does: Fires a cone blast ahead that destroys prisms in its path. The energy you banked by skimming sets how wide it
+      opens, and the crystal spends all of it.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: D b b
+  Charge: b b .
+  Mass: '- - -'
+  Space: b b .
+missing: ''
+arenas: [Regatta, Broadside, Brood Rush]
+games:
+  Time: [Switchback]
+  Charge: [The Bends]
+  Mass: []
+  Space: [Rampage]
+excused: [Mass]
+lean: destroyer
+leanWhy: No mass-making ability; its Mass game is excused.
+combos:
+- in: px
+  name: The echo shot
+  t: [12, 40]
+  src: Garrett's brief, 2026-11-18
+  is: 'The Dolphin''s full attack: power, target, ammunition, alignment, explosion.'
+  chain:
+  - [Space, Skim prisms to get power]
+  - - ''
+    - Seek a target worth destroying
+  - - Mass
+    - Seek a crystal that can hit that target
+  - - Charge
+    - Aim onto the crystal so the two are on a collision course
+  - ['', Find the target again]
+  - - Space
+    - The explosion completes the loop
+  drivers: [break, mastery, goal]
+  feel: Seeing the line before you fly it, and being right.
+- in: px
+  name: The hunter's shot
+  t: [10, 30]
+  src: Garrett's brief, 2026-11-18
+  is: The same loop pointed at enemy vessels.
+  chain:
+  - [Space, Skim for power]
+  - ['', Pick a rival vessel]
+  - - Mass
+    - Find a crystal on their line
+  - [Charge, Line them up]
+  - [Space, Fire through the crystal]
+  drivers: [rival, mastery]
+  feel: Leading a moving target.
+- in: px
+  name: The snap shot
+  t: [4, 12]
+  src: Garrett's brief, 2026-11-18
+  is: Skip the skimming. The shot is smaller, and you fire more often. Which one to use depends on what you are shooting.
+  chain:
+  - ['', See a target]
+  - [Mass, Take the nearest crystal]
+  - [Space, 'A small blast, now']
+  drivers: [break, joy]
+  feel: Rate of fire over size.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md

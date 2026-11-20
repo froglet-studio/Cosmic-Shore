@@ -1,0 +1,79 @@
+# Loop Atlas model: vessel Wrasse. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Wrasse
+verbs:
+  Time:
+    ability: Saved Boosts
+    does: Each loop of Time motes the Wrasse's kite closes saves boosts for the Grouper. The Grouper's pilot spends them
+      one at a time, each a short burst of speed, and can chain them back to back.
+    trigger: Grouper seat - hold
+    scales: More Time makes Time motes turn up more often and makes each boost faster.
+    source: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
+    arch: seat
+    t: [4, 20]
+  Charge:
+    ability: Kite Ram
+    does: 'The Wrasse''s kite loops its tail round Charge motes to power its ram: a charged ram on a rival hull knocks petals
+      loose as crystals anyone can grab, and kills a creature it passes through.'
+    trigger: Passive - loop Charge motes, then ram
+    scales: More Charge makes Charge motes turn up more often on the kite's board.
+    source: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
+    arch: passive
+    t: [2, 15]
+  Mass:
+    ability: Mass Cluster
+    does: The Wrasse's kite closes its tail round Mass motes to lay a cluster of your prisms on its plane; the more motes
+      in one loop, the far bigger the cluster. A loop holding two elements fizzles.
+    trigger: Passive - loop Mass motes
+    scales: More Mass makes Mass motes turn up more often on the kite's board.
+    source: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Space Blast
+    does: The Wrasse's kite closes its tail round Space motes and a blast goes off where the loop closed, destroying rival
+      prisms and sparing yours; the more motes in the loop, the bigger the blast.
+    trigger: Passive - loop Space motes
+    scales: More Space makes Space motes turn up more often and widens the hull's skim reach.
+    source: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
+    arch: passive
+    t: [2, 15]
+  Omni:
+    ability: Kite Omni
+    does: Drops a cluster of motes of every element on the navigator's board for the kite to lasso, making up for a short
+      supply of crystals.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Wrasse Run]
+  Charge: [Cleaner Ram]
+  Mass: [Reefbuild]
+  Space: [Blastline]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The one-colour loop
+  t: [6, 25]
+  is: The navigator chooses which verb fires by what the kite's tail closes around.
+  chain:
+  - - ''
+    - The Grouper flies the hull to the motes
+  - - ''
+    - The kite lassos motes of one element
+  - - ''
+    - 'The loop closes: that element''s verb fires'
+  - ['', On to the next cluster]
+  drivers: [crew, mastery]
+  feel: Closing the loop just in time.
+doc: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
