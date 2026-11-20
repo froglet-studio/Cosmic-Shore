@@ -125,6 +125,7 @@ namespace CosmicShore.UI
 
         void LateUpdate()
         {
+            PlaceSliceLabel();
             // Another colour set worn: the strip is painted again in it (the mesh retraces its colours as it is built).
             if (_colorVersion != ColorTrace.Version)
             {
@@ -288,7 +289,6 @@ namespace CosmicShore.UI
 
             Gauge(vh, r, s, zc, here, style, white);
             if (CellZoom) Bar(vh, r, s, zc, white);
-            else if (_sliceLabel) _sliceLabel.gameObject.SetActive(false);
         }
 
         // ── The cells, cut upright, and the map's slice ───────────────────────
@@ -341,12 +341,8 @@ namespace CosmicShore.UI
         /// <summary>The map's slice: a Lime bar across the strip with a handle at its right end.</summary>
         void Bar(VertexHelper vh, Rect r, float s, float zc, Vector2 white)
         {
-            float y = r.center.y + ((float)_map.Sky.SliceZ - zc) * s;
-            if (y < r.yMin - 2f || y > r.yMax + 2f)
-            {
-                if (_sliceLabel) _sliceLabel.gameObject.SetActive(false);
-                return;
-            }
+            float y = BarY(r, s, zc);
+            if (!BarInView(r, y)) return;
             _barY = y;
             var a = new Vector2(r.xMin + GaugeWidth, y);
             var b = new Vector2(r.xMax, y);
@@ -354,14 +350,33 @@ namespace CosmicShore.UI
             VoyageMapGraphic.Line(vh, a, b, 1.5f, VoyageMapSky.SliceLime, white);
             var handle = Handle(r, y);
             Box(vh, handle, VoyageMapSky.SliceLime, white);
-            SliceLabel(handle);
         }
+
+        float BarY(Rect r, float s, float zc) => r.center.y + ((float)_map.Sky.SliceZ - zc) * s;
+
+        static bool BarInView(Rect r, float y) => y >= r.yMin - 2f && y <= r.yMax + 2f;
 
         Rect Handle(Rect r, float y) => new(r.xMax - HandleW - 8f, y - HandleH * .5f, HandleW, HandleH);
 
-        void SliceLabel(Rect handle)
+        /// <summary>The words on the slice bar's handle, shown and placed from <see cref="LateUpdate"/> with the
+        /// bar's own numbers. Never from <see cref="OnPopulateMesh"/>: that runs inside the canvas's rebuild loop,
+        /// where switching a text off or on, or changing its words, edits the rebuild list being walked ("Trying to
+        /// remove Slice (TextMeshProUGUI) from rebuild list while we are already inside a rebuild loop").</summary>
+        void PlaceSliceLabel()
         {
-            string text = _map.Lines?.EdgeSlice;
+            string text = null;
+            Rect r = default, handle = default;
+            if (Ready && _tex && CellZoom)
+            {
+                r = rectTransform.rect;
+                float s = _map.PixelsPerUnit;
+                float y = BarY(r, s, CentreZ(s));
+                if (BarInView(r, y))
+                {
+                    text = _map.Lines?.EdgeSlice;
+                    handle = Handle(r, y);
+                }
+            }
             bool show = !string.IsNullOrEmpty(text);
             if (!_sliceLabel && !show) return;
             if (!_sliceLabel)
@@ -380,16 +395,18 @@ namespace CosmicShore.UI
                 t.alignment = TextAlignmentOptions.Center;
                 t.textWrappingMode = TextWrappingModes.NoWrap;
                 t.raycastTarget = false;
+                var made = (RectTransform)t.transform;
+                made.anchorMin = made.anchorMax = new Vector2(.5f, .5f);
+                made.pivot = new Vector2(.5f, .5f);
                 _sliceLabel = t;
             }
-            _sliceLabel.gameObject.SetActive(show);
+            if (_sliceLabel.gameObject.activeSelf != show) _sliceLabel.gameObject.SetActive(show);
             if (!show) return;
             if (_sliceLabel.text != text) _sliceLabel.text = text;
             var rt = (RectTransform)_sliceLabel.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(.5f, .5f);
-            rt.pivot = new Vector2(.5f, .5f);
-            rt.sizeDelta = handle.size;
-            rt.anchoredPosition = handle.center - rectTransform.rect.center;
+            if (rt.sizeDelta != handle.size) rt.sizeDelta = handle.size;
+            var at = handle.center - r.center;
+            if (rt.anchoredPosition != at) rt.anchoredPosition = at;
         }
 
         // ── Dragging the slice ───────────────────────────────────────────────
