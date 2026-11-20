@@ -1,0 +1,33 @@
+# Large files (Docs/BRANCH_POLICY.md, Shombith 2026-11-20): a pull request that ADDS a file over 10 MB to git outside
+# Git LFS fails here, so build output, captures and masters stop landing in the public repo's history. Reads the PR's
+# commits and writes nothing. Whether it is a REQUIRED check is a branch-protection setting, decided separately.
+name: Large files
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: large-files-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  large-files:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Full history, but no file contents up front (the repo is 4.2 GB): git fetches only the blobs it is asked for.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          lfs: false
+      - name: Check added files
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          python3 Tools/Build/check_large_files.py --self-test
+          python3 Tools/Build/check_large_files.py --base "origin/$BASE_REF" --head HEAD

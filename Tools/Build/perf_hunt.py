@@ -17,9 +17,8 @@ What it checks, and where each number comes from:
   amoebius  the game's own ProfilerMarkers measured in Amoebius with no Unity (Port/tools/
             amoebius_markers_run.py): allocations per marker repeat to ~1% between identical runs, so a
             KB/frame rise is a regression the same day; milliseconds there are .NET's and only WATCHED.
-  sweep     gates + collect (+ --amoebius) -> the generated block of Docs/Reports/PERFORMANCE.md, a JSON
-            board, and (with --tasks) one Froglet Tasks ticket per NEW regression
-            (team_tasks.py add; run it only when the person asked for the tickets).
+  sweep     gates + collect (+ --amoebius) -> the generated block of Docs/Reports/PERFORMANCE.md and a JSON
+            board.
 
 Baselines live in Docs/perf/baselines.json (Unity captures, per scene|label) and
 Docs/perf/amoebius_baselines.json (per mode); the first VALID measurement of a key becomes its baseline
@@ -29,7 +28,7 @@ Docs/perf/amoebius_baselines.json (per mode); the first VALID measurement of a k
     python3 Tools/Build/perf_hunt.py collect [--local DIR] [--out board.json]
     python3 Tools/Build/perf_hunt.py compare capture.json [--adopt]
     python3 Tools/Build/perf_hunt.py amoebius [--modes SkimRace:2:3,...] [--frames 1800] [--adopt] [--no-build]
-    python3 Tools/Build/perf_hunt.py sweep [--amoebius] [--tasks] [--strict] [--write]
+    python3 Tools/Build/perf_hunt.py sweep [--amoebius] [--strict] [--write]
     python3 Tools/Build/perf_hunt.py --self-test
 
 Exit codes: 0 clean, 2 a regression was found (sweep --strict, gates, amoebius), 1 a tool error.
@@ -568,7 +567,7 @@ def cell(v):
     return str(v if v is not None else "-").replace("|", "\\|")
 
 
-def render_report(gates, gate_failures, board, amoebius, tasks_filed):
+def render_report(gates, gate_failures, board, amoebius):
     lines = [BEGIN, "", f"_Last sweep: {now_iso()} (`python3 Tools/Build/perf_hunt.py sweep`). Baselines: "
              "`Docs/perf/baselines.json` (editor captures), `Docs/perf/amoebius_baselines.json` (Amoebius markers)._", ""]
     lines.append(f"**Static gates:** {'all OK' if gate_failures == 0 else str(gate_failures) + ' FAILING'}")
@@ -604,9 +603,6 @@ def render_report(gates, gate_failures, board, amoebius, tasks_filed):
             for line in v.get("engineShim", []):
                 lines.append(f"  - engine shim, not the game (`Docs/perf/amoebius_known.json`): {line}")
         lines.append("")
-    if tasks_filed:
-        lines.append("**Team tasks filed this sweep:** " + ", ".join(tasks_filed))
-        lines.append("")
     lines.append(END)
     return "\n".join(lines) + "\n"
 
@@ -621,17 +617,6 @@ def write_report(block):
         text = text.rstrip("\n") + "\n\n" + block
     with open(REPORT, "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
-
-
-def file_task(task, done_when, see):
-    # A ticket names nobody (Docs/TEAM.md rule 9); whoever owns the files finds it with who_works_where.py.
-    r = subprocess.run([PY,"Tools/Build/team_tasks.py", "add", "--area", "Performance", "--kind", "dev",
-                        "--task", task, "--done-when", done_when, "--see", see, "--by", "perf_hunt sweep",
-                        "--priority", "P2", "--dept", "developers", "--milestone", "M1",
-                        "--why", "a performance gate or a capture regressed; M1 needs every mode at speed on every platform"],
-                       cwd=REPO, capture_output=True, text=True)
-    m = re.search(r"T-\d{8}-[0-9a-f]{4}", r.stdout + r.stderr)
-    return m.group(0) if m else None
 
 
 def latest_per_machine(verdicts):
@@ -649,7 +634,7 @@ def latest_per_machine(verdicts):
 
 
 def gate_and_capture_regressions(gates, board):
-    """(key, task, done-when, see) for every red gate and every capture regression. The sweep files tasks from these;
+    """(key, task, done-when, see) for every red gate and every capture regression. The sweep reports these;
     a status refresh lists them too, so it never reports a capture regression as gone (it did until 2026-10-17)."""
     out = []
     for g in gates:
@@ -677,44 +662,25 @@ def cmd_sweep(args):
         runs = [r for r in runs if r.endswith(".json") and (load_json(r, {}) or {}).get("kind") == "amoebius-markers"]
         if runs:
             amoebius, _ = cmd_amoebius(argparse.Namespace(from_json=runs, adopt=False))
-    state = load_json(STATE, {})
-    filed = state.setdefault("filed", {})
-    tasks_filed = []
     regressions = gate_and_capture_regressions(gates, board)
     for v in (amoebius or []):
         for line in v["regressions"]:
             regressions.append((f"amoebius:{v['key']}:{line.split(' ')[0]}", f"Allocation regression in Amoebius {v['key']}: {line}",
                                 "perf_hunt.py amoebius reads within baseline for that marker", "Docs/Reports/PERFORMANCE.md"))
-    for key, task, done_when, see in regressions:
-        if args.tasks and key not in filed:
-            tid = file_task(task, done_when, see)
-            if tid:
-                filed[key] = {"task": tid, "filedUtc": now_iso()}
-                tasks_filed.append(tid)
-    save_json(STATE, state)
     save_json(STATUS, build_status(gates, board, amoebius, [r[1] for r in regressions]))
-    block = render_report(gates, gate_failures, board, amoebius, tasks_filed)
+    block = render_report(gates, gate_failures, board, amoebius)
     if args.write:
         write_report(block)
     print(block)
     if args.out:
         save_json(args.out, {"generatedUtc": now_iso(), "gates": gates, "captures": board["captures"] if board else [],
-                             "amoebius": amoebius, "regressions": [r[1] for r in regressions], "tasksFiled": tasks_filed})
+                             "amoebius": amoebius, "regressions": [r[1] for r in regressions]})
     n = len(regressions)
-    print(f"sweep: {n} regression(s)" + (f", {len(tasks_filed)} task(s) filed" if tasks_filed else ""))
+    print(f"sweep: {n} regression(s)")
     return 2 if (n and args.strict) else 0
 
 
 # ------------------------------------------------------------------ status (what the indicator and Claude read)
-
-def _open_tasks(area="Performance"):
-    try:
-        import team_tasks
-        tickets = team_tasks.open_tickets([area])
-    except Exception:  # noqa: BLE001 - a status read must never fail on the ticket store
-        return []
-    return [{"id": t.id, "kind": t.kind, "task": t.task[:160]} for t in tickets if t.state == "open"]
-
 
 def _bugs():
     """The Bug Ledger's count, read the way the board is: every origin/bugledger/<user> branch merged
@@ -750,7 +716,6 @@ def build_status(gates, board, amoebius, regressions):
     """One small JSON: what is green, what regressed, and the next steps in order. Written by every sweep."""
     baselines = load_json(BASELINES, {})
     have = {k.split("|")[1].lower() for k in baselines if "|" in k}
-    tasks = _open_tasks()
     bugs = _bugs()
     nxt = []
     for g in gates:
@@ -760,8 +725,7 @@ def build_status(gates, board, amoebius, regressions):
         nxt.append("Resolve: " + r)
     for label, title, _scene, _after, how in SCENARIOS:
         if label.lower() not in have:
-            tid = next((t["id"] for t in tasks if label.lower() in t["task"].lower() or title.lower() in t["task"].lower()), None)
-            nxt.append(f"Capture {title} in Release (no valid baseline yet): {how}" + (f" [{tid}]" if tid else ""))
+            nxt.append(f"Capture {title} in Release (no valid baseline yet): {how}")
     if bugs["open"]:
         nxt.append(f"{bugs['open']} open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: {bugs['top'][0]['title']})")
     caps = board["captures"] if board else []
@@ -776,7 +740,6 @@ def build_status(gates, board, amoebius, regressions):
                       "verdict": v["action"], "cpuBusyMs": v["summary"].get("cpuBusyMs"), "gcKB": v["summary"].get("gcKB")} for v in caps[-8:]],
         "amoebius": [{"key": v["key"], "verdict": v["action"], "topGameAllocators": v.get("top", [])} for v in (amoebius or [])],
         "bugs": bugs,
-        "openPerformanceTasks": tasks,
         "scenarios": [{"label": label, "title": title, "scene": scene, "afterSeconds": after, "owed": label.lower() not in have}
                       for label, title, scene, after, _how in SCENARIOS],
         "next": nxt,
@@ -912,14 +875,13 @@ def self_test():
 
         block = render_report([{"gate": "x", "ok": True, "line": "fine"}], 0,
                               {"branchesScanned": 3, "captures": [dict(v if False else compare_capture(worse, base), user="ys", name="n", branches=[])]},
-                              [compare_amoebius(d3, ab)], ["T-1"])
+                              [compare_amoebius(d3, ab)])
         write_report(block); write_report(block)
         text = open(REPORT, encoding="utf-8").read()
-        assert text.count(BEGIN) == 1 and "REGRESSION" in text and "T-1" in text
+        assert text.count(BEGIN) == 1 and "REGRESSION" in text
         assert "Menu_Main\\|S2" in text and "26.00" in text, "table cells must escape pipes and round numbers"
-        global _open_tasks, _bugs
-        keep = (_open_tasks, _bugs)
-        _open_tasks = lambda area="Performance": [{"id": "T-1", "kind": "test", "task": "First editor performance capture, S2 Lattice ..."}]
+        global _bugs
+        keep = _bugs
         _bugs = lambda: {"open": 2, "validating": 0, "top": [{"id": "E-1", "state": "open", "title": "boom"}]}
         try:
             save_json(BASELINES, {"Menu_Main|S2": {"cpuBusyMs": 1}})
@@ -929,7 +891,7 @@ def self_test():
             assert any("Skim Race I2" in n for n in st["next"]) and any("open console bug" in n for n in st["next"])
             assert "Next, in order:" in status_text(st)
         finally:
-            _open_tasks, _bugs = keep
+            _bugs = keep
         # The Bug Ledger count is the senders' branches merged, not the checked-out tree (2026-10-25: the tree
         # held 3 issues while the bugledger branches held 309), with the tree only as the unfetched fallback.
         import bug_ledger
@@ -984,14 +946,13 @@ def main():
     p = sub.add_parser("status", help="the short status and next steps (reads Docs/perf/status.json; --refresh re-measures)")
     p.add_argument("--refresh", action="store_true")
     p.add_argument("--json", action="store_true")
-    p = sub.add_parser("sweep", help="gates + collect (+ --amoebius) -> Docs/Reports/PERFORMANCE.md and team tasks")
+    p = sub.add_parser("sweep", help="gates + collect (+ --amoebius) -> Docs/Reports/PERFORMANCE.md")
     p.add_argument("--amoebius", action="store_true")
     p.add_argument("--modes", default="SkimRace:2:3")
     p.add_argument("--frames", type=int, default=1800)
     p.add_argument("--no-build", action="store_true")
     p.add_argument("--no-collect", action="store_true")
     p.add_argument("--local")
-    p.add_argument("--tasks", action="store_true", help="file a team task per NEW regression")
     p.add_argument("--strict", action="store_true", help="exit 2 on any regression")
     p.add_argument("--write", action="store_true", help="refresh the generated block of Docs/Reports/PERFORMANCE.md")
     p.add_argument("--out", help="write the sweep as JSON")
