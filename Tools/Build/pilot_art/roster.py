@@ -85,7 +85,8 @@ def plan(crews, existing_plan=None):
         names.add(p["person"].lower())
         words.add(p["word"])
         use.update(p["heritage"])
-        counts[p["callsign"]] += 1
+        if p["word"] not in known:     # a painted plan pilot is in people.json already: count it once
+            counts[p["callsign"]] += 1
     need = [(c, crews - counts[c]) for c in CALLSIGNS if counts[c] < crews]
     total_new = sum(n for _, n in need)
     animals = brief.rollable_animals()

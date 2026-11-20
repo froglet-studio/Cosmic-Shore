@@ -2024,6 +2024,870 @@
     "4:5": [654, 0, 1345, 864],
     "9:16": [757, 0, 1243, 864]
    }
+  },
+  "Lusiel": {
+   "name": "Lusiel Lanternwater",
+   "file": "Docs/Pilots/art/scenes/Lusiel.jpg",
+   "size": [1536, 864],
+   "close": [740, 20, 1120, 400],
+   "side": "right",
+   "treatment": "Chalking the day's tally on a harvest shed wall",
+   "source": "hobby: \"keep score of everything, including naps\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [354, 0, 1506, 864],
+    "1:1": [498, 0, 1362, 864],
+    "4:5": [584, 0, 1275, 864],
+    "9:16": [687, 0, 1173, 864]
+   }
+  },
+  "Tathadek": {
+   "name": "Tathadek Amberward",
+   "file": "Docs/Pilots/art/scenes/Tathadek.jpg",
+   "size": [1536, 864],
+   "close": [400, 20, 820, 440],
+   "side": "left",
+   "treatment": "Apologising to a scraped vessel after a hard landing",
+   "source": "hobby: \"name every vessel they fly, and apologise to it after a hard landing\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [34, 0, 1186, 864],
+    "1:1": [178, 0, 1042, 864],
+    "4:5": [264, 0, 955, 864],
+    "9:16": [367, 0, 853, 864]
+   }
+  },
+  "Brisoo": {
+   "name": "Brisoo Brinereach",
+   "file": "Docs/Pilots/art/scenes/Brisoo.jpg",
+   "size": [1536, 864],
+   "close": [820, 0, 1240, 420],
+   "side": "right",
+   "treatment": "Talking to the Ark on its dark hull at night",
+   "source": "hobby: \"talk to the Ark at night and insist it answers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [598, 0, 1462, 864],
+    "4:5": [684, 0, 1375, 864],
+    "9:16": [787, 0, 1273, 864]
+   }
+  },
+  "Galsodek": {
+   "name": "Galsodek Driftfall",
+   "file": "Docs/Pilots/art/scenes/Galsodek.jpg",
+   "size": [1536, 864],
+   "close": [260, 0, 700, 440],
+   "side": "left",
+   "treatment": "Giving a shell away across a quay stall",
+   "source": "hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [48, 0, 912, 864],
+    "4:5": [134, 0, 825, 864],
+    "9:16": [237, 0, 723, 864]
+   }
+  },
+  "Brivelo": {
+   "name": "Brivelo Greyrest",
+   "file": "Docs/Pilots/art/scenes/Brivelo.jpg",
+   "size": [1536, 864],
+   "close": [880, 40, 1260, 420],
+   "side": "right",
+   "treatment": "Wading through the flooded halls of a dead Ark",
+   "source": "history: \"grew up in the shadow of a dead Ark\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [638, 0, 1502, 864],
+    "4:5": [724, 0, 1415, 864],
+    "9:16": [827, 0, 1313, 864]
+   }
+  },
+  "Veveai": {
+   "name": "Veveai Dawnridge",
+   "file": "Docs/Pilots/art/scenes/Veveai.jpg",
+   "size": [1536, 864],
+   "close": [200, 20, 660, 480],
+   "side": "left",
+   "treatment": "Napping in a hammock under a tally of naps",
+   "source": "hobby: \"keep score of everything, including naps\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [84, 0, 775, 864],
+    "9:16": [187, 0, 673, 864]
+   }
+  },
+  "Tadiwen": {
+   "name": "Tadiwen Driftwhistle",
+   "file": "Docs/Pilots/art/scenes/Tadiwen.jpg",
+   "size": [1536, 864],
+   "close": [860, 20, 1280, 440],
+   "side": "right",
+   "treatment": "Lining up the jars of missed crystals",
+   "source": "hobby: \"keep a jar of every crystal they have ever missed\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [638, 0, 1502, 864],
+    "4:5": [724, 0, 1415, 864],
+    "9:16": [827, 0, 1313, 864]
+   }
+  },
+  "Esius": {
+   "name": "Esius Greydrift",
+   "file": "Docs/Pilots/art/scenes/Esius.jpg",
+   "size": [1536, 864],
+   "close": [170, 0, 550, 380],
+   "side": "left",
+   "treatment": "Searching the night horizon from a kelp raft",
+   "source": "want: \"to find the Ark that left them behind\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [14, 0, 705, 864],
+    "9:16": [117, 0, 603, 864]
+   }
+  },
+  "Eradek": {
+   "name": "Eradek Kelpkeel",
+   "file": "Docs/Pilots/art/scenes/Eradek.jpg",
+   "size": [1536, 864],
+   "close": [820, 40, 1260, 480],
+   "side": "right",
+   "treatment": "Laughing in the middle of a solemn rite",
+   "source": "hobby: \"laugh at exactly the wrong moments\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [608, 0, 1472, 864],
+    "4:5": [694, 0, 1385, 864],
+    "9:16": [797, 0, 1283, 864]
+   }
+  },
+  "Isoro": {
+   "name": "Isoro Driftmore",
+   "file": "Docs/Pilots/art/scenes/Isoro.jpg",
+   "size": [1536, 864],
+   "close": [260, 20, 720, 480],
+   "side": "left",
+   "treatment": "Humming off-key in a rescue cockpit mid-jump",
+   "source": "hobby: \"hum off-key during every jump\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [58, 0, 922, 864],
+    "4:5": [144, 0, 835, 864],
+    "9:16": [247, 0, 733, 864]
+   }
+  },
+  "Nemix": {
+   "name": "Nemix Hollowrunner",
+   "file": "Docs/Pilots/art/scenes/Nemix.jpg",
+   "size": [1536, 864],
+   "close": [760, 0, 1220, 460],
+   "side": "right",
+   "treatment": "Eating at a night-market grill before a run",
+   "source": "hobby: \"refuse to fly on an empty stomach\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [558, 0, 1422, 864],
+    "4:5": [644, 0, 1335, 864],
+    "9:16": [747, 0, 1233, 864]
+   }
+  },
+  "Calio": {
+   "name": "Calio Dawnrunner",
+   "file": "Docs/Pilots/art/scenes/Calio.jpg",
+   "size": [1536, 864],
+   "close": [90, 0, 470, 380],
+   "side": "left",
+   "treatment": "Resting on a red dune at the end of a hunt",
+   "source": "want: \"a quiet harbour and a long sleep\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [0, 0, 691, 864],
+    "9:16": [37, 0, 523, 864]
+   }
+  },
+  "Hasa": {
+   "name": "Hasa Wavemere",
+   "file": "Docs/Pilots/art/scenes/Hasa.jpg",
+   "size": [1536, 864],
+   "close": [1020, 0, 1440, 420],
+   "side": "right",
+   "treatment": "Counting a debt out of a chest in the hold",
+   "source": "want: \"to pay back an old debt, with interest\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [845, 0, 1536, 864],
+    "9:16": [987, 0, 1473, 864]
+   }
+  },
+  "Irenmo": {
+   "name": "Irenmo Lowspark",
+   "file": "Docs/Pilots/art/scenes/Irenmo.jpg",
+   "size": [1536, 864],
+   "close": [220, 0, 620, 400],
+   "side": "left",
+   "treatment": "Running late along a pier as the boats leave",
+   "source": "hobby: \"have never once arrived early\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [74, 0, 765, 864],
+    "9:16": [177, 0, 663, 864]
+   }
+  },
+  "Mithamo": {
+   "name": "Mithamo Hollowsong",
+   "file": "Docs/Pilots/art/scenes/Mithamo.jpg",
+   "size": [1536, 864],
+   "close": [880, 0, 1300, 420],
+   "side": "right",
+   "treatment": "Keeping score under the table at a treaty session",
+   "source": "hobby: \"keep score of everything, including naps\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [658, 0, 1522, 864],
+    "4:5": [744, 0, 1435, 864],
+    "9:16": [847, 0, 1333, 864]
+   }
+  },
+  "Nekoia": {
+   "name": "Nekoia Foamwater",
+   "file": "Docs/Pilots/art/scenes/Nekoia.jpg",
+   "size": [1536, 864],
+   "close": [260, 0, 680, 420],
+   "side": "left",
+   "treatment": "Tossing shells to a dock from a ship's rail",
+   "source": "hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [38, 0, 902, 864],
+    "4:5": [124, 0, 815, 864],
+    "9:16": [227, 0, 713, 864]
+   }
+  },
+  "Zerilo": {
+   "name": "Zerilo Moonwing",
+   "file": "Docs/Pilots/art/scenes/Zerilo.jpg",
+   "size": [1536, 864],
+   "close": [780, 0, 1220, 440],
+   "side": "right",
+   "treatment": "Arriving at a ballroom after the ball has ended",
+   "source": "hobby: \"have never once arrived early\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [568, 0, 1432, 864],
+    "4:5": [654, 0, 1345, 864],
+    "9:16": [757, 0, 1243, 864]
+   }
+  },
+  "Nebeth": {
+   "name": "Nebeth Starspark",
+   "file": "Docs/Pilots/art/scenes/Nebeth.jpg",
+   "size": [1536, 864],
+   "close": [220, 0, 600, 380],
+   "side": "left",
+   "treatment": "Welding a new bunk into empty crew quarters",
+   "source": "want: \"a crew that stays\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [64, 0, 755, 864],
+    "9:16": [167, 0, 653, 864]
+   }
+  },
+  "Abeko": {
+   "name": "Abeko Deeplight",
+   "file": "Docs/Pilots/art/scenes/Abeko.jpg",
+   "size": [1536, 864],
+   "close": [770, 0, 1170, 400],
+   "side": "right",
+   "treatment": "Kneeling at a sealed vault door no one has opened",
+   "source": "want: \"a vault no one else has opened\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [538, 0, 1402, 864],
+    "4:5": [624, 0, 1315, 864],
+    "9:16": [727, 0, 1213, 864]
+   }
+  },
+  "Zeliai": {
+   "name": "Zeliai Lanternwhistle",
+   "file": "Docs/Pilots/art/scenes/Zeliai.jpg",
+   "size": [1536, 864],
+   "close": [180, 20, 640, 480],
+   "side": "left",
+   "treatment": "Eating a huge breakfast before a raid",
+   "source": "hobby: \"refuse to fly on an empty stomach\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [64, 0, 755, 864],
+    "9:16": [167, 0, 653, 864]
+   }
+  },
+  "Zethave": {
+   "name": "Zethave Shellhook",
+   "file": "Docs/Pilots/art/scenes/Zethave.jpg",
+   "size": [1536, 864],
+   "close": [780, 0, 1140, 360],
+   "side": "right",
+   "treatment": "Chalking a tally of hymns in an empty sea chapel",
+   "source": "hobby: \"keep score of everything, including naps\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [528, 0, 1392, 864],
+    "4:5": [614, 0, 1305, 864],
+    "9:16": [717, 0, 1203, 864]
+   }
+  },
+  "Uvelo": {
+   "name": "Uvelo Stillbell",
+   "file": "Docs/Pilots/art/scenes/Uvelo.jpg",
+   "size": [1536, 864],
+   "close": [320, 40, 740, 460],
+   "side": "left",
+   "treatment": "Writing another letter to a sibling who never answers",
+   "source": "hobby: \"write letters to a sibling who never writes back\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [98, 0, 962, 864],
+    "4:5": [184, 0, 875, 864],
+    "9:16": [287, 0, 773, 864]
+   }
+  },
+  "Jorish": {
+   "name": "Jorish Ambershore",
+   "file": "Docs/Pilots/art/scenes/Jorish.jpg",
+   "size": [1536, 864],
+   "close": [860, 20, 1280, 440],
+   "side": "right",
+   "treatment": "Taking notes on what the Ark says at night",
+   "source": "hobby: \"talk to the Ark at night and insist it answers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [638, 0, 1502, 864],
+    "4:5": [724, 0, 1415, 864],
+    "9:16": [827, 0, 1313, 864]
+   }
+  },
+  "Vesidek": {
+   "name": "Vesidek Saltfall",
+   "file": "Docs/Pilots/art/scenes/Vesidek.jpg",
+   "size": [1536, 864],
+   "close": [240, 0, 700, 460],
+   "side": "left",
+   "treatment": "Humming off-key through a jump in a small cockpit",
+   "source": "hobby: \"hum off-key during every jump\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [38, 0, 902, 864],
+    "4:5": [124, 0, 815, 864],
+    "9:16": [227, 0, 713, 864]
+   }
+  },
+  "Gallaus": {
+   "name": "Gallaus Stillmore",
+   "file": "Docs/Pilots/art/scenes/Gallaus.jpg",
+   "size": [1536, 864],
+   "close": [760, 30, 1160, 430],
+   "side": "right",
+   "treatment": "Writing a letter on a protest barge at dawn",
+   "source": "hobby: \"write letters to a sibling who never writes back\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [528, 0, 1392, 864],
+    "4:5": [614, 0, 1305, 864],
+    "9:16": [717, 0, 1203, 864]
+   }
+  },
+  "Peai": {
+   "name": "Peai Coralfield",
+   "file": "Docs/Pilots/art/scenes/Peai.jpg",
+   "size": [1536, 864],
+   "close": [220, 20, 620, 420],
+   "side": "left",
+   "treatment": "Notching a rescue into a beam after a tunnel dig-out",
+   "source": "hobby: \"keep score of everything, including naps\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [74, 0, 765, 864],
+    "9:16": [177, 0, 663, 864]
+   }
+  },
+  "Harendek": {
+   "name": "Harendek Kelpspark",
+   "file": "Docs/Pilots/art/scenes/Harendek.jpg",
+   "size": [1536, 864],
+   "close": [700, 0, 1140, 440],
+   "side": "right",
+   "treatment": "Giving a shell to a stranger's child on a pier",
+   "source": "hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [344, 0, 1496, 864],
+    "1:1": [488, 0, 1352, 864],
+    "4:5": [574, 0, 1265, 864],
+    "9:16": [677, 0, 1163, 864]
+   }
+  },
+  "Delrave": {
+   "name": "Delrave Hollowlight",
+   "file": "Docs/Pilots/art/scenes/Delrave.jpg",
+   "size": [1536, 864],
+   "close": [260, 0, 640, 380],
+   "side": "left",
+   "treatment": "Chalking race times on the pit wall",
+   "source": "hobby: \"keep score of everything, including naps\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [18, 0, 882, 864],
+    "4:5": [104, 0, 795, 864],
+    "9:16": [207, 0, 693, 864]
+   }
+  },
+  "Belthax": {
+   "name": "Belthax Creststone",
+   "file": "Docs/Pilots/art/scenes/Belthax.jpg",
+   "size": [1536, 864],
+   "close": [800, 40, 1240, 480],
+   "side": "right",
+   "treatment": "Trying not to laugh at a solemn banquet",
+   "source": "hobby: \"laugh at exactly the wrong moments\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [588, 0, 1452, 864],
+    "4:5": [674, 0, 1365, 864],
+    "9:16": [777, 0, 1263, 864]
+   }
+  },
+  "Nemiwen": {
+   "name": "Nemiwen Saltgate",
+   "file": "Docs/Pilots/art/scenes/Nemiwen.jpg",
+   "size": [1536, 864],
+   "close": [280, 80, 680, 480],
+   "side": "left",
+   "treatment": "Climbing a giant bloom-stalk on a dare",
+   "source": "hobby: \"cannot resist a dare\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [48, 0, 912, 864],
+    "4:5": [134, 0, 825, 864],
+    "9:16": [237, 0, 723, 864]
+   }
+  },
+  "Delnous": {
+   "name": "Delnous Anchorweaver",
+   "file": "Docs/Pilots/art/scenes/Delnous.jpg",
+   "size": [1536, 864],
+   "close": [620, 20, 1100, 500],
+   "side": "right",
+   "treatment": "Humming while fitting a hull plate in a dry dock",
+   "source": "hobby: \"hum off-key during every jump\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [284, 0, 1436, 864],
+    "1:1": [428, 0, 1292, 864],
+    "4:5": [514, 0, 1205, 864],
+    "9:16": [617, 0, 1103, 864]
+   }
+  },
+  "Darsous": {
+   "name": "Darsous Silverwatch",
+   "file": "Docs/Pilots/art/scenes/Darsous.jpg",
+   "size": [1536, 864],
+   "close": [290, 20, 710, 440],
+   "side": "left",
+   "treatment": "Tying a ribbon on the hull for a lost friend",
+   "source": "hobby: \"tie a ribbon on the hull for every friend lost\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [68, 0, 932, 864],
+    "4:5": [154, 0, 845, 864],
+    "9:16": [257, 0, 743, 864]
+   }
+  },
+  "Jomasa": {
+   "name": "Jomasa Gullstone",
+   "file": "Docs/Pilots/art/scenes/Jomasa.jpg",
+   "size": [1536, 864],
+   "close": [820, 40, 1220, 440],
+   "side": "right",
+   "treatment": "Running for a ship that is already leaving",
+   "source": "hobby: \"have never once arrived early\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [588, 0, 1452, 864],
+    "4:5": [674, 0, 1365, 864],
+    "9:16": [777, 0, 1263, 864]
+   }
+  },
+  "Mamiai": {
+   "name": "Mamiai Saltsong",
+   "file": "Docs/Pilots/art/scenes/Mamiai.jpg",
+   "size": [1536, 864],
+   "close": [220, 40, 620, 440],
+   "side": "left",
+   "treatment": "Talking to the Ark while repairing a conduit at night",
+   "source": "hobby: \"talk to the Ark at night and insist it answers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [74, 0, 765, 864],
+    "9:16": [177, 0, 663, 864]
+   }
+  },
+  "Inuly": {
+   "name": "Inuly Greywater",
+   "file": "Docs/Pilots/art/scenes/Inuly.jpg",
+   "size": [1536, 864],
+   "close": [780, 0, 1200, 420],
+   "side": "right",
+   "treatment": "Giving shells to fans after a race",
+   "source": "hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [558, 0, 1422, 864],
+    "4:5": [644, 0, 1335, 864],
+    "9:16": [747, 0, 1233, 864]
+   }
+  },
+  "Ush": {
+   "name": "Ush Drifthart",
+   "file": "Docs/Pilots/art/scenes/Ush.jpg",
+   "size": [1536, 864],
+   "close": [240, 80, 640, 480],
+   "side": "left",
+   "treatment": "Tying a ribbon for a lost friend at the edge of the map",
+   "source": "hobby: \"tie a ribbon on the hull for every friend lost\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [8, 0, 872, 864],
+    "4:5": [94, 0, 785, 864],
+    "9:16": [197, 0, 683, 864]
+   }
+  },
+  "Venura": {
+   "name": "Venura Amberfield",
+   "file": "Docs/Pilots/art/scenes/Venura.jpg",
+   "size": [1536, 864],
+   "close": [800, 0, 1200, 400],
+   "side": "right",
+   "treatment": "Tying a ribbon for a lost friend on a bounty cutter",
+   "source": "hobby: \"tie a ribbon on the hull for every friend lost\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [568, 0, 1432, 864],
+    "4:5": [654, 0, 1345, 864],
+    "9:16": [757, 0, 1243, 864]
+   }
+  },
+  "Lutharin": {
+   "name": "Lutharin Tidestone",
+   "file": "Docs/Pilots/art/scenes/Lutharin.jpg",
+   "size": [1536, 864],
+   "close": [220, 0, 620, 400],
+   "side": "left",
+   "treatment": "Humming off-key while hauling glowing nets",
+   "source": "hobby: \"hum off-key during every jump\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [74, 0, 765, 864],
+    "9:16": [177, 0, 663, 864]
+   }
+  },
+  "Tariola": {
+   "name": "Tariola Rustshore",
+   "file": "Docs/Pilots/art/scenes/Tariola.jpg",
+   "size": [1536, 864],
+   "close": [780, 40, 1180, 440],
+   "side": "right",
+   "treatment": "Humming off-key in a lift before a treaty signing",
+   "source": "hobby: \"hum off-key during every jump\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [548, 0, 1412, 864],
+    "4:5": [634, 0, 1325, 864],
+    "9:16": [737, 0, 1223, 864]
+   }
+  },
+  "Jorenne": {
+   "name": "Jorenne Rustbrook",
+   "file": "Docs/Pilots/art/scenes/Jorenne.jpg",
+   "size": [1536, 864],
+   "close": [300, 40, 740, 480],
+   "side": "left",
+   "treatment": "Laughing in the middle of a harbour rescue",
+   "source": "hobby: \"laugh at exactly the wrong moments\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [88, 0, 952, 864],
+    "4:5": [174, 0, 865, 864],
+    "9:16": [277, 0, 763, 864]
+   }
+  },
+  "Emasa": {
+   "name": "Emasa Shellwing",
+   "file": "Docs/Pilots/art/scenes/Emasa.jpg",
+   "size": [1536, 864],
+   "close": [720, 0, 1160, 440],
+   "side": "right",
+   "treatment": "Eating a slow lunch at a market stall before departure",
+   "source": "hobby: \"refuse to fly on an empty stomach\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [364, 0, 1516, 864],
+    "1:1": [508, 0, 1372, 864],
+    "4:5": [594, 0, 1285, 864],
+    "9:16": [697, 0, 1183, 864]
+   }
+  },
+  "Kamane": {
+   "name": "Kamane Coralwright",
+   "file": "Docs/Pilots/art/scenes/Kamane.jpg",
+   "size": [1536, 864],
+   "close": [160, 120, 560, 520],
+   "side": "left",
+   "treatment": "Cracking a vault in a swamp ruin",
+   "source": "want: \"a vault no one else has opened\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [14, 0, 705, 864],
+    "9:16": [117, 0, 603, 864]
+   }
+  },
+  "Yovelia": {
+   "name": "Yovelia Frostgate",
+   "file": "Docs/Pilots/art/scenes/Yovelia.jpg",
+   "size": [1536, 864],
+   "close": [760, 0, 1180, 420],
+   "side": "right",
+   "treatment": "Humming off-key up the rigging at dawn",
+   "source": "hobby: \"hum off-key during every jump\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [538, 0, 1402, 864],
+    "4:5": [624, 0, 1315, 864],
+    "9:16": [727, 0, 1213, 864]
+   }
+  },
+  "Belkosa": {
+   "name": "Belkosa Reefridge",
+   "file": "Docs/Pilots/art/scenes/Belkosa.jpg",
+   "size": [1536, 864],
+   "close": [200, 0, 620, 420],
+   "side": "left",
+   "treatment": "Giving a shell to a nervous envoy before talks",
+   "source": "hobby: \"collect shells from every port and give them away to strangers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [64, 0, 755, 864],
+    "9:16": [167, 0, 653, 864]
+   }
+  },
+  "Kamael": {
+   "name": "Kamael Drifttail",
+   "file": "Docs/Pilots/art/scenes/Kamael.jpg",
+   "size": [1536, 864],
+   "close": [640, 80, 1060, 500],
+   "side": "right",
+   "treatment": "Talking to the Ark from a dinghy beside its hull",
+   "source": "hobby: \"talk to the Ark at night and insist it answers\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [274, 0, 1426, 864],
+    "1:1": [418, 0, 1282, 864],
+    "4:5": [504, 0, 1195, 864],
+    "9:16": [607, 0, 1093, 864]
+   }
+  },
+  "Wymimo": {
+   "name": "Wymimo Amberdrift",
+   "file": "Docs/Pilots/art/scenes/Wymimo.jpg",
+   "size": [1536, 864],
+   "close": [300, 0, 740, 440],
+   "side": "left",
+   "treatment": "Adding a missed crystal to a jar in a hunting blind",
+   "source": "hobby: \"keep a jar of every crystal they have ever missed\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [88, 0, 952, 864],
+    "4:5": [174, 0, 865, 864],
+    "9:16": [277, 0, 763, 864]
+   }
+  },
+  "Iliwen": {
+   "name": "Iliwen Amberfall",
+   "file": "Docs/Pilots/art/scenes/Iliwen.jpg",
+   "size": [1536, 864],
+   "close": [820, 0, 1200, 380],
+   "side": "right",
+   "treatment": "Bursting late into a meeting mid-speech",
+   "source": "hobby: \"have never once arrived early\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [578, 0, 1442, 864],
+    "4:5": [664, 0, 1355, 864],
+    "9:16": [767, 0, 1253, 864]
+   }
+  },
+  "Hanomo": {
+   "name": "Hanomo Glasswick",
+   "file": "Docs/Pilots/art/scenes/Hanomo.jpg",
+   "size": [1536, 864],
+   "close": [180, 0, 620, 440],
+   "side": "left",
+   "treatment": "Tying a ribbon for a lost friend on a choir barge",
+   "source": "hobby: \"tie a ribbon on the hull for every friend lost\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [54, 0, 745, 864],
+    "9:16": [157, 0, 643, 864]
+   }
+  },
+  "Nerenlo": {
+   "name": "Nerenlo Crestreach",
+   "file": "Docs/Pilots/art/scenes/Nerenlo.jpg",
+   "size": [1536, 864],
+   "close": [960, 20, 1380, 440],
+   "side": "right",
+   "treatment": "Sketching the wreck of the dead Ark they grew up beneath",
+   "source": "history: \"grew up in the shadow of a dead Ark\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [824, 0, 1515, 864],
+    "9:16": [927, 0, 1413, 864]
+   }
+  },
+  "Brilalo": {
+   "name": "Brilalo Dawnshore",
+   "file": "Docs/Pilots/art/scenes/Brilalo.jpg",
+   "size": [1536, 864],
+   "close": [140, 20, 600, 480],
+   "side": "left",
+   "treatment": "Writing letters in a lighthouse lamp room",
+   "source": "hobby: \"write letters to a sibling who never writes back\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [24, 0, 715, 864],
+    "9:16": [127, 0, 613, 864]
+   }
+  },
+  "Abero": {
+   "name": "Abero Greywing",
+   "file": "Docs/Pilots/art/scenes/Abero.jpg",
+   "size": [1536, 864],
+   "close": [870, 0, 1230, 360],
+   "side": "right",
+   "treatment": "Setting an extra place at an empty mess table",
+   "source": "want: \"a crew that stays\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [618, 0, 1482, 864],
+    "4:5": [704, 0, 1395, 864],
+    "9:16": [807, 0, 1293, 864]
+   }
+  },
+  "Xamilo": {
+   "name": "Xamilo Ashhook",
+   "file": "Docs/Pilots/art/scenes/Xamilo.jpg",
+   "size": [1536, 864],
+   "close": [220, 20, 660, 460],
+   "side": "left",
+   "treatment": "Humming off-key on the start line",
+   "source": "hobby: \"hum off-key during every jump\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [8, 0, 872, 864],
+    "4:5": [94, 0, 785, 864],
+    "9:16": [197, 0, 683, 864]
+   }
+  },
+  "Kakoai": {
+   "name": "Kakoai Anchormoor",
+   "file": "Docs/Pilots/art/scenes/Kakoai.jpg",
+   "size": [1536, 864],
+   "close": [880, 0, 1320, 440],
+   "side": "right",
+   "treatment": "Eating from a cargo crate while loading a ship",
+   "source": "hobby: \"refuse to fly on an empty stomach\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [668, 0, 1532, 864],
+    "4:5": [754, 0, 1445, 864],
+    "9:16": [857, 0, 1343, 864]
+   }
+  },
+  "Caane": {
+   "name": "Caane Frostdrift",
+   "file": "Docs/Pilots/art/scenes/Caane.jpg",
+   "size": [1536, 864],
+   "close": [400, 0, 800, 400],
+   "side": "left",
+   "treatment": "Laughing at the wrong moment at a rival's funeral",
+   "source": "hobby: \"laugh at exactly the wrong moments\" (the game's Quirks; put it in the third person)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [24, 0, 1176, 864],
+    "1:1": [168, 0, 1032, 864],
+    "4:5": [254, 0, 945, 864],
+    "9:16": [357, 0, 843, 864]
+   }
   }
  }
 }

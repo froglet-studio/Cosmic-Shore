@@ -16,7 +16,7 @@ number: the editor shares its captures by itself, the sweep judges them, and the
 |---|---|---|
 | **Every day** (`.github/workflows/perf-daily.yml`, 05:40 UTC, `bleeding-edge`) | `perf_hunt.py sweep` (static gates, every shared capture vs baseline) and `perf_hunt.py amoebius` (the game's own markers in Amoebius, allocations vs baseline) | the workflow run's `perf-sweep` artifact; red = a regression. Its `publish` job then COMMITS `Docs/perf/status.json` + `Docs/Reports/PERFORMANCE.md` to bleeding-edge (or to `perf-status` if protection refuses), which the editor's Project Record reads |
 | **After every play test** (editor, when the person turned on *Auto-publish* or pressed Share on the Bug Hunt & Performance badge) | `BugHuntReports` copies `capture_*.json` into `BugLedger/shared/reports/<user>/perf/` on their branch | `perf_hunt.py collect` (every origin branch) |
-| **Any session** | `perf_hunt.py sweep --write --tasks` refreshes `Docs/Reports/PERFORMANCE.md` and `Docs/perf/status.json`, and files one team task per NEW regression | `Docs/Reports/PERFORMANCE.md`, `Docs/TEAM_TASKS.md` (area Performance) |
+| **Any session** | `perf_hunt.py sweep --write` refreshes `Docs/Reports/PERFORMANCE.md` and `Docs/perf/status.json` | `Docs/Reports/PERFORMANCE.md` |
 | **When someone asks** "performance status", "what next", "what to test" | `.claude/hooks/health_status.py` hands the session `Docs/perf/status.json` | `python3 Tools/Build/perf_hunt.py status [--refresh]` |
 
 **Where people see it: three surfaces, no more** (Yash, 2026-10-15: no extra editor UI; 2026-10-17: the after-play
@@ -47,8 +47,7 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
 
 - **Validity first.** A capture taken in Debug code optimization, with Deep Profile, under a frame cap, with Burst
   off, with managed job time, or with a second camera enabled (the old Third Eye window; since 2026-11-01 the Third Eye drives the main camera, so only its overlays cost) is NOT a number. The reader says
-  so in its first section; the sweep refuses to compare it. Ask for a clean one (the team task template is in
-  `Docs/TEAM_TASKS.md`, area Performance) rather than reading a tainted one.
+  so in its first section; the sweep refuses to compare it. Ask for a clean one rather than reading a tainted one.
 - **An Amoebius allocation is the game's only when the engine API does not copy.** Before filing a game task from the
   Amoebius run, read the marker's code: if its bytes come from an engine stand-in that copies on every call (today:
   `Mesh.SetVertices/SetUVs/SetTriangles(List)`, because the renderer keys on array identity), it belongs in
@@ -89,7 +88,7 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
    there before it gets code.
 3. Pick the top item whose go/no-go is met. One item per commit. State the number you expect to move and by how much.
 4. Team rule: `python3 Tools/Build/who_works_where.py query <files>` first; a fix in another collaborator's area that
-   is more than local (one function, a data repair) is a ticket (`/team-tasks add`, naming nobody) with the measurement attached,
+   is more than local (one function, a data repair) is a hand-off on that lane (`/handoff-open`, with your person's yes) with the measurement attached,
    not a commit. Write `Affects: <person>'s <area>` in the commit otherwise.
 
 ## 3. Fix - the checklist every performance change in this repo is held to
@@ -141,8 +140,7 @@ where they disagree (`Docs/claude/PLUGINS_AND_CONNECTORS.md`). Before writing co
 
 ## 5. Close out everywhere
 
-`/bug-closeout` for the records: the team task the sweep filed (`team_tasks.py done <id> --note "<before -> after>"`),
-the perf record row, the lever table (§3.3: move the row to done or to §3.5 if it measured dead), and
+`/bug-closeout` for the records: the perf record row, the lever table (§3.3: move the row to done or to §3.5 if it measured dead), and
 `perf_hunt.py compare <after.json> --adopt` / `amoebius --adopt` so the baseline is the new normal. Commit the
 baselines with the fix. A regression that was NOT this change's (the base moved) is still a row: say what moved it.
 
