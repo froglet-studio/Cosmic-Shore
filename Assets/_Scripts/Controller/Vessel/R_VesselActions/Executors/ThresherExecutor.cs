@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <b>Enemy vessels: petals only</b> (the LOCKED PvP rule). The ball's swept path and every chain
     /// link reach an enemy hull; a contact is a scored <see cref="CombatHitClass.Strike"/> that
-    /// STEALS <c>vesselHitPetals</c> (Charge-scaled) petals per element through
+    /// STEALS <c>vesselHitPetals</c> (fixed; Charge lowers the smash speed instead) petals per element through
     /// <see cref="CombatHitDrain.TryAdmit"/>, decided on the machine that owns this hull. Nothing
     /// else touches the victim. Charge L5 "Magnet" draws the free ball toward the nearest enemy hull.
     ///
@@ -297,9 +297,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The four element scalings, read live (never cached) and folded into this frame's
         /// settings. Read through <c>EvaluateReplicated</c>, not <c>EvaluateLive</c>: every peer
         /// simulates this ball, and element levels themselves do not replicate, so a remote copy
-        /// reading its own (empty) ResourceSystem would fly a different ball. Only TIME lives in the
-        /// chain's settings (the spin-up rate and cap); Charge, Mass and Space are read where they
-        /// are spent (<see cref="TryHitVessel"/>, <see cref="LayTrailPrism"/>, <see cref="EnergyCap"/>).</summary>
+        /// reading its own (empty) ResourceSystem would fly a different ball. TIME (the spin-up rate and
+        /// cap) and CHARGE (the smash and white-hot speeds) live in the chain's settings; Mass and Space
+        /// are read where they are spent (<see cref="LayTrailPrism"/>, <see cref="EnergyCap"/>).</summary>
         void ApplyElementScaling()
         {
             _settings = _baseSettings;
@@ -307,6 +307,10 @@ namespace CosmicShore.Gameplay
             float spin = Mathf.Max(0.05f, config.SpinMultiplier.EvaluateReplicated(_status));
             _settings.LockSpinRate *= spin;
             _settings.LockMaxSpeed *= spin;
+            // CHARGE: a charged ball smashes at a lower speed (and goes white-hot sooner).
+            float smash = Mathf.Max(0.05f, config.SmashSpeedScale.EvaluateReplicated(_status));
+            _settings.SmashSpeed *= smash;
+            _settings.WhiteHotSpeed *= smash;
             _solver.Settings = _settings;
         }
 
@@ -1013,7 +1017,7 @@ namespace CosmicShore.Gameplay
         /// hull (every peer simulates the ball, so every peer sees the contact) — admitted through
         /// <see cref="CombatHitDrain.TryAdmit"/> (a warded victim is neither scored on nor robbed;
         /// <c>vesselHitCooldownSeconds</c> per victim), then a Strike-form STEAL of
-        /// <c>vesselHitPetals</c> (CHARGE) petals per element and the score on the stats channel.
+        /// <c>vesselHitPetals</c> petals per element and the score on the stats channel.
         /// </summary>
         void TryHitVessel(IVesselStatus victim, Vector3 velocity)
         {

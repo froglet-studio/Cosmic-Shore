@@ -1,0 +1,108 @@
+# Loop Atlas model: vessel Manta. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Manta
+verbs:
+  Time:
+    ability: Yawstery
+    does: Hard, flat turns on the turn pair, one side per direction. Your trail is a plain trail; Time makes the Manta faster,
+      cruising and soaring.
+    trigger: Hold, one side per direction
+    scales: More Time raises your cruise speed and your soaring speed.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md
+    arch: hold
+    t: [2, 12]
+  Charge:
+    ability: Sting
+    does: Graze a rival vessel or creature to plant a bomb without them knowing; each costs the energy your skimming gathers.
+      Every bomb shares one fuse and a new plant resets it, so they all go off together, and none can be scraped off.
+    trigger: Passive - skim to arm, graze to plant
+    scales: 'More Charge makes the shared fuse run longer when a plant resets it: 20 s at rest, 30 s at Charge 10.'
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md
+    arch: passive
+    t: [2, 15]
+  Mass:
+    ability: Decoy
+    does: Every elemental crystal you collect leaves a decoy where it was, one of its effects frozen as the tell. A rival
+      who takes it gets a cluster of danger prisms laid across their course.
+    trigger: Passive - collect a crystal
+    scales: More Mass makes a decoy stand longer.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Skim
+    does: 'Skimming prisms gathers the energy that plants bombs, and turns rival prisms explosive: destroyed, they take
+      their neighbours with them. Touching a prism with your hull sets off every bomb and loses all the energy.'
+    trigger: Passive - skim prisms
+    scales: More Space widens your skimmer.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md
+    arch: passive
+    t: [2, 15]
+  Omni:
+    ability: Kabloom
+    does: Every bomb you have planted on rivals and creatures goes off at once, and a blast blooms round your own ship as
+      well.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/MantaKabloomByCrystalEffectSO.cs
+    arch: omni
+    t: [10, 60]
+board:
+  Time: ~ b ~
+  Charge: b b .
+  Mass: x x x
+  Space: b b .
+missing: ''
+arenas: [Regatta, Broadside, Brood Rush]
+games:
+  Time: [Redline]
+  Charge: [Corona]
+  Mass: []
+  Space: [Bloomrush]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The fuse
+  t: [15, 60]
+  is: Arm quietly, plant on many, set them all off at once.
+  chain:
+  - - Space
+    - 'Skim a prism to arm: one energy is one bomb'
+  - - Charge
+    - 'Plant on as many as you dare: the planting loop'
+  - - Omni
+    - 'Kabloom: every bomb goes off'
+  drivers: [rival, mastery]
+  feel: Nobody knew until it went off.
+  sub:
+  - name: Plant and reset
+    at: 1
+    t: [4, 20]
+    is: The loop inside the fuse. Graze a rival or a creature to plant a bomb, and the shared fuse starts again for every
+      bomb already planted. Energy holds only one bomb, so each plant needs a fresh skim.
+    chain:
+    - - Charge
+      - 'Graze a rival or creature: a bomb is planted'
+    - - Charge
+      - 'The shared fuse resets: 20 s at rest, 30 s at Charge 10'
+    - - Space
+      - Skim a prism for the next energy
+    - - ''
+      - Pick the next target, or cash out
+    drivers: [rival, mastery, stake]
+    repsOf: bombs planted before the cash-out
+    feel: One more bomb is a bigger bloom, and one more chance to brush a prism and lose them all.
+    src: Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md section 0
+- name: The bait
+  t: [10, 40]
+  is: Leave a decoy and let greed do the work.
+  chain:
+  - - Mass
+    - 'Collect a crystal: a decoy is left'
+  - [Time, Yaw hard away]
+  - - ''
+    - A rival takes the decoy into danger prisms
+  drivers: [rival, joy]
+  feel: A trap someone chose to walk into.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md

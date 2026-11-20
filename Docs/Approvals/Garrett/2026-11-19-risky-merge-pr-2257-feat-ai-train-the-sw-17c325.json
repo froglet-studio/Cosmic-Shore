@@ -1,0 +1,29 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2257-feat-ai-train-the-sw-17c325",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T06:07:14+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2257 (feat(ai): train the Swordfish sword hand and the Goby's leash in their own Mass/Space games) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Swordfish.prefab, Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset",
+  "branch": "claude/project-thread-kszcm7",
+  "pr": 2257,
+  "commit": "f03a47b57",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Swordfish.prefab",
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset",
+    "Assets/_Scripts/Controller/Arcade/CLEAVE.md",
+    "Assets/_Scripts/Controller/Arcade/DEN_BUILDER.md",
+    "Assets/_Scripts/Controller/Arcade/PALISADE.md",
+    "Assets/_Scripts/Controller/Arcade/RIPTIDE.md",
+    "Docs/ElementalLoop/STATUS.md",
+    "Docs/ElementalLoop/loop.json"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Swordfish.prefab, Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset"
+    }
+  ]
+}

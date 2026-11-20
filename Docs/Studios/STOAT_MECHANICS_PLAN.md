@@ -1,5 +1,7 @@
 # The Stoat's mechanics — one picker, every mechanic, race-tested (plan, 2026-10-14)
 
+> **History, not the current Stoat (marked 2026-11-20, Yash).** What ships is the swing: one small black hole, the stick picks the exit angle, one slingshot. The source of truth is `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md` (the banner at its top) and `STOAT_DIPOLE.md` ("The swing", "One slingshot"). Kept as a record: the mechanic picker compared flights that the swing replaced.
+
 The ask (the user, 2026-10-14): *"The Stoat has mechanics. Can we do the proper mechanics by being able to choose which
 mechanics to follow? … compare the last few Stoat works, and create an interface where we can swap between the various
 mechanics of the Stoat, with the B key or by clicking the interface UI … a proper plan to make this vessel more fun to play

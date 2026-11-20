@@ -87,6 +87,46 @@ namespace CosmicShore.Data
         }
 
         /// <summary>
+        /// The modes moved to the arcade's PARTY category (Garrett, 2026-11-17, Docs/ArcadeRestructure/PLAN.md): games
+        /// that do not teach how the HyperSea works, so they train for no arena. Their genre elements above are kept, so
+        /// their intensity ladders and analytics are unchanged; only the arcade's category and the card's petals change.
+        /// A party game bends any rule it likes, and its card description says which.
+        /// </summary>
+        public static bool IsParty(GameModes mode)
+        {
+            switch (mode)
+            {
+                // A gather of many crystals: fun, but the HyperSea has several omni crystals, so it teaches nothing.
+                case GameModes.Scurry:
+                // A ball game, not control of the cell (Garrett, 2026-11-17). Tollway stays a Mass game.
+                case GameModes.ScarabScramble:
+                // A shuffle of other modes; it has no element of its own.
+                case GameModes.Maelstrom:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// The arcade category a mode files under: a party row first, then its genre (Mass, Space or both are one
+        /// category), and a mode with no genre is Party.
+        /// </summary>
+        public static ArcadeCategory CategoryFor(GameModes mode, ScoringMetric? metric)
+        {
+            if (IsParty(mode)) return ArcadeCategory.Party;
+            if (!TryElementsFor(mode, metric, out var primary, out _)) return ArcadeCategory.Party;
+            switch (primary)
+            {
+                case Element.Time: return ArcadeCategory.Time;
+                case Element.Charge: return ArcadeCategory.Charge;
+                case Element.Mass:
+                case Element.Space: return ArcadeCategory.MassSpace;
+                default: return ArcadeCategory.Party;
+            }
+        }
+
+        /// <summary>
         /// The fallback: the element standing for the kind of game a METRIC describes, for a mode
         /// with no row of its own. Returns false for a metric with no genre yet.
         /// </summary>

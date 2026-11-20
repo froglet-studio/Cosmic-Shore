@@ -1,0 +1,22 @@
+{
+  "id": "2026-11-17-squirrel-time-throttle-multiplier-x1-25-489e23",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T23:31:21+00:00",
+  "area": "Squirrel Time ability",
+  "summary": "Squirrel Time throttle multiplier x1.25->x1.5 raised to x1.375->x1.65 (step 5, crosses the 1.10x bar)",
+  "why": "On 20 fresh archive courses + the shipped Regatta course (3 seeds, levers never fit to them): imbalance card 1.13 -> 1.07, L5 1.09 -> 1.07, 0 DNF. Skim Race rungs inside bars.",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "c861f3b12",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Squirrel.prefab"
+  ],
+  "loop": {
+    "vessels": [
+      "Squirrel"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

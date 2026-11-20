@@ -866,13 +866,19 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
-            // Scene teardown: the drain coroutine dies with us - strike synchronously, pool-safe,
-            // and let the scene unload take the instantiated remainder in one sweep (the unload
-            // pays that cost anyway).
+            // The toybox root torn down while the scene lives: the drain coroutine dies with us, so
+            // strike synchronously, pool-safe.
+            // The scene itself closing is different: a strike gathers the world under a NEW
+            // GameObject, and one made while a scene closes is left behind ("Some objects were not
+            // cleaned up when closing the scene", Cell0_RetiringWorld, six machines) and re-parents
+            // creatures whose NetworkManager is already gone. The unload destroys every cell and
+            // its world in the same sweep, and Cell.OnDestroy retires the cell's own books, so
+            // there is nothing for a strike to do.
+            bool sceneClosing = !gameObject.scene.isLoaded;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var record = _cells[i];
-                if (record.Cell) record.Cell.StrikeSatelliteWorld();
+                if (record.Cell && !sceneClosing) record.Cell.StrikeSatelliteWorld();
                 if (record.Runtime) Destroy(record.Runtime);
             }
             _cells.Clear();

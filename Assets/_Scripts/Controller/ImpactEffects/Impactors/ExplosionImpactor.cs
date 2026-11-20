@@ -602,6 +602,10 @@ namespace CosmicShore.Gameplay
                 case VesselImpactor vesselImpactee:
                     if (vesselImpactee.Vessel.VesselStatus.Domain == explosion.Domain && !affectSelf)
                         break;
+                    // A hull inside a Soliton Tunnel is in another dimension: a blast out here does not reach it, nor a
+                    // rider's blast anyone out here (SolitonIsolation). Before the ledger, so it can still be caught once out.
+                    if (SolitonIsolation.Apart(SourceVessel?.VesselStatus, vesselImpactee.Vessel.VesselStatus))
+                        break;
 
                     // Recorded BEFORE the effect container is consulted: a pilot who passed the
                     // friendly-fire gate has been caught by this blast whether or not the firing

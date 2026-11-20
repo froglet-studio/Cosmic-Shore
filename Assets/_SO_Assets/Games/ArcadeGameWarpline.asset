@@ -27,7 +27,7 @@ MonoBehaviour:
   Vessels:
   - {fileID: 11400000, guid: 8d3f1a2b4c5e4d6f9a7b8c9d0e1f2a3b, type: 2}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1

@@ -1,0 +1,37 @@
+{
+  "id": "2026-11-16-risky-merge-pr-2059-feat-arcade-element-d6f337",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-16T22:23:48+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2059 (feat(arcade): element ladder I3 - each team's own crystals of the game's element) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; shared AI code every AI hull runs: Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+  "branch": "claude/project-thread-31ri4q",
+  "pr": 2059,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/ElementLadderCrystals.cs",
+    "Assets/_Scripts/Controller/Arcade/ElementLadderCrystals.cs.meta",
+    "Assets/_Scripts/Controller/Arcade/Harvest/HarvestController.cs",
+    "Assets/_Scripts/Controller/Arcade/MultiplayerMiniGameControllerBase.cs",
+    "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+    "Assets/_Scripts/Controller/Arcade/Shatterplane/ShatterplaneController.cs",
+    "Assets/_Scripts/ScriptableObjects/ModePreviewLibrarySO.cs",
+    "Assets/_Scripts/Tests/Editor/ElementLadderCrystalsTests.cs",
+    "Assets/_Scripts/Tests/Editor/ElementLadderCrystalsTests.cs.meta",
+    "Docs/Approvals/Shombith/2026-11-16-your-harvest-i3-team-crystal-pattern-is-c40ab1.json",
+    "Docs/ElementalLoop/PLAYBOOK.md"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "detail": "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs"
+    }
+  ]
+}

@@ -105,7 +105,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Let go this many units SHORT of the ring's plane, so the hull flies through the mouth after the fold " +
                  "(a crossing inside the fold's own step is not counted - GateRaceController declines it).")]
-        [SerializeField, Min(0f)] float aiFoldLandShort = 30f;
+        [SerializeField, Min(0f)] float aiFoldLandShort = 77.4f;
 
         [Tooltip("Seconds before an autopilot re-tries a fold it could not start. A press the " +
                  "ability refuses (still recharging) is harmless but costs an RPC, so it is not " +
@@ -125,8 +125,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.5f, 20f)] float aiBellyNoseDegrees = 3f;
 
         [Tooltip("How closely the BELLY must be on the ring for the autopilot to drop. Wider than a fold's line-up: the " +
-                 "drop is travel, so it lands short of the ring (by twice the miss it carries) and flies the rest.")]
-        [SerializeField, Range(1f, 30f)] float aiDropAimDegrees = 10f;
+                 "drop is travel, so it lands short of the ring (by twice the miss it carries) and flies the rest. 10 until " +
+                 "2026-11-17; 6.6 trained with the hop gates below (time_ai_search.py, TigerMoth run1); 9.87 with the let-go margin (run3, 2026-11-19).")]
+        [SerializeField, Range(1f, 30f)] float aiDropAimDegrees = 9.87f;
+
+        [Tooltip("How far short the drop lets go for the aim it carries: this many times the sideways miss (distance x " +
+                 "sin(belly error)). 2 until 2026-11-19; 1.02 trained with the let-go and hop genes (time_ai_search.py, TigerMoth run3). A gene of the Tiger Moth's drop drive (time_ai_search.py), " +
+                 "which Regatta's coach copies (RegattaTigerMothDrop.MissMargin).")]
+        [SerializeField, Min(0f)] float aiDropMissMargin = 1.02f;
 
         [Tooltip("A ring further round than the pitch entry but within this many degrees of the nose is ABEAM - where " +
                  "every exit gate leaves the next cluster, since the gate faces square to it. There the autopilot holds " +
@@ -152,21 +158,38 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float wallRegrowSeconds = 1.5f;
 
         [Header("Autopilot hops (the tower)")]
-        [Tooltip("How closely the BELLY must be on a tower ring's drop line before the autopilot presses.")]
-        [SerializeField, Range(1f, 30f)] float aiHopBellyDegrees = 8f;
+        [Tooltip("The most the BELLY may be off a tower ring's drop line when the autopilot presses: a cap, so a fall " +
+                 "that only grazes the ring at a steep slant is never taken. The press itself is judged where the fall " +
+                 "crosses the ring's plane (aiHopLineShare). At 8 the race judge's TigerMoth never pressed: its belly swings " +
+                 "through the line while the hull is off it, and the moments both were inside their own windows never came.")]
+        [SerializeField, Range(1f, 30f)] float aiHopBellyDegrees = 20f;
 
-        [Tooltip("How far off the ring's centre (as a share of its radius) the drop line may pass when the autopilot " +
-                 "presses. The pilot cruises over the ring, so this is the press's timing window.")]
-        [SerializeField, Range(0.1f, 0.9f)] float aiHopLineShare = 0.45f;
+        [Tooltip("How far off the ring's centre (as a share of its radius) the FALL may cross the ring's plane when the " +
+                 "autopilot presses - the line the belly points along, from where the hull is. The pilot cruises over " +
+                 "the ring, so this is the press's timing window. 0.45 until 2026-11-17: with the fall judged where it " +
+                 "crosses, 0.7 still lands inside the ring and the judge's I1 race finished in 143 s (0.45: never). 0.85 " +
+                 "trained later that day (time_ai_search.py, TigerMoth run1).")]
+        [SerializeField, Range(0.1f, 0.9f)] float aiHopLineShare = 0.753f;
 
         [Tooltip("How far ahead of the press point the autopilot steers along the line it arrives on (u): it flies the " +
                  "cruise line over the ring rather than at the ring, which sits under a plate.")]
-        [SerializeField, Min(10f)] float aiHopLookahead = 150f;
+        [SerializeField, Min(10f)] float aiHopLookahead = 137.4f;
 
         [Tooltip("How far past a tower ring's press point (u, beyond the ring's radius) an autopilot that has not dropped " +
                  "turns round and flies the cruise line back over it. It drops from either direction: the fall follows the " +
-                 "belly, not the nose. Before 2026-11-11 a bot that overshot flew on along the line for good.")]
-        [SerializeField, Min(10f)] float aiHopMissMargin = 60f;
+                 "belly, not the nose. Before 2026-11-11 a bot that overshot flew on along the line for good. 60 until " +
+                 "2026-11-17: shorter than the hull's turning circle, so the bot turned back before it was round and " +
+                 "looped over the ring without ever flying the line level (race judge: I2 timed out at 16 of 27 rings; " +
+                 "at 400 it finished in 188 s). 600 trained later that day (time_ai_search.py, TigerMoth run1).")]
+        [SerializeField, Min(10f)] float aiHopMissMargin = 249.3f;
+
+        [Header("AI nose")]
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain, 0 = off) and nose follow rate (0 = the fleet lag, " +
+                 "1.5/s), set as it is armed. TigerMoth: no lead, nose at 6.4/s, trained with the hop gates above " +
+                 "(time_ai_search.py, TigerMoth run1, 2026-11-17).")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.TigerMoth, 0f, noseFollow: 3.48f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
         const string WallOwnerId = "WaystationTowerWall";
 
@@ -388,7 +411,7 @@ namespace CosmicShore.Gameplay
                 // The hold IS the distance (the drop's numbers read off its own asset). Land short of the ring's plane by the authored margin plus twice the miss the aim carries, so the hull
                 // has room to turn into the mouth; the drop is travel, so a ring it crosses on the way is threaded anyway.
                 float along = distance * Mathf.Cos(aim * Mathf.Deg2Rad)
-                              - aiFoldLandShort - 2f * distance * Mathf.Sin(aim * Mathf.Deg2Rad);
+                              - aiFoldLandShort - aiDropMissMargin * distance * Mathf.Sin(aim * Mathf.Deg2Rad);
                 _aiFoldReleaseAt[pilot] = now + TigerMothDropMath.HoldSecondsFor(Mathf.Max(0f, along), drop.DropSpeed,
                     drop.DropEaseSeconds, drop.LandSeconds, status.Speed);
                 _aiFoldRetryAt[pilot] = now + aiFoldRetrySeconds;
@@ -660,7 +683,14 @@ namespace CosmicShore.Gameplay
                 Vector3 toRing = ring - hull.position;
                 float along = Vector3.Dot(toRing, drop);
                 if (along <= 0f) continue;
-                if (Vector3.ProjectOnPlane(toRing, drop).magnitude > _course[index].Radius * aiHopLineShare) continue;
+                // Press when the FALL will pass through the ring, not when the hull is over it with its belly near the
+                // line: the drop follows the belly (TigerMothDropMath.DropDirection), so a hull a little off the line and a
+                // belly a few degrees off can cancel or add. Judged where the belly's line crosses the ring's plane.
+                Vector3 belly = TigerMothDropMath.DropDirection(hull.rotation);
+                float closing = Vector3.Dot(belly, drop);
+                if (closing <= 0.1f) continue;
+                Vector3 crossing = hull.position + belly * (along / closing);
+                if (Vector3.ProjectOnPlane(crossing - ring, drop).magnitude > _course[index].Radius * aiHopLineShare) continue;
 
                 // Through the ring to the depth the hop plan reads off the lanterns (WaystationHopPlan.AiTargetDepth): the
                 // middle of the deep band plus this seat's own error, never past the far edge; on a plunge, short of the
@@ -668,7 +698,7 @@ namespace CosmicShore.Gameplay
                 // under it - deeper on a plunge - comes off what the hull still has to fall to reach the ring.
                 float ringDepth = Vector3.Dot(_course[index].Position - WaystationTower.PressOf(_course, index, s),
                                               _course[index].Axis);
-                float travel = along + (WaystationHopPlan.AiTargetDepth(_course, index, s, i) - ringDepth);
+                float travel = along / closing + (WaystationHopPlan.AiTargetDepth(_course, index, s, i) - ringDepth) / closing;
                 // The executor lands to the speed the hull had at the press, so the hold is sized at the live speed.
                 _hopReleaseAt[pilot] = now + WaystationTower.HoldForTravel(travel, status.Speed);
                 handler.PerformShipControllerActionsReplicated(input);

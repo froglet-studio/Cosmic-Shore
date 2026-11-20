@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-18-the-lobby-snapshot-now-carries-8-ai-seat-3f01c2",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T00:45:55+00:00",
+  "area": "multiplayer lobby and seating",
+  "summary": "The lobby snapshot now carries 8 AI seats (was 6, ProtocolVersion 34 -> 35) and the launch panel allows 9 seats, at most 3 a team, so every game can seat 9 vessels.",
+  "why": "Garrett 2026-11-17: open party games and team sizes up to 9 vessels in all games, max 3 per team. It goes past the four-player party target in MULTIPLAYER_START_HERE (the human party stays 4; the extra seats are AI).",
+  "branch": "claude/project-thread-e9yath",
+  "commit": "0e4d695fd",
+  "paths": [
+    "Assets/_Prefabs/CORE/NetworkManager.prefab",
+    "Assets/_Scripts/Controller/Multiplayer/ArcadeConfigSyncManager.cs",
+    "Assets/_Scripts/Tests/Editor/ArcadeLobbySnapshotTests.cs"
+  ]
+}

@@ -121,8 +121,10 @@ namespace CosmicShore.Gameplay
         /// short (a reading pilot flies an I3 hairpin lap in ~15 s offline against I1's ~24 s), so they fly more of them:
         /// sized so a pilot who reads the course lands near the ~90 s arcade target on every rung (BRITTLESTARTIME.md
         /// section 0, `brittle_star_time_course_harness --race`). I1's laps are the authored race
-        /// (<c>brittleStarTimeGateTarget</c>); the others scale from it.</summary>
-        public static readonly int[] LapsByIntensity = { 2, 3, 3, 4 };
+        /// (<c>brittleStarTimeGateTarget</c>); the others scale from it. I3 and I4 went from 3 and 4 to 6 laps on
+        /// 2026-11-17 so the ladder climbs: the Legendary AI raced 49 / 54 / 36 / 57 s, and I3 (its team crystals speed
+        /// it up) was the fastest rung; now 49 / 54 / 65 / 90 s (real-game judge, seeds 1-3).</summary>
+        public static readonly int[] LapsByIntensity = { 2, 3, 6, 6 };
 
         public static int LapsFor(int intensity) => LapsByIntensity[Mathf.Clamp(intensity, 1, 4) - 1];
 

@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-20-one-scope-line-added-assets-scripts-cont-25aac8",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-20T16:14:25+00:00",
+  "area": "AI gate (check_ai_no_state_writes.py)",
+  "summary": "One scope line added: Assets/_Scripts/Controller/Arcade/GrizzlyTime/GrizzlyTimeController.AI.cs (Grizzly Time's AI: its aim and its Rush press), as Brittle Star Time's coach files were added. The gate passes on it.",
+  "why": "The vessel-ai skill says a new AI's files join the gate's scopes.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "f91a79f47",
+  "paths": [
+    "Tools/Build/check_ai_no_state_writes.py"
+  ]
+}

@@ -103,6 +103,7 @@ import analytics_geo as G  # noqa: E402
 import analytics_store as S  # noqa: E402
 import analytics_views as V  # noqa: E402
 import analytics_notebook as NB  # noqa: E402  the Notebook page's routes
+import analytics_compare as CMP  # noqa: E402  Rev 66 A: the Funnel builder and Release compare
 
 CONFIG_PATH = os.path.expanduser(os.environ.get("FROGLET_ANALYTICS_CONFIG", "~/.froglet-analytics/config.json"))
 CONSOLE_DIR = os.path.normpath(os.path.join(HERE, "..", "console"))
@@ -113,7 +114,8 @@ CONSOLE_FILES = {"/": ("index.html", "text/html; charset=utf-8"),
                  "/themes.css": ("themes.css", "text/css; charset=utf-8"),
                  "/theme.js": ("theme.js", "text/javascript; charset=utf-8"),
                  "/notebook.js": ("notebook.js", "text/javascript; charset=utf-8"),
-                 "/notebook.css": ("notebook.css", "text/css; charset=utf-8")}
+                 "/notebook.css": ("notebook.css", "text/css; charset=utf-8"),
+                 "/compare.js": ("compare.js", "text/javascript; charset=utf-8")}
 CONSOLE_CSP = ("default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                "font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; "
                "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
@@ -639,6 +641,51 @@ def _r67_page(view):
     return route
 
 
+def _build_device(q):
+    """Rev 66 A pages: the build (default release; all = every build) and the device group, from a dict."""
+    build = q.get("build") or "release"
+    if build not in V.BUILD_FILTERS:
+        raise S.Invalid(f"build must be one of {list(V.BUILD_FILTERS)}")
+    device = q.get("device") or "all"
+    if device not in V.DEVICES:
+        raise S.Invalid(f"device must be one of {list(V.DEVICES)}")
+    return (None if build == "all" else build), device, S.DEVICE_GROUPS.get(device)
+
+
+def _with_events(h, work):
+    db = _app(h).store._read()
+    try:
+        return work(db)
+    finally:
+        db.close()
+
+
+def _funnel(h):
+    body = h._body()
+    if not isinstance(body, dict):
+        raise S.Invalid("send a JSON object")
+    build, device, devices = _build_device(body)
+    allowed = _app(h).store.allowed_events
+    page = _with_events(h, lambda db: CMP.funnel(db, body, allowed, build, devices))
+    page.update(build=build or "all", device=device)
+    return 200, page
+
+
+def _funnel_steps(h):
+    build, device, devices = _build_device(h._params())
+    allowed = _app(h).store.allowed_events
+    return 200, _with_events(h, lambda db: CMP.funnel_steps(db, allowed, build, devices))
+
+
+def _releases(h):
+    q = h._params()
+    build, device, devices = _build_device(q)
+    page = _with_events(h, lambda db: CMP.releases(db, q.get("a"), q.get("b"), q.get("span") or "first7", build,
+                                                   devices))
+    page.update(build=build or "all", device=device)
+    return 200, page
+
+
 R67_GET = {"/v1/sessions": _r67_page(V.sessions), "/v1/balance": _r67_page(V.balance), "/v1/quits": _r67_page(V.quits),
            "/v1/invites": _r67_page(V.invites), "/v1/errors": _r67_page(V.errors)}
 
@@ -652,6 +699,8 @@ REV65_PUT = {"/v1/eras": _eras_put, "/v1/dashboards": _dashboards_put}
 REV65_DELETE = {"/v1/queries": _queries_delete, "/v1/dashboards": _dashboards_delete,
                 "/v1/segments": _segments_delete, "/v1/presets": _presets_delete}
 REV65_GET.update(R67_GET)
+REV65_GET.update({"/v1/funnel/steps": _funnel_steps, "/v1/releases": _releases})
+REV65_POST["/v1/funnel"] = _funnel
 # The Notebook (analytics_notebook.py) mounts its routes into the tables above.
 for _routes, _nb in ((REV65_GET, NB.GET), (REV65_POST, NB.POST), (REV65_PUT, NB.PUT), (REV65_DELETE, NB.DELETE)):
     _routes.update(_nb)

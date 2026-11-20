@@ -28,14 +28,16 @@ namespace CosmicShore.Gameplay
         /// like going through another dimension ... When it comes out of the hole, then it interactable again"): while a tunnel
         /// or a Soliton Network flies this hull it is PHASED - its touch meets no prism and takes no crystal, and no prism or crystal
         /// touches it (<see cref="IHullContactGate"/>, read by both halves of every contact, the skimmer's too). A race ring
-        /// threaded inside still counts (it is a sweep, not a touch).
+        /// threaded inside still counts (it is a sweep, not a touch). 2026-11-20: it is the executor's
+        /// <see cref="MeerkatSolitonExecutor.InsideTube"/>, so a peer's copy of a rider is phased too (it was not: the riding
+        /// flag is not replicated), and everything else that could land on a rider asks <see cref="SolitonIsolation"/>.
         /// </summary>
         public bool Phased
         {
             get
             {
                 var wormhole = Wormhole;
-                return wormhole && (wormhole.IsRiding || wormhole.IsInNetwork || wormhole.IsInVoid);   // round 28: the void too
+                return wormhole && wormhole.InsideTube != null;   // a tunnel, a network, or the void (round 28)
             }
         }
 

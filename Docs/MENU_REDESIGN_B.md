@@ -6202,7 +6202,7 @@ returns aggregate and a per-party funnel. Charts: the colour set's four rims in 
 solo, Ruby multiplayer, Blue plain data) with legends and labels; the rims sit above the usual chart lightness band
 (`dataviz` validator), so labels stay on. Awaiting a pick.
 
-## 142. Rev 66 mockups: Froglet Analytics, more ideas - chart switches, live now, alerts, funnels, release and player compare (2026-11-06, awaiting a pick)
+## 142. Rev 66 mockups: Froglet Analytics, more ideas - chart switches, live now, alerts, funnels, release and player compare (2026-11-06; Shombith picked A, Funnels and Releases, 2026-11-17)
 
 **Asked (Shombith, 2026-11-06, picking all seven Rev 65 screens to be built):** "If you have more ideas provide mockups
 lets do that too", and the console should have "switches in graphs which helps all these departments" (business,
@@ -6247,7 +6247,14 @@ launches and returns split by `app_version` and an exception event the game does
 the message and its top frame). Player compare needs `GET /v1/similar?id=` worked out on the server; Claude is not
 asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in that order with a legend; play types Jade
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
-a better number. No player id reaches Claude on any of these. Awaiting a pick.
+a better number. No player id reaches Claude on any of these.
+
+**Picked (Shombith, 2026-11-17, "Build them A"):** the Funnel builder and Release compare, built in
+`Tools/Analytics/server/analytics_compare.py` and `Tools/Analytics/console/compare.js` (rail: Funnels under Players,
+Releases under Health). Live, Alerts and Player compare stay parked. **Differs from the board:** the conversion chart
+is a line per platform (the console's charts have no grouped bars over ordered steps); Finished by mode is a table;
+the launch histogram is a line per version; saving a funnel as a segment is not built (the steps are kept in the
+browser); release reads are worked out on the server when asked, not from a nightly table.
 
 ## 143. Rev 68 mockups: the Fleet Codex for the website - four looks, the whole fleet and one vessel window each (2026-11-08; Shombith picked C, section 144)
 
@@ -8822,3 +8829,9 @@ the toasts one fixed spot of their own.
   side with their captions under them.
 - **Not built**: the pause screen (the shared pause window, not voyage code), and the mockup's crew trust, pilot XP and
   colour shard tiles (no such systems yet).
+
+**Made room (2026-11-17):** Frogma was full again (511 boards plus `canvas.json` = its 512-file cap, which the
+claude.ai Design type sets and nothing in the repo can raise). On Shombith's pick the 228 boards of Rev 3 to Rev 40
+(222 on Menu Redesign, 6 on Compute Console) came off the canvas with their 96 title notes and section frames
+(canvas version `1794949812-dbeb`): 283 boards are left, 228 files free. Their copies stay in
+`Docs/MenuRedesignB/board/R3*` to `R40*`; the repo index and README were rewritten from the live canvas.
