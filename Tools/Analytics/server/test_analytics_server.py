@@ -743,6 +743,20 @@ class Http(unittest.TestCase):
                                                       "batch": [started("p1", "m1", T0)]})
         self.assertEqual((status, out["accepted"]), (200, 1))
 
+    def test_a_second_instance_takes_its_own_public_key_and_not_this_one(self):
+        # Tumult's instance (2026-11-20): its config names Tumult's key file, so Cosmic Shore's key is refused there.
+        work = tempfile.mkdtemp()
+        try:
+            key_file = os.path.join(work, "ingest_key.public")
+            with open(key_file, "w") as handle:
+                handle.write("fa_in_public_other_game\n")
+            other = A.App(dict(A.DEFAULTS, data_dir=os.path.join(work, "data"), public_key_file=key_file))
+            self.assertEqual(other.ingest_keys, {"public": "fa_in_public_other_game"})
+            self.assertIsNone(A._match_key(A.public_ingest_key(), other.ingest_keys))
+            other.store.db.close()
+        finally:
+            shutil.rmtree(work)
+
     def test_healthz_is_public(self):
         self.assertEqual(self.call("GET", "/healthz")[:2], (200, {"ok": True}))
 

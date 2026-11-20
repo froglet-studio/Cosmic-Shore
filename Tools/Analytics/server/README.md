@@ -69,6 +69,25 @@ only if they pass (a failure keeps the running code and is retried the next nigh
 `journalctl -u froglet-analytics-update`; run it now: `sudo froglet-analytics-update`. Checked in a sandbox through
 up to date, update, failing tests (kept the old code), merged branch (moved to bleeding-edge) and deleted branch.
 
+## A second instance: Tumult (2026-11-20)
+
+The same server runs again for Tumult, Froglet's browser tabletop game, beside this one on the same VM: its own
+service (`froglet-analytics-tumult`), user, port, data, keys, address and nightly update and backup. Its event list and
+public ingest key are not in this repository: they live in Tumult's (`froglet-studio/TumultTTG`,
+`docs/analytics/EVENT_SCHEMA.json` and `docs/analytics/ingest_key.public`), sparse-checked-out beside the server and
+refreshed by the nightly update, which restarts the service when either changes. A build of one game cannot write into
+the other's data: each instance accepts only its own game's key (`public_key_file` in its config).
+
+```bash
+export ANALYTICS_INSTANCE=tumult ANALYTICS_PORT=8788 ANALYTICS_SCHEMA_REPO=froglet-studio/TumultTTG
+export ANALYTICS_INGEST_ORIGINS="https://tumult.froglet.games https://www.froglet.games"
+bash setup-analytics-vm.sh        # → https://tumult-analytics.<ip-with-dashes>.sslip.io
+```
+
+Unset `ANALYTICS_INSTANCE` and the script installs, updates and names everything exactly as before. The console's
+Cosmic Shore pages (matches, vessels, modes) are empty for Tumult; Overview, Retention, Data health, the Funnel builder,
+Query Studio and Ask read any game's events.
+
 ## Pieces
 
 | File | What it does |
@@ -87,7 +106,7 @@ up to date, update, failing tests (kept the old code), merged branch (moved to b
 | `import_posthog.py` | Copies PostHog's history in, once, without IP addresses |
 | `self-update.sh` | The nightly self-update (tests before it restarts) |
 | `ingest_key.public` | The public, write-only ingest key every build ships with |
-| `setup-analytics-vm.sh` | Installs it on the Compute VM as its own user and service, behind Caddy |
+| `setup-analytics-vm.sh` | Installs it on the Compute VM as its own user and service, behind Caddy; `ANALYTICS_INSTANCE` installs another game's instance beside it |
 
 Standard library only, except the two Claude features (`pip install anthropic`, `ANTHROPIC_API_KEY`). Without them
 the overnight read is written by rules and the Ask box says it is off.
